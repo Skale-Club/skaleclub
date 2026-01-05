@@ -1,0 +1,94 @@
+import { z } from 'zod';
+import { insertBookingSchema, categories, services, bookings } from './schema';
+
+export const errorSchemas = {
+  validation: z.object({
+    message: z.string(),
+    field: z.string().optional(),
+  }),
+  notFound: z.object({
+    message: z.string(),
+  }),
+  conflict: z.object({
+    message: z.string(),
+  }),
+};
+
+export const api = {
+  categories: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/categories',
+      responses: {
+        200: z.array(z.custom<typeof categories.$inferSelect>()),
+      },
+    },
+    get: {
+      method: 'GET' as const,
+      path: '/api/categories/:slug',
+      responses: {
+        200: z.custom<typeof categories.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
+  services: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/services',
+      input: z.object({
+        categoryId: z.coerce.number().optional(),
+      }).optional(),
+      responses: {
+        200: z.array(z.custom<typeof services.$inferSelect>()),
+      },
+    },
+  },
+  bookings: {
+    create: {
+      method: 'POST' as const,
+      path: '/api/bookings',
+      input: insertBookingSchema,
+      responses: {
+        201: z.custom<typeof bookings.$inferSelect>(),
+        400: errorSchemas.validation,
+        409: errorSchemas.conflict, // Time slot taken
+      },
+    },
+    list: {
+      method: 'GET' as const,
+      path: '/api/bookings',
+      responses: {
+        200: z.array(z.custom<typeof bookings.$inferSelect>()),
+      },
+    },
+  },
+  availability: {
+    check: {
+      method: 'GET' as const,
+      path: '/api/availability',
+      input: z.object({
+        date: z.string(), // YYYY-MM-DD
+        totalDurationMinutes: z.coerce.number(),
+      }),
+      responses: {
+        200: z.array(z.object({
+          time: z.string(),
+          available: z.boolean(),
+        })),
+      },
+    },
+  },
+};
+
+export function buildUrl(path: string, params?: Record<string, string | number>): string {
+  let url = path;
+  if (params) {
+    Object.entries(params).forEach(([key, value]) => {
+      if (url.includes(`:${key}`)) {
+        url = url.replace(`:${key}`, String(value));
+      }
+    });
+  }
+  return url;
+}
