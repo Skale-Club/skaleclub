@@ -10,6 +10,14 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
 
+  // Supabase Config (for frontend)
+  app.get('/api/supabase-config', (req, res) => {
+    res.json({
+      url: process.env.SUPABASE_URL || '',
+      anonKey: process.env.SUPABASE_ANON_KEY || ''
+    });
+  });
+
   // Categories
   app.get(api.categories.list.path, async (req, res) => {
     const categories = await storage.getCategories();
