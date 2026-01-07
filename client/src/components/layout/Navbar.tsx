@@ -24,7 +24,7 @@ export function Navbar() {
             <img 
               src="https://storage.googleapis.com/msgsndr/q6UKnlWOQwyTk82yZPAs/media/695dbac289c99d91ea25f488.svg" 
               alt="Skleanings" 
-              className="h-12 w-auto"
+              className="h-10 w-auto"
             />
           </Link>
 

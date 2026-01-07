@@ -9,7 +9,7 @@ export function Footer() {
             <img 
               src="https://storage.googleapis.com/msgsndr/q6UKnlWOQwyTk82yZPAs/media/695dbac289c99d91ea25f488.svg" 
               alt="Skleanings" 
-              className="h-12 w-auto brightness-0 invert"
+              className="h-10 w-auto brightness-0 invert"
             />
           </Link>
           <p className="text-slate-400 max-w-sm">
