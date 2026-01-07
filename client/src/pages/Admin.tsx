@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -10,20 +10,48 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, Pencil, Trash2, LogOut, FolderOpen, Package, Calendar, Clock, DollarSign, User, MapPin, Image } from 'lucide-react';
+import { 
+  Sidebar, 
+  SidebarContent, 
+  SidebarFooter,
+  SidebarGroup, 
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarMenu, 
+  SidebarMenuButton, 
+  SidebarMenuItem,
+  SidebarProvider
+} from '@/components/ui/sidebar';
+import { Loader2, Plus, Pencil, Trash2, LogOut, FolderOpen, Package, Calendar, Clock, DollarSign, User, MapPin, Image, LayoutDashboard, Building2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
 import type { Category, Service, Booking } from '@shared/schema';
 
+type AdminSection = 'dashboard' | 'categories' | 'services' | 'bookings' | 'hero' | 'company';
+
+const menuItems = [
+  { id: 'dashboard' as AdminSection, title: 'Dashboard', icon: LayoutDashboard },
+  { id: 'categories' as AdminSection, title: 'Categories', icon: FolderOpen },
+  { id: 'services' as AdminSection, title: 'Services', icon: Package },
+  { id: 'bookings' as AdminSection, title: 'Bookings', icon: Calendar },
+  { id: 'hero' as AdminSection, title: 'Hero Settings', icon: Image },
+  { id: 'company' as AdminSection, title: 'Company Settings', icon: Building2 },
+];
+
 export default function Admin() {
   const { isAdmin, email, loading, signOut } = useAuth();
   const [, setLocation] = useLocation();
-  const { toast } = useToast();
+  const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
+
+  useEffect(() => {
+    if (!loading && !isAdmin) {
+      setLocation('/admin/login');
+    }
+  }, [loading, isAdmin, setLocation]);
 
   if (loading) {
     return (
@@ -34,7 +62,6 @@ export default function Admin() {
   }
 
   if (!isAdmin) {
-    setLocation('/admin/login');
     return null;
   }
 
@@ -43,56 +70,335 @@ export default function Admin() {
     setLocation('/admin/login');
   };
 
+  const sidebarStyle = {
+    "--sidebar-width": "16rem",
+    "--sidebar-width-icon": "3rem",
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="container-custom mx-auto px-4 py-4 flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-bold text-slate-900">Admin Dashboard</h1>
-            <p className="text-sm text-slate-500">{email}</p>
-          </div>
-          <Button variant="outline" onClick={handleLogout} data-testid="button-logout">
-            <LogOut className="w-4 h-4 mr-2" />
-            Logout
-          </Button>
-        </div>
-      </header>
+    <SidebarProvider style={sidebarStyle as React.CSSProperties}>
+      <div className="flex h-screen w-full bg-slate-50">
+        <Sidebar className="border-r border-gray-200">
+          <SidebarHeader className="p-4 border-b border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-lg">
+                A
+              </div>
+              <span className="font-semibold text-lg text-primary">Admin Panel</span>
+            </div>
+          </SidebarHeader>
+          
+          <SidebarContent className="p-2">
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {menuItems.map((item) => (
+                    <SidebarMenuItem key={item.id}>
+                      <SidebarMenuButton
+                        onClick={() => setActiveSection(item.id)}
+                        isActive={activeSection === item.id}
+                        data-testid={`nav-${item.id}`}
+                      >
+                        <item.icon className="w-4 h-4" />
+                        <span>{item.title}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
 
-      <main className="container-custom mx-auto p-4 md:p-8">
-        <Tabs defaultValue="categories" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
-            <TabsTrigger value="categories" data-testid="tab-categories">
-              <FolderOpen className="w-4 h-4 mr-2" />
-              Categories
-            </TabsTrigger>
-            <TabsTrigger value="services" data-testid="tab-services">
-              <Package className="w-4 h-4 mr-2" />
-              Services
-            </TabsTrigger>
-            <TabsTrigger value="bookings" data-testid="tab-bookings">
-              <Calendar className="w-4 h-4 mr-2" />
-              Bookings
-            </TabsTrigger>
-          </TabsList>
+          <SidebarFooter className="p-4 border-t border-gray-100 mt-auto">
+            <div className="space-y-3">
+              <div className="text-sm">
+                <p className="text-muted-foreground text-xs">Logged in as</p>
+                <p className="font-medium truncate">{email}</p>
+              </div>
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                onClick={handleLogout}
+                data-testid="button-logout"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign Out
+              </Button>
+            </div>
+          </SidebarFooter>
+        </Sidebar>
 
-          <TabsContent value="categories">
-            <CategoriesTab />
-          </TabsContent>
+        <main className="flex-1 overflow-auto p-6 md:p-8">
+          {activeSection === 'dashboard' && <DashboardSection />}
+          {activeSection === 'categories' && <CategoriesSection />}
+          {activeSection === 'services' && <ServicesSection />}
+          {activeSection === 'bookings' && <BookingsSection />}
+          {activeSection === 'hero' && <HeroSettingsSection />}
+          {activeSection === 'company' && <CompanySettingsSection />}
+        </main>
+      </div>
+    </SidebarProvider>
+  );
+}
 
-          <TabsContent value="services">
-            <ServicesTab />
-          </TabsContent>
+function DashboardSection() {
+  const { data: categories } = useQuery<Category[]>({ queryKey: ['/api/categories'] });
+  const { data: services } = useQuery<Service[]>({ queryKey: ['/api/services'] });
+  const { data: bookings } = useQuery<Booking[]>({ queryKey: ['/api/bookings'] });
 
-          <TabsContent value="bookings">
-            <BookingsTab />
-          </TabsContent>
-        </Tabs>
-      </main>
+  const stats = [
+    { label: 'Total Categories', value: categories?.length || 0, icon: FolderOpen, color: 'text-blue-500' },
+    { label: 'Total Services', value: services?.length || 0, icon: Package, color: 'text-green-500' },
+    { label: 'Total Bookings', value: bookings?.length || 0, icon: Calendar, color: 'text-purple-500' },
+    { label: 'Revenue', value: `$${bookings?.reduce((sum, b) => sum + Number(b.totalPrice), 0).toFixed(2) || '0.00'}`, icon: DollarSign, color: 'text-orange-500' },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <p className="text-muted-foreground">Overview of your cleaning business</p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat) => (
+          <Card key={stat.label}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">{stat.label}</p>
+                  <p className="text-2xl font-bold">{stat.value}</p>
+                </div>
+                <stat.icon className={clsx("w-8 h-8", stat.color)} />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Bookings</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {bookings?.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">No bookings yet</p>
+          ) : (
+            <div className="space-y-4">
+              {bookings?.slice(0, 5).map((booking) => (
+                <div key={booking.id} className="flex items-center justify-between gap-4 p-3 rounded-lg bg-slate-50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <User className="w-4 h-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{booking.customerName}</p>
+                      <p className="text-xs text-muted-foreground">{format(new Date(booking.bookingDate), "MMM dd, yyyy")}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold">${booking.totalPrice}</p>
+                    <Badge variant={booking.status === 'confirmed' ? 'default' : 'secondary'} className="text-xs">
+                      {booking.status}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
-function CategoriesTab() {
+function HeroSettingsSection() {
+  const { toast } = useToast();
+  const [heroTitle, setHeroTitle] = useState('Professional Cleaning Services');
+  const [heroSubtitle, setHeroSubtitle] = useState('Book your cleaning service today and enjoy a sparkling clean home');
+  const [heroImageUrl, setHeroImageUrl] = useState('');
+  const [ctaText, setCtaText] = useState('Book Now');
+
+  const handleSave = () => {
+    toast({ title: 'Hero settings saved', description: 'Your changes have been saved successfully.' });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Hero Settings</h1>
+        <p className="text-muted-foreground">Customize your landing page hero section</p>
+      </div>
+
+      <Card>
+        <CardContent className="p-6 space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="heroTitle">Hero Title</Label>
+            <Input 
+              id="heroTitle" 
+              value={heroTitle} 
+              onChange={(e) => setHeroTitle(e.target.value)}
+              placeholder="Enter hero title"
+              data-testid="input-hero-title"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="heroSubtitle">Hero Subtitle</Label>
+            <Textarea 
+              id="heroSubtitle" 
+              value={heroSubtitle} 
+              onChange={(e) => setHeroSubtitle(e.target.value)}
+              placeholder="Enter hero subtitle"
+              data-testid="input-hero-subtitle"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="heroImage">Hero Background Image URL</Label>
+            <Input 
+              id="heroImage" 
+              value={heroImageUrl} 
+              onChange={(e) => setHeroImageUrl(e.target.value)}
+              placeholder="https://..."
+              data-testid="input-hero-image"
+            />
+            {heroImageUrl && (
+              <img src={heroImageUrl} alt="Hero preview" className="w-full h-48 object-cover rounded-lg mt-2" />
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="ctaText">Call to Action Button Text</Label>
+            <Input 
+              id="ctaText" 
+              value={ctaText} 
+              onChange={(e) => setCtaText(e.target.value)}
+              placeholder="Book Now"
+              data-testid="input-cta-text"
+            />
+          </div>
+
+          <Button onClick={handleSave} data-testid="button-save-hero">
+            Save Changes
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function CompanySettingsSection() {
+  const { toast } = useToast();
+  const [companyName, setCompanyName] = useState('Skleanings');
+  const [companyEmail, setCompanyEmail] = useState('contact@skleanings.com');
+  const [companyPhone, setCompanyPhone] = useState('');
+  const [companyAddress, setCompanyAddress] = useState('');
+  const [workingHoursStart, setWorkingHoursStart] = useState('08:00');
+  const [workingHoursEnd, setWorkingHoursEnd] = useState('18:00');
+
+  const handleSave = () => {
+    toast({ title: 'Company settings saved', description: 'Your changes have been saved successfully.' });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Company Settings</h1>
+        <p className="text-muted-foreground">Manage your business information</p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Business Information</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="companyName">Company Name</Label>
+              <Input 
+                id="companyName" 
+                value={companyName} 
+                onChange={(e) => setCompanyName(e.target.value)}
+                data-testid="input-company-name"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="companyEmail">Contact Email</Label>
+              <Input 
+                id="companyEmail" 
+                type="email"
+                value={companyEmail} 
+                onChange={(e) => setCompanyEmail(e.target.value)}
+                data-testid="input-company-email"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="companyPhone">Phone Number</Label>
+              <Input 
+                id="companyPhone" 
+                value={companyPhone} 
+                onChange={(e) => setCompanyPhone(e.target.value)}
+                placeholder="+1 (555) 000-0000"
+                data-testid="input-company-phone"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="companyAddress">Business Address</Label>
+              <Input 
+                id="companyAddress" 
+                value={companyAddress} 
+                onChange={(e) => setCompanyAddress(e.target.value)}
+                placeholder="123 Main St, City, State"
+                data-testid="input-company-address"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Working Hours</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="workingHoursStart">Opening Time</Label>
+              <Input 
+                id="workingHoursStart" 
+                type="time"
+                value={workingHoursStart} 
+                onChange={(e) => setWorkingHoursStart(e.target.value)}
+                data-testid="input-hours-start"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="workingHoursEnd">Closing Time</Label>
+              <Input 
+                id="workingHoursEnd" 
+                type="time"
+                value={workingHoursEnd} 
+                onChange={(e) => setWorkingHoursEnd(e.target.value)}
+                data-testid="input-hours-end"
+              />
+            </div>
+          </div>
+
+          <Button onClick={handleSave} data-testid="button-save-company">
+            Save Changes
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function CategoriesSection() {
   const { toast } = useToast();
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -159,8 +465,8 @@ function CategoriesTab() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Categories</h2>
-          <p className="text-slate-500">Manage your service categories</p>
+          <h1 className="text-2xl font-bold">Categories</h1>
+          <p className="text-muted-foreground">Manage your service categories</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingCategory(null); }}>
           <DialogTrigger asChild>
@@ -189,7 +495,7 @@ function CategoriesTab() {
         <Card className="p-12 text-center">
           <FolderOpen className="w-12 h-12 text-slate-300 mx-auto mb-4" />
           <h3 className="font-semibold text-lg mb-2">No categories yet</h3>
-          <p className="text-slate-500 mb-4">Create your first category to get started</p>
+          <p className="text-muted-foreground mb-4">Create your first category to get started</p>
         </Card>
       ) : (
         <div className="grid gap-4">
@@ -201,7 +507,7 @@ function CategoriesTab() {
                 )}
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-lg truncate">{category.name}</h3>
-                  <p className="text-sm text-slate-500 truncate">{category.description}</p>
+                  <p className="text-sm text-muted-foreground truncate">{category.description}</p>
                   <Badge variant="secondary" className="mt-2">
                     {getServiceCount(category.id)} services
                   </Badge>
@@ -301,7 +607,7 @@ function CategoryForm({ category, onSubmit, isLoading }: {
   );
 }
 
-function ServicesTab() {
+function ServicesSection() {
   const { toast } = useToast();
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -376,8 +682,8 @@ function ServicesTab() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Services</h2>
-          <p className="text-slate-500">Manage your cleaning services</p>
+          <h1 className="text-2xl font-bold">Services</h1>
+          <p className="text-muted-foreground">Manage your cleaning services</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingService(null); }}>
           <DialogTrigger asChild>
@@ -428,7 +734,7 @@ function ServicesTab() {
         <Card className="p-12 text-center">
           <Package className="w-12 h-12 text-slate-300 mx-auto mb-4" />
           <h3 className="font-semibold text-lg mb-2">No services found</h3>
-          <p className="text-slate-500 mb-4">
+          <p className="text-muted-foreground mb-4">
             {services?.length === 0 ? 'Create your first service to get started' : 'Try adjusting your filters'}
           </p>
         </Card>
@@ -444,9 +750,9 @@ function ServicesTab() {
                   <h3 className="font-semibold text-lg line-clamp-1">{service.name}</h3>
                   <Badge variant="outline">${service.price}</Badge>
                 </div>
-                <p className="text-sm text-slate-500 line-clamp-2 mb-3">{service.description}</p>
+                <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{service.description}</p>
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 text-sm text-slate-500">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Clock className="w-4 h-4" />
                     <span>{Math.floor(service.durationMinutes / 60)}h {service.durationMinutes % 60}m</span>
                   </div>
@@ -612,7 +918,7 @@ function ServiceForm({ service, categories, onSubmit, isLoading }: {
   );
 }
 
-function BookingsTab() {
+function BookingsSection() {
   const { data: bookings, isLoading } = useQuery<Booking[]>({
     queryKey: ['/api/bookings']
   });
@@ -625,8 +931,8 @@ function BookingsTab() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Bookings</h2>
-          <p className="text-slate-500">View all customer bookings</p>
+          <h1 className="text-2xl font-bold">Bookings</h1>
+          <p className="text-muted-foreground">View all customer bookings</p>
         </div>
         <Badge variant="secondary" className="text-lg px-4 py-2">
           {bookings?.length || 0} Total
@@ -637,7 +943,7 @@ function BookingsTab() {
         <Card className="p-12 text-center">
           <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-4" />
           <h3 className="font-semibold text-lg mb-2">No bookings yet</h3>
-          <p className="text-slate-500">Bookings will appear here when customers make them</p>
+          <p className="text-muted-foreground">Bookings will appear here when customers make them</p>
         </Card>
       ) : (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
