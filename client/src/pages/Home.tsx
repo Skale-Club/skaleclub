@@ -39,11 +39,11 @@ export default function Home() {
                 </a>
               </div>
             </div>
-            <div className="relative hidden lg:flex h-full items-end justify-center self-end">
+            <div className="relative flex h-full items-end justify-center lg:justify-end self-end mt-8 lg:mt-0">
               <img 
                 src={heroImage} 
                 alt="Cleaning Professionals" 
-                className="w-full max-w-lg object-contain drop-shadow-2xl translate-y-0 scale-100 origin-bottom"
+                className="w-full max-w-[280px] sm:max-w-md lg:max-w-[600px] object-contain drop-shadow-2xl translate-y-0 scale-100 origin-bottom"
               />
             </div>
           </div>
