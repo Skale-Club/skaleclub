@@ -12,7 +12,7 @@ export default function AdminLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, loading, initialized } = useAuth();
+  const { signIn, loading } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -35,7 +35,7 @@ export default function AdminLogin() {
     setIsLoading(false);
   };
 
-  if (!initialized || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />

@@ -1,70 +1,85 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { initSupabase, getSupabase } from '@/lib/supabase';
-import { User, Session, SupabaseClient } from '@supabase/supabase-js';
+
+interface AdminSession {
+  isAdmin: boolean;
+  email: string | null;
+}
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+  isAdmin: boolean;
+  email: string | null;
   loading: boolean;
-  initialized: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
-  getAccessToken: () => string | null;
+  checkSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [email, setEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
-  const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
+
+  const checkSession = async () => {
+    try {
+      const response = await fetch('/api/admin/session', {
+        credentials: 'include'
+      });
+      const data: AdminSession = await response.json();
+      setIsAdmin(data.isAdmin);
+      setEmail(data.isAdmin ? data.email : null);
+    } catch (err) {
+      setIsAdmin(false);
+      setEmail(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    initSupabase()
-      .then((client) => {
-        setSupabase(client);
-        setInitialized(true);
-        
-        client.auth.getSession().then(({ data: { session } }) => {
-          setSession(session);
-          setUser(session?.user ?? null);
-          setLoading(false);
-        });
-
-        const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
-          setSession(session);
-          setUser(session?.user ?? null);
-          setLoading(false);
-        });
-
-        return () => subscription.unsubscribe();
-      })
-      .catch((err) => {
-        console.error('Failed to initialize Supabase:', err);
-        setLoading(false);
-        setInitialized(true);
-      });
+    checkSession();
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    if (!supabase) return { error: new Error('Supabase not initialized') };
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error as Error | null };
+    try {
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        return { error: new Error(data.message || 'Login failed') };
+      }
+
+      const data = await response.json();
+      setIsAdmin(true);
+      setEmail(data.email);
+      return { error: null };
+    } catch (err) {
+      return { error: err as Error };
+    }
   };
 
   const signOut = async () => {
-    if (!supabase) return;
-    await supabase.auth.signOut();
-  };
-
-  const getAccessToken = () => {
-    return session?.access_token || null;
+    try {
+      await fetch('/api/admin/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      setIsAdmin(false);
+      setEmail(null);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, initialized, signIn, signOut, getAccessToken }}>
+    <AuthContext.Provider value={{ isAdmin, email, loading, signIn, signOut, checkSession }}>
       {children}
     </AuthContext.Provider>
   );

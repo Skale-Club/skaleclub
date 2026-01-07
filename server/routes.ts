@@ -4,19 +4,11 @@ import { storage } from "./storage";
 import { api, errorSchemas, buildUrl } from "@shared/routes";
 import { z } from "zod";
 import { WORKING_HOURS, insertCategorySchema, insertServiceSchema } from "@shared/schema";
-import bcrypt from "bcrypt";
+import session from "express-session";
 
 // Admin credentials from environment variables
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
-
-// Generate password hash at startup for secure comparison
-let adminPasswordHash: string | null = null;
-(async () => {
-  if (ADMIN_PASSWORD) {
-    adminPasswordHash = await bcrypt.hash(ADMIN_PASSWORD, 10);
-  }
-})();
 
 // Extend session type to include admin flag
 declare module 'express-session' {

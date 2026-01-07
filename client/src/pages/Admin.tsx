@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { queryClient, authenticatedRequest } from '@/lib/queryClient';
+import { queryClient, apiRequest } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,11 +21,11 @@ import { clsx } from 'clsx';
 import type { Category, Service, Booking } from '@shared/schema';
 
 export default function Admin() {
-  const { user, loading, initialized, signOut } = useAuth();
+  const { isAdmin, email, loading, signOut } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  if (!initialized || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -33,7 +33,7 @@ export default function Admin() {
     );
   }
 
-  if (!user) {
+  if (!isAdmin) {
     setLocation('/admin/login');
     return null;
   }
@@ -49,7 +49,7 @@ export default function Admin() {
         <div className="container-custom mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div>
             <h1 className="text-xl font-bold text-slate-900">Admin Dashboard</h1>
-            <p className="text-sm text-slate-500">{user.email}</p>
+            <p className="text-sm text-slate-500">{email}</p>
           </div>
           <Button variant="outline" onClick={handleLogout} data-testid="button-logout">
             <LogOut className="w-4 h-4 mr-2" />
@@ -94,7 +94,6 @@ export default function Admin() {
 
 function CategoriesTab() {
   const { toast } = useToast();
-  const { getAccessToken } = useAuth();
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -108,9 +107,7 @@ function CategoriesTab() {
 
   const createCategory = useMutation({
     mutationFn: async (data: { name: string; slug: string; description: string; imageUrl: string }) => {
-      const token = getAccessToken();
-      if (!token) throw new Error('Not authenticated');
-      return authenticatedRequest('POST', '/api/categories', token, data);
+      return apiRequest('POST', '/api/categories', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
@@ -124,9 +121,7 @@ function CategoriesTab() {
 
   const updateCategory = useMutation({
     mutationFn: async (data: { id: number; name: string; slug: string; description: string; imageUrl: string }) => {
-      const token = getAccessToken();
-      if (!token) throw new Error('Not authenticated');
-      return authenticatedRequest('PUT', `/api/categories/${data.id}`, token, data);
+      return apiRequest('PUT', `/api/categories/${data.id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
@@ -141,9 +136,7 @@ function CategoriesTab() {
 
   const deleteCategory = useMutation({
     mutationFn: async (id: number) => {
-      const token = getAccessToken();
-      if (!token) throw new Error('Not authenticated');
-      return authenticatedRequest('DELETE', `/api/categories/${id}`, token);
+      return apiRequest('DELETE', `/api/categories/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
@@ -310,7 +303,6 @@ function CategoryForm({ category, onSubmit, isLoading }: {
 
 function ServicesTab() {
   const { toast } = useToast();
-  const { getAccessToken } = useAuth();
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>('all');
@@ -326,9 +318,7 @@ function ServicesTab() {
 
   const createService = useMutation({
     mutationFn: async (data: Omit<Service, 'id'>) => {
-      const token = getAccessToken();
-      if (!token) throw new Error('Not authenticated');
-      return authenticatedRequest('POST', '/api/services', token, data);
+      return apiRequest('POST', '/api/services', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/services'] });
@@ -342,9 +332,7 @@ function ServicesTab() {
 
   const updateService = useMutation({
     mutationFn: async (data: Service) => {
-      const token = getAccessToken();
-      if (!token) throw new Error('Not authenticated');
-      return authenticatedRequest('PUT', `/api/services/${data.id}`, token, data);
+      return apiRequest('PUT', `/api/services/${data.id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/services'] });
@@ -359,9 +347,7 @@ function ServicesTab() {
 
   const deleteService = useMutation({
     mutationFn: async (id: number) => {
-      const token = getAccessToken();
-      if (!token) throw new Error('Not authenticated');
-      return authenticatedRequest('DELETE', `/api/services/${id}`, token);
+      return apiRequest('DELETE', `/api/services/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/services'] });
