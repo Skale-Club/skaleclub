@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { api, errorSchemas, buildUrl } from "@shared/routes";
 import { z } from "zod";
 import { WORKING_HOURS, insertCategorySchema, insertServiceSchema } from "@shared/schema";
+import { insertSubcategorySchema } from "./storage";
 import bcrypt from "bcrypt";
 
 // Admin credentials from environment variables
@@ -135,10 +136,53 @@ export async function registerRoutes(
     }
   });
 
+  // Subcategories
+  app.get('/api/subcategories', async (req, res) => {
+    const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
+    const subcategories = await storage.getSubcategories(categoryId);
+    res.json(subcategories);
+  });
+
+  app.post('/api/subcategories', requireAdmin, async (req, res) => {
+    try {
+      const validatedData = insertSubcategorySchema.parse(req.body);
+      const subcategory = await storage.createSubcategory(validatedData);
+      res.status(201).json(subcategory);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.put('/api/subcategories/:id', requireAdmin, async (req, res) => {
+    try {
+      const validatedData = insertSubcategorySchema.partial().parse(req.body);
+      const subcategory = await storage.updateSubcategory(Number(req.params.id), validatedData);
+      res.json(subcategory);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.delete('/api/subcategories/:id', requireAdmin, async (req, res) => {
+    try {
+      await storage.deleteSubcategory(Number(req.params.id));
+      res.json({ success: true });
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
   // Services
   app.get(api.services.list.path, async (req, res) => {
     const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
-    const services = await storage.getServices(categoryId);
+    const subcategoryId = req.query.subcategoryId ? Number(req.query.subcategoryId) : undefined;
+    const services = await storage.getServices(categoryId, subcategoryId);
     res.json(services);
   });
 
