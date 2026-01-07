@@ -20,7 +20,7 @@ export default function Confirmation() {
         
         <h1 className="text-3xl font-bold text-slate-900 mb-4">Booking Confirmed!</h1>
         <p className="text-slate-600 mb-8 leading-relaxed">
-          Thank you for choosing SparkleClean. We've sent a confirmation email with all the details. Our team will arrive at the scheduled time.
+          Thank you for choosing BlueSpring Cleaning. We've sent a confirmation email with all the details. Our team will arrive at the scheduled time.
         </p>
 
         <div className="space-y-4">

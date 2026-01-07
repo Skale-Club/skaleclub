@@ -1,7 +1,8 @@
 import { useCategories } from "@/hooks/use-booking";
 import { Link } from "wouter";
-import { ArrowRight, Star, Shield, Clock } from "lucide-react";
+import { ArrowRight, Star, Shield, Clock, Phone } from "lucide-react";
 import { CartSummary } from "@/components/CartSummary";
+import heroImage from "@assets/image_1767748602105.png";
 
 export default function Home() {
   const { data: categories, isLoading } = useCategories();
@@ -9,69 +10,76 @@ export default function Home() {
   return (
     <div className="pb-24">
       {/* Hero Section */}
-      <section className="relative pt-20 pb-32 overflow-hidden">
+      <section className="relative min-h-[600px] flex items-center pt-20 pb-32 overflow-hidden bg-[#1a4d3e]">
         <div className="container-custom mx-auto relative z-10">
-          <div className="max-w-2xl">
-            <h1 className="text-5xl md:text-7xl font-bold leading-[1.1] mb-6 text-slate-900">
-              Your Home, <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400">
-                Impeccably Clean.
-              </span>
-            </h1>
-            <p className="text-xl text-slate-600 mb-8 leading-relaxed">
-              Professional cleaning services tailored to your lifestyle. 
-              Book trusted cleaners in seconds, not hours.
-            </p>
-            <div className="flex gap-4 flex-col sm:flex-row">
-              <Link href="/services">
-                <button className="px-8 py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-1 transition-all flex items-center justify-center gap-2">
-                  Book a Service
-                  <ArrowRight className="w-5 h-5" />
-                </button>
-              </Link>
-              <Link href="#how-it-works">
-                <button className="px-8 py-4 bg-white text-slate-700 font-bold rounded-xl border border-gray-200 shadow-sm hover:bg-gray-50 transition-all">
-                  How it Works
-                </button>
-              </Link>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="text-white">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/20 text-orange-400 text-sm font-medium mb-6">
+                <Shield className="w-4 h-4" />
+                Trusted Cleaning Experts in Denver!
+              </div>
+              <h1 className="text-5xl md:text-7xl font-bold leading-[1.1] mb-6 font-display">
+                Reliable Cleaning <br />
+                Services In <span className="text-white underline decoration-yellow-400">Denver, CO</span>
+              </h1>
+              <p className="text-xl text-emerald-50/80 mb-8 leading-relaxed max-w-xl">
+                We proudly serve Denver, CO, and the surrounding areas, ensuring top-quality service through our two dedicated lines.
+              </p>
+              <div className="flex gap-4 flex-col sm:flex-row items-center">
+                <Link href="/services">
+                  <button className="px-8 py-4 bg-[#c8ff44] text-slate-900 font-bold rounded-full hover:bg-[#b8ef34] transition-all flex items-center justify-center gap-2 text-lg">
+                    Get Instant Price
+                  </button>
+                </Link>
+                <a href="tel:3033094226" className="px-8 py-4 bg-transparent text-white font-bold rounded-full border border-white/30 hover:bg-white/10 transition-all flex items-center gap-2 text-lg">
+                  <Phone className="w-5 h-5" />
+                  (303) 309 4226
+                </a>
+              </div>
+            </div>
+            <div className="relative hidden lg:block">
+              <img 
+                src={heroImage} 
+                alt="Cleaning Professional" 
+                className="w-full max-w-2xl mx-auto drop-shadow-2xl transform translate-y-12 scale-110"
+              />
             </div>
           </div>
         </div>
         
-        {/* Abstract Background Shapes */}
-        <div className="absolute top-0 right-0 -z-10 w-[800px] h-[800px] bg-gradient-to-bl from-blue-50 to-transparent rounded-full blur-3xl opacity-60 transform translate-x-1/3 -translate-y-1/4"></div>
+        {/* Background Wash */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#1a4d3e] via-[#1a4d3e]/80 to-transparent"></div>
       </section>
 
-      {/* Features Grid */}
-      <section className="py-16 bg-white/50">
-        <div className="container-custom mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-          {[
-            { icon: Star, title: "Top Rated Professionals", desc: "Every cleaner is vetted, background-checked, and highly rated." },
-            { icon: Clock, title: "Flexible Scheduling", desc: "Book 7 days a week. Reschedule easily when life happens." },
-            { icon: Shield, title: "Satisfaction Guarantee", desc: "Not happy? We'll re-clean for free. Your peace of mind matters." },
-          ].map((feature, i) => (
-            <div key={i} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all">
-              <div className="w-12 h-12 bg-blue-50 text-primary rounded-xl flex items-center justify-center mb-6">
-                <feature.icon className="w-6 h-6" />
+      {/* Trust Badges */}
+      <section className="-translate-y-12 relative z-20">
+        <div className="container-custom mx-auto">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-100 overflow-hidden">
+            {[
+              { icon: Star, title: "100% Satisfaction Guarantee", desc: "Our quality is guaranteed." },
+              { icon: Shield, title: "Fully-vetted Cleaning Crew", desc: "Trusted professionals only." },
+              { icon: Clock, title: "Upfront Pricing & Easy Booking", desc: "Book in under 60 seconds." },
+            ].map((feature, i) => (
+              <div key={i} className="p-8 flex items-center gap-6 hover:bg-gray-50 transition-colors">
+                <div className="w-12 h-12 bg-emerald-50 text-[#1a4d3e] rounded-full flex items-center justify-center shrink-0">
+                  <feature.icon className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900">{feature.title}</h3>
+                  <p className="text-sm text-slate-500">{feature.desc}</p>
+                </div>
               </div>
-              <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-              <p className="text-slate-500">{feature.desc}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 
       {/* Categories */}
       <section className="py-20">
         <div className="container-custom mx-auto">
-          <div className="flex justify-between items-end mb-12">
-            <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Our Services</h2>
-              <p className="text-slate-600">Choose from our wide range of professional cleaning solutions.</p>
-            </div>
-            <Link href="/services" className="text-primary font-semibold hover:underline hidden md:block">
-              View all services
-            </Link>
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">Ready to Schedule?</h2>
+            <p className="text-slate-600 max-w-2xl mx-auto text-lg">Select a category below to start your instant online booking.</p>
           </div>
 
           {isLoading ? (
@@ -84,26 +92,23 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {categories?.map((category) => (
                 <Link key={category.id} href={`/services?category=${category.id}`}>
-                  <div className="group cursor-pointer relative overflow-hidden rounded-2xl h-80 shadow-md hover:shadow-xl transition-all duration-500">
-                    {/* Placeholder unsplash images based on category name */}
-                    {/* Cleaners, Sofa, Carpet */}
+                  <div className="group cursor-pointer relative overflow-hidden rounded-2xl h-80 shadow-md hover:shadow-xl transition-all duration-500 border border-gray-100">
                     <img 
-                      src={
-                        category.slug === 'upholstery' ? "https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?w=800&q=80" :
-                        category.slug === 'carpet' ? "https://images.unsplash.com/photo-1527512962299-633446c6eb06?w=800&q=80" :
-                        "https://images.unsplash.com/photo-1581578731117-104f2a412729?w=800&q=80"
-                      }
+                      src={category.imageUrl || "https://images.unsplash.com/photo-1581578731117-104f2a412729?w=800&q=80"}
                       alt={category.name}
                       className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                    <div className="absolute bottom-0 left-0 p-8">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+                    <div className="absolute bottom-0 left-0 p-8 w-full">
                       <h3 className="text-2xl font-bold text-white mb-2 group-hover:translate-x-2 transition-transform">
                         {category.name}
                       </h3>
-                      <p className="text-gray-300 text-sm opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
+                      <p className="text-gray-300 text-sm mb-4 line-clamp-2">
                         {category.description}
                       </p>
+                      <button className="w-full py-2 bg-[#c8ff44] text-slate-900 font-bold rounded-lg opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all">
+                        Book Now
+                      </button>
                     </div>
                   </div>
                 </Link>

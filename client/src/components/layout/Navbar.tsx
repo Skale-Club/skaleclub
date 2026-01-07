@@ -21,39 +21,25 @@ export function Navbar() {
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-white font-bold text-lg">S</span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center">
+              <div className="w-4 h-4 rounded-full bg-white/40 blur-[1px]"></div>
             </div>
-            <span className="font-display font-bold text-xl text-slate-900 tracking-tight">
-              SparkleClean
+            <span className="font-display font-bold text-2xl text-slate-900 tracking-tight">
+              BlueSpring <span className="text-emerald-600 font-medium text-lg">cleaning</span>
             </span>
           </Link>
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={clsx(
-                  "text-sm font-medium transition-colors hover:text-primary",
-                  location === link.href ? "text-primary" : "text-slate-600"
-                )}
-              >
-                {link.label}
-              </Link>
-            ))}
+            <Link href="/services" className="text-sm font-semibold text-slate-700 hover:text-emerald-600 transition-colors">Services</Link>
+            <span className="text-sm font-semibold text-slate-700">Areas Served</span>
+            <span className="text-sm font-semibold text-slate-700">FAQ</span>
+            <span className="text-sm font-semibold text-slate-700">Gift Cards</span>
+            <span className="text-sm font-semibold text-slate-700">Blog</span>
             
-            <Link href={items.length > 0 ? "/booking" : "/services"}>
-              <button className="relative p-2 rounded-full hover:bg-slate-100 transition-colors group">
-                <ShoppingBag className="w-6 h-6 text-slate-700 group-hover:text-primary transition-colors" />
-                {items.length > 0 && (
-                  <span className="absolute top-0 right-0 w-5 h-5 bg-primary text-white text-xs font-bold rounded-full flex items-center justify-center border-2 border-white transform translate-x-1 -translate-y-1">
-                    {items.length}
-                  </span>
-                )}
-              </button>
-            </Link>
+            <a href="tel:3033094226" className="px-4 py-2 bg-[#c8ff44] text-slate-900 font-bold rounded-full hover:bg-[#b8ef34] transition-all text-sm">
+              (303) 309 4226
+            </a>
           </div>
 
           {/* Mobile Menu Button */}
