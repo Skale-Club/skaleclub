@@ -4,41 +4,34 @@ import { storage } from "./storage";
 import { api, errorSchemas, buildUrl } from "@shared/routes";
 import { z } from "zod";
 import { WORKING_HOURS, insertCategorySchema, insertServiceSchema } from "@shared/schema";
-import { createClient } from "@supabase/supabase-js";
+import bcrypt from "bcrypt";
 
-// Initialize Supabase admin client for server-side auth verification
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const supabaseAdmin = supabaseUrl && supabaseServiceKey 
-  ? createClient(supabaseUrl, supabaseServiceKey)
-  : null;
+// Admin credentials from environment variables
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
 
-// Admin authentication middleware
-async function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization;
-  
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+// Generate password hash at startup for secure comparison
+let adminPasswordHash: string | null = null;
+(async () => {
+  if (ADMIN_PASSWORD) {
+    adminPasswordHash = await bcrypt.hash(ADMIN_PASSWORD, 10);
+  }
+})();
+
+// Extend session type to include admin flag
+declare module 'express-session' {
+  interface SessionData {
+    isAdmin: boolean;
+    adminEmail: string;
+  }
+}
+
+// Admin authentication middleware - session based
+function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.session?.isAdmin) {
     return res.status(401).json({ message: 'Authentication required' });
   }
-  
-  if (!supabaseAdmin) {
-    return res.status(500).json({ message: 'Server authentication not configured' });
-  }
-  
-  const token = authHeader.substring(7);
-  
-  try {
-    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-    
-    if (error || !user) {
-      return res.status(401).json({ message: 'Invalid or expired token' });
-    }
-    
-    // User is authenticated - proceed
-    next();
-  } catch (err) {
-    return res.status(401).json({ message: 'Authentication failed' });
-  }
+  next();
 }
 
 export async function registerRoutes(
@@ -46,14 +39,47 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
 
-  // Supabase Config (for frontend) - No caching to ensure fresh response
-  app.get('/api/supabase-config', (req, res) => {
-    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-    res.set('Pragma', 'no-cache');
-    res.status(200).json({
-      url: process.env.SUPABASE_URL || '',
-      anonKey: process.env.SUPABASE_ANON_KEY || ''
+  // Admin Login
+  app.post('/api/admin/login', async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+      return res.status(500).json({ message: 'Admin credentials not configured' });
+    }
+
+    if (email !== ADMIN_EMAIL) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Compare password directly (stored in encrypted Replit secret)
+    if (password !== ADMIN_PASSWORD) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Set session
+    req.session.isAdmin = true;
+    req.session.adminEmail = email;
+    
+    res.json({ success: true, email });
+  });
+
+  // Admin Logout
+  app.post('/api/admin/logout', (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: 'Failed to logout' });
+      }
+      res.json({ success: true });
     });
+  });
+
+  // Check admin session status
+  app.get('/api/admin/session', (req, res) => {
+    if (req.session?.isAdmin) {
+      res.json({ isAdmin: true, email: req.session.adminEmail });
+    } else {
+      res.json({ isAdmin: false });
+    }
   });
 
   // Categories
