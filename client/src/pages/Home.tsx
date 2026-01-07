@@ -10,24 +10,24 @@ export default function Home() {
   return (
     <div className="pb-24">
       {/* Hero Section */}
-      <section className="relative min-h-[500px] flex items-end pt-4 pb-0 overflow-hidden bg-[#1a4d3e]">
+      <section className="relative min-h-[500px] flex items-end pt-4 pb-0 overflow-hidden bg-[#1C53A3]">
         <div className="container-custom mx-auto relative z-10 w-full">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-end">
             <div className="text-white pt-20 pb-12 lg:pb-20">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/20 text-orange-400 text-sm font-medium mb-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/20 text-secondary text-sm font-medium mb-6 border border-secondary/30">
                 <Shield className="w-4 h-4" />
-                Trusted Cleaning Experts in Denver!
+                Trusted Cleaning Experts!
               </div>
               <h1 className="text-5xl md:text-7xl font-bold leading-[1.1] mb-6 font-display">
-                Reliable Cleaning <br />
-                Services In <span className="text-white underline decoration-yellow-400">Denver, CO</span>
+                Your 5-star <br />
+                <span className="text-white">cleaning company</span>
               </h1>
-              <p className="text-xl text-emerald-50/80 mb-8 leading-relaxed max-w-xl">
-                We proudly serve Denver, CO, and the surrounding areas, ensuring top-quality service through our two dedicated lines.
+              <p className="text-xl text-blue-50/80 mb-8 leading-relaxed max-w-xl">
+                We provide top-quality cleaning services ensuring a spotless environment for your home and office.
               </p>
               <div className="flex gap-4 flex-col sm:flex-row items-center">
                 <Link href="/services">
-                  <button className="px-8 py-4 bg-[#c8ff44] text-slate-900 font-bold rounded-full hover:bg-[#b8ef34] transition-all flex items-center justify-center gap-2 text-lg">
+                  <button className="px-8 py-4 bg-secondary text-secondary-foreground font-bold rounded-full hover:bg-secondary/90 transition-all flex items-center justify-center gap-2 text-lg">
                     Get Instant Price
                   </button>
                 </Link>
@@ -41,14 +41,14 @@ export default function Home() {
               <img 
                 src={heroImage} 
                 alt="Cleaning Professionals" 
-                className="w-full max-w-lg object-contain drop-shadow-2xl translate-y-[2px] scale-125 origin-bottom"
+                className="w-full max-w-lg object-contain drop-shadow-2xl translate-y-0 scale-100 origin-bottom"
               />
             </div>
           </div>
         </div>
         
         {/* Background Wash */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#1a4d3e] via-[#1a4d3e]/80 to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-[#1C53A3] via-[#1C53A3]/80 to-transparent"></div>
       </section>
 
       {/* Trust Badges */}
@@ -61,11 +61,11 @@ export default function Home() {
               { icon: Clock, title: "Upfront Pricing & Easy Booking", desc: "Book in under 60 seconds." },
             ].map((feature, i) => (
               <div key={i} className="p-8 flex items-center gap-6 hover:bg-gray-50 transition-colors">
-                <div className="w-12 h-12 bg-emerald-50 text-[#1a4d3e] rounded-full flex items-center justify-center shrink-0">
+                <div className="w-12 h-12 bg-blue-50 text-primary rounded-full flex items-center justify-center shrink-0">
                   <feature.icon className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900">{feature.title}</h3>
+                  <h3 className="font-bold text-[#1D1D1D]">{feature.title}</h3>
                   <p className="text-sm text-slate-500">{feature.desc}</p>
                 </div>
               </div>
