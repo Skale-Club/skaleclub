@@ -1,6 +1,6 @@
 import { useCart } from "@/context/CartContext";
 import { useAvailability, useCreateBooking } from "@/hooks/use-booking";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -43,6 +43,29 @@ export default function BookingPage() {
       paymentMethod: "site",
     }
   });
+
+  const calendarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("step") === "2") {
+      setStep(2);
+      setTimeout(() => {
+        calendarRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  }, []);
+
+  const handleNextStep = (nextStep: 1 | 2 | 3) => {
+    setStep(nextStep);
+    if (nextStep === 2) {
+      setTimeout(() => {
+        calendarRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   const onSubmit = (data: BookingFormValues) => {
     if (!selectedDate || !selectedTime) return;
@@ -147,7 +170,7 @@ export default function BookingPage() {
                 ))}
                 <div className="flex justify-end pt-4">
                   <button 
-                    onClick={() => setStep(2)}
+                    onClick={() => handleNextStep(2)}
                     className="px-8 py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center gap-2"
                   >
                     Select Date & Time <ChevronRight className="w-4 h-4" />
@@ -158,7 +181,7 @@ export default function BookingPage() {
 
             {/* STEP 2: SCHEDULE */}
             {step === 2 && (
-              <div className="bg-[#0B1120] p-8 rounded-2xl shadow-sm border border-slate-800 animate-in fade-in slide-in-from-bottom-4 text-white">
+              <div ref={calendarRef} className="bg-[#0B1120] p-8 rounded-2xl shadow-sm border border-slate-800 animate-in fade-in slide-in-from-bottom-4 text-white">
                 <div className="flex items-center gap-4 mb-8">
                   <button onClick={() => setStep(1)} className="p-2 hover:bg-slate-800 rounded-full transition-colors">
                     <ArrowLeft className="w-5 h-5 text-slate-400" />
@@ -291,7 +314,7 @@ export default function BookingPage() {
                 <div className="flex justify-end pt-8 mt-8 border-t border-slate-800">
                   <button 
                     disabled={!selectedDate || !selectedTime}
-                    onClick={() => setStep(3)}
+                    onClick={() => handleNextStep(3)}
                     className="px-8 py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2"
                   >
                     Continue to Checkout <ChevronRight className="w-4 h-4" />
@@ -304,7 +327,7 @@ export default function BookingPage() {
             {step === 3 && (
               <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-4">
                 <div className="flex items-center gap-4 mb-6">
-                  <button onClick={() => setStep(2)} className="p-2 hover:bg-slate-100 rounded-full">
+                  <button onClick={() => handleNextStep(2)} className="p-2 hover:bg-slate-100 rounded-full">
                     <ArrowLeft className="w-5 h-5" />
                   </button>
                   <h2 className="text-2xl font-bold">Contact Details</h2>
