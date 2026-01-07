@@ -26,7 +26,7 @@ import {
   SidebarMenuItem,
   SidebarProvider
 } from '@/components/ui/sidebar';
-import { Loader2, Plus, Pencil, Trash2, LogOut, FolderOpen, Package, Calendar, Clock, DollarSign, User, MapPin, Image, LayoutDashboard, Building2 } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, LogOut, FolderOpen, Package, Calendar, Clock, DollarSign, User, MapPin, Image, LayoutDashboard, Building2, GripVertical } from 'lucide-react';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
 import type { Category, Service, Booking } from '@shared/schema';
@@ -402,6 +402,8 @@ function CategoriesSection() {
   const { toast } = useToast();
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [orderedCategories, setOrderedCategories] = useState<Category[]>([]);
+  const [draggedId, setDraggedId] = useState<number | null>(null);
 
   const { data: categories, isLoading } = useQuery<Category[]>({
     queryKey: ['/api/categories']
@@ -410,6 +412,12 @@ function CategoriesSection() {
   const { data: services } = useQuery<Service[]>({
     queryKey: ['/api/services']
   });
+
+  useEffect(() => {
+    if (categories) {
+      setOrderedCategories(categories);
+    }
+  }, [categories]);
 
   const createCategory = useMutation({
     mutationFn: async (data: { name: string; slug: string; description: string; imageUrl: string }) => {
@@ -457,6 +465,36 @@ function CategoriesSection() {
     return services?.filter(s => s.categoryId === categoryId).length || 0;
   };
 
+  const handleDragStart = (e: React.DragEvent, id: number) => {
+    setDraggedId(id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: number) => {
+    e.preventDefault();
+    if (draggedId === null || draggedId === targetId) return;
+
+    const newOrder = [...orderedCategories];
+    const draggedIndex = newOrder.findIndex(c => c.id === draggedId);
+    const targetIndex = newOrder.findIndex(c => c.id === targetId);
+
+    const [draggedItem] = newOrder.splice(draggedIndex, 1);
+    newOrder.splice(targetIndex, 0, draggedItem);
+
+    setOrderedCategories(newOrder);
+    setDraggedId(null);
+    toast({ title: 'Category order updated' });
+  };
+
+  const handleDragEnd = () => {
+    setDraggedId(null);
+  };
+
   if (isLoading) {
     return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
@@ -466,7 +504,7 @@ function CategoriesSection() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Categories</h1>
-          <p className="text-muted-foreground">Manage your service categories</p>
+          <p className="text-muted-foreground">Manage your service categories. Drag to reorder.</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingCategory(null); }}>
           <DialogTrigger asChild>
@@ -491,66 +529,83 @@ function CategoriesSection() {
         </Dialog>
       </div>
 
-      {categories?.length === 0 ? (
+      {orderedCategories?.length === 0 ? (
         <Card className="p-12 text-center">
           <FolderOpen className="w-12 h-12 text-slate-300 mx-auto mb-4" />
           <h3 className="font-semibold text-lg mb-2">No categories yet</h3>
           <p className="text-muted-foreground mb-4">Create your first category to get started</p>
         </Card>
       ) : (
-        <div className="grid gap-4">
-          {categories?.map((category) => (
-            <Card key={category.id} className="p-4">
-              <div className="flex items-center gap-4">
-                {category.imageUrl && (
-                  <img src={category.imageUrl} alt={category.name} className="w-16 h-16 rounded-lg object-cover" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-lg truncate">{category.name}</h3>
-                  <p className="text-sm text-muted-foreground truncate">{category.description}</p>
-                  <Badge variant="secondary" className="mt-2">
-                    {getServiceCount(category.id)} services
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => { setEditingCategory(category); setIsDialogOpen(true); }}
-                    data-testid={`button-edit-category-${category.id}`}
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" data-testid={`button-delete-category-${category.id}`}>
-                        <Trash2 className="w-4 h-4 text-red-500" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Category?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          {getServiceCount(category.id) > 0 
-                            ? `This category has ${getServiceCount(category.id)} services. You must delete or reassign them first.`
-                            : 'This action cannot be undone.'}
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction 
-                          onClick={() => deleteCategory.mutate(category.id)}
-                          disabled={getServiceCount(category.id) > 0}
-                          className="bg-red-500 hover:bg-red-600"
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
+        <div className="grid gap-3">
+          {orderedCategories?.map((category) => (
+            <div
+              key={category.id}
+              draggable
+              onDragStart={(e) => handleDragStart(e, category.id)}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, category.id)}
+              onDragEnd={handleDragEnd}
+              className={clsx(
+                "flex items-center gap-4 p-4 rounded-lg bg-slate-100 dark:bg-slate-800 cursor-grab active:cursor-grabbing transition-all",
+                draggedId === category.id && "opacity-50 scale-[0.98]"
+              )}
+              data-testid={`category-item-${category.id}`}
+            >
+              <div className="text-muted-foreground cursor-grab">
+                <GripVertical className="w-5 h-5" />
               </div>
-            </Card>
+              {category.imageUrl && (
+                <img 
+                  src={category.imageUrl} 
+                  alt={category.name} 
+                  className="w-24 h-14 rounded-md object-cover flex-shrink-0" 
+                />
+              )}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-lg truncate">{category.name}</h3>
+                <p className="text-sm text-muted-foreground truncate">{category.description}</p>
+                <Badge variant="secondary" className="mt-2">
+                  {getServiceCount(category.id)} services
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => { setEditingCategory(category); setIsDialogOpen(true); }}
+                  data-testid={`button-edit-category-${category.id}`}
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="icon" data-testid={`button-delete-category-${category.id}`}>
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Category?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {getServiceCount(category.id) > 0 
+                          ? `This category has ${getServiceCount(category.id)} services. You must delete or reassign them first.`
+                          : 'This action cannot be undone.'}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={() => deleteCategory.mutate(category.id)}
+                        disabled={getServiceCount(category.id) > 0}
+                        className="bg-red-500 hover:bg-red-600"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </div>
           ))}
         </div>
       )}
