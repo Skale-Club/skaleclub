@@ -1159,12 +1159,12 @@ function ServiceForm({ service, categories, subcategories, onSubmit, isLoading }
         {filteredSubcategories.length > 0 && (
           <div className="space-y-2">
             <Label htmlFor="subcategory">Subcategory (Optional)</Label>
-            <Select value={subcategoryId} onValueChange={setSubcategoryId}>
+            <Select value={subcategoryId || "none"} onValueChange={(val) => setSubcategoryId(val === "none" ? '' : val)}>
               <SelectTrigger data-testid="select-service-subcategory">
                 <SelectValue placeholder="Select a subcategory" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="none">None</SelectItem>
                 {filteredSubcategories.map(sub => (
                   <SelectItem key={sub.id} value={String(sub.id)}>{sub.name}</SelectItem>
                 ))}
