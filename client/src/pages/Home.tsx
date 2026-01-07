@@ -34,7 +34,7 @@ export default function Home() {
               </p>
               <div className="flex gap-4 flex-col sm:flex-row items-center">
                 <Link href="/services">
-                  <button className="px-8 py-4 bg-[#facc15] hover:bg-[#eab308] text-black font-bold rounded-full transition-all flex items-center justify-center gap-2 text-lg">
+                  <button className="px-8 py-4 bg-[#FFFF01] hover:bg-[#e6e600] text-black font-bold rounded-full transition-all flex items-center justify-center gap-2 text-lg">
                     Get Instant Price
                   </button>
                 </Link>
@@ -126,7 +126,7 @@ export default function Home() {
                     <p className="text-gray-300 text-sm mb-4 line-clamp-2">
                       {category.description}
                     </p>
-                    <button className="w-full py-2 bg-[#facc15] hover:bg-[#eab308] text-black font-bold rounded-lg opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all">
+                    <button className="w-full py-2 bg-[#FFFF01] hover:bg-[#e6e600] text-black font-bold rounded-lg opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all">
                       Book Now
                     </button>
                   </div>
