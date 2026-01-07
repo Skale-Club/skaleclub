@@ -2,7 +2,7 @@ import { useCategories } from "@/hooks/use-booking";
 import { Link } from "wouter";
 import { ArrowRight, Star, Shield, Clock, Phone } from "lucide-react";
 import { CartSummary } from "@/components/CartSummary";
-import heroImage from "@assets/image_1767748602105.png";
+import heroImage from "@assets/Persona-Mobile_1767749022412.png";
 
 export default function Home() {
   const { data: categories, isLoading } = useCategories();
@@ -10,10 +10,10 @@ export default function Home() {
   return (
     <div className="pb-24">
       {/* Hero Section */}
-      <section className="relative min-h-[600px] flex items-center pt-20 pb-32 overflow-hidden bg-[#1a4d3e]">
+      <section className="relative min-h-[600px] flex items-center pt-20 pb-0 overflow-hidden bg-[#1a4d3e]">
         <div className="container-custom mx-auto relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="text-white">
+            <div className="text-white py-20 lg:pb-32">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/20 text-orange-400 text-sm font-medium mb-6">
                 <Shield className="w-4 h-4" />
                 Trusted Cleaning Experts in Denver!
@@ -37,11 +37,11 @@ export default function Home() {
                 </a>
               </div>
             </div>
-            <div className="relative hidden lg:block">
+            <div className="relative hidden lg:flex h-full items-end justify-center self-end">
               <img 
                 src={heroImage} 
-                alt="Cleaning Professional" 
-                className="w-full max-w-2xl mx-auto drop-shadow-2xl transform translate-y-12 scale-110"
+                alt="Cleaning Professionals" 
+                className="w-full max-w-xl object-contain drop-shadow-2xl translate-y-2 scale-110 origin-bottom"
               />
             </div>
           </div>
