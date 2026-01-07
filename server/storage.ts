@@ -25,9 +25,15 @@ export interface IStorage {
   getBookings(): Promise<Booking[]>;
   getBookingsByDate(date: string): Promise<Booking[]>;
   
-  // Seeding
+  // Category CRUD
   createCategory(category: InsertCategory): Promise<Category>;
+  updateCategory(id: number, category: Partial<InsertCategory>): Promise<Category>;
+  deleteCategory(id: number): Promise<void>;
+  
+  // Service CRUD
   createService(service: InsertService): Promise<Service>;
+  updateService(id: number, service: Partial<InsertService>): Promise<Service>;
+  deleteService(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -96,9 +102,27 @@ export class DatabaseStorage implements IStorage {
     return newCategory;
   }
 
+  async updateCategory(id: number, category: Partial<InsertCategory>): Promise<Category> {
+    const [updated] = await db.update(categories).set(category).where(eq(categories.id, id)).returning();
+    return updated;
+  }
+
+  async deleteCategory(id: number): Promise<void> {
+    await db.delete(categories).where(eq(categories.id, id));
+  }
+
   async createService(service: InsertService): Promise<Service> {
     const [newService] = await db.insert(services).values(service).returning();
     return newService;
+  }
+
+  async updateService(id: number, service: Partial<InsertService>): Promise<Service> {
+    const [updated] = await db.update(services).set(service).where(eq(services.id, id)).returning();
+    return updated;
+  }
+
+  async deleteService(id: number): Promise<void> {
+    await db.delete(services).where(eq(services.id, id));
   }
 }
 

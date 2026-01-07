@@ -30,11 +30,67 @@ export async function registerRoutes(
     res.json(category);
   });
 
+  // Admin Category CRUD
+  app.post('/api/categories', async (req, res) => {
+    try {
+      const category = await storage.createCategory(req.body);
+      res.status(201).json(category);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.put('/api/categories/:id', async (req, res) => {
+    try {
+      const category = await storage.updateCategory(Number(req.params.id), req.body);
+      res.json(category);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.delete('/api/categories/:id', async (req, res) => {
+    try {
+      await storage.deleteCategory(Number(req.params.id));
+      res.json({ success: true });
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
   // Services
   app.get(api.services.list.path, async (req, res) => {
     const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
     const services = await storage.getServices(categoryId);
     res.json(services);
+  });
+
+  // Admin Service CRUD
+  app.post('/api/services', async (req, res) => {
+    try {
+      const service = await storage.createService(req.body);
+      res.status(201).json(service);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.put('/api/services/:id', async (req, res) => {
+    try {
+      const service = await storage.updateService(Number(req.params.id), req.body);
+      res.json(service);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.delete('/api/services/:id', async (req, res) => {
+    try {
+      await storage.deleteService(Number(req.params.id));
+      res.json({ success: true });
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
   });
 
   // Bookings
