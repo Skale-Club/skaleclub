@@ -29,7 +29,7 @@ export default function AdminLogin() {
         variant: 'destructive'
       });
     } else {
-      setLocation('/admin');
+      window.location.href = '/admin';
     }
     
     setIsLoading(false);
