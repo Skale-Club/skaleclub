@@ -48,3 +48,6 @@ ADMIN_PASSWORD_HASH = "$2b$10$dxSVXIAxTzFule5m0XxJIOEitK0ZJSDpz4.0eZIAAymlTAU86b
 
 [agent]
 integrations = ["javascript_object_storage:2.0.0"]
+
+[objectStorage]
+defaultBucketID = "replit-objstore-2f11f6fc-9d4a-43cb-a427-c8958afc0d15"
