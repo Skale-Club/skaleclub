@@ -19,8 +19,10 @@ export default function Home() {
                 Trusted Cleaning Experts!
               </div>
               <h1 className="text-5xl md:text-7xl font-bold leading-[1.1] mb-6 font-display">
-                Your 5-star <br />
-                <span className="text-white">cleaning company</span>
+                <span className="text-white">Your 5-star</span> <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">
+                  cleaning company
+                </span>
               </h1>
               <p className="text-xl text-blue-50/80 mb-8 leading-relaxed max-w-xl">
                 We provide top-quality cleaning services ensuring a spotless environment for your home and office.
