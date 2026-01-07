@@ -52,7 +52,7 @@ export default function Home() {
       </section>
 
       {/* Trust Badges */}
-      <section className="relative z-20 -mt-16">
+      <section className="relative z-20 -mt-10">
         <div className="container-custom mx-auto">
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-100 overflow-hidden">
             {[
