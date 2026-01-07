@@ -54,9 +54,9 @@ export default function Home() {
           <div className="absolute inset-0 opacity-60" style={{ 
             background: `
               radial-gradient(circle at 20% 30%, #4facfe 0%, transparent 50%),
-              radial-gradient(circle at 80% 20%, #00f2fe 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, #a8d8ff 0%, transparent 50%),
               radial-gradient(circle at 50% 80%, #1C53A3 0%, transparent 50%),
-              linear-gradient(135deg, #1C53A3 0%, #4facfe 100%)
+              linear-gradient(135deg, #1C53A3 0%, #74abe2 100%)
             ` 
           }}></div>
           <div className="absolute inset-0 bg-gradient-to-r from-[#1C53A3] via-[#1C53A3]/20 to-transparent"></div>
