@@ -28,6 +28,14 @@ export const services = pgTable("services", {
   price: numeric("price", { precision: 10, scale: 2 }).notNull(), // Fixed price
   durationMinutes: integer("duration_minutes").notNull(), // Duration in minutes
   imageUrl: text("image_url"),
+  isHidden: boolean("is_hidden").default(false), // Hidden services only appear as add-ons
+});
+
+// Service add-on relationships (e.g., Sofa can suggest Ottoman as add-on)
+export const serviceAddons = pgTable("service_addons", {
+  id: serial("id").primaryKey(),
+  serviceId: integer("service_id").references(() => services.id).notNull(), // The main service
+  addonServiceId: integer("addon_service_id").references(() => services.id).notNull(), // The add-on service
 });
 
 export const bookings = pgTable("bookings", {
@@ -59,6 +67,7 @@ export const bookingItems = pgTable("booking_items", {
 export const insertCategorySchema = createInsertSchema(categories).omit({ id: true });
 export const insertSubcategorySchema = createInsertSchema(subcategories).omit({ id: true });
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true });
+export const insertServiceAddonSchema = createInsertSchema(serviceAddons).omit({ id: true });
 export const insertBookingSchema = createInsertSchema(bookings).omit({ 
   id: true, 
   createdAt: true,
@@ -74,11 +83,13 @@ export const insertBookingSchema = createInsertSchema(bookings).omit({
 export type Category = typeof categories.$inferSelect;
 export type Subcategory = typeof subcategories.$inferSelect;
 export type Service = typeof services.$inferSelect;
+export type ServiceAddon = typeof serviceAddons.$inferSelect;
 export type Booking = typeof bookings.$inferSelect;
 export type BookingItem = typeof bookingItems.$inferSelect;
 
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type InsertService = z.infer<typeof insertServiceSchema>;
+export type InsertServiceAddon = z.infer<typeof insertServiceAddonSchema>;
 export type InsertBooking = z.infer<typeof insertBookingSchema>;
 
 // For availability checking

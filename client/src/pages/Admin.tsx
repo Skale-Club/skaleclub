@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -912,7 +913,13 @@ function ServicesSection() {
   });
 
   const { data: services, isLoading } = useQuery<Service[]>({
-    queryKey: ['/api/services']
+    queryKey: ['/api/services', { includeHidden: true }],
+    queryFn: () => fetch('/api/services?includeHidden=true').then(r => r.json())
+  });
+
+  const { data: addonRelationships } = useQuery<{ id: number, serviceId: number, addonServiceId: number }[]>({
+    queryKey: ['/api/service-addons'],
+    queryFn: () => fetch('/api/service-addons').then(r => r.json())
   });
 
   const createService = useMutation({
@@ -990,6 +997,8 @@ function ServicesSection() {
               service={editingService}
               categories={categories || []}
               subcategories={subcategories || []}
+              allServices={services || []}
+              addonRelationships={addonRelationships || []}
               onSubmit={(data) => {
                 if (editingService) {
                   updateService.mutate({ ...data, id: editingService.id } as Service);
@@ -1041,7 +1050,10 @@ function ServicesSection() {
               )}
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2 mb-2">
-                  <h3 className="font-semibold text-lg line-clamp-1">{service.name}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-lg line-clamp-1">{service.name}</h3>
+                    {service.isHidden && <Badge variant="secondary" className="text-xs border-0 bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">Add-on Only</Badge>}
+                  </div>
                   <Badge variant="outline" className="border-0 bg-slate-200 dark:bg-slate-700">${service.price}</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{service.description}</p>
@@ -1097,11 +1109,13 @@ function ServicesSection() {
   );
 }
 
-function ServiceForm({ service, categories, subcategories, onSubmit, isLoading }: { 
+function ServiceForm({ service, categories, subcategories, allServices, addonRelationships, onSubmit, isLoading }: { 
   service: Service | null;
   categories: Category[];
   subcategories: Subcategory[];
-  onSubmit: (data: Partial<Service>) => void;
+  allServices: Service[];
+  addonRelationships: { id: number, serviceId: number, addonServiceId: number }[];
+  onSubmit: (data: Partial<Service> & { addonIds?: number[] }) => void;
   isLoading: boolean;
 }) {
   const [name, setName] = useState(service?.name || '');
@@ -1112,22 +1126,44 @@ function ServiceForm({ service, categories, subcategories, onSubmit, isLoading }
   const [categoryId, setCategoryId] = useState(service?.categoryId?.toString() || '');
   const [subcategoryId, setSubcategoryId] = useState(service?.subcategoryId?.toString() || '');
   const [imageUrl, setImageUrl] = useState(service?.imageUrl || '');
+  const [isHidden, setIsHidden] = useState(service?.isHidden || false);
+  const [selectedAddons, setSelectedAddons] = useState<number[]>(() => {
+    if (!service) return [];
+    return addonRelationships.filter(r => r.serviceId === service.id).map(r => r.addonServiceId);
+  });
 
   const filteredSubcategories = subcategories.filter(sub => sub.categoryId === Number(categoryId));
+  const availableAddons = allServices.filter(s => s.id !== service?.id);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleAddonToggle = (addonId: number) => {
+    setSelectedAddons(prev => 
+      prev.includes(addonId) ? prev.filter(id => id !== addonId) : [...prev, addonId]
+    );
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const data: Partial<Service> = {
+    const data: Partial<Service> & { addonIds?: number[] } = {
       name,
       description,
       price: String(price),
       durationMinutes: (durationHours * 60) + durationMinutes,
       categoryId: Number(categoryId),
-      imageUrl
+      imageUrl,
+      isHidden
     };
     if (subcategoryId) {
       data.subcategoryId = Number(subcategoryId);
     }
+    
+    if (service) {
+      await fetch(`/api/services/${service.id}/addons`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ addonIds: selectedAddons })
+      });
+    }
+    
     onSubmit(data);
   };
 
@@ -1223,6 +1259,40 @@ function ServiceForm({ service, categories, subcategories, onSubmit, isLoading }
           <Input id="imageUrl" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." data-testid="input-service-image" />
           {imageUrl && <img src={imageUrl} alt="Preview" className="w-full h-32 object-cover rounded-lg mt-2" />}
         </div>
+
+        <div className="flex items-center space-x-2 pt-2">
+          <Checkbox 
+            id="isHidden" 
+            checked={isHidden} 
+            onCheckedChange={(checked) => setIsHidden(!!checked)}
+            data-testid="checkbox-service-hidden"
+          />
+          <Label htmlFor="isHidden" className="text-sm font-normal cursor-pointer">
+            Add-on only (hidden from main services list)
+          </Label>
+        </div>
+
+        {service && availableAddons.length > 0 && (
+          <div className="space-y-2 pt-2">
+            <Label>Suggested Add-ons</Label>
+            <p className="text-xs text-muted-foreground">Select services to suggest when this service is added to cart</p>
+            <div className="max-h-40 overflow-y-auto space-y-2 border rounded-md p-3 bg-slate-50 dark:bg-slate-800">
+              {availableAddons.map(addon => (
+                <div key={addon.id} className="flex items-center space-x-2">
+                  <Checkbox 
+                    id={`addon-${addon.id}`} 
+                    checked={selectedAddons.includes(addon.id)} 
+                    onCheckedChange={() => handleAddonToggle(addon.id)}
+                    data-testid={`checkbox-addon-${addon.id}`}
+                  />
+                  <Label htmlFor={`addon-${addon.id}`} className="text-sm font-normal cursor-pointer flex-1">
+                    {addon.name} - ${addon.price}
+                  </Label>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
       <DialogFooter>
         <DialogClose asChild>

@@ -3,17 +3,20 @@ import {
   categories,
   subcategories,
   services,
+  serviceAddons,
   bookings,
   bookingItems,
   type Category,
   type Subcategory,
   type Service,
+  type ServiceAddon,
   type Booking,
   type InsertCategory,
   type InsertService,
+  type InsertServiceAddon,
   type InsertBooking,
 } from "@shared/schema";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { eq, and, gte, lte, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 export const insertSubcategorySchema = z.object({
@@ -27,7 +30,7 @@ export interface IStorage {
   // Categories & Services
   getCategories(): Promise<Category[]>;
   getCategoryBySlug(slug: string): Promise<Category | undefined>;
-  getServices(categoryId?: number, subcategoryId?: number): Promise<Service[]>;
+  getServices(categoryId?: number, subcategoryId?: number, includeHidden?: boolean): Promise<Service[]>;
   getService(id: number): Promise<Service | undefined>;
   
   // Subcategories
@@ -35,6 +38,11 @@ export interface IStorage {
   createSubcategory(subcategory: InsertSubcategory): Promise<Subcategory>;
   updateSubcategory(id: number, subcategory: Partial<InsertSubcategory>): Promise<Subcategory>;
   deleteSubcategory(id: number): Promise<void>;
+  
+  // Service Addons
+  getServiceAddons(serviceId: number): Promise<Service[]>;
+  setServiceAddons(serviceId: number, addonServiceIds: number[]): Promise<void>;
+  getAddonRelationships(): Promise<ServiceAddon[]>;
   
   // Bookings
   createBooking(booking: InsertBooking & { totalPrice: string, totalDurationMinutes: number, endTime: string }): Promise<Booking>;
@@ -62,14 +70,27 @@ export class DatabaseStorage implements IStorage {
     return category;
   }
 
-  async getServices(categoryId?: number, subcategoryId?: number): Promise<Service[]> {
+  async getServices(categoryId?: number, subcategoryId?: number, includeHidden: boolean = false): Promise<Service[]> {
     if (subcategoryId) {
-      return await db.select().from(services).where(eq(services.subcategoryId, subcategoryId));
+      if (includeHidden) {
+        return await db.select().from(services).where(eq(services.subcategoryId, subcategoryId));
+      }
+      return await db.select().from(services).where(
+        and(eq(services.subcategoryId, subcategoryId), eq(services.isHidden, false))
+      );
     }
     if (categoryId) {
-      return await db.select().from(services).where(eq(services.categoryId, categoryId));
+      if (includeHidden) {
+        return await db.select().from(services).where(eq(services.categoryId, categoryId));
+      }
+      return await db.select().from(services).where(
+        and(eq(services.categoryId, categoryId), eq(services.isHidden, false))
+      );
     }
-    return await db.select().from(services);
+    if (includeHidden) {
+      return await db.select().from(services);
+    }
+    return await db.select().from(services).where(eq(services.isHidden, false));
   }
 
   async getSubcategories(categoryId?: number): Promise<Subcategory[]> {
@@ -91,6 +112,30 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSubcategory(id: number): Promise<void> {
     await db.delete(subcategories).where(eq(subcategories.id, id));
+  }
+
+  async getServiceAddons(serviceId: number): Promise<Service[]> {
+    const addonRelations = await db.select().from(serviceAddons).where(eq(serviceAddons.serviceId, serviceId));
+    if (addonRelations.length === 0) return [];
+    
+    const addonIds = addonRelations.map(r => r.addonServiceId);
+    return await db.select().from(services).where(inArray(services.id, addonIds));
+  }
+
+  async setServiceAddons(serviceId: number, addonServiceIds: number[]): Promise<void> {
+    await db.delete(serviceAddons).where(eq(serviceAddons.serviceId, serviceId));
+    
+    if (addonServiceIds.length > 0) {
+      const values = addonServiceIds.map(addonId => ({
+        serviceId,
+        addonServiceId: addonId
+      }));
+      await db.insert(serviceAddons).values(values);
+    }
+  }
+
+  async getAddonRelationships(): Promise<ServiceAddon[]> {
+    return await db.select().from(serviceAddons);
   }
 
   async getService(id: number): Promise<Service | undefined> {

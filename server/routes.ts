@@ -182,8 +182,33 @@ export async function registerRoutes(
   app.get(api.services.list.path, async (req, res) => {
     const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
     const subcategoryId = req.query.subcategoryId ? Number(req.query.subcategoryId) : undefined;
-    const services = await storage.getServices(categoryId, subcategoryId);
+    const includeHidden = req.query.includeHidden === 'true';
+    const services = await storage.getServices(categoryId, subcategoryId, includeHidden);
     res.json(services);
+  });
+
+  // Service Addons
+  app.get('/api/services/:id/addons', async (req, res) => {
+    const addons = await storage.getServiceAddons(Number(req.params.id));
+    res.json(addons);
+  });
+
+  app.put('/api/services/:id/addons', requireAdmin, async (req, res) => {
+    try {
+      const addonIds = z.array(z.number()).parse(req.body.addonIds);
+      await storage.setServiceAddons(Number(req.params.id), addonIds);
+      res.json({ success: true });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid addon IDs' });
+      }
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.get('/api/service-addons', requireAdmin, async (req, res) => {
+    const relationships = await storage.getAddonRelationships();
+    res.json(relationships);
   });
 
   // Admin Service CRUD (protected routes)
