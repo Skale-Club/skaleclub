@@ -1,6 +1,7 @@
+import { useQuery } from "@tanstack/react-query";
 import { Service } from "@shared/schema";
 import { useCart } from "@/context/CartContext";
-import { Clock, Check, ImageIcon, Plus, Minus } from "lucide-react";
+import { Clock, Check, ImageIcon, Plus, Minus, Sparkles, Loader2 } from "lucide-react";
 import { clsx } from "clsx";
 
 interface ServiceCardProps {
@@ -9,9 +10,24 @@ interface ServiceCardProps {
 
 export function ServiceCard({ service }: ServiceCardProps) {
   const { addItem, items, removeItem, updateQuantity } = useCart();
+  
   const cartItem = items.find((item) => item.id === service.id);
   const isInCart = !!cartItem;
   const quantity = cartItem?.quantity || 0;
+
+  const { data: suggestedAddons = [], isLoading: addonsLoading, isError } = useQuery<Service[]>({
+    queryKey: ['/api/services', service.id, 'addons'],
+    queryFn: async () => {
+      const res = await fetch(`/api/services/${service.id}/addons`);
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: isInCart,
+    staleTime: 60000,
+  });
+
+  const filteredAddons = isError ? [] : suggestedAddons.filter(addon => !items.find(i => i.id === addon.id));
 
   return (
     <div className="group bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300 flex flex-col h-full">
@@ -96,6 +112,38 @@ export function ServiceCard({ service }: ServiceCardProps) {
             </div>
           )}
         </div>
+
+        {isInCart && (addonsLoading || filteredAddons.length > 0) && (
+          <div className="mt-4 pt-4 border-t border-slate-200">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              <span className="text-sm font-semibold text-slate-700">Suggested Add-ons</span>
+            </div>
+            {addonsLoading ? (
+              <div className="flex items-center justify-center py-2">
+                <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filteredAddons.map(addon => (
+                  <div key={addon.id} className="flex items-center justify-between gap-2 p-2 bg-slate-50 rounded-lg">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-800 truncate">{addon.name}</p>
+                      <p className="text-xs text-slate-500">${addon.price}</p>
+                    </div>
+                    <button
+                      onClick={() => addItem(addon)}
+                      className="px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
+                      data-testid={`button-add-addon-${addon.id}`}
+                    >
+                      Add
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

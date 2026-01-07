@@ -923,11 +923,18 @@ function ServicesSection() {
   });
 
   const createService = useMutation({
-    mutationFn: async (data: Omit<Service, 'id'>) => {
-      return apiRequest('POST', '/api/services', data);
+    mutationFn: async (data: Omit<Service, 'id'> & { addonIds?: number[] }) => {
+      const { addonIds, ...serviceData } = data;
+      const response = await apiRequest('POST', '/api/services', serviceData);
+      const newService = await response.json() as Service;
+      if (addonIds && addonIds.length > 0 && newService?.id) {
+        await apiRequest('PUT', `/api/services/${newService.id}/addons`, { addonIds });
+      }
+      return newService;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/services'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/services', { includeHidden: true }] });
+      queryClient.invalidateQueries({ queryKey: ['/api/service-addons'] });
       toast({ title: 'Service created successfully' });
       setIsDialogOpen(false);
     },
@@ -937,11 +944,16 @@ function ServicesSection() {
   });
 
   const updateService = useMutation({
-    mutationFn: async (data: Service) => {
-      return apiRequest('PUT', `/api/services/${data.id}`, data);
+    mutationFn: async (data: Service & { addonIds?: number[] }) => {
+      const { addonIds, ...serviceData } = data;
+      await apiRequest('PUT', `/api/services/${data.id}`, serviceData);
+      if (addonIds !== undefined) {
+        await apiRequest('PUT', `/api/services/${data.id}/addons`, { addonIds });
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/services'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/services', { includeHidden: true }] });
+      queryClient.invalidateQueries({ queryKey: ['/api/service-addons'] });
       toast({ title: 'Service updated successfully' });
       setEditingService(null);
       setIsDialogOpen(false);
@@ -956,7 +968,8 @@ function ServicesSection() {
       return apiRequest('DELETE', `/api/services/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/services'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/services', { includeHidden: true }] });
+      queryClient.invalidateQueries({ queryKey: ['/api/service-addons'] });
       toast({ title: 'Service deleted successfully' });
     },
     onError: (error: Error) => {
@@ -1141,7 +1154,7 @@ function ServiceForm({ service, categories, subcategories, allServices, addonRel
     );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const data: Partial<Service> & { addonIds?: number[] } = {
       name,
@@ -1150,20 +1163,12 @@ function ServiceForm({ service, categories, subcategories, allServices, addonRel
       durationMinutes: (durationHours * 60) + durationMinutes,
       categoryId: Number(categoryId),
       imageUrl,
-      isHidden
+      isHidden,
+      addonIds: selectedAddons
     };
     if (subcategoryId) {
       data.subcategoryId = Number(subcategoryId);
     }
-    
-    if (service) {
-      await fetch(`/api/services/${service.id}/addons`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ addonIds: selectedAddons })
-      });
-    }
-    
     onSubmit(data);
   };
 
