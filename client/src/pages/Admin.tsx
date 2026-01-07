@@ -29,13 +29,14 @@ import {
 import { Loader2, Plus, Pencil, Trash2, LogOut, FolderOpen, Package, Calendar, Clock, DollarSign, User, MapPin, Image, LayoutDashboard, Building2, GripVertical } from 'lucide-react';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
-import type { Category, Service, Booking } from '@shared/schema';
+import type { Category, Service, Booking, Subcategory } from '@shared/schema';
 
-type AdminSection = 'dashboard' | 'categories' | 'services' | 'bookings' | 'hero' | 'company';
+type AdminSection = 'dashboard' | 'categories' | 'subcategories' | 'services' | 'bookings' | 'hero' | 'company';
 
 const menuItems = [
   { id: 'dashboard' as AdminSection, title: 'Dashboard', icon: LayoutDashboard },
   { id: 'categories' as AdminSection, title: 'Categories', icon: FolderOpen },
+  { id: 'subcategories' as AdminSection, title: 'Subcategories', icon: FolderOpen },
   { id: 'services' as AdminSection, title: 'Services', icon: Package },
   { id: 'bookings' as AdminSection, title: 'Bookings', icon: Calendar },
   { id: 'hero' as AdminSection, title: 'Hero Settings', icon: Image },
@@ -131,6 +132,7 @@ export default function Admin() {
         <main className="flex-1 overflow-auto p-6 md:p-8">
           {activeSection === 'dashboard' && <DashboardSection />}
           {activeSection === 'categories' && <CategoriesSection />}
+          {activeSection === 'subcategories' && <SubcategoriesSection />}
           {activeSection === 'services' && <ServicesSection />}
           {activeSection === 'bookings' && <BookingsSection />}
           {activeSection === 'hero' && <HeroSettingsSection />}
@@ -650,6 +652,250 @@ function CategoryForm({ category, onSubmit, isLoading }: {
   );
 }
 
+function SubcategoriesSection() {
+  const { toast } = useToast();
+  const [editingSubcategory, setEditingSubcategory] = useState<Subcategory | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+
+  const { data: categories } = useQuery<Category[]>({
+    queryKey: ['/api/categories']
+  });
+
+  const { data: subcategories, isLoading } = useQuery<Subcategory[]>({
+    queryKey: ['/api/subcategories']
+  });
+
+  const { data: services } = useQuery<Service[]>({
+    queryKey: ['/api/services']
+  });
+
+  const createSubcategory = useMutation({
+    mutationFn: async (data: { name: string; slug: string; categoryId: number }) => {
+      return apiRequest('POST', '/api/subcategories', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/subcategories'] });
+      toast({ title: 'Subcategory created successfully' });
+      setIsDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to create subcategory', description: error.message, variant: 'destructive' });
+    }
+  });
+
+  const updateSubcategory = useMutation({
+    mutationFn: async (data: { id: number; name: string; slug: string; categoryId: number }) => {
+      return apiRequest('PUT', `/api/subcategories/${data.id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/subcategories'] });
+      toast({ title: 'Subcategory updated successfully' });
+      setEditingSubcategory(null);
+      setIsDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to update subcategory', description: error.message, variant: 'destructive' });
+    }
+  });
+
+  const deleteSubcategory = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest('DELETE', `/api/subcategories/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/subcategories'] });
+      toast({ title: 'Subcategory deleted successfully' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to delete subcategory', description: error.message, variant: 'destructive' });
+    }
+  });
+
+  const getCategoryName = (categoryId: number) => {
+    return categories?.find(c => c.id === categoryId)?.name || 'Unknown';
+  };
+
+  const getServiceCount = (subcategoryId: number) => {
+    return services?.filter(s => s.subcategoryId === subcategoryId).length || 0;
+  };
+
+  const filteredSubcategories = subcategories?.filter(sub => {
+    return filterCategory === 'all' || sub.categoryId === Number(filterCategory);
+  });
+
+  if (isLoading) {
+    return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Subcategories</h1>
+          <p className="text-muted-foreground">Organize services within categories</p>
+        </div>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingSubcategory(null); }}>
+          <DialogTrigger asChild>
+            <Button data-testid="button-add-subcategory">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Subcategory
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <SubcategoryForm 
+              subcategory={editingSubcategory}
+              categories={categories || []}
+              onSubmit={(data) => {
+                if (editingSubcategory) {
+                  updateSubcategory.mutate({ ...data, id: editingSubcategory.id });
+                } else {
+                  createSubcategory.mutate(data);
+                }
+              }}
+              isLoading={createSubcategory.isPending || updateSubcategory.isPending}
+            />
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="flex gap-4">
+        <Select value={filterCategory} onValueChange={setFilterCategory}>
+          <SelectTrigger className="w-[200px]" data-testid="select-filter-subcategory-category">
+            <SelectValue placeholder="Filter by category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {categories?.map(cat => (
+              <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {filteredSubcategories?.length === 0 ? (
+        <div className="p-12 text-center bg-slate-100 dark:bg-slate-800 rounded-lg">
+          <FolderOpen className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+          <h3 className="font-semibold text-lg mb-2">No subcategories yet</h3>
+          <p className="text-muted-foreground mb-4">Create subcategories to organize your services</p>
+        </div>
+      ) : (
+        <div className="grid gap-3">
+          {filteredSubcategories?.map((subcategory) => (
+            <div
+              key={subcategory.id}
+              className="flex items-center gap-4 p-4 rounded-lg bg-slate-100 dark:bg-slate-800 transition-all"
+              data-testid={`subcategory-item-${subcategory.id}`}
+            >
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-lg truncate">{subcategory.name}</h3>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge variant="secondary" className="border-0 bg-slate-200 dark:bg-slate-700">
+                    {getCategoryName(subcategory.categoryId)}
+                  </Badge>
+                  <Badge variant="outline" className="border-0 bg-slate-200 dark:bg-slate-700">
+                    {getServiceCount(subcategory.id)} services
+                  </Badge>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => { setEditingSubcategory(subcategory); setIsDialogOpen(true); }}
+                  data-testid={`button-edit-subcategory-${subcategory.id}`}
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="icon" data-testid={`button-delete-subcategory-${subcategory.id}`}>
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Subcategory?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {getServiceCount(subcategory.id) > 0 
+                          ? `This subcategory has ${getServiceCount(subcategory.id)} services. You must delete or reassign them first.`
+                          : 'This action cannot be undone.'}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={() => deleteSubcategory.mutate(subcategory.id)}
+                        disabled={getServiceCount(subcategory.id) > 0}
+                        className="bg-red-500 hover:bg-red-600"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SubcategoryForm({ subcategory, categories, onSubmit, isLoading }: { 
+  subcategory: Subcategory | null;
+  categories: Category[];
+  onSubmit: (data: { name: string; slug: string; categoryId: number }) => void;
+  isLoading: boolean;
+}) {
+  const [name, setName] = useState(subcategory?.name || '');
+  const [categoryId, setCategoryId] = useState(subcategory?.categoryId?.toString() || '');
+
+  const generateSlug = (text: string) => text.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({ name, slug: generateSlug(name), categoryId: Number(categoryId) });
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <DialogHeader>
+        <DialogTitle>{subcategory ? 'Edit Subcategory' : 'Add Subcategory'}</DialogTitle>
+      </DialogHeader>
+      <div className="space-y-4 py-4">
+        <div className="space-y-2">
+          <Label htmlFor="subcategory-name">Name</Label>
+          <Input id="subcategory-name" value={name} onChange={(e) => setName(e.target.value)} required data-testid="input-subcategory-name" />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="subcategory-category">Parent Category</Label>
+          <Select value={categoryId} onValueChange={setCategoryId} required>
+            <SelectTrigger data-testid="select-subcategory-category">
+              <SelectValue placeholder="Select a category" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map(cat => (
+                <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <DialogFooter>
+        <DialogClose asChild>
+          <Button variant="outline" type="button">Cancel</Button>
+        </DialogClose>
+        <Button type="submit" disabled={isLoading || !categoryId} data-testid="button-save-subcategory">
+          {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          {subcategory ? 'Update' : 'Create'}
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+}
+
 function ServicesSection() {
   const { toast } = useToast();
   const [editingService, setEditingService] = useState<Service | null>(null);
@@ -659,6 +905,10 @@ function ServicesSection() {
 
   const { data: categories } = useQuery<Category[]>({
     queryKey: ['/api/categories']
+  });
+
+  const { data: subcategories } = useQuery<Subcategory[]>({
+    queryKey: ['/api/subcategories']
   });
 
   const { data: services, isLoading } = useQuery<Service[]>({
@@ -739,6 +989,7 @@ function ServicesSection() {
             <ServiceForm 
               service={editingService}
               categories={categories || []}
+              subcategories={subcategories || []}
               onSubmit={(data) => {
                 if (editingService) {
                   updateService.mutate({ ...data, id: editingService.id } as Service);
@@ -846,9 +1097,10 @@ function ServicesSection() {
   );
 }
 
-function ServiceForm({ service, categories, onSubmit, isLoading }: { 
+function ServiceForm({ service, categories, subcategories, onSubmit, isLoading }: { 
   service: Service | null;
   categories: Category[];
+  subcategories: Subcategory[];
   onSubmit: (data: Partial<Service>) => void;
   isLoading: boolean;
 }) {
@@ -858,7 +1110,10 @@ function ServiceForm({ service, categories, onSubmit, isLoading }: {
   const [durationHours, setDurationHours] = useState(service ? Math.floor(service.durationMinutes / 60) : 0);
   const [durationMinutes, setDurationMinutes] = useState(service ? service.durationMinutes % 60 : 0);
   const [categoryId, setCategoryId] = useState(service?.categoryId?.toString() || '');
+  const [subcategoryId, setSubcategoryId] = useState(service?.subcategoryId?.toString() || '');
   const [imageUrl, setImageUrl] = useState(service?.imageUrl || '');
+
+  const filteredSubcategories = subcategories.filter(sub => sub.categoryId === Number(categoryId));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -868,6 +1123,7 @@ function ServiceForm({ service, categories, onSubmit, isLoading }: {
       price: String(price),
       durationMinutes: (durationHours * 60) + durationMinutes,
       categoryId: Number(categoryId),
+      subcategoryId: subcategoryId ? Number(subcategoryId) : null,
       imageUrl
     });
   };
@@ -885,7 +1141,7 @@ function ServiceForm({ service, categories, onSubmit, isLoading }: {
         
         <div className="space-y-2">
           <Label htmlFor="category">Category</Label>
-          <Select value={categoryId} onValueChange={setCategoryId} required>
+          <Select value={categoryId} onValueChange={(val) => { setCategoryId(val); setSubcategoryId(''); }} required>
             <SelectTrigger data-testid="select-service-category">
               <SelectValue placeholder="Select a category" />
             </SelectTrigger>
@@ -896,6 +1152,23 @@ function ServiceForm({ service, categories, onSubmit, isLoading }: {
             </SelectContent>
           </Select>
         </div>
+
+        {filteredSubcategories.length > 0 && (
+          <div className="space-y-2">
+            <Label htmlFor="subcategory">Subcategory (Optional)</Label>
+            <Select value={subcategoryId} onValueChange={setSubcategoryId}>
+              <SelectTrigger data-testid="select-service-subcategory">
+                <SelectValue placeholder="Select a subcategory" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">None</SelectItem>
+                {filteredSubcategories.map(sub => (
+                  <SelectItem key={sub.id} value={String(sub.id)}>{sub.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="description">Description</Label>
