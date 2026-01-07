@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl, type errorSchemas } from "@shared/routes";
-import { type InsertBooking, type Category, type Service, type Booking } from "@shared/schema";
+import { type InsertBooking, type Category, type Service, type Booking, type Subcategory } from "@shared/schema";
 import { z } from "zod";
 
 // --- Categories ---
@@ -15,14 +15,33 @@ export function useCategories() {
   });
 }
 
-// --- Services ---
-export function useServices(categoryId?: number) {
-  return useQuery({
-    queryKey: [api.services.list.path, categoryId],
+// --- Subcategories ---
+export function useSubcategories(categoryId?: number) {
+  return useQuery<Subcategory[]>({
+    queryKey: ['/api/subcategories', categoryId],
     queryFn: async () => {
       const url = categoryId 
-        ? buildUrl(api.services.list.path) + `?categoryId=${categoryId}`
-        : api.services.list.path;
+        ? `/api/subcategories?categoryId=${categoryId}`
+        : '/api/subcategories';
+      
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to fetch subcategories");
+      return res.json();
+    },
+  });
+}
+
+// --- Services ---
+export function useServices(categoryId?: number, subcategoryId?: number) {
+  return useQuery({
+    queryKey: [api.services.list.path, categoryId, subcategoryId],
+    queryFn: async () => {
+      let url = api.services.list.path;
+      const params = new URLSearchParams();
+      if (subcategoryId) params.append('subcategoryId', String(subcategoryId));
+      else if (categoryId) params.append('categoryId', String(categoryId));
+      
+      if (params.toString()) url += `?${params.toString()}`;
       
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch services");

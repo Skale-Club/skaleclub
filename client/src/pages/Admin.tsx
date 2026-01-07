@@ -1117,15 +1117,18 @@ function ServiceForm({ service, categories, subcategories, onSubmit, isLoading }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({
+    const data: Partial<Service> = {
       name,
       description,
       price: String(price),
       durationMinutes: (durationHours * 60) + durationMinutes,
       categoryId: Number(categoryId),
-      subcategoryId: subcategoryId ? Number(subcategoryId) : null,
       imageUrl
-    });
+    };
+    if (subcategoryId) {
+      data.subcategoryId = Number(subcategoryId);
+    }
+    onSubmit(data);
   };
 
   return (
