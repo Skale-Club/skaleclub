@@ -22,13 +22,10 @@ export function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
             <img 
-              src="https://storage.googleapis.com/msgsndr/q6UKnlWOQwyTk82yZPAs/media/695db91db75f6f214258be82.svg" 
+              src="https://storage.googleapis.com/msgsndr/q6UKnlWOQwyTk82yZPAs/media/695dbac289c99d91ea25f488.svg" 
               alt="Skleanings" 
-              className="h-10 w-auto"
+              className="h-12 w-auto"
             />
-            <span className="font-display font-bold text-2xl text-[#1D1D1D] tracking-tight">
-              Skleanings
-            </span>
           </Link>
 
           {/* Desktop Nav */}

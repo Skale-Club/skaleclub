@@ -7,13 +7,10 @@ export function Footer() {
         <div className="col-span-1 md:col-span-2">
           <Link href="/" className="flex items-center gap-2 mb-4">
             <img 
-              src="https://storage.googleapis.com/msgsndr/q6UKnlWOQwyTk82yZPAs/media/695db91db75f6f214258be82.svg" 
+              src="https://storage.googleapis.com/msgsndr/q6UKnlWOQwyTk82yZPAs/media/695dbac289c99d91ea25f488.svg" 
               alt="Skleanings" 
-              className="h-10 w-auto brightness-0 invert"
+              className="h-12 w-auto brightness-0 invert"
             />
-            <span className="font-display font-bold text-2xl text-white tracking-tight">
-              Skleanings
-            </span>
           </Link>
           <p className="text-slate-400 max-w-sm">
             Professional cleaning services. 
