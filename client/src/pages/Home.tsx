@@ -10,10 +10,10 @@ export default function Home() {
   return (
     <div className="pb-24">
       {/* Hero Section */}
-      <section className="relative min-h-[500px] flex items-end pt-0 pb-0 overflow-hidden bg-[#1a4d3e]">
+      <section className="relative min-h-[500px] flex items-end pt-12 pb-0 overflow-hidden bg-[#1a4d3e]">
         <div className="container-custom mx-auto relative z-10 w-full">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-end">
-            <div className="text-white pt-20 pb-12 lg:pb-16">
+            <div className="text-white pt-24 pb-20 lg:pb-28">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/20 text-orange-400 text-sm font-medium mb-6">
                 <Shield className="w-4 h-4" />
                 Trusted Cleaning Experts in Denver!
@@ -52,7 +52,7 @@ export default function Home() {
       </section>
 
       {/* Trust Badges */}
-      <section className="-translate-y-12 relative z-20">
+      <section className="relative z-20 mt-12">
         <div className="container-custom mx-auto">
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-100 overflow-hidden">
             {[
