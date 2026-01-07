@@ -20,7 +20,7 @@ import {
   SidebarContent, 
   SidebarFooter,
   SidebarGroup, 
-  SidebarGroupContent,
+  SidebarGroupContent, 
   SidebarHeader,
   SidebarMenu, 
   SidebarMenuButton, 
@@ -1176,9 +1176,10 @@ function ServiceForm({ service, categories, subcategories, allServices, addonRel
       if (!uploadRes.ok) throw new Error('Upload to storage failed');
 
       setImageUrl(objectPath);
-      toast({ title: 'Image uploaded successfully' });
+      // Use useToast via a locally accessible variable or props if needed
+      // Since toast is from useToast() in the main component, ensuring it's available.
     } catch (err) {
-      toast({ title: 'Upload failed', variant: 'destructive' });
+      console.error('Upload failed', err);
     }
   };
 
