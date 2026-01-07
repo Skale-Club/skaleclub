@@ -14,7 +14,7 @@ export default function Home() {
         <div className="container-custom mx-auto relative z-10 w-full">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-end">
             <div className="text-white pt-20 pb-12 lg:pb-20">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/20 text-secondary text-sm font-medium mb-6 border border-secondary/30">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-sm font-medium mb-6 border border-white/30">
                 <Shield className="w-4 h-4" />
                 Trusted Cleaning Experts!
               </div>
