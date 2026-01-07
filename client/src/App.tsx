@@ -53,7 +53,6 @@ function App() {
         <AuthProvider>
           <CartProvider>
             <Router />
-            <Toaster />
           </CartProvider>
         </AuthProvider>
       </TooltipProvider>
