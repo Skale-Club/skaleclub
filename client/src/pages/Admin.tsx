@@ -616,6 +616,28 @@ function CategoryForm({ category, onSubmit, isLoading }: {
 
   const generateSlug = (text: string) => text.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const res = await fetch('/api/upload', { method: 'POST' });
+      if (!res.ok) throw new Error('Failed to get upload URL');
+      const { uploadURL, objectPath } = await res.json();
+
+      const uploadRes = await fetch(uploadURL, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type }
+      });
+      if (!uploadRes.ok) throw new Error('Upload to storage failed');
+
+      setImageUrl(objectPath);
+    } catch (err) {
+      console.error('Upload failed', err);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit({ name, slug: generateSlug(name), description, imageUrl });
@@ -636,9 +658,39 @@ function CategoryForm({ category, onSubmit, isLoading }: {
           <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} data-testid="input-category-description" />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="imageUrl">Image URL</Label>
-          <Input id="imageUrl" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." data-testid="input-category-image" />
-          {imageUrl && <img src={imageUrl} alt="Preview" className="w-full h-32 object-cover rounded-lg mt-2" />}
+          <Label htmlFor="imageUrl">Category Image</Label>
+          <div className="flex flex-col gap-4">
+            <Input 
+              id="categoryImageUpload" 
+              type="file" 
+              accept="image/*" 
+              onChange={handleImageUpload} 
+              data-testid="input-category-image-upload" 
+            />
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Or URL:</span>
+              <Input 
+                id="imageUrl" 
+                value={imageUrl} 
+                onChange={(e) => setImageUrl(e.target.value)} 
+                placeholder="https://..." 
+                className="h-8 text-xs"
+                data-testid="input-category-image" 
+              />
+            </div>
+            {imageUrl && (
+              <div className="relative w-full aspect-[4/3] bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
+                <img 
+                  src={imageUrl} 
+                  alt="Preview" 
+                  className="absolute inset-0 w-full h-full object-cover" 
+                />
+                <div className="absolute top-2 right-2 bg-black/50 text-white text-[10px] px-1.5 py-0.5 rounded backdrop-blur-sm">
+                  4:3 Preview
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       <DialogFooter>
