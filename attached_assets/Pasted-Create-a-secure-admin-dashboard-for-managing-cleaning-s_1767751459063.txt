@@ -1,0 +1,85 @@
+Create a secure admin dashboard for managing cleaning service categories and products.
+
+AUTHENTICATION & ACCESS:
+- Implement secure authentication using Supabase Auth
+- Create one admin user with email: [SEU_EMAIL]
+- Protected routes - redirect to login if not authenticated
+- Admin access only at route: /admin
+- Logout functionality
+
+DATABASE STRUCTURE (Supabase):
+Create these tables with proper relationships:
+
+1. categories
+   - id (uuid, primary key)
+   - name (text)
+   - description (text, optional)
+   - order (integer)
+   - created_at (timestamp)
+
+2. services
+   - id (uuid, primary key)
+   - category_id (uuid, foreign key to categories)
+   - title (text)
+   - description (text)
+   - price (decimal)
+   - duration_hours (integer)
+   - duration_minutes (integer)
+   - image_url (text)
+   - is_active (boolean, default true)
+   - created_at (timestamp)
+
+ADMIN DASHBOARD FEATURES:
+
+Category Management:
+- List all categories with service count
+- Add new category
+- Edit category name and description
+- Delete category (with warning if contains services)
+- Reorder categories (drag-and-drop or up/down buttons)
+
+Service/Product Management:
+- Filter services by category
+- Search services by name
+- Add new service to a category
+- Edit service details:
+  * Upload/replace image (store in Supabase Storage)
+  * Title
+  * Description (textarea)
+  * Price (USD, formatted as currency)
+  * Duration (separate hours and minutes fields)
+  * Active/Inactive toggle
+- Delete service (with confirmation)
+- Bulk actions (activate/deactivate multiple)
+
+UI/UX REQUIREMENTS:
+- Clean, modern design using Tailwind CSS or shadcn/ui
+- Responsive layout (mobile-friendly)
+- Loading states for all async operations
+- Success/error toast notifications
+- Form validation with clear error messages
+- Confirmation modals for destructive actions
+- Empty states with helpful CTAs
+- Image preview before upload
+
+TECHNICAL REQUIREMENTS:
+- Use React with TypeScript
+- Supabase for database and storage
+- Proper error handling
+- Optimistic UI updates where appropriate
+- Image optimization (resize/compress before upload)
+- Row-level security (RLS) policies in Supabase
+
+SUPABASE SETUP:
+- Provide SQL migration script for tables
+- Configure Storage bucket for service images
+- Set up RLS policies for admin-only access
+- Create the admin user in Supabase Auth
+
+DO NOT BUILD:
+- Customer-facing interface
+- Booking system
+- Payment processing
+- Public pages
+
+Start with authentication setup, then database structure, then admin interface.
