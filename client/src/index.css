@@ -8,39 +8,36 @@
   --font-display: 'Outfit', sans-serif;
 
   --background: 0 0% 100%;
-  --foreground: 222 47% 11%;
+  --foreground: 0 0% 11%;
 
-  --primary: 217 91% 60%;
-  --primary-foreground: 210 40% 98%;
+  --primary: 215 71% 37%; /* #1C53A3 */
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 210 40% 96.1%;
-  --secondary-foreground: 222 47% 11.2%;
+  --secondary: 60 100% 50%; /* #FFFF01 */
+  --secondary-foreground: 0 0% 11%;
 
   --muted: 210 40% 96.1%;
   --muted-foreground: 215.4 16.3% 46.9%;
 
-  --accent: 210 40% 96.1%;
-  --accent-foreground: 222 47% 11.2%;
+  --accent: 60 100% 50%;
+  --accent-foreground: 0 0% 11%;
 
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 210 40% 98%;
 
   --border: 214.3 31.8% 91.4%;
   --input: 214.3 31.8% 91.4%;
-  --ring: 221.2 83.2% 53.3%;
+  --ring: 215 71% 37%;
   --radius: 0.75rem;
 }
 
 @layer base {
   body {
-    @apply bg-background text-foreground antialiased font-sans;
-    background-image: radial-gradient(at 100% 0%, hsla(217,91%,95%,0.5) 0px, transparent 50%),
-                      radial-gradient(at 0% 100%, hsla(217,91%,95%,0.5) 0px, transparent 50%);
-    background-attachment: fixed;
+    @apply bg-background text-[#1D1D1D] antialiased font-sans;
   }
   
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display tracking-tight text-slate-900;
+    @apply font-display tracking-tight text-[#1D1D1D];
   }
 }
 

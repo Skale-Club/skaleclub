@@ -21,23 +21,25 @@ export function Navbar() {
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center">
-              <div className="w-4 h-4 rounded-full bg-white/40 blur-[1px]"></div>
-            </div>
-            <span className="font-display font-bold text-2xl text-slate-900 tracking-tight">
-              BlueSpring <span className="text-emerald-600 font-medium text-lg">cleaning</span>
+            <img 
+              src="https://storage.googleapis.com/msgsndr/q6UKnlWOQwyTk82yZPAs/media/695db91db75f6f214258be82.svg" 
+              alt="Skleanings" 
+              className="h-10 w-auto"
+            />
+            <span className="font-display font-bold text-2xl text-[#1D1D1D] tracking-tight">
+              Skleanings
             </span>
           </Link>
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8">
-            <Link href="/services" className="text-sm font-semibold text-slate-700 hover:text-emerald-600 transition-colors">Services</Link>
-            <span className="text-sm font-semibold text-slate-700">Areas Served</span>
-            <span className="text-sm font-semibold text-slate-700">FAQ</span>
-            <span className="text-sm font-semibold text-slate-700">Gift Cards</span>
-            <span className="text-sm font-semibold text-slate-700">Blog</span>
+            <Link href="/services" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors">Services</Link>
+            <span className="text-sm font-semibold text-[#1D1D1D]">Areas Served</span>
+            <span className="text-sm font-semibold text-[#1D1D1D]">FAQ</span>
+            <span className="text-sm font-semibold text-[#1D1D1D]">Gift Cards</span>
+            <span className="text-sm font-semibold text-[#1D1D1D]">Blog</span>
             
-            <a href="tel:3033094226" className="px-4 py-2 bg-[#c8ff44] text-slate-900 font-bold rounded-full hover:bg-[#b8ef34] transition-all text-sm">
+            <a href="tel:3033094226" className="px-4 py-2 bg-secondary text-secondary-foreground font-bold rounded-full hover-elevate transition-all text-sm">
               (303) 309 4226
             </a>
           </div>
