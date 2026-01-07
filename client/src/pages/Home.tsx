@@ -10,10 +10,10 @@ export default function Home() {
   return (
     <div className="pb-24">
       {/* Hero Section */}
-      <section className="relative min-h-[500px] flex items-end pt-12 pb-0 overflow-hidden bg-[#1a4d3e]">
+      <section className="relative min-h-[500px] flex items-end pt-4 pb-0 overflow-hidden bg-[#1a4d3e]">
         <div className="container-custom mx-auto relative z-10 w-full">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-end">
-            <div className="text-white pt-24 pb-20 lg:pb-28">
+            <div className="text-white pt-20 pb-12 lg:pb-20">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/20 text-orange-400 text-sm font-medium mb-6">
                 <Shield className="w-4 h-4" />
                 Trusted Cleaning Experts in Denver!
