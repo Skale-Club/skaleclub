@@ -1056,19 +1056,21 @@ function ServicesSection() {
           </p>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {filteredServices?.map((service) => (
             <div key={service.id} className="overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800 transition-all">
               {service.imageUrl && (
-                <img src={service.imageUrl} alt={service.name} className="w-full h-40 object-cover" />
+                <div className="w-full aspect-[4/3] overflow-hidden">
+                  <img src={service.imageUrl} alt={service.name} className="w-full h-full object-cover" />
+                </div>
               )}
               <div className="p-4">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-2 mb-2">
+                  <div className="flex items-start justify-between gap-2">
                     <h3 className="font-semibold text-lg line-clamp-1">{service.name}</h3>
                     {service.isHidden && <Badge variant="secondary" className="text-xs border-0 bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">Add-on Only</Badge>}
                   </div>
-                  <Badge variant="outline" className="border-0 bg-slate-200 dark:bg-slate-700">${service.price}</Badge>
+                  <div className="text-2xl font-bold text-primary">${service.price}</div>
                 </div>
                 <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{service.description}</p>
                 <div className="flex items-center justify-between gap-2">
