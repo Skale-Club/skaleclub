@@ -10,7 +10,7 @@ export default function Home() {
   return (
     <div className="pb-24">
       {/* Hero Section */}
-      <section className="relative min-h-[500px] flex items-end pt-4 pb-0 overflow-hidden bg-gradient-to-br from-[#1C53A3] via-[#1e4b8a] to-[#0a2e5c]">
+      <section className="relative min-h-[500px] flex items-end pt-4 pb-0 overflow-hidden bg-[#1C53A3]">
         <div className="container-custom mx-auto relative z-10 w-full">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-end">
             <div className="text-white pt-20 pb-16 lg:pb-24">
@@ -49,9 +49,18 @@ export default function Home() {
           </div>
         </div>
         
-        {/* Background Wash - Modern Gradient Overlay */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.1),transparent)] pointer-events-none"></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-[#1C53A3] via-[#1C53A3]/40 to-transparent"></div>
+        {/* Modern Creative Blue Gradient Background */}
+        <div className="absolute inset-0 bg-[#1C53A3]">
+          <div className="absolute inset-0 opacity-60" style={{ 
+            background: `
+              radial-gradient(circle at 20% 30%, #4facfe 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, #00f2fe 0%, transparent 50%),
+              radial-gradient(circle at 50% 80%, #1C53A3 0%, transparent 50%),
+              linear-gradient(135deg, #1C53A3 0%, #4facfe 100%)
+            ` 
+          }}></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-[#1C53A3] via-[#1C53A3]/20 to-transparent"></div>
+        </div>
       </section>
 
       {/* Trust Badges */}
