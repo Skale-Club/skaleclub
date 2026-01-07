@@ -71,7 +71,13 @@ export function ServiceCard({ service }: ServiceCardProps) {
           {isInCart && (
             <div className="flex items-center bg-slate-100 rounded-xl p-1 gap-1">
               <button
-                onClick={() => updateQuantity(service.id, Math.max(1, quantity - 1))}
+                onClick={() => {
+                  if (quantity > 1) {
+                    updateQuantity(service.id, quantity - 1);
+                  } else {
+                    removeItem(service.id);
+                  }
+                }}
                 className="p-2 hover:bg-white rounded-lg transition-colors text-slate-600"
                 aria-label="Decrease quantity"
               >
