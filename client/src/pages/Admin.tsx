@@ -15,7 +15,6 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { useToast } from "@/hooks/use-toast";
 import { 
   Sidebar, 
   SidebarContent, 
@@ -29,6 +28,21 @@ import {
   SidebarProvider
 } from '@/components/ui/sidebar';
 import { Loader2, Plus, Pencil, Trash2, LogOut, FolderOpen, Package, Calendar, Clock, DollarSign, User, MapPin, Image, LayoutDashboard, Building2, GripVertical } from 'lucide-react';
+import { format } from 'date-fns';
+import { clsx } from 'clsx';
+import type { Category, Service, Booking, Subcategory } from '@shared/schema';
+
+type AdminSection = 'dashboard' | 'categories' | 'subcategories' | 'services' | 'bookings' | 'hero' | 'company';
+
+const menuItems = [
+  { id: 'dashboard' as AdminSection, title: 'Dashboard', icon: LayoutDashboard },
+  { id: 'categories' as AdminSection, title: 'Categories', icon: FolderOpen },
+  { id: 'subcategories' as AdminSection, title: 'Subcategories', icon: FolderOpen },
+  { id: 'services' as AdminSection, title: 'Services', icon: Package },
+  { id: 'bookings' as AdminSection, title: 'Bookings', icon: Calendar },
+  { id: 'hero' as AdminSection, title: 'Hero Settings', icon: Image },
+  { id: 'company' as AdminSection, title: 'Company Settings', icon: Building2 },
+];
 
 export default function Admin() {
   const { toast } = useToast();
