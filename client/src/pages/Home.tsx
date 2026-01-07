@@ -1,11 +1,16 @@
 import { useCategories } from "@/hooks/use-booking";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { ArrowRight, Star, Shield, Clock, Phone } from "lucide-react";
 import { CartSummary } from "@/components/CartSummary";
 import heroImage from "@assets/Persona-Mobile_1767749022412.png";
 
 export default function Home() {
   const { data: categories, isLoading } = useCategories();
+  const [, setLocation] = useLocation();
+
+  const handleCategoryClick = (categoryId: number) => {
+    setLocation(`/services?category=${categoryId}&scroll=true`);
+  };
 
   return (
     <div className="pb-24">
@@ -29,7 +34,7 @@ export default function Home() {
               </p>
               <div className="flex gap-4 flex-col sm:flex-row items-center">
                 <Link href="/services">
-                  <button className="px-8 py-4 bg-secondary text-secondary-foreground font-bold rounded-full hover:bg-secondary/90 transition-all flex items-center justify-center gap-2 text-lg">
+                  <button className="px-8 py-4 bg-[#facc15] hover:bg-[#eab308] text-black font-bold rounded-full transition-all flex items-center justify-center gap-2 text-lg">
                     Get Instant Price
                   </button>
                 </Link>
@@ -103,27 +108,29 @@ export default function Home() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {categories?.map((category) => (
-                <Link key={category.id} href={`/services?category=${category.id}`}>
-                  <div className="group cursor-pointer relative overflow-hidden rounded-2xl h-80 shadow-md hover:shadow-xl transition-all duration-500 border border-gray-100">
-                    <img 
-                      src={category.imageUrl || "https://images.unsplash.com/photo-1581578731117-104f2a412729?w=800&q=80"}
-                      alt={category.name}
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
-                    <div className="absolute bottom-0 left-0 p-8 w-full">
-                      <h3 className="text-2xl font-bold text-white mb-2 group-hover:translate-x-2 transition-transform">
-                        {category.name}
-                      </h3>
-                      <p className="text-gray-300 text-sm mb-4 line-clamp-2">
-                        {category.description}
-                      </p>
-                      <button className="w-full py-2 bg-[#c8ff44] text-slate-900 font-bold rounded-lg opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all">
-                        Book Now
-                      </button>
-                    </div>
+                <div 
+                  key={category.id} 
+                  className="group cursor-pointer relative overflow-hidden rounded-2xl h-80 shadow-md hover:shadow-xl transition-all duration-500 border border-gray-100"
+                  onClick={() => handleCategoryClick(category.id)}
+                >
+                  <img 
+                    src={category.imageUrl || "https://images.unsplash.com/photo-1581578731117-104f2a412729?w=800&q=80"}
+                    alt={category.name}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+                  <div className="absolute bottom-0 left-0 p-8 w-full">
+                    <h3 className="text-2xl font-bold text-white mb-2 group-hover:translate-x-2 transition-transform">
+                      {category.name}
+                    </h3>
+                    <p className="text-gray-300 text-sm mb-4 line-clamp-2">
+                      {category.description}
+                    </p>
+                    <button className="w-full py-2 bg-[#facc15] hover:bg-[#eab308] text-black font-bold rounded-lg opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all">
+                      Book Now
+                    </button>
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           )}

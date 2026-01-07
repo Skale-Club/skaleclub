@@ -28,20 +28,31 @@ export default function Services() {
     else setSelectedCategory(undefined);
     if (subCatId) setSelectedSubcategory(Number(subCatId));
     else setSelectedSubcategory(undefined);
+
+    // Scroll to services top if requested
+    if (params.get("scroll") === "true") {
+      const element = document.getElementById("services-top");
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" });
+      }
+    }
   }, [location]);
 
   return (
-    <div className="min-h-screen pb-32 pt-10">
+    <div className="min-h-screen pb-32 pt-10" id="services-top">
       <div className="container-custom mx-auto">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">Select Services</h1>
+          <h1 className="text-4xl font-bold mb-4 text-slate-900">Select Services</h1>
           <p className="text-slate-600 max-w-2xl mx-auto">
             Customize your cleaning package. Select the services you need, and we'll take care of the rest.
           </p>
         </div>
 
         {/* Category Filter Pills */}
-        <div className="flex flex-wrap justify-center gap-3 mb-6">
+        <div className={clsx(
+          "flex flex-wrap gap-3 mb-6",
+          selectedCategory === undefined ? "justify-center" : "justify-center"
+        )}>
           <button
             onClick={() => {
               setSelectedCategory(undefined);
@@ -69,7 +80,7 @@ export default function Services() {
               className={clsx(
                 "px-6 py-2.5 rounded-full font-medium transition-all duration-200",
                 selectedCategory === cat.id
-                  ? "bg-primary text-white shadow-lg shadow-primary/25"
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
                   : "bg-white text-slate-600 border border-gray-200 hover:bg-gray-50"
               )}
               data-testid={`button-filter-category-${cat.id}`}
@@ -119,6 +130,7 @@ export default function Services() {
         )}
 
         {!selectedCategory && <div className="mb-6" />}
+        {selectedCategory && (!subcategories || subcategories.length === 0) && <div className="mb-6" />}
 
         {/* Services Grid */}
         {isLoading ? (
