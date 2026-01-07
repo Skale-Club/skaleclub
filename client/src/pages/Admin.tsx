@@ -162,31 +162,29 @@ function DashboardSection() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
-          <Card key={stat.label}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">{stat.label}</p>
-                  <p className="text-2xl font-bold">{stat.value}</p>
-                </div>
-                <stat.icon className={clsx("w-8 h-8", stat.color)} />
+          <div key={stat.label} className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg transition-all">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">{stat.label}</p>
+                <p className="text-2xl font-bold">{stat.value}</p>
               </div>
-            </CardContent>
-          </Card>
+              <stat.icon className={clsx("w-8 h-8", stat.color)} />
+            </div>
+          </div>
         ))}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Bookings</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold">Recent Bookings</h2>
+        </div>
+        <div className="p-6">
           {bookings?.length === 0 ? (
             <p className="text-muted-foreground text-center py-8">No bookings yet</p>
           ) : (
             <div className="space-y-4">
               {bookings?.slice(0, 5).map((booking) => (
-                <div key={booking.id} className="flex items-center justify-between gap-4 p-3 rounded-lg bg-slate-50">
+                <div key={booking.id} className="flex items-center justify-between gap-4 p-3 rounded-lg bg-slate-200/50 dark:bg-slate-700/50">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                       <User className="w-4 h-4 text-primary" />
@@ -206,8 +204,8 @@ function DashboardSection() {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
@@ -230,60 +228,58 @@ function HeroSettingsSection() {
         <p className="text-muted-foreground">Customize your landing page hero section</p>
       </div>
 
-      <Card>
-        <CardContent className="p-6 space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="heroTitle">Hero Title</Label>
-            <Input 
-              id="heroTitle" 
-              value={heroTitle} 
-              onChange={(e) => setHeroTitle(e.target.value)}
-              placeholder="Enter hero title"
-              data-testid="input-hero-title"
-            />
-          </div>
+      <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg space-y-6 transition-all">
+        <div className="space-y-2">
+          <Label htmlFor="heroTitle">Hero Title</Label>
+          <Input 
+            id="heroTitle" 
+            value={heroTitle} 
+            onChange={(e) => setHeroTitle(e.target.value)}
+            placeholder="Enter hero title"
+            data-testid="input-hero-title"
+          />
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="heroSubtitle">Hero Subtitle</Label>
-            <Textarea 
-              id="heroSubtitle" 
-              value={heroSubtitle} 
-              onChange={(e) => setHeroSubtitle(e.target.value)}
-              placeholder="Enter hero subtitle"
-              data-testid="input-hero-subtitle"
-            />
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="heroSubtitle">Hero Subtitle</Label>
+          <Textarea 
+            id="heroSubtitle" 
+            value={heroSubtitle} 
+            onChange={(e) => setHeroSubtitle(e.target.value)}
+            placeholder="Enter hero subtitle"
+            data-testid="input-hero-subtitle"
+          />
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="heroImage">Hero Background Image URL</Label>
-            <Input 
-              id="heroImage" 
-              value={heroImageUrl} 
-              onChange={(e) => setHeroImageUrl(e.target.value)}
-              placeholder="https://..."
-              data-testid="input-hero-image"
-            />
-            {heroImageUrl && (
-              <img src={heroImageUrl} alt="Hero preview" className="w-full h-48 object-cover rounded-lg mt-2" />
-            )}
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="heroImage">Hero Background Image URL</Label>
+          <Input 
+            id="heroImage" 
+            value={heroImageUrl} 
+            onChange={(e) => setHeroImageUrl(e.target.value)}
+            placeholder="https://..."
+            data-testid="input-hero-image"
+          />
+          {heroImageUrl && (
+            <img src={heroImageUrl} alt="Hero preview" className="w-full h-48 object-cover rounded-lg mt-2" />
+          )}
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="ctaText">Call to Action Button Text</Label>
-            <Input 
-              id="ctaText" 
-              value={ctaText} 
-              onChange={(e) => setCtaText(e.target.value)}
-              placeholder="Book Now"
-              data-testid="input-cta-text"
-            />
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="ctaText">Call to Action Button Text</Label>
+          <Input 
+            id="ctaText" 
+            value={ctaText} 
+            onChange={(e) => setCtaText(e.target.value)}
+            placeholder="Book Now"
+            data-testid="input-cta-text"
+          />
+        </div>
 
-          <Button onClick={handleSave} data-testid="button-save-hero">
-            Save Changes
-          </Button>
-        </CardContent>
-      </Card>
+        <Button onClick={handleSave} data-testid="button-save-hero">
+          Save Changes
+        </Button>
+      </div>
     </div>
   );
 }
@@ -308,92 +304,84 @@ function CompanySettingsSection() {
         <p className="text-muted-foreground">Manage your business information</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Business Information</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="companyName">Company Name</Label>
-              <Input 
-                id="companyName" 
-                value={companyName} 
-                onChange={(e) => setCompanyName(e.target.value)}
-                data-testid="input-company-name"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="companyEmail">Contact Email</Label>
-              <Input 
-                id="companyEmail" 
-                type="email"
-                value={companyEmail} 
-                onChange={(e) => setCompanyEmail(e.target.value)}
-                data-testid="input-company-email"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="companyPhone">Phone Number</Label>
-              <Input 
-                id="companyPhone" 
-                value={companyPhone} 
-                onChange={(e) => setCompanyPhone(e.target.value)}
-                placeholder="+1 (555) 000-0000"
-                data-testid="input-company-phone"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="companyAddress">Business Address</Label>
-              <Input 
-                id="companyAddress" 
-                value={companyAddress} 
-                onChange={(e) => setCompanyAddress(e.target.value)}
-                placeholder="123 Main St, City, State"
-                data-testid="input-company-address"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Working Hours</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="workingHoursStart">Opening Time</Label>
-              <Input 
-                id="workingHoursStart" 
-                type="time"
-                value={workingHoursStart} 
-                onChange={(e) => setWorkingHoursStart(e.target.value)}
-                data-testid="input-hours-start"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="workingHoursEnd">Closing Time</Label>
-              <Input 
-                id="workingHoursEnd" 
-                type="time"
-                value={workingHoursEnd} 
-                onChange={(e) => setWorkingHoursEnd(e.target.value)}
-                data-testid="input-hours-end"
-              />
-            </div>
+      <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg space-y-6 transition-all">
+        <h2 className="text-lg font-semibold">Business Information</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="companyName">Company Name</Label>
+            <Input 
+              id="companyName" 
+              value={companyName} 
+              onChange={(e) => setCompanyName(e.target.value)}
+              data-testid="input-company-name"
+            />
           </div>
 
-          <Button onClick={handleSave} data-testid="button-save-company">
-            Save Changes
-          </Button>
-        </CardContent>
-      </Card>
+          <div className="space-y-2">
+            <Label htmlFor="companyEmail">Contact Email</Label>
+            <Input 
+              id="companyEmail" 
+              type="email"
+              value={companyEmail} 
+              onChange={(e) => setCompanyEmail(e.target.value)}
+              data-testid="input-company-email"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="companyPhone">Phone Number</Label>
+            <Input 
+              id="companyPhone" 
+              value={companyPhone} 
+              onChange={(e) => setCompanyPhone(e.target.value)}
+              placeholder="+1 (555) 000-0000"
+              data-testid="input-company-phone"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="companyAddress">Business Address</Label>
+            <Input 
+              id="companyAddress" 
+              value={companyAddress} 
+              onChange={(e) => setCompanyAddress(e.target.value)}
+              placeholder="123 Main St, City, State"
+              data-testid="input-company-address"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg space-y-6 transition-all">
+        <h2 className="text-lg font-semibold">Working Hours</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="workingHoursStart">Opening Time</Label>
+            <Input 
+              id="workingHoursStart" 
+              type="time"
+              value={workingHoursStart} 
+              onChange={(e) => setWorkingHoursStart(e.target.value)}
+              data-testid="input-hours-start"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="workingHoursEnd">Closing Time</Label>
+            <Input 
+              id="workingHoursEnd" 
+              type="time"
+              value={workingHoursEnd} 
+              onChange={(e) => setWorkingHoursEnd(e.target.value)}
+              data-testid="input-hours-end"
+            />
+          </div>
+        </div>
+
+        <Button onClick={handleSave} data-testid="button-save-company">
+          Save Changes
+        </Button>
+      </div>
     </div>
   );
 }
@@ -786,7 +774,7 @@ function ServicesSection() {
       </div>
 
       {filteredServices?.length === 0 ? (
-        <Card className="p-12 text-center">
+        <Card className="p-12 text-center border-0 bg-slate-100 dark:bg-slate-800">
           <Package className="w-12 h-12 text-slate-300 mx-auto mb-4" />
           <h3 className="font-semibold text-lg mb-2">No services found</h3>
           <p className="text-muted-foreground mb-4">
@@ -796,14 +784,14 @@ function ServicesSection() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredServices?.map((service) => (
-            <Card key={service.id} className="overflow-hidden">
+            <div key={service.id} className="overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800 transition-all">
               {service.imageUrl && (
                 <img src={service.imageUrl} alt={service.name} className="w-full h-40 object-cover" />
               )}
-              <CardContent className="p-4">
+              <div className="p-4">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <h3 className="font-semibold text-lg line-clamp-1">{service.name}</h3>
-                  <Badge variant="outline">${service.price}</Badge>
+                  <Badge variant="outline" className="border-0 bg-slate-200 dark:bg-slate-700">${service.price}</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{service.description}</p>
                 <div className="flex items-center justify-between gap-2">
@@ -811,14 +799,14 @@ function ServicesSection() {
                     <Clock className="w-4 h-4" />
                     <span>{Math.floor(service.durationMinutes / 60)}h {service.durationMinutes % 60}m</span>
                   </div>
-                  <Badge variant="secondary">{getCategoryName(service.categoryId)}</Badge>
+                  <Badge variant="secondary" className="border-0 bg-slate-200 dark:bg-slate-700">{getCategoryName(service.categoryId)}</Badge>
                 </div>
-                <div className="flex items-center gap-2 mt-4 pt-4 border-t">
+                <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => { setEditingService(service); setIsDialogOpen(true); }}
-                    className="flex-1"
+                    className="flex-1 bg-white dark:bg-slate-900 border-0"
                     data-testid={`button-edit-service-${service.id}`}
                   >
                     <Pencil className="w-4 h-4 mr-2" />
@@ -826,7 +814,7 @@ function ServicesSection() {
                   </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="outline" size="sm" data-testid={`button-delete-service-${service.id}`}>
+                      <Button variant="outline" size="sm" className="bg-white dark:bg-slate-900 border-0" data-testid={`button-delete-service-${service.id}`}>
                         <Trash2 className="w-4 h-4 text-red-500" />
                       </Button>
                     </AlertDialogTrigger>
@@ -841,7 +829,7 @@ function ServicesSection() {
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction 
                           onClick={() => deleteService.mutate(service.id)}
-                          className="bg-red-500 hover:bg-red-600"
+                          className="bg-red-500 hover:bg-red-600 border-0"
                         >
                           Delete
                         </AlertDialogAction>
@@ -849,8 +837,8 @@ function ServicesSection() {
                     </AlertDialogContent>
                   </AlertDialog>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ))}
         </div>
       )}
@@ -989,22 +977,22 @@ function BookingsSection() {
           <h1 className="text-2xl font-bold">Bookings</h1>
           <p className="text-muted-foreground">View all customer bookings</p>
         </div>
-        <Badge variant="secondary" className="text-lg px-4 py-2">
+        <Badge variant="secondary" className="text-lg px-4 py-2 border-0 bg-slate-100 dark:bg-slate-800">
           {bookings?.length || 0} Total
         </Badge>
       </div>
 
       {bookings?.length === 0 ? (
-        <Card className="p-12 text-center">
+        <div className="p-12 text-center rounded-lg bg-slate-100 dark:bg-slate-800">
           <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-4" />
           <h3 className="font-semibold text-lg mb-2">No bookings yet</h3>
           <p className="text-muted-foreground">Bookings will appear here when customers make them</p>
-        </Card>
+        </div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden transition-all">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider font-semibold">
+              <thead className="bg-slate-200/50 dark:bg-slate-700/50 text-slate-500 text-xs uppercase tracking-wider font-semibold">
                 <tr>
                   <th className="px-6 py-4 text-left">Customer</th>
                   <th className="px-6 py-4 text-left">Schedule</th>
@@ -1013,23 +1001,23 @@ function BookingsSection() {
                   <th className="px-6 py-4 text-right">Amount</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {bookings?.map((booking) => (
-                  <tr key={booking.id} className="hover:bg-slate-50/50 transition-colors">
+                  <tr key={booking.id} className="hover:bg-slate-200/30 dark:hover:bg-slate-700/30 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
+                        <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500">
                           <User className="w-4 h-4" />
                         </div>
                         <div>
-                          <p className="font-semibold text-slate-900">{booking.customerName}</p>
+                          <p className="font-semibold text-slate-900 dark:text-slate-100">{booking.customerName}</p>
                           <p className="text-xs text-slate-500">{booking.customerEmail}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="space-y-1">
-                        <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
+                        <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">
                           <Calendar className="w-3.5 h-3.5 text-slate-400" />
                           {format(new Date(booking.bookingDate), "MMM dd, yyyy")}
                         </div>
@@ -1040,7 +1028,7 @@ function BookingsSection() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm text-slate-600 flex items-start gap-1.5">
+                      <div className="text-sm text-slate-600 dark:text-slate-400 flex items-start gap-1.5">
                         <MapPin className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
                         <span className="truncate max-w-[200px]" title={booking.customerAddress}>
                           {booking.customerAddress}
@@ -1050,17 +1038,17 @@ function BookingsSection() {
                     <td className="px-6 py-4">
                       <span className={clsx(
                         "px-2.5 py-1 rounded-full text-xs font-bold",
-                        booking.status === "confirmed" ? "bg-green-50 text-green-600" :
-                        booking.status === "cancelled" ? "bg-red-50 text-red-600" :
-                        "bg-gray-100 text-gray-600"
+                        booking.status === "confirmed" ? "bg-green-100 text-green-700" :
+                        booking.status === "cancelled" ? "bg-red-100 text-red-700" :
+                        "bg-slate-200 text-slate-700"
                       )}>
                         {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="font-bold text-slate-900 flex items-center justify-end gap-1">
+                      <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center justify-end gap-1">
                         {booking.paymentMethod === "site" && (
-                          <span className="text-[10px] text-orange-500 bg-orange-50 px-1.5 rounded uppercase">Unpaid</span>
+                          <span className="text-[10px] text-orange-600 bg-orange-100 px-1.5 rounded uppercase">Unpaid</span>
                         )}
                         ${booking.totalPrice}
                       </div>
