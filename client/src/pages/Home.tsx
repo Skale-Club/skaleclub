@@ -10,10 +10,10 @@ export default function Home() {
   return (
     <div className="pb-24">
       {/* Hero Section */}
-      <section className="relative min-h-[600px] flex items-center pt-20 pb-0 overflow-hidden bg-[#1a4d3e]">
-        <div className="container-custom mx-auto relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="text-white py-20 lg:pb-32">
+      <section className="relative min-h-[500px] flex items-end pt-0 pb-0 overflow-hidden bg-[#1a4d3e]">
+        <div className="container-custom mx-auto relative z-10 w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-end">
+            <div className="text-white pt-20 pb-12 lg:pb-16">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/20 text-orange-400 text-sm font-medium mb-6">
                 <Shield className="w-4 h-4" />
                 Trusted Cleaning Experts in Denver!
@@ -41,7 +41,7 @@ export default function Home() {
               <img 
                 src={heroImage} 
                 alt="Cleaning Professionals" 
-                className="w-full max-w-lg object-contain drop-shadow-2xl translate-y-0 scale-100 origin-bottom"
+                className="w-full max-w-lg object-contain drop-shadow-2xl translate-y-[2px] scale-125 origin-bottom"
               />
             </div>
           </div>
