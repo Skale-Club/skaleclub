@@ -10,7 +10,7 @@ export default function Home() {
   return (
     <div className="pb-24">
       {/* Hero Section */}
-      <section className="relative min-h-[500px] flex items-end pt-4 pb-0 overflow-hidden bg-[#1C53A3]">
+      <section className="relative min-h-[500px] flex items-end pt-4 pb-0 overflow-hidden bg-gradient-to-br from-[#1C53A3] via-[#1e4b8a] to-[#0a2e5c]">
         <div className="container-custom mx-auto relative z-10 w-full">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-end">
             <div className="text-white pt-20 pb-12 lg:pb-20">
@@ -49,8 +49,9 @@ export default function Home() {
           </div>
         </div>
         
-        {/* Background Wash */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#1C53A3] via-[#1C53A3]/80 to-transparent"></div>
+        {/* Background Wash - Modern Gradient Overlay */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.1),transparent)] pointer-events-none"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-[#1C53A3] via-[#1C53A3]/40 to-transparent"></div>
       </section>
 
       {/* Trust Badges */}
