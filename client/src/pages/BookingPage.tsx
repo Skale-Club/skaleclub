@@ -4,11 +4,12 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { format, addDays } from "date-fns";
+import { format, addDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek, isSameMonth, isSameDay, addMonths, subMonths } from "date-fns";
 import { Link, useLocation } from "wouter";
-import { Trash2, Calendar, Clock, ChevronRight, CheckCircle2, ArrowLeft } from "lucide-react";
+import { Trash2, Calendar as CalendarIcon, Clock, ChevronRight, CheckCircle2, ArrowLeft, ChevronLeft } from "lucide-react";
 import { clsx } from "clsx";
 import { useToast } from "@/hooks/use-toast";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Schema for the form
 const bookingFormSchema = z.object({
@@ -30,6 +31,7 @@ export default function BookingPage() {
   // Booking State
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState<string>("");
+  const [viewDate, setViewDate] = useState<Date>(new Date());
   
   // API Hooks
   const { data: slots, isLoading: isLoadingSlots } = useAvailability(selectedDate, totalDuration);
@@ -156,66 +158,137 @@ export default function BookingPage() {
 
             {/* STEP 2: SCHEDULE */}
             {step === 2 && (
-              <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-4">
-                <div className="flex items-center gap-4 mb-6">
-                  <button onClick={() => setStep(1)} className="p-2 hover:bg-slate-100 rounded-full">
-                    <ArrowLeft className="w-5 h-5" />
+              <div className="bg-[#0B1120] p-8 rounded-2xl shadow-sm border border-slate-800 animate-in fade-in slide-in-from-bottom-4 text-white">
+                <div className="flex items-center gap-4 mb-8">
+                  <button onClick={() => setStep(1)} className="p-2 hover:bg-slate-800 rounded-full transition-colors">
+                    <ArrowLeft className="w-5 h-5 text-slate-400" />
                   </button>
                   <h2 className="text-2xl font-bold">Select Date & Time</h2>
                 </div>
 
-                <div className="mb-8">
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Select Date</label>
-                  <input
-                    type="date"
-                    min={format(new Date(), "yyyy-MM-dd")}
-                    max={format(addDays(new Date(), 30), "yyyy-MM-dd")}
-                    value={selectedDate}
-                    onChange={(e) => {
-                      setSelectedDate(e.target.value);
-                      setSelectedTime("");
-                    }}
-                    className="w-full p-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-lg"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                  {/* Calendar Column */}
+                  <div>
+                    <div className="flex items-center justify-between mb-8">
+                      <button 
+                        onClick={() => setViewDate(subMonths(viewDate, 1))}
+                        className="p-2 hover:bg-slate-800 rounded-full text-slate-400 transition-colors"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </button>
+                      <h3 className="text-lg font-semibold">{format(viewDate, "MMMM yyyy")}</h3>
+                      <button 
+                        onClick={() => setViewDate(addMonths(viewDate, 1))}
+                        className="p-2 hover:bg-slate-800 rounded-full text-slate-400 transition-colors"
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-7 mb-4">
+                      {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => (
+                        <div key={day} className="text-center text-xs font-medium text-slate-500 py-2">
+                          {day}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-1">
+                      {(() => {
+                        const monthStart = startOfMonth(viewDate);
+                        const monthEnd = endOfMonth(monthStart);
+                        const startDate = startOfWeek(monthStart);
+                        const endDate = endOfWeek(monthEnd);
+                        const rows = [];
+                        let days = [];
+                        let day = startDate;
+
+                        while (day <= endDate) {
+                          for (let i = 0; i < 7; i++) {
+                            const currentDay = day;
+                            const isCurrentMonth = isSameMonth(currentDay, monthStart);
+                            const isSelected = selectedDate === format(currentDay, "yyyy-MM-dd");
+                            const isToday = isSameDay(currentDay, new Date());
+                            const isPast = currentDay < new Date() && !isToday;
+
+                            days.push(
+                              <button
+                                key={currentDay.toString()}
+                                disabled={!isCurrentMonth || isPast}
+                                onClick={() => {
+                                  setSelectedDate(format(currentDay, "yyyy-MM-dd"));
+                                  setSelectedTime("");
+                                }}
+                                className={clsx(
+                                  "h-10 w-10 rounded-full flex items-center justify-center text-sm transition-all relative",
+                                  !isCurrentMonth && "opacity-0 cursor-default",
+                                  isCurrentMonth && isPast && "text-slate-700 cursor-not-allowed",
+                                  isCurrentMonth && !isPast && !isSelected && "text-slate-300 hover:bg-slate-800",
+                                  isSelected && "bg-primary text-white font-bold"
+                                )}
+                              >
+                                {format(currentDay, "d")}
+                                {isToday && !isSelected && (
+                                  <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-white rounded-full"></div>
+                                )}
+                              </button>
+                            );
+                            day = addDays(day, 1);
+                          }
+                          rows.push(days);
+                          days = [];
+                        }
+                        return rows;
+                      })()}
+                    </div>
+
+                    <div className="mt-12">
+                      <h4 className="text-sm font-medium text-slate-400 mb-4">Time zone</h4>
+                      <div className="flex items-center gap-2 text-sm text-slate-300">
+                        <Clock className="w-4 h-4 text-slate-500" />
+                        <span>GMT-05:00 America/New_York (EST)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Slots Column */}
+                  <div>
+                    <ScrollArea className="h-[400px] pr-4">
+                      <div className="space-y-3">
+                        {isLoadingSlots ? (
+                          [1, 2, 3, 4, 5, 6].map(i => (
+                            <div key={i} className="h-14 bg-slate-900/50 border border-slate-800 rounded-lg animate-pulse"></div>
+                          ))
+                        ) : slots && slots.length > 0 ? (
+                          slots.map((slot) => (
+                            <button
+                              key={slot.time}
+                              disabled={!slot.available}
+                              onClick={() => setSelectedTime(slot.time)}
+                              className={clsx(
+                                "w-full py-4 px-6 rounded-lg font-medium transition-all border text-center",
+                                !slot.available && "opacity-20 cursor-not-allowed bg-transparent border-slate-800 text-slate-500",
+                                slot.available && selectedTime === slot.time
+                                  ? "bg-primary/20 border-primary text-primary shadow-lg shadow-primary/10"
+                                  : slot.available && "bg-transparent border-slate-800 text-slate-300 hover:border-primary/50 hover:text-primary"
+                              )}
+                            >
+                              {slot.time}
+                            </button>
+                          ))
+                        ) : (
+                          <div className="text-center py-12 px-4 border border-dashed border-slate-800 rounded-xl">
+                            <p className="text-slate-500 text-sm">
+                              {selectedDate ? "No available slots for this duration." : "Select a date to view available times."}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </div>
                 </div>
 
-                {selectedDate && (
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-4">Available Slots</label>
-                    {isLoadingSlots ? (
-                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                        {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                          <div key={i} className="h-12 bg-gray-100 rounded-lg animate-pulse"></div>
-                        ))}
-                      </div>
-                    ) : slots && slots.length > 0 ? (
-                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                        {slots.map((slot) => (
-                          <button
-                            key={slot.time}
-                            disabled={!slot.available}
-                            onClick={() => setSelectedTime(slot.time)}
-                            className={clsx(
-                              "py-3 px-2 rounded-lg text-sm font-semibold transition-all border",
-                              !slot.available && "opacity-40 cursor-not-allowed bg-gray-50 border-transparent text-gray-400",
-                              slot.available && selectedTime === slot.time
-                                ? "bg-primary text-white border-primary shadow-lg shadow-primary/25 transform scale-105"
-                                : slot.available && "bg-white border-gray-200 text-slate-700 hover:border-primary hover:text-primary"
-                            )}
-                          >
-                            {slot.time}
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-10 bg-slate-50 rounded-xl">
-                        <p className="text-slate-500">No available slots for this duration on selected date.</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div className="flex justify-end pt-8 mt-8 border-t border-gray-100">
+                <div className="flex justify-end pt-8 mt-8 border-t border-slate-800">
                   <button 
                     disabled={!selectedDate || !selectedTime}
                     onClick={() => setStep(3)}
