@@ -45,3 +45,6 @@ VITE_SUPABASE_URL = "${SUPABASE_URL}"
 VITE_SUPABASE_ANON_KEY = "${SUPABASE_ANON_KEY}"
 ADMIN_EMAIL = "skleanings@gmail.com"
 ADMIN_PASSWORD_HASH = "$2b$10$dxSVXIAxTzFule5m0XxJIOEitK0ZJSDpz4.0eZIAAymlTAU86b2sW"
+
+[agent]
+integrations = ["javascript_object_storage:2.0.0"]

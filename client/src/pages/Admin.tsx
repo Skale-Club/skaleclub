@@ -1140,18 +1140,45 @@ function ServiceForm({ service, categories, subcategories, allServices, addonRel
   const [subcategoryId, setSubcategoryId] = useState(service?.subcategoryId?.toString() || '');
   const [imageUrl, setImageUrl] = useState(service?.imageUrl || '');
   const [isHidden, setIsHidden] = useState(service?.isHidden || false);
+  const [addonSearch, setAddonSearch] = useState('');
   const [selectedAddons, setSelectedAddons] = useState<number[]>(() => {
     if (!service) return [];
     return addonRelationships.filter(r => r.serviceId === service.id).map(r => r.addonServiceId);
   });
 
   const filteredSubcategories = subcategories.filter(sub => sub.categoryId === Number(categoryId));
-  const availableAddons = allServices.filter(s => s.id !== service?.id);
+  const availableAddons = allServices.filter(s => 
+    s.id !== service?.id && 
+    s.name.toLowerCase().includes(addonSearch.toLowerCase())
+  );
 
   const handleAddonToggle = (addonId: number) => {
     setSelectedAddons(prev => 
       prev.includes(addonId) ? prev.filter(id => id !== addonId) : [...prev, addonId]
     );
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const res = await fetch('/api/upload', { method: 'POST' });
+      if (!res.ok) throw new Error('Failed to get upload URL');
+      const { uploadURL, objectPath } = await res.json();
+
+      const uploadRes = await fetch(uploadURL, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type }
+      });
+      if (!uploadRes.ok) throw new Error('Upload to storage failed');
+
+      setImageUrl(objectPath);
+      toast({ title: 'Image uploaded successfully' });
+    } catch (err) {
+      toast({ title: 'Upload failed', variant: 'destructive' });
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -1260,9 +1287,39 @@ function ServiceForm({ service, categories, subcategories, allServices, addonRel
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="imageUrl">Image URL</Label>
-          <Input id="imageUrl" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." data-testid="input-service-image" />
-          {imageUrl && <img src={imageUrl} alt="Preview" className="w-full h-32 object-cover rounded-lg mt-2" />}
+          <Label htmlFor="imageUrl">Service Image</Label>
+          <div className="flex flex-col gap-4">
+            <Input 
+              id="imageUpload" 
+              type="file" 
+              accept="image/*" 
+              onChange={handleImageUpload} 
+              data-testid="input-service-image-upload" 
+            />
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Or URL:</span>
+              <Input 
+                id="imageUrl" 
+                value={imageUrl} 
+                onChange={(e) => setImageUrl(e.target.value)} 
+                placeholder="https://..." 
+                className="h-8 text-xs"
+                data-testid="input-service-image-url" 
+              />
+            </div>
+            {imageUrl && (
+              <div className="relative w-full aspect-[4/3] bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
+                <img 
+                  src={imageUrl.startsWith('/objects/') ? imageUrl : imageUrl} 
+                  alt="Preview" 
+                  className="absolute inset-0 w-full h-full object-cover" 
+                />
+                <div className="absolute top-2 right-2 bg-black/50 text-white text-[10px] px-1.5 py-0.5 rounded backdrop-blur-sm">
+                  4:3 Preview
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center space-x-2 pt-2">
@@ -1273,28 +1330,61 @@ function ServiceForm({ service, categories, subcategories, allServices, addonRel
             data-testid="checkbox-service-hidden"
           />
           <Label htmlFor="isHidden" className="text-sm font-normal cursor-pointer">
-            Add-on only (hidden from main services list)
+            Hide from main services list (Service will only show as add-on)
           </Label>
         </div>
 
-        {service && availableAddons.length > 0 && (
+        {service && allServices.length > 1 && (
           <div className="space-y-2 pt-2">
             <Label>Suggested Add-ons</Label>
-            <p className="text-xs text-muted-foreground">Select services to suggest when this service is added to cart</p>
-            <div className="max-h-40 overflow-y-auto space-y-2 border rounded-md p-3 bg-slate-50 dark:bg-slate-800">
-              {availableAddons.map(addon => (
-                <div key={addon.id} className="flex items-center space-x-2">
-                  <Checkbox 
-                    id={`addon-${addon.id}`} 
-                    checked={selectedAddons.includes(addon.id)} 
-                    onCheckedChange={() => handleAddonToggle(addon.id)}
-                    data-testid={`checkbox-addon-${addon.id}`}
-                  />
-                  <Label htmlFor={`addon-${addon.id}`} className="text-sm font-normal cursor-pointer flex-1">
-                    {addon.name} - ${addon.price}
-                  </Label>
+            <p className="text-xs text-muted-foreground">Choose which services to suggest when this is added</p>
+            <div className="space-y-2 border rounded-md p-3 bg-slate-50 dark:bg-slate-800">
+              <Input
+                placeholder="Search services..."
+                value={addonSearch}
+                onChange={(e) => setAddonSearch(e.target.value)}
+                className="h-8 text-sm mb-2"
+              />
+              <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
+                {availableAddons.length > 0 ? (
+                  availableAddons.map(addon => (
+                    <div key={addon.id} className="flex items-center space-x-2 py-1 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded px-1 transition-colors">
+                      <Checkbox 
+                        id={`addon-${addon.id}`} 
+                        checked={selectedAddons.includes(addon.id)} 
+                        onCheckedChange={() => handleAddonToggle(addon.id)}
+                        data-testid={`checkbox-addon-${addon.id}`}
+                      />
+                      <Label htmlFor={`addon-${addon.id}`} className="text-sm font-normal cursor-pointer flex-1 flex justify-between items-center">
+                        <span className="truncate">{addon.name}</span>
+                        <span className="text-xs text-muted-foreground ml-2">${addon.price}</span>
+                      </Label>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-center py-4 text-muted-foreground">No services found</p>
+                )}
+              </div>
+              {selectedAddons.length > 0 && (
+                <div className="pt-2 border-t mt-2 flex flex-wrap gap-1">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground w-full mb-1">Selected:</span>
+                  {selectedAddons.map(id => {
+                    const s = allServices.find(as => as.id === id);
+                    if (!s) return null;
+                    return (
+                      <Badge key={id} variant="secondary" className="text-[10px] py-0 h-5 border-0 bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                        {s.name}
+                        <button 
+                          onClick={(e) => { e.preventDefault(); handleAddonToggle(id); }}
+                          className="ml-1 hover:text-blue-900 dark:hover:text-blue-100"
+                        >
+                          ×
+                        </button>
+                      </Badge>
+                    );
+                  })}
                 </div>
-              ))}
+              )}
             </div>
           </div>
         )}

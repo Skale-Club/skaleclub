@@ -6,6 +6,7 @@ import { z } from "zod";
 import { WORKING_HOURS, insertCategorySchema, insertServiceSchema } from "@shared/schema";
 import { insertSubcategorySchema } from "./storage";
 import bcrypt from "bcrypt";
+import { ObjectStorageService, registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 
 // Admin credentials from environment variables
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
@@ -210,6 +211,22 @@ export async function registerRoutes(
     const relationships = await storage.getAddonRelationships();
     res.json(relationships);
   });
+
+  const objectStorageService = new ObjectStorageService();
+
+  app.post("/api/upload", requireAdmin, async (req, res) => {
+    try {
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+      res.json({ uploadURL, objectPath });
+    } catch (error) {
+      console.error("Upload error:", error);
+      res.status(500).json({ error: "Failed to generate upload URL" });
+    }
+  });
+
+  // Register object storage routes
+  registerObjectStorageRoutes(app);
 
   // Admin Service CRUD (protected routes)
   app.post('/api/services', requireAdmin, async (req, res) => {
