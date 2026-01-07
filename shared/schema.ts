@@ -12,9 +12,17 @@ export const categories = pgTable("categories", {
   imageUrl: text("image_url"), // For category card
 });
 
+export const subcategories = pgTable("subcategories", {
+  id: serial("id").primaryKey(),
+  categoryId: integer("category_id").references(() => categories.id).notNull(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+});
+
 export const services = pgTable("services", {
   id: serial("id").primaryKey(),
   categoryId: integer("category_id").references(() => categories.id).notNull(),
+  subcategoryId: integer("subcategory_id").references(() => subcategories.id),
   name: text("name").notNull(),
   description: text("description"),
   price: numeric("price", { precision: 10, scale: 2 }).notNull(), // Fixed price
@@ -49,6 +57,7 @@ export const bookingItems = pgTable("booking_items", {
 // === SCHEMAS ===
 
 export const insertCategorySchema = createInsertSchema(categories).omit({ id: true });
+export const insertSubcategorySchema = createInsertSchema(subcategories).omit({ id: true });
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true });
 export const insertBookingSchema = createInsertSchema(bookings).omit({ 
   id: true, 
@@ -63,6 +72,7 @@ export const insertBookingSchema = createInsertSchema(bookings).omit({
 // === TYPES ===
 
 export type Category = typeof categories.$inferSelect;
+export type Subcategory = typeof subcategories.$inferSelect;
 export type Service = typeof services.$inferSelect;
 export type Booking = typeof bookings.$inferSelect;
 export type BookingItem = typeof bookingItems.$inferSelect;
