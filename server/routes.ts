@@ -1,18 +1,56 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
 import { api, errorSchemas, buildUrl } from "@shared/routes";
 import { z } from "zod";
-import { WORKING_HOURS } from "@shared/schema";
+import { WORKING_HOURS, insertCategorySchema, insertServiceSchema } from "@shared/schema";
+import { createClient } from "@supabase/supabase-js";
+
+// Initialize Supabase admin client for server-side auth verification
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const supabaseAdmin = supabaseUrl && supabaseServiceKey 
+  ? createClient(supabaseUrl, supabaseServiceKey)
+  : null;
+
+// Admin authentication middleware
+async function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Authentication required' });
+  }
+  
+  if (!supabaseAdmin) {
+    return res.status(500).json({ message: 'Server authentication not configured' });
+  }
+  
+  const token = authHeader.substring(7);
+  
+  try {
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+    
+    if (error || !user) {
+      return res.status(401).json({ message: 'Invalid or expired token' });
+    }
+    
+    // User is authenticated - proceed
+    next();
+  } catch (err) {
+    return res.status(401).json({ message: 'Authentication failed' });
+  }
+}
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
 
-  // Supabase Config (for frontend)
+  // Supabase Config (for frontend) - No caching to ensure fresh response
   app.get('/api/supabase-config', (req, res) => {
-    res.json({
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.status(200).json({
       url: process.env.SUPABASE_URL || '',
       anonKey: process.env.SUPABASE_ANON_KEY || ''
     });
@@ -30,26 +68,34 @@ export async function registerRoutes(
     res.json(category);
   });
 
-  // Admin Category CRUD
-  app.post('/api/categories', async (req, res) => {
+  // Admin Category CRUD (protected routes)
+  app.post('/api/categories', requireAdmin, async (req, res) => {
     try {
-      const category = await storage.createCategory(req.body);
+      const validatedData = insertCategorySchema.parse(req.body);
+      const category = await storage.createCategory(validatedData);
       res.status(201).json(category);
     } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
       res.status(400).json({ message: (err as Error).message });
     }
   });
 
-  app.put('/api/categories/:id', async (req, res) => {
+  app.put('/api/categories/:id', requireAdmin, async (req, res) => {
     try {
-      const category = await storage.updateCategory(Number(req.params.id), req.body);
+      const validatedData = insertCategorySchema.partial().parse(req.body);
+      const category = await storage.updateCategory(Number(req.params.id), validatedData);
       res.json(category);
     } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
       res.status(400).json({ message: (err as Error).message });
     }
   });
 
-  app.delete('/api/categories/:id', async (req, res) => {
+  app.delete('/api/categories/:id', requireAdmin, async (req, res) => {
     try {
       await storage.deleteCategory(Number(req.params.id));
       res.json({ success: true });
@@ -65,26 +111,34 @@ export async function registerRoutes(
     res.json(services);
   });
 
-  // Admin Service CRUD
-  app.post('/api/services', async (req, res) => {
+  // Admin Service CRUD (protected routes)
+  app.post('/api/services', requireAdmin, async (req, res) => {
     try {
-      const service = await storage.createService(req.body);
+      const validatedData = insertServiceSchema.parse(req.body);
+      const service = await storage.createService(validatedData);
       res.status(201).json(service);
     } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
       res.status(400).json({ message: (err as Error).message });
     }
   });
 
-  app.put('/api/services/:id', async (req, res) => {
+  app.put('/api/services/:id', requireAdmin, async (req, res) => {
     try {
-      const service = await storage.updateService(Number(req.params.id), req.body);
+      const validatedData = insertServiceSchema.partial().parse(req.body);
+      const service = await storage.updateService(Number(req.params.id), validatedData);
       res.json(service);
     } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
       res.status(400).json({ message: (err as Error).message });
     }
   });
 
-  app.delete('/api/services/:id', async (req, res) => {
+  app.delete('/api/services/:id', requireAdmin, async (req, res) => {
     try {
       await storage.deleteService(Number(req.params.id));
       res.json({ success: true });

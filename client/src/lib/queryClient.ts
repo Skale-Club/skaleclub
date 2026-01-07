@@ -23,6 +23,30 @@ export async function apiRequest(
   return res;
 }
 
+export async function authenticatedRequest(
+  method: string,
+  url: string,
+  token: string,
+  data?: unknown | undefined,
+): Promise<Response> {
+  const headers: Record<string, string> = {
+    'Authorization': `Bearer ${token}`,
+  };
+  if (data) {
+    headers['Content-Type'] = 'application/json';
+  }
+  
+  const res = await fetch(url, {
+    method,
+    headers,
+    body: data ? JSON.stringify(data) : undefined,
+    credentials: "include",
+  });
+
+  await throwIfResNotOk(res);
+  return res;
+}
+
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { queryClient, apiRequest } from '@/lib/queryClient';
+import { queryClient, authenticatedRequest } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -94,6 +94,7 @@ export default function Admin() {
 
 function CategoriesTab() {
   const { toast } = useToast();
+  const { getAccessToken } = useAuth();
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -107,7 +108,9 @@ function CategoriesTab() {
 
   const createCategory = useMutation({
     mutationFn: async (data: { name: string; slug: string; description: string; imageUrl: string }) => {
-      return apiRequest('POST', '/api/categories', data);
+      const token = getAccessToken();
+      if (!token) throw new Error('Not authenticated');
+      return authenticatedRequest('POST', '/api/categories', token, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
@@ -121,7 +124,9 @@ function CategoriesTab() {
 
   const updateCategory = useMutation({
     mutationFn: async (data: { id: number; name: string; slug: string; description: string; imageUrl: string }) => {
-      return apiRequest('PUT', `/api/categories/${data.id}`, data);
+      const token = getAccessToken();
+      if (!token) throw new Error('Not authenticated');
+      return authenticatedRequest('PUT', `/api/categories/${data.id}`, token, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
@@ -136,7 +141,9 @@ function CategoriesTab() {
 
   const deleteCategory = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest('DELETE', `/api/categories/${id}`);
+      const token = getAccessToken();
+      if (!token) throw new Error('Not authenticated');
+      return authenticatedRequest('DELETE', `/api/categories/${id}`, token);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
@@ -303,6 +310,7 @@ function CategoryForm({ category, onSubmit, isLoading }: {
 
 function ServicesTab() {
   const { toast } = useToast();
+  const { getAccessToken } = useAuth();
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>('all');
@@ -318,7 +326,9 @@ function ServicesTab() {
 
   const createService = useMutation({
     mutationFn: async (data: Omit<Service, 'id'>) => {
-      return apiRequest('POST', '/api/services', data);
+      const token = getAccessToken();
+      if (!token) throw new Error('Not authenticated');
+      return authenticatedRequest('POST', '/api/services', token, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/services'] });
@@ -332,7 +342,9 @@ function ServicesTab() {
 
   const updateService = useMutation({
     mutationFn: async (data: Service) => {
-      return apiRequest('PUT', `/api/services/${data.id}`, data);
+      const token = getAccessToken();
+      if (!token) throw new Error('Not authenticated');
+      return authenticatedRequest('PUT', `/api/services/${data.id}`, token, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/services'] });
@@ -347,7 +359,9 @@ function ServicesTab() {
 
   const deleteService = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest('DELETE', `/api/services/${id}`);
+      const token = getAccessToken();
+      if (!token) throw new Error('Not authenticated');
+      return authenticatedRequest('DELETE', `/api/services/${id}`, token);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/services'] });
