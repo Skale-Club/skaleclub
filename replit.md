@@ -25,7 +25,8 @@ Preferred communication style: Simple, everyday language.
 - **Framework**: Express.js with TypeScript
 - **API Design**: RESTful endpoints defined in `shared/routes.ts` with Zod schemas for input/output validation
 - **Database ORM**: Drizzle ORM with PostgreSQL dialect
-- **Session Management**: connect-pg-simple for PostgreSQL-backed sessions
+- **Session Management**: express-session with in-memory store (development) 
+- **Admin Authentication**: Session-based auth with bcrypt password hashing
 
 ### Data Storage
 - **Database**: PostgreSQL (required via DATABASE_URL environment variable)
@@ -58,6 +59,11 @@ Preferred communication style: Simple, everyday language.
 ### Database
 - **PostgreSQL**: Required, connection via `DATABASE_URL` environment variable
 - **Drizzle Kit**: Used for schema migrations (`npm run db:push`)
+
+### Environment Variables (Required)
+- **SESSION_SECRET**: Required for session encryption (server will not start without it)
+- **ADMIN_EMAIL**: Admin login email
+- **ADMIN_PASSWORD_HASH**: bcrypt-hashed admin password (generate with `bcrypt.hash(password, 10)`)
 
 ### Third-Party UI Libraries
 - **Radix UI**: Headless UI primitives for accessibility (dialogs, dropdowns, forms, etc.)

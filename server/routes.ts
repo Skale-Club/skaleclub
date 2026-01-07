@@ -4,11 +4,11 @@ import { storage } from "./storage";
 import { api, errorSchemas, buildUrl } from "@shared/routes";
 import { z } from "zod";
 import { WORKING_HOURS, insertCategorySchema, insertServiceSchema } from "@shared/schema";
-import session from "express-session";
+import bcrypt from "bcrypt";
 
 // Admin credentials from environment variables
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || '';
 
 // Extend session type to include admin flag
 declare module 'express-session' {
@@ -31,11 +31,23 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
 
+  // Admin Login schema
+  const loginSchema = z.object({
+    email: z.string().email(),
+    password: z.string().min(1)
+  });
+
   // Admin Login
   app.post('/api/admin/login', async (req, res) => {
-    const { email, password } = req.body;
+    // Validate request body
+    const parsed = loginSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: 'Invalid email or password format' });
+    }
 
-    if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    const { email, password } = parsed.data;
+
+    if (!ADMIN_EMAIL || !ADMIN_PASSWORD_HASH) {
       return res.status(500).json({ message: 'Admin credentials not configured' });
     }
 
@@ -43,8 +55,9 @@ export async function registerRoutes(
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    // Compare password directly (stored in encrypted Replit secret)
-    if (password !== ADMIN_PASSWORD) {
+    // Compare password using bcrypt
+    const passwordMatch = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
+    if (!passwordMatch) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
