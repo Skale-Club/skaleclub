@@ -105,8 +105,8 @@ export default function BookingPage() {
   }
 
   return (
-    <div className="bg-slate-50 py-8">
-      <div className="container-custom mx-auto max-w-5xl">
+    <div className="bg-slate-50 py-8 min-h-[calc(100vh-80px)] flex flex-col justify-between">
+      <div className="container-custom mx-auto max-w-5xl flex-grow mb-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Main Content */}

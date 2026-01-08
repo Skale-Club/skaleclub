@@ -156,7 +156,7 @@ export default function Home() {
       </section>
 
       {/* Reviews Section */}
-      <section className="pt-20 pb-0 bg-slate-50 overflow-hidden mb-0">
+      <section className="pt-20 pb-0 bg-slate-50 overflow-hidden mb-0 -mb-1">
         <div className="w-full">
           <div className="container-custom mx-auto mb-16 text-center">
             <h2 className="text-3xl md:text-5xl font-bold mb-4">Customer Reviews</h2>
