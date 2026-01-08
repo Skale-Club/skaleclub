@@ -67,19 +67,20 @@ export function Navbar() {
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem className="flex-col items-start">
-                      <span className="font-medium">{user.firstName} {user.lastName}</span>
-                      <span className="text-sm text-muted-foreground">{user.email}</span>
-                    </DropdownMenuItem>
+                  <DropdownMenuContent align="end" className="w-56 bg-white border border-gray-100 shadow-lg">
+                    <div className="px-2 py-2 border-b border-gray-100 mb-1">
+                      <p className="font-medium text-sm leading-none">{user.firstName} {user.lastName}</p>
+                      <p className="text-xs text-muted-foreground mt-1.5 leading-none">{user.email}</p>
+                    </div>
                     {user.isAdmin && (
                       <DropdownMenuItem asChild>
-                        <Link href="/admin" className="cursor-pointer" data-testid="link-admin">
+                        <Link href="/admin" className="cursor-pointer w-full flex items-center" data-testid="link-admin">
+                          <User className="mr-2 h-4 w-4" />
                           Admin Panel
                         </Link>
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem onClick={() => logout()} data-testid="button-logout">
+                    <DropdownMenuItem onClick={() => logout()} data-testid="button-logout" className="text-red-600 focus:text-red-600">
                       <LogOut className="mr-2 h-4 w-4" />
                       Sair
                     </DropdownMenuItem>
