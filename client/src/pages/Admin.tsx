@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAdminAuth } from '@/context/AuthContext';
-import { useLocation } from 'wouter';
+import { useLocation, Link } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
