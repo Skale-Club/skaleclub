@@ -23,40 +23,40 @@ export default function Home() {
   return (
     <div className="pb-24">
       {/* Hero Section */}
-      <section className="relative min-h-[500px] flex items-end pt-4 pb-0 overflow-hidden bg-[#1C53A3]">
+      <section className="relative flex items-center lg:items-end pt-6 lg:pt-4 pb-0 overflow-hidden bg-[#1C53A3]">
         <div className="container-custom mx-auto relative z-10 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-end">
-            <div className="text-white pt-20 pb-16 lg:pb-24">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-sm font-medium mb-6 border border-white/30">
-                <Shield className="w-4 h-4" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 items-center lg:items-end">
+            <div className="text-white pt-4 pb-6 lg:pt-20 lg:pb-24">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-xs sm:text-sm font-medium mb-3 lg:mb-6 border border-white/30">
+                <Shield className="w-3 h-3 sm:w-4 sm:h-4" />
                 Trusted Cleaning Experts!
               </div>
-              <h1 className="text-5xl md:text-7xl font-bold leading-[1.1] mb-6 font-display">
+              <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold leading-[1.1] mb-3 lg:mb-6 font-display">
                 <span className="text-white">Your 5-star</span> <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">
                   cleaning company
                 </span>
               </h1>
-              <p className="text-xl text-blue-50/80 mb-8 leading-relaxed max-w-xl">
+              <p className="text-base sm:text-xl text-blue-50/80 mb-4 lg:mb-8 leading-relaxed max-w-xl">
                 We provide top-quality cleaning services ensuring a spotless environment for your home and office.
               </p>
-              <div className="flex gap-4 flex-col sm:flex-row items-center">
-                <Link href="/services">
-                  <button className="px-8 py-4 bg-[#FFFF01] hover:bg-[#e6e600] text-black font-bold rounded-full transition-all flex items-center justify-center gap-2 text-lg">
+              <div className="flex flex-col sm:flex-row gap-3 lg:gap-4">
+                <Link href="/services" className="w-full sm:w-auto">
+                  <button className="w-full px-6 sm:px-8 py-3 sm:py-4 bg-[#FFFF01] hover:bg-[#e6e600] text-black font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg">
                     Get Instant Price
                   </button>
                 </Link>
-                <a href={`tel:${telPhone}`} className="px-8 py-4 bg-transparent text-white font-bold rounded-full border border-white/30 hover:bg-white/10 transition-all flex items-center gap-2 text-lg">
-                  <Phone className="w-5 h-5 fill-current" />
+                <a href={`tel:${telPhone}`} className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-transparent text-white font-bold rounded-full border border-white/30 hover:bg-white/10 transition-all flex items-center justify-center gap-2 text-base sm:text-lg">
+                  <Phone className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
                   {displayPhone}
                 </a>
               </div>
             </div>
-            <div className="relative flex h-full items-end justify-center lg:justify-end self-end mt-8 lg:mt-0">
+            <div className="relative flex h-full items-end justify-center lg:justify-end self-end">
               <img 
                 src={heroImage} 
                 alt="Cleaning Professionals" 
-                className="w-full max-w-[280px] sm:max-w-md lg:max-w-[600px] object-contain drop-shadow-2xl translate-y-0 scale-100 origin-bottom"
+                className="w-full max-w-[200px] sm:max-w-md lg:max-w-[600px] object-contain drop-shadow-2xl translate-y-0 scale-100 origin-bottom"
               />
             </div>
           </div>
