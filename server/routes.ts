@@ -103,14 +103,12 @@ export async function registerRoutes(
 
   app.put('/api/categories/reorder', requireAdmin, async (req, res) => {
     try {
-      const { order } = z.object({
-        order: z.array(z.object({
-          id: z.number(),
-          order: z.number()
-        }))
-      }).parse(req.body);
+      const orderData = z.array(z.object({
+        id: z.number(),
+        order: z.number()
+      })).parse(req.body.order);
 
-      for (const item of order) {
+      for (const item of orderData) {
         await storage.updateCategory(item.id, { order: item.order });
       }
 
