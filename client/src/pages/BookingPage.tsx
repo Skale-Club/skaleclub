@@ -200,12 +200,9 @@ export default function BookingPage() {
                       })()}
                     </div>
 
-                    <div className="mt-12 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                      <h4 className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Time zone</h4>
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
-                        <Clock className="w-4 h-4 text-primary" />
-                        <span>GMT-05:00 America/New_York (EST)</span>
-                      </div>
+                    <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-center gap-2 text-sm text-slate-400">
+                      <Clock className="w-4 h-4" />
+                      <span>Time zone: GMT-05:00 America/New_York (EST)</span>
                     </div>
                   </div>
 
