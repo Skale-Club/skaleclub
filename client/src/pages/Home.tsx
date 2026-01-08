@@ -25,8 +25,8 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative flex items-center lg:items-end pt-6 lg:pt-4 pb-0 overflow-hidden bg-[#1C53A3]">
         <div className="container-custom mx-auto relative z-10 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 items-center lg:items-end">
-            <div className="text-white pt-4 pb-6 lg:pt-20 lg:pb-24">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-12 items-center lg:items-end">
+            <div className="text-white pt-4 pb-2 lg:pt-20 lg:pb-24">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-xs sm:text-sm font-medium mb-3 lg:mb-6 border border-white/30">
                 <Shield className="w-3 h-3 sm:w-4 sm:h-4" />
                 Trusted Cleaning Experts!
