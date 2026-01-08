@@ -7,17 +7,20 @@ import {
   bookings,
   bookingItems,
   companySettings,
+  faqs,
   type Category,
   type Subcategory,
   type Service,
   type ServiceAddon,
   type Booking,
   type CompanySettings,
+  type Faq,
   type InsertCategory,
   type InsertService,
   type InsertServiceAddon,
   type InsertBooking,
   type InsertCompanySettings,
+  type InsertFaq,
 } from "@shared/schema";
 import { eq, and, gte, lte, inArray } from "drizzle-orm";
 import { z } from "zod";
@@ -65,6 +68,12 @@ export interface IStorage {
   // Company Settings
   getCompanySettings(): Promise<CompanySettings>;
   updateCompanySettings(settings: Partial<InsertCompanySettings>): Promise<CompanySettings>;
+  
+  // FAQs
+  getFaqs(): Promise<Faq[]>;
+  createFaq(faq: InsertFaq): Promise<Faq>;
+  updateFaq(id: number, faq: Partial<InsertFaq>): Promise<Faq>;
+  deleteFaq(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -230,6 +239,24 @@ export class DatabaseStorage implements IStorage {
     const existing = await this.getCompanySettings();
     const [updated] = await db.update(companySettings).set(settings).where(eq(companySettings.id, existing.id)).returning();
     return updated;
+  }
+
+  async getFaqs(): Promise<Faq[]> {
+    return await db.select().from(faqs).orderBy(faqs.order);
+  }
+
+  async createFaq(faq: InsertFaq): Promise<Faq> {
+    const [newFaq] = await db.insert(faqs).values(faq).returning();
+    return newFaq;
+  }
+
+  async updateFaq(id: number, faq: Partial<InsertFaq>): Promise<Faq> {
+    const [updated] = await db.update(faqs).set(faq).where(eq(faqs.id, id)).returning();
+    return updated;
+  }
+
+  async deleteFaq(id: number): Promise<void> {
+    await db.delete(faqs).where(eq(faqs.id, id));
   }
 }
 
