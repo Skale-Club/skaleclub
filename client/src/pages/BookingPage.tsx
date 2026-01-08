@@ -172,10 +172,10 @@ export default function BookingPage() {
 
             {/* STEP 2: SCHEDULE */}
             {step === 2 && (
-              <div ref={calendarRef} className="bg-[#0B1120] p-8 rounded-2xl shadow-sm border border-slate-800 animate-in fade-in slide-in-from-bottom-4 text-white">
+              <div ref={calendarRef} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-4 text-slate-900">
                 <div className="flex items-center gap-4 mb-8">
-                  <button onClick={() => setStep(1)} className="p-2 hover:bg-slate-800 rounded-full transition-colors">
-                    <ArrowLeft className="w-5 h-5 text-slate-400" />
+                  <button onClick={() => setStep(1)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                    <ArrowLeft className="w-5 h-5 text-slate-600" />
                   </button>
                   <h2 className="text-2xl font-bold">Select Date & Time</h2>
                 </div>
@@ -186,14 +186,14 @@ export default function BookingPage() {
                     <div className="flex items-center justify-between mb-8">
                       <button 
                         onClick={() => setViewDate(subMonths(viewDate, 1))}
-                        className="p-2 hover:bg-slate-800 rounded-full text-slate-400 transition-colors"
+                        className="p-2 hover:bg-slate-50 rounded-full text-slate-400 transition-colors border border-gray-100"
                       >
                         <ChevronLeft className="w-5 h-5" />
                       </button>
-                      <h3 className="text-lg font-semibold">{format(viewDate, "MMMM yyyy")}</h3>
+                      <h3 className="text-lg font-bold text-slate-900">{format(viewDate, "MMMM yyyy")}</h3>
                       <button 
                         onClick={() => setViewDate(addMonths(viewDate, 1))}
-                        className="p-2 hover:bg-slate-800 rounded-full text-slate-400 transition-colors"
+                        className="p-2 hover:bg-slate-50 rounded-full text-slate-400 transition-colors border border-gray-100"
                       >
                         <ChevronRight className="w-5 h-5" />
                       </button>
@@ -201,13 +201,13 @@ export default function BookingPage() {
 
                     <div className="grid grid-cols-7 mb-4">
                       {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => (
-                        <div key={day} className="text-center text-xs font-medium text-slate-500 py-2">
-                          {day}
+                        <div key={day} className="text-center text-xs font-bold text-slate-400 py-2 uppercase tracking-wider">
+                          {day.substring(0, 3)}
                         </div>
                       ))}
                     </div>
 
-                    <div className="grid grid-cols-7 gap-1">
+                    <div className="grid grid-cols-7 gap-2">
                       {(() => {
                         const monthStart = startOfMonth(viewDate);
                         const monthEnd = endOfMonth(monthStart);
@@ -234,17 +234,15 @@ export default function BookingPage() {
                                   setSelectedTime("");
                                 }}
                                 className={clsx(
-                                  "h-10 w-10 rounded-full flex items-center justify-center text-sm transition-all relative",
+                                  "h-10 w-10 rounded-xl flex items-center justify-center text-sm font-semibold transition-all relative",
                                   !isCurrentMonth && "opacity-0 cursor-default",
-                                  isCurrentMonth && isPast && "text-slate-700 cursor-not-allowed",
-                                  isCurrentMonth && !isPast && !isSelected && "text-slate-300 hover:bg-slate-800",
-                                  isSelected && "bg-primary text-white font-bold"
+                                  isCurrentMonth && isPast && "text-slate-200 cursor-not-allowed",
+                                  isCurrentMonth && !isPast && !isSelected && "text-slate-600 hover:bg-slate-50 hover:text-primary border border-transparent",
+                                  isSelected && "bg-primary text-white shadow-md shadow-primary/20",
+                                  isToday && !isSelected && "text-primary border-primary/30 bg-primary/5"
                                 )}
                               >
                                 {format(currentDay, "d")}
-                                {isToday && !isSelected && (
-                                  <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-white rounded-full"></div>
-                                )}
                               </button>
                             );
                             day = addDays(day, 1);
@@ -256,10 +254,10 @@ export default function BookingPage() {
                       })()}
                     </div>
 
-                    <div className="mt-12">
-                      <h4 className="text-sm font-medium text-slate-400 mb-4">Time zone</h4>
-                      <div className="flex items-center gap-2 text-sm text-slate-300">
-                        <Clock className="w-4 h-4 text-slate-500" />
+                    <div className="mt-12 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                      <h4 className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Time zone</h4>
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <Clock className="w-4 h-4 text-primary" />
                         <span>GMT-05:00 America/New_York (EST)</span>
                       </div>
                     </div>
@@ -271,7 +269,7 @@ export default function BookingPage() {
                       <div className="space-y-3">
                         {isLoadingSlots ? (
                           [1, 2, 3, 4, 5, 6].map(i => (
-                            <div key={i} className="h-14 bg-slate-900/50 border border-slate-800 rounded-lg animate-pulse"></div>
+                            <div key={i} className="h-14 bg-slate-50 border border-slate-100 rounded-xl animate-pulse"></div>
                           ))
                         ) : slots && slots.length > 0 ? (
                           slots.map((slot) => (
@@ -280,19 +278,19 @@ export default function BookingPage() {
                               disabled={!slot.available}
                               onClick={() => setSelectedTime(slot.time)}
                               className={clsx(
-                                "w-full py-4 px-6 rounded-lg font-medium transition-all border text-center",
-                                !slot.available && "opacity-20 cursor-not-allowed bg-transparent border-slate-800 text-slate-500",
+                                "w-full py-4 px-6 rounded-xl font-bold transition-all border text-center text-sm",
+                                !slot.available && "opacity-20 cursor-not-allowed bg-slate-50 border-slate-100 text-slate-400",
                                 slot.available && selectedTime === slot.time
-                                  ? "bg-primary/20 border-primary text-primary shadow-lg shadow-primary/10"
-                                  : slot.available && "bg-transparent border-slate-800 text-slate-300 hover:border-primary/50 hover:text-primary"
+                                  ? "bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-[1.02]"
+                                  : slot.available && "bg-white border-slate-200 text-slate-600 hover:border-primary hover:text-primary hover:bg-primary/5"
                               )}
                             >
                               {slot.time}
                             </button>
                           ))
                         ) : (
-                          <div className="text-center py-12 px-4 border border-dashed border-slate-800 rounded-xl">
-                            <p className="text-slate-500 text-sm">
+                          <div className="text-center py-12 px-4 border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50/50">
+                            <p className="text-slate-400 text-sm font-medium">
                               {selectedDate ? "No available slots for this duration." : "Select a date to view available times."}
                             </p>
                           </div>
