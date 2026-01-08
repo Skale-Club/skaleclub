@@ -102,6 +102,10 @@ export default function Admin() {
     setDraggedSectionId(null);
   };
 
+  const { data: companySettings } = useQuery<CompanySettingsData>({
+    queryKey: ['/api/company-settings']
+  });
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -123,10 +127,6 @@ export default function Admin() {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "3rem",
   };
-
-  const { data: companySettings } = useQuery<CompanySettingsData>({
-    queryKey: ['/api/company-settings']
-  });
 
   return (
     <SidebarProvider style={sidebarStyle as React.CSSProperties}>
