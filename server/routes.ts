@@ -3,10 +3,11 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { api, errorSchemas, buildUrl } from "@shared/routes";
 import { z } from "zod";
-import { WORKING_HOURS, insertCategorySchema, insertServiceSchema, insertCompanySettingsSchema, insertFaqSchema } from "@shared/schema";
+import { WORKING_HOURS, insertCategorySchema, insertServiceSchema, insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema } from "@shared/schema";
 import { insertSubcategorySchema } from "./storage";
 import { ObjectStorageService, registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { authStorage } from "./replit_integrations/auth/storage";
+import { testGHLConnection, getGHLFreeSlots, getOrCreateGHLContact, createGHLAppointment } from "./integrations/ghl";
 
 // Admin authentication middleware - uses Replit Auth + isAdmin check
 async function requireAdmin(req: Request, res: Response, next: NextFunction) {
@@ -376,6 +377,215 @@ export async function registerRoutes(
     }
 
     res.json(slots);
+  });
+
+  // ===============================
+  // GoHighLevel Integration Routes
+  // ===============================
+
+  // Get GHL settings
+  app.get('/api/integrations/ghl', requireAdmin, async (req, res) => {
+    try {
+      const settings = await storage.getIntegrationSettings('gohighlevel');
+      if (!settings) {
+        return res.json({ 
+          provider: 'gohighlevel',
+          apiKey: '',
+          locationId: '',
+          calendarId: '2irhr47AR6K0AQkFqEQl',
+          isEnabled: false
+        });
+      }
+      res.json({
+        ...settings,
+        apiKey: settings.apiKey ? '********' : ''
+      });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  // Save GHL settings
+  app.put('/api/integrations/ghl', requireAdmin, async (req, res) => {
+    try {
+      const { apiKey, locationId, calendarId, isEnabled } = req.body;
+      
+      const existingSettings = await storage.getIntegrationSettings('gohighlevel');
+      
+      const settingsToSave: any = {
+        provider: 'gohighlevel',
+        locationId,
+        calendarId: calendarId || '2irhr47AR6K0AQkFqEQl',
+        isEnabled: isEnabled ?? false
+      };
+      
+      if (apiKey && apiKey !== '********') {
+        settingsToSave.apiKey = apiKey;
+      } else if (existingSettings?.apiKey) {
+        settingsToSave.apiKey = existingSettings.apiKey;
+      }
+      
+      const settings = await storage.upsertIntegrationSettings(settingsToSave);
+      res.json({
+        ...settings,
+        apiKey: settings.apiKey ? '********' : ''
+      });
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  // Test GHL connection
+  app.post('/api/integrations/ghl/test', requireAdmin, async (req, res) => {
+    try {
+      const { apiKey, locationId } = req.body;
+      
+      let keyToTest = apiKey;
+      if (apiKey === '********' || !apiKey) {
+        const existingSettings = await storage.getIntegrationSettings('gohighlevel');
+        keyToTest = existingSettings?.apiKey;
+      }
+      
+      if (!keyToTest || !locationId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'API key and Location ID are required' 
+        });
+      }
+      
+      const result = await testGHLConnection(keyToTest, locationId);
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ 
+        success: false, 
+        message: (err as Error).message 
+      });
+    }
+  });
+
+  // Get GHL free slots (public - needed for booking flow)
+  app.get('/api/integrations/ghl/free-slots', async (req, res) => {
+    try {
+      const settings = await storage.getIntegrationSettings('gohighlevel');
+      
+      if (!settings?.isEnabled || !settings.apiKey || !settings.calendarId) {
+        return res.json({ enabled: false, slots: {} });
+      }
+      
+      const startDate = new Date(req.query.startDate as string);
+      const endDate = new Date(req.query.endDate as string);
+      const timezone = (req.query.timezone as string) || 'America/New_York';
+      
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return res.status(400).json({ message: 'Invalid date range' });
+      }
+      
+      const result = await getGHLFreeSlots(
+        settings.apiKey,
+        settings.calendarId,
+        startDate,
+        endDate,
+        timezone
+      );
+      
+      res.json({ 
+        enabled: true, 
+        ...result 
+      });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  // Check if GHL is enabled (public - for frontend to know whether to use GHL)
+  app.get('/api/integrations/ghl/status', async (req, res) => {
+    try {
+      const settings = await storage.getIntegrationSettings('gohighlevel');
+      res.json({ 
+        enabled: settings?.isEnabled || false,
+        hasCalendar: !!settings?.calendarId
+      });
+    } catch (err) {
+      res.json({ enabled: false, hasCalendar: false });
+    }
+  });
+
+  // Sync booking to GHL (called after local booking is created)
+  app.post('/api/integrations/ghl/sync-booking', async (req, res) => {
+    try {
+      const settings = await storage.getIntegrationSettings('gohighlevel');
+      
+      if (!settings?.isEnabled || !settings.apiKey || !settings.locationId || !settings.calendarId) {
+        return res.json({ synced: false, reason: 'GHL not enabled' });
+      }
+      
+      const { bookingId, customerName, customerEmail, customerPhone, customerAddress, bookingDate, startTime, endTime, serviceSummary } = req.body;
+      
+      const nameParts = customerName.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      const contactResult = await getOrCreateGHLContact(
+        settings.apiKey,
+        settings.locationId,
+        {
+          email: customerEmail,
+          firstName,
+          lastName,
+          phone: customerPhone,
+          address: customerAddress
+        }
+      );
+      
+      if (!contactResult.success || !contactResult.contactId) {
+        await storage.updateBookingGHLSync(bookingId, '', '', 'failed');
+        return res.json({ 
+          synced: false, 
+          reason: contactResult.message || 'Failed to create contact' 
+        });
+      }
+      
+      const startDateTime = new Date(`${bookingDate}T${startTime}:00`);
+      const endDateTime = new Date(`${bookingDate}T${endTime}:00`);
+      
+      const appointmentResult = await createGHLAppointment(
+        settings.apiKey,
+        settings.calendarId,
+        {
+          contactId: contactResult.contactId,
+          startTime: startDateTime.toISOString(),
+          endTime: endDateTime.toISOString(),
+          title: `Cleaning: ${serviceSummary}`,
+          address: customerAddress
+        }
+      );
+      
+      if (!appointmentResult.success || !appointmentResult.appointmentId) {
+        await storage.updateBookingGHLSync(bookingId, contactResult.contactId, '', 'failed');
+        return res.json({ 
+          synced: false, 
+          reason: appointmentResult.message || 'Failed to create appointment' 
+        });
+      }
+      
+      await storage.updateBookingGHLSync(
+        bookingId, 
+        contactResult.contactId, 
+        appointmentResult.appointmentId, 
+        'synced'
+      );
+      
+      res.json({ 
+        synced: true, 
+        contactId: contactResult.contactId,
+        appointmentId: appointmentResult.appointmentId
+      });
+    } catch (err) {
+      res.status(500).json({ 
+        synced: false, 
+        reason: (err as Error).message 
+      });
+    }
   });
 
   // FAQs (public GET, admin CRUD)
