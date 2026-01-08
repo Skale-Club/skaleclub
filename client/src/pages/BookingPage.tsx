@@ -275,6 +275,23 @@ export default function BookingPage() {
                     <label className="text-sm font-medium text-slate-700">Phone Number</label>
                     <input
                       {...form.register("customerPhone")}
+                      onChange={(e) => {
+                        let value = e.target.value.replace(/\D/g, "");
+                        if (value.length > 10) value = value.slice(0, 10);
+                        
+                        let maskedValue = "";
+                        if (value.length > 0) {
+                          maskedValue = "(" + value.slice(0, 3);
+                          if (value.length > 3) {
+                            maskedValue += ") " + value.slice(3, 6);
+                          }
+                          if (value.length > 6) {
+                            maskedValue += "-" + value.slice(6, 10);
+                          }
+                        }
+                        e.target.value = maskedValue;
+                        form.setValue("customerPhone", maskedValue, { shouldValidate: true });
+                      }}
                       className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                       placeholder="(555) 123-4567"
                     />
