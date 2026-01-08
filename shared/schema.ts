@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, numeric, timestamp, boolean, date } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, numeric, timestamp, boolean, date, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -119,6 +119,7 @@ export const companySettings = pgTable("company_settings", {
   logoDark: text("logo_dark").default(''),
   logoIcon: text("logo_icon").default(''),
   sectionsOrder: text("sections_order").array(),
+  socialLinks: jsonb("social_links").default([]),
 });
 
 export const insertCompanySettingsSchema = createInsertSchema(companySettings).omit({ id: true });

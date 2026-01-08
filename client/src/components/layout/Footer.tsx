@@ -1,6 +1,24 @@
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
+import { 
+  SiFacebook, 
+  SiInstagram, 
+  SiX, 
+  SiYoutube, 
+  SiLinkedin, 
+  SiTiktok 
+} from "react-icons/si";
+
+const platformIcons: Record<string, any> = {
+  facebook: SiFacebook,
+  instagram: SiInstagram,
+  twitter: SiX,
+  x: SiX,
+  youtube: SiYoutube,
+  linkedin: SiLinkedin,
+  tiktok: SiTiktok,
+};
 
 export function Footer() {
   const { data: companySettings } = useQuery<CompanySettings>({
@@ -32,10 +50,29 @@ export function Footer() {
               />
             )}
           </Link>
-          <p className="text-slate-400 max-w-sm">
+          <p className="text-slate-400 max-w-sm mb-6">
             Professional cleaning services. 
             We provide upfront pricing and easy online booking for your convenience.
           </p>
+          
+          {companySettings && (companySettings as any).socialLinks && Array.isArray((companySettings as any).socialLinks) && (companySettings as any).socialLinks.length > 0 && (
+            <div className="flex gap-4">
+              {((companySettings as any).socialLinks as {platform: string, url: string}[]).map((link, i) => {
+                const Icon = platformIcons[link.platform.toLowerCase()] || SiFacebook;
+                return (
+                  <a 
+                    key={i} 
+                    href={link.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-slate-400 hover:text-white transition-colors"
+                  >
+                    <Icon className="w-5 h-5" />
+                  </a>
+                );
+              })}
+            </div>
+          )}
         </div>
         
         <div>
