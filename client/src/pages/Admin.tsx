@@ -712,36 +712,6 @@ function CompanySettingsSection() {
 
             </div>
           </div>
-
-          <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg space-y-6 transition-all">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Clock className="w-5 h-5 text-primary" />
-              Working Hours
-            </h2>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="workingHoursStart">Opening Time</Label>
-                <Input 
-                  id="workingHoursStart" 
-                  type="time"
-                  value={settings.workingHoursStart || '08:00'} 
-                  onChange={(e) => updateField('workingHoursStart', e.target.value)}
-                  data-testid="input-hours-start"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="workingHoursEnd">Closing Time</Label>
-                <Input 
-                  id="workingHoursEnd" 
-                  type="time"
-                  value={settings.workingHoursEnd || '18:00'} 
-                  onChange={(e) => updateField('workingHoursEnd', e.target.value)}
-                  data-testid="input-hours-end"
-                />
-              </div>
-            </div>
-          </div>
         </div>
 
         <div className="space-y-6">
