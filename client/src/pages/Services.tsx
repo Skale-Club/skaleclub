@@ -4,6 +4,7 @@ import { CartSummary } from "@/components/CartSummary";
 import { useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { clsx } from "clsx";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Services() {
   const [location] = useLocation();
@@ -18,6 +19,17 @@ export default function Services() {
   const { data: categories } = useCategories();
   const { data: subcategories } = useSubcategories(selectedCategory);
   const { data: services, isLoading } = useServices(selectedCategory, selectedSubcategory);
+  const { data: allServices } = useQuery<any[]>({
+    queryKey: ['/api/services'],
+  });
+
+  const categoriesWithServices = categories?.filter(cat => 
+    allServices?.some(s => s.categoryId === cat.id)
+  );
+
+  const subcategoriesWithServices = subcategories?.filter(sub => 
+    allServices?.some(s => s.subcategoryId === sub.id)
+  );
 
   // Update state if URL changes (optional, but good for linking)
   useEffect(() => {
@@ -69,7 +81,7 @@ export default function Services() {
           >
             All Services
           </button>
-          {categories?.map((cat) => (
+          {categoriesWithServices?.map((cat) => (
             <button
               key={cat.id}
               onClick={() => {
@@ -91,7 +103,7 @@ export default function Services() {
         </div>
 
         {/* Subcategory Filter Pills - only show when a category is selected */}
-        {selectedCategory && subcategories && subcategories.length > 0 && (
+        {selectedCategory && subcategoriesWithServices && subcategoriesWithServices.length > 0 && (
           <div className="flex flex-wrap justify-center gap-2 mb-12">
             <button
               onClick={() => {
@@ -108,7 +120,7 @@ export default function Services() {
             >
               All
             </button>
-            {subcategories.map((sub) => (
+            {subcategoriesWithServices.map((sub) => (
               <button
                 key={sub.id}
                 onClick={() => {
@@ -130,7 +142,7 @@ export default function Services() {
         )}
 
         {!selectedCategory && <div className="mb-6" />}
-        {selectedCategory && (!subcategories || subcategories.length === 0) && <div className="mb-6" />}
+        {selectedCategory && (!subcategoriesWithServices || subcategoriesWithServices.length === 0) && <div className="mb-6" />}
 
         {/* Services Grid */}
         {isLoading ? (
