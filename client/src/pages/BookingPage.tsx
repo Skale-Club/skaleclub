@@ -331,8 +331,8 @@ export default function BookingPage() {
                 </div>
 
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2 md:col-span-2">
+                  <div className="grid grid-cols-10 gap-6">
+                    <div className="space-y-2 col-span-7">
                       <label className="text-sm font-medium text-slate-700">Street Address</label>
                       <input
                         {...form.register("customerStreet")}
@@ -342,8 +342,8 @@ export default function BookingPage() {
                       {form.formState.errors.customerStreet && <p className="text-red-500 text-xs">{form.formState.errors.customerStreet.message}</p>}
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-700">Unit / Apt (Optional)</label>
+                    <div className="space-y-2 col-span-3">
+                      <label className="text-sm font-medium text-slate-700">Unit / Apt</label>
                       <input
                         {...form.register("customerUnit")}
                         className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
@@ -351,7 +351,7 @@ export default function BookingPage() {
                       />
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-2 col-span-7">
                       <label className="text-sm font-medium text-slate-700">City</label>
                       <input
                         {...form.register("customerCity")}
@@ -361,7 +361,7 @@ export default function BookingPage() {
                       {form.formState.errors.customerCity && <p className="text-red-500 text-xs">{form.formState.errors.customerCity.message}</p>}
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-2 col-span-3">
                       <label className="text-sm font-medium text-slate-700">State</label>
                       <input
                         {...form.register("customerState")}
