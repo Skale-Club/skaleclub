@@ -710,75 +710,6 @@ function CompanySettingsSection() {
                 </p>
               </div>
 
-              <div className="space-y-4 col-span-full border-t pt-6 mt-2">
-                <Label className="text-base font-semibold">Social Media Links (Max 5)</Label>
-                <div className="space-y-3">
-                  {(settings.socialLinks || []).map((link, index) => (
-                    <div key={index} className="flex gap-2 items-start">
-                      <div className="flex-1 space-y-2">
-                        <Select
-                          value={link.platform}
-                          onValueChange={(value) => {
-                            const newLinks = [...(settings.socialLinks || [])];
-                            newLinks[index].platform = value;
-                            setSettings(prev => ({ ...prev, socialLinks: newLinks }));
-                            saveSettings({ socialLinks: newLinks });
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select Platform" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="facebook">Facebook</SelectItem>
-                            <SelectItem value="instagram">Instagram</SelectItem>
-                            <SelectItem value="twitter">X (Twitter)</SelectItem>
-                            <SelectItem value="youtube">YouTube</SelectItem>
-                            <SelectItem value="linkedin">LinkedIn</SelectItem>
-                            <SelectItem value="tiktok">TikTok</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Input
-                          value={link.url}
-                          onChange={(e) => {
-                            const newLinks = [...(settings.socialLinks || [])];
-                            newLinks[index].url = e.target.value;
-                            setSettings(prev => ({ ...prev, socialLinks: newLinks }));
-                          }}
-                          onBlur={() => saveSettings({ socialLinks: settings.socialLinks })}
-                          placeholder="https://social-media.com/yourprofile"
-                          className="flex-1"
-                        />
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="mt-1"
-                        onClick={() => {
-                          const newLinks = (settings.socialLinks || []).filter((_, i) => i !== index);
-                          setSettings(prev => ({ ...prev, socialLinks: newLinks }));
-                          saveSettings({ socialLinks: newLinks });
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
-                    </div>
-                  ))}
-                  
-                  {(settings.socialLinks || []).length < 5 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full border-dashed"
-                      onClick={() => {
-                        const newLinks = [...(settings.socialLinks || []), { platform: 'facebook', url: '' }];
-                        setSettings(prev => ({ ...prev, socialLinks: newLinks }));
-                      }}
-                    >
-                      <Plus className="w-4 h-4 mr-2" /> Add Social Link
-                    </Button>
-                  )}
-                </div>
-              </div>
             </div>
           </div>
 
@@ -877,6 +808,76 @@ function CompanySettingsSection() {
                       <Plus className="w-6 h-6 text-white" />
                     </label>
                   </div>
+                </div>
+              </div>
+
+              <div className="space-y-4 border-t pt-6 mt-2">
+                <Label className="text-base font-semibold">Social Media Links (Max 5)</Label>
+                <div className="space-y-3">
+                  {(settings.socialLinks || []).map((link, index) => (
+                    <div key={index} className="flex gap-2 items-start">
+                      <div className="flex-1 space-y-2">
+                        <Select
+                          value={link.platform}
+                          onValueChange={(value) => {
+                            const newLinks = [...(settings.socialLinks || [])];
+                            newLinks[index].platform = value;
+                            setSettings(prev => ({ ...prev, socialLinks: newLinks }));
+                            saveSettings({ socialLinks: newLinks });
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Platform" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="facebook">Facebook</SelectItem>
+                            <SelectItem value="instagram">Instagram</SelectItem>
+                            <SelectItem value="twitter">X (Twitter)</SelectItem>
+                            <SelectItem value="youtube">YouTube</SelectItem>
+                            <SelectItem value="linkedin">LinkedIn</SelectItem>
+                            <SelectItem value="tiktok">TikTok</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          value={link.url}
+                          onChange={(e) => {
+                            const newLinks = [...(settings.socialLinks || [])];
+                            newLinks[index].url = e.target.value;
+                            setSettings(prev => ({ ...prev, socialLinks: newLinks }));
+                          }}
+                          onBlur={() => saveSettings({ socialLinks: settings.socialLinks })}
+                          placeholder="https://social-media.com/yourprofile"
+                          className="flex-1"
+                        />
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="mt-1"
+                        onClick={() => {
+                          const newLinks = (settings.socialLinks || []).filter((_, i) => i !== index);
+                          setSettings(prev => ({ ...prev, socialLinks: newLinks }));
+                          saveSettings({ socialLinks: newLinks });
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                  
+                  {(settings.socialLinks || []).length < 5 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-dashed"
+                      onClick={() => {
+                        const newLinks = [...(settings.socialLinks || []), { platform: 'facebook', url: '' }];
+                        setSettings(prev => ({ ...prev, socialLinks: newLinks }));
+                      }}
+                    >
+                      <Plus className="w-4 h-4 mr-2" /> Add Social Link
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
