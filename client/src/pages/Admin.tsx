@@ -964,7 +964,7 @@ function CategoriesSection() {
     e.dataTransfer.dropEffect = 'move';
   };
 
-  const handleDrop = (e: React.DragEvent, targetId: number) => {
+  const handleDrop = async (e: React.DragEvent, targetId: number) => {
     e.preventDefault();
     if (draggedId === null || draggedId === targetId) return;
 
@@ -975,9 +975,29 @@ function CategoriesSection() {
     const [draggedItem] = newOrder.splice(draggedIndex, 1);
     newOrder.splice(targetIndex, 0, draggedItem);
 
+    // Update local state immediately for UI responsiveness
     setOrderedCategories(newOrder);
     setDraggedId(null);
-    toast({ title: 'Category order updated' });
+
+    // Persist to backend
+    try {
+      const reorderPayload = newOrder.map((cat, index) => ({
+        id: cat.id,
+        order: index
+      }));
+      
+      await apiRequest('PUT', '/api/categories/reorder', { order: reorderPayload });
+      queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
+      toast({ title: 'Category order updated' });
+    } catch (error: any) {
+      toast({ 
+        title: 'Failed to update order', 
+        description: error.message, 
+        variant: 'destructive' 
+      });
+      // Revert local state on failure
+      setOrderedCategories(categories || []);
+    }
   };
 
   const handleDragEnd = () => {

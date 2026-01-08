@@ -101,6 +101,28 @@ export async function registerRoutes(
     }
   });
 
+  app.put('/api/categories/reorder', requireAdmin, async (req, res) => {
+    try {
+      const { order } = z.object({
+        order: z.array(z.object({
+          id: z.number(),
+          order: z.number()
+        }))
+      }).parse(req.body);
+
+      for (const item of order) {
+        await storage.updateCategory(item.id, { order: item.order });
+      }
+
+      res.json({ success: true });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
   // Subcategories
   app.get('/api/subcategories', async (req, res) => {
     const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
