@@ -365,95 +365,204 @@ function CompanySettingsSection() {
   const [companyAddress, setCompanyAddress] = useState('');
   const [workingHoursStart, setWorkingHoursStart] = useState('08:00');
   const [workingHoursEnd, setWorkingHoursEnd] = useState('18:00');
+  const [logoMain, setLogoMain] = useState('');
+  const [logoDark, setLogoDark] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = () => {
-    toast({ title: 'Company settings saved', description: 'Your changes have been saved successfully.' });
+  const handleSave = async () => {
+    setIsSaving(true);
+    // Simulating API call
+    await new Promise(resolve => setTimeout(resolve, 800));
+    setIsSaving(false);
+    toast({ 
+      title: 'Company settings saved', 
+      description: 'Your changes have been saved successfully.',
+      variant: 'default'
+    });
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'main' | 'dark') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const res = await fetch('/api/upload', { method: 'POST' });
+      if (!res.ok) throw new Error('Failed to get upload URL');
+      const { uploadURL, objectPath } = await res.json();
+
+      await fetch(uploadURL, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type }
+      });
+
+      if (type === 'main') setLogoMain(objectPath);
+      else setLogoDark(objectPath);
+      
+      toast({ title: 'Logo uploaded successfully' });
+    } catch (error: any) {
+      toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+    }
   };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Company Settings</h1>
-        <p className="text-muted-foreground">Manage your business information</p>
-      </div>
-
-      <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg space-y-6 transition-all">
-        <h2 className="text-lg font-semibold">Business Information</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="companyName">Company Name</Label>
-            <Input 
-              id="companyName" 
-              value={companyName} 
-              onChange={(e) => setCompanyName(e.target.value)}
-              data-testid="input-company-name"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="companyEmail">Contact Email</Label>
-            <Input 
-              id="companyEmail" 
-              type="email"
-              value={companyEmail} 
-              onChange={(e) => setCompanyEmail(e.target.value)}
-              data-testid="input-company-email"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="companyPhone">Phone Number</Label>
-            <Input 
-              id="companyPhone" 
-              value={companyPhone} 
-              onChange={(e) => setCompanyPhone(e.target.value)}
-              placeholder="+1 (555) 000-0000"
-              data-testid="input-company-phone"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="companyAddress">Business Address</Label>
-            <Input 
-              id="companyAddress" 
-              value={companyAddress} 
-              onChange={(e) => setCompanyAddress(e.target.value)}
-              placeholder="123 Main St, City, State"
-              data-testid="input-company-address"
-            />
-          </div>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Company Settings</h1>
+          <p className="text-muted-foreground">Manage your business information and assets</p>
         </div>
-      </div>
-
-      <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg space-y-6 transition-all">
-        <h2 className="text-lg font-semibold">Working Hours</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="workingHoursStart">Opening Time</Label>
-            <Input 
-              id="workingHoursStart" 
-              type="time"
-              value={workingHoursStart} 
-              onChange={(e) => setWorkingHoursStart(e.target.value)}
-              data-testid="input-hours-start"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="workingHoursEnd">Closing Time</Label>
-            <Input 
-              id="workingHoursEnd" 
-              type="time"
-              value={workingHoursEnd} 
-              onChange={(e) => setWorkingHoursEnd(e.target.value)}
-              data-testid="input-hours-end"
-            />
-          </div>
-        </div>
-
-        <Button onClick={handleSave} data-testid="button-save-company">
-          Save Changes
+        <Button 
+          onClick={handleSave} 
+          disabled={isSaving}
+          className="min-w-[140px]"
+          data-testid="button-save-company-top"
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            'Save Changes'
+          )}
         </Button>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg space-y-6 transition-all">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-primary" />
+              Business Information
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="companyName">Company Name</Label>
+                <Input 
+                  id="companyName" 
+                  value={companyName} 
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  data-testid="input-company-name"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="companyEmail">Contact Email</Label>
+                <Input 
+                  id="companyEmail" 
+                  type="email"
+                  value={companyEmail} 
+                  onChange={(e) => setCompanyEmail(e.target.value)}
+                  data-testid="input-company-email"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="companyPhone">Phone Number</Label>
+                <Input 
+                  id="companyPhone" 
+                  value={companyPhone} 
+                  onChange={(e) => setCompanyPhone(e.target.value)}
+                  placeholder="+1 (555) 000-0000"
+                  data-testid="input-company-phone"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="companyAddress">Business Address</Label>
+                <Input 
+                  id="companyAddress" 
+                  value={companyAddress} 
+                  onChange={(e) => setCompanyAddress(e.target.value)}
+                  placeholder="123 Main St, City, State"
+                  data-testid="input-company-address"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg space-y-6 transition-all">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Clock className="w-5 h-5 text-primary" />
+              Working Hours
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="workingHoursStart">Opening Time</Label>
+                <Input 
+                  id="workingHoursStart" 
+                  type="time"
+                  value={workingHoursStart} 
+                  onChange={(e) => setWorkingHoursStart(e.target.value)}
+                  data-testid="input-hours-start"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="workingHoursEnd">Closing Time</Label>
+                <Input 
+                  id="workingHoursEnd" 
+                  type="time"
+                  value={workingHoursEnd} 
+                  onChange={(e) => setWorkingHoursEnd(e.target.value)}
+                  data-testid="input-hours-end"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg space-y-6 transition-all">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Image className="w-5 h-5 text-primary" />
+              Branding Assets
+            </h2>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm">Main Logo (Light Mode)</Label>
+                <div className="flex flex-col gap-3">
+                  <div className="h-32 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-white flex items-center justify-center overflow-hidden relative group">
+                    {logoMain ? (
+                      <img src={logoMain} alt="Main Logo" className="max-h-full max-w-full object-contain p-2" />
+                    ) : (
+                      <div className="text-center p-4">
+                        <Image className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                        <p className="text-xs text-gray-400">Main Logo</p>
+                      </div>
+                    )}
+                    <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                      <Input type="file" className="hidden" onChange={(e) => handleLogoUpload(e, 'main')} accept="image/*" />
+                      <Plus className="w-8 h-8 text-white" />
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm">Dark Logo (Optional)</Label>
+                <div className="flex flex-col gap-3">
+                  <div className="h-32 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-slate-900 flex items-center justify-center overflow-hidden relative group">
+                    {logoDark ? (
+                      <img src={logoDark} alt="Dark Logo" className="max-h-full max-w-full object-contain p-2" />
+                    ) : (
+                      <div className="text-center p-4">
+                        <Image className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+                        <p className="text-xs text-gray-600">Dark Logo</p>
+                      </div>
+                    )}
+                    <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                      <Input type="file" className="hidden" onChange={(e) => handleLogoUpload(e, 'dark')} accept="image/*" />
+                      <Plus className="w-8 h-8 text-white" />
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
