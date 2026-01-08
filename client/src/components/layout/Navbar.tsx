@@ -80,9 +80,9 @@ export function Navbar() {
                         </Link>
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem onClick={() => logout()} data-testid="button-logout" className="text-red-600 focus:text-red-600">
+                    <DropdownMenuItem onClick={() => logout()} data-testid="button-logout" className="text-[#1D1D1D] focus:text-[#1D1D1D] focus:bg-accent cursor-pointer">
                       <LogOut className="mr-2 h-4 w-4" />
-                      Sair
+                      Logout
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -94,7 +94,7 @@ export function Navbar() {
                   data-testid="button-login"
                 >
                   <User className="mr-2 h-4 w-4" />
-                  Entrar
+                  Login
                 </Button>
               )
             )}
@@ -158,7 +158,7 @@ export function Navbar() {
                   className="flex items-center gap-2 text-base font-medium text-slate-600 hover:text-primary"
                 >
                   <LogOut className="w-4 h-4" />
-                  Sair
+                  Logout
                 </button>
               </div>
             ) : (
@@ -168,7 +168,7 @@ export function Navbar() {
                 data-testid="button-mobile-login"
               >
                 <User className="w-5 h-5" />
-                Entrar
+                Login
               </button>
             )
           )}
