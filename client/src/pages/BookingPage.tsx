@@ -6,7 +6,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format, addDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek, isSameMonth, isSameDay, addMonths, subMonths } from "date-fns";
 import { Link, useLocation } from "wouter";
-import { Trash2, Calendar as CalendarIcon, Clock, ChevronRight, CheckCircle2, ArrowLeft, ChevronLeft } from "lucide-react";
+import { Trash2, Calendar as CalendarIcon, Clock, ChevronRight, CheckCircle2, ArrowLeft, ChevronLeft, Plus, Minus, X } from "lucide-react";
 import { clsx } from "clsx";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -24,7 +24,7 @@ type BookingFormValues = z.infer<typeof bookingFormSchema>;
 
 export default function BookingPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const { items, totalPrice, totalDuration, removeItem } = useCart();
+  const { items, totalPrice, totalDuration, removeItem, updateQuantity } = useCart();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   
@@ -422,9 +422,43 @@ export default function BookingPage() {
               
               <div className="space-y-4 mb-6">
                 {items.map((item) => (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <span className="text-slate-600 truncate pr-4">{item.name}</span>
-                    <span className="font-medium">${item.price}</span>
+                  <div key={item.id} className="flex flex-col gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="flex justify-between items-start gap-2">
+                      <span className="text-slate-700 font-medium text-sm leading-tight line-clamp-2 flex-1">{item.name}</span>
+                      <button 
+                        onClick={() => removeItem(item.id)}
+                        className="p-1 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-md transition-colors"
+                        aria-label="Remove item"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center bg-white rounded-lg p-0.5 gap-1 border border-slate-200 shadow-sm">
+                        <button
+                          onClick={() => {
+                            if (item.quantity > 1) {
+                              updateQuantity(item.id, item.quantity - 1);
+                            } else {
+                              removeItem(item.id);
+                            }
+                          }}
+                          className="p-1 hover:bg-slate-50 rounded transition-colors text-slate-600"
+                          aria-label="Decrease quantity"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <span className="text-xs font-bold w-5 text-center text-slate-900">{item.quantity}</span>
+                        <button
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          className="p-1 hover:bg-slate-50 rounded transition-colors text-slate-600"
+                          aria-label="Increase quantity"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+                      <span className="font-bold text-sm text-slate-900">${(item.price * item.quantity).toFixed(2)}</span>
+                    </div>
                   </div>
                 ))}
               </div>
