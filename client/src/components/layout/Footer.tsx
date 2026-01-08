@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import type { CompanySettings } from "@shared/schema";
+import type { CompanySettings, Category } from "@shared/schema";
 import { 
   SiFacebook, 
   SiInstagram, 
@@ -23,6 +23,10 @@ const platformIcons: Record<string, any> = {
 export function Footer() {
   const { data: companySettings } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
+  });
+
+  const { data: categories } = useQuery<Category[]>({
+    queryKey: ['/api/categories'],
   });
 
   return (
@@ -78,10 +82,22 @@ export function Footer() {
         <div>
           <h4 className="font-bold text-white mb-4">Services</h4>
           <ul className="space-y-2 text-sm text-slate-400">
-            <li><Link href="/services" className="hover:text-primary">Home Cleaning</Link></li>
-            <li><Link href="/services" className="hover:text-primary">Carpet Cleaning</Link></li>
-            <li><Link href="/services" className="hover:text-primary">Upholstery</Link></li>
-            <li><Link href="/services" className="hover:text-primary">Move-in/Move-out</Link></li>
+            {categories && categories.length > 0 ? (
+              categories.map((category) => (
+                <li key={category.id}>
+                  <Link href={`/services?category=${category.id}`} className="hover:text-primary transition-colors">
+                    {category.name}
+                  </Link>
+                </li>
+              ))
+            ) : (
+              <>
+                <li><Link href="/services" className="hover:text-primary">Home Cleaning</Link></li>
+                <li><Link href="/services" className="hover:text-primary">Carpet Cleaning</Link></li>
+                <li><Link href="/services" className="hover:text-primary">Upholstery</Link></li>
+                <li><Link href="/services" className="hover:text-primary">Move-in/Move-out</Link></li>
+              </>
+            )}
           </ul>
         </div>
         
