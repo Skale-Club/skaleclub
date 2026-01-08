@@ -126,16 +126,6 @@ export default function Admin() {
     }
   }, [companySettings?.sectionsOrder]);
 
-  const sidebarStyle = {
-    "--sidebar-width": "16rem",
-    "--sidebar-width-icon": "3rem",
-  };
-
-  const handleLogout = async () => {
-    await signOut();
-    setLocation('/admin/login');
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -147,6 +137,16 @@ export default function Admin() {
   if (!isAdmin) {
     return null;
   }
+
+  const handleLogout = async () => {
+    await signOut();
+    setLocation('/admin/login');
+  };
+
+  const sidebarStyle = {
+    "--sidebar-width": "16rem",
+    "--sidebar-width-icon": "3rem",
+  };
 
   return (
     <SidebarProvider style={sidebarStyle as React.CSSProperties}>
@@ -419,6 +419,7 @@ function CompanySettingsSection() {
     logoMain: '',
     logoDark: '',
     logoIcon: '',
+    sectionsOrder: null,
   });
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
