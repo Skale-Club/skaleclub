@@ -87,15 +87,13 @@ export function Navbar() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <button 
                   onClick={() => window.location.href = '/api/login'}
+                  className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors"
                   data-testid="button-login"
                 >
-                  <User className="mr-2 h-4 w-4" />
                   Login
-                </Button>
+                </button>
               )
             )}
           </div>
