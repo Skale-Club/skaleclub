@@ -212,23 +212,23 @@ export default function BookingPage() {
                           ))
                         ) : slots && slots.length > 0 ? (
                           <div className="grid grid-cols-1 gap-3 pb-20">
-                            {slots.map((slot) => (
-                              <div key={slot.time} className="px-1 py-1">
-                                <button
-                                  disabled={!slot.available}
-                                  onClick={() => setSelectedTime(slot.time)}
-                                  className={clsx(
-                                    "w-full py-4 px-6 rounded-xl font-bold transition-all border text-center text-sm",
-                                    !slot.available && "opacity-20 cursor-not-allowed bg-slate-50 border-slate-100 text-slate-400",
-                                    slot.available && selectedTime === slot.time
-                                      ? "bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-[1.01]"
-                                      : slot.available && "bg-white border-slate-200 text-slate-600 hover:border-primary hover:text-primary hover:bg-primary/5"
-                                  )}
-                                >
-                                  {slot.time}
-                                </button>
-                              </div>
-                            ))}
+                            {slots
+                              .filter((slot) => slot.available)
+                              .map((slot) => (
+                                <div key={slot.time} className="px-1 py-1">
+                                  <button
+                                    onClick={() => setSelectedTime(slot.time)}
+                                    className={clsx(
+                                      "w-full py-4 px-6 rounded-xl font-bold transition-all border text-center text-sm",
+                                      selectedTime === slot.time
+                                        ? "bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-[1.01]"
+                                        : "bg-white border-slate-200 text-slate-600 hover:border-primary hover:text-primary hover:bg-primary/5"
+                                    )}
+                                  >
+                                    {slot.time}
+                                  </button>
+                                </div>
+                              ))}
                           </div>
                         ) : (
                           <div className="text-center py-12 px-4 border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50/50">
