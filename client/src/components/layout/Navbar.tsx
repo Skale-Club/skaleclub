@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/hooks/use-auth";
-import { ShoppingBag, Menu, X, User, LogOut } from "lucide-react";
+import { ShoppingBag, Menu, X, User, LogOut, Phone } from "lucide-react";
 import { useState } from "react";
 import { clsx } from "clsx";
 import { Button } from "@/components/ui/button";
@@ -58,7 +58,8 @@ export function Navbar() {
             <span className="text-sm font-semibold text-[#1D1D1D]">FAQ</span>
             <span className="text-sm font-semibold text-[#1D1D1D]">Blog</span>
             
-            <a href={`tel:${telPhone}`} className="px-4 py-2 bg-secondary text-secondary-foreground font-bold rounded-full hover-elevate transition-all text-sm">
+            <a href={`tel:${telPhone}`} className="px-4 py-2 bg-secondary text-secondary-foreground font-bold rounded-full hover-elevate transition-all text-sm flex items-center gap-2">
+              <Phone className="w-4 h-4" />
               {displayPhone}
             </a>
 
