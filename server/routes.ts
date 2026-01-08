@@ -322,6 +322,74 @@ export async function registerRoutes(
         endTime
       });
 
+      // Try to sync with GoHighLevel (non-blocking)
+      try {
+        const ghlSettings = await storage.getIntegrationSettings('gohighlevel');
+        if (ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.locationId && ghlSettings.calendarId) {
+          // Build service summary
+          const serviceNames: string[] = [];
+          for (const serviceId of input.serviceIds) {
+            const service = await storage.getService(serviceId);
+            if (service) serviceNames.push(service.name);
+          }
+          const serviceSummary = serviceNames.join(', ');
+          
+          const nameParts = input.customerName.split(' ');
+          const firstName = nameParts[0] || '';
+          const lastName = nameParts.slice(1).join(' ') || '';
+          
+          // Create/find contact in GHL
+          const contactResult = await getOrCreateGHLContact(
+            ghlSettings.apiKey,
+            ghlSettings.locationId,
+            {
+              email: input.customerEmail,
+              firstName,
+              lastName,
+              phone: input.customerPhone,
+              address: input.customerAddress
+            }
+          );
+          
+          if (contactResult.success && contactResult.contactId) {
+            // Create appointment in GHL
+            const startDateTime = new Date(`${input.bookingDate}T${input.startTime}:00`);
+            const endDateTime = new Date(`${input.bookingDate}T${endTime}:00`);
+            
+            const appointmentResult = await createGHLAppointment(
+              ghlSettings.apiKey,
+              ghlSettings.calendarId,
+              {
+                contactId: contactResult.contactId,
+                startTime: startDateTime.toISOString(),
+                endTime: endDateTime.toISOString(),
+                title: `Cleaning: ${serviceSummary}`,
+                address: input.customerAddress
+              }
+            );
+            
+            // Update booking with GHL sync status
+            if (appointmentResult.success && appointmentResult.appointmentId) {
+              await storage.updateBookingGHLSync(
+                booking.id,
+                contactResult.contactId,
+                appointmentResult.appointmentId,
+                'synced'
+              );
+            } else {
+              await storage.updateBookingGHLSync(booking.id, contactResult.contactId, '', 'failed');
+              console.log('GHL appointment sync failed:', appointmentResult.message);
+            }
+          } else {
+            await storage.updateBookingGHLSync(booking.id, '', '', 'failed');
+            console.log('GHL contact sync failed:', contactResult.message);
+          }
+        }
+      } catch (ghlError) {
+        console.log('GHL sync error (non-blocking):', ghlError);
+        // Don't fail the booking if GHL sync fails
+      }
+
       res.status(201).json(booking);
     } catch (err) {
       if (err instanceof z.ZodError) {
