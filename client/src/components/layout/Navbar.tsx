@@ -12,12 +12,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useQuery } from "@tanstack/react-query";
+import type { CompanySettings } from "@shared/schema";
 
 export function Navbar() {
   const [location] = useLocation();
   const { items } = useCart();
   const { user, isLoading, isAuthenticated, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { data: companySettings } = useQuery<CompanySettings>({
+    queryKey: ['/api/company-settings'],
+  });
+
+  const displayPhone = companySettings?.phone || "(303) 309 4226";
+  const telPhone = displayPhone.replace(/\D/g, '');
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -50,8 +58,8 @@ export function Navbar() {
             <span className="text-sm font-semibold text-[#1D1D1D]">FAQ</span>
             <span className="text-sm font-semibold text-[#1D1D1D]">Blog</span>
             
-            <a href="tel:3033094226" className="px-4 py-2 bg-secondary text-secondary-foreground font-bold rounded-full hover-elevate transition-all text-sm">
-              (303) 309 4226
+            <a href={`tel:${telPhone}`} className="px-4 py-2 bg-secondary text-secondary-foreground font-bold rounded-full hover-elevate transition-all text-sm">
+              {displayPhone}
             </a>
 
             {/* User Login/Profile */}

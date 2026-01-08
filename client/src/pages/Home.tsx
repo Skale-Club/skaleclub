@@ -3,10 +3,18 @@ import { Link, useLocation } from "wouter";
 import { ArrowRight, Star, Shield, Clock, Phone } from "lucide-react";
 import { CartSummary } from "@/components/CartSummary";
 import heroImage from "@assets/Persona-Mobile_1767749022412.png";
+import { useQuery } from "@tanstack/react-query";
+import type { CompanySettings } from "@shared/schema";
 
 export default function Home() {
   const { data: categories, isLoading } = useCategories();
   const [, setLocation] = useLocation();
+  const { data: companySettings } = useQuery<CompanySettings>({
+    queryKey: ['/api/company-settings'],
+  });
+
+  const displayPhone = companySettings?.phone || "(303) 309 4226";
+  const telPhone = displayPhone.replace(/\D/g, '');
 
   const handleCategoryClick = (categoryId: number) => {
     setLocation(`/services?category=${categoryId}&scroll=true`);
@@ -38,9 +46,9 @@ export default function Home() {
                     Get Instant Price
                   </button>
                 </Link>
-                <a href="tel:3033094226" className="px-8 py-4 bg-transparent text-white font-bold rounded-full border border-white/30 hover:bg-white/10 transition-all flex items-center gap-2 text-lg">
+                <a href={`tel:${telPhone}`} className="px-8 py-4 bg-transparent text-white font-bold rounded-full border border-white/30 hover:bg-white/10 transition-all flex items-center gap-2 text-lg">
                   <Phone className="w-5 h-5" />
-                  (303) 309 4226
+                  {displayPhone}
                 </a>
               </div>
             </div>
