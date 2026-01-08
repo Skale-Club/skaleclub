@@ -2,6 +2,9 @@ import { pgTable, text, serial, integer, numeric, timestamp, boolean, date } fro
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Re-export auth models (required for Replit Auth)
+export * from "./models/auth";
+
 // === TABLE DEFINITIONS ===
 
 export const categories = pgTable("categories", {
