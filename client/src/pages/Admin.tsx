@@ -27,7 +27,25 @@ import {
   SidebarMenuItem,
   SidebarProvider
 } from '@/components/ui/sidebar';
-import { Loader2, Plus, Pencil, Trash2, LogOut, FolderOpen, Package, Calendar, Clock, DollarSign, User, MapPin, Image, LayoutDashboard, Building2, GripVertical } from 'lucide-react';
+import { 
+  Loader2, 
+  Plus, 
+  Pencil, 
+  Trash2, 
+  LogOut, 
+  FolderOpen, 
+  Package, 
+  Calendar, 
+  Clock, 
+  DollarSign, 
+  User, 
+  MapPin, 
+  Image, 
+  LayoutDashboard, 
+  Building2, 
+  GripVertical,
+  ArrowLeft
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
 import type { Category, Service, Booking, Subcategory } from '@shared/schema';
@@ -83,11 +101,17 @@ export default function Admin() {
       <div className="flex h-screen w-full bg-slate-50">
         <Sidebar className="border-r border-gray-200">
           <SidebarHeader className="p-4 border-b border-gray-100">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-lg">
-                A
+            <div className="flex flex-col gap-4">
+              <Link href="/" className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-primary transition-colors group">
+                <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" />
+                Back to website
+              </Link>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-lg">
+                  A
+                </div>
+                <span className="font-semibold text-lg text-primary">Admin Panel</span>
               </div>
-              <span className="font-semibold text-lg text-primary">Admin Panel</span>
             </div>
           </SidebarHeader>
           
