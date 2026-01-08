@@ -40,7 +40,7 @@ export default function Home() {
                 <img 
                   src="https://storage.googleapis.com/msgsndr/q6UKnlWOQwyTk82yZPAs/media/696016120597df5bbeeba997.png" 
                   alt="Trusted Experts" 
-                  className="h-4 sm:h-5 w-auto object-contain"
+                  className="h-5 sm:h-6 w-auto object-contain"
                 />
               </div>
               <h1 className="sm:text-5xl md:text-7xl font-bold mb-3 lg:mb-6 font-display text-[11vw] sm:text-[48px] leading-[1.05] sm:leading-[1.1]">
