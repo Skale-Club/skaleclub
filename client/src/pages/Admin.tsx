@@ -2297,10 +2297,10 @@ function IntegrationsSection() {
     }
   }, [ghlSettings]);
 
-  const saveSettings = async () => {
+  const saveSettings = async (settingsToSave?: GHLSettings) => {
     setIsSaving(true);
     try {
-      await apiRequest('PUT', '/api/integrations/ghl', settings);
+      await apiRequest('PUT', '/api/integrations/ghl', settingsToSave || settings);
       queryClient.invalidateQueries({ queryKey: ['/api/integrations/ghl'] });
       toast({ title: 'Settings saved successfully' });
     } catch (error: any) {
@@ -2312,6 +2312,12 @@ function IntegrationsSection() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleToggleEnabled = async (checked: boolean) => {
+    const newSettings = { ...settings, isEnabled: checked };
+    setSettings(newSettings);
+    await saveSettings(newSettings);
   };
 
   const testConnection = async () => {
@@ -2372,13 +2378,15 @@ function IntegrationsSection() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {isSaving && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
               <Label htmlFor="ghl-enabled" className="text-sm">
                 {settings.isEnabled ? 'Enabled' : 'Disabled'}
               </Label>
               <Switch
                 id="ghl-enabled"
                 checked={settings.isEnabled}
-                onCheckedChange={(checked) => setSettings(prev => ({ ...prev, isEnabled: checked }))}
+                onCheckedChange={handleToggleEnabled}
+                disabled={isSaving}
                 data-testid="switch-ghl-enabled"
               />
             </div>
@@ -2441,7 +2449,7 @@ function IntegrationsSection() {
               Test Connection
             </Button>
             <Button
-              onClick={saveSettings}
+              onClick={() => saveSettings()}
               disabled={isSaving}
               data-testid="button-save-ghl"
             >
