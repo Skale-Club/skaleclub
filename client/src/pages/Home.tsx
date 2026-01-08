@@ -89,7 +89,7 @@ export default function Home() {
       </section>
       {/* Trust Badges */}
       <section className="relative z-20 -mt-10">
-        <div className="absolute inset-x-0 bottom-0 top-1/2 bg-[#F8FAFC] -z-10"></div>
+        <div className="absolute inset-x-0 bottom-0 top-1/2 bg-[#F8FAFC] -z-10 pt-[0px] pb-[0px] mt-[-25px] mb-[-25px]"></div>
         <div className="container-custom mx-auto">
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-100 overflow-hidden">
             {[
@@ -155,7 +155,6 @@ export default function Home() {
           )}
         </div>
       </section>
-
       {/* Reviews Section */}
       <section className="pt-20 pb-0 bg-white overflow-hidden mb-0">
         <div className="w-full">
