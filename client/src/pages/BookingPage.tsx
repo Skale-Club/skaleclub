@@ -229,11 +229,12 @@ export default function BookingPage() {
                   </div>
 
                   {/* Slots Column */}
-                  <div>
-                    <ScrollArea className="h-[400px] pr-4">
-                      <div className="space-y-3">
+                  <div className="relative">
+                    <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-white to-transparent z-10 pointer-events-none rounded-b-2xl" />
+                    <ScrollArea className="h-[340px] pr-4">
+                      <div className="space-y-3 pb-8">
                         {isLoadingSlots ? (
-                          [1, 2, 3, 4, 5, 6].map(i => (
+                          [1, 2, 3, 4, 5].map(i => (
                             <div key={i} className="h-14 bg-slate-50 border border-slate-100 rounded-xl animate-pulse"></div>
                           ))
                         ) : slots && slots.length > 0 ? (
