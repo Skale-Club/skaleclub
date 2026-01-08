@@ -39,7 +39,7 @@ export function Footer() {
   );
 
   return (
-    <footer className="bg-slate-900 text-slate-200 py-6">
+    <footer className="bg-slate-900 text-slate-200 py-6 pt-[40px] pb-[40px]">
       <div className="container-custom mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
         <div className="col-span-1 md:col-span-2">
           <Link href="/" className="flex items-center gap-2 mb-4">
