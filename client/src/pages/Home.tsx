@@ -13,7 +13,7 @@ export default function Home() {
     queryKey: ['/api/company-settings'],
   });
 
-  const displayPhone = companySettings?.phone || "(303) 309 4226";
+  const displayPhone = companySettings?.companyPhone || "(303) 309 4226";
   const telPhone = displayPhone.replace(/\D/g, '');
 
   const handleCategoryClick = (categoryId: number) => {
