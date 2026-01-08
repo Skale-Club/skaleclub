@@ -45,22 +45,28 @@ import {
   Building2, 
   GripVertical,
   ArrowLeft,
-  Check
+  Check,
+  ListFilter,
+  Users,
+  Puzzle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
 import type { Category, Service, Booking, Subcategory } from '@shared/schema';
 
-type AdminSection = 'dashboard' | 'categories' | 'subcategories' | 'services' | 'bookings' | 'hero' | 'company';
+type AdminSection = 'dashboard' | 'categories' | 'subcategories' | 'services' | 'bookings' | 'hero' | 'company' | 'users' | 'availability' | 'integrations';
 
 const menuItems = [
   { id: 'dashboard' as AdminSection, title: 'Dashboard', icon: LayoutDashboard },
   { id: 'categories' as AdminSection, title: 'Categories', icon: FolderOpen },
-  { id: 'subcategories' as AdminSection, title: 'Subcategories', icon: FolderOpen },
+  { id: 'subcategories' as AdminSection, title: 'Subcategories', icon: ListFilter },
   { id: 'services' as AdminSection, title: 'Services', icon: Package },
   { id: 'bookings' as AdminSection, title: 'Bookings', icon: Calendar },
-  { id: 'hero' as AdminSection, title: 'Hero Settings', icon: Image },
-  { id: 'company' as AdminSection, title: 'Company Settings', icon: Building2 },
+  { id: 'hero' as AdminSection, title: 'Hero Section', icon: Image },
+  { id: 'company' as AdminSection, title: 'Company Infos', icon: Building2 },
+  { id: 'users' as AdminSection, title: 'Users', icon: Users },
+  { id: 'availability' as AdminSection, title: 'Availability', icon: Clock },
+  { id: 'integrations' as AdminSection, title: 'Integrations', icon: Puzzle },
 ];
 
 export default function Admin() {
@@ -244,6 +250,24 @@ export default function Admin() {
           {activeSection === 'bookings' && <BookingsSection />}
           {activeSection === 'hero' && <HeroSettingsSection />}
           {activeSection === 'company' && <CompanySettingsSection />}
+          {activeSection === 'users' && (
+            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground bg-slate-100 dark:bg-slate-800 rounded-lg border-2 border-dashed">
+              <Users className="w-12 h-12 mb-4 opacity-20" />
+              <p>User management coming soon</p>
+            </div>
+          )}
+          {activeSection === 'availability' && (
+            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground bg-slate-100 dark:bg-slate-800 rounded-lg border-2 border-dashed">
+              <Clock className="w-12 h-12 mb-4 opacity-20" />
+              <p>Availability management coming soon</p>
+            </div>
+          )}
+          {activeSection === 'integrations' && (
+            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground bg-slate-100 dark:bg-slate-800 rounded-lg border-2 border-dashed">
+              <Puzzle className="w-12 h-12 mb-4 opacity-20" />
+              <p>Integrations coming soon</p>
+            </div>
+          )}
         </main>
       </div>
     </SidebarProvider>
