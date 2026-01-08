@@ -121,27 +121,6 @@ export default function BookingPage() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             
-            {/* Steps Indicator */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center gap-12 mb-8">
-              {[
-                { id: 2, label: "Schedule" },
-                { id: 3, label: "Checkout" },
-              ].map((s) => (
-                <div key={s.id} className="flex items-center gap-3">
-                  <div className={clsx(
-                    "w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-all",
-                    step >= s.id ? "bg-primary text-white scale-110 shadow-lg shadow-primary/20" : "bg-gray-100 text-slate-400"
-                  )}>
-                    {step > s.id ? <CheckCircle2 className="w-5 h-5" /> : (s.id === 2 ? 1 : 2)}
-                  </div>
-                  <span className={clsx(
-                    "font-bold hidden sm:block",
-                    step >= s.id ? "text-slate-900" : "text-slate-400"
-                  )}>{s.label}</span>
-                </div>
-              ))}
-            </div>
-
             {/* STEP 2: SCHEDULE */}
             {step === 2 && (
               <div ref={calendarRef} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-4 text-slate-900">
