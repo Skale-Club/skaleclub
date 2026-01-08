@@ -130,7 +130,10 @@ export default function Admin() {
 
   useEffect(() => {
     if (companySettings?.sectionsOrder && companySettings.sectionsOrder.length > 0) {
-      setSectionsOrder(companySettings.sectionsOrder as AdminSection[]);
+      const savedOrder = companySettings.sectionsOrder as AdminSection[];
+      const allSectionIds = menuItems.map(item => item.id);
+      const missingSections = allSectionIds.filter(id => !savedOrder.includes(id));
+      setSectionsOrder([...savedOrder, ...missingSections]);
     }
   }, [companySettings?.sectionsOrder]);
 
