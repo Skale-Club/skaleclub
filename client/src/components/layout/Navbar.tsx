@@ -62,7 +62,7 @@ export function Navbar() {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8">
-            <Link href="/services" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors">Services</Link>
+            <a href="/services" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer">Services</a>
             <a href="/#areas-served" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer">Areas Served</a>
             <span className="text-sm font-semibold text-[#1D1D1D]">FAQ</span>
             <span className="text-sm font-semibold text-[#1D1D1D]">Blog</span>
@@ -129,7 +129,7 @@ export function Navbar() {
       {isMenuOpen && (
         <div className="md:hidden bg-white border-b border-gray-100 py-4 px-4 space-y-4">
           {navLinks.map((link) => {
-            if (link.href.startsWith("/#")) {
+            if (link.href.startsWith("/#") || link.href === "/services") {
               return (
                 <a
                   key={link.href}
