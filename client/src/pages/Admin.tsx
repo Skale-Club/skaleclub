@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { useAdminAuth } from '@/context/AuthContext';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
@@ -46,7 +46,7 @@ const menuItems = [
 
 export default function Admin() {
   const { toast } = useToast();
-  const { isAdmin, email, loading, signOut } = useAuth();
+  const { isAdmin, email, firstName, lastName, loading, signOut } = useAdminAuth();
   const [, setLocation] = useLocation();
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
 

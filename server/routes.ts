@@ -5,27 +5,27 @@ import { api, errorSchemas, buildUrl } from "@shared/routes";
 import { z } from "zod";
 import { WORKING_HOURS, insertCategorySchema, insertServiceSchema } from "@shared/schema";
 import { insertSubcategorySchema } from "./storage";
-import bcrypt from "bcrypt";
 import { ObjectStorageService, registerObjectStorageRoutes } from "./replit_integrations/object_storage";
+import { isAuthenticated } from "./replit_integrations/auth";
+import { authStorage } from "./replit_integrations/auth/storage";
 
-// Admin credentials from environment variables
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
-const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || '';
-
-// Extend session type to include admin flag
-declare module 'express-session' {
-  interface SessionData {
-    isAdmin: boolean;
-    adminEmail: string;
-  }
-}
-
-// Admin authentication middleware - session based
-function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  if (!req.session?.isAdmin) {
+// Admin authentication middleware - uses Replit Auth + isAdmin check
+async function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  const user = (req as any).user;
+  
+  if (!req.isAuthenticated || !req.isAuthenticated() || !user?.claims?.sub) {
     return res.status(401).json({ message: 'Authentication required' });
   }
-  next();
+  
+  try {
+    const dbUser = await authStorage.getUser(user.claims.sub);
+    if (!dbUser?.isAdmin) {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+    next();
+  } catch (error) {
+    return res.status(500).json({ message: 'Failed to verify admin status' });
+  }
 }
 
 export async function registerRoutes(
@@ -33,58 +33,23 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
 
-  // Admin Login schema
-  const loginSchema = z.object({
-    email: z.string().email(),
-    password: z.string().min(1)
-  });
-
-  // Admin Login
-  app.post('/api/admin/login', async (req, res) => {
-    // Validate request body
-    const parsed = loginSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ message: 'Invalid email or password format' });
-    }
-
-    const { email, password } = parsed.data;
-
-    if (!ADMIN_EMAIL || !ADMIN_PASSWORD_HASH) {
-      return res.status(500).json({ message: 'Admin credentials not configured' });
-    }
-
-    if (email !== ADMIN_EMAIL) {
-      return res.status(401).json({ message: 'Invalid email or password' });
-    }
-
-    // Compare password using bcrypt
-    const passwordMatch = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
-    if (!passwordMatch) {
-      return res.status(401).json({ message: 'Invalid email or password' });
-    }
-
-    // Set session
-    req.session.isAdmin = true;
-    req.session.adminEmail = email;
+  // Check admin session status - uses Replit Auth
+  app.get('/api/admin/session', async (req, res) => {
+    const user = (req as any).user;
     
-    res.json({ success: true, email });
-  });
-
-  // Admin Logout
-  app.post('/api/admin/logout', (req, res) => {
-    req.session.destroy((err) => {
-      if (err) {
-        return res.status(500).json({ message: 'Failed to logout' });
-      }
-      res.json({ success: true });
-    });
-  });
-
-  // Check admin session status
-  app.get('/api/admin/session', (req, res) => {
-    if (req.session?.isAdmin) {
-      res.json({ isAdmin: true, email: req.session.adminEmail });
-    } else {
+    if (!req.isAuthenticated || !req.isAuthenticated() || !user?.claims?.sub) {
+      return res.json({ isAdmin: false });
+    }
+    
+    try {
+      const dbUser = await authStorage.getUser(user.claims.sub);
+      res.json({ 
+        isAdmin: dbUser?.isAdmin || false, 
+        email: dbUser?.email || null,
+        firstName: dbUser?.firstName || null,
+        lastName: dbUser?.lastName || null
+      });
+    } catch (error) {
       res.json({ isAdmin: false });
     }
   });
