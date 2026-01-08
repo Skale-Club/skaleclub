@@ -87,6 +87,20 @@ export default function Admin() {
     e.dataTransfer.dropEffect = 'move';
   };
 
+  const updateSectionOrder = useCallback(async (newOrder: AdminSection[]) => {
+    setSectionsOrder(newOrder);
+    try {
+      await apiRequest('PUT', '/api/company-settings', { sectionsOrder: newOrder });
+      queryClient.invalidateQueries({ queryKey: ['/api/company-settings'] });
+    } catch (error: any) {
+      toast({ 
+        title: 'Error saving section order', 
+        description: error.message,
+        variant: 'destructive'
+      });
+    }
+  }, [toast]);
+
   const handleSectionDrop = (e: React.DragEvent, targetId: AdminSection) => {
     e.preventDefault();
     if (draggedSectionId === null || draggedSectionId === targetId) return;
@@ -98,13 +112,29 @@ export default function Admin() {
     newOrder.splice(draggedIndex, 1);
     newOrder.splice(targetIndex, 0, draggedSectionId);
 
-    setSectionsOrder(newOrder);
+    updateSectionOrder(newOrder);
     setDraggedSectionId(null);
   };
 
   const { data: companySettings } = useQuery<CompanySettingsData>({
     queryKey: ['/api/company-settings']
   });
+
+  useEffect(() => {
+    if (companySettings?.sectionsOrder && companySettings.sectionsOrder.length > 0) {
+      setSectionsOrder(companySettings.sectionsOrder as AdminSection[]);
+    }
+  }, [companySettings?.sectionsOrder]);
+
+  const sidebarStyle = {
+    "--sidebar-width": "16rem",
+    "--sidebar-width-icon": "3rem",
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    setLocation('/admin/login');
+  };
 
   if (loading) {
     return (
@@ -117,16 +147,6 @@ export default function Admin() {
   if (!isAdmin) {
     return null;
   }
-
-  const handleLogout = async () => {
-    await signOut();
-    setLocation('/admin/login');
-  };
-
-  const sidebarStyle = {
-    "--sidebar-width": "16rem",
-    "--sidebar-width-icon": "3rem",
-  };
 
   return (
     <SidebarProvider style={sidebarStyle as React.CSSProperties}>
@@ -384,6 +404,7 @@ interface CompanySettingsData {
   logoMain: string | null;
   logoDark: string | null;
   logoIcon: string | null;
+  sectionsOrder: AdminSection[] | null;
 }
 
 function CompanySettingsSection() {

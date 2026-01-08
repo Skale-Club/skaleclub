@@ -118,6 +118,7 @@ export const companySettings = pgTable("company_settings", {
   logoMain: text("logo_main").default(''),
   logoDark: text("logo_dark").default(''),
   logoIcon: text("logo_icon").default(''),
+  sectionsOrder: text("sections_order").array(),
 });
 
 export const insertCompanySettingsSchema = createInsertSchema(companySettings).omit({ id: true });
