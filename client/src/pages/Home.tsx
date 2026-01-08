@@ -44,18 +44,24 @@ export default function Home() {
                 />
               </div>
               <h1 className="sm:text-5xl md:text-7xl font-bold mb-3 lg:mb-6 font-display text-[11vw] sm:text-[48px] leading-[1.05] sm:leading-[1.1]">
-                <span className="text-white">Your 5-star</span> <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">
-                  cleaning company
-                </span>
+                {companySettings?.heroTitle ? (
+                  <span className="text-white">{companySettings.heroTitle}</span>
+                ) : (
+                  <>
+                    <span className="text-white">Your 5-star</span> <br />
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">
+                      cleaning company
+                    </span>
+                  </>
+                )}
               </h1>
               <p className="text-base sm:text-xl text-blue-50/80 mb-4 lg:mb-8 leading-relaxed max-w-xl">
-                We provide top-quality cleaning services ensuring a spotless environment for your home and office.
+                {companySettings?.heroSubtitle || "We provide top-quality cleaning services ensuring a spotless environment for your home and office."}
               </p>
               <div className="flex flex-col sm:flex-row gap-3 lg:gap-4">
                 <Link href="/services" className="w-full sm:w-auto">
                   <button className="w-full px-6 sm:px-8 py-3 sm:py-4 bg-[#FFFF01] hover:bg-[#e6e600] text-black font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg">
-                    Get Instant Price
+                    {companySettings?.ctaText || "Get Instant Price"}
                   </button>
                 </Link>
                 <a href={`tel:${telPhone}`} className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-transparent text-white font-bold rounded-full border border-white/30 hover:bg-white/10 transition-all flex items-center justify-center gap-2 text-base sm:text-lg">
@@ -66,7 +72,7 @@ export default function Home() {
             </div>
             <div className="relative flex h-full items-end justify-center lg:justify-end self-end w-full lg:min-h-[500px]">
               <img 
-                src={heroImage} 
+                src={companySettings?.heroImageUrl || heroImage} 
                 alt="Cleaning Professionals" 
                 className="w-[85%] sm:w-full max-w-[320px] sm:max-w-md lg:max-w-[550px] xl:max-w-[650px] object-contain drop-shadow-2xl translate-y-0 scale-100 origin-bottom"
               />

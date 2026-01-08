@@ -351,20 +351,89 @@ function DashboardSection() {
 
 function HeroSettingsSection() {
   const { toast } = useToast();
-  const [heroTitle, setHeroTitle] = useState('Professional Cleaning Services');
-  const [heroSubtitle, setHeroSubtitle] = useState('Book your cleaning service today and enjoy a sparkling clean home');
-  const [heroImageUrl, setHeroImageUrl] = useState('');
-  const [ctaText, setCtaText] = useState('Book Now');
+  const { data: settings, isLoading } = useQuery<CompanySettingsData>({
+    queryKey: ['/api/company-settings']
+  });
 
-  const handleSave = () => {
-    toast({ title: 'Hero settings saved', description: 'Your changes have been saved successfully.' });
+  const [heroTitle, setHeroTitle] = useState('');
+  const [heroSubtitle, setHeroSubtitle] = useState('');
+  const [heroImageUrl, setHeroImageUrl] = useState('');
+  const [ctaText, setCtaText] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (settings) {
+      setHeroTitle((settings as any).heroTitle || '');
+      setHeroSubtitle((settings as any).heroSubtitle || '');
+      setHeroImageUrl((settings as any).heroImageUrl || '');
+      setCtaText((settings as any).ctaText || '');
+    }
+  }, [settings]);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await apiRequest('PUT', '/api/company-settings', {
+        heroTitle,
+        heroSubtitle,
+        heroImageUrl,
+        ctaText
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/company-settings'] });
+      toast({ title: 'Hero settings saved', description: 'Your changes have been saved successfully.' });
+    } catch (error: any) {
+      toast({ 
+        title: 'Error saving settings', 
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const uploadRes = await apiRequest('POST', '/api/upload');
+      const { uploadURL, objectPath } = await uploadRes.json() as { uploadURL: string; objectPath: string };
+
+      await fetch(uploadURL, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type }
+      });
+
+      setHeroImageUrl(objectPath);
+      toast({ title: 'Hero image uploaded' });
+    } catch (error: any) {
+      toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Hero Settings</h1>
-        <p className="text-muted-foreground">Customize your landing page hero section</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Hero Settings</h1>
+          <p className="text-muted-foreground">Customize your landing page hero section</p>
+        </div>
+        {isSaving && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Saving...</span>
+          </div>
+        )}
       </div>
 
       <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg space-y-6 transition-all">
@@ -391,17 +460,31 @@ function HeroSettingsSection() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="heroImage">Hero Background Image URL</Label>
-          <Input 
-            id="heroImage" 
-            value={heroImageUrl} 
-            onChange={(e) => setHeroImageUrl(e.target.value)}
-            placeholder="https://..."
-            data-testid="input-hero-image"
-          />
-          {heroImageUrl && (
-            <img src={heroImageUrl} alt="Hero preview" className="w-full h-48 object-cover rounded-lg mt-2" />
-          )}
+          <Label htmlFor="heroImage">Hero Background Image</Label>
+          <div className="flex flex-col gap-3">
+            <div className="h-48 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-white flex items-center justify-center overflow-hidden relative group">
+              {heroImageUrl ? (
+                <img src={heroImageUrl} alt="Hero preview" className="w-full h-full object-cover" />
+              ) : (
+                <div className="text-center p-4">
+                  <Image className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-xs text-gray-400">Background Image</p>
+                </div>
+              )}
+              <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                <input type="file" className="hidden" onChange={handleImageUpload} accept="image/*" />
+                <Plus className="w-8 h-8 text-white" />
+              </label>
+            </div>
+            <div className="flex gap-2">
+              <Input 
+                value={heroImageUrl} 
+                onChange={(e) => setHeroImageUrl(e.target.value)}
+                placeholder="Or enter image URL (https://...)"
+                data-testid="input-hero-image"
+              />
+            </div>
+          </div>
         </div>
 
         <div className="space-y-2">
@@ -415,8 +498,8 @@ function HeroSettingsSection() {
           />
         </div>
 
-        <Button onClick={handleSave} data-testid="button-save-hero">
-          Save Changes
+        <Button onClick={handleSave} disabled={isSaving} data-testid="button-save-hero">
+          {isSaving ? "Saving..." : "Save Changes"}
         </Button>
       </div>
     </div>

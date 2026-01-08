@@ -121,6 +121,10 @@ export const companySettings = pgTable("company_settings", {
   sectionsOrder: text("sections_order").array(),
   socialLinks: jsonb("social_links").default([]),
   mapEmbedUrl: text("map_embed_url").default('https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d259505.12434421625!2d-71.37915684523166!3d42.296281796774615!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sus!4v1767905922570!5m2!1sen!2sus'),
+  heroTitle: text("hero_title").default('Professional Cleaning Services'),
+  heroSubtitle: text("hero_subtitle").default('Book your cleaning service today and enjoy a sparkling clean home'),
+  heroImageUrl: text("hero_image_url").default(''),
+  ctaText: text("cta_text").default('Book Now'),
 });
 
 export const insertCompanySettingsSchema = createInsertSchema(companySettings).omit({ id: true });
