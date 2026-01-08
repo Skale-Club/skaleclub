@@ -85,7 +85,6 @@ export default function BookingPage() {
       endTime: endTime,
       totalDurationMinutes: totalDuration,
       totalPrice: String(totalPrice),
-      status: "confirmed" // Explicitly setting, though usually backend handles defaults
     }, {
       onSuccess: () => {
         setLocation("/confirmation");
@@ -457,7 +456,7 @@ export default function BookingPage() {
                           <Plus className="w-3 h-3" />
                         </button>
                       </div>
-                      <span className="font-bold text-sm text-slate-900">${(item.price * item.quantity).toFixed(2)}</span>
+                      <span className="font-bold text-sm text-slate-900">${(Number(item.price) * item.quantity).toFixed(2)}</span>
                     </div>
                   </div>
                 ))}
