@@ -2,6 +2,7 @@ import { useCategories, useServices } from "@/hooks/use-booking";
 import { Link, useLocation } from "wouter";
 import { ArrowRight, Star, Shield, Clock, Phone } from "lucide-react";
 import { CartSummary } from "@/components/CartSummary";
+import { AreasServedMap } from "@/components/AreasServedMap";
 import heroImage from "@assets/Persona-Mobile_1767749022412.png";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
@@ -180,6 +181,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+      <AreasServedMap />
       <CartSummary />
     </div>
   );
