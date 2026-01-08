@@ -145,10 +145,6 @@ export default function BookingPage() {
             {/* STEP 2: SCHEDULE */}
             {step === 2 && (
               <div ref={calendarRef} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-4 text-slate-900">
-                <div className="flex items-center gap-4 mb-8">
-                  <h2 className="text-2xl font-bold">Select Date & Time</h2>
-                </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                   {/* Calendar Column */}
                   <div>
