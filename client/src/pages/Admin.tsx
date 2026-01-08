@@ -1047,7 +1047,7 @@ function CategoriesSection() {
                 <img 
                   src={category.imageUrl} 
                   alt={category.name} 
-                  className="w-24 h-14 rounded-md object-cover flex-shrink-0" 
+                  className="w-24 aspect-[4/3] rounded-[2px] object-cover flex-shrink-0" 
                 />
               )}
               <div className="flex-1 min-w-0">
