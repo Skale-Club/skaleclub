@@ -63,7 +63,7 @@ export function Navbar() {
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8">
             <Link href="/services" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors">Services</Link>
-            <Link href="/#areas-served" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer">Areas Served</Link>
+            <a href="/#areas-served" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer">Areas Served</a>
             <span className="text-sm font-semibold text-[#1D1D1D]">FAQ</span>
             <span className="text-sm font-semibold text-[#1D1D1D]">Blog</span>
             
@@ -128,16 +128,30 @@ export function Navbar() {
       {/* Mobile Nav */}
       {isMenuOpen && (
         <div className="md:hidden bg-white border-b border-gray-100 py-4 px-4 space-y-4">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="block text-base font-medium text-slate-600 hover:text-primary"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {link.label}
-            </Link>
-          ))}
+          {navLinks.map((link) => {
+            if (link.href.startsWith("/#")) {
+              return (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className="block text-base font-medium text-slate-600 hover:text-primary"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  {link.label}
+                </a>
+              );
+            }
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="block text-base font-medium text-slate-600 hover:text-primary"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
           <Link href="/booking" onClick={() => setIsMenuOpen(false)}>
             <div className="flex items-center gap-2 text-primary font-medium">
               <ShoppingBag className="w-5 h-5" />
