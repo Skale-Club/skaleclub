@@ -21,7 +21,7 @@ export default function Home() {
   };
 
   return (
-    <div className="pb-24">
+    <div className="pb-12">
       {/* Hero Section */}
       <section className="relative flex items-center lg:items-end pt-6 lg:pt-4 pb-0 overflow-hidden bg-[#1C53A3]">
         <div className="container-custom mx-auto relative z-10 w-full">
