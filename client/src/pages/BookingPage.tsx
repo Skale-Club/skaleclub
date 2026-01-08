@@ -29,7 +29,7 @@ export default function BookingPage() {
   const { toast } = useToast();
   
   // Booking State
-  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [viewDate, setViewDate] = useState<Date>(new Date());
   
@@ -167,14 +167,6 @@ export default function BookingPage() {
                     </div>
                   </div>
                 ))}
-                <div className="flex justify-end pt-4">
-                  <button 
-                    onClick={() => handleNextStep(2)}
-                    className="px-8 py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center gap-2"
-                  >
-                    Select Date & Time <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
               </div>
             )}
 
@@ -308,16 +300,6 @@ export default function BookingPage() {
                       </div>
                     </ScrollArea>
                   </div>
-                </div>
-
-                <div className="flex justify-end pt-8 mt-8 border-t border-slate-800">
-                  <button 
-                    disabled={!selectedDate || !selectedTime}
-                    onClick={() => handleNextStep(3)}
-                    className="px-8 py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2"
-                  >
-                    Continue to Checkout <ChevronRight className="w-4 h-4" />
-                  </button>
                 </div>
               </div>
             )}
@@ -484,6 +466,28 @@ export default function BookingPage() {
               <div className="border-t border-gray-100 pt-4 mt-4 flex justify-between items-center">
                 <span className="font-bold text-lg text-slate-900">Total</span>
                 <span className="font-bold text-2xl text-primary">${totalPrice.toFixed(2)}</span>
+              </div>
+
+              {/* Continue Buttons moved here */}
+              <div className="mt-8">
+                {step === 1 && (
+                  <button 
+                    onClick={() => handleNextStep(2)}
+                    className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+                  >
+                    Select Date & Time <ChevronRight className="w-4 h-4" />
+                  </button>
+                )}
+                
+                {step === 2 && (
+                  <button 
+                    disabled={!selectedDate || !selectedTime}
+                    onClick={() => handleNextStep(3)}
+                    className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    Continue to Checkout <ChevronRight className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
           </div>
