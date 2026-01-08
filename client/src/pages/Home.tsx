@@ -110,7 +110,7 @@ export default function Home() {
         </div>
       </section>
       {/* Categories */}
-      <section className="py-20">
+      <section className="py-20 bg-[#F8FAFC]">
         <div className="container-custom mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold mb-4">Ready to Schedule?</h2>
@@ -156,14 +156,14 @@ export default function Home() {
       </section>
 
       {/* Reviews Section */}
-      <section className="pt-20 pb-0 bg-slate-50 overflow-hidden mb-0">
+      <section className="pt-20 pb-0 bg-white overflow-hidden mb-0">
         <div className="w-full">
           <div className="container-custom mx-auto mb-16 text-center">
             <h2 className="text-3xl md:text-5xl font-bold mb-4">Customer Reviews</h2>
             <p className="text-slate-600 max-w-2xl mx-auto text-lg">See what our customers are saying about our 5-star services.</p>
           </div>
           <div className="w-full px-0">
-            <div className="pb-8 md:pb-0 bg-[#F8FAFC]">
+            <div className="pb-8 md:pb-0 bg-white">
               <iframe 
                 className='lc_reviews_widget' 
                 src='https://reputationhub.site/reputation/widgets/review_widget/q6UKnlWOQwyTk82yZPAs' 
@@ -181,7 +181,7 @@ export default function Home() {
           </div>
         </div>
       </section>
-      <section id="areas-served">
+      <section id="areas-served" className="bg-[#F8FAFC] py-20">
         <AreasServedMap />
       </section>
       <CartSummary />
