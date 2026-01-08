@@ -151,7 +151,7 @@ export default function Home() {
             <p className="text-slate-600 max-w-2xl mx-auto text-lg">See what our customers are saying about our 5-star services.</p>
           </div>
           <div className="w-full px-0">
-            <div className="pb-0">
+            <div className="pb-8 md:pb-0 bg-[#F8FAFC]">
               <iframe 
                 className='lc_reviews_widget' 
                 src='https://reputationhub.site/reputation/widgets/review_widget/q6UKnlWOQwyTk82yZPAs' 
