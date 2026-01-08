@@ -343,7 +343,7 @@ export default function BookingPage() {
                     </div>
 
                     <div className="space-y-2 col-span-3">
-                      <label className="text-sm font-medium text-slate-700">Unit / Apt</label>
+                      <label className="text-sm font-medium text-slate-700">Unit / Apt (Optional)</label>
                       <input
                         {...form.register("customerUnit")}
                         className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
