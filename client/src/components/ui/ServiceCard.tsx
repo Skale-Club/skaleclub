@@ -30,9 +30,15 @@ export function ServiceCard({ service }: ServiceCardProps) {
   const filteredAddons = isError ? [] : suggestedAddons.filter(addon => !items.find(i => i.id === addon.id));
 
   return (
-    <div className="group bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300 flex flex-col h-full">
+    <div className="group bg-white rounded-lg border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300 flex flex-col h-full">
       {/* 4:3 Aspect Ratio Image */}
       <div className="relative w-full pt-[75%] bg-slate-100">
+        <div className="absolute top-2 right-2 z-10">
+          <div className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md text-slate-600 text-xs font-bold flex items-center shadow-sm border border-slate-100">
+            <Clock className="w-3 h-3 mr-1" />
+            {service.durationMinutes} mins
+          </div>
+        </div>
         {service.imageUrl ? (
           <img 
             src={service.imageUrl} 
@@ -56,10 +62,6 @@ export function ServiceCard({ service }: ServiceCardProps) {
         </p>
         
         <div className="flex flex-col">
-          <div className="flex items-center text-slate-400 text-sm mb-6">
-            <Clock className="w-4 h-4 mr-1.5" />
-            {service.durationMinutes} mins
-          </div>
           <span className="text-lg font-bold text-slate-900 mb-6">
             ${service.price}
           </span>

@@ -146,13 +146,13 @@ export default function Services() {
 
         {/* Services Grid */}
         {isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <div key={i} className="h-64 bg-gray-100 rounded-2xl animate-pulse"></div>
+              <div key={i} className="h-64 bg-gray-100 rounded-lg animate-pulse"></div>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {services?.map((service) => (
               <ServiceCard key={service.id} service={service} />
             ))}
