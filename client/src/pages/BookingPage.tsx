@@ -23,7 +23,7 @@ const bookingFormSchema = z.object({
 type BookingFormValues = z.infer<typeof bookingFormSchema>;
 
 export default function BookingPage() {
-  const [step, setStep] = useState<2 | 3>(2);
+  const [step, setStep] = useState<2 | 3 | 4>(2);
   const { items, totalPrice, totalDuration, removeItem, updateQuantity } = useCart();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -50,13 +50,9 @@ export default function BookingPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  const handleNextStep = (nextStep: 2 | 3) => {
+  const handleNextStep = (nextStep: 2 | 3 | 4) => {
     setStep(nextStep);
-    if (nextStep === 2) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const onSubmit = (data: BookingFormValues) => {
@@ -242,7 +238,7 @@ export default function BookingPage() {
               </div>
             )}
 
-            {/* STEP 3: CHECKOUT */}
+            {/* STEP 3: CONTACT INFORMATION */}
             {step === 3 && (
               <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-4">
                 <div className="flex items-center gap-4 mb-6">
@@ -252,7 +248,7 @@ export default function BookingPage() {
                   <h2 className="text-2xl font-bold">Contact Details</h2>
                 </div>
 
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-slate-700">Full Name</label>
@@ -285,6 +281,33 @@ export default function BookingPage() {
                     {form.formState.errors.customerPhone && <p className="text-red-500 text-xs">{form.formState.errors.customerPhone.message}</p>}
                   </div>
 
+                  <button 
+                    type="button"
+                    onClick={async () => {
+                      const isValid = await form.trigger(["customerName", "customerEmail", "customerPhone"]);
+                      if (isValid) {
+                        handleNextStep(4);
+                      }
+                    }}
+                    className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all mt-8 text-lg flex items-center justify-center gap-2"
+                  >
+                    Continue to Address <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 4: ADDRESS & PAYMENT */}
+            {step === 4 && (
+              <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-4">
+                <div className="flex items-center gap-4 mb-6">
+                  <button onClick={() => setStep(3)} className="p-2 hover:bg-slate-100 rounded-full">
+                    <ArrowLeft className="w-5 h-5" />
+                  </button>
+                  <h2 className="text-2xl font-bold">Address & Payment</h2>
+                </div>
+
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-700">Service Address</label>
                     <textarea
@@ -414,7 +437,20 @@ export default function BookingPage() {
                     onClick={() => handleNextStep(3)}
                     className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    Continue to Checkout <ChevronRight className="w-4 h-4" />
+                    Continue to Contact <ChevronRight className="w-4 h-4" />
+                  </button>
+                )}
+                {step === 3 && (
+                  <button 
+                    onClick={async () => {
+                      const isValid = await form.trigger(["customerName", "customerEmail", "customerPhone"]);
+                      if (isValid) {
+                        handleNextStep(4);
+                      }
+                    }}
+                    className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+                  >
+                    Continue to Address <ChevronRight className="w-4 h-4" />
                   </button>
                 )}
               </div>
