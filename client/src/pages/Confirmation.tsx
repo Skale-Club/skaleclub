@@ -28,13 +28,12 @@ export default function Confirmation() {
           Thank you for choosing {companySettings?.companyName || "Skleanings"}. We've sent a confirmation email with all the details. Our team will arrive at the scheduled time.
         </p>
 
-        <div className="space-y-4 flex flex-col gap-4">
+        <div className="flex flex-col gap-4">
           <Link href="/">
             <button className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
               <Home className="w-4 h-4" /> Return Home
             </button>
           </Link>
-          <div className="h-4" /> {/* 16px space */}
           <Link href="/services">
             <button className="w-full py-3 bg-white text-slate-600 font-bold rounded-xl border border-gray-200 hover:bg-gray-50 transition-all">
               Book Another Service
