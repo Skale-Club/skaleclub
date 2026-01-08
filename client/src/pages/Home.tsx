@@ -31,7 +31,7 @@ export default function Home() {
                 <Shield className="w-3 h-3 sm:w-4 sm:h-4" />
                 Trusted Cleaning Experts!
               </div>
-              <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold leading-[1.1] mb-3 lg:mb-6 font-display">
+              <h1 className="sm:text-5xl md:text-7xl font-bold mb-3 lg:mb-6 font-display text-[36px]">
                 <span className="text-white">Your 5-star</span> <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">
                   cleaning company
@@ -75,7 +75,6 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-r from-[#1C53A3] via-[#1C53A3]/20 to-transparent"></div>
         </div>
       </section>
-
       {/* Trust Badges */}
       <section className="relative z-20 -mt-10">
         <div className="container-custom mx-auto">
@@ -98,7 +97,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
       {/* Categories */}
       <section className="py-20">
         <div className="container-custom mx-auto">
@@ -144,7 +142,6 @@ export default function Home() {
           )}
         </div>
       </section>
-
       <CartSummary />
     </div>
   );
