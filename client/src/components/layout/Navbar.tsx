@@ -48,7 +48,6 @@ export function Navbar() {
             <Link href="/services" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors">Services</Link>
             <span className="text-sm font-semibold text-[#1D1D1D]">Areas Served</span>
             <span className="text-sm font-semibold text-[#1D1D1D]">FAQ</span>
-            <span className="text-sm font-semibold text-[#1D1D1D]">Gift Cards</span>
             <span className="text-sm font-semibold text-[#1D1D1D]">Blog</span>
             
             <a href="tel:3033094226" className="px-4 py-2 bg-secondary text-secondary-foreground font-bold rounded-full hover-elevate transition-all text-sm">
