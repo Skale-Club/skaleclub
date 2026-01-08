@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAdminAuth } from '@/context/AuthContext';
 import { useLocation, Link } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -44,7 +44,8 @@ import {
   LayoutDashboard, 
   Building2, 
   GripVertical,
-  ArrowLeft
+  ArrowLeft,
+  Check
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
@@ -357,29 +358,60 @@ function HeroSettingsSection() {
   );
 }
 
+interface CompanySettingsData {
+  id?: number;
+  companyName: string | null;
+  companyEmail: string | null;
+  companyPhone: string | null;
+  companyAddress: string | null;
+  workingHoursStart: string | null;
+  workingHoursEnd: string | null;
+  logoMain: string | null;
+  logoDark: string | null;
+  logoIcon: string | null;
+}
+
 function CompanySettingsSection() {
   const { toast } = useToast();
-  const [companyName, setCompanyName] = useState('Skleanings');
-  const [companyEmail, setCompanyEmail] = useState('contact@skleanings.com');
-  const [companyPhone, setCompanyPhone] = useState('');
-  const [companyAddress, setCompanyAddress] = useState('');
-  const [workingHoursStart, setWorkingHoursStart] = useState('08:00');
-  const [workingHoursEnd, setWorkingHoursEnd] = useState('18:00');
-  const [logoMain, setLogoMain] = useState('');
-  const [logoDark, setLogoDark] = useState('');
-  const [logoIcon, setLogoIcon] = useState('');
+  const [settings, setSettings] = useState<CompanySettingsData>({
+    companyName: 'Skleanings',
+    companyEmail: 'contact@skleanings.com',
+    companyPhone: '',
+    companyAddress: '',
+    workingHoursStart: '08:00',
+    workingHoursEnd: '18:00',
+    logoMain: '',
+    logoDark: '',
+    logoIcon: '',
+  });
   const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleSave = async () => {
+  const { data: fetchedSettings, isLoading } = useQuery<CompanySettingsData>({
+    queryKey: ['/api/company-settings']
+  });
+
+  useEffect(() => {
+    if (fetchedSettings) {
+      setSettings(fetchedSettings);
+    }
+  }, [fetchedSettings]);
+
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const saveSettings = useCallback(async (newSettings: Partial<CompanySettingsData>) => {
     setIsSaving(true);
     try {
-      // Simulating API call
-      await new Promise(resolve => setTimeout(resolve, 800));
-      toast({ 
-        title: 'Company settings saved', 
-        description: 'Your changes have been saved successfully.',
-        variant: 'default'
-      });
+      await apiRequest('PUT', '/api/company-settings', newSettings);
+      queryClient.invalidateQueries({ queryKey: ['/api/company-settings'] });
+      setLastSaved(new Date());
     } catch (error: any) {
       toast({ 
         title: 'Error saving settings', 
@@ -389,16 +421,27 @@ function CompanySettingsSection() {
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [toast]);
+
+  const updateField = useCallback((field: keyof CompanySettingsData, value: string) => {
+    setSettings(prev => ({ ...prev, [field]: value }));
+    
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    saveTimeoutRef.current = setTimeout(() => {
+      saveSettings({ [field]: value });
+    }, 800);
+  }, [saveSettings]);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'main' | 'dark' | 'icon') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     try {
-      const res = await fetch('/api/upload', { method: 'POST' });
-      if (!res.ok) throw new Error('Failed to get upload URL');
-      const { uploadURL, objectPath } = await res.json();
+      const uploadRes = await apiRequest('POST', '/api/upload');
+      const { uploadURL, objectPath } = await uploadRes.json() as { uploadURL: string; objectPath: string };
 
       await fetch(uploadURL, {
         method: 'PUT',
@@ -406,38 +449,46 @@ function CompanySettingsSection() {
         headers: { 'Content-Type': file.type }
       });
 
-      if (type === 'main') setLogoMain(objectPath);
-      else if (type === 'dark') setLogoDark(objectPath);
-      else setLogoIcon(objectPath);
+      const fieldMap = { main: 'logoMain', dark: 'logoDark', icon: 'logoIcon' } as const;
+      const fieldName = fieldMap[type];
       
-      toast({ title: 'Asset uploaded successfully' });
+      setSettings(prev => ({ ...prev, [fieldName]: objectPath }));
+      await saveSettings({ [fieldName]: objectPath });
+      
+      toast({ title: 'Asset uploaded and saved' });
     } catch (error: any) {
       toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold">Company Settings</h1>
           <p className="text-muted-foreground">Manage your business information and assets</p>
         </div>
-        <Button 
-          onClick={handleSave} 
-          disabled={isSaving}
-          className="min-w-[140px]"
-          data-testid="button-save-company-top"
-        >
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
           {isSaving ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Saving...</span>
             </>
-          ) : (
-            'Save Changes'
-          )}
-        </Button>
+          ) : lastSaved ? (
+            <>
+              <Check className="h-4 w-4 text-green-500" />
+              <span>Auto-saved</span>
+            </>
+          ) : null}
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -452,8 +503,8 @@ function CompanySettingsSection() {
                 <Label htmlFor="companyName">Company Name</Label>
                 <Input 
                   id="companyName" 
-                  value={companyName} 
-                  onChange={(e) => setCompanyName(e.target.value)}
+                  value={settings.companyName || ''} 
+                  onChange={(e) => updateField('companyName', e.target.value)}
                   data-testid="input-company-name"
                 />
               </div>
@@ -463,8 +514,8 @@ function CompanySettingsSection() {
                 <Input 
                   id="companyEmail" 
                   type="email"
-                  value={companyEmail} 
-                  onChange={(e) => setCompanyEmail(e.target.value)}
+                  value={settings.companyEmail || ''} 
+                  onChange={(e) => updateField('companyEmail', e.target.value)}
                   data-testid="input-company-email"
                 />
               </div>
@@ -473,8 +524,8 @@ function CompanySettingsSection() {
                 <Label htmlFor="companyPhone">Phone Number</Label>
                 <Input 
                   id="companyPhone" 
-                  value={companyPhone} 
-                  onChange={(e) => setCompanyPhone(e.target.value)}
+                  value={settings.companyPhone || ''} 
+                  onChange={(e) => updateField('companyPhone', e.target.value)}
                   placeholder="+1 (555) 000-0000"
                   data-testid="input-company-phone"
                 />
@@ -484,8 +535,8 @@ function CompanySettingsSection() {
                 <Label htmlFor="companyAddress">Business Address</Label>
                 <Input 
                   id="companyAddress" 
-                  value={companyAddress} 
-                  onChange={(e) => setCompanyAddress(e.target.value)}
+                  value={settings.companyAddress || ''} 
+                  onChange={(e) => updateField('companyAddress', e.target.value)}
                   placeholder="123 Main St, City, State"
                   data-testid="input-company-address"
                 />
@@ -504,8 +555,8 @@ function CompanySettingsSection() {
                 <Input 
                   id="workingHoursStart" 
                   type="time"
-                  value={workingHoursStart} 
-                  onChange={(e) => setWorkingHoursStart(e.target.value)}
+                  value={settings.workingHoursStart || '08:00'} 
+                  onChange={(e) => updateField('workingHoursStart', e.target.value)}
                   data-testid="input-hours-start"
                 />
               </div>
@@ -515,8 +566,8 @@ function CompanySettingsSection() {
                 <Input 
                   id="workingHoursEnd" 
                   type="time"
-                  value={workingHoursEnd} 
-                  onChange={(e) => setWorkingHoursEnd(e.target.value)}
+                  value={settings.workingHoursEnd || '18:00'} 
+                  onChange={(e) => updateField('workingHoursEnd', e.target.value)}
                   data-testid="input-hours-end"
                 />
               </div>
@@ -536,8 +587,8 @@ function CompanySettingsSection() {
                 <Label className="text-sm">Main Logo (Light Mode)</Label>
                 <div className="flex flex-col gap-3">
                   <div className="h-32 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-white flex items-center justify-center overflow-hidden relative group">
-                    {logoMain ? (
-                      <img src={logoMain} alt="Main Logo" className="max-h-full max-w-full object-contain p-2" />
+                    {settings.logoMain ? (
+                      <img src={settings.logoMain} alt="Main Logo" className="max-h-full max-w-full object-contain p-2" />
                     ) : (
                       <div className="text-center p-4">
                         <Image className="w-8 h-8 text-gray-400 mx-auto mb-2" />
@@ -556,8 +607,8 @@ function CompanySettingsSection() {
                 <Label className="text-sm">Dark Logo (Optional)</Label>
                 <div className="flex flex-col gap-3">
                   <div className="h-32 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-slate-900 flex items-center justify-center overflow-hidden relative group">
-                    {logoDark ? (
-                      <img src={logoDark} alt="Dark Logo" className="max-h-full max-w-full object-contain p-2" />
+                    {settings.logoDark ? (
+                      <img src={settings.logoDark} alt="Dark Logo" className="max-h-full max-w-full object-contain p-2" />
                     ) : (
                       <div className="text-center p-4">
                         <Image className="w-8 h-8 text-gray-600 mx-auto mb-2" />
@@ -575,8 +626,8 @@ function CompanySettingsSection() {
                 <Label className="text-sm">Favicon / App Icon</Label>
                 <div className="flex flex-col gap-3">
                   <div className="h-24 w-24 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-white flex items-center justify-center overflow-hidden relative group mx-auto">
-                    {logoIcon ? (
-                      <img src={logoIcon} alt="Icon" className="max-h-full max-w-full object-contain p-2" />
+                    {settings.logoIcon ? (
+                      <img src={settings.logoIcon} alt="Icon" className="max-h-full max-w-full object-contain p-2" />
                     ) : (
                       <div className="text-center p-2">
                         <Image className="w-6 h-6 text-gray-400 mx-auto mb-1" />
