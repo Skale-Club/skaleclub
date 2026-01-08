@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import type { CompanySettings, Category } from "@shared/schema";
+import type { CompanySettings, Category, Service } from "@shared/schema";
 import { 
   SiFacebook, 
   SiInstagram, 
@@ -28,6 +28,15 @@ export function Footer() {
   const { data: categories } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
   });
+
+  const { data: services } = useQuery<Service[]>({
+    queryKey: ['/api/services'],
+  });
+
+  // Filter categories that have at least one service
+  const activeCategories = categories?.filter(category => 
+    services?.some(service => service.categoryId === category.id)
+  );
 
   return (
     <footer className="bg-slate-900 text-slate-200 py-6">
@@ -82,8 +91,8 @@ export function Footer() {
         <div>
           <h4 className="font-bold text-white mb-4">Services</h4>
           <ul className="space-y-2 text-sm text-slate-400">
-            {categories && categories.length > 0 ? (
-              categories.map((category) => (
+            {activeCategories && activeCategories.length > 0 ? (
+              activeCategories.map((category) => (
                 <li key={category.id}>
                   <Link href={`/services?category=${category.id}`} className="hover:text-primary transition-colors">
                     {category.name}
