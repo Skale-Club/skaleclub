@@ -47,20 +47,20 @@ export function ServiceCard({ service }: ServiceCardProps) {
       </div>
 
       <div className="p-6 flex flex-col flex-grow">
-        <h3 className="text-lg font-bold text-slate-900 group-hover:text-primary transition-colors mb-2">
+        <h3 className="text-lg font-bold text-slate-900 group-hover:text-primary transition-colors mb-1">
           {service.name}
         </h3>
         
-        <p className="text-slate-500 text-sm mb-6 flex-grow">
+        <p className="text-slate-500 text-sm mb-4 flex-grow">
           {service.description || "Professional cleaning service tailored to your needs."}
         </p>
         
-        <div className="flex flex-col mb-6">
-          <div className="flex items-center text-slate-400 text-sm mb-1">
+        <div className="flex flex-col">
+          <div className="flex items-center text-slate-400 text-sm mb-6">
             <Clock className="w-4 h-4 mr-1.5" />
             {service.durationMinutes} mins
           </div>
-          <span className="text-lg font-bold text-slate-900">
+          <span className="text-lg font-bold text-slate-900 mb-6">
             ${service.price}
           </span>
         </div>
