@@ -39,6 +39,18 @@
   h1, h2, h3, h4, h5, h6 {
     @apply font-display tracking-tight text-[#1D1D1D];
   }
+
+  /* Remove default focus outline from all elements */
+  *:focus {
+    outline: none !important;
+  }
+
+  /* Remove focus-visible ring specifically for Shadcn/Tailwind components if needed */
+  .focus-visible\:ring-2,
+  .focus-visible\:ring-offset-2 {
+    --tw-ring-offset-width: 0px !important;
+    --tw-ring-width: 0px !important;
+  }
 }
 
 @layer components {
