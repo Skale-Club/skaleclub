@@ -47,7 +47,7 @@ export default function Home() {
                   </button>
                 </Link>
                 <a href={`tel:${telPhone}`} className="px-8 py-4 bg-transparent text-white font-bold rounded-full border border-white/30 hover:bg-white/10 transition-all flex items-center gap-2 text-lg">
-                  <Phone className="w-5 h-5" />
+                  <Phone className="w-5 h-5 fill-current" />
                   {displayPhone}
                 </a>
               </div>
