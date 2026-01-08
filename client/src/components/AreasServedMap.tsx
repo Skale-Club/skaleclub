@@ -1,7 +1,18 @@
-import { MapPin, ArrowRight } from "lucide-react";
+import { MapPin, ArrowRight, Loader2 } from "lucide-react";
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+
+interface CompanySettings {
+  mapEmbedUrl: string | null;
+}
 
 export function AreasServedMap() {
+  const { data: companySettings, isLoading } = useQuery<CompanySettings>({
+    queryKey: ['/api/company-settings']
+  });
+
+  const embedUrl = companySettings?.mapEmbedUrl || "https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d259505.12434421625!2d-71.37915684523166!3d42.296281796774615!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sus!4v1767905922570!5m2!1sen!2sus";
+
   return (
     <section className="py-20 bg-white overflow-hidden">
       <div className="container-custom mx-auto">
@@ -27,16 +38,22 @@ export function AreasServedMap() {
             </div>
           </div>
           
-          <div className="h-[450px] rounded-2xl overflow-hidden shadow-2xl border border-slate-100 lg:col-span-1">
-            <iframe
-              src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d259505.12434421625!2d-71.37915684523166!3d42.296281796774615!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sus!4v1767905922570!5m2!1sen!2sus"
-              width="100%"
-              height="100%"
-              style={{ border: 0 }}
-              allowFullScreen={true}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            ></iframe>
+          <div className="h-[450px] rounded-2xl overflow-hidden shadow-2xl border border-slate-100 lg:col-span-1 relative">
+            {isLoading ? (
+              <div className="absolute inset-0 flex items-center justify-center bg-slate-50">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <iframe
+                src={embedUrl}
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen={true}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              ></iframe>
+            )}
           </div>
         </div>
       </div>

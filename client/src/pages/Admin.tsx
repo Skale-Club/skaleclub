@@ -430,6 +430,7 @@ interface CompanySettingsData {
   logoIcon: string | null;
   sectionsOrder: AdminSection[] | null;
   socialLinks: { platform: string; url: string }[] | null;
+  mapEmbedUrl: string | null;
 }
 
 function CompanySettingsSection() {
@@ -446,6 +447,7 @@ function CompanySettingsSection() {
     logoIcon: '',
     sectionsOrder: null,
     socialLinks: [],
+    mapEmbedUrl: '',
   });
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -603,6 +605,20 @@ function CompanySettingsSection() {
                   placeholder="123 Main St, City, State"
                   data-testid="input-company-address"
                 />
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="mapEmbedUrl">Map Embed URL (Iframe src)</Label>
+                <Input 
+                  id="mapEmbedUrl" 
+                  value={settings.mapEmbedUrl || ''} 
+                  onChange={(e) => updateField('mapEmbedUrl', e.target.value)}
+                  placeholder="https://www.google.com/maps/embed?..."
+                  data-testid="input-map-embed-url"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Paste the iframe "src" attribute from Google Maps "Share -> Embed a map" to update the map shown on the home page.
+                </p>
               </div>
 
               <div className="space-y-4 col-span-full border-t pt-6 mt-2">
