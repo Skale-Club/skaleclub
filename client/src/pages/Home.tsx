@@ -144,20 +144,20 @@ export default function Home() {
       </section>
 
       {/* Reviews Section */}
-      <section className="py-20 bg-slate-50 overflow-hidden mb-0">
+      <section className="pt-20 pb-0 bg-slate-50 overflow-hidden mb-0">
         <div className="w-full">
           <div className="container-custom mx-auto mb-16 text-center">
             <h2 className="text-3xl md:text-5xl font-bold mb-4">Customer Reviews</h2>
             <p className="text-slate-600 max-w-2xl mx-auto text-lg">See what our customers are saying about our 5-star services.</p>
           </div>
           <div className="w-full px-0">
-            <div className="min-h-[500px] sm:min-h-[600px] pb-12">
+            <div className="pb-0">
               <iframe 
                 className='lc_reviews_widget' 
                 src='https://reputationhub.site/reputation/widgets/review_widget/q6UKnlWOQwyTk82yZPAs' 
                 frameBorder='0' 
                 scrolling='no' 
-                style={{ minWidth: '100%', width: '100%', height: '550px', border: 'none', display: 'block' }}
+                style={{ minWidth: '100%', width: '100%', height: '520px', border: 'none', display: 'block' }}
                 onLoad={() => {
                   const script = document.createElement('script');
                   script.type = 'text/javascript';
