@@ -57,8 +57,12 @@ export function Footer() {
           </ul>
         </div>
       </div>
-      <div className="container-custom mx-auto mt-6 pt-6 border-t border-slate-800 text-center text-slate-500 text-sm">
-        © {new Date().getFullYear()} Skleanings Services. All rights reserved.
+      <div className="container-custom mx-auto mt-6 pt-6 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-500 text-sm">
+        <p>© {new Date().getFullYear()} Skleanings Services. All rights reserved.</p>
+        <div className="flex gap-6">
+          <Link href="/privacy-policy" className="hover:text-primary transition-colors">Privacy Policy</Link>
+          <Link href="/terms-of-service" className="hover:text-primary transition-colors">Terms of Service</Link>
+        </div>
       </div>
     </footer>
   );

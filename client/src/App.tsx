@@ -14,6 +14,8 @@ import BookingPage from "@/pages/BookingPage";
 import Confirmation from "@/pages/Confirmation";
 import Admin from "@/pages/Admin";
 import AdminLogin from "@/pages/AdminLogin";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import TermsOfService from "@/pages/TermsOfService";
 
 function Router() {
   const [location] = useLocation();
@@ -38,6 +40,8 @@ function Router() {
           <Route path="/services" component={Services} />
           <Route path="/booking" component={BookingPage} />
           <Route path="/confirmation" component={Confirmation} />
+          <Route path="/privacy-policy" component={PrivacyPolicy} />
+          <Route path="/terms-of-service" component={TermsOfService} />
           <Route component={NotFound} />
         </Switch>
       </main>
