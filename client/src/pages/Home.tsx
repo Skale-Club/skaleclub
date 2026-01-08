@@ -31,7 +31,7 @@ export default function Home() {
                 <Shield className="w-3 h-3 sm:w-4 sm:h-4" />
                 Trusted Cleaning Experts!
               </div>
-              <h1 className="sm:text-5xl md:text-7xl font-bold mb-3 lg:mb-6 font-display text-[36px] leading-[1.05] sm:leading-[1.1]">
+              <h1 className="sm:text-5xl md:text-7xl font-bold mb-3 lg:mb-6 font-display text-[9vw] sm:text-[48px] leading-[1.05] sm:leading-[1.1]">
                 <span className="text-white">Your 5-star</span> <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">
                   cleaning company
