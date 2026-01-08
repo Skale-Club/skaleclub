@@ -105,3 +105,21 @@ export const WORKING_HOURS = {
   start: 8, // 8 AM
   end: 18,  // 6 PM
 };
+
+// Company Settings (singleton table - only one row)
+export const companySettings = pgTable("company_settings", {
+  id: serial("id").primaryKey(),
+  companyName: text("company_name").default('Skleanings'),
+  companyEmail: text("company_email").default('contact@skleanings.com'),
+  companyPhone: text("company_phone").default(''),
+  companyAddress: text("company_address").default(''),
+  workingHoursStart: text("working_hours_start").default('08:00'),
+  workingHoursEnd: text("working_hours_end").default('18:00'),
+  logoMain: text("logo_main").default(''),
+  logoDark: text("logo_dark").default(''),
+  logoIcon: text("logo_icon").default(''),
+});
+
+export const insertCompanySettingsSchema = createInsertSchema(companySettings).omit({ id: true });
+export type CompanySettings = typeof companySettings.$inferSelect;
+export type InsertCompanySettings = z.infer<typeof insertCompanySettingsSchema>;

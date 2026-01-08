@@ -3,7 +3,7 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { api, errorSchemas, buildUrl } from "@shared/routes";
 import { z } from "zod";
-import { WORKING_HOURS, insertCategorySchema, insertServiceSchema } from "@shared/schema";
+import { WORKING_HOURS, insertCategorySchema, insertServiceSchema, insertCompanySettingsSchema } from "@shared/schema";
 import { insertSubcategorySchema } from "./storage";
 import { ObjectStorageService, registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { authStorage } from "./replit_integrations/auth/storage";
@@ -191,6 +191,29 @@ export async function registerRoutes(
 
   // Register object storage routes
   registerObjectStorageRoutes(app);
+
+  // Company Settings (public GET, admin PUT)
+  app.get('/api/company-settings', async (req, res) => {
+    try {
+      const settings = await storage.getCompanySettings();
+      res.json(settings);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.put('/api/company-settings', requireAdmin, async (req, res) => {
+    try {
+      const validatedData = insertCompanySettingsSchema.partial().parse(req.body);
+      const settings = await storage.updateCompanySettings(validatedData);
+      res.json(settings);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
 
   // Admin Service CRUD (protected routes)
   app.post('/api/services', requireAdmin, async (req, res) => {

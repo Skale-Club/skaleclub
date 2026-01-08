@@ -6,15 +6,18 @@ import {
   serviceAddons,
   bookings,
   bookingItems,
+  companySettings,
   type Category,
   type Subcategory,
   type Service,
   type ServiceAddon,
   type Booking,
+  type CompanySettings,
   type InsertCategory,
   type InsertService,
   type InsertServiceAddon,
   type InsertBooking,
+  type InsertCompanySettings,
 } from "@shared/schema";
 import { eq, and, gte, lte, inArray } from "drizzle-orm";
 import { z } from "zod";
@@ -58,6 +61,10 @@ export interface IStorage {
   createService(service: InsertService): Promise<Service>;
   updateService(id: number, service: Partial<InsertService>): Promise<Service>;
   deleteService(id: number): Promise<void>;
+  
+  // Company Settings
+  getCompanySettings(): Promise<CompanySettings>;
+  updateCompanySettings(settings: Partial<InsertCompanySettings>): Promise<CompanySettings>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -208,6 +215,21 @@ export class DatabaseStorage implements IStorage {
 
   async deleteService(id: number): Promise<void> {
     await db.delete(services).where(eq(services.id, id));
+  }
+
+  async getCompanySettings(): Promise<CompanySettings> {
+    const [settings] = await db.select().from(companySettings);
+    if (settings) return settings;
+    
+    // Create default settings if none exist
+    const [newSettings] = await db.insert(companySettings).values({}).returning();
+    return newSettings;
+  }
+
+  async updateCompanySettings(settings: Partial<InsertCompanySettings>): Promise<CompanySettings> {
+    const existing = await this.getCompanySettings();
+    const [updated] = await db.update(companySettings).set(settings).where(eq(companySettings.id, existing.id)).returning();
+    return updated;
   }
 }
 
