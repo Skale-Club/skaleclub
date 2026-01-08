@@ -49,6 +49,7 @@ Preferred communication style: Simple, everyday language.
 3. **Availability Checking**: Time slot availability based on existing bookings and total service duration
 4. **Booking Flow**: Multi-step booking with date selection, time slot selection, and customer info
 5. **Admin Dashboard**: View all bookings with customer details and status
+6. **GoHighLevel Integration**: Automatic sync of bookings, contacts, and appointments with GHL CRM
 
 ### Working Hours Configuration
 - Defined in `shared/schema.ts` as `WORKING_HOURS` constant
@@ -83,3 +84,37 @@ Preferred communication style: Simple, everyday language.
 - **Vite**: Build tool and dev server
 - **TSX**: TypeScript execution for server
 - **esbuild**: Production bundling for server code
+
+### GoHighLevel Integration
+
+The platform integrates with GoHighLevel CRM for automatic syncing of bookings, contacts, and appointments.
+
+**Configuration (Admin Panel > Integrations):**
+- **API Key**: Your GoHighLevel API key from Settings > Business Profile > API Key
+- **Location ID**: Your GHL sub-account/location identifier
+- **Calendar ID**: The calendar to sync appointments with (default: 2irhr47AR6K0AQkFqEQl)
+- **Enable/Disable Toggle**: Turn integration on/off
+
+**How It Works:**
+1. When a booking is created, the system checks if GHL integration is enabled
+2. If enabled, creates or finds a contact in GHL with the customer's information
+3. Creates an appointment in the configured GHL calendar
+4. Stores GHL contact ID and appointment ID in the booking record
+5. Tracks sync status (pending, synced, failed) for each booking
+
+**Database Tables:**
+- `integrationSettings` - Stores GHL credentials and configuration
+- `bookings.ghlContactId` - Reference to GHL contact
+- `bookings.ghlAppointmentId` - Reference to GHL appointment
+- `bookings.ghlSyncStatus` - Sync status tracking
+
+**API Endpoints:**
+- `GET /api/integrations/ghl` - Get GHL settings (admin only)
+- `PUT /api/integrations/ghl` - Save GHL settings (admin only)
+- `POST /api/integrations/ghl/test` - Test connection (admin only)
+- `GET /api/integrations/ghl/status` - Check if GHL is enabled (public)
+- `GET /api/integrations/ghl/free-slots` - Get available slots from GHL (public)
+
+**Files:**
+- `server/integrations/ghl.ts` - GHL API utility functions
+- `client/src/pages/Admin.tsx` - IntegrationsSection component
