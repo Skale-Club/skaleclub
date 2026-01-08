@@ -79,6 +79,26 @@ export async function registerRoutes(
     }
   });
 
+  app.put('/api/categories/reorder', requireAdmin, async (req, res) => {
+    try {
+      const orderData = z.array(z.object({
+        id: z.number(),
+        order: z.number()
+      })).parse(req.body.order);
+
+      for (const item of orderData) {
+        await storage.updateCategory(item.id, { order: item.order });
+      }
+
+      res.json({ success: true });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
   app.put('/api/categories/:id', requireAdmin, async (req, res) => {
     try {
       const validatedData = insertCategorySchema.partial().parse(req.body);
@@ -97,26 +117,6 @@ export async function registerRoutes(
       await storage.deleteCategory(Number(req.params.id));
       res.json({ success: true });
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
-    }
-  });
-
-  app.put('/api/categories/reorder', requireAdmin, async (req, res) => {
-    try {
-      const orderData = z.array(z.object({
-        id: z.number(),
-        order: z.number()
-      })).parse(req.body.order);
-
-      for (const item of orderData) {
-        await storage.updateCategory(item.id, { order: item.order });
-      }
-
-      res.json({ success: true });
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({ message: 'Validation error', errors: err.errors });
-      }
       res.status(400).json({ message: (err as Error).message });
     }
   });
