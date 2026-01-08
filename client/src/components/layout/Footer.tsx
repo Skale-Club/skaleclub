@@ -50,7 +50,7 @@ export function Footer() {
               />
             )}
           </Link>
-          <p className="text-slate-400 max-w-sm mb-6">
+          <p className="text-slate-400 max-w-sm mb-6 text-[14px]">
             Professional cleaning services. 
             We provide upfront pricing and easy online booking for your convenience.
           </p>
