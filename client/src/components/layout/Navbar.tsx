@@ -44,11 +44,19 @@ export function Navbar() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <img 
-              src="https://storage.googleapis.com/msgsndr/q6UKnlWOQwyTk82yZPAs/media/695dbac289c99d91ea25f488.svg" 
-              alt="Skleanings" 
-              className="h-[30px] md:h-10 w-auto"
-            />
+            {companySettings?.logoMain ? (
+              <img 
+                src={companySettings.logoMain} 
+                alt={companySettings.companyName || "Skleanings"} 
+                className="h-[30px] md:h-10 w-auto"
+              />
+            ) : (
+              <img 
+                src="https://storage.googleapis.com/msgsndr/q6UKnlWOQwyTk82yZPAs/media/695dbac289c99d91ea25f488.svg" 
+                alt="Skleanings" 
+                className="h-[30px] md:h-10 w-auto"
+              />
+            )}
           </Link>
 
           {/* Desktop Nav */}

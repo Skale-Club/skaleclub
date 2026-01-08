@@ -12,7 +12,13 @@ export function Footer() {
       <div className="container-custom mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
         <div className="col-span-1 md:col-span-2">
           <Link href="/" className="flex items-center gap-2 mb-4">
-            {companySettings?.logoIcon ? (
+            {companySettings?.logoDark ? (
+              <img 
+                src={companySettings.logoDark} 
+                alt={companySettings.companyName || "Skleanings"} 
+                className="h-7 w-auto"
+              />
+            ) : companySettings?.logoIcon ? (
               <img 
                 src={companySettings.logoIcon} 
                 alt={companySettings.companyName || "Skleanings"} 
