@@ -268,12 +268,7 @@ export default function Admin() {
               <p>Availability management coming soon</p>
             </div>
           )}
-          {activeSection === 'integrations' && (
-            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground bg-slate-100 dark:bg-slate-800 rounded-lg border-2 border-dashed">
-              <Puzzle className="w-12 h-12 mb-4 opacity-20" />
-              <p>Integrations coming soon</p>
-            </div>
-          )}
+          {activeSection === 'integrations' && <IntegrationsSection />}
         </main>
       </div>
     </SidebarProvider>
@@ -2269,5 +2264,205 @@ function FaqForm({ faq, onSubmit, isLoading, nextOrder }: {
         </Button>
       </DialogFooter>
     </form>
+  );
+}
+
+interface GHLSettings {
+  provider: string;
+  apiKey: string;
+  locationId: string;
+  calendarId: string;
+  isEnabled: boolean;
+}
+
+function IntegrationsSection() {
+  const { toast } = useToast();
+  const [settings, setSettings] = useState<GHLSettings>({
+    provider: 'gohighlevel',
+    apiKey: '',
+    locationId: '',
+    calendarId: '2irhr47AR6K0AQkFqEQl',
+    isEnabled: false
+  });
+  const [isTesting, setIsTesting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const { data: ghlSettings, isLoading } = useQuery<GHLSettings>({
+    queryKey: ['/api/integrations/ghl']
+  });
+
+  useEffect(() => {
+    if (ghlSettings) {
+      setSettings(ghlSettings);
+    }
+  }, [ghlSettings]);
+
+  const saveSettings = async () => {
+    setIsSaving(true);
+    try {
+      await apiRequest('PUT', '/api/integrations/ghl', settings);
+      queryClient.invalidateQueries({ queryKey: ['/api/integrations/ghl'] });
+      toast({ title: 'Settings saved successfully' });
+    } catch (error: any) {
+      toast({ 
+        title: 'Failed to save settings', 
+        description: error.message, 
+        variant: 'destructive' 
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const testConnection = async () => {
+    setIsTesting(true);
+    try {
+      const response = await fetch('/api/integrations/ghl/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiKey: settings.apiKey,
+          locationId: settings.locationId
+        }),
+        credentials: 'include'
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        toast({ title: 'Connection successful', description: 'GoHighLevel integration is working correctly.' });
+      } else {
+        toast({ 
+          title: 'Connection failed', 
+          description: result.message || 'Could not connect to GoHighLevel',
+          variant: 'destructive'
+        });
+      }
+    } catch (error: any) {
+      toast({ 
+        title: 'Connection failed', 
+        description: error.message, 
+        variant: 'destructive' 
+      });
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  if (isLoading) {
+    return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Integrations</h1>
+        <p className="text-muted-foreground">Connect your booking system with external services</p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">GoHighLevel</CardTitle>
+                <p className="text-sm text-muted-foreground">Sync calendars, contacts, and appointments</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="ghl-enabled" className="text-sm">
+                {settings.isEnabled ? 'Enabled' : 'Disabled'}
+              </Label>
+              <Switch
+                id="ghl-enabled"
+                checked={settings.isEnabled}
+                onCheckedChange={(checked) => setSettings(prev => ({ ...prev, isEnabled: checked }))}
+                data-testid="switch-ghl-enabled"
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="ghl-api-key">API Key</Label>
+              <Input
+                id="ghl-api-key"
+                type="password"
+                value={settings.apiKey}
+                onChange={(e) => setSettings(prev => ({ ...prev, apiKey: e.target.value }))}
+                placeholder="Enter your GoHighLevel API key"
+                data-testid="input-ghl-api-key"
+              />
+              <p className="text-xs text-muted-foreground">
+                Find this in your GHL account under Settings {'->'} Business Profile {'->'} API Key
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ghl-location-id">Location ID</Label>
+              <Input
+                id="ghl-location-id"
+                value={settings.locationId}
+                onChange={(e) => setSettings(prev => ({ ...prev, locationId: e.target.value }))}
+                placeholder="Enter your Location ID"
+                data-testid="input-ghl-location-id"
+              />
+              <p className="text-xs text-muted-foreground">
+                Your GHL sub-account/location identifier
+              </p>
+            </div>
+
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="ghl-calendar-id">Calendar ID</Label>
+              <Input
+                id="ghl-calendar-id"
+                value={settings.calendarId}
+                onChange={(e) => setSettings(prev => ({ ...prev, calendarId: e.target.value }))}
+                placeholder="2irhr47AR6K0AQkFqEQl"
+                data-testid="input-ghl-calendar-id"
+              />
+              <p className="text-xs text-muted-foreground">
+                The calendar to sync appointments with (default: 2irhr47AR6K0AQkFqEQl)
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={testConnection}
+              disabled={isTesting || !settings.apiKey || !settings.locationId}
+              data-testid="button-test-ghl"
+            >
+              {isTesting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Test Connection
+            </Button>
+            <Button
+              onClick={saveSettings}
+              disabled={isSaving}
+              data-testid="button-save-ghl"
+            >
+              {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Save Settings
+            </Button>
+          </div>
+
+          {settings.isEnabled && (
+            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+              <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                <Check className="w-4 h-4" />
+                <span className="font-medium text-sm">Integration Active</span>
+              </div>
+              <p className="text-xs text-green-600 dark:text-green-500 mt-1">
+                New bookings will be synced to GoHighLevel automatically
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
