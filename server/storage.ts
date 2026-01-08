@@ -8,6 +8,7 @@ import {
   bookingItems,
   companySettings,
   faqs,
+  integrationSettings,
   type Category,
   type Subcategory,
   type Service,
@@ -15,12 +16,14 @@ import {
   type Booking,
   type CompanySettings,
   type Faq,
+  type IntegrationSettings,
   type InsertCategory,
   type InsertService,
   type InsertServiceAddon,
   type InsertBooking,
   type InsertCompanySettings,
   type InsertFaq,
+  type InsertIntegrationSettings,
 } from "@shared/schema";
 import { eq, and, gte, lte, inArray } from "drizzle-orm";
 import { z } from "zod";
@@ -74,6 +77,13 @@ export interface IStorage {
   createFaq(faq: InsertFaq): Promise<Faq>;
   updateFaq(id: number, faq: Partial<InsertFaq>): Promise<Faq>;
   deleteFaq(id: number): Promise<void>;
+  
+  // Integration Settings
+  getIntegrationSettings(provider: string): Promise<IntegrationSettings | undefined>;
+  upsertIntegrationSettings(settings: InsertIntegrationSettings): Promise<IntegrationSettings>;
+  
+  // Booking GHL sync
+  updateBookingGHLSync(bookingId: number, ghlContactId: string, ghlAppointmentId: string, syncStatus: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -257,6 +267,34 @@ export class DatabaseStorage implements IStorage {
 
   async deleteFaq(id: number): Promise<void> {
     await db.delete(faqs).where(eq(faqs.id, id));
+  }
+
+  async getIntegrationSettings(provider: string): Promise<IntegrationSettings | undefined> {
+    const [settings] = await db.select().from(integrationSettings).where(eq(integrationSettings.provider, provider));
+    return settings;
+  }
+
+  async upsertIntegrationSettings(settings: InsertIntegrationSettings): Promise<IntegrationSettings> {
+    const existing = await this.getIntegrationSettings(settings.provider || "gohighlevel");
+    
+    if (existing) {
+      const [updated] = await db
+        .update(integrationSettings)
+        .set({ ...settings, updatedAt: new Date() })
+        .where(eq(integrationSettings.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db.insert(integrationSettings).values(settings).returning();
+      return created;
+    }
+  }
+
+  async updateBookingGHLSync(bookingId: number, ghlContactId: string, ghlAppointmentId: string, syncStatus: string): Promise<void> {
+    await db
+      .update(bookings)
+      .set({ ghlContactId, ghlAppointmentId, ghlSyncStatus: syncStatus })
+      .where(eq(bookings.id, bookingId));
   }
 }
 
