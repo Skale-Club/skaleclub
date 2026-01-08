@@ -16,6 +16,8 @@ import Admin from "@/pages/Admin";
 import AdminLogin from "@/pages/AdminLogin";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfService from "@/pages/TermsOfService";
+import AboutUs from "@/pages/AboutUs";
+import Contact from "@/pages/Contact";
 
 function Router() {
   const [location] = useLocation();
@@ -42,6 +44,8 @@ function Router() {
           <Route path="/confirmation" component={Confirmation} />
           <Route path="/privacy-policy" component={PrivacyPolicy} />
           <Route path="/terms-of-service" component={TermsOfService} />
+          <Route path="/about" component={AboutUs} />
+          <Route path="/contact" component={Contact} />
           <Route component={NotFound} />
         </Switch>
       </main>
