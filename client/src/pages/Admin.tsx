@@ -52,9 +52,10 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
-import type { Category, Service, Booking, Subcategory } from '@shared/schema';
+import type { Category, Service, Booking, Subcategory, Faq } from '@shared/schema';
+import { HelpCircle } from 'lucide-react';
 
-type AdminSection = 'dashboard' | 'categories' | 'subcategories' | 'services' | 'bookings' | 'hero' | 'company' | 'users' | 'availability' | 'integrations';
+type AdminSection = 'dashboard' | 'categories' | 'subcategories' | 'services' | 'bookings' | 'hero' | 'company' | 'faqs' | 'users' | 'availability' | 'integrations';
 
 const menuItems = [
   { id: 'dashboard' as AdminSection, title: 'Dashboard', icon: LayoutDashboard },
@@ -64,6 +65,7 @@ const menuItems = [
   { id: 'bookings' as AdminSection, title: 'Bookings', icon: Calendar },
   { id: 'hero' as AdminSection, title: 'Hero Section', icon: Image },
   { id: 'company' as AdminSection, title: 'Company Infos', icon: Building2 },
+  { id: 'faqs' as AdminSection, title: 'FAQs', icon: HelpCircle },
   { id: 'users' as AdminSection, title: 'Users', icon: Users },
   { id: 'availability' as AdminSection, title: 'Availability', icon: Clock },
   { id: 'integrations' as AdminSection, title: 'Integrations', icon: Puzzle },
@@ -250,6 +252,7 @@ export default function Admin() {
           {activeSection === 'bookings' && <BookingsSection />}
           {activeSection === 'hero' && <HeroSettingsSection />}
           {activeSection === 'company' && <CompanySettingsSection />}
+          {activeSection === 'faqs' && <FaqsSection />}
           {activeSection === 'users' && (
             <div className="flex flex-col items-center justify-center h-64 text-muted-foreground bg-slate-100 dark:bg-slate-800 rounded-lg border-2 border-dashed">
               <Users className="w-12 h-12 mb-4 opacity-20" />
@@ -1966,5 +1969,228 @@ function BookingsSection() {
         </div>
       )}
     </div>
+  );
+}
+
+function FaqsSection() {
+  const { toast } = useToast();
+  const [editingFaq, setEditingFaq] = useState<Faq | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const { data: faqs, isLoading } = useQuery<Faq[]>({
+    queryKey: ['/api/faqs']
+  });
+
+  const createFaq = useMutation({
+    mutationFn: async (data: { question: string; answer: string; order: number }) => {
+      return apiRequest('POST', '/api/faqs', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/faqs'] });
+      toast({ title: 'FAQ created successfully' });
+      setIsDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to create FAQ', description: error.message, variant: 'destructive' });
+    }
+  });
+
+  const updateFaq = useMutation({
+    mutationFn: async (data: { id: number; question: string; answer: string; order: number }) => {
+      return apiRequest('PUT', `/api/faqs/${data.id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/faqs'] });
+      toast({ title: 'FAQ updated successfully' });
+      setEditingFaq(null);
+      setIsDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to update FAQ', description: error.message, variant: 'destructive' });
+    }
+  });
+
+  const deleteFaq = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest('DELETE', `/api/faqs/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/faqs'] });
+      toast({ title: 'FAQ deleted successfully' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to delete FAQ', description: error.message, variant: 'destructive' });
+    }
+  });
+
+  if (isLoading) {
+    return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">FAQs</h1>
+          <p className="text-muted-foreground">Manage frequently asked questions</p>
+        </div>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingFaq(null); }}>
+          <DialogTrigger asChild>
+            <Button data-testid="button-add-faq">
+              <Plus className="w-4 h-4 mr-2" />
+              Add FAQ
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <FaqForm 
+              faq={editingFaq}
+              onSubmit={(data) => {
+                if (editingFaq) {
+                  updateFaq.mutate({ ...data, id: editingFaq.id });
+                } else {
+                  createFaq.mutate(data);
+                }
+              }}
+              isLoading={createFaq.isPending || updateFaq.isPending}
+              nextOrder={faqs?.length || 0}
+            />
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {faqs?.length === 0 ? (
+        <div className="p-12 text-center bg-slate-100 dark:bg-slate-800 rounded-lg">
+          <HelpCircle className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+          <h3 className="font-semibold text-lg mb-2">No FAQs yet</h3>
+          <p className="text-muted-foreground mb-4">Create FAQs to help your customers find answers quickly</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {faqs?.map((faq) => (
+            <div
+              key={faq.id}
+              className="p-4 rounded-lg bg-slate-100 dark:bg-slate-800 transition-all"
+              data-testid={`faq-item-${faq.id}`}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge variant="outline" className="text-xs border-0 bg-slate-200 dark:bg-slate-700">
+                      #{faq.order}
+                    </Badge>
+                  </div>
+                  <h3 className="font-semibold text-lg">{faq.question}</h3>
+                  <p className="text-muted-foreground mt-1 text-sm whitespace-pre-wrap">{faq.answer}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => { setEditingFaq(faq); setIsDialogOpen(true); }}
+                    data-testid={`button-edit-faq-${faq.id}`}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" data-testid={`button-delete-faq-${faq.id}`}>
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete FAQ?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={() => deleteFaq.mutate(faq.id)}
+                          className="bg-red-500 hover:bg-red-600"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FaqForm({ faq, onSubmit, isLoading, nextOrder }: { 
+  faq: Faq | null; 
+  onSubmit: (data: { question: string; answer: string; order: number }) => void;
+  isLoading: boolean;
+  nextOrder: number;
+}) {
+  const [question, setQuestion] = useState(faq?.question || '');
+  const [answer, setAnswer] = useState(faq?.answer || '');
+  const [order, setOrder] = useState(faq?.order ?? nextOrder);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({ question, answer, order });
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <DialogHeader>
+        <DialogTitle>{faq ? 'Edit FAQ' : 'Add FAQ'}</DialogTitle>
+      </DialogHeader>
+      <div className="space-y-4 py-4">
+        <div className="space-y-2">
+          <Label htmlFor="faq-question">Question</Label>
+          <Input 
+            id="faq-question" 
+            value={question} 
+            onChange={(e) => setQuestion(e.target.value)} 
+            required 
+            placeholder="e.g., How do I book a service?"
+            data-testid="input-faq-question" 
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="faq-answer">Answer</Label>
+          <Textarea 
+            id="faq-answer" 
+            value={answer} 
+            onChange={(e) => setAnswer(e.target.value)} 
+            required
+            placeholder="Provide a helpful answer..."
+            rows={4}
+            data-testid="input-faq-answer" 
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="faq-order">Display Order</Label>
+          <Input 
+            id="faq-order" 
+            type="number"
+            value={order} 
+            onChange={(e) => setOrder(Number(e.target.value))} 
+            min={0}
+            data-testid="input-faq-order" 
+          />
+          <p className="text-xs text-muted-foreground">Lower numbers appear first</p>
+        </div>
+      </div>
+      <DialogFooter>
+        <DialogClose asChild>
+          <Button variant="outline" type="button">Cancel</Button>
+        </DialogClose>
+        <Button type="submit" disabled={isLoading} data-testid="button-save-faq">
+          {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          {faq ? 'Update' : 'Create'}
+        </Button>
+      </DialogFooter>
+    </form>
   );
 }
