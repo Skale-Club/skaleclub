@@ -67,12 +67,39 @@ export default function Admin() {
   const { isAdmin, email, firstName, lastName, loading, signOut } = useAdminAuth();
   const [, setLocation] = useLocation();
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
+  const [sectionsOrder, setSectionsOrder] = useState<AdminSection[]>(menuItems.map(item => item.id));
+  const [draggedSectionId, setDraggedSectionId] = useState<AdminSection | null>(null);
 
   useEffect(() => {
     if (!loading && !isAdmin) {
       setLocation('/admin/login');
     }
   }, [loading, isAdmin, setLocation]);
+
+  const handleSectionDragStart = (e: React.DragEvent, id: AdminSection) => {
+    setDraggedSectionId(id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleSectionDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleSectionDrop = (e: React.DragEvent, targetId: AdminSection) => {
+    e.preventDefault();
+    if (draggedSectionId === null || draggedSectionId === targetId) return;
+
+    const newOrder = [...sectionsOrder];
+    const draggedIndex = newOrder.indexOf(draggedSectionId);
+    const targetIndex = newOrder.indexOf(targetId);
+
+    newOrder.splice(draggedIndex, 1);
+    newOrder.splice(targetIndex, 0, draggedSectionId);
+
+    setSectionsOrder(newOrder);
+    setDraggedSectionId(null);
+  };
 
   if (loading) {
     return (
@@ -119,18 +146,36 @@ export default function Admin() {
             <SidebarGroup>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {menuItems.map((item) => (
-                    <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton
-                        onClick={() => setActiveSection(item.id)}
-                        isActive={activeSection === item.id}
-                        data-testid={`nav-${item.id}`}
+                  {sectionsOrder.map((sectionId) => {
+                    const item = menuItems.find(i => i.id === sectionId)!;
+                    return (
+                      <SidebarMenuItem 
+                        key={item.id}
+                        draggable
+                        onDragStart={(e) => handleSectionDragStart(e, item.id)}
+                        onDragOver={handleSectionDragOver}
+                        onDrop={(e) => handleSectionDrop(e, item.id)}
+                        onDragEnd={() => setDraggedSectionId(null)}
+                        className={clsx(
+                          "transition-all",
+                          draggedSectionId === item.id && "opacity-50"
+                        )}
                       >
-                        <item.icon className="w-4 h-4" />
-                        <span>{item.title}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
+                        <SidebarMenuButton
+                          onClick={() => setActiveSection(item.id)}
+                          isActive={activeSection === item.id}
+                          data-testid={`nav-${item.id}`}
+                          className="group/btn"
+                        >
+                          <div className="flex items-center gap-2 flex-1">
+                            <GripVertical className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover/btn:opacity-100 transition-opacity cursor-grab active:cursor-grabbing" />
+                            <item.icon className="w-4 h-4" />
+                            <span>{item.title}</span>
+                          </div>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
