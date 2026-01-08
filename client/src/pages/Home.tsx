@@ -21,7 +21,7 @@ export default function Home() {
   };
 
   return (
-    <div className="pb-12">
+    <div className="pb-0">
       {/* Hero Section */}
       <section className="relative flex items-center lg:items-end pt-6 lg:pt-4 pb-0 overflow-hidden bg-[#1C53A3]">
         <div className="container-custom mx-auto relative z-10 w-full">
@@ -144,26 +144,28 @@ export default function Home() {
       </section>
 
       {/* Reviews Section */}
-      <section className="py-20 bg-slate-50 overflow-hidden">
+      <section className="py-20 bg-slate-50 overflow-hidden mb-0">
         <div className="w-full">
           <div className="container-custom mx-auto mb-16 text-center">
             <h2 className="text-3xl md:text-5xl font-bold mb-4">Customer Reviews</h2>
             <p className="text-slate-600 max-w-2xl mx-auto text-lg">See what our customers are saying about our 5-star services.</p>
           </div>
           <div className="w-full px-0">
-            <iframe 
-              className='lc_reviews_widget' 
-              src='https://reputationhub.site/reputation/widgets/review_widget/q6UKnlWOQwyTk82yZPAs' 
-              frameBorder='0' 
-              scrolling='no' 
-              style={{ minWidth: '100%', width: '100%', height: 'auto', minHeight: '600px', border: 'none' }}
-              onLoad={() => {
-                const script = document.createElement('script');
-                script.type = 'text/javascript';
-                script.src = 'https://reputationhub.site/reputation/assets/review-widget.js';
-                document.body.appendChild(script);
-              }}
-            ></iframe>
+            <div className="min-h-[400px]">
+              <iframe 
+                className='lc_reviews_widget' 
+                src='https://reputationhub.site/reputation/widgets/review_widget/q6UKnlWOQwyTk82yZPAs' 
+                frameBorder='0' 
+                scrolling='no' 
+                style={{ minWidth: '100%', width: '100%', height: '400px', border: 'none', display: 'block' }}
+                onLoad={() => {
+                  const script = document.createElement('script');
+                  script.type = 'text/javascript';
+                  script.src = 'https://reputationhub.site/reputation/assets/review-widget.js';
+                  document.body.appendChild(script);
+                }}
+              ></iframe>
+            </div>
           </div>
         </div>
       </section>
