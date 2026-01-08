@@ -51,8 +51,8 @@ export default function Services() {
   }, [location]);
 
   return (
-    <div className="min-h-[calc(100vh-80px)] pb-32 pt-10 flex flex-col justify-between" id="services-top">
-      <div className="container-custom mx-auto flex-grow">
+    <div className="min-h-[60vh] pb-32 pt-10" id="services-top">
+      <div className="container-custom mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4 text-slate-900">Select Services</h1>
           <p className="text-slate-600 max-w-2xl mx-auto">
