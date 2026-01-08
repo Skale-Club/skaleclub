@@ -207,7 +207,7 @@ export default function BookingPage() {
                   </div>
 
                   {/* Slots Column */}
-                  <div className="relative h-[340px]">
+                  <div className="relative h-[440px]">
                     <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white via-white/80 to-transparent z-10 pointer-events-none rounded-b-2xl" />
                     <ScrollArea className="h-full pr-4">
                       <div className="space-y-3 pb-20">
