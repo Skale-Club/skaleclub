@@ -18,6 +18,7 @@ import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfService from "@/pages/TermsOfService";
 import AboutUs from "@/pages/AboutUs";
 import Contact from "@/pages/Contact";
+import Faq from "@/pages/Faq";
 
 function Router() {
   const [location] = useLocation();
@@ -46,6 +47,7 @@ function Router() {
           <Route path="/terms-of-service" component={TermsOfService} />
           <Route path="/about" component={AboutUs} />
           <Route path="/contact" component={Contact} />
+          <Route path="/faq" component={Faq} />
           <Route component={NotFound} />
         </Switch>
       </main>

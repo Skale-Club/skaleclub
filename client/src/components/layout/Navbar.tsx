@@ -31,6 +31,7 @@ export function Navbar() {
     { href: "/", label: "Home" },
     { href: "/services", label: "Services" },
     { href: "/#areas-served", label: "Areas Served" },
+    { href: "/faq", label: "FAQ" },
   ];
 
   const getInitials = (firstName?: string | null, lastName?: string | null) => {
@@ -64,7 +65,7 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-8">
             <a href="/services" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer">Services</a>
             <a href="/#areas-served" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer">Areas Served</a>
-            <span className="text-sm font-semibold text-[#1D1D1D]">FAQ</span>
+            <a href="/faq" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer">FAQ</a>
             <span className="text-sm font-semibold text-[#1D1D1D]">Blog</span>
             
             <a href={`tel:${telPhone}`} className="px-4 py-2 bg-secondary text-secondary-foreground font-bold rounded-full hover-elevate transition-all text-sm flex items-center gap-2">

@@ -3,7 +3,6 @@ import { Link, useLocation } from "wouter";
 import { ArrowRight, Star, Shield, Clock, Phone } from "lucide-react";
 import { CartSummary } from "@/components/CartSummary";
 import { AreasServedMap } from "@/components/AreasServedMap";
-import { FaqSection } from "@/components/FaqSection";
 import heroImage from "@assets/Persona-Mobile_1767749022412.png";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
@@ -185,7 +184,6 @@ export default function Home() {
       <section id="areas-served" className="bg-[#F8FAFC] py-20">
         <AreasServedMap />
       </section>
-      <FaqSection />
       <CartSummary />
     </div>
   );
