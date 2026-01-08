@@ -367,21 +367,31 @@ function CompanySettingsSection() {
   const [workingHoursEnd, setWorkingHoursEnd] = useState('18:00');
   const [logoMain, setLogoMain] = useState('');
   const [logoDark, setLogoDark] = useState('');
+  const [logoIcon, setLogoIcon] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
     setIsSaving(true);
-    // Simulating API call
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setIsSaving(false);
-    toast({ 
-      title: 'Company settings saved', 
-      description: 'Your changes have been saved successfully.',
-      variant: 'default'
-    });
+    try {
+      // Simulating API call
+      await new Promise(resolve => setTimeout(resolve, 800));
+      toast({ 
+        title: 'Company settings saved', 
+        description: 'Your changes have been saved successfully.',
+        variant: 'default'
+      });
+    } catch (error: any) {
+      toast({ 
+        title: 'Error saving settings', 
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'main' | 'dark') => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'main' | 'dark' | 'icon') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -397,9 +407,10 @@ function CompanySettingsSection() {
       });
 
       if (type === 'main') setLogoMain(objectPath);
-      else setLogoDark(objectPath);
+      else if (type === 'dark') setLogoDark(objectPath);
+      else setLogoIcon(objectPath);
       
-      toast({ title: 'Logo uploaded successfully' });
+      toast({ title: 'Asset uploaded successfully' });
     } catch (error: any) {
       toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
     }
@@ -556,6 +567,25 @@ function CompanySettingsSection() {
                     <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
                       <Input type="file" className="hidden" onChange={(e) => handleLogoUpload(e, 'dark')} accept="image/*" />
                       <Plus className="w-8 h-8 text-white" />
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm">Favicon / App Icon</Label>
+                <div className="flex flex-col gap-3">
+                  <div className="h-24 w-24 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-white flex items-center justify-center overflow-hidden relative group mx-auto">
+                    {logoIcon ? (
+                      <img src={logoIcon} alt="Icon" className="max-h-full max-w-full object-contain p-2" />
+                    ) : (
+                      <div className="text-center p-2">
+                        <Image className="w-6 h-6 text-gray-400 mx-auto mb-1" />
+                        <p className="text-[10px] text-gray-400">Icon</p>
+                      </div>
+                    )}
+                    <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                      <Input type="file" className="hidden" onChange={(e) => handleLogoUpload(e, 'icon')} accept="image/*" />
+                      <Plus className="w-6 h-6 text-white" />
                     </label>
                   </div>
                 </div>
