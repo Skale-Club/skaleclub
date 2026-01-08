@@ -21,7 +21,7 @@ export default function Home() {
   };
 
   return (
-    <div className="pb-0">
+    <div className="pb-12">
       {/* Hero Section */}
       <section className="relative flex items-center lg:items-end pt-6 lg:pt-4 pb-0 overflow-hidden bg-[#1C53A3]">
         <div className="container-custom mx-auto relative z-10 w-full">
@@ -98,11 +98,11 @@ export default function Home() {
         </div>
       </section>
       {/* Categories */}
-      <section className="py-2">
+      <section className="py-20">
         <div className="container-custom mx-auto">
-          <div className="text-center mb-4">
-            <h2 className="text-3xl md:text-5xl font-bold mb-2">Ready to Schedule?</h2>
-            <p className="text-slate-600 max-w-2xl mx-auto text-base">Select a category below to start your instant online booking.</p>
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">Ready to Schedule?</h2>
+            <p className="text-slate-600 max-w-2xl mx-auto text-lg">Select a category below to start your instant online booking.</p>
           </div>
 
           {isLoading ? (
@@ -144,11 +144,11 @@ export default function Home() {
       </section>
 
       {/* Reviews Section */}
-      <section className="py-2 bg-slate-50 overflow-hidden">
+      <section className="py-20 bg-slate-50 overflow-hidden">
         <div className="w-full">
-          <div className="container-custom mx-auto mb-4 text-center">
-            <h2 className="text-3xl md:text-5xl font-bold mb-2">Customer Reviews</h2>
-            <p className="text-slate-600 max-w-2xl mx-auto text-base">See what our customers are saying about our 5-star services.</p>
+          <div className="container-custom mx-auto mb-16 text-center">
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">Customer Reviews</h2>
+            <p className="text-slate-600 max-w-2xl mx-auto text-lg">See what our customers are saying about our 5-star services.</p>
           </div>
           <div className="w-full px-0">
             <iframe 
@@ -156,7 +156,7 @@ export default function Home() {
               src='https://reputationhub.site/reputation/widgets/review_widget/q6UKnlWOQwyTk82yZPAs' 
               frameBorder='0' 
               scrolling='no' 
-              style={{ minWidth: '100%', width: '100%', minHeight: '600px', border: 'none' }}
+              style={{ minWidth: '100%', width: '100%', height: 'auto', minHeight: '600px', border: 'none' }}
               onLoad={() => {
                 const script = document.createElement('script');
                 script.type = 'text/javascript';
