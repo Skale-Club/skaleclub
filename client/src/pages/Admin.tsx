@@ -124,6 +124,10 @@ export default function Admin() {
     "--sidebar-width-icon": "3rem",
   };
 
+  const { data: companySettings } = useQuery<CompanySettingsData>({
+    queryKey: ['/api/company-settings']
+  });
+
   return (
     <SidebarProvider style={sidebarStyle as React.CSSProperties}>
       <div className="flex h-screen w-full bg-slate-50">
@@ -135,10 +139,21 @@ export default function Admin() {
                 Back to website
               </Link>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-lg">
-                  A
-                </div>
-                <span className="font-semibold text-lg text-primary">Admin Panel</span>
+                {companySettings?.logoIcon ? (
+                  <img 
+                    src={companySettings.logoIcon} 
+                    alt={companySettings.companyName || 'Logo'} 
+                    className="w-10 h-10 rounded-lg object-contain bg-white p-1 border border-gray-100"
+                    data-testid="img-admin-logo"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-lg">
+                    {companySettings?.companyName?.[0] || 'A'}
+                  </div>
+                )}
+                <span className="font-semibold text-lg text-primary truncate">
+                  {companySettings?.companyName || 'Admin Panel'}
+                </span>
               </div>
             </div>
           </SidebarHeader>
