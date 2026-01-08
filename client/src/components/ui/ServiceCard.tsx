@@ -115,70 +115,72 @@ export function ServiceCard({ service }: ServiceCardProps) {
           )}
         </div>
 
-        {isInCart && (addonsLoading || suggestedAddons.length > 0) && (
+        {isInCart && (suggestedAddons.length > 0 || addonsLoading) && (
           <div className="mt-4 pt-4 border-t border-slate-200">
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              <span className="text-sm font-semibold text-slate-700">Suggested Add-ons</span>
-            </div>
-            {addonsLoading ? (
+            {addonsLoading && suggestedAddons.length === 0 ? (
               <div className="flex items-center justify-center py-2">
                 <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
               </div>
-            ) : (
-              <div className="space-y-2">
-                {suggestedAddons.map(addon => {
-                  const addonItem = items.find(i => i.id === addon.id);
-                  const isAddonInCart = !!addonItem;
-                  const addonQty = addonItem?.quantity || 0;
+            ) : suggestedAddons.length > 0 ? (
+              <>
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  <span className="text-sm font-semibold text-slate-700">Suggested Add-ons</span>
+                </div>
+                <div className="space-y-2">
+                  {suggestedAddons.map(addon => {
+                    const addonItem = items.find(i => i.id === addon.id);
+                    const isAddonInCart = !!addonItem;
+                    const addonQty = addonItem?.quantity || 0;
 
-                  return (
-                    <div key={addon.id} className="flex items-center justify-between gap-2 p-2 bg-slate-50 rounded-lg">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-800 truncate">{addon.name}</p>
-                        <p className="text-xs text-slate-500">${addon.price}</p>
-                      </div>
-                      
-                      {isAddonInCart ? (
-                        <div className="flex items-center bg-white rounded-lg p-0.5 gap-1 border border-slate-100 shadow-sm">
-                          <button
-                            onClick={() => {
-                              if (addonQty > 1) {
-                                updateQuantity(addon.id, addonQty - 1);
-                              } else {
-                                removeItem(addon.id);
-                              }
-                            }}
-                            className="p-1.5 hover:bg-slate-50 rounded-md transition-colors text-slate-600"
-                            aria-label="Decrease quantity"
-                          >
-                            <Minus className="w-3 h-3" />
-                          </button>
-                          <span className="w-6 text-center text-xs font-bold text-slate-900">
-                            {addonQty}
-                          </span>
-                          <button
-                            onClick={() => updateQuantity(addon.id, addonQty + 1)}
-                            className="p-1.5 hover:bg-slate-50 rounded-md transition-colors text-slate-600"
-                            aria-label="Increase quantity"
-                          >
-                            <Plus className="w-3 h-3" />
-                          </button>
+                    return (
+                      <div key={addon.id} className="flex items-center justify-between gap-2 p-2 bg-slate-50 rounded-lg">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-slate-800 truncate">{addon.name}</p>
+                          <p className="text-xs text-slate-500">${addon.price}</p>
                         </div>
-                      ) : (
-                        <button
-                          onClick={() => addItem(addon)}
-                          className="px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
-                          data-testid={`button-add-addon-${addon.id}`}
-                        >
-                          Add
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                        
+                        {isAddonInCart ? (
+                          <div className="flex items-center bg-white rounded-lg p-0.5 gap-1 border border-slate-100 shadow-sm">
+                            <button
+                              onClick={() => {
+                                if (addonQty > 1) {
+                                  updateQuantity(addon.id, addonQty - 1);
+                                } else {
+                                  removeItem(addon.id);
+                                }
+                              }}
+                              className="p-1.5 hover:bg-slate-50 rounded-md transition-colors text-slate-600"
+                              aria-label="Decrease quantity"
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                            <span className="w-6 text-center text-xs font-bold text-slate-900">
+                              {addonQty}
+                            </span>
+                            <button
+                              onClick={() => updateQuantity(addon.id, addonQty + 1)}
+                              className="p-1.5 hover:bg-slate-50 rounded-md transition-colors text-slate-600"
+                              aria-label="Increase quantity"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => addItem(addon)}
+                            className="px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
+                            data-testid={`button-add-addon-${addon.id}`}
+                          >
+                            Add
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            ) : null}
           </div>
         )}
       </div>
