@@ -1,4 +1,4 @@
-import { useCategories } from "@/hooks/use-booking";
+import { useCategories, useServices } from "@/hooks/use-booking";
 import { Link, useLocation } from "wouter";
 import { ArrowRight, Star, Shield, Clock, Phone } from "lucide-react";
 import { CartSummary } from "@/components/CartSummary";
@@ -7,11 +7,14 @@ import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
 
 export default function Home() {
-  const { data: categories, isLoading } = useCategories();
+  const { data: categories, isLoading: isCategoriesLoading } = useCategories();
+  const { data: services, isLoading: isServicesLoading } = useServices();
   const [, setLocation] = useLocation();
   const { data: companySettings } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
   });
+
+  const isLoading = isCategoriesLoading || isServicesLoading;
 
   const displayPhone = companySettings?.companyPhone || "(303) 309 4226";
   const telPhone = displayPhone.replace(/\D/g, '');
@@ -19,6 +22,11 @@ export default function Home() {
   const handleCategoryClick = (categoryId: number) => {
     setLocation(`/services?category=${categoryId}&scroll=true`);
   };
+
+  // Filter categories that have at least one service
+  const activeCategories = categories?.filter(category => 
+    services?.some(service => service.categoryId === category.id)
+  );
 
   return (
     <div className="pb-0">
@@ -112,8 +120,8 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {categories?.map((category) => (
+            <div className={`grid grid-cols-1 md:grid-cols-2 ${activeCategories?.length === 1 ? 'lg:grid-cols-1 max-w-md mx-auto' : activeCategories?.length === 2 ? 'lg:grid-cols-2 max-w-4xl mx-auto' : 'lg:grid-cols-3'} gap-8`}>
+              {activeCategories?.map((category) => (
                 <div 
                   key={category.id} 
                   className="group cursor-pointer relative overflow-hidden rounded-2xl h-80 shadow-md hover:shadow-xl transition-all duration-500 border border-gray-100"
