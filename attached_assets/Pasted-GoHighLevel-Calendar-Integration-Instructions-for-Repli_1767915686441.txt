@@ -1,0 +1,158 @@
+GoHighLevel Calendar Integration - Instructions for Replit Agent
+OBJECTIVE
+Integrate the Skleanings booking system with GoHighLevel (GHL) to sync calendars, appointments, and contacts.
+GHL Calendar ID: 2irhr47AR6K0AQkFqEQl
+
+WHAT WE NEED TO BUILD
+1. DATABASE CHANGES
+Create new table: integration_settings
+
+Store GHL API key, location ID, calendar ID
+Track if integration is active
+Link to company/user
+
+Update bookings table:
+
+Add columns: ghl_appointment_id, ghl_contact_id, sync_status
+
+
+2. BACKEND API ROUTES
+Create folder: /api/integrations/ghl/
+Files needed:
+
+config.js - Save/load GHL settings
+free-slots.js - Fetch available time slots from GHL
+create-contact.js - Create/update contact in GHL
+create-appointment.js - Create appointment in GHL
+utils.js - Helper functions for GHL API calls
+
+Each route should:
+
+Authenticate with GHL using Bearer token
+Handle errors gracefully
+Return standardized responses
+
+
+3. ADMIN PANEL - INTEGRATIONS PAGE
+Replace "Integrations coming soon" with configuration form:
+Form fields:
+
+GHL API Key (password input)
+Location ID (text input)
+Calendar ID (text input, default: 2irhr47AR6K0AQkFqEQl)
+Enable/Disable toggle
+"Save Settings" button
+"Test Connection" button
+
+Functionality:
+
+Save credentials to database (encrypted)
+Test button verifies GHL connection
+Show success/error messages
+
+
+4. FRONTEND BOOKING FLOW CHANGES
+When user selects a date:
+
+Check if GHL integration is enabled
+If yes: fetch slots from GHL API via our backend
+If no: use local slots from database
+Display slots in calendar UI
+
+When user confirms booking:
+
+Create booking locally in Supabase (keep existing flow)
+If GHL enabled:
+
+Create/update contact in GHL
+Create appointment in GHL
+Store GHL IDs in local booking record
+
+
+Show confirmation to user
+
+
+GHL API INTEGRATION DETAILS
+Base URL: https://services.leadconnectorhq.com
+Authentication:
+
+Header: Authorization: Bearer {API_KEY}
+Header: Version: 2021-04-15
+
+Key Endpoints to Use:
+
+Get Free Slots
+
+GET /calendars/{calendarId}/free-slots
+Params: startDate, endDate (Unix timestamps), timezone
+Returns: Available time slots by date
+
+
+Create Contact
+
+POST /contacts/
+Body: locationId, email, firstName, lastName, phone
+Returns: Contact ID
+
+
+Create Appointment
+
+POST /calendars/{calendarId}/appointments
+Body: calendarId, contactId, startTime, endTime, title, status
+Returns: Appointment ID
+
+
+
+
+IMPORTANT REQUIREMENTS
+Security:
+
+Never expose GHL API key in frontend
+Encrypt API key in database
+All GHL calls go through backend
+
+Error Handling:
+
+If GHL fails, booking should still work locally
+Show user-friendly error messages
+Log errors for debugging
+
+Timezone:
+
+User timezone: America/New_York (EST)
+Convert times properly when sending to GHL
+
+Fallback:
+
+System must work even if GHL is disabled
+Local calendar remains functional
+
+
+TESTING CHECKLIST
+
+ Can save GHL settings in admin panel
+ Test connection validates credentials
+ Calendar shows GHL slots when enabled
+ Booking creates contact in GHL
+ Booking creates appointment in GHL
+ Local database stores GHL IDs
+ System works when GHL is disabled
+ Errors are handled gracefully
+
+
+PHASED APPROACH
+Phase 1: Database setup + settings page
+Phase 2: Backend API routes for GHL
+Phase 3: Frontend calendar integration
+Phase 4: Frontend booking flow integration
+Phase 5: Testing and error handling
+
+QUESTIONS BEFORE STARTING
+
+What's the current structure of the bookings table?
+How is user/company authentication handled?
+Where are calendar availability rules stored currently?
+Should we support multiple GHL calendars per company?
+
+
+END OF INSTRUCTIONS

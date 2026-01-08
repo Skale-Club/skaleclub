@@ -56,6 +56,22 @@ export const bookings = pgTable("bookings", {
   paymentMethod: text("payment_method").notNull(), // "site" or "online"
   status: text("status").notNull().default("confirmed"), // confirmed, cancelled
   createdAt: timestamp("created_at").defaultNow(),
+  // GHL integration fields
+  ghlAppointmentId: text("ghl_appointment_id"),
+  ghlContactId: text("ghl_contact_id"),
+  ghlSyncStatus: text("ghl_sync_status").default("pending"), // pending, synced, failed
+});
+
+// GoHighLevel Integration Settings
+export const integrationSettings = pgTable("integration_settings", {
+  id: serial("id").primaryKey(),
+  provider: text("provider").notNull().default("gohighlevel"), // gohighlevel, etc.
+  apiKey: text("api_key"), // Encrypted API key
+  locationId: text("location_id"),
+  calendarId: text("calendar_id").default("2irhr47AR6K0AQkFqEQl"),
+  isEnabled: boolean("is_enabled").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const bookingItems = pgTable("booking_items", {
@@ -75,11 +91,19 @@ export const insertServiceAddonSchema = createInsertSchema(serviceAddons).omit({
 export const insertBookingSchema = createInsertSchema(bookings).omit({ 
   id: true, 
   createdAt: true,
-  status: true 
+  status: true,
+  ghlAppointmentId: true,
+  ghlContactId: true,
+  ghlSyncStatus: true,
 }).extend({
   // Frontend sends service IDs, backend calculates totals/snapshots
   serviceIds: z.array(z.number()).min(1, "Select at least one service"),
   bookingDate: z.string(), // Provide as string YYYY-MM-DD
+});
+export const insertIntegrationSettingsSchema = createInsertSchema(integrationSettings).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true 
 });
 
 // === TYPES ===
@@ -90,11 +114,13 @@ export type Service = typeof services.$inferSelect;
 export type ServiceAddon = typeof serviceAddons.$inferSelect;
 export type Booking = typeof bookings.$inferSelect;
 export type BookingItem = typeof bookingItems.$inferSelect;
+export type IntegrationSettings = typeof integrationSettings.$inferSelect;
 
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type InsertService = z.infer<typeof insertServiceSchema>;
 export type InsertServiceAddon = z.infer<typeof insertServiceAddonSchema>;
 export type InsertBooking = z.infer<typeof insertBookingSchema>;
+export type InsertIntegrationSettings = z.infer<typeof insertIntegrationSettingsSchema>;
 
 // For availability checking
 export interface TimeSlot {
