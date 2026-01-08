@@ -52,11 +52,11 @@ export default function Home() {
                 </a>
               </div>
             </div>
-            <div className="relative flex h-full items-end justify-center lg:justify-end self-end">
+            <div className="relative flex h-full items-end justify-center lg:justify-end self-end w-full">
               <img 
                 src={heroImage} 
                 alt="Cleaning Professionals" 
-                className="w-full max-w-[200px] sm:max-w-md lg:max-w-[600px] object-contain drop-shadow-2xl translate-y-0 scale-100 origin-bottom"
+                className="w-full max-w-none sm:max-w-md lg:max-w-[600px] object-contain drop-shadow-2xl translate-y-0 scale-100 origin-bottom"
               />
             </div>
           </div>
