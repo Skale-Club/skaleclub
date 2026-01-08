@@ -35,9 +35,12 @@ export default function Home() {
         <div className="container-custom mx-auto relative z-10 w-full">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-12 items-center lg:items-end">
             <div className="text-white pt-4 pb-2 lg:pt-20 lg:pb-24">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-xs sm:text-sm font-medium mb-3 lg:mb-6 border border-white/30">
-                <Shield className="w-3 h-3 sm:w-4 sm:h-4" />
-                Trusted Cleaning Experts!
+              <div className="mb-3 lg:mb-6">
+                <img 
+                  src="https://storage.googleapis.com/msgsndr/q6UKnlWOQwyTk82yZPAs/media/696016120597df5bbeeba997.png" 
+                  alt="Trusted Experts" 
+                  className="h-8 sm:h-10 w-auto object-contain"
+                />
               </div>
               <h1 className="sm:text-5xl md:text-7xl font-bold mb-3 lg:mb-6 font-display text-[11vw] sm:text-[48px] leading-[1.05] sm:leading-[1.1]">
                 <span className="text-white">Your 5-star</span> <br />
