@@ -23,7 +23,7 @@ const bookingFormSchema = z.object({
 type BookingFormValues = z.infer<typeof bookingFormSchema>;
 
 export default function BookingPage() {
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<2 | 3>(2);
   const { items, totalPrice, totalDuration, removeItem, updateQuantity } = useCart();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -47,16 +47,13 @@ export default function BookingPage() {
   const calendarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("step") === "2") {
-      setStep(2);
-      setTimeout(() => {
-        calendarRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-    }
+    // Scroll to calendar on load as we start on step 2
+    setTimeout(() => {
+      calendarRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
   }, []);
 
-  const handleNextStep = (nextStep: 1 | 2 | 3) => {
+  const handleNextStep = (nextStep: 2 | 3) => {
     setStep(nextStep);
     if (nextStep === 2) {
       setTimeout(() => {
@@ -125,58 +122,30 @@ export default function BookingPage() {
           <div className="lg:col-span-2 space-y-6">
             
             {/* Steps Indicator */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between mb-8">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center gap-12 mb-8">
               {[
-                { id: 1, label: "Services" },
                 { id: 2, label: "Schedule" },
                 { id: 3, label: "Checkout" },
               ].map((s) => (
                 <div key={s.id} className="flex items-center gap-3">
                   <div className={clsx(
-                    "w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm",
-                    step >= s.id ? "bg-primary text-white" : "bg-gray-100 text-slate-400"
+                    "w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-all",
+                    step >= s.id ? "bg-primary text-white scale-110 shadow-lg shadow-primary/20" : "bg-gray-100 text-slate-400"
                   )}>
-                    {step > s.id ? <CheckCircle2 className="w-5 h-5" /> : s.id}
+                    {step > s.id ? <CheckCircle2 className="w-5 h-5" /> : (s.id === 2 ? 1 : 2)}
                   </div>
                   <span className={clsx(
-                    "font-medium hidden sm:block",
+                    "font-bold hidden sm:block",
                     step >= s.id ? "text-slate-900" : "text-slate-400"
                   )}>{s.label}</span>
                 </div>
               ))}
             </div>
 
-            {/* STEP 1: REVIEW SERVICES */}
-            {step === 1 && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
-                <h2 className="text-2xl font-bold mb-4">Review Services</h2>
-                {items.map((item) => (
-                  <div key={item.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:border-primary/30 transition-all">
-                    <div>
-                      <h3 className="font-bold text-lg text-slate-900">{item.name}</h3>
-                      <p className="text-slate-500 text-sm">{item.durationMinutes} mins</p>
-                    </div>
-                    <div className="flex items-center gap-6">
-                      <span className="font-bold text-lg">${item.price}</span>
-                      <button 
-                        onClick={() => removeItem(item.id)}
-                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
             {/* STEP 2: SCHEDULE */}
             {step === 2 && (
               <div ref={calendarRef} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-4 text-slate-900">
                 <div className="flex items-center gap-4 mb-8">
-                  <button onClick={() => setStep(1)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                    <ArrowLeft className="w-5 h-5 text-slate-600" />
-                  </button>
                   <h2 className="text-2xl font-bold">Select Date & Time</h2>
                 </div>
 
@@ -306,7 +275,7 @@ export default function BookingPage() {
             {step === 3 && (
               <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-4">
                 <div className="flex items-center gap-4 mb-6">
-                  <button onClick={() => handleNextStep(2)} className="p-2 hover:bg-slate-100 rounded-full">
+                  <button onClick={() => setStep(2)} className="p-2 hover:bg-slate-100 rounded-full">
                     <ArrowLeft className="w-5 h-5" />
                   </button>
                   <h2 className="text-2xl font-bold">Contact Details</h2>
@@ -468,15 +437,6 @@ export default function BookingPage() {
 
               {/* Continue Buttons moved here */}
               <div className="mt-8">
-                {step === 1 && (
-                  <button 
-                    onClick={() => handleNextStep(2)}
-                    className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
-                  >
-                    Select Date & Time <ChevronRight className="w-4 h-4" />
-                  </button>
-                )}
-                
                 {step === 2 && (
                   <button 
                     disabled={!selectedDate || !selectedTime}
