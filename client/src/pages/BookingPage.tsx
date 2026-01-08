@@ -47,10 +47,12 @@ export default function BookingPage() {
   const calendarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Scroll to calendar on load as we start on step 2
-    setTimeout(() => {
-      calendarRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("scroll") === "calendar") {
+      setTimeout(() => {
+        calendarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
+    }
   }, []);
 
   const handleNextStep = (nextStep: 2 | 3) => {

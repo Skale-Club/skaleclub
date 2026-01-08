@@ -36,7 +36,7 @@ export function CartSummary() {
           </div>
         </div>
 
-        <Link href="/booking?step=2">
+        <Link href="/booking?scroll=calendar">
           <button className="w-full md:w-auto px-8 py-3 bg-white text-blue-600 font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
             Continue to Booking
             <ArrowRight className="w-4 h-4" />
