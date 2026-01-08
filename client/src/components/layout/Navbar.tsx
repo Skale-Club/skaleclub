@@ -30,6 +30,7 @@ export function Navbar() {
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/services", label: "Services" },
+    { href: "/#areas-served", label: "Areas Served" },
   ];
 
   const getInitials = (firstName?: string | null, lastName?: string | null) => {
@@ -62,7 +63,7 @@ export function Navbar() {
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8">
             <Link href="/services" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors">Services</Link>
-            <span className="text-sm font-semibold text-[#1D1D1D]">Areas Served</span>
+            <Link href="/#areas-served" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer">Areas Served</Link>
             <span className="text-sm font-semibold text-[#1D1D1D]">FAQ</span>
             <span className="text-sm font-semibold text-[#1D1D1D]">Blog</span>
             

@@ -181,7 +181,9 @@ export default function Home() {
           </div>
         </div>
       </section>
-      <AreasServedMap />
+      <section id="areas-served">
+        <AreasServedMap />
+      </section>
       <CartSummary />
     </div>
   );
