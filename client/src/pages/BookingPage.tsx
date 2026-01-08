@@ -207,10 +207,10 @@ export default function BookingPage() {
                   </div>
 
                   {/* Slots Column */}
-                  <div className="relative">
-                    <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-white to-transparent z-10 pointer-events-none rounded-b-2xl" />
-                    <ScrollArea className="h-[340px] pr-4">
-                      <div className="space-y-3 pb-8">
+                  <div className="relative h-[340px]">
+                    <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white via-white/80 to-transparent z-10 pointer-events-none rounded-b-2xl" />
+                    <ScrollArea className="h-full pr-4">
+                      <div className="space-y-3 pb-20">
                         {isLoadingSlots ? (
                           [1, 2, 3, 4, 5].map(i => (
                             <div key={i} className="h-14 bg-slate-50 border border-slate-100 rounded-xl animate-pulse"></div>
