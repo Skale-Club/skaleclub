@@ -184,7 +184,7 @@ export default function BookingPage() {
                             const isPast = currentDay < new Date() && !isToday;
 
                             days.push(
-                              <div key={currentDay.toString()} className="flex justify-center items-center">
+                              <div key={currentDay.toString()} className="flex justify-center items-center aspect-square">
                                 <button
                                   disabled={!isCurrentMonth || isPast}
                                   onClick={() => {
@@ -192,7 +192,7 @@ export default function BookingPage() {
                                     setSelectedTime("");
                                   }}
                                   className={clsx(
-                                    "h-10 w-10 rounded-xl flex items-center justify-center text-sm font-semibold transition-all relative",
+                                    "h-10 w-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all relative",
                                     !isCurrentMonth && "opacity-0 cursor-default",
                                     isCurrentMonth && isPast && "text-slate-200 cursor-not-allowed",
                                     isCurrentMonth && !isPast && !isSelected && "text-slate-600 hover:bg-slate-50 hover:text-primary border border-transparent",
