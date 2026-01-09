@@ -731,112 +731,9 @@ function CompanySettingsSection() {
                   data-testid="input-map-embed-url"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Paste the iframe "src" attribute from Google Maps "Share -{'>'} Embed a map" to update the map shown on the home page.
+                  Paste the iframe "src" attribute from Google Maps "Share -> Embed a map" to update the map shown on the home page.
                 </p>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="timeFormat">Time Display Format</Label>
-                <Select 
-                  value={settings.timeFormat || '12h'} 
-                  onValueChange={(value) => updateField('timeFormat', value)}
-                >
-                  <SelectTrigger id="timeFormat" data-testid="select-time-format">
-                    <SelectValue placeholder="Select format" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="12h">12-hour (AM/PM)</SelectItem>
-                    <SelectItem value="24h">24-hour</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Choose how times are displayed in the booking calendar
-                </p>
-              </div>
-
-              <div className="space-y-4 sm:col-span-2">
-                <Label className="text-base font-semibold flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  Business Hours by Day
-                </Label>
-                <div className="space-y-3">
-                  {(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const).map((day) => {
-                    const dayHours = (settings.businessHours || DEFAULT_BUSINESS_HOURS)[day];
-                    const timeFormat = settings.timeFormat || '12h';
-                    
-                    const formatTimeDisplay = (time24: string) => {
-                      if (timeFormat === '24h') return time24;
-                      const [hours, minutes] = time24.split(':').map(Number);
-                      const period = hours >= 12 ? 'PM' : 'AM';
-                      const displayHours = hours % 12 || 12;
-                      return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
-                    };
-                    
-                    return (
-                      <div key={day} className="flex items-center gap-3 p-3 bg-background rounded-lg border">
-                        <div className="w-24 capitalize font-medium text-sm">{day}</div>
-                        <Switch
-                          checked={dayHours.isOpen}
-                          onCheckedChange={(checked) => {
-                            const newHours = { ...(settings.businessHours || DEFAULT_BUSINESS_HOURS) };
-                            newHours[day] = { ...newHours[day], isOpen: checked };
-                            updateField('businessHours', newHours);
-                          }}
-                          data-testid={`switch-${day}-open`}
-                        />
-                        <span className="text-sm text-muted-foreground w-12">{dayHours.isOpen ? 'Open' : 'Closed'}</span>
-                        {dayHours.isOpen && (
-                          <div className="flex items-center gap-2 flex-1">
-                            <Select
-                              value={dayHours.start}
-                              onValueChange={(value) => {
-                                const newHours = { ...(settings.businessHours || DEFAULT_BUSINESS_HOURS) };
-                                newHours[day] = { ...newHours[day], start: value };
-                                updateField('businessHours', newHours);
-                              }}
-                            >
-                              <SelectTrigger className="w-28" data-testid={`select-${day}-start`}>
-                                <SelectValue>{formatTimeDisplay(dayHours.start)}</SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                {Array.from({ length: 24 }, (_, h) => (
-                                  <SelectItem key={h} value={`${h.toString().padStart(2, '0')}:00`}>
-                                    {formatTimeDisplay(`${h.toString().padStart(2, '0')}:00`)}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <span className="text-muted-foreground">to</span>
-                            <Select
-                              value={dayHours.end}
-                              onValueChange={(value) => {
-                                const newHours = { ...(settings.businessHours || DEFAULT_BUSINESS_HOURS) };
-                                newHours[day] = { ...newHours[day], end: value };
-                                updateField('businessHours', newHours);
-                              }}
-                            >
-                              <SelectTrigger className="w-28" data-testid={`select-${day}-end`}>
-                                <SelectValue>{formatTimeDisplay(dayHours.end)}</SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                {Array.from({ length: 24 }, (_, h) => (
-                                  <SelectItem key={h} value={`${h.toString().padStart(2, '0')}:00`}>
-                                    {formatTimeDisplay(`${h.toString().padStart(2, '0')}:00`)}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Set different business hours for each day of the week. Days marked as closed won't show any available time slots.
-                </p>
-              </div>
-
             </div>
           </div>
         </div>
@@ -2405,6 +2302,163 @@ interface GHLSettings {
   locationId: string;
   calendarId: string;
   isEnabled: boolean;
+}
+
+function AvailabilitySection() {
+  const { toast } = useToast();
+  const { data: settings, isLoading } = useQuery<any>({
+    queryKey: ['/api/company-settings']
+  });
+
+  const updateSettingsMutation = useMutation({
+    mutationFn: async (newSettings: any) => {
+      return apiRequest('PUT', '/api/company-settings', newSettings);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/company-settings'] });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to update settings', description: error.message, variant: 'destructive' });
+    }
+  });
+
+  const updateField = (field: string, value: any) => {
+    if (!settings) return;
+    updateSettingsMutation.mutate({ ...settings, [field]: value });
+  };
+
+  if (isLoading || !settings) {
+    return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  }
+
+  const DEFAULT_BUSINESS_HOURS = {
+    monday: { isOpen: true, start: '08:00', end: '18:00' },
+    tuesday: { isOpen: true, start: '08:00', end: '18:00' },
+    wednesday: { isOpen: true, start: '08:00', end: '18:00' },
+    thursday: { isOpen: true, start: '08:00', end: '18:00' },
+    friday: { isOpen: true, start: '08:00', end: '18:00' },
+    saturday: { isOpen: false, start: '08:00', end: '18:00' },
+    sunday: { isOpen: false, start: '08:00', end: '18:00' }
+  };
+
+  const formatTimeDisplay = (time24: string) => {
+    const timeFormat = settings.timeFormat || '12h';
+    if (timeFormat === '24h') return time24;
+    const [hours, minutes] = time24.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Availability & Business Hours</h1>
+        <p className="text-muted-foreground">Manage your working hours and time display preferences</p>
+      </div>
+
+      <div className="grid gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Clock className="w-5 h-5 text-primary" />
+              Time Display & Hours
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="max-w-xs space-y-2">
+              <Label htmlFor="timeFormat">Time Display Format</Label>
+              <Select 
+                value={settings.timeFormat || '12h'} 
+                onValueChange={(value) => updateField('timeFormat', value)}
+              >
+                <SelectTrigger id="timeFormat">
+                  <SelectValue placeholder="Select format" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="12h">12-hour (AM/PM)</SelectItem>
+                  <SelectItem value="24h">24-hour</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Choose how times are displayed in the booking calendar
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <Label className="text-base font-semibold">Business Hours by Day</Label>
+              <div className="space-y-3">
+                {(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const).map((day) => {
+                  const dayHours = (settings.businessHours || DEFAULT_BUSINESS_HOURS)[day];
+                  
+                  return (
+                    <div key={day} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border">
+                      <div className="w-24 capitalize font-medium text-sm">{day}</div>
+                      <Switch
+                        checked={dayHours.isOpen}
+                        onCheckedChange={(checked) => {
+                          const newHours = { ...(settings.businessHours || DEFAULT_BUSINESS_HOURS) };
+                          newHours[day] = { ...newHours[day], isOpen: checked };
+                          updateField('businessHours', newHours);
+                        }}
+                      />
+                      <span className="text-sm text-muted-foreground w-12">{dayHours.isOpen ? 'Open' : 'Closed'}</span>
+                      {dayHours.isOpen && (
+                        <div className="flex items-center gap-2 flex-1">
+                          <Select
+                            value={dayHours.start}
+                            onValueChange={(value) => {
+                              const newHours = { ...(settings.businessHours || DEFAULT_BUSINESS_HOURS) };
+                              newHours[day] = { ...newHours[day], start: value };
+                              updateField('businessHours', newHours);
+                            }}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue>{formatTimeDisplay(dayHours.start)}</SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Array.from({ length: 24 }, (_, h) => (
+                                <SelectItem key={h} value={`${h.toString().padStart(2, '0')}:00`}>
+                                  {formatTimeDisplay(`${h.toString().padStart(2, '0')}:00`)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <span className="text-muted-foreground">to</span>
+                          <Select
+                            value={dayHours.end}
+                            onValueChange={(value) => {
+                              const newHours = { ...(settings.businessHours || DEFAULT_BUSINESS_HOURS) };
+                              newHours[day] = { ...newHours[day], end: value };
+                              updateField('businessHours', newHours);
+                            }}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue>{formatTimeDisplay(dayHours.end)}</SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Array.from({ length: 24 }, (_, h) => (
+                                <SelectItem key={h} value={`${h.toString().padStart(2, '0')}:00`}>
+                                  {formatTimeDisplay(`${h.toString().padStart(2, '0')}:00`)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Set different business hours for each day of the week. Days marked as closed won't show any available time slots.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
 }
 
 function IntegrationsSection() {
