@@ -731,7 +731,7 @@ function CompanySettingsSection() {
                   data-testid="input-map-embed-url"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Paste the iframe "src" attribute from Google Maps "Share -> Embed a map" to update the map shown on the home page.
+                  Paste the iframe "src" attribute from Google Maps "Share -{'>'} Embed a map" to update the map shown on the home page.
                 </p>
               </div>
             </div>
