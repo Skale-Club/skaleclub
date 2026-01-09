@@ -184,24 +184,25 @@ export default function BookingPage() {
                             const isPast = currentDay < new Date() && !isToday;
 
                             days.push(
-                              <button
-                                key={currentDay.toString()}
-                                disabled={!isCurrentMonth || isPast}
-                                onClick={() => {
-                                  setSelectedDate(format(currentDay, "yyyy-MM-dd"));
-                                  setSelectedTime("");
-                                }}
-                                className={clsx(
-                                  "h-10 w-10 rounded-xl flex items-center justify-center text-sm font-semibold transition-all relative",
-                                  !isCurrentMonth && "opacity-0 cursor-default",
-                                  isCurrentMonth && isPast && "text-slate-200 cursor-not-allowed",
-                                  isCurrentMonth && !isPast && !isSelected && "text-slate-600 hover:bg-slate-50 hover:text-primary border border-transparent",
-                                  isSelected && "bg-primary text-white shadow-md shadow-primary/20",
-                                  isToday && !isSelected && "text-primary border-primary/30 bg-primary/5"
-                                )}
-                              >
-                                {format(currentDay, "d")}
-                              </button>
+                              <div key={currentDay.toString()} className="flex justify-center items-center">
+                                <button
+                                  disabled={!isCurrentMonth || isPast}
+                                  onClick={() => {
+                                    setSelectedDate(format(currentDay, "yyyy-MM-dd"));
+                                    setSelectedTime("");
+                                  }}
+                                  className={clsx(
+                                    "h-10 w-10 rounded-xl flex items-center justify-center text-sm font-semibold transition-all relative",
+                                    !isCurrentMonth && "opacity-0 cursor-default",
+                                    isCurrentMonth && isPast && "text-slate-200 cursor-not-allowed",
+                                    isCurrentMonth && !isPast && !isSelected && "text-slate-600 hover:bg-slate-50 hover:text-primary border border-transparent",
+                                    isSelected && "bg-primary text-white shadow-md shadow-primary/20",
+                                    isToday && !isSelected && "text-primary border-primary/30 bg-primary/5"
+                                  )}
+                                >
+                                  {format(currentDay, "d")}
+                                </button>
+                              </div>
                             );
                             day = addDays(day, 1);
                           }
