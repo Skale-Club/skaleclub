@@ -515,6 +515,7 @@ interface CompanySettingsData {
   sectionsOrder: AdminSection[] | null;
   socialLinks: { platform: string; url: string }[] | null;
   mapEmbedUrl: string | null;
+  timeFormat: string | null;
 }
 
 function CompanySettingsSection() {
@@ -532,6 +533,7 @@ function CompanySettingsSection() {
     sectionsOrder: null,
     socialLinks: [],
     mapEmbedUrl: '',
+    timeFormat: '12h',
   });
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -702,6 +704,25 @@ function CompanySettingsSection() {
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Paste the iframe "src" attribute from Google Maps "Share -{'>'} Embed a map" to update the map shown on the home page.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="timeFormat">Time Display Format</Label>
+                <Select 
+                  value={settings.timeFormat || '12h'} 
+                  onValueChange={(value) => updateField('timeFormat', value)}
+                >
+                  <SelectTrigger id="timeFormat" data-testid="select-time-format">
+                    <SelectValue placeholder="Select format" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="12h">12-hour (AM/PM)</SelectItem>
+                    <SelectItem value="24h">24-hour</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Choose how times are displayed in the booking calendar
                 </p>
               </div>
 

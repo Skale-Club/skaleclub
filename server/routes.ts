@@ -414,6 +414,14 @@ export async function registerRoutes(
     const existingBookings = await storage.getBookingsByDate(date);
     const slots = [];
 
+    // Check if the selected date is today (in EST/America/New_York timezone)
+    const now = new Date();
+    const estNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const todayStr = estNow.toISOString().split('T')[0];
+    const isToday = date === todayStr;
+    const currentHour = estNow.getHours();
+    const currentMinute = estNow.getMinutes();
+
     // Generate slots every 30 minutes
     // Start from WORKING_HOURS.start to WORKING_HOURS.end
     for (let h = WORKING_HOURS.start; h < WORKING_HOURS.end; h++) {
@@ -421,6 +429,13 @@ export async function registerRoutes(
         const startHour = h.toString().padStart(2, '0');
         const startMinute = m.toString().padStart(2, '0');
         const startTime = `${startHour}:${startMinute}`;
+
+        // Skip past slots if today
+        if (isToday) {
+          if (h < currentHour || (h === currentHour && m <= currentMinute)) {
+            continue; // This slot is in the past
+          }
+        }
 
         // Calculate proposed end time
         const slotDate = new Date(`2000-01-01T${startTime}:00`);

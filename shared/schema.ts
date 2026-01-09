@@ -152,6 +152,7 @@ export const companySettings = pgTable("company_settings", {
   heroSubtitle: text("hero_subtitle").default('Book your cleaning service today and enjoy a sparkling clean home'),
   heroImageUrl: text("hero_image_url").default(''),
   ctaText: text("cta_text").default('Book Now'),
+  timeFormat: text("time_format").default('12h'), // '12h' or '24h'
 });
 
 export const insertCompanySettingsSchema = createInsertSchema(companySettings).omit({ id: true });

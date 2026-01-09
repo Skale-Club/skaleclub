@@ -10,6 +10,16 @@ import { Trash2, Calendar as CalendarIcon, Clock, ChevronRight, CheckCircle2, Ar
 import { clsx } from "clsx";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useQuery } from "@tanstack/react-query";
+
+// Helper to format time based on format setting
+function formatTime(time24: string, timeFormat: string): string {
+  if (timeFormat === '24h') return time24;
+  const [hours, minutes] = time24.split(':').map(Number);
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const displayHours = hours % 12 || 12;
+  return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+}
 
 // Schema for the form
 const bookingFormSchema = z.object({
@@ -39,6 +49,8 @@ export default function BookingPage() {
   // API Hooks
   const { data: slots, isLoading: isLoadingSlots } = useAvailability(selectedDate, totalDuration);
   const createBooking = useCreateBooking();
+  const { data: companySettings } = useQuery<{ timeFormat?: string }>({ queryKey: ['/api/company-settings'] });
+  const timeFormat = companySettings?.timeFormat || '12h';
   
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
@@ -225,7 +237,7 @@ export default function BookingPage() {
                                         : "bg-white border-slate-200 text-slate-600 hover:border-primary hover:text-primary hover:bg-primary/5"
                                     )}
                                   >
-                                    {slot.time}
+                                    {formatTime(slot.time, timeFormat)}
                                   </button>
                                 </div>
                               ))}
@@ -472,7 +484,7 @@ export default function BookingPage() {
                  {selectedTime && (
                    <div className="flex justify-between text-slate-500 text-sm">
                      <span>Time</span>
-                     <span>{selectedTime}</span>
+                     <span>{formatTime(selectedTime, timeFormat)}</span>
                    </div>
                  )}
               </div>
