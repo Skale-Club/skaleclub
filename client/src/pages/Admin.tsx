@@ -183,7 +183,7 @@ export default function Admin() {
   return (
     <SidebarProvider style={sidebarStyle as React.CSSProperties}>
       <div className="flex h-screen w-full bg-slate-50 relative">
-        <Sidebar className="border-r border-gray-200">
+        <Sidebar className="border-r border-gray-200 bg-white">
           <SidebarHeader className="p-4 border-b border-gray-100">
             <div className="flex flex-col gap-4">
               <Link href="/" className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-primary transition-colors group">
@@ -271,8 +271,8 @@ export default function Admin() {
         </Sidebar>
 
         <main className="flex-1 overflow-auto p-6 md:p-8 relative">
-          <div className="md:hidden absolute top-4 left-4 z-50">
-            <SidebarTrigger />
+          <div className="md:hidden fixed top-4 left-4 z-50">
+            <SidebarTrigger className="bg-white shadow-md border border-gray-200 rounded-lg p-2 hover:bg-gray-50" />
           </div>
           {activeSection === 'dashboard' && <DashboardSection />}
           {activeSection === 'categories' && <CategoriesSection />}
