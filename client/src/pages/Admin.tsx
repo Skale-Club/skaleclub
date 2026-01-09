@@ -2485,9 +2485,6 @@ function BookingRow({ booking, onUpdate, onDelete }: {
             >
               <ChevronDown className={clsx("w-4 h-4 transition-transform", expanded && "rotate-180")} />
             </button>
-            <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500">
-              <User className="w-4 h-4" />
-            </div>
             <div>
               <p className="font-semibold text-slate-900 dark:text-slate-100">{booking.customerName}</p>
               <p className="text-xs text-slate-500">{booking.customerEmail}</p>
@@ -2526,19 +2523,6 @@ function BookingRow({ booking, onUpdate, onDelete }: {
               <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
-        </td>
-        <td className="px-6 py-4">
-          <div className="flex flex-wrap gap-1 max-w-[200px]">
-            {bookingItems ? (
-              bookingItems.map((item) => (
-                <Badge key={item.id} variant="outline" className="text-[10px] py-0 px-1 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 whitespace-nowrap">
-                  {item.serviceName}
-                </Badge>
-              ))
-            ) : (
-              <span className="text-xs text-slate-400 italic">Loading...</span>
-            )}
-          </div>
         </td>
         <td className="px-6 py-4">
           <button
@@ -2703,7 +2687,6 @@ function BookingsSection() {
                   <th className="px-6 py-4 text-left">Schedule</th>
                   <th className="px-6 py-4 text-left">Address</th>
                   <th className="px-6 py-4 text-left">Status</th>
-                  <th className="px-6 py-4 text-left">Services</th>
                   <th className="px-6 py-4 text-left">Payment</th>
                   <th className="px-6 py-4 text-left">Amount</th>
                   <th className="px-6 py-4 text-right">Actions</th>
