@@ -469,12 +469,12 @@ function HeroSettingsSection() {
             <div className="space-y-2">
               <Label htmlFor="heroImage">Hero Background Image</Label>
               <div className="flex flex-col gap-3">
-                <div className="h-64 lg:h-full min-h-[300px] rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden relative group">
+                <div className="h-32 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden relative group max-w-md">
                   {heroImageUrl ? (
                     <img src={heroImageUrl} alt="Hero preview" className="w-full h-full object-cover" />
                   ) : (
                     <div className="text-center p-4">
-                      <Image className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <Image className="w-6 h-6 text-gray-400 mx-auto mb-2" />
                       <p className="text-xs text-gray-400">Background Image</p>
                     </div>
                   )}
@@ -483,7 +483,7 @@ function HeroSettingsSection() {
                     <Plus className="w-8 h-8 text-white" />
                   </label>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 max-w-md">
                   <Input 
                     value={heroImageUrl} 
                     onChange={(e) => setHeroImageUrl(e.target.value)}
