@@ -44,7 +44,7 @@ export default function Home() {
                   className="h-5 sm:h-6 w-auto object-contain"
                 />
               </div>
-              <h1 className="text-[11vw] sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-3 lg:mb-6 font-display leading-[1.05] sm:leading-[1.1]">
+              <h1 className="text-[11vw] sm:text-5xl md:text-6xl lg:text-5xl xl:text-6xl font-bold mb-3 lg:mb-6 font-display leading-[1.05] sm:leading-[1.1]">
                 {companySettings?.heroTitle ? (
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">{companySettings.heroTitle}</span>
                 ) : (
