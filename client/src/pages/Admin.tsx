@@ -2446,8 +2446,7 @@ function BookingRow({ booking, onUpdate, onDelete }: {
     queryFn: async () => {
       const res = await fetch(`/api/bookings/${booking.id}/items`);
       return res.json();
-    },
-    enabled: expanded
+    }
   });
 
   const handleAmountChange = (value: string) => {
@@ -2526,6 +2525,19 @@ function BookingRow({ booking, onUpdate, onDelete }: {
               <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
+        </td>
+        <td className="px-6 py-4">
+          <div className="flex flex-wrap gap-1 max-w-[200px]">
+            {bookingItems ? (
+              bookingItems.map((item) => (
+                <Badge key={item.id} variant="outline" className="text-[10px] py-0 px-1 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 whitespace-nowrap">
+                  {item.serviceName}
+                </Badge>
+              ))
+            ) : (
+              <span className="text-xs text-slate-400 italic">Loading...</span>
+            )}
+          </div>
         </td>
         <td className="px-6 py-4">
           <button
@@ -2690,6 +2702,7 @@ function BookingsSection() {
                   <th className="px-6 py-4 text-left">Schedule</th>
                   <th className="px-6 py-4 text-left">Address</th>
                   <th className="px-6 py-4 text-left">Status</th>
+                  <th className="px-6 py-4 text-left">Services</th>
                   <th className="px-6 py-4 text-left">Payment</th>
                   <th className="px-6 py-4 text-left">Amount</th>
                   <th className="px-6 py-4 text-right">Actions</th>
