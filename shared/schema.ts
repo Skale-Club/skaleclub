@@ -181,6 +181,7 @@ export const companySettings = pgTable("company_settings", {
   ctaText: text("cta_text").default('Book Now'),
   timeFormat: text("time_format").default('12h'), // '12h' or '24h'
   businessHours: jsonb("business_hours"), // Day-by-day business hours
+  minimumBookingValue: numeric("minimum_booking_value", { precision: 10, scale: 2 }).default('0'), // Minimum cart value required
 });
 
 export const insertCompanySettingsSchema = createInsertSchema(companySettings).omit({ id: true });

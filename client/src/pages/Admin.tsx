@@ -538,6 +538,7 @@ interface CompanySettingsData {
   mapEmbedUrl: string | null;
   timeFormat: string | null;
   businessHours: BusinessHours | null;
+  minimumBookingValue: string | null;
 }
 
 function CompanySettingsSection() {
@@ -557,6 +558,7 @@ function CompanySettingsSection() {
     mapEmbedUrl: '',
     timeFormat: '12h',
     businessHours: DEFAULT_BUSINESS_HOURS,
+    minimumBookingValue: '0',
   });
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -727,6 +729,23 @@ function CompanySettingsSection() {
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Paste the iframe "src" attribute from Google Maps "Share -{'>'} Embed a map" to update the map shown on the home page.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="minimumBookingValue">Minimum Booking Value ($)</Label>
+                <Input 
+                  id="minimumBookingValue" 
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={settings.minimumBookingValue || '0'} 
+                  onChange={(e) => updateField('minimumBookingValue', e.target.value)}
+                  placeholder="0.00"
+                  data-testid="input-minimum-booking-value"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Customers must reach this cart total before proceeding to checkout. Set to 0 to disable.
                 </p>
               </div>
             </div>
