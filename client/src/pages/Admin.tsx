@@ -2793,11 +2793,11 @@ function AvailabilitySection() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Clock className="w-5 h-5 text-primary" />
-              Time Display & Hours
+              <DollarSign className="w-5 h-5 text-primary" />
+              Booking Constraints
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent>
             <div className="max-w-xs space-y-2">
               <Label htmlFor="minimumBookingValue">Minimum Booking Value ($)</Label>
               <Input 
@@ -2814,7 +2814,17 @@ function AvailabilitySection() {
                 Customers must reach this cart total before proceeding to checkout. Set to 0 to disable.
               </p>
             </div>
+          </CardContent>
+        </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Clock className="w-5 h-5 text-primary" />
+              Time Display & Hours
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
             <div className="max-w-xs space-y-2">
               <Label htmlFor="timeFormat">Time Display Format</Label>
               <Select 
