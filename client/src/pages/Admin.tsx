@@ -3039,7 +3039,7 @@ function IntegrationsSection() {
                 data-testid="input-ghl-api-key"
               />
               <p className="text-xs text-muted-foreground">
-                Find this in your GHL account under Settings {'->'} Business Profile {'->'} API Key
+                Find this in your GHL account under Settings {'->'} Private Integrations
               </p>
             </div>
 
