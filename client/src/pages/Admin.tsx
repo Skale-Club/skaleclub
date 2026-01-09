@@ -262,12 +262,7 @@ export default function Admin() {
               <p>User management coming soon</p>
             </div>
           )}
-          {activeSection === 'availability' && (
-            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground bg-slate-100 dark:bg-slate-800 rounded-lg border-2 border-dashed">
-              <Clock className="w-12 h-12 mb-4 opacity-20" />
-              <p>Availability management coming soon</p>
-            </div>
-          )}
+          {activeSection === 'availability' && <AvailabilitySection />}
           {activeSection === 'integrations' && <IntegrationsSection />}
         </main>
       </div>
