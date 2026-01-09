@@ -561,12 +561,6 @@ function HeroSettingsSection() {
             </div>
           </div>
         </div>
-
-        <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
-          <Button onClick={handleSave} disabled={isSaving} data-testid="button-save-hero">
-            {isSaving ? "Saving..." : "Save Changes"}
-          </Button>
-        </div>
       </div>
     </div>
   );
