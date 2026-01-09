@@ -223,7 +223,7 @@ export async function createGHLAppointment(
         endTime: appointment.endTime,
         title: appointment.title,
         address: appointment.address,
-        status: "confirmed",
+        appointmentStatus: "confirmed",
       }),
     });
 
