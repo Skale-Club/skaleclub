@@ -464,7 +464,6 @@ function HeroSettingsSection() {
           ) : null}
         </div>
       </div>
-
       <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg transition-all">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="space-y-6">
@@ -514,7 +513,7 @@ function HeroSettingsSection() {
 
           <div className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="heroImage">Hero Background Image</Label>
+              <Label htmlFor="heroImage">Hero Image</Label>
               <div className="flex flex-col gap-3">
                 <div className="aspect-[4/3] w-full max-w-xs rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden relative group">
                   {heroImageUrl ? (
