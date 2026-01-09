@@ -17,24 +17,35 @@ export interface AnalyticsConfig {
 
 let isInitialized = false;
 let config: AnalyticsConfig = {};
+let initializedProviders = { gtm: false, ga4: false, fbq: false };
 
 export function initAnalytics(settings: AnalyticsConfig) {
-  if (isInitialized) return;
   config = settings;
 
-  if (settings.gtmEnabled && settings.gtmContainerId) {
+  if (settings.gtmEnabled && settings.gtmContainerId && !initializedProviders.gtm) {
     injectGTM(settings.gtmContainerId);
+    initializedProviders.gtm = true;
   }
 
-  if (settings.ga4Enabled && settings.ga4MeasurementId) {
+  if (settings.ga4Enabled && settings.ga4MeasurementId && !initializedProviders.ga4) {
     injectGA4(settings.ga4MeasurementId);
+    initializedProviders.ga4 = true;
   }
 
-  if (settings.facebookPixelEnabled && settings.facebookPixelId) {
+  if (settings.facebookPixelEnabled && settings.facebookPixelId && !initializedProviders.fbq) {
     injectFacebookPixel(settings.facebookPixelId);
+    initializedProviders.fbq = true;
   }
 
   isInitialized = true;
+}
+
+function isGtagAvailable(): boolean {
+  return typeof window.gtag === 'function';
+}
+
+function isFbqAvailable(): boolean {
+  return typeof window.fbq === 'function';
 }
 
 function injectGTM(containerId: string) {
@@ -128,17 +139,19 @@ export function trackEvent(eventName: AnalyticsEventName, payload: AnalyticsEven
     console.log('[Analytics]', eventName, payload);
   }
 
-  window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push({
-    event: eventName,
-    ...payload
-  });
+  if (config.gtmEnabled) {
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      event: eventName,
+      ...payload
+    });
+  }
 
-  if (config.ga4Enabled && config.ga4MeasurementId && window.gtag) {
+  if (config.ga4Enabled && config.ga4MeasurementId && isGtagAvailable()) {
     window.gtag('event', eventName, payload);
   }
 
-  if (config.facebookPixelEnabled && config.facebookPixelId && window.fbq) {
+  if (config.facebookPixelEnabled && config.facebookPixelId && isFbqAvailable()) {
     const fbEventMap: Record<string, string> = {
       'add_to_cart': 'AddToCart',
       'begin_checkout': 'InitiateCheckout',
@@ -173,49 +186,51 @@ export function trackPageView(path: string, title?: string) {
   });
 }
 
-export function trackAddToCart(item: { id: number | string; name: string; price: number; category?: string }) {
+export function trackAddToCart(item: { id: number | string; name: string; price: number; quantity?: number; category?: string }) {
+  const quantity = item.quantity || 1;
   trackEvent('add_to_cart', {
-    value: item.price,
+    value: item.price * quantity,
     currency: 'USD',
     items: [{
-      item_id: item.id,
+      item_id: String(item.id),
       item_name: item.name,
       price: item.price,
-      quantity: 1,
+      quantity: quantity,
       item_category: item.category
     }]
   });
 }
 
-export function trackRemoveFromCart(item: { id: number | string; name: string; price: number }) {
+export function trackRemoveFromCart(item: { id: number | string; name: string; price: number; quantity?: number }) {
+  const quantity = item.quantity || 1;
   trackEvent('remove_from_cart', {
-    value: item.price,
+    value: item.price * quantity,
     currency: 'USD',
     items: [{
-      item_id: item.id,
+      item_id: String(item.id),
       item_name: item.name,
       price: item.price,
-      quantity: 1
+      quantity: quantity
     }]
   });
 }
 
-export function trackBeginCheckout(items: Array<{ id: number | string; name: string; price: number }>, total: number) {
+export function trackBeginCheckout(items: Array<{ id: number | string; name: string; price: number; quantity?: number }>, total: number) {
   trackEvent('begin_checkout', {
     value: total,
     currency: 'USD',
     items: items.map(item => ({
-      item_id: item.id,
+      item_id: String(item.id),
       item_name: item.name,
       price: item.price,
-      quantity: 1
+      quantity: item.quantity || 1
     }))
   });
 }
 
 export function trackPurchase(
   transactionId: string,
-  items: Array<{ id: number | string; name: string; price: number }>,
+  items: Array<{ id: number | string; name: string; price: number; quantity?: number }>,
   total: number
 ) {
   trackEvent('purchase', {
@@ -223,10 +238,10 @@ export function trackPurchase(
     value: total,
     currency: 'USD',
     items: items.map(item => ({
-      item_id: item.id,
+      item_id: String(item.id),
       item_name: item.name,
       price: item.price,
-      quantity: 1
+      quantity: item.quantity || 1
     }))
   });
 }

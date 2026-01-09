@@ -76,7 +76,7 @@ export default function BookingPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (items.length > 0) {
       trackBeginCheckout(
-        items.map(item => ({ id: item.id, name: item.name, price: Number(item.price) })),
+        items.map(item => ({ id: item.id, name: item.name, price: Number(item.price), quantity: item.quantity })),
         totalPrice
       );
     }

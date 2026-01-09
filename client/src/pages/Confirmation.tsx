@@ -18,7 +18,7 @@ export default function Confirmation() {
       const transactionId = `booking_${Date.now()}`;
       trackPurchase(
         transactionId,
-        items.map(item => ({ id: item.id, name: item.name, price: Number(item.price) })),
+        items.map(item => ({ id: item.id, name: item.name, price: Number(item.price), quantity: item.quantity })),
         totalPrice
       );
       hasTracked.current = true;
