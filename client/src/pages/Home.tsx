@@ -80,11 +80,11 @@ export default function Home() {
                 </a>
               </div>
             </div>
-            <div className="relative flex h-full items-end justify-center lg:justify-end self-end w-full lg:min-h-[500px] z-10 lg:ml-[-10%]">
+            <div className="relative flex h-full items-end justify-center lg:justify-end self-end w-full lg:min-h-[500px] z-10 lg:ml-[-5%]">
               <img 
                 src={companySettings?.heroImageUrl || heroImage} 
                 alt="Cleaning Professionals" 
-                className="w-full sm:w-[110%] lg:w-[120%] max-w-[350px] sm:max-w-[450px] md:max-w-[550px] lg:max-w-[700px] xl:max-w-[850px] object-contain drop-shadow-2xl translate-y-[2%] sm:translate-y-[5%] scale-100 sm:scale-105 lg:scale-110 origin-bottom"
+                className="w-full sm:w-[105%] lg:w-[110%] max-w-[320px] sm:max-w-[420px] md:max-w-[520px] lg:max-w-[620px] xl:max-w-[750px] object-contain drop-shadow-2xl translate-y-[2%] sm:translate-y-[5%] scale-100 sm:scale-102 lg:scale-105 origin-bottom"
               />
             </div>
           </div>
