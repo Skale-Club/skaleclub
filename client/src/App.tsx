@@ -7,6 +7,7 @@ import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { useSEO } from "@/hooks/use-seo";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import Services from "@/pages/Services";
@@ -19,6 +20,11 @@ import TermsOfService from "@/pages/TermsOfService";
 import AboutUs from "@/pages/AboutUs";
 import Contact from "@/pages/Contact";
 import Faq from "@/pages/Faq";
+
+function SEOProvider({ children }: { children: React.ReactNode }) {
+  useSEO();
+  return <>{children}</>;
+}
 
 function Router() {
   const [location] = useLocation();
@@ -62,7 +68,9 @@ function App() {
       <TooltipProvider>
         <AuthProvider>
           <CartProvider>
-            <Router />
+            <SEOProvider>
+              <Router />
+            </SEOProvider>
           </CartProvider>
         </AuthProvider>
       </TooltipProvider>
