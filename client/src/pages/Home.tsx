@@ -59,10 +59,10 @@ export default function Home() {
               <p className="text-base sm:text-xl text-blue-50/80 mb-4 lg:mb-8 leading-relaxed max-w-xl">
                 {companySettings?.heroSubtitle || "We provide top-quality cleaning services ensuring a spotless environment for your home and office."}
               </p>
-              <div className="flex flex-row gap-3 lg:gap-4 flex-wrap">
-                <Link href="/services" className="shrink-0">
+              <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 flex-wrap">
+                <Link href="/services" className="w-full sm:w-auto shrink-0">
                   <button 
-                    className="px-6 sm:px-8 py-3 sm:py-4 bg-[#FFFF01] hover:bg-[#e6e600] text-black font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
+                    className="w-full px-6 sm:px-8 py-3 sm:py-4 bg-[#FFFF01] hover:bg-[#e6e600] text-black font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
                     onClick={() => trackCTAClick('hero', companySettings?.ctaText || 'Get Instant Price')}
                     data-testid="button-hero-cta"
                   >
@@ -71,7 +71,7 @@ export default function Home() {
                 </Link>
                 <a 
                   href={`tel:${telPhone}`} 
-                  className="shrink-0 px-6 sm:px-8 py-3 sm:py-4 bg-transparent text-white font-bold rounded-full border border-white/30 hover:bg-white/10 transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
+                  className="w-full sm:w-auto shrink-0 px-6 sm:px-8 py-3 sm:py-4 bg-transparent text-white font-bold rounded-full border border-white/30 hover:bg-white/10 transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
                   onClick={() => trackCTAClick('hero', 'phone_call')}
                   data-testid="button-hero-phone"
                 >
