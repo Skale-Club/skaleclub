@@ -52,8 +52,17 @@ Preferred communication style: Simple, everyday language.
 6. **GoHighLevel Integration**: Automatic sync of bookings, contacts, and appointments with GHL CRM
 
 ### Working Hours Configuration
-- Defined in `shared/schema.ts` as `WORKING_HOURS` constant
-- Used for calculating available time slots
+- **Day-by-day business hours**: Configurable per day of week in Admin > Company Settings
+- Stored in `companySettings.businessHours` as JSON (BusinessHours type)
+- Each day has: `isOpen` (boolean), `start` (HH:MM), `end` (HH:MM)
+- Default: Monday-Friday 8am-6pm open, Saturday-Sunday closed
+- When GHL integration is enabled, availability also checks GHL free slots
+- Booking calendar defaults to tomorrow (not today) to allow time for scheduling
+
+### Time Display Format
+- Configurable in Admin > Company Settings (12-hour AM/PM or 24-hour)
+- Stored in `companySettings.timeFormat` ('12h' or '24h')
+- Applied throughout booking UI and admin availability section
 
 ## External Dependencies
 
