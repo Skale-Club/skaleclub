@@ -68,7 +68,8 @@ import {
   Users,
   Puzzle,
   Globe,
-  Search
+  Search,
+  ChevronDown
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
