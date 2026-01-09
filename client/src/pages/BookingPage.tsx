@@ -222,7 +222,7 @@ export default function BookingPage() {
                           [1, 2, 3, 4, 5].map(i => (
                             <div key={i} className="h-14 bg-slate-50 border border-slate-100 rounded-xl animate-pulse"></div>
                           ))
-                        ) : slots && slots.length > 0 ? (
+                        ) : slots && slots.some(s => s.available) ? (
                           <div className="grid grid-cols-1 gap-3 pb-20">
                             {slots
                               .filter((slot) => slot.available)
@@ -245,7 +245,7 @@ export default function BookingPage() {
                         ) : (
                           <div className="text-center py-12 px-4 border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50/50">
                             <p className="text-slate-400 text-sm font-medium">
-                              {selectedDate ? "No available slots for this duration." : "Select a date to view available times."}
+                              {selectedDate ? (slots && slots.length > 0 ? "No slots available for this date" : "No available slots for this duration.") : "Select a date to view available times."}
                             </p>
                           </div>
                         )}
