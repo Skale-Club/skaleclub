@@ -1,12 +1,14 @@
 const GHL_BASE_URL = "https://services.leadconnectorhq.com";
-const GHL_API_VERSION = "2021-04-15";
+const GHL_API_VERSION = "2021-07-28";
 
-export interface GHLFreeSlot {
-  slots: string[];
+export interface GHLSlotItem {
+  startTime: string;
+  endTime: string;
 }
 
 export interface GHLFreeSlotsResponse {
-  [date: string]: GHLFreeSlot;
+  slots?: GHLSlotItem[];
+  [date: string]: any;
 }
 
 export interface GHLContact {
@@ -75,11 +77,11 @@ export async function getGHLFreeSlots(
   startDate: Date,
   endDate: Date,
   timezone: string = "America/New_York"
-): Promise<{ success: boolean; slots?: GHLFreeSlotsResponse; message?: string }> {
+): Promise<{ success: boolean; slots?: GHLSlotItem[]; message?: string }> {
   try {
-    const startTimestamp = Math.floor(startDate.getTime() / 1000);
-    const endTimestamp = Math.floor(endDate.getTime() / 1000);
-
+    const startTimestamp = Math.floor(startDate.getTime());
+    const endTimestamp = Math.floor(endDate.getTime());
+    
     const params = new URLSearchParams({
       startDate: startTimestamp.toString(),
       endDate: endTimestamp.toString(),
@@ -93,7 +95,29 @@ export async function getGHLFreeSlots(
 
     if (response.ok) {
       const data = await response.json();
-      return { success: true, slots: data };
+      console.log('GHL raw API response:', JSON.stringify(data, null, 2));
+      
+      let slotsArray: GHLSlotItem[] = [];
+      
+      if (Array.isArray(data)) {
+        slotsArray = data;
+      } else if (data.slots && Array.isArray(data.slots)) {
+        slotsArray = data.slots;
+      } else if (data._embedded && data._embedded.slots) {
+        slotsArray = data._embedded.slots;
+      } else {
+        for (const key of Object.keys(data)) {
+          if (key !== 'traceId' && data[key]?.slots && Array.isArray(data[key].slots)) {
+            slotsArray = data[key].slots.map((s: string) => ({
+              startTime: s,
+              endTime: s
+            }));
+            break;
+          }
+        }
+      }
+      
+      return { success: true, slots: slotsArray };
     } else {
       const error = await response.json().catch(() => ({}));
       return { 

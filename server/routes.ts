@@ -445,22 +445,34 @@ export async function registerRoutes(
           'America/New_York'
         );
         
+        console.log('GHL free slots result:', JSON.stringify(result, null, 2));
+        
         if (result.success && result.slots) {
-          // GHL returns slots by date, extract the slots for this date
-          const dateSlots = result.slots[date];
-          if (dateSlots && dateSlots.slots) {
-            // GHL slots are in ISO format, extract just the time part (HH:MM)
-            ghlFreeSlots = dateSlots.slots.map((slot: string) => {
-              // Handle ISO format like "2026-01-13T08:00:00-05:00"
-              const timePart = slot.includes('T') ? slot.split('T')[1] : slot;
-              return timePart.substring(0, 5); // Get HH:MM
-            });
-            useGhlSlots = true;
-          }
+          // Filter slots for the requested date and extract time parts
+          ghlFreeSlots = result.slots
+            .filter((slot: any) => {
+              // Check if slot is for the requested date
+              const slotDate = slot.startTime?.split('T')[0];
+              return slotDate === date;
+            })
+            .map((slot: any) => {
+              // Extract HH:MM from startTime (e.g., "2026-01-13T08:00:00.000Z" -> "08:00")
+              const timePart = slot.startTime?.includes('T') ? slot.startTime.split('T')[1] : slot.startTime;
+              return timePart?.substring(0, 5) || '';
+            })
+            .filter((time: string) => time !== '');
+          
+          console.log('Extracted GHL free time slots for', date, ':', ghlFreeSlots);
+          useGhlSlots = true;
+        } else if (result.success) {
+          // GHL returned success but empty/no slots
+          console.log('GHL returned success but no slots data');
+          useGhlSlots = true;
+          ghlFreeSlots = [];
         }
       } catch (error) {
         console.error('Error fetching GHL slots:', error);
-        // Fall back to local availability check
+        // Fall back to local availability check only on error
       }
     }
 
