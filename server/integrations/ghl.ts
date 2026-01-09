@@ -277,6 +277,36 @@ export async function createGHLAppointment(
   }
 }
 
+function parseAddress(fullAddress: string): { street: string; city: string; state: string } {
+  const parts = fullAddress.split(',').map(p => p.trim());
+  
+  if (parts.length >= 3) {
+    const lastPart = parts[parts.length - 1];
+    const stateMatch = lastPart.match(/^([A-Z]{2})$/i);
+    
+    if (stateMatch) {
+      const state = stateMatch[1].toUpperCase();
+      const city = parts[parts.length - 2];
+      const street = parts.slice(0, parts.length - 2).join(', ');
+      return { street, city, state };
+    }
+  }
+  
+  if (parts.length >= 2) {
+    const lastPart = parts[parts.length - 1];
+    const cityStateMatch = lastPart.match(/^(.+?)\s+([A-Z]{2})$/i);
+    
+    if (cityStateMatch) {
+      const city = cityStateMatch[1].trim();
+      const state = cityStateMatch[2].toUpperCase();
+      const street = parts.slice(0, parts.length - 1).join(', ');
+      return { street, city, state };
+    }
+  }
+  
+  return { street: fullAddress, city: '', state: '' };
+}
+
 export async function updateGHLContact(
   apiKey: string,
   contactId: string,
@@ -294,7 +324,14 @@ export async function updateGHLContact(
     if (updates.firstName) body.firstName = updates.firstName;
     if (updates.lastName) body.lastName = updates.lastName;
     if (updates.phone) body.phone = updates.phone;
-    if (updates.address) body.address1 = updates.address;
+    
+    if (updates.address) {
+      const parsed = parseAddress(updates.address);
+      body.address1 = parsed.street;
+      if (parsed.city) body.city = parsed.city;
+      if (parsed.state) body.state = parsed.state;
+      console.log(`Parsed address: street="${parsed.street}", city="${parsed.city}", state="${parsed.state}"`);
+    }
 
     const response = await ghlFetch(`/contacts/${contactId}`, apiKey, {
       method: "PUT",
