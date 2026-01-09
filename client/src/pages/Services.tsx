@@ -5,6 +5,7 @@ import { useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { clsx } from "clsx";
 import { useQuery } from "@tanstack/react-query";
+import { Search, X } from "lucide-react";
 
 export default function Services() {
   const [location] = useLocation();
@@ -15,6 +16,7 @@ export default function Services() {
   
   const [selectedCategory, setSelectedCategory] = useState<number | undefined>(initialCatId);
   const [selectedSubcategory, setSelectedSubcategory] = useState<number | undefined>(initialSubCatId);
+  const [searchQuery, setSearchQuery] = useState("");
   
   const { data: categories } = useCategories();
   const { data: subcategories } = useSubcategories(selectedCategory);
@@ -30,6 +32,15 @@ export default function Services() {
   const subcategoriesWithServices = subcategories?.filter(sub => 
     allServices?.some(s => s.subcategoryId === sub.id)
   );
+
+  const filteredServices = services?.filter(service => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      service.name.toLowerCase().includes(query) ||
+      (service.description?.toLowerCase().includes(query))
+    );
+  });
 
   // Update state if URL changes (optional, but good for linking)
   useEffect(() => {
@@ -53,11 +64,32 @@ export default function Services() {
   return (
     <div className="min-h-[60vh] pb-32 pt-10" id="services-top">
       <div className="container-custom mx-auto">
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-4 text-slate-900">Select Services</h1>
-          <p className="text-slate-600 max-w-2xl mx-auto">
+          <p className="text-slate-600 max-w-2xl mx-auto mb-8">
             Customize your cleaning package. Select the services you need, and we'll take care of the rest.
           </p>
+
+          <div className="max-w-md mx-auto relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+            <input
+              type="text"
+              placeholder="Search services..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900 placeholder:text-slate-400"
+              data-testid="input-search-services"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"
+                aria-label="Clear search"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Category Filter Pills */}
@@ -150,10 +182,10 @@ export default function Services() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {services?.map((service) => (
+            {filteredServices?.map((service) => (
               <ServiceCard key={service.id} service={service} />
             ))}
-            {services?.length === 0 && (
+            {filteredServices?.length === 0 && (
               <div className="col-span-full text-center py-20 text-slate-400">
                 No services found in this category.
               </div>
