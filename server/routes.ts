@@ -352,9 +352,10 @@ export async function registerRoutes(
           );
           
           if (contactResult.success && contactResult.contactId) {
-            // Create appointment in GHL
-            const startDateTime = new Date(`${input.bookingDate}T${input.startTime}:00`);
-            const endDateTime = new Date(`${input.bookingDate}T${endTime}:00`);
+            // Create appointment in GHL - use EST/EDT timezone format (America/New_York)
+            // GHL expects format like "2026-01-27T12:00:00-05:00" not UTC
+            const startTimeISO = `${input.bookingDate}T${input.startTime}:00-05:00`;
+            const endTimeISO = `${input.bookingDate}T${endTime}:00-05:00`;
             
             const appointmentResult = await createGHLAppointment(
               ghlSettings.apiKey,
@@ -362,8 +363,8 @@ export async function registerRoutes(
               ghlSettings.locationId,
               {
                 contactId: contactResult.contactId,
-                startTime: startDateTime.toISOString(),
-                endTime: endDateTime.toISOString(),
+                startTime: startTimeISO,
+                endTime: endTimeISO,
                 title: `Cleaning: ${serviceSummary}`,
                 address: input.customerAddress
               }
@@ -859,8 +860,10 @@ export async function registerRoutes(
         });
       }
       
-      const startDateTime = new Date(`${bookingDate}T${startTime}:00`);
-      const endDateTime = new Date(`${bookingDate}T${endTime}:00`);
+      // Use EST/EDT timezone format (America/New_York)
+      // GHL expects format like "2026-01-27T12:00:00-05:00" not UTC
+      const startTimeISO = `${bookingDate}T${startTime}:00-05:00`;
+      const endTimeISO = `${bookingDate}T${endTime}:00-05:00`;
       
       const appointmentResult = await createGHLAppointment(
         settings.apiKey,
@@ -868,8 +871,8 @@ export async function registerRoutes(
         settings.locationId,
         {
           contactId: contactResult.contactId,
-          startTime: startDateTime.toISOString(),
-          endTime: endDateTime.toISOString(),
+          startTime: startTimeISO,
+          endTime: endTimeISO,
           title: `Cleaning: ${serviceSummary}`,
           address: customerAddress
         }
