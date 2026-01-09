@@ -791,7 +791,7 @@ function CompanySettingsSection() {
                   Image shown when your site is shared on social media (Facebook, Twitter, LinkedIn). Recommended size: 1200x630 pixels.
                 </p>
                 <div className="flex flex-col gap-3">
-                  <div className="aspect-[4/3] w-full max-w-xs rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden relative group">
+                  <div className="aspect-[1.91/1] w-full max-w-xs rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden relative group">
                     {settings.ogImage ? (
                       <img src={settings.ogImage} alt="OG Preview" className="w-full h-full object-cover" />
                     ) : (
