@@ -277,6 +277,50 @@ export async function createGHLAppointment(
   }
 }
 
+export async function updateGHLContact(
+  apiKey: string,
+  contactId: string,
+  updates: {
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    address?: string;
+  }
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    const body: any = {};
+    if (updates.email) body.email = updates.email;
+    if (updates.firstName) body.firstName = updates.firstName;
+    if (updates.lastName) body.lastName = updates.lastName;
+    if (updates.phone) body.phone = updates.phone;
+    if (updates.address) body.address1 = updates.address;
+
+    const response = await ghlFetch(`/contacts/${contactId}`, apiKey, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
+
+    if (response.ok) {
+      console.log(`GHL contact ${contactId} updated successfully`);
+      return { success: true };
+    } else {
+      const error = await response.json().catch(() => ({}));
+      console.log(`GHL contact update failed: ${error.message || response.status}`);
+      return { 
+        success: false, 
+        message: error.message || `Failed to update contact: ${response.status}` 
+      };
+    }
+  } catch (error: any) {
+    console.log(`GHL contact update error: ${error.message}`);
+    return { 
+      success: false, 
+      message: error.message || "Failed to update contact" 
+    };
+  }
+}
+
 export async function getOrCreateGHLContact(
   apiKey: string,
   locationId: string,
@@ -292,6 +336,9 @@ export async function getOrCreateGHLContact(
   
   if (existingByEmail.contactId) {
     console.log(`GHL contact found by email: ${existingByEmail.contactId}`);
+    if (contact.address) {
+      await updateGHLContact(apiKey, existingByEmail.contactId, { address: contact.address });
+    }
     return { success: true, contactId: existingByEmail.contactId };
   }
   
@@ -299,6 +346,9 @@ export async function getOrCreateGHLContact(
   
   if (existingByPhone.contactId) {
     console.log(`GHL contact found by phone: ${existingByPhone.contactId}`);
+    if (contact.address) {
+      await updateGHLContact(apiKey, existingByPhone.contactId, { address: contact.address });
+    }
     return { success: true, contactId: existingByPhone.contactId };
   }
   
