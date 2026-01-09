@@ -270,27 +270,30 @@ export default function Admin() {
           </SidebarFooter>
         </Sidebar>
 
-        <main className="flex-1 overflow-auto p-6 md:p-8 relative">
-          <div className="md:hidden fixed top-4 left-4 z-50">
-            <SidebarTrigger className="bg-white shadow-md border border-gray-200 rounded-lg p-2 hover:bg-gray-50" />
+        <main className="flex-1 overflow-auto relative">
+          <header className="md:hidden sticky top-0 z-50 bg-white border-b border-gray-200 p-4 flex items-center gap-4">
+            <SidebarTrigger className="bg-white shadow-sm border border-gray-200 rounded-lg p-2" />
+            <span className="font-semibold text-primary">Admin Panel</span>
+          </header>
+          <div className="p-6 md:p-8">
+            {activeSection === 'dashboard' && <DashboardSection />}
+            {activeSection === 'categories' && <CategoriesSection />}
+            {activeSection === 'subcategories' && <SubcategoriesSection />}
+            {activeSection === 'services' && <ServicesSection />}
+            {activeSection === 'bookings' && <BookingsSection />}
+            {activeSection === 'hero' && <HeroSettingsSection />}
+            {activeSection === 'company' && <CompanySettingsSection />}
+            {activeSection === 'seo' && <SEOSection />}
+            {activeSection === 'faqs' && <FaqsSection />}
+            {activeSection === 'users' && (
+              <div className="flex flex-col items-center justify-center h-64 text-muted-foreground bg-slate-100 dark:bg-slate-800 rounded-lg border-2 border-dashed">
+                <Users className="w-12 h-12 mb-4 opacity-20" />
+                <p>User management coming soon</p>
+              </div>
+            )}
+            {activeSection === 'availability' && <AvailabilitySection />}
+            {activeSection === 'integrations' && <IntegrationsSection />}
           </div>
-          {activeSection === 'dashboard' && <DashboardSection />}
-          {activeSection === 'categories' && <CategoriesSection />}
-          {activeSection === 'subcategories' && <SubcategoriesSection />}
-          {activeSection === 'services' && <ServicesSection />}
-          {activeSection === 'bookings' && <BookingsSection />}
-          {activeSection === 'hero' && <HeroSettingsSection />}
-          {activeSection === 'company' && <CompanySettingsSection />}
-          {activeSection === 'seo' && <SEOSection />}
-          {activeSection === 'faqs' && <FaqsSection />}
-          {activeSection === 'users' && (
-            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground bg-slate-100 dark:bg-slate-800 rounded-lg border-2 border-dashed">
-              <Users className="w-12 h-12 mb-4 opacity-20" />
-              <p>User management coming soon</p>
-            </div>
-          )}
-          {activeSection === 'availability' && <AvailabilitySection />}
-          {activeSection === 'integrations' && <IntegrationsSection />}
         </main>
       </div>
     </SidebarProvider>
