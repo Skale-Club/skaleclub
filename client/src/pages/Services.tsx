@@ -64,71 +64,74 @@ export default function Services() {
   return (
     <div className="min-h-[60vh] pb-32 pt-10" id="services-top">
       <div className="container-custom mx-auto">
-        <div className="text-center mb-8">
+        <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4 text-slate-900">Select Services</h1>
-          <p className="text-slate-600 max-w-2xl mx-auto mb-8">
+          <p className="text-slate-600 max-w-2xl mx-auto mb-10">
             Customize your cleaning package. Select the services you need, and we'll take care of the rest.
           </p>
 
-          <div className="max-w-md mx-auto relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-            <input
-              type="text"
-              placeholder="Search services..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900 placeholder:text-slate-400"
-              data-testid="input-search-services"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"
-                aria-label="Clear search"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Category Filter Pills */}
-        <div className="flex overflow-x-auto pb-4 gap-3 mb-6 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap sm:justify-center sm:pb-0">
-          <button
-            onClick={() => {
-              setSelectedCategory(undefined);
-              setSelectedSubcategory(undefined);
-              window.history.pushState(null, "", "/services");
-            }}
-            className={clsx(
-              "px-6 py-2.5 rounded-full font-medium transition-all duration-200 whitespace-nowrap",
-              selectedCategory === undefined
-                ? "bg-slate-900 text-white shadow-lg"
-                : "bg-white text-slate-600 border border-gray-200 hover:bg-gray-50"
-            )}
-            data-testid="button-filter-all"
-          >
-            All Services
-          </button>
-          {categoriesWithServices?.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => {
-                setSelectedCategory(cat.id);
-                setSelectedSubcategory(undefined);
-                window.history.pushState(null, "", `/services?category=${cat.id}`);
-              }}
-              className={clsx(
-                "px-6 py-2.5 rounded-full font-medium transition-all duration-200 whitespace-nowrap",
-                selectedCategory === cat.id
-                  ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
-                  : "bg-white text-slate-600 border border-gray-200 hover:bg-gray-50"
+          <div className="flex flex-col lg:flex-row items-center justify-center gap-4 max-w-6xl mx-auto px-4">
+            {/* Search Input */}
+            <div className="w-full lg:max-w-sm relative group order-1 lg:order-2">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+              <input
+                type="text"
+                placeholder="Search services..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-2.5 bg-white border border-gray-200 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900 placeholder:text-slate-400"
+                data-testid="input-search-services"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"
+                  aria-label="Clear search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               )}
-              data-testid={`button-filter-category-${cat.id}`}
-            >
-              {cat.name}
-            </button>
-          ))}
+            </div>
+
+            {/* Category Filter Pills */}
+            <div className="flex overflow-x-auto w-full lg:w-auto pb-4 lg:pb-0 gap-3 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 lg:flex-wrap order-2 lg:order-1">
+              <button
+                onClick={() => {
+                  setSelectedCategory(undefined);
+                  setSelectedSubcategory(undefined);
+                  window.history.pushState(null, "", "/services");
+                }}
+                className={clsx(
+                  "px-6 py-2.5 rounded-full font-medium transition-all duration-200 whitespace-nowrap",
+                  selectedCategory === undefined
+                    ? "bg-slate-900 text-white shadow-lg"
+                    : "bg-white text-slate-600 border border-gray-200 hover:bg-gray-50"
+                )}
+                data-testid="button-filter-all"
+              >
+                All Services
+              </button>
+              {categoriesWithServices?.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => {
+                    setSelectedCategory(cat.id);
+                    setSelectedSubcategory(undefined);
+                    window.history.pushState(null, "", `/services?category=${cat.id}`);
+                  }}
+                  className={clsx(
+                    "px-6 py-2.5 rounded-full font-medium transition-all duration-200 whitespace-nowrap",
+                    selectedCategory === cat.id
+                      ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
+                      : "bg-white text-slate-600 border border-gray-200 hover:bg-gray-50"
+                  )}
+                  data-testid={`button-filter-category-${cat.id}`}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Subcategory Filter Pills - only show when a category is selected */}
