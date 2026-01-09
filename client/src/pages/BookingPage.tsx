@@ -518,7 +518,6 @@ export default function BookingPage() {
                 </p>
               )}
 
-              {/* Continue Buttons moved here */}
               <div className="mt-8">
                 {step === 2 && (
                   <button 
