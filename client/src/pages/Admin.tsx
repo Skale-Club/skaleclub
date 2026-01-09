@@ -3064,11 +3064,11 @@ function IntegrationsSection() {
                 id="ghl-calendar-id"
                 value={settings.calendarId}
                 onChange={(e) => setSettings(prev => ({ ...prev, calendarId: e.target.value }))}
-                placeholder="2irhr47AR6K0AQkFqEQl"
+                placeholder="Enter your Calendar ID"
                 data-testid="input-ghl-calendar-id"
               />
               <p className="text-xs text-muted-foreground">
-                The calendar to sync appointments with (default: 2irhr47AR6K0AQkFqEQl)
+                The calendar to sync appointments with
               </p>
             </div>
           </div>
