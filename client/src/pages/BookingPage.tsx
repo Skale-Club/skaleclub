@@ -183,10 +183,14 @@ export default function BookingPage() {
                             const isToday = isSameDay(currentDay, new Date());
                             const isPast = currentDay < new Date() && !isToday;
 
+                            // Mock availability check for now as we don't have a batch API
+                            // In a real scenario, we might want to fetch this from the backend
+                            const isAvailable = isCurrentMonth && !isPast;
+
                             days.push(
                               <div key={currentDay.toString()} className="flex justify-center items-center aspect-square p-0.5">
                                 <button
-                                  disabled={!isCurrentMonth || isPast}
+                                  disabled={!isCurrentMonth || isPast || !isAvailable}
                                   onClick={() => {
                                     setSelectedDate(format(currentDay, "yyyy-MM-dd"));
                                     setSelectedTime("");
@@ -194,8 +198,8 @@ export default function BookingPage() {
                                   className={clsx(
                                     "h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all relative shrink-0",
                                     !isCurrentMonth && "opacity-0 cursor-default",
-                                    isCurrentMonth && isPast && "text-slate-200 cursor-not-allowed",
-                                    isCurrentMonth && !isPast && !isSelected && "text-slate-600 hover:bg-slate-50 hover:text-primary border border-transparent",
+                                    (isPast || !isAvailable) && isCurrentMonth && "text-slate-200 cursor-not-allowed opacity-40",
+                                    isCurrentMonth && !isPast && isAvailable && !isSelected && "text-slate-600 hover:bg-slate-50 hover:text-primary border border-transparent",
                                     isSelected && "bg-primary text-white shadow-md shadow-primary/20",
                                     isToday && !isSelected && "text-primary border-primary/30 bg-primary/5"
                                   )}
