@@ -48,7 +48,8 @@ import {
   Check,
   ListFilter,
   Users,
-  Puzzle
+  Puzzle,
+  Globe
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
@@ -548,6 +549,8 @@ interface CompanySettingsData {
   timeFormat: string | null;
   businessHours: BusinessHours | null;
   minimumBookingValue: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
 }
 
 function CompanySettingsSection() {
@@ -568,6 +571,8 @@ function CompanySettingsSection() {
     timeFormat: '12h',
     businessHours: DEFAULT_BUSINESS_HOURS,
     minimumBookingValue: '0',
+    seoTitle: 'Skleanings - Professional Cleaning Services',
+    seoDescription: 'Professional cleaning services for homes and businesses. Book your cleaning appointment online.',
   });
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -755,6 +760,43 @@ function CompanySettingsSection() {
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Customers must reach this cart total before proceeding to checkout. Set to 0 to disable.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg space-y-6 transition-all">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Globe className="w-5 h-5 text-primary" />
+              SEO Settings
+            </h2>
+            <div className="grid gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="seoTitle">Page Title</Label>
+                <Input 
+                  id="seoTitle" 
+                  value={settings.seoTitle || ''} 
+                  onChange={(e) => updateField('seoTitle', e.target.value)}
+                  placeholder="Skleanings - Professional Cleaning Services"
+                  data-testid="input-seo-title"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  This appears in the browser tab and search engine results.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="seoDescription">Meta Description</Label>
+                <Textarea 
+                  id="seoDescription" 
+                  value={settings.seoDescription || ''} 
+                  onChange={(e) => updateField('seoDescription', e.target.value)}
+                  placeholder="Professional cleaning services for homes and businesses..."
+                  rows={3}
+                  data-testid="input-seo-description"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Brief description shown in search engine results (recommended: 150-160 characters).
                 </p>
               </div>
             </div>
