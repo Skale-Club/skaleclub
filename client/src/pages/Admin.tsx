@@ -2480,11 +2480,14 @@ function BookingRow({ booking, onUpdate, onDelete }: {
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setExpanded(!expanded)}
-              className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+              className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
               data-testid={`button-expand-booking-${booking.id}`}
             >
-              <User className="w-4 h-4" />
+              <ChevronDown className={clsx("w-4 h-4 transition-transform", expanded && "rotate-180")} />
             </button>
+            <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500">
+              <User className="w-4 h-4" />
+            </div>
             <div>
               <p className="font-semibold text-slate-900 dark:text-slate-100">{booking.customerName}</p>
               <p className="text-xs text-slate-500">{booking.customerEmail}</p>
