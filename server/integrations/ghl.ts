@@ -203,6 +203,7 @@ export async function findGHLContactByEmail(
 export async function createGHLAppointment(
   apiKey: string,
   calendarId: string,
+  locationId: string,
   appointment: {
     contactId: string;
     startTime: string;
@@ -216,6 +217,7 @@ export async function createGHLAppointment(
       method: "POST",
       body: JSON.stringify({
         calendarId,
+        locationId,
         contactId: appointment.contactId,
         startTime: appointment.startTime,
         endTime: appointment.endTime,

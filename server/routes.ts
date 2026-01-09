@@ -359,6 +359,7 @@ export async function registerRoutes(
             const appointmentResult = await createGHLAppointment(
               ghlSettings.apiKey,
               ghlSettings.calendarId,
+              ghlSettings.locationId,
               {
                 contactId: contactResult.contactId,
                 startTime: startDateTime.toISOString(),
@@ -716,6 +717,7 @@ export async function registerRoutes(
       const appointmentResult = await createGHLAppointment(
         settings.apiKey,
         settings.calendarId,
+        settings.locationId,
         {
           contactId: contactResult.contactId,
           startTime: startDateTime.toISOString(),
