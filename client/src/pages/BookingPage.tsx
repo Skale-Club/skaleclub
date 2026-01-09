@@ -51,7 +51,8 @@ export default function BookingPage() {
   const createBooking = useCreateBooking();
   const { data: companySettings } = useQuery<{ timeFormat?: string; minimumBookingValue?: string }>({ queryKey: ['/api/company-settings'] });
   const timeFormat = companySettings?.timeFormat || '12h';
-  const minimumBookingValue = parseFloat(companySettings?.minimumBookingValue || '0') || 0;
+  const minimumBookingValueStr = companySettings?.minimumBookingValue || '0';
+  const minimumBookingValue = parseFloat(minimumBookingValueStr) || 0;
   const isBelowMinimum = minimumBookingValue > 0 && totalPrice < minimumBookingValue;
   const adjustmentAmount = isBelowMinimum ? minimumBookingValue - totalPrice : 0;
   const finalPrice = isBelowMinimum ? minimumBookingValue : totalPrice;
