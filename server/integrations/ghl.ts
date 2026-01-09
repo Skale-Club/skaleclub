@@ -106,13 +106,15 @@ export async function getGHLFreeSlots(
       } else if (data._embedded && data._embedded.slots) {
         slotsArray = data._embedded.slots;
       } else {
+        // GHL returns slots grouped by date like: { "2026-01-09": { slots: [...] }, "2026-01-10": { slots: [...] } }
+        // We need to iterate ALL dates and accumulate all slots
         for (const key of Object.keys(data)) {
           if (key !== 'traceId' && data[key]?.slots && Array.isArray(data[key].slots)) {
-            slotsArray = data[key].slots.map((s: string) => ({
+            const dateSlots = data[key].slots.map((s: string) => ({
               startTime: s,
               endTime: s
             }));
-            break;
+            slotsArray = slotsArray.concat(dateSlots);
           }
         }
       }
