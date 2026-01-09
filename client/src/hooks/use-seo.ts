@@ -5,6 +5,7 @@ interface SeoSettings {
   seoTitle: string | null;
   seoDescription: string | null;
   ogImage: string | null;
+  logoIcon: string | null;
 }
 
 function setMetaTag(property: string, content: string, isProperty = false) {
@@ -48,7 +49,18 @@ export function useSEO() {
 
     setMetaTag('og:type', 'website', true);
     setMetaTag('og:url', window.location.href, true);
-  }, [settings?.seoTitle, settings?.seoDescription, settings?.ogImage]);
+
+    if (settings?.logoIcon) {
+      let favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement | null;
+      if (!favicon) {
+        favicon = document.createElement('link');
+        favicon.rel = 'icon';
+        document.head.appendChild(favicon);
+      }
+      favicon.type = 'image/png';
+      favicon.href = settings.logoIcon;
+    }
+  }, [settings?.seoTitle, settings?.seoDescription, settings?.ogImage, settings?.logoIcon]);
 
   return settings;
 }
