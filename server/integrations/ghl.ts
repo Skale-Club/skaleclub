@@ -202,6 +202,36 @@ export async function findGHLContactByEmail(
   }
 }
 
+export async function findGHLContactByPhone(
+  apiKey: string,
+  locationId: string,
+  phone: string
+): Promise<{ success: boolean; contactId?: string; message?: string }> {
+  try {
+    const normalizedPhone = phone.replace(/\D/g, '');
+    
+    const params = new URLSearchParams({
+      locationId,
+      query: normalizedPhone,
+    });
+
+    const response = await ghlFetch(`/contacts/?${params.toString()}`, apiKey);
+
+    if (response.ok) {
+      const data = await response.json();
+      const contact = data.contacts?.find((c: any) => {
+        const contactPhone = c.phone?.replace(/\D/g, '') || '';
+        return contactPhone === normalizedPhone || contactPhone.endsWith(normalizedPhone) || normalizedPhone.endsWith(contactPhone);
+      });
+      return { success: true, contactId: contact?.id };
+    } else {
+      return { success: false };
+    }
+  } catch (error: any) {
+    return { success: false };
+  }
+}
+
 export async function createGHLAppointment(
   apiKey: string,
   calendarId: string,
@@ -258,11 +288,20 @@ export async function getOrCreateGHLContact(
     address?: string;
   }
 ): Promise<{ success: boolean; contactId?: string; message?: string }> {
-  const existing = await findGHLContactByEmail(apiKey, locationId, contact.email);
+  const existingByEmail = await findGHLContactByEmail(apiKey, locationId, contact.email);
   
-  if (existing.contactId) {
-    return { success: true, contactId: existing.contactId };
+  if (existingByEmail.contactId) {
+    console.log(`GHL contact found by email: ${existingByEmail.contactId}`);
+    return { success: true, contactId: existingByEmail.contactId };
   }
   
+  const existingByPhone = await findGHLContactByPhone(apiKey, locationId, contact.phone);
+  
+  if (existingByPhone.contactId) {
+    console.log(`GHL contact found by phone: ${existingByPhone.contactId}`);
+    return { success: true, contactId: existingByPhone.contactId };
+  }
+  
+  console.log('GHL contact not found, creating new contact');
   return createGHLContact(apiKey, locationId, contact);
 }
