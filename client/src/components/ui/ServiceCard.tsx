@@ -87,7 +87,7 @@ export function ServiceCard({ service }: ServiceCardProps) {
           </button>
 
           {isInCart && (
-            <div className="flex items-center bg-slate-100 rounded-xl p-1 gap-1">
+            <div className="flex items-center bg-slate-100 rounded-xl p-0.5 gap-0.5">
               <button
                 onClick={() => {
                   if (quantity > 1) {
@@ -96,20 +96,20 @@ export function ServiceCard({ service }: ServiceCardProps) {
                     removeItem(service.id);
                   }
                 }}
-                className="p-2 hover:bg-white rounded-lg transition-colors text-slate-600"
+                className="p-1.5 hover:bg-white rounded-lg transition-colors text-slate-600"
                 aria-label="Decrease quantity"
               >
-                <Minus className="w-4 h-4" />
+                <Minus className="w-3.5 h-3.5" />
               </button>
-              <span className="w-8 text-center font-bold text-slate-900">
+              <span className="w-6 text-center font-bold text-slate-900 text-sm">
                 {quantity}
               </span>
               <button
                 onClick={() => updateQuantity(service.id, quantity + 1)}
-                className="p-2 hover:bg-white rounded-lg transition-colors text-slate-600"
+                className="p-1.5 hover:bg-white rounded-lg transition-colors text-slate-600"
                 aria-label="Increase quantity"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3.5 h-3.5" />
               </button>
             </div>
           )}
