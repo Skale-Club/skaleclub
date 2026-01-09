@@ -251,7 +251,7 @@ export default function Admin() {
             </SidebarGroup>
           </SidebarContent>
 
-          <SidebarFooter className="p-4 border-t border-gray-100 mt-auto">
+          <SidebarFooter className="p-4 border-t border-gray-100 mt-auto bg-[#ffffff]">
             <div className="space-y-3">
               <div className="text-sm">
                 <p className="text-muted-foreground text-xs">Logged in as</p>
