@@ -184,6 +184,7 @@ export const companySettings = pgTable("company_settings", {
   minimumBookingValue: numeric("minimum_booking_value", { precision: 10, scale: 2 }).default('0'), // Minimum cart value required
   seoTitle: text("seo_title").default('Skleanings - Professional Cleaning Services'),
   seoDescription: text("seo_description").default('Professional cleaning services for homes and businesses. Book your cleaning appointment online.'),
+  ogImage: text("og_image").default(''),
 });
 
 export const insertCompanySettingsSchema = createInsertSchema(companySettings).omit({ id: true });

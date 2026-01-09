@@ -551,6 +551,7 @@ interface CompanySettingsData {
   minimumBookingValue: string | null;
   seoTitle: string | null;
   seoDescription: string | null;
+  ogImage: string | null;
 }
 
 function CompanySettingsSection() {
@@ -573,6 +574,7 @@ function CompanySettingsSection() {
     minimumBookingValue: '0',
     seoTitle: 'Skleanings - Professional Cleaning Services',
     seoDescription: 'Professional cleaning services for homes and businesses. Book your cleaning appointment online.',
+    ogImage: '',
   });
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -798,6 +800,60 @@ function CompanySettingsSection() {
                 <p className="text-xs text-muted-foreground mt-1">
                   Brief description shown in search engine results (recommended: 150-160 characters).
                 </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Open Graph Image</Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Image shown when your site is shared on social media (Facebook, Twitter, LinkedIn). Recommended size: 1200x630 pixels.
+                </p>
+                <div className="flex flex-col gap-3">
+                  <div className="aspect-[1200/630] max-w-md rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden relative group">
+                    {settings.ogImage ? (
+                      <img src={settings.ogImage} alt="OG Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="text-center p-4">
+                        <Image className="w-10 h-10 text-gray-400 mx-auto mb-2" />
+                        <p className="text-sm text-gray-400">1200 x 630 px</p>
+                      </div>
+                    )}
+                    <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                      <Input 
+                        type="file" 
+                        className="hidden" 
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try {
+                            const uploadRes = await apiRequest('POST', '/api/upload');
+                            const { uploadURL, objectPath } = await uploadRes.json() as { uploadURL: string; objectPath: string };
+                            await fetch(uploadURL, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+                            setSettings(prev => ({ ...prev, ogImage: objectPath }));
+                            await saveSettings({ ogImage: objectPath });
+                            toast({ title: 'Open Graph image uploaded' });
+                          } catch (error: any) {
+                            toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+                          }
+                        }} 
+                        accept="image/*" 
+                      />
+                      <Plus className="w-8 h-8 text-white" />
+                    </label>
+                  </div>
+                  {settings.ogImage && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-fit"
+                      onClick={() => {
+                        setSettings(prev => ({ ...prev, ogImage: '' }));
+                        saveSettings({ ogImage: '' });
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" /> Remove Image
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
