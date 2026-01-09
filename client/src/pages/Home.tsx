@@ -35,7 +35,7 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative flex items-center lg:items-end pt-6 lg:pt-4 pb-0 overflow-hidden bg-[#1C53A3]">
         <div className="container-custom mx-auto relative z-10 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-[55%_45%] gap-2 lg:gap-8 items-center lg:items-end">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-8 items-center lg:items-end">
             <div className="text-white pt-4 pb-2 lg:pt-20 lg:pb-24 relative z-20">
               <div className="mb-3 lg:mb-6">
                 <img 
