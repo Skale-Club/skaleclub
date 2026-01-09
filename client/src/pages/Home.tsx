@@ -35,8 +35,8 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative flex items-center lg:items-end pt-6 lg:pt-4 pb-0 overflow-hidden bg-[#1C53A3]">
         <div className="container-custom mx-auto relative z-10 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-12 items-center lg:items-end">
-            <div className="text-white pt-4 pb-2 lg:pt-20 lg:pb-24 lg:pr-12">
+          <div className="grid grid-cols-1 lg:grid-cols-[55%_45%] gap-2 lg:gap-8 items-center lg:items-end">
+            <div className="text-white pt-4 pb-2 lg:pt-20 lg:pb-24 relative z-20">
               <div className="mb-3 lg:mb-6">
                 <img 
                   src="https://storage.googleapis.com/msgsndr/q6UKnlWOQwyTk82yZPAs/media/696016120597df5bbeeba997.png" 
@@ -44,7 +44,7 @@ export default function Home() {
                   className="h-5 sm:h-6 w-auto object-contain"
                 />
               </div>
-              <h1 className="sm:text-5xl md:text-7xl font-bold mb-3 lg:mb-6 font-display text-[11vw] sm:text-[48px] leading-[1.05] sm:leading-[1.1] lg:max-w-[420px]">
+              <h1 className="text-[11vw] sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-3 lg:mb-6 font-display leading-[1.05] sm:leading-[1.1]">
                 {companySettings?.heroTitle ? (
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">{companySettings.heroTitle}</span>
                 ) : (
@@ -59,10 +59,10 @@ export default function Home() {
               <p className="text-base sm:text-xl text-blue-50/80 mb-4 lg:mb-8 leading-relaxed max-w-xl">
                 {companySettings?.heroSubtitle || "We provide top-quality cleaning services ensuring a spotless environment for your home and office."}
               </p>
-              <div className="flex flex-col sm:flex-row gap-3 lg:gap-4">
-                <Link href="/services" className="w-full sm:w-auto">
+              <div className="flex flex-row gap-3 lg:gap-4 flex-wrap">
+                <Link href="/services" className="shrink-0">
                   <button 
-                    className="w-full px-6 sm:px-8 py-3 sm:py-4 bg-[#FFFF01] hover:bg-[#e6e600] text-black font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg"
+                    className="px-6 sm:px-8 py-3 sm:py-4 bg-[#FFFF01] hover:bg-[#e6e600] text-black font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
                     onClick={() => trackCTAClick('hero', companySettings?.ctaText || 'Get Instant Price')}
                     data-testid="button-hero-cta"
                   >
@@ -71,7 +71,7 @@ export default function Home() {
                 </Link>
                 <a 
                   href={`tel:${telPhone}`} 
-                  className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-transparent text-white font-bold rounded-full border border-white/30 hover:bg-white/10 transition-all flex items-center justify-center gap-2 text-base sm:text-lg"
+                  className="shrink-0 px-6 sm:px-8 py-3 sm:py-4 bg-transparent text-white font-bold rounded-full border border-white/30 hover:bg-white/10 transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
                   onClick={() => trackCTAClick('hero', 'phone_call')}
                   data-testid="button-hero-phone"
                 >
@@ -80,11 +80,11 @@ export default function Home() {
                 </a>
               </div>
             </div>
-            <div className="relative flex h-full items-end justify-center lg:justify-end self-end w-full lg:min-h-[500px]">
+            <div className="relative flex h-full items-end justify-center lg:justify-end self-end w-full lg:min-h-[500px] z-10">
               <img 
                 src={companySettings?.heroImageUrl || heroImage} 
                 alt="Cleaning Professionals" 
-                className="w-[85%] sm:w-full max-w-[320px] sm:max-w-md lg:max-w-[550px] xl:max-w-[650px] object-contain drop-shadow-2xl translate-y-0 scale-100 origin-bottom"
+                className="w-[85%] sm:w-full max-w-[320px] sm:max-w-[400px] md:max-w-[480px] lg:max-w-[550px] xl:max-w-[650px] object-contain drop-shadow-2xl translate-y-0 scale-100 origin-bottom"
               />
             </div>
           </div>
