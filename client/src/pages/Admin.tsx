@@ -42,7 +42,8 @@ import {
   SidebarMenu, 
   SidebarMenuButton, 
   SidebarMenuItem,
-  SidebarProvider
+  SidebarProvider,
+  SidebarTrigger
 } from '@/components/ui/sidebar';
 import { 
   Loader2, 
@@ -181,7 +182,7 @@ export default function Admin() {
 
   return (
     <SidebarProvider style={sidebarStyle as React.CSSProperties}>
-      <div className="flex h-screen w-full bg-slate-50">
+      <div className="flex h-screen w-full bg-slate-50 relative">
         <Sidebar className="border-r border-gray-200">
           <SidebarHeader className="p-4 border-b border-gray-100">
             <div className="flex flex-col gap-4">
@@ -229,7 +230,9 @@ export default function Admin() {
                         )}
                       >
                         <SidebarMenuButton
-                          onClick={() => setActiveSection(item.id)}
+                          onClick={() => {
+                            setActiveSection(item.id);
+                          }}
                           isActive={activeSection === item.id}
                           data-testid={`nav-${item.id}`}
                           className="group/btn"
@@ -267,7 +270,10 @@ export default function Admin() {
           </SidebarFooter>
         </Sidebar>
 
-        <main className="flex-1 overflow-auto p-6 md:p-8">
+        <main className="flex-1 overflow-auto p-6 md:p-8 relative">
+          <div className="md:hidden absolute top-4 left-4 z-50">
+            <SidebarTrigger />
+          </div>
           {activeSection === 'dashboard' && <DashboardSection />}
           {activeSection === 'categories' && <CategoriesSection />}
           {activeSection === 'subcategories' && <SubcategoriesSection />}
