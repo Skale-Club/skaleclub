@@ -320,19 +320,6 @@ export default function BookingPage() {
                     />
                     {form.formState.errors.customerPhone && <p className="text-red-500 text-xs">{form.formState.errors.customerPhone.message}</p>}
                   </div>
-
-                  <button 
-                    type="button"
-                    onClick={async () => {
-                      const isValid = await form.trigger(["customerName", "customerEmail", "customerPhone"]);
-                      if (isValid) {
-                        handleNextStep(4);
-                      }
-                    }}
-                    className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all mt-8 text-lg flex items-center justify-center gap-2"
-                  >
-                    Continue to Address <ChevronRight className="w-5 h-5" />
-                  </button>
                 </div>
               </div>
             )}
