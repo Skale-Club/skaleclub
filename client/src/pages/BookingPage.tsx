@@ -53,7 +53,8 @@ export default function BookingPage() {
   const timeFormat = companySettings?.timeFormat || '12h';
   const minimumBookingValue = parseFloat(companySettings?.minimumBookingValue || '0') || 0;
   const isBelowMinimum = minimumBookingValue > 0 && totalPrice < minimumBookingValue;
-  const amountNeeded = minimumBookingValue - totalPrice;
+  const adjustmentAmount = isBelowMinimum ? minimumBookingValue - totalPrice : 0;
+  const finalPrice = isBelowMinimum ? minimumBookingValue : totalPrice;
   
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
@@ -93,7 +94,7 @@ export default function BookingPage() {
       startTime: selectedTime,
       endTime: endTime,
       totalDurationMinutes: totalDuration,
-      totalPrice: String(totalPrice),
+      totalPrice: String(finalPrice),
     }, {
       onSuccess: () => {
         setLocation("/confirmation");
@@ -418,7 +419,7 @@ export default function BookingPage() {
                     disabled={createBooking.isPending}
                     className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-8 text-lg"
                   >
-                    {createBooking.isPending ? "Confirming..." : `Confirm Booking - $${totalPrice.toFixed(2)}`}
+                    {createBooking.isPending ? "Confirming..." : `Confirm Booking - $${finalPrice.toFixed(2)}`}
                   </button>
                 </form>
               </div>
@@ -492,27 +493,35 @@ export default function BookingPage() {
                  )}
               </div>
 
-              <div className="border-t border-gray-100 pt-4 mt-4 flex justify-between items-center">
+              <div className="border-t border-gray-100 pt-4 space-y-2">
+                <div className="flex justify-between text-slate-600 text-sm">
+                  <span>Subtotal</span>
+                  <span>${totalPrice.toFixed(2)}</span>
+                </div>
+                {isBelowMinimum && (
+                  <div className="flex justify-between text-slate-500 text-sm">
+                    <span>Minimum order adjustment</span>
+                    <span>+${adjustmentAmount.toFixed(2)}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t border-gray-100 pt-4 mt-2 flex justify-between items-center">
                 <span className="font-bold text-lg text-slate-900">Total</span>
-                <span className="font-bold text-2xl text-primary">${totalPrice.toFixed(2)}</span>
+                <span className="font-bold text-2xl text-primary">${finalPrice.toFixed(2)}</span>
               </div>
 
               {isBelowMinimum && (
-                <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                  <p className="text-amber-700 text-sm font-medium">
-                    Minimum order: ${minimumBookingValue.toFixed(2)}
-                  </p>
-                  <p className="text-amber-600 text-xs mt-1">
-                    Add ${amountNeeded.toFixed(2)} more to proceed
-                  </p>
-                </div>
+                <p className="text-xs text-slate-400 mt-2">
+                  A minimum order of ${minimumBookingValue.toFixed(2)} applies
+                </p>
               )}
 
               {/* Continue Buttons moved here */}
               <div className="mt-8">
                 {step === 2 && (
                   <button 
-                    disabled={!selectedDate || !selectedTime || isBelowMinimum}
+                    disabled={!selectedDate || !selectedTime}
                     onClick={() => handleNextStep(3)}
                     className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
