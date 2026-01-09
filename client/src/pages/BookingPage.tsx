@@ -41,8 +41,8 @@ export default function BookingPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   
-  // Booking State
-  const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
+  // Booking State - start with tomorrow
+  const [selectedDate, setSelectedDate] = useState<string>(format(addDays(new Date(), 1), "yyyy-MM-dd"));
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [viewDate, setViewDate] = useState<Date>(new Date());
   

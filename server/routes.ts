@@ -3,7 +3,7 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { api, errorSchemas, buildUrl } from "@shared/routes";
 import { z } from "zod";
-import { WORKING_HOURS, insertCategorySchema, insertServiceSchema, insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema } from "@shared/schema";
+import { WORKING_HOURS, DEFAULT_BUSINESS_HOURS, insertCategorySchema, insertServiceSchema, insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema, BusinessHours, DayHours } from "@shared/schema";
 import { insertSubcategorySchema } from "./storage";
 import { ObjectStorageService, registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { authStorage } from "./replit_integrations/auth/storage";
@@ -411,7 +411,59 @@ export async function registerRoutes(
       return res.status(400).json({ message: "Missing date or duration" });
     }
 
+    // Get company settings for business hours
+    const companySettings = await storage.getCompanySettings();
+    const businessHours: BusinessHours = (companySettings?.businessHours as BusinessHours) || DEFAULT_BUSINESS_HOURS;
+    
+    // Get the day of week for the selected date
+    const selectedDate = new Date(date + 'T12:00:00');
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
+    const dayName = dayNames[selectedDate.getDay()];
+    const dayHours: DayHours = businessHours[dayName];
+    
+    // If business is closed on this day, return empty slots
+    if (!dayHours.isOpen) {
+      return res.json([]);
+    }
+
     const existingBookings = await storage.getBookingsByDate(date);
+    
+    // Check if GHL integration is enabled and get GHL free slots
+    const ghlSettings = await storage.getIntegrationSettings('gohighlevel');
+    let ghlFreeSlots: string[] = [];
+    let useGhlSlots = false;
+    
+    if (ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.calendarId) {
+      try {
+        const startDate = new Date(date + 'T00:00:00');
+        const endDate = new Date(date + 'T23:59:59');
+        const result = await getGHLFreeSlots(
+          ghlSettings.apiKey,
+          ghlSettings.calendarId,
+          startDate,
+          endDate,
+          'America/New_York'
+        );
+        
+        if (result.success && result.slots) {
+          // GHL returns slots by date, extract the slots for this date
+          const dateSlots = result.slots[date];
+          if (dateSlots && dateSlots.slots) {
+            // GHL slots are in ISO format, extract just the time part (HH:MM)
+            ghlFreeSlots = dateSlots.slots.map((slot: string) => {
+              // Handle ISO format like "2026-01-13T08:00:00-05:00"
+              const timePart = slot.includes('T') ? slot.split('T')[1] : slot;
+              return timePart.substring(0, 5); // Get HH:MM
+            });
+            useGhlSlots = true;
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching GHL slots:', error);
+        // Fall back to local availability check
+      }
+    }
+
     const slots = [];
 
     // Check if the selected date is today (in EST/America/New_York timezone)
@@ -422,13 +474,21 @@ export async function registerRoutes(
     const currentHour = estNow.getHours();
     const currentMinute = estNow.getMinutes();
 
-    // Generate slots every 30 minutes
-    // Start from WORKING_HOURS.start to WORKING_HOURS.end
-    for (let h = WORKING_HOURS.start; h < WORKING_HOURS.end; h++) {
+    // Parse business hours for this day
+    const [startHr, startMn] = dayHours.start.split(':').map(Number);
+    const [endHr, endMn] = dayHours.end.split(':').map(Number);
+
+    // Generate slots every 30 minutes based on day-specific business hours
+    for (let h = startHr; h < endHr || (h === endHr && 0 < endMn); h++) {
       for (let m = 0; m < 60; m += 30) {
-        const startHour = h.toString().padStart(2, '0');
-        const startMinute = m.toString().padStart(2, '0');
-        const startTime = `${startHour}:${startMinute}`;
+        // Skip if before start time
+        if (h === startHr && m < startMn) continue;
+        // Skip if at or after end time
+        if (h > endHr || (h === endHr && m >= endMn)) continue;
+
+        const slotHour = h.toString().padStart(2, '0');
+        const slotMinute = m.toString().padStart(2, '0');
+        const startTime = `${slotHour}:${slotMinute}`;
 
         // Skip past slots if today
         if (isToday) {
@@ -441,8 +501,8 @@ export async function registerRoutes(
         const slotDate = new Date(`2000-01-01T${startTime}:00`);
         slotDate.setMinutes(slotDate.getMinutes() + totalDurationMinutes);
         
-        // Check if ends after working hours
-        if (slotDate.getHours() > WORKING_HOURS.end || (slotDate.getHours() === WORKING_HOURS.end && slotDate.getMinutes() > 0)) {
+        // Check if ends after working hours for this day
+        if (slotDate.getHours() > endHr || (slotDate.getHours() === endHr && slotDate.getMinutes() > endMn)) {
              continue; // Exceeds working hours
         }
         
@@ -450,10 +510,20 @@ export async function registerRoutes(
         const endMinute = slotDate.getMinutes().toString().padStart(2, '0');
         const endTime = `${endHour}:${endMinute}`;
 
-        // Check conflicts
-        const isAvailable = !existingBookings.some(b => {
-           return startTime < b.endTime && endTime > b.startTime;
-        });
+        // Check availability
+        let isAvailable = true;
+        
+        // If using GHL, check if this slot is in the GHL free slots list
+        if (useGhlSlots) {
+          isAvailable = ghlFreeSlots.includes(startTime);
+        }
+        
+        // Also check local bookings (in case there are bookings not synced to GHL)
+        if (isAvailable) {
+          isAvailable = !existingBookings.some(b => {
+             return startTime < b.endTime && endTime > b.startTime;
+          });
+        }
 
         slots.push({ time: startTime, available: isAvailable });
       }

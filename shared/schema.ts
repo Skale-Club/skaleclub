@@ -133,6 +133,33 @@ export const WORKING_HOURS = {
   end: 18,  // 6 PM
 };
 
+// Day-by-day business hours type
+export interface DayHours {
+  isOpen: boolean;
+  start: string; // HH:MM
+  end: string;   // HH:MM
+}
+
+export interface BusinessHours {
+  monday: DayHours;
+  tuesday: DayHours;
+  wednesday: DayHours;
+  thursday: DayHours;
+  friday: DayHours;
+  saturday: DayHours;
+  sunday: DayHours;
+}
+
+export const DEFAULT_BUSINESS_HOURS: BusinessHours = {
+  monday: { isOpen: true, start: '08:00', end: '18:00' },
+  tuesday: { isOpen: true, start: '08:00', end: '18:00' },
+  wednesday: { isOpen: true, start: '08:00', end: '18:00' },
+  thursday: { isOpen: true, start: '08:00', end: '18:00' },
+  friday: { isOpen: true, start: '08:00', end: '18:00' },
+  saturday: { isOpen: false, start: '09:00', end: '14:00' },
+  sunday: { isOpen: false, start: '09:00', end: '14:00' },
+};
+
 // Company Settings (singleton table - only one row)
 export const companySettings = pgTable("company_settings", {
   id: serial("id").primaryKey(),
@@ -153,6 +180,7 @@ export const companySettings = pgTable("company_settings", {
   heroImageUrl: text("hero_image_url").default(''),
   ctaText: text("cta_text").default('Book Now'),
   timeFormat: text("time_format").default('12h'), // '12h' or '24h'
+  businessHours: jsonb("business_hours"), // Day-by-day business hours
 });
 
 export const insertCompanySettingsSchema = createInsertSchema(companySettings).omit({ id: true });
