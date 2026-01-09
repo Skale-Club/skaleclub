@@ -1,3 +1,20 @@
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAdminAuth } from '@/context/AuthContext';
 import { useLocation, Link } from 'wouter';
@@ -2505,6 +2522,84 @@ function BookingsSection() {
   );
 }
 
+function SortableFaqItem({ faq, onEdit, onDelete }: { faq: Faq; onEdit: (faq: Faq) => void; onDelete: (id: number) => void }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: faq.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 'auto',
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="p-3 rounded-lg bg-slate-100 dark:bg-slate-800 transition-all border group relative"
+      data-testid={`faq-item-${faq.id}`}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground p-1"
+        >
+          <GripVertical className="w-4 h-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="font-semibold text-sm line-clamp-1">{faq.question}</h3>
+          </div>
+          <p className="text-muted-foreground text-xs line-clamp-2">{faq.answer}</p>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => onEdit(faq)}
+            data-testid={`button-edit-faq-${faq.id}`}
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" data-testid={`button-delete-faq-${faq.id}`}>
+                <Trash2 className="w-3.5 h-3.5 text-red-500" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete FAQ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={() => onDelete(faq.id)}
+                  className="bg-red-500 hover:bg-red-600"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function FaqsSection() {
   const { toast } = useToast();
   const [editingFaq, setEditingFaq] = useState<Faq | null>(null);
@@ -2513,6 +2608,13 @@ function FaqsSection() {
   const { data: faqs, isLoading } = useQuery<Faq[]>({
     queryKey: ['/api/faqs']
   });
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const createFaq = useMutation({
     mutationFn: async (data: { question: string; answer: string; order: number }) => {
@@ -2556,6 +2658,34 @@ function FaqsSection() {
     }
   });
 
+  const reorderFaqs = useMutation({
+    mutationFn: async (newOrder: { id: number; order: number }[]) => {
+      return Promise.all(
+        newOrder.map(item => apiRequest('PUT', `/api/faqs/${item.id}`, { order: item.order }))
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/faqs'] });
+    }
+  });
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id && faqs) {
+      const oldIndex = faqs.findIndex((f) => f.id === active.id);
+      const newIndex = faqs.findIndex((f) => f.id === over.id);
+
+      const newFaqs = arrayMove(faqs, oldIndex, newIndex);
+      const updates = newFaqs.map((faq, index) => ({
+        id: faq.id,
+        order: index
+      }));
+
+      reorderFaqs.mutate(updates);
+    }
+  };
+
   if (isLoading) {
     return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
@@ -2598,61 +2728,27 @@ function FaqsSection() {
           <p className="text-muted-foreground mb-4">Create FAQs to help your customers find answers quickly</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {faqs?.map((faq) => (
-            <div
-              key={faq.id}
-              className="p-4 rounded-lg bg-slate-100 dark:bg-slate-800 transition-all"
-              data-testid={`faq-item-${faq.id}`}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="outline" className="text-xs border-0 bg-slate-200 dark:bg-slate-700">
-                      #{faq.order}
-                    </Badge>
-                  </div>
-                  <h3 className="font-semibold text-lg">{faq.question}</h3>
-                  <p className="text-muted-foreground mt-1 text-sm whitespace-pre-wrap">{faq.answer}</p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => { setEditingFaq(faq); setIsDialogOpen(true); }}
-                    data-testid={`button-edit-faq-${faq.id}`}
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" data-testid={`button-delete-faq-${faq.id}`}>
-                        <Trash2 className="w-4 h-4 text-red-500" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete FAQ?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction 
-                          onClick={() => deleteFaq.mutate(faq.id)}
-                          className="bg-red-500 hover:bg-red-600"
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={faqs?.map(f => f.id) || []}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="grid gap-2">
+              {faqs?.map((faq) => (
+                <SortableFaqItem
+                  key={faq.id}
+                  faq={faq}
+                  onEdit={(f) => { setEditingFaq(f); setIsDialogOpen(true); }}
+                  onDelete={(id) => deleteFaq.mutate(id)}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       )}
     </div>
   );
