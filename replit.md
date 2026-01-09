@@ -127,3 +127,31 @@ The platform integrates with GoHighLevel CRM for automatic syncing of bookings, 
 **Files:**
 - `server/integrations/ghl.ts` - GHL API utility functions
 - `client/src/pages/Admin.tsx` - IntegrationsSection component
+
+### SEO Management
+
+The platform includes a comprehensive SEO management system accessible via Admin > SEO section (separate from Company Settings).
+
+**SEO Fields Available:**
+- **Basic SEO**: Title, Description, Keywords, Author, Canonical URL, Robots Tag
+- **Open Graph**: og:title, og:description, og:image, og:type, og:site_name, og:url
+- **Twitter Cards**: twitter:card, twitter:title, twitter:description, twitter:image, twitter:site, twitter:creator
+- **Schema.org**: LocalBusiness JSON-LD auto-generated from company settings
+
+**Dynamic Features:**
+- All meta tags injected client-side via `useSEO` hook
+- Dynamic sitemap.xml includes: homepage, services page, cart page, and all category pages
+- robots.txt with sitemap reference auto-generated
+
+**API Endpoints:**
+- `GET /sitemap.xml` - Dynamic XML sitemap
+- `GET /robots.txt` - Dynamic robots.txt with sitemap reference
+
+**Files:**
+- `client/src/hooks/use-seo.ts` - SEO meta tag injection hook
+- `client/src/pages/Admin.tsx` - SEOSection component
+- `server/routes.ts` - sitemap.xml and robots.txt endpoints
+
+**Design Choices:**
+- Hero image preview: 4:3 aspect ratio
+- OG image preview: 1.91:1 aspect ratio (matches social media standards)

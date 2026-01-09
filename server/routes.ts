@@ -236,6 +236,71 @@ export async function registerRoutes(
     }
   });
 
+  // Robots.txt endpoint
+  app.get('/robots.txt', async (req, res) => {
+    try {
+      const settings = await storage.getCompanySettings();
+      const canonicalUrl = settings?.seoCanonicalUrl || `https://${req.get('host')}`;
+      
+      const robotsTxt = `User-agent: *
+Allow: /
+
+Sitemap: ${canonicalUrl}/sitemap.xml
+`;
+      res.type('text/plain').send(robotsTxt);
+    } catch (err) {
+      res.type('text/plain').send('User-agent: *\nAllow: /');
+    }
+  });
+
+  // Sitemap.xml endpoint
+  app.get('/sitemap.xml', async (req, res) => {
+    try {
+      const settings = await storage.getCompanySettings();
+      const categories = await storage.getCategories();
+      const canonicalUrl = settings?.seoCanonicalUrl || `https://${req.get('host')}`;
+      const lastMod = new Date().toISOString().split('T')[0];
+
+      let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${canonicalUrl}/</loc>
+    <lastmod>${lastMod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>${canonicalUrl}/services</loc>
+    <lastmod>${lastMod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>${canonicalUrl}/cart</loc>
+    <lastmod>${lastMod}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>`;
+
+      for (const category of categories) {
+        sitemap += `
+  <url>
+    <loc>${canonicalUrl}/services/${category.slug}</loc>
+    <lastmod>${lastMod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`;
+      }
+
+      sitemap += `
+</urlset>`;
+
+      res.type('application/xml').send(sitemap);
+    } catch (err) {
+      res.status(500).send('Error generating sitemap');
+    }
+  });
+
   // Admin Service CRUD (protected routes)
   app.post('/api/services', requireAdmin, async (req, res) => {
     try {
@@ -582,8 +647,8 @@ export async function registerRoutes(
         const startDate = new Date(year, month - 1, 1);
         const endDate = new Date(year, month, 0, 23, 59, 59);
         const ghlResult = await getGHLFreeSlots(
-          ghlSettings.apiKey,
-          ghlSettings.calendarId,
+          ghlSettings.apiKey!,
+          ghlSettings.calendarId!,
           startDate,
           endDate,
           'America/New_York'

@@ -185,6 +185,20 @@ export const companySettings = pgTable("company_settings", {
   seoTitle: text("seo_title").default('Skleanings - Professional Cleaning Services'),
   seoDescription: text("seo_description").default('Professional cleaning services for homes and businesses. Book your cleaning appointment online.'),
   ogImage: text("og_image").default(''),
+  // Extended SEO fields
+  seoKeywords: text("seo_keywords").default(''),
+  seoAuthor: text("seo_author").default(''),
+  seoCanonicalUrl: text("seo_canonical_url").default(''),
+  seoRobotsTag: text("seo_robots_tag").default('index, follow'),
+  // Open Graph extended
+  ogType: text("og_type").default('website'),
+  ogSiteName: text("og_site_name").default(''),
+  // Twitter Cards
+  twitterCard: text("twitter_card").default('summary_large_image'),
+  twitterSite: text("twitter_site").default(''),
+  twitterCreator: text("twitter_creator").default(''),
+  // Schema.org LocalBusiness
+  schemaLocalBusiness: jsonb("schema_local_business").default({}),
 });
 
 export const insertCompanySettingsSchema = createInsertSchema(companySettings).omit({ id: true });
