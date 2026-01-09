@@ -545,6 +545,154 @@ export async function registerRoutes(
     res.json(slots);
   });
 
+  // Monthly Availability Summary - returns which dates have at least one available slot
+  app.get(api.availability.month.path, async (req, res) => {
+    const year = Number(req.query.year);
+    const month = Number(req.query.month); // 1-12
+    const totalDurationMinutes = Number(req.query.totalDurationMinutes);
+
+    if (!year || !month || isNaN(totalDurationMinutes)) {
+      return res.status(400).json({ message: "Missing year, month, or duration" });
+    }
+
+    // Get company settings for business hours
+    const companySettings = await storage.getCompanySettings();
+    const businessHours: BusinessHours = (companySettings?.businessHours as BusinessHours) || DEFAULT_BUSINESS_HOURS;
+    
+    // Get GHL settings once
+    const ghlSettings = await storage.getIntegrationSettings('gohighlevel');
+    const useGhl = ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.calendarId;
+    
+    // Get date range for the month
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const result: Record<string, boolean> = {};
+    
+    // Current date/time in EST
+    const now = new Date();
+    const estNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const todayStr = estNow.toISOString().split('T')[0];
+    const currentHour = estNow.getHours();
+    const currentMinute = estNow.getMinutes();
+
+    // Fetch GHL free slots for the entire month if enabled
+    let ghlMonthSlots: Map<string, string[]> = new Map();
+    if (useGhl) {
+      try {
+        const startDate = new Date(year, month - 1, 1);
+        const endDate = new Date(year, month, 0, 23, 59, 59);
+        const ghlResult = await getGHLFreeSlots(
+          ghlSettings.apiKey,
+          ghlSettings.calendarId,
+          startDate,
+          endDate,
+          'America/New_York'
+        );
+        
+        if (ghlResult.success && ghlResult.slots) {
+          for (const slot of ghlResult.slots) {
+            const slotDate = slot.startTime?.split('T')[0];
+            if (slotDate) {
+              const timePart = slot.startTime?.includes('T') ? slot.startTime.split('T')[1] : slot.startTime;
+              const timeStr = timePart?.substring(0, 5) || '';
+              if (timeStr) {
+                if (!ghlMonthSlots.has(slotDate)) {
+                  ghlMonthSlots.set(slotDate, []);
+                }
+                ghlMonthSlots.get(slotDate)!.push(timeStr);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching GHL slots for month:', error);
+      }
+    }
+    
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dateObj = new Date(dateStr + 'T12:00:00');
+      const dayName = dayNames[dateObj.getDay()];
+      const dayHours: DayHours = businessHours[dayName];
+      
+      // Check if in the past
+      if (dateStr < todayStr) {
+        result[dateStr] = false;
+        continue;
+      }
+      
+      // Check if business is closed
+      if (!dayHours.isOpen) {
+        result[dateStr] = false;
+        continue;
+      }
+      
+      const isToday = dateStr === todayStr;
+      const [startHr, startMn] = dayHours.start.split(':').map(Number);
+      const [endHr, endMn] = dayHours.end.split(':').map(Number);
+      
+      // Get existing bookings for this day
+      const existingBookings = await storage.getBookingsByDate(dateStr);
+      
+      // Get GHL free slots for this day if using GHL
+      const ghlFreeSlots = useGhl ? (ghlMonthSlots.get(dateStr) || []) : [];
+      
+      let hasAvailableSlot = false;
+      
+      // Check each potential slot
+      for (let h = startHr; h < endHr || (h === endHr && 0 < endMn); h++) {
+        if (hasAvailableSlot) break;
+        
+        for (let m = 0; m < 60; m += 30) {
+          if (hasAvailableSlot) break;
+          if (h === startHr && m < startMn) continue;
+          if (h > endHr || (h === endHr && m >= endMn)) continue;
+          
+          const slotHour = h.toString().padStart(2, '0');
+          const slotMinute = m.toString().padStart(2, '0');
+          const startTime = `${slotHour}:${slotMinute}`;
+          
+          // Skip past slots if today
+          if (isToday && (h < currentHour || (h === currentHour && m <= currentMinute))) {
+            continue;
+          }
+          
+          // Calculate end time
+          const slotDate = new Date(`2000-01-01T${startTime}:00`);
+          slotDate.setMinutes(slotDate.getMinutes() + totalDurationMinutes);
+          
+          if (slotDate.getHours() > endHr || (slotDate.getHours() === endHr && slotDate.getMinutes() > endMn)) {
+            continue;
+          }
+          
+          const endHour = slotDate.getHours().toString().padStart(2, '0');
+          const endMinute = slotDate.getMinutes().toString().padStart(2, '0');
+          const endTime = `${endHour}:${endMinute}`;
+          
+          // Check availability
+          let isAvailable = true;
+          
+          if (useGhl) {
+            isAvailable = ghlFreeSlots.includes(startTime);
+          }
+          
+          if (isAvailable) {
+            isAvailable = !existingBookings.some(b => startTime < b.endTime && endTime > b.startTime);
+          }
+          
+          if (isAvailable) {
+            hasAvailableSlot = true;
+          }
+        }
+      }
+      
+      result[dateStr] = hasAvailableSlot;
+    }
+    
+    res.json(result);
+  });
+
   // ===============================
   // GoHighLevel Integration Routes
   // ===============================

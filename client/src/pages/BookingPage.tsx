@@ -1,5 +1,5 @@
 import { useCart } from "@/context/CartContext";
-import { useAvailability, useCreateBooking } from "@/hooks/use-booking";
+import { useAvailability, useCreateBooking, useMonthAvailability } from "@/hooks/use-booking";
 import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -50,6 +50,11 @@ export default function BookingPage() {
   const { data: slots, isLoading: isLoadingSlots } = useAvailability(selectedDate, totalDuration);
   const createBooking = useCreateBooking();
   const { data: companySettings } = useQuery<{ timeFormat?: string; minimumBookingValue?: string }>({ queryKey: ['/api/company-settings'] });
+  
+  // Fetch monthly availability to disable dates without slots
+  const viewYear = viewDate.getFullYear();
+  const viewMonth = viewDate.getMonth() + 1; // 1-12
+  const { data: monthAvailability, isLoading: isLoadingMonthAvailability } = useMonthAvailability(viewYear, viewMonth, totalDuration);
   const timeFormat = companySettings?.timeFormat || '12h';
   const minimumBookingValueStr = companySettings?.minimumBookingValue || '0';
   const minimumBookingValue = parseFloat(minimumBookingValueStr) || 0;
@@ -179,20 +184,20 @@ export default function BookingPage() {
                           for (let i = 0; i < 7; i++) {
                             const currentDay = day;
                             const isCurrentMonth = isSameMonth(currentDay, monthStart);
-                            const isSelected = selectedDate === format(currentDay, "yyyy-MM-dd");
+                            const dateStr = format(currentDay, "yyyy-MM-dd");
+                            const isSelected = selectedDate === dateStr;
                             const isToday = isSameDay(currentDay, new Date());
                             const isPast = currentDay < new Date() && !isToday;
 
-                            // Mock availability check for now as we don't have a batch API
-                            // In a real scenario, we might want to fetch this from the backend
-                            const isAvailable = isCurrentMonth && !isPast;
+                            // Check availability from the monthly availability API
+                            const isAvailable = monthAvailability ? monthAvailability[dateStr] === true : (!isPast && isCurrentMonth);
 
                             days.push(
                               <div key={currentDay.toString()} className="flex justify-center items-center aspect-square p-0.5">
                                 <button
-                                  disabled={!isCurrentMonth || isPast || !isAvailable}
+                                  disabled={!isCurrentMonth || isPast || !isAvailable || isLoadingMonthAvailability}
                                   onClick={() => {
-                                    setSelectedDate(format(currentDay, "yyyy-MM-dd"));
+                                    setSelectedDate(dateStr);
                                     setSelectedTime("");
                                   }}
                                   className={clsx(
@@ -200,8 +205,8 @@ export default function BookingPage() {
                                     !isCurrentMonth && "opacity-0 cursor-default",
                                     (isPast || !isAvailable) && isCurrentMonth && "text-slate-200 cursor-not-allowed opacity-40",
                                     isCurrentMonth && !isPast && isAvailable && !isSelected && "text-slate-600 hover:bg-slate-50 hover:text-primary border border-transparent",
-                                    isSelected && "bg-primary text-white shadow-md shadow-primary/20",
-                                    isToday && !isSelected && "text-primary border-primary/30 bg-primary/5"
+                                    isSelected && isAvailable && "bg-primary text-white shadow-md shadow-primary/20",
+                                    isToday && !isSelected && isAvailable && "text-primary border-primary/30 bg-primary/5"
                                   )}
                                 >
                                   {format(currentDay, "d")}

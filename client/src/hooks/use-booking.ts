@@ -66,6 +66,21 @@ export function useAvailability(date: string | undefined, totalDurationMinutes: 
   });
 }
 
+// --- Monthly Availability ---
+export function useMonthAvailability(year: number, month: number, totalDurationMinutes: number) {
+  return useQuery({
+    queryKey: [api.availability.month.path, year, month, totalDurationMinutes],
+    queryFn: async () => {
+      const url = `${api.availability.month.path}?year=${year}&month=${month}&totalDurationMinutes=${totalDurationMinutes}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to check monthly availability");
+      return api.availability.month.responses[200].parse(await res.json()) as Record<string, boolean>;
+    },
+    enabled: year > 0 && month > 0 && totalDurationMinutes > 0,
+    staleTime: 60000, // Cache for 1 minute
+  });
+}
+
 // --- Bookings ---
 export function useCreateBooking() {
   const queryClient = useQueryClient();

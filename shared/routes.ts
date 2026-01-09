@@ -78,6 +78,18 @@ export const api = {
         })),
       },
     },
+    month: {
+      method: 'GET' as const,
+      path: '/api/availability/month',
+      input: z.object({
+        year: z.coerce.number(),
+        month: z.coerce.number(), // 1-12
+        totalDurationMinutes: z.coerce.number(),
+      }),
+      responses: {
+        200: z.record(z.string(), z.boolean()), // { "2026-01-13": true, "2026-01-14": false, ... }
+      },
+    },
   },
 };
 
