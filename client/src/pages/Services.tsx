@@ -61,10 +61,7 @@ export default function Services() {
         </div>
 
         {/* Category Filter Pills */}
-        <div className={clsx(
-          "flex flex-wrap gap-3 mb-6",
-          selectedCategory === undefined ? "justify-center" : "justify-center"
-        )}>
+        <div className="flex overflow-x-auto pb-4 gap-3 mb-6 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap sm:justify-center sm:pb-0">
           <button
             onClick={() => {
               setSelectedCategory(undefined);
@@ -72,7 +69,7 @@ export default function Services() {
               window.history.pushState(null, "", "/services");
             }}
             className={clsx(
-              "px-6 py-2.5 rounded-full font-medium transition-all duration-200",
+              "px-6 py-2.5 rounded-full font-medium transition-all duration-200 whitespace-nowrap",
               selectedCategory === undefined
                 ? "bg-slate-900 text-white shadow-lg"
                 : "bg-white text-slate-600 border border-gray-200 hover:bg-gray-50"
@@ -90,7 +87,7 @@ export default function Services() {
                 window.history.pushState(null, "", `/services?category=${cat.id}`);
               }}
               className={clsx(
-                "px-6 py-2.5 rounded-full font-medium transition-all duration-200",
+                "px-6 py-2.5 rounded-full font-medium transition-all duration-200 whitespace-nowrap",
                 selectedCategory === cat.id
                   ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
                   : "bg-white text-slate-600 border border-gray-200 hover:bg-gray-50"
@@ -104,14 +101,14 @@ export default function Services() {
 
         {/* Subcategory Filter Pills - only show when a category is selected */}
         {selectedCategory && subcategoriesWithServices && subcategoriesWithServices.length > 0 && (
-          <div className="flex flex-wrap justify-center gap-2 mb-12">
+          <div className="flex overflow-x-auto pb-4 justify-start sm:justify-center gap-2 mb-12 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap sm:pb-0">
             <button
               onClick={() => {
                 setSelectedSubcategory(undefined);
                 window.history.pushState(null, "", `/services?category=${selectedCategory}`);
               }}
               className={clsx(
-                "px-4 py-2 rounded-full text-sm font-medium transition-all duration-200",
+                "px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap",
                 selectedSubcategory === undefined
                   ? "bg-slate-700 text-white"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -128,7 +125,7 @@ export default function Services() {
                   window.history.pushState(null, "", `/services?category=${selectedCategory}&subcategory=${sub.id}`);
                 }}
                 className={clsx(
-                  "px-4 py-2 rounded-full text-sm font-medium transition-all duration-200",
+                  "px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap",
                   selectedSubcategory === sub.id
                     ? "bg-blue-600 text-white"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
