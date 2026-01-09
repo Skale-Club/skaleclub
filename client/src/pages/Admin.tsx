@@ -426,71 +426,80 @@ function HeroSettingsSection() {
         )}
       </div>
 
-      <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg space-y-6 transition-all">
-        <div className="space-y-2">
-          <Label htmlFor="heroTitle">Hero Title</Label>
-          <Input 
-            id="heroTitle" 
-            value={heroTitle} 
-            onChange={(e) => setHeroTitle(e.target.value)}
-            placeholder="Enter hero title"
-            data-testid="input-hero-title"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="heroSubtitle">Hero Subtitle</Label>
-          <Textarea 
-            id="heroSubtitle" 
-            value={heroSubtitle} 
-            onChange={(e) => setHeroSubtitle(e.target.value)}
-            placeholder="Enter hero subtitle"
-            data-testid="input-hero-subtitle"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="heroImage">Hero Background Image</Label>
-          <div className="flex flex-col gap-3">
-            <div className="h-48 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-white flex items-center justify-center overflow-hidden relative group">
-              {heroImageUrl ? (
-                <img src={heroImageUrl} alt="Hero preview" className="w-full h-full object-cover" />
-              ) : (
-                <div className="text-center p-4">
-                  <Image className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-xs text-gray-400">Background Image</p>
-                </div>
-              )}
-              <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                <input type="file" className="hidden" onChange={handleImageUpload} accept="image/*" />
-                <Plus className="w-8 h-8 text-white" />
-              </label>
-            </div>
-            <div className="flex gap-2">
+      <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg transition-all">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="heroTitle">Hero Title</Label>
               <Input 
-                value={heroImageUrl} 
-                onChange={(e) => setHeroImageUrl(e.target.value)}
-                placeholder="Or enter image URL (https://...)"
-                data-testid="input-hero-image"
+                id="heroTitle" 
+                value={heroTitle} 
+                onChange={(e) => setHeroTitle(e.target.value)}
+                placeholder="Enter hero title"
+                data-testid="input-hero-title"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="heroSubtitle">Hero Subtitle</Label>
+              <Textarea 
+                id="heroSubtitle" 
+                value={heroSubtitle} 
+                onChange={(e) => setHeroSubtitle(e.target.value)}
+                placeholder="Enter hero subtitle"
+                data-testid="input-hero-subtitle"
+                className="min-h-[120px]"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ctaText">Call to Action Button Text</Label>
+              <Input 
+                id="ctaText" 
+                value={ctaText} 
+                onChange={(e) => setCtaText(e.target.value)}
+                placeholder="Book Now"
+                data-testid="input-cta-text"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="heroImage">Hero Background Image</Label>
+              <div className="flex flex-col gap-3">
+                <div className="h-64 lg:h-full min-h-[300px] rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden relative group">
+                  {heroImageUrl ? (
+                    <img src={heroImageUrl} alt="Hero preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="text-center p-4">
+                      <Image className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-xs text-gray-400">Background Image</p>
+                    </div>
+                  )}
+                  <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                    <input type="file" className="hidden" onChange={handleImageUpload} accept="image/*" />
+                    <Plus className="w-8 h-8 text-white" />
+                  </label>
+                </div>
+                <div className="flex gap-2">
+                  <Input 
+                    value={heroImageUrl} 
+                    onChange={(e) => setHeroImageUrl(e.target.value)}
+                    placeholder="Or enter image URL (https://...)"
+                    data-testid="input-hero-image"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="ctaText">Call to Action Button Text</Label>
-          <Input 
-            id="ctaText" 
-            value={ctaText} 
-            onChange={(e) => setCtaText(e.target.value)}
-            placeholder="Book Now"
-            data-testid="input-cta-text"
-          />
+        <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
+          <Button onClick={handleSave} disabled={isSaving} data-testid="button-save-hero">
+            {isSaving ? "Saving..." : "Save Changes"}
+          </Button>
         </div>
-
-        <Button onClick={handleSave} disabled={isSaving} data-testid="button-save-hero">
-          {isSaving ? "Saving..." : "Save Changes"}
-        </Button>
       </div>
     </div>
   );
