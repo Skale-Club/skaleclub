@@ -354,6 +354,8 @@ function HeroSettingsSection() {
   const [heroImageUrl, setHeroImageUrl] = useState('');
   const [ctaText, setCtaText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (settings) {
@@ -364,26 +366,51 @@ function HeroSettingsSection() {
     }
   }, [settings]);
 
-  const handleSave = async () => {
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const saveHeroSettings = useCallback(async (updates: any) => {
     setIsSaving(true);
     try {
-      await apiRequest('PUT', '/api/company-settings', {
-        heroTitle,
-        heroSubtitle,
-        heroImageUrl,
-        ctaText
-      });
+      await apiRequest('PUT', '/api/company-settings', updates);
       queryClient.invalidateQueries({ queryKey: ['/api/company-settings'] });
-      toast({ title: 'Hero settings saved', description: 'Your changes have been saved successfully.' });
+      setLastSaved(new Date());
     } catch (error: any) {
       toast({ 
-        title: 'Error saving settings', 
+        title: 'Error saving hero settings', 
         description: error.message,
         variant: 'destructive'
       });
     } finally {
       setIsSaving(false);
     }
+  }, [toast]);
+
+  const triggerAutoSave = useCallback((updates: any) => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = setTimeout(() => {
+      saveHeroSettings(updates);
+    }, 800);
+  }, [saveHeroSettings]);
+
+  const handleSave = async () => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    await saveHeroSettings({
+      heroTitle,
+      heroSubtitle,
+      heroImageUrl,
+      ctaText
+    });
+    toast({ title: 'Hero settings saved', description: 'Your changes have been saved successfully.' });
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -401,7 +428,8 @@ function HeroSettingsSection() {
       });
 
       setHeroImageUrl(objectPath);
-      toast({ title: 'Hero image uploaded' });
+      await saveHeroSettings({ heroImageUrl: objectPath });
+      toast({ title: 'Hero image uploaded and saved' });
     } catch (error: any) {
       toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
     }
@@ -417,17 +445,24 @@ function HeroSettingsSection() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold">Hero Settings</h1>
           <p className="text-muted-foreground">Customize your landing page hero section</p>
         </div>
-        {isSaving && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Saving...</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          {isSaving ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Saving...</span>
+            </>
+          ) : lastSaved ? (
+            <>
+              <Check className="h-4 w-4 text-green-500" />
+              <span>Auto-saved</span>
+            </>
+          ) : null}
+        </div>
       </div>
 
       <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg transition-all">
@@ -438,7 +473,10 @@ function HeroSettingsSection() {
               <Input 
                 id="heroTitle" 
                 value={heroTitle} 
-                onChange={(e) => setHeroTitle(e.target.value)}
+                onChange={(e) => {
+                  setHeroTitle(e.target.value);
+                  triggerAutoSave({ heroTitle: e.target.value });
+                }}
                 placeholder="Enter hero title"
                 data-testid="input-hero-title"
               />
@@ -449,7 +487,10 @@ function HeroSettingsSection() {
               <Textarea 
                 id="heroSubtitle" 
                 value={heroSubtitle} 
-                onChange={(e) => setHeroSubtitle(e.target.value)}
+                onChange={(e) => {
+                  setHeroSubtitle(e.target.value);
+                  triggerAutoSave({ heroSubtitle: e.target.value });
+                }}
                 placeholder="Enter hero subtitle"
                 data-testid="input-hero-subtitle"
                 className="min-h-[120px]"
@@ -461,7 +502,10 @@ function HeroSettingsSection() {
               <Input 
                 id="ctaText" 
                 value={ctaText} 
-                onChange={(e) => setCtaText(e.target.value)}
+                onChange={(e) => {
+                  setCtaText(e.target.value);
+                  triggerAutoSave({ ctaText: e.target.value });
+                }}
                 placeholder="Book Now"
                 data-testid="input-cta-text"
               />
@@ -489,7 +533,10 @@ function HeroSettingsSection() {
                 <div className="flex gap-2 max-w-xs">
                   <Input 
                     value={heroImageUrl} 
-                    onChange={(e) => setHeroImageUrl(e.target.value)}
+                    onChange={(e) => {
+                      setHeroImageUrl(e.target.value);
+                      triggerAutoSave({ heroImageUrl: e.target.value });
+                    }}
                     placeholder="Or enter image URL (https://...)"
                     data-testid="input-hero-image"
                   />
