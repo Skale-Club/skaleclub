@@ -184,7 +184,7 @@ export default function Admin() {
     <SidebarProvider style={sidebarStyle as React.CSSProperties}>
       <div className="flex h-screen w-full bg-slate-50 relative">
         <Sidebar className="border-r border-gray-200 bg-white">
-          <SidebarHeader className="p-4 border-b border-gray-100">
+          <SidebarHeader className="p-4 border-b border-gray-100 bg-[#ffffff]">
             <div className="flex flex-col gap-4">
               <Link href="/" className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-primary transition-colors group">
                 <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" />
@@ -210,7 +210,7 @@ export default function Admin() {
             </div>
           </SidebarHeader>
           
-          <SidebarContent className="p-2">
+          <SidebarContent className="p-2 bg-[#ffffff]">
             <SidebarGroup>
               <SidebarGroupContent>
                 <SidebarMenu>
