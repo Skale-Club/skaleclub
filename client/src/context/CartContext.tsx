@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import type { Service } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { trackAddToCart, trackRemoveFromCart } from "@/lib/analytics";
 
 interface CartItem extends Service {
   quantity: number;
@@ -26,11 +27,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems((prev) => {
       const existing = prev.find((i) => i.id === service.id);
       if (existing) return prev;
+      trackAddToCart({ 
+        id: service.id, 
+        name: service.name, 
+        price: Number(service.price) 
+      });
       return [...prev, { ...service, quantity: 1 }];
     });
   };
 
   const removeItem = (serviceId: number) => {
+    const item = items.find((i) => i.id === serviceId);
+    if (item) {
+      trackRemoveFromCart({ 
+        id: item.id, 
+        name: item.name, 
+        price: Number(item.price) 
+      });
+    }
     setItems((prev) => prev.filter((i) => i.id !== serviceId));
   };
 

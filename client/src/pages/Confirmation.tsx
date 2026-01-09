@@ -1,18 +1,28 @@
 import { Link } from "wouter";
 import { CheckCircle2, Home } from "lucide-react";
 import { useCart } from "@/context/CartContext";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
+import { trackPurchase } from "@/lib/analytics";
 
 export default function Confirmation() {
-  const { clearCart } = useCart();
+  const { items, totalPrice, clearCart } = useCart();
+  const hasTracked = useRef(false);
   const { data: companySettings } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
   });
 
   useEffect(() => {
-    // Clear cart on successful booking page load
+    if (!hasTracked.current && items.length > 0) {
+      const transactionId = `booking_${Date.now()}`;
+      trackPurchase(
+        transactionId,
+        items.map(item => ({ id: item.id, name: item.name, price: Number(item.price) })),
+        totalPrice
+      );
+      hasTracked.current = true;
+    }
     clearCart();
   }, []);
 

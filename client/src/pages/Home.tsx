@@ -6,6 +6,7 @@ import { AreasServedMap } from "@/components/AreasServedMap";
 import heroImage from "@assets/Persona-Mobile_1767749022412.png";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
+import { trackCTAClick } from "@/lib/analytics";
 
 export default function Home() {
   const { data: categories, isLoading: isCategoriesLoading } = useCategories();
@@ -60,11 +61,20 @@ export default function Home() {
               </p>
               <div className="flex flex-col sm:flex-row gap-3 lg:gap-4">
                 <Link href="/services" className="w-full sm:w-auto">
-                  <button className="w-full px-6 sm:px-8 py-3 sm:py-4 bg-[#FFFF01] hover:bg-[#e6e600] text-black font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg">
+                  <button 
+                    className="w-full px-6 sm:px-8 py-3 sm:py-4 bg-[#FFFF01] hover:bg-[#e6e600] text-black font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg"
+                    onClick={() => trackCTAClick('hero', companySettings?.ctaText || 'Get Instant Price')}
+                    data-testid="button-hero-cta"
+                  >
                     {companySettings?.ctaText || "Get Instant Price"}
                   </button>
                 </Link>
-                <a href={`tel:${telPhone}`} className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-transparent text-white font-bold rounded-full border border-white/30 hover:bg-white/10 transition-all flex items-center justify-center gap-2 text-base sm:text-lg">
+                <a 
+                  href={`tel:${telPhone}`} 
+                  className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-transparent text-white font-bold rounded-full border border-white/30 hover:bg-white/10 transition-all flex items-center justify-center gap-2 text-base sm:text-lg"
+                  onClick={() => trackCTAClick('hero', 'phone_call')}
+                  data-testid="button-hero-phone"
+                >
                   <Phone className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
                   {displayPhone}
                 </a>
@@ -151,7 +161,10 @@ export default function Home() {
                     <p className="text-gray-300 text-sm mb-4 line-clamp-2">
                       {category.description}
                     </p>
-                    <button className="w-full py-2 bg-[#FFFF01] hover:bg-[#e6e600] text-black font-bold rounded-lg opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all">
+                    <button 
+                      className="w-full py-2 bg-[#FFFF01] hover:bg-[#e6e600] text-black font-bold rounded-lg opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all"
+                      onClick={() => trackCTAClick('category_card', category.name)}
+                    >
                       Book Now
                     </button>
                   </div>

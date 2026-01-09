@@ -199,6 +199,13 @@ export const companySettings = pgTable("company_settings", {
   twitterCreator: text("twitter_creator").default(''),
   // Schema.org LocalBusiness
   schemaLocalBusiness: jsonb("schema_local_business").default({}),
+  // Marketing Analytics
+  gtmContainerId: text("gtm_container_id").default(''), // GTM-XXXXXXX
+  ga4MeasurementId: text("ga4_measurement_id").default(''), // G-XXXXXXXXXX
+  facebookPixelId: text("facebook_pixel_id").default(''), // Numeric ID
+  gtmEnabled: boolean("gtm_enabled").default(false),
+  ga4Enabled: boolean("ga4_enabled").default(false),
+  facebookPixelEnabled: boolean("facebook_pixel_enabled").default(false),
 });
 
 export const insertCompanySettingsSchema = createInsertSchema(companySettings).omit({ id: true });

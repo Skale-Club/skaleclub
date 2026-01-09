@@ -2,10 +2,11 @@ import { useCategories, useServices, useSubcategories } from "@/hooks/use-bookin
 import { ServiceCard } from "@/components/ui/ServiceCard";
 import { CartSummary } from "@/components/CartSummary";
 import { useLocation } from "wouter";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { clsx } from "clsx";
 import { useQuery } from "@tanstack/react-query";
 import { Search, X } from "lucide-react";
+import { trackViewServices } from "@/lib/analytics";
 
 export default function Services() {
   const [location] = useLocation();
@@ -42,6 +43,21 @@ export default function Services() {
     );
   });
 
+  const hasTrackedView = useRef(false);
+
+  useEffect(() => {
+    if (!hasTrackedView.current && services && services.length > 0) {
+      const categoryName = selectedCategory 
+        ? categories?.find(c => c.id === selectedCategory)?.name 
+        : 'All Services';
+      trackViewServices(
+        categoryName,
+        services.slice(0, 10).map(s => ({ id: s.id, name: s.name, price: Number(s.price) }))
+      );
+      hasTrackedView.current = true;
+    }
+  }, [services, selectedCategory, categories]);
+
   // Update state if URL changes (optional, but good for linking)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -59,6 +75,8 @@ export default function Services() {
         element.scrollIntoView({ behavior: "smooth" });
       }
     }
+    
+    hasTrackedView.current = false;
   }, [location]);
 
   return (

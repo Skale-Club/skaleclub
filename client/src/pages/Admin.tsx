@@ -3010,6 +3010,15 @@ function AvailabilitySection() {
   );
 }
 
+interface AnalyticsSettings {
+  gtmContainerId: string;
+  ga4MeasurementId: string;
+  facebookPixelId: string;
+  gtmEnabled: boolean;
+  ga4Enabled: boolean;
+  facebookPixelEnabled: boolean;
+}
+
 function IntegrationsSection() {
   const { toast } = useToast();
   const [settings, setSettings] = useState<GHLSettings>({
@@ -3019,11 +3028,26 @@ function IntegrationsSection() {
     calendarId: '2irhr47AR6K0AQkFqEQl',
     isEnabled: false
   });
+  const [analyticsSettings, setAnalyticsSettings] = useState<AnalyticsSettings>({
+    gtmContainerId: '',
+    ga4MeasurementId: '',
+    facebookPixelId: '',
+    gtmEnabled: false,
+    ga4Enabled: false,
+    facebookPixelEnabled: false
+  });
   const [isTesting, setIsTesting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingAnalytics, setIsSavingAnalytics] = useState(false);
+  const [lastSavedAnalytics, setLastSavedAnalytics] = useState<Date | null>(null);
+  const saveAnalyticsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data: ghlSettings, isLoading } = useQuery<GHLSettings>({
     queryKey: ['/api/integrations/ghl']
+  });
+
+  const { data: companySettings } = useQuery<any>({
+    queryKey: ['/api/company-settings']
   });
 
   useEffect(() => {
@@ -3031,6 +3055,56 @@ function IntegrationsSection() {
       setSettings(ghlSettings);
     }
   }, [ghlSettings]);
+
+  useEffect(() => {
+    if (companySettings) {
+      setAnalyticsSettings({
+        gtmContainerId: companySettings.gtmContainerId || '',
+        ga4MeasurementId: companySettings.ga4MeasurementId || '',
+        facebookPixelId: companySettings.facebookPixelId || '',
+        gtmEnabled: companySettings.gtmEnabled || false,
+        ga4Enabled: companySettings.ga4Enabled || false,
+        facebookPixelEnabled: companySettings.facebookPixelEnabled || false
+      });
+    }
+  }, [companySettings]);
+
+  useEffect(() => {
+    return () => {
+      if (saveAnalyticsTimeoutRef.current) {
+        clearTimeout(saveAnalyticsTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const saveAnalyticsSettings = useCallback(async (newSettings: Partial<AnalyticsSettings>) => {
+    setIsSavingAnalytics(true);
+    try {
+      await apiRequest('PUT', '/api/company-settings', newSettings);
+      queryClient.invalidateQueries({ queryKey: ['/api/company-settings'] });
+      setLastSavedAnalytics(new Date());
+    } catch (error: any) {
+      toast({ 
+        title: 'Error saving analytics settings', 
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSavingAnalytics(false);
+    }
+  }, [toast]);
+
+  const updateAnalyticsField = useCallback(<K extends keyof AnalyticsSettings>(field: K, value: AnalyticsSettings[K]) => {
+    setAnalyticsSettings(prev => ({ ...prev, [field]: value }));
+    
+    if (saveAnalyticsTimeoutRef.current) {
+      clearTimeout(saveAnalyticsTimeoutRef.current);
+    }
+    
+    saveAnalyticsTimeoutRef.current = setTimeout(() => {
+      saveAnalyticsSettings({ [field]: value });
+    }, 800);
+  }, [saveAnalyticsSettings]);
 
   const saveSettings = async (settingsToSave?: GHLSettings) => {
     setIsSaving(true);
@@ -3094,115 +3168,264 @@ function IntegrationsSection() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold">Integrations</h1>
         <p className="text-muted-foreground">Connect your booking system with external services</p>
       </div>
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Marketing & Analytics</h2>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            {isSavingAnalytics ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Saving...</span>
+              </>
+            ) : lastSavedAnalytics ? (
+              <>
+                <Check className="h-4 w-4 text-green-500" />
+                <span>Auto-saved</span>
+              </>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <Globe className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <CardTitle className="text-base">Google Tag Manager</CardTitle>
+                </div>
+                <Switch
+                  checked={analyticsSettings.gtmEnabled}
+                  onCheckedChange={(checked) => updateAnalyticsField('gtmEnabled', checked)}
+                  data-testid="switch-gtm-enabled"
+                />
               </div>
-              <div>
-                <CardTitle className="text-lg">GoHighLevel</CardTitle>
-                <p className="text-sm text-muted-foreground">Sync calendars, contacts, and appointments</p>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="gtm-id" className="text-sm">Container ID</Label>
+                <Input
+                  id="gtm-id"
+                  value={analyticsSettings.gtmContainerId}
+                  onChange={(e) => updateAnalyticsField('gtmContainerId', e.target.value)}
+                  placeholder="GTM-XXXXXXX"
+                  className="text-sm"
+                  data-testid="input-gtm-id"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Find this in GTM under Admin {'->'} Container Settings
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                    <Globe className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <CardTitle className="text-base">Google Analytics 4</CardTitle>
+                </div>
+                <Switch
+                  checked={analyticsSettings.ga4Enabled}
+                  onCheckedChange={(checked) => updateAnalyticsField('ga4Enabled', checked)}
+                  data-testid="switch-ga4-enabled"
+                />
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="ga4-id" className="text-sm">Measurement ID</Label>
+                <Input
+                  id="ga4-id"
+                  value={analyticsSettings.ga4MeasurementId}
+                  onChange={(e) => updateAnalyticsField('ga4MeasurementId', e.target.value)}
+                  placeholder="G-XXXXXXXXXX"
+                  className="text-sm"
+                  data-testid="input-ga4-id"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Find this in GA4 Admin {'->'} Data Streams
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                    <Globe className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <CardTitle className="text-base">Facebook Pixel</CardTitle>
+                </div>
+                <Switch
+                  checked={analyticsSettings.facebookPixelEnabled}
+                  onCheckedChange={(checked) => updateAnalyticsField('facebookPixelEnabled', checked)}
+                  data-testid="switch-fb-pixel-enabled"
+                />
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="fb-pixel-id" className="text-sm">Pixel ID</Label>
+                <Input
+                  id="fb-pixel-id"
+                  value={analyticsSettings.facebookPixelId}
+                  onChange={(e) => updateAnalyticsField('facebookPixelId', e.target.value)}
+                  placeholder="123456789012345"
+                  className="text-sm"
+                  data-testid="input-fb-pixel-id"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Find this in Meta Events Manager
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="p-4 bg-slate-100 dark:bg-slate-800 rounded-lg">
+          <h3 className="font-medium text-sm mb-2">Tracked Events</h3>
+          <p className="text-xs text-muted-foreground mb-3">
+            When enabled, the following events are automatically tracked:
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              { event: 'cta_click', desc: 'Button clicks (Book Now, etc.)' },
+              { event: 'add_to_cart', desc: 'Service added to cart' },
+              { event: 'remove_from_cart', desc: 'Service removed from cart' },
+              { event: 'begin_checkout', desc: 'Booking form started' },
+              { event: 'purchase', desc: 'Booking confirmed (conversion)' },
+              { event: 'view_item_list', desc: 'Services page viewed' },
+            ].map(({ event, desc }) => (
+              <div key={event} className="text-xs bg-white dark:bg-slate-900 p-2 rounded border">
+                <code className="text-primary font-mono">{event}</code>
+                <p className="text-muted-foreground mt-0.5">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">CRM & Calendar</h2>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">GoHighLevel</CardTitle>
+                  <p className="text-sm text-muted-foreground">Sync calendars, contacts, and appointments</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {isSaving && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                <Label htmlFor="ghl-enabled" className="text-sm">
+                  {settings.isEnabled ? 'Enabled' : 'Disabled'}
+                </Label>
+                <Switch
+                  id="ghl-enabled"
+                  checked={settings.isEnabled}
+                  onCheckedChange={handleToggleEnabled}
+                  disabled={isSaving}
+                  data-testid="switch-ghl-enabled"
+                />
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              {isSaving && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
-              <Label htmlFor="ghl-enabled" className="text-sm">
-                {settings.isEnabled ? 'Enabled' : 'Disabled'}
-              </Label>
-              <Switch
-                id="ghl-enabled"
-                checked={settings.isEnabled}
-                onCheckedChange={handleToggleEnabled}
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="ghl-api-key">API Key</Label>
+                <Input
+                  id="ghl-api-key"
+                  type="password"
+                  value={settings.apiKey}
+                  onChange={(e) => setSettings(prev => ({ ...prev, apiKey: e.target.value }))}
+                  placeholder="Enter your GoHighLevel API key"
+                  data-testid="input-ghl-api-key"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Find this in your GHL account under Settings {'->'} Private Integrations
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ghl-location-id">Location ID</Label>
+                <Input
+                  id="ghl-location-id"
+                  value={settings.locationId}
+                  onChange={(e) => setSettings(prev => ({ ...prev, locationId: e.target.value }))}
+                  placeholder="Enter your Location ID"
+                  data-testid="input-ghl-location-id"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Your GHL sub-account/location identifier
+                </p>
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="ghl-calendar-id">Calendar ID</Label>
+                <Input
+                  id="ghl-calendar-id"
+                  value={settings.calendarId}
+                  onChange={(e) => setSettings(prev => ({ ...prev, calendarId: e.target.value }))}
+                  placeholder="Enter your Calendar ID"
+                  data-testid="input-ghl-calendar-id"
+                />
+                <p className="text-xs text-muted-foreground">ID of the GHL calendar to sync appointments with</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={testConnection}
+                disabled={isTesting || !settings.apiKey || !settings.locationId}
+                data-testid="button-test-ghl"
+              >
+                {isTesting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Test Connection
+              </Button>
+              <Button
+                onClick={() => saveSettings()}
                 disabled={isSaving}
-                data-testid="switch-ghl-enabled"
-              />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="ghl-api-key">API Key</Label>
-              <Input
-                id="ghl-api-key"
-                type="password"
-                value={settings.apiKey}
-                onChange={(e) => setSettings(prev => ({ ...prev, apiKey: e.target.value }))}
-                placeholder="Enter your GoHighLevel API key"
-                data-testid="input-ghl-api-key"
-              />
-              <p className="text-xs text-muted-foreground">
-                Find this in your GHL account under Settings {'->'} Private Integrations
-              </p>
+                data-testid="button-save-ghl"
+              >
+                {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Save Settings
+              </Button>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="ghl-location-id">Location ID</Label>
-              <Input
-                id="ghl-location-id"
-                value={settings.locationId}
-                onChange={(e) => setSettings(prev => ({ ...prev, locationId: e.target.value }))}
-                placeholder="Enter your Location ID"
-                data-testid="input-ghl-location-id"
-              />
-              <p className="text-xs text-muted-foreground">
-                Your GHL sub-account/location identifier
-              </p>
-            </div>
-
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="ghl-calendar-id">Calendar ID</Label>
-              <Input
-                id="ghl-calendar-id"
-                value={settings.calendarId}
-                onChange={(e) => setSettings(prev => ({ ...prev, calendarId: e.target.value }))}
-                placeholder="Enter your Calendar ID"
-                data-testid="input-ghl-calendar-id"
-              />
-              <p className="text-xs text-muted-foreground">ID of the GHL calendar to sync appointments with</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 pt-4 border-t">
-            <Button
-              variant="outline"
-              onClick={testConnection}
-              disabled={isTesting || !settings.apiKey || !settings.locationId}
-              data-testid="button-test-ghl"
-            >
-              {isTesting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Test Connection
-            </Button>
-            <Button
-              onClick={() => saveSettings()}
-              disabled={isSaving}
-              data-testid="button-save-ghl"
-            >
-              {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Save Settings
-            </Button>
-          </div>
-
-          {settings.isEnabled && (
-            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-              <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
-                <Check className="w-4 h-4" />
-                <span className="font-medium text-sm">Integration Active</span>
+            {settings.isEnabled && (
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                  <Check className="w-4 h-4" />
+                  <span className="font-medium text-sm">Integration Active</span>
+                </div>
+                <p className="text-xs text-green-600 dark:text-green-500 mt-1">
+                  New bookings will be synced to GoHighLevel automatically
+                </p>
               </div>
-              <p className="text-xs text-green-600 dark:text-green-500 mt-1">
-                New bookings will be synced to GoHighLevel automatically
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

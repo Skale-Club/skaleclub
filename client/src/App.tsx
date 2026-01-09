@@ -1,6 +1,6 @@
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/context/CartContext";
@@ -8,6 +8,9 @@ import { AuthProvider } from "@/context/AuthContext";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useSEO } from "@/hooks/use-seo";
+import { initAnalytics, trackPageView } from "@/lib/analytics";
+import { useEffect } from "react";
+import type { CompanySettings } from "@shared/schema";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import Services from "@/pages/Services";
@@ -20,6 +23,32 @@ import TermsOfService from "@/pages/TermsOfService";
 import AboutUs from "@/pages/AboutUs";
 import Contact from "@/pages/Contact";
 import Faq from "@/pages/Faq";
+
+function AnalyticsProvider({ children }: { children: React.ReactNode }) {
+  const { data: settings } = useQuery<CompanySettings>({
+    queryKey: ['/api/company-settings'],
+  });
+  const [location] = useLocation();
+
+  useEffect(() => {
+    if (settings) {
+      initAnalytics({
+        gtmContainerId: settings.gtmContainerId || undefined,
+        ga4MeasurementId: settings.ga4MeasurementId || undefined,
+        facebookPixelId: settings.facebookPixelId || undefined,
+        gtmEnabled: settings.gtmEnabled || false,
+        ga4Enabled: settings.ga4Enabled || false,
+        facebookPixelEnabled: settings.facebookPixelEnabled || false,
+      });
+    }
+  }, [settings]);
+
+  useEffect(() => {
+    trackPageView(location);
+  }, [location]);
+
+  return <>{children}</>;
+}
 
 function SEOProvider({ children }: { children: React.ReactNode }) {
   useSEO();
@@ -69,7 +98,9 @@ function App() {
         <AuthProvider>
           <CartProvider>
             <SEOProvider>
-              <Router />
+              <AnalyticsProvider>
+                <Router />
+              </AnalyticsProvider>
             </SEOProvider>
           </CartProvider>
         </AuthProvider>

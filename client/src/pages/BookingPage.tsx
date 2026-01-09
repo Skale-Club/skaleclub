@@ -11,6 +11,7 @@ import { clsx } from "clsx";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQuery } from "@tanstack/react-query";
+import { trackBeginCheckout, trackEvent } from "@/lib/analytics";
 
 // Helper to format time based on format setting
 function formatTime(time24: string, timeFormat: string): string {
@@ -73,6 +74,12 @@ export default function BookingPage() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (items.length > 0) {
+      trackBeginCheckout(
+        items.map(item => ({ id: item.id, name: item.name, price: Number(item.price) })),
+        totalPrice
+      );
+    }
   }, []);
 
   const handleNextStep = (nextStep: 2 | 3 | 4) => {
