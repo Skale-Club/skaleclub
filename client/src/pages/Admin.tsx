@@ -2422,10 +2422,238 @@ function ServiceForm({ service, categories, subcategories, allServices, addonRel
   );
 }
 
+interface BookingItem {
+  id: number;
+  bookingId: number;
+  serviceId: number;
+  serviceName: string;
+  price: string;
+}
+
+function BookingRow({ booking, onUpdate, onDelete }: { 
+  booking: Booking; 
+  onUpdate: (id: number, updates: Partial<{ status: string; paymentStatus: string; totalPrice: string }>) => void;
+  onDelete: (id: number) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [editingAmount, setEditingAmount] = useState(false);
+  const [amountValue, setAmountValue] = useState(booking.totalPrice);
+  const amountDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const { toast } = useToast();
+
+  const { data: bookingItems } = useQuery<BookingItem[]>({
+    queryKey: ['/api/bookings', booking.id, 'items'],
+    queryFn: async () => {
+      const res = await fetch(`/api/bookings/${booking.id}/items`);
+      return res.json();
+    },
+    enabled: expanded
+  });
+
+  const handleAmountChange = (value: string) => {
+    setAmountValue(value);
+    if (amountDebounceRef.current) clearTimeout(amountDebounceRef.current);
+    amountDebounceRef.current = setTimeout(() => {
+      const parsed = parseFloat(value);
+      if (!isNaN(parsed) && parsed >= 0) {
+        onUpdate(booking.id, { totalPrice: parsed.toFixed(2) });
+        toast({ title: 'Amount updated' });
+      }
+    }, 800);
+  };
+
+  const handleStatusChange = (status: string) => {
+    onUpdate(booking.id, { status });
+    toast({ title: `Status changed to ${status}` });
+  };
+
+  const handlePaymentToggle = () => {
+    const newStatus = booking.paymentStatus === 'paid' ? 'unpaid' : 'paid';
+    onUpdate(booking.id, { paymentStatus: newStatus });
+    toast({ title: newStatus === 'paid' ? 'Marked as paid' : 'Marked as unpaid' });
+  };
+
+  return (
+    <>
+      <tr className="hover:bg-slate-200/30 dark:hover:bg-slate-700/30 transition-colors">
+        <td className="px-6 py-4">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setExpanded(!expanded)}
+              className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+              data-testid={`button-expand-booking-${booking.id}`}
+            >
+              <User className="w-4 h-4" />
+            </button>
+            <div>
+              <p className="font-semibold text-slate-900 dark:text-slate-100">{booking.customerName}</p>
+              <p className="text-xs text-slate-500">{booking.customerEmail}</p>
+              <p className="text-xs text-slate-400">{booking.customerPhone}</p>
+            </div>
+          </div>
+        </td>
+        <td className="px-6 py-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+              {format(new Date(booking.bookingDate), "MMM dd, yyyy")}
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-slate-500">
+              <Clock className="w-3.5 h-3.5 text-slate-400" />
+              {booking.startTime} - {booking.endTime}
+            </div>
+          </div>
+        </td>
+        <td className="px-6 py-4">
+          <div className="text-sm text-slate-600 dark:text-slate-400 flex items-start gap-1.5">
+            <MapPin className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
+            <span className="truncate max-w-[200px]" title={booking.customerAddress}>
+              {booking.customerAddress}
+            </span>
+          </div>
+        </td>
+        <td className="px-6 py-4">
+          <Select value={booking.status} onValueChange={handleStatusChange}>
+            <SelectTrigger className="w-[120px] h-8 text-xs" data-testid={`select-status-${booking.id}`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="confirmed">Confirmed</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+        </td>
+        <td className="px-6 py-4">
+          <button
+            onClick={handlePaymentToggle}
+            className={clsx(
+              "px-2.5 py-1 rounded-full text-xs font-bold cursor-pointer transition-colors",
+              booking.paymentStatus === "paid" 
+                ? "bg-green-100 text-green-700 hover:bg-green-200" 
+                : "bg-orange-100 text-orange-700 hover:bg-orange-200"
+            )}
+            data-testid={`button-payment-${booking.id}`}
+          >
+            {booking.paymentStatus === "paid" ? "Paid" : "Unpaid"}
+          </button>
+        </td>
+        <td className="px-6 py-4">
+          {editingAmount ? (
+            <div className="flex items-center gap-1">
+              <span className="text-slate-500">$</span>
+              <Input
+                type="number"
+                step="0.01"
+                value={amountValue}
+                onChange={(e) => handleAmountChange(e.target.value)}
+                onBlur={() => setEditingAmount(false)}
+                className="w-20 h-7 text-sm"
+                autoFocus
+                data-testid={`input-amount-${booking.id}`}
+              />
+            </div>
+          ) : (
+            <button
+              onClick={() => setEditingAmount(true)}
+              className="font-bold text-slate-900 dark:text-slate-100 hover:underline cursor-pointer"
+              data-testid={`button-edit-amount-${booking.id}`}
+            >
+              ${booking.totalPrice}
+            </button>
+          )}
+        </td>
+        <td className="px-6 py-4 text-right">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" data-testid={`button-delete-booking-${booking.id}`}>
+                <Trash2 className="w-4 h-4 text-red-500" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Booking?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete the booking for {booking.customerName}. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={() => onDelete(booking.id)}
+                  className="bg-red-500 hover:bg-red-600"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </td>
+      </tr>
+      {expanded && (
+        <tr className="bg-slate-50 dark:bg-slate-900/50">
+          <td colSpan={7} className="px-6 py-4">
+            <div className="space-y-3">
+              <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300">Booked Services</h4>
+              {bookingItems && bookingItems.length > 0 ? (
+                <div className="grid gap-2">
+                  {bookingItems.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between p-2 rounded bg-slate-100 dark:bg-slate-800">
+                      <span className="text-sm text-slate-700 dark:text-slate-300">{item.serviceName}</span>
+                      <span className="text-sm font-medium text-slate-900 dark:text-slate-100">${item.price}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-500">Loading services...</p>
+              )}
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
 function BookingsSection() {
   const { data: bookings, isLoading } = useQuery<Booking[]>({
     queryKey: ['/api/bookings']
   });
+  const { toast } = useToast();
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: number; updates: Partial<{ status: string; paymentStatus: string; totalPrice: string }> }) => {
+      const res = await apiRequest('PATCH', `/api/bookings/${id}`, updates);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/bookings'] });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest('DELETE', `/api/bookings/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/bookings'] });
+      toast({ title: 'Booking deleted' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    }
+  });
+
+  const handleUpdate = (id: number, updates: Partial<{ status: string; paymentStatus: string; totalPrice: string }>) => {
+    updateMutation.mutate({ id, updates });
+  };
+
+  const handleDelete = (id: number) => {
+    deleteMutation.mutate(id);
+  };
 
   if (isLoading) {
     return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
@@ -2436,7 +2664,7 @@ function BookingsSection() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Bookings</h1>
-          <p className="text-muted-foreground">View all customer bookings</p>
+          <p className="text-muted-foreground">Manage all customer bookings</p>
         </div>
         <Badge variant="secondary" className="text-lg px-4 py-2 border-0 bg-slate-100 dark:bg-slate-800">
           {bookings?.length || 0} Total
@@ -2459,62 +2687,19 @@ function BookingsSection() {
                   <th className="px-6 py-4 text-left">Schedule</th>
                   <th className="px-6 py-4 text-left">Address</th>
                   <th className="px-6 py-4 text-left">Status</th>
-                  <th className="px-6 py-4 text-right">Amount</th>
+                  <th className="px-6 py-4 text-left">Payment</th>
+                  <th className="px-6 py-4 text-left">Amount</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {bookings?.map((booking) => (
-                  <tr key={booking.id} className="hover:bg-slate-200/30 dark:hover:bg-slate-700/30 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500">
-                          <User className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-slate-900 dark:text-slate-100">{booking.customerName}</p>
-                          <p className="text-xs text-slate-500">{booking.customerEmail}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">
-                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                          {format(new Date(booking.bookingDate), "MMM dd, yyyy")}
-                        </div>
-                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                          <Clock className="w-3.5 h-3.5 text-slate-400" />
-                          {booking.startTime} - {booking.endTime}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-slate-600 dark:text-slate-400 flex items-start gap-1.5">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
-                        <span className="truncate max-w-[200px]" title={booking.customerAddress}>
-                          {booking.customerAddress}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={clsx(
-                        "px-2.5 py-1 rounded-full text-xs font-bold",
-                        booking.status === "confirmed" ? "bg-green-100 text-green-700" :
-                        booking.status === "cancelled" ? "bg-red-100 text-red-700" :
-                        "bg-slate-200 text-slate-700"
-                      )}>
-                        {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center justify-end gap-1">
-                        {booking.paymentMethod === "site" && (
-                          <span className="text-[10px] text-orange-600 bg-orange-100 px-1.5 rounded uppercase">Unpaid</span>
-                        )}
-                        ${booking.totalPrice}
-                      </div>
-                    </td>
-                  </tr>
+                  <BookingRow 
+                    key={booking.id} 
+                    booking={booking} 
+                    onUpdate={handleUpdate}
+                    onDelete={handleDelete}
+                  />
                 ))}
               </tbody>
             </table>

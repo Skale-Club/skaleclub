@@ -54,7 +54,8 @@ export const bookings = pgTable("bookings", {
   totalDurationMinutes: integer("total_duration_minutes").notNull(),
   totalPrice: numeric("total_price", { precision: 10, scale: 2 }).notNull(),
   paymentMethod: text("payment_method").notNull(), // "site" or "online"
-  status: text("status").notNull().default("confirmed"), // confirmed, cancelled
+  paymentStatus: text("payment_status").notNull().default("unpaid"), // paid, unpaid
+  status: text("status").notNull().default("confirmed"), // confirmed, cancelled, completed
   createdAt: timestamp("created_at").defaultNow(),
   // GHL integration fields
   ghlAppointmentId: text("ghl_appointment_id"),

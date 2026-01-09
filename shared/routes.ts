@@ -62,6 +62,40 @@ export const api = {
         200: z.array(z.custom<typeof bookings.$inferSelect>()),
       },
     },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/bookings/:id',
+      input: z.object({
+        status: z.enum(['confirmed', 'cancelled', 'completed']).optional(),
+        paymentStatus: z.enum(['paid', 'unpaid']).optional(),
+        totalPrice: z.string().optional(),
+      }),
+      responses: {
+        200: z.custom<typeof bookings.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/bookings/:id',
+      responses: {
+        200: z.object({ message: z.string() }),
+        404: errorSchemas.notFound,
+      },
+    },
+    getItems: {
+      method: 'GET' as const,
+      path: '/api/bookings/:id/items',
+      responses: {
+        200: z.array(z.object({
+          id: z.number(),
+          bookingId: z.number(),
+          serviceId: z.number(),
+          serviceName: z.string(),
+          price: z.string(),
+        })),
+      },
+    },
   },
   availability: {
     check: {

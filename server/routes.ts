@@ -469,6 +469,49 @@ Sitemap: ${canonicalUrl}/sitemap.xml
     }
   });
 
+  // Update Booking
+  app.patch('/api/bookings/:id', requireAdmin, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const existing = await storage.getBooking(id);
+      if (!existing) {
+        return res.status(404).json({ message: 'Booking not found' });
+      }
+      
+      const input = api.bookings.update.input.parse(req.body);
+      const updated = await storage.updateBooking(id, input);
+      res.json(updated);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  // Delete Booking
+  app.delete('/api/bookings/:id', requireAdmin, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const existing = await storage.getBooking(id);
+      if (!existing) {
+        return res.status(404).json({ message: 'Booking not found' });
+      }
+      
+      await storage.deleteBooking(id);
+      res.json({ message: 'Booking deleted' });
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  // Get Booking Items
+  app.get('/api/bookings/:id/items', async (req, res) => {
+    const id = Number(req.params.id);
+    const items = await storage.getBookingItems(id);
+    res.json(items);
+  });
+
   // Availability Logic
   app.get(api.availability.check.path, async (req, res) => {
     const date = req.query.date as string;

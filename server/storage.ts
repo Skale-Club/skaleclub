@@ -57,6 +57,10 @@ export interface IStorage {
   createBooking(booking: InsertBooking & { totalPrice: string, totalDurationMinutes: number, endTime: string }): Promise<Booking>;
   getBookings(): Promise<Booking[]>;
   getBookingsByDate(date: string): Promise<Booking[]>;
+  getBooking(id: number): Promise<Booking | undefined>;
+  updateBooking(id: number, updates: Partial<{ status: string; paymentStatus: string; totalPrice: string }>): Promise<Booking>;
+  deleteBooking(id: number): Promise<void>;
+  getBookingItems(bookingId: number): Promise<BookingItem[]>;
   
   // Category CRUD
   createCategory(category: InsertCategory): Promise<Category>;
@@ -206,6 +210,27 @@ export class DatabaseStorage implements IStorage {
 
   async getBookingsByDate(date: string): Promise<Booking[]> {
     return await db.select().from(bookings).where(eq(bookings.bookingDate, date));
+  }
+
+  async getBooking(id: number): Promise<Booking | undefined> {
+    const [booking] = await db.select().from(bookings).where(eq(bookings.id, id));
+    return booking;
+  }
+
+  async updateBooking(id: number, updates: Partial<{ status: string; paymentStatus: string; totalPrice: string }>): Promise<Booking> {
+    const [updated] = await db.update(bookings).set(updates).where(eq(bookings.id, id)).returning();
+    return updated;
+  }
+
+  async deleteBooking(id: number): Promise<void> {
+    // First delete booking items
+    await db.delete(bookingItems).where(eq(bookingItems.bookingId, id));
+    // Then delete the booking
+    await db.delete(bookings).where(eq(bookings.id, id));
+  }
+
+  async getBookingItems(bookingId: number): Promise<BookingItem[]> {
+    return await db.select().from(bookingItems).where(eq(bookingItems.bookingId, bookingId));
   }
 
   async createCategory(category: InsertCategory): Promise<Category> {
