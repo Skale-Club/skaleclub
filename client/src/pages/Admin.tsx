@@ -2999,7 +2999,6 @@ function IntegrationsSection() {
         <h1 className="text-2xl font-bold">Integrations</h1>
         <p className="text-muted-foreground">Connect your booking system with external services</p>
       </div>
-
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between gap-4">
@@ -3067,9 +3066,7 @@ function IntegrationsSection() {
                 placeholder="Enter your Calendar ID"
                 data-testid="input-ghl-calendar-id"
               />
-              <p className="text-xs text-muted-foreground">
-                The calendar to sync appointments with
-              </p>
+              <p className="text-xs text-muted-foreground">ID of the GHL calendar to sync appointments with</p>
             </div>
           </div>
 
