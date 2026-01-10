@@ -247,43 +247,40 @@ export default function BookingPage() {
                   </div>
 
                   {/* Slots Column */}
-                  <div className="relative h-[440px]">
-                    <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white via-white/80 to-transparent z-10 pointer-events-none rounded-b-2xl" />
-                    <ScrollArea className="h-full pr-4">
-                      <div className="space-y-3 pb-20">
-                        {isLoadingSlots ? (
-                          [1, 2, 3, 4, 5].map(i => (
-                            <div key={i} className="h-14 bg-slate-50 border border-slate-100 rounded-xl animate-pulse"></div>
-                          ))
-                        ) : slots && slots.some(s => s.available) ? (
-                          <div className="grid grid-cols-1 gap-3 pb-20">
-                            {slots
-                              .filter((slot) => slot.available)
-                              .map((slot) => (
-                                <div key={slot.time} className="px-1 py-1">
-                                  <button
-                                    onClick={() => handleTimeSelect(slot.time)}
-                                    className={clsx(
-                                      "w-full py-4 px-6 rounded-xl font-bold transition-all border text-center text-sm",
-                                      selectedTime === slot.time
-                                        ? "bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-[1.01]"
-                                        : "bg-white border-slate-200 text-slate-600 hover:border-primary hover:text-primary hover:bg-primary/5"
-                                    )}
-                                  >
-                                    {formatTime(slot.time, timeFormat)}
-                                  </button>
-                                </div>
-                              ))}
-                          </div>
-                        ) : (
-                          <div className="text-center py-12 px-4 border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50/50">
-                            <p className="text-slate-400 text-sm font-medium">
-                              {selectedDate ? (slots && slots.length > 0 ? "No slots available for this date" : "No available slots for this duration.") : "Select a date to view available times."}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </ScrollArea>
+                  <div className="relative max-h-[440px] overflow-y-auto">
+                    <div className="space-y-3">
+                      {isLoadingSlots ? (
+                        [1, 2, 3, 4, 5].map(i => (
+                          <div key={i} className="h-14 bg-slate-50 border border-slate-100 rounded-xl animate-pulse"></div>
+                        ))
+                      ) : slots && slots.some(s => s.available) ? (
+                        <div className="grid grid-cols-1 gap-3">
+                          {slots
+                            .filter((slot) => slot.available)
+                            .map((slot) => (
+                              <div key={slot.time} className="px-1 py-1">
+                                <button
+                                  onClick={() => handleTimeSelect(slot.time)}
+                                  className={clsx(
+                                    "w-full py-4 px-6 rounded-xl font-bold transition-all border text-center text-sm",
+                                    selectedTime === slot.time
+                                      ? "bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-[1.01]"
+                                      : "bg-white border-slate-200 text-slate-600 hover:border-primary hover:text-primary hover:bg-primary/5"
+                                  )}
+                                >
+                                  {formatTime(slot.time, timeFormat)}
+                                </button>
+                              </div>
+                            ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-12 px-4 border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50/50">
+                          <p className="text-slate-400 text-sm font-medium">
+                            {selectedDate ? (slots && slots.length > 0 ? "No slots available for this date" : "No available slots for this duration.") : "Select a date to view available times."}
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
