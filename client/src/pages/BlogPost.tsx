@@ -230,46 +230,46 @@ export default function BlogPostPage() {
             </div>
 
             <aside className="lg:w-[30%]">
-              <div className="sticky top-4 space-y-6">
+              <div className="sticky top-20 space-y-6">
                 {relatedServices && relatedServices.length > 0 && (
                   <Card>
-                    <CardHeader>
+                    <CardHeader className="pb-3">
                       <CardTitle className="text-lg" data-testid="text-related-services-title">
                         Related Services
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {relatedServices.map(service => (
-                        <div key={service.id} className="flex gap-3" data-testid={`card-service-${service.id}`}>
+                        <div key={service.id} className="overflow-hidden" data-testid={`card-service-${service.id}`}>
                           {service.imageUrl ? (
-                            <img
-                              src={service.imageUrl}
-                              alt={service.name}
-                              className="w-16 h-12 object-cover rounded flex-shrink-0"
-                              data-testid={`img-service-${service.id}`}
-                            />
+                            <div className="aspect-[4/3] overflow-hidden rounded-lg mb-3">
+                              <img
+                                src={service.imageUrl}
+                                alt={service.name}
+                                className="w-full h-full object-cover"
+                                data-testid={`img-service-${service.id}`}
+                              />
+                            </div>
                           ) : (
-                            <div className="w-16 h-12 bg-muted rounded flex items-center justify-center flex-shrink-0">
-                              <ShoppingCart className="w-4 h-4 text-muted-foreground" />
+                            <div className="aspect-[4/3] bg-muted rounded-lg flex items-center justify-center mb-3">
+                              <ShoppingCart className="w-8 h-8 text-muted-foreground" />
                             </div>
                           )}
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-medium text-foreground line-clamp-1" data-testid={`text-service-name-${service.id}`}>
-                              {service.name}
-                            </h4>
-                            <p className="text-sm font-bold text-primary" data-testid={`text-service-price-${service.id}`}>
-                              ${service.price}
-                            </p>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              className="mt-1 h-7 text-xs"
-                              onClick={() => handleAddToCart(service)}
-                              data-testid={`button-add-to-cart-${service.id}`}
-                            >
-                              Add to Cart
-                            </Button>
-                          </div>
+                          <h4 className="font-semibold text-foreground mb-1" data-testid={`text-service-name-${service.id}`}>
+                            {service.name}
+                          </h4>
+                          <p className="text-lg font-bold text-primary mb-2" data-testid={`text-service-price-${service.id}`}>
+                            ${service.price}
+                          </p>
+                          <Button 
+                            size="sm" 
+                            className="w-full bg-yellow-400 hover:bg-yellow-500 text-black border-0"
+                            onClick={() => handleAddToCart(service)}
+                            data-testid={`button-add-to-cart-${service.id}`}
+                          >
+                            <ShoppingCart className="w-4 h-4 mr-2" />
+                            Add to Cart
+                          </Button>
                         </div>
                       ))}
                     </CardContent>
