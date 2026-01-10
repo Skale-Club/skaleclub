@@ -2537,44 +2537,44 @@ function BookingRow({ booking, onUpdate, onDelete }: {
     <>
       <tr className="hover:bg-slate-200/30 dark:hover:bg-slate-700/30 transition-colors">
         <td className="px-4 py-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <button 
               onClick={() => setExpanded(!expanded)}
-              className="w-8 h-8 rounded flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shrink-0"
+              className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shrink-0"
               data-testid={`button-expand-booking-${booking.id}`}
             >
-              <ChevronDown className={clsx("w-4 h-4 transition-transform", expanded && "rotate-180")} />
+              <ChevronDown className={clsx("w-3 h-3 transition-transform", expanded && "rotate-180")} />
             </button>
-            <div className="min-w-0">
-              <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">{booking.customerName}</p>
-              <p className="text-[10px] text-slate-500 truncate">{booking.customerEmail}</p>
-              <p className="text-[10px] text-slate-400 truncate">{booking.customerPhone}</p>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-slate-900 dark:text-slate-100 truncate text-xs">{booking.customerName}</p>
+              <p className="text-[10px] text-slate-500 truncate leading-tight">{booking.customerEmail}</p>
+              <p className="text-[10px] text-slate-400 truncate leading-tight">{booking.customerPhone}</p>
             </div>
           </div>
         </td>
         <td className="px-4 py-4">
-          <div className="space-y-0.5 whitespace-nowrap">
-            <div className="flex items-center gap-1 text-xs font-medium text-slate-700 dark:text-slate-300">
-              <Calendar className="w-3 h-3 text-slate-400" />
+          <div className="space-y-0.5 min-w-0">
+            <div className="flex items-center gap-1 text-[11px] font-medium text-slate-700 dark:text-slate-300 truncate">
+              <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
               {format(new Date(booking.bookingDate), "MMM dd, yyyy")}
             </div>
-            <div className="flex items-center gap-1 text-[10px] text-slate-500">
-              <Clock className="w-3 h-3 text-slate-400" />
-              {booking.startTime} - {booking.endTime}
+            <div className="flex items-center gap-1 text-[10px] text-slate-500 truncate">
+              <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+              {booking.startTime}-{booking.endTime}
             </div>
           </div>
         </td>
         <td className="px-4 py-4">
-          <div className="text-xs text-slate-600 dark:text-slate-400 flex items-start gap-1">
+          <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-start gap-1 min-w-0">
             <MapPin className="w-3 h-3 text-slate-400 mt-0.5 shrink-0" />
-            <span className="truncate max-w-[150px]" title={booking.customerAddress}>
+            <span className="truncate w-full" title={booking.customerAddress}>
               {booking.customerAddress}
             </span>
           </div>
         </td>
         <td className="px-4 py-4">
           <Select value={booking.status} onValueChange={handleStatusChange}>
-            <SelectTrigger className="w-[100px] h-7 text-[10px]" data-testid={`select-status-${booking.id}`}>
+            <SelectTrigger className="w-full h-7 text-[10px] px-2" data-testid={`select-status-${booking.id}`}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -2589,7 +2589,7 @@ function BookingRow({ booking, onUpdate, onDelete }: {
           <button
             onClick={handlePaymentToggle}
             className={clsx(
-              "px-2 py-0.5 rounded-full text-[10px] font-bold cursor-pointer transition-colors whitespace-nowrap",
+              "px-1.5 py-0.5 rounded-full text-[9px] font-bold cursor-pointer transition-colors w-full text-center",
               booking.paymentStatus === "paid" 
                 ? "bg-green-100 text-green-700 hover:bg-green-200" 
                 : "bg-orange-100 text-orange-700 hover:bg-orange-200"
@@ -2599,14 +2599,14 @@ function BookingRow({ booking, onUpdate, onDelete }: {
             {booking.paymentStatus === "paid" ? "Paid" : "Unpaid"}
           </button>
         </td>
-        <td className="px-4 py-4 font-bold text-slate-900 dark:text-slate-100 text-xs">
+        <td className="px-4 py-4 font-bold text-slate-900 dark:text-slate-100 text-xs whitespace-nowrap">
           ${booking.totalPrice}
         </td>
         <td className="px-4 py-4 text-right">
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7" data-testid={`button-delete-booking-${booking.id}`}>
-                <Trash2 className="w-3.5 h-3.5 text-red-500" />
+              <Button variant="ghost" size="icon" className="h-6 w-6" data-testid={`button-delete-booking-${booking.id}`}>
+                <Trash2 className="w-3 h-3 text-red-500" />
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
@@ -2859,19 +2859,19 @@ function BookingsSection() {
           <p className="text-muted-foreground">Bookings will appear here when customers make them</p>
         </div>
       ) : (
-        <div className="space-y-4 max-w-full overflow-hidden">
-          <div className="hidden md:block bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden transition-all border">
-            <div className="overflow-x-auto">
-              <table className="w-full table-auto min-w-[900px]">
-                <thead className="bg-slate-200/50 dark:bg-slate-700/50 text-slate-500 text-xs uppercase tracking-wider font-semibold">
+        <div className="space-y-4 w-full">
+          <div className="hidden md:block bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden transition-all border w-full">
+            <div className="w-full overflow-hidden">
+              <table className="w-full table-fixed">
+                <thead className="bg-slate-200/50 dark:bg-slate-700/50 text-slate-500 text-[10px] uppercase tracking-wider font-semibold">
                   <tr>
-                    <th className="px-6 py-4 text-left">Customer</th>
-                    <th className="px-6 py-4 text-left">Schedule</th>
-                    <th className="px-6 py-4 text-left">Address</th>
-                    <th className="px-6 py-4 text-left">Status</th>
-                    <th className="px-6 py-4 text-left">Payment</th>
-                    <th className="px-6 py-4 text-left">Amount</th>
-                    <th className="px-6 py-4 text-right">Actions</th>
+                    <th className="px-4 py-4 text-left w-[20%]">Customer</th>
+                    <th className="px-4 py-4 text-left w-[18%]">Schedule</th>
+                    <th className="px-4 py-4 text-left w-[22%]">Address</th>
+                    <th className="px-4 py-4 text-left w-[15%]">Status</th>
+                    <th className="px-4 py-4 text-left w-[10%]">Payment</th>
+                    <th className="px-4 py-4 text-left w-[10%]">Amount</th>
+                    <th className="px-4 py-4 text-right w-[5%]"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
