@@ -2520,8 +2520,7 @@ function BookingRow({ booking, onUpdate, onDelete }: {
   const [expanded, setExpanded] = useState(false);
   const { toast } = useToast();
 
-  const { data: bookingItems, isLoading: itemsLoading } = useBookingItems(booking.id, true);
-  const servicesTotal = bookingItems?.reduce((sum, item) => sum + parseFloat(item.price || '0'), 0) || 0;
+  const { data: bookingItems } = useBookingItems(booking.id, expanded);
 
   const handleStatusChange = (status: string) => {
     onUpdate(booking.id, { status });
@@ -2604,7 +2603,7 @@ function BookingRow({ booking, onUpdate, onDelete }: {
             className="font-bold text-slate-900 dark:text-slate-100"
             data-testid={`text-amount-${booking.id}`}
           >
-            {itemsLoading ? '...' : `$${servicesTotal.toFixed(2)}`}
+            ${booking.totalPrice}
           </span>
         </td>
         <td className="px-6 py-4 text-right">
@@ -2671,9 +2670,7 @@ function BookingMobileCard({
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { toast } = useToast();
-  const { data: items, isLoading: itemsLoading } = useBookingItems(booking.id, true);
-  
-  const servicesTotal = items?.reduce((sum, item) => sum + parseFloat(item.price || '0'), 0) || 0;
+  const { data: items, isLoading: itemsLoading } = useBookingItems(booking.id, isExpanded);
 
   const handleStatusChange = (status: string) => {
     onUpdate(booking.id, { status });
@@ -2719,7 +2716,7 @@ function BookingMobileCard({
           </div>
           <div className="flex items-center gap-2 font-bold justify-end text-primary">
             <DollarSign className="w-4 h-4" />
-            <span>{itemsLoading ? '...' : `$${servicesTotal.toFixed(2)}`}</span>
+            <span>${booking.totalPrice}</span>
           </div>
         </div>
 
