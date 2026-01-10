@@ -66,7 +66,7 @@ export const api = {
       method: 'PATCH' as const,
       path: '/api/bookings/:id',
       input: z.object({
-        status: z.enum(['confirmed', 'cancelled', 'completed']).optional(),
+        status: z.enum(['pending', 'confirmed', 'cancelled', 'completed']).optional(),
         paymentStatus: z.enum(['paid', 'unpaid']).optional(),
         totalPrice: z.string().optional(),
       }),
