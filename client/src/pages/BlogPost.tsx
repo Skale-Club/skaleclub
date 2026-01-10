@@ -231,6 +231,22 @@ export default function BlogPostPage() {
 
             <aside className="lg:w-[30%]">
               <div className="sticky top-20 space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Need Cleaning Services?</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Book our professional cleaning services today and enjoy a spotless home.
+                    </p>
+                    <Link href="/services">
+                      <Button className="w-full" data-testid="button-browse-services">
+                        Browse Services
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+
                 {relatedServices && relatedServices.length > 0 && (
                   <Card>
                     <CardHeader className="pb-3">
@@ -325,22 +341,6 @@ export default function BlogPostPage() {
                     </CardContent>
                   </Card>
                 )}
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Need Cleaning Services?</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Book our professional cleaning services today and enjoy a spotless home.
-                    </p>
-                    <Link href="/services">
-                      <Button className="w-full" data-testid="button-browse-services">
-                        Browse Services
-                      </Button>
-                    </Link>
-                  </CardContent>
-                </Card>
               </div>
             </aside>
           </div>
