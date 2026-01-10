@@ -278,7 +278,7 @@ function AdminContent() {
             Admin Panel
           </button>
         </header>
-        <div className="p-4 md:p-6 max-w-full overflow-hidden">
+        <div className="p-6 md:p-8">
           {activeSection === 'dashboard' && <DashboardSection />}
           {activeSection === 'categories' && <CategoriesSection />}
           {activeSection === 'subcategories' && <SubcategoriesSection />}
@@ -2536,60 +2536,59 @@ function BookingRow({ booking, onUpdate, onDelete }: {
   return (
     <>
       <tr className="hover:bg-slate-200/30 dark:hover:bg-slate-700/30 transition-colors">
-        <td className="px-4 py-4">
-          <div className="flex items-center gap-1">
+        <td className="px-6 py-4">
+          <div className="flex items-center gap-3">
             <button 
               onClick={() => setExpanded(!expanded)}
-              className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shrink-0"
+              className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
               data-testid={`button-expand-booking-${booking.id}`}
             >
-              <ChevronDown className={clsx("w-3 h-3 transition-transform", expanded && "rotate-180")} />
+              <ChevronDown className={clsx("w-4 h-4 transition-transform", expanded && "rotate-180")} />
             </button>
-            <div className="min-w-0 flex-1">
-              <p className="font-semibold text-slate-900 dark:text-slate-100 truncate text-xs">{booking.customerName}</p>
-              <p className="text-[10px] text-slate-500 truncate leading-tight">{booking.customerEmail}</p>
-              <p className="text-[10px] text-slate-400 truncate leading-tight">{booking.customerPhone}</p>
+            <div>
+              <p className="font-semibold text-slate-900 dark:text-slate-100">{booking.customerName}</p>
+              <p className="text-xs text-slate-500">{booking.customerEmail}</p>
+              <p className="text-xs text-slate-400">{booking.customerPhone}</p>
             </div>
           </div>
         </td>
-        <td className="px-4 py-4">
-          <div className="space-y-0.5 min-w-0">
-            <div className="flex items-center gap-1 text-[11px] font-medium text-slate-700 dark:text-slate-300 truncate">
-              <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
+        <td className="px-6 py-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
               {format(new Date(booking.bookingDate), "MMM dd, yyyy")}
             </div>
-            <div className="flex items-center gap-1 text-[10px] text-slate-500 truncate">
-              <Clock className="w-3 h-3 text-slate-400 shrink-0" />
-              {booking.startTime}-{booking.endTime}
+            <div className="flex items-center gap-1.5 text-xs text-slate-500">
+              <Clock className="w-3.5 h-3.5 text-slate-400" />
+              {booking.startTime} - {booking.endTime}
             </div>
           </div>
         </td>
-        <td className="px-4 py-4">
-          <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-start gap-1 min-w-0">
-            <MapPin className="w-3 h-3 text-slate-400 mt-0.5 shrink-0" />
-            <span className="truncate w-full" title={booking.customerAddress}>
+        <td className="px-6 py-4">
+          <div className="text-sm text-slate-600 dark:text-slate-400 flex items-start gap-1.5">
+            <MapPin className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
+            <span className="truncate max-w-[200px]" title={booking.customerAddress}>
               {booking.customerAddress}
             </span>
           </div>
         </td>
-        <td className="px-4 py-4">
+        <td className="px-6 py-4">
           <Select value={booking.status} onValueChange={handleStatusChange}>
-            <SelectTrigger className="w-full h-7 text-[10px] px-2" data-testid={`select-status-${booking.id}`}>
+            <SelectTrigger className="w-[120px] h-8 text-xs" data-testid={`select-status-${booking.id}`}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="confirmed">Confirmed</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>
               <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
         </td>
-        <td className="px-4 py-4">
+        <td className="px-6 py-4">
           <button
             onClick={handlePaymentToggle}
             className={clsx(
-              "px-1.5 py-0.5 rounded-full text-[9px] font-bold cursor-pointer transition-colors w-full text-center",
+              "px-2.5 py-1 rounded-full text-xs font-bold cursor-pointer transition-colors",
               booking.paymentStatus === "paid" 
                 ? "bg-green-100 text-green-700 hover:bg-green-200" 
                 : "bg-orange-100 text-orange-700 hover:bg-orange-200"
@@ -2599,14 +2598,19 @@ function BookingRow({ booking, onUpdate, onDelete }: {
             {booking.paymentStatus === "paid" ? "Paid" : "Unpaid"}
           </button>
         </td>
-        <td className="px-4 py-4 font-bold text-slate-900 dark:text-slate-100 text-xs whitespace-nowrap">
-          ${booking.totalPrice}
+        <td className="px-6 py-4">
+          <span
+            className="font-bold text-slate-900 dark:text-slate-100"
+            data-testid={`text-amount-${booking.id}`}
+          >
+            ${booking.totalPrice}
+          </span>
         </td>
-        <td className="px-4 py-4 text-right">
+        <td className="px-6 py-4 text-right">
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-6 w-6" data-testid={`button-delete-booking-${booking.id}`}>
-                <Trash2 className="w-3 h-3 text-red-500" />
+              <Button variant="ghost" size="icon" className="h-8 w-8" data-testid={`button-delete-booking-${booking.id}`}>
+                <Trash2 className="w-4 h-4 text-red-500" />
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
@@ -2859,15 +2863,45 @@ function BookingsSection() {
           <p className="text-muted-foreground">Bookings will appear here when customers make them</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {bookings?.map((booking) => (
-            <BookingMobileCard
-              key={booking.id}
-              booking={booking}
-              onUpdate={handleUpdate}
-              onDelete={handleDelete}
-            />
-          ))}
+        <div className="space-y-4">
+          <div className="hidden md:block bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden transition-all">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-slate-200/50 dark:bg-slate-700/50 text-slate-500 text-xs uppercase tracking-wider font-semibold">
+                  <tr>
+                    <th className="px-6 py-4 text-left">Customer</th>
+                    <th className="px-6 py-4 text-left">Schedule</th>
+                    <th className="px-6 py-4 text-left">Address</th>
+                    <th className="px-6 py-4 text-left">Status</th>
+                    <th className="px-6 py-4 text-left">Payment</th>
+                    <th className="px-6 py-4 text-left">Amount</th>
+                    <th className="px-6 py-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {bookings?.map((booking) => (
+                    <BookingRow 
+                      key={booking.id} 
+                      booking={booking} 
+                      onUpdate={handleUpdate}
+                      onDelete={handleDelete}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <div className="md:hidden space-y-4">
+            {bookings?.map((booking) => (
+              <BookingMobileCard
+                key={booking.id}
+                booking={booking}
+                onUpdate={handleUpdate}
+                onDelete={handleDelete}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>
