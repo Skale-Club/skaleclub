@@ -255,6 +255,11 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({
   updatedAt: true 
 }).extend({
   serviceIds: z.array(z.number()).optional(),
+  publishedAt: z.union([z.string(), z.date(), z.null()]).optional().transform(val => {
+    if (!val) return null;
+    if (val instanceof Date) return val;
+    return new Date(val);
+  }),
 });
 
 export type BlogPost = typeof blogPosts.$inferSelect;
