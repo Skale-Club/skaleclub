@@ -60,6 +60,8 @@ const TermsOfService = lazy(() => import("@/pages/TermsOfService").then(m => ({ 
 const AboutUs = lazy(() => import("@/pages/AboutUs").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Contact = lazy(() => import("@/pages/Contact").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Faq = lazy(() => import("@/pages/Faq").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const Blog = lazy(() => import("@/pages/Blog").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const BlogPost = lazy(() => import("@/pages/BlogPost").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 
 function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const { data: settings } = useQuery<CompanySettings>({
@@ -130,6 +132,8 @@ function Router() {
             <Route path="/about" component={AboutUs} />
             <Route path="/contact" component={Contact} />
             <Route path="/faq" component={Faq} />
+            <Route path="/blog" component={Blog} />
+            <Route path="/blog/:slug" component={BlogPost} />
             <Route component={NotFound} />
           </Switch>
         </Suspense>
