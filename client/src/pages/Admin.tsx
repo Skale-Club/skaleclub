@@ -74,10 +74,10 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
-import type { Category, Service, Booking, Subcategory, Faq } from '@shared/schema';
-import { HelpCircle } from 'lucide-react';
+import type { Category, Service, Booking, Subcategory, Faq, BlogPost } from '@shared/schema';
+import { HelpCircle, FileText } from 'lucide-react';
 
-type AdminSection = 'dashboard' | 'categories' | 'subcategories' | 'services' | 'bookings' | 'hero' | 'company' | 'seo' | 'faqs' | 'users' | 'availability' | 'integrations';
+type AdminSection = 'dashboard' | 'categories' | 'subcategories' | 'services' | 'bookings' | 'hero' | 'company' | 'seo' | 'faqs' | 'users' | 'availability' | 'integrations' | 'blog';
 
 const menuItems = [
   { id: 'dashboard' as AdminSection, title: 'Dashboard', icon: LayoutDashboard },
@@ -85,6 +85,7 @@ const menuItems = [
   { id: 'subcategories' as AdminSection, title: 'Subcategories', icon: ListFilter },
   { id: 'services' as AdminSection, title: 'Services', icon: Package },
   { id: 'bookings' as AdminSection, title: 'Bookings', icon: Calendar },
+  { id: 'blog' as AdminSection, title: 'Blog', icon: FileText },
   { id: 'hero' as AdminSection, title: 'Hero Section', icon: Image },
   { id: 'company' as AdminSection, title: 'Company Infos', icon: Building2 },
   { id: 'seo' as AdminSection, title: 'SEO', icon: Search },
@@ -296,6 +297,7 @@ function AdminContent() {
           )}
           {activeSection === 'availability' && <AvailabilitySection />}
           {activeSection === 'integrations' && <IntegrationsSection />}
+          {activeSection === 'blog' && <BlogSection />}
         </div>
       </main>
     </div>
@@ -3823,6 +3825,500 @@ function IntegrationsSection() {
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+function BlogSection() {
+  const { toast } = useToast();
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
+  const [formData, setFormData] = useState({
+    title: '',
+    slug: '',
+    content: '',
+    excerpt: '',
+    metaDescription: '',
+    focusKeyword: '',
+    featureImageUrl: '',
+    status: 'draft',
+    authorName: 'Admin',
+    publishedAt: null as string | null,
+    serviceIds: [] as number[],
+  });
+
+  const { data: posts, isLoading } = useQuery<BlogPost[]>({
+    queryKey: ['/api/blog'],
+  });
+
+  const { data: services } = useQuery<Service[]>({
+    queryKey: ['/api/services'],
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: typeof formData) => apiRequest('POST', '/api/blog', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/blog'] });
+      toast({ title: 'Blog post created successfully' });
+      setIsCreateOpen(false);
+      resetForm();
+    },
+    onError: (err: any) => {
+      toast({ title: 'Error creating post', description: err.message, variant: 'destructive' });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: typeof formData }) => 
+      apiRequest('PUT', `/api/blog/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/blog'] });
+      toast({ title: 'Blog post updated successfully' });
+      setEditingPost(null);
+      resetForm();
+    },
+    onError: (err: any) => {
+      toast({ title: 'Error updating post', description: err.message, variant: 'destructive' });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/blog/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/blog'] });
+      toast({ title: 'Blog post deleted' });
+    },
+    onError: (err: any) => {
+      toast({ title: 'Error deleting post', description: err.message, variant: 'destructive' });
+    },
+  });
+
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      slug: '',
+      content: '',
+      excerpt: '',
+      metaDescription: '',
+      focusKeyword: '',
+      featureImageUrl: '',
+      status: 'draft',
+      authorName: 'Admin',
+      publishedAt: null,
+      serviceIds: [],
+    });
+  };
+
+  const generateSlug = (title: string) => {
+    return title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim();
+  };
+
+  const handleTitleChange = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      title: value,
+      slug: prev.slug || generateSlug(value),
+    }));
+  };
+
+  const handleEdit = async (post: BlogPost) => {
+    const postServices = await fetch(`/api/blog/${post.id}/services`).then(r => r.json());
+    setEditingPost(post);
+    setFormData({
+      title: post.title,
+      slug: post.slug,
+      content: post.content,
+      excerpt: post.excerpt || '',
+      metaDescription: post.metaDescription || '',
+      focusKeyword: post.focusKeyword || '',
+      featureImageUrl: post.featureImageUrl || '',
+      status: post.status,
+      authorName: post.authorName || 'Admin',
+      publishedAt: post.publishedAt ? new Date(post.publishedAt).toISOString().split('T')[0] : null,
+      serviceIds: postServices.map((s: Service) => s.id),
+    });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const dataToSend = {
+      ...formData,
+      publishedAt: formData.status === 'published' && formData.publishedAt 
+        ? new Date(formData.publishedAt).toISOString() 
+        : formData.status === 'published' 
+          ? new Date().toISOString() 
+          : null,
+    };
+
+    if (editingPost) {
+      updateMutation.mutate({ id: editingPost.id, data: dataToSend });
+    } else {
+      createMutation.mutate(dataToSend);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const { uploadURL, objectPath } = await fetch('/api/upload', { 
+        method: 'POST',
+        credentials: 'include',
+      }).then(r => r.json());
+
+      await fetch(uploadURL, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type },
+      });
+
+      setFormData(prev => ({ ...prev, featureImageUrl: objectPath }));
+      toast({ title: 'Image uploaded successfully' });
+    } catch (err: any) {
+      toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
+    }
+  };
+
+  const toggleServiceSelection = (serviceId: number) => {
+    setFormData(prev => ({
+      ...prev,
+      serviceIds: prev.serviceIds.includes(serviceId)
+        ? prev.serviceIds.filter(id => id !== serviceId)
+        : prev.serviceIds.length < 3 
+          ? [...prev.serviceIds, serviceId]
+          : prev.serviceIds,
+    }));
+  };
+
+  const renderForm = () => (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="title">Title *</Label>
+          <Input
+            id="title"
+            value={formData.title}
+            onChange={(e) => handleTitleChange(e.target.value)}
+            placeholder="Enter post title"
+            required
+            data-testid="input-blog-title"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="slug">Slug *</Label>
+          <Input
+            id="slug"
+            value={formData.slug}
+            onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
+            placeholder="url-friendly-slug"
+            required
+            data-testid="input-blog-slug"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="content">Content *</Label>
+        <Textarea
+          id="content"
+          value={formData.content}
+          onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+          placeholder="Write your blog post content here. HTML tags are supported (h2, h3, p, ul, li, strong, em, a)..."
+          className="min-h-[300px] font-mono text-sm"
+          required
+          data-testid="textarea-blog-content"
+        />
+        <p className="text-xs text-muted-foreground">Supports HTML formatting</p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="excerpt">Excerpt</Label>
+        <Textarea
+          id="excerpt"
+          value={formData.excerpt}
+          onChange={(e) => setFormData(prev => ({ ...prev, excerpt: e.target.value.slice(0, 150) }))}
+          placeholder="Short description shown on blog cards..."
+          className="min-h-[80px]"
+          data-testid="textarea-blog-excerpt"
+        />
+        <p className="text-xs text-muted-foreground">{formData.excerpt.length}/150 characters</p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="featureImage">Feature Image</Label>
+        <div className="flex items-center gap-4">
+          {formData.featureImageUrl && (
+            <img 
+              src={formData.featureImageUrl} 
+              alt="Feature" 
+              className="w-32 h-18 object-cover rounded-lg"
+              data-testid="img-blog-feature-preview"
+            />
+          )}
+          <Input
+            id="featureImage"
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="flex-1"
+            data-testid="input-blog-feature-image"
+          />
+        </div>
+        <p className="text-xs text-muted-foreground">Recommended: 1200x675px (16:9 aspect ratio)</p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="metaDescription">Meta Description</Label>
+          <Textarea
+            id="metaDescription"
+            value={formData.metaDescription}
+            onChange={(e) => setFormData(prev => ({ 
+              ...prev, 
+              metaDescription: e.target.value.slice(0, 155) 
+            }))}
+            placeholder="SEO meta description..."
+            className="min-h-[80px]"
+            data-testid="textarea-blog-meta"
+          />
+          <p className="text-xs text-muted-foreground">{formData.metaDescription.length}/155 characters</p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="focusKeyword">Focus Keyword</Label>
+          <Input
+            id="focusKeyword"
+            value={formData.focusKeyword}
+            onChange={(e) => setFormData(prev => ({ ...prev, focusKeyword: e.target.value }))}
+            placeholder="Primary SEO keyword"
+            data-testid="input-blog-keyword"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Related Services (max 3)</Label>
+        <div className="grid gap-2 max-h-48 overflow-y-auto border rounded-lg p-3">
+          {services?.filter(s => !s.isHidden).map(service => (
+            <div 
+              key={service.id} 
+              className="flex items-center gap-2"
+            >
+              <Checkbox
+                id={`service-${service.id}`}
+                checked={formData.serviceIds.includes(service.id)}
+                onCheckedChange={() => toggleServiceSelection(service.id)}
+                disabled={!formData.serviceIds.includes(service.id) && formData.serviceIds.length >= 3}
+                data-testid={`checkbox-service-${service.id}`}
+              />
+              <Label htmlFor={`service-${service.id}`} className="text-sm cursor-pointer">
+                {service.name} - ${service.price}
+              </Label>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="space-y-2">
+          <Label htmlFor="status">Status</Label>
+          <Select
+            value={formData.status}
+            onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+          >
+            <SelectTrigger data-testid="select-blog-status">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="draft">Draft</SelectItem>
+              <SelectItem value="published">Published</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="publishedAt">Publication Date</Label>
+          <Input
+            id="publishedAt"
+            type="date"
+            value={formData.publishedAt || ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, publishedAt: e.target.value || null }))}
+            data-testid="input-blog-date"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="authorName">Author</Label>
+          <Input
+            id="authorName"
+            value={formData.authorName}
+            onChange={(e) => setFormData(prev => ({ ...prev, authorName: e.target.value }))}
+            placeholder="Author name"
+            data-testid="input-blog-author"
+          />
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-3 pt-4 border-t">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            setIsCreateOpen(false);
+            setEditingPost(null);
+            resetForm();
+          }}
+          data-testid="button-blog-cancel"
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          disabled={createMutation.isPending || updateMutation.isPending}
+          data-testid="button-blog-save"
+        >
+          {(createMutation.isPending || updateMutation.isPending) && (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          )}
+          {editingPost ? 'Update Post' : 'Create Post'}
+        </Button>
+      </div>
+    </form>
+  );
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (isCreateOpen || editingPost) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setIsCreateOpen(false);
+              setEditingPost(null);
+              resetForm();
+            }}
+            data-testid="button-blog-back"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Posts
+          </Button>
+          <h1 className="text-2xl font-bold">
+            {editingPost ? 'Edit Post' : 'Create New Post'}
+          </h1>
+        </div>
+        <Card>
+          <CardContent className="pt-6">
+            {renderForm()}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground" data-testid="text-blog-title">Blog Posts</h1>
+          <p className="text-sm text-muted-foreground">Manage your blog content and SEO</p>
+        </div>
+        <Button onClick={() => setIsCreateOpen(true)} data-testid="button-blog-create">
+          <Plus className="w-4 h-4 mr-2" />
+          New Post
+        </Button>
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          {posts && posts.length > 0 ? (
+            <div className="divide-y">
+              {posts.map(post => (
+                <div key={post.id} className="flex items-center gap-4 p-4" data-testid={`row-blog-${post.id}`}>
+                  {post.featureImageUrl ? (
+                    <img 
+                      src={post.featureImageUrl} 
+                      alt={post.title}
+                      className="w-20 h-12 object-cover rounded-lg flex-shrink-0"
+                      data-testid={`img-blog-${post.id}`}
+                    />
+                  ) : (
+                    <div className="w-20 h-12 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+                      <FileText className="w-6 h-6 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium truncate" data-testid={`text-blog-title-${post.id}`}>{post.title}</h3>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span>{post.publishedAt ? format(new Date(post.publishedAt), 'MMM d, yyyy') : 'Not published'}</span>
+                      <Badge variant={post.status === 'published' ? 'default' : 'secondary'} data-testid={`badge-blog-status-${post.id}`}>
+                        {post.status}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleEdit(post)}
+                      data-testid={`button-blog-edit-${post.id}`}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" data-testid={`button-blog-delete-${post.id}`}>
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Blog Post?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently delete "{post.title}". This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => deleteMutation.mutate(post.id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <FileText className="w-12 h-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium">No blog posts yet</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Create your first blog post to engage your audience
+              </p>
+              <Button onClick={() => setIsCreateOpen(true)} data-testid="button-blog-first-post">
+                <Plus className="w-4 h-4 mr-2" />
+                Create First Post
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
