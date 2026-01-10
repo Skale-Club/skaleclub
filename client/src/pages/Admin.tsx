@@ -4329,23 +4329,23 @@ function BlogSection() {
         </div>
       </div>
 
-      <Card>
+      <Card className="border-0 shadow-none">
         <CardContent className="p-0">
           {sortedPosts && sortedPosts.length > 0 ? (
-            <div className="divide-y">
+            <div className="divide-y space-y-4">
               {sortedPosts.map(post => (
-                <div key={post.id} className="flex items-center gap-4 p-4" data-testid={`row-blog-${post.id}`}>
+                <div key={post.id} className="flex items-start gap-4 py-4" data-testid={`row-blog-${post.id}`}>
                   {post.featureImageUrl ? (
                     <img
                       src={post.featureImageUrl}
                       alt={post.title}
-                      className="w-20 h-12 object-cover rounded-lg flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                      className="w-[100px] h-[68px] object-cover rounded-sm flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
                       onClick={() => handleEdit(post)}
                       data-testid={`img-blog-${post.id}`}
                     />
                   ) : (
                     <div
-                      className="w-20 h-12 bg-muted rounded-lg flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-muted/80 transition-colors"
+                      className="w-[100px] h-[68px] bg-muted rounded-sm flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-muted/80 transition-colors"
                       onClick={() => handleEdit(post)}
                     >
                       <FileText className="w-6 h-6 text-muted-foreground" />
@@ -4359,7 +4359,7 @@ function BlogSection() {
                     >
                       {post.title}
                     </h3>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex flex-col items-start gap-1 text-sm text-muted-foreground">
                       <span>{post.publishedAt ? format(new Date(post.publishedAt), 'MMM d, yyyy') : 'Not published'}</span>
                       <Badge variant={post.status === 'published' ? 'default' : 'secondary'} data-testid={`badge-blog-status-${post.id}`}>
                         {post.status}

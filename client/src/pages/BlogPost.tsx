@@ -127,7 +127,7 @@ export default function BlogPostPage() {
     <div className="min-h-screen bg-background">
       <article>
         <div className="bg-primary/5 py-8 md:py-12">
-          <div className="container max-w-6xl mx-auto px-4">
+          <div className="container-custom">
             <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-4" data-testid="nav-post-breadcrumb">
               <Link href="/" className="hover:text-primary">Home</Link>
               <span>/</span>
@@ -137,7 +137,7 @@ export default function BlogPostPage() {
             </nav>
 
             <h1 
-              className="text-2xl md:text-4xl font-bold text-foreground mb-4 max-w-4xl"
+              className="text-3xl md:text-4xl font-bold text-foreground mb-4 max-w-4xl"
               data-testid="text-post-title"
             >
               {post.title}
@@ -165,7 +165,7 @@ export default function BlogPostPage() {
           </div>
         </div>
 
-        <div className="container max-w-6xl mx-auto px-4 py-8 md:py-12">
+        <div className="container-custom py-8 md:py-12">
           <div className="flex flex-col lg:flex-row gap-8">
             <div className="lg:w-[70%]">
               {post.featureImageUrl && (
@@ -231,15 +231,15 @@ export default function BlogPostPage() {
             </div>
 
             <aside className="lg:w-[30%]">
-              <div className="sticky top-20 space-y-6">
+              <div className="sticky top-20 divide-y divide-gray-200/80 space-y-8">
                 {relatedPosts && relatedPosts.length > 0 && (
-                  <Card>
-                    <CardHeader>
+                  <Card className="border-0 shadow-none rounded-none bg-transparent p-0">
+                    <CardHeader className="p-0 pb-3">
                       <CardTitle className="text-lg" data-testid="text-related-posts-title">
                         Related Posts
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-4 p-0">
                       {relatedPosts.map(relatedPost => (
                         <Link
                           key={relatedPost.id}
@@ -264,7 +264,7 @@ export default function BlogPostPage() {
                             )}
                             <div className="flex-1 min-w-0">
                               <h4
-                                className="text-sm font-medium text-foreground group-hover:text-primary line-clamp-2 transition-colors"
+                                className="text-base font-semibold text-foreground group-hover:text-primary line-clamp-2 transition-colors"
                                 data-testid={`text-related-title-${relatedPost.id}`}
                               >
                                 {relatedPost.title}
@@ -281,13 +281,13 @@ export default function BlogPostPage() {
                 )}
 
                 {relatedServices && relatedServices.length > 0 && (
-                  <Card>
-                    <CardHeader className="pb-3">
+                  <Card className="border-0 shadow-none rounded-none bg-transparent p-0 pt-8">
+                    <CardHeader className="p-0 pb-3">
                       <CardTitle className="text-lg" data-testid="text-related-services-title">
                         Related Services
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-4 p-0">
                       {relatedServices.map(service => (
                         <div key={service.id} className="flex gap-3 items-stretch" data-testid={`card-service-${service.id}`}>
                           {service.imageUrl ? (
@@ -325,11 +325,11 @@ export default function BlogPostPage() {
                   </Card>
                 )}
 
-                <Card>
-                  <CardHeader>
+                <Card className="border-0 shadow-none rounded-none bg-transparent p-0 pt-8">
+                  <CardHeader className="p-0 pb-3">
                     <CardTitle className="text-lg">Need Cleaning Services?</CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-0">
                     <p className="text-sm text-muted-foreground mb-4">
                       Book our professional cleaning services today and enjoy a spotless home.
                     </p>
