@@ -278,7 +278,7 @@ function AdminContent() {
             Admin Panel
           </button>
         </header>
-        <div className="p-6 md:p-8">
+        <div className="p-4 md:p-6 max-w-full overflow-hidden">
           {activeSection === 'dashboard' && <DashboardSection />}
           {activeSection === 'categories' && <CategoriesSection />}
           {activeSection === 'subcategories' && <SubcategoriesSection />}
@@ -2536,59 +2536,60 @@ function BookingRow({ booking, onUpdate, onDelete }: {
   return (
     <>
       <tr className="hover:bg-slate-200/30 dark:hover:bg-slate-700/30 transition-colors">
-        <td className="px-6 py-4">
-          <div className="flex items-center gap-3">
+        <td className="px-4 py-4">
+          <div className="flex items-center gap-2">
             <button 
               onClick={() => setExpanded(!expanded)}
-              className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+              className="w-8 h-8 rounded flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shrink-0"
               data-testid={`button-expand-booking-${booking.id}`}
             >
               <ChevronDown className={clsx("w-4 h-4 transition-transform", expanded && "rotate-180")} />
             </button>
-            <div>
-              <p className="font-semibold text-slate-900 dark:text-slate-100">{booking.customerName}</p>
-              <p className="text-xs text-slate-500">{booking.customerEmail}</p>
-              <p className="text-xs text-slate-400">{booking.customerPhone}</p>
+            <div className="min-w-0">
+              <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">{booking.customerName}</p>
+              <p className="text-[10px] text-slate-500 truncate">{booking.customerEmail}</p>
+              <p className="text-[10px] text-slate-400 truncate">{booking.customerPhone}</p>
             </div>
           </div>
         </td>
-        <td className="px-6 py-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">
-              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+        <td className="px-4 py-4">
+          <div className="space-y-0.5 whitespace-nowrap">
+            <div className="flex items-center gap-1 text-xs font-medium text-slate-700 dark:text-slate-300">
+              <Calendar className="w-3 h-3 text-slate-400" />
               {format(new Date(booking.bookingDate), "MMM dd, yyyy")}
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-slate-500">
-              <Clock className="w-3.5 h-3.5 text-slate-400" />
+            <div className="flex items-center gap-1 text-[10px] text-slate-500">
+              <Clock className="w-3 h-3 text-slate-400" />
               {booking.startTime} - {booking.endTime}
             </div>
           </div>
         </td>
-        <td className="px-6 py-4">
-          <div className="text-sm text-slate-600 dark:text-slate-400 flex items-start gap-1.5">
-            <MapPin className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
-            <span className="truncate max-w-[200px]" title={booking.customerAddress}>
+        <td className="px-4 py-4">
+          <div className="text-xs text-slate-600 dark:text-slate-400 flex items-start gap-1">
+            <MapPin className="w-3 h-3 text-slate-400 mt-0.5 shrink-0" />
+            <span className="truncate max-w-[150px]" title={booking.customerAddress}>
               {booking.customerAddress}
             </span>
           </div>
         </td>
-        <td className="px-6 py-4">
+        <td className="px-4 py-4">
           <Select value={booking.status} onValueChange={handleStatusChange}>
-            <SelectTrigger className="w-[120px] h-8 text-xs" data-testid={`select-status-${booking.id}`}>
+            <SelectTrigger className="w-[100px] h-7 text-[10px]" data-testid={`select-status-${booking.id}`}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="confirmed">Confirmed</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>
               <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
         </td>
-        <td className="px-6 py-4">
+        <td className="px-4 py-4">
           <button
             onClick={handlePaymentToggle}
             className={clsx(
-              "px-2.5 py-1 rounded-full text-xs font-bold cursor-pointer transition-colors",
+              "px-2 py-0.5 rounded-full text-[10px] font-bold cursor-pointer transition-colors whitespace-nowrap",
               booking.paymentStatus === "paid" 
                 ? "bg-green-100 text-green-700 hover:bg-green-200" 
                 : "bg-orange-100 text-orange-700 hover:bg-orange-200"
@@ -2598,19 +2599,14 @@ function BookingRow({ booking, onUpdate, onDelete }: {
             {booking.paymentStatus === "paid" ? "Paid" : "Unpaid"}
           </button>
         </td>
-        <td className="px-6 py-4">
-          <span
-            className="font-bold text-slate-900 dark:text-slate-100"
-            data-testid={`text-amount-${booking.id}`}
-          >
-            ${booking.totalPrice}
-          </span>
+        <td className="px-4 py-4 font-bold text-slate-900 dark:text-slate-100 text-xs">
+          ${booking.totalPrice}
         </td>
-        <td className="px-6 py-4 text-right">
+        <td className="px-4 py-4 text-right">
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" data-testid={`button-delete-booking-${booking.id}`}>
-                <Trash2 className="w-4 h-4 text-red-500" />
+              <Button variant="ghost" size="icon" className="h-7 w-7" data-testid={`button-delete-booking-${booking.id}`}>
+                <Trash2 className="w-3.5 h-3.5 text-red-500" />
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
@@ -2863,10 +2859,10 @@ function BookingsSection() {
           <p className="text-muted-foreground">Bookings will appear here when customers make them</p>
         </div>
       ) : (
-        <div className="space-y-4">
-          <div className="hidden md:block bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden transition-all">
+        <div className="space-y-4 max-w-full overflow-hidden">
+          <div className="hidden md:block bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden transition-all border">
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full table-auto min-w-[900px]">
                 <thead className="bg-slate-200/50 dark:bg-slate-700/50 text-slate-500 text-xs uppercase tracking-wider font-semibold">
                   <tr>
                     <th className="px-6 py-4 text-left">Customer</th>
