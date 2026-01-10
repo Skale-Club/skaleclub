@@ -272,16 +272,16 @@ export default function BlogPostPage() {
                             </div>
                           )}
                           <div className="flex-1 min-w-0 flex flex-col">
-                            <h4 className="text-sm font-semibold text-foreground line-clamp-1" data-testid={`text-service-name-${service.id}`}>
+                            <h4 className="text-base font-semibold text-foreground line-clamp-1" data-testid={`text-service-name-${service.id}`}>
                               {service.name}
                             </h4>
-                            <p className="text-xs font-bold text-primary" data-testid={`text-service-price-${service.id}`}>
+                            <p className="text-sm font-bold text-primary" data-testid={`text-service-price-${service.id}`}>
                               ${service.price}
                             </p>
                             <Button 
                               size="sm" 
                               variant="default"
-                              className="mt-auto h-7 text-[10px] px-2"
+                              className="mt-auto h-7 text-xs px-2"
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
