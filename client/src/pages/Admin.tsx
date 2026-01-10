@@ -2859,45 +2859,15 @@ function BookingsSection() {
           <p className="text-muted-foreground">Bookings will appear here when customers make them</p>
         </div>
       ) : (
-        <div className="space-y-4 w-full">
-          <div className="hidden md:block bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden transition-all border w-full">
-            <div className="w-full overflow-hidden">
-              <table className="w-full table-fixed">
-                <thead className="bg-slate-200/50 dark:bg-slate-700/50 text-slate-500 text-[10px] uppercase tracking-wider font-semibold">
-                  <tr>
-                    <th className="px-4 py-4 text-left w-[20%]">Customer</th>
-                    <th className="px-4 py-4 text-left w-[18%]">Schedule</th>
-                    <th className="px-4 py-4 text-left w-[22%]">Address</th>
-                    <th className="px-4 py-4 text-left w-[15%]">Status</th>
-                    <th className="px-4 py-4 text-left w-[10%]">Payment</th>
-                    <th className="px-4 py-4 text-left w-[10%]">Amount</th>
-                    <th className="px-4 py-4 text-right w-[5%]"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {bookings?.map((booking) => (
-                    <BookingRow 
-                      key={booking.id} 
-                      booking={booking} 
-                      onUpdate={handleUpdate}
-                      onDelete={handleDelete}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-          
-          <div className="md:hidden space-y-4">
-            {bookings?.map((booking) => (
-              <BookingMobileCard
-                key={booking.id}
-                booking={booking}
-                onUpdate={handleUpdate}
-                onDelete={handleDelete}
-              />
-            ))}
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {bookings?.map((booking) => (
+            <BookingMobileCard
+              key={booking.id}
+              booking={booking}
+              onUpdate={handleUpdate}
+              onDelete={handleDelete}
+            />
+          ))}
         </div>
       )}
     </div>
