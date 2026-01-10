@@ -12,6 +12,52 @@
   </head>
   <body>
     <div id="root"></div>
+    <div id="initial-loader" style="position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; background-color: white;">
+      <div class="loader-dots">
+        <div class="loader-dot"></div>
+        <div class="loader-dot"></div>
+        <div class="loader-dot"></div>
+      </div>
+    </div>
+    <style>
+      #initial-loader {
+        opacity: 0;
+        animation: loaderFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      }
+      @keyframes loaderFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      .loader-fade-out {
+        opacity: 0 !important;
+        transition: opacity 0.15s ease-out;
+      }
+      .loader-dots {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      @keyframes dotBounce {
+        0%, 80%, 100% {
+          transform: scale(0.6) translateY(0);
+          opacity: 0.4;
+        }
+        40% {
+          transform: scale(1) translateY(-8px);
+          opacity: 1;
+        }
+      }
+      .loader-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background-color: #1C53A3;
+        animation: dotBounce 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      }
+      .loader-dot:nth-child(1) { animation-delay: 0s; }
+      .loader-dot:nth-child(2) { animation-delay: 0.16s; }
+      .loader-dot:nth-child(3) { animation-delay: 0.32s; }
+    </style>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

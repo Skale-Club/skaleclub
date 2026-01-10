@@ -1,7 +1,7 @@
-# BlueSpring Cleaning Brandbook
+# Skleanings Brandbook
 
 ## Core Identity
-BlueSpring Cleaning is a professional cleaning service platform that emphasizes trust, quality, and ease of use.
+Skleanings is a professional cleaning service platform that emphasizes trust, quality, and ease of use.
 
 ## Color Palette
 The brand uses a high-contrast blue and yellow scheme to project professionalism and energy.

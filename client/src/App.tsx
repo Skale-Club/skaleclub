@@ -9,20 +9,57 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useSEO } from "@/hooks/use-seo";
 import { initAnalytics, trackPageView } from "@/lib/analytics";
-import { useEffect } from "react";
+import { PageLoader } from "@/components/ui/spinner";
+import { useEffect, Suspense, lazy, useRef, useState, createContext, useContext } from "react";
 import type { CompanySettings } from "@shared/schema";
-import NotFound from "@/pages/not-found";
-import Home from "@/pages/Home";
-import Services from "@/pages/Services";
-import BookingPage from "@/pages/BookingPage";
-import Confirmation from "@/pages/Confirmation";
-import Admin from "@/pages/Admin";
-import AdminLogin from "@/pages/AdminLogin";
-import PrivacyPolicy from "@/pages/PrivacyPolicy";
-import TermsOfService from "@/pages/TermsOfService";
-import AboutUs from "@/pages/AboutUs";
-import Contact from "@/pages/Contact";
-import Faq from "@/pages/Faq";
+
+// Context to track initial app load state
+const InitialLoadContext = createContext<{ isInitialLoad: boolean; markLoaded: () => void }>({
+  isInitialLoad: true,
+  markLoaded: () => {},
+});
+
+// Hook to hide initial loader after first page renders
+function useHideInitialLoader() {
+  const { isInitialLoad, markLoaded } = useContext(InitialLoadContext);
+  const hasRun = useRef(false);
+
+  useEffect(() => {
+    if (isInitialLoad && !hasRun.current) {
+      hasRun.current = true;
+      const loader = document.getElementById("initial-loader");
+      if (loader) {
+        loader.classList.add("loader-fade-out");
+        setTimeout(() => {
+          loader.remove();
+          markLoaded();
+        }, 150);
+      } else {
+        markLoaded();
+      }
+    }
+  }, [isInitialLoad, markLoaded]);
+}
+
+// Wrapper to call the hook when a lazy component mounts
+function PageWrapper({ children }: { children: React.ReactNode }) {
+  useHideInitialLoader();
+  return <>{children}</>;
+}
+
+// Lazy load page components for route transitions
+const NotFound = lazy(() => import("@/pages/not-found").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const Home = lazy(() => import("@/pages/Home").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const Services = lazy(() => import("@/pages/Services").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const BookingPage = lazy(() => import("@/pages/BookingPage").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const Confirmation = lazy(() => import("@/pages/Confirmation").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const Admin = lazy(() => import("@/pages/Admin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const AdminLogin = lazy(() => import("@/pages/AdminLogin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const TermsOfService = lazy(() => import("@/pages/TermsOfService").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const AboutUs = lazy(() => import("@/pages/AboutUs").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const Contact = lazy(() => import("@/pages/Contact").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const Faq = lazy(() => import("@/pages/Faq").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 
 function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const { data: settings } = useQuery<CompanySettings>({
@@ -57,34 +94,44 @@ function SEOProvider({ children }: { children: React.ReactNode }) {
 
 function Router() {
   const [location] = useLocation();
+  const { isInitialLoad } = useContext(InitialLoadContext);
   const isAdminRoute = location.startsWith('/admin');
+
+  // During initial load, show PageLoader for route transitions
+  const fallback = isInitialLoad ? null : <PageLoader />;
 
   if (isAdminRoute) {
     return (
-      <Switch>
-        <Route path="/admin/login" component={AdminLogin} />
-        <Route path="/admin" component={Admin} />
-        <Route component={NotFound} />
-      </Switch>
+      <Suspense fallback={fallback}>
+        <Switch>
+          <Route path="/admin/login" component={AdminLogin} />
+          <Route path="/admin" component={Admin} />
+          <Route component={NotFound} />
+        </Switch>
+      </Suspense>
     );
   }
 
+  // Hide everything during initial load to prevent footer flash
+  // The initial-loader in index.html covers the screen until content is ready
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className={`flex flex-col min-h-screen ${isInitialLoad ? 'invisible' : ''}`}>
       <Navbar />
       <main className="flex-grow">
-        <Switch>
-          <Route path="/" component={Home} />
-          <Route path="/services" component={Services} />
-          <Route path="/booking" component={BookingPage} />
-          <Route path="/confirmation" component={Confirmation} />
-          <Route path="/privacy-policy" component={PrivacyPolicy} />
-          <Route path="/terms-of-service" component={TermsOfService} />
-          <Route path="/about" component={AboutUs} />
-          <Route path="/contact" component={Contact} />
-          <Route path="/faq" component={Faq} />
-          <Route component={NotFound} />
-        </Switch>
+        <Suspense fallback={fallback}>
+          <Switch>
+            <Route path="/" component={Home} />
+            <Route path="/services" component={Services} />
+            <Route path="/booking" component={BookingPage} />
+            <Route path="/confirmation" component={Confirmation} />
+            <Route path="/privacy-policy" component={PrivacyPolicy} />
+            <Route path="/terms-of-service" component={TermsOfService} />
+            <Route path="/about" component={AboutUs} />
+            <Route path="/contact" component={Contact} />
+            <Route path="/faq" component={Faq} />
+            <Route component={NotFound} />
+          </Switch>
+        </Suspense>
       </main>
       <Footer />
     </div>
@@ -92,20 +139,25 @@ function Router() {
 }
 
 function App() {
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const markLoaded = useRef(() => setIsInitialLoad(false)).current;
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthProvider>
-          <CartProvider>
-            <SEOProvider>
-              <AnalyticsProvider>
-                <Router />
-              </AnalyticsProvider>
-            </SEOProvider>
-          </CartProvider>
-        </AuthProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <InitialLoadContext.Provider value={{ isInitialLoad, markLoaded }}>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <AuthProvider>
+            <CartProvider>
+              <SEOProvider>
+                <AnalyticsProvider>
+                  <Router />
+                </AnalyticsProvider>
+              </SEOProvider>
+            </CartProvider>
+          </AuthProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </InitialLoadContext.Provider>
   );
 }
 
