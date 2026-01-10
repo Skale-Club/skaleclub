@@ -88,9 +88,9 @@ export default function Services() {
             Customize your cleaning package. Select the services you need, and we'll take care of the rest.
           </p>
 
-          <div className="flex flex-col lg:flex-row items-center justify-center gap-4 max-w-6xl mx-auto px-4">
-            {/* Search Input */}
-            <div className="w-full lg:max-w-sm relative group order-1 lg:order-2">
+          {/* Search Input - inside container padding */}
+          <div className="max-w-6xl mx-auto px-4 lg:px-0">
+            <div className="w-full lg:max-w-sm lg:mx-auto relative group mb-4">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
               <input
                 type="text"
@@ -110,61 +110,61 @@ export default function Services() {
                 </button>
               )}
             </div>
+          </div>
 
-            {/* Category Filter Pills */}
-            <div className="flex overflow-x-auto w-full lg:w-auto pb-4 lg:pb-0 gap-3 no-scrollbar lg:flex-wrap order-2 lg:order-1 -mx-4 sm:mx-0 scroll-smooth">
-              <div className="shrink-0 w-4 sm:hidden" aria-hidden="true" />
+          {/* Category Filter Pills - full width scroll on mobile */}
+          <div className="flex overflow-x-auto w-full pb-4 lg:pb-0 gap-3 no-scrollbar lg:flex-wrap lg:justify-center lg:px-4 scroll-smooth">
+            <div className="shrink-0 w-4 lg:hidden" aria-hidden="true" />
+            <button
+              onClick={() => {
+                setSelectedCategory(undefined);
+                setSelectedSubcategory(undefined);
+                window.history.pushState(null, "", "/services");
+              }}
+              className={clsx(
+                "px-6 py-2.5 rounded-full font-medium transition-all duration-200 whitespace-nowrap shrink-0",
+                selectedCategory === undefined
+                  ? "bg-slate-900 text-white shadow-lg"
+                  : "bg-white text-slate-600 border border-gray-200 hover:bg-gray-50"
+              )}
+              data-testid="button-filter-all"
+            >
+              All Services
+            </button>
+            {categoriesWithServices?.map((cat) => (
               <button
+                key={cat.id}
                 onClick={() => {
-                  setSelectedCategory(undefined);
+                  setSelectedCategory(cat.id);
                   setSelectedSubcategory(undefined);
-                  window.history.pushState(null, "", "/services");
+                  window.history.pushState(null, "", `/services?category=${cat.id}`);
                 }}
                 className={clsx(
-                  "px-6 py-2.5 rounded-full font-medium transition-all duration-200 whitespace-nowrap",
-                  selectedCategory === undefined
-                    ? "bg-slate-900 text-white shadow-lg"
+                  "px-6 py-2.5 rounded-full font-medium transition-all duration-200 whitespace-nowrap shrink-0",
+                  selectedCategory === cat.id
+                    ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
                     : "bg-white text-slate-600 border border-gray-200 hover:bg-gray-50"
                 )}
-                data-testid="button-filter-all"
+                data-testid={`button-filter-category-${cat.id}`}
               >
-                All Services
+                {cat.name}
               </button>
-              {categoriesWithServices?.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => {
-                    setSelectedCategory(cat.id);
-                    setSelectedSubcategory(undefined);
-                    window.history.pushState(null, "", `/services?category=${cat.id}`);
-                  }}
-                  className={clsx(
-                    "px-6 py-2.5 rounded-full font-medium transition-all duration-200 whitespace-nowrap",
-                    selectedCategory === cat.id
-                      ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
-                      : "bg-white text-slate-600 border border-gray-200 hover:bg-gray-50"
-                  )}
-                  data-testid={`button-filter-category-${cat.id}`}
-                >
-                  {cat.name}
-                </button>
-              ))}
-              <div className="shrink-0 w-4 sm:hidden" aria-hidden="true" />
-            </div>
+            ))}
+            <div className="shrink-0 w-4 lg:hidden" aria-hidden="true" />
           </div>
         </div>
 
         {/* Subcategory Filter Pills - only show when a category is selected */}
         {selectedCategory && subcategoriesWithServices && subcategoriesWithServices.length > 0 && (
-          <div className="flex overflow-x-auto pb-4 justify-start sm:justify-center gap-2 mb-12 no-scrollbar -mx-4 sm:mx-0 sm:flex-wrap sm:pb-0 scroll-smooth">
-            <div className="shrink-0 w-4 sm:hidden" aria-hidden="true" />
+          <div className="flex overflow-x-auto pb-4 justify-start lg:justify-center gap-2 mb-12 no-scrollbar lg:flex-wrap lg:pb-0 lg:px-4 scroll-smooth">
+            <div className="shrink-0 w-4 lg:hidden" aria-hidden="true" />
             <button
               onClick={() => {
                 setSelectedSubcategory(undefined);
                 window.history.pushState(null, "", `/services?category=${selectedCategory}`);
               }}
               className={clsx(
-                "px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap",
+                "px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap shrink-0",
                 selectedSubcategory === undefined
                   ? "bg-slate-700 text-white"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -181,7 +181,7 @@ export default function Services() {
                   window.history.pushState(null, "", `/services?category=${selectedCategory}&subcategory=${sub.id}`);
                 }}
                 className={clsx(
-                  "px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap",
+                  "px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap shrink-0",
                   selectedSubcategory === sub.id
                     ? "bg-blue-600 text-white"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -191,7 +191,7 @@ export default function Services() {
                 {sub.name}
               </button>
             ))}
-            <div className="shrink-0 w-4 sm:hidden" aria-hidden="true" />
+            <div className="shrink-0 w-4 lg:hidden" aria-hidden="true" />
           </div>
         )}
 
