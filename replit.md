@@ -155,3 +155,41 @@ The platform includes a comprehensive SEO management system accessible via Admin
 **Design Choices:**
 - Hero image preview: 4:3 aspect ratio
 - OG image preview: 1.91:1 aspect ratio (matches social media standards)
+
+### Blog System
+
+The platform includes a comprehensive blog system for content marketing and SEO.
+
+**Features:**
+- **Admin Management**: Create, edit, delete blog posts via Admin > Blog section
+- **Rich Content**: HTML content support with excerpt and feature images
+- **SEO Optimization**: Meta descriptions (155 char limit), focus keywords, structured data (Article schema)
+- **Related Services**: Link up to 3 services to each post, displayed as purchasable cards
+- **Social Sharing**: Facebook, Twitter, LinkedIn, WhatsApp share buttons on posts
+- **Related Posts**: Sidebar showing other recent posts
+- **Homepage Integration**: "Latest from Our Blog" section showing 3 recent posts
+- **Archive Page**: Grid layout with search and pagination (9 posts per page)
+
+**Database Tables:**
+- `blogPosts` - Blog post content, SEO fields, status, and metadata
+- `blogPostServices` - Junction table linking posts to related services
+
+**Public Pages:**
+- `/blog` - Blog archive with grid layout, search, and pagination
+- `/blog/:slug` - Single post page with related content and social sharing
+
+**API Endpoints:**
+- `GET /api/blog` - List posts (supports ?status=published&limit=9&offset=0)
+- `GET /api/blog/count` - Count of published posts for pagination
+- `GET /api/blog/:slug` - Get single post by slug
+- `POST /api/blog` - Create post (admin only)
+- `PUT /api/blog/:id` - Update post (admin only)
+- `DELETE /api/blog/:id` - Delete post (admin only)
+- `GET /api/blog/:id/services` - Get related services for a post
+- `GET /api/blog/:id/related` - Get related posts
+
+**Files:**
+- `client/src/pages/Blog.tsx` - Blog archive page
+- `client/src/pages/BlogPost.tsx` - Single post page
+- `client/src/pages/Admin.tsx` - BlogSection component
+- `client/src/pages/Home.tsx` - BlogSection for homepage
