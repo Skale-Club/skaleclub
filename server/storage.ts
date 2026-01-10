@@ -9,6 +9,8 @@ import {
   companySettings,
   faqs,
   integrationSettings,
+  blogPosts,
+  blogPostServices,
   type Category,
   type Subcategory,
   type Service,
@@ -18,6 +20,8 @@ import {
   type CompanySettings,
   type Faq,
   type IntegrationSettings,
+  type BlogPost,
+  type BlogPostService,
   type InsertCategory,
   type InsertService,
   type InsertServiceAddon,
@@ -25,8 +29,9 @@ import {
   type InsertCompanySettings,
   type InsertFaq,
   type InsertIntegrationSettings,
+  type InsertBlogPost,
 } from "@shared/schema";
-import { eq, and, gte, lte, inArray } from "drizzle-orm";
+import { eq, and, gte, lte, inArray, desc, sql, ne } from "drizzle-orm";
 import { z } from "zod";
 
 export const insertSubcategorySchema = z.object({
@@ -89,6 +94,19 @@ export interface IStorage {
   
   // Booking GHL sync
   updateBookingGHLSync(bookingId: number, ghlContactId: string, ghlAppointmentId: string, syncStatus: string): Promise<void>;
+  
+  // Blog Posts
+  getBlogPosts(status?: string): Promise<BlogPost[]>;
+  getBlogPost(id: number): Promise<BlogPost | undefined>;
+  getBlogPostBySlug(slug: string): Promise<BlogPost | undefined>;
+  getPublishedBlogPosts(limit?: number, offset?: number): Promise<BlogPost[]>;
+  getRelatedBlogPosts(postId: number, limit?: number): Promise<BlogPost[]>;
+  createBlogPost(post: InsertBlogPost): Promise<BlogPost>;
+  updateBlogPost(id: number, post: Partial<InsertBlogPost>): Promise<BlogPost>;
+  deleteBlogPost(id: number): Promise<void>;
+  getBlogPostServices(postId: number): Promise<Service[]>;
+  setBlogPostServices(postId: number, serviceIds: number[]): Promise<void>;
+  countPublishedBlogPosts(): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -321,6 +339,100 @@ export class DatabaseStorage implements IStorage {
       .update(bookings)
       .set({ ghlContactId, ghlAppointmentId, ghlSyncStatus: syncStatus })
       .where(eq(bookings.id, bookingId));
+  }
+
+  async getBlogPosts(status?: string): Promise<BlogPost[]> {
+    if (status) {
+      return await db.select().from(blogPosts).where(eq(blogPosts.status, status)).orderBy(desc(blogPosts.createdAt));
+    }
+    return await db.select().from(blogPosts).orderBy(desc(blogPosts.createdAt));
+  }
+
+  async getBlogPost(id: number): Promise<BlogPost | undefined> {
+    const [post] = await db.select().from(blogPosts).where(eq(blogPosts.id, id));
+    return post;
+  }
+
+  async getBlogPostBySlug(slug: string): Promise<BlogPost | undefined> {
+    const [post] = await db.select().from(blogPosts).where(eq(blogPosts.slug, slug));
+    return post;
+  }
+
+  async getPublishedBlogPosts(limit: number = 10, offset: number = 0): Promise<BlogPost[]> {
+    return await db.select()
+      .from(blogPosts)
+      .where(eq(blogPosts.status, 'published'))
+      .orderBy(desc(blogPosts.publishedAt))
+      .limit(limit)
+      .offset(offset);
+  }
+
+  async getRelatedBlogPosts(postId: number, limit: number = 4): Promise<BlogPost[]> {
+    return await db.select()
+      .from(blogPosts)
+      .where(and(
+        eq(blogPosts.status, 'published'),
+        ne(blogPosts.id, postId)
+      ))
+      .orderBy(desc(blogPosts.publishedAt))
+      .limit(limit);
+  }
+
+  async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
+    const { serviceIds, ...postData } = post;
+    const [newPost] = await db.insert(blogPosts).values(postData).returning();
+    
+    if (serviceIds && serviceIds.length > 0) {
+      await this.setBlogPostServices(newPost.id, serviceIds);
+    }
+    
+    return newPost;
+  }
+
+  async updateBlogPost(id: number, post: Partial<InsertBlogPost>): Promise<BlogPost> {
+    const { serviceIds, ...postData } = post;
+    const [updated] = await db.update(blogPosts)
+      .set({ ...postData, updatedAt: new Date() })
+      .where(eq(blogPosts.id, id))
+      .returning();
+    
+    if (serviceIds !== undefined) {
+      await this.setBlogPostServices(id, serviceIds);
+    }
+    
+    return updated;
+  }
+
+  async deleteBlogPost(id: number): Promise<void> {
+    await db.delete(blogPostServices).where(eq(blogPostServices.blogPostId, id));
+    await db.delete(blogPosts).where(eq(blogPosts.id, id));
+  }
+
+  async getBlogPostServices(postId: number): Promise<Service[]> {
+    const relations = await db.select().from(blogPostServices).where(eq(blogPostServices.blogPostId, postId));
+    if (relations.length === 0) return [];
+    
+    const serviceIds = relations.map(r => r.serviceId);
+    return await db.select().from(services).where(inArray(services.id, serviceIds));
+  }
+
+  async setBlogPostServices(postId: number, serviceIds: number[]): Promise<void> {
+    await db.delete(blogPostServices).where(eq(blogPostServices.blogPostId, postId));
+    
+    if (serviceIds.length > 0) {
+      const values = serviceIds.map(serviceId => ({
+        blogPostId: postId,
+        serviceId
+      }));
+      await db.insert(blogPostServices).values(values);
+    }
+  }
+
+  async countPublishedBlogPosts(): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` })
+      .from(blogPosts)
+      .where(eq(blogPosts.status, 'published'));
+    return Number(result[0]?.count || 0);
   }
 }
 

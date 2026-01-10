@@ -3,7 +3,7 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { api, errorSchemas, buildUrl } from "@shared/routes";
 import { z } from "zod";
-import { WORKING_HOURS, DEFAULT_BUSINESS_HOURS, insertCategorySchema, insertServiceSchema, insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema, BusinessHours, DayHours } from "@shared/schema";
+import { WORKING_HOURS, DEFAULT_BUSINESS_HOURS, insertCategorySchema, insertServiceSchema, insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema, insertBlogPostSchema, BusinessHours, DayHours } from "@shared/schema";
 import { insertSubcategorySchema } from "./storage";
 import { ObjectStorageService, registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { authStorage } from "./replit_integrations/auth/storage";
@@ -258,6 +258,7 @@ Sitemap: ${canonicalUrl}/sitemap.xml
     try {
       const settings = await storage.getCompanySettings();
       const categories = await storage.getCategories();
+      const blogPostsList = await storage.getPublishedBlogPosts(100, 0);
       const canonicalUrl = settings?.seoCanonicalUrl || `https://${req.get('host')}`;
       const lastMod = new Date().toISOString().split('T')[0];
 
@@ -276,6 +277,12 @@ Sitemap: ${canonicalUrl}/sitemap.xml
     <priority>0.9</priority>
   </url>
   <url>
+    <loc>${canonicalUrl}/blog</loc>
+    <lastmod>${lastMod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>${canonicalUrl}/cart</loc>
     <lastmod>${lastMod}</lastmod>
     <changefreq>monthly</changefreq>
@@ -289,6 +296,17 @@ Sitemap: ${canonicalUrl}/sitemap.xml
     <lastmod>${lastMod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+  </url>`;
+      }
+
+      for (const post of blogPostsList) {
+        const postDate = post.updatedAt ? new Date(post.updatedAt).toISOString().split('T')[0] : lastMod;
+        sitemap += `
+  <url>
+    <loc>${canonicalUrl}/blog/${post.slug}</loc>
+    <lastmod>${postDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>`;
       }
 
@@ -1011,6 +1029,111 @@ Sitemap: ${canonicalUrl}/sitemap.xml
         synced: false, 
         reason: (err as Error).message 
       });
+    }
+  });
+
+  // Blog Posts (public GET, admin CRUD)
+  app.get('/api/blog', async (req, res) => {
+    try {
+      const status = req.query.status as string | undefined;
+      const limit = req.query.limit ? Number(req.query.limit) : undefined;
+      const offset = req.query.offset ? Number(req.query.offset) : 0;
+      
+      if (status === 'published' && limit) {
+        const posts = await storage.getPublishedBlogPosts(limit, offset);
+        res.json(posts);
+      } else if (status) {
+        const posts = await storage.getBlogPosts(status);
+        res.json(posts);
+      } else {
+        const posts = await storage.getBlogPosts();
+        res.json(posts);
+      }
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.get('/api/blog/count', async (req, res) => {
+    try {
+      const count = await storage.countPublishedBlogPosts();
+      res.json({ count });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.get('/api/blog/:idOrSlug', async (req, res) => {
+    try {
+      const param = req.params.idOrSlug;
+      let post;
+      
+      if (/^\d+$/.test(param)) {
+        post = await storage.getBlogPost(Number(param));
+      } else {
+        post = await storage.getBlogPostBySlug(param);
+      }
+      
+      if (!post) {
+        return res.status(404).json({ message: 'Blog post not found' });
+      }
+      res.json(post);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.get('/api/blog/:id/services', async (req, res) => {
+    try {
+      const services = await storage.getBlogPostServices(Number(req.params.id));
+      res.json(services);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.get('/api/blog/:id/related', async (req, res) => {
+    try {
+      const limit = req.query.limit ? Number(req.query.limit) : 4;
+      const posts = await storage.getRelatedBlogPosts(Number(req.params.id), limit);
+      res.json(posts);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.post('/api/blog', requireAdmin, async (req, res) => {
+    try {
+      const validatedData = insertBlogPostSchema.parse(req.body);
+      const post = await storage.createBlogPost(validatedData);
+      res.status(201).json(post);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.put('/api/blog/:id', requireAdmin, async (req, res) => {
+    try {
+      const validatedData = insertBlogPostSchema.partial().parse(req.body);
+      const post = await storage.updateBlogPost(Number(req.params.id), validatedData);
+      res.json(post);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.delete('/api/blog/:id', requireAdmin, async (req, res) => {
+    try {
+      await storage.deleteBlogPost(Number(req.params.id));
+      res.json({ success: true });
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
     }
   });
 

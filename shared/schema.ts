@@ -224,3 +224,39 @@ export const faqs = pgTable("faqs", {
 export const insertFaqSchema = createInsertSchema(faqs).omit({ id: true });
 export type Faq = typeof faqs.$inferSelect;
 export type InsertFaq = z.infer<typeof insertFaqSchema>;
+
+// Blog Posts table
+export const blogPosts = pgTable("blog_posts", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  slug: text("slug").notNull().unique(),
+  content: text("content").notNull(),
+  excerpt: text("excerpt"),
+  metaDescription: text("meta_description"),
+  focusKeyword: text("focus_keyword"),
+  featureImageUrl: text("feature_image_url"),
+  status: text("status").notNull().default("draft"),
+  authorName: text("author_name").default("Admin"),
+  publishedAt: timestamp("published_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Junction table for blog posts and services (related products)
+export const blogPostServices = pgTable("blog_post_services", {
+  id: serial("id").primaryKey(),
+  blogPostId: integer("blog_post_id").references(() => blogPosts.id).notNull(),
+  serviceId: integer("service_id").references(() => services.id).notNull(),
+});
+
+export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true 
+}).extend({
+  serviceIds: z.array(z.number()).optional(),
+});
+
+export type BlogPost = typeof blogPosts.$inferSelect;
+export type BlogPostService = typeof blogPostServices.$inferSelect;
+export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
