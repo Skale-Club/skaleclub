@@ -37,7 +37,7 @@ export default function BlogPostPage() {
 
   const { data: relatedPosts } = useQuery<BlogPost[]>({
     queryKey: ['/api/blog', post?.id, 'related'],
-    queryFn: () => fetch(`/api/blog/${post?.id}/related?limit=4`).then(r => r.json()),
+    queryFn: () => fetch(`/api/blog/${post?.id}/related?limit=2`).then(r => r.json()),
     enabled: !!post?.id,
   });
 
@@ -232,21 +232,53 @@ export default function BlogPostPage() {
 
             <aside className="lg:w-[30%]">
               <div className="sticky top-20 space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Need Cleaning Services?</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Book our professional cleaning services today and enjoy a spotless home.
-                    </p>
-                    <Link href="/services">
-                      <Button className="w-full" data-testid="button-browse-services">
-                        Browse Services
-                      </Button>
-                    </Link>
-                  </CardContent>
-                </Card>
+                {relatedPosts && relatedPosts.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg" data-testid="text-related-posts-title">
+                        Related Posts
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {relatedPosts.map(relatedPost => (
+                        <Link
+                          key={relatedPost.id}
+                          href={`/blog/${relatedPost.slug}`}
+                          className="block group"
+                        >
+                          <div
+                            className="flex gap-3"
+                            data-testid={`link-related-${relatedPost.id}`}
+                          >
+                            {relatedPost.featureImageUrl ? (
+                              <img
+                                src={relatedPost.featureImageUrl}
+                                alt={relatedPost.title}
+                                className="w-16 h-12 object-cover rounded flex-shrink-0"
+                                data-testid={`img-related-${relatedPost.id}`}
+                              />
+                            ) : (
+                              <div className="w-16 h-12 bg-muted rounded flex items-center justify-center flex-shrink-0">
+                                <FileText className="w-4 h-4 text-muted-foreground" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <h4
+                                className="text-sm font-medium text-foreground group-hover:text-primary line-clamp-2 transition-colors"
+                                data-testid={`text-related-title-${relatedPost.id}`}
+                              >
+                                {relatedPost.title}
+                              </h4>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {relatedPost.publishedAt && format(new Date(relatedPost.publishedAt), 'MMM d, yyyy')}
+                              </p>
+                            </div>
+                          </div>
+                        </Link>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
 
                 {relatedServices && relatedServices.length > 0 && (
                   <Card>
@@ -293,53 +325,21 @@ export default function BlogPostPage() {
                   </Card>
                 )}
 
-                {relatedPosts && relatedPosts.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg" data-testid="text-related-posts-title">
-                        Related Posts
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {relatedPosts.map(relatedPost => (
-                        <Link 
-                          key={relatedPost.id} 
-                          href={`/blog/${relatedPost.slug}`}
-                          className="block group"
-                        >
-                          <div 
-                            className="flex gap-3"
-                            data-testid={`link-related-${relatedPost.id}`}
-                          >
-                            {relatedPost.featureImageUrl ? (
-                              <img
-                                src={relatedPost.featureImageUrl}
-                                alt={relatedPost.title}
-                                className="w-16 h-12 object-cover rounded flex-shrink-0"
-                                data-testid={`img-related-${relatedPost.id}`}
-                              />
-                            ) : (
-                              <div className="w-16 h-12 bg-muted rounded flex items-center justify-center flex-shrink-0">
-                                <FileText className="w-4 h-4 text-muted-foreground" />
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <h4 
-                                className="text-sm font-medium text-foreground group-hover:text-primary line-clamp-2 transition-colors"
-                                data-testid={`text-related-title-${relatedPost.id}`}
-                              >
-                                {relatedPost.title}
-                              </h4>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {relatedPost.publishedAt && format(new Date(relatedPost.publishedAt), 'MMM d, yyyy')}
-                              </p>
-                            </div>
-                          </div>
-                        </Link>
-                      ))}
-                    </CardContent>
-                  </Card>
-                )}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Need Cleaning Services?</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Book our professional cleaning services today and enjoy a spotless home.
+                    </p>
+                    <Link href="/services">
+                      <Button className="w-full" data-testid="button-browse-services">
+                        Browse Services
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
               </div>
             </aside>
           </div>

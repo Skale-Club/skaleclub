@@ -77,15 +77,15 @@ export function Navbar() {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8">
-            <a href="/services" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer">Services</a>
+            <Link href="/services" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer">Services</Link>
             <button
               onClick={() => handleHashNavigation('areas-served')}
               className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer"
             >
               Areas Served
             </button>
-            <a href="/blog" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer">Blog</a>
-            <a href="/faq" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer">FAQ</a>
+            <Link href="/blog" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer">Blog</Link>
+            <Link href="/faq" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer">FAQ</Link>
             
             <a href={`tel:${telPhone}`} className="px-4 py-2 bg-secondary text-secondary-foreground font-bold rounded-full hover-elevate transition-all text-sm flex items-center gap-2">
               <Phone className="w-4 h-4 fill-current" />
@@ -151,7 +151,6 @@ export function Navbar() {
           <div className="flex flex-col gap-5">
             {navLinks.map((link) => {
               const isHashLink = link.href.startsWith("/#");
-              const isExternal = link.href === "/services";
               const Content = (
                 <span className="text-lg font-semibold text-slate-700 hover:text-primary transition-colors">
                   {link.label}
@@ -171,18 +170,6 @@ export function Navbar() {
                   >
                     {Content}
                   </button>
-                );
-              }
-              if (isExternal) {
-                return (
-                  <a
-                    key={link.href}
-                    href={link.href}
-                    className="block"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    {Content}
-                  </a>
                 );
               }
               return (

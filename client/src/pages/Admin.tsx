@@ -15,7 +15,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAdminAuth } from '@/context/AuthContext';
 import { useLocation, Link } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -3833,6 +3833,9 @@ function BlogSection() {
   const { toast } = useToast();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'title-asc' | 'title-desc' | 'status'>('newest');
+  const [serviceSearch, setServiceSearch] = useState('');
+  const [isSaved, setIsSaved] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
@@ -3841,9 +3844,9 @@ function BlogSection() {
     metaDescription: '',
     focusKeyword: '',
     featureImageUrl: '',
-    status: 'draft',
-    authorName: 'Admin',
-    publishedAt: null as string | null,
+    status: 'published',
+    authorName: 'Skleanings',
+    publishedAt: new Date().toISOString().split('T')[0] as string | null,
     serviceIds: [] as number[],
   });
 
@@ -3854,6 +3857,45 @@ function BlogSection() {
   const { data: services } = useQuery<Service[]>({
     queryKey: ['/api/services'],
   });
+
+  const sortedPosts = useMemo(() => {
+    if (!posts) return [];
+
+    const sorted = [...posts];
+
+    switch (sortBy) {
+      case 'newest':
+        return sorted.sort((a, b) => {
+          const dateA = new Date(a.publishedAt || a.createdAt || 0).getTime();
+          const dateB = new Date(b.publishedAt || b.createdAt || 0).getTime();
+          return dateB - dateA;
+        });
+      case 'oldest':
+        return sorted.sort((a, b) => {
+          const dateA = new Date(a.publishedAt || a.createdAt || 0).getTime();
+          const dateB = new Date(b.publishedAt || b.createdAt || 0).getTime();
+          return dateA - dateB;
+        });
+      case 'title-asc':
+        return sorted.sort((a, b) => a.title.localeCompare(b.title));
+      case 'title-desc':
+        return sorted.sort((a, b) => b.title.localeCompare(a.title));
+      case 'status':
+        return sorted.sort((a, b) => {
+          if (a.status === b.status) return 0;
+          return a.status === 'published' ? -1 : 1;
+        });
+      default:
+        return sorted;
+    }
+  }, [posts, sortBy]);
+
+  // Reset saved state when form data changes
+  useEffect(() => {
+    if (isSaved) {
+      setIsSaved(false);
+    }
+  }, [formData]);
 
   const createMutation = useMutation({
     mutationFn: (data: typeof formData) => apiRequest('POST', '/api/blog', data),
@@ -3869,13 +3911,12 @@ function BlogSection() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: typeof formData }) => 
+    mutationFn: ({ id, data }: { id: number; data: typeof formData }) =>
       apiRequest('PUT', `/api/blog/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/blog'] });
-      toast({ title: 'Blog post updated successfully' });
-      setEditingPost(null);
-      resetForm();
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3000);
     },
     onError: (err: any) => {
       toast({ title: 'Error updating post', description: err.message, variant: 'destructive' });
@@ -3902,9 +3943,9 @@ function BlogSection() {
       metaDescription: '',
       focusKeyword: '',
       featureImageUrl: '',
-      status: 'draft',
-      authorName: 'Admin',
-      publishedAt: null,
+      status: 'published',
+      authorName: 'Skleanings',
+      publishedAt: new Date().toISOString().split('T')[0] as string | null,
       serviceIds: [],
     });
   };
@@ -3929,6 +3970,7 @@ function BlogSection() {
   const handleEdit = async (post: BlogPost) => {
     const postServices = await fetch(`/api/blog/${post.id}/services`).then(r => r.json());
     setEditingPost(post);
+    setIsSaved(false);
     setFormData({
       title: post.title,
       slug: post.slug,
@@ -4103,10 +4145,20 @@ function BlogSection() {
 
       <div className="space-y-2">
         <Label>Related Services (max 3)</Label>
+        <Input
+          placeholder="Search services..."
+          value={serviceSearch}
+          onChange={(e) => setServiceSearch(e.target.value)}
+          className="mb-2"
+          data-testid="input-service-search"
+        />
         <div className="grid gap-2 max-h-48 overflow-y-auto border rounded-lg p-3">
-          {services?.filter(s => !s.isHidden).map(service => (
-            <div 
-              key={service.id} 
+          {services?.filter(s =>
+            !s.isHidden &&
+            s.name.toLowerCase().includes(serviceSearch.toLowerCase())
+          ).map(service => (
+            <div
+              key={service.id}
               className="flex items-center gap-2"
             >
               <Checkbox
@@ -4156,35 +4208,56 @@ function BlogSection() {
             id="authorName"
             value={formData.authorName}
             onChange={(e) => setFormData(prev => ({ ...prev, authorName: e.target.value }))}
-            placeholder="Author name"
+            placeholder="Skleanings"
             data-testid="input-blog-author"
           />
         </div>
       </div>
 
-      <div className="flex justify-end gap-3 pt-4 border-t">
+      <div className="flex justify-between items-center pt-4 border-t">
         <Button
           type="button"
-          variant="outline"
+          variant="ghost"
           onClick={() => {
             setIsCreateOpen(false);
             setEditingPost(null);
+            setServiceSearch('');
+            setIsSaved(false);
             resetForm();
           }}
-          data-testid="button-blog-cancel"
+          data-testid="button-blog-back-bottom"
         >
-          Cancel
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Posts
         </Button>
-        <Button
-          type="submit"
-          disabled={createMutation.isPending || updateMutation.isPending}
-          data-testid="button-blog-save"
-        >
-          {(createMutation.isPending || updateMutation.isPending) && (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          )}
-          {editingPost ? 'Update Post' : 'Create Post'}
-        </Button>
+        <div className="flex gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setIsCreateOpen(false);
+              setEditingPost(null);
+              setServiceSearch('');
+              setIsSaved(false);
+              resetForm();
+            }}
+            data-testid="button-blog-cancel"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            disabled={createMutation.isPending || updateMutation.isPending}
+            className={isSaved ? 'bg-green-600 hover:bg-green-600' : ''}
+            data-testid="button-blog-save"
+          >
+            {(createMutation.isPending || updateMutation.isPending) && (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            )}
+            {isSaved && <Check className="w-4 h-4 mr-2" />}
+            {isSaved ? 'Saved' : editingPost ? 'Update Post' : 'Create Post'}
+          </Button>
+        </div>
       </div>
     </form>
   );
@@ -4207,6 +4280,8 @@ function BlogSection() {
             onClick={() => {
               setIsCreateOpen(false);
               setEditingPost(null);
+              setServiceSearch('');
+              setIsSaved(false);
               resetForm();
             }}
             data-testid="button-blog-back"
@@ -4234,32 +4309,56 @@ function BlogSection() {
           <h1 className="text-2xl font-bold text-foreground" data-testid="text-blog-title">Blog Posts</h1>
           <p className="text-sm text-muted-foreground">Manage your blog content and SEO</p>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)} data-testid="button-blog-create">
-          <Plus className="w-4 h-4 mr-2" />
-          New Post
-        </Button>
+        <div className="flex items-center gap-3">
+          <Select value={sortBy} onValueChange={(value: typeof sortBy) => setSortBy(value)}>
+            <SelectTrigger className="w-[180px]" data-testid="select-blog-sort">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">Newest First</SelectItem>
+              <SelectItem value="oldest">Oldest First</SelectItem>
+              <SelectItem value="title-asc">Title (A-Z)</SelectItem>
+              <SelectItem value="title-desc">Title (Z-A)</SelectItem>
+              <SelectItem value="status">Status</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button onClick={() => setIsCreateOpen(true)} data-testid="button-blog-create">
+            <Plus className="w-4 h-4 mr-2" />
+            New Post
+          </Button>
+        </div>
       </div>
 
       <Card>
         <CardContent className="p-0">
-          {posts && posts.length > 0 ? (
+          {sortedPosts && sortedPosts.length > 0 ? (
             <div className="divide-y">
-              {posts.map(post => (
+              {sortedPosts.map(post => (
                 <div key={post.id} className="flex items-center gap-4 p-4" data-testid={`row-blog-${post.id}`}>
                   {post.featureImageUrl ? (
-                    <img 
-                      src={post.featureImageUrl} 
+                    <img
+                      src={post.featureImageUrl}
                       alt={post.title}
-                      className="w-20 h-12 object-cover rounded-lg flex-shrink-0"
+                      className="w-20 h-12 object-cover rounded-lg flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => handleEdit(post)}
                       data-testid={`img-blog-${post.id}`}
                     />
                   ) : (
-                    <div className="w-20 h-12 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+                    <div
+                      className="w-20 h-12 bg-muted rounded-lg flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-muted/80 transition-colors"
+                      onClick={() => handleEdit(post)}
+                    >
                       <FileText className="w-6 h-6 text-muted-foreground" />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium truncate" data-testid={`text-blog-title-${post.id}`}>{post.title}</h3>
+                    <h3
+                      className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
+                      onClick={() => handleEdit(post)}
+                      data-testid={`text-blog-title-${post.id}`}
+                    >
+                      {post.title}
+                    </h3>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <span>{post.publishedAt ? format(new Date(post.publishedAt), 'MMM d, yyyy') : 'Not published'}</span>
                       <Badge variant={post.status === 'published' ? 'default' : 'secondary'} data-testid={`badge-blog-status-${post.id}`}>

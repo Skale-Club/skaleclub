@@ -98,6 +98,19 @@ function Router() {
   const [location] = useLocation();
   const { isInitialLoad } = useContext(InitialLoadContext);
   const isAdminRoute = location.startsWith('/admin');
+  const prevLocation = useRef(location);
+
+  // Scroll to top when navigating to a new page (not hash links)
+  useEffect(() => {
+    // Skip if it's the same path (hash change only) or initial load
+    if (prevLocation.current !== location && !isInitialLoad) {
+      // Don't scroll if there's a hash in the URL (handled by the page itself)
+      if (!window.location.hash) {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+    }
+    prevLocation.current = location;
+  }, [location, isInitialLoad]);
 
   // During initial load, show PageLoader for route transitions
   const fallback = isInitialLoad ? null : <PageLoader />;
