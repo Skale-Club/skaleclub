@@ -83,13 +83,7 @@ export default function BlogPostPage() {
   };
 
   const handleAddToCart = (service: Service) => {
-    addItem({
-      serviceId: service.id,
-      name: service.name,
-      price: Number(service.price),
-      durationMinutes: service.durationMinutes,
-      imageUrl: service.imageUrl || undefined,
-    });
+    addItem(service);
     toast({ title: `${service.name} added to cart` });
   };
 
@@ -151,7 +145,7 @@ export default function BlogPostPage() {
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
-                <time dateTime={post.publishedAt || ''} data-testid="text-post-date">
+                <time dateTime={post.publishedAt ? String(post.publishedAt) : ''} data-testid="text-post-date">
                   {post.publishedAt ? format(new Date(post.publishedAt), 'MMMM d, yyyy') : 'Draft'}
                 </time>
               </div>
@@ -233,51 +227,55 @@ export default function BlogPostPage() {
                   </div>
                 </div>
               </div>
-
-              {relatedServices && relatedServices.length > 0 && (
-                <div className="mt-12">
-                  <h2 className="text-xl font-bold text-foreground mb-6" data-testid="text-related-services-title">
-                    Related Services
-                  </h2>
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {relatedServices.map(service => (
-                      <Card key={service.id} className="overflow-hidden" data-testid={`card-service-${service.id}`}>
-                        {service.imageUrl && (
-                          <div className="aspect-video overflow-hidden">
-                            <img
-                              src={service.imageUrl}
-                              alt={service.name}
-                              className="w-full h-full object-cover"
-                              data-testid={`img-service-${service.id}`}
-                            />
-                          </div>
-                        )}
-                        <CardContent className="p-4">
-                          <h3 className="font-semibold text-foreground mb-1" data-testid={`text-service-name-${service.id}`}>
-                            {service.name}
-                          </h3>
-                          <p className="text-lg font-bold text-primary mb-3" data-testid={`text-service-price-${service.id}`}>
-                            ${service.price}
-                          </p>
-                          <Button 
-                            size="sm" 
-                            className="w-full"
-                            onClick={() => handleAddToCart(service)}
-                            data-testid={`button-add-to-cart-${service.id}`}
-                          >
-                            <ShoppingCart className="w-4 h-4 mr-2" />
-                            Add to Cart
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
 
             <aside className="lg:w-[30%]">
               <div className="sticky top-4 space-y-6">
+                {relatedServices && relatedServices.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg" data-testid="text-related-services-title">
+                        Related Services
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {relatedServices.map(service => (
+                        <div key={service.id} className="flex gap-3" data-testid={`card-service-${service.id}`}>
+                          {service.imageUrl ? (
+                            <img
+                              src={service.imageUrl}
+                              alt={service.name}
+                              className="w-16 h-12 object-cover rounded flex-shrink-0"
+                              data-testid={`img-service-${service.id}`}
+                            />
+                          ) : (
+                            <div className="w-16 h-12 bg-muted rounded flex items-center justify-center flex-shrink-0">
+                              <ShoppingCart className="w-4 h-4 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-medium text-foreground line-clamp-1" data-testid={`text-service-name-${service.id}`}>
+                              {service.name}
+                            </h4>
+                            <p className="text-sm font-bold text-primary" data-testid={`text-service-price-${service.id}`}>
+                              ${service.price}
+                            </p>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="mt-1 h-7 text-xs"
+                              onClick={() => handleAddToCart(service)}
+                              data-testid={`button-add-to-cart-${service.id}`}
+                            >
+                              Add to Cart
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+
                 {relatedPosts && relatedPosts.length > 0 && (
                   <Card>
                     <CardHeader>
