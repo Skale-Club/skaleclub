@@ -23,9 +23,7 @@ export function AreasServedMap() {
           </div>
           <h2 className="text-3xl md:text-5xl font-bold mb-6">Areas We Serve</h2>
           
-          <p className="text-slate-600 text-lg mb-8 leading-relaxed">
-            We provide professional cleaning services within 40 minutes of Framingham, Massachusetts. Check the map to see if we cover your location.
-          </p>
+          <p className="text-slate-600 text-lg mb-8 leading-relaxed">We provide professional cleaning services across Massachusetts and nearby areas. Check the map to see if we cover your location.</p>
 
           <div className="mb-4">
             <Link href="/services">

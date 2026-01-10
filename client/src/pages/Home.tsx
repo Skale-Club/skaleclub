@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useCategories, useServices } from "@/hooks/use-booking";
 import { Link, useLocation } from "wouter";
 import { ArrowRight, Star, Shield, Clock, Phone, Calendar, FileText } from "lucide-react";
@@ -113,9 +114,23 @@ export default function Home() {
   };
 
   // Filter categories that have at least one service
-  const activeCategories = categories?.filter(category => 
+  const activeCategories = categories?.filter(category =>
     services?.some(service => service.categoryId === category.id)
   );
+
+  // Handle hash navigation on mount (e.g., /#areas-served)
+  useEffect(() => {
+    const hash = window.location.hash.replace('#', '');
+    if (hash) {
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        const element = document.getElementById(hash);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  }, []);
 
   return (
     <div className="pb-0">

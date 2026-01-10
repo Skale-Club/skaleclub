@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/hooks/use-auth";
 import { ShoppingBag, Menu, X, User, LogOut, Phone } from "lucide-react";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { clsx } from "clsx";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,6 +41,19 @@ export function Navbar() {
     return (first + last).toUpperCase() || 'U';
   };
 
+  const handleHashNavigation = useCallback((hash: string) => {
+    if (location === '/') {
+      // Already on home page, just scroll to the element
+      const element = document.getElementById(hash);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      // Navigate to home page first, then scroll after page loads
+      window.location.href = `/#${hash}`;
+    }
+  }, [location]);
+
   return (
     <nav className="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-gray-100">
       <div className="container-custom mx-auto">
@@ -65,7 +78,12 @@ export function Navbar() {
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8">
             <a href="/services" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer">Services</a>
-            <a href="/#areas-served" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer">Areas Served</a>
+            <button
+              onClick={() => handleHashNavigation('areas-served')}
+              className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer"
+            >
+              Areas Served
+            </button>
             <a href="/blog" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer">Blog</a>
             <a href="/faq" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer">FAQ</a>
             
@@ -132,13 +150,29 @@ export function Navbar() {
         <div className="md:hidden bg-white border-b border-gray-100 py-6 px-6 flex flex-col gap-6 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="flex flex-col gap-5">
             {navLinks.map((link) => {
-              const isExternal = link.href.startsWith("/#") || link.href === "/services";
+              const isHashLink = link.href.startsWith("/#");
+              const isExternal = link.href === "/services";
               const Content = (
                 <span className="text-lg font-semibold text-slate-700 hover:text-primary transition-colors">
                   {link.label}
                 </span>
               );
 
+              if (isHashLink) {
+                const hash = link.href.replace("/#", "");
+                return (
+                  <button
+                    key={link.href}
+                    className="block text-left"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      handleHashNavigation(hash);
+                    }}
+                  >
+                    {Content}
+                  </button>
+                );
+              }
               if (isExternal) {
                 return (
                   <a
