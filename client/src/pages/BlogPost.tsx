@@ -258,7 +258,7 @@ export default function BlogPostPage() {
                       {relatedServices.map(service => (
                         <div key={service.id} className="flex gap-3 items-stretch" data-testid={`card-service-${service.id}`}>
                           {service.imageUrl ? (
-                            <div className="w-16 overflow-hidden rounded flex-shrink-0">
+                            <div className="w-20 aspect-[4/3] overflow-hidden rounded flex-shrink-0">
                               <img
                                 src={service.imageUrl}
                                 alt={service.name}
@@ -267,7 +267,7 @@ export default function BlogPostPage() {
                               />
                             </div>
                           ) : (
-                            <div className="w-16 bg-muted rounded flex items-center justify-center flex-shrink-0">
+                            <div className="w-20 aspect-[4/3] bg-muted rounded flex items-center justify-center flex-shrink-0">
                               <ShoppingCart className="w-4 h-4 text-muted-foreground" />
                             </div>
                           )}
