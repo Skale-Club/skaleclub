@@ -384,7 +384,7 @@ export default function BookingPage() {
                         <input
                           {...form.register("customerCity")}
                           className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                          placeholder="Framingham"
+                          placeholder="Boston"
                         />
                         {form.formState.errors.customerCity && <p className="text-red-500 text-xs">{form.formState.errors.customerCity.message}</p>}
                       </div>
