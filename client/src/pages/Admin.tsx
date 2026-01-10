@@ -2518,24 +2518,10 @@ function BookingRow({ booking, onUpdate, onDelete }: {
   onDelete: (id: number) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const [editingAmount, setEditingAmount] = useState(false);
-  const [amountValue, setAmountValue] = useState(booking.totalPrice);
-  const amountDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
-  const { data: bookingItems } = useBookingItems(booking.id, expanded);
-
-  const handleAmountChange = (value: string) => {
-    setAmountValue(value);
-    if (amountDebounceRef.current) clearTimeout(amountDebounceRef.current);
-    amountDebounceRef.current = setTimeout(() => {
-      const parsed = parseFloat(value);
-      if (!isNaN(parsed) && parsed >= 0) {
-        onUpdate(booking.id, { totalPrice: parsed.toFixed(2) });
-        toast({ title: 'Amount updated' });
-      }
-    }, 800);
-  };
+  const { data: bookingItems, isLoading: itemsLoading } = useBookingItems(booking.id, true);
+  const servicesTotal = bookingItems?.reduce((sum, item) => sum + parseFloat(item.price || '0'), 0) || 0;
 
   const handleStatusChange = (status: string) => {
     onUpdate(booking.id, { status });
@@ -2614,29 +2600,12 @@ function BookingRow({ booking, onUpdate, onDelete }: {
           </button>
         </td>
         <td className="px-6 py-4">
-          {editingAmount ? (
-            <div className="flex items-center gap-1">
-              <span className="text-slate-500">$</span>
-              <Input
-                type="number"
-                step="0.01"
-                value={amountValue}
-                onChange={(e) => handleAmountChange(e.target.value)}
-                onBlur={() => setEditingAmount(false)}
-                className="w-20 h-7 text-sm"
-                autoFocus
-                data-testid={`input-amount-${booking.id}`}
-              />
-            </div>
-          ) : (
-            <button
-              onClick={() => setEditingAmount(true)}
-              className="font-bold text-slate-900 dark:text-slate-100 hover:underline cursor-pointer"
-              data-testid={`button-edit-amount-${booking.id}`}
-            >
-              ${booking.totalPrice}
-            </button>
-          )}
+          <span
+            className="font-bold text-slate-900 dark:text-slate-100"
+            data-testid={`text-amount-${booking.id}`}
+          >
+            {itemsLoading ? '...' : `$${servicesTotal.toFixed(2)}`}
+          </span>
         </td>
         <td className="px-6 py-4 text-right">
           <AlertDialog>
@@ -2702,7 +2671,9 @@ function BookingMobileCard({
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { toast } = useToast();
-  const { data: items, isLoading: itemsLoading } = useBookingItems(booking.id, isExpanded);
+  const { data: items, isLoading: itemsLoading } = useBookingItems(booking.id, true);
+  
+  const servicesTotal = items?.reduce((sum, item) => sum + parseFloat(item.price || '0'), 0) || 0;
 
   const handleStatusChange = (status: string) => {
     onUpdate(booking.id, { status });
@@ -2748,7 +2719,7 @@ function BookingMobileCard({
           </div>
           <div className="flex items-center gap-2 font-bold justify-end text-primary">
             <DollarSign className="w-4 h-4" />
-            <span>{booking.totalPrice}</span>
+            <span>{itemsLoading ? '...' : `$${servicesTotal.toFixed(2)}`}</span>
           </div>
         </div>
 
