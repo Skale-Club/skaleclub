@@ -311,47 +311,49 @@ export default function BookingPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Phone Number</label>
-                    <input
-                      {...form.register("customerPhone")}
-                      onChange={(e) => {
-                        let value = e.target.value.replace(/\D/g, "");
-                        if (value.length > 10) value = value.slice(0, 10);
-                        
-                        let maskedValue = "";
-                        if (value.length > 0) {
-                          maskedValue = "(" + value.slice(0, 3);
-                          if (value.length > 3) {
-                            maskedValue += ") " + value.slice(3, 6);
+                    <div className="space-y-2 mt-4">
+                      <label className="text-sm font-medium text-slate-700">Phone Number</label>
+                      <input
+                        {...form.register("customerPhone")}
+                        onChange={(e) => {
+                          let value = e.target.value.replace(/\D/g, "");
+                          if (value.length > 10) value = value.slice(0, 10);
+                          
+                          let maskedValue = "";
+                          if (value.length > 0) {
+                            maskedValue = "(" + value.slice(0, 3);
+                            if (value.length > 3) {
+                              maskedValue += ") " + value.slice(3, 6);
+                            }
+                            if (value.length > 6) {
+                              maskedValue += "-" + value.slice(6, 10);
+                            }
                           }
-                          if (value.length > 6) {
-                            maskedValue += "-" + value.slice(6, 10);
-                          }
-                        }
-                        e.target.value = maskedValue;
-                        form.setValue("customerPhone", maskedValue, { shouldValidate: true });
-                      }}
-                      className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                      placeholder="(555) 123-4567"
-                    />
-                    {form.formState.errors.customerPhone && <p className="text-red-500 text-xs">{form.formState.errors.customerPhone.message}</p>}
-                    
-                    {step === 3 && (
-                      <button 
-                        type="button"
-                        onClick={async () => {
-                          const isValid = await form.trigger(["customerName", "customerEmail", "customerPhone"]);
-                          if (isValid) {
-                            handleNextStep(4);
-                          }
+                          e.target.value = maskedValue;
+                          form.setValue("customerPhone", maskedValue, { shouldValidate: true });
                         }}
-                        className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 mt-8"
-                      >
-                        Continue to Address <ChevronRight className="w-4 h-4" />
-                      </button>
+                        className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                        placeholder="(555) 123-4567"
+                      />
+                      {form.formState.errors.customerPhone && <p className="text-red-500 text-xs">{form.formState.errors.customerPhone.message}</p>}
+                    </div>
+
+                    {step === 3 && (
+                      <div className="pt-6">
+                        <button 
+                          type="button"
+                          onClick={async () => {
+                            const isValid = await form.trigger(["customerName", "customerEmail", "customerPhone"]);
+                            if (isValid) {
+                              handleNextStep(4);
+                            }
+                          }}
+                          className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+                        >
+                          Continue to Address <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
                     )}
-                  </div>
                 </div>
               </div>
             )}
