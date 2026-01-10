@@ -43,7 +43,8 @@ import {
   SidebarMenuButton, 
   SidebarMenuItem,
   SidebarProvider,
-  SidebarTrigger
+  SidebarTrigger,
+  useSidebar
 } from '@/components/ui/sidebar';
 import { 
   Loader2, 
@@ -93,13 +94,14 @@ const menuItems = [
   { id: 'integrations' as AdminSection, title: 'Integrations', icon: Puzzle },
 ];
 
-export default function Admin() {
+function AdminContent() {
   const { toast } = useToast();
   const { isAdmin, email, firstName, lastName, loading, signOut } = useAdminAuth();
   const [, setLocation] = useLocation();
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
   const [sectionsOrder, setSectionsOrder] = useState<AdminSection[]>(menuItems.map(item => item.id));
   const [draggedSectionId, setDraggedSectionId] = useState<AdminSection | null>(null);
+  const { toggleSidebar } = useSidebar();
 
   useEffect(() => {
     if (!loading && !isAdmin) {
@@ -176,6 +178,131 @@ export default function Admin() {
     setLocation('/admin/login');
   };
 
+  return (
+    <div className="flex h-screen w-full bg-slate-50 relative overflow-x-hidden">
+      <Sidebar className="border-r border-gray-200 bg-white">
+        <SidebarHeader className="p-4 border-b border-gray-100 bg-[#ffffff]">
+          <div className="flex flex-col gap-4">
+            <Link href="/" className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-primary transition-colors group">
+              <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" />
+              Back to website
+            </Link>
+            <div className="flex items-center gap-3">
+              {companySettings?.logoIcon ? (
+                <img 
+                  src={companySettings.logoIcon} 
+                  alt={companySettings.companyName || 'Logo'} 
+                  className="w-10 h-10 rounded-lg object-contain bg-white p-1 border border-gray-100"
+                  data-testid="img-admin-logo"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-lg">
+                  {companySettings?.companyName?.[0] || 'A'}
+                </div>
+              )}
+              <span className="font-semibold text-lg text-primary truncate">
+                {companySettings?.companyName || 'Admin Panel'}
+              </span>
+            </div>
+          </div>
+        </SidebarHeader>
+        
+        <SidebarContent className="p-2 bg-[#ffffff]">
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {sectionsOrder.map((sectionId) => {
+                  const item = menuItems.find(i => i.id === sectionId)!;
+                  return (
+                    <SidebarMenuItem 
+                      key={item.id}
+                      draggable
+                      onDragStart={(e) => handleSectionDragStart(e, item.id)}
+                      onDragOver={handleSectionDragOver}
+                      onDrop={(e) => handleSectionDrop(e, item.id)}
+                      onDragEnd={() => setDraggedSectionId(null)}
+                      className={clsx(
+                        "transition-all",
+                        draggedSectionId === item.id && "opacity-50"
+                      )}
+                    >
+                      <SidebarMenuButton
+                        onClick={() => {
+                          setActiveSection(item.id);
+                        }}
+                        isActive={activeSection === item.id}
+                        data-testid={`nav-${item.id}`}
+                        className="group/btn"
+                      >
+                        <div className="flex items-center gap-2 flex-1">
+                          <GripVertical className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover/btn:opacity-100 transition-opacity cursor-grab active:cursor-grabbing" />
+                          <item.icon className="w-4 h-4" />
+                          <span>{item.title}</span>
+                        </div>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+
+        <SidebarFooter className="p-4 border-t border-gray-100 mt-auto bg-[#ffffff]">
+          <div className="space-y-3">
+            <div className="text-sm">
+              <p className="text-muted-foreground text-xs">Logged in as</p>
+              <p className="font-medium truncate">{email}</p>
+            </div>
+            <Button 
+              variant="default" 
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white border-0" 
+              onClick={handleLogout}
+              data-testid="button-logout"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
+        </SidebarFooter>
+      </Sidebar>
+
+      <main className="flex-1 min-w-0 overflow-auto relative">
+        <header className="md:hidden sticky top-0 z-50 bg-white border-b border-gray-200 p-4 flex items-center gap-4">
+          <SidebarTrigger className="bg-white shadow-sm border border-gray-200 rounded-lg p-2 h-10 w-10 shrink-0" />
+          <button
+            type="button"
+            className="font-semibold text-primary select-none text-left"
+            onClick={toggleSidebar}
+          >
+            Admin Panel
+          </button>
+        </header>
+        <div className="p-6 md:p-8">
+          {activeSection === 'dashboard' && <DashboardSection />}
+          {activeSection === 'categories' && <CategoriesSection />}
+          {activeSection === 'subcategories' && <SubcategoriesSection />}
+          {activeSection === 'services' && <ServicesSection />}
+          {activeSection === 'bookings' && <BookingsSection />}
+          {activeSection === 'hero' && <HeroSettingsSection />}
+          {activeSection === 'company' && <CompanySettingsSection />}
+          {activeSection === 'seo' && <SEOSection />}
+          {activeSection === 'faqs' && <FaqsSection />}
+          {activeSection === 'users' && (
+            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground bg-slate-100 dark:bg-slate-800 rounded-lg border-2 border-dashed">
+              <Users className="w-12 h-12 mb-4 opacity-20" />
+              <p>User management coming soon</p>
+            </div>
+          )}
+          {activeSection === 'availability' && <AvailabilitySection />}
+          {activeSection === 'integrations' && <IntegrationsSection />}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+export default function Admin() {
   const sidebarStyle = {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "3rem",
@@ -183,122 +310,7 @@ export default function Admin() {
 
   return (
     <SidebarProvider style={sidebarStyle as React.CSSProperties}>
-      <div className="flex h-screen w-full bg-slate-50 relative overflow-x-hidden">
-        <Sidebar className="border-r border-gray-200 bg-white">
-          <SidebarHeader className="p-4 border-b border-gray-100 bg-[#ffffff]">
-            <div className="flex flex-col gap-4">
-              <Link href="/" className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-primary transition-colors group">
-                <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" />
-                Back to website
-              </Link>
-              <div className="flex items-center gap-3">
-                {companySettings?.logoIcon ? (
-                  <img 
-                    src={companySettings.logoIcon} 
-                    alt={companySettings.companyName || 'Logo'} 
-                    className="w-10 h-10 rounded-lg object-contain bg-white p-1 border border-gray-100"
-                    data-testid="img-admin-logo"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-lg">
-                    {companySettings?.companyName?.[0] || 'A'}
-                  </div>
-                )}
-                <span className="font-semibold text-lg text-primary truncate">
-                  {companySettings?.companyName || 'Admin Panel'}
-                </span>
-              </div>
-            </div>
-          </SidebarHeader>
-          
-          <SidebarContent className="p-2 bg-[#ffffff]">
-            <SidebarGroup>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {sectionsOrder.map((sectionId) => {
-                    const item = menuItems.find(i => i.id === sectionId)!;
-                    return (
-                      <SidebarMenuItem 
-                        key={item.id}
-                        draggable
-                        onDragStart={(e) => handleSectionDragStart(e, item.id)}
-                        onDragOver={handleSectionDragOver}
-                        onDrop={(e) => handleSectionDrop(e, item.id)}
-                        onDragEnd={() => setDraggedSectionId(null)}
-                        className={clsx(
-                          "transition-all",
-                          draggedSectionId === item.id && "opacity-50"
-                        )}
-                      >
-                        <SidebarMenuButton
-                          onClick={() => {
-                            setActiveSection(item.id);
-                          }}
-                          isActive={activeSection === item.id}
-                          data-testid={`nav-${item.id}`}
-                          className="group/btn"
-                        >
-                          <div className="flex items-center gap-2 flex-1">
-                            <GripVertical className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover/btn:opacity-100 transition-opacity cursor-grab active:cursor-grabbing" />
-                            <item.icon className="w-4 h-4" />
-                            <span>{item.title}</span>
-                          </div>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-
-          <SidebarFooter className="p-4 border-t border-gray-100 mt-auto bg-[#ffffff]">
-            <div className="space-y-3">
-              <div className="text-sm">
-                <p className="text-muted-foreground text-xs">Logged in as</p>
-                <p className="font-medium truncate">{email}</p>
-              </div>
-              <Button 
-                variant="default" 
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white border-0" 
-                onClick={handleLogout}
-                data-testid="button-logout"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign Out
-              </Button>
-            </div>
-          </SidebarFooter>
-        </Sidebar>
-
-        <main className="flex-1 min-w-0 overflow-auto relative">
-          <header className="md:hidden sticky top-0 z-50 bg-white border-b border-gray-200 p-4 flex items-center gap-4">
-            <SidebarTrigger className="bg-white shadow-sm border border-gray-200 rounded-lg p-2 h-10 w-10 shrink-0" />
-            <span className="font-semibold text-primary select-none text-left">
-              Admin Panel
-            </span>
-          </header>
-          <div className="p-6 md:p-8">
-            {activeSection === 'dashboard' && <DashboardSection />}
-            {activeSection === 'categories' && <CategoriesSection />}
-            {activeSection === 'subcategories' && <SubcategoriesSection />}
-            {activeSection === 'services' && <ServicesSection />}
-            {activeSection === 'bookings' && <BookingsSection />}
-            {activeSection === 'hero' && <HeroSettingsSection />}
-            {activeSection === 'company' && <CompanySettingsSection />}
-            {activeSection === 'seo' && <SEOSection />}
-            {activeSection === 'faqs' && <FaqsSection />}
-            {activeSection === 'users' && (
-              <div className="flex flex-col items-center justify-center h-64 text-muted-foreground bg-slate-100 dark:bg-slate-800 rounded-lg border-2 border-dashed">
-                <Users className="w-12 h-12 mb-4 opacity-20" />
-                <p>User management coming soon</p>
-              </div>
-            )}
-            {activeSection === 'availability' && <AvailabilitySection />}
-            {activeSection === 'integrations' && <IntegrationsSection />}
-          </div>
-        </main>
-      </div>
+      <AdminContent />
     </SidebarProvider>
   );
 }
