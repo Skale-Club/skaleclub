@@ -1,0 +1,149 @@
+# Blog System Implementation for Cleanings Website
+
+## Overview
+We need to implement a complete blog system for our cleaning services website. The blog must be fully integrated with our existing admin panel and product database, with a strong focus on SEO optimization.
+
+## Admin Panel Requirements
+
+### New Menu Item
+- Add a new "Blog" menu item in the admin navigation
+- This section should be accessible from the main admin dashboard
+
+### Blog Management Interface
+Create a blog post management page with the following features:
+
+1. **Post List View**
+   - Display all blog posts in a table/list format
+   - Show: Title, Date, Status (Published/Draft), Featured Image thumbnail
+   - Include Edit and Delete actions for each post
+
+2. **Create/Edit Post Form**
+   Required fields:
+   - **Title**: Text input (required)
+   - **Slug**: Auto-generated from title, editable for SEO purposes
+   - **Content**: Rich text WYSIWYG editor that accepts HTML (H2, H3, paragraphs, lists, bold, italic, links, etc.)
+   - **Feature Image**: Image upload with 16:9 aspect ratio (1200x675px recommended)
+   - **Meta Description**: Text area (155 characters max, with counter)
+   - **Focus Keyword**: Text input for SEO targeting
+   - **Related Products**: Multi-select dropdown to choose 3 products from existing database
+   - **Status**: Draft/Published toggle
+   - **Publication Date**: Date picker
+
+3. **SEO Features**
+   - Auto-generate SEO-friendly slugs
+   - Meta description field
+   - Focus keyword tracking
+   - Open Graph image (use feature image)
+   - Schema.org Article markup
+
+## Frontend Requirements
+
+### Homepage Blog Section
+- Add a new "Latest from Our Blog" section on the homepage (position: after main services section)
+- Display 3 most recent blog posts in a card grid layout
+- Each card should show:
+  - Feature image (16:9 ratio)
+  - Title
+  - Excerpt (first 150 characters)
+  - "Read More" button
+  - Publication date
+
+### Single Blog Post Page
+
+**Layout Structure:**
+
+**Main Content Area (Left - 70% width):**
+- Page title (H1)
+- Publication date and author
+- Feature image (16:9, larger size - 1200px width)
+- Full post content (with proper HTML formatting)
+- Social share buttons (Facebook, Twitter, LinkedIn, WhatsApp)
+
+**Sidebar (Right - 30% width):**
+- "Related Posts" widget showing 3-4 similar posts with:
+  - Thumbnail image
+  - Title
+  - Short excerpt
+
+**Below Main Content:**
+- "Related Products" section with 3 products
+- Display product card with:
+  - Product image
+  - Name
+  - Price
+  - "Add to Cart" button
+- These products should be the ones selected in the admin panel when creating the post
+
+### Blog Archive Page
+- Display all published posts in grid format (3 columns)
+- Pagination (10 posts per page)
+- Filter/search functionality
+
+## Technical Requirements
+
+### Database Schema
+Create tables for:
+```sql
+blog_posts:
+- id
+- title
+- slug (unique)
+- content (TEXT)
+- meta_description
+- focus_keyword
+- feature_image_url
+- status (draft/published)
+- author_id
+- published_at
+- created_at
+- updated_at
+
+blog_post_products (junction table):
+- id
+- blog_post_id
+- product_id
+```
+
+### SEO Optimization
+1. **On-Page SEO:**
+   - Proper heading hierarchy (H1, H2, H3)
+   - Meta title and description
+   - Canonical URLs
+   - Alt text for all images
+   - Internal linking structure
+
+2. **Technical SEO:**
+   - XML sitemap for blog posts
+   - Schema.org Article markup
+   - Open Graph tags for social sharing
+   - Twitter Card tags
+   - Breadcrumb navigation
+   - Mobile-responsive design
+   - Fast loading times (optimize images)
+
+3. **URL Structure:**
+   - Use format: `/blog/[slug]`
+   - Clean, SEO-friendly URLs
+   - No special characters in slugs
+
+### WYSIWYG Editor
+- Use a reliable rich text editor (TinyMCE or Quill recommended)
+- Support for: headings, paragraphs, bold, italic, lists, links, images
+- Allow raw HTML editing for advanced users
+- Auto-save drafts
+
+## Additional Features (Nice to Have)
+- Categories/Tags system
+- Featured post toggle
+- Reading time calculator
+- Comment system (optional)
+- RSS feed
+- Related posts algorithm based on keywords/tags
+
+## Integration Notes
+- Blog posts should integrate with existing product database
+- Use existing authentication system for admin access
+- Maintain consistent design with current website theme
+- Ensure all new pages are mobile-responsive
+
+Please implement this blog system following best practices for performance, security, and SEO. Let me know if you need clarification on any requirements.
