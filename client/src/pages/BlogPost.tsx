@@ -256,9 +256,9 @@ export default function BlogPostPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {relatedServices.map(service => (
-                        <div key={service.id} className="flex gap-3 items-center" data-testid={`card-service-${service.id}`}>
+                        <div key={service.id} className="flex gap-3 items-stretch" data-testid={`card-service-${service.id}`}>
                           {service.imageUrl ? (
-                            <div className="w-16 h-12 overflow-hidden rounded flex-shrink-0">
+                            <div className="w-16 overflow-hidden rounded flex-shrink-0">
                               <img
                                 src={service.imageUrl}
                                 alt={service.name}
@@ -267,11 +267,11 @@ export default function BlogPostPage() {
                               />
                             </div>
                           ) : (
-                            <div className="w-16 h-12 bg-muted rounded flex items-center justify-center flex-shrink-0">
+                            <div className="w-16 bg-muted rounded flex items-center justify-center flex-shrink-0">
                               <ShoppingCart className="w-4 h-4 text-muted-foreground" />
                             </div>
                           )}
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0 flex flex-col">
                             <h4 className="text-sm font-semibold text-foreground line-clamp-1" data-testid={`text-service-name-${service.id}`}>
                               {service.name}
                             </h4>
@@ -281,8 +281,12 @@ export default function BlogPostPage() {
                             <Button 
                               size="sm" 
                               variant="default"
-                              className="mt-1 h-7 text-[10px] px-2"
-                              onClick={() => handleAddToCart(service)}
+                              className="mt-auto h-7 text-[10px] px-2"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleAddToCart(service);
+                              }}
                               data-testid={`button-add-to-cart-${service.id}`}
                             >
                               Add to Booking
