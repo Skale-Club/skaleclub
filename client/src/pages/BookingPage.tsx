@@ -367,8 +367,8 @@ export default function BookingPage() {
                 </div>
 
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <div className="grid grid-cols-10 gap-x-6 gap-y-4">
-                    <div className="space-y-2 col-span-7">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
                       <label className="text-sm font-medium text-slate-700">Street Address</label>
                       <input
                         {...form.register("customerStreet")}
@@ -378,33 +378,35 @@ export default function BookingPage() {
                       {form.formState.errors.customerStreet && <p className="text-red-500 text-xs">{form.formState.errors.customerStreet.message}</p>}
                     </div>
 
-                    <div className="space-y-2 col-span-3">
-                      <label className="text-sm font-medium text-slate-700 leading-tight">Unit / Apt (Optional)</label>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2 col-span-2">
+                        <label className="text-sm font-medium text-slate-700">City</label>
+                        <input
+                          {...form.register("customerCity")}
+                          className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                          placeholder="Framingham"
+                        />
+                        {form.formState.errors.customerCity && <p className="text-red-500 text-xs">{form.formState.errors.customerCity.message}</p>}
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-slate-700">State</label>
+                        <input
+                          {...form.register("customerState")}
+                          className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                          placeholder="MA"
+                        />
+                        {form.formState.errors.customerState && <p className="text-red-500 text-xs">{form.formState.errors.customerState.message}</p>}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700">Unit / Apt <span className="text-slate-400 font-normal">(Optional)</span></label>
                       <input
                         {...form.register("customerUnit")}
                         className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                        placeholder="Apt"
+                        placeholder="Apt 4B"
                       />
-                    </div>
-
-                    <div className="space-y-2 col-span-7">
-                      <label className="text-sm font-medium text-slate-700">City</label>
-                      <input
-                        {...form.register("customerCity")}
-                        className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                        placeholder="Framingham"
-                      />
-                      {form.formState.errors.customerCity && <p className="text-red-500 text-xs">{form.formState.errors.customerCity.message}</p>}
-                    </div>
-
-                    <div className="space-y-2 col-span-3">
-                      <label className="text-sm font-medium text-slate-700">State</label>
-                      <input
-                        {...form.register("customerState")}
-                        className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                        placeholder="MA"
-                      />
-                      {form.formState.errors.customerState && <p className="text-red-500 text-xs">{form.formState.errors.customerState.message}</p>}
                     </div>
                   </div>
 
