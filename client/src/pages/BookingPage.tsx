@@ -346,7 +346,7 @@ export default function BookingPage() {
                             handleNextStep(4);
                           }
                         }}
-                        className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 mt-4"
+                        className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 mt-8"
                       >
                         Continue to Address <ChevronRight className="w-4 h-4" />
                       </button>
