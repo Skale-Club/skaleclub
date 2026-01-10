@@ -71,6 +71,17 @@ export default function BookingPage() {
   });
 
   const calendarRef = useRef<HTMLDivElement>(null);
+  const summaryRef = useRef<HTMLDivElement>(null);
+
+  const handleTimeSelect = (time: string) => {
+    setSelectedTime(time);
+    // On mobile, scroll to the booking summary after selecting a time
+    if (window.innerWidth < 1024 && summaryRef.current) {
+      setTimeout(() => {
+        summaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  };
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -251,7 +262,7 @@ export default function BookingPage() {
                               .map((slot) => (
                                 <div key={slot.time} className="px-1 py-1">
                                   <button
-                                    onClick={() => setSelectedTime(slot.time)}
+                                    onClick={() => handleTimeSelect(slot.time)}
                                     className={clsx(
                                       "w-full py-4 px-6 rounded-xl font-bold transition-all border text-center text-sm",
                                       selectedTime === slot.time
@@ -449,7 +460,7 @@ export default function BookingPage() {
           </div>
 
           {/* Sticky Summary Sidebar */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1" ref={summaryRef}>
             <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 sticky top-24">
               <h3 className="font-bold text-xl mb-4 text-slate-900">Booking Summary</h3>
               
