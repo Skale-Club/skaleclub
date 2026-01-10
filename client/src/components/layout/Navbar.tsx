@@ -127,80 +127,94 @@ export function Navbar() {
 
       {/* Mobile Nav */}
       {isMenuOpen && (
-        <div className="md:hidden bg-white border-b border-gray-100 py-4 px-4 space-y-4">
-          {navLinks.map((link) => {
-            if (link.href.startsWith("/#") || link.href === "/services") {
-              return (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className="block text-base font-medium text-slate-600 hover:text-primary"
-                  onClick={() => setIsMenuOpen(false)}
-                >
+        <div className="md:hidden bg-white border-b border-gray-100 py-6 px-6 flex flex-col gap-6 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex flex-col gap-5">
+            {navLinks.map((link) => {
+              const isExternal = link.href.startsWith("/#") || link.href === "/services";
+              const Content = (
+                <span className="text-lg font-semibold text-slate-700 hover:text-primary transition-colors">
                   {link.label}
-                </a>
+                </span>
               );
-            }
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="block text-base font-medium text-slate-600 hover:text-primary"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
-          <Link href="/booking" onClick={() => setIsMenuOpen(false)}>
-            <div className="flex items-center gap-2 text-primary font-medium">
-              <ShoppingBag className="w-5 h-5" />
-              <span>Cart ({items.length})</span>
-            </div>
-          </Link>
-          
-          {/* Mobile Login/User */}
-          {!isLoading && (
-            isAuthenticated && user ? (
-              <div className="space-y-2 pt-2 border-t border-gray-100">
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.profileImageUrl || undefined} alt={user.firstName || 'User'} />
-                    <AvatarFallback>{getInitials(user.firstName, user.lastName)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium text-sm">{user.firstName} {user.lastName}</p>
-                    <p className="text-xs text-muted-foreground">{user.email}</p>
-                  </div>
-                </div>
-                {user.isAdmin && (
-                  <Link 
-                    href="/admin" 
-                    className="block text-base font-medium text-slate-600 hover:text-primary"
+
+              if (isExternal) {
+                return (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    className="block"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    Admin Panel
-                  </Link>
-                )}
-                <button 
-                  onClick={() => { setIsMenuOpen(false); logout(); }}
-                  className="flex items-center gap-2 text-base font-medium text-slate-600 hover:text-primary"
+                    {Content}
+                  </a>
+                );
+              }
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="block"
+                  onClick={() => setIsMenuOpen(false)}
                 >
-                  <LogOut className="w-4 h-4" />
-                  Logout
-                </button>
+                  {Content}
+                </Link>
+              );
+            })}
+          </div>
+
+          <div className="pt-6 border-t border-gray-100 flex flex-col gap-6">
+            <Link href="/booking" onClick={() => setIsMenuOpen(false)}>
+              <div className="flex items-center gap-3 text-primary font-bold text-lg">
+                <ShoppingBag className="w-6 h-6" />
+                <span>Cart ({items.length})</span>
               </div>
-            ) : (
-              <button 
-                onClick={() => window.location.href = '/api/login'}
-                className="flex items-center gap-2 text-base font-medium text-primary"
-                data-testid="button-mobile-login"
-              >
-                <User className="w-5 h-5" />
-                Login
-              </button>
-            )
-          )}
+            </Link>
+            
+            {/* Mobile Login/User */}
+            {!isLoading && (
+              isAuthenticated && user ? (
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                    <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
+                      <AvatarImage src={user.profileImageUrl || undefined} alt={user.firstName || 'User'} />
+                      <AvatarFallback>{getInitials(user.firstName, user.lastName)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-bold text-slate-900 leading-none text-base">{user.firstName} {user.lastName}</p>
+                      <p className="text-xs text-slate-500 mt-1">{user.email}</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-4 px-1">
+                    {user.isAdmin && (
+                      <Link 
+                        href="/admin" 
+                        className="text-base font-semibold text-slate-700 hover:text-primary transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        Admin Panel
+                      </Link>
+                    )}
+                    <button 
+                      onClick={() => { setIsMenuOpen(false); logout(); }}
+                      className="flex items-center gap-2 text-base font-semibold text-slate-500 hover:text-red-500 transition-colors"
+                    >
+                      <LogOut className="w-5 h-5" />
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => window.location.href = '/api/login'}
+                  className="flex items-center gap-3 text-lg font-bold text-primary hover:opacity-80 transition-opacity"
+                  data-testid="button-mobile-login"
+                >
+                  <User className="w-6 h-6" />
+                  Login
+                </button>
+              )
+            )}
+          </div>
         </div>
       )}
     </nav>
