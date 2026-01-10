@@ -33,6 +33,7 @@ export const services = pgTable("services", {
   durationMinutes: integer("duration_minutes").notNull(), // Duration in minutes
   imageUrl: text("image_url"),
   isHidden: boolean("is_hidden").default(false), // Hidden services only appear as add-ons
+  order: integer("order").default(0),
 });
 
 // Service add-on relationships (e.g., Sofa can suggest Ottoman as add-on)

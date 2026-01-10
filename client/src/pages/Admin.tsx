@@ -12,6 +12,7 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
+  rectSortingStrategy,
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -65,33 +66,33 @@ import {
   GripVertical,
   ArrowLeft,
   Check,
-  ListFilter,
   Users,
   Puzzle,
   Globe,
   Search,
-  ChevronDown
+  ChevronDown,
+  LayoutGrid,
+  List
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
 import type { Category, Service, Booking, Subcategory, Faq, BlogPost } from '@shared/schema';
 import { HelpCircle, FileText } from 'lucide-react';
 
-type AdminSection = 'dashboard' | 'categories' | 'subcategories' | 'services' | 'bookings' | 'hero' | 'company' | 'seo' | 'faqs' | 'users' | 'availability' | 'integrations' | 'blog';
+type AdminSection = 'dashboard' | 'categories' | 'services' | 'bookings' | 'hero' | 'company' | 'seo' | 'faqs' | 'users' | 'availability' | 'integrations' | 'blog';
 
 const menuItems = [
   { id: 'dashboard' as AdminSection, title: 'Dashboard', icon: LayoutDashboard },
+  { id: 'company' as AdminSection, title: 'Company Infos', icon: Building2 },
+  { id: 'hero' as AdminSection, title: 'Hero Section', icon: Image },
   { id: 'categories' as AdminSection, title: 'Categories', icon: FolderOpen },
-  { id: 'subcategories' as AdminSection, title: 'Subcategories', icon: ListFilter },
   { id: 'services' as AdminSection, title: 'Services', icon: Package },
   { id: 'bookings' as AdminSection, title: 'Bookings', icon: Calendar },
-  { id: 'blog' as AdminSection, title: 'Blog', icon: FileText },
-  { id: 'hero' as AdminSection, title: 'Hero Section', icon: Image },
-  { id: 'company' as AdminSection, title: 'Company Infos', icon: Building2 },
-  { id: 'seo' as AdminSection, title: 'SEO', icon: Search },
+  { id: 'availability' as AdminSection, title: 'Availability', icon: Clock },
   { id: 'faqs' as AdminSection, title: 'FAQs', icon: HelpCircle },
   { id: 'users' as AdminSection, title: 'Users', icon: Users },
-  { id: 'availability' as AdminSection, title: 'Availability', icon: Clock },
+  { id: 'blog' as AdminSection, title: 'Blog', icon: FileText },
+  { id: 'seo' as AdminSection, title: 'SEO', icon: Search },
   { id: 'integrations' as AdminSection, title: 'Integrations', icon: Puzzle },
 ];
 
@@ -101,24 +102,19 @@ function AdminContent() {
   const [, setLocation] = useLocation();
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
   const [sectionsOrder, setSectionsOrder] = useState<AdminSection[]>(menuItems.map(item => item.id));
-  const [draggedSectionId, setDraggedSectionId] = useState<AdminSection | null>(null);
   const { toggleSidebar } = useSidebar();
+  const sidebarSensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     if (!loading && !isAdmin) {
       setLocation('/admin/login');
     }
   }, [loading, isAdmin, setLocation]);
-
-  const handleSectionDragStart = (e: React.DragEvent, id: AdminSection) => {
-    setDraggedSectionId(id);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleSectionDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
 
   const updateSectionOrder = useCallback(async (newOrder: AdminSection[]) => {
     setSectionsOrder(newOrder);
@@ -134,19 +130,18 @@ function AdminContent() {
     }
   }, [toast]);
 
-  const handleSectionDrop = (e: React.DragEvent, targetId: AdminSection) => {
-    e.preventDefault();
-    if (draggedSectionId === null || draggedSectionId === targetId) return;
+  const handleSidebarDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
 
-    const newOrder = [...sectionsOrder];
-    const draggedIndex = newOrder.indexOf(draggedSectionId);
-    const targetIndex = newOrder.indexOf(targetId);
-
-    newOrder.splice(draggedIndex, 1);
-    newOrder.splice(targetIndex, 0, draggedSectionId);
-
-    updateSectionOrder(newOrder);
-    setDraggedSectionId(null);
+    setSectionsOrder(prev => {
+      const oldIndex = prev.indexOf(active.id as AdminSection);
+      const newIndex = prev.indexOf(over.id as AdminSection);
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      const reordered = arrayMove(prev, oldIndex, newIndex);
+      updateSectionOrder(reordered);
+      return reordered;
+    });
   };
 
   const { data: companySettings } = useQuery<CompanySettingsData>({
@@ -157,8 +152,9 @@ function AdminContent() {
     if (companySettings?.sectionsOrder && companySettings.sectionsOrder.length > 0) {
       const savedOrder = companySettings.sectionsOrder as AdminSection[];
       const allSectionIds = menuItems.map(item => item.id);
-      const missingSections = allSectionIds.filter(id => !savedOrder.includes(id));
-      setSectionsOrder([...savedOrder, ...missingSections]);
+      const validSaved = savedOrder.filter(id => allSectionIds.includes(id));
+      const missingSections = allSectionIds.filter(id => !validSaved.includes(id));
+      setSectionsOrder([...validSaved, ...missingSections]);
     }
   }, [companySettings?.sectionsOrder]);
 
@@ -211,40 +207,27 @@ function AdminContent() {
         <SidebarContent className="p-2 bg-[#ffffff]">
           <SidebarGroup>
             <SidebarGroupContent>
-              <SidebarMenu>
-                {sectionsOrder.map((sectionId) => {
-                  const item = menuItems.find(i => i.id === sectionId)!;
-                  return (
-                    <SidebarMenuItem 
-                      key={item.id}
-                      draggable
-                      onDragStart={(e) => handleSectionDragStart(e, item.id)}
-                      onDragOver={handleSectionDragOver}
-                      onDrop={(e) => handleSectionDrop(e, item.id)}
-                      onDragEnd={() => setDraggedSectionId(null)}
-                      className={clsx(
-                        "transition-all",
-                        draggedSectionId === item.id && "opacity-50"
-                      )}
-                    >
-                      <SidebarMenuButton
-                        onClick={() => {
-                          setActiveSection(item.id);
-                        }}
-                        isActive={activeSection === item.id}
-                        data-testid={`nav-${item.id}`}
-                        className="group/btn"
-                      >
-                        <div className="flex items-center gap-2 flex-1">
-                          <GripVertical className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover/btn:opacity-100 transition-opacity cursor-grab active:cursor-grabbing" />
-                          <item.icon className="w-4 h-4" />
-                          <span>{item.title}</span>
-                        </div>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
+              <DndContext
+                sensors={sidebarSensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleSidebarDragEnd}
+              >
+                <SortableContext items={sectionsOrder} strategy={verticalListSortingStrategy}>
+                  <SidebarMenu>
+                    {sectionsOrder.map((sectionId) => {
+                      const item = menuItems.find(i => i.id === sectionId)!;
+                      return (
+                        <SidebarSortableItem
+                          key={item.id}
+                          item={item}
+                          isActive={activeSection === item.id}
+                          onSelect={() => setActiveSection(item.id)}
+                        />
+                      );
+                    })}
+                  </SidebarMenu>
+                </SortableContext>
+              </DndContext>
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
@@ -268,7 +251,7 @@ function AdminContent() {
         </SidebarFooter>
       </Sidebar>
 
-      <main className="flex-1 min-w-0 overflow-auto relative">
+        <main className="flex-1 min-w-0 overflow-auto relative" id="admin-top">
         <header className="md:hidden sticky top-0 z-50 bg-white border-b border-gray-200 p-4 flex items-center gap-4">
           <SidebarTrigger className="bg-white shadow-sm border border-gray-200 rounded-lg p-2 h-10 w-10 shrink-0" />
           <button
@@ -279,10 +262,19 @@ function AdminContent() {
             Admin Panel
           </button>
         </header>
-        <div className="p-6 md:p-8">
-          {activeSection === 'dashboard' && <DashboardSection />}
+      <div className="p-6 md:p-8">
+        {activeSection === 'dashboard' && (
+          <DashboardSection 
+            goToBookings={() => {
+              if (!sectionsOrder.includes('bookings')) {
+                setSectionsOrder(prev => [...prev, 'bookings']);
+              }
+              setActiveSection('bookings');
+              document.getElementById('admin-top')?.scrollIntoView({ behavior: 'smooth' });
+            }}
+          />
+        )}
           {activeSection === 'categories' && <CategoriesSection />}
-          {activeSection === 'subcategories' && <SubcategoriesSection />}
           {activeSection === 'services' && <ServicesSection />}
           {activeSection === 'bookings' && <BookingsSection />}
           {activeSection === 'hero' && <HeroSettingsSection />}
@@ -317,7 +309,7 @@ export default function Admin() {
   );
 }
 
-function DashboardSection() {
+function DashboardSection({ goToBookings }: { goToBookings: () => void }) {
   const { data: categories } = useQuery<Category[]>({ queryKey: ['/api/categories'] });
   const { data: services } = useQuery<Service[]>({ queryKey: ['/api/services'] });
   const { data: bookings } = useQuery<Booking[]>({ queryKey: ['/api/bookings'] });
@@ -351,8 +343,11 @@ function DashboardSection() {
       </div>
 
       <div className="bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between gap-4">
           <h2 className="text-lg font-semibold">Recent Bookings</h2>
+          <Button variant="outline" size="sm" onClick={goToBookings}>
+            Go to Bookings
+          </Button>
         </div>
         <div className="p-6">
           {bookings?.length === 0 ? (
@@ -367,13 +362,19 @@ function DashboardSection() {
                     </div>
                     <div>
                       <p className="font-medium">{booking.customerName}</p>
-                      <p className="text-xs text-muted-foreground">{format(new Date(booking.bookingDate), "MMM dd, yyyy")}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(booking.bookingDate), "MMM dd, yyyy")} • {booking.startTime} - {booking.endTime}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate max-w-[220px]">{booking.customerAddress}</p>
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right space-y-1">
                     <p className="font-bold">${booking.totalPrice}</p>
-                    <Badge variant={booking.status === 'confirmed' ? 'default' : 'secondary'} className="text-xs">
+                    <Badge variant={booking.status === 'confirmed' ? 'default' : booking.status === 'completed' ? 'secondary' : 'destructive'} className="text-xs capitalize">
                       {booking.status}
+                    </Badge>
+                    <Badge variant="outline" className="text-[11px] border-0 bg-slate-50 dark:bg-slate-800">
+                      {booking.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
                     </Badge>
                   </div>
                 </div>
@@ -1356,7 +1357,16 @@ function CategoriesSection() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [orderedCategories, setOrderedCategories] = useState<Category[]>([]);
-  const [draggedId, setDraggedId] = useState<number | null>(null);
+  const [isSubDialogOpen, setIsSubDialogOpen] = useState(false);
+  const [selectedCategoryForSubs, setSelectedCategoryForSubs] = useState<Category | null>(null);
+  const [editingSubcategory, setEditingSubcategory] = useState<Subcategory | null>(null);
+  const [subName, setSubName] = useState('');
+  const reorderSensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const { data: categories, isLoading } = useQuery<Category[]>({
     queryKey: ['/api/categories']
@@ -1366,9 +1376,19 @@ function CategoriesSection() {
     queryKey: ['/api/services']
   });
 
+  const { data: subcategories } = useQuery<Subcategory[]>({
+    queryKey: ['/api/subcategories']
+  });
+
   useEffect(() => {
     if (categories) {
-      setOrderedCategories(categories);
+      const sorted = [...categories].sort((a, b) => {
+        const orderA = a.order ?? 0;
+        const orderB = b.order ?? 0;
+        if (orderA === orderB) return a.id - b.id;
+        return orderA - orderB;
+      });
+      setOrderedCategories(sorted);
     }
   }, [categories]);
 
@@ -1418,54 +1438,107 @@ function CategoriesSection() {
     return services?.filter(s => s.categoryId === categoryId).length || 0;
   };
 
-  const handleDragStart = (e: React.DragEvent, id: number) => {
-    setDraggedId(id);
-    e.dataTransfer.effectAllowed = 'move';
+  const createSubcategory = useMutation({
+    mutationFn: async (data: { name: string; slug: string; categoryId: number }) => {
+      return apiRequest('POST', '/api/subcategories', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/subcategories'] });
+      toast({ title: 'Subcategory created successfully' });
+      setEditingSubcategory(null);
+      setSubName('');
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to create subcategory', description: error.message, variant: 'destructive' });
+    }
+  });
+
+  const updateSubcategory = useMutation({
+    mutationFn: async (data: { id: number; name: string; slug: string; categoryId: number }) => {
+      return apiRequest('PUT', `/api/subcategories/${data.id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/subcategories'] });
+      toast({ title: 'Subcategory updated successfully' });
+      setEditingSubcategory(null);
+      setSubName('');
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to update subcategory', description: error.message, variant: 'destructive' });
+    }
+  });
+
+  const deleteSubcategory = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest('DELETE', `/api/subcategories/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/subcategories'] });
+      toast({ title: 'Subcategory deleted successfully' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to delete subcategory', description: error.message, variant: 'destructive' });
+    }
+  });
+
+  const handleOpenSubDialog = (category: Category) => {
+    setSelectedCategoryForSubs(category);
+    setEditingSubcategory(null);
+    setSubName('');
+    setIsSubDialogOpen(true);
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleSaveSubcategory = (e: React.FormEvent) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleDrop = async (e: React.DragEvent, targetId: number) => {
-    e.preventDefault();
-    if (draggedId === null || draggedId === targetId) return;
-
-    const newOrder = [...orderedCategories];
-    const draggedIndex = newOrder.findIndex(c => c.id === draggedId);
-    const targetIndex = newOrder.findIndex(c => c.id === targetId);
-
-    const [draggedItem] = newOrder.splice(draggedIndex, 1);
-    newOrder.splice(targetIndex, 0, draggedItem);
-
-    // Update local state immediately for UI responsiveness
-    setOrderedCategories(newOrder);
-    setDraggedId(null);
-
-    // Persist to backend
-    try {
-      const reorderPayload = newOrder.map((cat, index) => ({
-        id: cat.id,
-        order: index
-      }));
-      
-      await apiRequest('PUT', '/api/categories/reorder', { order: reorderPayload });
-      queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
-      toast({ title: 'Category order updated' });
-    } catch (error: any) {
-      toast({ 
-        title: 'Failed to update order', 
-        description: error.message, 
-        variant: 'destructive' 
-      });
-      // Revert local state on failure
-      setOrderedCategories(categories || []);
+    if (!selectedCategoryForSubs) return;
+    const payload = {
+      name: subName,
+      slug: subName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+      categoryId: selectedCategoryForSubs.id,
+    };
+    if (editingSubcategory) {
+      updateSubcategory.mutate({ ...payload, id: editingSubcategory.id });
+    } else {
+      createSubcategory.mutate(payload);
     }
   };
 
-  const handleDragEnd = () => {
-    setDraggedId(null);
+  const categorySubcategories = selectedCategoryForSubs
+    ? subcategories?.filter(sub => sub.categoryId === selectedCategoryForSubs.id)
+    : [];
+
+  const handleCategoryDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    setOrderedCategories(prev => {
+      const oldIndex = prev.findIndex(c => c.id === Number(active.id));
+      const newIndex = prev.findIndex(c => c.id === Number(over.id));
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      const previous = prev;
+      const reordered = arrayMove(prev, oldIndex, newIndex);
+
+      const reorderPayload = reordered.map((cat, index) => ({
+        id: cat.id,
+        order: index
+      }));
+
+      apiRequest('PUT', '/api/categories/reorder', { order: reorderPayload })
+        .then(() => {
+          queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
+          toast({ title: 'Category order updated' });
+        })
+        .catch((error: any) => {
+          toast({
+            title: 'Failed to update order',
+            description: error.message,
+            variant: 'destructive'
+          });
+          setOrderedCategories(previous);
+        });
+
+      return reordered;
+    });
   };
 
   if (isLoading) {
@@ -1509,125 +1582,143 @@ function CategoriesSection() {
           <p className="text-muted-foreground mb-4">Create your first category to get started</p>
         </Card>
       ) : (
-        <div className="grid gap-3">
-          {orderedCategories?.map((category) => (
-            <div
-              key={category.id}
-              draggable
-              onDragStart={(e) => handleDragStart(e, category.id)}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, category.id)}
-              onDragEnd={handleDragEnd}
-              className={clsx(
-                "flex w-full min-w-0 flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 rounded-lg bg-slate-100 dark:bg-slate-800 cursor-grab active:cursor-grabbing transition-all",
-                draggedId === category.id && "opacity-50 scale-[0.98]"
-              )}
-              data-testid={`category-item-${category.id}`}
-            >
-              <div className="flex min-w-0 items-center gap-3 sm:contents">
-                <div className="text-muted-foreground cursor-grab">
-                  <GripVertical className="w-5 h-5" />
-                </div>
-                {category.imageUrl && (
-                  <img
-                    src={category.imageUrl}
-                    alt={category.name}
-                    className="w-16 h-12 sm:w-24 sm:aspect-[4/3] rounded-[2px] object-cover flex-shrink-0"
-                  />
-                )}
-                <div className="flex-1 min-w-0 sm:hidden">
-                  <h3 className="font-semibold truncate">{category.name}</h3>
-                  <Badge variant="secondary" className="mt-1">
-                    {getServiceCount(category.id)} services
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-1 sm:hidden ml-auto">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => { setEditingCategory(category); setIsDialogOpen(true); }}
-                    data-testid={`button-edit-category-${category.id}-mobile`}
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" data-testid={`button-delete-category-${category.id}-mobile`}>
-                        <Trash2 className="w-4 h-4 text-red-500" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Category?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          {getServiceCount(category.id) > 0
-                            ? `This category has ${getServiceCount(category.id)} services. You must delete or reassign them first.`
-                            : 'This action cannot be undone.'}
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => deleteCategory.mutate(category.id)}
-                          disabled={getServiceCount(category.id) > 0}
-                          className="bg-red-500 hover:bg-red-600"
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </div>
-              <div className="hidden sm:block flex-1 min-w-0">
-                <h3 className="font-semibold text-lg truncate">{category.name}</h3>
-                <p className="text-sm text-muted-foreground truncate">{category.description}</p>
-                <Badge variant="secondary" className="mt-2">
-                  {getServiceCount(category.id)} services
-                </Badge>
-              </div>
-              <p className="text-sm text-muted-foreground line-clamp-2 break-words sm:hidden">{category.description}</p>
-              <div className="hidden sm:flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => { setEditingCategory(category); setIsDialogOpen(true); }}
-                  data-testid={`button-edit-category-${category.id}`}
-                >
-                  <Pencil className="w-4 h-4" />
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="icon" data-testid={`button-delete-category-${category.id}`}>
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Category?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        {getServiceCount(category.id) > 0 
-                          ? `This category has ${getServiceCount(category.id)} services. You must delete or reassign them first.`
-                          : 'This action cannot be undone.'}
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction 
-                        onClick={() => deleteCategory.mutate(category.id)}
-                        disabled={getServiceCount(category.id) > 0}
-                        className="bg-red-500 hover:bg-red-600"
-                      >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
+        <DndContext
+          sensors={reorderSensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleCategoryDragEnd}
+        >
+          <SortableContext
+            items={orderedCategories.map(cat => cat.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="grid gap-3">
+              {orderedCategories?.map((category, index) => (
+                <CategoryReorderRow
+                  key={category.id}
+                  category={category}
+                  serviceCount={getServiceCount(category.id)}
+                  onEdit={() => { setEditingCategory(category); setIsDialogOpen(true); }}
+                  onDelete={() => deleteCategory.mutate(category.id)}
+                  disableDelete={getServiceCount(category.id) > 0}
+                  index={index}
+                  onManageSubcategories={() => handleOpenSubDialog(category)}
+                  subcategories={subcategories}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       )}
+
+      <Dialog open={isSubDialogOpen} onOpenChange={(open) => {
+        setIsSubDialogOpen(open);
+        if (!open) {
+          setSelectedCategoryForSubs(null);
+          setEditingSubcategory(null);
+          setSubName('');
+        }
+      }}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>
+              Manage subcategories {selectedCategoryForSubs ? `for ${selectedCategoryForSubs.name}` : ''}
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleSaveSubcategory} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="subcategory-name-inline">Name</Label>
+              <Input
+                id="subcategory-name-inline"
+                value={subName}
+                onChange={(e) => setSubName(e.target.value)}
+                required
+                data-testid="input-subcategory-name-inline"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <DialogClose asChild>
+                <Button type="button" variant="outline">Cancel</Button>
+              </DialogClose>
+              <Button
+                type="submit"
+                disabled={
+                  !subName ||
+                  createSubcategory.isPending ||
+                  updateSubcategory.isPending ||
+                  !selectedCategoryForSubs
+                }
+              >
+                {(createSubcategory.isPending || updateSubcategory.isPending) && (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                )}
+                {editingSubcategory ? 'Update subcategory' : 'Add subcategory'}
+              </Button>
+            </div>
+          </form>
+
+          <div className="mt-6 space-y-3 max-h-80 overflow-y-auto pr-1">
+            {categorySubcategories && categorySubcategories.length > 0 ? (
+              categorySubcategories.map((subcategory) => (
+                <div
+                  key={subcategory.id}
+                  className="flex items-center gap-3 p-3 rounded-md border border-gray-200 dark:border-slate-700"
+                  data-testid={`subcategory-item-${subcategory.id}`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{subcategory.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {services?.filter(s => s.subcategoryId === subcategory.id).length || 0} services
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setEditingSubcategory(subcategory);
+                        setSubName(subcategory.name);
+                      }}
+                      data-testid={`button-edit-subcategory-${subcategory.id}`}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" data-testid={`button-delete-subcategory-${subcategory.id}`}>
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Subcategory?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {(services?.filter(s => s.subcategoryId === subcategory.id).length || 0) > 0
+                              ? 'This subcategory has services. Delete or reassign them first.'
+                              : 'This action cannot be undone.'}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => deleteSubcategory.mutate(subcategory.id)}
+                            disabled={(services?.filter(s => s.subcategoryId === subcategory.id).length || 0) > 0}
+                            className="bg-red-500 hover:bg-red-600"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground">No subcategories yet.</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -1983,6 +2074,8 @@ function ServicesSection() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [orderedServices, setOrderedServices] = useState<Service[]>([]);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const { data: categories } = useQuery<Category[]>({
     queryKey: ['/api/categories']
@@ -2001,6 +2094,13 @@ function ServicesSection() {
     queryKey: ['/api/service-addons'],
     queryFn: () => fetch('/api/service-addons').then(r => r.json())
   });
+
+  const reorderSensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const createService = useMutation({
     mutationFn: async (data: Omit<Service, 'id'> & { addonIds?: number[] }) => {
@@ -2057,14 +2157,94 @@ function ServicesSection() {
     }
   });
 
-  const filteredServices = services?.filter(service => {
-    const matchesCategory = filterCategory === 'all' || service.categoryId === Number(filterCategory);
-    const matchesSearch = service.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+  const reorderServices = useMutation<Service[], Error, { id: number; order: number }[]>({
+    mutationFn: async (orderData: { id: number; order: number }[]) => {
+      const res = await apiRequest('PUT', '/api/services/reorder', { order: orderData });
+      return res.json();
+    },
+    onError: (error: Error) => {
+      // Refetch to restore correct order on error
+      queryClient.invalidateQueries({ queryKey: ['/api/services'] });
+      toast({ title: 'Failed to reorder services', description: error.message, variant: 'destructive' });
+    },
+    onSuccess: (data) => {
+      const sorted = [...(data || [])].sort((a, b) => {
+        const oa = a.order ?? 0;
+        const ob = b.order ?? 0;
+        return oa !== ob ? oa - ob : a.id - b.id;
+      });
+      // Update local state and cache directly without refetching
+      setOrderedServices(sorted);
+      queryClient.setQueryData(['/api/services', { includeHidden: true }], sorted);
+      queryClient.setQueryData(['/api/services'], sorted.filter(s => !s.isHidden));
+      toast({ title: 'Service order updated' });
+    }
   });
+
+  const filteredServices = useMemo(() => {
+    const base = orderedServices.length > 0 ? orderedServices : services || [];
+    const filtered = base.filter(service => {
+      const matchesCategory = filterCategory === 'all' || service.categoryId === Number(filterCategory);
+      const matchesSearch = service.name.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+    return filtered.sort((a, b) => {
+      const orderA = a.order ?? 0;
+      const orderB = b.order ?? 0;
+      if (orderA === orderB) return a.id - b.id;
+      return orderA - orderB;
+    });
+  }, [services, filterCategory, searchQuery, orderedServices]);
 
   const getCategoryName = (categoryId: number) => {
     return categories?.find(c => c.id === categoryId)?.name || 'Unknown';
+  };
+
+  const orderedServicesRef = useRef(orderedServices);
+  orderedServicesRef.current = orderedServices;
+
+  useEffect(() => {
+    // Only sync from server on initial load or when services list changes (add/delete)
+    // Skip during reorder operations to avoid flicker
+    if (!services || reorderServices.isPending) return;
+
+    const current = orderedServicesRef.current;
+
+    // Check if this is just a reorder (same IDs, different order) - skip sync
+    if (current.length > 0) {
+      const currentIds = current.map(s => s.id);
+      const newIds = new Set(services.map(s => s.id));
+      const sameServices = currentIds.length === newIds.size &&
+        currentIds.every(id => newIds.has(id));
+      if (sameServices) return;
+    }
+
+    const sorted = [...services].sort((a, b) => {
+      const orderA = a.order ?? 0;
+      const orderB = b.order ?? 0;
+      if (orderA === orderB) return a.id - b.id;
+      return orderA - orderB;
+    });
+    setOrderedServices(sorted);
+  }, [services, reorderServices.isPending]);
+
+  const handleServiceDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = orderedServices.findIndex(item => item.id === Number(active.id));
+    const newIndex = orderedServices.findIndex(item => item.id === Number(over.id));
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(orderedServices, oldIndex, newIndex);
+    const withOrder = reordered.map((svc, index) => ({ ...svc, order: index }));
+
+    // Optimistically update local state for immediate visual feedback
+    setOrderedServices(withOrder);
+
+    // Send only the id and order to the server
+    const orderData = withOrder.map(svc => ({ id: svc.id, order: svc.order as number }));
+    reorderServices.mutate(orderData);
   };
 
   if (isLoading) {
@@ -2073,20 +2253,21 @@ function ServicesSection() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Services</h1>
-          <p className="text-muted-foreground">Manage your cleaning services</p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold">Services</h1>
+        <p className="text-muted-foreground">Manage your cleaning services</p>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
         <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingService(null); }}>
           <DialogTrigger asChild>
-            <Button data-testid="button-add-service">
-              <Plus className="w-4 h-4 mr-2" />
+            <Button size="sm" data-testid="button-add-service">
+              <Plus className="w-4 h-4 mr-1.5" />
               Add Service
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg">
-            <ServiceForm 
+            <ServiceForm
               service={editingService}
               categories={categories || []}
               subcategories={subcategories || []}
@@ -2103,18 +2284,33 @@ function ServicesSection() {
             />
           </DialogContent>
         </Dialog>
-      </div>
-
-      <div className="flex flex-col sm:flex-row gap-4">
-        <Input 
-          placeholder="Search services..." 
+        <div className="flex items-center gap-1.5">
+          <Button
+            variant={viewMode === 'grid' ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode('grid')}
+          >
+            <LayoutGrid className="w-4 h-4 mr-1.5" />
+            Grid
+          </Button>
+          <Button
+            variant={viewMode === 'list' ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode('list')}
+          >
+            <List className="w-4 h-4 mr-1.5" />
+            List
+          </Button>
+        </div>
+        <Input
+          placeholder="Search services..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="max-w-xs"
+          className="max-w-xs h-9"
           data-testid="input-search-services"
         />
         <Select value={filterCategory} onValueChange={setFilterCategory}>
-          <SelectTrigger className="w-[200px]" data-testid="select-filter-category">
+          <SelectTrigger className="w-[180px] h-9" data-testid="select-filter-category">
             <SelectValue placeholder="Filter by category" />
           </SelectTrigger>
           <SelectContent>
@@ -2135,71 +2331,492 @@ function ServicesSection() {
           </p>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-          {filteredServices?.map((service) => (
-            <div key={service.id} className="overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800 transition-all">
-              {service.imageUrl && (
-                <div className="w-full aspect-[4/3] overflow-hidden">
-                  <img src={service.imageUrl} alt={service.name} className="w-full h-full object-cover" />
-                </div>
-              )}
-              <div className="p-4">
-                <div className="flex flex-col gap-2 mb-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-semibold text-lg line-clamp-1">{service.name}</h3>
-                    {service.isHidden && <Badge variant="secondary" className="text-xs border-0 bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">Add-on Only</Badge>}
-                  </div>
-                  <div className="text-2xl font-bold text-primary">${service.price}</div>
-                </div>
-                <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{service.description}</p>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Clock className="w-4 h-4" />
-                    <span>{Math.floor(service.durationMinutes / 60)}h {service.durationMinutes % 60}m</span>
-                  </div>
-                  <Badge variant="secondary" className="border-0 bg-slate-200 dark:bg-slate-700">{getCategoryName(service.categoryId)}</Badge>
-                </div>
-                <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => { setEditingService(service); setIsDialogOpen(true); }}
-                    className="flex-1 bg-white dark:bg-slate-900 border-0"
-                    data-testid={`button-edit-service-${service.id}`}
-                  >
-                    <Pencil className="w-4 h-4 mr-2" />
-                    Edit
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="bg-white dark:bg-slate-900 border-0" data-testid={`button-delete-service-${service.id}`}>
-                        <Trash2 className="w-4 h-4 text-red-500" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Service?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will permanently delete "{service.name}". This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction 
-                          onClick={() => deleteService.mutate(service.id)}
-                          className="bg-red-500 hover:bg-red-600 border-0"
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
+        <DndContext
+          sensors={reorderSensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleServiceDragEnd}
+        >
+          <SortableContext
+            items={filteredServices.map(s => s.id)}
+            strategy={viewMode === 'grid' ? rectSortingStrategy : verticalListSortingStrategy}
+          >
+            {viewMode === 'grid' ? (
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+                {filteredServices?.map((service) => (
+                  <ServiceGridItem
+                    key={service.id}
+                    service={service}
+                    categoryName={getCategoryName(service.categoryId)}
+                    onEdit={() => { setEditingService(service); setIsDialogOpen(true); }}
+                    onDelete={() => deleteService.mutate(service.id)}
+                  />
+                ))}
               </div>
-            </div>
-          ))}
+            ) : (
+              <div className="space-y-3">
+                {filteredServices?.map((service, index) => (
+                  <ServiceListRow
+                    key={service.id}
+                    service={service}
+                    categoryName={getCategoryName(service.categoryId)}
+                    onEdit={() => { setEditingService(service); setIsDialogOpen(true); }}
+                    onDelete={() => deleteService.mutate(service.id)}
+                    index={index}
+                  />
+                ))}
+              </div>
+            )}
+          </SortableContext>
+        </DndContext>
+      )}
+    </div>
+  );
+}
+
+function SidebarSortableItem({
+  item,
+  isActive,
+  onSelect,
+}: {
+  item: typeof menuItems[number];
+  isActive: boolean;
+  onSelect: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      className={clsx(
+        "group/menu-item relative transition-all",
+        isDragging && "opacity-60 ring-2 ring-primary/30 rounded-md"
+      )}
+    >
+      <SidebarMenuButton
+        onClick={onSelect}
+        isActive={isActive}
+        data-testid={`nav-${item.id}`}
+        className="group/btn"
+      >
+        <div className="flex items-center gap-2 flex-1">
+          <span
+            className="p-1 -ml-1 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing opacity-0 group-hover/btn:opacity-100 transition-opacity"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="w-3.5 h-3.5" />
+          </span>
+          <item.icon className="w-4 h-4" />
+          <span>{item.title}</span>
+        </div>
+      </SidebarMenuButton>
+    </li>
+  );
+}
+
+function ServiceGridItem({
+  service,
+  categoryName,
+  onEdit,
+  onDelete,
+}: {
+  service: Service;
+  categoryName: string;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: service.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  const durationLabel = `${Math.floor(service.durationMinutes / 60)}h ${service.durationMinutes % 60}m`;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={clsx(
+        "group relative overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700 transition-all",
+        isDragging && "ring-2 ring-primary/40 shadow-lg bg-white dark:bg-slate-800/80"
+      )}
+    >
+      <button
+        className="absolute top-2 left-2 z-20 p-2 text-muted-foreground hover:text-foreground bg-white/80 dark:bg-slate-900/70 rounded-md shadow-sm cursor-grab active:cursor-grabbing"
+        {...attributes}
+        {...listeners}
+        aria-label="Drag to reorder"
+      >
+        <GripVertical className="w-4 h-4" />
+      </button>
+      {service.imageUrl ? (
+        <div className="w-full aspect-[4/3] overflow-hidden">
+          <img
+            src={service.imageUrl}
+            alt={service.name}
+            className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+          />
+        </div>
+      ) : (
+        <div className="w-full aspect-[4/3] bg-slate-200 flex items-center justify-center text-muted-foreground">
+          <Package className="w-5 h-5" />
         </div>
       )}
+      <div className="p-4 space-y-3">
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="font-semibold text-lg leading-tight line-clamp-1 pr-6">{service.name}</h3>
+          {service.isHidden && (
+            <Badge variant="secondary" className="text-[11px] border-0 bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200">
+              Add-on Only
+            </Badge>
+          )}
+        </div>
+        <div className="text-2xl font-bold text-primary">${service.price}</div>
+        <Badge variant="secondary" className="w-fit border-0 bg-slate-200 dark:bg-slate-700">
+          {categoryName}
+        </Badge>
+        <p className="text-sm text-muted-foreground line-clamp-2">{service.description}</p>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Clock className="w-4 h-4" />
+          <span>{durationLabel}</span>
+        </div>
+        <div className="flex items-center gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onEdit}
+            className="flex-1 bg-white dark:bg-slate-900 border-0"
+            data-testid={`button-edit-service-${service.id}`}
+          >
+            <Pencil className="w-4 h-4 mr-2" />
+            Edit
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" className="bg-white dark:bg-slate-900 border-0" data-testid={`button-delete-service-${service.id}`}>
+                <Trash2 className="w-4 h-4 text-red-500" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Service?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete "{service.name}". This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={onDelete}
+                  className="bg-red-500 hover:bg-red-600 border-0"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ServiceListRow({
+  service,
+  categoryName,
+  onEdit,
+  onDelete,
+  index,
+}: {
+  service: Service;
+  categoryName: string;
+  onEdit: () => void;
+  onDelete: () => void;
+  index: number;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: service.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  const durationLabel = `${Math.floor(service.durationMinutes / 60)}h ${service.durationMinutes % 60}m`;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={clsx(
+        "flex flex-col sm:flex-row gap-3 p-3 rounded-lg bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-700 shadow-sm",
+        isDragging && "ring-2 ring-primary/40 shadow-md"
+      )}
+    >
+      <div className="flex items-center gap-3">
+        <button
+          className="p-2 text-muted-foreground hover:text-foreground rounded-md cursor-grab active:cursor-grabbing self-center"
+          {...attributes}
+          {...listeners}
+          aria-label="Drag to reorder"
+        >
+          <GripVertical className="w-4 h-4" />
+        </button>
+        <div className="w-28 sm:w-32 aspect-[4/3] rounded-md overflow-hidden bg-slate-200 dark:bg-slate-800 flex-shrink-0">
+          {service.imageUrl ? (
+            <img src={service.imageUrl} alt={service.name} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+              <Package className="w-5 h-5" />
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex-1 min-w-0 flex flex-col gap-2">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="font-semibold text-base leading-tight line-clamp-1">{service.name}</h3>
+            <p className="text-xs text-muted-foreground line-clamp-2">{service.description}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-[11px] border-0 bg-slate-200 dark:bg-slate-700">#{index + 1}</Badge>
+            {service.isHidden && (
+              <Badge variant="secondary" className="text-[11px] border-0 bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200">
+                Add-on Only
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-4 text-sm">
+          <span className="font-semibold text-primary">${service.price}</span>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Clock className="w-4 h-4" />
+            <span>{durationLabel}</span>
+          </div>
+          <Badge variant="secondary" className="w-fit border-0 bg-slate-200 dark:bg-slate-700">
+            {categoryName}
+          </Badge>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onEdit}
+            className="bg-white dark:bg-slate-800 border-0"
+            data-testid={`button-edit-service-${service.id}`}
+          >
+            <Pencil className="w-4 h-4 mr-2" />
+            Edit
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" className="bg-white dark:bg-slate-800 border-0" data-testid={`button-delete-service-${service.id}`}>
+                <Trash2 className="w-4 h-4 text-red-500" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Service?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete "{service.name}". This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={onDelete}
+                  className="bg-red-500 hover:bg-red-600 border-0"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CategoryReorderRow({
+  category,
+  serviceCount,
+  onEdit,
+  onDelete,
+  disableDelete,
+  index,
+  onManageSubcategories,
+  subcategories,
+}: {
+  category: Category;
+  serviceCount: number;
+  onEdit: () => void;
+  onDelete: () => void;
+  disableDelete: boolean;
+  index: number;
+  onManageSubcategories: () => void;
+  subcategories?: Subcategory[];
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: category.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={clsx(
+        "flex w-full min-w-0 flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 rounded-lg bg-slate-100 dark:bg-slate-800 border border-gray-200/70 dark:border-slate-700 cursor-grab active:cursor-grabbing transition-all shadow-sm",
+        isDragging && "ring-2 ring-primary/40 shadow-md"
+      )}
+      data-testid={`category-item-${category.id}`}
+    >
+      <div className="flex min-w-0 items-center gap-3 sm:contents">
+        <button
+          className="text-muted-foreground cursor-grab p-2 -ml-2"
+          {...attributes}
+          {...listeners}
+          aria-label="Drag to reorder category"
+        >
+          <GripVertical className="w-4 h-4" />
+        </button>
+        {category.imageUrl ? (
+          <img
+            src={category.imageUrl}
+            alt={category.name}
+            className="w-16 aspect-[4/3] sm:w-24 rounded-[2px] object-cover flex-shrink-0"
+          />
+        ) : (
+          <div className="w-16 aspect-[4/3] sm:w-24 rounded-[2px] bg-slate-200 flex items-center justify-center text-muted-foreground flex-shrink-0">
+            <FolderOpen className="w-4 h-4" />
+          </div>
+        )}
+        <div className="flex-1 min-w-0 sm:hidden">
+          <h3 className="font-semibold truncate">{category.name}</h3>
+          <Badge variant="secondary" className="mt-1">
+            {serviceCount} services
+          </Badge>
+          <Badge variant="outline" className="mt-1 border-0 bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100">
+            {(subcategories?.filter(sub => sub.categoryId === category.id).length) ?? 0} subcategories
+          </Badge>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-2"
+            onClick={onManageSubcategories}
+          >
+            Manage subcategories
+          </Button>
+        </div>
+        <div className="flex items-center gap-1 sm:hidden ml-auto">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onEdit}
+            data-testid={`button-edit-category-${category.id}-mobile`}
+          >
+            <Pencil className="w-4 h-4" />
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="icon" data-testid={`button-delete-category-${category.id}-mobile`}>
+                <Trash2 className="w-4 h-4 text-red-500" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Category?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {disableDelete
+                    ? `This category has ${serviceCount} services. You must delete or reassign them first.`
+                    : 'This action cannot be undone.'}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={onDelete}
+                  disabled={disableDelete}
+                  className="bg-red-500 hover:bg-red-600"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </div>
+      <div className="hidden sm:flex flex-1 min-w-0 items-center gap-4">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-lg truncate">{category.name}</h3>
+          <p className="text-sm text-muted-foreground truncate">{category.description}</p>
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
+            <Badge variant="secondary">
+              {serviceCount} services
+            </Badge>
+            <Badge variant="outline" className="border-0 bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100">
+              {(subcategories?.filter(sub => sub.categoryId === category.id).length) ?? 0} subcategories
+            </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onManageSubcategories}
+            >
+              Manage subcategories
+            </Button>
+          </div>
+        </div>
+        <Badge variant="secondary" className="border-0 bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100 shrink-0 self-center">
+          #{index + 1}
+        </Badge>
+      </div>
+      <p className="text-sm text-muted-foreground line-clamp-2 break-words sm:hidden">{category.description}</p>
+      <div className="hidden sm:flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onEdit}
+          data-testid={`button-edit-category-${category.id}`}
+        >
+          <Pencil className="w-4 h-4" />
+        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="ghost" size="icon" data-testid={`button-delete-category-${category.id}`}>
+              <Trash2 className="w-4 h-4 text-red-500" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Category?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {disableDelete
+                  ? `This category has ${serviceCount} services. You must delete or reassign them first.`
+                  : 'This action cannot be undone.'}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={onDelete}
+                disabled={disableDelete}
+                className="bg-red-500 hover:bg-red-600"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </div>
   );
 }
@@ -2574,17 +3191,34 @@ function BookingRow({ booking, onUpdate, onDelete }: {
             </span>
           </div>
         </td>
-        <td className="px-6 py-4">
-          <Select value={booking.status} onValueChange={handleStatusChange}>
-            <SelectTrigger className="w-[120px] h-8 text-xs" data-testid={`select-status-${booking.id}`}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="confirmed">Confirmed</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-            </SelectContent>
-          </Select>
+        <td className="px-6 py-4 align-middle">
+          <div className="flex items-center min-h-[56px]">
+            <Select value={booking.status} onValueChange={handleStatusChange}>
+              <SelectTrigger className="w-[140px] h-10 text-xs" data-testid={`select-status-${booking.id}`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="confirmed">
+                  <span className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-blue-200 border border-blue-300" />
+                    Confirmed
+                  </span>
+                </SelectItem>
+                <SelectItem value="completed">
+                  <span className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-green-200 border border-green-300" />
+                    Completed
+                  </span>
+                </SelectItem>
+                <SelectItem value="cancelled">
+                  <span className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-200 border border-red-300" />
+                    Cancelled
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </td>
         <td className="px-6 py-4">
           <button
@@ -2608,46 +3242,55 @@ function BookingRow({ booking, onUpdate, onDelete }: {
             ${booking.totalPrice}
           </span>
         </td>
-        <td className="px-6 py-4 text-right">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" data-testid={`button-delete-booking-${booking.id}`}>
-                <Trash2 className="w-4 h-4 text-red-500" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete Booking?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will permanently delete the booking for {booking.customerName}. This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction 
-                  onClick={() => onDelete(booking.id)}
-                  className="bg-red-500 hover:bg-red-600"
+        <td className="px-6 py-4 text-right align-middle">
+          <div className="flex items-center justify-end min-h-[56px]">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 items-center justify-center"
+                  data-testid={`button-delete-booking-${booking.id}`}
+                  aria-label="Delete booking"
                 >
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+                  <Trash2 className="w-4 h-4 text-red-500" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Booking?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete the booking for {booking.customerName}. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={() => onDelete(booking.id)}
+                    className="bg-red-500 hover:bg-red-600"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </td>
       </tr>
       {expanded && (
-        <tr className="bg-slate-50 dark:bg-slate-900/50">
+        <tr className="bg-slate-100 dark:bg-slate-800/60">
           <td colSpan={7} className="px-6 py-4">
             <div className="space-y-3">
               <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300">Booked Services</h4>
               {bookingItems && bookingItems.length > 0 ? (
-                <div className="grid gap-2">
+                <div className="divide-y divide-gray-200 dark:divide-slate-700">
                   {bookingItems.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-2 rounded bg-slate-100 dark:bg-slate-800">
+                    <div key={item.id} className="flex items-center justify-between py-2">
                       <span className="text-sm text-slate-700 dark:text-slate-300">{item.serviceName}</span>
                       <span className="text-sm font-medium text-slate-900 dark:text-slate-100">${item.price}</span>
                     </div>
                   ))}
+                  <div className="h-px bg-gray-200 dark:bg-slate-700" />
                 </div>
               ) : (
                 <p className="text-sm text-slate-500">Loading services...</p>

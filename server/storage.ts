@@ -31,7 +31,7 @@ import {
   type InsertIntegrationSettings,
   type InsertBlogPost,
 } from "@shared/schema";
-import { eq, and, gte, lte, inArray, desc, sql, ne } from "drizzle-orm";
+import { eq, and, gte, lte, inArray, desc, asc, sql, ne } from "drizzle-orm";
 import { z } from "zod";
 
 export const insertSubcategorySchema = z.object({
@@ -77,6 +77,7 @@ export interface IStorage {
   createService(service: InsertService): Promise<Service>;
   updateService(id: number, service: Partial<InsertService>): Promise<Service>;
   deleteService(id: number): Promise<void>;
+  reorderServices(order: { id: number; order: number }[]): Promise<void>;
   
   // Company Settings
   getCompanySettings(): Promise<CompanySettings>;
@@ -122,24 +123,36 @@ export class DatabaseStorage implements IStorage {
   async getServices(categoryId?: number, subcategoryId?: number, includeHidden: boolean = false): Promise<Service[]> {
     if (subcategoryId) {
       if (includeHidden) {
-        return await db.select().from(services).where(eq(services.subcategoryId, subcategoryId));
+        return await db
+          .select()
+          .from(services)
+          .where(eq(services.subcategoryId, subcategoryId))
+          .orderBy(asc(services.order), asc(services.id));
       }
-      return await db.select().from(services).where(
-        and(eq(services.subcategoryId, subcategoryId), eq(services.isHidden, false))
-      );
+      return await db
+        .select()
+        .from(services)
+        .where(and(eq(services.subcategoryId, subcategoryId), eq(services.isHidden, false)))
+        .orderBy(asc(services.order), asc(services.id));
     }
     if (categoryId) {
       if (includeHidden) {
-        return await db.select().from(services).where(eq(services.categoryId, categoryId));
+        return await db
+          .select()
+          .from(services)
+          .where(eq(services.categoryId, categoryId))
+          .orderBy(asc(services.order), asc(services.id));
       }
-      return await db.select().from(services).where(
-        and(eq(services.categoryId, categoryId), eq(services.isHidden, false))
-      );
+      return await db
+        .select()
+        .from(services)
+        .where(and(eq(services.categoryId, categoryId), eq(services.isHidden, false)))
+        .orderBy(asc(services.order), asc(services.id));
     }
     if (includeHidden) {
-      return await db.select().from(services);
+      return await db.select().from(services).orderBy(asc(services.order), asc(services.id));
     }
-    return await db.select().from(services).where(eq(services.isHidden, false));
+    return await db.select().from(services).where(eq(services.isHidden, false)).orderBy(asc(services.order), asc(services.id));
   }
 
   async getSubcategories(categoryId?: number): Promise<Subcategory[]> {
@@ -267,7 +280,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createService(service: InsertService): Promise<Service> {
-    const [newService] = await db.insert(services).values(service).returning();
+    let nextOrder = service.order;
+    if (nextOrder === undefined || nextOrder === null) {
+      const [{ maxOrder }] = await db
+        .select({ maxOrder: sql<number>`coalesce(max(${services.order}), 0)` })
+        .from(services);
+      nextOrder = Number(maxOrder ?? 0) + 1;
+    }
+    const [newService] = await db.insert(services).values({ ...service, order: nextOrder }).returning();
     return newService;
   }
 
@@ -278,6 +298,14 @@ export class DatabaseStorage implements IStorage {
 
   async deleteService(id: number): Promise<void> {
     await db.delete(services).where(eq(services.id, id));
+  }
+
+  async reorderServices(order: { id: number; order: number }[]): Promise<void> {
+    await db.transaction(async (tx) => {
+      for (const item of order) {
+        await tx.update(services).set({ order: item.order }).where(eq(services.id, item.id));
+      }
+    });
   }
 
   async getCompanySettings(): Promise<CompanySettings> {

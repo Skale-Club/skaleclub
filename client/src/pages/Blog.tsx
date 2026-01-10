@@ -22,6 +22,7 @@ export default function Blog() {
     isFetchingNextPage,
   } = useInfiniteQuery<BlogPost[]>({
     queryKey: ['/api/blog', 'published', POSTS_PER_PAGE],
+    initialPageParam: 0,
     queryFn: ({ pageParam = 0 }) =>
       fetch(`/api/blog?status=published&limit=${POSTS_PER_PAGE}&offset=${pageParam}`).then(r => r.json()),
     getNextPageParam: (lastPage, allPages) =>

@@ -333,6 +333,25 @@ Sitemap: ${canonicalUrl}/sitemap.xml
     }
   });
 
+  // IMPORTANT: This route must come BEFORE /api/services/:id to avoid route conflict
+  app.put('/api/services/reorder', requireAdmin, async (req, res) => {
+    try {
+      const orderData = z.array(z.object({
+        id: z.number(),
+        order: z.number()
+      })).parse(req.body.order);
+
+      await storage.reorderServices(orderData);
+      const updated = await storage.getServices(undefined, undefined, true);
+      res.json(updated);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
   app.put('/api/services/:id', requireAdmin, async (req, res) => {
     try {
       const validatedData = insertServiceSchema.partial().parse(req.body);

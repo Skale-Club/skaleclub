@@ -135,14 +135,14 @@ export default function Home() {
   return (
     <div className="pb-0">
       {/* Hero Section */}
-      <section className="relative flex items-center lg:items-end pt-6 lg:pt-4 pb-0 overflow-hidden bg-[#1C53A3] max-h-[85vh]">
+      <section className="relative flex items-center lg:items-end pt-6 lg:pt-4 pb-0 overflow-hidden bg-[#1C53A3] min-h-[65vh] sm:min-h-[50vh] lg:min-h-0 lg:max-h-[60vh]">
         <div className="container-custom mx-auto relative z-10 w-full">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-8 items-center lg:items-center">
             <div className="text-white pt-4 pb-2 lg:pt-12 lg:pb-12 relative z-20">
               <div className="mb-3 lg:mb-6">
-                <img 
-                  src="https://storage.googleapis.com/msgsndr/q6UKnlWOQwyTk82yZPAs/media/696016120597df5bbeeba997.png" 
-                  alt="Trusted Experts" 
+                <img
+                  src="https://storage.googleapis.com/msgsndr/q6UKnlWOQwyTk82yZPAs/media/696016120597df5bbeeba997.png"
+                  alt="Trusted Experts"
                   className="h-5 sm:h-6 w-auto object-contain"
                 />
               </div>
@@ -163,7 +163,7 @@ export default function Home() {
               </p>
               <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 flex-wrap">
                 <Link href="/services" className="w-full sm:w-auto shrink-0">
-                  <button 
+                  <button
                     className="w-full px-6 sm:px-8 py-3 sm:py-4 bg-[#FFFF01] hover:bg-[#e6e600] text-black font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
                     onClick={() => trackCTAClick('hero', companySettings?.ctaText || 'Get Instant Price')}
                     data-testid="button-hero-cta"
@@ -171,8 +171,8 @@ export default function Home() {
                     {companySettings?.ctaText || "Get Instant Price"}
                   </button>
                 </Link>
-                <a 
-                  href={`tel:${telPhone}`} 
+                <a
+                  href={`tel:${telPhone}`}
                   className="w-full sm:w-auto shrink-0 px-6 sm:px-8 py-3 sm:py-4 bg-transparent text-white font-bold rounded-full border border-white/30 hover:bg-white/10 transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
                   onClick={() => trackCTAClick('hero', 'phone_call')}
                   data-testid="button-hero-phone"
@@ -182,11 +182,11 @@ export default function Home() {
                 </a>
               </div>
             </div>
-            <div className="relative flex h-full items-end justify-center lg:justify-end self-end w-full lg:min-h-[500px] z-10 lg:ml-[-5%]">
-              <img 
-                src={companySettings?.heroImageUrl || heroImage} 
-                alt="Cleaning Professionals" 
-                className="w-full sm:w-[105%] lg:w-[110%] max-w-[320px] sm:max-w-[420px] md:max-w-[520px] lg:max-w-[620px] xl:max-w-[750px] object-contain drop-shadow-2xl translate-y-[2%] sm:translate-y-[5%] scale-100 sm:scale-102 lg:scale-105 origin-bottom"
+            <div className="relative flex h-full items-end justify-center lg:justify-end self-end w-full lg:min-h-[400px] z-10 lg:ml-[-5%] -mt-2 sm:mt-0">
+              <img
+                src={companySettings?.heroImageUrl || heroImage}
+                alt="Cleaning Professionals"
+                className="w-[100vw] sm:w-[105%] lg:w-[100%] max-w-[400px] sm:max-w-[360px] md:max-w-[420px] lg:max-w-[490px] xl:max-w-[560px] object-contain drop-shadow-2xl translate-y-[2%] sm:translate-y-[5%] scale-100 sm:scale-102 lg:scale-100 origin-bottom"
               />
             </div>
           </div>
