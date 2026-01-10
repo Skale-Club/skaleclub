@@ -112,7 +112,8 @@ export default function Services() {
             </div>
 
             {/* Category Filter Pills */}
-            <div className="flex overflow-x-auto w-full lg:w-auto pb-4 lg:pb-0 gap-3 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 lg:flex-wrap order-2 lg:order-1">
+            <div className="flex overflow-x-auto w-full lg:w-auto pb-4 lg:pb-0 gap-3 no-scrollbar lg:flex-wrap order-2 lg:order-1 -mx-4 sm:mx-0 scroll-smooth">
+              <div className="shrink-0 w-4 sm:hidden" aria-hidden="true" />
               <button
                 onClick={() => {
                   setSelectedCategory(undefined);
@@ -148,13 +149,15 @@ export default function Services() {
                   {cat.name}
                 </button>
               ))}
+              <div className="shrink-0 w-4 sm:hidden" aria-hidden="true" />
             </div>
           </div>
         </div>
 
         {/* Subcategory Filter Pills - only show when a category is selected */}
         {selectedCategory && subcategoriesWithServices && subcategoriesWithServices.length > 0 && (
-          <div className="flex overflow-x-auto pb-4 justify-start sm:justify-center gap-2 mb-12 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap sm:pb-0">
+          <div className="flex overflow-x-auto pb-4 justify-start sm:justify-center gap-2 mb-12 no-scrollbar -mx-4 sm:mx-0 sm:flex-wrap sm:pb-0 scroll-smooth">
+            <div className="shrink-0 w-4 sm:hidden" aria-hidden="true" />
             <button
               onClick={() => {
                 setSelectedSubcategory(undefined);
@@ -188,6 +191,7 @@ export default function Services() {
                 {sub.name}
               </button>
             ))}
+            <div className="shrink-0 w-4 sm:hidden" aria-hidden="true" />
           </div>
         )}
 
