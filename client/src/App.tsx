@@ -105,6 +105,7 @@ function Router() {
       <Suspense fallback={fallback}>
         <Switch>
           <Route path="/admin/login" component={AdminLogin} />
+          <Route path="/admin" component={Admin} />
           <Route path="/admin/:rest*" component={Admin} />
           <Route component={NotFound} />
         </Switch>
