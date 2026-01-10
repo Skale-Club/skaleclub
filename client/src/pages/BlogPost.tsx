@@ -20,6 +20,7 @@ import { format } from 'date-fns';
 import type { BlogPost, Service, CompanySettings } from '@shared/schema';
 import { useCart } from '@/context/CartContext';
 import { useToast } from '@/hooks/use-toast';
+import { CartSummary } from '@/components/CartSummary';
 
 export default function BlogPostPage() {
   const params = useParams<{ slug: string }>();
@@ -278,19 +279,13 @@ export default function BlogPostPage() {
                             <p className="text-sm font-bold text-primary" data-testid={`text-service-price-${service.id}`}>
                               ${service.price}
                             </p>
-                            <Button 
-                              size="sm" 
-                              variant="default"
-                              className="mt-auto h-7 text-xs px-2"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleAddToCart(service);
-                              }}
+                            <button
+                              className="mt-auto h-7 text-xs px-3 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 transition-colors"
+                              onClick={() => handleAddToCart(service)}
                               data-testid={`button-add-to-cart-${service.id}`}
                             >
                               Add to Booking
-                            </Button>
+                            </button>
                           </div>
                         </div>
                       ))}
@@ -374,6 +369,8 @@ export default function BlogPostPage() {
           }
         })
       }} />
+
+      <CartSummary />
     </div>
   );
 }
