@@ -183,7 +183,7 @@ export default function Admin() {
 
   return (
     <SidebarProvider style={sidebarStyle as React.CSSProperties}>
-      <div className="flex h-screen w-full bg-slate-50 relative">
+      <div className="flex h-screen w-full bg-slate-50 relative overflow-x-hidden">
         <Sidebar className="border-r border-gray-200 bg-white">
           <SidebarHeader className="p-4 border-b border-gray-100 bg-[#ffffff]">
             <div className="flex flex-col gap-4">
@@ -271,10 +271,12 @@ export default function Admin() {
           </SidebarFooter>
         </Sidebar>
 
-        <main className="flex-1 overflow-auto relative">
+        <main className="flex-1 min-w-0 overflow-auto relative">
           <header className="md:hidden sticky top-0 z-50 bg-white border-b border-gray-200 p-4 flex items-center gap-4">
-            <SidebarTrigger className="bg-white shadow-sm border border-gray-200 rounded-lg p-2" />
-            <span className="font-semibold text-primary">Admin Panel</span>
+            <SidebarTrigger className="bg-white shadow-sm border border-gray-200 rounded-lg p-2 h-10 w-10 shrink-0" />
+            <span className="font-semibold text-primary select-none text-left">
+              Admin Panel
+            </span>
           </header>
           <div className="p-6 md:p-8">
             {activeSection === 'dashboard' && <DashboardSection />}
@@ -1458,14 +1460,14 @@ function CategoriesSection() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Categories</h1>
           <p className="text-muted-foreground">Manage your service categories. Drag to reorder.</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingCategory(null); }}>
           <DialogTrigger asChild>
-            <Button data-testid="button-add-category">
+            <Button data-testid="button-add-category" className="w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               Add Category
             </Button>
@@ -1503,29 +1505,75 @@ function CategoriesSection() {
               onDrop={(e) => handleDrop(e, category.id)}
               onDragEnd={handleDragEnd}
               className={clsx(
-                "flex items-center gap-4 p-4 rounded-lg bg-slate-100 dark:bg-slate-800 cursor-grab active:cursor-grabbing transition-all",
+                "flex w-full min-w-0 flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 rounded-lg bg-slate-100 dark:bg-slate-800 cursor-grab active:cursor-grabbing transition-all",
                 draggedId === category.id && "opacity-50 scale-[0.98]"
               )}
               data-testid={`category-item-${category.id}`}
             >
-              <div className="text-muted-foreground cursor-grab">
-                <GripVertical className="w-5 h-5" />
+              <div className="flex min-w-0 items-center gap-3 sm:contents">
+                <div className="text-muted-foreground cursor-grab">
+                  <GripVertical className="w-5 h-5" />
+                </div>
+                {category.imageUrl && (
+                  <img
+                    src={category.imageUrl}
+                    alt={category.name}
+                    className="w-16 h-12 sm:w-24 sm:aspect-[4/3] rounded-[2px] object-cover flex-shrink-0"
+                  />
+                )}
+                <div className="flex-1 min-w-0 sm:hidden">
+                  <h3 className="font-semibold truncate">{category.name}</h3>
+                  <Badge variant="secondary" className="mt-1">
+                    {getServiceCount(category.id)} services
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-1 sm:hidden ml-auto">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => { setEditingCategory(category); setIsDialogOpen(true); }}
+                    data-testid={`button-edit-category-${category.id}-mobile`}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" data-testid={`button-delete-category-${category.id}-mobile`}>
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Category?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {getServiceCount(category.id) > 0
+                            ? `This category has ${getServiceCount(category.id)} services. You must delete or reassign them first.`
+                            : 'This action cannot be undone.'}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => deleteCategory.mutate(category.id)}
+                          disabled={getServiceCount(category.id) > 0}
+                          className="bg-red-500 hover:bg-red-600"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
-              {category.imageUrl && (
-                <img 
-                  src={category.imageUrl} 
-                  alt={category.name} 
-                  className="w-24 aspect-[4/3] rounded-[2px] object-cover flex-shrink-0" 
-                />
-              )}
-              <div className="flex-1 min-w-0">
+              <div className="hidden sm:block flex-1 min-w-0">
                 <h3 className="font-semibold text-lg truncate">{category.name}</h3>
                 <p className="text-sm text-muted-foreground truncate">{category.description}</p>
                 <Badge variant="secondary" className="mt-2">
                   {getServiceCount(category.id)} services
                 </Badge>
               </div>
-              <div className="flex items-center gap-2">
+              <p className="text-sm text-muted-foreground line-clamp-2 break-words sm:hidden">{category.description}</p>
+              <div className="hidden sm:flex items-center gap-2">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -3133,19 +3181,23 @@ function AvailabilitySection() {
               <div className="space-y-3">
                 {(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const).map((day) => {
                   const dayHours = (settings.businessHours || DEFAULT_BUSINESS_HOURS)[day];
-                  
+
                   return (
-                    <div key={day} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border">
-                      <div className="w-24 capitalize font-medium text-sm">{day}</div>
-                      <Switch
-                        checked={dayHours.isOpen}
-                        onCheckedChange={(checked) => {
-                          const newHours = { ...(settings.businessHours || DEFAULT_BUSINESS_HOURS) };
-                          newHours[day] = { ...newHours[day], isOpen: checked };
-                          updateField('businessHours', newHours);
-                        }}
-                      />
-                      <span className="text-sm text-muted-foreground w-12">{dayHours.isOpen ? 'Open' : 'Closed'}</span>
+                    <div key={day} className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border">
+                      <div className="flex items-center justify-between sm:justify-start gap-3 sm:w-auto">
+                        <div className="w-24 capitalize font-medium text-sm">{day}</div>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={dayHours.isOpen}
+                            onCheckedChange={(checked) => {
+                              const newHours = { ...(settings.businessHours || DEFAULT_BUSINESS_HOURS) };
+                              newHours[day] = { ...newHours[day], isOpen: checked };
+                              updateField('businessHours', newHours);
+                            }}
+                          />
+                          <span className="text-sm text-muted-foreground w-12">{dayHours.isOpen ? 'Open' : 'Closed'}</span>
+                        </div>
+                      </div>
                       {dayHours.isOpen && (
                         <div className="flex items-center gap-2 flex-1">
                           <Select
@@ -3156,7 +3208,7 @@ function AvailabilitySection() {
                               updateField('businessHours', newHours);
                             }}
                           >
-                            <SelectTrigger className="w-32">
+                            <SelectTrigger className="w-full sm:w-32">
                               <SelectValue>{formatTimeDisplay(dayHours.start)}</SelectValue>
                             </SelectTrigger>
                             <SelectContent>
@@ -3167,7 +3219,7 @@ function AvailabilitySection() {
                               ))}
                             </SelectContent>
                           </Select>
-                          <span className="text-muted-foreground">to</span>
+                          <span className="text-muted-foreground shrink-0">to</span>
                           <Select
                             value={dayHours.end}
                             onValueChange={(value) => {
@@ -3176,7 +3228,7 @@ function AvailabilitySection() {
                               updateField('businessHours', newHours);
                             }}
                           >
-                            <SelectTrigger className="w-32">
+                            <SelectTrigger className="w-full sm:w-32">
                               <SelectValue>{formatTimeDisplay(dayHours.end)}</SelectValue>
                             </SelectTrigger>
                             <SelectContent>
