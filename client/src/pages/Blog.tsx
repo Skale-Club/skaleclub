@@ -73,9 +73,9 @@ export default function Blog() {
         {isLoading ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {[...Array(6)].map((_, i) => (
-              <Card key={i} className="overflow-hidden">
+              <Card key={i} className="overflow-hidden border-0">
                 <Skeleton className="aspect-video" />
-                <CardContent className="p-4 space-y-3">
+                <CardContent className="p-4 space-y-3 bg-slate-50">
                   <Skeleton className="h-6 w-3/4" />
                   <Skeleton className="h-4 w-full" />
                   <Skeleton className="h-4 w-2/3" />
@@ -89,7 +89,7 @@ export default function Blog() {
               {filteredPosts.map(post => (
                 <Link key={post.id} href={`/blog/${post.slug}`}>
                   <Card 
-                    className="overflow-hidden hover-elevate cursor-pointer h-full flex flex-col"
+                    className="overflow-hidden hover-elevate cursor-pointer h-full flex flex-col border-0"
                     data-testid={`card-blog-${post.id}`}
                   >
                     {post.featureImageUrl ? (
@@ -106,7 +106,7 @@ export default function Blog() {
                         <FileText className="w-12 h-12 text-muted-foreground" />
                       </div>
                     )}
-                    <CardContent className="p-4 flex-1 flex flex-col">
+                    <CardContent className="p-4 flex-1 flex flex-col bg-slate-50">
                       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                         <Calendar className="w-4 h-4" />
                         <span data-testid={`text-blog-date-${post.id}`}>
