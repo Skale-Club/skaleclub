@@ -2671,6 +2671,7 @@ function BookingMobileCard({
   const [isExpanded, setIsExpanded] = useState(false);
   const { toast } = useToast();
   const { data: items, isLoading: itemsLoading } = useBookingItems(booking.id, isExpanded);
+  const isItemsLoading = isExpanded && itemsLoading;
 
   const handleStatusChange = (status: string) => {
     onUpdate(booking.id, { status });
@@ -2775,7 +2776,7 @@ function BookingMobileCard({
         {isExpanded && (
           <div className="mt-4 p-3 bg-slate-50 rounded-md border border-slate-100 space-y-2">
             <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Services</h4>
-            {itemsLoading ? (
+            {isItemsLoading ? (
               <Loader2 className="w-4 h-4 animate-spin mx-auto" />
             ) : items && items.length > 0 ? (
               <ul className="space-y-1">
