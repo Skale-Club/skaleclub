@@ -2491,6 +2491,27 @@ interface BookingItem {
   price: string;
 }
 
+function getBookingStatusColor(status: string) {
+  switch (status) {
+    case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    case 'confirmed': return 'bg-blue-100 text-blue-800 border-blue-200';
+    case 'completed': return 'bg-green-100 text-green-800 border-green-200';
+    case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
+    default: return 'bg-gray-100 text-gray-800 border-gray-200';
+  }
+}
+
+function useBookingItems(bookingId: number, enabled: boolean = true) {
+  return useQuery<BookingItem[]>({
+    queryKey: ['/api/bookings', bookingId, 'items'],
+    queryFn: async () => {
+      const res = await fetch(`/api/bookings/${bookingId}/items`);
+      return res.json();
+    },
+    enabled
+  });
+}
+
 function BookingRow({ booking, onUpdate, onDelete }: { 
   booking: Booking; 
   onUpdate: (id: number, updates: Partial<{ status: string; paymentStatus: string; totalPrice: string }>) => void;
@@ -2502,13 +2523,7 @@ function BookingRow({ booking, onUpdate, onDelete }: {
   const amountDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
-  const { data: bookingItems } = useQuery<BookingItem[]>({
-    queryKey: ['/api/bookings', booking.id, 'items'],
-    queryFn: async () => {
-      const res = await fetch(`/api/bookings/${booking.id}/items`);
-      return res.json();
-    }
-  });
+  const { data: bookingItems } = useBookingItems(booking.id, expanded);
 
   const handleAmountChange = (value: string) => {
     setAmountValue(value);
@@ -2679,19 +2694,15 @@ function BookingRow({ booking, onUpdate, onDelete }: {
 function BookingMobileCard({ 
   booking, 
   onUpdate, 
-  onDelete, 
-  getStatusColor, 
-  getBookingItems 
+  onDelete 
 }: { 
   booking: Booking; 
   onUpdate: (id: number, data: any) => void;
   onDelete: (id: number) => void;
-  getStatusColor: (status: string) => string;
-  getBookingItems: (id: number) => any;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { toast } = useToast();
-  const { data: items, isLoading: itemsLoading } = getBookingItems(booking.id);
+  const { data: items, isLoading: itemsLoading } = useBookingItems(booking.id, isExpanded);
 
   const handleStatusChange = (status: string) => {
     onUpdate(booking.id, { status });
@@ -2712,7 +2723,7 @@ function BookingMobileCard({
             <span className="text-sm text-muted-foreground">{format(new Date(booking.bookingDate), 'MMM dd, yyyy')}</span>
           </div>
           <div className="flex flex-col items-end gap-1">
-            <Badge className={getStatusColor(booking.status)}>
+            <Badge className={getBookingStatusColor(booking.status)}>
               {booking.status}
             </Badge>
             <Badge variant="outline" className={booking.paymentStatus === 'paid' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-yellow-100 text-yellow-800 border-yellow-200'}>
@@ -2819,56 +2830,6 @@ function BookingMobileCard({
       </CardContent>
     </Card>
   );
-}
-
-function useBookingItems(id: number) {
-  return useQuery<BookingItem[]>({
-    queryKey: ['/api/bookings', id, 'items'],
-    queryFn: async () => {
-      const res = await fetch(`/api/bookings/${id}/items`);
-      return res.json();
-    }
-  });
-}
-
-function useBookingItems(id: number) {
-  return useQuery<BookingItem[]>({
-    queryKey: ['/api/bookings', id, 'items'],
-    queryFn: async () => {
-      const res = await fetch(`/api/bookings/${id}/items`);
-      return res.json();
-    }
-  });
-}
-
-function useBookingItems(id: number) {
-  return useQuery<BookingItem[]>({
-    queryKey: ['/api/bookings', id, 'items'],
-    queryFn: async () => {
-      const res = await fetch(`/api/bookings/${id}/items`);
-      return res.json();
-    }
-  });
-}
-
-function useBookingItems(id: number) {
-  return useQuery<BookingItem[]>({
-    queryKey: ['/api/bookings', id, 'items'],
-    queryFn: async () => {
-      const res = await fetch(`/api/bookings/${id}/items`);
-      return res.json();
-    }
-  });
-}
-
-function useBookingItems(id: number) {
-  return useQuery<BookingItem[]>({
-    queryKey: ['/api/bookings', id, 'items'],
-    queryFn: async () => {
-      const res = await fetch(`/api/bookings/${id}/items`);
-      return res.json();
-    }
-  });
 }
 
 function BookingsSection() {
