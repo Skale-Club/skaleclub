@@ -2675,189 +2675,200 @@ function BookingRow({ booking, onUpdate, onDelete }: {
   );
 }
 
-function BookingMobileCard({ booking, onUpdate, onDelete }: { 
-  booking: Booking; 
-  onUpdate: (id: number, updates: Partial<{ status: string; paymentStatus: string; totalPrice: string }>) => void;
-  onDelete: (id: number) => void;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const [editingAmount, setEditingAmount] = useState(false);
-  const [amountValue, setAmountValue] = useState(booking.totalPrice);
-  const { toast } = useToast();
 
-  const { data: bookingItems } = useQuery<BookingItem[]>({
-    queryKey: ['/api/bookings', booking.id, 'items'],
-    queryFn: async () => {
-      const res = await fetch(`/api/bookings/${booking.id}/items`);
-      return res.json();
-    }
-  });
+function BookingMobileCard({ 
+  booking, 
+  onUpdate, 
+  onDelete, 
+  getStatusColor, 
+  getBookingItems 
+}: { 
+  booking: Booking; 
+  onUpdate: (id: number, data: any) => void;
+  onDelete: (id: number) => void;
+  getStatusColor: (status: string) => string;
+  getBookingItems: (id: number) => any;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const { toast } = useToast();
+  const { data: items, isLoading: itemsLoading } = getBookingItems(booking.id);
 
   const handleStatusChange = (status: string) => {
     onUpdate(booking.id, { status });
     toast({ title: `Status changed to ${status}` });
   };
 
-  const handlePaymentToggle = () => {
-    const newStatus = booking.paymentStatus === 'paid' ? 'unpaid' : 'paid';
-    onUpdate(booking.id, { paymentStatus: newStatus });
-    toast({ title: newStatus === 'paid' ? 'Marked as paid' : 'Marked as unpaid' });
-  };
-
-  const handleAmountUpdate = () => {
-    const parsed = parseFloat(amountValue);
-    if (!isNaN(parsed) && parsed >= 0) {
-      onUpdate(booking.id, { totalPrice: parsed.toFixed(2) });
-      setEditingAmount(false);
-      toast({ title: 'Amount updated' });
-    }
+  const handlePaymentStatusChange = (paymentStatus: string) => {
+    onUpdate(booking.id, { paymentStatus });
+    toast({ title: `Payment status changed to ${paymentStatus}` });
   };
 
   return (
-    <Card className="bg-white dark:bg-slate-800 border-0 shadow-sm overflow-hidden">
-      <CardContent className="p-4 space-y-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => setExpanded(!expanded)}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shrink-0"
-            >
-              <ChevronDown className={clsx("w-5 h-5 transition-transform", expanded && "rotate-180")} />
-            </button>
-            <div className="min-w-0">
-              <p className="font-bold text-slate-900 dark:text-slate-100 truncate">{booking.customerName}</p>
-              <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1">
-                <Calendar className="w-3 h-3" />
-                <span>{format(new Date(booking.bookingDate), "MMM dd, yyyy")}</span>
-                <span className="text-slate-300">•</span>
-                <Clock className="w-3 h-3" />
-                <span>{booking.startTime}</span>
-              </div>
-            </div>
+    <Card className="mb-4 overflow-hidden border-slate-200">
+      <CardHeader className="p-4 pb-2 space-y-0">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-col">
+            <span className="font-bold text-lg">#{booking.id}</span>
+            <span className="text-sm text-muted-foreground">{format(new Date(booking.bookingDate), 'MMM dd, yyyy')}</span>
           </div>
-          <div className="text-right shrink-0">
-            {editingAmount ? (
-              <div className="flex items-center gap-1">
-                <Input
-                  type="number"
-                  value={amountValue}
-                  onChange={(e) => setAmountValue(e.target.value)}
-                  className="w-20 h-8 text-sm text-right"
-                  onBlur={handleAmountUpdate}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAmountUpdate()}
-                  autoFocus
-                />
-              </div>
+          <div className="flex flex-col items-end gap-1">
+            <Badge className={getStatusColor(booking.status)}>
+              {booking.status}
+            </Badge>
+            <Badge variant="outline" className={booking.paymentStatus === 'paid' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-yellow-100 text-yellow-800 border-yellow-200'}>
+              {booking.paymentStatus}
+            </Badge>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="p-4 pt-2 space-y-3">
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <User className="w-4 h-4" />
+            <span className="truncate">{booking.customerName}</span>
+          </div>
+          <div className="flex items-center gap-2 text-muted-foreground justify-end">
+            <Clock className="w-4 h-4" />
+            <span>{booking.startTime} - {booking.endTime}</span>
+          </div>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <MapPin className="w-4 h-4" />
+            <span className="truncate">{booking.customerAddress}</span>
+          </div>
+          <div className="flex items-center gap-2 font-bold justify-end text-primary">
+            <DollarSign className="w-4 h-4" />
+            <span>{booking.totalPrice}</span>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2 pt-2">
+          <Select onValueChange={handleStatusChange} defaultValue={booking.status}>
+            <SelectTrigger className="h-8 text-xs w-[110px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="confirmed">Confirmed</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select onValueChange={handlePaymentStatusChange} defaultValue={booking.paymentStatus}>
+            <SelectTrigger className="h-8 text-xs w-[110px]">
+              <SelectValue placeholder="Payment" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="paid">Paid</SelectItem>
+              <SelectItem value="unpaid">Unpaid</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive ml-auto">
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Booking?</AlertDialogTitle>
+                <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => onDelete(booking.id)} className="bg-destructive text-destructive-foreground">Delete</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="w-full mt-2 h-8"
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            {isExpanded ? 'Hide Details' : 'Show Services'}
+            <ChevronDown className={clsx("w-4 h-4 ml-2 transition-transform", isExpanded && "rotate-180")} />
+          </Button>
+        </div>
+
+        {isExpanded && (
+          <div className="mt-4 p-3 bg-slate-50 rounded-md border border-slate-100 space-y-2">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Services</h4>
+            {itemsLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+            ) : items && items.length > 0 ? (
+              <ul className="space-y-1">
+                {items.map((item: any) => (
+                  <li key={item.id} className="text-sm flex justify-between items-center">
+                    <span>{item.serviceName}</span>
+                    <span className="font-medium">${item.price}</span>
+                  </li>
+                ))}
+              </ul>
             ) : (
-              <p 
-                onClick={() => setEditingAmount(true)}
-                className="text-lg font-bold text-primary cursor-pointer hover:underline"
-              >
-                ${booking.totalPrice}
-              </p>
+              <p className="text-sm text-muted-foreground italic">No services listed</p>
             )}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 pt-2">
-          <div className="space-y-1">
-            <p className="text-[10px] uppercase font-bold text-slate-400">Status</p>
-            <Select value={booking.status} onValueChange={handleStatusChange}>
-              <SelectTrigger className="h-8 text-xs bg-slate-50 dark:bg-slate-900/50 border-0">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="confirmed">Confirmed</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <p className="text-[10px] uppercase font-bold text-slate-400">Payment</p>
-            <button
-              onClick={handlePaymentToggle}
-              className={clsx(
-                "w-full h-8 rounded-md text-[10px] font-bold uppercase transition-colors flex items-center justify-center border-0",
-                booking.paymentStatus === "paid" 
-                  ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" 
-                  : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
-              )}
-            >
-              {booking.paymentStatus === "paid" ? "Paid" : "Unpaid"}
-            </button>
-          </div>
-        </div>
-
-        {expanded && (
-          <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-700 space-y-4 animate-in slide-in-from-top-2 duration-200">
-            <div className="grid gap-3">
-              <div className="flex items-start gap-3">
-                <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-                <div className="text-sm">
-                  <p className="text-slate-500 text-xs font-bold uppercase">Address</p>
-                  <p className="text-slate-700 dark:text-slate-300">{booking.customerAddress}</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <User className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-                <div className="text-sm">
-                  <p className="text-slate-500 text-xs font-bold uppercase">Contact</p>
-                  <p className="text-slate-700 dark:text-slate-300">{booking.customerEmail}</p>
-                  <p className="text-slate-700 dark:text-slate-300">{booking.customerPhone}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-xs font-bold text-slate-500 uppercase">Booked Services</p>
-              {bookingItems && bookingItems.length > 0 ? (
-                <div className="grid gap-1.5">
-                  {bookingItems.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-2 rounded bg-slate-50 dark:bg-slate-900/50 text-sm">
-                      <span className="text-slate-600 dark:text-slate-400">{item.serviceName}</span>
-                      <span className="font-medium">${item.price}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-slate-400 italic">Loading services...</p>
-              )}
-            </div>
-
-            <div className="pt-2 flex justify-end">
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete Booking
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent className="w-[90vw] max-w-md rounded-xl">
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Booking?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will permanently delete the booking for {booking.customerName}.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel className="rounded-lg">Cancel</AlertDialogCancel>
-                    <AlertDialogAction 
-                      onClick={() => onDelete(booking.id)}
-                      className="bg-red-500 hover:bg-red-600 rounded-lg border-0"
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+            <div className="pt-2 border-t border-slate-200 text-xs text-muted-foreground">
+              <p>Email: {booking.customerEmail}</p>
+              <p>Phone: {booking.customerPhone}</p>
             </div>
           </div>
         )}
       </CardContent>
     </Card>
   );
+}
+
+function useBookingItems(id: number) {
+  return useQuery<BookingItem[]>({
+    queryKey: ['/api/bookings', id, 'items'],
+    queryFn: async () => {
+      const res = await fetch(`/api/bookings/${id}/items`);
+      return res.json();
+    }
+  });
+}
+
+function useBookingItems(id: number) {
+  return useQuery<BookingItem[]>({
+    queryKey: ['/api/bookings', id, 'items'],
+    queryFn: async () => {
+      const res = await fetch(`/api/bookings/${id}/items`);
+      return res.json();
+    }
+  });
+}
+
+function useBookingItems(id: number) {
+  return useQuery<BookingItem[]>({
+    queryKey: ['/api/bookings', id, 'items'],
+    queryFn: async () => {
+      const res = await fetch(`/api/bookings/${id}/items`);
+      return res.json();
+    }
+  });
+}
+
+function useBookingItems(id: number) {
+  return useQuery<BookingItem[]>({
+    queryKey: ['/api/bookings', id, 'items'],
+    queryFn: async () => {
+      const res = await fetch(`/api/bookings/${id}/items`);
+      return res.json();
+    }
+  });
+}
+
+function useBookingItems(id: number) {
+  return useQuery<BookingItem[]>({
+    queryKey: ['/api/bookings', id, 'items'],
+    queryFn: async () => {
+      const res = await fetch(`/api/bookings/${id}/items`);
+      return res.json();
+    }
+  });
 }
 
 function BookingsSection() {

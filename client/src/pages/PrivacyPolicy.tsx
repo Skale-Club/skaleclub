@@ -25,7 +25,7 @@ export default function PrivacyPolicy() {
             Your privacy is important to us. This policy explains how {companyName} collects, uses, and protects your personal information.
           </p>
           <p className="text-primary-foreground/60 mt-4 text-sm">
-            Last updated: January 10, 2025
+            Last updated: January 10, 2026
           </p>
         </div>
       </div>
@@ -55,7 +55,7 @@ export default function PrivacyPolicy() {
             <p>We collect information that you provide directly to us and information collected automatically when you use our services.</p>
 
             <h4 className="font-semibold text-gray-900 mt-6 mb-3">Personal Information You Provide</h4>
-            <ul className="list-disc pl-6 space-y-2">
+            <ul className="list-disc space-y-2">
               <li><strong>Contact Information:</strong> Name, email address, phone number, and mailing address</li>
               <li><strong>Booking Details:</strong> Service preferences, appointment dates and times, property information</li>
               <li><strong>Payment Information:</strong> Credit card numbers, billing address (processed securely through our payment providers)</li>
@@ -64,7 +64,7 @@ export default function PrivacyPolicy() {
             </ul>
 
             <h4 className="font-semibold text-gray-900 mt-6 mb-3">Information Collected Automatically</h4>
-            <ul className="list-disc pl-6 space-y-2">
+            <ul className="list-disc space-y-2">
               <li><strong>Device Information:</strong> IP address, browser type, operating system, and device identifiers</li>
               <li><strong>Usage Data:</strong> Pages visited, time spent on pages, click patterns, and referring URLs</li>
               <li><strong>Location Data:</strong> General geographic location based on IP address</li>
@@ -131,7 +131,7 @@ export default function PrivacyPolicy() {
             <p>We use cookies and similar tracking technologies to enhance your experience on our website:</p>
 
             <h4 className="font-semibold text-gray-900 mt-6 mb-3">Types of Cookies We Use</h4>
-            <ul className="list-disc pl-6 space-y-2">
+            <ul className="list-disc space-y-2">
               <li><strong>Essential Cookies:</strong> Required for the website to function properly (e.g., session management, shopping cart)</li>
               <li><strong>Analytics Cookies:</strong> Help us understand how visitors interact with our website (e.g., Google Analytics)</li>
               <li><strong>Marketing Cookies:</strong> Used to deliver relevant advertisements and track campaign effectiveness</li>
@@ -255,7 +255,7 @@ function Section({
         <div className="text-primary">{icon}</div>
         <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
       </div>
-      <div className="prose prose-gray max-w-none pl-9 space-y-4 text-gray-600">
+      <div className="prose prose-gray max-w-none space-y-4 text-gray-600">
         {children}
       </div>
     </section>
