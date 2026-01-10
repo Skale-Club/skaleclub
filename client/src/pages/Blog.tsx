@@ -97,7 +97,7 @@ export default function Blog() {
                         <img
                           src={post.featureImageUrl}
                           alt={post.title}
-                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-[1.025]"
                           data-testid={`img-blog-${post.id}`}
                         />
                       </div>
