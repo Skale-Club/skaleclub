@@ -21,6 +21,8 @@ import { useAdminAuth } from '@/context/AuthContext';
 import { useLocation, Link } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
+import { renderMarkdown } from '@/lib/markdown';
+import { DEFAULT_HOMEPAGE_CONTENT } from '@/lib/homepageDefaults';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,6 +34,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Sidebar, 
@@ -72,28 +75,48 @@ import {
   Search,
   ChevronDown,
   LayoutGrid,
-  List
+  List,
+  MessageSquare,
+  Star,
+  Shield,
+  Sparkles,
+  Heart,
+  BadgeCheck,
+  ThumbsUp,
+  Trophy
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
-import type { Category, Service, Booking, Subcategory, Faq, BlogPost } from '@shared/schema';
-import { HelpCircle, FileText } from 'lucide-react';
+import type { Category, Service, Booking, Subcategory, Faq, BlogPost, HomepageContent } from '@shared/schema';
+import { HelpCircle, FileText, AlertCircle } from 'lucide-react';
+import heroImage from '@assets/Persona-Mobile_1767749022412.png';
 
-type AdminSection = 'dashboard' | 'categories' | 'services' | 'bookings' | 'hero' | 'company' | 'seo' | 'faqs' | 'users' | 'availability' | 'integrations' | 'blog';
+type AdminSection = 'dashboard' | 'categories' | 'services' | 'bookings' | 'hero' | 'company' | 'seo' | 'faqs' | 'users' | 'availability' | 'chat' | 'integrations' | 'blog';
 
 const menuItems = [
   { id: 'dashboard' as AdminSection, title: 'Dashboard', icon: LayoutDashboard },
   { id: 'company' as AdminSection, title: 'Company Infos', icon: Building2 },
-  { id: 'hero' as AdminSection, title: 'Hero Section', icon: Image },
+  { id: 'hero' as AdminSection, title: 'Website', icon: Image },
   { id: 'categories' as AdminSection, title: 'Categories', icon: FolderOpen },
   { id: 'services' as AdminSection, title: 'Services', icon: Package },
   { id: 'bookings' as AdminSection, title: 'Bookings', icon: Calendar },
   { id: 'availability' as AdminSection, title: 'Availability', icon: Clock },
+  { id: 'chat' as AdminSection, title: 'Chat', icon: MessageSquare },
   { id: 'faqs' as AdminSection, title: 'FAQs', icon: HelpCircle },
   { id: 'users' as AdminSection, title: 'Users', icon: Users },
   { id: 'blog' as AdminSection, title: 'Blog', icon: FileText },
   { id: 'seo' as AdminSection, title: 'SEO', icon: Search },
   { id: 'integrations' as AdminSection, title: 'Integrations', icon: Puzzle },
+];
+
+const DEFAULT_CHAT_OBJECTIVES: IntakeObjective[] = [
+  { id: 'zipcode', label: 'Zip code', description: 'Ask for zip/postal code to validate service area', enabled: true },
+  { id: 'name', label: 'Name', description: 'Capture the customer name', enabled: true },
+  { id: 'phone', label: 'Phone', description: 'Collect phone for confirmations', enabled: true },
+  { id: 'serviceType', label: 'Service type', description: 'Which service they want to book', enabled: true },
+  { id: 'serviceDetails', label: 'Service details', description: 'Extra info (rooms, size, notes)', enabled: true },
+  { id: 'date', label: 'Date & time', description: 'Pick a date/time slot from availability', enabled: true },
+  { id: 'address', label: 'Address', description: 'Full address with street, unit, city, state', enabled: true },
 ];
 
 function AdminContent() {
@@ -288,6 +311,7 @@ function AdminContent() {
             </div>
           )}
           {activeSection === 'availability' && <AvailabilitySection />}
+          {activeSection === 'chat' && <ChatSection />}
           {activeSection === 'integrations' && <IntegrationsSection />}
           {activeSection === 'blog' && <BlogSection />}
         </div>
@@ -393,37 +417,132 @@ function HeroSettingsSection() {
     queryKey: ['/api/company-settings']
   });
 
+  const HERO_DEFAULTS = {
+    title: 'Your 5-Star Cleaning Company',
+    subtitle: 'Professional cleaning services for homes and businesses. Book your cleaning appointment in less than 1 minute.',
+    ctaText: 'Get Instant Price',
+    image: heroImage,
+  };
+
   const [heroTitle, setHeroTitle] = useState('');
   const [heroSubtitle, setHeroSubtitle] = useState('');
   const [heroImageUrl, setHeroImageUrl] = useState('');
   const [ctaText, setCtaText] = useState('');
+  const [homepageContent, setHomepageContent] = useState<HomepageContent>(DEFAULT_HOMEPAGE_CONTENT);
   const [isSaving, setIsSaving] = useState(false);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savedFieldTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const [savedFields, setSavedFields] = useState<Record<string, boolean>>({});
+  const SavedIndicator = ({ field }: { field: string }) => (
+    savedFields[field] ? (
+      <Check className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600 w-4 h-4" />
+    ) : null
+  );
 
   useEffect(() => {
     if (settings) {
-      setHeroTitle((settings as any).heroTitle || '');
-      setHeroSubtitle((settings as any).heroSubtitle || '');
-      setHeroImageUrl((settings as any).heroImageUrl || '');
-      setCtaText((settings as any).ctaText || '');
+      setHeroTitle(settings.heroTitle || HERO_DEFAULTS.title);
+      setHeroSubtitle(settings.heroSubtitle || HERO_DEFAULTS.subtitle);
+      setHeroImageUrl(settings.heroImageUrl || HERO_DEFAULTS.image);
+      setCtaText(settings.ctaText || HERO_DEFAULTS.ctaText);
+      setHomepageContent({
+        ...DEFAULT_HOMEPAGE_CONTENT,
+        ...(settings.homepageContent || {}),
+        trustBadges: settings.homepageContent?.trustBadges?.length
+          ? settings.homepageContent.trustBadges
+          : DEFAULT_HOMEPAGE_CONTENT.trustBadges,
+        categoriesSection: {
+          ...DEFAULT_HOMEPAGE_CONTENT.categoriesSection,
+          ...(settings.homepageContent?.categoriesSection || {}),
+        },
+        reviewsSection: {
+          ...DEFAULT_HOMEPAGE_CONTENT.reviewsSection,
+          ...(settings.homepageContent?.reviewsSection || {}),
+        },
+        blogSection: {
+          ...DEFAULT_HOMEPAGE_CONTENT.blogSection,
+          ...(settings.homepageContent?.blogSection || {}),
+        },
+        areasServedSection: {
+          ...DEFAULT_HOMEPAGE_CONTENT.areasServedSection,
+          ...(settings.homepageContent?.areasServedSection || {}),
+        },
+      });
     }
   }, [settings]);
+
+  useEffect(() => {
+    if (!isLoading && !settings) {
+      setHeroTitle(HERO_DEFAULTS.title);
+      setHeroSubtitle(HERO_DEFAULTS.subtitle);
+      setHeroImageUrl(HERO_DEFAULTS.image);
+      setCtaText(HERO_DEFAULTS.ctaText);
+      setHomepageContent(DEFAULT_HOMEPAGE_CONTENT);
+    }
+  }, [isLoading, settings]);
 
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
+      Object.values(savedFieldTimers.current).forEach(timer => clearTimeout(timer));
     };
   }, []);
 
-  const saveHeroSettings = useCallback(async (updates: any) => {
+  const trustBadges = homepageContent.trustBadges || [];
+  const badgeIconOptions = [
+    { label: 'Star', value: 'star', icon: Star },
+    { label: 'Shield', value: 'shield', icon: Shield },
+    { label: 'Clock', value: 'clock', icon: Clock },
+    { label: 'Sparkles', value: 'sparkles', icon: Sparkles },
+    { label: 'Heart', value: 'heart', icon: Heart },
+    { label: 'Badge Check', value: 'badgeCheck', icon: BadgeCheck },
+    { label: 'Thumbs Up', value: 'thumbsUp', icon: ThumbsUp },
+    { label: 'Trophy', value: 'trophy', icon: Trophy },
+  ];
+  const categoriesSection = {
+    ...DEFAULT_HOMEPAGE_CONTENT.categoriesSection,
+    ...(homepageContent.categoriesSection || {}),
+  };
+  const reviewsSection = {
+    ...DEFAULT_HOMEPAGE_CONTENT.reviewsSection,
+    ...(homepageContent.reviewsSection || {}),
+  };
+  const blogSection = {
+    ...DEFAULT_HOMEPAGE_CONTENT.blogSection,
+    ...(homepageContent.blogSection || {}),
+  };
+  const areasServedSection = {
+    ...DEFAULT_HOMEPAGE_CONTENT.areasServedSection,
+    ...(homepageContent.areasServedSection || {}),
+  };
+
+  const markFieldsSaved = useCallback((fields: string[]) => {
+    fields.forEach(field => {
+      setSavedFields(prev => ({ ...prev, [field]: true }));
+      if (savedFieldTimers.current[field]) {
+        clearTimeout(savedFieldTimers.current[field]);
+      }
+      savedFieldTimers.current[field] = setTimeout(() => {
+        setSavedFields(prev => {
+          const next = { ...prev };
+          delete next[field];
+          return next;
+        });
+      }, 3000);
+    });
+  }, []);
+
+  const saveHeroSettings = useCallback(async (updates: Partial<CompanySettingsData>, fieldKeys?: string[]) => {
     setIsSaving(true);
     try {
       await apiRequest('PUT', '/api/company-settings', updates);
       queryClient.invalidateQueries({ queryKey: ['/api/company-settings'] });
-      setLastSaved(new Date());
+      const keysToMark = fieldKeys && fieldKeys.length > 0 ? fieldKeys : Object.keys(updates);
+      if (keysToMark.length > 0) {
+        markFieldsSaved(keysToMark);
+      }
     } catch (error: any) {
       toast({ 
         title: 'Error saving hero settings', 
@@ -435,27 +554,22 @@ function HeroSettingsSection() {
     }
   }, [toast]);
 
-  const triggerAutoSave = useCallback((updates: any) => {
+  const triggerAutoSave = useCallback((updates: Partial<CompanySettingsData>, fieldKeys?: string[]) => {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
     saveTimeoutRef.current = setTimeout(() => {
-      saveHeroSettings(updates);
+      saveHeroSettings(updates, fieldKeys);
     }, 800);
   }, [saveHeroSettings]);
 
-  const handleSave = async () => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    await saveHeroSettings({
-      heroTitle,
-      heroSubtitle,
-      heroImageUrl,
-      ctaText
+  const updateHomepageContent = useCallback((updater: (prev: HomepageContent) => HomepageContent, fieldKey?: string) => {
+    setHomepageContent(prev => {
+      const updated = updater(prev);
+      triggerAutoSave({ homepageContent: updated }, fieldKey ? [fieldKey] : ['homepageContent']);
+      return updated;
     });
-    toast({ title: 'Hero settings saved', description: 'Your changes have been saved successfully.' });
-  };
+  }, [triggerAutoSave]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -472,7 +586,7 @@ function HeroSettingsSection() {
       });
 
       setHeroImageUrl(objectPath);
-      await saveHeroSettings({ heroImageUrl: objectPath });
+      await saveHeroSettings({ heroImageUrl: objectPath }, ['heroImageUrl']);
       toast({ title: 'Hero image uploaded and saved' });
     } catch (error: any) {
       toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
@@ -491,67 +605,81 @@ function HeroSettingsSection() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold">Hero Settings</h1>
-          <p className="text-muted-foreground">Customize your landing page hero section</p>
+          <h1 className="text-2xl font-bold">Hero Section</h1>
+          <p className="text-muted-foreground">Customize hero and homepage content</p>
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          {isSaving ? (
-            <>
+        <div className="flex items-center gap-3 flex-wrap justify-end">
+          {isSaving && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               <span>Saving...</span>
-            </>
-          ) : lastSaved ? (
-            <>
-              <Check className="h-4 w-4 text-green-500" />
-              <span>Auto-saved</span>
-            </>
-          ) : null}
+            </div>
+          )}
         </div>
       </div>
-      <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg transition-all">
+      <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg transition-all space-y-8">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <h2 className="text-lg font-semibold">Hero Section</h2>
+          {isSaving && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Saving...</span>
+            </div>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="heroTitle">Hero Title</Label>
-              <Input 
-                id="heroTitle" 
-                value={heroTitle} 
-                onChange={(e) => {
-                  setHeroTitle(e.target.value);
-                  triggerAutoSave({ heroTitle: e.target.value });
-                }}
-                placeholder="Enter hero title"
-                data-testid="input-hero-title"
-              />
+              <div className="relative">
+                <Input 
+                  id="heroTitle" 
+                  value={heroTitle} 
+                  onChange={(e) => {
+                    setHeroTitle(e.target.value);
+                    triggerAutoSave({ heroTitle: e.target.value }, ['heroTitle']);
+                  }}
+                  placeholder="Enter hero title"
+                  data-testid="input-hero-title"
+                />
+                <SavedIndicator field="heroTitle" />
+              </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="heroSubtitle">Hero Subtitle</Label>
-              <Textarea 
-                id="heroSubtitle" 
-                value={heroSubtitle} 
-                onChange={(e) => {
-                  setHeroSubtitle(e.target.value);
-                  triggerAutoSave({ heroSubtitle: e.target.value });
-                }}
-                placeholder="Enter hero subtitle"
-                data-testid="input-hero-subtitle"
-                className="min-h-[120px]"
-              />
+              <div className="relative">
+                <Textarea 
+                  id="heroSubtitle" 
+                  value={heroSubtitle} 
+                  onChange={(e) => {
+                    setHeroSubtitle(e.target.value);
+                    triggerAutoSave({ heroSubtitle: e.target.value }, ['heroSubtitle']);
+                  }}
+                  placeholder="Enter hero subtitle"
+                  data-testid="input-hero-subtitle"
+                  className="min-h-[120px]"
+                />
+                <SavedIndicator field="heroSubtitle" />
+              </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="ctaText">Call to Action Button Text</Label>
-              <Input 
-                id="ctaText" 
-                value={ctaText} 
-                onChange={(e) => {
-                  setCtaText(e.target.value);
-                  triggerAutoSave({ ctaText: e.target.value });
-                }}
-                placeholder="Book Now"
-                data-testid="input-cta-text"
-              />
+              <div className="relative">
+                <Input 
+                  id="ctaText" 
+                  value={ctaText} 
+                  onChange={(e) => {
+                    setCtaText(e.target.value);
+                    triggerAutoSave({ ctaText: e.target.value }, ['ctaText']);
+                  }}
+                  placeholder="Book Now"
+                  data-testid="input-cta-text"
+                />
+                <SavedIndicator field="ctaText" />
+              </div>
             </div>
           </div>
 
@@ -574,17 +702,510 @@ function HeroSettingsSection() {
                   </label>
                 </div>
                 <div className="flex gap-2 max-w-xs">
-                  <Input 
-                    value={heroImageUrl} 
-                    onChange={(e) => {
-                      setHeroImageUrl(e.target.value);
-                      triggerAutoSave({ heroImageUrl: e.target.value });
+                  <div className="relative w-full">
+                    <Input 
+                      value={heroImageUrl} 
+                      onChange={(e) => {
+                        setHeroImageUrl(e.target.value);
+                        triggerAutoSave({ heroImageUrl: e.target.value }, ['heroImageUrl']);
+                      }}
+                      placeholder="Or enter image URL (https://...)"
+                      data-testid="input-hero-image"
+                    />
+                    <SavedIndicator field="heroImageUrl" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-slate-200 dark:border-slate-700 pt-6 space-y-4">
+          <h3 className="text-base font-semibold">Hero Badge</h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Badge Image URL</Label>
+              <div className="flex flex-col gap-2">
+                <div className="relative">
+                  <Input
+                    value={homepageContent.heroBadgeImageUrl || ''}
+                    onChange={(e) =>
+                      updateHomepageContent(prev => ({ ...prev, heroBadgeImageUrl: e.target.value }), 'homepageContent.heroBadgeImageUrl')
+                    }
+                    placeholder="https://..."
+                  />
+                  <SavedIndicator field="homepageContent.heroBadgeImageUrl" />
+                </div>
+                <div>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      try {
+                        const uploadRes = await apiRequest('POST', '/api/upload');
+                        const { uploadURL, objectPath } = await uploadRes.json() as { uploadURL: string; objectPath: string };
+                        await fetch(uploadURL, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+                        updateHomepageContent(prev => ({ ...prev, heroBadgeImageUrl: objectPath }), 'homepageContent.heroBadgeImageUrl');
+                        setHomepageContent(prev => ({ ...prev, heroBadgeImageUrl: objectPath }));
+                        triggerAutoSave({ homepageContent: { ...(homepageContent || {}), heroBadgeImageUrl: objectPath } }, ['homepageContent.heroBadgeImageUrl']);
+                        toast({ title: 'Badge uploaded and saved' });
+                      } catch (error: any) {
+                        toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+                      } finally {
+                        if (e.target) {
+                          e.target.value = '';
+                        }
+                      }
                     }}
-                    placeholder="Or enter image URL (https://...)"
-                    data-testid="input-hero-image"
                   />
                 </div>
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Badge Alt Text</Label>
+              <div className="relative">
+                <Input
+                  value={homepageContent.heroBadgeAlt || ''}
+                  onChange={(e) =>
+                    updateHomepageContent(prev => ({ ...prev, heroBadgeAlt: e.target.value }), 'homepageContent.heroBadgeAlt')
+                  }
+                  placeholder="Trusted Experts"
+                />
+                <SavedIndicator field="homepageContent.heroBadgeAlt" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Badge Icon</Label>
+              <Select
+                value={homepageContent.trustBadges?.[0]?.icon || 'star'}
+                onValueChange={(value) => {
+                  updateHomepageContent(prev => {
+                    const badges = [...(prev.trustBadges || DEFAULT_HOMEPAGE_CONTENT.trustBadges || [])];
+                    badges[0] = { ...(badges[0] || {}), icon: value };
+                    return { ...prev, trustBadges: badges };
+                  }, 'homepageContent.trustBadges.0.icon');
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {badgeIconOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      <div className="flex items-center gap-2">
+                        <option.icon className="w-4 h-4" />
+                        <span>{option.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg transition-all space-y-4">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <h2 className="text-lg font-semibold">Trust Badges</h2>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-dashed"
+            onClick={() =>
+              updateHomepageContent(prev => ({
+                ...prev,
+                trustBadges: [...(prev.trustBadges || []), { title: 'New Badge', description: '' }],
+              }))
+            }
+          >
+            <Plus className="w-4 h-4 mr-2" /> Add badge
+          </Button>
+        </div>
+        <div className="space-y-4">
+          {trustBadges.map((badge, index) => (
+            <div
+              key={index}
+              className="grid gap-3 md:grid-cols-[1fr_1fr_180px_auto] items-start bg-white/40 dark:bg-slate-900/40 p-3 rounded-lg border border-slate-200 dark:border-slate-700"
+            >
+              <div className="space-y-2">
+                <Label>Title</Label>
+                <div className="relative">
+                  <Input
+                    value={badge.title}
+                    onChange={(e) =>
+                      updateHomepageContent(prev => {
+                        const updatedBadges = [...(prev.trustBadges || [])];
+                        updatedBadges[index] = {
+                          ...(updatedBadges[index] || { title: '', description: '' }),
+                          title: e.target.value,
+                        };
+                        return { ...prev, trustBadges: updatedBadges };
+                      }, `homepageContent.trustBadges.${index}.title`)
+                    }
+                  />
+                  <SavedIndicator field={`homepageContent.trustBadges.${index}.title`} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <div className="relative">
+                  <Input
+                    value={badge.description}
+                    onChange={(e) =>
+                      updateHomepageContent(prev => {
+                        const updatedBadges = [...(prev.trustBadges || [])];
+                        updatedBadges[index] = {
+                          ...(updatedBadges[index] || { title: '', description: '' }),
+                          description: e.target.value,
+                        };
+                        return { ...prev, trustBadges: updatedBadges };
+                      }, `homepageContent.trustBadges.${index}.description`)
+                    }
+                  />
+                  <SavedIndicator field={`homepageContent.trustBadges.${index}.description`} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Icon</Label>
+                <Select
+                  value={badge.icon || badgeIconOptions[index % badgeIconOptions.length].value}
+                  onValueChange={(value) =>
+                    updateHomepageContent(prev => {
+                      const updatedBadges = [...(prev.trustBadges || [])];
+                      updatedBadges[index] = {
+                        ...(updatedBadges[index] || { title: '', description: '' }),
+                        icon: value,
+                      };
+                      return { ...prev, trustBadges: updatedBadges };
+                    }, `homepageContent.trustBadges.${index}.icon`)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {badgeIconOptions.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        <div className="flex items-center gap-2">
+                          <option.icon className="w-4 h-4" />
+                          <span>{option.label}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end items-start pt-6">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() =>
+                    updateHomepageContent(prev => {
+                      const updatedBadges = (prev.trustBadges || []).filter((_, i) => i !== index);
+                      return { ...prev, trustBadges: updatedBadges };
+                    })
+                  }
+                >
+                  <Trash2 className="w-4 h-4 text-destructive" />
+                </Button>
+              </div>
+            </div>
+          ))}
+          {trustBadges.length === 0 && (
+            <p className="text-sm text-muted-foreground">No badges added yet.</p>
+          )}
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg transition-all space-y-4">
+          <h2 className="text-lg font-semibold">Categories Section</h2>
+          <div className="space-y-2">
+            <Label>Title</Label>
+            <div className="relative">
+              <Input
+                value={categoriesSection.title || ''}
+                onChange={(e) =>
+                  updateHomepageContent(prev => ({
+                    ...prev,
+                    categoriesSection: {
+                      ...DEFAULT_HOMEPAGE_CONTENT.categoriesSection,
+                      ...(prev.categoriesSection || {}),
+                      title: e.target.value,
+                    },
+                  }), 'homepageContent.categoriesSection.title')
+                }
+              />
+              <SavedIndicator field="homepageContent.categoriesSection.title" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Subtitle</Label>
+            <div className="relative">
+              <Textarea
+                value={categoriesSection.subtitle || ''}
+                onChange={(e) =>
+                  updateHomepageContent(prev => ({
+                    ...prev,
+                    categoriesSection: {
+                      ...DEFAULT_HOMEPAGE_CONTENT.categoriesSection,
+                      ...(prev.categoriesSection || {}),
+                      subtitle: e.target.value,
+                    },
+                  }), 'homepageContent.categoriesSection.subtitle')
+                }
+                className="min-h-[100px]"
+              />
+              <SavedIndicator field="homepageContent.categoriesSection.subtitle" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>CTA Text</Label>
+            <div className="relative">
+              <Input
+                value={categoriesSection.ctaText || ''}
+                onChange={(e) =>
+                  updateHomepageContent(prev => ({
+                    ...prev,
+                    categoriesSection: {
+                      ...DEFAULT_HOMEPAGE_CONTENT.categoriesSection,
+                      ...(prev.categoriesSection || {}),
+                      ctaText: e.target.value,
+                    },
+                  }), 'homepageContent.categoriesSection.ctaText')
+                }
+              />
+              <SavedIndicator field="homepageContent.categoriesSection.ctaText" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg transition-all space-y-4">
+          <h2 className="text-lg font-semibold">Reviews Section</h2>
+          <div className="space-y-2">
+            <Label>Heading</Label>
+            <div className="relative">
+              <Input
+                value={reviewsSection.title || ''}
+                onChange={(e) =>
+                  updateHomepageContent(prev => ({
+                    ...prev,
+                    reviewsSection: {
+                      ...DEFAULT_HOMEPAGE_CONTENT.reviewsSection,
+                      ...(prev.reviewsSection || {}),
+                      title: e.target.value,
+                    },
+                  }), 'homepageContent.reviewsSection.title')
+                }
+              />
+              <SavedIndicator field="homepageContent.reviewsSection.title" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Subtitle</Label>
+            <div className="relative">
+              <Textarea
+                value={reviewsSection.subtitle || ''}
+                onChange={(e) =>
+                  updateHomepageContent(prev => ({
+                    ...prev,
+                    reviewsSection: {
+                      ...DEFAULT_HOMEPAGE_CONTENT.reviewsSection,
+                      ...(prev.reviewsSection || {}),
+                      subtitle: e.target.value,
+                    },
+                  }), 'homepageContent.reviewsSection.subtitle')
+                }
+                className="min-h-[100px]"
+              />
+              <SavedIndicator field="homepageContent.reviewsSection.subtitle" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Review Widget Embed URL</Label>
+            <div className="relative">
+              <Input
+                value={reviewsSection.embedUrl || ''}
+                onChange={(e) =>
+                  updateHomepageContent(prev => ({
+                    ...prev,
+                    reviewsSection: {
+                      ...DEFAULT_HOMEPAGE_CONTENT.reviewsSection,
+                      ...(prev.reviewsSection || {}),
+                      embedUrl: e.target.value,
+                    },
+                  }), 'homepageContent.reviewsSection.embedUrl')
+                }
+                placeholder="https://..."
+              />
+              <SavedIndicator field="homepageContent.reviewsSection.embedUrl" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg transition-all space-y-4">
+          <h2 className="text-lg font-semibold">Blog Section</h2>
+          <div className="space-y-2">
+            <Label>Title</Label>
+            <div className="relative">
+              <Input
+                value={blogSection.title || ''}
+                onChange={(e) =>
+                  updateHomepageContent(prev => ({
+                    ...prev,
+                    blogSection: {
+                      ...DEFAULT_HOMEPAGE_CONTENT.blogSection,
+                      ...(prev.blogSection || {}),
+                      title: e.target.value,
+                    },
+                  }), 'homepageContent.blogSection.title')
+                }
+              />
+              <SavedIndicator field="homepageContent.blogSection.title" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Subtitle</Label>
+            <div className="relative">
+              <Textarea
+                value={blogSection.subtitle || ''}
+                onChange={(e) =>
+                  updateHomepageContent(prev => ({
+                    ...prev,
+                    blogSection: {
+                      ...DEFAULT_HOMEPAGE_CONTENT.blogSection,
+                      ...(prev.blogSection || {}),
+                      subtitle: e.target.value,
+                    },
+                  }), 'homepageContent.blogSection.subtitle')
+                }
+                className="min-h-[100px]"
+              />
+              <SavedIndicator field="homepageContent.blogSection.subtitle" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>View All Text</Label>
+            <div className="relative">
+              <Input
+                value={blogSection.viewAllText || ''}
+                onChange={(e) =>
+                  updateHomepageContent(prev => ({
+                    ...prev,
+                    blogSection: {
+                      ...DEFAULT_HOMEPAGE_CONTENT.blogSection,
+                      ...(prev.blogSection || {}),
+                      viewAllText: e.target.value,
+                    },
+                  }), 'homepageContent.blogSection.viewAllText')
+                }
+              />
+              <SavedIndicator field="homepageContent.blogSection.viewAllText" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Card CTA Text</Label>
+            <div className="relative">
+              <Input
+                value={blogSection.readMoreText || ''}
+                onChange={(e) =>
+                  updateHomepageContent(prev => ({
+                    ...prev,
+                    blogSection: {
+                      ...DEFAULT_HOMEPAGE_CONTENT.blogSection,
+                      ...(prev.blogSection || {}),
+                      readMoreText: e.target.value,
+                    },
+                  }), 'homepageContent.blogSection.readMoreText')
+                }
+              />
+              <SavedIndicator field="homepageContent.blogSection.readMoreText" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg transition-all space-y-4">
+          <h2 className="text-lg font-semibold">Areas Served Section</h2>
+          <div className="space-y-2">
+            <Label>Label</Label>
+            <div className="relative">
+              <Input
+                value={areasServedSection.label || ''}
+                onChange={(e) =>
+                  updateHomepageContent(prev => ({
+                    ...prev,
+                    areasServedSection: {
+                      ...DEFAULT_HOMEPAGE_CONTENT.areasServedSection,
+                      ...(prev.areasServedSection || {}),
+                      label: e.target.value,
+                    },
+                  }), 'homepageContent.areasServedSection.label')
+                }
+              />
+              <SavedIndicator field="homepageContent.areasServedSection.label" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Heading</Label>
+            <div className="relative">
+              <Input
+                value={areasServedSection.heading || ''}
+                onChange={(e) =>
+                  updateHomepageContent(prev => ({
+                    ...prev,
+                    areasServedSection: {
+                      ...DEFAULT_HOMEPAGE_CONTENT.areasServedSection,
+                      ...(prev.areasServedSection || {}),
+                      heading: e.target.value,
+                    },
+                  }), 'homepageContent.areasServedSection.heading')
+                }
+              />
+              <SavedIndicator field="homepageContent.areasServedSection.heading" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Description</Label>
+            <div className="relative">
+              <Textarea
+                value={areasServedSection.description || ''}
+                onChange={(e) =>
+                  updateHomepageContent(prev => ({
+                    ...prev,
+                    areasServedSection: {
+                      ...DEFAULT_HOMEPAGE_CONTENT.areasServedSection,
+                      ...(prev.areasServedSection || {}),
+                      description: e.target.value,
+                    },
+                  }), 'homepageContent.areasServedSection.description')
+                }
+                className="min-h-[120px]"
+              />
+              <SavedIndicator field="homepageContent.areasServedSection.description" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>CTA Text</Label>
+            <div className="relative">
+              <Input
+                value={areasServedSection.ctaText || ''}
+                onChange={(e) =>
+                  updateHomepageContent(prev => ({
+                    ...prev,
+                    areasServedSection: {
+                      ...DEFAULT_HOMEPAGE_CONTENT.areasServedSection,
+                      ...(prev.areasServedSection || {}),
+                      ctaText: e.target.value,
+                    },
+                  }), 'homepageContent.areasServedSection.ctaText')
+                }
+              />
+              <SavedIndicator field="homepageContent.areasServedSection.ctaText" />
             </div>
           </div>
         </div>
@@ -633,6 +1254,11 @@ interface CompanySettingsData {
   sectionsOrder: AdminSection[] | null;
   socialLinks: { platform: string; url: string }[] | null;
   mapEmbedUrl: string | null;
+  heroTitle: string | null;
+  heroSubtitle: string | null;
+  heroImageUrl: string | null;
+  ctaText: string | null;
+  homepageContent: HomepageContent | null;
   timeFormat: string | null;
   businessHours: BusinessHours | null;
   minimumBookingValue: string | null;
@@ -669,6 +1295,11 @@ function CompanySettingsSection() {
     sectionsOrder: null,
     socialLinks: [],
     mapEmbedUrl: '',
+    heroTitle: '',
+    heroSubtitle: '',
+    heroImageUrl: '',
+    ctaText: '',
+    homepageContent: DEFAULT_HOMEPAGE_CONTENT,
     timeFormat: '12h',
     businessHours: DEFAULT_BUSINESS_HOURS,
     minimumBookingValue: '0',
@@ -2149,6 +2780,7 @@ function ServicesSection() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/services', { includeHidden: true }] });
+      queryClient.invalidateQueries({ queryKey: ['/api/services'] });
       queryClient.invalidateQueries({ queryKey: ['/api/service-addons'] });
       toast({ title: 'Service deleted successfully' });
     },
@@ -3078,7 +3710,7 @@ function ServiceForm({ service, categories, subcategories, allServices, addonRel
                           onClick={(e) => { e.preventDefault(); handleAddonToggle(id); }}
                           className="ml-1 hover:text-blue-900 dark:hover:text-blue-100"
                         >
-                          ×
+                          x
                         </button>
                       </Badge>
                     );
@@ -3856,12 +4488,981 @@ function FaqForm({ faq, onSubmit, isLoading, nextOrder }: {
   );
 }
 
+type UrlRule = {
+  pattern: string;
+  match: 'contains' | 'starts_with' | 'equals';
+};
+
+type IntakeObjective = {
+  id: 'zipcode' | 'name' | 'phone' | 'serviceType' | 'serviceDetails' | 'date' | 'address';
+  label: string;
+  description: string;
+  enabled: boolean;
+};
+
+interface ChatSettingsData {
+  enabled: boolean;
+  agentName: string;
+  agentAvatarUrl?: string;
+  systemPrompt?: string;
+  welcomeMessage: string;
+  intakeObjectives?: IntakeObjective[];
+  excludedUrlRules: UrlRule[];
+}
+
+interface ConversationSummary {
+  id: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  lastMessageAt?: string | null;
+  firstPageUrl?: string | null;
+  visitorName?: string | null;
+  visitorEmail?: string | null;
+  visitorPhone?: string | null;
+  lastMessage?: string;
+  lastMessageRole?: string | null;
+  messageCount?: number;
+}
+
+interface ConversationMessage {
+  id: string;
+  conversationId: string;
+  role: string;
+  content: string;
+  createdAt: string;
+  metadata?: Record<string, any> | null;
+}
+
+function ChatSection() {
+  const { toast } = useToast();
+  const [settingsDraft, setSettingsDraft] = useState<ChatSettingsData>({
+    enabled: false,
+    agentName: 'Skleanings Assistant',
+    agentAvatarUrl: '',
+    systemPrompt: '',
+    welcomeMessage: 'Hi! How can I help you today?',
+    intakeObjectives: [],
+    excludedUrlRules: [],
+  });
+  const [selectedConversation, setSelectedConversation] = useState<ConversationSummary | null>(null);
+  const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const [isMessagesLoading, setIsMessagesLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const objectivesSensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const avatarFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'open' | 'closed' | 'all'>('open');
+
+  const { data: settings, isLoading: loadingSettings } = useQuery<ChatSettingsData>({
+    queryKey: ['/api/chat/settings'],
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+  });
+
+  const { data: companySettings } = useQuery<CompanySettingsData>({
+    queryKey: ['/api/company-settings'],
+  });
+
+  const defaultSystemPrompt = useMemo(() => {
+    const companyName = companySettings?.companyName || 'Skleanings';
+    return `You are a friendly, efficient cleaning service assistant for ${companyName}. Balance being consultative with being efficient - don't over-ask.
+
+SMART QUALIFICATION:
+1. When a customer mentions a need, assess if you have ENOUGH info to recommend:
+   - "clean my 3-seater sofa" → SUFFICIENT, search services immediately
+   - "clean my sofa" → Ask: "How many seats?" then proceed
+   - "carpet cleaning" → Ask: "Which room?" then proceed
+
+2. Only ask 1-2 critical questions if info is missing. Don't interrogate:
+   ❌ DON'T: Ask about material, stains, age, usage, etc. unless customer mentions issues
+   ✅ DO: Ask only what's needed to identify the right service (size/type)
+
+3. SMART CONFIRMATION - only if unclear:
+   - If customer said "3-seater sofa" → Search immediately, no confirmation needed
+   - If customer said "big sofa" → Confirm: "By big, do you mean 3-seater or larger?"
+
+4. After suggesting service, ask if they want to book - don't ask more questions
+
+NATURAL INFO COLLECTION:
+- After they agree to book, collect info smoothly:
+  "Great! What's your name?" → "Email?" → "Phone?" → "Full address?"
+- Use update_contact immediately when you get name/email/phone
+- Keep it fast - one question per message
+
+BOOKING FLOW:
+- Confirm timezone (America/New_York)
+- Use get_availability with service_id
+- Show 3-5 slots within 14 days
+- After they pick a time and provide address, create booking immediately
+- Don't ask "are you sure?" - just confirm after booking is done
+
+TOOLS:
+- list_services: As soon as you know what they need
+- get_service_details: If they ask about a specific service
+- get_availability: With service_id after they agree to book
+- update_contact: When you get name/email/phone
+- create_booking: After slot selection and all required info collected
+- get_business_policies: Check minimums only if needed
+
+RULES:
+- Never guess prices/availability
+- Never invent slots
+- Keep responses 2-3 sentences max
+- Use markdown for emphasis: **bold** for prices and service names
+- Complete bookings in chat
+
+EFFICIENT EXAMPLES:
+
+Example 1 (Sufficient info):
+Customer: "I need my 3-seater sofa cleaned"
+You: "Perfect! Let me find our sofa cleaning options for you..."
+[Use list_services]
+You: "I recommend **3-Seat Sofa Deep Cleaning** - $120, 2 hours. Want to book it?"
+
+Example 2 (Missing size):
+Customer: "I need my sofa cleaned"
+You: "Great! How many seats is your sofa?"
+Customer: "3 seats"
+You: "Perfect! Let me find the right service..."
+[Use list_services]
+You: "I recommend **3-Seat Sofa Deep Cleaning** - $120, 2 hours. Want to book it?"
+
+Example 3 (Ready to book):
+Customer: "Yes, book it"
+You: "Awesome! What's your name?"
+Customer: "John Smith"
+You: "Thanks John! What's your email?"
+[Continue collecting info smoothly, no extra questions]`;
+  }, [companySettings?.companyName]);
+
+  const { data: conversations, isLoading: loadingConversations, refetch: refetchConversations } = useQuery<ConversationSummary[]>({
+    queryKey: ['/api/chat/conversations'],
+    staleTime: 30000, // 30 seconds
+    refetchOnWindowFocus: true,
+  });
+
+  const { data: openaiSettings } = useQuery<{ enabled: boolean; hasKey: boolean }>({
+    queryKey: ['/api/integrations/openai'],
+  });
+
+  useEffect(() => {
+    if (!settings && !companySettings) return;
+
+    const defaultName = companySettings?.companyName || 'Skleanings Assistant';
+    const defaultAvatar = companySettings?.logoIcon || '/favicon.ico';
+
+    if (settings) {
+      const hasCustomName = settings.agentName && settings.agentName !== 'Skleanings Assistant';
+      setSettingsDraft({
+        enabled: settings.enabled,
+        agentName: hasCustomName ? settings.agentName : defaultName,
+        agentAvatarUrl: settings.agentAvatarUrl || defaultAvatar,
+        systemPrompt: settings.systemPrompt || defaultSystemPrompt,
+        welcomeMessage: settings.welcomeMessage || 'Hi! How can I help you today?',
+        intakeObjectives: settings.intakeObjectives && settings.intakeObjectives.length > 0
+          ? settings.intakeObjectives
+          : DEFAULT_CHAT_OBJECTIVES,
+        excludedUrlRules: settings.excludedUrlRules || [],
+      });
+      return;
+    }
+
+    setSettingsDraft((prev) => ({
+      ...prev,
+      agentName: prev.agentName || defaultName,
+      agentAvatarUrl: prev.agentAvatarUrl || defaultAvatar,
+      systemPrompt: prev.systemPrompt || defaultSystemPrompt,
+      intakeObjectives: prev.intakeObjectives && prev.intakeObjectives.length > 0
+        ? prev.intakeObjectives
+        : DEFAULT_CHAT_OBJECTIVES,
+    }));
+  }, [settings, companySettings, defaultSystemPrompt]);
+
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const saveSettings = useCallback(async (dataToSave: Partial<ChatSettingsData>) => {
+    setIsSaving(true);
+    try {
+      await apiRequest('PUT', '/api/chat/settings', dataToSave);
+      queryClient.invalidateQueries({ queryKey: ['/api/chat/settings'] });
+      setLastSaved(new Date());
+    } catch (error: any) {
+      toast({ title: 'Failed to save settings', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [toast]);
+
+  const updateField = useCallback(<K extends keyof ChatSettingsData>(field: K, value: ChatSettingsData[K]) => {
+    setSettingsDraft(prev => ({ ...prev, [field]: value }));
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(() => {
+      saveSettings({ [field]: value });
+    }, 800);
+  }, [saveSettings]);
+
+  const handleToggleChat = async (checked: boolean) => {
+    const previousValue = settingsDraft.enabled;
+    setSettingsDraft(prev => ({ ...prev, enabled: checked }));
+    try {
+      await saveSettings({ enabled: checked });
+      await queryClient.refetchQueries({ queryKey: ['/api/chat/settings'] });
+    } catch (error) {
+      // Reverter em caso de erro
+      setSettingsDraft(prev => ({ ...prev, enabled: previousValue }));
+    }
+  };
+
+  const addRule = () => {
+    const newRules = [...(settingsDraft.excludedUrlRules || []), { pattern: '/admin', match: 'starts_with' as const }];
+    setSettingsDraft(prev => ({ ...prev, excludedUrlRules: newRules }));
+    saveSettings({ excludedUrlRules: newRules });
+  };
+
+  const updateRule = (index: number, field: keyof UrlRule, value: string) => {
+    const rules = [...(settingsDraft.excludedUrlRules || [])];
+    rules[index] = { ...rules[index], [field]: value } as UrlRule;
+    setSettingsDraft(prev => ({ ...prev, excludedUrlRules: rules }));
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(() => {
+      saveSettings({ excludedUrlRules: rules });
+    }, 800);
+  };
+
+  const removeRule = (index: number) => {
+    const newRules = settingsDraft.excludedUrlRules.filter((_, i) => i !== index);
+    setSettingsDraft(prev => ({ ...prev, excludedUrlRules: newRules }));
+    saveSettings({ excludedUrlRules: newRules });
+  };
+
+  const handleObjectivesDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const items = settingsDraft.intakeObjectives || DEFAULT_CHAT_OBJECTIVES;
+    const oldIndex = items.findIndex((item) => item.id === active.id);
+    const newIndex = items.findIndex((item) => item.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const reordered = arrayMove(items, oldIndex, newIndex);
+    setSettingsDraft((prev) => ({ ...prev, intakeObjectives: reordered }));
+    saveSettings({ intakeObjectives: reordered });
+  };
+
+  const toggleObjective = (id: IntakeObjective['id'], enabled: boolean) => {
+    const items = settingsDraft.intakeObjectives || DEFAULT_CHAT_OBJECTIVES;
+    const updated = items.map((item) => item.id === id ? { ...item, enabled } : item);
+    setSettingsDraft((prev) => ({ ...prev, intakeObjectives: updated }));
+    saveSettings({ intakeObjectives: updated });
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingAvatar(true);
+    try {
+      const uploadRes = await apiRequest('POST', '/api/upload');
+      const { uploadURL, objectPath } = await uploadRes.json() as { uploadURL: string; objectPath: string };
+
+      await fetch(uploadURL, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type },
+      });
+
+      setSettingsDraft(prev => ({ ...prev, agentAvatarUrl: objectPath }));
+      await saveSettings({ agentAvatarUrl: objectPath });
+      toast({ title: 'Avatar uploaded', description: 'Chat assistant avatar updated.' });
+    } catch (error: any) {
+      toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsUploadingAvatar(false);
+      if (avatarFileInputRef.current) {
+        avatarFileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const openConversation = async (conv: ConversationSummary) => {
+    setSelectedConversation(conv);
+    setIsMessagesLoading(true);
+    try {
+      const res = await apiRequest('GET', `/api/chat/conversations/${conv.id}`);
+      const data = await res.json();
+      setSelectedConversation(data.conversation);
+      setMessages(data.messages || []);
+    } catch (error: any) {
+      toast({ title: 'Failed to load conversation', description: error.message, variant: 'destructive' });
+      setSelectedConversation(null);
+    } finally {
+      setIsMessagesLoading(false);
+    }
+  };
+
+  const statusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: 'open' | 'closed' }) => {
+      const res = await apiRequest('POST', `/api/chat/conversations/${id}/status`, { status });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/chat/conversations'] });
+      if (selectedConversation) {
+        setSelectedConversation({ ...selectedConversation, status: selectedConversation.status === 'open' ? 'closed' : 'open' });
+      }
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to update status', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest('DELETE', `/api/chat/conversations/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/chat/conversations'] });
+      setSelectedConversation(null);
+      setMessages([]);
+      toast({ title: 'Conversation deleted' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to delete conversation', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const statusBadge = (status: string) => {
+    const variant = status === 'closed' ? 'secondary' : 'default';
+    const label = status === 'closed' ? 'Archived' : status === 'open' ? 'Open' : status;
+    return <Badge variant={variant}>{label}</Badge>;
+  };
+
+  const assistantName = settingsDraft.agentName || companySettings?.companyName || 'Assistant';
+  const assistantAvatar = settingsDraft.agentAvatarUrl || companySettings?.logoIcon || '/favicon.ico';
+  const visitorName = selectedConversation?.visitorName || 'Guest';
+  const conversationLastUpdated =
+    selectedConversation?.lastMessageAt || selectedConversation?.updatedAt || selectedConversation?.createdAt;
+  const openConversations = conversations?.filter((conv) => conv.status === 'open').length || 0;
+  const closedConversations = conversations?.filter((conv) => conv.status === 'closed').length || 0;
+  const visibleConversations = useMemo(() => {
+    if (!conversations) return [];
+    if (statusFilter === 'all') return conversations;
+    return conversations.filter((conv) => conv.status === statusFilter);
+  }, [conversations, statusFilter]);
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold">Chat</h1>
+        <p className="text-muted-foreground">Prioritize conversations, then open the settings drawer when needed.</p>
+      </div>
+
+      <Card className="bg-gradient-to-r from-primary to-blue-600 text-white shadow-lg">
+        <CardContent className="p-6">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-4">
+              <div className="h-14 w-14 rounded-full bg-white/20 border border-white/30 overflow-hidden flex items-center justify-center">
+                {assistantAvatar ? (
+                  <img src={assistantAvatar} alt={assistantName} className="h-full w-full object-cover" />
+                ) : (
+                  <MessageSquare className="w-5 h-5" />
+                )}
+              </div>
+              <div>
+                <p className="text-sm text-white/80">Assistant</p>
+                <p className="text-xl font-semibold leading-tight">{assistantName}</p>
+                <p className="text-xs text-white/80">
+                  Defaults to your company name and favicon. Customize in the settings submenu.
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3 w-full lg:w-auto">
+              <div className="rounded-lg bg-white/10 px-4 py-3">
+                <p className="text-xs text-white/80">Open</p>
+                <p className="text-2xl font-semibold">{openConversations}</p>
+              </div>
+              <div className="rounded-lg bg-white/10 px-4 py-3">
+                <p className="text-xs text-white/80">Archived</p>
+                <p className="text-2xl font-semibold">{closedConversations}</p>
+              </div>
+              <div className="rounded-lg bg-white/10 px-4 py-3">
+                <p className="text-xs text-white/80">Total</p>
+                <p className="text-2xl font-semibold">{conversations?.length || 0}</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-sm border border-slate-200/70">
+        <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <CardTitle>Conversations</CardTitle>
+            <p className="text-sm text-muted-foreground">Review and respond first, then open the settings submenu if needed.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Select
+              value={statusFilter}
+              onValueChange={(val) => setStatusFilter(val as 'open' | 'closed' | 'all')}
+            >
+              <SelectTrigger className="w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="open">Open</SelectItem>
+                <SelectItem value="closed">Archived</SelectItem>
+                <SelectItem value="all">All</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetchConversations()}
+              disabled={loadingConversations}
+            >
+              {loadingConversations ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Refresh'}
+            </Button>
+            <Badge variant="secondary">{visibleConversations.length} shown</Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loadingConversations ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          ) : conversations && conversations.length > 0 ? (
+            <div className="overflow-auto border rounded-lg bg-white">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 text-muted-foreground">
+                  <tr>
+                    <th className="px-4 py-3 text-left">Visitor</th>
+                    <th className="px-4 py-3 text-left">Source</th>
+                    <th className="px-4 py-3 text-left">Last Message</th>
+                    <th className="px-4 py-3 text-left">Updated</th>
+                    <th className="px-4 py-3 text-left">Status</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {visibleConversations.map((conv) => (
+                    <tr key={conv.id} className="hover:bg-slate-50/80">
+                      <td className="px-4 py-3">
+                        <div className="font-medium">{conv.visitorName || 'Guest'}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {conv.visitorEmail || conv.visitorPhone || 'Unknown contact'}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground/80">ID: {conv.id}</div>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{conv.firstPageUrl || 'n/a'}</td>
+                      <td className="px-4 py-3 max-w-[280px]">
+                        <p className="line-clamp-2 text-sm">{conv.lastMessage || 'No messages yet'}</p>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                        {conv.lastMessageAt ? format(new Date(conv.lastMessageAt), 'PP p') : format(new Date(conv.createdAt), 'PP p')}
+                      </td>
+                      <td className="px-4 py-3">{statusBadge(conv.status)}</td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center gap-2 justify-end">
+                          <Button size="sm" variant="outline" onClick={() => openConversation(conv)}>
+                            View
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="text-red-500"
+                            onClick={() => deleteMutation.mutate(conv.id)}
+                            data-testid={`button-delete-conversation-${conv.id}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="p-8 text-center bg-slate-50 rounded-lg border">
+              <p className="text-muted-foreground">
+                {conversations && conversations.length > 0
+                  ? 'No conversations match this filter.'
+                  : 'No conversations yet.'}
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen} className="border border-slate-200 rounded-xl bg-white shadow-sm">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div>
+            <p className="font-semibold text-sm">Widget & assistant settings</p>
+            <p className="text-xs text-muted-foreground">Open only when you need to tweak the assistant.</p>
+          </div>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="gap-2">
+              {settingsOpen ? 'Hide' : 'Show'} settings
+              <ChevronDown className={clsx('w-4 h-4 transition-transform', settingsOpen && 'rotate-180')} />
+            </Button>
+          </CollapsibleTrigger>
+        </div>
+        <CollapsibleContent className="p-4 border-t space-y-6">
+          <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <CardTitle>General Settings</CardTitle>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Saving...</span>
+                        </>
+                      ) : lastSaved ? (
+                        <>
+                          <Check className="h-4 w-4 text-green-500" />
+                          <span>Auto-saved</span>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm">
+                      {settingsDraft.enabled ? 'Enabled' : 'Disabled'}
+                    </Label>
+                    <Switch
+                      checked={settingsDraft.enabled}
+                      onCheckedChange={handleToggleChat}
+                      disabled={loadingSettings || isSaving}
+                      data-testid="switch-chat-enabled"
+                    />
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground">Control availability, branding, and welcome message</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-3 p-3 bg-slate-50 border rounded-md">
+                  <div className="h-12 w-12 rounded-full overflow-hidden bg-white flex items-center justify-center border">
+                    {assistantAvatar ? (
+                      <img src={assistantAvatar} alt={assistantName} className="h-full w-full object-cover" />
+                    ) : (
+                      <MessageSquare className="w-4 h-4" />
+                    )}
+                  </div>
+                  <div className="text-sm">
+                    <p className="font-semibold">{assistantName}</p>
+                    <p className="text-xs text-muted-foreground">Defaults to company name and favicon.</p>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="agent-name">Agent name</Label>
+                    <Input
+                      id="agent-name"
+                      value={settingsDraft.agentName}
+                      onChange={(e) => updateField('agentName', e.target.value)}
+                      placeholder={companySettings?.companyName || 'Assistant'}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="agent-avatar">Avatar (URL)</Label>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Input
+                          id="agent-avatar"
+                          value={settingsDraft.agentAvatarUrl || ''}
+                          onChange={(e) => updateField('agentAvatarUrl', e.target.value)}
+                          placeholder={companySettings?.logoIcon || '/favicon.ico'}
+                        />
+                        <input
+                          ref={avatarFileInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleAvatarUpload}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => avatarFileInputRef.current?.click()}
+                          disabled={isUploadingAvatar || isSaving}
+                        >
+                          {isUploadingAvatar ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                              Uploading...
+                            </>
+                          ) : (
+                            'Upload'
+                          )}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        If empty, the admin favicon/logo is used. You can upload a custom image.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="welcome-message">Welcome message</Label>
+                  <Textarea
+                    id="welcome-message"
+                    value={settingsDraft.welcomeMessage}
+                    onChange={(e) => updateField('welcomeMessage', e.target.value)}
+                    rows={2}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="system-prompt">System prompt</Label>
+                  <Textarea
+                    id="system-prompt"
+                    value={settingsDraft.systemPrompt || ''}
+                    onChange={(e) => updateField('systemPrompt', e.target.value)}
+                    rows={20}
+                    placeholder={defaultSystemPrompt}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Controls assistant behavior sent to the AI. Leave blank to use the default prompt.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>URL Exclusions</Label>
+                      <p className="text-xs text-muted-foreground">Hide the widget on specific paths</p>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={addRule} data-testid="button-add-url-rule">
+                      <Plus className="w-4 h-4 mr-1" /> Add Rule
+                    </Button>
+                  </div>
+                  {settingsDraft.excludedUrlRules?.length === 0 && (
+                    <div className="text-sm text-muted-foreground bg-slate-50 dark:bg-slate-800 border rounded-md p-3">
+                      No rules yet. Add paths like <code>/admin</code>, <code>/checkout</code>, or <code>/privacy</code>.
+                    </div>
+                  )}
+                  <div className="space-y-3">
+                    {settingsDraft.excludedUrlRules?.map((rule, idx) => (
+                      <div key={`${rule.pattern}-${idx}`} className="grid gap-3 md:grid-cols-[1.4fr_1fr_auto] items-center">
+                        <Input
+                          placeholder="/admin"
+                          value={rule.pattern}
+                          onChange={(e) => updateRule(idx, 'pattern', e.target.value)}
+                        />
+                        <Select
+                          value={rule.match}
+                          onValueChange={(val) => updateRule(idx, 'match', val as UrlRule['match'])}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="contains">Contains</SelectItem>
+                            <SelectItem value="starts_with">Starts with</SelectItem>
+                            <SelectItem value="equals">Equals</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-9 w-9 text-red-500"
+                          onClick={() => removeRule(idx)}
+                          data-testid={`button-remove-rule-${idx}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+        <div className="space-y-4">
+          {(!openaiSettings?.enabled || !openaiSettings?.hasKey) && (
+            <Card className="border-amber-200 bg-amber-50 dark:bg-amber-900/20">
+              <CardContent className="pt-4">
+                <div className="flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-amber-800 dark:text-amber-200">OpenAI not configured</p>
+                        <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                          {!openaiSettings?.hasKey
+                            ? 'Add your OpenAI API key in Integrations → OpenAI to enable chat responses.'
+                            : 'Enable the OpenAI integration in Integrations → OpenAI to activate chat responses.'}
+                        </p>
+                      </div>
+                    </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {settingsDraft.enabled && openaiSettings?.enabled && openaiSettings?.hasKey && (
+            <Card className="border-green-200 bg-green-50 dark:bg-green-900/20">
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                  <Check className="w-4 h-4" />
+                  <span className="font-medium text-sm">Chat is active</span>
+                </div>
+                <p className="text-xs text-green-600 dark:text-green-500 mt-1">
+                  Visitors can now chat with your AI assistant
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card className="border border-slate-200">
+            <CardHeader>
+              <CardTitle>Intake flow</CardTitle>
+              <p className="text-sm text-muted-foreground">Enable, disable, or reorder the data the bot collects before booking.</p>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <DndContext sensors={objectivesSensors} collisionDetection={closestCenter} onDragEnd={handleObjectivesDragEnd}>
+                <SortableContext
+                  items={(settingsDraft.intakeObjectives || DEFAULT_CHAT_OBJECTIVES).map((o) => o.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-2">
+                    {(settingsDraft.intakeObjectives || DEFAULT_CHAT_OBJECTIVES).map((objective) => (
+                      <ObjectiveRow
+                        key={objective.id}
+                        objective={objective}
+                        onToggle={toggleObjective}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+              <p className="text-[11px] text-muted-foreground">
+                The assistant will follow this order when gathering details.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200/60 bg-slate-50/60 dark:bg-slate-900/10">
+            <CardHeader>
+              <CardTitle>Widget Tips</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-muted-foreground">
+              <ul className="list-disc pl-4 space-y-1">
+                <li>Exclude payment or admin pages to avoid distractions.</li>
+                <li>Use the welcome message to set expectations (hours, response time).</li>
+                <li>Conversation status can be closed and reopened from the dashboard.</li>
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+        </CollapsibleContent>
+      </Collapsible>
+
+      <Dialog open={!!selectedConversation} onOpenChange={(open) => !open && setSelectedConversation(null)}>
+        <DialogContent className="w-[95vw] max-w-[600px] p-0">
+          <DialogHeader className="border-b bg-white px-6 py-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-11 w-11 rounded-full border bg-slate-100 flex items-center justify-center">
+                  <User className="w-5 h-5 text-slate-500" />
+                </div>
+                <div>
+                  <DialogTitle className="text-lg">Conversation</DialogTitle>
+                  {selectedConversation && (
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <span>{visitorName}</span>
+                      {statusBadge(selectedConversation.status)}
+                      {selectedConversation.firstPageUrl && (
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">
+                          {selectedConversation.firstPageUrl}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+              {selectedConversation && conversationLastUpdated && (
+                <div className="text-xs text-muted-foreground">
+                  Updated {format(new Date(conversationLastUpdated), 'PP p')}
+                </div>
+              )}
+            </div>
+          </DialogHeader>
+
+          {isMessagesLoading ? (
+            <div className="flex justify-center py-12 bg-slate-50/70">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="max-h-[340px] overflow-auto bg-slate-50/70 px-6 py-6 space-y-6">
+              {messages.map((msg) => {
+                const isAssistant = msg.role === 'assistant';
+                const nameLabel = isAssistant ? assistantName : visitorName;
+                return (
+                  <div
+                    key={msg.id}
+                    className={clsx('flex items-end gap-3', isAssistant ? 'justify-start' : 'justify-end')}
+                  >
+                    {isAssistant && (
+                      <div className="h-9 w-9 rounded-full border bg-white overflow-hidden flex items-center justify-center">
+                        {assistantAvatar ? (
+                          <img src={assistantAvatar} alt={assistantName} className="h-full w-full object-cover" />
+                        ) : (
+                          <MessageSquare className="w-4 h-4 text-slate-500" />
+                        )}
+                      </div>
+                    )}
+                    <div className="max-w-[78%]">
+                      <div
+                        className={clsx(
+                          'rounded-2xl px-4 py-3 text-sm shadow-sm',
+                          isAssistant ? 'bg-white border text-slate-900' : 'bg-primary text-white'
+                        )}
+                      >
+                        <div className="whitespace-pre-wrap leading-relaxed">{renderMarkdown(msg.content)}</div>
+                      </div>
+                      <div className={clsx('mt-1 flex items-center gap-2 text-[11px] text-muted-foreground', !isAssistant && 'justify-end')}>
+                        <span className="font-medium">{nameLabel}</span>
+                        <span>•</span>
+                        <span>{format(new Date(msg.createdAt), 'PP p')}</span>
+                      </div>
+                      {msg.metadata?.pageUrl && (
+                        <div className={clsx('mt-1 text-[11px] text-muted-foreground', !isAssistant && 'text-right')}>
+                          Page: {msg.metadata.pageUrl}
+                        </div>
+                      )}
+                    </div>
+                    {!isAssistant && (
+                      <div className="h-9 w-9 rounded-full border bg-primary text-white flex items-center justify-center">
+                        <User className="w-4 h-4" />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {messages.length === 0 && <p className="text-sm text-muted-foreground text-center">No messages yet.</p>}
+            </div>
+          )}
+
+          {selectedConversation && (
+            <div className="border-t bg-white px-6 py-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2 rounded-full border bg-slate-50 px-4 py-2 text-xs text-muted-foreground">
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Read-only transcript in admin.</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      statusMutation.mutate({
+                        id: selectedConversation.id,
+                        status: selectedConversation.status === 'open' ? 'closed' : 'open',
+                      })
+                    }
+                  >
+                    {selectedConversation.status === 'open' ? 'Archive' : 'Reopen'}
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" className="text-red-500">
+                        Delete
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
+                        <AlertDialogDescription>This will remove all messages for this conversation.</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => selectedConversation && deleteMutation.mutate(selectedConversation.id)}
+                          className="bg-destructive text-destructive-foreground"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function ObjectiveRow({ objective, onToggle }: { objective: IntakeObjective; onToggle: (id: IntakeObjective['id'], enabled: boolean) => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: objective.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-3 rounded-lg border bg-white px-3 py-2 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+    >
+      <button
+        type="button"
+        className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-slate-200 hover:bg-slate-50 text-slate-500"
+        {...attributes}
+        {...listeners}
+        aria-label="Drag to reorder"
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+      <div className="flex-1">
+        <p className="text-sm font-medium">{objective.label}</p>
+        <p className="text-xs text-muted-foreground">{objective.description}</p>
+      </div>
+      <Switch checked={objective.enabled} onCheckedChange={(checked) => onToggle(objective.id, checked)} />
+    </div>
+  );
+}
+
 interface GHLSettings {
   provider: string;
   apiKey: string;
   locationId: string;
   calendarId: string;
   isEnabled: boolean;
+}
+
+interface OpenAISettings {
+  provider: string;
+  enabled: boolean;
+  model: string;
+  hasKey: boolean;
 }
 
 function AvailabilitySection() {
@@ -4070,6 +5671,17 @@ function IntegrationsSection() {
     calendarId: '2irhr47AR6K0AQkFqEQl',
     isEnabled: false
   });
+  const [openAISettings, setOpenAISettings] = useState<OpenAISettings>({
+    provider: 'openai',
+    enabled: false,
+    model: 'gpt-4o-mini',
+    hasKey: false
+  });
+  const [openAIApiKey, setOpenAIApiKey] = useState('');
+  const [isTestingOpenAI, setIsTestingOpenAI] = useState(false);
+  const [isSavingOpenAI, setIsSavingOpenAI] = useState(false);
+  const [openAITestResult, setOpenAITestResult] = useState<'idle' | 'success' | 'error'>('idle');
+  const [openAITestMessage, setOpenAITestMessage] = useState<string | null>(null);
   const [analyticsSettings, setAnalyticsSettings] = useState<AnalyticsSettings>({
     gtmContainerId: '',
     ga4MeasurementId: '',
@@ -4083,9 +5695,14 @@ function IntegrationsSection() {
   const [isSavingAnalytics, setIsSavingAnalytics] = useState(false);
   const [lastSavedAnalytics, setLastSavedAnalytics] = useState<Date | null>(null);
   const saveAnalyticsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [ghlTestResult, setGhlTestResult] = useState<'idle' | 'success' | 'error'>('idle');
 
   const { data: ghlSettings, isLoading } = useQuery<GHLSettings>({
     queryKey: ['/api/integrations/ghl']
+  });
+
+  const { data: openaiSettingsData } = useQuery<OpenAISettings>({
+    queryKey: ['/api/integrations/openai']
   });
 
   const { data: companySettings } = useQuery<any>({
@@ -4097,6 +5714,19 @@ function IntegrationsSection() {
       setSettings(ghlSettings);
     }
   }, [ghlSettings]);
+
+  useEffect(() => {
+    if (openaiSettingsData) {
+      setOpenAISettings(openaiSettingsData);
+      if (openaiSettingsData.hasKey) {
+        setOpenAITestResult('success');
+        setOpenAITestMessage(openaiSettingsData.enabled ? 'OpenAI is enabled.' : 'Key saved. Run test to verify connection.');
+      } else {
+        setOpenAITestResult('idle');
+        setOpenAITestMessage(null);
+      }
+    }
+  }, [openaiSettingsData]);
 
   useEffect(() => {
     if (companySettings) {
@@ -4148,6 +5778,126 @@ function IntegrationsSection() {
     }, 800);
   }, [saveAnalyticsSettings]);
 
+  const saveOpenAISettings = async (settingsToSave?: Partial<OpenAISettings> & { apiKey?: string }) => {
+    setIsSavingOpenAI(true);
+    try {
+      await apiRequest('PUT', '/api/integrations/openai', {
+        enabled: settingsToSave?.enabled ?? openAISettings.enabled,
+        model: settingsToSave?.model || openAISettings.model,
+        apiKey: settingsToSave?.apiKey || openAIApiKey || undefined
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/integrations/openai'] });
+      setOpenAIApiKey('');
+      toast({ title: 'OpenAI settings saved' });
+    } catch (error: any) {
+      toast({
+        title: 'Failed to save OpenAI settings',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSavingOpenAI(false);
+    }
+  };
+
+  const handleToggleOpenAI = async (checked: boolean) => {
+    if (checked && !(openAITestResult === 'success' || openAISettings.hasKey)) {
+      toast({
+        title: 'Please run Test Connection',
+        description: 'You must have a successful test before enabling OpenAI.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    const next = { ...openAISettings, enabled: checked };
+    setOpenAISettings(next);
+    if (checked) {
+      setOpenAITestResult('success');
+      setOpenAITestMessage('OpenAI is enabled.');
+    } else {
+      setOpenAITestResult('idle');
+      setOpenAITestMessage(null);
+    }
+    await saveOpenAISettings(next);
+  };
+
+  const testOpenAIConnection = async () => {
+    setIsTestingOpenAI(true);
+    setOpenAITestResult('idle');
+    setOpenAITestMessage(null);
+    try {
+      const response = await fetch('/api/integrations/openai/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiKey: openAIApiKey || undefined,
+          model: openAISettings.model
+        }),
+        credentials: 'include'
+      });
+      const text = await response.text();
+      const contentType = response.headers.get('content-type') || '';
+      let result: any = {};
+      if (contentType.includes('application/json')) {
+        try {
+          result = text ? JSON.parse(text) : {};
+        } catch {
+          result = { success: false, message: text || 'Unexpected response from server' };
+        }
+      } else {
+        const snippet = (text || '').replace(/\s+/g, ' ').slice(0, 140);
+        result = {
+          success: false,
+          message: `Unexpected response (status ${response.status}, content-type: ${contentType || 'unknown'}). The API route may not be running. Try restarting the server and testing again. Snippet: ${snippet}`
+        };
+      }
+      if (result.success) {
+        setOpenAITestResult('success');
+        setOpenAITestMessage('Connection successful. You can now enable OpenAI.');
+        setOpenAISettings(prev => ({ ...prev, hasKey: true }));
+        setOpenAIApiKey('');
+        queryClient.invalidateQueries({ queryKey: ['/api/integrations/openai'] });
+        toast({ title: 'OpenAI connected', description: 'API key saved. You can now enable the integration.' });
+      } else {
+        setOpenAITestResult('error');
+        setOpenAITestMessage(result.message || 'Could not reach OpenAI.');
+        toast({
+          title: 'OpenAI test failed',
+          description: result.message || 'Could not reach OpenAI',
+          variant: 'destructive'
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: 'OpenAI test failed',
+        description: error.message,
+        variant: 'destructive'
+      });
+      setOpenAITestResult('error');
+      setOpenAITestMessage(error.message || 'Connection failed.');
+    } finally {
+      setIsTestingOpenAI(false);
+    }
+  };
+
+  const ghlTestButtonClass =
+    ghlTestResult === 'success'
+      ? 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200'
+      : ghlTestResult === 'error'
+      ? 'bg-red-100 text-red-700 border-red-300 hover:bg-red-200'
+      : '';
+
+  const openAITestButtonClass =
+    openAITestResult === 'success'
+      ? 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200'
+      : openAITestResult === 'error'
+      ? 'bg-red-100 text-red-700 border-red-300 hover:bg-red-200'
+      : '';
+
+  const hasGtmId = analyticsSettings.gtmContainerId.trim().length > 0;
+  const hasGa4Id = analyticsSettings.ga4MeasurementId.trim().length > 0;
+  const hasFacebookPixelId = analyticsSettings.facebookPixelId.trim().length > 0;
+
   const saveSettings = async (settingsToSave?: GHLSettings) => {
     setIsSaving(true);
     try {
@@ -4166,6 +5916,14 @@ function IntegrationsSection() {
   };
 
   const handleToggleEnabled = async (checked: boolean) => {
+    if (checked && ghlTestResult !== 'success') {
+      toast({
+        title: 'Please run Test Connection',
+        description: 'You must have a successful test before enabling GoHighLevel.',
+        variant: 'destructive'
+      });
+      return;
+    }
     const newSettings = { ...settings, isEnabled: checked };
     setSettings(newSettings);
     await saveSettings(newSettings);
@@ -4173,6 +5931,7 @@ function IntegrationsSection() {
 
   const testConnection = async () => {
     setIsTesting(true);
+    setGhlTestResult('idle');
     try {
       const response = await fetch('/api/integrations/ghl/test', {
         method: 'POST',
@@ -4186,8 +5945,11 @@ function IntegrationsSection() {
       const result = await response.json();
       
       if (result.success) {
-        toast({ title: 'Connection successful', description: 'GoHighLevel integration is working correctly.' });
+        setGhlTestResult('success');
+        await saveSettings(settings);
+        toast({ title: 'Connection successful', description: 'Settings saved. You can now enable the integration.' });
       } else {
+        setGhlTestResult('error');
         toast({ 
           title: 'Connection failed', 
           description: result.message || 'Could not connect to GoHighLevel',
@@ -4195,6 +5957,7 @@ function IntegrationsSection() {
         });
       }
     } catch (error: any) {
+      setGhlTestResult('error');
       toast({ 
         title: 'Connection failed', 
         description: error.message, 
@@ -4216,149 +5979,99 @@ function IntegrationsSection() {
         <p className="text-muted-foreground">Connect your booking system with external services</p>
       </div>
 
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Marketing & Analytics</h2>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            {isSavingAnalytics ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Saving...</span>
-              </>
-            ) : lastSavedAnalytics ? (
-              <>
-                <Check className="h-4 w-4 text-green-500" />
-                <span>Auto-saved</span>
-              </>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                    <Globe className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <CardTitle className="text-base">Google Tag Manager</CardTitle>
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">AI & Chat</h2>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <MessageSquare className="w-5 h-5 text-primary" />
                 </div>
-                <Switch
-                  checked={analyticsSettings.gtmEnabled}
-                  onCheckedChange={(checked) => updateAnalyticsField('gtmEnabled', checked)}
-                  data-testid="switch-gtm-enabled"
-                />
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-2">
-                <Label htmlFor="gtm-id" className="text-sm">Container ID</Label>
-                <Input
-                  id="gtm-id"
-                  value={analyticsSettings.gtmContainerId}
-                  onChange={(e) => updateAnalyticsField('gtmContainerId', e.target.value)}
-                  placeholder="GTM-XXXXXXX"
-                  className="text-sm"
-                  data-testid="input-gtm-id"
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Find this in GTM under Admin {'->'} Container Settings
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                    <Globe className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                  </div>
-                  <CardTitle className="text-base">Google Analytics 4</CardTitle>
+                <div>
+                  <CardTitle className="text-lg">OpenAI</CardTitle>
+                  <p className="text-sm text-muted-foreground">Power the chat assistant with OpenAI responses</p>
                 </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {isSavingOpenAI && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                <Label className="text-sm">
+                  {openAISettings.enabled ? 'Enabled' : 'Disabled'}
+                </Label>
                 <Switch
-                  checked={analyticsSettings.ga4Enabled}
-                  onCheckedChange={(checked) => updateAnalyticsField('ga4Enabled', checked)}
-                  data-testid="switch-ga4-enabled"
+                  checked={openAISettings.enabled}
+                  onCheckedChange={handleToggleOpenAI}
+                  disabled={isSavingOpenAI}
+                  data-testid="switch-openai-enabled"
                 />
               </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="ga4-id" className="text-sm">Measurement ID</Label>
+                <Label htmlFor="openai-api-key">API Key</Label>
                 <Input
-                  id="ga4-id"
-                  value={analyticsSettings.ga4MeasurementId}
-                  onChange={(e) => updateAnalyticsField('ga4MeasurementId', e.target.value)}
-                  placeholder="G-XXXXXXXXXX"
-                  className="text-sm"
-                  data-testid="input-ga4-id"
+                  id="openai-api-key"
+                  type="password"
+                  value={openAIApiKey}
+                  onChange={(e) => setOpenAIApiKey(e.target.value)}
+                  placeholder={openAISettings.hasKey ? '••••••••••••' : 'sk-...'}
+                  data-testid="input-openai-api-key"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Stored securely on the server. Not returned after saving.
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Find this in GA4 Admin {'->'} Data Streams
-              </p>
-            </CardContent>
-          </Card>
+              <div className="space-y-2">
+                <Label htmlFor="openai-model">Model</Label>
+                <Select
+                  value={openAISettings.model}
+                  onValueChange={(val) => setOpenAISettings(prev => ({ ...prev, model: val }))}
+                >
+                  <SelectTrigger id="openai-model">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="gpt-4o-mini">gpt-4o-mini</SelectItem>
+                    <SelectItem value="gpt-4o">gpt-4o</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                    <Globe className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                  </div>
-                  <CardTitle className="text-base">Facebook Pixel</CardTitle>
+            <div className="flex items-center gap-3 pt-4 border-t">
+              <Button
+                variant="outline"
+                className={openAITestButtonClass}
+                onClick={testOpenAIConnection}
+                disabled={isTestingOpenAI || (!openAIApiKey && !openAISettings.hasKey)}
+                data-testid="button-test-openai"
+              >
+                {isTestingOpenAI && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {openAITestResult === 'success' ? 'Test OK' : openAITestResult === 'error' ? 'Test Failed' : 'Test Connection'}
+              </Button>
+            </div>
+
+            {openAISettings.enabled && (
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                  <Check className="w-4 h-4" />
+                  <span className="font-medium text-sm">OpenAI is enabled.</span>
                 </div>
-                <Switch
-                  checked={analyticsSettings.facebookPixelEnabled}
-                  onCheckedChange={(checked) => updateAnalyticsField('facebookPixelEnabled', checked)}
-                  data-testid="switch-fb-pixel-enabled"
-                />
+                <p className="text-xs text-green-600 dark:text-green-500 mt-1">
+                  The chat assistant will use OpenAI to respond to visitors
+                </p>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-2">
-                <Label htmlFor="fb-pixel-id" className="text-sm">Pixel ID</Label>
-                <Input
-                  id="fb-pixel-id"
-                  value={analyticsSettings.facebookPixelId}
-                  onChange={(e) => updateAnalyticsField('facebookPixelId', e.target.value)}
-                  placeholder="123456789012345"
-                  className="text-sm"
-                  data-testid="input-fb-pixel-id"
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Find this in Meta Events Manager
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+            )}
 
-        <div className="p-4 bg-slate-100 dark:bg-slate-800 rounded-lg">
-          <h3 className="font-medium text-sm mb-2">Tracked Events</h3>
-          <p className="text-xs text-muted-foreground mb-3">
-            When enabled, the following events are automatically tracked:
-          </p>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              { event: 'cta_click', desc: 'Button clicks (Book Now, etc.)' },
-              { event: 'add_to_cart', desc: 'Service added to cart' },
-              { event: 'remove_from_cart', desc: 'Service removed from cart' },
-              { event: 'begin_checkout', desc: 'Booking form started' },
-              { event: 'purchase', desc: 'Booking confirmed (conversion)' },
-              { event: 'view_item_list', desc: 'Services page viewed' },
-            ].map(({ event, desc }) => (
-              <div key={event} className="text-xs bg-white dark:bg-slate-900 p-2 rounded border">
-                <code className="text-primary font-mono">{event}</code>
-                <p className="text-muted-foreground mt-0.5">{desc}</p>
+            {!openAISettings.hasKey && !openAISettings.enabled && (
+              <div className="text-xs text-muted-foreground">
+                Add a key and test the connection to enable OpenAI responses.
               </div>
-            ))}
-          </div>
-        </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <div className="space-y-4">
@@ -4437,20 +6150,13 @@ function IntegrationsSection() {
             <div className="flex items-center gap-3 pt-4 border-t">
               <Button
                 variant="outline"
+                className={ghlTestButtonClass}
                 onClick={testConnection}
                 disabled={isTesting || !settings.apiKey || !settings.locationId}
                 data-testid="button-test-ghl"
               >
                 {isTesting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Test Connection
-              </Button>
-              <Button
-                onClick={() => saveSettings()}
-                disabled={isSaving}
-                data-testid="button-save-ghl"
-              >
-                {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Save Settings
+                {ghlTestResult === 'success' ? 'Test OK' : ghlTestResult === 'error' ? 'Test Failed' : 'Test Connection'}
               </Button>
             </div>
 
@@ -4467,6 +6173,171 @@ function IntegrationsSection() {
             )}
           </CardContent>
         </Card>
+      </div>
+
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Marketing & Analytics</h2>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            {isSavingAnalytics ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Saving...</span>
+              </>
+            ) : lastSavedAnalytics ? (
+              <>
+                <Check className="h-4 w-4 text-green-500" />
+                <span>Auto-saved</span>
+              </>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <Globe className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <CardTitle className="text-base">Google Tag Manager</CardTitle>
+                </div>
+                <Switch
+                  checked={analyticsSettings.gtmEnabled}
+                  onCheckedChange={(checked) => updateAnalyticsField('gtmEnabled', checked)}
+                  data-testid="switch-gtm-enabled"
+                />
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="gtm-id" className="text-sm">Container ID</Label>
+                <Input
+                  id="gtm-id"
+                  value={analyticsSettings.gtmContainerId}
+                  onChange={(e) => updateAnalyticsField('gtmContainerId', e.target.value)}
+                  placeholder="GTM-XXXXXXX"
+                  className="text-sm"
+                  data-testid="input-gtm-id"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Find this in GTM under Admin {'->'} Container Settings
+              </p>
+              {analyticsSettings.gtmEnabled && hasGtmId && (
+                <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-2.5 py-2 text-xs text-green-700 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400">
+                  <Check className="h-3.5 w-3.5" />
+                  <span className="font-medium">Integration Active</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                    <Globe className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <CardTitle className="text-base">Google Analytics 4</CardTitle>
+                </div>
+                <Switch
+                  checked={analyticsSettings.ga4Enabled}
+                  onCheckedChange={(checked) => updateAnalyticsField('ga4Enabled', checked)}
+                  data-testid="switch-ga4-enabled"
+                />
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="ga4-id" className="text-sm">Measurement ID</Label>
+                <Input
+                  id="ga4-id"
+                  value={analyticsSettings.ga4MeasurementId}
+                  onChange={(e) => updateAnalyticsField('ga4MeasurementId', e.target.value)}
+                  placeholder="G-XXXXXXXXXX"
+                  className="text-sm"
+                  data-testid="input-ga4-id"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Find this in GA4 Admin {'->'} Data Streams
+              </p>
+              {analyticsSettings.ga4Enabled && hasGa4Id && (
+                <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-2.5 py-2 text-xs text-green-700 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400">
+                  <Check className="h-3.5 w-3.5" />
+                  <span className="font-medium">Integration Active</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                    <Globe className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <CardTitle className="text-base">Facebook Pixel</CardTitle>
+                </div>
+                <Switch
+                  checked={analyticsSettings.facebookPixelEnabled}
+                  onCheckedChange={(checked) => updateAnalyticsField('facebookPixelEnabled', checked)}
+                  data-testid="switch-fb-pixel-enabled"
+                />
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="fb-pixel-id" className="text-sm">Pixel ID</Label>
+                <Input
+                  id="fb-pixel-id"
+                  value={analyticsSettings.facebookPixelId}
+                  onChange={(e) => updateAnalyticsField('facebookPixelId', e.target.value)}
+                  placeholder="123456789012345"
+                  className="text-sm"
+                  data-testid="input-fb-pixel-id"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Find this in Meta Events Manager
+              </p>
+              {analyticsSettings.facebookPixelEnabled && hasFacebookPixelId && (
+                <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-2.5 py-2 text-xs text-green-700 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400">
+                  <Check className="h-3.5 w-3.5" />
+                  <span className="font-medium">Integration Active</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">Tracked Events</h2>
+        <div className="p-4 bg-slate-100 dark:bg-slate-800 rounded-lg">
+          <p className="text-xs text-muted-foreground mb-3">
+            When enabled, the following events are automatically tracked:
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              { event: 'cta_click', desc: 'Button clicks (Book Now, etc.)' },
+              { event: 'add_to_cart', desc: 'Service added to cart' },
+              { event: 'remove_from_cart', desc: 'Service removed from cart' },
+              { event: 'begin_checkout', desc: 'Booking form started' },
+              { event: 'purchase', desc: 'Booking confirmed (conversion)' },
+              { event: 'view_item_list', desc: 'Services page viewed' },
+            ].map(({ event, desc }) => (
+              <div key={event} className="text-xs bg-white dark:bg-slate-900 p-2 rounded border">
+                <code className="text-primary font-mono">{event}</code>
+                <p className="text-muted-foreground mt-0.5">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

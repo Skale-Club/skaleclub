@@ -12,6 +12,7 @@ import { initAnalytics, trackPageView } from "@/lib/analytics";
 import { PageLoader } from "@/components/ui/spinner";
 import { useEffect, Suspense, lazy, useRef, useState, createContext, useContext } from "react";
 import type { CompanySettings } from "@shared/schema";
+import { ChatWidget } from "@/components/chat/ChatWidget";
 
 // Context to track initial app load state
 const InitialLoadContext = createContext<{ isInitialLoad: boolean; markLoaded: () => void }>({
@@ -152,6 +153,7 @@ function Router() {
         </Suspense>
       </main>
       <Footer />
+      <ChatWidget />
     </div>
   );
 }

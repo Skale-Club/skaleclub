@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, numeric, timestamp, boolean, date, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, numeric, timestamp, boolean, date, jsonb, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -33,6 +33,7 @@ export const services = pgTable("services", {
   durationMinutes: integer("duration_minutes").notNull(), // Duration in minutes
   imageUrl: text("image_url"),
   isHidden: boolean("is_hidden").default(false), // Hidden services only appear as add-ons
+  isArchived: boolean("is_archived").default(false), // Soft delete flag
   order: integer("order").default(0),
 });
 
@@ -76,6 +77,53 @@ export const integrationSettings = pgTable("integration_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Chat Settings (singleton table - only one row)
+export const chatSettings = pgTable("chat_settings", {
+  id: serial("id").primaryKey(),
+  enabled: boolean("enabled").default(false),
+  agentName: text("agent_name").default("Skleanings Assistant"),
+  agentAvatarUrl: text("agent_avatar_url").default(""),
+  systemPrompt: text("system_prompt").default(
+    "You are our helpful chat assistant. Provide concise, friendly answers. Use the provided tools to fetch services, details, and availability. Do not guess prices or availability; always use tool data when relevant. If booking is requested, gather details and direct the user to the booking page at /booking."
+  ),
+  welcomeMessage: text("welcome_message").default("Hi! How can I help you today?"),
+  intakeObjectives: jsonb("intake_objectives").default([]),
+  excludedUrlRules: jsonb("excluded_url_rules").default([]),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Chat Integrations (OpenAI)
+export const chatIntegrations = pgTable("chat_integrations", {
+  id: serial("id").primaryKey(),
+  provider: text("provider").notNull().default("openai"),
+  enabled: boolean("enabled").default(false),
+  model: text("model").default("gpt-4o-mini"),
+  apiKey: text("api_key"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const conversations = pgTable("conversations", {
+  id: uuid("id").primaryKey(),
+  status: text("status").notNull().default("open"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  lastMessageAt: timestamp("last_message_at"),
+  firstPageUrl: text("first_page_url"),
+  visitorName: text("visitor_name"),
+  visitorPhone: text("visitor_phone"),
+  visitorEmail: text("visitor_email"),
+});
+
+export const conversationMessages = pgTable("conversation_messages", {
+  id: uuid("id").primaryKey(),
+  conversationId: uuid("conversation_id").references(() => conversations.id).notNull(),
+  role: text("role").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  metadata: jsonb("metadata"),
+});
+
 export const bookingItems = pgTable("booking_items", {
   id: serial("id").primaryKey(),
   bookingId: integer("booking_id").references(() => bookings.id).notNull(),
@@ -107,6 +155,23 @@ export const insertIntegrationSettingsSchema = createInsertSchema(integrationSet
   createdAt: true, 
   updatedAt: true 
 });
+export const insertChatSettingsSchema = createInsertSchema(chatSettings).omit({
+  id: true,
+  updatedAt: true,
+});
+export const insertChatIntegrationsSchema = createInsertSchema(chatIntegrations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export const insertConversationSchema = createInsertSchema(conversations).omit({
+  createdAt: true,
+  updatedAt: true,
+  lastMessageAt: true,
+});
+export const insertConversationMessageSchema = createInsertSchema(conversationMessages).omit({
+  createdAt: true,
+});
 
 // === TYPES ===
 
@@ -117,12 +182,20 @@ export type ServiceAddon = typeof serviceAddons.$inferSelect;
 export type Booking = typeof bookings.$inferSelect;
 export type BookingItem = typeof bookingItems.$inferSelect;
 export type IntegrationSettings = typeof integrationSettings.$inferSelect;
+export type ChatSettings = typeof chatSettings.$inferSelect;
+export type ChatIntegrations = typeof chatIntegrations.$inferSelect;
+export type Conversation = typeof conversations.$inferSelect;
+export type ConversationMessage = typeof conversationMessages.$inferSelect;
 
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type InsertService = z.infer<typeof insertServiceSchema>;
 export type InsertServiceAddon = z.infer<typeof insertServiceAddonSchema>;
 export type InsertBooking = z.infer<typeof insertBookingSchema>;
 export type InsertIntegrationSettings = z.infer<typeof insertIntegrationSettingsSchema>;
+export type InsertChatSettings = z.infer<typeof insertChatSettingsSchema>;
+export type InsertChatIntegrations = z.infer<typeof insertChatIntegrationsSchema>;
+export type InsertConversation = z.infer<typeof insertConversationSchema>;
+export type InsertConversationMessage = z.infer<typeof insertConversationMessageSchema>;
 
 // For availability checking
 export interface TimeSlot {
@@ -150,6 +223,16 @@ export interface BusinessHours {
   friday: DayHours;
   saturday: DayHours;
   sunday: DayHours;
+}
+
+export interface HomepageContent {
+  heroBadgeImageUrl?: string;
+  heroBadgeAlt?: string;
+  trustBadges?: { title: string; description: string; icon?: string }[];
+  categoriesSection?: { title?: string; subtitle?: string; ctaText?: string };
+  reviewsSection?: { title?: string; subtitle?: string; embedUrl?: string };
+  blogSection?: { title?: string; subtitle?: string; viewAllText?: string; readMoreText?: string };
+  areasServedSection?: { label?: string; heading?: string; description?: string; ctaText?: string };
 }
 
 export const DEFAULT_BUSINESS_HOURS: BusinessHours = {
@@ -208,9 +291,12 @@ export const companySettings = pgTable("company_settings", {
   gtmEnabled: boolean("gtm_enabled").default(false),
   ga4Enabled: boolean("ga4_enabled").default(false),
   facebookPixelEnabled: boolean("facebook_pixel_enabled").default(false),
+  homepageContent: jsonb("homepage_content").$type<HomepageContent>().default({}),
 });
 
-export const insertCompanySettingsSchema = createInsertSchema(companySettings).omit({ id: true });
+export const insertCompanySettingsSchema = createInsertSchema(companySettings, {
+  homepageContent: z.custom<HomepageContent>().optional().nullable(),
+}).omit({ id: true });
 export type CompanySettings = typeof companySettings.$inferSelect;
 export type InsertCompanySettings = z.infer<typeof insertCompanySettingsSchema>;
 

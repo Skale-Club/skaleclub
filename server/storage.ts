@@ -6,6 +6,10 @@ import {
   serviceAddons,
   bookings,
   bookingItems,
+  chatSettings,
+  chatIntegrations,
+  conversations,
+  conversationMessages,
   companySettings,
   faqs,
   integrationSettings,
@@ -15,9 +19,13 @@ import {
   type Subcategory,
   type Service,
   type ServiceAddon,
-      type Booking,
+  type Booking,
   type BookingItem,
   type CompanySettings,
+  type ChatSettings,
+  type ChatIntegrations,
+  type Conversation,
+  type ConversationMessage,
   type Faq,
   type IntegrationSettings,
   type BlogPost,
@@ -26,7 +34,10 @@ import {
   type InsertService,
   type InsertServiceAddon,
   type InsertBooking,
-  type InsertCompanySettings,
+  type InsertChatSettings,
+  type InsertChatIntegrations,
+  type InsertConversation,
+  type InsertConversationMessage,
   type InsertFaq,
   type InsertIntegrationSettings,
   type InsertBlogPost,
@@ -81,7 +92,7 @@ export interface IStorage {
   
   // Company Settings
   getCompanySettings(): Promise<CompanySettings>;
-  updateCompanySettings(settings: Partial<InsertCompanySettings>): Promise<CompanySettings>;
+  updateCompanySettings(settings: Partial<CompanySettings>): Promise<CompanySettings>;
   
   // FAQs
   getFaqs(): Promise<Faq[]>;
@@ -95,6 +106,19 @@ export interface IStorage {
   
   // Booking GHL sync
   updateBookingGHLSync(bookingId: number, ghlContactId: string, ghlAppointmentId: string, syncStatus: string): Promise<void>;
+  
+  // Chat
+  getChatSettings(): Promise<ChatSettings>;
+  updateChatSettings(settings: Partial<InsertChatSettings>): Promise<ChatSettings>;
+  getChatIntegration(provider: string): Promise<ChatIntegrations | undefined>;
+  upsertChatIntegration(settings: InsertChatIntegrations): Promise<ChatIntegrations>;
+  listConversations(): Promise<Conversation[]>;
+  getConversation(id: string): Promise<Conversation | undefined>;
+  updateConversation(id: string, updates: Partial<Conversation>): Promise<Conversation | undefined>;
+  deleteConversation(id: string): Promise<void>;
+  createConversation(conversation: InsertConversation): Promise<Conversation>;
+  addConversationMessage(message: InsertConversationMessage): Promise<ConversationMessage>;
+  getConversationMessages(conversationId: string): Promise<ConversationMessage[]>;
   
   // Blog Posts
   getBlogPosts(status?: string): Promise<BlogPost[]>;
@@ -111,6 +135,21 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  private chatSchemaEnsured = false;
+
+  private async ensureChatSchema(): Promise<void> {
+    if (this.chatSchemaEnsured) return;
+    try {
+      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "agent_avatar_url" text DEFAULT ''`);
+      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "system_prompt" text DEFAULT 'You are our helpful chat assistant. Provide concise, friendly answers. Use the provided tools to fetch services, details, and availability. Do not guess prices or availability; always use tool data when relevant. If booking is requested, gather details and direct the user to the booking page at /booking.'`);
+      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "intake_objectives" jsonb DEFAULT '[]'`);
+      this.chatSchemaEnsured = true;
+    } catch (err) {
+      console.error("ensureChatSchema error:", err);
+      this.chatSchemaEnsured = false;
+    }
+  }
+
   async getCategories(): Promise<Category[]> {
     return await db.select().from(categories).orderBy(categories.order);
   }
@@ -126,13 +165,13 @@ export class DatabaseStorage implements IStorage {
         return await db
           .select()
           .from(services)
-          .where(eq(services.subcategoryId, subcategoryId))
+          .where(and(eq(services.subcategoryId, subcategoryId), eq(services.isArchived, false)))
           .orderBy(asc(services.order), asc(services.id));
       }
       return await db
         .select()
         .from(services)
-        .where(and(eq(services.subcategoryId, subcategoryId), eq(services.isHidden, false)))
+        .where(and(eq(services.subcategoryId, subcategoryId), eq(services.isHidden, false), eq(services.isArchived, false)))
         .orderBy(asc(services.order), asc(services.id));
     }
     if (categoryId) {
@@ -140,19 +179,23 @@ export class DatabaseStorage implements IStorage {
         return await db
           .select()
           .from(services)
-          .where(eq(services.categoryId, categoryId))
+          .where(and(eq(services.categoryId, categoryId), eq(services.isArchived, false)))
           .orderBy(asc(services.order), asc(services.id));
       }
       return await db
         .select()
         .from(services)
-        .where(and(eq(services.categoryId, categoryId), eq(services.isHidden, false)))
+        .where(and(eq(services.categoryId, categoryId), eq(services.isHidden, false), eq(services.isArchived, false)))
         .orderBy(asc(services.order), asc(services.id));
     }
     if (includeHidden) {
-      return await db.select().from(services).orderBy(asc(services.order), asc(services.id));
+      return await db.select().from(services).where(eq(services.isArchived, false)).orderBy(asc(services.order), asc(services.id));
     }
-    return await db.select().from(services).where(eq(services.isHidden, false)).orderBy(asc(services.order), asc(services.id));
+    return await db
+      .select()
+      .from(services)
+      .where(and(eq(services.isHidden, false), eq(services.isArchived, false)))
+      .orderBy(asc(services.order), asc(services.id));
   }
 
   async getSubcategories(categoryId?: number): Promise<Subcategory[]> {
@@ -181,7 +224,10 @@ export class DatabaseStorage implements IStorage {
     if (addonRelations.length === 0) return [];
     
     const addonIds = addonRelations.map(r => r.addonServiceId);
-    return await db.select().from(services).where(inArray(services.id, addonIds));
+    return await db
+      .select()
+      .from(services)
+      .where(and(inArray(services.id, addonIds), eq(services.isArchived, false)));
   }
 
   async setServiceAddons(serviceId: number, addonServiceIds: number[]): Promise<void> {
@@ -201,7 +247,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getService(id: number): Promise<Service | undefined> {
-    const [service] = await db.select().from(services).where(eq(services.id, id));
+    const [service] = await db
+      .select()
+      .from(services)
+      .where(and(eq(services.id, id), eq(services.isArchived, false)));
     return service;
   }
 
@@ -297,7 +346,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteService(id: number): Promise<void> {
-    await db.delete(services).where(eq(services.id, id));
+    await db.transaction(async (tx) => {
+      await tx.delete(serviceAddons).where(eq(serviceAddons.serviceId, id));
+      await tx.delete(serviceAddons).where(eq(serviceAddons.addonServiceId, id));
+      await tx.delete(blogPostServices).where(eq(blogPostServices.serviceId, id));
+      await tx.update(services).set({ isArchived: true }).where(eq(services.id, id));
+    });
   }
 
   async reorderServices(order: { id: number; order: number }[]): Promise<void> {
@@ -317,7 +371,7 @@ export class DatabaseStorage implements IStorage {
     return newSettings;
   }
 
-  async updateCompanySettings(settings: Partial<InsertCompanySettings>): Promise<CompanySettings> {
+  async updateCompanySettings(settings: Partial<CompanySettings>): Promise<CompanySettings> {
     const existing = await this.getCompanySettings();
     const [updated] = await db.update(companySettings).set(settings).where(eq(companySettings.id, existing.id)).returning();
     return updated;
@@ -367,6 +421,114 @@ export class DatabaseStorage implements IStorage {
       .update(bookings)
       .set({ ghlContactId, ghlAppointmentId, ghlSyncStatus: syncStatus })
       .where(eq(bookings.id, bookingId));
+  }
+
+  async getChatSettings(): Promise<ChatSettings> {
+    try {
+      await this.ensureChatSchema();
+      const [settings] = await db.select().from(chatSettings);
+      if (settings) return settings;
+    } catch (err) {
+      console.error("getChatSettings initial read failed, retrying after ensuring schema:", err);
+      this.chatSchemaEnsured = false;
+      await this.ensureChatSchema();
+    }
+
+    const [created] = await db.insert(chatSettings).values({}).returning();
+    return created;
+  }
+
+  async updateChatSettings(settings: Partial<InsertChatSettings>): Promise<ChatSettings> {
+    try {
+      await this.ensureChatSchema();
+      const existing = await this.getChatSettings();
+      const [updated] = await db
+        .update(chatSettings)
+        .set({ ...settings, updatedAt: new Date() })
+        .where(eq(chatSettings.id, existing.id))
+        .returning();
+      return updated;
+    } catch (err) {
+      console.error("updateChatSettings failed, retrying after ensuring schema:", err);
+      this.chatSchemaEnsured = false;
+      await this.ensureChatSchema();
+      const existing = await this.getChatSettings();
+      const [updated] = await db
+        .update(chatSettings)
+        .set({ ...settings, updatedAt: new Date() })
+        .where(eq(chatSettings.id, existing.id))
+        .returning();
+      return updated;
+    }
+  }
+
+  async getChatIntegration(provider: string): Promise<ChatIntegrations | undefined> {
+    const [integration] = await db.select().from(chatIntegrations).where(eq(chatIntegrations.provider, provider));
+    return integration;
+  }
+
+  async upsertChatIntegration(settings: InsertChatIntegrations): Promise<ChatIntegrations> {
+    const existing = await this.getChatIntegration(settings.provider || "openai");
+    if (existing) {
+      const payload = {
+        ...settings,
+        apiKey: settings.apiKey ?? existing.apiKey,
+        updatedAt: new Date(),
+      };
+      const [updated] = await db
+        .update(chatIntegrations)
+        .set(payload)
+        .where(eq(chatIntegrations.id, existing.id))
+        .returning();
+      return updated;
+    }
+
+    const [created] = await db.insert(chatIntegrations).values(settings).returning();
+    return created;
+  }
+
+  async listConversations(): Promise<Conversation[]> {
+    return await db
+      .select()
+      .from(conversations)
+      .orderBy(desc(sql`COALESCE(${conversations.lastMessageAt}, ${conversations.createdAt})`));
+  }
+
+  async getConversation(id: string): Promise<Conversation | undefined> {
+    const [conversation] = await db.select().from(conversations).where(eq(conversations.id, id));
+    return conversation;
+  }
+
+  async updateConversation(id: string, updates: Partial<Conversation>): Promise<Conversation | undefined> {
+    const [updated] = await db
+      .update(conversations)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(conversations.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteConversation(id: string): Promise<void> {
+    await db.delete(conversationMessages).where(eq(conversationMessages.conversationId, id));
+    await db.delete(conversations).where(eq(conversations.id, id));
+  }
+
+  async createConversation(conversation: InsertConversation): Promise<Conversation> {
+    const [created] = await db.insert(conversations).values(conversation).returning();
+    return created;
+  }
+
+  async addConversationMessage(message: InsertConversationMessage): Promise<ConversationMessage> {
+    const [created] = await db.insert(conversationMessages).values(message).returning();
+    return created;
+  }
+
+  async getConversationMessages(conversationId: string): Promise<ConversationMessage[]> {
+    return await db
+      .select()
+      .from(conversationMessages)
+      .where(eq(conversationMessages.conversationId, conversationId))
+      .orderBy(asc(conversationMessages.createdAt));
   }
 
   async getBlogPosts(status?: string): Promise<BlogPost[]> {

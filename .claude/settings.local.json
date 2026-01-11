@@ -7,7 +7,10 @@
       "Bash(npx tsx:*)",
       "WebFetch(domain:i.postimg.cc)",
       "WebFetch(domain:postimg.cc)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(npm run db:push:*)",
+      "Bash(npx drizzle-kit introspect:*)",
+      "Bash(pkill:*)"
     ]
   }
 }

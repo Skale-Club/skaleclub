@@ -3,7 +3,9 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { api, errorSchemas, buildUrl } from "@shared/routes";
 import { z } from "zod";
-import { WORKING_HOURS, DEFAULT_BUSINESS_HOURS, insertCategorySchema, insertServiceSchema, insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema, insertBlogPostSchema, BusinessHours, DayHours } from "@shared/schema";
+import OpenAI from "openai";
+import crypto from "crypto";
+import { WORKING_HOURS, DEFAULT_BUSINESS_HOURS, insertCategorySchema, insertServiceSchema, insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema, insertBlogPostSchema, BusinessHours, DayHours, insertChatSettingsSchema, insertChatIntegrationsSchema } from "@shared/schema";
 import { insertSubcategorySchema } from "./storage";
 import { ObjectStorageService, registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { authStorage } from "./replit_integrations/auth/storage";
@@ -27,6 +29,67 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
     return res.status(500).json({ message: 'Failed to verify admin status' });
   }
 }
+
+// Chat helpers
+const urlRuleSchema = z.object({
+  pattern: z.string().min(1),
+  match: z.enum(['contains', 'starts_with', 'equals']),
+});
+
+const chatMessageSchema = z.object({
+  conversationId: z.string().uuid().optional(),
+  message: z.string().min(1).max(2000),
+  pageUrl: z.string().optional(),
+  visitorId: z.string().optional(),
+  userAgent: z.string().optional(),
+  visitorName: z.string().optional(),
+  visitorEmail: z.string().optional(),
+  visitorPhone: z.string().optional(),
+});
+
+type UrlRule = z.infer<typeof urlRuleSchema>;
+
+const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+
+function isRateLimited(key: string, limit = 8, windowMs = 60_000): boolean {
+  const now = Date.now();
+  const entry = rateLimitStore.get(key);
+  if (!entry || now > entry.resetAt) {
+    rateLimitStore.set(key, { count: 1, resetAt: now + windowMs });
+    return false;
+  }
+  entry.count += 1;
+  return entry.count > limit;
+}
+
+function isUrlExcluded(url: string, rules: UrlRule[] = []): boolean {
+  if (!url) return false;
+  return rules.some(rule => {
+    const pattern = rule.pattern || '';
+    if (rule.match === 'contains') return url.includes(pattern);
+    if (rule.match === 'starts_with') return url.startsWith(pattern);
+    return url === pattern;
+  });
+}
+
+const DEFAULT_CHAT_MODEL = 'gpt-4o-mini';
+
+type IntakeObjective = {
+  id: 'zipcode' | 'name' | 'phone' | 'serviceType' | 'serviceDetails' | 'date' | 'address';
+  label: string;
+  description: string;
+  enabled: boolean;
+};
+
+const DEFAULT_INTAKE_OBJECTIVES: IntakeObjective[] = [
+  { id: 'zipcode', label: 'Zip code', description: 'Collect zip/postal code to validate service area', enabled: true },
+  { id: 'name', label: 'Name', description: 'Customer full name', enabled: true },
+  { id: 'phone', label: 'Phone', description: 'Phone number for confirmations', enabled: true },
+  { id: 'serviceType', label: 'Service type', description: 'Which service is requested', enabled: true },
+  { id: 'serviceDetails', label: 'Service details', description: 'Extra details (rooms, size, notes)', enabled: true },
+  { id: 'date', label: 'Date & time', description: 'Date and time slot selection', enabled: true },
+  { id: 'address', label: 'Address', description: 'Full address with street, unit, city, state', enabled: true },
+];
 
 export async function registerRoutes(
   httpServer: Server,
@@ -53,6 +116,451 @@ export async function registerRoutes(
       res.json({ isAdmin: false });
     }
   });
+
+  let runtimeOpenAiKey = process.env.OPENAI_API_KEY || "";
+
+  const chatTools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
+    {
+      type: "function",
+      function: {
+        name: "list_services",
+        description: "List all available cleaning services with price and duration",
+        parameters: {
+          type: "object",
+          properties: {
+            query: { type: "string", description: "Optional search string to filter services by name" },
+          },
+          additionalProperties: false,
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_service_details",
+        description: "Get details for a specific service",
+        parameters: {
+          type: "object",
+          properties: {
+            service_id: { type: "number", description: "ID of the service" },
+          },
+          required: ["service_id"],
+          additionalProperties: false,
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_availability",
+        description: "Get available start times between two dates",
+        parameters: {
+          type: "object",
+          properties: {
+            service_id: { type: "number", description: "ID of the service to determine duration" },
+            start_date: { type: "string", description: "Start date (YYYY-MM-DD)" },
+            end_date: { type: "string", description: "End date (YYYY-MM-DD)" },
+          },
+          required: ["start_date", "end_date"],
+          additionalProperties: false,
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "create_booking",
+        description: "Create a booking for one or more services once the customer has provided all details",
+        parameters: {
+          type: "object",
+          properties: {
+            service_ids: {
+              type: "array",
+              items: { type: "number" },
+              description: "IDs of services to book",
+            },
+            booking_date: { type: "string", description: "Booking date in YYYY-MM-DD (America/New_York time)" },
+            start_time: { type: "string", description: "Start time in HH:mm (24h, America/New_York)" },
+            customer_name: { type: "string", description: "Customer full name" },
+            customer_email: { type: "string", description: "Customer email" },
+            customer_phone: { type: "string", description: "Customer phone" },
+            customer_address: { type: "string", description: "Full address with street, city, state, and unit if applicable" },
+            payment_method: {
+              type: "string",
+              enum: ["site", "online"],
+              description: "Payment method; defaults to site",
+            },
+            notes: { type: "string", description: "Any additional notes from the customer", nullable: true },
+          },
+          required: ["service_ids", "booking_date", "start_time", "customer_name", "customer_email", "customer_phone", "customer_address"],
+          additionalProperties: false,
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "update_contact",
+        description: "Save visitor contact info (name/email/phone) to the conversation as soon as it is provided",
+        parameters: {
+          type: "object",
+          properties: {
+            name: { type: "string", description: "Visitor name" },
+            email: { type: "string", description: "Visitor email" },
+            phone: { type: "string", description: "Visitor phone" },
+          },
+          additionalProperties: false,
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_business_policies",
+        description: "Get business hours and any minimum booking rules",
+        parameters: {
+          type: "object",
+          properties: {},
+          additionalProperties: false,
+        },
+      },
+    },
+  ];
+
+  function getOpenAIClient(apiKey?: string) {
+    const key = apiKey || runtimeOpenAiKey || process.env.OPENAI_API_KEY;
+    if (!key) return null;
+    return new OpenAI({ apiKey: key });
+  }
+
+  function formatServiceForTool(service: any) {
+    return {
+      id: service.id,
+      name: service.name,
+      description: service.description,
+      price: service.price?.toString?.() || service.price,
+      durationMinutes: service.durationMinutes,
+    };
+  }
+
+  async function getAvailabilityForDate(
+    date: string,
+    durationMinutes: number,
+    useGhl: boolean,
+    ghlSettings: any
+  ) {
+    const company = await storage.getCompanySettings();
+    const businessHours: BusinessHours = (company?.businessHours as BusinessHours) || DEFAULT_BUSINESS_HOURS;
+    const selectedDate = new Date(date + 'T12:00:00');
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
+    const dayName = dayNames[selectedDate.getDay()];
+    const dayHours: DayHours = businessHours[dayName];
+
+    if (!dayHours?.isOpen) return [];
+
+    const existingBookings = await storage.getBookingsByDate(date);
+    let ghlFreeSlots: string[] = [];
+
+    if (useGhl && ghlSettings?.apiKey && ghlSettings.calendarId) {
+      try {
+        const startDate = new Date(date + 'T00:00:00');
+        const endDate = new Date(date + 'T23:59:59');
+        const result = await getGHLFreeSlots(
+          ghlSettings.apiKey,
+          ghlSettings.calendarId,
+          startDate,
+          endDate,
+          'America/New_York'
+        );
+        if (result.success && result.slots) {
+          ghlFreeSlots = result.slots
+            .filter((slot: any) => slot.startTime?.startsWith(date))
+            .map((slot: any) => slot.startTime.split('T')[1]?.substring(0, 5))
+            .filter((t: string) => !!t);
+        }
+      } catch {
+        // fall back silently
+      }
+    }
+
+    const now = new Date();
+    const estNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const todayStr = estNow.toISOString().split('T')[0];
+    const isToday = date === todayStr;
+    const currentHour = estNow.getHours();
+    const currentMinute = estNow.getMinutes();
+
+    const [startHr, startMn] = dayHours.start.split(':').map(Number);
+    const [endHr, endMn] = dayHours.end.split(':').map(Number);
+
+    const slots: string[] = [];
+
+    for (let h = startHr; h < endHr || (h === endHr && 0 < endMn); h++) {
+      for (let m = 0; m < 60; m += 30) {
+        if (h === startHr && m < startMn) continue;
+        if (h > endHr || (h === endHr && m >= endMn)) continue;
+
+        const slotHour = h.toString().padStart(2, '0');
+        const slotMinute = m.toString().padStart(2, '0');
+        const startTime = `${slotHour}:${slotMinute}`;
+
+        if (isToday) {
+          if (h < currentHour || (h === currentHour && m <= currentMinute)) continue;
+        }
+
+        const slotDate = new Date(`2000-01-01T${startTime}:00`);
+        slotDate.setMinutes(slotDate.getMinutes() + durationMinutes);
+        if (slotDate.getHours() > endHr || (slotDate.getHours() === endHr && slotDate.getMinutes() > endMn)) {
+          continue;
+        }
+
+        const endHour = slotDate.getHours().toString().padStart(2, '0');
+        const endMinute = slotDate.getMinutes().toString().padStart(2, '0');
+        const endTime = `${endHour}:${endMinute}`;
+
+        let available = true;
+
+        if (useGhl) {
+          available = ghlFreeSlots.includes(startTime);
+        }
+
+        if (available) {
+          available = !existingBookings.some(b => startTime < b.endTime && endTime > b.startTime);
+        }
+
+        if (available) {
+          slots.push(startTime);
+        }
+      }
+    }
+
+    return slots;
+  }
+
+  async function getAvailabilityRange(
+    startDate: string,
+    endDate: string,
+    durationMinutes: number
+  ) {
+    const start = new Date(startDate + 'T00:00:00');
+    const end = new Date(endDate + 'T00:00:00');
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return {};
+
+    const result: Record<string, string[]> = {};
+    const ghlSettings = await storage.getIntegrationSettings('gohighlevel');
+    const useGhl = !!(ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.calendarId);
+
+    for (
+      let cursor = new Date(start);
+      cursor.getTime() <= end.getTime();
+      cursor.setDate(cursor.getDate() + 1)
+    ) {
+      const dateStr = cursor.toISOString().split('T')[0];
+      const slots = await getAvailabilityForDate(dateStr, durationMinutes, useGhl, ghlSettings);
+      result[dateStr] = slots;
+    }
+
+    return result;
+  }
+
+  async function runChatTool(
+    toolName: string,
+    args: any,
+    conversationId?: string
+  ) {
+    switch (toolName) {
+      case 'list_services': {
+        const services = await storage.getServices(undefined, undefined, false);
+        const query = (args?.query as string | undefined)?.toLowerCase?.();
+        const filtered = query
+          ? services.filter(s => s.name.toLowerCase().includes(query))
+          : services;
+        return { services: filtered.map(formatServiceForTool) };
+      }
+      case 'get_service_details': {
+        const id = Number(args?.service_id);
+        if (!id) return { error: 'service_id is required' };
+        const service = await storage.getService(id);
+        if (!service) return { error: 'Service not found' };
+        return { service: formatServiceForTool(service) };
+      }
+      case 'get_availability': {
+        const startDate = args?.start_date as string;
+        const endDate = args?.end_date as string;
+        let durationMinutes = 60;
+        if (args?.service_id) {
+          const service = await storage.getService(Number(args.service_id));
+          if (service?.durationMinutes) {
+            durationMinutes = service.durationMinutes;
+          }
+        }
+        const availability = await getAvailabilityRange(startDate, endDate, durationMinutes);
+        return { availability, durationMinutes };
+      }
+      case 'get_business_policies': {
+        const company = await storage.getCompanySettings();
+        return {
+          workingHoursStart: company.workingHoursStart,
+          workingHoursEnd: company.workingHoursEnd,
+          businessHours: company.businessHours || DEFAULT_BUSINESS_HOURS,
+          minimumBookingValue: company.minimumBookingValue?.toString?.() || company.minimumBookingValue,
+        };
+      }
+      case 'update_contact': {
+        const name = (args?.name as string | undefined)?.trim();
+        const email = (args?.email as string | undefined)?.trim();
+        const phone = (args?.phone as string | undefined)?.trim();
+        if (!conversationId) return { error: 'Conversation ID missing' };
+        if (!name && !email && !phone) return { error: 'Provide at least one of name, email, or phone' };
+
+        const updates: any = {};
+        if (name) updates.visitorName = name;
+        if (email) updates.visitorEmail = email;
+        if (phone) updates.visitorPhone = phone;
+
+        const updated = await storage.updateConversation(conversationId, updates);
+        return {
+          success: true,
+          visitorName: updated?.visitorName,
+          visitorEmail: updated?.visitorEmail,
+          visitorPhone: updated?.visitorPhone,
+        };
+      }
+      case 'create_booking': {
+        const serviceIds = Array.isArray(args?.service_ids) ? args.service_ids.map((id: any) => Number(id)).filter(Boolean) : [];
+        const bookingDate = args?.booking_date as string;
+        const startTime = args?.start_time as string;
+        const paymentMethod = (args?.payment_method as string) || 'site';
+        const customerName = (args?.customer_name as string)?.trim();
+        const customerEmail = (args?.customer_email as string)?.trim();
+        const customerPhone = (args?.customer_phone as string)?.trim();
+        const customerAddress = (args?.customer_address as string)?.trim();
+
+        if (
+          serviceIds.length === 0 ||
+          !bookingDate ||
+          !startTime ||
+          !customerName ||
+          !customerEmail ||
+          !customerPhone ||
+          !customerAddress
+        ) {
+          return { error: 'Missing required booking fields.' };
+        }
+
+        const services = [];
+        let totalPrice = 0;
+        let totalDuration = 0;
+
+        for (const id of serviceIds) {
+          const service = await storage.getService(id);
+          if (!service) {
+            return { error: `Service ID ${id} not found` };
+          }
+          services.push(service);
+          totalPrice += Number(service.price);
+          totalDuration += service.durationMinutes;
+        }
+
+        const [startHour, startMinute] = startTime.split(':').map(Number);
+        const startDate = new Date(`2000-01-01T${startTime}:00`);
+        startDate.setMinutes(startDate.getMinutes() + totalDuration);
+        const endHour = startDate.getHours().toString().padStart(2, '0');
+        const endMinute = startDate.getMinutes().toString().padStart(2, '0');
+        const endTime = `${endHour}:${endMinute}`;
+
+        const existingBookings = await storage.getBookingsByDate(bookingDate);
+        const hasConflict = existingBookings.some(b => startTime < b.endTime && endTime > b.startTime);
+        if (hasConflict) {
+          return { error: 'Time slot is no longer available.' };
+        }
+
+        const ghlSettings = await storage.getIntegrationSettings('gohighlevel');
+        const useGhl = !!(ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.calendarId);
+        const slotsForDay = await getAvailabilityForDate(bookingDate, totalDuration, useGhl, ghlSettings);
+        if (slotsForDay.length > 0 && !slotsForDay.includes(startTime)) {
+          return { error: 'Selected time is unavailable. Choose another slot.', availableSlots: slotsForDay };
+        }
+
+        const company = await storage.getCompanySettings();
+        const minimumBookingValue = parseFloat(company?.minimumBookingValue as any) || 0;
+        if (minimumBookingValue > 0 && totalPrice < minimumBookingValue) {
+          totalPrice = minimumBookingValue;
+        }
+
+        const booking = await storage.createBooking({
+          serviceIds,
+          bookingDate,
+          startTime,
+          endTime,
+          totalDurationMinutes: totalDuration,
+          totalPrice: totalPrice.toFixed(2),
+          customerName,
+          customerEmail,
+          customerPhone,
+          customerAddress,
+          paymentMethod,
+        });
+
+        try {
+          if (useGhl && ghlSettings?.apiKey && ghlSettings.locationId && ghlSettings.calendarId) {
+            const serviceNames = services.map(s => s.name).join(', ');
+            const nameParts = customerName.split(' ');
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || '';
+
+            const contactResult = await getOrCreateGHLContact(ghlSettings.apiKey, ghlSettings.locationId, {
+              email: customerEmail,
+              firstName,
+              lastName,
+              phone: customerPhone,
+              address: customerAddress,
+            });
+
+            if (contactResult.success && contactResult.contactId) {
+              const startTimeISO = `${bookingDate}T${startTime}:00-05:00`;
+              const endTimeISO = `${bookingDate}T${endTime}:00-05:00`;
+              const appointmentResult = await createGHLAppointment(
+                ghlSettings.apiKey,
+                ghlSettings.calendarId,
+                ghlSettings.locationId,
+                {
+                  contactId: contactResult.contactId,
+                  startTime: startTimeISO,
+                  endTime: endTimeISO,
+                  title: `Cleaning: ${serviceNames}`,
+                  address: customerAddress,
+                }
+              );
+
+              if (appointmentResult.success && appointmentResult.appointmentId) {
+                await storage.updateBookingGHLSync(booking.id, contactResult.contactId, appointmentResult.appointmentId, 'synced');
+              } else {
+                await storage.updateBookingGHLSync(booking.id, contactResult.contactId, '', 'failed');
+              }
+            } else {
+              await storage.updateBookingGHLSync(booking.id, '', '', 'failed');
+            }
+          }
+        } catch {
+          // Non-blocking: ignore sync failures
+        }
+
+        return {
+          success: true,
+          bookingId: booking.id,
+          bookingDate,
+          startTime,
+          endTime,
+          totalDurationMinutes: totalDuration,
+          totalPrice: totalPrice.toFixed(2),
+          services: services.map(s => ({ id: s.id, name: s.name })),
+        };
+      }
+      default:
+        return { error: 'Unknown tool' };
+    }
+  }
 
   // Categories
   app.get(api.categories.list.path, async (req, res) => {
@@ -837,6 +1345,521 @@ Sitemap: ${canonicalUrl}/sitemap.xml
     }
     
     res.json(result);
+  });
+
+  // ===============================
+  // Chat Routes
+  // ===============================
+
+  // Public chat configuration for widget
+  app.get('/api/chat/config', async (_req, res) => {
+    try {
+      const settings = await storage.getChatSettings();
+      const company = await storage.getCompanySettings();
+      const defaultName = company?.companyName || 'Skleanings Assistant';
+      const fallbackName =
+        settings.agentName && settings.agentName !== 'Skleanings Assistant'
+          ? settings.agentName
+          : defaultName;
+      const companyIcon = company?.logoIcon || '/favicon.ico';
+      const fallbackAvatar = companyIcon;
+      const primaryAvatar = settings.agentAvatarUrl || fallbackAvatar;
+      const intakeObjectives = (settings.intakeObjectives as IntakeObjective[] | null) || [];
+      const effectiveObjectives = intakeObjectives.length ? intakeObjectives : DEFAULT_INTAKE_OBJECTIVES;
+
+      res.json({
+        enabled: !!settings.enabled,
+        agentName: fallbackName,
+        agentAvatarUrl: primaryAvatar,
+        fallbackAvatarUrl: fallbackAvatar,
+        welcomeMessage: settings.welcomeMessage || 'Hi! How can I help you today?',
+        excludedUrlRules: (settings.excludedUrlRules as UrlRule[]) || [],
+        intakeObjectives: effectiveObjectives,
+      });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  // Admin chat settings
+  app.get('/api/chat/settings', requireAdmin, async (_req, res) => {
+    try {
+      const settings = await storage.getChatSettings();
+      const intakeObjectives = (settings.intakeObjectives as IntakeObjective[] | null) || [];
+      const effectiveObjectives = intakeObjectives.length ? intakeObjectives : DEFAULT_INTAKE_OBJECTIVES;
+      res.json({ ...settings, intakeObjectives: effectiveObjectives });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.put('/api/chat/settings', requireAdmin, async (req, res) => {
+    try {
+      const payload = insertChatSettingsSchema
+        .partial()
+        .extend({
+          excludedUrlRules: z.array(urlRuleSchema).optional(),
+          intakeObjectives: z.array(z.object({
+            id: z.enum(['zipcode', 'name', 'phone', 'serviceType', 'serviceDetails', 'date', 'address']),
+            label: z.string(),
+            description: z.string(),
+            enabled: z.boolean()
+          })).optional(),
+        })
+        .parse(req.body);
+      const updated = await storage.updateChatSettings(payload);
+      res.json(updated);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  // Admin conversations
+  app.get('/api/chat/conversations', requireAdmin, async (_req, res) => {
+    try {
+      const conversations = await storage.listConversations();
+      const withPreview = await Promise.all(
+        conversations.map(async (conv) => {
+          const messages = await storage.getConversationMessages(conv.id);
+          const lastMessage = messages[messages.length - 1];
+          return {
+            ...conv,
+            lastMessage: lastMessage?.content || '',
+            lastMessageRole: lastMessage?.role || null,
+            messageCount: messages.length,
+          };
+        })
+      );
+      res.json(withPreview);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.get('/api/chat/conversations/:id', requireAdmin, async (req, res) => {
+    try {
+      const conversation = await storage.getConversation(req.params.id);
+      if (!conversation) return res.status(404).json({ message: 'Conversation not found' });
+      const messages = await storage.getConversationMessages(conversation.id);
+      res.json({ conversation, messages });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.post('/api/chat/conversations/:id/status', requireAdmin, async (req, res) => {
+    try {
+      const { status } = z.object({ status: z.enum(['open', 'closed']) }).parse(req.body);
+      const existing = await storage.getConversation(req.params.id);
+      if (!existing) return res.status(404).json({ message: 'Conversation not found' });
+      const updated = await storage.updateConversation(req.params.id, { status });
+      res.json(updated);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.delete('/api/chat/conversations/:id', requireAdmin, async (req, res) => {
+    try {
+      await storage.deleteConversation(req.params.id);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  // Public conversation history (by ID stored in browser)
+  app.get('/api/chat/conversations/:id/messages', async (req, res) => {
+    try {
+      const conversation = await storage.getConversation(req.params.id);
+      if (!conversation) {
+        return res.status(404).json({ message: 'Conversation not found' });
+      }
+      const messages = await storage.getConversationMessages(req.params.id);
+      res.json({ conversation, messages });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  // Public chat message endpoint
+  app.post('/api/chat/message', async (req, res) => {
+    try {
+      const ipKey = (req.ip || 'unknown').toString();
+      if (isRateLimited(ipKey)) {
+        return res.status(429).json({ message: 'Too many requests, please slow down.' });
+      }
+
+      const parsed = chatMessageSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: 'Invalid input', errors: parsed.error.errors });
+      }
+      const input = parsed.data;
+
+      const settings = await storage.getChatSettings();
+      const excludedRules = (settings.excludedUrlRules as UrlRule[]) || [];
+
+      if (!settings.enabled) {
+        return res.status(503).json({ message: 'Chat is currently disabled.' });
+      }
+
+      if (isUrlExcluded(input.pageUrl || '', excludedRules)) {
+        return res.status(403).json({ message: 'Chat is not available on this page.' });
+      }
+
+      const integration = await storage.getChatIntegration('openai');
+      if (!integration?.enabled) {
+        return res.status(503).json({ message: 'OpenAI integration is not enabled. Please enable it in Admin → Integrations.' });
+      }
+
+      const apiKey = runtimeOpenAiKey || process.env.OPENAI_API_KEY || integration?.apiKey;
+      if (!apiKey) {
+        return res.status(503).json({ message: 'OpenAI API key is missing. Please configure it in Admin → Integrations.' });
+      }
+
+      const model = integration.model || DEFAULT_CHAT_MODEL;
+      const conversationId = input.conversationId || crypto.randomUUID();
+
+      let conversation = await storage.getConversation(conversationId);
+      if (!conversation) {
+        conversation = await storage.createConversation({
+          id: conversationId,
+          status: 'open',
+          firstPageUrl: input.pageUrl,
+          visitorName: input.visitorName,
+          visitorEmail: input.visitorEmail,
+          visitorPhone: input.visitorPhone,
+        });
+      } else {
+        await storage.updateConversation(conversationId, { lastMessageAt: new Date() });
+      }
+
+      if (conversation?.status === 'closed') {
+        await storage.updateConversation(conversationId, { status: 'open' });
+      }
+
+      // Check message limit (50 messages per conversation)
+      const existingMessages = await storage.getConversationMessages(conversationId);
+      if (existingMessages.length >= 50) {
+        return res.status(429).json({
+          message: 'This conversation has reached the message limit. Please start a new conversation.',
+          limitReached: true
+        });
+      }
+
+      await storage.addConversationMessage({
+        id: crypto.randomUUID(),
+        conversationId,
+        role: 'visitor',
+        content: input.message.trim(),
+        metadata: {
+          pageUrl: input.pageUrl,
+          userAgent: input.userAgent,
+          visitorId: input.visitorId,
+        },
+      });
+
+      const company = await storage.getCompanySettings();
+      const history = await storage.getConversationMessages(conversationId);
+      const historyMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = history.map((m) => ({
+        role: (m.role === 'assistant' ? 'assistant' : 'user') as 'assistant' | 'user',
+        content: m.content,
+      }));
+
+      const intakeObjectives = (settings.intakeObjectives as IntakeObjective[] | null) || DEFAULT_INTAKE_OBJECTIVES;
+      const enabledObjectives = intakeObjectives.filter(obj => obj.enabled);
+      const objectivesText = enabledObjectives.length
+        ? `Collect info in this order: ${enabledObjectives.map((o, idx) => `${idx + 1}) ${o.label}`).join('; ')}. Only ask enabled items and avoid repeating already provided details.`
+        : 'Collect booking details efficiently and avoid repeating questions.';
+
+      const defaultSystemPrompt = `You are a friendly, efficient cleaning service assistant for ${company?.companyName || 'Skleanings'}. Balance being consultative with being efficient - don't over-ask.
+
+SMART QUALIFICATION:
+1. When a customer mentions a need, assess if you have ENOUGH info to recommend:
+   - "clean my 3-seater sofa" → SUFFICIENT, search services immediately
+   - "clean my sofa" → Ask: "How many seats?" then proceed
+   - "carpet cleaning" → Ask: "Which room?" then proceed
+
+2. Only ask 1-2 critical questions if info is missing. Don't interrogate:
+   ❌ DON'T: Ask about material, stains, age, usage, etc. unless customer mentions issues
+   ✅ DO: Ask only what's needed to identify the right service (size/type)
+
+3. SMART CONFIRMATION - only if unclear:
+   - If customer said "3-seater sofa" → Search immediately, no confirmation needed
+   - If customer said "big sofa" → Confirm: "By big, do you mean 3-seater or larger?"
+
+4. After suggesting service, ask if they want to book - don't ask more questions
+
+NATURAL INFO COLLECTION:
+- After they agree to book, collect info smoothly:
+  "Great! What's your name?" → "Email?" → "Phone?" → "Full address?"
+- Use update_contact immediately when you get name/email/phone
+- Keep it fast - one question per message
+
+BOOKING FLOW:
+- Confirm timezone (America/New_York)
+- Use get_availability with service_id
+- Show 3-5 slots within 14 days
+- After they pick a time and provide address, create booking immediately
+- Don't ask "are you sure?" - just confirm after booking is done
+
+TOOLS:
+- list_services: As soon as you know what they need
+- get_service_details: If they ask about a specific service
+- get_availability: With service_id after they agree to book
+- update_contact: When you get name/email/phone
+- create_booking: After slot selection and all required info collected
+- get_business_policies: Check minimums only if needed
+
+RULES:
+- Never guess prices/availability
+- Never invent slots
+- Keep responses 2-3 sentences max
+- Use markdown for emphasis: **bold** for prices and service names
+- Complete bookings in chat
+
+EFFICIENT EXAMPLES:
+
+Example 1 (Sufficient info):
+Customer: "I need my 3-seater sofa cleaned"
+You: "Perfect! Let me find our sofa cleaning options for you..."
+[Use list_services]
+You: "I recommend **3-Seat Sofa Deep Cleaning** - $120, 2 hours. Want to book it?"
+
+Example 2 (Missing size):
+Customer: "I need my sofa cleaned"
+You: "Great! How many seats is your sofa?"
+Customer: "3 seats"
+You: "Perfect! Let me find the right service..."
+[Use list_services]
+You: "I recommend **3-Seat Sofa Deep Cleaning** - $120, 2 hours. Want to book it?"
+
+Example 3 (Ready to book):
+Customer: "Yes, book it"
+You: "Awesome! What's your name?"
+Customer: "John Smith"
+You: "Thanks John! What's your email?"
+[Continue collecting info smoothly, no extra questions]`;
+      const systemPrompt = settings.systemPrompt || defaultSystemPrompt;
+
+      const chatMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+        {
+          role: 'system',
+          content: systemPrompt,
+        },
+        {
+          role: 'system',
+          content: objectivesText,
+        },
+        ...historyMessages,
+      ];
+
+      const openai = getOpenAIClient(apiKey);
+      if (!openai) {
+        return res.status(503).json({ message: 'Chat is currently unavailable.' });
+      }
+
+      let assistantResponse = 'Sorry, I could not process that request.';
+      let leadCaptured = false;
+      let bookingCompleted: { value: number; services: string[] } | null = null;
+
+      try {
+        const first = await openai.chat.completions.create({
+          model,
+          messages: chatMessages,
+          tools: chatTools,
+          tool_choice: 'auto',
+          max_tokens: 500,
+        });
+
+        let choice = first.choices[0].message;
+        const toolCalls = choice.tool_calls || [];
+
+        if (toolCalls.length > 0) {
+          const toolResponses = [];
+          for (const call of toolCalls) {
+            let args: any = {};
+            try {
+              args = JSON.parse(call.function.arguments || '{}');
+            } catch {
+              args = {};
+            }
+            const toolResult = await runChatTool(call.function.name, args, conversationId);
+
+            // Track lead capture (first time contact info is saved)
+            if (call.function.name === 'update_contact' && toolResult.success) {
+              const conv = await storage.getConversation(conversationId);
+              if (conv?.visitorName || conv?.visitorEmail || conv?.visitorPhone) {
+                leadCaptured = true;
+              }
+            }
+
+            // Track booking completion
+            if (call.function.name === 'create_booking' && toolResult.success) {
+              bookingCompleted = {
+                value: parseFloat(String(toolResult.totalPrice ?? '0')) || 0,
+                services: toolResult.services?.map((s: any) => s.name) || []
+              };
+            }
+
+            toolResponses.push({
+              role: 'tool' as const,
+              tool_call_id: call.id,
+              content: JSON.stringify(toolResult),
+            });
+          }
+
+          const second = await openai.chat.completions.create({
+            model,
+            messages: [...chatMessages, choice, ...toolResponses],
+            max_tokens: 500,
+          });
+
+          assistantResponse = second.choices[0].message.content || assistantResponse;
+        } else {
+          assistantResponse = choice.content || assistantResponse;
+        }
+      } catch (err: any) {
+        console.error('OpenAI chat error:', err?.message);
+        assistantResponse = 'Chat is unavailable right now. Please try again soon.';
+      }
+
+      await storage.addConversationMessage({
+        id: crypto.randomUUID(),
+        conversationId,
+        role: 'assistant',
+        content: assistantResponse,
+      });
+      await storage.updateConversation(conversationId, { lastMessageAt: new Date() });
+
+      res.json({
+        conversationId,
+        response: assistantResponse,
+        leadCaptured,
+        bookingCompleted
+      });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  // ===============================
+  // OpenAI Integration Routes
+  // ===============================
+
+  app.get('/api/integrations/openai', requireAdmin, async (_req, res) => {
+    try {
+      const integration = await storage.getChatIntegration('openai');
+      res.json({
+        provider: 'openai',
+        enabled: integration?.enabled || false,
+        model: integration?.model || DEFAULT_CHAT_MODEL,
+        hasKey: !!(runtimeOpenAiKey || process.env.OPENAI_API_KEY || integration?.apiKey),
+      });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.put('/api/integrations/openai', requireAdmin, async (req, res) => {
+    try {
+      const existing = await storage.getChatIntegration('openai');
+      const payload = insertChatIntegrationsSchema
+        .partial()
+        .extend({
+          apiKey: z.string().min(10).optional(),
+        })
+        .parse({ ...req.body, provider: 'openai' });
+
+      const providedKey = payload.apiKey && payload.apiKey !== '********' ? payload.apiKey : undefined;
+      const keyToPersist = providedKey ?? existing?.apiKey ?? runtimeOpenAiKey ?? process.env.OPENAI_API_KEY;
+      if (providedKey) {
+        runtimeOpenAiKey = providedKey;
+      }
+
+      const willEnable = payload.enabled ?? false;
+      const keyAvailable = !!keyToPersist;
+      if (willEnable && !keyAvailable) {
+        return res.status(400).json({ message: 'Provide a valid API key and test it before enabling.' });
+      }
+
+      const updated = await storage.upsertChatIntegration({
+        provider: 'openai',
+        enabled: payload.enabled ?? false,
+        model: payload.model || DEFAULT_CHAT_MODEL,
+        apiKey: keyToPersist,
+      });
+
+      res.json({
+        ...updated,
+        hasKey: !!keyToPersist,
+        apiKey: undefined,
+      });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.post('/api/integrations/openai/test', requireAdmin, async (req, res) => {
+    try {
+      const bodySchema = z.object({
+        apiKey: z.string().min(10).optional(),
+        model: z.string().optional(),
+      });
+      const { apiKey, model } = bodySchema.parse(req.body);
+      const existing = await storage.getChatIntegration('openai');
+      const keyToUse =
+        (apiKey && apiKey !== '********' ? apiKey : undefined) ||
+        runtimeOpenAiKey ||
+        process.env.OPENAI_API_KEY ||
+        existing?.apiKey;
+
+      if (!keyToUse) {
+        return res.status(400).json({ success: false, message: 'API key is required' });
+      }
+
+      const client = getOpenAIClient(keyToUse);
+      if (!client) {
+        return res.status(400).json({ success: false, message: 'Invalid API key' });
+      }
+
+      try {
+        await client.chat.completions.create({
+          model: model || DEFAULT_CHAT_MODEL,
+          messages: [{ role: 'user', content: 'Say pong' }],
+          max_tokens: 5,
+        });
+      } catch (err: any) {
+        const message = err?.message || 'Failed to test OpenAI connection';
+        const status = err?.status || err?.response?.status;
+        return res.status(500).json({
+          success: false,
+          message: status ? `OpenAI error (${status}): ${message}` : message,
+        });
+      }
+
+      // Cache key in memory for runtime use
+      runtimeOpenAiKey = keyToUse;
+      await storage.upsertChatIntegration({
+        provider: 'openai',
+        enabled: existing?.enabled ?? false,
+        model: model || existing?.model || DEFAULT_CHAT_MODEL,
+        apiKey: keyToUse,
+      });
+
+      res.json({ success: true, message: 'Connection successful' });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err?.message || 'Failed to test OpenAI connection' });
+    }
   });
 
   // ===============================

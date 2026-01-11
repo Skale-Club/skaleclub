@@ -115,7 +115,14 @@ export type AnalyticsEventName =
   | 'add_payment_info'
   | 'purchase'
   | 'contact_click'
-  | 'page_view';
+  | 'page_view'
+  | 'chat_open'
+  | 'chat_close'
+  | 'chat_message_sent'
+  | 'chat_message_received'
+  | 'chat_new_conversation'
+  | 'chat_lead_captured'
+  | 'chat_booking_completed';
 
 export interface AnalyticsEventPayload {
   location?: string;
@@ -259,5 +266,70 @@ export function trackViewServices(category?: string, items?: Array<{ id: number 
       price: item.price,
       quantity: 1
     }))
+  });
+}
+
+// Chat Analytics
+export function trackChatOpen(pageUrl: string) {
+  trackEvent('chat_open', {
+    location: pageUrl,
+    label: 'Chat Widget Opened'
+  });
+}
+
+export function trackChatClose(pageUrl: string, messageCount: number) {
+  trackEvent('chat_close', {
+    location: pageUrl,
+    label: 'Chat Widget Closed',
+    value: messageCount
+  });
+}
+
+export function trackChatMessageSent(pageUrl: string, conversationId?: string) {
+  trackEvent('chat_message_sent', {
+    location: pageUrl,
+    label: 'Visitor Message',
+    conversation_id: conversationId
+  });
+}
+
+export function trackChatMessageReceived(pageUrl: string, conversationId?: string) {
+  trackEvent('chat_message_received', {
+    location: pageUrl,
+    label: 'Assistant Response',
+    conversation_id: conversationId
+  });
+}
+
+export function trackChatNewConversation(pageUrl: string) {
+  trackEvent('chat_new_conversation', {
+    location: pageUrl,
+    label: 'New Conversation Started'
+  });
+}
+
+export function trackChatLeadCaptured(pageUrl: string, conversationId?: string) {
+  trackEvent('chat_lead_captured', {
+    location: pageUrl,
+    label: 'Lead Captured via Chat',
+    conversation_id: conversationId,
+    category: 'lead_generation'
+  });
+}
+
+export function trackChatBookingCompleted(
+  pageUrl: string,
+  conversationId: string | undefined,
+  bookingValue: number,
+  services: string[]
+) {
+  trackEvent('chat_booking_completed', {
+    location: pageUrl,
+    label: 'Booking Completed via Chat',
+    conversation_id: conversationId,
+    value: bookingValue,
+    currency: 'USD',
+    category: 'conversion',
+    services: services.join(', ')
   });
 }

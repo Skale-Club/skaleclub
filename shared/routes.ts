@@ -1,6 +1,22 @@
 import { z } from 'zod';
 import { insertBookingSchema, categories, services, bookings } from './schema';
 
+const urlRuleSchema = z.object({
+  pattern: z.string(),
+  match: z.enum(['contains', 'starts_with', 'equals']),
+});
+
+const chatMessageInput = z.object({
+  conversationId: z.string().uuid().optional(),
+  message: z.string(),
+  pageUrl: z.string().optional(),
+  visitorId: z.string().optional(),
+  userAgent: z.string().optional(),
+  visitorName: z.string().optional(),
+  visitorEmail: z.string().optional(),
+  visitorPhone: z.string().optional(),
+});
+
 export const errorSchemas = {
   validation: z.object({
     message: z.string(),
@@ -41,6 +57,49 @@ export const api = {
       }).optional(),
       responses: {
         200: z.array(z.custom<typeof services.$inferSelect>()),
+      },
+    },
+  },
+  chat: {
+    config: {
+      method: 'GET' as const,
+      path: '/api/chat/config',
+      responses: {
+        200: z.object({
+          enabled: z.boolean(),
+          agentName: z.string(),
+          agentAvatarUrl: z.string(),
+          fallbackAvatarUrl: z.string(),
+          welcomeMessage: z.string(),
+          excludedUrlRules: z.array(urlRuleSchema),
+        }),
+      },
+    },
+    message: {
+      method: 'POST' as const,
+      path: '/api/chat/message',
+      input: chatMessageInput,
+      responses: {
+        200: z.object({
+          conversationId: z.string(),
+          response: z.string(),
+        }),
+        503: z.object({ message: z.string() }),
+      },
+    },
+    history: {
+      method: 'GET' as const,
+      path: '/api/chat/conversations/:id/messages',
+      responses: {
+        200: z.object({
+          conversation: z.any(),
+          messages: z.array(z.object({
+            id: z.string(),
+            role: z.string(),
+            content: z.string(),
+            createdAt: z.string().optional(),
+          })),
+        }),
       },
     },
   },
