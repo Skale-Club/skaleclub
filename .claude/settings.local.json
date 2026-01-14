@@ -10,7 +10,19 @@
       "Bash(curl:*)",
       "Bash(npm run db:push:*)",
       "Bash(npx drizzle-kit introspect:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(python3:*)",
+      "Bash(env)",
+      "Bash(PGPASSWORD='npg_Zya5O7pwbeCK' psql:*)",
+      "Bash(PGPASSWORD='password' psql:*)",
+      "Bash(find:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm start)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(fuser:*)",
+      "Bash(kill:*)"
     ]
   }
 }

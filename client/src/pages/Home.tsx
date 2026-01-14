@@ -33,7 +33,7 @@ function BlogSection({ content }: { content: HomepageContent['blogSection'] }) {
   };
 
   return (
-    <section className="py-20 bg-white">
+    <section className="py-20 bg-[#F8FAFC]">
       <div className="container-custom mx-auto">
         <div className="flex items-center justify-between mb-12">
           <div>
@@ -290,9 +290,9 @@ export default function Home() {
           ) : (
             <div className={`grid grid-cols-1 md:grid-cols-2 ${activeCategories?.length === 1 ? 'lg:grid-cols-1 max-w-md mx-auto' : activeCategories?.length === 2 ? 'lg:grid-cols-2 max-w-4xl mx-auto' : 'lg:grid-cols-3'} gap-8`}>
               {activeCategories?.map((category) => (
-                <div 
-                  key={category.id} 
-                  className="group cursor-pointer relative overflow-hidden rounded-2xl h-80 shadow-md hover:shadow-xl transition-all duration-500 border border-gray-100"
+                <div
+                  key={category.id}
+                  className="group cursor-pointer relative overflow-hidden rounded-2xl h-80 shadow-md hover:shadow-xl transition-all duration-500 bg-light-gray"
                   onClick={() => handleCategoryClick(category.id)}
                 >
                   <img 
@@ -352,7 +352,7 @@ export default function Home() {
         </div>
       </section>
       <BlogSection content={homepageContent.blogSection} />
-      <section id="areas-served" className="bg-[#F8FAFC] py-20">
+      <section id="areas-served" className="bg-white py-20">
         <AreasServedMap 
           mapEmbedUrl={companySettings?.mapEmbedUrl} 
           content={homepageContent.areasServedSection} 

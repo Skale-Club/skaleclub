@@ -8,6 +8,7 @@ import {
   bookingItems,
   chatSettings,
   chatIntegrations,
+  twilioSettings,
   conversations,
   conversationMessages,
   companySettings,
@@ -24,6 +25,7 @@ import {
   type CompanySettings,
   type ChatSettings,
   type ChatIntegrations,
+  type TwilioSettings,
   type Conversation,
   type ConversationMessage,
   type Faq,
@@ -36,6 +38,7 @@ import {
   type InsertBooking,
   type InsertChatSettings,
   type InsertChatIntegrations,
+  type InsertTwilioSettings,
   type InsertConversation,
   type InsertConversationMessage,
   type InsertFaq,
@@ -112,6 +115,11 @@ export interface IStorage {
   updateChatSettings(settings: Partial<InsertChatSettings>): Promise<ChatSettings>;
   getChatIntegration(provider: string): Promise<ChatIntegrations | undefined>;
   upsertChatIntegration(settings: InsertChatIntegrations): Promise<ChatIntegrations>;
+
+  // Twilio Integration
+  getTwilioSettings(): Promise<TwilioSettings | undefined>;
+  saveTwilioSettings(settings: InsertTwilioSettings): Promise<TwilioSettings>;
+
   listConversations(): Promise<Conversation[]>;
   getConversation(id: string): Promise<Conversation | undefined>;
   updateConversation(id: string, updates: Partial<Conversation>): Promise<Conversation | undefined>;
@@ -484,6 +492,31 @@ export class DatabaseStorage implements IStorage {
     }
 
     const [created] = await db.insert(chatIntegrations).values(settings).returning();
+    return created;
+  }
+
+  async getTwilioSettings(): Promise<TwilioSettings | undefined> {
+    const [settings] = await db.select().from(twilioSettings).limit(1);
+    return settings;
+  }
+
+  async saveTwilioSettings(settings: InsertTwilioSettings): Promise<TwilioSettings> {
+    const existing = await this.getTwilioSettings();
+    if (existing) {
+      const payload = {
+        ...settings,
+        authToken: settings.authToken ?? existing.authToken,
+        updatedAt: new Date(),
+      };
+      const [updated] = await db
+        .update(twilioSettings)
+        .set(payload)
+        .where(eq(twilioSettings.id, existing.id))
+        .returning();
+      return updated;
+    }
+
+    const [created] = await db.insert(twilioSettings).values(settings).returning();
     return created;
   }
 

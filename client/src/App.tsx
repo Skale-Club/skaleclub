@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useSEO } from "@/hooks/use-seo";
@@ -164,19 +165,21 @@ function App() {
 
   return (
     <InitialLoadContext.Provider value={{ isInitialLoad, markLoaded }}>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <AuthProvider>
-            <CartProvider>
-              <SEOProvider>
-                <AnalyticsProvider>
-                  <Router />
-                </AnalyticsProvider>
-              </SEOProvider>
-            </CartProvider>
-          </AuthProvider>
-        </TooltipProvider>
-      </QueryClientProvider>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <AuthProvider>
+              <CartProvider>
+                <SEOProvider>
+                  <AnalyticsProvider>
+                    <Router />
+                  </AnalyticsProvider>
+                </SEOProvider>
+              </CartProvider>
+            </AuthProvider>
+          </TooltipProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
     </InitialLoadContext.Provider>
   );
 }

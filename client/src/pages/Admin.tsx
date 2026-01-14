@@ -83,10 +83,14 @@ import {
   Heart,
   BadgeCheck,
   ThumbsUp,
-  Trophy
+  Trophy,
+  Moon,
+  Sun
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { useTheme } from '@/context/ThemeContext';
 import type { Category, Service, Booking, Subcategory, Faq, BlogPost, HomepageContent } from '@shared/schema';
 import { HelpCircle, FileText, AlertCircle } from 'lucide-react';
 import heroImage from '@assets/Persona-Mobile_1767749022412.png';
@@ -199,9 +203,9 @@ function AdminContent() {
   };
 
   return (
-    <div className="flex h-screen w-full bg-slate-50 relative overflow-x-hidden">
-      <Sidebar className="border-r border-gray-200 bg-white">
-        <SidebarHeader className="p-4 border-b border-gray-100 bg-[#ffffff]">
+    <div className="flex h-screen w-full bg-background relative overflow-x-hidden">
+      <Sidebar className="border-r border-sidebar-border bg-sidebar">
+        <SidebarHeader className="p-4 border-b border-sidebar-border bg-sidebar">
           <div className="flex flex-col gap-4">
             <Link href="/" className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-primary transition-colors group">
               <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" />
@@ -209,14 +213,14 @@ function AdminContent() {
             </Link>
             <div className="flex items-center gap-3">
               {companySettings?.logoIcon ? (
-                <img 
-                  src={companySettings.logoIcon} 
-                  alt={companySettings.companyName || 'Logo'} 
-                  className="w-10 h-10 rounded-lg object-contain bg-white p-1 border border-gray-100"
+                <img
+                  src={companySettings.logoIcon}
+                  alt={companySettings.companyName || 'Logo'}
+                  className="w-10 h-10 object-contain"
                   data-testid="img-admin-logo"
                 />
               ) : (
-                <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-lg">
+                <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-lg">
                   {companySettings?.companyName?.[0] || 'A'}
                 </div>
               )}
@@ -226,8 +230,8 @@ function AdminContent() {
             </div>
           </div>
         </SidebarHeader>
-        
-        <SidebarContent className="p-2 bg-[#ffffff]">
+
+        <SidebarContent className="p-2 bg-sidebar">
           <SidebarGroup>
             <SidebarGroupContent>
               <DndContext
@@ -255,15 +259,18 @@ function AdminContent() {
           </SidebarGroup>
         </SidebarContent>
 
-        <SidebarFooter className="p-4 border-t border-gray-100 mt-auto bg-[#ffffff]">
+        <SidebarFooter className="p-4 border-t border-border mt-auto bg-sidebar">
           <div className="space-y-3">
-            <div className="text-sm">
-              <p className="text-muted-foreground text-xs">Logged in as</p>
-              <p className="font-medium truncate">{email}</p>
+            <div className="flex items-center justify-between">
+              <div className="text-sm">
+                <p className="text-muted-foreground text-xs">Logged in as</p>
+                <p className="font-medium truncate text-foreground">{email}</p>
+              </div>
+              <ThemeToggle variant="icon" className="text-muted-foreground hover:text-foreground" />
             </div>
-            <Button 
-              variant="default" 
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white border-0" 
+            <Button
+              variant="default"
+              className="w-full"
               onClick={handleLogout}
               data-testid="button-logout"
             >
@@ -274,15 +281,15 @@ function AdminContent() {
         </SidebarFooter>
       </Sidebar>
 
-        <main className="flex-1 min-w-0 overflow-auto relative" id="admin-top">
-        <header className="md:hidden sticky top-0 z-50 bg-white border-b border-gray-200 p-4 flex items-center gap-4">
-          <SidebarTrigger className="bg-white shadow-sm border border-gray-200 rounded-lg p-2 h-10 w-10 shrink-0" />
+        <main className="flex-1 min-w-0 overflow-auto relative bg-background" id="admin-top">
+        <header className="md:hidden sticky top-0 z-50 bg-card border-b border-border p-4 flex items-center gap-4">
+          <SidebarTrigger className="bg-card shadow-sm border border-border rounded-lg p-2 h-10 w-10 shrink-0" />
           <button
             type="button"
             className="font-semibold text-primary select-none text-left"
             onClick={toggleSidebar}
           >
-            Admin Panel
+            {companySettings?.companyName || 'Skleanings'}
           </button>
         </header>
       <div className="p-6 md:p-8">
@@ -305,8 +312,8 @@ function AdminContent() {
           {activeSection === 'seo' && <SEOSection />}
           {activeSection === 'faqs' && <FaqsSection />}
           {activeSection === 'users' && (
-            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground bg-slate-100 dark:bg-slate-800 rounded-lg border-2 border-dashed">
-              <Users className="w-12 h-12 mb-4 opacity-20" />
+            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground bg-card rounded-lg border-2 border-dashed border-border">
+              <Users className="w-12 h-12 mb-4 opacity-40" />
               <p>User management coming soon</p>
             </div>
           )}
@@ -337,6 +344,7 @@ function DashboardSection({ goToBookings }: { goToBookings: () => void }) {
   const { data: categories } = useQuery<Category[]>({ queryKey: ['/api/categories'] });
   const { data: services } = useQuery<Service[]>({ queryKey: ['/api/services'] });
   const { data: bookings } = useQuery<Booking[]>({ queryKey: ['/api/bookings'] });
+  const dashboardMenuTitle = menuItems.find((item) => item.id === 'dashboard')?.title ?? 'Dashboard';
 
   const stats = [
     { label: 'Total Categories', value: categories?.length || 0, icon: FolderOpen, color: 'text-blue-500' },
@@ -348,58 +356,66 @@ function DashboardSection({ goToBookings }: { goToBookings: () => void }) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <h1 className="text-2xl font-bold">{dashboardMenuTitle}</h1>
         <p className="text-muted-foreground">Overview of your cleaning business</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
-          <div key={stat.label} className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg transition-all">
+          <div key={stat.label} className="bg-muted p-6 rounded-lg transition-all hover:bg-muted/80">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm text-muted-foreground">{stat.label}</p>
-                <p className="text-2xl font-bold">{stat.value}</p>
+                <p className="text-2xl font-bold text-foreground">{stat.value}</p>
               </div>
-              <stat.icon className={clsx("w-8 h-8", stat.color)} />
+              <div className="w-12 h-12 rounded-xl bg-card/70 flex items-center justify-center">
+                <stat.icon className={clsx("w-6 h-6", stat.color)} />
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between gap-4">
-          <h2 className="text-lg font-semibold">Recent Bookings</h2>
-          <Button variant="outline" size="sm" onClick={goToBookings}>
+      <div className="bg-muted rounded-lg overflow-hidden">
+        <div className="p-6 pb-4 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-primary" />
+            Recent Bookings
+          </h2>
+          <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={goToBookings}>
             Go to Bookings
           </Button>
         </div>
-        <div className="p-6">
+        <div className="px-6 pb-6">
           {bookings?.length === 0 ? (
             <p className="text-muted-foreground text-center py-8">No bookings yet</p>
           ) : (
             <div className="space-y-4">
               {bookings?.slice(0, 5).map((booking) => (
-                <div key={booking.id} className="flex items-center justify-between gap-4 p-3 rounded-lg bg-slate-200/50 dark:bg-slate-700/50">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <User className="w-4 h-4 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium">{booking.customerName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {format(new Date(booking.bookingDate), "MMM dd, yyyy")} • {booking.startTime} - {booking.endTime}
-                      </p>
-                      <p className="text-xs text-muted-foreground truncate max-w-[220px]">{booking.customerAddress}</p>
-                    </div>
+                <div key={booking.id} className="flex flex-col gap-3 p-3 rounded-lg bg-card/70 dark:bg-slate-900/70 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{booking.customerName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(booking.bookingDate), "MMM dd, yyyy")} • {booking.startTime} - {booking.endTime}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">{booking.customerAddress}</p>
                   </div>
-                  <div className="text-right space-y-1">
-                    <p className="font-bold">${booking.totalPrice}</p>
-                    <Badge variant={booking.status === 'confirmed' ? 'default' : booking.status === 'completed' ? 'secondary' : 'destructive'} className="text-xs capitalize">
-                      {booking.status}
-                    </Badge>
-                    <Badge variant="outline" className="text-[11px] border-0 bg-slate-50 dark:bg-slate-800">
-                      {booking.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
-                    </Badge>
+                  <div className="flex flex-col items-start gap-2 sm:items-end sm:text-right">
+                    <p className="text-2xl sm:text-xl font-bold">${booking.totalPrice}</p>
+                    <div className="flex items-center gap-2 flex-wrap sm:justify-end">
+                      <Badge
+                        variant={booking.status === 'confirmed' ? 'default' : booking.status === 'completed' ? 'secondary' : 'destructive'}
+                        className="text-xs font-semibold leading-5 px-3 py-1 min-w-[88px] justify-center capitalize"
+                      >
+                        {booking.status}
+                      </Badge>
+                      <Badge
+                        variant={booking.paymentStatus === 'paid' ? 'success' : 'warning'}
+                        className="text-xs font-semibold leading-5 px-3 py-1 min-w-[88px] justify-center"
+                      >
+                        {booking.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -416,6 +432,7 @@ function HeroSettingsSection() {
   const { data: settings, isLoading } = useQuery<CompanySettingsData>({
     queryKey: ['/api/company-settings']
   });
+  const heroMenuTitle = menuItems.find((item) => item.id === 'hero')?.title ?? 'Hero Section';
 
   const HERO_DEFAULTS = {
     title: 'Your 5-Star Cleaning Company',
@@ -605,7 +622,7 @@ function HeroSettingsSection() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold">Hero Section</h1>
+          <h1 className="text-2xl font-bold">{heroMenuTitle}</h1>
           <p className="text-muted-foreground">Customize hero and homepage content</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap justify-end">
@@ -617,9 +634,12 @@ function HeroSettingsSection() {
           )}
         </div>
       </div>
-      <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg transition-all space-y-8">
+      <div className="bg-muted p-6 rounded-lg transition-all space-y-8">
         <div className="flex items-center justify-between gap-4 flex-wrap">
-          <h2 className="text-lg font-semibold">Hero Section</h2>
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Image className="w-5 h-5 text-primary" />
+            Hero Section
+          </h2>
           {isSaving && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -687,13 +707,13 @@ function HeroSettingsSection() {
             <div className="space-y-2">
               <Label htmlFor="heroImage">Hero Image</Label>
               <div className="flex flex-col gap-3">
-                <div className="aspect-[4/3] w-full max-w-xs rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden relative group">
+                <div className="aspect-[4/3] w-full max-w-xs rounded-lg border-2 border-dashed border-border bg-card flex items-center justify-center overflow-hidden relative group">
                   {heroImageUrl ? (
                     <img src={heroImageUrl} alt="Hero preview" className="w-full h-full object-cover" />
                   ) : (
                     <div className="text-center p-4">
-                      <Image className="w-6 h-6 text-gray-400 mx-auto mb-2" />
-                      <p className="text-xs text-gray-400">Background Image</p>
+                      <Image className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-xs text-muted-foreground">Background Image</p>
                     </div>
                   )}
                   <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
@@ -720,8 +740,11 @@ function HeroSettingsSection() {
           </div>
         </div>
 
-        <div className="border-t border-slate-200 dark:border-slate-700 pt-6 space-y-4">
-          <h3 className="text-base font-semibold">Hero Badge</h3>
+        <div className="border-t border-border pt-6 space-y-4">
+          <h3 className="text-base font-semibold flex items-center gap-2">
+            <BadgeCheck className="w-4 h-4 text-primary" />
+            Hero Badge
+          </h3>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label>Badge Image URL</Label>
@@ -807,9 +830,12 @@ function HeroSettingsSection() {
         </div>
       </div>
 
-      <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg transition-all space-y-4">
+      <div className="bg-muted p-6 rounded-lg transition-all space-y-4">
         <div className="flex items-center justify-between gap-4 flex-wrap">
-          <h2 className="text-lg font-semibold">Trust Badges</h2>
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <BadgeCheck className="w-5 h-5 text-primary" />
+            Trust Badges
+          </h2>
           <Button
             variant="outline"
             size="sm"
@@ -828,7 +854,7 @@ function HeroSettingsSection() {
           {trustBadges.map((badge, index) => (
             <div
               key={index}
-              className="grid gap-3 md:grid-cols-[1fr_1fr_180px_auto] items-start bg-white/40 dark:bg-slate-900/40 p-3 rounded-lg border border-slate-200 dark:border-slate-700"
+              className="grid gap-3 md:grid-cols-[1fr_1fr_180px_auto] items-start bg-card p-3 rounded-lg border border-border"
             >
               <div className="space-y-2">
                 <Label>Title</Label>
@@ -921,8 +947,11 @@ function HeroSettingsSection() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg transition-all space-y-4">
-          <h2 className="text-lg font-semibold">Categories Section</h2>
+        <div className="bg-muted p-6 rounded-lg transition-all space-y-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <FolderOpen className="w-5 h-5 text-primary" />
+            Categories Section
+          </h2>
           <div className="space-y-2">
             <Label>Title</Label>
             <div className="relative">
@@ -983,8 +1012,11 @@ function HeroSettingsSection() {
           </div>
         </div>
 
-        <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg transition-all space-y-4">
-          <h2 className="text-lg font-semibold">Reviews Section</h2>
+        <div className="bg-muted p-6 rounded-lg transition-all space-y-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Star className="w-5 h-5 text-primary" />
+            Reviews Section
+          </h2>
           <div className="space-y-2">
             <Label>Heading</Label>
             <div className="relative">
@@ -1048,8 +1080,11 @@ function HeroSettingsSection() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg transition-all space-y-4">
-          <h2 className="text-lg font-semibold">Blog Section</h2>
+        <div className="bg-muted p-6 rounded-lg transition-all space-y-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <FileText className="w-5 h-5 text-primary" />
+            Blog Section
+          </h2>
           <div className="space-y-2">
             <Label>Title</Label>
             <div className="relative">
@@ -1129,8 +1164,11 @@ function HeroSettingsSection() {
           </div>
         </div>
 
-        <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg transition-all space-y-4">
-          <h2 className="text-lg font-semibold">Areas Served Section</h2>
+        <div className="bg-muted p-6 rounded-lg transition-all space-y-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-primary" />
+            Areas Served Section
+          </h2>
           <div className="space-y-2">
             <Label>Label</Label>
             <div className="relative">
@@ -1413,7 +1451,7 @@ function CompanySettingsSection() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg space-y-6 transition-all">
+          <div className="bg-muted p-6 rounded-lg space-y-6 transition-all">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Building2 className="w-5 h-5 text-primary" />
               Business Information
@@ -1481,7 +1519,7 @@ function CompanySettingsSection() {
         </div>
 
         <div className="space-y-6">
-          <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg space-y-6 transition-all">
+          <div className="bg-muted p-6 rounded-lg space-y-6 transition-all">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Image className="w-5 h-5 text-primary" />
               Branding Assets
@@ -1491,13 +1529,13 @@ function CompanySettingsSection() {
               <div className="space-y-2">
                 <Label className="text-sm">Main Logo (Light Mode)</Label>
                 <div className="flex flex-col gap-3">
-                  <div className="h-32 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-white flex items-center justify-center overflow-hidden relative group">
+                  <div className="h-32 rounded-lg border-2 border-dashed border-border bg-white flex items-center justify-center overflow-hidden relative group">
                     {settings.logoMain ? (
                       <img src={settings.logoMain} alt="Main Logo" className="max-h-full max-w-full object-contain p-2" />
                     ) : (
                       <div className="text-center p-4">
-                        <Image className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                        <p className="text-xs text-gray-400">Main Logo</p>
+                        <Image className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-xs text-muted-foreground">Main Logo</p>
                       </div>
                     )}
                     <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
@@ -1511,13 +1549,13 @@ function CompanySettingsSection() {
               <div className="space-y-2">
                 <Label className="text-sm">Dark Logo (Optional)</Label>
                 <div className="flex flex-col gap-3">
-                  <div className="h-32 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-slate-900 flex items-center justify-center overflow-hidden relative group">
+                  <div className="h-32 rounded-lg border-2 border-dashed border-border bg-slate-900 dark:bg-slate-100 flex items-center justify-center overflow-hidden relative group">
                     {settings.logoDark ? (
                       <img src={settings.logoDark} alt="Dark Logo" className="max-h-full max-w-full object-contain p-2" />
                     ) : (
                       <div className="text-center p-4">
-                        <Image className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-                        <p className="text-xs text-gray-600">Dark Logo</p>
+                        <Image className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-xs text-muted-foreground">Dark Logo</p>
                       </div>
                     )}
                     <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
@@ -1530,13 +1568,13 @@ function CompanySettingsSection() {
               <div className="space-y-2">
                 <Label className="text-sm">Favicon / App Icon</Label>
                 <div className="flex flex-col gap-3">
-                  <div className="h-24 w-24 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-white flex items-center justify-center overflow-hidden relative group mx-auto">
+                  <div className="h-24 w-24 rounded-lg border-2 border-dashed border-border bg-white flex items-center justify-center overflow-hidden relative group mx-auto">
                     {settings.logoIcon ? (
                       <img src={settings.logoIcon} alt="Icon" className="max-h-full max-w-full object-contain p-2" />
                     ) : (
                       <div className="text-center p-2">
-                        <Image className="w-6 h-6 text-gray-400 mx-auto mb-1" />
-                        <p className="text-[10px] text-gray-400">Icon</p>
+                        <Image className="w-6 h-6 text-muted-foreground mx-auto mb-1" />
+                        <p className="text-[10px] text-muted-foreground">Icon</p>
                       </div>
                     )}
                     <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
@@ -1739,7 +1777,7 @@ function SEOSection() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-6">
-          <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg space-y-6 transition-all">
+          <div className="bg-muted p-6 rounded-lg space-y-6 transition-all">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Search className="w-5 h-5 text-primary" />
               Basic SEO
@@ -1838,7 +1876,7 @@ function SEOSection() {
         </div>
 
         <div className="space-y-6">
-          <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg space-y-6 transition-all">
+          <div className="bg-muted p-6 rounded-lg space-y-6 transition-all">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Globe className="w-5 h-5 text-primary" />
               Open Graph (Social Sharing)
@@ -1879,13 +1917,13 @@ function SEOSection() {
                   Image shown when shared on Facebook, LinkedIn, etc. (1200x630px recommended)
                 </p>
                 <div className="flex flex-col gap-3">
-                  <div className="aspect-[1.91/1] w-full max-w-xs rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden relative group">
+                  <div className="aspect-[1.91/1] w-full max-w-xs rounded-lg border-2 border-dashed border-border bg-card flex items-center justify-center overflow-hidden relative group">
                     {settings.ogImage ? (
                       <img src={settings.ogImage} alt="OG Preview" className="w-full h-full object-cover" />
                     ) : (
                       <div className="text-center p-4">
-                        <Image className="w-10 h-10 text-gray-400 mx-auto mb-2" />
-                        <p className="text-sm text-gray-400">1200 x 630 px</p>
+                        <Image className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">1200 x 630 px</p>
                       </div>
                     )}
                     <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
@@ -1929,7 +1967,7 @@ function SEOSection() {
             </div>
           </div>
 
-          <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg space-y-6 transition-all">
+          <div className="bg-muted p-6 rounded-lg space-y-6 transition-all">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Globe className="w-5 h-5 text-primary" />
               Twitter Cards
@@ -2190,7 +2228,7 @@ function CategoriesSection() {
               Add Category
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="border-0 bg-white dark:bg-slate-800">
             <CategoryForm 
               category={editingCategory}
               onSubmit={(data) => {
@@ -2208,7 +2246,7 @@ function CategoriesSection() {
 
       {orderedCategories?.length === 0 ? (
         <Card className="p-12 text-center">
-          <FolderOpen className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+          <FolderOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="font-semibold text-lg mb-2">No categories yet</h3>
           <p className="text-muted-foreground mb-4">Create your first category to get started</p>
         </Card>
@@ -2249,7 +2287,7 @@ function CategoriesSection() {
           setSubName('');
         }
       }}>
-        <DialogContent className="max-w-xl">
+        <DialogContent className="max-w-xl border-0 bg-white dark:bg-slate-800">
           <DialogHeader>
             <DialogTitle>
               Manage subcategories {selectedCategoryForSubs ? `for ${selectedCategoryForSubs.name}` : ''}
@@ -2269,10 +2307,11 @@ function CategoriesSection() {
             </div>
             <div className="flex items-center gap-2">
               <DialogClose asChild>
-                <Button type="button" variant="outline">Cancel</Button>
+                <Button type="button" variant="outline" className="border-0">Cancel</Button>
               </DialogClose>
               <Button
                 type="submit"
+                className="bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:text-white dark:hover:bg-blue-700 border-0"
                 disabled={
                   !subName ||
                   createSubcategory.isPending ||
@@ -2334,7 +2373,7 @@ function CategoriesSection() {
                           <AlertDialogAction
                             onClick={() => deleteSubcategory.mutate(subcategory.id)}
                             disabled={(services?.filter(s => s.subcategoryId === subcategory.id).length || 0) > 0}
-                            className="bg-red-500 hover:bg-red-600"
+                            variant="destructive"
                           >
                             Delete
                           </AlertDialogAction>
@@ -2409,44 +2448,53 @@ function CategoryForm({ category, onSubmit, isLoading }: {
         <div className="space-y-2">
           <Label htmlFor="imageUrl">Category Image</Label>
           <div className="flex flex-col gap-4">
-            <Input 
-              id="categoryImageUpload" 
-              type="file" 
-              accept="image/*" 
-              onChange={handleImageUpload} 
-              data-testid="input-category-image-upload" 
-            />
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Or URL:</span>
-              <Input 
-                id="imageUrl" 
-                value={imageUrl} 
-                onChange={(e) => setImageUrl(e.target.value)} 
-                placeholder="https://..." 
+              <Input
+                id="imageUrl"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https://..."
                 className="h-8 text-xs"
-                data-testid="input-category-image" 
+                data-testid="input-category-image"
               />
             </div>
             {imageUrl && (
-              <div className="relative w-full aspect-[4/3] bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
-                <img 
-                  src={imageUrl} 
-                  alt="Preview" 
-                  className="absolute inset-0 w-full h-full object-cover" 
+              <div className="relative w-48 aspect-[4/3] bg-muted rounded-lg overflow-hidden border border-border cursor-pointer group" onClick={() => document.getElementById('categoryImageUpload')?.click()}>
+                <img
+                  src={imageUrl}
+                  alt="Preview"
+                  className="absolute inset-0 w-full h-full object-cover transition-opacity group-hover:opacity-50"
                 />
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
+                  <div className="text-center">
+                    <svg className="w-8 h-8 text-white mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <p className="text-white text-xs font-medium">Click to upload</p>
+                  </div>
+                </div>
                 <div className="absolute top-2 right-2 bg-black/50 text-white text-[10px] px-1.5 py-0.5 rounded backdrop-blur-sm">
                   4:3 Preview
                 </div>
               </div>
             )}
+            <Input
+              id="categoryImageUpload"
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              data-testid="input-category-image-upload"
+              className="hidden"
+            />
           </div>
         </div>
       </div>
       <DialogFooter>
         <DialogClose asChild>
-          <Button variant="outline" type="button">Cancel</Button>
+          <Button variant="outline" type="button" className="border-0">Cancel</Button>
         </DialogClose>
-        <Button type="submit" disabled={isLoading} data-testid="button-save-category">
+        <Button type="submit" disabled={isLoading} data-testid="button-save-category" className="bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:text-white dark:hover:bg-blue-700 border-0">
           {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
           {category ? 'Update' : 'Create'}
         </Button>
@@ -2577,8 +2625,8 @@ function SubcategoriesSection() {
       </div>
 
       {filteredSubcategories?.length === 0 ? (
-        <div className="p-12 text-center bg-slate-100 dark:bg-slate-800 rounded-lg">
-          <FolderOpen className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+        <div className="p-12 text-center bg-card border border-border rounded-lg">
+          <FolderOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="font-semibold text-lg mb-2">No subcategories yet</h3>
           <p className="text-muted-foreground mb-4">Create subcategories to organize your services</p>
         </div>
@@ -2587,16 +2635,16 @@ function SubcategoriesSection() {
           {filteredSubcategories?.map((subcategory) => (
             <div
               key={subcategory.id}
-              className="flex items-center gap-4 p-4 rounded-lg bg-slate-100 dark:bg-slate-800 transition-all"
+              className="flex items-center gap-4 p-4 rounded-lg bg-muted transition-all"
               data-testid={`subcategory-item-${subcategory.id}`}
             >
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-lg truncate">{subcategory.name}</h3>
                 <div className="flex items-center gap-2 mt-1">
-                  <Badge variant="secondary" className="border-0 bg-slate-200 dark:bg-slate-700">
+                  <Badge variant="secondary" className="border-0 bg-secondary">
                     {getCategoryName(subcategory.categoryId)}
                   </Badge>
-                  <Badge variant="outline" className="border-0 bg-slate-200 dark:bg-slate-700">
+                  <Badge variant="outline" className="border-0 bg-secondary">
                     {getServiceCount(subcategory.id)} services
                   </Badge>
                 </div>
@@ -2630,7 +2678,7 @@ function SubcategoriesSection() {
                       <AlertDialogAction 
                         onClick={() => deleteSubcategory.mutate(subcategory.id)}
                         disabled={getServiceCount(subcategory.id) > 0}
-                        className="bg-red-500 hover:bg-red-600"
+                        variant="destructive"
                       >
                         Delete
                       </AlertDialogAction>
@@ -2707,6 +2755,7 @@ function ServicesSection() {
   const [searchQuery, setSearchQuery] = useState('');
   const [orderedServices, setOrderedServices] = useState<Service[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const scrollPositionRef = useRef<number>(0);
 
   const { data: categories } = useQuery<Category[]>({
     queryKey: ['/api/categories']
@@ -2757,17 +2806,33 @@ function ServicesSection() {
   const updateService = useMutation({
     mutationFn: async (data: Service & { addonIds?: number[] }) => {
       const { addonIds, ...serviceData } = data;
-      await apiRequest('PUT', `/api/services/${data.id}`, serviceData);
+      const response = await apiRequest('PUT', `/api/services/${data.id}`, serviceData);
+      const updatedService = await response.json();
       if (addonIds !== undefined) {
         await apiRequest('PUT', `/api/services/${data.id}/addons`, { addonIds });
       }
+      return updatedService;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/services', { includeHidden: true }] });
-      queryClient.invalidateQueries({ queryKey: ['/api/service-addons'] });
+    onSuccess: async (updatedService) => {
+      // Update local state immediately for instant UI feedback
+      setOrderedServices(prev =>
+        prev.map(s => s.id === updatedService.id ? updatedService : s)
+      );
+      // Also update the query cache directly
+      queryClient.setQueryData(['/api/services', { includeHidden: true }], (old: Service[] | undefined) =>
+        old?.map(s => s.id === updatedService.id ? updatedService : s) ?? []
+      );
+      // Refetch to ensure consistency
+      await queryClient.refetchQueries({ queryKey: ['/api/services', { includeHidden: true }] });
+      await queryClient.refetchQueries({ queryKey: ['/api/service-addons'] });
       toast({ title: 'Service updated successfully' });
+      const savedScrollPosition = scrollPositionRef.current;
       setEditingService(null);
       setIsDialogOpen(false);
+      // Restore scroll position after dialog closes
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: savedScrollPosition, behavior: 'instant' });
+      });
     },
     onError: (error: Error) => {
       toast({ title: 'Failed to update service', description: error.message, variant: 'destructive' });
@@ -2893,7 +2958,11 @@ function ServicesSection() {
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
         <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingService(null); }}>
           <DialogTrigger asChild>
-            <Button size="sm" data-testid="button-add-service">
+            <Button
+              size="sm"
+              className="h-10 px-3 text-sm bg-primary text-primary-foreground border-0 shadow-none focus-visible:ring-0"
+              data-testid="button-add-service"
+            >
               <Plus className="w-4 h-4 mr-1.5" />
               Add Service
             </Button>
@@ -2918,17 +2987,25 @@ function ServicesSection() {
         </Dialog>
         <div className="flex items-center gap-1.5">
           <Button
-            variant={viewMode === 'grid' ? "default" : "outline"}
+            variant="outline"
             size="sm"
             onClick={() => setViewMode('grid')}
+            className={clsx(
+              "h-10 min-w-[88px] bg-card/70 text-sm border-0 shadow-none focus-visible:ring-0",
+              viewMode === 'grid' ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
+            )}
           >
             <LayoutGrid className="w-4 h-4 mr-1.5" />
             Grid
           </Button>
           <Button
-            variant={viewMode === 'list' ? "default" : "outline"}
+            variant="outline"
             size="sm"
             onClick={() => setViewMode('list')}
+            className={clsx(
+              "h-10 min-w-[88px] bg-card/70 text-sm border-0 shadow-none focus-visible:ring-0",
+              viewMode === 'list' ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
+            )}
           >
             <List className="w-4 h-4 mr-1.5" />
             List
@@ -2938,14 +3015,14 @@ function ServicesSection() {
           placeholder="Search services..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="max-w-xs h-9"
+          className="max-w-xs h-10 bg-card/70 text-sm placeholder:text-muted-foreground border-0 shadow-none focus-visible:ring-0"
           data-testid="input-search-services"
         />
         <Select value={filterCategory} onValueChange={setFilterCategory}>
-          <SelectTrigger className="w-[180px] h-9" data-testid="select-filter-category">
+          <SelectTrigger className="w-[180px] h-10 bg-card/70 text-sm border-0 shadow-none focus-visible:ring-0" data-testid="select-filter-category">
             <SelectValue placeholder="Filter by category" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="border-0 shadow-none">
             <SelectItem value="all">All Categories</SelectItem>
             {categories?.map(cat => (
               <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>
@@ -2955,8 +3032,8 @@ function ServicesSection() {
       </div>
 
       {filteredServices?.length === 0 ? (
-        <Card className="p-12 text-center border-0 bg-slate-100 dark:bg-slate-800">
-          <Package className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+        <Card className="p-12 text-center bg-card border border-border">
+          <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="font-semibold text-lg mb-2">No services found</h3>
           <p className="text-muted-foreground mb-4">
             {services?.length === 0 ? 'Create your first service to get started' : 'Try adjusting your filters'}
@@ -2979,7 +3056,11 @@ function ServicesSection() {
                     key={service.id}
                     service={service}
                     categoryName={getCategoryName(service.categoryId)}
-                    onEdit={() => { setEditingService(service); setIsDialogOpen(true); }}
+                    onEdit={() => {
+                      scrollPositionRef.current = window.scrollY;
+                      setEditingService(service);
+                      setIsDialogOpen(true);
+                    }}
                     onDelete={() => deleteService.mutate(service.id)}
                   />
                 ))}
@@ -2991,7 +3072,11 @@ function ServicesSection() {
                     key={service.id}
                     service={service}
                     categoryName={getCategoryName(service.categoryId)}
-                    onEdit={() => { setEditingService(service); setIsDialogOpen(true); }}
+                    onEdit={() => {
+                      scrollPositionRef.current = window.scrollY;
+                      setEditingService(service);
+                      setIsDialogOpen(true);
+                    }}
                     onDelete={() => deleteService.mutate(service.id)}
                     index={index}
                   />
@@ -3014,6 +3099,7 @@ function SidebarSortableItem({
   isActive: boolean;
   onSelect: () => void;
 }) {
+  const { isMobile, setOpenMobile } = useSidebar();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -3030,7 +3116,12 @@ function SidebarSortableItem({
       )}
     >
       <SidebarMenuButton
-        onClick={onSelect}
+        onClick={() => {
+          onSelect();
+          if (isMobile) {
+            setOpenMobile(false);
+          }
+        }}
         isActive={isActive}
         data-testid={`nav-${item.id}`}
         className="group/btn"
@@ -3075,12 +3166,12 @@ function ServiceGridItem({
       ref={setNodeRef}
       style={style}
       className={clsx(
-        "group relative overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700 transition-all",
-        isDragging && "ring-2 ring-primary/40 shadow-lg bg-white dark:bg-slate-800/80"
+        "group relative overflow-hidden rounded-lg bg-muted transition-all h-full flex flex-col",
+        isDragging && "ring-2 ring-primary/40 shadow-lg bg-card/80"
       )}
     >
       <button
-        className="absolute top-2 left-2 z-20 p-2 text-muted-foreground hover:text-foreground bg-white/80 dark:bg-slate-900/70 rounded-md shadow-sm cursor-grab active:cursor-grabbing"
+        className="absolute top-2 left-2 z-20 p-2 text-muted-foreground hover:text-foreground bg-card/80 backdrop-blur-sm rounded-md shadow-sm cursor-grab active:cursor-grabbing"
         {...attributes}
         {...listeners}
         aria-label="Drag to reorder"
@@ -3096,63 +3187,65 @@ function ServiceGridItem({
           />
         </div>
       ) : (
-        <div className="w-full aspect-[4/3] bg-slate-200 flex items-center justify-center text-muted-foreground">
+        <div className="w-full aspect-[4/3] bg-muted flex items-center justify-center text-muted-foreground">
           <Package className="w-5 h-5" />
         </div>
       )}
-      <div className="p-4 space-y-3">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="font-semibold text-lg leading-tight line-clamp-1 pr-6">{service.name}</h3>
+      <div className="p-4 flex-1 flex flex-col">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <h3 className="font-semibold text-lg leading-tight pr-6">{service.name}</h3>
           {service.isHidden && (
             <Badge variant="secondary" className="text-[11px] border-0 bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200">
               Add-on Only
             </Badge>
           )}
         </div>
-        <div className="text-2xl font-bold text-primary">${service.price}</div>
-        <Badge variant="secondary" className="w-fit border-0 bg-slate-200 dark:bg-slate-700">
+        <div className="text-2xl font-bold text-primary mb-2">${service.price}</div>
+        <Badge variant="secondary" className="w-fit border-0 bg-secondary mb-2">
           {categoryName}
         </Badge>
-        <p className="text-sm text-muted-foreground line-clamp-2">{service.description}</p>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground mb-2">{service.description}</p>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
           <Clock className="w-4 h-4" />
           <span>{durationLabel}</span>
         </div>
-        <div className="flex items-center gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onEdit}
-            className="flex-1 bg-white dark:bg-slate-900 border-0"
-            data-testid={`button-edit-service-${service.id}`}
-          >
-            <Pencil className="w-4 h-4 mr-2" />
-            Edit
-          </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" className="bg-white dark:bg-slate-900 border-0" data-testid={`button-delete-service-${service.id}`}>
-                <Trash2 className="w-4 h-4 text-red-500" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete Service?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will permanently delete "{service.name}". This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction 
-                  onClick={onDelete}
-                  className="bg-red-500 hover:bg-red-600 border-0"
-                >
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+        <div className="mt-auto pt-3">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onEdit}
+              className="flex-1 bg-card dark:bg-slate-700/60 border-0"
+              data-testid={`button-edit-service-${service.id}`}
+            >
+              <Pencil className="w-4 h-4 mr-2" />
+              Edit
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="bg-card dark:bg-slate-700/60 border-0" data-testid={`button-delete-service-${service.id}`}>
+                  <Trash2 className="w-4 h-4 text-red-500" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Service?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete "{service.name}". This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={onDelete}
+                    variant="destructive"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </div>
     </div>
@@ -3185,7 +3278,7 @@ function ServiceListRow({
       ref={setNodeRef}
       style={style}
       className={clsx(
-        "flex flex-col sm:flex-row gap-3 p-3 rounded-lg bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-700 shadow-sm",
+        "flex flex-col sm:flex-row gap-3 p-3 rounded-lg bg-card border border-border shadow-sm",
         isDragging && "ring-2 ring-primary/40 shadow-md"
       )}
     >
@@ -3198,7 +3291,7 @@ function ServiceListRow({
         >
           <GripVertical className="w-4 h-4" />
         </button>
-        <div className="w-28 sm:w-32 aspect-[4/3] rounded-md overflow-hidden bg-slate-200 dark:bg-slate-800 flex-shrink-0">
+        <div className="w-28 sm:w-32 aspect-[4/3] rounded-md overflow-hidden bg-muted flex-shrink-0">
           {service.imageUrl ? (
             <img src={service.imageUrl} alt={service.name} className="w-full h-full object-cover" />
           ) : (
@@ -3216,7 +3309,7 @@ function ServiceListRow({
             <p className="text-xs text-muted-foreground line-clamp-2">{service.description}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="text-[11px] border-0 bg-slate-200 dark:bg-slate-700">#{index + 1}</Badge>
+            <Badge variant="secondary" className="text-[11px] border-0 bg-secondary">#{index + 1}</Badge>
             {service.isHidden && (
               <Badge variant="secondary" className="text-[11px] border-0 bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200">
                 Add-on Only
@@ -3231,17 +3324,17 @@ function ServiceListRow({
             <Clock className="w-4 h-4" />
             <span>{durationLabel}</span>
           </div>
-          <Badge variant="secondary" className="w-fit border-0 bg-slate-200 dark:bg-slate-700">
+          <Badge variant="secondary" className="w-fit border-0 bg-secondary">
             {categoryName}
           </Badge>
         </div>
 
-        <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
           <Button
             variant="outline"
             size="sm"
             onClick={onEdit}
-            className="bg-white dark:bg-slate-800 border-0"
+            className="bg-card border-0"
             data-testid={`button-edit-service-${service.id}`}
           >
             <Pencil className="w-4 h-4 mr-2" />
@@ -3249,7 +3342,7 @@ function ServiceListRow({
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" className="bg-white dark:bg-slate-800 border-0" data-testid={`button-delete-service-${service.id}`}>
+              <Button variant="outline" size="sm" className="bg-card border-0" data-testid={`button-delete-service-${service.id}`}>
                 <Trash2 className="w-4 h-4 text-red-500" />
               </Button>
             </AlertDialogTrigger>
@@ -3264,7 +3357,7 @@ function ServiceListRow({
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction 
                   onClick={onDelete}
-                  className="bg-red-500 hover:bg-red-600 border-0"
+                  variant="destructive"
                 >
                   Delete
                 </AlertDialogAction>
@@ -3307,7 +3400,7 @@ function CategoryReorderRow({
       ref={setNodeRef}
       style={style}
       className={clsx(
-        "flex w-full min-w-0 flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 rounded-lg bg-slate-100 dark:bg-slate-800 border border-gray-200/70 dark:border-slate-700 cursor-grab active:cursor-grabbing transition-all shadow-sm",
+        "flex w-full min-w-0 flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 rounded-lg bg-light-gray dark:bg-slate-800 cursor-grab active:cursor-grabbing transition-all shadow-sm",
         isDragging && "ring-2 ring-primary/40 shadow-md"
       )}
       data-testid={`category-item-${category.id}`}
@@ -3328,22 +3421,22 @@ function CategoryReorderRow({
             className="w-16 aspect-[4/3] sm:w-24 rounded-[2px] object-cover flex-shrink-0"
           />
         ) : (
-          <div className="w-16 aspect-[4/3] sm:w-24 rounded-[2px] bg-slate-200 flex items-center justify-center text-muted-foreground flex-shrink-0">
+          <div className="w-16 aspect-[4/3] sm:w-24 rounded-[2px] bg-muted flex items-center justify-center text-muted-foreground flex-shrink-0">
             <FolderOpen className="w-4 h-4" />
           </div>
         )}
         <div className="flex-1 min-w-0 sm:hidden">
           <h3 className="font-semibold truncate">{category.name}</h3>
-          <Badge variant="secondary" className="mt-1">
+          <Badge variant="secondary" className="mt-1 bg-[#FFFF01] text-black font-bold dark:bg-[#FFFF01] dark:text-black">
             {serviceCount} services
           </Badge>
-          <Badge variant="outline" className="mt-1 border-0 bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100">
+          <Badge variant="outline" className="mt-1 border-0 bg-slate-800 text-white dark:bg-slate-700 dark:text-slate-200">
             {(subcategories?.filter(sub => sub.categoryId === category.id).length) ?? 0} subcategories
           </Badge>
           <Button
             variant="outline"
             size="sm"
-            className="mt-2"
+            className="mt-2 border-0"
             onClick={onManageSubcategories}
           >
             Manage subcategories
@@ -3378,7 +3471,7 @@ function CategoryReorderRow({
                 <AlertDialogAction
                   onClick={onDelete}
                   disabled={disableDelete}
-                  className="bg-red-500 hover:bg-red-600"
+                  variant="destructive"
                 >
                   Delete
                 </AlertDialogAction>
@@ -3392,22 +3485,23 @@ function CategoryReorderRow({
           <h3 className="font-semibold text-lg truncate">{category.name}</h3>
           <p className="text-sm text-muted-foreground truncate">{category.description}</p>
           <div className="flex items-center gap-2 mt-2 flex-wrap">
-            <Badge variant="secondary">
+            <Badge variant="secondary" className="bg-[#FFFF01] text-black font-bold dark:bg-[#FFFF01] dark:text-black">
               {serviceCount} services
             </Badge>
-            <Badge variant="outline" className="border-0 bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100">
+            <Badge variant="outline" className="border-0 bg-slate-800 text-white dark:bg-slate-700 dark:text-slate-200">
               {(subcategories?.filter(sub => sub.categoryId === category.id).length) ?? 0} subcategories
             </Badge>
             <Button
               variant="outline"
               size="sm"
+              className="border-0"
               onClick={onManageSubcategories}
             >
               Manage subcategories
             </Button>
           </div>
         </div>
-        <Badge variant="secondary" className="border-0 bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100 shrink-0 self-center">
+        <Badge variant="secondary" className="border-0 bg-slate-800 text-white shrink-0 self-center dark:bg-slate-700 dark:text-slate-200">
           #{index + 1}
         </Badge>
       </div>
@@ -3441,7 +3535,7 @@ function CategoryReorderRow({
               <AlertDialogAction
                 onClick={onDelete}
                 disabled={disableDelete}
-                className="bg-red-500 hover:bg-red-600"
+                variant="destructive"
               >
                 Delete
               </AlertDialogAction>
@@ -3640,7 +3734,7 @@ function ServiceForm({ service, categories, subcategories, allServices, addonRel
               />
             </div>
             {imageUrl && (
-              <div className="relative w-full aspect-[4/3] bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
+              <div className="relative w-full aspect-[4/3] bg-muted rounded-lg overflow-hidden border border-border">
                 <img 
                   src={imageUrl.startsWith('/objects/') ? imageUrl : imageUrl} 
                   alt="Preview" 
@@ -3670,7 +3764,7 @@ function ServiceForm({ service, categories, subcategories, allServices, addonRel
           <div className="space-y-2 pt-2">
             <Label>Suggested Add-ons</Label>
             <p className="text-xs text-muted-foreground">Choose which services to suggest when this is added</p>
-            <div className="space-y-2 border rounded-md p-3 bg-slate-50 dark:bg-slate-800">
+            <div className="space-y-2 border rounded-md p-3 bg-muted">
               <Input
                 placeholder="Search services..."
                 value={addonSearch}
@@ -3744,11 +3838,11 @@ interface BookingItem {
 
 function getBookingStatusColor(status: string) {
   switch (status) {
-    case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-    case 'confirmed': return 'bg-blue-100 text-blue-800 border-blue-200';
-    case 'completed': return 'bg-green-100 text-green-800 border-green-200';
-    case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
-    default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    case 'pending': return 'bg-warning/10 text-warning dark:text-warning border-warning/20';
+    case 'confirmed': return 'bg-primary/10 text-primary border-primary/20';
+    case 'completed': return 'bg-success/10 text-success border-success/20';
+    case 'cancelled': return 'bg-destructive/10 text-destructive border-destructive/20';
+    default: return 'bg-muted text-muted-foreground border-border';
   }
 }
 
@@ -3778,26 +3872,25 @@ function BookingRow({ booking, onUpdate, onDelete }: {
     toast({ title: `Status changed to ${status}` });
   };
 
-  const handlePaymentToggle = () => {
-    const newStatus = booking.paymentStatus === 'paid' ? 'unpaid' : 'paid';
-    onUpdate(booking.id, { paymentStatus: newStatus });
-    toast({ title: newStatus === 'paid' ? 'Marked as paid' : 'Marked as unpaid' });
+  const handlePaymentChange = (paymentStatus: string) => {
+    onUpdate(booking.id, { paymentStatus });
+    toast({ title: `Payment status changed to ${paymentStatus}` });
   };
 
   return (
     <>
-      <tr className="hover:bg-slate-200/30 dark:hover:bg-slate-700/30 transition-colors">
+      <tr className="hover:bg-muted/30 dark:hover:bg-slate-700/30 transition-colors">
         <td className="px-6 py-4">
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setExpanded(!expanded)}
-              className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+              className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-muted dark:hover:bg-slate-700 transition-colors"
               data-testid={`button-expand-booking-${booking.id}`}
             >
               <ChevronDown className={clsx("w-4 h-4 transition-transform", expanded && "rotate-180")} />
             </button>
             <div>
-              <p className="font-semibold text-slate-900 dark:text-slate-100">{booking.customerName}</p>
+              <p className="font-semibold text-foreground">{booking.customerName}</p>
               <p className="text-xs text-slate-500">{booking.customerEmail}</p>
               <p className="text-xs text-slate-400">{booking.customerPhone}</p>
             </div>
@@ -3853,22 +3946,29 @@ function BookingRow({ booking, onUpdate, onDelete }: {
           </div>
         </td>
         <td className="px-6 py-4">
-          <button
-            onClick={handlePaymentToggle}
-            className={clsx(
-              "px-2.5 py-1 rounded-full text-xs font-bold cursor-pointer transition-colors",
-              booking.paymentStatus === "paid" 
-                ? "bg-green-100 text-green-700 hover:bg-green-200" 
-                : "bg-orange-100 text-orange-700 hover:bg-orange-200"
-            )}
-            data-testid={`button-payment-${booking.id}`}
-          >
-            {booking.paymentStatus === "paid" ? "Paid" : "Unpaid"}
-          </button>
+          <Select value={booking.paymentStatus} onValueChange={handlePaymentChange}>
+            <SelectTrigger className="w-[120px] h-10 text-xs" data-testid={`select-payment-${booking.id}`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="paid">
+                <span className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-green-200 border border-green-300" />
+                  Paid
+                </span>
+              </SelectItem>
+              <SelectItem value="unpaid">
+                <span className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-yellow-200 border border-yellow-300" />
+                  Unpaid
+                </span>
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </td>
         <td className="px-6 py-4">
           <span
-            className="font-bold text-slate-900 dark:text-slate-100"
+            className="font-bold text-foreground"
             data-testid={`text-amount-${booking.id}`}
           >
             ${booking.totalPrice}
@@ -3899,7 +3999,7 @@ function BookingRow({ booking, onUpdate, onDelete }: {
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction 
                     onClick={() => onDelete(booking.id)}
-                    className="bg-red-500 hover:bg-red-600"
+                    variant="destructive"
                   >
                     Delete
                   </AlertDialogAction>
@@ -3910,7 +4010,7 @@ function BookingRow({ booking, onUpdate, onDelete }: {
         </td>
       </tr>
       {expanded && (
-        <tr className="bg-slate-100 dark:bg-slate-800/60">
+        <tr className="bg-muted/60">
           <td colSpan={7} className="px-6 py-4">
             <div className="space-y-3">
               <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300">Booked Services</h4>
@@ -3919,7 +4019,7 @@ function BookingRow({ booking, onUpdate, onDelete }: {
                   {bookingItems.map((item) => (
                     <div key={item.id} className="flex items-center justify-between py-2">
                       <span className="text-sm text-slate-700 dark:text-slate-300">{item.serviceName}</span>
-                      <span className="text-sm font-medium text-slate-900 dark:text-slate-100">${item.price}</span>
+                      <span className="text-sm font-medium text-foreground">${item.price}</span>
                     </div>
                   ))}
                   <div className="h-px bg-gray-200 dark:bg-slate-700" />
@@ -3961,46 +4061,30 @@ function BookingMobileCard({
   };
 
   return (
-    <Card className="mb-4 overflow-hidden border-slate-200">
-      <CardHeader className="p-4 pb-2 space-y-0">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex flex-col">
-            <span className="font-bold text-lg">#{booking.id}</span>
-            <span className="text-sm text-muted-foreground">{format(new Date(booking.bookingDate), 'MMM dd, yyyy')}</span>
+    <Card className="mb-4 overflow-hidden border-0 bg-muted">
+      <CardHeader className="p-4 pb-3 space-y-0">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-semibold text-base truncate">{booking.customerName}</p>
+            <p className="text-xs text-muted-foreground">
+              {format(new Date(booking.bookingDate), 'MMM dd, yyyy')} • {booking.startTime} - {booking.endTime}
+            </p>
           </div>
-          <div className="flex flex-col items-end gap-1">
-            <Badge className={getBookingStatusColor(booking.status)}>
-              {booking.status}
-            </Badge>
-            <Badge variant="outline" className={booking.paymentStatus === 'paid' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-yellow-100 text-yellow-800 border-yellow-200'}>
-              {booking.paymentStatus}
-            </Badge>
+          <div className="text-right">
+            <p className="text-lg font-bold text-foreground">${booking.totalPrice}</p>
+            <p className="text-xs text-muted-foreground">#{booking.id}</p>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="p-4 pt-2 space-y-3">
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <User className="w-4 h-4" />
-            <span className="truncate">{booking.customerName}</span>
-          </div>
-          <div className="flex items-center gap-2 text-muted-foreground justify-end">
-            <Clock className="w-4 h-4" />
-            <span>{booking.startTime} - {booking.endTime}</span>
-          </div>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <MapPin className="w-4 h-4" />
-            <span className="truncate">{booking.customerAddress}</span>
-          </div>
-          <div className="flex items-center gap-2 font-bold justify-end text-primary">
-            <DollarSign className="w-4 h-4" />
-            <span>${booking.totalPrice}</span>
-          </div>
+      <CardContent className="p-4 pt-0 space-y-3">
+        <div className="flex items-start gap-2 text-xs text-muted-foreground">
+          <MapPin className="w-4 h-4 mt-0.5" />
+          <span className="truncate">{booking.customerAddress}</span>
         </div>
 
-        <div className="flex flex-wrap gap-2 pt-2">
+        <div className="grid gap-2">
           <Select onValueChange={handleStatusChange} defaultValue={booking.status}>
-            <SelectTrigger className="h-8 text-xs w-[110px]">
+            <SelectTrigger className="h-9 text-xs w-full">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -4012,7 +4096,7 @@ function BookingMobileCard({
           </Select>
 
           <Select onValueChange={handlePaymentStatusChange} defaultValue={booking.paymentStatus}>
-            <SelectTrigger className="h-8 text-xs w-[110px]">
+            <SelectTrigger className="h-9 text-xs w-full">
               <SelectValue placeholder="Payment" />
             </SelectTrigger>
             <SelectContent>
@@ -4020,10 +4104,21 @@ function BookingMobileCard({
               <SelectItem value="unpaid">Unpaid</SelectItem>
             </SelectContent>
           </Select>
+        </div>
 
+        <div className="flex items-center justify-between gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-0"
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            {isExpanded ? 'Hide Details' : 'Show Services'}
+            <ChevronDown className={clsx("w-4 h-4 ml-2 transition-transform", isExpanded && "rotate-180")} />
+          </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive ml-auto">
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
                 <Trash2 className="w-4 h-4" />
               </Button>
             </AlertDialogTrigger>
@@ -4038,20 +4133,10 @@ function BookingMobileCard({
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="w-full mt-2 h-8"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            {isExpanded ? 'Hide Details' : 'Show Services'}
-            <ChevronDown className={clsx("w-4 h-4 ml-2 transition-transform", isExpanded && "rotate-180")} />
-          </Button>
         </div>
 
         {isExpanded && (
-          <div className="mt-4 p-3 bg-slate-50 rounded-md border border-slate-100 space-y-2">
+          <div className="mt-2 p-3 bg-card/70 dark:bg-slate-900/70 rounded-md space-y-2">
             <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Services</h4>
             {isItemsLoading ? (
               <Loader2 className="w-4 h-4 animate-spin mx-auto" />
@@ -4067,7 +4152,7 @@ function BookingMobileCard({
             ) : (
               <p className="text-sm text-muted-foreground italic">No services listed</p>
             )}
-            <div className="pt-2 border-t border-slate-200 text-xs text-muted-foreground">
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-700 text-xs text-muted-foreground">
               <p>Email: {booking.customerEmail}</p>
               <p>Phone: {booking.customerPhone}</p>
             </div>
@@ -4129,23 +4214,23 @@ function BookingsSection() {
           <h1 className="text-2xl font-bold">Bookings</h1>
           <p className="text-muted-foreground">Manage all customer bookings</p>
         </div>
-        <Badge variant="secondary" className="text-lg px-4 py-2 border-0 bg-slate-100 dark:bg-slate-800">
+        <Badge variant="secondary" className="text-lg px-4 py-2 border-0 bg-muted">
           {bookings?.length || 0} Total
         </Badge>
       </div>
 
       {bookings?.length === 0 ? (
-        <div className="p-12 text-center rounded-lg bg-slate-100 dark:bg-slate-800">
-          <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+        <div className="p-12 text-center rounded-lg bg-card border border-border">
+          <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="font-semibold text-lg mb-2">No bookings yet</h3>
           <p className="text-muted-foreground">Bookings will appear here when customers make them</p>
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="hidden md:block bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden transition-all">
+          <div className="hidden md:block bg-muted rounded-lg overflow-hidden transition-all">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-slate-200/50 dark:bg-slate-700/50 text-slate-500 text-xs uppercase tracking-wider font-semibold">
+                <thead className="bg-muted/50 dark:bg-slate-700/50 text-slate-500 text-xs uppercase tracking-wider font-semibold">
                   <tr>
                     <th className="px-6 py-4 text-left">Customer</th>
                     <th className="px-6 py-4 text-left">Schedule</th>
@@ -4156,7 +4241,7 @@ function BookingsSection() {
                     <th className="px-6 py-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody className="bg-card/70 dark:bg-slate-800/70 divide-y divide-gray-200/70 dark:divide-slate-600/40">
                   {bookings?.map((booking) => (
                     <BookingRow 
                       key={booking.id} 
@@ -4207,7 +4292,7 @@ function SortableFaqItem({ faq, onEdit, onDelete }: { faq: Faq; onEdit: (faq: Fa
     <div
       ref={setNodeRef}
       style={style}
-      className="p-3 rounded-lg bg-slate-100 dark:bg-slate-800 transition-all border group relative"
+      className="p-3 rounded-lg bg-muted transition-all group relative"
       data-testid={`faq-item-${faq.id}`}
     >
       <div className="flex items-center gap-3">
@@ -4220,7 +4305,7 @@ function SortableFaqItem({ faq, onEdit, onDelete }: { faq: Faq; onEdit: (faq: Fa
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-semibold text-sm line-clamp-1">{faq.question}</h3>
+            <h3 className="font-semibold text-base line-clamp-1">{faq.question}</h3>
           </div>
           <p className="text-muted-foreground text-xs line-clamp-2">{faq.answer}</p>
         </div>
@@ -4251,7 +4336,7 @@ function SortableFaqItem({ faq, onEdit, onDelete }: { faq: Faq; onEdit: (faq: Fa
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction 
                   onClick={() => onDelete(faq.id)}
-                  className="bg-red-500 hover:bg-red-600"
+                  variant="destructive"
                 >
                   Delete
                 </AlertDialogAction>
@@ -4386,8 +4471,8 @@ function FaqsSection() {
       </div>
 
       {faqs?.length === 0 ? (
-        <div className="p-12 text-center bg-slate-100 dark:bg-slate-800 rounded-lg">
-          <HelpCircle className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+        <div className="p-12 text-center bg-card rounded-lg">
+          <HelpCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="font-semibold text-lg mb-2">No FAQs yet</h3>
           <p className="text-muted-foreground mb-4">Create FAQs to help your customers find answers quickly</p>
         </div>
@@ -4853,9 +4938,11 @@ You: "Thanks John! What's your email?"
   });
 
   const statusBadge = (status: string) => {
-    const variant = status === 'closed' ? 'secondary' : 'default';
     const label = status === 'closed' ? 'Archived' : status === 'open' ? 'Open' : status;
-    return <Badge variant={variant}>{label}</Badge>;
+    const badgeClass = status === 'open'
+      ? 'bg-blue-50 text-blue-600 border-2 border-blue-600 rounded-full px-3 py-1 text-xs font-bold dark:bg-blue-950 dark:text-blue-400 dark:border-blue-400'
+      : 'bg-slate-100 text-slate-600 border-2 border-slate-600 rounded-full px-3 py-1 text-xs font-bold dark:bg-slate-800 dark:text-slate-400 dark:border-slate-400';
+    return <span className={badgeClass}>{label}</span>;
   };
 
   const assistantName = settingsDraft.agentName || companySettings?.companyName || 'Assistant';
@@ -4878,7 +4965,7 @@ You: "Thanks John! What's your email?"
         <p className="text-muted-foreground">Prioritize conversations, then open the settings drawer when needed.</p>
       </div>
 
-      <Card className="bg-gradient-to-r from-primary to-blue-600 text-white shadow-lg">
+      <Card className="bg-gradient-to-r from-primary to-blue-600 dark:from-slate-700 dark:to-slate-600 text-white shadow-lg border-0">
         <CardContent className="p-6">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-4">
@@ -4915,7 +5002,7 @@ You: "Thanks John! What's your email?"
         </CardContent>
       </Card>
 
-      <Card className="shadow-sm border border-slate-200/70">
+      <Card className="shadow-sm border-0 bg-muted dark:bg-slate-800/70">
         <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <CardTitle>Conversations</CardTitle>
@@ -4926,24 +5013,27 @@ You: "Thanks John! What's your email?"
               value={statusFilter}
               onValueChange={(val) => setStatusFilter(val as 'open' | 'closed' | 'all')}
             >
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-[120px] h-9 bg-card/70 border border-border/60 shadow-none focus-visible:ring-0 text-sm">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="border-0 shadow-none bg-card/90 text-foreground">
                 <SelectItem value="open">Open</SelectItem>
                 <SelectItem value="closed">Archived</SelectItem>
                 <SelectItem value="all">All</SelectItem>
               </SelectContent>
             </Select>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
+              className="h-9 min-w-[110px] border-0 bg-slate-200 hover:bg-slate-300 text-slate-950 font-semibold dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-100"
               onClick={() => refetchConversations()}
               disabled={loadingConversations}
             >
               {loadingConversations ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Refresh'}
             </Button>
-            <Badge variant="secondary">{visibleConversations.length} shown</Badge>
+            <div className="h-9 min-w-[110px] flex items-center justify-center bg-[#FFFF01] text-black font-bold rounded-md px-4 text-sm">
+              {visibleConversations.length} shown
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -4952,9 +5042,9 @@ You: "Thanks John! What's your email?"
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : conversations && conversations.length > 0 ? (
-            <div className="overflow-auto border rounded-lg bg-white">
+            <div className="overflow-auto rounded-lg bg-muted dark:bg-slate-800/70">
               <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-muted-foreground">
+                <thead className="bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
                   <tr>
                     <th className="px-4 py-3 text-left">Visitor</th>
                     <th className="px-4 py-3 text-left">Source</th>
@@ -4964,9 +5054,9 @@ You: "Thanks John! What's your email?"
                     <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y">
+                <tbody className="bg-card/70 dark:bg-slate-800/60 divide-y divide-border/60 dark:divide-slate-700/60">
                   {visibleConversations.map((conv) => (
-                    <tr key={conv.id} className="hover:bg-slate-50/80">
+                    <tr key={conv.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/50">
                       <td className="px-4 py-3">
                         <div className="font-medium">{conv.visitorName || 'Guest'}</div>
                         <div className="text-xs text-muted-foreground">
@@ -4984,11 +5074,11 @@ You: "Thanks John! What's your email?"
                       <td className="px-4 py-3">{statusBadge(conv.status)}</td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center gap-2 justify-end">
-                          <Button size="sm" variant="outline" onClick={() => openConversation(conv)}>
-                            View
-                          </Button>
-                          <Button
-                            size="icon"
+                      <Button size="sm" variant="ghost" className="min-w-[88px] h-8 justify-center text-sm font-semibold border-0 bg-slate-600 hover:bg-slate-700 text-white dark:bg-slate-600 dark:hover:bg-slate-500 dark:text-white" onClick={() => openConversation(conv)}>
+                        View
+                      </Button>
+                      <Button
+                        size="icon"
                             variant="ghost"
                             className="text-red-500"
                             onClick={() => deleteMutation.mutate(conv.id)}
@@ -5004,7 +5094,7 @@ You: "Thanks John! What's your email?"
               </table>
             </div>
           ) : (
-            <div className="p-8 text-center bg-slate-50 rounded-lg border">
+            <div className="p-8 text-center bg-card/80 dark:bg-slate-900/70 rounded-lg">
               <p className="text-muted-foreground">
                 {conversations && conversations.length > 0
                   ? 'No conversations match this filter.'
@@ -5015,10 +5105,10 @@ You: "Thanks John! What's your email?"
         </CardContent>
       </Card>
 
-      <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen} className="border border-slate-200 rounded-xl bg-white shadow-sm">
+      <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen} className="rounded-xl bg-card/80 dark:bg-slate-900/70 shadow-none border border-border/70 dark:border-slate-800/70">
         <div className="flex items-center justify-between px-4 py-3">
           <div>
-            <p className="font-semibold text-sm">Widget & assistant settings</p>
+            <p className="font-semibold text-base">Widget & assistant settings</p>
             <p className="text-xs text-muted-foreground">Open only when you need to tweak the assistant.</p>
           </div>
           <CollapsibleTrigger asChild>
@@ -5028,9 +5118,9 @@ You: "Thanks John! What's your email?"
             </Button>
           </CollapsibleTrigger>
         </div>
-        <CollapsibleContent className="p-4 border-t space-y-6">
+        <CollapsibleContent className="p-4 border-t border-border/70 dark:border-slate-800/70 space-y-6">
           <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-            <Card>
+            <Card className="border-0 bg-muted dark:bg-slate-800/60 shadow-none">
               <CardHeader>
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
@@ -5064,66 +5154,68 @@ You: "Thanks John! What's your email?"
                 <p className="text-sm text-muted-foreground">Control availability, branding, and welcome message</p>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center gap-3 p-3 bg-slate-50 border rounded-md">
-                  <div className="h-12 w-12 rounded-full overflow-hidden bg-white flex items-center justify-center border">
-                    {assistantAvatar ? (
-                      <img src={assistantAvatar} alt={assistantName} className="h-full w-full object-cover" />
-                    ) : (
-                      <MessageSquare className="w-4 h-4" />
-                    )}
+                <div className="space-y-3 bg-card rounded-lg border border-border/70 dark:bg-slate-900/80 dark:border-slate-800/70 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-full overflow-hidden bg-white/80 dark:bg-slate-800 flex items-center justify-center border border-border/60 dark:border-slate-700/60">
+                      {assistantAvatar ? (
+                        <img src={assistantAvatar} alt={assistantName} className="h-full w-full object-cover" />
+                      ) : (
+                        <MessageSquare className="w-4 h-4" />
+                      )}
+                    </div>
+                    <div className="text-sm">
+                      <p className="font-semibold">{assistantName}</p>
+                      <p className="text-xs text-muted-foreground">Defaults to company name and favicon.</p>
+                    </div>
                   </div>
-                  <div className="text-sm">
-                    <p className="font-semibold">{assistantName}</p>
-                    <p className="text-xs text-muted-foreground">Defaults to company name and favicon.</p>
-                  </div>
-                </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="agent-name">Agent name</Label>
-                    <Input
-                      id="agent-name"
-                      value={settingsDraft.agentName}
-                      onChange={(e) => updateField('agentName', e.target.value)}
-                      placeholder={companySettings?.companyName || 'Assistant'}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="agent-avatar">Avatar (URL)</Label>
-                    <div className="flex flex-col gap-2">
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        <Input
-                          id="agent-avatar"
-                          value={settingsDraft.agentAvatarUrl || ''}
-                          onChange={(e) => updateField('agentAvatarUrl', e.target.value)}
-                          placeholder={companySettings?.logoIcon || '/favicon.ico'}
-                        />
-                        <input
-                          ref={avatarFileInputRef}
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handleAvatarUpload}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => avatarFileInputRef.current?.click()}
-                          disabled={isUploadingAvatar || isSaving}
-                        >
-                          {isUploadingAvatar ? (
-                            <>
-                              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                              Uploading...
-                            </>
-                          ) : (
-                            'Upload'
-                          )}
-                        </Button>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="agent-name">Agent name</Label>
+                      <Input
+                        id="agent-name"
+                        value={settingsDraft.agentName}
+                        onChange={(e) => updateField('agentName', e.target.value)}
+                        placeholder={companySettings?.companyName || 'Assistant'}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="agent-avatar">Avatar (URL)</Label>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <Input
+                            id="agent-avatar"
+                            value={settingsDraft.agentAvatarUrl || ''}
+                            onChange={(e) => updateField('agentAvatarUrl', e.target.value)}
+                            placeholder={companySettings?.logoIcon || '/favicon.ico'}
+                          />
+                          <input
+                            ref={avatarFileInputRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleAvatarUpload}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => avatarFileInputRef.current?.click()}
+                            disabled={isUploadingAvatar || isSaving}
+                          >
+                            {isUploadingAvatar ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                Uploading...
+                              </>
+                            ) : (
+                              'Upload'
+                            )}
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          If empty, the admin favicon/logo is used. You can upload a custom image.
+                        </p>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        If empty, the admin favicon/logo is used. You can upload a custom image.
-                      </p>
                     </div>
                   </div>
                 </div>
@@ -5163,7 +5255,7 @@ You: "Thanks John! What's your email?"
                     </Button>
                   </div>
                   {settingsDraft.excludedUrlRules?.length === 0 && (
-                    <div className="text-sm text-muted-foreground bg-slate-50 dark:bg-slate-800 border rounded-md p-3">
+                    <div className="text-sm text-muted-foreground bg-card/80 dark:bg-slate-900/70 border border-border/60 dark:border-slate-800/60 rounded-md p-3">
                       No rules yet. Add paths like <code>/admin</code>, <code>/checkout</code>, or <code>/privacy</code>.
                     </div>
                   )}
@@ -5223,21 +5315,7 @@ You: "Thanks John! What's your email?"
             </Card>
           )}
 
-          {settingsDraft.enabled && openaiSettings?.enabled && openaiSettings?.hasKey && (
-            <Card className="border-green-200 bg-green-50 dark:bg-green-900/20">
-              <CardContent className="pt-4">
-                <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
-                  <Check className="w-4 h-4" />
-                  <span className="font-medium text-sm">Chat is active</span>
-                </div>
-                <p className="text-xs text-green-600 dark:text-green-500 mt-1">
-                  Visitors can now chat with your AI assistant
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          <Card className="border border-slate-200">
+          <Card className="border-0 bg-muted dark:bg-slate-800/60 shadow-none">
             <CardHeader>
               <CardTitle>Intake flow</CardTitle>
               <p className="text-sm text-muted-foreground">Enable, disable, or reorder the data the bot collects before booking.</p>
@@ -5265,7 +5343,7 @@ You: "Thanks John! What's your email?"
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200/60 bg-slate-50/60 dark:bg-slate-900/10">
+          <Card className="border-0 bg-muted dark:bg-slate-800/60 shadow-none">
             <CardHeader>
               <CardTitle>Widget Tips</CardTitle>
             </CardHeader>
@@ -5277,6 +5355,20 @@ You: "Thanks John! What's your email?"
               </ul>
             </CardContent>
           </Card>
+
+          {settingsDraft.enabled && openaiSettings?.enabled && openaiSettings?.hasKey && (
+            <Card className="border-green-200 bg-green-50 dark:bg-green-900/20">
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                  <Check className="w-4 h-4" />
+                  <span className="font-medium text-sm">Chat is active</span>
+                </div>
+                <p className="text-xs text-green-600 dark:text-green-500 mt-1">
+                  Visitors can now chat with your AI assistant
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
         </CollapsibleContent>
@@ -5340,7 +5432,7 @@ You: "Thanks John! What's your email?"
                       <div
                         className={clsx(
                           'rounded-2xl px-4 py-3 text-sm shadow-sm',
-                          isAssistant ? 'bg-white border text-slate-900' : 'bg-primary text-white'
+                          isAssistant ? 'bg-card border border-border text-foreground' : 'bg-primary text-primary-foreground'
                         )}
                       >
                         <div className="whitespace-pre-wrap leading-relaxed">{renderMarkdown(msg.content)}</div>
@@ -5430,11 +5522,11 @@ function ObjectiveRow({ objective, onToggle }: { objective: IntakeObjective; onT
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-3 rounded-lg border bg-white px-3 py-2 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+      className="flex items-center gap-3 rounded-lg border bg-white px-3 py-2 shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:bg-slate-800 dark:border-slate-700"
     >
       <button
         type="button"
-        className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-slate-200 hover:bg-slate-50 text-slate-500"
+        className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-slate-200 hover:bg-slate-50 text-slate-500 dark:border-slate-600 dark:hover:bg-slate-700 dark:text-slate-400"
         {...attributes}
         {...listeners}
         aria-label="Drag to reorder"
@@ -5442,7 +5534,7 @@ function ObjectiveRow({ objective, onToggle }: { objective: IntakeObjective; onT
         <GripVertical className="h-4 w-4" />
       </button>
       <div className="flex-1">
-        <p className="text-sm font-medium">{objective.label}</p>
+        <p className="text-sm font-medium dark:text-slate-200">{objective.label}</p>
         <p className="text-xs text-muted-foreground">{objective.description}</p>
       </div>
       <Switch checked={objective.enabled} onCheckedChange={(checked) => onToggle(objective.id, checked)} />
@@ -5470,6 +5562,7 @@ function AvailabilitySection() {
   const { data: settings, isLoading } = useQuery<any>({
     queryKey: ['/api/company-settings']
   });
+  const availabilityMenuTitle = menuItems.find((item) => item.id === 'availability')?.title ?? 'Availability & Business Hours';
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (newSettings: any) => {
@@ -5514,19 +5607,17 @@ function AvailabilitySection() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Availability & Business Hours</h1>
+        <h1 className="text-2xl font-bold">{availabilityMenuTitle}</h1>
         <p className="text-muted-foreground">Manage your working hours and time display preferences</p>
       </div>
 
       <div className="grid gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-primary" />
-              Booking Constraints
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="bg-muted p-6 rounded-lg space-y-6 transition-all">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <DollarSign className="w-5 h-5 text-primary" />
+            Booking Constraints
+          </h2>
+          <div>
             <div className="max-w-xs space-y-2">
               <Label htmlFor="minimumBookingValue">Minimum Booking Value ($)</Label>
               <Input 
@@ -5543,17 +5634,15 @@ function AvailabilitySection() {
                 Customers must reach this cart total before proceeding to checkout. Set to 0 to disable.
               </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Clock className="w-5 h-5 text-primary" />
-              Time Display & Hours
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
+        <div className="bg-muted p-6 rounded-lg space-y-6 transition-all">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Clock className="w-5 h-5 text-primary" />
+            Time Display & Hours
+          </h2>
+          <div className="space-y-6">
             <div className="max-w-xs space-y-2">
               <Label htmlFor="timeFormat">Time Display Format</Label>
               <Select 
@@ -5580,7 +5669,7 @@ function AvailabilitySection() {
                   const dayHours = (settings.businessHours || DEFAULT_BUSINESS_HOURS)[day];
 
                   return (
-                    <div key={day} className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border">
+                    <div key={day} className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-card rounded-lg border border-border">
                       <div className="flex items-center justify-between sm:justify-start gap-3 sm:w-auto">
                         <div className="w-24 capitalize font-medium text-sm">{day}</div>
                         <div className="flex items-center gap-2">
@@ -5646,9 +5735,288 @@ function AvailabilitySection() {
                 Set different business hours for each day of the week. Days marked as closed won't show any available time slots.
               </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
+    </div>
+  );
+}
+
+interface TwilioSettings {
+  enabled: boolean;
+  accountSid: string;
+  authToken: string;
+  fromPhoneNumber: string;
+  toPhoneNumber: string;
+  notifyOnNewChat: boolean;
+}
+
+function TwilioSection() {
+  const { toast } = useToast();
+  const [settings, setSettings] = useState<TwilioSettings>({
+    enabled: false,
+    accountSid: '',
+    authToken: '',
+    fromPhoneNumber: '',
+    toPhoneNumber: '',
+    notifyOnNewChat: true
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
+  const [testResult, setTestResult] = useState<'idle' | 'success' | 'error'>('idle');
+  const [testMessage, setTestMessage] = useState<string | null>(null);
+
+  const { data: twilioSettings, isLoading } = useQuery<TwilioSettings>({
+    queryKey: ['/api/integrations/twilio']
+  });
+
+  useEffect(() => {
+    if (twilioSettings) {
+      setSettings(twilioSettings);
+    }
+  }, [twilioSettings]);
+
+  const saveSettings = async () => {
+    setIsSaving(true);
+    try {
+      await apiRequest('PUT', '/api/integrations/twilio', settings);
+      queryClient.invalidateQueries({ queryKey: ['/api/integrations/twilio'] });
+      toast({ title: 'Twilio settings saved successfully' });
+    } catch (error: any) {
+      toast({
+        title: 'Failed to save Twilio settings',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const testConnection = async () => {
+    setIsTesting(true);
+    setTestResult('idle');
+    setTestMessage(null);
+    try {
+      const response = await fetch('/api/integrations/twilio/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accountSid: settings.accountSid,
+          authToken: settings.authToken,
+          fromPhoneNumber: settings.fromPhoneNumber,
+          toPhoneNumber: settings.toPhoneNumber
+        }),
+        credentials: 'include'
+      });
+      const result = await response.json();
+
+      if (result.success) {
+        setTestResult('success');
+        setTestMessage('Test message sent successfully!');
+        toast({ title: 'Test successful', description: 'Check your phone for the test message.' });
+      } else {
+        setTestResult('error');
+        setTestMessage(result.message || 'Test failed');
+        toast({
+          title: 'Test failed',
+          description: result.message || 'Could not send test message',
+          variant: 'destructive'
+        });
+      }
+    } catch (error: any) {
+      setTestResult('error');
+      setTestMessage(error.message || 'Connection failed');
+      toast({
+        title: 'Test failed',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  const handleToggleEnabled = async (checked: boolean) => {
+    if (checked && testResult !== 'success') {
+      toast({
+        title: 'Please run Test Connection',
+        description: 'You must have a successful test before enabling Twilio.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    const newSettings = { ...settings, enabled: checked };
+    setSettings(newSettings);
+    setIsSaving(true);
+    try {
+      await apiRequest('PUT', '/api/integrations/twilio', newSettings);
+      queryClient.invalidateQueries({ queryKey: ['/api/integrations/twilio'] });
+      toast({ title: checked ? 'Twilio enabled' : 'Twilio disabled' });
+    } catch (error: any) {
+      toast({
+        title: 'Failed to update settings',
+        description: error.message,
+        variant: 'destructive'
+      });
+      setSettings(prev => ({ ...prev, enabled: !checked }));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const testButtonClass =
+    testResult === 'success'
+      ? 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200'
+      : testResult === 'error'
+      ? 'bg-red-100 text-red-700 border-red-300 hover:bg-red-200'
+      : '';
+
+  if (isLoading) {
+    return <div className="flex justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card className="border-0 bg-muted">
+        <CardHeader>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                <MessageSquare className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">Twilio SMS</CardTitle>
+                <p className="text-sm text-muted-foreground">Get SMS notifications for new chat conversations</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {isSaving && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+              <Label className="text-sm">
+                {settings.enabled ? 'Enabled' : 'Disabled'}
+              </Label>
+              <Switch
+                checked={settings.enabled}
+                onCheckedChange={handleToggleEnabled}
+                disabled={isSaving}
+                data-testid="switch-twilio-enabled"
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="twilio-account-sid">Account SID</Label>
+              <Input
+                id="twilio-account-sid"
+                type="text"
+                value={settings.accountSid}
+                onChange={(e) => setSettings(prev => ({ ...prev, accountSid: e.target.value }))}
+                placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                data-testid="input-twilio-account-sid"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="twilio-auth-token">Auth Token</Label>
+              <Input
+                id="twilio-auth-token"
+                type="password"
+                value={settings.authToken}
+                onChange={(e) => setSettings(prev => ({ ...prev, authToken: e.target.value }))}
+                placeholder="••••••••••••••••••••••••••••••••"
+                data-testid="input-twilio-auth-token"
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="twilio-from-phone">From Phone Number</Label>
+              <Input
+                id="twilio-from-phone"
+                type="tel"
+                value={settings.fromPhoneNumber}
+                onChange={(e) => setSettings(prev => ({ ...prev, fromPhoneNumber: e.target.value }))}
+                placeholder="+1234567890"
+                data-testid="input-twilio-from-phone"
+              />
+              <p className="text-xs text-muted-foreground">
+                Your Twilio phone number (with country code)
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="twilio-to-phone">To Phone Number</Label>
+              <Input
+                id="twilio-to-phone"
+                type="tel"
+                value={settings.toPhoneNumber}
+                onChange={(e) => setSettings(prev => ({ ...prev, toPhoneNumber: e.target.value }))}
+                placeholder="+1234567890"
+                data-testid="input-twilio-to-phone"
+              />
+              <p className="text-xs text-muted-foreground">
+                Phone number to receive notifications
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="notify-new-chat"
+              checked={settings.notifyOnNewChat}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, notifyOnNewChat: checked as boolean }))}
+              data-testid="checkbox-notify-new-chat"
+            />
+            <Label htmlFor="notify-new-chat" className="text-sm font-normal cursor-pointer">
+              Send SMS when a new chat conversation starts
+            </Label>
+          </div>
+
+          <div className="flex items-center gap-3 pt-4 border-t">
+            <Button
+              onClick={saveSettings}
+              disabled={isSaving}
+              data-testid="button-save-twilio"
+            >
+              {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Save Settings
+            </Button>
+            <Button
+              variant="outline"
+              className={testButtonClass}
+              onClick={testConnection}
+              disabled={isTesting || !settings.accountSid || !settings.authToken || !settings.fromPhoneNumber || !settings.toPhoneNumber}
+              data-testid="button-test-twilio"
+            >
+              {isTesting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {testResult === 'success' ? 'Test OK' : testResult === 'error' ? 'Test Failed' : 'Send Test SMS'}
+            </Button>
+          </div>
+
+          {testMessage && (
+            <div className={`p-3 rounded-lg text-sm ${
+              testResult === 'success'
+                ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800'
+                : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800'
+            }`}>
+              {testMessage}
+            </div>
+          )}
+
+          {settings.enabled && (
+            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+              <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                <Check className="w-4 h-4" />
+                <span className="font-medium text-sm">Twilio is enabled</span>
+              </div>
+              <p className="text-xs text-green-600 dark:text-green-500 mt-1">
+                You'll receive SMS notifications when new chat conversations start
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -5696,6 +6064,7 @@ function IntegrationsSection() {
   const [lastSavedAnalytics, setLastSavedAnalytics] = useState<Date | null>(null);
   const saveAnalyticsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [ghlTestResult, setGhlTestResult] = useState<'idle' | 'success' | 'error'>('idle');
+  const integrationsMenuTitle = menuItems.find((item) => item.id === 'integrations')?.title ?? 'Integrations';
 
   const { data: ghlSettings, isLoading } = useQuery<GHLSettings>({
     queryKey: ['/api/integrations/ghl']
@@ -5975,13 +6344,12 @@ function IntegrationsSection() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold">Integrations</h1>
+        <h1 className="text-2xl font-bold">{integrationsMenuTitle}</h1>
         <p className="text-muted-foreground">Connect your booking system with external services</p>
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold">AI & Chat</h2>
-        <Card>
+        <Card className="border-0 bg-muted">
           <CardHeader>
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
@@ -6075,8 +6443,7 @@ function IntegrationsSection() {
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold">CRM & Calendar</h2>
-        <Card>
+        <Card className="border-0 bg-muted">
           <CardHeader>
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
@@ -6175,26 +6542,11 @@ function IntegrationsSection() {
         </Card>
       </div>
 
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Marketing & Analytics</h2>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            {isSavingAnalytics ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Saving...</span>
-              </>
-            ) : lastSavedAnalytics ? (
-              <>
-                <Check className="h-4 w-4 text-green-500" />
-                <span>Auto-saved</span>
-              </>
-            ) : null}
-          </div>
-        </div>
+      <TwilioSection />
 
+      <div className="space-y-6">
         <div className="grid gap-4 md:grid-cols-3">
-          <Card>
+          <Card className="border-0 bg-muted">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
@@ -6234,7 +6586,7 @@ function IntegrationsSection() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-0 bg-muted">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
@@ -6274,7 +6626,7 @@ function IntegrationsSection() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-0 bg-muted">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
@@ -6316,9 +6668,12 @@ function IntegrationsSection() {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Tracked Events</h2>
-        <div className="p-4 bg-slate-100 dark:bg-slate-800 rounded-lg">
+      <div className="bg-muted p-6 rounded-lg space-y-4 transition-all">
+        <h2 className="text-lg font-semibold flex items-center gap-2">
+          <LayoutGrid className="w-5 h-5 text-primary" />
+          Tracked Events
+        </h2>
+        <div className="p-4 bg-card/60 rounded-lg">
           <p className="text-xs text-muted-foreground mb-3">
             When enabled, the following events are automatically tracked:
           </p>
@@ -6331,7 +6686,7 @@ function IntegrationsSection() {
               { event: 'purchase', desc: 'Booking confirmed (conversion)' },
               { event: 'view_item_list', desc: 'Services page viewed' },
             ].map(({ event, desc }) => (
-              <div key={event} className="text-xs bg-white dark:bg-slate-900 p-2 rounded border">
+              <div key={event} className="text-xs bg-muted/40 p-2 rounded">
                 <code className="text-primary font-mono">{event}</code>
                 <p className="text-muted-foreground mt-0.5">{desc}</p>
               </div>
@@ -6350,6 +6705,7 @@ function BlogSection() {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'title-asc' | 'title-desc' | 'status'>('newest');
   const [serviceSearch, setServiceSearch] = useState('');
   const [isSaved, setIsSaved] = useState(false);
+  const blogMenuTitle = menuItems.find((item) => item.id === 'blog')?.title ?? 'Blog Posts';
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
@@ -6803,29 +7159,25 @@ function BlogSection() {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Posts
           </Button>
-          <h1 className="text-2xl font-bold">
-            {editingPost ? 'Edit Post' : 'Create New Post'}
-          </h1>
+          <h1 className="text-2xl font-bold">{editingPost ? 'Edit Post' : 'Create New Post'}</h1>
         </div>
-        <Card>
-          <CardContent className="pt-6">
-            {renderForm()}
-          </CardContent>
-        </Card>
+        <div className="bg-muted p-6 rounded-lg space-y-6 transition-all">
+          {renderForm()}
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground" data-testid="text-blog-title">Blog Posts</h1>
+          <h1 className="text-2xl font-bold text-foreground" data-testid="text-blog-title">{blogMenuTitle}</h1>
           <p className="text-sm text-muted-foreground">Manage your blog content and SEO</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
           <Select value={sortBy} onValueChange={(value: typeof sortBy) => setSortBy(value)}>
-            <SelectTrigger className="w-[180px]" data-testid="select-blog-sort">
+            <SelectTrigger className="w-full sm:w-[180px]" data-testid="select-blog-sort">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -6836,102 +7188,104 @@ function BlogSection() {
               <SelectItem value="status">Status</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={() => setIsCreateOpen(true)} data-testid="button-blog-create">
+          <Button className="w-full sm:w-auto" onClick={() => setIsCreateOpen(true)} data-testid="button-blog-create">
             <Plus className="w-4 h-4 mr-2" />
             New Post
           </Button>
         </div>
       </div>
 
-      <Card className="border-0 shadow-none">
-        <CardContent className="p-0">
-          {sortedPosts && sortedPosts.length > 0 ? (
-            <div className="divide-y space-y-4">
-              {sortedPosts.map(post => (
-                <div key={post.id} className="flex items-start gap-4 py-4" data-testid={`row-blog-${post.id}`}>
-                  {post.featureImageUrl ? (
-                    <img
-                      src={post.featureImageUrl}
-                      alt={post.title}
-                      className="w-[100px] h-[68px] object-cover rounded-sm flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-                      onClick={() => handleEdit(post)}
-                      data-testid={`img-blog-${post.id}`}
-                    />
-                  ) : (
-                    <div
-                      className="w-[100px] h-[68px] bg-muted rounded-sm flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-muted/80 transition-colors"
-                      onClick={() => handleEdit(post)}
-                    >
-                      <FileText className="w-6 h-6 text-muted-foreground" />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <h3
-                      className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
-                      onClick={() => handleEdit(post)}
-                      data-testid={`text-blog-title-${post.id}`}
-                    >
-                      {post.title}
-                    </h3>
-                    <div className="flex flex-col items-start gap-1 text-sm text-muted-foreground">
-                      <span>{post.publishedAt ? format(new Date(post.publishedAt), 'MMM d, yyyy') : 'Not published'}</span>
-                      <Badge variant={post.status === 'published' ? 'default' : 'secondary'} data-testid={`badge-blog-status-${post.id}`}>
-                        {post.status}
-                      </Badge>
-                    </div>
+      <div className="bg-muted p-6 rounded-lg space-y-6 transition-all">
+        <h2 className="text-lg font-semibold flex items-center gap-2">
+          <FileText className="w-5 h-5 text-primary" />
+          Posts
+        </h2>
+        {sortedPosts && sortedPosts.length > 0 ? (
+          <div className="space-y-3">
+            {sortedPosts.map(post => (
+              <div key={post.id} className="flex flex-col gap-4 p-4 bg-card/90 dark:bg-slate-900/70 rounded-lg sm:flex-row sm:items-start" data-testid={`row-blog-${post.id}`}>
+                {post.featureImageUrl ? (
+                  <img
+                    src={post.featureImageUrl}
+                    alt={post.title}
+                    className="w-full h-[160px] object-cover rounded-sm cursor-pointer hover:opacity-80 transition-opacity sm:w-[100px] sm:h-[68px] sm:flex-shrink-0"
+                    onClick={() => handleEdit(post)}
+                    data-testid={`img-blog-${post.id}`}
+                  />
+                ) : (
+                  <div
+                    className="w-full h-[160px] bg-muted rounded-sm flex items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors sm:w-[100px] sm:h-[68px] sm:flex-shrink-0"
+                    onClick={() => handleEdit(post)}
+                  >
+                    <FileText className="w-6 h-6 text-muted-foreground" />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEdit(post)}
-                      data-testid={`button-blog-edit-${post.id}`}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" data-testid={`button-blog-delete-${post.id}`}>
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Blog Post?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will permanently delete "{post.title}". This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => deleteMutation.mutate(post.id)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                )}
+                <div className="flex-1 min-w-0">
+                  <h3
+                    className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
+                    onClick={() => handleEdit(post)}
+                    data-testid={`text-blog-title-${post.id}`}
+                  >
+                    {post.title}
+                  </h3>
+                  <div className="flex flex-col items-start gap-1 text-sm text-muted-foreground">
+                    <span>{post.publishedAt ? format(new Date(post.publishedAt), 'MMM d, yyyy') : 'Not published'}</span>
+                    <Badge variant={post.status === 'published' ? 'default' : 'secondary'} data-testid={`badge-blog-status-${post.id}`}>
+                      {post.status}
+                    </Badge>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <FileText className="w-12 h-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium">No blog posts yet</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Create your first blog post to engage your audience
-              </p>
-              <Button onClick={() => setIsCreateOpen(true)} data-testid="button-blog-first-post">
-                <Plus className="w-4 h-4 mr-2" />
-                Create First Post
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                <div className="flex items-center gap-2 self-end sm:self-center">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleEdit(post)}
+                    data-testid={`button-blog-edit-${post.id}`}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" data-testid={`button-blog-delete-${post.id}`}>
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Blog Post?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently delete "{post.title}". This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => deleteMutation.mutate(post.id)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <FileText className="w-12 h-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium">No blog posts yet</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Create your first blog post to engage your audience
+            </p>
+            <Button onClick={() => setIsCreateOpen(true)} data-testid="button-blog-first-post">
+              <Plus className="w-4 h-4 mr-2" />
+              Create First Post
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

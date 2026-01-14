@@ -209,8 +209,8 @@ export function Navbar() {
                   </div>
                   <div className="flex flex-col gap-4 px-1">
                     {user.isAdmin && (
-                      <Link 
-                        href="/admin" 
+                      <Link
+                        href="/admin"
                         className="text-base font-semibold text-slate-700 hover:text-primary transition-colors"
                         onClick={() => setIsMenuOpen(false)}
                       >

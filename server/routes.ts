@@ -10,6 +10,7 @@ import { insertSubcategorySchema } from "./storage";
 import { ObjectStorageService, registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { authStorage } from "./replit_integrations/auth/storage";
 import { testGHLConnection, getGHLFreeSlots, getOrCreateGHLContact, createGHLAppointment } from "./integrations/ghl";
+import { sendNewChatNotification } from "./integrations/twilio";
 
 // Admin authentication middleware - uses Replit Auth + isAdmin check
 async function requireAdmin(req: Request, res: Response, next: NextFunction) {
@@ -1527,6 +1528,7 @@ Sitemap: ${canonicalUrl}/sitemap.xml
       const conversationId = input.conversationId || crypto.randomUUID();
 
       let conversation = await storage.getConversation(conversationId);
+      const isNewConversation = !conversation;
       if (!conversation) {
         conversation = await storage.createConversation({
           id: conversationId,
@@ -1536,6 +1538,14 @@ Sitemap: ${canonicalUrl}/sitemap.xml
           visitorEmail: input.visitorEmail,
           visitorPhone: input.visitorPhone,
         });
+
+        // Send Twilio notification for new chat
+        const twilioSettings = await storage.getTwilioSettings();
+        if (twilioSettings && isNewConversation) {
+          sendNewChatNotification(twilioSettings, conversationId, input.pageUrl).catch(err => {
+            console.error('Failed to send Twilio notification:', err);
+          });
+        }
       } else {
         await storage.updateConversation(conversationId, { lastMessageAt: new Date() });
       }
@@ -2070,6 +2080,106 @@ You: "Thanks John! What's your email?"
       res.status(500).json({ 
         synced: false, 
         reason: (err as Error).message 
+      });
+    }
+  });
+
+  // ===============================
+  // Twilio Integration Routes
+  // ===============================
+
+  // Get Twilio settings
+  app.get('/api/integrations/twilio', requireAdmin, async (_req, res) => {
+    try {
+      const settings = await storage.getTwilioSettings();
+      if (!settings) {
+        return res.json({
+          enabled: false,
+          accountSid: '',
+          authToken: '',
+          fromPhoneNumber: '',
+          toPhoneNumber: '',
+          notifyOnNewChat: true
+        });
+      }
+      res.json({
+        ...settings,
+        authToken: settings.authToken ? '********' : ''
+      });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  // Save Twilio settings
+  app.put('/api/integrations/twilio', requireAdmin, async (req, res) => {
+    try {
+      const { accountSid, authToken, fromPhoneNumber, toPhoneNumber, notifyOnNewChat, enabled } = req.body;
+
+      const existingSettings = await storage.getTwilioSettings();
+
+      const settingsToSave: any = {
+        accountSid,
+        fromPhoneNumber,
+        toPhoneNumber,
+        notifyOnNewChat: notifyOnNewChat ?? true,
+        enabled: enabled ?? false
+      };
+
+      // Only update authToken if a new one is provided (not masked)
+      if (authToken && authToken !== '********') {
+        settingsToSave.authToken = authToken;
+      } else if (existingSettings?.authToken) {
+        settingsToSave.authToken = existingSettings.authToken;
+      }
+
+      const settings = await storage.saveTwilioSettings(settingsToSave);
+
+      res.json({
+        ...settings,
+        authToken: settings.authToken ? '********' : ''
+      });
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  // Test Twilio connection
+  app.post('/api/integrations/twilio/test', requireAdmin, async (req, res) => {
+    try {
+      const { accountSid, authToken, fromPhoneNumber, toPhoneNumber } = req.body;
+
+      let tokenToTest = authToken;
+      if (authToken === '********' || !authToken) {
+        const existingSettings = await storage.getTwilioSettings();
+        tokenToTest = existingSettings?.authToken;
+      }
+
+      if (!accountSid || !tokenToTest || !fromPhoneNumber || !toPhoneNumber) {
+        return res.status(400).json({
+          success: false,
+          message: 'All fields are required to test Twilio connection'
+        });
+      }
+
+      // Send test SMS using Twilio
+      const twilio = await import('twilio');
+      const client = twilio.default(accountSid, tokenToTest);
+
+      await client.messages.create({
+        body: 'Test message from Skleanings - Your Twilio integration is working!',
+        from: fromPhoneNumber,
+        to: toPhoneNumber
+      });
+
+      res.json({
+        success: true,
+        message: 'Test SMS sent successfully!'
+      });
+    } catch (err: any) {
+      res.status(500).json({
+        success: false,
+        message: err?.message || 'Failed to send test SMS'
       });
     }
   });

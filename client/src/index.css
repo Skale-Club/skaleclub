@@ -7,6 +7,7 @@
   --font-sans: 'Inter', sans-serif;
   --font-display: 'Outfit', sans-serif;
 
+  /* Light Mode Colors */
   --background: 0 0% 100%;
   --foreground: 0 0% 11%;
 
@@ -32,15 +33,84 @@
 
   --popover: 0 0% 100%;
   --popover-foreground: 222.2 84% 4.9%;
+
+  /* Card and Section backgrounds */
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 11%;
+  --section: 210 40% 98%; /* slate-50 */
+
+  /* Sidebar */
+  --sidebar: 0 0% 100%;
+  --sidebar-foreground: 0 0% 11%;
+  --sidebar-border: 214.3 31.8% 91.4%;
+  --sidebar-accent: 210 40% 96.1%;
+  --sidebar-accent-foreground: 0 0% 11%;
+
+  /* Success color */
+  --success: 142 76% 36%;
+  --success-foreground: 0 0% 100%;
+
+  /* Warning color */
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 11%;
+}
+
+/* Dark Mode Colors */
+.dark {
+  --background: 222 47% 11%; /* slate-900 */
+  --foreground: 210 40% 98%; /* slate-50 */
+
+  --primary: 217 91% 60%; /* blue-500, mais claro para contraste */
+  --primary-foreground: 222 47% 11%;
+
+  --secondary: 60 100% 50%; /* #FFFF01 - mantém amarelo */
+  --secondary-foreground: 0 0% 11%;
+
+  --muted: 217 33% 17%; /* slate-800 */
+  --muted-foreground: 215 20% 65%; /* slate-400 */
+
+  --accent: 60 100% 50%; /* #FFFF01 */
+  --accent-foreground: 0 0% 11%;
+
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 217 33% 25%; /* slate-700 */
+  --input: 217 33% 17%; /* slate-800 */
+  --ring: 217 91% 60%;
+
+  --popover: 222 47% 11%;
+  --popover-foreground: 210 40% 98%;
+
+  /* Card and Section backgrounds */
+  --card: 217 33% 17%; /* slate-800 */
+  --card-foreground: 210 40% 98%;
+  --section: 222 47% 11%; /* slate-900 */
+
+  /* Sidebar */
+  --sidebar: 217 33% 17%; /* slate-800 */
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-border: 217 33% 25%;
+  --sidebar-accent: 217 33% 25%;
+  --sidebar-accent-foreground: 210 40% 98%;
+
+  /* Success color */
+  --success: 142 71% 45%;
+  --success-foreground: 0 0% 100%;
+
+  /* Warning color */
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 11%;
 }
 
 @layer base {
   body {
-    @apply bg-background text-[#1D1D1D] antialiased font-sans;
+    @apply bg-background text-foreground antialiased font-sans;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
   }
-  
+
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display tracking-tight text-[#1D1D1D];
+    @apply font-display tracking-tight text-foreground;
   }
 
   /* Remove default focus outline from all elements */
@@ -60,8 +130,86 @@
   .container-custom {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
-  
+
   .glass-panel {
     @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-xl;
+  }
+
+  /* Admin Panel Design Tokens */
+
+  /* Card container - usado para cards de conteúdo */
+  .admin-card {
+    @apply bg-card text-card-foreground rounded-lg border border-border p-6;
+    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+  }
+
+  /* Section container - usado para agrupar seções */
+  .admin-section {
+    @apply bg-muted rounded-lg p-6 space-y-4;
+    transition: background-color 0.2s ease-in-out;
+  }
+
+  /* Form group - espaçamento padrão para formulários */
+  .admin-form-group {
+    @apply space-y-4;
+  }
+
+  /* Form field - campo individual de formulário */
+  .admin-form-field {
+    @apply space-y-2;
+  }
+
+  /* Grid padrão para formulários de 2 colunas */
+  .admin-form-grid {
+    @apply grid gap-4 sm:grid-cols-2;
+  }
+
+  /* Header de página */
+  .admin-page-header {
+    @apply mb-6;
+  }
+
+  .admin-page-title {
+    @apply text-2xl font-bold text-foreground;
+  }
+
+  .admin-page-subtitle {
+    @apply text-muted-foreground mt-1;
+  }
+
+  /* Stat card para dashboard */
+  .admin-stat-card {
+    @apply bg-card rounded-lg p-6 border border-border;
+    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+  }
+
+  /* Table container */
+  .admin-table-container {
+    @apply bg-card rounded-lg border border-border overflow-hidden;
+    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+  }
+
+  /* Action buttons group */
+  .admin-actions {
+    @apply flex items-center gap-2;
+  }
+
+  /* Badge variants para status */
+  .admin-badge-success {
+    @apply bg-success/10 text-success border-success/20;
+  }
+
+  .admin-badge-warning {
+    @apply bg-warning/10 text-warning border-warning/20;
+  }
+
+  .admin-badge-error {
+    @apply bg-destructive/10 text-destructive border-destructive/20;
+  }
+
+  /* Input padrão com suporte a dark mode */
+  .admin-input {
+    @apply bg-background border-input text-foreground placeholder:text-muted-foreground;
+    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
   }
 }

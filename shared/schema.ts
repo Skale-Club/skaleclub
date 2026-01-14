@@ -103,6 +103,19 @@ export const chatIntegrations = pgTable("chat_integrations", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Twilio Integration Settings
+export const twilioSettings = pgTable("twilio_settings", {
+  id: serial("id").primaryKey(),
+  enabled: boolean("enabled").default(false),
+  accountSid: text("account_sid"),
+  authToken: text("auth_token"),
+  fromPhoneNumber: text("from_phone_number"),
+  toPhoneNumber: text("to_phone_number"),
+  notifyOnNewChat: boolean("notify_on_new_chat").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const conversations = pgTable("conversations", {
   id: uuid("id").primaryKey(),
   status: text("status").notNull().default("open"),
@@ -164,6 +177,11 @@ export const insertChatIntegrationsSchema = createInsertSchema(chatIntegrations)
   createdAt: true,
   updatedAt: true,
 });
+export const insertTwilioSettingsSchema = createInsertSchema(twilioSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
 export const insertConversationSchema = createInsertSchema(conversations).omit({
   createdAt: true,
   updatedAt: true,
@@ -184,6 +202,7 @@ export type BookingItem = typeof bookingItems.$inferSelect;
 export type IntegrationSettings = typeof integrationSettings.$inferSelect;
 export type ChatSettings = typeof chatSettings.$inferSelect;
 export type ChatIntegrations = typeof chatIntegrations.$inferSelect;
+export type TwilioSettings = typeof twilioSettings.$inferSelect;
 export type Conversation = typeof conversations.$inferSelect;
 export type ConversationMessage = typeof conversationMessages.$inferSelect;
 
@@ -194,6 +213,7 @@ export type InsertBooking = z.infer<typeof insertBookingSchema>;
 export type InsertIntegrationSettings = z.infer<typeof insertIntegrationSettingsSchema>;
 export type InsertChatSettings = z.infer<typeof insertChatSettingsSchema>;
 export type InsertChatIntegrations = z.infer<typeof insertChatIntegrationsSchema>;
+export type InsertTwilioSettings = z.infer<typeof insertTwilioSettingsSchema>;
 export type InsertConversation = z.infer<typeof insertConversationSchema>;
 export type InsertConversationMessage = z.infer<typeof insertConversationMessageSchema>;
 

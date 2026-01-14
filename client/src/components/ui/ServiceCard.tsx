@@ -30,9 +30,12 @@ export function ServiceCard({ service }: ServiceCardProps) {
   const filteredAddons = isError ? [] : suggestedAddons.filter(addon => !items.find(i => i.id === addon.id));
 
   return (
-    <div className="group bg-white rounded-lg border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300 flex flex-col h-full">
-      {/* 4:3 Aspect Ratio Image */}
-      <div className="relative w-full pt-[75%] bg-slate-100 overflow-hidden">
+    <div className="group bg-light-gray rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full">
+      {/* 4:3 Aspect Ratio Image - Clickable to add to booking */}
+      <div
+        className="relative w-full pt-[75%] bg-slate-100 overflow-hidden cursor-pointer"
+        onClick={() => !isInCart && addItem(service)}
+      >
         <div className="absolute top-2 right-2 z-10">
           <div className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md text-slate-600 text-xs font-bold flex items-center shadow-sm border border-slate-100">
             <Clock className="w-3 h-3 mr-1" />
@@ -40,8 +43,8 @@ export function ServiceCard({ service }: ServiceCardProps) {
           </div>
         </div>
         {service.imageUrl ? (
-          <img 
-            src={service.imageUrl} 
+          <img
+            src={service.imageUrl}
             alt={service.name}
             className="absolute top-0 left-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.01]"
           />
@@ -53,7 +56,10 @@ export function ServiceCard({ service }: ServiceCardProps) {
       </div>
 
       <div className="p-6 flex flex-col flex-grow">
-        <h3 className="text-lg font-bold text-slate-900 group-hover:text-primary transition-colors mb-1">
+        <h3
+          className="text-xl font-bold text-slate-900 group-hover:text-primary transition-colors mb-1 cursor-pointer"
+          onClick={() => !isInCart && addItem(service)}
+        >
           {service.name}
         </h3>
         
@@ -87,7 +93,7 @@ export function ServiceCard({ service }: ServiceCardProps) {
           </button>
 
           {isInCart && (
-            <div className="flex items-center bg-slate-100 rounded-xl p-0.5 gap-0.5">
+            <div className="flex items-center bg-slate-200 rounded-xl p-0.5 gap-0.5">
               <button
                 onClick={() => {
                   if (quantity > 1) {
@@ -96,7 +102,7 @@ export function ServiceCard({ service }: ServiceCardProps) {
                     removeItem(service.id);
                   }
                 }}
-                className="p-1.5 hover:bg-white rounded-lg transition-colors text-slate-600"
+                className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors text-slate-600"
                 aria-label="Decrease quantity"
               >
                 <Minus className="w-3.5 h-3.5" />
@@ -106,7 +112,7 @@ export function ServiceCard({ service }: ServiceCardProps) {
               </span>
               <button
                 onClick={() => updateQuantity(service.id, quantity + 1)}
-                className="p-1.5 hover:bg-white rounded-lg transition-colors text-slate-600"
+                className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors text-slate-600"
                 aria-label="Increase quantity"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -127,54 +133,72 @@ export function ServiceCard({ service }: ServiceCardProps) {
                   <Sparkles className="w-4 h-4 text-amber-500" />
                   <span className="text-sm font-semibold text-slate-700">Suggested Add-ons</span>
                 </div>
-                <div className="space-y-2">
+                <div className="flex overflow-x-auto gap-3 pb-2 snap-x snap-mandatory scroll-smooth no-scrollbar">
                   {suggestedAddons.map(addon => {
                     const addonItem = items.find(i => i.id === addon.id);
                     const isAddonInCart = !!addonItem;
                     const addonQty = addonItem?.quantity || 0;
 
                     return (
-                      <div key={addon.id} className="flex items-center justify-between gap-2 p-2 bg-slate-50 rounded-lg">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-slate-800 truncate">{addon.name}</p>
-                          <p className="text-xs text-slate-500">${addon.price}</p>
-                        </div>
-                        
-                        {isAddonInCart ? (
-                          <div className="flex items-center bg-white rounded-lg p-0.5 gap-1 border border-slate-100 shadow-sm">
-                            <button
-                              onClick={() => {
-                                if (addonQty > 1) {
-                                  updateQuantity(addon.id, addonQty - 1);
-                                } else {
-                                  removeItem(addon.id);
-                                }
-                              }}
-                              className="p-1.5 hover:bg-slate-50 rounded-md transition-colors text-slate-600"
-                              aria-label="Decrease quantity"
-                            >
-                              <Minus className="w-3 h-3" />
-                            </button>
-                            <span className="w-6 text-center text-xs font-bold text-slate-900">
-                              {addonQty}
-                            </span>
-                            <button
-                              onClick={() => updateQuantity(addon.id, addonQty + 1)}
-                              className="p-1.5 hover:bg-slate-50 rounded-md transition-colors text-slate-600"
-                              aria-label="Increase quantity"
-                            >
-                              <Plus className="w-3 h-3" />
-                            </button>
+                      <div key={addon.id} className="flex flex-col gap-2 p-3 bg-slate-50 rounded-lg min-w-[280px] snap-start">
+                        <div className="flex items-center gap-3">
+                          {/* Addon Thumbnail 4:3 */}
+                          <div className="w-20 h-15 shrink-0 rounded-md overflow-hidden bg-slate-200">
+                            {addon.imageUrl ? (
+                              <img
+                                src={addon.imageUrl}
+                                alt={addon.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-slate-400">
+                                <ImageIcon className="w-5 h-5" />
+                              </div>
+                            )}
                           </div>
-                        ) : (
-                          <button
-                            onClick={() => addItem(addon)}
-                            className="px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
-                            data-testid={`button-add-addon-${addon.id}`}
-                          >
-                            Add
-                          </button>
-                        )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-slate-800 mb-0.5">{addon.name}</p>
+                            <p className="text-sm font-bold text-slate-900">${addon.price}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-center">
+                          {isAddonInCart ? (
+                            <div className="flex items-center bg-white rounded-lg p-0.5 gap-1 border border-slate-200 shadow-sm">
+                              <button
+                                onClick={() => {
+                                  if (addonQty > 1) {
+                                    updateQuantity(addon.id, addonQty - 1);
+                                  } else {
+                                    removeItem(addon.id);
+                                  }
+                                }}
+                                className="p-1.5 hover:bg-slate-50 rounded-md transition-colors text-slate-600"
+                                aria-label="Decrease quantity"
+                              >
+                                <Minus className="w-3.5 h-3.5" />
+                              </button>
+                              <span className="w-8 text-center text-sm font-bold text-slate-900">
+                                {addonQty}
+                              </span>
+                              <button
+                                onClick={() => updateQuantity(addon.id, addonQty + 1)}
+                                className="p-1.5 hover:bg-slate-50 rounded-md transition-colors text-slate-600"
+                                aria-label="Increase quantity"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => addItem(addon)}
+                              className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+                              data-testid={`button-add-addon-${addon.id}`}
+                            >
+                              Add to Booking
+                            </button>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
