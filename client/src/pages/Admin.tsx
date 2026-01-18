@@ -97,19 +97,20 @@ import { format } from 'date-fns';
 import { clsx } from 'clsx';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useTheme } from '@/context/ThemeContext';
-import type { Category, Service, Booking, Subcategory, Faq, BlogPost, HomepageContent } from '@shared/schema';
+import type { Category, Service, Booking, Subcategory, Faq, BlogPost, HomepageContent, QuizLead, LeadClassification, LeadStatus } from '@shared/schema';
 import { HelpCircle, FileText, AlertCircle, ExternalLink } from 'lucide-react';
 import heroImage from '@assets/Persona-Mobile_1767749022412.png';
 import ghlLogo from '@assets/ghl-logo.webp';
 import { SiFacebook, SiGoogleanalytics, SiGoogletagmanager, SiOpenai, SiTwilio } from 'react-icons/si';
 
-type AdminSection = 'dashboard' | 'bookings' | 'hero' | 'company' | 'seo' | 'faqs' | 'users' | 'availability' | 'chat' | 'integrations' | 'blog' | 'knowledge-base';
+type AdminSection = 'dashboard' | 'bookings' | 'leads' | 'hero' | 'company' | 'seo' | 'faqs' | 'users' | 'availability' | 'chat' | 'integrations' | 'blog' | 'knowledge-base';
 
 const menuItems = [
   { id: 'dashboard' as AdminSection, title: 'Dashboard', icon: LayoutDashboard },
   { id: 'company' as AdminSection, title: 'Company Infos', icon: Building2 },
   { id: 'hero' as AdminSection, title: 'Website', icon: Image },
   { id: 'bookings' as AdminSection, title: 'Bookings', icon: Calendar },
+  { id: 'leads' as AdminSection, title: 'Leads', icon: Sparkles },
   { id: 'availability' as AdminSection, title: 'Availability', icon: Clock },
   { id: 'chat' as AdminSection, title: 'Chat', icon: MessageSquare },
   { id: 'knowledge-base' as AdminSection, title: 'Knowledge Base', icon: BookOpen },
@@ -325,6 +326,7 @@ function AdminContent() {
             />
           )}
           {activeSection === 'bookings' && <BookingsSection />}
+          {activeSection === 'leads' && <LeadsSection />}
           {activeSection === 'hero' && <HeroSettingsSection />}
           {activeSection === 'company' && <CompanySettingsSection />}
           {activeSection === 'seo' && <SEOSection />}
@@ -4252,6 +4254,317 @@ function BookingMobileCard({
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function LeadsSection() {
+  const { toast } = useToast();
+  const [filters, setFilters] = useState<{
+    search: string;
+    classification: LeadClassification | 'all';
+    status: LeadStatus | 'all';
+    completion: 'all' | 'complete' | 'incomplete';
+  }>({
+    search: '',
+    classification: 'all',
+    status: 'all',
+    completion: 'all',
+  });
+
+  const { data: leads, isLoading } = useQuery<QuizLead[]>({
+    queryKey: ['/api/quiz-leads', filters],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (filters.search) params.set('search', filters.search);
+      if (filters.classification !== 'all') params.set('classificacao', filters.classification);
+      if (filters.status !== 'all') params.set('status', filters.status);
+      if (filters.completion === 'complete') params.set('quizCompleto', 'true');
+      if (filters.completion === 'incomplete') params.set('quizCompleto', 'false');
+      const res = await apiRequest('GET', `/api/quiz-leads${params.toString() ? `?${params.toString()}` : ''}`);
+      return res.json();
+    }
+  });
+
+  const deleteLead = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest('DELETE', `/api/quiz-leads/${id}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/quiz-leads'] });
+      toast({ title: 'Lead deletado' });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Erro ao deletar lead',
+        description: error?.message || 'Tente novamente',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const updateLead = useMutation({
+    mutationFn: async ({ id, status, observacoes }: { id: number; status?: LeadStatus; observacoes?: string }) => {
+      const res = await apiRequest('PATCH', `/api/quiz-leads/${id}`, { status, observacoes });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/quiz-leads'] });
+      toast({ title: 'Lead atualizado' });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Erro ao atualizar lead',
+        description: error?.message || 'Tente novamente',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const stats = useMemo(() => {
+    const list = leads || [];
+    return {
+      total: list.length,
+      hot: list.filter(l => l.classificacao === 'QUENTE').length,
+      warm: list.filter(l => l.classificacao === 'MORNO').length,
+      cold: list.filter(l => l.classificacao === 'FRIO').length,
+      inProgress: list.filter(l => !l.quizCompleto).length,
+    };
+  }, [leads]);
+
+  const statusOptions: { value: LeadStatus | 'all'; label: string }[] = [
+    { value: 'all', label: 'Todos status' },
+    { value: 'novo', label: 'Novo' },
+    { value: 'contatado', label: 'Contatado' },
+    { value: 'qualificado', label: 'Qualificado' },
+    { value: 'convertido', label: 'Convertido' },
+    { value: 'descartado', label: 'Descartado' },
+  ];
+
+  const classificationOptions: { value: LeadClassification | 'all'; label: string }[] = [
+    { value: 'all', label: 'Todas as classificações' },
+    { value: 'QUENTE', label: 'Lead Quente' },
+    { value: 'MORNO', label: 'Lead Morno' },
+    { value: 'FRIO', label: 'Lead Frio' },
+    { value: 'DESQUALIFICADO', label: 'Desqualificado' },
+  ];
+
+  const completionOptions: { value: 'all' | 'complete' | 'incomplete'; label: string }[] = [
+    { value: 'all', label: 'Todos' },
+    { value: 'complete', label: 'Quiz completo' },
+    { value: 'incomplete', label: 'Abandonado' },
+  ];
+
+  const formatDate = (value?: string | null) => {
+    if (!value) return '—';
+    return format(new Date(value), 'MMM d, yyyy');
+  };
+
+  const classificationBadge = (classificacao?: LeadClassification | null) => {
+    switch (classificacao) {
+      case 'QUENTE':
+        return 'bg-green-50 text-green-700 border-green-200';
+      case 'MORNO':
+        return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'FRIO':
+        return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'DESQUALIFICADO':
+        return 'bg-slate-100 text-slate-600 border-slate-200';
+      default:
+        return 'bg-slate-100 text-slate-600 border-slate-200';
+    }
+  };
+
+  const questionLabel = (lead: QuizLead) => {
+    if (lead.quizCompleto) return 'Quiz completo';
+    const step = lead.ultimaPerguntaRespondida || 1;
+    return `Pergunta ${step} de 11`;
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <p className="text-sm text-muted-foreground uppercase tracking-wide">Leads do Quiz</p>
+          <h1 className="text-2xl font-bold">Acompanhamento de qualificações</h1>
+          <p className="text-muted-foreground">Veja quem iniciou o quiz, onde parou e atualize o status rapidamente.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/quiz-leads'] })}>
+            <RotateCcw className="w-4 h-4 mr-2" />
+            Atualizar
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="p-4 rounded-xl border bg-card shadow-sm">
+          <p className="text-xs text-muted-foreground">Total</p>
+          <p className="text-2xl font-bold">{stats.total}</p>
+        </div>
+        <div className="p-4 rounded-xl border bg-card shadow-sm">
+          <p className="text-xs text-muted-foreground">Quentes</p>
+          <p className="text-2xl font-bold text-green-600">{stats.hot}</p>
+        </div>
+        <div className="p-4 rounded-xl border bg-card shadow-sm">
+          <p className="text-xs text-muted-foreground">Mornos</p>
+          <p className="text-2xl font-bold text-amber-600">{stats.warm}</p>
+        </div>
+        <div className="p-4 rounded-xl border bg-card shadow-sm">
+          <p className="text-xs text-muted-foreground">Frios</p>
+          <p className="text-2xl font-bold text-blue-600">{stats.cold}</p>
+        </div>
+        <div className="p-4 rounded-xl border bg-card shadow-sm">
+          <p className="text-xs text-muted-foreground">Abandonos</p>
+          <p className="text-2xl font-bold text-rose-600">{stats.inProgress}</p>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-border flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
+          <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
+            <Input
+              placeholder="Buscar por nome, email ou telefone"
+              value={filters.search}
+              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+              className="w-full sm:w-64"
+            />
+            <Select
+              value={filters.classification}
+              onValueChange={(value) => setFilters(prev => ({ ...prev, classification: value as LeadClassification | 'all' }))}
+            >
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="Classificação" />
+              </SelectTrigger>
+              <SelectContent>
+                {classificationOptions.map(option => (
+                  <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={filters.status}
+              onValueChange={(value) => setFilters(prev => ({ ...prev, status: value as LeadStatus | 'all' }))}
+            >
+              <SelectTrigger className="w-full sm:w-40">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                {statusOptions.map(option => (
+                  <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={filters.completion}
+              onValueChange={(value) => setFilters(prev => ({ ...prev, completion: value as 'all' | 'complete' | 'incomplete' }))}
+            >
+              <SelectTrigger className="w-full sm:w-40">
+                <SelectValue placeholder="Conclusão" />
+              </SelectTrigger>
+              <SelectContent>
+                {completionOptions.map(option => (
+                  <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-border">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Lead</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Contato</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Classificação</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Última etapa</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Atualizado</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Ações</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {isLoading && (
+                <tr>
+                  <td colSpan={7} className="px-4 py-6 text-center text-muted-foreground">
+                    <Loader2 className="w-5 h-5 animate-spin inline-block mr-2" />
+                    Carregando leads...
+                  </td>
+                </tr>
+              )}
+              {!isLoading && (!leads || leads.length === 0) && (
+                <tr>
+                  <td colSpan={7} className="px-4 py-10 text-center text-muted-foreground">
+                    Nenhum lead encontrado ainda.
+                  </td>
+                </tr>
+              )}
+              {leads?.map(lead => (
+                <tr key={lead.id} className="hover:bg-muted/50 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="font-semibold text-foreground">{lead.nome || 'Sem nome'}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {lead.cidadeEstado || 'Cidade não informada'}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="text-sm text-foreground">{lead.email || '—'}</div>
+                    <div className="text-xs text-muted-foreground">{lead.telefone || 'Sem telefone'}</div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge className={clsx("border", classificationBadge(lead.classificacao))}>
+                      {lead.classificacao || '—'}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="text-sm font-medium text-foreground">{questionLabel(lead)}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {lead.quizCompleto ? 'Completo' : 'Em progresso'}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Select
+                      value={lead.status || 'novo'}
+                      onValueChange={(value) => updateLead.mutate({ id: lead.id, status: value as LeadStatus })}
+                    >
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {statusOptions.filter(s => s.value !== 'all').map(option => (
+                          <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">
+                    {formatDate((lead.updatedAt as any) || (lead.createdAt as any))}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => {
+                          if (window.confirm('Deletar este lead?')) {
+                            deleteLead.mutate(lead.id);
+                          }
+                        }}
+                        disabled={deleteLead.isPending}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   );
 }
 

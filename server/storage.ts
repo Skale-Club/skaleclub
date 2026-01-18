@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { QUIZ_TOTAL_QUESTIONS, calculateQuizScores, classifyLead } from "@shared/quiz";
 import {
   categories,
   subcategories,
@@ -6,6 +7,7 @@ import {
   serviceAddons,
   bookings,
   bookingItems,
+  quizLeads,
   chatSettings,
   chatIntegrations,
   twilioSettings,
@@ -31,6 +33,9 @@ import {
   type TwilioSettings,
   type Conversation,
   type ConversationMessage,
+  type QuizLead,
+  type LeadStatus,
+  type LeadClassification,
   type Faq,
   type IntegrationSettings,
   type BlogPost,
@@ -47,13 +52,14 @@ import {
   type InsertTwilioSettings,
   type InsertConversation,
   type InsertConversationMessage,
+  type QuizLeadProgressInput,
   type InsertFaq,
   type InsertIntegrationSettings,
   type InsertBlogPost,
   type InsertKnowledgeBaseCategory,
   type InsertKnowledgeBaseArticle,
 } from "@shared/schema";
-import { eq, and, gte, lte, inArray, desc, asc, sql, ne } from "drizzle-orm";
+import { eq, and, or, ilike, gte, lte, inArray, desc, asc, sql, ne } from "drizzle-orm";
 import { z } from "zod";
 
 export const insertSubcategorySchema = z.object({
@@ -135,6 +141,13 @@ export interface IStorage {
   createConversation(conversation: InsertConversation): Promise<Conversation>;
   addConversationMessage(message: InsertConversationMessage): Promise<ConversationMessage>;
   getConversationMessages(conversationId: string): Promise<ConversationMessage[]>;
+  
+  // Leads
+  upsertQuizLeadProgress(progress: QuizLeadProgressInput, metadata?: { userAgent?: string }): Promise<QuizLead>;
+  getQuizLeadBySession(sessionId: string): Promise<QuizLead | undefined>;
+  listQuizLeads(filters?: { status?: LeadStatus; classificacao?: LeadClassification; quizCompleto?: boolean; search?: string }): Promise<QuizLead[]>;
+  updateQuizLead(id: number, updates: Partial<Pick<QuizLead, "status" | "observacoes" | "notificacaoEnviada">>): Promise<QuizLead | undefined>;
+  deleteQuizLead(id: number): Promise<boolean>;
   
   // Blog Posts
   getBlogPosts(status?: string): Promise<BlogPost[]>;
@@ -594,6 +607,166 @@ export class DatabaseStorage implements IStorage {
       .from(conversationMessages)
       .where(eq(conversationMessages.conversationId, conversationId))
       .orderBy(asc(conversationMessages.createdAt));
+  }
+  
+  async getQuizLeadBySession(sessionId: string): Promise<QuizLead | undefined> {
+    const [lead] = await db.select().from(quizLeads).where(eq(quizLeads.sessionId, sessionId));
+    return lead;
+  }
+
+  async upsertQuizLeadProgress(progress: QuizLeadProgressInput, metadata: { userAgent?: string } = {}): Promise<QuizLead> {
+    const existing = await this.getQuizLeadBySession(progress.sessionId);
+    if (!existing && !progress.nome) {
+      throw new Error("Nome é obrigatório para iniciar o quiz");
+    }
+
+    const combinedAnswers = {
+      tipoNegocio: progress.tipoNegocio ?? existing?.tipoNegocio ?? undefined,
+      tempoNegocio: progress.tempoNegocio ?? existing?.tempoNegocio ?? undefined,
+      experienciaMarketing: progress.experienciaMarketing ?? existing?.experienciaMarketing ?? undefined,
+      orcamentoAnuncios: progress.orcamentoAnuncios ?? existing?.orcamentoAnuncios ?? undefined,
+      principalDesafio: progress.principalDesafio ?? existing?.principalDesafio ?? undefined,
+      disponibilidade: progress.disponibilidade ?? existing?.disponibilidade ?? undefined,
+      expectativaResultado: progress.expectativaResultado ?? existing?.expectativaResultado ?? undefined,
+      tipoNegocioOutro: progress.tipoNegocioOutro ?? existing?.tipoNegocioOutro ?? undefined,
+    };
+
+    const scoreResult = calculateQuizScores(combinedAnswers);
+    const isComplete = progress.quizCompleto || progress.questionNumber >= QUIZ_TOTAL_QUESTIONS;
+    const classification: LeadClassification | undefined = isComplete
+      ? classifyLead(scoreResult.total)
+      : (existing?.classificacao ?? (progress.classificacao as LeadClassification | undefined));
+    const now = new Date();
+    const latestQuestion = Math.max(progress.questionNumber, existing?.ultimaPerguntaRespondida ?? 0);
+
+    const payload: Partial<typeof quizLeads.$inferInsert> = {
+      sessionId: progress.sessionId,
+      nome: progress.nome ?? existing?.nome ?? "",
+      email: progress.email ?? existing?.email,
+      telefone: progress.telefone ?? existing?.telefone,
+      cidadeEstado: progress.cidadeEstado ?? existing?.cidadeEstado,
+      tipoNegocio: progress.tipoNegocio ?? existing?.tipoNegocio,
+      tipoNegocioOutro: progress.tipoNegocioOutro ?? existing?.tipoNegocioOutro,
+      tempoNegocio: progress.tempoNegocio ?? existing?.tempoNegocio,
+      experienciaMarketing: progress.experienciaMarketing ?? existing?.experienciaMarketing,
+      orcamentoAnuncios: progress.orcamentoAnuncios ?? existing?.orcamentoAnuncios,
+      principalDesafio: progress.principalDesafio ?? existing?.principalDesafio,
+      disponibilidade: progress.disponibilidade ?? existing?.disponibilidade,
+      expectativaResultado: progress.expectativaResultado ?? existing?.expectativaResultado,
+      scoreTotal: scoreResult.total,
+      classificacao: classification,
+      scoreTipoNegocio: scoreResult.breakdown.scoreTipoNegocio,
+      scoreTempoNegocio: scoreResult.breakdown.scoreTempoNegocio,
+      scoreExperiencia: scoreResult.breakdown.scoreExperiencia,
+      scoreOrcamento: scoreResult.breakdown.scoreOrcamento,
+      scoreDesafio: scoreResult.breakdown.scoreDesafio,
+      scoreDisponibilidade: scoreResult.breakdown.scoreDisponibilidade,
+      scoreExpectativa: scoreResult.breakdown.scoreExpectativa,
+      tempoTotalSegundos: progress.tempoTotalSegundos ?? existing?.tempoTotalSegundos,
+      userAgent: metadata.userAgent ?? existing?.userAgent,
+      urlOrigem: progress.urlOrigem ?? existing?.urlOrigem,
+      utmSource: progress.utmSource ?? existing?.utmSource,
+      utmMedium: progress.utmMedium ?? existing?.utmMedium,
+      utmCampaign: progress.utmCampaign ?? existing?.utmCampaign,
+      status: existing?.status ?? "novo",
+      quizCompleto: isComplete || existing?.quizCompleto || false,
+      ultimaPerguntaRespondida: latestQuestion,
+      notificacaoEnviada: existing?.notificacaoEnviada ?? false,
+      updatedAt: now,
+    };
+
+    if (!existing) {
+      const startedAt = progress.startedAt ? new Date(progress.startedAt) : now;
+      const safeStartedAt = isNaN(startedAt.getTime()) ? now : startedAt;
+      const insertPayload: typeof quizLeads.$inferInsert = {
+        sessionId: progress.sessionId,
+        nome: progress.nome || "",
+        email: payload.email,
+        telefone: payload.telefone,
+        cidadeEstado: payload.cidadeEstado,
+        tipoNegocio: payload.tipoNegocio,
+        tipoNegocioOutro: payload.tipoNegocioOutro,
+        tempoNegocio: payload.tempoNegocio,
+        experienciaMarketing: payload.experienciaMarketing,
+        orcamentoAnuncios: payload.orcamentoAnuncios,
+        principalDesafio: payload.principalDesafio,
+        disponibilidade: payload.disponibilidade,
+        expectativaResultado: payload.expectativaResultado,
+        scoreTotal: payload.scoreTotal ?? 0,
+        classificacao: payload.classificacao ?? null,
+        scoreTipoNegocio: payload.scoreTipoNegocio ?? 0,
+        scoreTempoNegocio: payload.scoreTempoNegocio ?? 0,
+        scoreExperiencia: payload.scoreExperiencia ?? 0,
+        scoreOrcamento: payload.scoreOrcamento ?? 0,
+        scoreDesafio: payload.scoreDesafio ?? 0,
+        scoreDisponibilidade: payload.scoreDisponibilidade ?? 0,
+        scoreExpectativa: payload.scoreExpectativa ?? 0,
+        tempoTotalSegundos: payload.tempoTotalSegundos ?? null,
+        userAgent: payload.userAgent ?? null,
+        urlOrigem: payload.urlOrigem ?? null,
+        utmSource: payload.utmSource ?? null,
+        utmMedium: payload.utmMedium ?? null,
+        utmCampaign: payload.utmCampaign ?? null,
+        status: payload.status ?? "novo",
+        quizCompleto: payload.quizCompleto ?? false,
+        ultimaPerguntaRespondida: payload.ultimaPerguntaRespondida ?? latestQuestion,
+        notificacaoEnviada: payload.notificacaoEnviada ?? false,
+        dataContato: null,
+        observacoes: payload.observacoes ?? null,
+        createdAt: safeStartedAt,
+        updatedAt: now,
+      };
+      const [created] = await db.insert(quizLeads).values(insertPayload).returning();
+      return created;
+    }
+
+    const [updated] = await db
+      .update(quizLeads)
+      .set(payload)
+      .where(eq(quizLeads.id, existing.id))
+      .returning();
+    return updated;
+  }
+
+  async listQuizLeads(filters: { status?: LeadStatus; classificacao?: LeadClassification; quizCompleto?: boolean; search?: string } = {}): Promise<QuizLead[]> {
+    const conditions: any[] = [];
+    if (filters.status) conditions.push(eq(quizLeads.status, filters.status));
+    if (filters.classificacao) conditions.push(eq(quizLeads.classificacao, filters.classificacao));
+    if (typeof filters.quizCompleto === "boolean") conditions.push(eq(quizLeads.quizCompleto, filters.quizCompleto));
+    if (filters.search) {
+      const likeValue = `%${filters.search.toLowerCase()}%`;
+      conditions.push(
+        or(
+          ilike(quizLeads.nome, likeValue),
+          ilike(quizLeads.email, likeValue),
+          ilike(quizLeads.telefone, likeValue),
+        )
+      );
+    }
+
+    if (conditions.length) {
+      return await db.select().from(quizLeads).where(and(...conditions)).orderBy(desc(quizLeads.createdAt));
+    }
+    return await db.select().from(quizLeads).orderBy(desc(quizLeads.createdAt));
+  }
+
+  async updateQuizLead(id: number, updates: Partial<Pick<QuizLead, "status" | "observacoes" | "notificacaoEnviada">>): Promise<QuizLead | undefined> {
+    const [existing] = await db.select().from(quizLeads).where(eq(quizLeads.id, id));
+    if (!existing) return undefined;
+
+    const [updated] = await db
+      .update(quizLeads)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(quizLeads.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteQuizLead(id: number): Promise<boolean> {
+    const [existing] = await db.select().from(quizLeads).where(eq(quizLeads.id, id));
+    if (!existing) return false;
+    await db.delete(quizLeads).where(eq(quizLeads.id, id));
+    return true;
   }
 
   async getBlogPosts(status?: string): Promise<BlogPost[]> {

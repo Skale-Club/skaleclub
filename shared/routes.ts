@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertBookingSchema, categories, services, bookings } from './schema';
+import { insertBookingSchema, categories, services, bookings, quizLeadProgressSchema, quizLeads, leadStatusEnum, leadClassificationEnum } from './schema';
 
 const urlRuleSchema = z.object({
   pattern: z.string(),
@@ -16,6 +16,9 @@ const chatMessageInput = z.object({
   visitorEmail: z.string().optional(),
   visitorPhone: z.string().optional(),
 });
+
+const leadStatusValues = leadStatusEnum.enumValues as [string, ...string[]];
+const leadClassificationValues = leadClassificationEnum.enumValues as [string, ...string[]];
 
 export const errorSchemas = {
   validation: z.object({
@@ -153,6 +156,60 @@ export const api = {
           serviceName: z.string(),
           price: z.string(),
         })),
+      },
+    },
+  },
+  quizLeads: {
+    progress: {
+      method: 'POST' as const,
+      path: '/api/quiz-leads/progress',
+      input: quizLeadProgressSchema,
+      responses: {
+        200: z.custom<typeof quizLeads.$inferSelect>(),
+        400: errorSchemas.validation,
+        409: errorSchemas.conflict,
+      },
+    },
+    get: {
+      method: 'GET' as const,
+      path: '/api/quiz-leads/:sessionId',
+      responses: {
+        200: z.custom<typeof quizLeads.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+    list: {
+      method: 'GET' as const,
+      path: '/api/quiz-leads',
+      input: z.object({
+        status: z.enum(leadStatusValues).optional(),
+        classificacao: z.enum(leadClassificationValues).optional(),
+        quizCompleto: z.coerce.boolean().optional(),
+        search: z.string().optional(),
+      }).optional(),
+      responses: {
+        200: z.array(z.custom<typeof quizLeads.$inferSelect>()),
+      },
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/quiz-leads/:id',
+      input: z.object({
+        status: z.enum(leadStatusValues).optional(),
+        observacoes: z.string().optional(),
+        notificacaoEnviada: z.boolean().optional(),
+      }),
+      responses: {
+        200: z.custom<typeof quizLeads.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/quiz-leads/:id',
+      responses: {
+        200: z.object({ message: z.string() }),
+        404: errorSchemas.notFound,
       },
     },
   },

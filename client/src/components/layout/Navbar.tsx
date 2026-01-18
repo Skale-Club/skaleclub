@@ -51,7 +51,7 @@ export function Navbar() {
   }, [location]);
 
   return (
-    <nav className="bg-[#242424]/85 backdrop-blur-md absolute top-0 left-0 right-0 z-50">
+    <nav className="bg-[#242424]/85 backdrop-blur-md fixed top-0 left-0 right-0 z-50">
       <div className="container-custom mx-auto">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -96,14 +96,21 @@ export function Navbar() {
                       <p className="text-xs text-muted-foreground mt-1.5 leading-none">{user.email}</p>
                     </div>
                     {user.isAdmin && (
-                      <DropdownMenuItem asChild>
-                        <Link href="/admin" className="cursor-pointer w-full flex items-center" data-testid="link-admin">
+                      <DropdownMenuItem
+                        asChild
+                        className="cursor-pointer data-[highlighted]:bg-slate-100 data-[highlighted]:text-[#1D1D1D]"
+                      >
+                        <Link href="/admin" className="w-full flex items-center" data-testid="link-admin">
                           <User className="mr-2 h-4 w-4" />
                           Admin Panel
                         </Link>
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem onClick={() => logout()} data-testid="button-logout" className="text-[#1D1D1D] focus:text-[#1D1D1D] focus:bg-accent cursor-pointer">
+                    <DropdownMenuItem
+                      onClick={() => logout()}
+                      data-testid="button-logout"
+                      className="text-[#1D1D1D] focus:text-[#1D1D1D] data-[highlighted]:bg-slate-100 data-[highlighted]:text-[#1D1D1D] cursor-pointer"
+                    >
                       <LogOut className="mr-2 h-4 w-4" />
                       Logout
                     </DropdownMenuItem>
@@ -112,7 +119,7 @@ export function Navbar() {
               ) : (
                 <button 
                   onClick={() => window.location.href = '/api/login'}
-                  className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors"
+                  className="text-sm font-semibold text-white bg-transparent border border-white/40 px-4 py-2 rounded-full hover:bg-white/10 transition-colors"
                   data-testid="button-login"
                 >
                   Login

@@ -1,0 +1,49 @@
+Possível causa do problema
+O primeiro save falhava em janelas anônimas porque o quiz gerava um sessionId diferente/sem UUID e o autosave usava um “snapshot” antigo das respostas (enviava nome vazio), então o backend recusava a criação (“Nome é obrigatório”).
+
+Correções implementadas
+
+Geração de sessionId robusta (UUID v4 mesmo sem crypto.randomUUID) e session garantido assim que você interage.
+Autosave passa a usar sempre as respostas mais recentes via ref, e envia o valor digitado no momento (evita salvar nome/email vazios).
+Arquivo: LeadQuizModal.tsx.
+Admin Leads agora permite deletar um lead (rota DELETE + botão com confirmação).
+Arquivos: routes.ts, routes.ts, storage.ts, Admin.tsx.
+Como validar agora
+
+Em aba anônima: abrir o quiz, digitar nome válido, esperar 1–2s ou clicar “Próximo”. Verificar em Admin > Leads que o lead aparece com ultima_pergunta_respondida = 1.
+Repetir com email/telefone para confirmar salvamento progressivo.
+No Admin, testar o botão de deletar para remover o lead de teste.
+npm run check já passa.
+Se ainda não salvar: veja se há erro de rede no console ao chamar /api/quiz-leads/progress ou se o backend está rodando; qualquer erro ali agora deveria aparecer no log de rede.
+
+1 file changed
+Undo
+
+Review
+LeadQuizModal.tsx
++33
+-23
+User attachment
+ainda nao deu certo
+
+The errors in your console show relation "quiz_leads" does not exist, which means the new migration wasn’t applied to the database. The frontend is fine; the backend just needs the table.
+
+Fix:
+
+Apply migrations to your DATABASE_URL:
+npm run db:push
+
+If your DATABASE_URL isn’t set, set it first (e.g., export DATABASE_URL=...).
+
+After that, retest in an incognito tab: enter name → wait or click Próximo → the lead should appear in Admin > Leads with última_pergunta_respondida = 1.
+
+If you can’t run db:push, apply the SQL from 0008_quiz_leads.sql directly to your DB, then restart the server.
+
+Lead delete in admin is already implemented; it will work once the table exists.
+
+faca voce
+
+
+Não consegui aplicar a migração porque o banco não está acessível na máquina/sandbox: o npm run db:push falha com getaddrinfo EAI_AGAIN helium, indicando que a DATABASE_URL atual aponta para um host que não resolve (ou sem rede). Preciso de um DATABASE_URL válido (Postgres acessível a partir deste ambiente) para criar a tabela quiz_leads que o backend espera.
+
+Pode me passar uma DATABASE_URL funcional ou habilitar acesso ao seu banco? Depois é só rodar npm run db:push novamente e o salvamento do quiz vai funcionar.

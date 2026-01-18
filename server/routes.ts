@@ -7,12 +7,14 @@ import OpenAI from "openai";
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
-import { WORKING_HOURS, DEFAULT_BUSINESS_HOURS, insertCategorySchema, insertServiceSchema, insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema, insertBlogPostSchema, BusinessHours, DayHours, insertChatSettingsSchema, insertChatIntegrationsSchema, insertKnowledgeBaseCategorySchema, insertKnowledgeBaseArticleSchema } from "@shared/schema";
+import { WORKING_HOURS, DEFAULT_BUSINESS_HOURS, insertCategorySchema, insertServiceSchema, insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema, insertBlogPostSchema, BusinessHours, DayHours, insertChatSettingsSchema, insertChatIntegrationsSchema, insertKnowledgeBaseCategorySchema, insertKnowledgeBaseArticleSchema, quizLeadProgressSchema } from "@shared/schema";
+import type { LeadClassification, LeadStatus } from "@shared/schema";
+import { QUIZ_TOTAL_QUESTIONS } from "@shared/quiz";
 import { insertSubcategorySchema } from "./storage";
 import { ObjectStorageService, registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { authStorage } from "./replit_integrations/auth/storage";
 import { testGHLConnection, getGHLFreeSlots, getOrCreateGHLContact, createGHLAppointment } from "./integrations/ghl";
-import { sendLowPerformanceAlert, sendNewChatNotification } from "./integrations/twilio";
+import { sendHotLeadNotification, sendLowPerformanceAlert, sendNewChatNotification } from "./integrations/twilio";
 
 // Admin authentication middleware - uses Replit Auth + isAdmin check
 async function requireAdmin(req: Request, res: Response, next: NextFunction) {
@@ -532,13 +534,13 @@ export async function registerRoutes(
 
           if (contactEmail || contactPhone) {
             const contactResult = await getOrCreateGHLContact(
-              ghlSettings.apiKey,
-              ghlSettings.locationId,
+              ghlSettings.apiKey as string,
+              ghlSettings.locationId as string,
               {
-                email: contactEmail || undefined,
+                email: contactEmail || "",
                 firstName,
                 lastName,
-                phone: contactPhone || undefined,
+                phone: contactPhone || "",
                 address: undefined,
               }
             );
@@ -937,6 +939,94 @@ export async function registerRoutes(
       }
       res.status(400).json({ message: (err as Error).message });
     }
+  });
+
+  // Quiz Leads
+  app.get('/api/quiz-leads/:sessionId', async (req, res) => {
+    const lead = await storage.getQuizLeadBySession(req.params.sessionId);
+    if (!lead) {
+      return res.status(404).json({ message: 'Lead não encontrado' });
+    }
+    res.json(lead);
+  });
+
+  app.post('/api/quiz-leads/progress', async (req, res) => {
+    try {
+      const parsed = quizLeadProgressSchema.parse(req.body);
+      const questionNumber = Math.min(parsed.questionNumber, QUIZ_TOTAL_QUESTIONS);
+      const payload = {
+        ...parsed,
+        questionNumber,
+        quizCompleto: parsed.quizCompleto || questionNumber >= QUIZ_TOTAL_QUESTIONS,
+      };
+      let lead = await storage.upsertQuizLeadProgress(payload, { userAgent: req.get('user-agent') || undefined });
+
+      if (lead.quizCompleto && lead.classificacao === 'QUENTE' && !lead.notificacaoEnviada) {
+        try {
+          const twilioSettings = await storage.getTwilioSettings();
+          if (twilioSettings) {
+            const notifyResult = await sendHotLeadNotification(twilioSettings, lead);
+            if (notifyResult.success) {
+              const updated = await storage.updateQuizLead(lead.id, { notificacaoEnviada: true });
+              lead = updated || { ...lead, notificacaoEnviada: true };
+            }
+          }
+        } catch (notificationError) {
+          console.error('Lead notification error:', notificationError);
+        }
+      }
+      res.json(lead);
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors?.[0]?.message || 'Erro de validação' });
+      }
+      if (err?.code === '23505') {
+        return res.status(409).json({ message: 'Email já está cadastrado em outro lead' });
+      }
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.get('/api/quiz-leads', requireAdmin, async (req, res) => {
+    try {
+      const parsed = api.quizLeads.list.input ? api.quizLeads.list.input.parse(req.query) : {};
+      const filters = (parsed || {}) as { status?: LeadStatus; classificacao?: LeadClassification; quizCompleto?: boolean; search?: string };
+      const leads = await storage.listQuizLeads(filters);
+      res.json(leads);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid filters', errors: err.errors });
+      }
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.patch('/api/quiz-leads/:id', requireAdmin, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (Number.isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid lead id' });
+      }
+      const updates = api.quizLeads.update.input.parse(req.body) as { status?: LeadStatus; observacoes?: string; notificacaoEnviada?: boolean };
+      const updated = await storage.updateQuizLead(id, updates);
+      if (!updated) {
+        return res.status(404).json({ message: 'Lead not found' });
+      }
+      res.json(updated);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.delete('/api/quiz-leads/:id', requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (Number.isNaN(id)) return res.status(400).json({ message: 'Invalid lead id' });
+    const deleted = await storage.deleteQuizLead(id);
+    if (!deleted) return res.status(404).json({ message: 'Lead not found' });
+    res.json({ message: 'Lead deleted' });
   });
 
   // Robots.txt endpoint
@@ -1603,7 +1693,7 @@ Sitemap: ${canonicalUrl}/sitemap.xml
           const msg = messages[i];
           if (msg.role !== 'visitor') continue;
           const nextAssistant = messages.slice(i + 1).find((m) => m.role === 'assistant');
-          if (!nextAssistant) continue;
+          if (!nextAssistant || !msg.createdAt || !nextAssistant.createdAt) continue;
           const start = new Date(msg.createdAt).getTime();
           const end = new Date(nextAssistant.createdAt).getTime();
           if (!Number.isFinite(start) || !Number.isFinite(end)) continue;

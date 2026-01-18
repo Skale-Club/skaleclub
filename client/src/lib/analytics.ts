@@ -122,7 +122,12 @@ export type AnalyticsEventName =
   | 'chat_message_received'
   | 'chat_new_conversation'
   | 'chat_lead_captured'
-  | 'chat_booking_completed';
+  | 'chat_booking_completed'
+  | 'quiz_open'
+  | 'quiz_step_completed'
+  | 'quiz_completed'
+  | 'quiz_abandoned'
+  | 'quiz_result_action';
 
 export interface AnalyticsEventPayload {
   location?: string;

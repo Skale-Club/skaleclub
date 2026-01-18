@@ -14,8 +14,8 @@ export const DEFAULT_HOMEPAGE_CONTENT: HomepageContent = {
     ctaText: 'Book Now',
   },
   reviewsSection: {
-    title: 'Customer Reviews',
-    subtitle: 'See what our customers are saying about our 5-star services.',
+    title: 'Avaliações de Clientes',
+    subtitle: 'Veja o que nossos clientes dizem sobre nossos serviços 5 estrelas.',
     embedUrl: 'https://reputationhub.site/reputation/widgets/review_widget/q6UKnlWOQwyTk82yZPAs',
   },
   blogSection: {

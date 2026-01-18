@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useCategories, useServices } from "@/hooks/use-booking";
 import { Link, useLocation } from "wouter";
 import { ArrowRight, Star, Shield, Clock, Sparkles, Heart, BadgeCheck, ThumbsUp, Trophy, Phone, Calendar, FileText } from "lucide-react";
@@ -10,6 +10,7 @@ import type { CompanySettings, BlogPost, HomepageContent } from "@shared/schema"
 import { format } from "date-fns";
 import { trackCTAClick } from "@/lib/analytics";
 import { DEFAULT_HOMEPAGE_CONTENT } from "@/lib/homepageDefaults";
+import { LeadQuizModal } from "@/components/LeadQuizModal";
 
 function BlogSection({ content }: { content: HomepageContent['blogSection'] }) {
   const sectionContent = {
@@ -149,6 +150,23 @@ export default function Home() {
 
   const displayPhone = companySettings?.companyPhone || "(303) 309 4226";
   const telPhone = displayPhone.replace(/\D/g, '');
+  const [isQuizOpen, setIsQuizOpen] = useState(false);
+
+  const REVIEWS_TITLE_PT = 'Avaliações de Clientes';
+  const REVIEWS_SUBTITLE_PT = 'Veja o que nossos clientes dizem sobre nossos serviços 5 estrelas.';
+  const reviewsTitle = (() => {
+    const title = homepageContent.reviewsSection?.title?.trim();
+    if (!title) return REVIEWS_TITLE_PT;
+    if (title.toLowerCase() === 'customer reviews') return REVIEWS_TITLE_PT;
+    return title;
+  })();
+  const reviewsSubtitle = (() => {
+    const subtitle = homepageContent.reviewsSection?.subtitle?.trim();
+    const defaultEn = 'see what our customers are saying about our 5-star services.';
+    if (!subtitle) return REVIEWS_SUBTITLE_PT;
+    if (subtitle.toLowerCase() === defaultEn) return REVIEWS_SUBTITLE_PT;
+    return subtitle;
+  })();
 
   const handleCategoryClick = (categoryId: number) => {
     setLocation(`/services?category=${categoryId}&scroll=true`);
@@ -173,13 +191,29 @@ export default function Home() {
     }
   }, []);
 
+  useEffect(() => {
+    const clickHandler = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      const trigger = target.closest('[data-quiz-trigger], button, a') as HTMLElement | null;
+      if (!trigger) return;
+      const text = (trigger.textContent || '').trim().toLowerCase();
+      if (trigger.dataset.quizTrigger === 'lead-quiz' || text === 'agendar conversa gratuita') {
+        event.preventDefault();
+        setIsQuizOpen(true);
+      }
+    };
+    document.addEventListener('click', clickHandler);
+    return () => document.removeEventListener('click', clickHandler);
+  }, []);
+
   return (
     <div className="pb-0">
       {/* Hero Section */}
-      <section className="relative flex items-center lg:items-end pt-16 sm:pt-12 lg:pt-4 pb-0 overflow-hidden bg-[#1C53A3] min-h-[65vh] sm:min-h-[50vh] lg:min-h-[500px] xl:min-h-[550px]">
+      <section className="relative flex items-center lg:items-end pt-16 sm:pt-20 lg:pt-16 pb-12 sm:pb-16 lg:pb-20 overflow-hidden bg-[#1C53A3] min-h-[65vh] sm:min-h-[50vh] lg:min-h-[500px] xl:min-h-[550px]">
         <div className="container-custom mx-auto relative z-10 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-center lg:items-center">
-            <div className="order-1 lg:order-2 text-white pt-4 pb-2 lg:pt-6 lg:pb-8 lg:-translate-y-14 relative z-20">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-1 sm:gap-6 lg:gap-8 items-center lg:items-center">
+            <div className="order-1 lg:order-2 text-white pt-6 sm:pt-8 lg:pt-16 pb-1 sm:pb-5 lg:pb-[5.5rem] lg:translate-y-0 relative z-20">
               <div className="mt-4 sm:mt-0 mb-3 lg:mb-6">
                 <img
                   src={homepageContent.heroBadgeImageUrl || DEFAULT_HOMEPAGE_CONTENT.heroBadgeImageUrl}
@@ -203,45 +237,58 @@ export default function Home() {
                 {companySettings?.heroSubtitle || "We provide top-quality cleaning services ensuring a spotless environment for your home and office."}
               </p>
               <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 flex-wrap">
-                <Link href="/services" className="w-full sm:w-auto shrink-0">
-                  <button
-                    className="w-full px-6 sm:px-8 py-3 sm:py-4 bg-[#406EF1] hover:bg-[#355CD0] hover:scale-105 text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
-                    onClick={() => trackCTAClick('hero', companySettings?.ctaText || 'Get Instant Price')}
-                    data-testid="button-hero-cta"
-                  >
-                    {companySettings?.ctaText || "Get Instant Price"}
-                  </button>
-                </Link>
+                <button
+                  data-quiz-trigger="lead-quiz"
+                  className="w-full sm:w-auto shrink-0 px-6 sm:px-8 py-3 sm:py-4 bg-[#406EF1] hover:bg-[#355CD0] hover:scale-105 text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
+                  onClick={() => {
+                    setIsQuizOpen(true);
+                    trackCTAClick('hero', 'Agendar Conversa Gratuita');
+                  }}
+                  data-testid="button-hero-quiz"
+                >
+                  Agendar Conversa Gratuita
+                </button>
               </div>
             </div>
-            <div className="order-2 lg:order-1 relative flex h-full items-end justify-center lg:justify-end self-end w-full lg:min-h-[400px] z-10 lg:ml-[-5%] mt-6 sm:mt-2 lg:-mt-10">
+            <div className="order-2 lg:order-1 relative flex h-full items-end justify-center lg:justify-end self-end w-full lg:min-h-[400px] z-10 lg:ml-[-3%] mt-0 sm:mt-0 lg:-mt-10">
               <img
                 src={companySettings?.heroImageUrl || heroImage}
                 alt="Cleaning Professionals"
-                className="w-[100vw] sm:w-[105%] lg:w-[100%] max-w-[400px] sm:max-w-[360px] md:max-w-[420px] lg:max-w-[490px] xl:max-w-[560px] object-contain drop-shadow-2xl translate-y-[2%] sm:translate-y-[-2%] lg:translate-y-[-6%] scale-100 sm:scale-102 lg:scale-100 origin-bottom"
+                className="w-[92vw] sm:w-[98%] lg:w-full max-w-[380px] sm:max-w-[360px] md:max-w-[430px] lg:max-w-[500px] xl:max-w-[560px] object-contain drop-shadow-2xl -translate-y-[2%] sm:-translate-y-[1%] lg:translate-y-[0%] scale-100 sm:scale-100 lg:scale-98 origin-bottom"
               />
             </div>
           </div>
         </div>
 
-        {/* Modern Creative Blue Gradient Background */}
-        <div className="absolute inset-0 bg-[#1C53A3]">
-          <div className="absolute inset-0 opacity-70" style={{
+        {/* Hero Background Gradient */}
+        <div
+          className="absolute inset-0"
+          style={{
             background: `
-              radial-gradient(circle at 15% 25%, #5B4A44 0%, transparent 50%),
-              radial-gradient(circle at 70% 20%, #44363B 0%, transparent 45%),
-              radial-gradient(circle at 85% 70%, #2A2334 0%, transparent 55%),
-              linear-gradient(135deg, #5B4A44 0%, #44363B 30%, #2A2334 60%, #0E1A2E 100%)
+              linear-gradient(
+                to right bottom,
+                #09152d,
+                #0b152a,
+                #0d1427,
+                #0f1424,
+                #101421,
+                #121622,
+                #151723,
+                #171924,
+                #1c1c29,
+                #21202e,
+                #262332,
+                #2c2637
+              )
             `
-          }}></div>
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0E1A2E]/80 via-[#13233A]/40 to-transparent"></div>
-        </div>
+          }}
+        ></div>
       </section>
       {/* Trust Badges */}
-      <section className="relative z-20 -mt-10 sm:-mt-12 lg:-mt-14 bg-[#111111]">
-        <div className="absolute inset-x-0 bottom-0 top-[70%] sm:top-[55%] bg-[#111111] -z-10 pt-[0px] pb-[0px] mt-[-25px] mb-[-25px]"></div>
-        <div className="container-custom mx-auto">
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-100 overflow-hidden">
+      <section className="relative z-20 -mt-16 sm:-mt-16 lg:-mt-24 bg-[#111111] pb-4 sm:pb-6 lg:pb-8">
+        <div className="absolute inset-x-0 bottom-0 top-[88%] sm:top-[72%] bg-[#111111] -z-10 pt-[0px] pb-[0px] mt-[-25px] mb-[-25px]"></div>
+        <div className="container-custom mx-auto relative">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-100 overflow-hidden relative z-30 -translate-y-10 sm:-translate-y-6 lg:-translate-y-8">
             {trustBadges.map((feature, i) => {
               const iconKey = (feature.icon || '').toLowerCase();
               const Icon = badgeIconMap[iconKey] || badgeIconMap.star || Star;
@@ -260,20 +307,20 @@ export default function Home() {
           </div>
         </div>
       </section>
-      <div className="h-3 bg-[#111111]"></div>
+      <div className="h-0 bg-[#111111]"></div>
       {/* Reviews Section */}
-      <section className="pt-20 pb-0 bg-[#111111] overflow-hidden mb-0 text-white">
+      <section className="pt-6 sm:pt-10 lg:pt-12 pb-0 bg-[#111111] overflow-hidden mb-0 text-white">
         <div className="w-full">
           <div className="container-custom mx-auto mb-16 text-center">
             <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white">
-              {homepageContent.reviewsSection?.title || DEFAULT_HOMEPAGE_CONTENT.reviewsSection?.title}
+              {reviewsTitle}
             </h2>
             <p className="text-slate-300 max-w-2xl mx-auto text-lg">
-              {homepageContent.reviewsSection?.subtitle || DEFAULT_HOMEPAGE_CONTENT.reviewsSection?.subtitle}
+              {reviewsSubtitle}
             </p>
           </div>
           <div className="w-full px-0">
-            <div className="pb-8 md:pb-0 bg-[#111111]">
+            <div className="pb-8 md:pb-0 bg-[#111111] -mt-6 sm:-mt-8 lg:-mt-10">
               <iframe 
                 className='lc_reviews_widget' 
                 src={homepageContent.reviewsSection?.embedUrl || DEFAULT_HOMEPAGE_CONTENT.reviewsSection?.embedUrl}
@@ -299,6 +346,7 @@ export default function Home() {
         />
       </section>
       <CartSummary />
+      <LeadQuizModal open={isQuizOpen} onClose={() => setIsQuizOpen(false)} />
     </div>
   );
 }
