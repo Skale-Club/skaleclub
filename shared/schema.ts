@@ -87,8 +87,18 @@ export const chatSettings = pgTable("chat_settings", {
     "You are our helpful chat assistant. Provide concise, friendly answers. Use the provided tools to fetch services, details, and availability. Do not guess prices or availability; always use tool data when relevant. If booking is requested, gather details and direct the user to the booking page at /booking."
   ),
   welcomeMessage: text("welcome_message").default("Hi! How can I help you today?"),
+  avgResponseTime: text("avg_response_time").default(""),
+  calendarProvider: text("calendar_provider").default("gohighlevel"),
+  calendarId: text("calendar_id").default(""),
+  calendarStaff: jsonb("calendar_staff").default([]),
+  languageSelectorEnabled: boolean("language_selector_enabled").default(false),
+  defaultLanguage: text("default_language").default("en"),
+  lowPerformanceSmsEnabled: boolean("low_performance_sms_enabled").default(false),
+  lowPerformanceThresholdSeconds: integer("low_performance_threshold_seconds").default(300),
   intakeObjectives: jsonb("intake_objectives").default([]),
   excludedUrlRules: jsonb("excluded_url_rules").default([]),
+  useKnowledgeBase: boolean("use_knowledge_base").default(true),
+  useFaqs: boolean("use_faqs").default(true),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
@@ -341,6 +351,7 @@ export const blogPosts = pgTable("blog_posts", {
   excerpt: text("excerpt"),
   metaDescription: text("meta_description"),
   focusKeyword: text("focus_keyword"),
+  tags: text("tags"),
   featureImageUrl: text("feature_image_url"),
   status: text("status").notNull().default("draft"),
   authorName: text("author_name").default("Admin"),
@@ -372,3 +383,59 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({
 export type BlogPost = typeof blogPosts.$inferSelect;
 export type BlogPostService = typeof blogPostServices.$inferSelect;
 export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
+
+// Knowledge Base Categories
+export const knowledgeBaseCategories = pgTable("knowledge_base_categories", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  description: text("description"),
+  icon: text("icon"), // Lucide icon name
+  order: integer("order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Knowledge Base Articles
+export const knowledgeBaseArticles = pgTable("knowledge_base_articles", {
+  id: serial("id").primaryKey(),
+  categoryId: integer("category_id").references(() => knowledgeBaseCategories.id).notNull(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  order: integer("order").default(0),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Knowledge Base to Assistant Integration
+export const knowledgeBaseAssistantLink = pgTable("knowledge_base_assistant_link", {
+  id: serial("id").primaryKey(),
+  categoryId: integer("category_id").references(() => knowledgeBaseCategories.id).notNull(),
+  isLinkedToAssistant: boolean("is_linked_to_assistant").default(false),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertKnowledgeBaseCategorySchema = createInsertSchema(knowledgeBaseCategories).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertKnowledgeBaseArticleSchema = createInsertSchema(knowledgeBaseArticles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertKnowledgeBaseAssistantLinkSchema = createInsertSchema(knowledgeBaseAssistantLink).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type KnowledgeBaseCategory = typeof knowledgeBaseCategories.$inferSelect;
+export type KnowledgeBaseArticle = typeof knowledgeBaseArticles.$inferSelect;
+export type KnowledgeBaseAssistantLink = typeof knowledgeBaseAssistantLink.$inferSelect;
+export type InsertKnowledgeBaseCategory = z.infer<typeof insertKnowledgeBaseCategorySchema>;
+export type InsertKnowledgeBaseArticle = z.infer<typeof insertKnowledgeBaseArticleSchema>;
+export type InsertKnowledgeBaseAssistantLink = z.infer<typeof insertKnowledgeBaseAssistantLinkSchema>;

@@ -28,6 +28,8 @@ type ChatConfig = {
   agentAvatarUrl?: string;
   fallbackAvatarUrl?: string;
   welcomeMessage: string;
+  languageSelectorEnabled?: boolean;
+  defaultLanguage?: string;
   excludedUrlRules: UrlRule[];
 };
 
@@ -41,6 +43,12 @@ type ChatMessage = {
 
 const STORAGE_KEY = "chat_conversation_id";
 const LOCAL_MESSAGES_KEY = "chat_widget_messages";
+const LANGUAGE_KEY = "chat_widget_language";
+const LANGUAGE_OPTIONS = [
+  { value: "en", label: "English" },
+  { value: "pt-BR", label: "Portuguese (Brazil)" },
+  { value: "es", label: "Spanish" },
+];
 
 function matchesRule(url: string, rule: UrlRule) {
   if (!rule?.pattern) return false;
@@ -73,6 +81,7 @@ export function ChatWidget() {
   const [hasShownWelcome, setHasShownWelcome] = useState(false);
   const [shouldShowDotAfterClose, setShouldShowDotAfterClose] = useState(false);
   const [limitReached, setLimitReached] = useState(false);
+  const [language, setLanguage] = useState("");
 
   const { data: config } = useQuery<ChatConfig>({
     queryKey: ["/api/chat/config"],
@@ -162,6 +171,13 @@ export function ChatWidget() {
   }, [config]);
 
   useEffect(() => {
+    if (!config?.languageSelectorEnabled) return;
+    const stored = localStorage.getItem(LANGUAGE_KEY);
+    const fallback = config.defaultLanguage || "en";
+    setLanguage(stored || fallback);
+  }, [config?.languageSelectorEnabled, config?.defaultLanguage]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
     const alreadySeen = sessionStorage.getItem("chat_welcome_shown") === "1";
     setHasShownWelcome(alreadySeen);
@@ -221,6 +237,11 @@ export function ChatWidget() {
     }
   };
 
+  const handleLanguageChange = (value: string) => {
+    setLanguage(value);
+    localStorage.setItem(LANGUAGE_KEY, value);
+  };
+
   const startNewConversation = () => {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(LOCAL_MESSAGES_KEY);
@@ -255,6 +276,7 @@ export function ChatWidget() {
         message: content,
         pageUrl: window.location.pathname,
         userAgent: navigator.userAgent,
+        language: language || config?.defaultLanguage,
       };
       const res = await apiRequest("POST", "/api/chat/message", payload);
       const data = await res.json();
@@ -399,6 +421,26 @@ export function ChatWidget() {
               <X className="w-4 h-4" />
             </Button>
           </div>
+
+          {config?.languageSelectorEnabled && (
+            <div className="px-4 py-2 border-b bg-white">
+              <label className="text-xs text-muted-foreground" htmlFor="chat-language">
+                Language
+              </label>
+              <select
+                id="chat-language"
+                className="mt-1 w-full rounded-md border border-slate-200 bg-white px-2 py-1 text-sm"
+                value={language || config?.defaultLanguage || "en"}
+                onChange={(event) => handleLanguageChange(event.target.value)}
+              >
+                {LANGUAGE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div ref={scrollRef} className="p-3 space-y-2 h-80 overflow-y-auto bg-slate-50">
             {loadingHistory && (

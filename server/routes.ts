@@ -5,12 +5,12 @@ import { api, errorSchemas, buildUrl } from "@shared/routes";
 import { z } from "zod";
 import OpenAI from "openai";
 import crypto from "crypto";
-import { WORKING_HOURS, DEFAULT_BUSINESS_HOURS, insertCategorySchema, insertServiceSchema, insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema, insertBlogPostSchema, BusinessHours, DayHours, insertChatSettingsSchema, insertChatIntegrationsSchema } from "@shared/schema";
+import { WORKING_HOURS, DEFAULT_BUSINESS_HOURS, insertCategorySchema, insertServiceSchema, insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema, insertBlogPostSchema, BusinessHours, DayHours, insertChatSettingsSchema, insertChatIntegrationsSchema, insertKnowledgeBaseCategorySchema, insertKnowledgeBaseArticleSchema } from "@shared/schema";
 import { insertSubcategorySchema } from "./storage";
 import { ObjectStorageService, registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { authStorage } from "./replit_integrations/auth/storage";
 import { testGHLConnection, getGHLFreeSlots, getOrCreateGHLContact, createGHLAppointment } from "./integrations/ghl";
-import { sendNewChatNotification } from "./integrations/twilio";
+import { sendLowPerformanceAlert, sendNewChatNotification } from "./integrations/twilio";
 
 // Admin authentication middleware - uses Replit Auth + isAdmin check
 async function requireAdmin(req: Request, res: Response, next: NextFunction) {
@@ -46,11 +46,13 @@ const chatMessageSchema = z.object({
   visitorName: z.string().optional(),
   visitorEmail: z.string().optional(),
   visitorPhone: z.string().optional(),
+  language: z.string().optional(),
 });
 
 type UrlRule = z.infer<typeof urlRuleSchema>;
 
 const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+let lastLowPerformanceAlertAt: number | null = null;
 
 function isRateLimited(key: string, limit = 8, windowMs = 60_000): boolean {
   const now = Date.now();
@@ -226,6 +228,40 @@ export async function registerRoutes(
         },
       },
     },
+    {
+      type: "function",
+      function: {
+        name: "search_knowledge_base",
+        description: "Search linked knowledge base documents to answer company-specific questions or policies",
+        parameters: {
+          type: "object",
+          properties: {
+            query: {
+              type: "string",
+              description: "Optional keywords to search documents (e.g., 'prep', 'pets', 'reschedule'). Leave empty to fetch all linked docs."
+            },
+          },
+          additionalProperties: false,
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "search_faqs",
+        description: "Search frequently asked questions database to answer questions about policies, cleaning process, products, guarantees, cancellation, and other common inquiries",
+        parameters: {
+          type: "object",
+          properties: {
+            query: {
+              type: "string",
+              description: "Optional search keywords to filter FAQs (e.g., 'cancellation', 'products', 'guarantee'). Leave empty to get all FAQs."
+            },
+          },
+          additionalProperties: false,
+        },
+      },
+    },
   ];
 
   function getOpenAIClient(apiKey?: string) {
@@ -367,7 +403,8 @@ export async function registerRoutes(
   async function runChatTool(
     toolName: string,
     args: any,
-    conversationId?: string
+    conversationId?: string,
+    options?: { allowFaqs?: boolean; allowKnowledgeBase?: boolean }
   ) {
     switch (toolName) {
       case 'list_services': {
@@ -407,6 +444,65 @@ export async function registerRoutes(
           minimumBookingValue: company.minimumBookingValue?.toString?.() || company.minimumBookingValue,
         };
       }
+      case 'search_knowledge_base': {
+        if (options?.allowKnowledgeBase === false) {
+          return { error: 'Knowledge base is disabled for this chat.' };
+        }
+        const query = (args?.query as string | undefined)?.toLowerCase?.()?.trim();
+        const docs = await storage.getLinkedKnowledgeBaseDocuments();
+        if (!docs.length) {
+          return { documents: [], message: 'No linked knowledge base documents available.' };
+        }
+
+        const filtered = query
+          ? docs.filter(doc =>
+            doc.title.toLowerCase().includes(query) ||
+            doc.content.toLowerCase().includes(query) ||
+            doc.categoryName.toLowerCase().includes(query)
+          )
+          : docs;
+
+        return {
+          documents: filtered.slice(0, 8).map(doc => ({
+            id: doc.id,
+            title: doc.title,
+            category: doc.categoryName,
+            content: doc.content,
+          })),
+          searchQuery: query,
+        };
+      }
+      case 'search_faqs': {
+        if (options?.allowFaqs === false) {
+          return { error: 'FAQ search is disabled for this chat.' };
+        }
+        const query = (args?.query as string | undefined)?.toLowerCase?.()?.trim();
+        const allFaqs = await storage.getFaqs();
+
+        // If no query, return all FAQs
+        if (!query) {
+          return {
+            faqs: allFaqs.map(faq => ({
+              question: faq.question,
+              answer: faq.answer,
+            })),
+          };
+        }
+
+        // Filter FAQs by query (search in both question and answer)
+        const filtered = allFaqs.filter(faq =>
+          faq.question.toLowerCase().includes(query) ||
+          faq.answer.toLowerCase().includes(query)
+        );
+
+        return {
+          faqs: filtered.map(faq => ({
+            question: faq.question,
+            answer: faq.answer,
+          })),
+          searchQuery: query,
+        };
+      }
       case 'update_contact': {
         const name = (args?.name as string | undefined)?.trim();
         const email = (args?.email as string | undefined)?.trim();
@@ -420,11 +516,43 @@ export async function registerRoutes(
         if (phone) updates.visitorPhone = phone;
 
         const updated = await storage.updateConversation(conversationId, updates);
+        const ghlSettings = await storage.getIntegrationSettings('gohighlevel');
+        const canSyncGhl = !!(ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.locationId);
+        let contactId: string | undefined;
+
+        if (canSyncGhl) {
+          const contactName = updated?.visitorName || name || '';
+          const nameParts = contactName.split(' ');
+          const firstName = nameParts[0] || '';
+          const lastName = nameParts.slice(1).join(' ') || '';
+          const contactEmail = updated?.visitorEmail || email || '';
+          const contactPhone = updated?.visitorPhone || phone || '';
+
+          if (contactEmail || contactPhone) {
+            const contactResult = await getOrCreateGHLContact(
+              ghlSettings.apiKey,
+              ghlSettings.locationId,
+              {
+                email: contactEmail || undefined,
+                firstName,
+                lastName,
+                phone: contactPhone || undefined,
+                address: undefined,
+              }
+            );
+            if (!contactResult.success || !contactResult.contactId) {
+              return { error: contactResult.message || 'Failed to create contact in GoHighLevel.' };
+            }
+            contactId = contactResult.contactId;
+          }
+        }
+
         return {
           success: true,
           visitorName: updated?.visitorName,
           visitorEmail: updated?.visitorEmail,
           visitorPhone: updated?.visitorPhone,
+          ghlContactId: contactId,
         };
       }
       case 'create_booking': {
@@ -477,8 +605,17 @@ export async function registerRoutes(
         }
 
         const ghlSettings = await storage.getIntegrationSettings('gohighlevel');
-        const useGhl = !!(ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.calendarId);
-        const slotsForDay = await getAvailabilityForDate(bookingDate, totalDuration, useGhl, ghlSettings);
+        const chatSettings = await storage.getChatSettings();
+        const calendarProvider = chatSettings?.calendarProvider || 'gohighlevel';
+        const calendarIdOverride = chatSettings?.calendarId || '';
+        const effectiveCalendarId = calendarIdOverride || ghlSettings?.calendarId || '';
+        const useGhl = calendarProvider === 'gohighlevel' && !!(ghlSettings?.isEnabled && ghlSettings.apiKey && effectiveCalendarId);
+        const slotsForDay = await getAvailabilityForDate(
+          bookingDate,
+          totalDuration,
+          useGhl,
+          useGhl ? { ...ghlSettings, calendarId: effectiveCalendarId } : ghlSettings
+        );
         if (slotsForDay.length > 0 && !slotsForDay.includes(startTime)) {
           return { error: 'Selected time is unavailable. Choose another slot.', availableSlots: slotsForDay };
         }
@@ -487,6 +624,48 @@ export async function registerRoutes(
         const minimumBookingValue = parseFloat(company?.minimumBookingValue as any) || 0;
         if (minimumBookingValue > 0 && totalPrice < minimumBookingValue) {
           totalPrice = minimumBookingValue;
+        }
+
+        let ghlContactId: string | undefined;
+        let ghlAppointmentId: string | undefined;
+        if (useGhl && ghlSettings?.apiKey && ghlSettings.locationId && effectiveCalendarId) {
+          const serviceNames = services.map(s => s.name).join(', ');
+          const nameParts = customerName.split(' ');
+          const firstName = nameParts[0] || '';
+          const lastName = nameParts.slice(1).join(' ') || '';
+
+          const contactResult = await getOrCreateGHLContact(ghlSettings.apiKey, ghlSettings.locationId, {
+            email: customerEmail,
+            firstName,
+            lastName,
+            phone: customerPhone,
+            address: customerAddress,
+          });
+
+          if (!contactResult.success || !contactResult.contactId) {
+            return { error: contactResult.message || 'Failed to create contact in GoHighLevel.' };
+          }
+          ghlContactId = contactResult.contactId;
+
+          const startTimeISO = `${bookingDate}T${startTime}:00-05:00`;
+          const endTimeISO = `${bookingDate}T${endTime}:00-05:00`;
+          const appointmentResult = await createGHLAppointment(
+            ghlSettings.apiKey,
+            effectiveCalendarId,
+            ghlSettings.locationId,
+            {
+              contactId: contactResult.contactId,
+              startTime: startTimeISO,
+              endTime: endTimeISO,
+              title: `Cleaning: ${serviceNames}`,
+              address: customerAddress,
+            }
+          );
+
+          if (!appointmentResult.success || !appointmentResult.appointmentId) {
+            return { error: appointmentResult.message || 'Failed to create appointment in GoHighLevel.' };
+          }
+          ghlAppointmentId = appointmentResult.appointmentId;
         }
 
         const booking = await storage.createBooking({
@@ -503,48 +682,8 @@ export async function registerRoutes(
           paymentMethod,
         });
 
-        try {
-          if (useGhl && ghlSettings?.apiKey && ghlSettings.locationId && ghlSettings.calendarId) {
-            const serviceNames = services.map(s => s.name).join(', ');
-            const nameParts = customerName.split(' ');
-            const firstName = nameParts[0] || '';
-            const lastName = nameParts.slice(1).join(' ') || '';
-
-            const contactResult = await getOrCreateGHLContact(ghlSettings.apiKey, ghlSettings.locationId, {
-              email: customerEmail,
-              firstName,
-              lastName,
-              phone: customerPhone,
-              address: customerAddress,
-            });
-
-            if (contactResult.success && contactResult.contactId) {
-              const startTimeISO = `${bookingDate}T${startTime}:00-05:00`;
-              const endTimeISO = `${bookingDate}T${endTime}:00-05:00`;
-              const appointmentResult = await createGHLAppointment(
-                ghlSettings.apiKey,
-                ghlSettings.calendarId,
-                ghlSettings.locationId,
-                {
-                  contactId: contactResult.contactId,
-                  startTime: startTimeISO,
-                  endTime: endTimeISO,
-                  title: `Cleaning: ${serviceNames}`,
-                  address: customerAddress,
-                }
-              );
-
-              if (appointmentResult.success && appointmentResult.appointmentId) {
-                await storage.updateBookingGHLSync(booking.id, contactResult.contactId, appointmentResult.appointmentId, 'synced');
-              } else {
-                await storage.updateBookingGHLSync(booking.id, contactResult.contactId, '', 'failed');
-              }
-            } else {
-              await storage.updateBookingGHLSync(booking.id, '', '', 'failed');
-            }
-          }
-        } catch {
-          // Non-blocking: ignore sync failures
+        if (useGhl && ghlContactId && ghlAppointmentId) {
+          await storage.updateBookingGHLSync(booking.id, ghlContactId, ghlAppointmentId, 'synced');
         }
 
         return {
@@ -1374,6 +1513,9 @@ Sitemap: ${canonicalUrl}/sitemap.xml
         agentAvatarUrl: primaryAvatar,
         fallbackAvatarUrl: fallbackAvatar,
         welcomeMessage: settings.welcomeMessage || 'Hi! How can I help you today?',
+        avgResponseTime: settings.avgResponseTime || '',
+        languageSelectorEnabled: settings.languageSelectorEnabled ?? false,
+        defaultLanguage: settings.defaultLanguage || 'en',
         excludedUrlRules: (settings.excludedUrlRules as UrlRule[]) || [],
         intakeObjectives: effectiveObjectives,
       });
@@ -1394,6 +1536,60 @@ Sitemap: ${canonicalUrl}/sitemap.xml
     }
   });
 
+  app.get('/api/chat/response-time', requireAdmin, async (_req, res) => {
+    try {
+      const conversations = await storage.listConversations();
+      let totalMs = 0;
+      let samples = 0;
+
+      for (const conversation of conversations) {
+        const messages = await storage.getConversationMessages(conversation.id);
+        for (let i = 0; i < messages.length; i++) {
+          const msg = messages[i];
+          if (msg.role !== 'visitor') continue;
+          const nextAssistant = messages.slice(i + 1).find((m) => m.role === 'assistant');
+          if (!nextAssistant) continue;
+          const start = new Date(msg.createdAt).getTime();
+          const end = new Date(nextAssistant.createdAt).getTime();
+          if (!Number.isFinite(start) || !Number.isFinite(end)) continue;
+          if (end < start) continue;
+          totalMs += end - start;
+          samples += 1;
+        }
+      }
+
+      const avgSeconds = samples ? Math.round(totalMs / samples / 1000) : 0;
+      const minutes = Math.floor(avgSeconds / 60);
+      const seconds = avgSeconds % 60;
+      const formatted = samples
+        ? minutes > 0
+          ? `${minutes}m ${seconds}s`
+          : `${seconds}s`
+        : 'No responses yet';
+
+      const chatSettings = await storage.getChatSettings();
+      if (chatSettings.lowPerformanceSmsEnabled && samples > 0) {
+        const threshold = chatSettings.lowPerformanceThresholdSeconds || 300;
+        const cooldownMs = 6 * 60 * 60 * 1000;
+        const now = Date.now();
+        const canAlert = !lastLowPerformanceAlertAt || now - lastLowPerformanceAlertAt > cooldownMs;
+        if (avgSeconds >= threshold && canAlert) {
+          const twilioSettings = await storage.getTwilioSettings();
+          if (twilioSettings) {
+            const result = await sendLowPerformanceAlert(twilioSettings, avgSeconds, samples);
+            if (result.success) {
+              lastLowPerformanceAlertAt = now;
+            }
+          }
+        }
+      }
+
+      res.json({ averageSeconds: avgSeconds, formatted, samples });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
   app.put('/api/chat/settings', requireAdmin, async (req, res) => {
     try {
       const payload = insertChatSettingsSchema
@@ -1406,6 +1602,18 @@ Sitemap: ${canonicalUrl}/sitemap.xml
             description: z.string(),
             enabled: z.boolean()
           })).optional(),
+          useKnowledgeBase: z.boolean().optional(),
+          useFaqs: z.boolean().optional(),
+          calendarProvider: z.string().optional(),
+          calendarId: z.string().optional(),
+          calendarStaff: z.array(z.object({
+            name: z.string(),
+            calendarId: z.string(),
+          })).optional(),
+          languageSelectorEnabled: z.boolean().optional(),
+          defaultLanguage: z.string().optional(),
+          lowPerformanceSmsEnabled: z.boolean().optional(),
+          lowPerformanceThresholdSeconds: z.number().int().positive().optional(),
         })
         .parse(req.body);
       const updated = await storage.updateChatSettings(payload);
@@ -1572,6 +1780,7 @@ Sitemap: ${canonicalUrl}/sitemap.xml
           pageUrl: input.pageUrl,
           userAgent: input.userAgent,
           visitorId: input.visitorId,
+          language: input.language,
         },
       });
 
@@ -1587,6 +1796,14 @@ Sitemap: ${canonicalUrl}/sitemap.xml
       const objectivesText = enabledObjectives.length
         ? `Collect info in this order: ${enabledObjectives.map((o, idx) => `${idx + 1}) ${o.label}`).join('; ')}. Only ask enabled items and avoid repeating already provided details.`
         : 'Collect booking details efficiently and avoid repeating questions.';
+      const allowKnowledgeBase = settings.useKnowledgeBase !== false;
+      const allowFaqs = settings.useFaqs !== false;
+      const sourceRules = `SOURCES:
+- Knowledge base is ${allowKnowledgeBase ? 'enabled' : 'disabled'}. ${allowKnowledgeBase ? 'Use search_knowledge_base for company-specific policies, prep instructions, service coverage, and internal knowledge.' : 'Do not call search_knowledge_base.'}
+- FAQs are ${allowFaqs ? 'enabled' : 'disabled'}. ${allowFaqs ? 'If the knowledge base has no relevant info, use search_faqs for general policies, process, products, guarantees, cancellation, payment methods, and common questions.' : 'Do not call search_faqs.'}`;
+      const languageInstruction = input.language
+        ? `LANGUAGE:\n- Respond in ${input.language}.`
+        : '';
 
       const defaultSystemPrompt = `You are a friendly, efficient cleaning service assistant for ${company?.companyName || 'Skleanings'}. Balance being consultative with being efficient - don't over-ask.
 
@@ -1606,11 +1823,20 @@ SMART QUALIFICATION:
 
 4. After suggesting service, ask if they want to book - don't ask more questions
 
+QUALIFICATION GUARDRAILS:
+- Ask only for the minimum info needed to identify the correct service (type + size/room). One question at a time.
+- If the user already gave the detail, do NOT ask again. Move to the next missing item.
+- Never ask for address, email, or phone until they agree to book.
+- If they mention multiple services, pick the primary one and confirm in one sentence.
+- If the request is unclear, ask a single clarifying question then proceed.
+
 NATURAL INFO COLLECTION:
 - After they agree to book, collect info smoothly:
   "Great! What's your name?" → "Email?" → "Phone?" → "Full address?"
 - Use update_contact immediately when you get name/email/phone
 - Keep it fast - one question per message
+- Intake flow order is mandatory: only ask the next missing item from the configured intake objectives.
+- Never skip ahead or reorder intake questions. If the user already provided an item, mark it as done and move to the next.
 
 BOOKING FLOW:
 - Confirm timezone (America/New_York)
@@ -1618,6 +1844,13 @@ BOOKING FLOW:
 - Show 3-5 slots within 14 days
 - After they pick a time and provide address, create booking immediately
 - Don't ask "are you sure?" - just confirm after booking is done
+- Booking must be completed inside chat using create_booking once all required fields are collected.
+- Required fields for create_booking: service_id(s), booking_date, start_time, customer_name, customer_email, customer_phone, customer_address.
+- If availability changes, propose the next 3-5 slots and continue.
+
+SOURCES:
+- Knowledge base is enabled. Use search_knowledge_base for company-specific policies, prep instructions, service coverage, and internal knowledge.
+- FAQs are enabled. If the knowledge base has no relevant info, use search_faqs for general policies, process, products, guarantees, cancellation, payment methods, and common questions.
 
 TOOLS:
 - list_services: As soon as you know what they need
@@ -1626,13 +1859,22 @@ TOOLS:
 - update_contact: When you get name/email/phone
 - create_booking: After slot selection and all required info collected
 - get_business_policies: Check minimums only if needed
+- search_knowledge_base: Use for company-specific policies, prep instructions, service coverage, or internal knowledge.
+- search_faqs: Use when customer asks about general policies, process, products, guarantees, cancellation, payment methods, or common questions. Search with keywords or get all FAQs.
 
 RULES:
 - Never guess prices/availability
 - Never invent slots
-- Keep responses 2-3 sentences max
+- Keep responses 1-2 sentences max
 - Use markdown for emphasis: **bold** for prices and service names
 - Complete bookings in chat
+- When asked about policies, products, process, or general questions, ALWAYS use search_knowledge_base first before answering (if enabled).
+- If no relevant knowledge base docs are found and FAQs are enabled, use search_faqs next.
+- If a knowledge base doc or FAQ provides the answer, use it. Never make up policy information.
+- If knowledge base or FAQs are disabled in settings, do not call those tools.
+- If a source is enabled in the chat settings, you MUST use it to answer relevant questions by reading its content first.
+- If GoHighLevel is enabled, contacts and appointments must be created; if any tool returns an error, ask the user to retry.
+- Be direct: lead with the answer and avoid filler phrases.
 
 EFFICIENT EXAMPLES:
 
@@ -1663,6 +1905,11 @@ You: "Thanks John! What's your email?"
           role: 'system',
           content: systemPrompt,
         },
+        {
+          role: 'system',
+          content: sourceRules,
+        },
+        ...(languageInstruction ? [{ role: 'system', content: languageInstruction } as const] : []),
         {
           role: 'system',
           content: objectivesText,
@@ -1700,7 +1947,10 @@ You: "Thanks John! What's your email?"
             } catch {
               args = {};
             }
-            const toolResult = await runChatTool(call.function.name, args, conversationId);
+            const toolResult = await runChatTool(call.function.name, args, conversationId, {
+              allowFaqs,
+              allowKnowledgeBase,
+            });
 
             // Track lead capture (first time contact info is saved)
             if (call.function.name === 'update_contact' && toolResult.success) {
@@ -2215,6 +2465,84 @@ You: "Thanks John! What's your email?"
     }
   });
 
+  app.delete('/api/blog/tags/:tag', requireAdmin, async (req, res) => {
+    try {
+      const rawTag = decodeURIComponent(req.params.tag || '').trim();
+      if (!rawTag) {
+        return res.status(400).json({ message: 'Tag is required' });
+      }
+      const posts = await storage.getBlogPosts();
+      const target = rawTag.toLowerCase();
+      let updatedCount = 0;
+      for (const post of posts) {
+        const tags = (post.tags || '')
+          .split(',')
+          .map(tag => tag.trim())
+          .filter(Boolean);
+        if (!tags.length) continue;
+        const filtered = tags.filter(tag => tag.toLowerCase() !== target);
+        if (filtered.length !== tags.length) {
+          await storage.updateBlogPost(post.id, { tags: filtered.join(',') });
+          updatedCount += 1;
+        }
+      }
+      res.json({ success: true, tag: rawTag, updatedCount });
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.put('/api/blog/tags/:tag', requireAdmin, async (req, res) => {
+    try {
+      const rawTag = decodeURIComponent(req.params.tag || '').trim();
+      const nextTag = String(req.body?.name || '').trim();
+      if (!rawTag || !nextTag) {
+        return res.status(400).json({ message: 'Tag and new name are required' });
+      }
+      const fromLower = rawTag.toLowerCase();
+      const toLower = nextTag.toLowerCase();
+      const posts = await storage.getBlogPosts();
+      let updatedCount = 0;
+
+      for (const post of posts) {
+        const tags = (post.tags || '')
+          .split(',')
+          .map(tag => tag.trim())
+          .filter(Boolean);
+        if (!tags.length) continue;
+
+        const seen = new Set<string>();
+        let changed = false;
+        const nextTags: string[] = [];
+
+        for (const tag of tags) {
+          const lower = tag.toLowerCase();
+          if (lower === fromLower) {
+            changed = true;
+            if (!seen.has(toLower)) {
+              seen.add(toLower);
+              nextTags.push(nextTag);
+            }
+            continue;
+          }
+          if (!seen.has(lower)) {
+            seen.add(lower);
+            nextTags.push(tag);
+          }
+        }
+
+        if (changed) {
+          await storage.updateBlogPost(post.id, { tags: nextTags.join(',') });
+          updatedCount += 1;
+        }
+      }
+
+      res.json({ success: true, tag: rawTag, renamedTo: nextTag, updatedCount });
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
   app.get('/api/blog/:idOrSlug', async (req, res) => {
     try {
       const param = req.params.idOrSlug;
@@ -2286,6 +2614,139 @@ You: "Thanks John! What's your email?"
       res.json({ success: true });
     } catch (err) {
       res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  // Knowledge Base (admin CRUD)
+  app.get('/api/knowledge-base/categories', requireAdmin, async (req, res) => {
+    try {
+      const categories = await storage.getKnowledgeBaseCategories();
+      res.json(categories);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.get('/api/knowledge-base/categories/:id', requireAdmin, async (req, res) => {
+    try {
+      const category = await storage.getKnowledgeBaseCategory(Number(req.params.id));
+      if (!category) {
+        return res.status(404).json({ message: 'Category not found' });
+      }
+      res.json(category);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.post('/api/knowledge-base/categories', requireAdmin, async (req, res) => {
+    try {
+      const validatedData = insertKnowledgeBaseCategorySchema.parse(req.body);
+      const category = await storage.createKnowledgeBaseCategory(validatedData);
+      res.status(201).json(category);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.put('/api/knowledge-base/categories/:id', requireAdmin, async (req, res) => {
+    try {
+      const validatedData = insertKnowledgeBaseCategorySchema.partial().parse(req.body);
+      const category = await storage.updateKnowledgeBaseCategory(Number(req.params.id), validatedData);
+      res.json(category);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.delete('/api/knowledge-base/categories/:id', requireAdmin, async (req, res) => {
+    try {
+      await storage.deleteKnowledgeBaseCategory(Number(req.params.id));
+      res.json({ success: true });
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.get('/api/knowledge-base/articles', requireAdmin, async (req, res) => {
+    try {
+      const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
+      const articles = await storage.getKnowledgeBaseArticles(categoryId);
+      res.json(articles);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.get('/api/knowledge-base/articles/:id', requireAdmin, async (req, res) => {
+    try {
+      const article = await storage.getKnowledgeBaseArticle(Number(req.params.id));
+      if (!article) {
+        return res.status(404).json({ message: 'Article not found' });
+      }
+      res.json(article);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.post('/api/knowledge-base/articles', requireAdmin, async (req, res) => {
+    try {
+      const validatedData = insertKnowledgeBaseArticleSchema.parse(req.body);
+      const article = await storage.createKnowledgeBaseArticle(validatedData);
+      res.status(201).json(article);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.put('/api/knowledge-base/articles/:id', requireAdmin, async (req, res) => {
+    try {
+      const validatedData = insertKnowledgeBaseArticleSchema.partial().parse(req.body);
+      const article = await storage.updateKnowledgeBaseArticle(Number(req.params.id), validatedData);
+      res.json(article);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.delete('/api/knowledge-base/articles/:id', requireAdmin, async (req, res) => {
+    try {
+      await storage.deleteKnowledgeBaseArticle(Number(req.params.id));
+      res.json({ success: true });
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.post('/api/knowledge-base/categories/:id/link-assistant', requireAdmin, async (req, res) => {
+    try {
+      const { isLinked } = req.body;
+      await storage.toggleKnowledgeBaseCategoryAssistantLink(Number(req.params.id), isLinked);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.get('/api/knowledge-base/categories/:id/link-assistant', requireAdmin, async (req, res) => {
+    try {
+      const isLinked = await storage.getKnowledgeBaseCategoryAssistantLink(Number(req.params.id));
+      res.json({ isLinked });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
     }
   });
 

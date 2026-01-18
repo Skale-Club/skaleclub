@@ -31,3 +31,39 @@ export async function sendNewChatNotification(
     return { success: false, message: error?.message || 'Unknown error' };
   }
 }
+
+export async function sendLowPerformanceAlert(
+  twilioSettings: TwilioSettings,
+  avgSeconds: number,
+  samples: number
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    if (!twilioSettings.enabled) {
+      return { success: false, message: 'Twilio notifications are disabled' };
+    }
+
+    if (!twilioSettings.accountSid || !twilioSettings.authToken || !twilioSettings.fromPhoneNumber || !twilioSettings.toPhoneNumber) {
+      return { success: false, message: 'Twilio settings are incomplete' };
+    }
+
+    const minutes = Math.floor(avgSeconds / 60);
+    const seconds = avgSeconds % 60;
+    const formatted = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+
+    const twilio = await import('twilio');
+    const client = twilio.default(twilioSettings.accountSid, twilioSettings.authToken);
+
+    const message = `⚠️ Chat response time alert\n\nAverage: ${formatted}\nSamples: ${samples}`;
+
+    await client.messages.create({
+      body: message,
+      from: twilioSettings.fromPhoneNumber,
+      to: twilioSettings.toPhoneNumber
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Failed to send Twilio alert:', error);
+    return { success: false, message: error?.message || 'Unknown error' };
+  }
+}

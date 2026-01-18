@@ -205,7 +205,7 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 flex-wrap">
                 <Link href="/services" className="w-full sm:w-auto shrink-0">
                   <button
-                    className="w-full px-6 sm:px-8 py-3 sm:py-4 bg-[#FFFF01] hover:bg-[#e6e600] text-black font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
+                    className="w-full px-6 sm:px-8 py-3 sm:py-4 bg-[#FFFF01] hover:bg-[#e6e600] hover:scale-105 text-black font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
                     onClick={() => trackCTAClick('hero', companySettings?.ctaText || 'Get Instant Price')}
                     data-testid="button-hero-cta"
                   >
@@ -214,7 +214,7 @@ export default function Home() {
                 </Link>
                 <a
                   href={`tel:${telPhone}`}
-                  className="w-full sm:w-auto shrink-0 px-6 sm:px-8 py-3 sm:py-4 bg-transparent text-white font-bold rounded-full border border-white/30 hover:bg-white/10 transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
+                  className="w-full sm:w-auto shrink-0 px-6 sm:px-8 py-3 sm:py-4 bg-transparent text-white font-bold rounded-full border border-white/30 hover:bg-white/10 hover:scale-105 transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
                   onClick={() => trackCTAClick('hero', 'phone_call')}
                   data-testid="button-hero-phone"
                 >

@@ -35,6 +35,8 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Calendar as CalendarPicker } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Sidebar, 
@@ -50,22 +52,22 @@ import {
   SidebarTrigger,
   useSidebar
 } from '@/components/ui/sidebar';
-import { 
-  Loader2, 
-  Plus, 
-  Pencil, 
-  Trash2, 
-  LogOut, 
-  FolderOpen, 
-  Package, 
-  Calendar, 
-  Clock, 
-  DollarSign, 
-  User, 
-  MapPin, 
-  Image, 
-  LayoutDashboard, 
-  Building2, 
+import {
+  Loader2,
+  Plus,
+  Pencil,
+  Trash2,
+  LogOut,
+  FolderOpen,
+  Package,
+  Calendar,
+  Clock,
+  DollarSign,
+  User,
+  MapPin,
+  Image,
+  LayoutDashboard,
+  Building2,
   GripVertical,
   ArrowLeft,
   Check,
@@ -77,6 +79,9 @@ import {
   LayoutGrid,
   List,
   MessageSquare,
+  Archive,
+  RotateCcw,
+  Tag,
   Star,
   Shield,
   Sparkles,
@@ -85,17 +90,20 @@ import {
   ThumbsUp,
   Trophy,
   Moon,
-  Sun
+  Sun,
+  BookOpen
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useTheme } from '@/context/ThemeContext';
 import type { Category, Service, Booking, Subcategory, Faq, BlogPost, HomepageContent } from '@shared/schema';
-import { HelpCircle, FileText, AlertCircle } from 'lucide-react';
+import { HelpCircle, FileText, AlertCircle, ExternalLink } from 'lucide-react';
 import heroImage from '@assets/Persona-Mobile_1767749022412.png';
+import ghlLogo from '@assets/ghl-logo.webp';
+import { SiFacebook, SiGoogleanalytics, SiGoogletagmanager, SiOpenai, SiTwilio } from 'react-icons/si';
 
-type AdminSection = 'dashboard' | 'categories' | 'services' | 'bookings' | 'hero' | 'company' | 'seo' | 'faqs' | 'users' | 'availability' | 'chat' | 'integrations' | 'blog';
+type AdminSection = 'dashboard' | 'categories' | 'services' | 'bookings' | 'hero' | 'company' | 'seo' | 'faqs' | 'users' | 'availability' | 'chat' | 'integrations' | 'blog' | 'knowledge-base';
 
 const menuItems = [
   { id: 'dashboard' as AdminSection, title: 'Dashboard', icon: LayoutDashboard },
@@ -106,6 +114,7 @@ const menuItems = [
   { id: 'bookings' as AdminSection, title: 'Bookings', icon: Calendar },
   { id: 'availability' as AdminSection, title: 'Availability', icon: Clock },
   { id: 'chat' as AdminSection, title: 'Chat', icon: MessageSquare },
+  { id: 'knowledge-base' as AdminSection, title: 'Knowledge Base', icon: BookOpen },
   { id: 'faqs' as AdminSection, title: 'FAQs', icon: HelpCircle },
   { id: 'users' as AdminSection, title: 'Users', icon: Users },
   { id: 'blog' as AdminSection, title: 'Blog', icon: FileText },
@@ -128,6 +137,7 @@ function AdminContent() {
   const { isAdmin, email, firstName, lastName, loading, signOut } = useAdminAuth();
   const [, setLocation] = useLocation();
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
+  const [blogResetSignal, setBlogResetSignal] = useState(0);
   const [sectionsOrder, setSectionsOrder] = useState<AdminSection[]>(menuItems.map(item => item.id));
   const { toggleSidebar } = useSidebar();
   const sidebarSensors = useSensors(
@@ -156,6 +166,18 @@ function AdminContent() {
       });
     }
   }, [toast]);
+
+  const handleSectionSelect = useCallback((section: AdminSection) => {
+    if (section === 'blog') {
+      if (activeSection === 'blog') {
+        setBlogResetSignal(prev => prev + 1);
+      } else {
+        setActiveSection(section);
+      }
+      return;
+    }
+    setActiveSection(section);
+  }, [activeSection]);
 
   const handleSidebarDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -203,7 +225,7 @@ function AdminContent() {
   };
 
   return (
-    <div className="flex h-screen w-full bg-background relative overflow-x-hidden">
+    <div className="flex min-h-screen md:h-screen w-full bg-background relative overflow-x-hidden">
       <Sidebar className="border-r border-sidebar-border bg-sidebar">
         <SidebarHeader className="p-4 border-b border-sidebar-border bg-sidebar">
           <div className="flex flex-col gap-4">
@@ -248,7 +270,7 @@ function AdminContent() {
                           key={item.id}
                           item={item}
                           isActive={activeSection === item.id}
-                          onSelect={() => setActiveSection(item.id)}
+                          onSelect={() => handleSectionSelect(item.id)}
                         />
                       );
                     })}
@@ -281,7 +303,7 @@ function AdminContent() {
         </SidebarFooter>
       </Sidebar>
 
-        <main className="flex-1 min-w-0 overflow-auto relative bg-background" id="admin-top">
+      <main className="flex-1 min-w-0 relative bg-background overflow-visible md:overflow-auto md:h-screen" id="admin-top">
         <header className="md:hidden sticky top-0 z-50 bg-card border-b border-border p-4 flex items-center gap-4">
           <SidebarTrigger className="bg-card shadow-sm border border-border rounded-lg p-2 h-10 w-10 shrink-0" />
           <button
@@ -292,18 +314,18 @@ function AdminContent() {
             {companySettings?.companyName || 'Skleanings'}
           </button>
         </header>
-      <div className="p-6 md:p-8">
-        {activeSection === 'dashboard' && (
-          <DashboardSection 
-            goToBookings={() => {
-              if (!sectionsOrder.includes('bookings')) {
-                setSectionsOrder(prev => [...prev, 'bookings']);
-              }
-              setActiveSection('bookings');
-              document.getElementById('admin-top')?.scrollIntoView({ behavior: 'smooth' });
-            }}
-          />
-        )}
+        <div className="p-6 pb-16 md:p-8 md:pb-10">
+          {activeSection === 'dashboard' && (
+            <DashboardSection 
+              goToBookings={() => {
+                if (!sectionsOrder.includes('bookings')) {
+                  setSectionsOrder(prev => [...prev, 'bookings']);
+                }
+                setActiveSection('bookings');
+                document.getElementById('admin-top')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            />
+          )}
           {activeSection === 'categories' && <CategoriesSection />}
           {activeSection === 'services' && <ServicesSection />}
           {activeSection === 'bookings' && <BookingsSection />}
@@ -319,8 +341,9 @@ function AdminContent() {
           )}
           {activeSection === 'availability' && <AvailabilitySection />}
           {activeSection === 'chat' && <ChatSection />}
+          {activeSection === 'knowledge-base' && <KnowledgeBaseSection />}
           {activeSection === 'integrations' && <IntegrationsSection />}
-          {activeSection === 'blog' && <BlogSection />}
+          {activeSection === 'blog' && <BlogSection resetSignal={blogResetSignal} />}
         </div>
       </main>
     </div>
@@ -410,8 +433,11 @@ function DashboardSection({ goToBookings }: { goToBookings: () => void }) {
                         {booking.status}
                       </Badge>
                       <Badge
-                        variant={booking.paymentStatus === 'paid' ? 'success' : 'warning'}
-                        className="text-xs font-semibold leading-5 px-3 py-1 min-w-[88px] justify-center"
+                        className={`text-xs font-semibold leading-5 px-3 py-1 min-w-[88px] justify-center border ${
+                          booking.paymentStatus === 'paid'
+                            ? 'border-primary/30 bg-primary/10 text-primary dark:border-primary/40 dark:bg-primary/20'
+                            : 'border-border bg-muted text-muted-foreground'
+                        }`}
                       >
                         {booking.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
                       </Badge>
@@ -3925,19 +3951,19 @@ function BookingRow({ booking, onUpdate, onDelete }: {
               <SelectContent>
                 <SelectItem value="confirmed">
                   <span className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-blue-200 border border-blue-300" />
+                    <span className="w-2.5 h-2.5 rounded-full border border-primary/40 bg-primary/15" />
                     Confirmed
                   </span>
                 </SelectItem>
                 <SelectItem value="completed">
                   <span className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-green-200 border border-green-300" />
+                    <span className="w-2.5 h-2.5 rounded-full border border-secondary/70 bg-secondary/40" />
                     Completed
                   </span>
                 </SelectItem>
                 <SelectItem value="cancelled">
                   <span className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-red-200 border border-red-300" />
+                    <span className="w-2.5 h-2.5 rounded-full border border-destructive/40 bg-destructive/15" />
                     Cancelled
                   </span>
                 </SelectItem>
@@ -3953,13 +3979,13 @@ function BookingRow({ booking, onUpdate, onDelete }: {
             <SelectContent>
               <SelectItem value="paid">
                 <span className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-green-200 border border-green-300" />
+                  <span className="w-2.5 h-2.5 rounded-full border border-primary/40 bg-primary/15" />
                   Paid
                 </span>
               </SelectItem>
               <SelectItem value="unpaid">
                 <span className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-yellow-200 border border-yellow-300" />
+                  <span className="w-2.5 h-2.5 rounded-full border border-muted-foreground/30 bg-muted-foreground/15" />
                   Unpaid
                 </span>
               </SelectItem>
@@ -4214,7 +4240,7 @@ function BookingsSection() {
           <h1 className="text-2xl font-bold">Bookings</h1>
           <p className="text-muted-foreground">Manage all customer bookings</p>
         </div>
-        <Badge variant="secondary" className="text-lg px-4 py-2 border-0 bg-muted">
+        <Badge variant="secondary" className="text-lg px-4 py-2 border-0 bg-muted dark:text-white">
           {bookings?.length || 0} Total
         </Badge>
       </div>
@@ -4591,8 +4617,18 @@ interface ChatSettingsData {
   agentAvatarUrl?: string;
   systemPrompt?: string;
   welcomeMessage: string;
+  avgResponseTime?: string;
+  calendarProvider?: string;
+  calendarId?: string;
+  calendarStaff?: { name: string; calendarId: string }[];
+  languageSelectorEnabled?: boolean;
+  defaultLanguage?: string;
+  lowPerformanceSmsEnabled?: boolean;
+  lowPerformanceThresholdSeconds?: number;
   intakeObjectives?: IntakeObjective[];
   excludedUrlRules: UrlRule[];
+  useKnowledgeBase?: boolean;
+  useFaqs?: boolean;
 }
 
 interface ConversationSummary {
@@ -4627,16 +4663,29 @@ function ChatSection() {
     agentAvatarUrl: '',
     systemPrompt: '',
     welcomeMessage: 'Hi! How can I help you today?',
+    avgResponseTime: '',
+    calendarProvider: 'gohighlevel',
+    calendarId: '',
+    calendarStaff: [],
+    languageSelectorEnabled: false,
+    defaultLanguage: 'en',
+    lowPerformanceSmsEnabled: false,
+    lowPerformanceThresholdSeconds: 300,
     intakeObjectives: [],
     excludedUrlRules: [],
+    useKnowledgeBase: true,
+    useFaqs: true,
   });
   const [selectedConversation, setSelectedConversation] = useState<ConversationSummary | null>(null);
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isMessagesLoading, setIsMessagesLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [kbDriveLink, setKbDriveLink] = useState('');
+  const [isKbUploading, setIsKbUploading] = useState(false);
   const objectivesSensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -4645,7 +4694,27 @@ function ChatSection() {
   );
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const avatarFileInputRef = useRef<HTMLInputElement | null>(null);
+  const kbFileInputRef = useRef<HTMLInputElement | null>(null);
   const [statusFilter, setStatusFilter] = useState<'open' | 'closed' | 'all'>('open');
+  const [pageSize, setPageSize] = useState<10 | 20 | 50>(10);
+  const [pageIndex, setPageIndex] = useState(0);
+  const [kbSelectedCategoryId, setKbSelectedCategoryId] = useState<number | null>(null);
+  const [isKbCategoryDialogOpen, setIsKbCategoryDialogOpen] = useState(false);
+  const [isKbDocumentDialogOpen, setIsKbDocumentDialogOpen] = useState(false);
+  const [kbCategoryFormData, setKbCategoryFormData] = useState({
+    name: '',
+    slug: '',
+    description: '',
+    icon: 'BookOpen',
+    order: 0,
+  });
+  const [kbDocumentFormData, setKbDocumentFormData] = useState({
+    categoryId: 0,
+    title: '',
+    content: '',
+    order: 0,
+    isActive: true,
+  });
 
   const { data: settings, isLoading: loadingSettings } = useQuery<ChatSettingsData>({
     queryKey: ['/api/chat/settings'],
@@ -4677,11 +4746,20 @@ SMART QUALIFICATION:
 
 4. After suggesting service, ask if they want to book - don't ask more questions
 
+QUALIFICATION GUARDRAILS:
+- Ask only for the minimum info needed to identify the correct service (type + size/room). One question at a time.
+- If the user already gave the detail, do NOT ask again. Move to the next missing item.
+- Never ask for address, email, or phone until they agree to book.
+- If they mention multiple services, pick the primary one and confirm in one sentence.
+- If the request is unclear, ask a single clarifying question then proceed.
+
 NATURAL INFO COLLECTION:
 - After they agree to book, collect info smoothly:
   "Great! What's your name?" → "Email?" → "Phone?" → "Full address?"
 - Use update_contact immediately when you get name/email/phone
 - Keep it fast - one question per message
+- Intake flow order is mandatory: only ask the next missing item from the configured intake objectives.
+- Never skip ahead or reorder intake questions. If the user already provided an item, mark it as done and move to the next.
 
 BOOKING FLOW:
 - Confirm timezone (America/New_York)
@@ -4689,6 +4767,13 @@ BOOKING FLOW:
 - Show 3-5 slots within 14 days
 - After they pick a time and provide address, create booking immediately
 - Don't ask "are you sure?" - just confirm after booking is done
+- Booking must be completed inside chat using create_booking once all required fields are collected.
+- Required fields for create_booking: service_id(s), booking_date, start_time, customer_name, customer_email, customer_phone, customer_address.
+- If availability changes, propose the next 3-5 slots and continue.
+
+SOURCES:
+- Knowledge base is enabled. Use search_knowledge_base for company-specific policies, prep instructions, service coverage, and internal knowledge.
+- FAQs are enabled. If the knowledge base has no relevant info, use search_faqs for general policies, process, products, guarantees, cancellation, payment methods, and common questions.
 
 TOOLS:
 - list_services: As soon as you know what they need
@@ -4697,13 +4782,22 @@ TOOLS:
 - update_contact: When you get name/email/phone
 - create_booking: After slot selection and all required info collected
 - get_business_policies: Check minimums only if needed
+- search_knowledge_base: Use for company-specific policies, prep instructions, service coverage, or internal knowledge.
+- search_faqs: Use when customer asks about general policies, process, products, guarantees, cancellation, payment methods, or common questions.
 
 RULES:
 - Never guess prices/availability
 - Never invent slots
-- Keep responses 2-3 sentences max
+- Keep responses 1-2 sentences max
 - Use markdown for emphasis: **bold** for prices and service names
 - Complete bookings in chat
+- When asked about policies, products, process, or general questions, ALWAYS use search_knowledge_base first before answering (if enabled).
+- If no relevant knowledge base docs are found and FAQs are enabled, use search_faqs next.
+- If a knowledge base doc or FAQ provides the answer, use it. Never make up policy information.
+- If knowledge base or FAQs are disabled in settings, do not call those tools.
+- If a source is enabled in the chat settings, you MUST use it to answer relevant questions by reading its content first.
+- If GoHighLevel is enabled, contacts and appointments must be created; if any tool returns an error, ask the user to retry.
+- Be direct: lead with the answer and avoid filler phrases.
 
 EFFICIENT EXAMPLES:
 
@@ -4739,6 +4833,53 @@ You: "Thanks John! What's your email?"
     queryKey: ['/api/integrations/openai'],
   });
 
+  const { data: responseTimeData, isLoading: responseTimeLoading } = useQuery<{
+    averageSeconds: number;
+    formatted: string;
+    samples: number;
+  }>({
+    queryKey: ['/api/chat/response-time'],
+    queryFn: async () => {
+      const response = await fetch('/api/chat/response-time', { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch response time');
+      return response.json();
+    },
+  });
+
+  const { data: kbCategories, isLoading: kbCategoriesLoading } = useQuery({
+    queryKey: ['/api/knowledge-base/categories'],
+    queryFn: async () => {
+      const response = await fetch('/api/knowledge-base/categories');
+      if (!response.ok) throw new Error('Failed to fetch knowledge base categories');
+      return response.json();
+    },
+  });
+
+  const { data: kbArticles, isLoading: kbArticlesLoading } = useQuery({
+    queryKey: ['/api/knowledge-base/articles'],
+    queryFn: async () => {
+      const response = await fetch('/api/knowledge-base/articles');
+      if (!response.ok) throw new Error('Failed to fetch knowledge base articles');
+      return response.json();
+    },
+  });
+
+  const { data: kbAssistantLinks, isLoading: kbAssistantLinksLoading } = useQuery({
+    queryKey: ['/api/knowledge-base/assistant-links', kbCategories?.map((category: any) => category.id).join(',')],
+    enabled: !!kbCategories?.length,
+    queryFn: async () => {
+      const entries = await Promise.all(
+        (kbCategories || []).map(async (category: any) => {
+          const response = await fetch(`/api/knowledge-base/categories/${category.id}/link-assistant`);
+          if (!response.ok) throw new Error('Failed to fetch assistant link status');
+          const { isLinked } = await response.json();
+          return [category.id, isLinked] as const;
+        })
+      );
+      return Object.fromEntries(entries) as Record<number, boolean>;
+    },
+  });
+
   useEffect(() => {
     if (!settings && !companySettings) return;
 
@@ -4753,10 +4894,20 @@ You: "Thanks John! What's your email?"
         agentAvatarUrl: settings.agentAvatarUrl || defaultAvatar,
         systemPrompt: settings.systemPrompt || defaultSystemPrompt,
         welcomeMessage: settings.welcomeMessage || 'Hi! How can I help you today?',
+        avgResponseTime: settings.avgResponseTime || '',
+        calendarProvider: settings.calendarProvider || 'gohighlevel',
+        calendarId: settings.calendarId || '',
+        calendarStaff: settings.calendarStaff || [],
+        languageSelectorEnabled: settings.languageSelectorEnabled ?? false,
+        defaultLanguage: settings.defaultLanguage || 'en',
+        lowPerformanceSmsEnabled: settings.lowPerformanceSmsEnabled ?? false,
+        lowPerformanceThresholdSeconds: settings.lowPerformanceThresholdSeconds ?? 300,
         intakeObjectives: settings.intakeObjectives && settings.intakeObjectives.length > 0
           ? settings.intakeObjectives
           : DEFAULT_CHAT_OBJECTIVES,
         excludedUrlRules: settings.excludedUrlRules || [],
+        useKnowledgeBase: settings.useKnowledgeBase ?? true,
+        useFaqs: settings.useFaqs ?? true,
       });
       return;
     }
@@ -4769,8 +4920,23 @@ You: "Thanks John! What's your email?"
       intakeObjectives: prev.intakeObjectives && prev.intakeObjectives.length > 0
         ? prev.intakeObjectives
         : DEFAULT_CHAT_OBJECTIVES,
+      avgResponseTime: prev.avgResponseTime || '',
+      calendarProvider: prev.calendarProvider || 'gohighlevel',
+      calendarId: prev.calendarId || '',
+      calendarStaff: prev.calendarStaff || [],
+      languageSelectorEnabled: prev.languageSelectorEnabled ?? false,
+      defaultLanguage: prev.defaultLanguage || 'en',
+      lowPerformanceSmsEnabled: prev.lowPerformanceSmsEnabled ?? false,
+      lowPerformanceThresholdSeconds: prev.lowPerformanceThresholdSeconds ?? 300,
+      useKnowledgeBase: prev.useKnowledgeBase ?? true,
+      useFaqs: prev.useFaqs ?? true,
     }));
   }, [settings, companySettings, defaultSystemPrompt]);
+
+  useEffect(() => {
+    if (kbSelectedCategoryId || !kbCategories?.length) return;
+    setKbSelectedCategoryId(kbCategories[0].id);
+  }, [kbCategories, kbSelectedCategoryId]);
 
   useEffect(() => {
     return () => {
@@ -4779,6 +4945,20 @@ You: "Thanks John! What's your email?"
       }
     };
   }, []);
+
+  const kbArticleCounts = useMemo(() => {
+    const counts: Record<number, number> = {};
+    (kbArticles || []).forEach((article: any) => {
+      counts[article.categoryId] = (counts[article.categoryId] || 0) + 1;
+    });
+    return counts;
+  }, [kbArticles]);
+
+  const visibleKbDocuments = useMemo(() => {
+    if (!kbArticles) return [];
+    if (!kbSelectedCategoryId) return kbArticles;
+    return kbArticles.filter((article: any) => article.categoryId === kbSelectedCategoryId);
+  }, [kbArticles, kbSelectedCategoryId]);
 
   const saveSettings = useCallback(async (dataToSave: Partial<ChatSettingsData>) => {
     setIsSaving(true);
@@ -4804,6 +4984,175 @@ You: "Thanks John! What's your email?"
       saveSettings({ [field]: value });
     }, 800);
   }, [saveSettings]);
+
+  const createKbCategoryMutation = useMutation({
+    mutationFn: async (data: typeof kbCategoryFormData) => {
+      const response = await apiRequest('POST', '/api/knowledge-base/categories', data);
+      return response.json();
+    },
+    onSuccess: (category: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/categories'] });
+      setKbSelectedCategoryId(category.id);
+      toast({ title: 'Category created' });
+      setIsKbCategoryDialogOpen(false);
+      setKbCategoryFormData({ name: '', slug: '', description: '', icon: 'BookOpen', order: 0 });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Failed to create category', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const createKbDocumentMutation = useMutation({
+    mutationFn: (data: typeof kbDocumentFormData) => apiRequest('POST', '/api/knowledge-base/articles', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/articles'] });
+      toast({ title: 'Document added' });
+      setIsKbDocumentDialogOpen(false);
+      setKbDocumentFormData({ categoryId: kbSelectedCategoryId || 0, title: '', content: '', order: 0, isActive: true });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Failed to add document', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const deleteKbCategoryMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/knowledge-base/categories/${id}`),
+    onSuccess: (_res, id) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/categories'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/articles'] });
+      if (kbSelectedCategoryId === id) {
+        setKbSelectedCategoryId(null);
+      }
+      toast({ title: 'Category deleted' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Failed to delete category', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const deleteKbDocumentMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/knowledge-base/articles/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/articles'] });
+      toast({ title: 'Document deleted' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Failed to delete document', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const toggleKbAssistantLinkMutation = useMutation({
+    mutationFn: ({ categoryId, isLinked }: { categoryId: number; isLinked: boolean }) =>
+      apiRequest('POST', `/api/knowledge-base/categories/${categoryId}/link-assistant`, { isLinked }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/assistant-links'] });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Failed to update chat link', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const generateKbSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim();
+  };
+
+  const handleKbCategoryNameChange = (value: string) => {
+    setKbCategoryFormData((prev) => ({
+      ...prev,
+      name: value,
+      slug: prev.slug || generateKbSlug(value),
+    }));
+  };
+
+  const openKbDocumentDialog = () => {
+    if (!kbCategories?.length) {
+      toast({ title: 'Create a category first', description: 'Add a category before adding documents.', variant: 'destructive' });
+      return;
+    }
+    const fallbackCategoryId = kbSelectedCategoryId || kbCategories[0].id;
+    setKbDocumentFormData((prev) => ({ ...prev, categoryId: fallbackCategoryId }));
+    setIsKbDocumentDialogOpen(true);
+  };
+
+  const addCalendarStaff = () => {
+    const next = [...(settingsDraft.calendarStaff || []), { name: '', calendarId: '' }];
+    updateField('calendarStaff', next);
+  };
+
+  const updateCalendarStaff = (index: number, field: 'name' | 'calendarId', value: string) => {
+    const next = [...(settingsDraft.calendarStaff || [])];
+    next[index] = { ...next[index], [field]: value };
+    updateField('calendarStaff', next);
+  };
+
+  const removeCalendarStaff = (index: number) => {
+    const next = (settingsDraft.calendarStaff || []).filter((_, i) => i !== index);
+    updateField('calendarStaff', next);
+  };
+
+  const handleKbFileAttach = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsKbUploading(true);
+    try {
+      const isTextFile = file.type.startsWith('text/')
+        || /\.(md|txt|csv|json)$/i.test(file.name);
+
+      if (isTextFile) {
+        const text = await file.text();
+        const snippet = `# Source: ${file.name}\n${text}`;
+        setKbDocumentFormData(prev => ({
+          ...prev,
+          content: prev.content ? `${prev.content}\n\n${snippet}` : snippet,
+        }));
+        toast({ title: 'File imported', description: `${file.name} added to the document.` });
+      } else {
+        const uploadRes = await apiRequest('POST', '/api/upload');
+        const { uploadURL, objectPath } = await uploadRes.json() as { uploadURL: string; objectPath: string };
+
+        await fetch(uploadURL, {
+          method: 'PUT',
+          body: file,
+          headers: { 'Content-Type': file.type },
+        });
+
+        const linkLine = `Attachment: ${objectPath}`;
+        setKbDocumentFormData(prev => ({
+          ...prev,
+          content: prev.content ? `${prev.content}\n\n${linkLine}` : linkLine,
+        }));
+        toast({ title: 'File attached', description: `${file.name} uploaded.` });
+      }
+    } catch (error: any) {
+      toast({ title: 'Attachment failed', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsKbUploading(false);
+      if (kbFileInputRef.current) {
+        kbFileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const attachKbDriveLink = () => {
+    const link = kbDriveLink.trim();
+    if (!link) {
+      toast({ title: 'Add a Drive link first', variant: 'destructive' });
+      return;
+    }
+    const line = `Drive link: ${link}`;
+    setKbDocumentFormData(prev => ({
+      ...prev,
+      content: prev.content ? `${prev.content}\n\n${line}` : line,
+    }));
+    setKbDriveLink('');
+    toast({ title: 'Drive link attached' });
+  };
 
   const handleToggleChat = async (checked: boolean) => {
     const previousValue = settingsDraft.enabled;
@@ -4940,8 +5289,8 @@ You: "Thanks John! What's your email?"
   const statusBadge = (status: string) => {
     const label = status === 'closed' ? 'Archived' : status === 'open' ? 'Open' : status;
     const badgeClass = status === 'open'
-      ? 'bg-blue-50 text-blue-600 border-2 border-blue-600 rounded-full px-3 py-1 text-xs font-bold dark:bg-blue-950 dark:text-blue-400 dark:border-blue-400'
-      : 'bg-slate-100 text-slate-600 border-2 border-slate-600 rounded-full px-3 py-1 text-xs font-bold dark:bg-slate-800 dark:text-slate-400 dark:border-slate-400';
+      ? 'bg-blue-500/10 text-blue-200 border border-blue-400/50 rounded-full px-3 py-1 text-xs font-semibold'
+      : 'bg-slate-700/40 text-slate-300 border border-slate-500/50 rounded-full px-3 py-1 text-xs font-semibold';
     return <span className={badgeClass}>{label}</span>;
   };
 
@@ -4957,6 +5306,29 @@ You: "Thanks John! What's your email?"
     if (statusFilter === 'all') return conversations;
     return conversations.filter((conv) => conv.status === statusFilter);
   }, [conversations, statusFilter]);
+  const totalConversations = visibleConversations.length;
+  const totalPages = Math.max(1, Math.ceil(totalConversations / pageSize));
+  const clampedPageIndex = Math.min(pageIndex, totalPages - 1);
+  const paginatedConversations = useMemo(() => {
+    const start = clampedPageIndex * pageSize;
+    return visibleConversations.slice(start, start + pageSize);
+  }, [visibleConversations, clampedPageIndex, pageSize]);
+
+  useEffect(() => {
+    setPageIndex(0);
+  }, [statusFilter, pageSize]);
+
+  useEffect(() => {
+    if (pageIndex !== clampedPageIndex) {
+      setPageIndex(clampedPageIndex);
+    }
+  }, [pageIndex, clampedPageIndex]);
+
+  useEffect(() => {
+    if (messages.length > 0 && !isMessagesLoading) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+    }
+  }, [messages, isMessagesLoading]);
 
   return (
     <div className="space-y-8">
@@ -4965,63 +5337,27 @@ You: "Thanks John! What's your email?"
         <p className="text-muted-foreground">Prioritize conversations, then open the settings drawer when needed.</p>
       </div>
 
-      <Card className="bg-gradient-to-r from-primary to-blue-600 dark:from-slate-700 dark:to-slate-600 text-white shadow-lg border-0">
-        <CardContent className="p-6">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-4">
-              <div className="h-14 w-14 rounded-full bg-white/20 border border-white/30 overflow-hidden flex items-center justify-center">
-                {assistantAvatar ? (
-                  <img src={assistantAvatar} alt={assistantName} className="h-full w-full object-cover" />
-                ) : (
-                  <MessageSquare className="w-5 h-5" />
-                )}
-              </div>
-              <div>
-                <p className="text-sm text-white/80">Assistant</p>
-                <p className="text-xl font-semibold leading-tight">{assistantName}</p>
-                <p className="text-xs text-white/80">
-                  Defaults to your company name and favicon. Customize in the settings submenu.
-                </p>
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-3 w-full lg:w-auto">
-              <div className="rounded-lg bg-white/10 px-4 py-3">
-                <p className="text-xs text-white/80">Open</p>
-                <p className="text-2xl font-semibold">{openConversations}</p>
-              </div>
-              <div className="rounded-lg bg-white/10 px-4 py-3">
-                <p className="text-xs text-white/80">Archived</p>
-                <p className="text-2xl font-semibold">{closedConversations}</p>
-              </div>
-              <div className="rounded-lg bg-white/10 px-4 py-3">
-                <p className="text-xs text-white/80">Total</p>
-                <p className="text-2xl font-semibold">{conversations?.length || 0}</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       <Card className="shadow-sm border-0 bg-muted dark:bg-slate-800/70">
         <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <CardTitle>Conversations</CardTitle>
             <p className="text-sm text-muted-foreground">Review and respond first, then open the settings submenu if needed.</p>
           </div>
-          <div className="flex items-center gap-2">
-            <Select
-              value={statusFilter}
-              onValueChange={(val) => setStatusFilter(val as 'open' | 'closed' | 'all')}
-            >
-              <SelectTrigger className="w-[120px] h-9 bg-card/70 border border-border/60 shadow-none focus-visible:ring-0 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="border-0 shadow-none bg-card/90 text-foreground">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Select
+                value={statusFilter}
+                onValueChange={(val) => setStatusFilter(val as 'open' | 'closed' | 'all')}
+              >
+                <SelectTrigger className="w-[120px] h-9 bg-card/70 border border-border/60 shadow-none focus-visible:ring-0 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+              <SelectContent className="border-0 shadow-none bg-card text-foreground">
                 <SelectItem value="open">Open</SelectItem>
                 <SelectItem value="closed">Archived</SelectItem>
                 <SelectItem value="all">All</SelectItem>
               </SelectContent>
-            </Select>
+              </Select>
             <Button
               variant="ghost"
               size="sm"
@@ -5032,7 +5368,22 @@ You: "Thanks John! What's your email?"
               {loadingConversations ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Refresh'}
             </Button>
             <div className="h-9 min-w-[110px] flex items-center justify-center bg-[#FFFF01] text-black font-bold rounded-md px-4 text-sm">
-              {visibleConversations.length} shown
+              {paginatedConversations.length} shown
+            </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-9 min-w-[72px] rounded-md border border-border/60 bg-card/80 px-3 flex items-center gap-2">
+                <p className="text-[11px] text-muted-foreground">Open</p>
+                <p className="text-sm font-semibold text-foreground">{openConversations}</p>
+              </div>
+              <div className="h-9 min-w-[72px] rounded-md border border-border/60 bg-card/80 px-3 flex items-center gap-2">
+                <p className="text-[11px] text-muted-foreground">Archived</p>
+                <p className="text-sm font-semibold text-foreground">{closedConversations}</p>
+              </div>
+              <div className="h-9 min-w-[72px] rounded-md border border-border/60 bg-card/80 px-3 flex items-center gap-2">
+                <p className="text-[11px] text-muted-foreground">Total</p>
+                <p className="text-sm font-semibold text-foreground">{conversations?.length || 0}</p>
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -5042,6 +5393,7 @@ You: "Thanks John! What's your email?"
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : conversations && conversations.length > 0 ? (
+            <>
             <div className="overflow-auto rounded-lg bg-muted dark:bg-slate-800/70">
               <table className="w-full text-sm">
                 <thead className="bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
@@ -5051,11 +5403,11 @@ You: "Thanks John! What's your email?"
                     <th className="px-4 py-3 text-left">Last Message</th>
                     <th className="px-4 py-3 text-left">Updated</th>
                     <th className="px-4 py-3 text-left">Status</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
+                    <th className="px-4 py-3 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-card/70 dark:bg-slate-800/60 divide-y divide-border/60 dark:divide-slate-700/60">
-                  {visibleConversations.map((conv) => (
+                  {paginatedConversations.map((conv) => (
                     <tr key={conv.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/50">
                       <td className="px-4 py-3">
                         <div className="font-medium">{conv.visitorName || 'Guest'}</div>
@@ -5072,20 +5424,84 @@ You: "Thanks John! What's your email?"
                         {conv.lastMessageAt ? format(new Date(conv.lastMessageAt), 'PP p') : format(new Date(conv.createdAt), 'PP p')}
                       </td>
                       <td className="px-4 py-3">{statusBadge(conv.status)}</td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center gap-2 justify-end">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-center gap-3">
                       <Button size="sm" variant="ghost" className="min-w-[88px] h-8 justify-center text-sm font-semibold border-0 bg-slate-600 hover:bg-slate-700 text-white dark:bg-slate-600 dark:hover:bg-slate-500 dark:text-white" onClick={() => openConversation(conv)}>
                         View
                       </Button>
-                      <Button
-                        size="icon"
-                            variant="ghost"
-                            className="text-red-500"
-                            onClick={() => deleteMutation.mutate(conv.id)}
-                            data-testid={`button-delete-conversation-${conv.id}`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                        <div className="flex items-center gap-1">
+                          {conv.status === 'open' ? (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-slate-100"
+                                  aria-label="Archive conversation"
+                                  data-testid={`button-archive-conversation-${conv.id}`}
+                                >
+                                  <Archive className="w-4 h-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Archive conversation?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This conversation will be moved to archived. You can reopen it later.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => statusMutation.mutate({ id: conv.id, status: 'closed' })}
+                                  >
+                                    Archive
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          ) : (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-slate-100"
+                              onClick={() => statusMutation.mutate({ id: conv.id, status: 'open' })}
+                              aria-label="Reopen conversation"
+                              data-testid={`button-reopen-conversation-${conv.id}`}
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                            </Button>
+                          )}
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="text-red-500"
+                                data-testid={`button-delete-conversation-${conv.id}`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This action cannot be undone. All messages in this conversation will be permanently deleted.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteMutation.mutate(conv.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                         </div>
                       </td>
                     </tr>
@@ -5093,6 +5509,50 @@ You: "Thanks John! What's your email?"
                 </tbody>
               </table>
             </div>
+            {totalConversations > 10 && (
+              <div className="mt-3 flex flex-col gap-3 border-t border-border/60 pt-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="text-xs text-muted-foreground">
+                  Page {clampedPageIndex + 1} of {totalPages}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-3"
+                    onClick={() => setPageIndex((prev) => Math.max(0, prev - 1))}
+                    disabled={clampedPageIndex === 0}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-3"
+                    onClick={() => setPageIndex((prev) => Math.min(totalPages - 1, prev + 1))}
+                    disabled={clampedPageIndex >= totalPages - 1}
+                  >
+                    Next
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Rows</span>
+                  <Select
+                    value={String(pageSize)}
+                    onValueChange={(value) => setPageSize(Number(value) as 10 | 20 | 50)}
+                  >
+                    <SelectTrigger className="h-8 w-[90px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="20">20</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+            </>
           ) : (
             <div className="p-8 text-center bg-card/80 dark:bg-slate-900/70 rounded-lg">
               <p className="text-muted-foreground">
@@ -5102,6 +5562,493 @@ You: "Thanks John! What's your email?"
               </p>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-sm border-0 bg-muted dark:bg-slate-800/70">
+        <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <CardTitle>Knowledge Base for Chat</CardTitle>
+            <p className="text-sm text-muted-foreground">Add documents and link categories so the assistant can answer with your content.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsKbCategoryDialogOpen(true)}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New Category
+            </Button>
+            <Button size="sm" onClick={openKbDocumentDialog}>
+              <Plus className="w-4 h-4 mr-2" />
+              New Document
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span
+              className={clsx(
+                'rounded-full px-2.5 py-1 font-semibold',
+                settingsDraft.enabled
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                  : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+              )}
+            >
+              Chat {settingsDraft.enabled ? 'enabled' : 'disabled'}
+            </span>
+            <span className="text-muted-foreground">
+              Link categories to make their documents available to the assistant.
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-3 rounded-lg border border-border/70 bg-card/70 px-3 py-2">
+              <div>
+                <p className="text-sm font-medium">Use knowledge base</p>
+                <p className="text-xs text-muted-foreground">Allow the assistant to read linked documents.</p>
+              </div>
+              <Switch
+                checked={settingsDraft.useKnowledgeBase ?? true}
+                onCheckedChange={(checked) => updateField('useKnowledgeBase', checked)}
+                data-testid="switch-chat-use-knowledge-base"
+              />
+            </div>
+            <div className="flex items-center gap-3 rounded-lg border border-border/70 bg-card/70 px-3 py-2">
+              <div>
+                <p className="text-sm font-medium">Use FAQs</p>
+                <p className="text-xs text-muted-foreground">Allow the assistant to read FAQ content.</p>
+              </div>
+              <Switch
+                checked={settingsDraft.useFaqs ?? true}
+                onCheckedChange={(checked) => updateField('useFaqs', checked)}
+                data-testid="switch-chat-use-faqs"
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold">Categories</p>
+                <span className="text-xs text-muted-foreground">
+                  {kbCategories?.length || 0} total
+                </span>
+              </div>
+              {kbCategoriesLoading ? (
+                <div className="flex justify-center py-6">
+                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                </div>
+              ) : kbCategories && kbCategories.length > 0 ? (
+                <div className="space-y-2">
+                  {kbCategories.map((category: any) => {
+                    const isLinked = !!kbAssistantLinks?.[category.id];
+                    return (
+                      <div
+                        key={category.id}
+                        className={clsx(
+                          'rounded-lg border bg-card/70 px-3 py-3 transition-colors cursor-pointer',
+                          kbSelectedCategoryId === category.id && 'border-primary/50 bg-primary/5'
+                        )}
+                        onClick={() => setKbSelectedCategoryId(category.id)}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="font-medium">{category.name}</p>
+                            {category.description && (
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                {category.description}
+                              </p>
+                            )}
+                            <p className="mt-2 text-[11px] text-muted-foreground">
+                              {kbArticleCounts[category.id] || 0} documents
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3" onClick={(event) => event.stopPropagation()}>
+                            <div className="flex flex-col items-end gap-2">
+                              <span className="text-[11px] text-muted-foreground">Use in chat</span>
+                              <Switch
+                                checked={isLinked}
+                                onCheckedChange={(checked) =>
+                                  toggleKbAssistantLinkMutation.mutate({ categoryId: category.id, isLinked: checked })
+                                }
+                                disabled={kbAssistantLinksLoading}
+                              />
+                            </div>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                  onClick={(event) => event.stopPropagation()}
+                                  aria-label="Delete category"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent onClick={(event) => event.stopPropagation()}>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete category?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This removes the category and all documents inside it.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteKbCategoryMutation.mutate(category.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="rounded-lg border border-dashed border-border/70 bg-card/60 p-4 text-sm text-muted-foreground">
+                  No categories yet. Create one to start adding documents.
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold">Documents</p>
+                {kbSelectedCategoryId && (
+                  <span className="text-xs text-muted-foreground">
+                    {visibleKbDocuments.length} in this category
+                  </span>
+                )}
+              </div>
+              {kbArticlesLoading ? (
+                <div className="flex justify-center py-6">
+                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                </div>
+              ) : !kbSelectedCategoryId ? (
+                <div className="rounded-lg border border-dashed border-border/70 bg-card/60 p-4 text-sm text-muted-foreground">
+                  Select a category to view its documents.
+                </div>
+              ) : visibleKbDocuments.length > 0 ? (
+                <div className="space-y-3">
+                  {visibleKbDocuments.map((doc: any) => (
+                    <div key={doc.id} className="rounded-lg border bg-card/70 px-4 py-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-medium">{doc.title}</p>
+                          <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+                            {doc.content}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={doc.isActive ? 'default' : 'secondary'}>
+                            {doc.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                aria-label="Delete document"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete document?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This document will be permanently removed.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteKbDocumentMutation.mutate(doc.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-lg border border-dashed border-border/70 bg-card/60 p-4 text-sm text-muted-foreground">
+                  No documents yet. Add one to power the assistant responses.
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={isKbCategoryDialogOpen} onOpenChange={(open) => {
+        if (!open) {
+          setIsKbCategoryDialogOpen(false);
+          setKbCategoryFormData({ name: '', slug: '', description: '', icon: 'BookOpen', order: 0 });
+        }
+      }}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>New Knowledge Base Category</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="kb-category-name">Name</Label>
+              <Input
+                id="kb-category-name"
+                value={kbCategoryFormData.name}
+                onChange={(e) => handleKbCategoryNameChange(e.target.value)}
+                placeholder="Policies, Services, Pricing..."
+              />
+            </div>
+            <div>
+              <Label htmlFor="kb-category-slug">Slug</Label>
+              <Input
+                id="kb-category-slug"
+                value={kbCategoryFormData.slug}
+                onChange={(e) => setKbCategoryFormData((prev) => ({ ...prev, slug: e.target.value }))}
+                placeholder="policies"
+              />
+            </div>
+            <div>
+              <Label htmlFor="kb-category-description">Description</Label>
+              <Textarea
+                id="kb-category-description"
+                value={kbCategoryFormData.description}
+                onChange={(e) => setKbCategoryFormData((prev) => ({ ...prev, description: e.target.value }))}
+                rows={3}
+                placeholder="Short description for the assistant context."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsKbCategoryDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => createKbCategoryMutation.mutate(kbCategoryFormData)}
+              disabled={!kbCategoryFormData.name.trim() || !kbCategoryFormData.slug.trim()}
+            >
+              Create Category
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isKbDocumentDialogOpen} onOpenChange={(open) => {
+        if (!open) {
+          setIsKbDocumentDialogOpen(false);
+          setKbDocumentFormData({ categoryId: kbSelectedCategoryId || 0, title: '', content: '', order: 0, isActive: true });
+          setKbDriveLink('');
+        }
+      }}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>New Knowledge Base Document</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="kb-document-category">Category</Label>
+              <Select
+                value={String(kbDocumentFormData.categoryId || '')}
+                onValueChange={(value) => setKbDocumentFormData((prev) => ({ ...prev, categoryId: Number(value) }))}
+              >
+                <SelectTrigger id="kb-document-category">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {kbCategories?.map((category: any) => (
+                    <SelectItem key={category.id} value={String(category.id)}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="kb-document-title">Title</Label>
+              <Input
+                id="kb-document-title"
+                value={kbDocumentFormData.title}
+                onChange={(e) => setKbDocumentFormData((prev) => ({ ...prev, title: e.target.value }))}
+                placeholder="Cancellation policy, Service areas..."
+              />
+            </div>
+            <div>
+              <Label htmlFor="kb-document-content">Content</Label>
+              <Textarea
+                id="kb-document-content"
+                value={kbDocumentFormData.content}
+                onChange={(e) => setKbDocumentFormData((prev) => ({ ...prev, content: e.target.value }))}
+                rows={8}
+                placeholder="Write the content the assistant should reference."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Attachments</Label>
+              <div className="grid gap-2 md:grid-cols-[1fr_auto]">
+                <Input
+                  value={kbDriveLink}
+                  onChange={(e) => setKbDriveLink(e.target.value)}
+                  placeholder="Paste Google Drive link"
+                />
+                <Button type="button" variant="outline" onClick={attachKbDriveLink}>
+                  Attach link
+                </Button>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  ref={kbFileInputRef}
+                  type="file"
+                  accept=".txt,.md,.csv,.json,.pdf,.doc,.docx"
+                  className="hidden"
+                  onChange={handleKbFileAttach}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => kbFileInputRef.current?.click()}
+                  disabled={isKbUploading}
+                >
+                  {isKbUploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Uploading...
+                    </>
+                  ) : (
+                    'Upload file'
+                  )}
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Text files are imported into the document. Other files are attached as links.
+                </p>
+              </div>
+            </div>
+            <div className="grid gap-4 md:grid-cols-[1fr_auto]">
+              <div>
+                <Label htmlFor="kb-document-order">Order</Label>
+                <Input
+                  id="kb-document-order"
+                  type="number"
+                  value={kbDocumentFormData.order}
+                  onChange={(e) => setKbDocumentFormData((prev) => ({ ...prev, order: parseInt(e.target.value) || 0 }))}
+                />
+              </div>
+              <div className="flex items-center gap-2 pt-6">
+                <Checkbox
+                  id="kb-document-active"
+                  checked={kbDocumentFormData.isActive}
+                  onCheckedChange={(checked) => setKbDocumentFormData((prev) => ({ ...prev, isActive: checked as boolean }))}
+                />
+                <Label htmlFor="kb-document-active">Active</Label>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsKbDocumentDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => createKbDocumentMutation.mutate(kbDocumentFormData)}
+              disabled={!kbDocumentFormData.title.trim() || !kbDocumentFormData.content.trim() || !kbDocumentFormData.categoryId}
+            >
+              Add Document
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Card className="shadow-sm border-0 bg-muted dark:bg-slate-800/70">
+        <CardHeader>
+          <CardTitle>Calendars & Staff</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Configure which calendar the chat should use for availability and bookings.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="chat-calendar-provider">Calendar provider</Label>
+              <Select
+                value={settingsDraft.calendarProvider || 'gohighlevel'}
+                onValueChange={(value) => updateField('calendarProvider', value)}
+              >
+                <SelectTrigger id="chat-calendar-provider">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="gohighlevel">GoHighLevel</SelectItem>
+                  <SelectItem value="google">Google Calendar</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="chat-calendar-id">Calendar ID</Label>
+              <Input
+                id="chat-calendar-id"
+                value={settingsDraft.calendarId || ''}
+                onChange={(e) => updateField('calendarId', e.target.value)}
+                placeholder="Primary calendar ID"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Staff calendars</Label>
+              <Button type="button" variant="outline" size="sm" onClick={addCalendarStaff}>
+                <Plus className="w-4 h-4 mr-1" /> Add staff
+              </Button>
+            </div>
+            {(settingsDraft.calendarStaff || []).length === 0 ? (
+              <div className="rounded-lg border border-dashed border-border/70 bg-card/60 p-4 text-sm text-muted-foreground">
+                No staff calendars yet. Add one if you want to route bookings by staff.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {(settingsDraft.calendarStaff || []).map((staff, index) => (
+                  <div key={`${staff.name}-${index}`} className="grid gap-2 md:grid-cols-[1fr_1fr_auto] items-center">
+                    <Input
+                      value={staff.name}
+                      onChange={(e) => updateCalendarStaff(index, 'name', e.target.value)}
+                      placeholder="Staff name"
+                    />
+                    <Input
+                      value={staff.calendarId}
+                      onChange={(e) => updateCalendarStaff(index, 'calendarId', e.target.value)}
+                      placeholder="Staff calendar ID"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 text-muted-foreground hover:text-foreground"
+                      onClick={() => removeCalendarStaff(index)}
+                      aria-label="Remove staff calendar"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Staff calendars are stored for routing; booking logic can use them when enabled.
+            </p>
+          </div>
         </CardContent>
       </Card>
 
@@ -5217,6 +6164,76 @@ You: "Thanks John! What's your email?"
                         </p>
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="avg-response-time">Average response time</Label>
+                  <div className="flex items-center justify-between rounded-md border border-border/70 bg-card px-3 py-2">
+                    <div>
+                      <p className="text-sm font-medium">
+                        {responseTimeLoading ? 'Calculating...' : responseTimeData?.formatted || 'No responses yet'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {responseTimeData?.samples ? `${responseTimeData.samples} reply samples` : 'Based on chat history'}
+                      </p>
+                    </div>
+                    <span className="text-xs text-muted-foreground">Auto</span>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between rounded-lg border border-border/70 bg-card/70 px-3 py-2">
+                    <div>
+                      <p className="text-sm font-medium">Low performance SMS alert</p>
+                      <p className="text-xs text-muted-foreground">Send Twilio SMS when response time is too high.</p>
+                    </div>
+                    <Switch
+                      checked={settingsDraft.lowPerformanceSmsEnabled ?? false}
+                      onCheckedChange={(checked) => updateField('lowPerformanceSmsEnabled', checked)}
+                      data-testid="switch-chat-low-performance-sms"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="low-performance-threshold">Alert threshold (seconds)</Label>
+                    <Input
+                      id="low-performance-threshold"
+                      type="number"
+                      min="30"
+                      step="30"
+                      value={settingsDraft.lowPerformanceThresholdSeconds ?? 300}
+                      onChange={(e) => updateField('lowPerformanceThresholdSeconds', Number(e.target.value) || 300)}
+                    />
+                    <p className="text-xs text-muted-foreground">Alert triggers when average response exceeds this.</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between rounded-lg border border-border/70 bg-card/70 px-3 py-2">
+                    <div>
+                      <p className="text-sm font-medium">Language selector</p>
+                      <p className="text-xs text-muted-foreground">Allow visitors to choose the chat language.</p>
+                    </div>
+                    <Switch
+                      checked={settingsDraft.languageSelectorEnabled ?? false}
+                      onCheckedChange={(checked) => updateField('languageSelectorEnabled', checked)}
+                      data-testid="switch-chat-language-selector"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="default-language">Default language</Label>
+                    <Select
+                      value={settingsDraft.defaultLanguage || 'en'}
+                      onValueChange={(value) => updateField('defaultLanguage', value)}
+                    >
+                      <SelectTrigger id="default-language">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="pt-BR">Portuguese (Brazil)</SelectItem>
+                        <SelectItem value="es">Spanish</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
@@ -5375,30 +6392,25 @@ You: "Thanks John! What's your email?"
       </Collapsible>
 
       <Dialog open={!!selectedConversation} onOpenChange={(open) => !open && setSelectedConversation(null)}>
-        <DialogContent className="w-[95vw] max-w-[600px] p-0">
-          <DialogHeader className="border-b bg-white px-6 py-4">
+        <DialogContent className="w-[95vw] max-w-[640px] p-0 gap-0 overflow-hidden rounded-2xl border-0 bg-white dark:bg-[#0b1220] text-slate-900 dark:text-slate-100 shadow-2xl">
+          <DialogHeader className="border-0 bg-slate-50 dark:bg-[#0d1526] px-6 py-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-11 w-11 rounded-full border bg-slate-100 flex items-center justify-center">
-                  <User className="w-5 h-5 text-slate-500" />
-                </div>
-                <div>
-                  <DialogTitle className="text-lg">Conversation</DialogTitle>
-                  {selectedConversation && (
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      <span>{visitorName}</span>
-                      {statusBadge(selectedConversation.status)}
-                      {selectedConversation.firstPageUrl && (
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">
-                          {selectedConversation.firstPageUrl}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
+              <div>
+                <DialogTitle className="text-lg">Conversation</DialogTitle>
+                {selectedConversation && (
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                    <span>{visitorName}</span>
+                    {statusBadge(selectedConversation.status)}
+                    {selectedConversation.firstPageUrl && (
+                      <span className="rounded-full bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 text-[11px] text-slate-600 dark:text-slate-300">
+                        {selectedConversation.firstPageUrl}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
               {selectedConversation && conversationLastUpdated && (
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-slate-500 dark:text-slate-400">
                   Updated {format(new Date(conversationLastUpdated), 'PP p')}
                 </div>
               )}
@@ -5406,11 +6418,11 @@ You: "Thanks John! What's your email?"
           </DialogHeader>
 
           {isMessagesLoading ? (
-            <div className="flex justify-center py-12 bg-slate-50/70">
-              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+            <div className="flex justify-center py-12 bg-slate-200 dark:bg-[#0a1222]">
+              <Loader2 className="w-5 h-5 animate-spin text-blue-500 dark:text-blue-400" />
             </div>
           ) : (
-            <div className="max-h-[340px] overflow-auto bg-slate-50/70 px-6 py-6 space-y-6">
+            <div className="max-h-[450px] overflow-auto bg-slate-200 dark:bg-[#0a1222] px-6 py-6 space-y-6">
               {messages.map((msg) => {
                 const isAssistant = msg.role === 'assistant';
                 const nameLabel = isAssistant ? assistantName : visitorName;
@@ -5420,11 +6432,11 @@ You: "Thanks John! What's your email?"
                     className={clsx('flex items-end gap-3', isAssistant ? 'justify-start' : 'justify-end')}
                   >
                     {isAssistant && (
-                      <div className="h-9 w-9 rounded-full border bg-white overflow-hidden flex items-center justify-center">
+                      <div className="h-9 w-9 rounded-full bg-white dark:bg-[#0b1220] border border-slate-200 dark:border-slate-700 overflow-hidden flex items-center justify-center shadow-sm">
                         {assistantAvatar ? (
                           <img src={assistantAvatar} alt={assistantName} className="h-full w-full object-cover" />
                         ) : (
-                          <MessageSquare className="w-4 h-4 text-slate-500" />
+                          <MessageSquare className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                         )}
                       </div>
                     )}
@@ -5432,44 +6444,48 @@ You: "Thanks John! What's your email?"
                       <div
                         className={clsx(
                           'rounded-2xl px-4 py-3 text-sm shadow-sm',
-                          isAssistant ? 'bg-card border border-border text-foreground' : 'bg-primary text-primary-foreground'
+                          isAssistant
+                            ? 'bg-white dark:bg-[#111a2e] text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-800/80'
+                            : 'bg-[#3b82f6] text-white'
                         )}
                       >
                         <div className="whitespace-pre-wrap leading-relaxed">{renderMarkdown(msg.content)}</div>
                       </div>
-                      <div className={clsx('mt-1 flex items-center gap-2 text-[11px] text-muted-foreground', !isAssistant && 'justify-end')}>
+                      <div className={clsx('mt-1 flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400', !isAssistant && 'justify-end')}>
                         <span className="font-medium">{nameLabel}</span>
                         <span>•</span>
                         <span>{format(new Date(msg.createdAt), 'PP p')}</span>
                       </div>
                       {msg.metadata?.pageUrl && (
-                        <div className={clsx('mt-1 text-[11px] text-muted-foreground', !isAssistant && 'text-right')}>
+                        <div className={clsx('mt-1 text-[11px] text-slate-500 dark:text-slate-400', !isAssistant && 'text-right')}>
                           Page: {msg.metadata.pageUrl}
                         </div>
                       )}
                     </div>
                     {!isAssistant && (
-                      <div className="h-9 w-9 rounded-full border bg-primary text-white flex items-center justify-center">
+                      <div className="h-9 w-9 rounded-full bg-[#3b82f6] text-white flex items-center justify-center shadow-sm">
                         <User className="w-4 h-4" />
                       </div>
                     )}
                   </div>
                 );
               })}
-              {messages.length === 0 && <p className="text-sm text-muted-foreground text-center">No messages yet.</p>}
+              {messages.length === 0 && <p className="text-sm text-slate-500 dark:text-slate-400 text-center">No messages yet.</p>}
+              <div ref={messagesEndRef} />
             </div>
           )}
 
           {selectedConversation && (
-            <div className="border-t bg-white px-6 py-4">
+            <div className="border-0 bg-slate-50 dark:bg-[#0d1526] px-6 py-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-2 rounded-full border bg-slate-50 px-4 py-2 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2 rounded-full bg-slate-200 dark:bg-slate-800/70 px-4 py-2 text-xs text-slate-600 dark:text-slate-300">
                   <MessageSquare className="w-4 h-4" />
                   <span>Read-only transcript in admin.</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
-                    variant="outline"
+                    variant="ghost"
+                    className="bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-100"
                     onClick={() =>
                       statusMutation.mutate({
                         id: selectedConversation.id,
@@ -5481,7 +6497,7 @@ You: "Thanks John! What's your email?"
                   </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="ghost" className="text-red-500">
+                      <Button variant="ghost" className="text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300">
                         Delete
                       </Button>
                     </AlertDialogTrigger>
@@ -5882,8 +6898,8 @@ function TwilioSection() {
         <CardHeader>
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                <MessageSquare className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              <div className="w-10 h-10 rounded-lg bg-[#F22F46] dark:bg-[#F22F46] flex items-center justify-center">
+                <SiTwilio className="w-5 h-5 text-white" />
               </div>
               <div>
                 <CardTitle className="text-lg">Twilio SMS</CardTitle>
@@ -6354,7 +7370,7 @@ function IntegrationsSection() {
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <MessageSquare className="w-5 h-5 text-primary" />
+                  <SiOpenai className="w-5 h-5 text-black dark:text-white" />
                 </div>
                 <div>
                   <CardTitle className="text-lg">OpenAI</CardTitle>
@@ -6447,8 +7463,8 @@ function IntegrationsSection() {
           <CardHeader>
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                <div className="w-10 h-10 rounded-lg bg-transparent flex items-center justify-center overflow-hidden">
+                  <img src={ghlLogo} alt="GoHighLevel" className="w-9 h-9 rounded-md object-contain" />
                 </div>
                 <div>
                   <CardTitle className="text-lg">GoHighLevel</CardTitle>
@@ -6551,7 +7567,7 @@ function IntegrationsSection() {
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                    <Globe className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <SiGoogletagmanager className="w-4 h-4 text-[#1A73E8] dark:text-[#8AB4F8]" />
                   </div>
                   <CardTitle className="text-base">Google Tag Manager</CardTitle>
                 </div>
@@ -6591,7 +7607,7 @@ function IntegrationsSection() {
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                    <Globe className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    <SiGoogleanalytics className="w-4 h-4 text-[#E37400] dark:text-[#FFB74D]" />
                   </div>
                   <CardTitle className="text-base">Google Analytics 4</CardTitle>
                 </div>
@@ -6631,7 +7647,7 @@ function IntegrationsSection() {
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                    <Globe className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    <SiFacebook className="w-4 h-4 text-[#1877F2] dark:text-[#5AA2FF]" />
                   </div>
                   <CardTitle className="text-base">Facebook Pixel</CardTitle>
                 </div>
@@ -6698,13 +7714,606 @@ function IntegrationsSection() {
   );
 }
 
-function BlogSection() {
+function KnowledgeBaseSection() {
+  const { toast } = useToast();
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState(false);
+  const [isCreateArticleOpen, setIsCreateArticleOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<any | null>(null);
+  const [editingArticle, setEditingArticle] = useState<any | null>(null);
+
+  const [categoryFormData, setCategoryFormData] = useState({
+    name: '',
+    slug: '',
+    description: '',
+    icon: 'Package',
+    order: 0,
+  });
+
+  const [articleFormData, setArticleFormData] = useState({
+    categoryId: 0,
+    title: '',
+    content: '',
+    order: 0,
+    isActive: true,
+  });
+
+  const { data: categories, isLoading: categoriesLoading } = useQuery({
+    queryKey: ['/api/knowledge-base/categories'],
+    queryFn: async () => {
+      const response = await fetch('/api/knowledge-base/categories');
+      if (!response.ok) throw new Error('Failed to fetch categories');
+      return response.json();
+    },
+  });
+
+  const { data: articles, isLoading: articlesLoading } = useQuery({
+    queryKey: ['/api/knowledge-base/articles', selectedCategoryId],
+    queryFn: async () => {
+      const url = selectedCategoryId
+        ? `/api/knowledge-base/articles?categoryId=${selectedCategoryId}`
+        : '/api/knowledge-base/articles';
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to fetch articles');
+      return response.json();
+    },
+  });
+
+  const createCategoryMutation = useMutation({
+    mutationFn: (data: typeof categoryFormData) => apiRequest('POST', '/api/knowledge-base/categories', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/categories'] });
+      toast({ title: 'Category created successfully' });
+      setIsCreateCategoryOpen(false);
+      resetCategoryForm();
+    },
+    onError: (err: any) => {
+      toast({ title: 'Error creating category', description: err.message, variant: 'destructive' });
+    },
+  });
+
+  const updateCategoryMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: typeof categoryFormData }) =>
+      apiRequest('PUT', `/api/knowledge-base/categories/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/categories'] });
+      toast({ title: 'Category updated successfully' });
+      setEditingCategory(null);
+      resetCategoryForm();
+    },
+    onError: (err: any) => {
+      toast({ title: 'Error updating category', description: err.message, variant: 'destructive' });
+    },
+  });
+
+  const deleteCategoryMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/knowledge-base/categories/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/categories'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/articles'] });
+      toast({ title: 'Category deleted' });
+    },
+    onError: (err: any) => {
+      toast({ title: 'Error deleting category', description: err.message, variant: 'destructive' });
+    },
+  });
+
+  const createArticleMutation = useMutation({
+    mutationFn: (data: typeof articleFormData) => apiRequest('POST', '/api/knowledge-base/articles', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/articles'] });
+      toast({ title: 'Article created successfully' });
+      setIsCreateArticleOpen(false);
+      resetArticleForm();
+    },
+    onError: (err: any) => {
+      toast({ title: 'Error creating article', description: err.message, variant: 'destructive' });
+    },
+  });
+
+  const updateArticleMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: typeof articleFormData }) =>
+      apiRequest('PUT', `/api/knowledge-base/articles/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/articles'] });
+      toast({ title: 'Article updated successfully' });
+      setEditingArticle(null);
+      resetArticleForm();
+    },
+    onError: (err: any) => {
+      toast({ title: 'Error updating article', description: err.message, variant: 'destructive' });
+    },
+  });
+
+  const deleteArticleMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/knowledge-base/articles/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/articles'] });
+      toast({ title: 'Article deleted' });
+    },
+    onError: (err: any) => {
+      toast({ title: 'Error deleting article', description: err.message, variant: 'destructive' });
+    },
+  });
+
+  const toggleAssistantLinkMutation = useMutation({
+    mutationFn: ({ categoryId, isLinked }: { categoryId: number; isLinked: boolean }) =>
+      apiRequest('POST', `/api/knowledge-base/categories/${categoryId}/link-assistant`, { isLinked }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/categories'] });
+      toast({ title: 'Assistant link updated successfully' });
+    },
+    onError: (err: any) => {
+      toast({ title: 'Error updating assistant link', description: err.message, variant: 'destructive' });
+    },
+  });
+
+  const resetCategoryForm = () => {
+    setCategoryFormData({
+      name: '',
+      slug: '',
+      description: '',
+      icon: 'Package',
+      order: 0,
+    });
+  };
+
+  const resetArticleForm = () => {
+    setArticleFormData({
+      categoryId: selectedCategoryId || 0,
+      title: '',
+      content: '',
+      order: 0,
+      isActive: true,
+    });
+  };
+
+  const generateSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim();
+  };
+
+  const handleCategoryNameChange = (value: string) => {
+    setCategoryFormData(prev => ({
+      ...prev,
+      name: value,
+      slug: prev.slug || generateSlug(value),
+    }));
+  };
+
+  const handleEditCategory = (category: any) => {
+    setEditingCategory(category);
+    setCategoryFormData({
+      name: category.name,
+      slug: category.slug,
+      description: category.description || '',
+      icon: category.icon || 'Package',
+      order: category.order || 0,
+    });
+  };
+
+  const handleEditArticle = (article: any) => {
+    setEditingArticle(article);
+    setArticleFormData({
+      categoryId: article.categoryId,
+      title: article.title,
+      content: article.content,
+      order: article.order || 0,
+      isActive: article.isActive ?? true,
+    });
+  };
+
+  const handleSaveCategory = () => {
+    if (editingCategory) {
+      updateCategoryMutation.mutate({ id: editingCategory.id, data: categoryFormData });
+    } else {
+      createCategoryMutation.mutate(categoryFormData);
+    }
+  };
+
+  const handleSaveArticle = () => {
+    if (editingArticle) {
+      updateArticleMutation.mutate({ id: editingArticle.id, data: articleFormData });
+    } else {
+      createArticleMutation.mutate(articleFormData);
+    }
+  };
+
+  const handleToggleAssistantLink = async (categoryId: number) => {
+    try {
+      const response = await fetch(`/api/knowledge-base/categories/${categoryId}/link-assistant`);
+      const { isLinked } = await response.json();
+      toggleAssistantLinkMutation.mutate({ categoryId, isLinked: !isLinked });
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to toggle assistant link', variant: 'destructive' });
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Knowledge Base</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage knowledge base categories and articles for your AI assistant
+          </p>
+        </div>
+        <Button onClick={() => setIsCreateCategoryOpen(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          New Category
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="md:col-span-1 border-0 bg-muted">
+          <CardHeader>
+            <CardTitle>Categories</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {categoriesLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin" />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {categories && categories.length > 0 ? (
+                  categories.map((category: any) => (
+                    <div
+                      key={category.id}
+                      className={clsx(
+                        'p-3 rounded-lg cursor-pointer transition-colors hover:bg-accent',
+                        selectedCategoryId === category.id && 'bg-accent'
+                      )}
+                      onClick={() => setSelectedCategoryId(category.id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium">{category.name}</h4>
+                          {category.description && (
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                              {category.description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 ml-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleAssistantLink(category.id);
+                            }}
+                          >
+                            <Sparkles className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditCategory(category);
+                            }}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Category</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will delete the category and all its articles. This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteCategoryMutation.mutate(category.id)}
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    No categories yet. Create one to get started.
+                  </p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-2 border-0 bg-muted">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>
+                {selectedCategoryId
+                  ? `Articles - ${categories?.find((c: any) => c.id === selectedCategoryId)?.name}`
+                  : 'Articles'}
+              </CardTitle>
+              <Button
+                onClick={() => {
+                  if (!selectedCategoryId) {
+                    toast({
+                      title: 'Select a category first',
+                      description: 'Please select a category to add articles to',
+                      variant: 'destructive',
+                    });
+                    return;
+                  }
+                  setArticleFormData(prev => ({ ...prev, categoryId: selectedCategoryId }));
+                  setIsCreateArticleOpen(true);
+                }}
+                disabled={!selectedCategoryId}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                New Article
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {articlesLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin" />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {articles && articles.length > 0 ? (
+                  articles.map((article: any) => (
+                    <div key={article.id} className="p-4 border rounded-lg">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium">{article.title}</h4>
+                          <p className="text-sm text-muted-foreground mt-2 line-clamp-3">
+                            {article.content.substring(0, 200)}...
+                          </p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge variant={article.isActive ? 'default' : 'secondary'}>
+                              {article.isActive ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 ml-4">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleEditArticle(article)}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="ghost">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Article</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will permanently delete this article. This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteArticleMutation.mutate(article.id)}
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    {selectedCategoryId
+                      ? 'No articles in this category yet.'
+                      : 'Select a category to view articles.'}
+                  </p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Dialog open={isCreateCategoryOpen || editingCategory !== null} onOpenChange={(open) => {
+        if (!open) {
+          setIsCreateCategoryOpen(false);
+          setEditingCategory(null);
+          resetCategoryForm();
+        }
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingCategory ? 'Edit Category' : 'Create Category'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="category-name">Name</Label>
+              <Input
+                id="category-name"
+                value={categoryFormData.name}
+                onChange={(e) => handleCategoryNameChange(e.target.value)}
+                placeholder="Products Used"
+              />
+            </div>
+            <div>
+              <Label htmlFor="category-slug">Slug</Label>
+              <Input
+                id="category-slug"
+                value={categoryFormData.slug}
+                onChange={(e) => setCategoryFormData(prev => ({ ...prev, slug: e.target.value }))}
+                placeholder="products-used"
+              />
+            </div>
+            <div>
+              <Label htmlFor="category-description">Description</Label>
+              <Textarea
+                id="category-description"
+                value={categoryFormData.description}
+                onChange={(e) => setCategoryFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Information about products used in our services"
+                rows={3}
+              />
+            </div>
+            <div>
+              <Label htmlFor="category-icon">Icon (Lucide icon name)</Label>
+              <Input
+                id="category-icon"
+                value={categoryFormData.icon}
+                onChange={(e) => setCategoryFormData(prev => ({ ...prev, icon: e.target.value }))}
+                placeholder="Package"
+              />
+            </div>
+            <div>
+              <Label htmlFor="category-order">Order</Label>
+              <Input
+                id="category-order"
+                type="number"
+                value={categoryFormData.order}
+                onChange={(e) => setCategoryFormData(prev => ({ ...prev, order: parseInt(e.target.value) || 0 }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsCreateCategoryOpen(false);
+              setEditingCategory(null);
+              resetCategoryForm();
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveCategory}>
+              {editingCategory ? 'Update' : 'Create'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isCreateArticleOpen || editingArticle !== null} onOpenChange={(open) => {
+        if (!open) {
+          setIsCreateArticleOpen(false);
+          setEditingArticle(null);
+          resetArticleForm();
+        }
+      }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingArticle ? 'Edit Article' : 'Create Article'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="article-category">Category</Label>
+              <Select
+                value={articleFormData.categoryId.toString()}
+                onValueChange={(value) => setArticleFormData(prev => ({ ...prev, categoryId: parseInt(value) }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories?.map((category: any) => (
+                    <SelectItem key={category.id} value={category.id.toString()}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="article-title">Title</Label>
+              <Input
+                id="article-title"
+                value={articleFormData.title}
+                onChange={(e) => setArticleFormData(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="All-Purpose Cleaner Usage Guide"
+              />
+            </div>
+            <div>
+              <Label htmlFor="article-content">Content</Label>
+              <Textarea
+                id="article-content"
+                value={articleFormData.content}
+                onChange={(e) => setArticleFormData(prev => ({ ...prev, content: e.target.value }))}
+                placeholder="Detailed information about the topic..."
+                rows={12}
+              />
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <Label htmlFor="article-order">Order</Label>
+                <Input
+                  id="article-order"
+                  type="number"
+                  value={articleFormData.order}
+                  onChange={(e) => setArticleFormData(prev => ({ ...prev, order: parseInt(e.target.value) || 0 }))}
+                />
+              </div>
+              <div className="flex items-center space-x-2 pt-6">
+                <Checkbox
+                  id="article-active"
+                  checked={articleFormData.isActive}
+                  onCheckedChange={(checked) => setArticleFormData(prev => ({ ...prev, isActive: checked as boolean }))}
+                />
+                <Label htmlFor="article-active">Active</Label>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsCreateArticleOpen(false);
+              setEditingArticle(null);
+              resetArticleForm();
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveArticle}>
+              {editingArticle ? 'Update' : 'Create'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function BlogSection({ resetSignal }: { resetSignal: number }) {
   const { toast } = useToast();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'title-asc' | 'title-desc' | 'status'>('newest');
   const [serviceSearch, setServiceSearch] = useState('');
   const [isSaved, setIsSaved] = useState(false);
+  const [isEditorExpanded, setIsEditorExpanded] = useState(false);
+  const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
+  const [tagToDelete, setTagToDelete] = useState<string | null>(null);
+  const [isDeletingTag, setIsDeletingTag] = useState(false);
+  const [editingTag, setEditingTag] = useState<string | null>(null);
+  const [editingTagValue, setEditingTagValue] = useState('');
+  const [isRenamingTag, setIsRenamingTag] = useState(false);
   const blogMenuTitle = menuItems.find((item) => item.id === 'blog')?.title ?? 'Blog Posts';
   const [formData, setFormData] = useState({
     title: '',
@@ -6713,12 +8322,17 @@ function BlogSection() {
     excerpt: '',
     metaDescription: '',
     focusKeyword: '',
+    tags: '' as string,
     featureImageUrl: '',
     status: 'published',
     authorName: 'Skleanings',
     publishedAt: new Date().toISOString().split('T')[0] as string | null,
     serviceIds: [] as number[],
   });
+  const [tagInput, setTagInput] = useState('');
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const lastContentRef = useRef('');
+  const lastResetSignalRef = useRef(0);
 
   const { data: posts, isLoading } = useQuery<BlogPost[]>({
     queryKey: ['/api/blog'],
@@ -6760,12 +8374,123 @@ function BlogSection() {
     }
   }, [posts, sortBy]);
 
+  const availableTags = useMemo(() => {
+    if (!posts) return [];
+    const tagMap = new Map<string, string>();
+    posts.forEach((post) => {
+      const rawTags = (post.tags || '').split(',');
+      rawTags.forEach((tag) => {
+        const trimmed = tag.trim();
+        if (!trimmed) return;
+        const key = trimmed.toLowerCase();
+        if (!tagMap.has(key)) {
+          tagMap.set(key, trimmed);
+        }
+      });
+    });
+    return Array.from(tagMap.values()).sort((a, b) => a.localeCompare(b));
+  }, [posts]);
+
+  const selectedTagSet = useMemo(() => {
+    return new Set(
+      formData.tags
+        .split(',')
+        .map((tag) => tag.trim().toLowerCase())
+        .filter(Boolean)
+    );
+  }, [formData.tags]);
+
+  const addTag = useCallback((tag: string) => {
+    const trimmed = tag.trim();
+    if (!trimmed) return;
+    setFormData((prev) => {
+      const existing = prev.tags
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
+      if (existing.some((t) => t.toLowerCase() === trimmed.toLowerCase())) {
+        return prev;
+      }
+      return { ...prev, tags: existing.length ? `${existing.join(',')},${trimmed}` : trimmed };
+    });
+  }, []);
+
+  const resetForm = useCallback(() => {
+    setFormData({
+      title: '',
+      slug: '',
+      content: '',
+      excerpt: '',
+      metaDescription: '',
+      focusKeyword: '',
+      tags: '',
+      featureImageUrl: '',
+      status: 'published',
+      authorName: 'Skleanings',
+      publishedAt: new Date().toISOString().split('T')[0] as string | null,
+      serviceIds: [],
+    });
+    setTagInput('');
+  }, []);
+
   // Reset saved state when form data changes
   useEffect(() => {
     if (isSaved) {
       setIsSaved(false);
     }
   }, [formData]);
+
+  useEffect(() => {
+    if (resetSignal === lastResetSignalRef.current) return;
+    lastResetSignalRef.current = resetSignal;
+    if (editingPost || isCreateOpen) {
+      setIsCreateOpen(false);
+      setEditingPost(null);
+      setServiceSearch('');
+      setIsSaved(false);
+      resetForm();
+    }
+  }, [resetSignal, editingPost, isCreateOpen, resetForm]);
+
+  useEffect(() => {
+    if (!contentRef.current) return;
+    if (formData.content === lastContentRef.current) return;
+    if (document.activeElement === contentRef.current) return;
+    contentRef.current.innerHTML = formData.content;
+    lastContentRef.current = formData.content;
+  }, [formData.content]);
+
+  const syncEditorContent = useCallback(() => {
+    if (!contentRef.current) return;
+    const rawHtml = contentRef.current.innerHTML;
+    const text = contentRef.current.textContent?.trim() || '';
+    const nextHtml = text ? rawHtml : '';
+    lastContentRef.current = nextHtml;
+    setFormData(prev => (prev.content === nextHtml ? prev : { ...prev, content: nextHtml }));
+  }, []);
+
+  const runEditorCommand = useCallback(
+    (command: string, value?: string) => {
+      if (!contentRef.current) return;
+      contentRef.current.focus();
+      document.execCommand(command, false, value);
+      syncEditorContent();
+    },
+    [syncEditorContent]
+  );
+
+  const setEditorBlock = useCallback(
+    (tag: 'p' | 'h2') => {
+      runEditorCommand('formatBlock', `<${tag}>`);
+    },
+    [runEditorCommand]
+  );
+
+  const insertEditorLink = useCallback(() => {
+    const url = window.prompt('Enter URL');
+    if (!url) return;
+    runEditorCommand('createLink', url);
+  }, [runEditorCommand]);
 
   const createMutation = useMutation({
     mutationFn: (data: typeof formData) => apiRequest('POST', '/api/blog', data),
@@ -6804,21 +8529,81 @@ function BlogSection() {
     },
   });
 
-  const resetForm = () => {
-    setFormData({
-      title: '',
-      slug: '',
-      content: '',
-      excerpt: '',
-      metaDescription: '',
-      focusKeyword: '',
-      featureImageUrl: '',
-      status: 'published',
-      authorName: 'Skleanings',
-      publishedAt: new Date().toISOString().split('T')[0] as string | null,
-      serviceIds: [],
-    });
-  };
+  const removeTagMutation = useMutation({
+    mutationFn: async (tag: string) => {
+      await apiRequest('DELETE', `/api/blog/tags/${encodeURIComponent(tag)}`);
+    },
+    onSuccess: (_data, tag) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/blog'] });
+      toast({ title: 'Tag removed', description: `"${tag}" removed from all posts.` });
+    },
+    onError: (err: any) => {
+      toast({ title: 'Failed to remove tag', description: err.message, variant: 'destructive' });
+    },
+    onSettled: () => {
+      setIsDeletingTag(false);
+      setTagToDelete(null);
+    }
+  });
+
+  const renameTagMutation = useMutation({
+    mutationFn: async ({ from, to }: { from: string; to: string }) => {
+      await apiRequest('PUT', `/api/blog/tags/${encodeURIComponent(from)}`, { name: to });
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/blog'] });
+      toast({ title: 'Tag updated', description: `"${variables.from}" renamed to "${variables.to}".` });
+    },
+    onError: (err: any) => {
+      toast({ title: 'Failed to update tag', description: err.message, variant: 'destructive' });
+    },
+    onSettled: () => {
+      setIsRenamingTag(false);
+      setEditingTag(null);
+      setEditingTagValue('');
+    }
+  });
+
+  const handleConfirmRemoveTag = useCallback(() => {
+    if (!tagToDelete || isDeletingTag) return;
+    setIsDeletingTag(true);
+    removeTagMutation.mutate(tagToDelete);
+  }, [tagToDelete, isDeletingTag, removeTagMutation]);
+
+  const handleStartEditTag = useCallback((tag: string) => {
+    if (isRenamingTag) return;
+    setEditingTag(tag);
+    setEditingTagValue(tag);
+  }, [isRenamingTag]);
+
+  const handleCancelEditTag = useCallback(() => {
+    setEditingTag(null);
+    setEditingTagValue('');
+  }, []);
+
+  const handleSubmitEditTag = useCallback(() => {
+    if (!editingTag || isRenamingTag) return;
+    const next = editingTagValue.trim();
+    if (!next) {
+      handleCancelEditTag();
+      return;
+    }
+    if (next === editingTag) {
+      handleCancelEditTag();
+      return;
+    }
+    const nextLower = next.toLowerCase();
+    const currentLower = editingTag.toLowerCase();
+    const hasDuplicate = availableTags.some(
+      (tag) => tag.toLowerCase() === nextLower && tag.toLowerCase() !== currentLower
+    );
+    if (hasDuplicate) {
+      toast({ title: 'Tag already exists', description: `"${next}" is already in use.` });
+      return;
+    }
+    setIsRenamingTag(true);
+    renameTagMutation.mutate({ from: editingTag, to: next });
+  }, [editingTag, editingTagValue, isRenamingTag, availableTags, renameTagMutation, toast, handleCancelEditTag]);
 
   const generateSlug = (title: string) => {
     return title
@@ -6848,16 +8633,22 @@ function BlogSection() {
       excerpt: post.excerpt || '',
       metaDescription: post.metaDescription || '',
       focusKeyword: post.focusKeyword || '',
+      tags: (post as any).tags || '',
       featureImageUrl: post.featureImageUrl || '',
       status: post.status,
       authorName: post.authorName || 'Admin',
       publishedAt: post.publishedAt ? new Date(post.publishedAt).toISOString().split('T')[0] : null,
       serviceIds: postServices.map((s: Service) => s.id),
     });
+    setTagInput('');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.content.trim()) {
+      toast({ title: 'Content is required', variant: 'destructive' });
+      return;
+    }
     const dataToSend = {
       ...formData,
       publishedAt: formData.status === 'published' && formData.publishedAt 
@@ -6908,9 +8699,46 @@ function BlogSection() {
     }));
   };
 
-  const renderForm = () => (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2">
+  const renderForm = () => {
+    const publishedDate = formData.publishedAt
+      ? new Date(`${formData.publishedAt}T00:00:00`)
+      : undefined;
+    const focusScore = (() => {
+      const keyword = formData.focusKeyword.toLowerCase().trim();
+      if (!keyword) return null;
+
+      const title = formData.title.toLowerCase();
+      const slug = formData.slug.toLowerCase();
+      const content = formData.content.toLowerCase();
+      const metaDesc = formData.metaDescription.toLowerCase();
+
+      let score = 0;
+      if (title.includes(keyword)) score += 25;
+      if (slug.includes(keyword.replace(/\s+/g, '-'))) score += 15;
+      if (metaDesc.includes(keyword)) score += 25;
+
+      const wordCount = content.split(/\s+/).filter(w => w.length > 0).length;
+      const keywordRegex = new RegExp(keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+      const keywordCount = (content.match(keywordRegex) || []).length;
+      const density = wordCount > 0 ? (keywordCount / wordCount) * 100 : 0;
+
+      if (keywordCount >= 1) score += 10;
+      if (keywordCount >= 3) score += 10;
+      if (density >= 0.5 && density <= 2.5) score += 15;
+
+      const barColor = score >= 80 ? 'bg-green-500' : score >= 50 ? 'bg-yellow-500' : 'bg-red-500';
+      const badgeClass = score >= 80
+        ? 'bg-green-500/15 text-green-600 dark:text-green-400'
+        : score >= 50
+        ? 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400'
+        : 'bg-red-500/15 text-red-600 dark:text-red-400';
+
+      return { score, barColor, badgeClass };
+    })();
+
+    return (
+      <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-3">
         <div className="space-y-2">
           <Label htmlFor="title">Title *</Label>
           <Input
@@ -6918,6 +8746,7 @@ function BlogSection() {
             value={formData.title}
             onChange={(e) => handleTitleChange(e.target.value)}
             placeholder="Enter post title"
+            className="border-0 bg-background"
             required
             data-testid="input-blog-title"
           />
@@ -6929,60 +8758,131 @@ function BlogSection() {
             value={formData.slug}
             onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
             placeholder="url-friendly-slug"
+            className="border-0 bg-background"
             required
             data-testid="input-blog-slug"
           />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="focusKeyword">Focus Keyword</Label>
+          <div className="rounded-md bg-background overflow-hidden">
+            <div className="relative">
+              <Input
+                id="focusKeyword"
+                value={formData.focusKeyword}
+                onChange={(e) => setFormData(prev => ({ ...prev, focusKeyword: e.target.value }))}
+                placeholder="Primary SEO keyword"
+                className="pr-14 rounded-none border-0 bg-transparent"
+                data-testid="input-blog-keyword"
+              />
+              {focusScore && (
+                <span
+                  className={clsx(
+                    "absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-2 py-0.5 text-[10px] font-medium",
+                    focusScore.badgeClass
+                  )}
+                >
+                  {focusScore.score}/100
+                </span>
+              )}
+            </div>
+            {focusScore && (
+              <div className="h-[3px] bg-slate-200 dark:bg-slate-700">
+                <div className={clsx("h-full transition-all", focusScore.barColor)} style={{ width: `${focusScore.score}%` }} />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="content">Content *</Label>
-        <Textarea
-          id="content"
-          value={formData.content}
-          onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-          placeholder="Write your blog post content here. HTML tags are supported (h2, h3, p, ul, li, strong, em, a)..."
-          className="min-h-[300px] font-mono text-sm"
-          required
-          data-testid="textarea-blog-content"
-        />
-        <p className="text-xs text-muted-foreground">Supports HTML formatting</p>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="excerpt">Excerpt</Label>
-        <Textarea
-          id="excerpt"
-          value={formData.excerpt}
-          onChange={(e) => setFormData(prev => ({ ...prev, excerpt: e.target.value.slice(0, 150) }))}
-          placeholder="Short description shown on blog cards..."
-          className="min-h-[80px]"
-          data-testid="textarea-blog-excerpt"
-        />
-        <p className="text-xs text-muted-foreground">{formData.excerpt.length}/150 characters</p>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="featureImage">Feature Image</Label>
-        <div className="flex items-center gap-4">
-          {formData.featureImageUrl && (
-            <img 
-              src={formData.featureImageUrl} 
-              alt="Feature" 
-              className="w-32 h-18 object-cover rounded-lg"
-              data-testid="img-blog-feature-preview"
-            />
-          )}
-          <Input
-            id="featureImage"
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="flex-1"
-            data-testid="input-blog-feature-image"
+        <div className="rounded-md bg-background overflow-hidden">
+          <div className="flex flex-wrap items-center gap-1 border-b border-border/50 px-2 py-2 text-xs text-muted-foreground">
+            <button
+              type="button"
+              onClick={() => setEditorBlock('p')}
+              className="rounded-md px-2 py-1 text-xs text-foreground hover:bg-muted"
+            >
+              P
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditorBlock('h2')}
+              className="rounded-md px-2 py-1 text-xs text-foreground hover:bg-muted"
+            >
+              H2
+            </button>
+            <span className="mx-1 h-4 w-px bg-border/60" />
+            <button
+              type="button"
+              onClick={() => runEditorCommand('bold')}
+              className="rounded-md px-2 py-1 text-xs text-foreground hover:bg-muted"
+            >
+              B
+            </button>
+            <button
+              type="button"
+              onClick={() => runEditorCommand('italic')}
+              className="rounded-md px-2 py-1 text-xs text-foreground hover:bg-muted"
+            >
+              I
+            </button>
+            <button
+              type="button"
+              onClick={() => runEditorCommand('insertUnorderedList')}
+              className="rounded-md px-2 py-1 text-xs text-foreground hover:bg-muted"
+            >
+              UL
+            </button>
+            <button
+              type="button"
+              onClick={() => runEditorCommand('insertOrderedList')}
+              className="rounded-md px-2 py-1 text-xs text-foreground hover:bg-muted"
+            >
+              OL
+            </button>
+            <button
+              type="button"
+              onClick={insertEditorLink}
+              className="rounded-md px-2 py-1 text-xs text-foreground hover:bg-muted"
+            >
+              Link
+            </button>
+            <button
+              type="button"
+              onClick={() => runEditorCommand('removeFormat')}
+              className="rounded-md px-2 py-1 text-xs text-foreground hover:bg-muted"
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsEditorExpanded(prev => !prev)}
+              className="ml-auto rounded-md px-2 py-1 text-xs text-foreground hover:bg-muted"
+            >
+              {isEditorExpanded ? 'Collapse' : 'Expand'}
+            </button>
+          </div>
+          <div
+            id="content"
+            ref={contentRef}
+            contentEditable
+            suppressContentEditableWarning
+            spellCheck
+            onInput={syncEditorContent}
+            onBlur={syncEditorContent}
+            data-placeholder="Write your blog post content here..."
+            className={clsx(
+              "admin-editor px-3 py-2 text-sm focus:outline-none prose prose-sm dark:prose-invert max-w-none overflow-y-auto",
+              isEditorExpanded
+                ? "min-h-[320px] max-h-[65vh] sm:min-h-[420px] sm:max-h-[70vh]"
+                : "min-h-[180px] max-h-[40vh] sm:min-h-[220px] sm:max-h-[45vh]"
+            )}
+            data-testid="textarea-blog-content"
           />
         </div>
-        <p className="text-xs text-muted-foreground">Recommended: 1200x675px (16:9 aspect ratio)</p>
+        <p className="text-xs text-muted-foreground">Supports HTML formatting</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -6991,58 +8891,164 @@ function BlogSection() {
           <Textarea
             id="metaDescription"
             value={formData.metaDescription}
-            onChange={(e) => setFormData(prev => ({ 
-              ...prev, 
-              metaDescription: e.target.value.slice(0, 155) 
+            onChange={(e) => setFormData(prev => ({
+              ...prev,
+              metaDescription: e.target.value.slice(0, 155)
             }))}
-            placeholder="SEO meta description..."
-            className="min-h-[80px]"
+            placeholder="Short description for SEO and blog cards..."
+            className="min-h-[100px] border-0 bg-background"
             data-testid="textarea-blog-meta"
           />
-          <p className="text-xs text-muted-foreground">{formData.metaDescription.length}/155 characters</p>
+          <p className="text-xs text-muted-foreground">{formData.metaDescription.length}/155 characters · Used for SEO and blog cards</p>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="focusKeyword">Focus Keyword</Label>
-          <Input
-            id="focusKeyword"
-            value={formData.focusKeyword}
-            onChange={(e) => setFormData(prev => ({ ...prev, focusKeyword: e.target.value }))}
-            placeholder="Primary SEO keyword"
-            data-testid="input-blog-keyword"
-          />
+          <Label>Feature Image</Label>
+          <div
+            className="relative w-full sm:w-1/2 aspect-video rounded-lg border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 transition-colors cursor-pointer overflow-hidden group"
+            onClick={() => document.getElementById('featureImageInput')?.click()}
+          >
+            {formData.featureImageUrl ? (
+              <>
+                <img
+                  src={formData.featureImageUrl}
+                  alt="Feature"
+                  className="w-full h-full object-cover"
+                  data-testid="img-blog-feature-preview"
+                />
+                <div className="absolute top-2 left-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white">
+                  Uploaded
+                </div>
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <span className="text-white text-sm font-medium">Click to change</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFormData(prev => ({ ...prev, featureImageUrl: '' }));
+                  }}
+                  className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 hover:bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </>
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
+                <Image className="w-8 h-8 mb-2" />
+                <span className="text-sm">Click to upload</span>
+                <span className="text-xs mt-1">1200x675px (16:9)</span>
+              </div>
+            )}
+            <input
+              id="featureImageInput"
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+              data-testid="input-blog-feature-image"
+            />
+          </div>
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label>Related Services (max 3)</Label>
-        <Input
-          placeholder="Search services..."
-          value={serviceSearch}
-          onChange={(e) => setServiceSearch(e.target.value)}
-          className="mb-2"
-          data-testid="input-service-search"
-        />
-        <div className="grid gap-2 max-h-48 overflow-y-auto border rounded-lg p-3">
-          {services?.filter(s =>
-            !s.isHidden &&
-            s.name.toLowerCase().includes(serviceSearch.toLowerCase())
-          ).map(service => (
-            <div
-              key={service.id}
-              className="flex items-center gap-2"
-            >
-              <Checkbox
-                id={`service-${service.id}`}
-                checked={formData.serviceIds.includes(service.id)}
-                onCheckedChange={() => toggleServiceSelection(service.id)}
-                disabled={!formData.serviceIds.includes(service.id) && formData.serviceIds.length >= 3}
-                data-testid={`checkbox-service-${service.id}`}
-              />
-              <Label htmlFor={`service-${service.id}`} className="text-sm cursor-pointer">
-                {service.name} - ${service.price}
-              </Label>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label>Tags</Label>
+          <div className="flex flex-wrap gap-2 min-h-9 rounded-md bg-background px-3 py-2">
+            {formData.tags.split(',').filter(t => t.trim()).map((tag, index) => (
+              <span
+                key={index}
+                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary"
+              >
+                {tag.trim()}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const tags = formData.tags.split(',').filter(t => t.trim());
+                    tags.splice(index, 1);
+                    setFormData(prev => ({ ...prev, tags: tags.join(',') }));
+                  }}
+                  className="hover:text-destructive"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+            <input
+              type="text"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ',') {
+                  e.preventDefault();
+                  const newTag = tagInput.trim();
+                  if (newTag && !formData.tags.split(',').map(t => t.trim().toLowerCase()).includes(newTag.toLowerCase())) {
+                    setFormData(prev => ({
+                      ...prev,
+                      tags: prev.tags ? `${prev.tags},${newTag}` : newTag
+                    }));
+                  }
+                  setTagInput('');
+                }
+              }}
+              placeholder={formData.tags ? "Add more..." : "Type and press Enter..."}
+              className="flex-1 min-w-[120px] bg-transparent border-0 outline-none text-sm placeholder:text-muted-foreground"
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">Press Enter or comma to add a tag</p>
+          {availableTags.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">Available tags</p>
+              <div className="flex flex-wrap gap-2">
+                {availableTags
+                  .filter((tag) => !selectedTagSet.has(tag.toLowerCase()))
+                  .map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => addTag(tag)}
+                      className="rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                    >
+                      + {tag}
+                    </button>
+                  ))}
+              </div>
             </div>
-          ))}
+          )}
+        </div>
+        <div className="space-y-2">
+          <Label>Related Services (max 3)</Label>
+          <div className="rounded-md bg-background overflow-hidden">
+            <Input
+              placeholder="Search services..."
+              value={serviceSearch}
+              onChange={(e) => setServiceSearch(e.target.value)}
+              className="rounded-none border-0 bg-transparent"
+              data-testid="input-service-search"
+            />
+            <div className="grid gap-2 max-h-[120px] overflow-y-auto border-t border-border/50 p-3">
+              {services?.filter(s =>
+                !s.isHidden &&
+                s.name.toLowerCase().includes(serviceSearch.toLowerCase())
+              ).map(service => (
+                <div
+                  key={service.id}
+                  className="flex items-center gap-2"
+                >
+                  <Checkbox
+                    id={`service-${service.id}`}
+                    checked={formData.serviceIds.includes(service.id)}
+                    onCheckedChange={() => toggleServiceSelection(service.id)}
+                    disabled={!formData.serviceIds.includes(service.id) && formData.serviceIds.length >= 3}
+                    data-testid={`checkbox-service-${service.id}`}
+                  />
+                  <Label htmlFor={`service-${service.id}`} className="text-sm cursor-pointer">
+                    {service.name} - ${service.price}
+                  </Label>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -7053,7 +9059,7 @@ function BlogSection() {
             value={formData.status}
             onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
           >
-            <SelectTrigger data-testid="select-blog-status">
+            <SelectTrigger className="border-0 bg-background" data-testid="select-blog-status">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -7064,13 +9070,42 @@ function BlogSection() {
         </div>
         <div className="space-y-2">
           <Label htmlFor="publishedAt">Publication Date</Label>
-          <Input
-            id="publishedAt"
-            type="date"
-            value={formData.publishedAt || ''}
-            onChange={(e) => setFormData(prev => ({ ...prev, publishedAt: e.target.value || null }))}
-            data-testid="input-blog-date"
-          />
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                id="publishedAt"
+                type="button"
+                className={clsx(
+                  "flex h-9 w-full items-center justify-between rounded-md bg-background px-3 py-2 text-sm",
+                  !publishedDate && "text-muted-foreground"
+                )}
+                data-testid="input-blog-date"
+              >
+                <span className="truncate">
+                  {publishedDate ? format(publishedDate, "MM/dd/yyyy") : "Select date"}
+                </span>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-auto rounded-2xl border-0 p-0 shadow-lg overflow-hidden"
+              align="end"
+              side="bottom"
+              sideOffset={8}
+            >
+              <CalendarPicker
+                mode="single"
+                selected={publishedDate}
+                onSelect={(date) =>
+                  setFormData(prev => ({
+                    ...prev,
+                    publishedAt: date ? format(date, "yyyy-MM-dd") : null
+                  }))
+                }
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
         </div>
         <div className="space-y-2">
           <Label htmlFor="authorName">Author</Label>
@@ -7079,12 +9114,13 @@ function BlogSection() {
             value={formData.authorName}
             onChange={(e) => setFormData(prev => ({ ...prev, authorName: e.target.value }))}
             placeholder="Skleanings"
+            className="border-0 bg-background"
             data-testid="input-blog-author"
           />
         </div>
       </div>
 
-      <div className="flex justify-between items-center pt-4 border-t">
+      <div className="flex justify-between items-center pt-4 border-t border-border/70">
         <Button
           type="button"
           variant="ghost"
@@ -7103,7 +9139,7 @@ function BlogSection() {
         <div className="flex gap-3">
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             onClick={() => {
               setIsCreateOpen(false);
               setEditingPost(null);
@@ -7111,6 +9147,7 @@ function BlogSection() {
               setIsSaved(false);
               resetForm();
             }}
+            className="text-muted-foreground hover:text-foreground"
             data-testid="button-blog-cancel"
           >
             Cancel
@@ -7130,7 +9167,8 @@ function BlogSection() {
         </div>
       </div>
     </form>
-  );
+    );
+  };
 
   if (isLoading) {
     return (
@@ -7143,25 +9181,38 @@ function BlogSection() {
   if (isCreateOpen || editingPost) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setIsCreateOpen(false);
-              setEditingPost(null);
-              setServiceSearch('');
-              setIsSaved(false);
-              resetForm();
-            }}
-            data-testid="button-blog-back"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Posts
-          </Button>
-          <h1 className="text-2xl font-bold">{editingPost ? 'Edit Post' : 'Create New Post'}</h1>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setIsCreateOpen(false);
+                setEditingPost(null);
+                setServiceSearch('');
+                setIsSaved(false);
+                resetForm();
+              }}
+              data-testid="button-blog-back"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Posts
+            </Button>
+            <h1 className="text-2xl font-bold">{editingPost ? 'Edit Post' : 'Create New Post'}</h1>
+          </div>
+          {editingPost && formData.slug && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.open(`/blog/${formData.slug}`, '_blank')}
+              className="border-0"
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              View Post
+            </Button>
+          )}
         </div>
-        <div className="bg-muted p-6 rounded-lg space-y-6 transition-all">
+        <div className="bg-muted p-4 sm:p-6 rounded-lg space-y-6 transition-all">
           {renderForm()}
         </div>
       </div>
@@ -7176,6 +9227,82 @@ function BlogSection() {
           <p className="text-sm text-muted-foreground">Manage your blog content and SEO</p>
         </div>
         <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
+          <Dialog open={isTagManagerOpen} onOpenChange={setIsTagManagerOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="w-full sm:w-auto border-0">
+                <Tag className="w-4 h-4 mr-2" />
+                Manage Tags
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md border-0">
+              <DialogHeader>
+                <DialogTitle>Manage Tags</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-2 max-h-[320px] overflow-y-auto">
+                {availableTags.length > 0 ? (
+                  availableTags.map((tag) => (
+                    <div
+                      key={tag}
+                      className="flex items-center justify-between gap-3 rounded-md bg-muted/60 px-3 py-2"
+                      onDoubleClick={() => handleStartEditTag(tag)}
+                    >
+                      {editingTag === tag ? (
+                        <Input
+                          value={editingTagValue}
+                          onChange={(e) => setEditingTagValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleSubmitEditTag();
+                            }
+                            if (e.key === 'Escape') {
+                              e.preventDefault();
+                              handleCancelEditTag();
+                            }
+                          }}
+                          onBlur={handleSubmitEditTag}
+                          autoFocus
+                          className="h-8 border-0 bg-transparent px-0 text-sm"
+                          data-testid={`input-tag-edit-${tag}`}
+                        />
+                      ) : (
+                        <span className="text-sm font-medium">{tag}</span>
+                      )}
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleStartEditTag(tag)}
+                          disabled={isDeletingTag || isRenamingTag}
+                          data-testid={`button-tag-edit-${tag}`}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setTagToDelete(tag)}
+                          disabled={isDeletingTag || editingTag === tag || isRenamingTag}
+                          data-testid={`button-tag-delete-${tag}`}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">No tags available.</p>
+                )}
+              </div>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" variant="ghost">Close</Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           <Select value={sortBy} onValueChange={(value: typeof sortBy) => setSortBy(value)}>
             <SelectTrigger className="w-full sm:w-[180px]" data-testid="select-blog-sort">
               <SelectValue />
@@ -7195,7 +9322,7 @@ function BlogSection() {
         </div>
       </div>
 
-      <div className="bg-muted p-6 rounded-lg space-y-6 transition-all">
+      <div className="bg-muted p-4 sm:p-6 rounded-lg space-y-6 transition-all">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <FileText className="w-5 h-5 text-primary" />
           Posts
@@ -7203,7 +9330,7 @@ function BlogSection() {
         {sortedPosts && sortedPosts.length > 0 ? (
           <div className="space-y-3">
             {sortedPosts.map(post => (
-              <div key={post.id} className="flex flex-col gap-4 p-4 bg-card/90 dark:bg-slate-900/70 rounded-lg sm:flex-row sm:items-start" data-testid={`row-blog-${post.id}`}>
+              <div key={post.id} className="flex flex-col gap-4 p-3 sm:p-4 bg-card/90 dark:bg-slate-900/70 rounded-lg sm:flex-row sm:items-start" data-testid={`row-blog-${post.id}`}>
                 {post.featureImageUrl ? (
                   <img
                     src={post.featureImageUrl}
@@ -7286,6 +9413,24 @@ function BlogSection() {
           </div>
         )}
       </div>
+      <AlertDialog open={!!tagToDelete} onOpenChange={(open) => !open && setTagToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove tag</AlertDialogTitle>
+            <AlertDialogDescription>
+              {tagToDelete
+                ? `Remove "${tagToDelete}" from all posts? This cannot be undone.`
+                : 'Remove this tag from all posts?'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingTag}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmRemoveTag} disabled={isDeletingTag}>
+              {isDeletingTag ? 'Removing...' : 'Remove'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
