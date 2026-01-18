@@ -176,11 +176,11 @@ export default function Home() {
   return (
     <div className="pb-0">
       {/* Hero Section */}
-      <section className="relative flex items-center lg:items-end pt-6 lg:pt-4 pb-0 overflow-hidden bg-[#1C53A3] min-h-[65vh] sm:min-h-[50vh] lg:min-h-[500px] xl:min-h-[550px]">
+      <section className="relative flex items-center lg:items-end pt-16 sm:pt-12 lg:pt-4 pb-0 overflow-hidden bg-[#1C53A3] min-h-[65vh] sm:min-h-[50vh] lg:min-h-[500px] xl:min-h-[550px]">
         <div className="container-custom mx-auto relative z-10 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-8 items-center lg:items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-center lg:items-center">
             <div className="order-1 lg:order-2 text-white pt-4 pb-2 lg:pt-6 lg:pb-8 lg:-translate-y-14 relative z-20">
-              <div className="mb-3 lg:mb-6">
+              <div className="mt-4 sm:mt-0 mb-3 lg:mb-6">
                 <img
                   src={homepageContent.heroBadgeImageUrl || DEFAULT_HOMEPAGE_CONTENT.heroBadgeImageUrl}
                   alt={homepageContent.heroBadgeAlt || DEFAULT_HOMEPAGE_CONTENT.heroBadgeAlt || 'Trusted Experts'}
@@ -214,11 +214,11 @@ export default function Home() {
                 </Link>
               </div>
             </div>
-            <div className="order-2 lg:order-1 relative flex h-full items-end justify-center lg:justify-end self-end w-full lg:min-h-[400px] z-10 lg:ml-[-5%] -mt-2 sm:mt-0 lg:-mt-10">
+            <div className="order-2 lg:order-1 relative flex h-full items-end justify-center lg:justify-end self-end w-full lg:min-h-[400px] z-10 lg:ml-[-5%] mt-6 sm:mt-2 lg:-mt-10">
               <img
                 src={companySettings?.heroImageUrl || heroImage}
                 alt="Cleaning Professionals"
-                className="w-[100vw] sm:w-[105%] lg:w-[100%] max-w-[400px] sm:max-w-[360px] md:max-w-[420px] lg:max-w-[490px] xl:max-w-[560px] object-contain drop-shadow-2xl translate-y-[-6%] sm:translate-y-[-2%] lg:translate-y-[-6%] scale-100 sm:scale-102 lg:scale-100 origin-bottom"
+                className="w-[100vw] sm:w-[105%] lg:w-[100%] max-w-[400px] sm:max-w-[360px] md:max-w-[420px] lg:max-w-[490px] xl:max-w-[560px] object-contain drop-shadow-2xl translate-y-[2%] sm:translate-y-[-2%] lg:translate-y-[-6%] scale-100 sm:scale-102 lg:scale-100 origin-bottom"
               />
             </div>
           </div>
@@ -238,8 +238,8 @@ export default function Home() {
         </div>
       </section>
       {/* Trust Badges */}
-      <section className="relative z-20 -mt-10">
-        <div className="absolute inset-x-0 bottom-0 top-1/2 bg-[#F8FAFC] -z-10 pt-[0px] pb-[0px] mt-[-25px] mb-[-25px]"></div>
+      <section className="relative z-20 -mt-10 sm:-mt-12 lg:-mt-14 bg-[#111111]">
+        <div className="absolute inset-x-0 bottom-0 top-[70%] sm:top-[55%] bg-[#111111] -z-10 pt-[0px] pb-[0px] mt-[-25px] mb-[-25px]"></div>
         <div className="container-custom mx-auto">
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-100 overflow-hidden">
             {trustBadges.map((feature, i) => {
@@ -260,19 +260,20 @@ export default function Home() {
           </div>
         </div>
       </section>
+      <div className="h-3 bg-[#111111]"></div>
       {/* Reviews Section */}
-      <section className="pt-20 pb-0 bg-white overflow-hidden mb-0">
+      <section className="pt-20 pb-0 bg-[#111111] overflow-hidden mb-0 text-white">
         <div className="w-full">
           <div className="container-custom mx-auto mb-16 text-center">
-            <h2 className="text-3xl md:text-5xl font-bold mb-4">
+            <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white">
               {homepageContent.reviewsSection?.title || DEFAULT_HOMEPAGE_CONTENT.reviewsSection?.title}
             </h2>
-            <p className="text-slate-600 max-w-2xl mx-auto text-lg">
+            <p className="text-slate-300 max-w-2xl mx-auto text-lg">
               {homepageContent.reviewsSection?.subtitle || DEFAULT_HOMEPAGE_CONTENT.reviewsSection?.subtitle}
             </p>
           </div>
           <div className="w-full px-0">
-            <div className="pb-8 md:pb-0 bg-white">
+            <div className="pb-8 md:pb-0 bg-[#111111]">
               <iframe 
                 className='lc_reviews_widget' 
                 src={homepageContent.reviewsSection?.embedUrl || DEFAULT_HOMEPAGE_CONTENT.reviewsSection?.embedUrl}

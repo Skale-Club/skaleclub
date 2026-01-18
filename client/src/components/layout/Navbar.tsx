@@ -51,7 +51,7 @@ export function Navbar() {
   }, [location]);
 
   return (
-    <nav className="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-gray-100">
+    <nav className="bg-[#242424]/85 backdrop-blur-md absolute top-0 left-0 right-0 z-50">
       <div className="container-custom mx-auto">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -60,13 +60,13 @@ export function Navbar() {
               <img 
                 src={companySettings.logoMain} 
                 alt={companySettings.companyName || "Skleanings"} 
-                className="h-[27px] md:h-9 w-auto"
+                className="h-auto w-[54px] object-contain p-1.5"
               />
             ) : (
               <img 
                 src="https://storage.googleapis.com/msgsndr/q6UKnlWOQwyTk82yZPAs/media/695dbac289c99d91ea25f488.svg" 
                 alt="Skleanings" 
-                className="h-[27px] md:h-9 w-auto"
+                className="h-auto w-[54px] object-contain p-1.5"
               />
             )}
           </Link>
@@ -123,7 +123,7 @@ export function Navbar() {
 
           {/* Mobile Menu Button */}
           <button 
-            className="md:hidden p-2 text-slate-600"
+            className="md:hidden p-2 text-white"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             {isMenuOpen ? <X /> : <Menu />}
