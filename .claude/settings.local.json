@@ -22,7 +22,10 @@
       "Bash(lsof:*)",
       "Bash(xargs kill:*)",
       "Bash(fuser:*)",
-      "Bash(kill:*)"
+      "Bash(kill:*)",
+      "Bash(echo:*)",
+      "Bash(ls:*)",
+      "Bash(chmod:*)"
     ]
   }
 }

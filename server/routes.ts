@@ -5,6 +5,8 @@ import { api, errorSchemas, buildUrl } from "@shared/routes";
 import { z } from "zod";
 import OpenAI from "openai";
 import crypto from "crypto";
+import fs from "fs";
+import path from "path";
 import { WORKING_HOURS, DEFAULT_BUSINESS_HOURS, insertCategorySchema, insertServiceSchema, insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema, insertBlogPostSchema, BusinessHours, DayHours, insertChatSettingsSchema, insertChatIntegrationsSchema, insertKnowledgeBaseCategorySchema, insertKnowledgeBaseArticleSchema } from "@shared/schema";
 import { insertSubcategorySchema } from "./storage";
 import { ObjectStorageService, registerObjectStorageRoutes } from "./replit_integrations/object_storage";
@@ -855,6 +857,32 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Upload error:", error);
       res.status(500).json({ error: "Failed to generate upload URL" });
+    }
+  });
+
+  // Local file upload endpoint (fallback when Object Storage doesn't work)
+  app.post("/api/upload-local", requireAdmin, async (req, res) => {
+    try {
+      const { filename, data } = req.body;
+      if (!filename || !data) {
+        return res.status(400).json({ error: "Missing filename or data" });
+      }
+
+      // Sanitize filename
+      const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const timestamp = Date.now();
+      const ext = path.extname(safeName) || '.png';
+      const finalName = `upload_${timestamp}${ext}`;
+
+      // Decode base64 and save
+      const buffer = Buffer.from(data, 'base64');
+      const filePath = path.join(process.cwd(), 'attached_assets', finalName);
+      fs.writeFileSync(filePath, buffer);
+
+      res.json({ path: `/attached_assets/${finalName}` });
+    } catch (error) {
+      console.error("Local upload error:", error);
+      res.status(500).json({ error: "Failed to save file" });
     }
   });
 

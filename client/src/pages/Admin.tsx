@@ -619,17 +619,41 @@ function HeroSettingsSection() {
     if (!file) return;
 
     try {
-      const uploadRes = await apiRequest('POST', '/api/upload');
-      const { uploadURL, objectPath } = await uploadRes.json() as { uploadURL: string; objectPath: string };
+      let imagePath = '';
+      
+      try {
+        const uploadRes = await apiRequest('POST', '/api/upload');
+        const { uploadURL, objectPath } = await uploadRes.json() as { uploadURL: string; objectPath: string };
 
-      await fetch(uploadURL, {
-        method: 'PUT',
-        body: file,
-        headers: { 'Content-Type': file.type }
-      });
+        await fetch(uploadURL, {
+          method: 'PUT',
+          body: file,
+          headers: { 'Content-Type': file.type }
+        });
+        
+        imagePath = objectPath;
+      } catch (objectStorageError) {
+        const reader = new FileReader();
+        const base64Data = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => {
+            const result = reader.result as string;
+            const base64 = result.split(',')[1];
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
 
-      setHeroImageUrl(objectPath);
-      await saveHeroSettings({ heroImageUrl: objectPath }, ['heroImageUrl']);
+        const localRes = await apiRequest('POST', '/api/upload-local', {
+          filename: file.name,
+          data: base64Data
+        });
+        const { path } = await localRes.json() as { path: string };
+        imagePath = path;
+      }
+
+      setHeroImageUrl(imagePath);
+      await saveHeroSettings({ heroImageUrl: imagePath }, ['heroImageUrl']);
       toast({ title: 'Hero image uploaded and saved' });
     } catch (error: any) {
       toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });

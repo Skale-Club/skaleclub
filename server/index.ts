@@ -3,8 +3,12 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
+import path from "path";
 
 const app = express();
+
+// Serve attached_assets as static files
+app.use('/attached_assets', express.static(path.join(process.cwd(), 'attached_assets')));
 const httpServer = createServer(app);
 
 declare module "http" {
