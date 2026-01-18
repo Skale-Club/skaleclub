@@ -886,6 +886,33 @@ export async function registerRoutes(
     }
   });
 
+  // Update favicon endpoint - replaces the system favicon
+  app.post("/api/update-favicon", requireAdmin, async (req, res) => {
+    try {
+      const { data, filename } = req.body;
+      if (!data) {
+        return res.status(400).json({ error: "Missing image data" });
+      }
+
+      const buffer = Buffer.from(data, 'base64');
+      
+      // Update favicon.png in client/public
+      const faviconPath = path.join(process.cwd(), 'client', 'public', 'favicon.png');
+      fs.writeFileSync(faviconPath, buffer);
+      
+      // Also update in dist if it exists (for production builds)
+      const distFaviconPath = path.join(process.cwd(), 'dist', 'public', 'favicon.png');
+      if (fs.existsSync(path.dirname(distFaviconPath))) {
+        fs.writeFileSync(distFaviconPath, buffer);
+      }
+
+      res.json({ success: true, message: 'Favicon updated successfully' });
+    } catch (error) {
+      console.error("Favicon update error:", error);
+      res.status(500).json({ error: "Failed to update favicon" });
+    }
+  });
+
   // Register object storage routes
   registerObjectStorageRoutes(app);
 

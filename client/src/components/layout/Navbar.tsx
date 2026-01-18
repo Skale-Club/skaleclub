@@ -29,10 +29,6 @@ export function Navbar() {
 
   const navLinks = [
     { href: "/", label: "Home" },
-    { href: "/services", label: "Services" },
-    { href: "/#areas-served", label: "Areas Served" },
-    { href: "/blog", label: "Blog" },
-    { href: "/faq", label: "FAQ" },
   ];
 
   const getInitials = (firstName?: string | null, lastName?: string | null) => {
@@ -77,17 +73,7 @@ export function Navbar() {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8">
-            <Link href="/services" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer">Services</Link>
-            <button
-              onClick={() => handleHashNavigation('areas-served')}
-              className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer"
-            >
-              Areas Served
-            </button>
-            <Link href="/blog" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer">Blog</Link>
-            <Link href="/faq" className="text-sm font-semibold text-[#1D1D1D] hover:text-primary transition-colors cursor-pointer">FAQ</Link>
-            
-            <a href={`tel:${telPhone}`} className="px-4 py-2 bg-secondary text-secondary-foreground font-bold rounded-full hover-elevate transition-all text-sm flex items-center gap-2">
+            <a href={`tel:${telPhone}`} className="px-4 py-2 bg-[#406EF1] hover:bg-[#355CD0] text-white font-bold rounded-full hover-elevate transition-all text-sm flex items-center gap-2">
               <Phone className="w-4 h-4 fill-current" />
               {displayPhone}
             </a>

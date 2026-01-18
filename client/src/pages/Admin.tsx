@@ -103,14 +103,12 @@ import heroImage from '@assets/Persona-Mobile_1767749022412.png';
 import ghlLogo from '@assets/ghl-logo.webp';
 import { SiFacebook, SiGoogleanalytics, SiGoogletagmanager, SiOpenai, SiTwilio } from 'react-icons/si';
 
-type AdminSection = 'dashboard' | 'categories' | 'services' | 'bookings' | 'hero' | 'company' | 'seo' | 'faqs' | 'users' | 'availability' | 'chat' | 'integrations' | 'blog' | 'knowledge-base';
+type AdminSection = 'dashboard' | 'bookings' | 'hero' | 'company' | 'seo' | 'faqs' | 'users' | 'availability' | 'chat' | 'integrations' | 'blog' | 'knowledge-base';
 
 const menuItems = [
   { id: 'dashboard' as AdminSection, title: 'Dashboard', icon: LayoutDashboard },
   { id: 'company' as AdminSection, title: 'Company Infos', icon: Building2 },
   { id: 'hero' as AdminSection, title: 'Website', icon: Image },
-  { id: 'categories' as AdminSection, title: 'Categories', icon: FolderOpen },
-  { id: 'services' as AdminSection, title: 'Services', icon: Package },
   { id: 'bookings' as AdminSection, title: 'Bookings', icon: Calendar },
   { id: 'availability' as AdminSection, title: 'Availability', icon: Clock },
   { id: 'chat' as AdminSection, title: 'Chat', icon: MessageSquare },
@@ -326,8 +324,6 @@ function AdminContent() {
               }}
             />
           )}
-          {activeSection === 'categories' && <CategoriesSection />}
-          {activeSection === 'services' && <ServicesSection />}
           {activeSection === 'bookings' && <BookingsSection />}
           {activeSection === 'hero' && <HeroSettingsSection />}
           {activeSection === 'company' && <CompanySettingsSection />}
@@ -1448,20 +1444,66 @@ function CompanySettingsSection() {
     if (!file) return;
 
     try {
-      const uploadRes = await apiRequest('POST', '/api/upload');
-      const { uploadURL, objectPath } = await uploadRes.json() as { uploadURL: string; objectPath: string };
+      let imagePath = '';
+      
+      try {
+        const uploadRes = await apiRequest('POST', '/api/upload');
+        const { uploadURL, objectPath } = await uploadRes.json() as { uploadURL: string; objectPath: string };
 
-      await fetch(uploadURL, {
-        method: 'PUT',
-        body: file,
-        headers: { 'Content-Type': file.type }
-      });
+        await fetch(uploadURL, {
+          method: 'PUT',
+          body: file,
+          headers: { 'Content-Type': file.type }
+        });
+        
+        imagePath = objectPath;
+      } catch (objectStorageError) {
+        const reader = new FileReader();
+        const base64Data = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => {
+            const result = reader.result as string;
+            const base64 = result.split(',')[1];
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        const localRes = await apiRequest('POST', '/api/upload-local', {
+          filename: file.name,
+          data: base64Data
+        });
+        const { path } = await localRes.json() as { path: string };
+        imagePath = path;
+      }
 
       const fieldMap = { main: 'logoMain', dark: 'logoDark', icon: 'logoIcon' } as const;
       const fieldName = fieldMap[type];
       
-      setSettings(prev => ({ ...prev, [fieldName]: objectPath }));
-      await saveSettings({ [fieldName]: objectPath });
+      setSettings(prev => ({ ...prev, [fieldName]: imagePath }));
+      await saveSettings({ [fieldName]: imagePath });
+      
+      if (type === 'icon') {
+        const reader = new FileReader();
+        const base64Data = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => {
+            const result = reader.result as string;
+            const base64 = result.split(',')[1];
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        
+        try {
+          await apiRequest('POST', '/api/update-favicon', {
+            data: base64Data,
+            filename: file.name
+          });
+        } catch (faviconError) {
+          console.error('Failed to update system favicon:', faviconError);
+        }
+      }
       
       toast({ title: 'Asset uploaded and saved' });
     } catch (error: any) {

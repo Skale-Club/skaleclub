@@ -179,7 +179,7 @@ export default function Home() {
       <section className="relative flex items-center lg:items-end pt-6 lg:pt-4 pb-0 overflow-hidden bg-[#1C53A3] min-h-[65vh] sm:min-h-[50vh] lg:min-h-[500px] xl:min-h-[550px]">
         <div className="container-custom mx-auto relative z-10 w-full">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-8 items-center lg:items-center">
-            <div className="text-white pt-4 pb-2 lg:pt-12 lg:pb-12 relative z-20">
+            <div className="order-1 lg:order-2 text-white pt-4 pb-2 lg:pt-6 lg:pb-8 lg:-translate-y-14 relative z-20">
               <div className="mb-3 lg:mb-6">
                 <img
                   src={homepageContent.heroBadgeImageUrl || DEFAULT_HOMEPAGE_CONTENT.heroBadgeImageUrl}
@@ -187,7 +187,7 @@ export default function Home() {
                   className="h-5 sm:h-6 w-auto object-contain"
                 />
               </div>
-              <h1 className="text-[11vw] sm:text-5xl md:text-6xl lg:text-5xl xl:text-6xl font-bold mb-3 lg:mb-6 font-display leading-[1.05] sm:leading-[1.1]">
+              <h1 className="text-[11vw] sm:text-5xl md:text-6xl lg:text-4xl xl:text-5xl font-bold mb-3 lg:mb-6 font-display leading-[1.05] sm:leading-[1.1]">
                 {companySettings?.heroTitle ? (
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">{companySettings.heroTitle}</span>
                 ) : (
@@ -205,45 +205,36 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 flex-wrap">
                 <Link href="/services" className="w-full sm:w-auto shrink-0">
                   <button
-                    className="w-full px-6 sm:px-8 py-3 sm:py-4 bg-[#FFFF01] hover:bg-[#e6e600] hover:scale-105 text-black font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
+                    className="w-full px-6 sm:px-8 py-3 sm:py-4 bg-[#406EF1] hover:bg-[#355CD0] hover:scale-105 text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
                     onClick={() => trackCTAClick('hero', companySettings?.ctaText || 'Get Instant Price')}
                     data-testid="button-hero-cta"
                   >
                     {companySettings?.ctaText || "Get Instant Price"}
                   </button>
                 </Link>
-                <a
-                  href={`tel:${telPhone}`}
-                  className="w-full sm:w-auto shrink-0 px-6 sm:px-8 py-3 sm:py-4 bg-transparent text-white font-bold rounded-full border border-white/30 hover:bg-white/10 hover:scale-105 transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
-                  onClick={() => trackCTAClick('hero', 'phone_call')}
-                  data-testid="button-hero-phone"
-                >
-                  <Phone className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
-                  {displayPhone}
-                </a>
               </div>
             </div>
-            <div className="relative flex h-full items-end justify-center lg:justify-end self-end w-full lg:min-h-[400px] z-10 lg:ml-[-5%] -mt-2 sm:mt-0">
+            <div className="order-2 lg:order-1 relative flex h-full items-end justify-center lg:justify-end self-end w-full lg:min-h-[400px] z-10 lg:ml-[-5%] -mt-2 sm:mt-0 lg:-mt-10">
               <img
                 src={companySettings?.heroImageUrl || heroImage}
                 alt="Cleaning Professionals"
-                className="w-[100vw] sm:w-[105%] lg:w-[100%] max-w-[400px] sm:max-w-[360px] md:max-w-[420px] lg:max-w-[490px] xl:max-w-[560px] object-contain drop-shadow-2xl translate-y-[2%] sm:translate-y-[5%] scale-100 sm:scale-102 lg:scale-100 origin-bottom"
+                className="w-[100vw] sm:w-[105%] lg:w-[100%] max-w-[400px] sm:max-w-[360px] md:max-w-[420px] lg:max-w-[490px] xl:max-w-[560px] object-contain drop-shadow-2xl translate-y-[-6%] sm:translate-y-[-2%] lg:translate-y-[-6%] scale-100 sm:scale-102 lg:scale-100 origin-bottom"
               />
             </div>
           </div>
         </div>
-        
+
         {/* Modern Creative Blue Gradient Background */}
         <div className="absolute inset-0 bg-[#1C53A3]">
-          <div className="absolute inset-0 opacity-60" style={{ 
+          <div className="absolute inset-0 opacity-70" style={{
             background: `
-              radial-gradient(circle at 20% 30%, #4facfe 0%, transparent 50%),
-              radial-gradient(circle at 80% 20%, #a8d8ff 0%, transparent 50%),
-              radial-gradient(circle at 50% 80%, #1C53A3 0%, transparent 50%),
-              linear-gradient(135deg, #1C53A3 0%, #74abe2 100%)
-            ` 
+              radial-gradient(circle at 15% 25%, #5B4A44 0%, transparent 50%),
+              radial-gradient(circle at 70% 20%, #44363B 0%, transparent 45%),
+              radial-gradient(circle at 85% 70%, #2A2334 0%, transparent 55%),
+              linear-gradient(135deg, #5B4A44 0%, #44363B 30%, #2A2334 60%, #0E1A2E 100%)
+            `
           }}></div>
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1C53A3] via-[#1C53A3]/20 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0E1A2E]/80 via-[#13233A]/40 to-transparent"></div>
         </div>
       </section>
       {/* Trust Badges */}
@@ -267,58 +258,6 @@ export default function Home() {
               );
             })}
           </div>
-        </div>
-      </section>
-      {/* Categories */}
-      <section className="py-20 bg-[#F8FAFC]">
-        <div className="container-custom mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold mb-4">
-              {homepageContent.categoriesSection?.title || DEFAULT_HOMEPAGE_CONTENT.categoriesSection?.title}
-            </h2>
-            <p className="text-slate-600 max-w-2xl mx-auto text-lg">
-              {homepageContent.categoriesSection?.subtitle || DEFAULT_HOMEPAGE_CONTENT.categoriesSection?.subtitle}
-            </p>
-          </div>
-
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-64 bg-gray-100 rounded-2xl animate-pulse"></div>
-              ))}
-            </div>
-          ) : (
-            <div className={`grid grid-cols-1 md:grid-cols-2 ${activeCategories?.length === 1 ? 'lg:grid-cols-1 max-w-md mx-auto' : activeCategories?.length === 2 ? 'lg:grid-cols-2 max-w-4xl mx-auto' : 'lg:grid-cols-3'} gap-8`}>
-              {activeCategories?.map((category) => (
-                <div
-                  key={category.id}
-                  className="group cursor-pointer relative overflow-hidden rounded-2xl h-80 shadow-md hover:shadow-xl transition-all duration-500 bg-light-gray"
-                  onClick={() => handleCategoryClick(category.id)}
-                >
-                  <img 
-                    src={category.imageUrl || "https://images.unsplash.com/photo-1581578731117-104f2a412729?w=800&q=80"}
-                    alt={category.name}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
-                  <div className="absolute bottom-0 left-0 p-8 w-full">
-                    <h3 className="text-2xl font-bold text-white mb-2 group-hover:translate-x-2 transition-transform">
-                      {category.name}
-                    </h3>
-                    <p className="text-gray-300 text-sm mb-4 line-clamp-2">
-                      {category.description}
-                    </p>
-                    <button 
-                      className="w-full py-2 bg-[#FFFF01] hover:bg-[#e6e600] text-black font-bold rounded-lg opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all"
-                      onClick={() => trackCTAClick('category_card', category.name)}
-                    >
-                      {homepageContent.categoriesSection?.ctaText || DEFAULT_HOMEPAGE_CONTENT.categoriesSection?.ctaText}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </section>
       {/* Reviews Section */}
