@@ -123,16 +123,15 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
               return (
                 <div
                   key={`${numberLabel}-${step.title}-${index}`}
-                  className="group relative overflow-visible rounded-3xl bg-white/90 border border-slate-100 shadow-[0_30px_80px_-55px_rgba(15,23,42,0.55)] hover:-translate-y-2 hover:shadow-[0_35px_90px_-50px_rgba(23,37,84,0.45)] transition-all duration-300 backdrop-blur flex-shrink-0 w-[88%] sm:w-[70%] md:w-[52%] lg:w-[36%] xl:w-[30%]"
+                  className="group relative overflow-visible rounded-3xl bg-white/90 border border-slate-100 shadow-[0_24px_60px_-60px_rgba(15,23,42,0.45)] hover:-translate-y-2 hover:shadow-[0_28px_70px_-55px_rgba(23,37,84,0.4)] transition-all duration-300 backdrop-blur flex-shrink-0 w-[88%] sm:w-[70%] md:w-[52%] lg:w-[36%] xl:w-[30%]"
                 >
-                  <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
-                  <div className="absolute right-4 top-3 text-6xl font-black text-slate-100/80 pointer-events-none">
-                    {numberLabel}
-                  </div>
+                    <div className="absolute right-4 top-3 text-6xl font-black text-slate-100/80 pointer-events-none">
+                      {numberLabel}
+                    </div>
                   <div className="relative z-10 p-6 space-y-5">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shadow-inner">
+                        <div className="h-12 w-12 min-w-12 flex-shrink-0 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
                           <Icon className="w-6 h-6" />
                         </div>
                         <div className="space-y-1">
