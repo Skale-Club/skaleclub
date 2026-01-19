@@ -49,6 +49,13 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
   const practicalTitle = section.practicalBlockTitle || 'Na prática';
   const [isPaused, setIsPaused] = useState(false);
   const trackRef = useRef<HTMLDivElement | null>(null);
+  const dragStateRef = useRef<{ isDown: boolean; startX: number; startScroll: number }>({
+    isDown: false,
+    startX: 0,
+    startScroll: 0,
+  });
+  const resumeTimerRef = useRef<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     const track = trackRef.current;
@@ -70,6 +77,70 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
     animationFrame = requestAnimationFrame(step);
     return () => cancelAnimationFrame(animationFrame);
   }, [isPaused, stepsLoop.length]);
+
+  // Helpers to pause/resume auto-scroll when user interacts
+  const pauseAutoScroll = () => {
+    setIsPaused(true);
+    if (resumeTimerRef.current) {
+      window.clearTimeout(resumeTimerRef.current);
+      resumeTimerRef.current = null;
+    }
+  };
+
+  const resumeAutoScroll = (delayMs = 800) => {
+    if (resumeTimerRef.current) {
+      window.clearTimeout(resumeTimerRef.current);
+    }
+    resumeTimerRef.current = window.setTimeout(() => {
+      setIsPaused(false);
+      resumeTimerRef.current = null;
+    }, delayMs);
+  };
+
+  // Drag to scroll
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+
+    const handlePointerDown = (e: PointerEvent) => {
+      pauseAutoScroll();
+      setIsDragging(true);
+      dragStateRef.current = {
+        isDown: true,
+        startX: e.clientX,
+        startScroll: track.scrollLeft,
+      };
+      track.setPointerCapture?.(e.pointerId);
+    };
+
+    const handlePointerMove = (e: PointerEvent) => {
+      if (!dragStateRef.current.isDown) return;
+      e.preventDefault();
+      const diff = e.clientX - dragStateRef.current.startX;
+      track.scrollLeft = dragStateRef.current.startScroll - diff;
+    };
+
+    const handlePointerUp = (e: PointerEvent) => {
+      if (dragStateRef.current.isDown) {
+        dragStateRef.current.isDown = false;
+        track.releasePointerCapture?.(e.pointerId);
+        resumeAutoScroll();
+        setIsDragging(false);
+      }
+    };
+
+    track.addEventListener('pointerdown', handlePointerDown);
+    track.addEventListener('pointermove', handlePointerMove);
+    track.addEventListener('pointerup', handlePointerUp);
+    track.addEventListener('pointerleave', handlePointerUp);
+
+    return () => {
+      track.removeEventListener('pointerdown', handlePointerDown);
+      track.removeEventListener('pointermove', handlePointerMove);
+      track.removeEventListener('pointerup', handlePointerUp);
+      track.removeEventListener('pointerleave', handlePointerUp);
+    };
+  }, []);
 
   const handleCta = (event: MouseEvent<HTMLAnchorElement>) => {
     if (onCtaClick) {
@@ -115,7 +186,7 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
           <div className="pointer-events-none absolute right-0 top-0 h-full w-12 sm:w-16 bg-gradient-to-l from-[#f7f9fc] via-[#f7f9fc] to-transparent z-10" />
           <div
             ref={trackRef}
-            className="flex gap-6 md:gap-7 xl:gap-8 overflow-x-scroll overflow-y-visible no-scrollbar scroll-smooth pt-2 pb-10"
+            className={`flex gap-6 md:gap-7 xl:gap-8 overflow-x-scroll overflow-y-visible no-scrollbar scroll-smooth pt-2 pb-10 select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           >
             {stepsLoop.map((step, index) => {
               const Icon = getStepIcon(step.icon);
@@ -159,10 +230,10 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
         </div>
 
         <div className="container-custom mx-auto px-4 sm:px-6 md:px-10 grid gap-6 lg:grid-cols-[2fr_1fr] items-stretch -mt-6 md:-mt-10">
-          <div className="rounded-3xl bg-white/90 border border-slate-100 shadow-[0_24px_70px_-50px_rgba(15,23,42,0.45)] p-6 md:p-8 space-y-4 h-full">
+          <div className="rounded-3xl bg-white/90 border border-slate-100 shadow-[0_24px_70px_-50px_rgba(15,23,42,0.45)] px-8 py-8 space-y-4 h-full">
             <div className="flex items-center gap-3">
               <div className="h-11 w-11 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                <CheckCircle2 className="w-5 h-5" />
+                <CheckCircle2 className="w-6 h-6" />
               </div>
               <div>
                 <p className="text-lg font-bold text-slate-900">{practicalTitle}</p>
@@ -175,14 +246,14 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
                   key={`${bullet}-${idx}`}
                   className="flex items-start gap-3 p-4 rounded-2xl bg-slate-50/90 border border-slate-100 shadow-sm"
                 >
-                  <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5" />
+                  <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5" />
                   <p className="text-sm text-slate-700 leading-relaxed">{bullet}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="rounded-3xl bg-white/95 border border-slate-100 shadow-[0_24px_70px_-50px_rgba(15,23,42,0.45)] p-6 flex flex-col gap-4 justify-center h-full">
+          <div className="rounded-3xl bg-white/95 border border-slate-100 shadow-[0_24px_70px_-50px_rgba(15,23,42,0.45)] px-8 py-8 flex flex-col gap-4 justify-center h-full">
             <div className="space-y-2">
               <p className="text-sm font-semibold text-slate-700 uppercase tracking-[0.12em]">Próximo passo</p>
               <p className="text-xl font-bold text-slate-900 leading-tight">Agenda aberta para novos projetos</p>

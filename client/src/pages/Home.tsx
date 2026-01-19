@@ -340,13 +340,13 @@ export default function Home() {
             </p>
           </div>
           <div className="w-full px-0">
-            <div className="pb-8 md:pb-0 bg-[#111111] -mt-6 sm:-mt-8 lg:-mt-10">
+            <div className="pb-0 bg-[#111111] -mt-6 sm:-mt-8 lg:-mt-10">
               <iframe 
-                className='lc_reviews_widget' 
+                className="lc_reviews_widget rounded-none" 
                 src={homepageContent.reviewsSection?.embedUrl || DEFAULT_HOMEPAGE_CONTENT.reviewsSection?.embedUrl}
                 frameBorder='0' 
                 scrolling='no' 
-                style={{ minWidth: '100%', width: '100%', height: '520px', border: 'none', display: 'block' }}
+                style={{ minWidth: '100%', width: '100%', height: '488px', border: 'none', display: 'block', borderRadius: '0', background: '#111111' }}
                 onLoad={() => {
                   const script = document.createElement('script');
                   script.type = 'text/javascript';

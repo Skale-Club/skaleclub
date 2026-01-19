@@ -1,4 +1,4 @@
-import { db } from "./db";
+import { db, pool } from "./db";
 import { DEFAULT_QUIZ_CONFIG, calculateQuizScoresWithConfig, classifyLead } from "@shared/quiz";
 import {
   categories,
@@ -62,6 +62,23 @@ import {
 } from "@shared/schema";
 import { eq, and, or, ilike, gte, lte, inArray, desc, asc, sql, ne } from "drizzle-orm";
 import { z } from "zod";
+
+// Ensure optional GHL columns exist even if migration hasn't been applied yet
+let ensureGhlColumnsPromise: Promise<void> | null = null;
+async function ensureQuizLeadGhlColumns() {
+  if (ensureGhlColumnsPromise) return ensureGhlColumnsPromise;
+  ensureGhlColumnsPromise = pool
+    .query(`
+      ALTER TABLE quiz_leads ADD COLUMN IF NOT EXISTS ghl_contact_id text;
+      ALTER TABLE quiz_leads ADD COLUMN IF NOT EXISTS ghl_sync_status text DEFAULT 'pending';
+    `)
+    .then(() => undefined)
+    .catch((err) => {
+      ensureGhlColumnsPromise = null;
+      throw err;
+    });
+  return ensureGhlColumnsPromise;
+}
 
 export const insertSubcategorySchema = z.object({
   categoryId: z.number(),
@@ -612,16 +629,20 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getQuizLeadBySession(sessionId: string): Promise<QuizLead | undefined> {
+    await ensureQuizLeadGhlColumns();
     const [lead] = await db.select().from(quizLeads).where(eq(quizLeads.sessionId, sessionId));
     return lead;
   }
 
   async getQuizLeadByEmail(email: string): Promise<QuizLead | undefined> {
+    await ensureQuizLeadGhlColumns();
     const [lead] = await db.select().from(quizLeads).where(eq(quizLeads.email, email));
     return lead;
   }
 
   async upsertQuizLeadProgress(progress: QuizLeadProgressInput, metadata: { userAgent?: string } = {}, quizConfig?: QuizConfig): Promise<QuizLead> {
+    await ensureQuizLeadGhlColumns();
+
     const existing = await this.getQuizLeadBySession(progress.sessionId);
     if (!existing && !progress.nome) {
       throw new Error("Nome é obrigatório para iniciar o quiz");
@@ -777,6 +798,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async listQuizLeads(filters: { status?: LeadStatus; classificacao?: LeadClassification; quizCompleto?: boolean; search?: string } = {}): Promise<QuizLead[]> {
+    await ensureQuizLeadGhlColumns();
     const conditions: any[] = [];
     if (filters.status) conditions.push(eq(quizLeads.status, filters.status));
     if (filters.classificacao) conditions.push(eq(quizLeads.classificacao, filters.classificacao));
@@ -799,6 +821,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateQuizLead(id: number, updates: Partial<Pick<QuizLead, "status" | "observacoes" | "notificacaoEnviada" | "ghlContactId" | "ghlSyncStatus">>): Promise<QuizLead | undefined> {
+    await ensureQuizLeadGhlColumns();
     const [existing] = await db.select().from(quizLeads).where(eq(quizLeads.id, id));
     if (!existing) return undefined;
 
@@ -811,6 +834,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteQuizLead(id: number): Promise<boolean> {
+    await ensureQuizLeadGhlColumns();
     const [existing] = await db.select().from(quizLeads).where(eq(quizLeads.id, id));
     if (!existing) return false;
     await db.delete(quizLeads).where(eq(quizLeads.id, id));

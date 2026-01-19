@@ -232,3 +232,14 @@
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* Reviews widget should keep square edges */
+.lc_reviews_widget {
+  border-radius: 0 !important;
+  background: #111111 !important;
+}
+
+/* If the widget injects its own markup, keep all corners square */
+.lc_reviews_widget * {
+  border-radius: 0 !important;
+}
