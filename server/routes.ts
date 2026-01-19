@@ -1016,7 +1016,8 @@ export async function registerRoutes(
       if (lead.quizCompleto) {
         try {
           const ghlSettings = await storage.getIntegrationSettings('gohighlevel');
-          if (ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.locationId && (lead.email || lead.telefone)) {
+          // GHL sync requires at least phone number
+          if (ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.locationId && lead.telefone) {
             const nameParts = (lead.nome || '').trim().split(' ').filter(Boolean);
             const firstName = nameParts.shift() || lead.nome || 'Lead';
             const lastName = nameParts.join(' ');
