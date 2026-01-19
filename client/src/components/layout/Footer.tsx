@@ -25,7 +25,11 @@ export function Footer() {
     queryKey: ['/api/company-settings'],
   });
 
-  
+  const companyName = companySettings?.companyName?.trim() || "Skleanings";
+  const tagline =
+    companySettings?.heroSubtitle?.trim() ||
+    companySettings?.seoDescription?.trim() ||
+    "Mentoria 1-a-1 em marketing digital para empresários brasileiros que querem escalar nos EUA. Estratégia personalizada, suporte contínuo e foco em resultados reais.";
 
   return (
     <footer className="bg-[#1F1F1F] text-slate-300 py-6 pt-[40px] pb-[40px]">
@@ -35,26 +39,25 @@ export function Footer() {
             {companySettings?.logoDark ? (
               <img 
                 src={companySettings.logoDark} 
-                alt={companySettings.companyName || "Skleanings"} 
+                alt={companyName} 
                 className="h-auto w-[52px]"
               />
             ) : companySettings?.logoIcon ? (
               <img 
                 src={companySettings.logoIcon} 
-                alt={companySettings.companyName || "Skleanings"} 
+                alt={companyName} 
                 className="h-auto w-[52px] brightness-0 invert"
               />
             ) : (
               <img 
                 src="https://storage.googleapis.com/msgsndr/q6UKnlWOQwyTk82yZPAs/media/695dbac289c99d91ea25f488.svg" 
-                alt="Skleanings" 
+                alt={companyName} 
                 className="h-auto w-[52px] brightness-0 invert"
               />
             )}
           </Link>
           <p className="text-gray-400 max-w-sm mb-6 text-[14px]">
-            Professional cleaning services. 
-            We provide upfront pricing and easy online booking for your convenience.
+            {tagline}
           </p>
           
           {companySettings && (companySettings as any).socialLinks && Array.isArray((companySettings as any).socialLinks) && (companySettings as any).socialLinks.length > 0 && (
@@ -79,19 +82,19 @@ export function Footer() {
         
         
         <div>
-          <h4 className="font-bold text-white mb-4">Company</h4>
+          <h4 className="font-bold text-white mb-4">Empresa</h4>
           <ul className="space-y-2 text-sm text-gray-400">
-            <li><Link href="/about" className="hover:text-gray-200">About Us</Link></li>
-            <li><Link href="/contact" className="hover:text-gray-200">Contact</Link></li>
+            <li><Link href="/about" className="hover:text-gray-200">Sobre</Link></li>
+            <li><Link href="/contact" className="hover:text-gray-200">Contato</Link></li>
             <li><Link href="/faq" className="hover:text-gray-200">FAQ</Link></li>
           </ul>
         </div>
       </div>
       <div className="container-custom mx-auto mt-6 pt-6 border-t border-[#2A2A2A] flex flex-col md:flex-row justify-between items-center gap-4 text-gray-400 text-sm">
-        <p>© {new Date().getFullYear()} Skleanings. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} {companyName}. Todos os direitos reservados.</p>
         <div className="flex gap-6">
-          <Link href="/privacy-policy" className="text-gray-400 hover:text-gray-200 transition-colors">Privacy Policy</Link>
-          <Link href="/terms-of-service" className="text-gray-400 hover:text-gray-200 transition-colors">Terms of Service</Link>
+          <Link href="/privacy-policy" className="text-gray-400 hover:text-gray-200 transition-colors">Política de Privacidade</Link>
+          <Link href="/terms-of-service" className="text-gray-400 hover:text-gray-200 transition-colors">Termos de Serviço</Link>
         </div>
       </div>
     </footer>

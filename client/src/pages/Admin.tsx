@@ -16,7 +16,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from 'react';
 import { useAdminAuth } from '@/context/AuthContext';
 import { useLocation, Link } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -29,6 +29,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -70,7 +71,10 @@ import {
   Building2,
   GripVertical,
   ArrowLeft,
+  ArrowUp,
+  ArrowDown,
   Check,
+  Eye,
   Users,
   Puzzle,
   Globe,
@@ -89,6 +93,9 @@ import {
   BadgeCheck,
   ThumbsUp,
   Trophy,
+  Target,
+  PhoneCall,
+  LineChart,
   Moon,
   Sun,
   BookOpen
@@ -97,7 +104,8 @@ import { format } from 'date-fns';
 import { clsx } from 'clsx';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useTheme } from '@/context/ThemeContext';
-import type { Category, Service, Booking, Subcategory, Faq, BlogPost, HomepageContent, QuizLead, LeadClassification, LeadStatus } from '@shared/schema';
+import type { Category, Service, Booking, Subcategory, Faq, BlogPost, HomepageContent, QuizLead, LeadClassification, LeadStatus, QuizConfig, QuizQuestion, QuizOption, ConsultingStep } from '@shared/schema';
+import { DEFAULT_QUIZ_CONFIG, calculateMaxScore, getSortedQuestions } from '@shared/quiz';
 import { HelpCircle, FileText, AlertCircle, ExternalLink } from 'lucide-react';
 import heroImage from '@assets/Persona-Mobile_1767749022412.png';
 import ghlLogo from '@assets/ghl-logo.webp';
@@ -447,6 +455,7 @@ function DashboardSection({ goToBookings }: { goToBookings: () => void }) {
           )}
         </div>
       </div>
+
     </div>
   );
 }
@@ -508,6 +517,13 @@ function HeroSettingsSection() {
           ...DEFAULT_HOMEPAGE_CONTENT.areasServedSection,
           ...(settings.homepageContent?.areasServedSection || {}),
         },
+        consultingStepsSection: {
+          ...DEFAULT_HOMEPAGE_CONTENT.consultingStepsSection,
+          ...(settings.homepageContent?.consultingStepsSection || {}),
+          steps: (settings.homepageContent?.consultingStepsSection?.steps?.length
+            ? settings.homepageContent.consultingStepsSection.steps
+            : DEFAULT_HOMEPAGE_CONTENT.consultingStepsSection?.steps) || [],
+        },
       });
     }
   }, [settings]);
@@ -542,6 +558,14 @@ function HeroSettingsSection() {
     { label: 'Thumbs Up', value: 'thumbsUp', icon: ThumbsUp },
     { label: 'Trophy', value: 'trophy', icon: Trophy },
   ];
+  const consultingIconOptions = [
+    { label: 'Pesquisa', value: 'search', icon: Search },
+    { label: 'Diferencial', value: 'sparkles', icon: Sparkles },
+    { label: 'Layout', value: 'layout', icon: LayoutGrid },
+    { label: 'Foco', value: 'target', icon: Target },
+    { label: 'Atendimento', value: 'phone-call', icon: PhoneCall },
+    { label: 'Resultados', value: 'line-chart', icon: LineChart },
+  ];
   const categoriesSection = {
     ...DEFAULT_HOMEPAGE_CONTENT.categoriesSection,
     ...(homepageContent.categoriesSection || {}),
@@ -558,6 +582,27 @@ function HeroSettingsSection() {
     ...DEFAULT_HOMEPAGE_CONTENT.areasServedSection,
     ...(homepageContent.areasServedSection || {}),
   };
+  const consultingStepsSection = useMemo(() => {
+    const base = {
+      ...DEFAULT_HOMEPAGE_CONTENT.consultingStepsSection,
+      ...(homepageContent.consultingStepsSection || {}),
+    };
+    const steps = base.steps?.length
+      ? base.steps
+      : DEFAULT_HOMEPAGE_CONTENT.consultingStepsSection?.steps || [];
+    return { ...base, steps };
+  }, [homepageContent.consultingStepsSection]);
+  const consultingSteps = useMemo(
+    () =>
+      [...(consultingStepsSection.steps || [])].sort(
+        (a, b) => (a.order || 0) - (b.order || 0) || a.numberLabel.localeCompare(b.numberLabel)
+      ),
+    [consultingStepsSection.steps]
+  );
+  const practicalBullets =
+    consultingStepsSection.practicalBullets?.length && consultingStepsSection.practicalBullets.length > 0
+      ? consultingStepsSection.practicalBullets
+      : DEFAULT_HOMEPAGE_CONTENT.consultingStepsSection?.practicalBullets || [];
 
   const markFieldsSaved = useCallback((fields: string[]) => {
     fields.forEach(field => {
@@ -611,6 +656,99 @@ function HeroSettingsSection() {
       return updated;
     });
   }, [triggerAutoSave]);
+
+  const updateConsultingSection = useCallback(
+    (updater: (section: NonNullable<HomepageContent['consultingStepsSection']>) => NonNullable<HomepageContent['consultingStepsSection']>, fieldKey?: string) => {
+      updateHomepageContent(prev => {
+        const currentSection = {
+          ...DEFAULT_HOMEPAGE_CONTENT.consultingStepsSection,
+          ...(prev.consultingStepsSection || {}),
+        } as NonNullable<HomepageContent['consultingStepsSection']>;
+        const updatedSection = updater(currentSection);
+        return { ...prev, consultingStepsSection: updatedSection };
+      }, fieldKey);
+    },
+    [updateHomepageContent]
+  );
+
+  const updateConsultingSteps = useCallback(
+    (updater: (steps: ConsultingStep[]) => ConsultingStep[], fieldKey = 'homepageContent.consultingStepsSection.steps') => {
+      updateConsultingSection(
+        section => ({
+          ...section,
+          steps: updater([...(section.steps || [])]),
+        }),
+        fieldKey
+      );
+    },
+    [updateConsultingSection]
+  );
+
+  const handleMoveStep = useCallback(
+    (index: number, direction: -1 | 1) => {
+      updateConsultingSteps(steps => {
+        const ordered = [...steps].sort(
+          (a, b) => (a.order || 0) - (b.order || 0) || a.numberLabel.localeCompare(b.numberLabel)
+        );
+        const targetIndex = index + direction;
+        if (targetIndex < 0 || targetIndex >= ordered.length) return ordered;
+        const reordered = arrayMove(ordered, index, targetIndex).map((step, idx) => ({
+          ...step,
+          order: idx + 1,
+        }));
+        return reordered;
+      });
+    },
+    [updateConsultingSteps]
+  );
+
+  const handleAddStep = useCallback(() => {
+    const nextOrder = (consultingStepsSection.steps?.length || 0) + 1;
+    const newStep: ConsultingStep = {
+      order: nextOrder,
+      numberLabel: String(nextOrder).padStart(2, '0'),
+      icon: 'sparkles',
+      title: 'Nova Etapa',
+      whatWeDo: '',
+      outcome: '',
+    };
+    updateConsultingSteps(steps => [...steps, newStep]);
+  }, [consultingStepsSection.steps, updateConsultingSteps]);
+
+  const handleDeleteStep = useCallback(
+    (index: number) => {
+      updateConsultingSteps(steps => {
+        const ordered = [...steps].sort(
+          (a, b) => (a.order || 0) - (b.order || 0) || a.numberLabel.localeCompare(b.numberLabel)
+        );
+        const filtered = ordered.filter((_, i) => i !== index);
+        return filtered.map((step, idx) => ({ ...step, order: step.order ?? idx + 1 }));
+      });
+    },
+    [updateConsultingSteps]
+  );
+
+  const handleStepChange = useCallback(
+    (index: number, updater: (step: ConsultingStep) => ConsultingStep, fieldKey: string, resort = false) => {
+      updateConsultingSteps(
+        steps => {
+          const ordered = [...steps].sort(
+            (a, b) => (a.order || 0) - (b.order || 0) || a.numberLabel.localeCompare(b.numberLabel)
+          );
+          if (!ordered[index]) return ordered;
+          ordered[index] = updater(ordered[index]);
+          const next = resort
+            ? [...ordered].sort(
+                (a, b) => (a.order || 0) - (b.order || 0) || a.numberLabel.localeCompare(b.numberLabel)
+              )
+            : ordered;
+          return next;
+        },
+        fieldKey
+      );
+    },
+    [updateConsultingSteps]
+  );
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1293,6 +1431,395 @@ function HeroSettingsSection() {
               />
               <SavedIndicator field="homepageContent.areasServedSection.ctaText" />
             </div>
+          </div>
+        </div>
+      </div>
+      <div className="bg-muted p-6 rounded-lg transition-all space-y-6">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <LayoutGrid className="w-5 h-5 text-primary" />
+              Consultoria - Como Funciona
+            </h2>
+            <p className="text-sm text-muted-foreground">Edite o passo a passo exibido na landing.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={consultingStepsSection.enabled ?? true}
+                onCheckedChange={(checked) =>
+                  updateConsultingSection(
+                    section => ({ ...section, enabled: checked }),
+                    'homepageContent.consultingStepsSection.enabled'
+                  )
+                }
+              />
+              <span className="text-sm text-muted-foreground">
+                {consultingStepsSection.enabled ? 'Seção ativa' : 'Seção oculta'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="space-y-2">
+            <Label>Título</Label>
+            <div className="relative">
+              <Input
+                value={consultingStepsSection.title || ''}
+                onChange={(e) =>
+                  updateConsultingSection(
+                    section => ({ ...section, title: e.target.value }),
+                    'homepageContent.consultingStepsSection.title'
+                  )
+                }
+                placeholder="Como Funciona a Consultoria"
+              />
+              <SavedIndicator field="homepageContent.consultingStepsSection.title" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Subtítulo</Label>
+            <div className="relative">
+              <Textarea
+                value={consultingStepsSection.subtitle || ''}
+                onChange={(e) =>
+                  updateConsultingSection(
+                    section => ({ ...section, subtitle: e.target.value }),
+                    'homepageContent.consultingStepsSection.subtitle'
+                  )
+                }
+                className="min-h-[96px]"
+                placeholder="Um processo claro, em etapas, para você gerar clientes de forma previsível nos EUA."
+              />
+              <SavedIndicator field="homepageContent.consultingStepsSection.subtitle" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Slug/ID da seção</Label>
+            <div className="relative">
+              <Input
+                value={consultingStepsSection.sectionId || ''}
+                onChange={(e) =>
+                  updateConsultingSection(
+                    section => ({ ...section, sectionId: e.target.value }),
+                    'homepageContent.consultingStepsSection.sectionId'
+                  )
+                }
+                placeholder="como-funciona"
+              />
+              <SavedIndicator field="homepageContent.consultingStepsSection.sectionId" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Texto auxiliar (opcional)</Label>
+            <div className="relative">
+              <Textarea
+                value={consultingStepsSection.helperText || ''}
+                onChange={(e) =>
+                  updateConsultingSection(
+                    section => ({ ...section, helperText: e.target.value }),
+                    'homepageContent.consultingStepsSection.helperText'
+                  )
+                }
+                className="min-h-[80px]"
+                placeholder="Texto curto abaixo do CTA"
+              />
+              <SavedIndicator field="homepageContent.consultingStepsSection.helperText" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>CTA - Texto do botão</Label>
+            <div className="relative">
+              <Input
+                value={consultingStepsSection.ctaButtonLabel || ''}
+                onChange={(e) =>
+                  updateConsultingSection(
+                    section => ({ ...section, ctaButtonLabel: e.target.value }),
+                    'homepageContent.consultingStepsSection.ctaButtonLabel'
+                  )
+                }
+                placeholder="Agendar Conversa Gratuita"
+              />
+              <SavedIndicator field="homepageContent.consultingStepsSection.ctaButtonLabel" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>CTA - Link/ação</Label>
+            <div className="relative">
+              <Input
+                value={consultingStepsSection.ctaButtonLink || ''}
+                onChange={(e) =>
+                  updateConsultingSection(
+                    section => ({ ...section, ctaButtonLink: e.target.value }),
+                    'homepageContent.consultingStepsSection.ctaButtonLink'
+                  )
+                }
+                placeholder="#lead-quiz"
+              />
+              <SavedIndicator field="homepageContent.consultingStepsSection.ctaButtonLink" />
+            </div>
+            <p className="text-xs text-muted-foreground">Use um anchor (#lead-quiz) ou um link interno.</p>
+          </div>
+          <div className="space-y-2">
+            <Label>Bloco Na prática - Título</Label>
+            <div className="relative">
+              <Input
+                value={consultingStepsSection.practicalBlockTitle || ''}
+                onChange={(e) =>
+                  updateConsultingSection(
+                    section => ({ ...section, practicalBlockTitle: e.target.value }),
+                    'homepageContent.consultingStepsSection.practicalBlockTitle'
+                  )
+                }
+                placeholder="Na prática"
+              />
+              <SavedIndicator field="homepageContent.consultingStepsSection.practicalBlockTitle" />
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <Label>Bullets do bloco Na prática</Label>
+            {practicalBullets.length < 6 && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-dashed"
+                onClick={() =>
+                  updateConsultingSection(
+                    section => ({
+                      ...section,
+                      practicalBullets: [...(section.practicalBullets || []), 'Novo bullet'],
+                    }),
+                    'homepageContent.consultingStepsSection.practicalBullets'
+                  )
+                }
+              >
+                <Plus className="w-4 h-4 mr-2" /> Adicionar bullet
+              </Button>
+            )}
+          </div>
+          <div className="space-y-2">
+            {practicalBullets.map((bullet, index) => (
+              <div key={index} className="flex gap-2 items-start">
+                <div className="relative flex-1">
+                  <Input
+                    value={bullet}
+                    onChange={(e) =>
+                      updateConsultingSection(
+                        section => {
+                          const current = [...(section.practicalBullets || practicalBullets)];
+                          current[index] = e.target.value;
+                          return { ...section, practicalBullets: current };
+                        },
+                        `homepageContent.consultingStepsSection.practicalBullets.${index}`
+                      )
+                    }
+                  />
+                  <SavedIndicator field={`homepageContent.consultingStepsSection.practicalBullets.${index}`} />
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  disabled={practicalBullets.length <= 1}
+                  onClick={() =>
+                    updateConsultingSection(
+                      section => {
+                        const current = [...(section.practicalBullets || practicalBullets)];
+                        return { ...section, practicalBullets: current.filter((_, i) => i !== index) };
+                      },
+                      'homepageContent.consultingStepsSection.practicalBullets'
+                    )
+                  }
+                >
+                  <Trash2 className="w-4 h-4 text-destructive" />
+                </Button>
+              </div>
+            ))}
+            {practicalBullets.length === 0 && (
+              <p className="text-sm text-muted-foreground">Sem bullets cadastrados.</p>
+            )}
+          </div>
+        </div>
+
+        <div className="border-t border-border pt-6 space-y-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h3 className="text-base font-semibold flex items-center gap-2">
+                <List className="w-4 h-4 text-primary" />
+                Etapas (cards)
+              </h3>
+              <p className="text-sm text-muted-foreground">Reordene pelas setas ou ajustando o campo Ordem.</p>
+            </div>
+            <Button variant="outline" size="sm" className="border-dashed" onClick={handleAddStep}>
+              <Plus className="w-4 h-4 mr-2" /> Adicionar etapa
+            </Button>
+          </div>
+
+          <div className="space-y-3">
+            {consultingSteps.map((step, index) => (
+              <div
+                key={`${step.numberLabel}-${index}`}
+                className="bg-card border border-border rounded-lg p-4 space-y-4 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold">
+                      {step.numberLabel || String(index + 1).padStart(2, '0')}
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-semibold">{step.title || 'Etapa'}</p>
+                      <p className="text-xs text-muted-foreground">Ordem {step.order ?? index + 1}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={index === 0}
+                      onClick={() => handleMoveStep(index, -1)}
+                    >
+                      <ArrowUp className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={index === consultingSteps.length - 1}
+                      onClick={() => handleMoveStep(index, 1)}
+                    >
+                      <ArrowDown className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleDeleteStep(index)}>
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-4">
+                  <div className="space-y-1">
+                    <Label>Ordem</Label>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        value={step.order ?? index + 1}
+                        onChange={(e) =>
+                          handleStepChange(
+                            index,
+                            current => ({ ...current, order: Number(e.target.value) || index + 1 }),
+                            `homepageContent.consultingStepsSection.steps.${index}.order`,
+                            true
+                          )
+                        }
+                      />
+                      <SavedIndicator field={`homepageContent.consultingStepsSection.steps.${index}.order`} />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Número</Label>
+                    <div className="relative">
+                      <Input
+                        value={step.numberLabel || ''}
+                        onChange={(e) =>
+                          handleStepChange(
+                            index,
+                            current => ({ ...current, numberLabel: e.target.value }),
+                            `homepageContent.consultingStepsSection.steps.${index}.numberLabel`
+                          )
+                        }
+                        placeholder="01"
+                      />
+                      <SavedIndicator field={`homepageContent.consultingStepsSection.steps.${index}.numberLabel`} />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Ícone</Label>
+                    <Select
+                      value={step.icon || consultingIconOptions[0].value}
+                      onValueChange={(value) =>
+                        handleStepChange(
+                          index,
+                          current => ({ ...current, icon: value }),
+                          `homepageContent.consultingStepsSection.steps.${index}.icon`
+                        )
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {consultingIconOptions.map(option => (
+                          <SelectItem key={option.value} value={option.value}>
+                            <div className="flex items-center gap-2">
+                              <option.icon className="w-4 h-4" />
+                              <span>{option.label}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Título</Label>
+                  <div className="relative">
+                    <Input
+                      value={step.title}
+                      onChange={(e) =>
+                        handleStepChange(
+                          index,
+                          current => ({ ...current, title: e.target.value }),
+                          `homepageContent.consultingStepsSection.steps.${index}.title`
+                        )
+                      }
+                    />
+                    <SavedIndicator field={`homepageContent.consultingStepsSection.steps.${index}.title`} />
+                  </div>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>O que fazemos</Label>
+                    <div className="relative">
+                      <Textarea
+                        value={step.whatWeDo}
+                        onChange={(e) =>
+                          handleStepChange(
+                            index,
+                            current => ({ ...current, whatWeDo: e.target.value }),
+                            `homepageContent.consultingStepsSection.steps.${index}.whatWeDo`
+                          )
+                        }
+                        className="min-h-[110px]"
+                      />
+                      <SavedIndicator field={`homepageContent.consultingStepsSection.steps.${index}.whatWeDo`} />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Você sai com</Label>
+                    <div className="relative">
+                      <Textarea
+                        value={step.outcome}
+                        onChange={(e) =>
+                          handleStepChange(
+                            index,
+                            current => ({ ...current, outcome: e.target.value }),
+                            `homepageContent.consultingStepsSection.steps.${index}.outcome`
+                          )
+                        }
+                        className="min-h-[110px]"
+                      />
+                      <SavedIndicator field={`homepageContent.consultingStepsSection.steps.${index}.outcome`} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {consultingSteps.length === 0 && (
+              <p className="text-sm text-muted-foreground">Nenhuma etapa cadastrada.</p>
+            )}
           </div>
         </div>
       </div>
@@ -4259,6 +4786,9 @@ function BookingMobileCard({
 
 function LeadsSection() {
   const { toast } = useToast();
+  const [isFormEditorOpen, setIsFormEditorOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<QuizLead | null>(null);
+  const [isLeadDialogOpen, setIsLeadDialogOpen] = useState(false);
   const [filters, setFilters] = useState<{
     search: string;
     classification: LeadClassification | 'all';
@@ -4269,6 +4799,14 @@ function LeadsSection() {
     classification: 'all',
     status: 'all',
     completion: 'all',
+  });
+
+  const { data: quizConfig } = useQuery<QuizConfig>({
+    queryKey: ['/api/quiz-config'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/quiz-config');
+      return res.json();
+    }
   });
 
   const { data: leads, isLoading } = useQuery<QuizLead[]>({
@@ -4284,6 +4822,9 @@ function LeadsSection() {
       return res.json();
     }
   });
+
+  const questionsForDisplay = useMemo(() => getSortedQuestions(quizConfig || DEFAULT_QUIZ_CONFIG), [quizConfig]);
+  const totalQuestions = questionsForDisplay.length || DEFAULT_QUIZ_CONFIG.questions.length;
 
   const deleteLead = useMutation({
     mutationFn: async (id: number) => {
@@ -4321,6 +4862,11 @@ function LeadsSection() {
     }
   });
 
+  const openLeadDialog = (lead: QuizLead) => {
+    setSelectedLead(lead);
+    setIsLeadDialogOpen(true);
+  };
+
   const stats = useMemo(() => {
     const list = leads || [];
     return {
@@ -4351,7 +4897,7 @@ function LeadsSection() {
 
   const completionOptions: { value: 'all' | 'complete' | 'incomplete'; label: string }[] = [
     { value: 'all', label: 'Todos' },
-    { value: 'complete', label: 'Quiz completo' },
+    { value: 'complete', label: 'Formulário completo' },
     { value: 'incomplete', label: 'Abandonado' },
   ];
 
@@ -4376,24 +4922,84 @@ function LeadsSection() {
   };
 
   const questionLabel = (lead: QuizLead) => {
-    if (lead.quizCompleto) return 'Quiz completo';
+    if (lead.quizCompleto) return 'Formulário completo';
     const step = lead.ultimaPerguntaRespondida || 1;
-    return `Pergunta ${step} de 11`;
+    return `Pergunta ${step} de ${totalQuestions}`;
   };
+
+  const ghlBadgeClass = (status?: string | null) => {
+    if (status === 'synced') return 'bg-green-50 text-green-700 border-green-200';
+    if (status === 'failed') return 'bg-red-50 text-red-700 border-red-200';
+    return 'bg-amber-50 text-amber-700 border-amber-200';
+  };
+
+  const getLeadFieldValue = (lead: QuizLead, fieldId: string) => {
+    const direct = (lead as any)?.[fieldId];
+    if (direct !== undefined && direct !== null && String(direct).trim() !== '') {
+      return String(direct);
+    }
+    return lead.customAnswers?.[fieldId] || '';
+  };
+
+  const getAnswerForQuestion = (lead: QuizLead, question: QuizQuestion) => {
+    const raw = getLeadFieldValue(lead, question.id);
+    if (!raw) return '';
+    if (question.type === 'select' && question.options) {
+      const match = question.options.find(o => o.value === raw || o.label === raw);
+      return match?.label || raw;
+    }
+    return raw;
+  };
+
+  const getConditionalAnswer = (lead: QuizLead, question: QuizQuestion) => {
+    if (!question.conditionalField) return '';
+    const trigger = getLeadFieldValue(lead, question.id);
+    if (trigger !== question.conditionalField.showWhen) return '';
+    return getLeadFieldValue(lead, question.conditionalField.id);
+  };
+
+  const extraCustomAnswers = useMemo(() => {
+    if (!selectedLead) return [];
+    const knownIds = new Set(questionsForDisplay.map(q => q.id));
+    return Object.entries(selectedLead.customAnswers || {}).filter(([id]) => !knownIds.has(id));
+  }, [questionsForDisplay, selectedLead]);
+
+  const DetailItem = ({ label, value }: { label: string; value: ReactNode }) => (
+    <div className="p-3 rounded-lg border bg-muted/40">
+      <p className="text-xs uppercase text-muted-foreground">{label}</p>
+      <div className="text-sm font-medium text-foreground break-words">{value || '—'}</div>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <p className="text-sm text-muted-foreground uppercase tracking-wide">Leads do Quiz</p>
+          <p className="text-sm text-muted-foreground uppercase tracking-wide">Leads do Formulário</p>
           <h1 className="text-2xl font-bold">Acompanhamento de qualificações</h1>
-          <p className="text-muted-foreground">Veja quem iniciou o quiz, onde parou e atualize o status rapidamente.</p>
+          <p className="text-muted-foreground">Veja quem iniciou o formulário, onde parou e atualize o status rapidamente.</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/quiz-leads'] })}>
             <RotateCcw className="w-4 h-4 mr-2" />
             Atualizar
           </Button>
+          <Sheet open={isFormEditorOpen} onOpenChange={setIsFormEditorOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline">
+                <Pencil className="w-4 h-4 mr-2" />
+                Editar Formulário
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+              <SheetHeader>
+                <SheetTitle>Editor de Formulário</SheetTitle>
+              </SheetHeader>
+              <div className="mt-6">
+                <FormEditorContent />
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
 
@@ -4544,6 +5150,14 @@ function LeadsSection() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => openLeadDialog(lead)}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button
                         variant="destructive"
                         size="icon"
                         className="h-8 w-8"
@@ -4564,9 +5178,738 @@ function LeadsSection() {
           </table>
         </div>
       </div>
+
+      <Dialog open={isLeadDialogOpen} onOpenChange={setIsLeadDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          {selectedLead ? (
+            <div className="space-y-4">
+              <DialogHeader>
+                <DialogTitle>Detalhes do lead</DialogTitle>
+              </DialogHeader>
+
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase text-muted-foreground">Lead</p>
+                  <h2 className="text-xl font-semibold leading-tight">{selectedLead.nome || 'Sem nome'}</h2>
+                  <p className="text-sm text-muted-foreground">{selectedLead.cidadeEstado || 'Cidade não informada'}</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Badge className={clsx("border", classificationBadge(selectedLead.classificacao))}>
+                    {selectedLead.classificacao || '—'}
+                  </Badge>
+                  <Badge variant="outline">{selectedLead.status || 'novo'}</Badge>
+                  <Badge variant="secondary">{questionLabel(selectedLead)}</Badge>
+                  {selectedLead.ghlSyncStatus && (
+                    <Badge className={clsx("border", ghlBadgeClass(selectedLead.ghlSyncStatus))}>
+                      GHL: {selectedLead.ghlSyncStatus}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <DetailItem label="Email" value={selectedLead.email || '—'} />
+                <DetailItem label="Telefone" value={selectedLead.telefone || '—'} />
+                <DetailItem label="Cidade/Estado" value={selectedLead.cidadeEstado || '—'} />
+                <DetailItem label="Tipo de negócio" value={selectedLead.tipoNegocio || '—'} />
+                <DetailItem label="Experiência em marketing" value={selectedLead.experienciaMarketing || '—'} />
+                <DetailItem label="Orçamento em anúncios" value={selectedLead.orcamentoAnuncios || '—'} />
+                <DetailItem label="Principal desafio" value={selectedLead.principalDesafio || '—'} />
+                <DetailItem label="Disponibilidade" value={selectedLead.disponibilidade || '—'} />
+                <DetailItem label="Expectativa de resultado" value={selectedLead.expectativaResultado || '—'} />
+                <DetailItem label="Score total" value={selectedLead.scoreTotal ?? '—'} />
+                <DetailItem label="Classificação" value={selectedLead.classificacao || '—'} />
+                <DetailItem label="Última atualização" value={formatDate((selectedLead.updatedAt as any) || (selectedLead.createdAt as any))} />
+              </div>
+
+              {selectedLead.observacoes && (
+                <div className="p-3 rounded-lg border bg-muted/40">
+                  <p className="text-xs uppercase text-muted-foreground">Observações</p>
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{selectedLead.observacoes}</p>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-base">Respostas do formulário</h3>
+                  <span className="text-xs text-muted-foreground">{questionsForDisplay.length} perguntas</span>
+                </div>
+                {questionsForDisplay.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhuma pergunta configurada.</p>
+                ) : (
+                  <div className="divide-y divide-border rounded-lg border bg-card">
+                    {questionsForDisplay.map((question) => {
+                      const answer = getAnswerForQuestion(selectedLead, question);
+                      const conditionalAnswer = getConditionalAnswer(selectedLead, question);
+                      return (
+                        <div key={question.id} className="p-3">
+                          <p className="text-xs uppercase text-muted-foreground mb-1">{question.id}</p>
+                          <p className="font-semibold text-sm text-foreground">{question.title}</p>
+                          <p className="text-sm text-muted-foreground mt-1">{answer || '—'}</p>
+                          {conditionalAnswer && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {(question.conditionalField?.title || 'Detalhe')}: <span className="text-foreground">{conditionalAnswer}</span>
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {extraCustomAnswers.map(([fieldId, value]) => (
+                      <div key={fieldId} className="p-3">
+                        <p className="text-xs uppercase text-muted-foreground mb-1">{fieldId}</p>
+                        <p className="text-sm text-muted-foreground">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Selecione um lead para ver detalhes.</p>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
+// ============================================
+// FORM EDITOR CONTENT (used in Sheet)
+// ============================================
+
+function FormEditorContent() {
+  const { toast } = useToast();
+  const [editingQuestion, setEditingQuestion] = useState<QuizQuestion | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isThresholdsOpen, setIsThresholdsOpen] = useState(false);
+
+  const { data: quizConfig, isLoading } = useQuery<QuizConfig>({
+    queryKey: ['/api/quiz-config'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/quiz-config');
+      return res.json();
+    }
+  });
+
+  const [config, setConfig] = useState<QuizConfig>(quizConfig || DEFAULT_QUIZ_CONFIG);
+
+  useEffect(() => {
+    setConfig(quizConfig || DEFAULT_QUIZ_CONFIG);
+  }, [quizConfig]);
+
+  const sortedQuestions = getSortedQuestions(config);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const saveConfig = useMutation({
+    mutationFn: async (newConfig: QuizConfig) => {
+      const res = await apiRequest('PUT', '/api/quiz-config', newConfig);
+      return res.json();
+    },
+    onSuccess: (data: QuizConfig) => {
+      setConfig(data);
+      queryClient.invalidateQueries({ queryKey: ['/api/quiz-config'] });
+      toast({ title: 'Configuração salva com sucesso' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Erro ao salvar configuração', description: error.message, variant: 'destructive' });
+    }
+  });
+
+  const handleSaveQuestion = (question: QuizQuestion) => {
+    const existingIndex = config.questions.findIndex(q => q.id === question.id);
+    let newQuestions: QuizQuestion[];
+
+    if (existingIndex >= 0) {
+      newQuestions = config.questions.map(q => q.id === question.id ? question : q);
+    } else {
+      newQuestions = [...config.questions, question];
+    }
+
+    // Recalculate order
+    newQuestions = newQuestions
+      .sort((a, b) => a.order - b.order)
+      .map((q, i) => ({ ...q, order: i + 1 }));
+
+    const newConfig: QuizConfig = {
+      ...config,
+      questions: newQuestions,
+      maxScore: calculateMaxScore({ ...config, questions: newQuestions }),
+    };
+
+    setConfig(newConfig);
+    saveConfig.mutate(newConfig);
+    setIsDialogOpen(false);
+    setEditingQuestion(null);
+  };
+
+  const handleDeleteQuestion = (questionId: string) => {
+    const newQuestions = config.questions
+      .filter(q => q.id !== questionId)
+      .sort((a, b) => a.order - b.order)
+      .map((q, i) => ({ ...q, order: i + 1 }));
+
+    const newConfig: QuizConfig = {
+      ...config,
+      questions: newQuestions,
+      maxScore: calculateMaxScore({ ...config, questions: newQuestions }),
+    };
+
+    setConfig(newConfig);
+    saveConfig.mutate(newConfig);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = sortedQuestions.findIndex(q => q.id === active.id);
+      const newIndex = sortedQuestions.findIndex(q => q.id === over.id);
+
+      const reordered = arrayMove(sortedQuestions, oldIndex, newIndex);
+      const newQuestions = reordered.map((q, i) => ({ ...q, order: i + 1 }));
+
+      const newConfig: QuizConfig = {
+        ...config,
+        questions: newQuestions,
+        maxScore: calculateMaxScore({ ...config, questions: newQuestions }),
+      };
+
+      setConfig(newConfig);
+      saveConfig.mutate(newConfig);
+    }
+  };
+
+  const handleSaveThresholds = (thresholds: QuizConfig['thresholds']) => {
+    const newConfig: QuizConfig = {
+      ...config,
+      thresholds,
+    };
+    setConfig(newConfig);
+    saveConfig.mutate(newConfig);
+    setIsThresholdsOpen(false);
+  };
+
+  const getQuestionTypeBadge = (type: QuizQuestion['type']) => {
+    const labels = { text: 'Texto', email: 'Email', tel: 'Telefone', select: 'Múltipla escolha' };
+    return labels[type] || type;
+  };
+
+  const getQuestionMaxPoints = (question: QuizQuestion) => {
+    if (question.type !== 'select' || !question.options) return 0;
+    return Math.max(...question.options.map(o => o.points));
+  };
+
+  if (isLoading) {
+    return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Action buttons */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingQuestion(null); }}>
+          <DialogTrigger asChild>
+            <Button size="sm">
+              <Plus className="w-4 h-4 mr-2" />
+              Nova Pergunta
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <QuestionForm
+              question={editingQuestion}
+              onSave={handleSaveQuestion}
+              isLoading={saveConfig.isPending}
+              nextOrder={sortedQuestions.length + 1}
+              existingIds={config.questions.map(q => q.id)}
+            />
+          </DialogContent>
+        </Dialog>
+        <Dialog open={isThresholdsOpen} onOpenChange={setIsThresholdsOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Star className="w-4 h-4 mr-2" />
+              Limites
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <ThresholdsForm
+              thresholds={config.thresholds}
+              onSave={handleSaveThresholds}
+              isLoading={saveConfig.isPending}
+            />
+          </DialogContent>
+        </Dialog>
+        <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded ml-auto">
+          Score máx: {config.maxScore}
+        </span>
+      </div>
+
+      {/* Thresholds info */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="p-3 rounded-xl border bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800">
+          <p className="text-xs text-green-600 dark:text-green-400 font-semibold">QUENTE</p>
+          <p className="text-lg font-bold text-green-700 dark:text-green-300">≥ {config.thresholds.hot} pts</p>
+        </div>
+        <div className="p-3 rounded-xl border bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800">
+          <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold">MORNO</p>
+          <p className="text-lg font-bold text-amber-700 dark:text-amber-300">≥ {config.thresholds.warm} pts</p>
+        </div>
+        <div className="p-3 rounded-xl border bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
+          <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">FRIO</p>
+          <p className="text-lg font-bold text-blue-700 dark:text-blue-300">≥ {config.thresholds.cold} pts</p>
+        </div>
+        <div className="p-3 rounded-xl border bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">DESQUALIFICADO</p>
+          <p className="text-lg font-bold text-slate-600 dark:text-slate-300">&lt; {config.thresholds.cold} pts</p>
+        </div>
+      </div>
+
+      {/* Questions list */}
+      <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-border bg-muted/50">
+          <p className="text-sm font-semibold text-muted-foreground">{sortedQuestions.length} perguntas</p>
+        </div>
+
+        {sortedQuestions.length === 0 ? (
+          <div className="p-12 text-center">
+            <HelpCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="font-semibold text-lg mb-2">Nenhuma pergunta</h3>
+            <p className="text-muted-foreground mb-4">Adicione perguntas ao formulário de qualificação</p>
+          </div>
+        ) : (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={sortedQuestions.map(q => q.id)} strategy={verticalListSortingStrategy}>
+              <div className="divide-y divide-border">
+                {sortedQuestions.map((question) => (
+                  <SortableQuestionItem
+                    key={question.id}
+                    question={question}
+                    onEdit={(q) => { setEditingQuestion(q); setIsDialogOpen(true); }}
+                    onDelete={(id) => {
+                      if (window.confirm('Tem certeza que deseja excluir esta pergunta?')) {
+                        handleDeleteQuestion(id);
+                      }
+                    }}
+                    typeBadge={getQuestionTypeBadge(question.type)}
+                    maxPoints={getQuestionMaxPoints(question)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SortableQuestionItem({
+  question,
+  onEdit,
+  onDelete,
+  typeBadge,
+  maxPoints
+}: {
+  question: QuizQuestion;
+  onEdit: (q: QuizQuestion) => void;
+  onDelete: (id: string) => void;
+  typeBadge: string;
+  maxPoints: number;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: question.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 'auto',
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="p-4 hover:bg-muted/50 transition-colors">
+      <div className="flex items-start gap-3">
+        <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing mt-1 text-muted-foreground hover:text-foreground">
+          <GripVertical className="w-5 h-5" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-semibold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{question.order}</span>
+            <Badge variant="outline" className="text-xs">{typeBadge}</Badge>
+            {maxPoints > 0 && (
+              <Badge variant="secondary" className="text-xs">{maxPoints} pts max</Badge>
+            )}
+            {question.required && (
+              <Badge variant="default" className="text-xs bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">Obrigatória</Badge>
+            )}
+          </div>
+          <h3 className="font-semibold text-foreground truncate">{question.title}</h3>
+          {question.type === 'select' && question.options && (
+            <p className="text-xs text-muted-foreground mt-1">
+              {question.options.length} opções: {question.options.slice(0, 3).map(o => o.label).join(', ')}{question.options.length > 3 ? '...' : ''}
+            </p>
+          )}
+          {question.placeholder && question.type !== 'select' && (
+            <p className="text-xs text-muted-foreground mt-1">Placeholder: {question.placeholder}</p>
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(question)}>
+            <Pencil className="w-4 h-4" />
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600">
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Excluir pergunta?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta ação não pode ser desfeita. A pergunta será removida do formulário.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={() => onDelete(question.id)} className="bg-red-600 hover:bg-red-700">
+                  Excluir
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ThresholdsForm({
+  thresholds,
+  onSave,
+  isLoading
+}: {
+  thresholds: QuizConfig['thresholds'];
+  onSave: (t: QuizConfig['thresholds']) => void;
+  isLoading: boolean;
+}) {
+  const [hot, setHot] = useState(thresholds.hot);
+  const [warm, setWarm] = useState(thresholds.warm);
+  const [cold, setCold] = useState(thresholds.cold);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave({ hot, warm, cold });
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <DialogHeader>
+        <DialogTitle>Limites de Classificação</DialogTitle>
+      </DialogHeader>
+      <div className="space-y-4 py-4">
+        <p className="text-sm text-muted-foreground">
+          Defina os pontos mínimos para cada classificação de lead.
+        </p>
+        <div className="space-y-3">
+          <div className="flex items-center gap-4">
+            <Label className="w-32 text-green-600">QUENTE (≥)</Label>
+            <Input type="number" value={hot} onChange={(e) => setHot(Number(e.target.value))} min={0} className="w-24" />
+            <span className="text-sm text-muted-foreground">pontos</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <Label className="w-32 text-amber-600">MORNO (≥)</Label>
+            <Input type="number" value={warm} onChange={(e) => setWarm(Number(e.target.value))} min={0} className="w-24" />
+            <span className="text-sm text-muted-foreground">pontos</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <Label className="w-32 text-blue-600">FRIO (≥)</Label>
+            <Input type="number" value={cold} onChange={(e) => setCold(Number(e.target.value))} min={0} className="w-24" />
+            <span className="text-sm text-muted-foreground">pontos</span>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Leads com score abaixo de {cold} são classificados como DESQUALIFICADO.
+        </p>
+      </div>
+      <DialogFooter>
+        <DialogClose asChild>
+          <Button variant="outline" type="button">Cancelar</Button>
+        </DialogClose>
+        <Button type="submit" disabled={isLoading}>
+          {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          Salvar
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+}
+
+function QuestionForm({
+  question,
+  onSave,
+  isLoading,
+  nextOrder,
+  existingIds,
+}: {
+  question: QuizQuestion | null;
+  onSave: (q: QuizQuestion) => void;
+  isLoading: boolean;
+  nextOrder: number;
+  existingIds: string[];
+}) {
+  const [id, setId] = useState(question?.id || '');
+  const [title, setTitle] = useState(question?.title || '');
+  const [type, setType] = useState<QuizQuestion['type']>(question?.type || 'text');
+  const [required, setRequired] = useState(question?.required ?? true);
+  const [placeholder, setPlaceholder] = useState(question?.placeholder || '');
+  const [order, setOrder] = useState(question?.order ?? nextOrder);
+  const [options, setOptions] = useState<QuizOption[]>(question?.options || []);
+  const [hasConditional, setHasConditional] = useState(!!question?.conditionalField);
+  const [conditionalShowWhen, setConditionalShowWhen] = useState(question?.conditionalField?.showWhen || '');
+  const [conditionalId, setConditionalId] = useState(question?.conditionalField?.id || '');
+  const [conditionalTitle, setConditionalTitle] = useState(question?.conditionalField?.title || '');
+  const [conditionalPlaceholder, setConditionalPlaceholder] = useState(question?.conditionalField?.placeholder || '');
+
+  useEffect(() => {
+    setId(question?.id || '');
+    setTitle(question?.title || '');
+    setType(question?.type || 'text');
+    setRequired(question?.required ?? true);
+    setPlaceholder(question?.placeholder || '');
+    setOrder(question?.order ?? nextOrder);
+    setOptions(question?.options || []);
+    setHasConditional(!!question?.conditionalField);
+    setConditionalShowWhen(question?.conditionalField?.showWhen || '');
+    setConditionalId(question?.conditionalField?.id || '');
+    setConditionalTitle(question?.conditionalField?.title || '');
+    setConditionalPlaceholder(question?.conditionalField?.placeholder || '');
+  }, [question, nextOrder]);
+
+  const isEditing = !!question;
+  const idError = !isEditing && existingIds.includes(id) ? 'Este ID já está em uso' : '';
+
+  const handleAddOption = () => {
+    setOptions([...options, { value: '', label: '', points: 0 }]);
+  };
+
+  const handleRemoveOption = (index: number) => {
+    setOptions(options.filter((_, i) => i !== index));
+  };
+
+  const handleOptionChange = (index: number, field: keyof QuizOption, value: string | number) => {
+    const newOptions = [...options];
+    if (field === 'points') {
+      newOptions[index] = { ...newOptions[index], [field]: Number(value) };
+    } else {
+      newOptions[index] = { ...newOptions[index], [field]: value };
+      // Auto-fill value if label is being set and value is empty
+      if (field === 'label' && !newOptions[index].value) {
+        newOptions[index].value = value as string;
+      }
+    }
+    setOptions(newOptions);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!id || !title) return;
+    if (idError) return;
+
+    const questionData: QuizQuestion = {
+      id,
+      order,
+      title,
+      type,
+      required,
+      placeholder: placeholder || undefined,
+      options: type === 'select' ? options.filter(o => o.label && o.value) : undefined,
+      conditionalField: hasConditional && conditionalId && conditionalShowWhen ? {
+        showWhen: conditionalShowWhen,
+        id: conditionalId,
+        title: conditionalTitle,
+        placeholder: conditionalPlaceholder,
+      } : undefined,
+    };
+
+    onSave(questionData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <DialogHeader>
+        <DialogTitle>{isEditing ? 'Editar Pergunta' : 'Nova Pergunta'}</DialogTitle>
+      </DialogHeader>
+      <div className="space-y-4 py-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="question-id">ID (único)</Label>
+            <Input
+              id="question-id"
+              value={id}
+              onChange={(e) => setId(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))}
+              placeholder="ex: minhaPergunta"
+              disabled={isEditing}
+              required
+            />
+            {idError && <p className="text-xs text-red-500">{idError}</p>}
+            <p className="text-xs text-muted-foreground">Use apenas letras, números e _</p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="question-order">Ordem</Label>
+            <Input
+              id="question-order"
+              type="number"
+              value={order}
+              onChange={(e) => setOrder(Number(e.target.value))}
+              min={1}
+              required
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="question-title">Texto da Pergunta</Label>
+          <Textarea
+            id="question-title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Ex: Qual é o seu nome completo?"
+            required
+            rows={2}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Tipo de Resposta</Label>
+            <Select value={type} onValueChange={(v) => setType(v as QuizQuestion['type'])}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="text">Texto livre</SelectItem>
+                <SelectItem value="email">Email</SelectItem>
+                <SelectItem value="tel">Telefone</SelectItem>
+                <SelectItem value="select">Múltipla escolha</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="question-placeholder">Placeholder</Label>
+            <Input
+              id="question-placeholder"
+              value={placeholder}
+              onChange={(e) => setPlaceholder(e.target.value)}
+              placeholder="Texto de ajuda"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Checkbox id="question-required" checked={required} onCheckedChange={(c) => setRequired(!!c)} />
+          <Label htmlFor="question-required" className="text-sm">Pergunta obrigatória</Label>
+        </div>
+
+        {type === 'select' && (
+          <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+            <div className="flex items-center justify-between">
+              <Label className="text-base font-semibold">Opções de Resposta</Label>
+              <Button type="button" variant="outline" size="sm" onClick={handleAddOption}>
+                <Plus className="w-3 h-3 mr-1" /> Adicionar
+              </Button>
+            </div>
+            {options.length === 0 && (
+              <p className="text-sm text-muted-foreground">Nenhuma opção. Clique em "Adicionar" para criar.</p>
+            )}
+            <div className="space-y-2">
+              {options.map((option, index) => (
+                <div key={index} className="flex items-center gap-2 p-2 bg-background rounded border">
+                  <Input
+                    value={option.label}
+                    onChange={(e) => handleOptionChange(index, 'label', e.target.value)}
+                    placeholder="Label (texto visível)"
+                    className="flex-1"
+                  />
+                  <Input
+                    type="number"
+                    value={option.points}
+                    onChange={(e) => handleOptionChange(index, 'points', e.target.value)}
+                    placeholder="Pts"
+                    className="w-20"
+                    min={0}
+                  />
+                  <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => handleRemoveOption(index)}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            {/* Conditional field */}
+            <div className="pt-3 border-t">
+              <div className="flex items-center gap-2 mb-3">
+                <Checkbox id="has-conditional" checked={hasConditional} onCheckedChange={(c) => setHasConditional(!!c)} />
+                <Label htmlFor="has-conditional" className="text-sm">Adicionar campo condicional</Label>
+              </div>
+              {hasConditional && (
+                <div className="space-y-3 pl-6">
+                  <div className="space-y-2">
+                    <Label className="text-xs">Mostrar quando selecionado:</Label>
+                    <Select value={conditionalShowWhen} onValueChange={setConditionalShowWhen}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma opção" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {options.filter(o => o.value).map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>{opt.label || opt.value}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      value={conditionalId}
+                      onChange={(e) => setConditionalId(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))}
+                      placeholder="ID do campo"
+                    />
+                    <Input
+                      value={conditionalPlaceholder}
+                      onChange={(e) => setConditionalPlaceholder(e.target.value)}
+                      placeholder="Placeholder"
+                    />
+                  </div>
+                  <Input
+                    value={conditionalTitle}
+                    onChange={(e) => setConditionalTitle(e.target.value)}
+                    placeholder="Título do campo condicional"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+      <DialogFooter>
+        <DialogClose asChild>
+          <Button variant="outline" type="button">Cancelar</Button>
+        </DialogClose>
+        <Button type="submit" disabled={isLoading || !!idError}>
+          {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          {isEditing ? 'Atualizar' : 'Criar'}
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+}
+
+// ============================================
+// BOOKINGS SECTION
+// ============================================
 
 function BookingsSection() {
   const { data: bookings, isLoading } = useQuery<Booking[]>({

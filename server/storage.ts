@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { QUIZ_TOTAL_QUESTIONS, calculateQuizScores, classifyLead } from "@shared/quiz";
+import { DEFAULT_QUIZ_CONFIG, calculateQuizScoresWithConfig, classifyLead } from "@shared/quiz";
 import {
   categories,
   subcategories,
@@ -34,6 +34,7 @@ import {
   type Conversation,
   type ConversationMessage,
   type QuizLead,
+  type QuizConfig,
   type LeadStatus,
   type LeadClassification,
   type Faq,
@@ -143,10 +144,11 @@ export interface IStorage {
   getConversationMessages(conversationId: string): Promise<ConversationMessage[]>;
   
   // Leads
-  upsertQuizLeadProgress(progress: QuizLeadProgressInput, metadata?: { userAgent?: string }): Promise<QuizLead>;
+  upsertQuizLeadProgress(progress: QuizLeadProgressInput, metadata?: { userAgent?: string }, quizConfig?: QuizConfig): Promise<QuizLead>;
   getQuizLeadBySession(sessionId: string): Promise<QuizLead | undefined>;
   listQuizLeads(filters?: { status?: LeadStatus; classificacao?: LeadClassification; quizCompleto?: boolean; search?: string }): Promise<QuizLead[]>;
-  updateQuizLead(id: number, updates: Partial<Pick<QuizLead, "status" | "observacoes" | "notificacaoEnviada">>): Promise<QuizLead | undefined>;
+  updateQuizLead(id: number, updates: Partial<Pick<QuizLead, "status" | "observacoes" | "notificacaoEnviada" | "ghlContactId" | "ghlSyncStatus">>): Promise<QuizLead | undefined>;
+  getQuizLeadByEmail(email: string): Promise<QuizLead | undefined>;
   deleteQuizLead(id: number): Promise<boolean>;
   
   // Blog Posts
@@ -614,30 +616,51 @@ export class DatabaseStorage implements IStorage {
     return lead;
   }
 
-  async upsertQuizLeadProgress(progress: QuizLeadProgressInput, metadata: { userAgent?: string } = {}): Promise<QuizLead> {
+  async getQuizLeadByEmail(email: string): Promise<QuizLead | undefined> {
+    const [lead] = await db.select().from(quizLeads).where(eq(quizLeads.email, email));
+    return lead;
+  }
+
+  async upsertQuizLeadProgress(progress: QuizLeadProgressInput, metadata: { userAgent?: string } = {}, quizConfig?: QuizConfig): Promise<QuizLead> {
     const existing = await this.getQuizLeadBySession(progress.sessionId);
     if (!existing && !progress.nome) {
       throw new Error("Nome é obrigatório para iniciar o quiz");
     }
 
-    const combinedAnswers = {
+    const config = quizConfig || (await this.getCompanySettings()).quizConfig || DEFAULT_QUIZ_CONFIG;
+    const totalQuestions = config.questions.length || DEFAULT_QUIZ_CONFIG.questions.length;
+    const safeQuestionNumber = Math.max(1, Math.min(progress.questionNumber, totalQuestions));
+
+    const mergedCustomAnswers = Object.fromEntries(
+      Object.entries({
+        ...(existing?.customAnswers || {}),
+        ...(progress.customAnswers || {}),
+      }).filter(([_, value]) => typeof value === "string" && value.trim().length > 0)
+    );
+
+    const answersForScoring: Record<string, string | undefined> = {
+      ...mergedCustomAnswers,
+      nome: progress.nome ?? existing?.nome ?? undefined,
+      email: progress.email ?? existing?.email ?? undefined,
+      telefone: progress.telefone ?? existing?.telefone ?? undefined,
+      cidadeEstado: progress.cidadeEstado ?? existing?.cidadeEstado ?? undefined,
       tipoNegocio: progress.tipoNegocio ?? existing?.tipoNegocio ?? undefined,
+      tipoNegocioOutro: progress.tipoNegocioOutro ?? existing?.tipoNegocioOutro ?? undefined,
       tempoNegocio: progress.tempoNegocio ?? existing?.tempoNegocio ?? undefined,
       experienciaMarketing: progress.experienciaMarketing ?? existing?.experienciaMarketing ?? undefined,
       orcamentoAnuncios: progress.orcamentoAnuncios ?? existing?.orcamentoAnuncios ?? undefined,
       principalDesafio: progress.principalDesafio ?? existing?.principalDesafio ?? undefined,
       disponibilidade: progress.disponibilidade ?? existing?.disponibilidade ?? undefined,
       expectativaResultado: progress.expectativaResultado ?? existing?.expectativaResultado ?? undefined,
-      tipoNegocioOutro: progress.tipoNegocioOutro ?? existing?.tipoNegocioOutro ?? undefined,
     };
 
-    const scoreResult = calculateQuizScores(combinedAnswers);
-    const isComplete = progress.quizCompleto || progress.questionNumber >= QUIZ_TOTAL_QUESTIONS;
+    const scoreResult = calculateQuizScoresWithConfig(answersForScoring, config);
+    const isComplete = progress.quizCompleto || safeQuestionNumber >= totalQuestions;
     const classification: LeadClassification | undefined = isComplete
-      ? classifyLead(scoreResult.total)
+      ? classifyLead(scoreResult.total, config.thresholds)
       : (existing?.classificacao ?? (progress.classificacao as LeadClassification | undefined));
     const now = new Date();
-    const latestQuestion = Math.max(progress.questionNumber, existing?.ultimaPerguntaRespondida ?? 0);
+    const latestQuestion = Math.max(safeQuestionNumber, existing?.ultimaPerguntaRespondida ?? 0);
 
     const payload: Partial<typeof quizLeads.$inferInsert> = {
       sessionId: progress.sessionId,
@@ -653,15 +676,16 @@ export class DatabaseStorage implements IStorage {
       principalDesafio: progress.principalDesafio ?? existing?.principalDesafio,
       disponibilidade: progress.disponibilidade ?? existing?.disponibilidade,
       expectativaResultado: progress.expectativaResultado ?? existing?.expectativaResultado,
+      customAnswers: mergedCustomAnswers,
       scoreTotal: scoreResult.total,
       classificacao: classification,
-      scoreTipoNegocio: scoreResult.breakdown.scoreTipoNegocio,
-      scoreTempoNegocio: scoreResult.breakdown.scoreTempoNegocio,
-      scoreExperiencia: scoreResult.breakdown.scoreExperiencia,
-      scoreOrcamento: scoreResult.breakdown.scoreOrcamento,
-      scoreDesafio: scoreResult.breakdown.scoreDesafio,
-      scoreDisponibilidade: scoreResult.breakdown.scoreDisponibilidade,
-      scoreExpectativa: scoreResult.breakdown.scoreExpectativa,
+      scoreTipoNegocio: scoreResult.breakdown.scoreTipoNegocio ?? existing?.scoreTipoNegocio ?? 0,
+      scoreTempoNegocio: scoreResult.breakdown.scoreTempoNegocio ?? existing?.scoreTempoNegocio ?? 0,
+      scoreExperiencia: scoreResult.breakdown.scoreExperiencia ?? existing?.scoreExperiencia ?? 0,
+      scoreOrcamento: scoreResult.breakdown.scoreOrcamento ?? existing?.scoreOrcamento ?? 0,
+      scoreDesafio: scoreResult.breakdown.scoreDesafio ?? existing?.scoreDesafio ?? 0,
+      scoreDisponibilidade: scoreResult.breakdown.scoreDisponibilidade ?? existing?.scoreDisponibilidade ?? 0,
+      scoreExpectativa: scoreResult.breakdown.scoreExpectativa ?? existing?.scoreExpectativa ?? 0,
       tempoTotalSegundos: progress.tempoTotalSegundos ?? existing?.tempoTotalSegundos,
       userAgent: metadata.userAgent ?? existing?.userAgent,
       urlOrigem: progress.urlOrigem ?? existing?.urlOrigem,
@@ -673,6 +697,8 @@ export class DatabaseStorage implements IStorage {
       ultimaPerguntaRespondida: latestQuestion,
       notificacaoEnviada: existing?.notificacaoEnviada ?? false,
       updatedAt: now,
+      ghlContactId: existing?.ghlContactId ?? null,
+      ghlSyncStatus: existing?.ghlSyncStatus ?? "pending",
     };
 
     if (!existing) {
@@ -692,6 +718,7 @@ export class DatabaseStorage implements IStorage {
         principalDesafio: payload.principalDesafio,
         disponibilidade: payload.disponibilidade,
         expectativaResultado: payload.expectativaResultado,
+        customAnswers: mergedCustomAnswers,
         scoreTotal: payload.scoreTotal ?? 0,
         classificacao: payload.classificacao ?? null,
         scoreTipoNegocio: payload.scoreTipoNegocio ?? 0,
@@ -713,11 +740,32 @@ export class DatabaseStorage implements IStorage {
         notificacaoEnviada: payload.notificacaoEnviada ?? false,
         dataContato: null,
         observacoes: payload.observacoes ?? null,
+        ghlContactId: null,
+        ghlSyncStatus: payload.ghlSyncStatus ?? "pending",
         createdAt: safeStartedAt,
         updatedAt: now,
       };
-      const [created] = await db.insert(quizLeads).values(insertPayload).returning();
-      return created;
+      try {
+        const [created] = await db.insert(quizLeads).values(insertPayload).returning();
+        return created;
+      } catch (err: any) {
+        if (err?.code === "23505" && payload.email) {
+          const existingByEmail = await this.getQuizLeadByEmail(payload.email);
+          if (existingByEmail) {
+            const [updatedExisting] = await db
+              .update(quizLeads)
+              .set({
+                ...insertPayload,
+                sessionId: existingByEmail.sessionId,
+                updatedAt: now,
+              })
+              .where(eq(quizLeads.id, existingByEmail.id))
+              .returning();
+            return updatedExisting;
+          }
+        }
+        throw err;
+      }
     }
 
     const [updated] = await db
@@ -750,7 +798,7 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(quizLeads).orderBy(desc(quizLeads.createdAt));
   }
 
-  async updateQuizLead(id: number, updates: Partial<Pick<QuizLead, "status" | "observacoes" | "notificacaoEnviada">>): Promise<QuizLead | undefined> {
+  async updateQuizLead(id: number, updates: Partial<Pick<QuizLead, "status" | "observacoes" | "notificacaoEnviada" | "ghlContactId" | "ghlSyncStatus">>): Promise<QuizLead | undefined> {
     const [existing] = await db.select().from(quizLeads).where(eq(quizLeads.id, id));
     if (!existing) return undefined;
 

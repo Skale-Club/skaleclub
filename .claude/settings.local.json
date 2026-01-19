@@ -25,7 +25,9 @@
       "Bash(kill:*)",
       "Bash(echo:*)",
       "Bash(ls:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(grep:*)",
+      "Bash(pgrep:*)"
     ]
   }
 }

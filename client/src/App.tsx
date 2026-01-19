@@ -55,6 +55,7 @@ const Home = lazy(() => import("@/pages/Home").then(m => ({ default: () => <Page
 const Services = lazy(() => import("@/pages/Services").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const BookingPage = lazy(() => import("@/pages/BookingPage").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Confirmation = lazy(() => import("@/pages/Confirmation").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const LeadThankYou = lazy(() => import("@/pages/LeadThankYou").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Admin = lazy(() => import("@/pages/Admin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const AdminLogin = lazy(() => import("@/pages/AdminLogin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
@@ -142,6 +143,7 @@ function Router() {
             <Route path="/services" component={Services} />
             <Route path="/booking" component={BookingPage} />
             <Route path="/confirmation" component={Confirmation} />
+            <Route path="/lead-thank-you" component={LeadThankYou} />
             <Route path="/privacy-policy" component={PrivacyPolicy} />
             <Route path="/terms-of-service" component={TermsOfService} />
             <Route path="/about" component={AboutUs} />

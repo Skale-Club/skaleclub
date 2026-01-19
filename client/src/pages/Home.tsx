@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { trackCTAClick } from "@/lib/analytics";
 import { DEFAULT_HOMEPAGE_CONTENT } from "@/lib/homepageDefaults";
 import { LeadQuizModal } from "@/components/LeadQuizModal";
+import { ConsultingStepsSection } from "@/components/ConsultingStepsSection";
 
 function BlogSection({ content }: { content: HomepageContent['blogSection'] }) {
   const sectionContent = {
@@ -112,6 +113,16 @@ export default function Home() {
   });
 
   const isLoading = isCategoriesLoading || isServicesLoading;
+  const consultingStepsSection = (() => {
+    const base = {
+      ...DEFAULT_HOMEPAGE_CONTENT.consultingStepsSection,
+      ...(companySettings?.homepageContent?.consultingStepsSection || {}),
+    };
+    const steps = base.steps?.length
+      ? base.steps
+      : DEFAULT_HOMEPAGE_CONTENT.consultingStepsSection?.steps || [];
+    return { ...base, steps };
+  })();
   const homepageContent = {
     ...DEFAULT_HOMEPAGE_CONTENT,
     ...(companySettings?.homepageContent || {}),
@@ -134,6 +145,7 @@ export default function Home() {
       ...DEFAULT_HOMEPAGE_CONTENT.areasServedSection,
       ...(companySettings?.homepageContent?.areasServedSection || {}),
     },
+    consultingStepsSection,
   };
 
   const trustBadges = homepageContent.trustBadges || [];
@@ -151,6 +163,10 @@ export default function Home() {
   const displayPhone = companySettings?.companyPhone || "(303) 309 4226";
   const telPhone = displayPhone.replace(/\D/g, '');
   const [isQuizOpen, setIsQuizOpen] = useState(false);
+  const handleConsultingCta = () => {
+    setIsQuizOpen(true);
+    trackCTAClick('consulting-steps', consultingStepsSection.ctaButtonLabel || 'Agendar Conversa Gratuita');
+  };
 
   const REVIEWS_TITLE_PT = 'Avaliações de Clientes';
   const REVIEWS_SUBTITLE_PT = 'Veja o que nossos clientes dizem sobre nossos serviços 5 estrelas.';
@@ -236,7 +252,7 @@ export default function Home() {
               <p className="text-base sm:text-xl text-blue-50/80 mb-4 lg:mb-8 leading-relaxed max-w-xl">
                 {companySettings?.heroSubtitle || "We provide top-quality cleaning services ensuring a spotless environment for your home and office."}
               </p>
-              <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 flex-wrap">
+              <div className="flex flex-col sm:flex-row gap-3 lg:gap-5 flex-wrap">
                 <button
                   data-quiz-trigger="lead-quiz"
                   className="w-full sm:w-auto shrink-0 px-6 sm:px-8 py-3 sm:py-4 bg-[#406EF1] hover:bg-[#355CD0] hover:scale-105 text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
@@ -307,6 +323,10 @@ export default function Home() {
           </div>
         </div>
       </section>
+      <ConsultingStepsSection
+        section={homepageContent.consultingStepsSection}
+        onCtaClick={handleConsultingCta}
+      />
       <div className="h-0 bg-[#111111]"></div>
       {/* Reviews Section */}
       <section className="pt-6 sm:pt-10 lg:pt-12 pb-0 bg-[#111111] overflow-hidden mb-0 text-white">

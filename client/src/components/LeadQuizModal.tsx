@@ -1,28 +1,17 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { AlertCircle, ArrowLeft, ArrowRight, Check, Loader2, Sparkles, X } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, Check, ChevronDown, Loader2, X } from "lucide-react";
 import clsx from "clsx";
+import { useQuery } from "@tanstack/react-query";
 import { trackEvent } from "@/lib/analytics";
-import { quizOptions, calculateQuizScores, classifyLead, QUIZ_TOTAL_QUESTIONS } from "@shared/quiz";
-import type { LeadClassification, QuizLead } from "@shared/schema";
+import { DEFAULT_QUIZ_CONFIG, calculateQuizScoresWithConfig, classifyLead, getSortedQuestions, KNOWN_FIELD_IDS } from "@shared/quiz";
+import type { LeadClassification, QuizLead, QuizConfig, QuizQuestion } from "@shared/schema";
 
-type QuizView = "quiz" | "loading" | "result";
+type QuizView = "quiz" | "loading";
 
-type Answers = {
-  nome: string;
-  email: string;
-  telefone: string;
-  cidadeEstado: string;
-  tipoNegocio: string;
-  tipoNegocioOutro: string;
-  tempoNegocio: string;
-  experienciaMarketing: string;
-  orcamentoAnuncios: string;
-  principalDesafio: string;
-  disponibilidade: string;
-  expectativaResultado: string;
-};
+// Dynamic answers type - supports any question ID
+type Answers = Record<string, string>;
 
 type StoredQuizState = {
   sessionId: string;
@@ -32,62 +21,49 @@ type StoredQuizState = {
   startedAt: string;
   lastUpdatedAt: string;
   pendingSync: boolean;
+  selectedCountry?: string;
 };
+
+// Country configuration for phone input
+type CountryConfig = {
+  code: string;
+  name: string;
+  dialCode: string;
+  flag: string;
+  format: string; // e.g., "(###) ###-####" for US
+  maxDigits: number;
+};
+
+const COUNTRIES: CountryConfig[] = [
+  { code: "US", name: "Estados Unidos", dialCode: "+1", flag: "🇺🇸", format: "(###) ###-####", maxDigits: 10 },
+  { code: "BR", name: "Brasil", dialCode: "+55", flag: "🇧🇷", format: "(##) #####-####", maxDigits: 11 },
+  { code: "MX", name: "México", dialCode: "+52", flag: "🇲🇽", format: "(##) ####-####", maxDigits: 10 },
+  { code: "CA", name: "Canadá", dialCode: "+1", flag: "🇨🇦", format: "(###) ###-####", maxDigits: 10 },
+  { code: "PT", name: "Portugal", dialCode: "+351", flag: "🇵🇹", format: "### ### ###", maxDigits: 9 },
+  { code: "ES", name: "Espanha", dialCode: "+34", flag: "🇪🇸", format: "### ### ###", maxDigits: 9 },
+  { code: "UK", name: "Reino Unido", dialCode: "+44", flag: "🇬🇧", format: "#### ######", maxDigits: 10 },
+  { code: "DE", name: "Alemanha", dialCode: "+49", flag: "🇩🇪", format: "### #######", maxDigits: 10 },
+  { code: "FR", name: "França", dialCode: "+33", flag: "🇫🇷", format: "# ## ## ## ##", maxDigits: 9 },
+  { code: "IT", name: "Itália", dialCode: "+39", flag: "🇮🇹", format: "### ### ####", maxDigits: 10 },
+];
+
+const DEFAULT_COUNTRY = "US";
 
 const STORAGE_KEY = "skale-quiz-state";
 const EXPIRATION_HOURS = 24;
-const PHONE_REGEX = /^\+1 \(\d{3}\) \d{3}-\d{4}$/;
 const NAME_REGEX = /^[A-Za-zÀ-ÿ\s]{3,100}$/;
 
-const INITIAL_ANSWERS: Answers = {
-  nome: "",
-  email: "",
-  telefone: "",
-  cidadeEstado: "",
-  tipoNegocio: "",
-  tipoNegocioOutro: "",
-  tempoNegocio: "",
-  experienciaMarketing: "",
-  orcamentoAnuncios: "",
-  principalDesafio: "",
-  disponibilidade: "",
-  expectativaResultado: "",
-};
-
-const RESULT_CONFIG: Record<LeadClassification, { title: string; message: string; cta: string; color: string; href: string; icon: string }> = {
-  QUENTE: {
-    title: "🎯 Você tem o perfil ideal!",
-    message: "Seu negócio tem tudo para se beneficiar da nossa mentoria. Vamos agendar uma conversa?",
-    cta: "Agendar Minha Call Agora",
-    color: "#22C55E",
-    href: "/booking",
-    icon: "sparkles",
-  },
-  MORNO: {
-    title: "📈 Você tem potencial!",
-    message: "Vejo que você está no caminho certo. Que tal receber nosso guia gratuito para começar?",
-    cta: "Receber Guia Gratuito",
-    color: "#F59E0B",
-    href: "/contact",
-    icon: "sparkles",
-  },
-  FRIO: {
-    title: "🙏 Obrigado pelo interesse!",
-    message: "Vamos te manter informado com conteúdos relevantes para quando você estiver pronto.",
-    cta: "Receber Conteúdos",
-    color: "#3B82F6",
-    href: "/blog",
-    icon: "sparkles",
-  },
-  DESQUALIFICADO: {
-    title: "✨ Obrigado por seu tempo!",
-    message: "No momento, nossa mentoria pode não ser o melhor fit. Mas fique à vontade para explorar nosso conteúdo gratuito.",
-    cta: "Ver Blog",
-    color: "#6B7280",
-    href: "/blog",
-    icon: "sparkles",
-  },
-};
+// Build initial answers from config
+function buildInitialAnswers(config: QuizConfig): Answers {
+  const answers: Answers = {};
+  for (const q of config.questions) {
+    answers[q.id] = "";
+    if (q.conditionalField) {
+      answers[q.conditionalField.id] = "";
+    }
+  }
+  return answers;
+}
 
 function generateSessionId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
@@ -96,17 +72,38 @@ function generateSessionId() {
   return `${random()}${random()}-${random()}-${random()}-${random()}-${random()}${random()}${random()}`;
 }
 
-function formatPhone(value: string) {
+function formatPhoneForCountry(value: string, country: CountryConfig): string {
+  // Only keep digits
+  const digits = value.replace(/\D/g, "").slice(0, country.maxDigits);
+
+  if (!digits) return "";
+
+  // Apply format pattern
+  let result = "";
+  let digitIndex = 0;
+
+  for (const char of country.format) {
+    if (digitIndex >= digits.length) break;
+    if (char === "#") {
+      result += digits[digitIndex];
+      digitIndex++;
+    } else {
+      result += char;
+    }
+  }
+
+  return result;
+}
+
+function getFullPhoneNumber(formattedPhone: string, country: CountryConfig): string {
+  const digits = formattedPhone.replace(/\D/g, "");
+  if (!digits) return "";
+  return `${country.dialCode} ${formattedPhone}`;
+}
+
+function isValidPhoneForCountry(value: string, country: CountryConfig): boolean {
   const digits = value.replace(/\D/g, "");
-  const normalized = digits.startsWith("1") && digits.length > 10 ? digits.slice(1) : digits;
-  const limited = normalized.slice(0, 10);
-  const area = limited.slice(0, 3);
-  const mid = limited.slice(3, 6);
-  const tail = limited.slice(6, 10);
-  if (tail) return `+1 (${area}) ${mid}-${tail}`;
-  if (mid) return `+1 (${area}) ${mid}`;
-  if (area) return `+1 (${area})`;
-  return "";
+  return digits.length === country.maxDigits;
 }
 
 function isExpired(timestamp: string) {
@@ -147,49 +144,56 @@ function clearStoredState() {
   }
 }
 
-function getFieldError(stepId: keyof Answers, answers: Answers) {
-  switch (stepId) {
-    case "nome": {
-      const name = answers.nome.trim();
-      if (!name) return "Por favor, insira seu nome completo";
-      if (name.length < 3 || name.length > 100) return "Por favor, insira seu nome completo";
-      if (!NAME_REGEX.test(name)) return "Use apenas letras e espaços";
-      return null;
+function getFieldError(question: QuizQuestion | undefined, answers: Answers, selectedCountry?: CountryConfig): string | null {
+  if (!question) return null;
+
+  const value = (answers[question.id] || "").trim();
+
+  // Check if required and empty
+  if (question.required && !value) {
+    if (question.type === "select") {
+      return "Por favor, selecione uma opção";
+    }
+    return "Este campo é obrigatório";
+  }
+
+  // Type-specific validation
+  switch (question.type) {
+    case "text": {
+      // Special validation for name field
+      if (question.id === "nome" && value) {
+        if (value.length < 3 || value.length > 100) return "Por favor, insira seu nome completo";
+        if (!NAME_REGEX.test(value)) return "Use apenas letras e espaços";
+      }
+      // Generic text validation
+      if (value && value.length < 3) return "Por favor, insira pelo menos 3 caracteres";
+      break;
     }
     case "email": {
-      const email = answers.email.trim();
-      if (!email || !/.+@.+\..+/.test(email)) return "Por favor, insira um email válido";
-      return null;
+      if (value && !/.+@.+\..+/.test(value)) return "Por favor, insira um email válido";
+      break;
     }
-    case "telefone": {
-      const phone = answers.telefone.trim();
-      if (!phone || !PHONE_REGEX.test(phone)) return "Por favor, insira um telefone válido";
-      return null;
-    }
-    case "cidadeEstado": {
-      const city = answers.cidadeEstado.trim();
-      if (!city || city.length < 3) return "Por favor, insira sua cidade e estado";
-      return null;
-    }
-    case "tipoNegocio": {
-      if (!answers.tipoNegocio) return "Por favor, selecione uma opção";
-      if (answers.tipoNegocio === "Outro" && !answers.tipoNegocioOutro.trim()) {
-        return "Por favor, descreva seu tipo de negócio";
+    case "tel": {
+      if (value && selectedCountry) {
+        if (!isValidPhoneForCountry(value, selectedCountry)) {
+          return `Por favor, insira um telefone válido (${selectedCountry.maxDigits} dígitos)`;
+        }
       }
-      return null;
+      break;
     }
-    case "tempoNegocio":
-    case "experienciaMarketing":
-    case "orcamentoAnuncios":
-    case "principalDesafio":
-    case "disponibilidade":
-    case "expectativaResultado": {
-      if (!(answers[stepId] as string)) return "Por favor, selecione uma opção";
-      return null;
+    case "select": {
+      // Check conditional field if applicable
+      if (question.conditionalField && value === question.conditionalField.showWhen) {
+        const conditionalValue = (answers[question.conditionalField.id] || "").trim();
+        if (!conditionalValue) {
+          return `Por favor, preencha o campo adicional`;
+        }
+      }
+      break;
     }
-    default:
-      return null;
   }
+
+  return null;
 }
 
 type LeadQuizModalProps = {
@@ -198,7 +202,22 @@ type LeadQuizModalProps = {
 };
 
 export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
-  const [answers, setAnswers] = useState<Answers>(INITIAL_ANSWERS);
+  // Fetch quiz config
+  const { data: quizConfig, isLoading: isConfigLoading } = useQuery<QuizConfig>({
+    queryKey: ['/api/quiz-config'],
+    queryFn: async () => {
+      const res = await fetch('/api/quiz-config');
+      if (!res.ok) throw new Error('Failed to load quiz config');
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  const config = quizConfig || DEFAULT_QUIZ_CONFIG;
+  const sortedQuestions = useMemo(() => getSortedQuestions(config), [config]);
+  const totalQuestions = sortedQuestions.length;
+
+  const [answers, setAnswers] = useState<Answers>(() => buildInitialAnswers(DEFAULT_QUIZ_CONFIG));
   const [currentStep, setCurrentStep] = useState(1);
   const [lastAnsweredStep, setLastAnsweredStep] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -206,36 +225,38 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
   const [view, setView] = useState<QuizView>("quiz");
   const [pendingSync, setPendingSync] = useState(false);
   const [storageAvailable, setStorageAvailable] = useState(true);
-  const [resultLead, setResultLead] = useState<QuizLead | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [direction, setDirection] = useState<1 | -1>(1);
   const [originUrl, setOriginUrl] = useState("");
   const [utmParams, setUtmParams] = useState({ source: "", medium: "", campaign: "" });
+  const [selectedCountryCode, setSelectedCountryCode] = useState<string>(DEFAULT_COUNTRY);
+  const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
   const autoSaveRef = useRef<number>();
-  const answersRef = useRef<Answers>(INITIAL_ANSWERS);
+  const answersRef = useRef<Answers>(buildInitialAnswers(DEFAULT_QUIZ_CONFIG));
   const syncedOnOpenRef = useRef(false);
-  const loadingTimerRef = useRef<number>();
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const countryDropdownRef = useRef<HTMLDivElement | null>(null);
 
-  const score = useMemo(() => calculateQuizScores(answers), [answers]);
-  const classification = useMemo(() => classifyLead(score.total), [score.total]);
-  const progressPercent = Math.min((currentStep / QUIZ_TOTAL_QUESTIONS) * 100, 100);
+  const selectedCountry = useMemo(() =>
+    COUNTRIES.find(c => c.code === selectedCountryCode) || COUNTRIES[0],
+    [selectedCountryCode]
+  );
 
-  const questionOrder: Array<keyof Answers> = [
-    "nome",
-    "email",
-    "telefone",
-    "cidadeEstado",
-    "tipoNegocio",
-    "tempoNegocio",
-    "experienciaMarketing",
-    "orcamentoAnuncios",
-    "principalDesafio",
-    "disponibilidade",
-    "expectativaResultado",
-  ];
+  // Update answers when config loads
+  useEffect(() => {
+    if (quizConfig) {
+      const newInitial = buildInitialAnswers(quizConfig);
+      setAnswers(prev => ({ ...newInitial, ...prev }));
+      answersRef.current = { ...newInitial, ...answersRef.current };
+    }
+  }, [quizConfig]);
 
-  const currentQuestionId = questionOrder[currentStep - 1];
+  const score = useMemo(() => calculateQuizScoresWithConfig(answers, config), [answers, config]);
+  const classification = useMemo(() => classifyLead(score.total, config.thresholds), [score.total, config.thresholds]);
+  const progressPercent = Math.min((currentStep / totalQuestions) * 100, 100);
+
+  const currentQuestion = sortedQuestions[currentStep - 1];
+  const currentQuestionId = currentQuestion?.id;
 
   useEffect(() => {
     try {
@@ -277,11 +298,25 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
     if (stored) {
       setSessionId(stored.sessionId);
       setAnswers(stored.answers);
-      setCurrentStep(Math.min(stored.currentStep, QUIZ_TOTAL_QUESTIONS));
+      setCurrentStep(Math.min(stored.currentStep, totalQuestions));
       setLastAnsweredStep(stored.lastAnsweredStep || 0);
       setStartedAt(new Date(stored.startedAt));
       setPendingSync(stored.pendingSync);
+      if (stored.selectedCountry) {
+        setSelectedCountryCode(stored.selectedCountry);
+      }
     }
+  }, []);
+
+  // Close country dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (countryDropdownRef.current && !countryDropdownRef.current.contains(event.target as Node)) {
+        setIsCountryDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -321,10 +356,11 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
         startedAt: (startedAt || new Date()).toISOString(),
         lastUpdatedAt: new Date().toISOString(),
         pendingSync: pending,
+        selectedCountry: selectedCountryCode,
       };
       saveStoredState(payload);
     },
-    [answers, ensureSession, pendingSync, startedAt, storageAvailable],
+    [answers, ensureSession, pendingSync, selectedCountryCode, startedAt, storageAvailable],
   );
 
   useEffect(() => {
@@ -338,7 +374,12 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
     ): Promise<QuizLead | null> => {
       const session = ensureSession();
       const effectiveAnswers = { ...answersRef.current, ...(opts?.overrideAnswers || {}) };
-      const effectiveScore = calculateQuizScores(effectiveAnswers);
+      const effectiveScore = calculateQuizScoresWithConfig(effectiveAnswers, config);
+      const customAnswers = Object.fromEntries(
+        Object.entries(effectiveAnswers)
+          .filter(([key, value]) => !KNOWN_FIELD_IDS.includes(key) && typeof value === "string" && value.trim())
+          .map(([key, value]) => [key, (value as string).trim()])
+      );
       const payload: any = {
         sessionId: session,
         questionNumber,
@@ -358,10 +399,21 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
         scoreDisponibilidade: effectiveScore.breakdown.scoreDisponibilidade,
         scoreExpectativa: effectiveScore.breakdown.scoreExpectativa,
       };
+      if (Object.keys(customAnswers).length > 0) {
+        payload.customAnswers = customAnswers;
+      }
 
       if (effectiveAnswers.nome) payload.nome = effectiveAnswers.nome.trim();
       if (effectiveAnswers.email) payload.email = effectiveAnswers.email.trim();
-      if (effectiveAnswers.telefone) payload.telefone = effectiveAnswers.telefone.trim();
+      if (effectiveAnswers.telefone) {
+        // Include country code in the phone number
+        const phoneDigits = effectiveAnswers.telefone.replace(/\D/g, "");
+        if (phoneDigits.length === selectedCountry.maxDigits) {
+          payload.telefone = getFullPhoneNumber(effectiveAnswers.telefone, selectedCountry);
+        } else {
+          payload.telefone = effectiveAnswers.telefone.trim();
+        }
+      }
       if (effectiveAnswers.cidadeEstado) payload.cidadeEstado = effectiveAnswers.cidadeEstado.trim();
       if (effectiveAnswers.tipoNegocio) payload.tipoNegocio = effectiveAnswers.tipoNegocio;
       if (effectiveAnswers.tipoNegocioOutro) payload.tipoNegocioOutro = effectiveAnswers.tipoNegocioOutro.trim();
@@ -380,7 +432,15 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
           body: JSON.stringify(payload),
         });
         if (!res.ok) {
-          throw new Error(await res.text());
+          const errorText = await res.text();
+          let friendlyMessage = errorText;
+          try {
+            const parsed = JSON.parse(errorText);
+            friendlyMessage = parsed?.message || errorText;
+          } catch {
+            // ignore JSON parse errors
+          }
+          throw new Error(friendlyMessage || "Erro ao salvar progresso");
         }
         const lead = (await res.json()) as QuizLead;
         setPendingSync(false);
@@ -391,24 +451,16 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
         console.error("Failed to sync lead progress", err);
         setPendingSync(true);
         updateStoredState(opts?.stepToResume ?? currentStep, questionNumber, true);
-        return null;
+        throw err;
       }
     },
     [
-      answers,
+      config,
       currentStep,
       ensureSession,
       originUrl,
       pendingSync,
-      score.breakdown.scoreDesafio,
-      score.breakdown.scoreDisponibilidade,
-      score.breakdown.scoreExperiencia,
-      score.breakdown.scoreExpectativa,
-      score.breakdown.scoreOrcamento,
-      score.breakdown.scoreTempoNegocio,
-      score.breakdown.scoreTipoNegocio,
-      score.total,
-      sessionId,
+      selectedCountry,
       startedAt,
       updateStoredState,
       utmParams.campaign,
@@ -424,27 +476,35 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
     }
   }, [currentStep, lastAnsweredStep, open, persistProgress, sessionId]);
 
-  const handleAnswerChange = (field: keyof Answers, value: string) => {
+  const handleAnswerChange = (field: string, value: string) => {
     ensureSession();
-    if (field === "telefone") {
-      value = formatPhone(value);
+    // Format phone if it's a tel field
+    const question = sortedQuestions.find(q => q.id === field);
+    if (question?.type === "tel") {
+      value = formatPhoneForCountry(value, selectedCountry);
     }
     setAnswers(prev => ({ ...prev, [field]: value }));
     setErrorMessage(null);
 
     if (autoSaveRef.current) window.clearTimeout(autoSaveRef.current);
     autoSaveRef.current = window.setTimeout(() => {
-      const error = getFieldError(field, { ...answers, [field]: value });
-      if (!error && questionOrder[currentStep - 1] === field) {
-        void persistProgress(currentStep, { stepToResume: currentStep, overrideAnswers: { [field]: value } });
+      const error = getFieldError(question, { ...answers, [field]: value }, selectedCountry);
+      if (!error && currentQuestion?.id === field) {
+        // For phone fields, save with country code prefix
+        const valueToSave = question?.type === "tel" && value
+          ? getFullPhoneNumber(value, selectedCountry)
+          : value;
+        void persistProgress(currentStep, { stepToResume: currentStep, overrideAnswers: { [field]: valueToSave } });
       }
     }, 400);
   };
 
-  const handleOptionSelect = (field: keyof Answers, value: string) => {
+  const handleOptionSelect = (field: string, value: string) => {
     const updated = { ...answers, [field]: value };
-    if (field === "tipoNegocio" && value !== "Outro") {
-      updated.tipoNegocioOutro = "";
+    // Clear conditional field if option changes
+    const question = sortedQuestions.find(q => q.id === field);
+    if (question?.conditionalField && value !== question.conditionalField.showWhen) {
+      updated[question.conditionalField.id] = "";
     }
     setAnswers(updated);
     setErrorMessage(null);
@@ -452,21 +512,28 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
   };
 
   const handleNext = async () => {
-    const error = getFieldError(currentQuestionId, answers);
+    const error = getFieldError(currentQuestion, answers, selectedCountry);
     if (error) {
       setErrorMessage(error);
       containerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
     const questionNumber = currentStep;
-    const nextStep = Math.min(currentStep + 1, QUIZ_TOTAL_QUESTIONS);
+    const nextStep = Math.min(currentStep + 1, totalQuestions);
     setDirection(1);
-    setCurrentStep(nextStep);
-    const lead = await persistProgress(questionNumber, { stepToResume: nextStep });
-    if (lead) {
-      setLastAnsweredStep(questionNumber);
+    try {
+      setCurrentStep(nextStep);
+      const lead = await persistProgress(questionNumber, { stepToResume: nextStep });
+      if (lead) {
+        setLastAnsweredStep(questionNumber);
+      }
+      trackEvent("quiz_step_completed", { step: questionNumber, classificationPreview: classification, score: score.total });
+    } catch (err: any) {
+      setErrorMessage(err?.message || "Não conseguimos enviar agora. Tente novamente em instantes.");
+      setPendingSync(true);
+      setView("quiz");
+      setCurrentStep(questionNumber); // keep user on same step if fail
     }
-    trackEvent("quiz_step_completed", { step: questionNumber, classificationPreview: classification, score: score.total });
   };
 
   const handleBack = () => {
@@ -477,90 +544,88 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
   };
 
   const handleFinish = async () => {
-    const error = getFieldError(currentQuestionId, answers);
+    const error = getFieldError(currentQuestion, answers, selectedCountry);
     if (error) {
       setErrorMessage(error);
       return;
     }
     setView("loading");
     const durationSeconds = startedAt ? Math.max(0, Math.round((Date.now() - startedAt.getTime()) / 1000)) : undefined;
-    const lead = await persistProgress(QUIZ_TOTAL_QUESTIONS, {
-      stepToResume: QUIZ_TOTAL_QUESTIONS,
-      markComplete: true,
-      tempoTotalSegundos: durationSeconds,
-    });
-
-    setLastAnsweredStep(QUIZ_TOTAL_QUESTIONS);
-    setResultLead(lead ?? null);
-    if (lead) {
-      clearStoredState();
-    } else {
-      setPendingSync(true);
-    }
-    const leadClassification = lead?.classificacao || classification;
-    const leadScore = lead?.scoreTotal ?? score.total;
-    loadingTimerRef.current = window.setTimeout(() => {
-      setView("result");
-      trackEvent("quiz_completed", {
-        classification: leadClassification,
-        score: leadScore,
-        synced: !!lead,
+    try {
+      const lead = await persistProgress(totalQuestions, {
+        stepToResume: totalQuestions,
+        markComplete: true,
+        tempoTotalSegundos: durationSeconds,
       });
-    }, 2000);
+
+      setLastAnsweredStep(totalQuestions);
+      if (lead) {
+        clearStoredState();
+        const leadClassification = lead.classificacao || classification;
+        const leadScore = lead.scoreTotal ?? score.total;
+        trackEvent("quiz_completed", {
+          classification: leadClassification,
+          score: leadScore,
+          synced: true,
+        });
+        onClose();
+        window.location.href = "/lead-thank-you";
+        return;
+      }
+
+      setPendingSync(true);
+      setErrorMessage("Não conseguimos enviar agora. Tente novamente em instantes.");
+      setView("quiz");
+    } catch (err: any) {
+      const msg = err?.message || "Não conseguimos enviar agora. Tente novamente em instantes.";
+      setErrorMessage(msg);
+      setPendingSync(true);
+      setView("quiz");
+    }
   };
 
-  useEffect(() => {
-    return () => {
-      if (loadingTimerRef.current) {
-        window.clearTimeout(loadingTimerRef.current);
-      }
-    };
-  }, []);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isLastStep) {
+      await handleFinish();
+    } else {
+      await handleNext();
+    }
+  };
 
   const handleClose = () => {
-    if (view !== "result") {
+    if (view === "quiz") {
       trackEvent("quiz_abandoned", { step: currentStep });
-    } else if (!pendingSync) {
-      clearStoredState();
-      setAnswers(INITIAL_ANSWERS);
-      setCurrentStep(1);
-      setLastAnsweredStep(0);
-      setResultLead(null);
-      setSessionId(generateSessionId());
-      setStartedAt(new Date());
     }
+    clearStoredState();
+    setAnswers(buildInitialAnswers(config));
+    setCurrentStep(1);
+    setLastAnsweredStep(0);
+    setSessionId(generateSessionId());
+    setStartedAt(new Date());
     setView("quiz");
     setErrorMessage(null);
     setDirection(1);
     onClose();
   };
 
-  const handleResultAction = (href: string, classificationValue: LeadClassification) => {
-    trackEvent("quiz_result_action", { classification: classificationValue, href });
-    window.location.href = href;
-  };
-
   if (!open) return null;
 
-  const currentQuestionTitleMap: Record<keyof Answers, string> = {
-    nome: "Qual é o seu nome completo?",
-    email: "Qual é o seu email?",
-    telefone: "Qual é o seu telefone/WhatsApp?",
-    cidadeEstado: "Em qual cidade e estado você está nos EUA?",
-    tipoNegocio: "Qual tipo de negócio você tem?",
-    tempoNegocio: "Há quanto tempo você tem esse negócio nos EUA?",
-    experienciaMarketing: "Você já investiu em marketing digital antes?",
-    orcamentoAnuncios: "Quanto você está disposto a investir MENSALMENTE em anúncios?",
-    principalDesafio: "Qual é o seu MAIOR desafio hoje?",
-    disponibilidade: "Quanto tempo por semana você consegue dedicar ao aprendizado?",
-    expectativaResultado: "Em quanto tempo você espera começar a ver resultados?",
-    tipoNegocioOutro: "",
-  };
+  // Show loading while config is loading
+  if (isConfigLoading) {
+    return createPortal(
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+        <div className="bg-white rounded-2xl p-8 flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-[#406EF1]" />
+          <p className="text-slate-600">Carregando quiz...</p>
+        </div>
+      </div>,
+      document.body
+    );
+  }
 
-  const isLastStep = currentStep === QUIZ_TOTAL_QUESTIONS;
-  const resultClassification = (resultLead?.classificacao || classification) as LeadClassification;
-  const resultConfig = RESULT_CONFIG[resultClassification];
-  const canProceed = !getFieldError(currentQuestionId, answers);
+  const isLastStep = currentStep === totalQuestions;
+  const canProceed = !getFieldError(currentQuestion, answers, selectedCountry);
 
   return createPortal(
     <AnimatePresence>
@@ -599,12 +664,12 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
                   </div>
                 )}
 
-                {view === "quiz" && (
-                  <>
+                {view === "quiz" && currentQuestion && (
+                  <form onSubmit={handleSubmit}>
                     <div className="flex items-start justify-between">
                       <div>
                         <p className="text-sm font-semibold text-[#406EF1] uppercase tracking-wide">Vamos começar!</p>
-                        <h2 className="text-2xl sm:text-3xl font-bold leading-tight mt-1">{currentQuestionTitleMap[currentQuestionId]}</h2>
+                        <h2 className="text-2xl sm:text-3xl font-bold leading-tight mt-1">{currentQuestion.title}</h2>
                       </div>
                     </div>
 
@@ -618,85 +683,119 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
                         transition={{ duration: 0.25, ease: "easeOut" }}
                         className="mt-6 space-y-4"
                       >
-                        {currentQuestionId === "nome" && (
+                        {/* Text input fields */}
+                        {(currentQuestion.type === "text" || currentQuestion.type === "email") && (
                           <input
-                            value={answers.nome}
-                            onChange={e => handleAnswerChange("nome", e.target.value)}
-                            placeholder="Digite seu nome completo"
+                            type={currentQuestion.type === "email" ? "email" : "text"}
+                            value={answers[currentQuestion.id] || ""}
+                            onChange={e => handleAnswerChange(currentQuestion.id, e.target.value)}
+                            placeholder={currentQuestion.placeholder || ""}
                             className={clsx(
                               "w-full rounded-xl border px-4 py-3 text-lg transition-colors",
                               errorMessage ? "border-red-400" : "border-slate-200",
                               "focus:border-[#406EF1] focus:ring-2 focus:ring-[#406EF1]/30"
                             )}
-                            aria-label="Nome completo"
+                            aria-label={currentQuestion.title}
                           />
                         )}
 
-                        {currentQuestionId === "email" && (
-                          <input
-                            type="email"
-                            value={answers.email}
-                            onChange={e => handleAnswerChange("email", e.target.value)}
-                            placeholder="exemplo@email.com"
-                            className={clsx(
-                              "w-full rounded-xl border px-4 py-3 text-lg transition-colors",
-                              errorMessage ? "border-red-400" : "border-slate-200",
-                              "focus:border-[#406EF1] focus:ring-2 focus:ring-[#406EF1]/30"
-                            )}
-                            aria-label="Email"
-                          />
+                        {/* Phone input with country selector */}
+                        {currentQuestion.type === "tel" && (
+                          <div className="flex gap-2">
+                            {/* Country selector */}
+                            <div className="relative" ref={countryDropdownRef}>
+                              <button
+                                type="button"
+                                onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
+                                className={clsx(
+                                  "flex items-center gap-1 rounded-xl border px-3 py-3 text-lg transition-colors h-[52px] min-w-[100px]",
+                                  errorMessage ? "border-red-400" : "border-slate-200",
+                                  "hover:border-[#406EF1]/70 focus:border-[#406EF1] focus:ring-2 focus:ring-[#406EF1]/30"
+                                )}
+                              >
+                                <span className="text-xl">{selectedCountry.flag}</span>
+                                <span className="text-sm text-slate-600">{selectedCountry.dialCode}</span>
+                                <ChevronDown className={clsx(
+                                  "h-4 w-4 text-slate-400 transition-transform",
+                                  isCountryDropdownOpen && "rotate-180"
+                                )} />
+                              </button>
+
+                              {/* Dropdown */}
+                              <AnimatePresence>
+                                {isCountryDropdownOpen && (
+                                  <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.15 }}
+                                    className="absolute z-50 mt-1 w-64 rounded-xl border border-slate-200 bg-white shadow-lg overflow-hidden"
+                                  >
+                                    <div className="max-h-60 overflow-y-auto py-1">
+                                      {COUNTRIES.map((country) => (
+                                        <button
+                                          key={country.code}
+                                          type="button"
+                                          onClick={() => {
+                                            setSelectedCountryCode(country.code);
+                                            setIsCountryDropdownOpen(false);
+                                            // Clear phone when changing country
+                                            setAnswers(prev => ({ ...prev, [currentQuestion.id]: "" }));
+                                          }}
+                                          className={clsx(
+                                            "w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-slate-50 transition-colors",
+                                            selectedCountryCode === country.code && "bg-[#EFF3FF]"
+                                          )}
+                                        >
+                                          <span className="text-xl">{country.flag}</span>
+                                          <span className="flex-1 text-sm font-medium text-slate-700">{country.name}</span>
+                                          <span className="text-sm text-slate-500">{country.dialCode}</span>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+
+                            {/* Phone input */}
+                            <input
+                              type="tel"
+                              value={answers[currentQuestion.id] || ""}
+                              onChange={e => handleAnswerChange(currentQuestion.id, e.target.value)}
+                              placeholder={selectedCountry.format.replace(/#/g, "0")}
+                              className={clsx(
+                                "flex-1 rounded-xl border px-4 py-3 text-lg transition-colors",
+                                errorMessage ? "border-red-400" : "border-slate-200",
+                                "focus:border-[#406EF1] focus:ring-2 focus:ring-[#406EF1]/30"
+                              )}
+                              aria-label={currentQuestion.title}
+                              maxLength={selectedCountry.format.length}
+                            />
+                          </div>
                         )}
 
-                        {currentQuestionId === "telefone" && (
-                          <input
-                            type="tel"
-                            value={answers.telefone}
-                            onChange={e => handleAnswerChange("telefone", e.target.value)}
-                            placeholder="+1 (555) 123-4567"
-                            className={clsx(
-                              "w-full rounded-xl border px-4 py-3 text-lg transition-colors",
-                              errorMessage ? "border-red-400" : "border-slate-200",
-                              "focus:border-[#406EF1] focus:ring-2 focus:ring-[#406EF1]/30"
-                            )}
-                            aria-label="Telefone"
-                            maxLength={18}
-                          />
-                        )}
-
-                        {currentQuestionId === "cidadeEstado" && (
-                          <input
-                            value={answers.cidadeEstado}
-                            onChange={e => handleAnswerChange("cidadeEstado", e.target.value)}
-                            placeholder="Boston, MA"
-                            className={clsx(
-                              "w-full rounded-xl border px-4 py-3 text-lg transition-colors",
-                              errorMessage ? "border-red-400" : "border-slate-200",
-                              "focus:border-[#406EF1] focus:ring-2 focus:ring-[#406EF1]/30"
-                            )}
-                            aria-label="Cidade e Estado"
-                          />
-                        )}
-
-                        {currentQuestionId && ["tipoNegocio", "tempoNegocio", "experienciaMarketing", "orcamentoAnuncios", "principalDesafio", "disponibilidade", "expectativaResultado"].includes(currentQuestionId) && (
+                        {/* Multiple choice fields */}
+                        {currentQuestion.type === "select" && currentQuestion.options && (
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {quizOptions[currentQuestionId as keyof typeof quizOptions].map(option => (
+                            {currentQuestion.options.map(option => (
                               <button
                                 type="button"
                                 key={option.value}
-                                onClick={() => handleOptionSelect(currentQuestionId, option.value)}
+                                onClick={() => handleOptionSelect(currentQuestion.id, option.value)}
                                 className={clsx(
                                   "flex items-center justify-between rounded-xl border px-4 py-3 text-left transition-all shadow-sm",
-                                  answers[currentQuestionId] === option.value
+                                  answers[currentQuestion.id] === option.value
                                     ? "border-[#406EF1] bg-[#EFF3FF] shadow-md"
                                     : "border-slate-200 hover:border-[#406EF1]/70 hover:bg-slate-50",
-                                  errorMessage && !answers[currentQuestionId] ? "border-red-400" : ""
+                                  errorMessage && !answers[currentQuestion.id] ? "border-red-400" : ""
                                 )}
                               >
                                 <div>
                                   <p className="font-semibold text-slate-900">{option.label}</p>
                                 </div>
-                                {answers[currentQuestionId] === option.value && (
-                                  <span className="h-8 w-8 rounded-full bg-[#406EF1] text-white flex items-center justify-center">
+                                {answers[currentQuestion.id] === option.value && (
+                                  <span className="h-8 w-8 min-h-8 min-w-8 rounded-full bg-[#406EF1] text-white flex items-center justify-center shrink-0">
                                     <Check className="h-4 w-4" />
                                   </span>
                                 )}
@@ -705,13 +804,15 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
                           </div>
                         )}
 
-                        {currentQuestionId === "tipoNegocio" && answers.tipoNegocio === "Outro" && (
+                        {/* Conditional field (e.g., "Outro" text input) */}
+                        {currentQuestion.conditionalField &&
+                         answers[currentQuestion.id] === currentQuestion.conditionalField.showWhen && (
                           <div className="mt-2">
-                            <label className="text-sm font-semibold text-slate-700">Conte qual é o seu negócio</label>
+                            <label className="text-sm font-semibold text-slate-700">{currentQuestion.conditionalField.title}</label>
                             <input
-                              value={answers.tipoNegocioOutro}
-                              onChange={e => handleAnswerChange("tipoNegocioOutro", e.target.value)}
-                              placeholder="Descreva seu tipo de negócio"
+                              value={answers[currentQuestion.conditionalField.id] || ""}
+                              onChange={e => handleAnswerChange(currentQuestion.conditionalField!.id, e.target.value)}
+                              placeholder={currentQuestion.conditionalField.placeholder}
                               className={clsx(
                                 "mt-1 w-full rounded-xl border px-4 py-3 text-base transition-colors",
                                 errorMessage ? "border-red-400" : "border-slate-200",
@@ -741,9 +842,8 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
                         Voltar
                       </button>
                       <button
-                        type="button"
+                        type="submit"
                         aria-disabled={!canProceed}
-                        onClick={isLastStep ? handleFinish : handleNext}
                         className={clsx(
                           "inline-flex items-center justify-center gap-2 rounded-xl bg-[#406EF1] px-5 py-3 text-white font-semibold hover:bg-[#355CD0] transition-colors w-full sm:w-auto",
                           !canProceed && "opacity-60 cursor-not-allowed"
@@ -753,7 +853,7 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
                         <ArrowRight className="h-4 w-4" />
                       </button>
                     </div>
-                  </>
+                  </form>
                 )}
 
                 {view === "loading" && (
@@ -762,54 +862,6 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
                     <div className="text-center space-y-2">
                       <p className="text-xl font-semibold text-slate-900">Analisando seu perfil...</p>
                       <p className="text-slate-500">Isso leva apenas alguns instantes.</p>
-                    </div>
-                  </div>
-                )}
-
-                {view === "result" && (
-                  <div className="space-y-6 py-4">
-                    <div
-                      className="rounded-2xl border px-6 py-6 shadow-sm"
-                      style={{ borderColor: resultConfig.color + "55", background: `${resultConfig.color}0f` }}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="h-12 w-12 rounded-full flex items-center justify-center text-white" style={{ backgroundColor: resultConfig.color }}>
-                          <Sparkles className="h-5 w-5" />
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-sm font-semibold uppercase tracking-wide" style={{ color: resultConfig.color }}>
-                            {resultClassification === "QUENTE" ? "Lead Quente" : resultClassification === "MORNO" ? "Lead Morno" : resultClassification === "FRIO" ? "Lead Frio" : "Desqualificado"}
-                          </p>
-                          <h3 className="text-2xl font-bold text-slate-900">{resultConfig.title}</h3>
-                          <p className="text-slate-600 text-lg">{resultConfig.message}</p>
-                        </div>
-                      </div>
-                      <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                        <button
-                          onClick={() => handleResultAction(resultConfig.href, resultClassification)}
-                          className="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-white font-semibold shadow-lg transition-transform hover:scale-[1.01]"
-                          style={{ backgroundColor: resultConfig.color }}
-                        >
-                          {resultConfig.cta}
-                          <ArrowRight className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            clearStoredState();
-                            setAnswers(INITIAL_ANSWERS);
-                            setCurrentStep(1);
-                            setLastAnsweredStep(0);
-                            setView("quiz");
-                            setResultLead(null);
-                            setSessionId(generateSessionId());
-                            setStartedAt(new Date());
-                          }}
-                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-5 py-3 text-slate-700 hover:bg-slate-50 transition-colors"
-                        >
-                          Refazer quiz
-                        </button>
-                      </div>
-                      <p className="text-xs text-slate-500 mt-3">Seus dados foram salvos com segurança.</p>
                     </div>
                   </div>
                 )}

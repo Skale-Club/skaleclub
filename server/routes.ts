@@ -9,7 +9,8 @@ import fs from "fs";
 import path from "path";
 import { WORKING_HOURS, DEFAULT_BUSINESS_HOURS, insertCategorySchema, insertServiceSchema, insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema, insertBlogPostSchema, BusinessHours, DayHours, insertChatSettingsSchema, insertChatIntegrationsSchema, insertKnowledgeBaseCategorySchema, insertKnowledgeBaseArticleSchema, quizLeadProgressSchema } from "@shared/schema";
 import type { LeadClassification, LeadStatus } from "@shared/schema";
-import { QUIZ_TOTAL_QUESTIONS } from "@shared/quiz";
+import { DEFAULT_QUIZ_CONFIG, calculateMaxScore } from "@shared/quiz";
+import type { QuizConfig } from "@shared/schema";
 import { insertSubcategorySchema } from "./storage";
 import { ObjectStorageService, registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { authStorage } from "./replit_integrations/auth/storage";
@@ -941,6 +942,39 @@ export async function registerRoutes(
     }
   });
 
+  // Quiz Config (public GET, admin PUT)
+  app.get('/api/quiz-config', async (req, res) => {
+    try {
+      const settings = await storage.getCompanySettings();
+      res.json(settings?.quizConfig || DEFAULT_QUIZ_CONFIG);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.put('/api/quiz-config', requireAdmin, async (req, res) => {
+    try {
+      const config = req.body as QuizConfig;
+
+      // Validate basic structure
+      if (!config.questions || !Array.isArray(config.questions)) {
+        return res.status(400).json({ message: 'Invalid config: questions array required' });
+      }
+
+      // Recalculate maxScore based on options
+      const maxScore = calculateMaxScore(config);
+      const updatedConfig: QuizConfig = {
+        ...config,
+        maxScore,
+      };
+
+      await storage.updateCompanySettings({ quizConfig: updatedConfig });
+      res.json(updatedConfig);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
   // Quiz Leads
   app.get('/api/quiz-leads/:sessionId', async (req, res) => {
     const lead = await storage.getQuizLeadBySession(req.params.sessionId);
@@ -953,13 +987,16 @@ export async function registerRoutes(
   app.post('/api/quiz-leads/progress', async (req, res) => {
     try {
       const parsed = quizLeadProgressSchema.parse(req.body);
-      const questionNumber = Math.min(parsed.questionNumber, QUIZ_TOTAL_QUESTIONS);
+      const settings = await storage.getCompanySettings();
+      const quizConfig = settings?.quizConfig || DEFAULT_QUIZ_CONFIG;
+      const totalQuestions = quizConfig.questions.length || DEFAULT_QUIZ_CONFIG.questions.length;
+      const questionNumber = Math.min(parsed.questionNumber, totalQuestions);
       const payload = {
         ...parsed,
         questionNumber,
-        quizCompleto: parsed.quizCompleto || questionNumber >= QUIZ_TOTAL_QUESTIONS,
+        quizCompleto: parsed.quizCompleto || questionNumber >= totalQuestions,
       };
-      let lead = await storage.upsertQuizLeadProgress(payload, { userAgent: req.get('user-agent') || undefined });
+      let lead = await storage.upsertQuizLeadProgress(payload, { userAgent: req.get('user-agent') || undefined }, quizConfig);
 
       if (lead.quizCompleto && lead.classificacao === 'QUENTE' && !lead.notificacaoEnviada) {
         try {
@@ -973,6 +1010,45 @@ export async function registerRoutes(
           }
         } catch (notificationError) {
           console.error('Lead notification error:', notificationError);
+        }
+      }
+
+      if (lead.quizCompleto) {
+        try {
+          const ghlSettings = await storage.getIntegrationSettings('gohighlevel');
+          if (ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.locationId && (lead.email || lead.telefone)) {
+            const nameParts = (lead.nome || '').trim().split(' ').filter(Boolean);
+            const firstName = nameParts.shift() || lead.nome || 'Lead';
+            const lastName = nameParts.join(' ');
+
+            const contactResult = await getOrCreateGHLContact(
+              ghlSettings.apiKey,
+              ghlSettings.locationId,
+              {
+                email: lead.email || '',
+                firstName,
+                lastName,
+                phone: lead.telefone || '',
+                address: lead.cidadeEstado || undefined,
+              }
+            );
+
+            if (contactResult.success && contactResult.contactId) {
+              const synced = await storage.updateQuizLead(lead.id, { ghlContactId: contactResult.contactId, ghlSyncStatus: 'synced' });
+              if (synced) {
+                lead = synced;
+              }
+            } else if (lead.ghlSyncStatus !== 'synced') {
+              await storage.updateQuizLead(lead.id, { ghlSyncStatus: 'failed' });
+            }
+          }
+        } catch (ghlError) {
+          console.log('GHL lead sync error (non-blocking):', ghlError);
+          try {
+            await storage.updateQuizLead(lead.id, { ghlSyncStatus: 'failed' });
+          } catch {
+            // ignore best-effort update
+          }
         }
       }
       res.json(lead);

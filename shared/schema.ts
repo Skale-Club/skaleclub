@@ -209,8 +209,11 @@ export const quizLeads = pgTable("quiz_leads", {
   notificacaoEnviada: boolean("notificacao_enviada").notNull().default(false),
   dataContato: timestamp("data_contato"),
   observacoes: text("observacoes"),
+  customAnswers: jsonb("custom_answers").$type<Record<string, string>>().default({}),
+  ghlContactId: text("ghl_contact_id"),
+  ghlSyncStatus: text("ghl_sync_status").default("pending"),
 }, (table) => ({
-  emailIdx: uniqueIndex("quiz_leads_email_unique").on(table.email),
+  emailIdx: index("quiz_leads_email_idx").on(table.email),
   classificacaoIdx: index("quiz_leads_classificacao_idx").on(table.classificacao),
   createdAtIdx: index("quiz_leads_created_at_idx").on(table.createdAt),
   statusIdx: index("quiz_leads_status_idx").on(table.status),
@@ -272,6 +275,8 @@ export const insertQuizLeadSchema = createInsertSchema(quizLeads).omit({
   ultimaPerguntaRespondida: true,
   notificacaoEnviada: true,
   dataContato: true,
+  ghlContactId: true,
+  ghlSyncStatus: true,
 });
 
 const leadClassificationValues = leadClassificationEnum.enumValues as [string, ...string[]];
@@ -279,7 +284,7 @@ const leadStatusValues = leadStatusEnum.enumValues as [string, ...string[]];
 
 export const quizLeadProgressSchema = z.object({
   sessionId: z.string().uuid(),
-  questionNumber: z.number().int().min(1).max(11),
+  questionNumber: z.number().int().min(1).max(50),
   nome: z.string().min(3).max(100).optional(),
   email: z.string().email().max(255).optional(),
   telefone: z.string().min(7).max(20).optional(),
@@ -308,6 +313,7 @@ export const quizLeadProgressSchema = z.object({
   utmMedium: z.string().max(200).optional(),
   utmCampaign: z.string().max(200).optional(),
   startedAt: z.string().optional(),
+  customAnswers: z.record(z.string()).optional(),
 });
 
 // === TYPES ===
@@ -369,6 +375,28 @@ export interface BusinessHours {
   sunday: DayHours;
 }
 
+export interface ConsultingStep {
+  order: number;
+  numberLabel: string;
+  icon?: string;
+  title: string;
+  whatWeDo: string;
+  outcome: string;
+}
+
+export interface ConsultingStepsSection {
+  enabled?: boolean;
+  sectionId?: string;
+  title?: string;
+  subtitle?: string;
+  steps?: ConsultingStep[];
+  practicalBlockTitle?: string;
+  practicalBullets?: string[];
+  ctaButtonLabel?: string;
+  ctaButtonLink?: string;
+  helperText?: string | null;
+}
+
 export interface HomepageContent {
   heroBadgeImageUrl?: string;
   heroBadgeAlt?: string;
@@ -377,6 +405,44 @@ export interface HomepageContent {
   reviewsSection?: { title?: string; subtitle?: string; embedUrl?: string };
   blogSection?: { title?: string; subtitle?: string; viewAllText?: string; readMoreText?: string };
   areasServedSection?: { label?: string; heading?: string; description?: string; ctaText?: string };
+  consultingStepsSection?: ConsultingStepsSection;
+}
+
+// Quiz Configuration Types
+export type QuizQuestionType = 'text' | 'email' | 'tel' | 'select';
+
+export interface QuizOption {
+  value: string;
+  label: string;
+  points: number;
+}
+
+export interface QuizConditionalField {
+  showWhen: string;
+  id: string;
+  title: string;
+  placeholder: string;
+}
+
+export interface QuizQuestion {
+  id: string;
+  order: number;
+  title: string;
+  type: QuizQuestionType;
+  required: boolean;
+  placeholder?: string;
+  options?: QuizOption[];
+  conditionalField?: QuizConditionalField;
+}
+
+export interface QuizConfig {
+  questions: QuizQuestion[];
+  maxScore: number;
+  thresholds: {
+    hot: number;
+    warm: number;
+    cold: number;
+  };
 }
 
 export const DEFAULT_BUSINESS_HOURS: BusinessHours = {
@@ -436,10 +502,12 @@ export const companySettings = pgTable("company_settings", {
   ga4Enabled: boolean("ga4_enabled").default(false),
   facebookPixelEnabled: boolean("facebook_pixel_enabled").default(false),
   homepageContent: jsonb("homepage_content").$type<HomepageContent>().default({}),
+  quizConfig: jsonb("quiz_config").$type<QuizConfig>(),
 });
 
 export const insertCompanySettingsSchema = createInsertSchema(companySettings, {
   homepageContent: z.custom<HomepageContent>().optional().nullable(),
+  quizConfig: z.custom<QuizConfig>().optional().nullable(),
 }).omit({ id: true });
 export type CompanySettings = typeof companySettings.$inferSelect;
 export type InsertCompanySettings = z.infer<typeof insertCompanySettingsSchema>;

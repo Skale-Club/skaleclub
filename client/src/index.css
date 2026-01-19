@@ -223,3 +223,12 @@
     pointer-events: none;
   }
 }
+
+/* Utility to hide scrollbars (used in carrossel track) */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
