@@ -1460,7 +1460,7 @@ function HeroSettingsSection() {
                           if (!res.ok) throw new Error('Upload failed');
                           const { path } = await res.json();
                           setAboutImageUrl(path);
-                          handleFieldUpdate('aboutImageUrl', path);
+                          triggerAutoSave({ aboutImageUrl: path }, ['aboutImageUrl']);
                           toast({ title: 'Sucesso', description: 'Imagem enviada com sucesso!' });
                         };
                         reader.onerror = () => {
@@ -1485,7 +1485,7 @@ function HeroSettingsSection() {
                   value={aboutImageUrl}
                   onChange={(e) => {
                     setAboutImageUrl(e.target.value);
-                    handleFieldUpdate('aboutImageUrl', e.target.value);
+                    triggerAutoSave({ aboutImageUrl: e.target.value }, ['aboutImageUrl']);
                   }}
                   placeholder="Ou cole a URL da imagem (https://...)"
                   data-testid="input-about-image"
