@@ -1,7 +1,7 @@
 CREATE TYPE "lead_classificacao" AS ENUM ('QUENTE', 'MORNO', 'FRIO', 'DESQUALIFICADO');
 CREATE TYPE "lead_status" AS ENUM ('novo', 'contatado', 'qualificado', 'convertido', 'descartado');
 
-CREATE TABLE IF NOT EXISTS "quiz_leads" (
+CREATE TABLE IF NOT EXISTS "form_leads" (
   "id" serial PRIMARY KEY NOT NULL,
   "session_id" uuid NOT NULL,
   "created_at" timestamp DEFAULT now(),
@@ -34,16 +34,16 @@ CREATE TABLE IF NOT EXISTS "quiz_leads" (
   "utm_medium" text,
   "utm_campaign" text,
   "status" "lead_status" NOT NULL DEFAULT 'novo',
-  "quiz_completo" boolean NOT NULL DEFAULT false,
+  "form_completo" boolean NOT NULL DEFAULT false,
   "ultima_pergunta_respondida" integer NOT NULL DEFAULT 0,
   "notificacao_enviada" boolean NOT NULL DEFAULT false,
   "data_contato" timestamp,
   "observacoes" text,
-  CONSTRAINT "quiz_leads_score_total_check" CHECK (score_total >= 0 AND score_total <= 78)
+  CONSTRAINT "form_leads_score_total_check" CHECK (score_total >= 0 AND score_total <= 78)
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS "quiz_leads_email_unique" ON "quiz_leads" ("email");
-CREATE UNIQUE INDEX IF NOT EXISTS "quiz_leads_session_idx" ON "quiz_leads" ("session_id");
-CREATE INDEX IF NOT EXISTS "quiz_leads_classificacao_idx" ON "quiz_leads" ("classificacao");
-CREATE INDEX IF NOT EXISTS "quiz_leads_created_at_idx" ON "quiz_leads" ("created_at");
-CREATE INDEX IF NOT EXISTS "quiz_leads_status_idx" ON "quiz_leads" ("status");
+CREATE UNIQUE INDEX IF NOT EXISTS "form_leads_email_unique" ON "form_leads" ("email");
+CREATE UNIQUE INDEX IF NOT EXISTS "form_leads_session_idx" ON "form_leads" ("session_id");
+CREATE INDEX IF NOT EXISTS "form_leads_classificacao_idx" ON "form_leads" ("classificacao");
+CREATE INDEX IF NOT EXISTS "form_leads_created_at_idx" ON "form_leads" ("created_at");
+CREATE INDEX IF NOT EXISTS "form_leads_status_idx" ON "form_leads" ("status");

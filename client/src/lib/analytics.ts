@@ -123,11 +123,11 @@ export type AnalyticsEventName =
   | 'chat_new_conversation'
   | 'chat_lead_captured'
   | 'chat_booking_completed'
-  | 'quiz_open'
-  | 'quiz_step_completed'
-  | 'quiz_completed'
-  | 'quiz_abandoned'
-  | 'quiz_result_action';
+  | 'form_open'
+  | 'form_step_completed'
+  | 'form_completed'
+  | 'form_abandoned'
+  | 'form_result_action';
 
 export interface AnalyticsEventPayload {
   location?: string;

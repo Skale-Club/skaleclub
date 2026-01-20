@@ -7,10 +7,10 @@ import OpenAI from "openai";
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
-import { WORKING_HOURS, DEFAULT_BUSINESS_HOURS, insertCategorySchema, insertServiceSchema, insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema, insertBlogPostSchema, BusinessHours, DayHours, insertChatSettingsSchema, insertChatIntegrationsSchema, insertKnowledgeBaseCategorySchema, insertKnowledgeBaseArticleSchema, quizLeadProgressSchema } from "@shared/schema";
+import { WORKING_HOURS, DEFAULT_BUSINESS_HOURS, insertCategorySchema, insertServiceSchema, insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema, insertBlogPostSchema, BusinessHours, DayHours, insertChatSettingsSchema, insertChatIntegrationsSchema, insertKnowledgeBaseCategorySchema, insertKnowledgeBaseArticleSchema, formLeadProgressSchema } from "@shared/schema";
 import type { LeadClassification, LeadStatus } from "@shared/schema";
-import { DEFAULT_QUIZ_CONFIG, calculateMaxScore } from "@shared/quiz";
-import type { QuizConfig } from "@shared/schema";
+import { DEFAULT_FORM_CONFIG, calculateMaxScore } from "@shared/form";
+import type { FormConfig } from "@shared/schema";
 import { insertSubcategorySchema } from "./storage";
 import { ObjectStorageService, registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { authStorage } from "./replit_integrations/auth/storage";
@@ -942,19 +942,19 @@ export async function registerRoutes(
     }
   });
 
-  // Quiz Config (public GET, admin PUT)
-  app.get('/api/quiz-config', async (req, res) => {
+  // Form Config (public GET, admin PUT)
+  app.get('/api/form-config', async (req, res) => {
     try {
       const settings = await storage.getCompanySettings();
-      res.json(settings?.quizConfig || DEFAULT_QUIZ_CONFIG);
+      res.json(settings?.formConfig || DEFAULT_FORM_CONFIG);
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
     }
   });
 
-  app.put('/api/quiz-config', requireAdmin, async (req, res) => {
+  app.put('/api/form-config', requireAdmin, async (req, res) => {
     try {
-      const config = req.body as QuizConfig;
+      const config = req.body as FormConfig;
 
       // Validate basic structure
       if (!config.questions || !Array.isArray(config.questions)) {
@@ -963,48 +963,48 @@ export async function registerRoutes(
 
       // Recalculate maxScore based on options
       const maxScore = calculateMaxScore(config);
-      const updatedConfig: QuizConfig = {
+      const updatedConfig: FormConfig = {
         ...config,
         maxScore,
       };
 
-      await storage.updateCompanySettings({ quizConfig: updatedConfig });
+      await storage.updateCompanySettings({ formConfig: updatedConfig });
       res.json(updatedConfig);
     } catch (err) {
       res.status(400).json({ message: (err as Error).message });
     }
   });
 
-  // Quiz Leads
-  app.get('/api/quiz-leads/:sessionId', async (req, res) => {
-    const lead = await storage.getQuizLeadBySession(req.params.sessionId);
+  // Form Leads
+  app.get('/api/form-leads/:sessionId', async (req, res) => {
+    const lead = await storage.getFormLeadBySession(req.params.sessionId);
     if (!lead) {
       return res.status(404).json({ message: 'Lead não encontrado' });
     }
     res.json(lead);
   });
 
-  app.post('/api/quiz-leads/progress', async (req, res) => {
+  app.post('/api/form-leads/progress', async (req, res) => {
     try {
-      const parsed = quizLeadProgressSchema.parse(req.body);
+      const parsed = formLeadProgressSchema.parse(req.body);
       const settings = await storage.getCompanySettings();
-      const quizConfig = settings?.quizConfig || DEFAULT_QUIZ_CONFIG;
-      const totalQuestions = quizConfig.questions.length || DEFAULT_QUIZ_CONFIG.questions.length;
+      const formConfig = settings?.formConfig || DEFAULT_FORM_CONFIG;
+      const totalQuestions = formConfig.questions.length || DEFAULT_FORM_CONFIG.questions.length;
       const questionNumber = Math.min(parsed.questionNumber, totalQuestions);
       const payload = {
         ...parsed,
         questionNumber,
-        quizCompleto: parsed.quizCompleto || questionNumber >= totalQuestions,
+        formCompleto: parsed.formCompleto || questionNumber >= totalQuestions,
       };
-      let lead = await storage.upsertQuizLeadProgress(payload, { userAgent: req.get('user-agent') || undefined }, quizConfig);
+      let lead = await storage.upsertFormLeadProgress(payload, { userAgent: req.get('user-agent') || undefined }, formConfig);
 
-      if (lead.quizCompleto && lead.classificacao === 'QUENTE' && !lead.notificacaoEnviada) {
+      if (lead.formCompleto && lead.classificacao === 'QUENTE' && !lead.notificacaoEnviada) {
         try {
           const twilioSettings = await storage.getTwilioSettings();
           if (twilioSettings) {
             const notifyResult = await sendHotLeadNotification(twilioSettings, lead);
             if (notifyResult.success) {
-              const updated = await storage.updateQuizLead(lead.id, { notificacaoEnviada: true });
+              const updated = await storage.updateFormLead(lead.id, { notificacaoEnviada: true });
               lead = updated || { ...lead, notificacaoEnviada: true };
             }
           }
@@ -1013,7 +1013,7 @@ export async function registerRoutes(
         }
       }
 
-      if (lead.quizCompleto) {
+      if (lead.formCompleto) {
         try {
           const ghlSettings = await storage.getIntegrationSettings('gohighlevel');
           // GHL sync requires at least phone number
@@ -1035,18 +1035,18 @@ export async function registerRoutes(
             );
 
             if (contactResult.success && contactResult.contactId) {
-              const synced = await storage.updateQuizLead(lead.id, { ghlContactId: contactResult.contactId, ghlSyncStatus: 'synced' });
+              const synced = await storage.updateFormLead(lead.id, { ghlContactId: contactResult.contactId, ghlSyncStatus: 'synced' });
               if (synced) {
                 lead = synced;
               }
             } else if (lead.ghlSyncStatus !== 'synced') {
-              await storage.updateQuizLead(lead.id, { ghlSyncStatus: 'failed' });
+              await storage.updateFormLead(lead.id, { ghlSyncStatus: 'failed' });
             }
           }
         } catch (ghlError) {
           console.log('GHL lead sync error (non-blocking):', ghlError);
           try {
-            await storage.updateQuizLead(lead.id, { ghlSyncStatus: 'failed' });
+            await storage.updateFormLead(lead.id, { ghlSyncStatus: 'failed' });
           } catch {
             // ignore best-effort update
           }
@@ -1064,11 +1064,11 @@ export async function registerRoutes(
     }
   });
 
-  app.get('/api/quiz-leads', requireAdmin, async (req, res) => {
+  app.get('/api/form-leads', requireAdmin, async (req, res) => {
     try {
-      const parsed = api.quizLeads.list.input ? api.quizLeads.list.input.parse(req.query) : {};
-      const filters = (parsed || {}) as { status?: LeadStatus; classificacao?: LeadClassification; quizCompleto?: boolean; search?: string };
-      const leads = await storage.listQuizLeads(filters);
+      const parsed = api.formLeads.list.input ? api.formLeads.list.input.parse(req.query) : {};
+      const filters = (parsed || {}) as { status?: LeadStatus; classificacao?: LeadClassification; formCompleto?: boolean; search?: string };
+      const leads = await storage.listFormLeads(filters);
       res.json(leads);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -1078,14 +1078,14 @@ export async function registerRoutes(
     }
   });
 
-  app.patch('/api/quiz-leads/:id', requireAdmin, async (req, res) => {
+  app.patch('/api/form-leads/:id', requireAdmin, async (req, res) => {
     try {
       const id = Number(req.params.id);
       if (Number.isNaN(id)) {
         return res.status(400).json({ message: 'Invalid lead id' });
       }
-      const updates = api.quizLeads.update.input.parse(req.body) as { status?: LeadStatus; observacoes?: string; notificacaoEnviada?: boolean };
-      const updated = await storage.updateQuizLead(id, updates);
+      const updates = api.formLeads.update.input.parse(req.body) as { status?: LeadStatus; observacoes?: string; notificacaoEnviada?: boolean };
+      const updated = await storage.updateFormLead(id, updates);
       if (!updated) {
         return res.status(404).json({ message: 'Lead not found' });
       }
@@ -1098,10 +1098,10 @@ export async function registerRoutes(
     }
   });
 
-  app.delete('/api/quiz-leads/:id', requireAdmin, async (req, res) => {
+  app.delete('/api/form-leads/:id', requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     if (Number.isNaN(id)) return res.status(400).json({ message: 'Invalid lead id' });
-    const deleted = await storage.deleteQuizLead(id);
+    const deleted = await storage.deleteFormLead(id);
     if (!deleted) return res.status(404).json({ message: 'Lead not found' });
     res.json({ message: 'Lead deleted' });
   });

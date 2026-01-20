@@ -1,4 +1,4 @@
-import type { TwilioSettings, QuizLead } from "@shared/schema";
+import type { TwilioSettings, FormLead } from "@shared/schema";
 
 export async function sendNewChatNotification(
   twilioSettings: TwilioSettings,
@@ -70,7 +70,7 @@ export async function sendLowPerformanceAlert(
 
 export async function sendHotLeadNotification(
   twilioSettings: TwilioSettings,
-  lead: Pick<QuizLead, "nome" | "email" | "telefone" | "cidadeEstado" | "classificacao">
+  lead: Pick<FormLead, "nome" | "email" | "telefone" | "cidadeEstado" | "classificacao">
 ): Promise<{ success: boolean; message?: string }> {
   try {
     if (!twilioSettings.enabled) {
@@ -84,7 +84,7 @@ export async function sendHotLeadNotification(
     const twilio = await import('twilio');
     const client = twilio.default(twilioSettings.accountSid, twilioSettings.authToken);
     const title = lead.classificacao === 'QUENTE' ? '🔥 Lead Quente' : 'Lead';
-    const message = `${title} via Quiz\nNome: ${lead.nome || 'Não informado'}\nEmail: ${lead.email || 'Não informado'}\nTelefone: ${lead.telefone || 'Não informado'}\nCidade/Estado: ${lead.cidadeEstado || 'Não informado'}`;
+    const message = `${title} via Formulário\nNome: ${lead.nome || 'Não informado'}\nEmail: ${lead.email || 'Não informado'}\nTelefone: ${lead.telefone || 'Não informado'}\nCidade/Estado: ${lead.cidadeEstado || 'Não informado'}`;
 
     await client.messages.create({
       body: message,

@@ -5,15 +5,15 @@ import { AlertCircle, ArrowLeft, ArrowRight, Check, ChevronDown, Loader2, X } fr
 import clsx from "clsx";
 import { useQuery } from "@tanstack/react-query";
 import { trackEvent } from "@/lib/analytics";
-import { DEFAULT_QUIZ_CONFIG, calculateQuizScoresWithConfig, classifyLead, getSortedQuestions, KNOWN_FIELD_IDS } from "@shared/quiz";
-import type { LeadClassification, QuizLead, QuizConfig, QuizQuestion } from "@shared/schema";
+import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead, getSortedQuestions, KNOWN_FIELD_IDS } from "@shared/form";
+import type { LeadClassification, FormLead, FormConfig, FormQuestion } from "@shared/schema";
 
-type QuizView = "quiz" | "loading";
+type FormView = "form" | "loading";
 
 // Dynamic answers type - supports any question ID
 type Answers = Record<string, string>;
 
-type StoredQuizState = {
+type StoredFormState = {
   sessionId: string;
   answers: Answers;
   currentStep: number;
@@ -49,12 +49,12 @@ const COUNTRIES: CountryConfig[] = [
 
 const DEFAULT_COUNTRY = "US";
 
-const STORAGE_KEY = "skale-quiz-state";
+const STORAGE_KEY = "skale-form-state";
 const EXPIRATION_HOURS = 24;
 const NAME_REGEX = /^[A-Za-zÀ-ÿ\s]{3,100}$/;
 
 // Build initial answers from config
-function buildInitialAnswers(config: QuizConfig): Answers {
+function buildInitialAnswers(config: FormConfig): Answers {
   const answers: Answers = {};
   for (const q of config.questions) {
     answers[q.id] = "";
@@ -113,11 +113,11 @@ function isExpired(timestamp: string) {
   return diffHours > EXPIRATION_HOURS;
 }
 
-function loadStoredState(): StoredQuizState | null {
+function loadStoredState(): StoredFormState | null {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as StoredQuizState;
+    const parsed = JSON.parse(raw) as StoredFormState;
     if (!parsed.sessionId || !parsed.startedAt || isExpired(parsed.lastUpdatedAt)) {
       window.localStorage.removeItem(STORAGE_KEY);
       return null;
@@ -128,7 +128,7 @@ function loadStoredState(): StoredQuizState | null {
   }
 }
 
-function saveStoredState(state: StoredQuizState) {
+function saveStoredState(state: StoredFormState) {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {
@@ -144,7 +144,7 @@ function clearStoredState() {
   }
 }
 
-function getFieldError(question: QuizQuestion | undefined, answers: Answers, selectedCountry?: CountryConfig): string | null {
+function getFieldError(question: FormQuestion | undefined, answers: Answers, selectedCountry?: CountryConfig): string | null {
   if (!question) return null;
 
   const value = (answers[question.id] || "").trim();
@@ -196,33 +196,33 @@ function getFieldError(question: QuizQuestion | undefined, answers: Answers, sel
   return null;
 }
 
-type LeadQuizModalProps = {
+type LeadFormModalProps = {
   open: boolean;
   onClose: () => void;
 };
 
-export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
-  // Fetch quiz config
-  const { data: quizConfig, isLoading: isConfigLoading } = useQuery<QuizConfig>({
-    queryKey: ['/api/quiz-config'],
+export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
+  // Fetch form config
+  const { data: formConfig, isLoading: isConfigLoading } = useQuery<FormConfig>({
+    queryKey: ['/api/form-config'],
     queryFn: async () => {
-      const res = await fetch('/api/quiz-config');
-      if (!res.ok) throw new Error('Failed to load quiz config');
+      const res = await fetch('/api/form-config');
+      if (!res.ok) throw new Error('Failed to load form config');
       return res.json();
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const config = quizConfig || DEFAULT_QUIZ_CONFIG;
+  const config = formConfig || DEFAULT_FORM_CONFIG;
   const sortedQuestions = useMemo(() => getSortedQuestions(config), [config]);
   const totalQuestions = sortedQuestions.length;
 
-  const [answers, setAnswers] = useState<Answers>(() => buildInitialAnswers(DEFAULT_QUIZ_CONFIG));
+  const [answers, setAnswers] = useState<Answers>(() => buildInitialAnswers(DEFAULT_FORM_CONFIG));
   const [currentStep, setCurrentStep] = useState(1);
   const [lastAnsweredStep, setLastAnsweredStep] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [startedAt, setStartedAt] = useState<Date | null>(null);
-  const [view, setView] = useState<QuizView>("quiz");
+  const [view, setView] = useState<FormView>("form");
   const [pendingSync, setPendingSync] = useState(false);
   const [storageAvailable, setStorageAvailable] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -232,7 +232,7 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
   const [selectedCountryCode, setSelectedCountryCode] = useState<string>(DEFAULT_COUNTRY);
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
   const autoSaveRef = useRef<number>();
-  const answersRef = useRef<Answers>(buildInitialAnswers(DEFAULT_QUIZ_CONFIG));
+  const answersRef = useRef<Answers>(buildInitialAnswers(DEFAULT_FORM_CONFIG));
   const syncedOnOpenRef = useRef(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const countryDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -244,14 +244,14 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
 
   // Update answers when config loads
   useEffect(() => {
-    if (quizConfig) {
-      const newInitial = buildInitialAnswers(quizConfig);
+    if (formConfig) {
+      const newInitial = buildInitialAnswers(formConfig);
       setAnswers(prev => ({ ...newInitial, ...prev }));
       answersRef.current = { ...newInitial, ...answersRef.current };
     }
-  }, [quizConfig]);
+  }, [formConfig]);
 
-  const score = useMemo(() => calculateQuizScoresWithConfig(answers, config), [answers, config]);
+  const score = useMemo(() => calculateFormScoresWithConfig(answers, config), [answers, config]);
   const classification = useMemo(() => classifyLead(score.total, config.thresholds), [score.total, config.thresholds]);
   const progressPercent = Math.min((currentStep / totalQuestions) * 100, 100);
 
@@ -260,7 +260,7 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
 
   useEffect(() => {
     try {
-      const testKey = "__quiz_check__";
+      const testKey = "__form_check__";
       window.localStorage.setItem(testKey, "1");
       window.localStorage.removeItem(testKey);
       setStorageAvailable(true);
@@ -323,7 +323,7 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
     if (open) {
       document.body.style.overflow = "hidden";
       ensureSession();
-      trackEvent("quiz_open", { location: "home" });
+      trackEvent("form_open", { location: "home" });
     } else {
       document.body.style.overflow = "";
       syncedOnOpenRef.current = false;
@@ -348,7 +348,7 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
     (stepToResume: number, answeredStep: number, pending = pendingSync) => {
       const session = ensureSession();
       if (!storageAvailable || !session) return;
-      const payload: StoredQuizState = {
+      const payload: StoredFormState = {
         sessionId: session,
         answers,
         currentStep: stepToResume,
@@ -371,10 +371,10 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
     async (
       questionNumber: number,
       opts?: { stepToResume?: number; markComplete?: boolean; tempoTotalSegundos?: number; overrideAnswers?: Partial<Answers> }
-    ): Promise<QuizLead | null> => {
+    ): Promise<FormLead | null> => {
       const session = ensureSession();
       const effectiveAnswers = { ...answersRef.current, ...(opts?.overrideAnswers || {}) };
-      const effectiveScore = calculateQuizScoresWithConfig(effectiveAnswers, config);
+      const effectiveScore = calculateFormScoresWithConfig(effectiveAnswers, config);
       const customAnswers = Object.fromEntries(
         Object.entries(effectiveAnswers)
           .filter(([key, value]) => !KNOWN_FIELD_IDS.includes(key) && typeof value === "string" && value.trim())
@@ -388,7 +388,7 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
         utmSource: utmParams.source || undefined,
         utmMedium: utmParams.medium || undefined,
         utmCampaign: utmParams.campaign || undefined,
-        quizCompleto: opts?.markComplete || false,
+        formCompleto: opts?.markComplete || false,
         tempoTotalSegundos: opts?.tempoTotalSegundos,
         scoreTotal: effectiveScore.total,
         scoreTipoNegocio: effectiveScore.breakdown.scoreTipoNegocio,
@@ -426,7 +426,7 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
 
       updateStoredState(opts?.stepToResume ?? currentStep, questionNumber, pendingSync);
       try {
-        const res = await fetch("/api/quiz-leads/progress", {
+        const res = await fetch("/api/form-leads/progress", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
@@ -442,7 +442,7 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
           }
           throw new Error(friendlyMessage || "Erro ao salvar progresso");
         }
-        const lead = (await res.json()) as QuizLead;
+        const lead = (await res.json()) as FormLead;
         setPendingSync(false);
         updateStoredState(opts?.stepToResume ?? currentStep, questionNumber, false);
         setLastAnsweredStep(questionNumber);
@@ -527,11 +527,11 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
       if (lead) {
         setLastAnsweredStep(questionNumber);
       }
-      trackEvent("quiz_step_completed", { step: questionNumber, classificationPreview: classification, score: score.total });
+      trackEvent("form_step_completed", { step: questionNumber, classificationPreview: classification, score: score.total });
     } catch (err: any) {
       setErrorMessage(err?.message || "Não conseguimos enviar agora. Tente novamente em instantes.");
       setPendingSync(true);
-      setView("quiz");
+      setView("form");
       setCurrentStep(questionNumber); // keep user on same step if fail
     }
   };
@@ -563,7 +563,7 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
         clearStoredState();
         const leadClassification = lead.classificacao || classification;
         const leadScore = lead.scoreTotal ?? score.total;
-        trackEvent("quiz_completed", {
+        trackEvent("form_completed", {
           classification: leadClassification,
           score: leadScore,
           synced: true,
@@ -575,12 +575,12 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
 
       setPendingSync(true);
       setErrorMessage("Não conseguimos enviar agora. Tente novamente em instantes.");
-      setView("quiz");
+      setView("form");
     } catch (err: any) {
       const msg = err?.message || "Não conseguimos enviar agora. Tente novamente em instantes.";
       setErrorMessage(msg);
       setPendingSync(true);
-      setView("quiz");
+      setView("form");
     }
   };
 
@@ -594,8 +594,8 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
   };
 
   const handleClose = () => {
-    if (view === "quiz") {
-      trackEvent("quiz_abandoned", { step: currentStep });
+    if (view === "form") {
+      trackEvent("form_abandoned", { step: currentStep });
     }
     clearStoredState();
     setAnswers(buildInitialAnswers(config));
@@ -603,7 +603,7 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
     setLastAnsweredStep(0);
     setSessionId(generateSessionId());
     setStartedAt(new Date());
-    setView("quiz");
+    setView("form");
     setErrorMessage(null);
     setDirection(1);
     onClose();
@@ -617,7 +617,7 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
         <div className="bg-white rounded-2xl p-8 flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-[#406EF1]" />
-          <p className="text-slate-600">Carregando quiz...</p>
+          <p className="text-slate-600">Carregando formulário...</p>
         </div>
       </div>,
       document.body
@@ -639,7 +639,7 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
           <div className="relative overflow-hidden bg-white text-slate-900 h-full sm:h-auto rounded-none sm:rounded-3xl shadow-2xl" ref={containerRef}>
             <button
               className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
-              aria-label="Fechar quiz"
+              aria-label="Fechar formulário"
               onClick={handleClose}
             >
               <X className="h-5 w-5" />
@@ -659,12 +659,12 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
                     <AlertCircle className="h-4 w-4 mt-0.5" />
                     <div>
                       <p className="font-semibold">Importante</p>
-                      <p>Não feche esta janela até completar o quiz. Seu navegador não permite salvar localmente.</p>
+                      <p>Não feche esta janela até completar o formulário. Seu navegador não permite salvar localmente.</p>
                     </div>
                   </div>
                 )}
 
-                {view === "quiz" && currentQuestion && (
+                {view === "form" && currentQuestion && (
                   <form onSubmit={handleSubmit}>
                     <div className="flex items-start justify-between">
                       <div>
@@ -823,7 +823,7 @@ export function LeadQuizModal({ open, onClose }: LeadQuizModalProps) {
                         )}
 
                         {errorMessage && (
-                          <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 animate-quiz-shake">
+                          <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 animate-form-shake">
                             <AlertCircle className="h-5 w-5 mt-0.5" />
                             <p className="font-medium">{errorMessage}</p>
                           </div>

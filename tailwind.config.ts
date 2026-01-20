@@ -119,7 +119,7 @@ export default {
           from: { opacity: "1" },
           to: { opacity: "0" },
         },
-        "quiz-shake": {
+        "form-shake": {
           "0%, 100%": { transform: "translateX(0)" },
           "25%": { transform: "translateX(-4px)" },
           "75%": { transform: "translateX(4px)" },
@@ -131,7 +131,7 @@ export default {
         "dot-pulse": "dot-pulse 1s ease-in-out infinite",
         "fade-in": "fade-in 0.3s ease-out",
         "fade-out": "fade-out 0.3s ease-out",
-        "quiz-shake": "quiz-shake 0.4s ease-in-out",
+        "form-shake": "form-shake 0.4s ease-in-out",
       },
     },
   },

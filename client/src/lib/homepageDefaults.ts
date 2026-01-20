@@ -2,33 +2,53 @@ import type { HomepageContent } from '@shared/schema';
 
 export const DEFAULT_HOMEPAGE_CONTENT: HomepageContent = {
   heroBadgeImageUrl: 'https://storage.googleapis.com/msgsndr/q6UKnlWOQwyTk82yZPAs/media/696016120597df5bbeeba997.png',
-  heroBadgeAlt: 'Trusted Experts',
+  heroBadgeAlt: 'Especialistas em Marketing',
   trustBadges: [
-    { title: '100% Satisfaction Guarantee', description: 'Our quality is guaranteed.', icon: 'star' },
-    { title: 'Fully-vetted Cleaning Crew', description: 'Trusted professionals only.', icon: 'shield' },
-    { title: 'Upfront Pricing & Easy Booking', description: 'Book in under 60 seconds.', icon: 'clock' },
+    { title: 'Resultados Comprovados', description: 'Estratégias testadas que geram leads.', icon: 'trophy' },
+    { title: 'Foco em Service-Based Business', description: 'Expertise exclusivo no seu mercado.', icon: 'target' },
+    { title: 'Consultoria Personalizada', description: 'Acompanhamento 1:1 toda semana.', icon: 'heart' },
   ],
   categoriesSection: {
-    title: 'Ready to Schedule?',
-    subtitle: 'Select a category below to start your instant online booking.',
-    ctaText: 'Book Now',
+    title: 'Pronto para Crescer?',
+    subtitle: 'Selecione uma categoria para conhecer nossas soluções.',
+    ctaText: 'Agendar Conversa',
   },
   reviewsSection: {
     title: 'Avaliações de Clientes',
-    subtitle: 'Veja o que nossos clientes dizem sobre nossos serviços 5 estrelas.',
+    subtitle: 'Veja o que nossos clientes dizem sobre nossos serviços.',
     embedUrl: 'https://reputationhub.site/reputation/widgets/review_widget/q6UKnlWOQwyTk82yZPAs',
   },
   blogSection: {
-    title: 'Latest from Our Blog',
-    subtitle: 'Tips and insights for a cleaner home',
-    viewAllText: 'View All Posts',
-    readMoreText: 'Read More',
+    title: 'Insights e Estratégias',
+    subtitle: 'Dicas práticas para crescer seu negócio de serviços',
+    viewAllText: 'Ver Todos',
+    readMoreText: 'Ler Mais',
+  },
+  aboutSection: {
+    label: 'Sobre Nós',
+    heading: 'Quem Somos',
+    description: 'Somos especialistas em marketing digital para prestadores de serviço nos EUA. Ajudamos empresas de cleaning, landscaping, handyman e outros serviços a gerarem clientes de forma previsível e escalável através de estratégias de aquisição, conversão e otimização.',
+    defaultImageUrl: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80',
+    highlights: [
+      {
+        title: 'Especialistas em Service-Based Business',
+        description: 'Foco exclusivo em empresas de serviço no mercado americano.',
+      },
+      {
+        title: 'Estratégias Comprovadas',
+        description: 'Metodologias testadas para gerar leads qualificados e conversões.',
+      },
+      {
+        title: 'Acompanhamento 1:1',
+        description: 'Consultoria personalizada com sessões semanais e suporte contínuo.',
+      },
+    ],
   },
   areasServedSection: {
-    label: 'Service Areas',
-    heading: 'Areas We Serve',
-    description: 'We provide professional cleaning services across Massachusetts and nearby areas. Check the map to see if we cover your location.',
-    ctaText: 'Book Now',
+    label: 'Onde Atendemos',
+    heading: 'Atuação Nacional',
+    description: 'Atendemos prestadores de serviço em todos os Estados Unidos. Nossa consultoria é 100% online, permitindo acompanhamento próximo independente da sua localização.',
+    ctaText: 'Agendar Conversa',
   },
   consultingStepsSection: {
     enabled: true,
@@ -92,7 +112,7 @@ export const DEFAULT_HOMEPAGE_CONTENT: HomepageContent = {
       'Acompanhamento pra ajustar rota e destravar o que estiver impedindo resultado.',
     ],
     ctaButtonLabel: 'Agendar Conversa Gratuita',
-    ctaButtonLink: '#lead-quiz',
+    ctaButtonLink: '#lead-form',
     helperText: 'Você sai da conversa com clareza do próximo passo — mesmo que não feche a consultoria.',
   },
 };

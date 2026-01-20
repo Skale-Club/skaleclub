@@ -104,8 +104,8 @@ import { format } from 'date-fns';
 import { clsx } from 'clsx';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useTheme } from '@/context/ThemeContext';
-import type { Category, Service, Booking, Subcategory, Faq, BlogPost, HomepageContent, QuizLead, LeadClassification, LeadStatus, QuizConfig, QuizQuestion, QuizOption, ConsultingStep } from '@shared/schema';
-import { DEFAULT_QUIZ_CONFIG, calculateMaxScore, getSortedQuestions } from '@shared/quiz';
+import type { Category, Service, Booking, Subcategory, Faq, BlogPost, HomepageContent, FormLead, LeadClassification, LeadStatus, FormConfig, FormQuestion, FormOption, ConsultingStep } from '@shared/schema';
+import { DEFAULT_FORM_CONFIG, calculateMaxScore, getSortedQuestions } from '@shared/form';
 import { HelpCircle, FileText, AlertCircle, ExternalLink } from 'lucide-react';
 import heroImage from '@assets/Persona-Mobile_1767749022412.png';
 import ghlLogo from '@assets/ghl-logo.webp';
@@ -468,15 +468,16 @@ function HeroSettingsSection() {
   const heroMenuTitle = menuItems.find((item) => item.id === 'hero')?.title ?? 'Hero Section';
 
   const HERO_DEFAULTS = {
-    title: 'Your 5-Star Cleaning Company',
-    subtitle: 'Professional cleaning services for homes and businesses. Book your cleaning appointment in less than 1 minute.',
-    ctaText: 'Get Instant Price',
+    title: 'Gere clientes de forma previsível',
+    subtitle: 'Consultoria em marketing digital para prestadores de serviço nos EUA. Transforme seu negócio com estratégias comprovadas de aquisição e conversão de clientes.',
+    ctaText: 'Agendar Conversa Gratuita',
     image: heroImage,
   };
 
   const [heroTitle, setHeroTitle] = useState('');
   const [heroSubtitle, setHeroSubtitle] = useState('');
   const [heroImageUrl, setHeroImageUrl] = useState('');
+  const [aboutImageUrl, setAboutImageUrl] = useState('');
   const [ctaText, setCtaText] = useState('');
   const [homepageContent, setHomepageContent] = useState<HomepageContent>(DEFAULT_HOMEPAGE_CONTENT);
   const [isSaving, setIsSaving] = useState(false);
@@ -491,9 +492,11 @@ function HeroSettingsSection() {
 
   useEffect(() => {
     if (settings) {
+      console.log('Loading settings, heroImageUrl from DB:', settings.heroImageUrl);
       setHeroTitle(settings.heroTitle || HERO_DEFAULTS.title);
       setHeroSubtitle(settings.heroSubtitle || HERO_DEFAULTS.subtitle);
       setHeroImageUrl(settings.heroImageUrl || HERO_DEFAULTS.image);
+      setAboutImageUrl(settings.aboutImageUrl || '');
       setCtaText(settings.ctaText || HERO_DEFAULTS.ctaText);
       setHomepageContent({
         ...DEFAULT_HOMEPAGE_CONTENT,
@@ -512,6 +515,10 @@ function HeroSettingsSection() {
         blogSection: {
           ...DEFAULT_HOMEPAGE_CONTENT.blogSection,
           ...(settings.homepageContent?.blogSection || {}),
+        },
+        aboutSection: {
+          ...DEFAULT_HOMEPAGE_CONTENT.aboutSection,
+          ...(settings.homepageContent?.aboutSection || {}),
         },
         areasServedSection: {
           ...DEFAULT_HOMEPAGE_CONTENT.areasServedSection,
@@ -533,6 +540,7 @@ function HeroSettingsSection() {
       setHeroTitle(HERO_DEFAULTS.title);
       setHeroSubtitle(HERO_DEFAULTS.subtitle);
       setHeroImageUrl(HERO_DEFAULTS.image);
+      setAboutImageUrl('');
       setCtaText(HERO_DEFAULTS.ctaText);
       setHomepageContent(DEFAULT_HOMEPAGE_CONTENT);
     }
@@ -578,6 +586,10 @@ function HeroSettingsSection() {
     ...DEFAULT_HOMEPAGE_CONTENT.blogSection,
     ...(homepageContent.blogSection || {}),
   };
+  const aboutSection = {
+    ...DEFAULT_HOMEPAGE_CONTENT.aboutSection,
+    ...(homepageContent.aboutSection || {}),
+  };
   const areasServedSection = {
     ...DEFAULT_HOMEPAGE_CONTENT.areasServedSection,
     ...(homepageContent.areasServedSection || {}),
@@ -622,8 +634,11 @@ function HeroSettingsSection() {
 
   const saveHeroSettings = useCallback(async (updates: Partial<CompanySettingsData>, fieldKeys?: string[]) => {
     setIsSaving(true);
+    console.log('saveHeroSettings called with:', updates);
     try {
-      await apiRequest('PUT', '/api/company-settings', updates);
+      const response = await apiRequest('PUT', '/api/company-settings', updates);
+      const savedData = await response.json();
+      console.log('Saved data from server:', savedData);
       queryClient.invalidateQueries({ queryKey: ['/api/company-settings'] });
       const keysToMark = fieldKeys && fieldKeys.length > 0 ? fieldKeys : Object.keys(updates);
       if (keysToMark.length > 0) {
@@ -788,6 +803,7 @@ function HeroSettingsSection() {
         imagePath = path;
       }
 
+      console.log('Saving hero image URL:', imagePath);
       setHeroImageUrl(imagePath);
       await saveHeroSettings({ heroImageUrl: imagePath }, ['heroImageUrl']);
       toast({ title: 'Hero image uploaded and saved' });
@@ -1352,6 +1368,86 @@ function HeroSettingsSection() {
 
         <div className="bg-muted p-6 rounded-lg transition-all space-y-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
+            <User className="w-5 h-5 text-primary" />
+            Seção Quem Somos
+          </h2>
+          <div className="space-y-2">
+            <Label>Label</Label>
+            <div className="relative">
+              <Input
+                value={aboutSection.label || ''}
+                onChange={(e) =>
+                  updateHomepageContent(prev => ({
+                    ...prev,
+                    aboutSection: {
+                      ...DEFAULT_HOMEPAGE_CONTENT.aboutSection,
+                      ...(prev.aboutSection || {}),
+                      label: e.target.value,
+                    },
+                  }), 'homepageContent.aboutSection.label')
+                }
+              />
+              <SavedIndicator field="homepageContent.aboutSection.label" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Título</Label>
+            <div className="relative">
+              <Input
+                value={aboutSection.heading || ''}
+                onChange={(e) =>
+                  updateHomepageContent(prev => ({
+                    ...prev,
+                    aboutSection: {
+                      ...DEFAULT_HOMEPAGE_CONTENT.aboutSection,
+                      ...(prev.aboutSection || {}),
+                      heading: e.target.value,
+                    },
+                  }), 'homepageContent.aboutSection.heading')
+                }
+              />
+              <SavedIndicator field="homepageContent.aboutSection.heading" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Descrição</Label>
+            <div className="relative">
+              <Textarea
+                value={aboutSection.description || ''}
+                onChange={(e) =>
+                  updateHomepageContent(prev => ({
+                    ...prev,
+                    aboutSection: {
+                      ...DEFAULT_HOMEPAGE_CONTENT.aboutSection,
+                      ...(prev.aboutSection || {}),
+                      description: e.target.value,
+                    },
+                  }), 'homepageContent.aboutSection.description')
+                }
+                className="min-h-[120px]"
+              />
+              <SavedIndicator field="homepageContent.aboutSection.description" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Imagem URL</Label>
+            <div className="relative">
+              <Input
+                value={aboutImageUrl}
+                onChange={(e) => {
+                  setAboutImageUrl(e.target.value);
+                  handleFieldUpdate('aboutImageUrl', e.target.value);
+                }}
+                placeholder="https://example.com/about-image.jpg"
+              />
+              <SavedIndicator field="aboutImageUrl" />
+            </div>
+            <p className="text-xs text-muted-foreground">URL da imagem para a seção "Quem Somos"</p>
+          </div>
+        </div>
+
+        <div className="bg-muted p-6 rounded-lg transition-all space-y-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
             <MapPin className="w-5 h-5 text-primary" />
             Areas Served Section
           </h2>
@@ -1555,11 +1651,11 @@ function HeroSettingsSection() {
                     'homepageContent.consultingStepsSection.ctaButtonLink'
                   )
                 }
-                placeholder="#lead-quiz"
+                placeholder="#lead-form"
               />
               <SavedIndicator field="homepageContent.consultingStepsSection.ctaButtonLink" />
             </div>
-            <p className="text-xs text-muted-foreground">Use um anchor (#lead-quiz) ou um link interno.</p>
+            <p className="text-xs text-muted-foreground">Use um anchor (#lead-form) ou um link interno.</p>
           </div>
           <div className="space-y-2">
             <Label>Bloco Na prática - Título</Label>
@@ -4787,7 +4883,7 @@ function BookingMobileCard({
 function LeadsSection() {
   const { toast } = useToast();
   const [isFormEditorOpen, setIsFormEditorOpen] = useState(false);
-  const [selectedLead, setSelectedLead] = useState<QuizLead | null>(null);
+  const [selectedLead, setSelectedLead] = useState<FormLead | null>(null);
   const [isLeadDialogOpen, setIsLeadDialogOpen] = useState(false);
   const [filters, setFilters] = useState<{
     search: string;
@@ -4801,38 +4897,38 @@ function LeadsSection() {
     completion: 'all',
   });
 
-  const { data: quizConfig } = useQuery<QuizConfig>({
-    queryKey: ['/api/quiz-config'],
+  const { data: formConfig } = useQuery<FormConfig>({
+    queryKey: ['/api/form-config'],
     queryFn: async () => {
-      const res = await apiRequest('GET', '/api/quiz-config');
+      const res = await apiRequest('GET', '/api/form-config');
       return res.json();
     }
   });
 
-  const { data: leads, isLoading } = useQuery<QuizLead[]>({
-    queryKey: ['/api/quiz-leads', filters],
+  const { data: leads, isLoading } = useQuery<FormLead[]>({
+    queryKey: ['/api/form-leads', filters],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (filters.search) params.set('search', filters.search);
       if (filters.classification !== 'all') params.set('classificacao', filters.classification);
       if (filters.status !== 'all') params.set('status', filters.status);
-      if (filters.completion === 'complete') params.set('quizCompleto', 'true');
-      if (filters.completion === 'incomplete') params.set('quizCompleto', 'false');
-      const res = await apiRequest('GET', `/api/quiz-leads${params.toString() ? `?${params.toString()}` : ''}`);
+      if (filters.completion === 'complete') params.set('formCompleto', 'true');
+      if (filters.completion === 'incomplete') params.set('formCompleto', 'false');
+      const res = await apiRequest('GET', `/api/form-leads${params.toString() ? `?${params.toString()}` : ''}`);
       return res.json();
     }
   });
 
-  const questionsForDisplay = useMemo(() => getSortedQuestions(quizConfig || DEFAULT_QUIZ_CONFIG), [quizConfig]);
-  const totalQuestions = questionsForDisplay.length || DEFAULT_QUIZ_CONFIG.questions.length;
+  const questionsForDisplay = useMemo(() => getSortedQuestions(formConfig || DEFAULT_FORM_CONFIG), [formConfig]);
+  const totalQuestions = questionsForDisplay.length || DEFAULT_FORM_CONFIG.questions.length;
 
   const deleteLead = useMutation({
     mutationFn: async (id: number) => {
-      const res = await apiRequest('DELETE', `/api/quiz-leads/${id}`);
+      const res = await apiRequest('DELETE', `/api/form-leads/${id}`);
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/quiz-leads'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/form-leads'] });
       toast({ title: 'Lead deletado' });
     },
     onError: (error: any) => {
@@ -4846,11 +4942,11 @@ function LeadsSection() {
 
   const updateLead = useMutation({
     mutationFn: async ({ id, status, observacoes }: { id: number; status?: LeadStatus; observacoes?: string }) => {
-      const res = await apiRequest('PATCH', `/api/quiz-leads/${id}`, { status, observacoes });
+      const res = await apiRequest('PATCH', `/api/form-leads/${id}`, { status, observacoes });
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/quiz-leads'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/form-leads'] });
       toast({ title: 'Lead atualizado' });
     },
     onError: (error: any) => {
@@ -4862,7 +4958,7 @@ function LeadsSection() {
     }
   });
 
-  const openLeadDialog = (lead: QuizLead) => {
+  const openLeadDialog = (lead: FormLead) => {
     setSelectedLead(lead);
     setIsLeadDialogOpen(true);
   };
@@ -4874,7 +4970,7 @@ function LeadsSection() {
       hot: list.filter(l => l.classificacao === 'QUENTE').length,
       warm: list.filter(l => l.classificacao === 'MORNO').length,
       cold: list.filter(l => l.classificacao === 'FRIO').length,
-      inProgress: list.filter(l => !l.quizCompleto).length,
+      inProgress: list.filter(l => !l.formCompleto).length,
     };
   }, [leads]);
 
@@ -4921,8 +5017,8 @@ function LeadsSection() {
     }
   };
 
-  const questionLabel = (lead: QuizLead) => {
-    if (lead.quizCompleto) return 'Formulário completo';
+  const questionLabel = (lead: FormLead) => {
+    if (lead.formCompleto) return 'Formulário completo';
     const step = lead.ultimaPerguntaRespondida || 1;
     return `Pergunta ${step} de ${totalQuestions}`;
   };
@@ -4933,7 +5029,7 @@ function LeadsSection() {
     return 'bg-amber-50 text-amber-700 border-amber-200';
   };
 
-  const getLeadFieldValue = (lead: QuizLead, fieldId: string) => {
+  const getLeadFieldValue = (lead: FormLead, fieldId: string) => {
     const direct = (lead as any)?.[fieldId];
     if (direct !== undefined && direct !== null && String(direct).trim() !== '') {
       return String(direct);
@@ -4941,7 +5037,7 @@ function LeadsSection() {
     return lead.customAnswers?.[fieldId] || '';
   };
 
-  const getAnswerForQuestion = (lead: QuizLead, question: QuizQuestion) => {
+  const getAnswerForQuestion = (lead: FormLead, question: FormQuestion) => {
     const raw = getLeadFieldValue(lead, question.id);
     if (!raw) return '';
     if (question.type === 'select' && question.options) {
@@ -4951,7 +5047,7 @@ function LeadsSection() {
     return raw;
   };
 
-  const getConditionalAnswer = (lead: QuizLead, question: QuizQuestion) => {
+  const getConditionalAnswer = (lead: FormLead, question: FormQuestion) => {
     if (!question.conditionalField) return '';
     const trigger = getLeadFieldValue(lead, question.id);
     if (trigger !== question.conditionalField.showWhen) return '';
@@ -4980,7 +5076,7 @@ function LeadsSection() {
           <p className="text-muted-foreground">Veja quem iniciou o formulário, onde parou e atualize o status rapidamente.</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/quiz-leads'] })}>
+          <Button variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/form-leads'] })}>
             <RotateCcw className="w-4 h-4 mr-2" />
             Atualizar
           </Button>
@@ -5126,7 +5222,7 @@ function LeadsSection() {
                   <td className="px-4 py-3">
                     <div className="text-sm font-medium text-foreground">{questionLabel(lead)}</div>
                     <div className="text-xs text-muted-foreground">
-                      {lead.quizCompleto ? 'Completo' : 'Em progresso'}
+                      {lead.formCompleto ? 'Completo' : 'Em progresso'}
                     </div>
                   </td>
                   <td className="px-4 py-3">
@@ -5180,9 +5276,9 @@ function LeadsSection() {
       </div>
 
       <Dialog open={isLeadDialogOpen} onOpenChange={setIsLeadDialogOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-4xl w-[95vw] sm:w-full max-h-[90vh] overflow-hidden">
           {selectedLead ? (
-            <div className="space-y-4">
+            <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-1">
               <DialogHeader>
                 <DialogTitle>Detalhes do lead</DialogTitle>
               </DialogHeader>
@@ -5279,23 +5375,23 @@ function LeadsSection() {
 
 function FormEditorContent() {
   const { toast } = useToast();
-  const [editingQuestion, setEditingQuestion] = useState<QuizQuestion | null>(null);
+  const [editingQuestion, setEditingQuestion] = useState<FormQuestion | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isThresholdsOpen, setIsThresholdsOpen] = useState(false);
 
-  const { data: quizConfig, isLoading } = useQuery<QuizConfig>({
-    queryKey: ['/api/quiz-config'],
+  const { data: formConfig, isLoading } = useQuery<FormConfig>({
+    queryKey: ['/api/form-config'],
     queryFn: async () => {
-      const res = await apiRequest('GET', '/api/quiz-config');
+      const res = await apiRequest('GET', '/api/form-config');
       return res.json();
     }
   });
 
-  const [config, setConfig] = useState<QuizConfig>(quizConfig || DEFAULT_QUIZ_CONFIG);
+  const [config, setConfig] = useState<FormConfig>(formConfig || DEFAULT_FORM_CONFIG);
 
   useEffect(() => {
-    setConfig(quizConfig || DEFAULT_QUIZ_CONFIG);
-  }, [quizConfig]);
+    setConfig(formConfig || DEFAULT_FORM_CONFIG);
+  }, [formConfig]);
 
   const sortedQuestions = getSortedQuestions(config);
 
@@ -5307,13 +5403,13 @@ function FormEditorContent() {
   );
 
   const saveConfig = useMutation({
-    mutationFn: async (newConfig: QuizConfig) => {
-      const res = await apiRequest('PUT', '/api/quiz-config', newConfig);
+    mutationFn: async (newConfig: FormConfig) => {
+      const res = await apiRequest('PUT', '/api/form-config', newConfig);
       return res.json();
     },
-    onSuccess: (data: QuizConfig) => {
+    onSuccess: (data: FormConfig) => {
       setConfig(data);
-      queryClient.invalidateQueries({ queryKey: ['/api/quiz-config'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/form-config'] });
       toast({ title: 'Configuração salva com sucesso' });
     },
     onError: (error: Error) => {
@@ -5321,9 +5417,9 @@ function FormEditorContent() {
     }
   });
 
-  const handleSaveQuestion = (question: QuizQuestion) => {
+  const handleSaveQuestion = (question: FormQuestion) => {
     const existingIndex = config.questions.findIndex(q => q.id === question.id);
-    let newQuestions: QuizQuestion[];
+    let newQuestions: FormQuestion[];
 
     if (existingIndex >= 0) {
       newQuestions = config.questions.map(q => q.id === question.id ? question : q);
@@ -5336,7 +5432,7 @@ function FormEditorContent() {
       .sort((a, b) => a.order - b.order)
       .map((q, i) => ({ ...q, order: i + 1 }));
 
-    const newConfig: QuizConfig = {
+    const newConfig: FormConfig = {
       ...config,
       questions: newQuestions,
       maxScore: calculateMaxScore({ ...config, questions: newQuestions }),
@@ -5354,7 +5450,7 @@ function FormEditorContent() {
       .sort((a, b) => a.order - b.order)
       .map((q, i) => ({ ...q, order: i + 1 }));
 
-    const newConfig: QuizConfig = {
+    const newConfig: FormConfig = {
       ...config,
       questions: newQuestions,
       maxScore: calculateMaxScore({ ...config, questions: newQuestions }),
@@ -5374,7 +5470,7 @@ function FormEditorContent() {
       const reordered = arrayMove(sortedQuestions, oldIndex, newIndex);
       const newQuestions = reordered.map((q, i) => ({ ...q, order: i + 1 }));
 
-      const newConfig: QuizConfig = {
+      const newConfig: FormConfig = {
         ...config,
         questions: newQuestions,
         maxScore: calculateMaxScore({ ...config, questions: newQuestions }),
@@ -5385,8 +5481,8 @@ function FormEditorContent() {
     }
   };
 
-  const handleSaveThresholds = (thresholds: QuizConfig['thresholds']) => {
-    const newConfig: QuizConfig = {
+  const handleSaveThresholds = (thresholds: FormConfig['thresholds']) => {
+    const newConfig: FormConfig = {
       ...config,
       thresholds,
     };
@@ -5395,12 +5491,12 @@ function FormEditorContent() {
     setIsThresholdsOpen(false);
   };
 
-  const getQuestionTypeBadge = (type: QuizQuestion['type']) => {
+  const getQuestionTypeBadge = (type: FormQuestion['type']) => {
     const labels = { text: 'Texto', email: 'Email', tel: 'Telefone', select: 'Múltipla escolha' };
     return labels[type] || type;
   };
 
-  const getQuestionMaxPoints = (question: QuizQuestion) => {
+  const getQuestionMaxPoints = (question: FormQuestion) => {
     if (question.type !== 'select' || !question.options) return 0;
     return Math.max(...question.options.map(o => o.points));
   };
@@ -5516,8 +5612,8 @@ function SortableQuestionItem({
   typeBadge,
   maxPoints
 }: {
-  question: QuizQuestion;
-  onEdit: (q: QuizQuestion) => void;
+  question: FormQuestion;
+  onEdit: (q: FormQuestion) => void;
   onDelete: (id: string) => void;
   typeBadge: string;
   maxPoints: number;
@@ -5593,8 +5689,8 @@ function ThresholdsForm({
   onSave,
   isLoading
 }: {
-  thresholds: QuizConfig['thresholds'];
-  onSave: (t: QuizConfig['thresholds']) => void;
+  thresholds: FormConfig['thresholds'];
+  onSave: (t: FormConfig['thresholds']) => void;
   isLoading: boolean;
 }) {
   const [hot, setHot] = useState(thresholds.hot);
@@ -5656,19 +5752,19 @@ function QuestionForm({
   nextOrder,
   existingIds,
 }: {
-  question: QuizQuestion | null;
-  onSave: (q: QuizQuestion) => void;
+  question: FormQuestion | null;
+  onSave: (q: FormQuestion) => void;
   isLoading: boolean;
   nextOrder: number;
   existingIds: string[];
 }) {
   const [id, setId] = useState(question?.id || '');
   const [title, setTitle] = useState(question?.title || '');
-  const [type, setType] = useState<QuizQuestion['type']>(question?.type || 'text');
+  const [type, setType] = useState<FormQuestion['type']>(question?.type || 'text');
   const [required, setRequired] = useState(question?.required ?? true);
   const [placeholder, setPlaceholder] = useState(question?.placeholder || '');
   const [order, setOrder] = useState(question?.order ?? nextOrder);
-  const [options, setOptions] = useState<QuizOption[]>(question?.options || []);
+  const [options, setOptions] = useState<FormOption[]>(question?.options || []);
   const [hasConditional, setHasConditional] = useState(!!question?.conditionalField);
   const [conditionalShowWhen, setConditionalShowWhen] = useState(question?.conditionalField?.showWhen || '');
   const [conditionalId, setConditionalId] = useState(question?.conditionalField?.id || '');
@@ -5701,7 +5797,7 @@ function QuestionForm({
     setOptions(options.filter((_, i) => i !== index));
   };
 
-  const handleOptionChange = (index: number, field: keyof QuizOption, value: string | number) => {
+  const handleOptionChange = (index: number, field: keyof FormOption, value: string | number) => {
     const newOptions = [...options];
     if (field === 'points') {
       newOptions[index] = { ...newOptions[index], [field]: Number(value) };
@@ -5720,7 +5816,7 @@ function QuestionForm({
     if (!id || !title) return;
     if (idError) return;
 
-    const questionData: QuizQuestion = {
+    const questionData: FormQuestion = {
       id,
       order,
       title,
@@ -5787,7 +5883,7 @@ function QuestionForm({
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Tipo de Resposta</Label>
-            <Select value={type} onValueChange={(v) => setType(v as QuizQuestion['type'])}>
+            <Select value={type} onValueChange={(v) => setType(v as FormQuestion['type'])}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>

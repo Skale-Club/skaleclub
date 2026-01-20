@@ -171,7 +171,7 @@ export const leadStatusEnum = pgEnum("lead_status", [
   "descartado",
 ]);
 
-export const quizLeads = pgTable("quiz_leads", {
+export const formLeads = pgTable("form_leads", {
   id: serial("id").primaryKey(),
   sessionId: uuid("session_id").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -204,7 +204,7 @@ export const quizLeads = pgTable("quiz_leads", {
   utmMedium: text("utm_medium"),
   utmCampaign: text("utm_campaign"),
   status: leadStatusEnum("status").notNull().default("novo"),
-  quizCompleto: boolean("quiz_completo").notNull().default(false),
+  formCompleto: boolean("form_completo").notNull().default(false),
   ultimaPerguntaRespondida: integer("ultima_pergunta_respondida").notNull().default(0),
   notificacaoEnviada: boolean("notificacao_enviada").notNull().default(false),
   dataContato: timestamp("data_contato"),
@@ -213,12 +213,12 @@ export const quizLeads = pgTable("quiz_leads", {
   ghlContactId: text("ghl_contact_id"),
   ghlSyncStatus: text("ghl_sync_status").default("pending"),
 }, (table) => ({
-  emailIdx: index("quiz_leads_email_idx").on(table.email),
-  classificacaoIdx: index("quiz_leads_classificacao_idx").on(table.classificacao),
-  createdAtIdx: index("quiz_leads_created_at_idx").on(table.createdAt),
-  statusIdx: index("quiz_leads_status_idx").on(table.status),
-  sessionIdx: uniqueIndex("quiz_leads_session_idx").on(table.sessionId),
-  scoreTotalRange: check("quiz_leads_score_total_check", sql`${table.scoreTotal} >= 0 AND ${table.scoreTotal} <= 78`),
+  emailIdx: index("form_leads_email_idx").on(table.email),
+  classificacaoIdx: index("form_leads_classificacao_idx").on(table.classificacao),
+  createdAtIdx: index("form_leads_created_at_idx").on(table.createdAt),
+  statusIdx: index("form_leads_status_idx").on(table.status),
+  sessionIdx: uniqueIndex("form_leads_session_idx").on(table.sessionId),
+  scoreTotalRange: check("form_leads_score_total_check", sql`${table.scoreTotal} >= 0 AND ${table.scoreTotal} <= 78`),
 }));
 
 // === SCHEMAS ===
@@ -266,12 +266,12 @@ export const insertConversationSchema = createInsertSchema(conversations).omit({
 export const insertConversationMessageSchema = createInsertSchema(conversationMessages).omit({
   createdAt: true,
 });
-export const insertQuizLeadSchema = createInsertSchema(quizLeads).omit({
+export const insertFormLeadSchema = createInsertSchema(formLeads).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
   status: true,
-  quizCompleto: true,
+  formCompleto: true,
   ultimaPerguntaRespondida: true,
   notificacaoEnviada: true,
   dataContato: true,
@@ -282,7 +282,7 @@ export const insertQuizLeadSchema = createInsertSchema(quizLeads).omit({
 const leadClassificationValues = leadClassificationEnum.enumValues as [string, ...string[]];
 const leadStatusValues = leadStatusEnum.enumValues as [string, ...string[]];
 
-export const quizLeadProgressSchema = z.object({
+export const formLeadProgressSchema = z.object({
   sessionId: z.string().uuid(),
   questionNumber: z.number().int().min(1).max(50),
   nome: z.string().min(3).max(100).optional(),
@@ -306,7 +306,7 @@ export const quizLeadProgressSchema = z.object({
   scoreDisponibilidade: z.number().int().min(0).max(10).optional(),
   scoreExpectativa: z.number().int().min(0).max(10).optional(),
   classificacao: z.enum(leadClassificationValues).optional(),
-  quizCompleto: z.boolean().optional(),
+  formCompleto: z.boolean().optional(),
   tempoTotalSegundos: z.number().int().min(0).optional(),
   urlOrigem: z.string().max(500).optional(),
   utmSource: z.string().max(200).optional(),
@@ -330,7 +330,7 @@ export type ChatIntegrations = typeof chatIntegrations.$inferSelect;
 export type TwilioSettings = typeof twilioSettings.$inferSelect;
 export type Conversation = typeof conversations.$inferSelect;
 export type ConversationMessage = typeof conversationMessages.$inferSelect;
-export type QuizLead = typeof quizLeads.$inferSelect;
+export type FormLead = typeof formLeads.$inferSelect;
 export type LeadClassification = typeof leadClassificationEnum.enumValues[number];
 export type LeadStatus = typeof leadStatusEnum.enumValues[number];
 
@@ -344,8 +344,8 @@ export type InsertChatIntegrations = z.infer<typeof insertChatIntegrationsSchema
 export type InsertTwilioSettings = z.infer<typeof insertTwilioSettingsSchema>;
 export type InsertConversation = z.infer<typeof insertConversationSchema>;
 export type InsertConversationMessage = z.infer<typeof insertConversationMessageSchema>;
-export type InsertQuizLead = z.infer<typeof insertQuizLeadSchema>;
-export type QuizLeadProgressInput = z.infer<typeof quizLeadProgressSchema>;
+export type InsertFormLead = z.infer<typeof insertFormLeadSchema>;
+export type FormLeadProgressInput = z.infer<typeof formLeadProgressSchema>;
 
 // For availability checking
 export interface TimeSlot {
@@ -404,39 +404,46 @@ export interface HomepageContent {
   categoriesSection?: { title?: string; subtitle?: string; ctaText?: string };
   reviewsSection?: { title?: string; subtitle?: string; embedUrl?: string };
   blogSection?: { title?: string; subtitle?: string; viewAllText?: string; readMoreText?: string };
+  aboutSection?: {
+    label?: string;
+    heading?: string;
+    description?: string;
+    defaultImageUrl?: string;
+    highlights?: { title: string; description: string }[];
+  };
   areasServedSection?: { label?: string; heading?: string; description?: string; ctaText?: string };
   consultingStepsSection?: ConsultingStepsSection;
 }
 
-// Quiz Configuration Types
-export type QuizQuestionType = 'text' | 'email' | 'tel' | 'select';
+// Form Configuration Types
+export type FormQuestionType = 'text' | 'email' | 'tel' | 'select';
 
-export interface QuizOption {
+export interface FormOption {
   value: string;
   label: string;
   points: number;
 }
 
-export interface QuizConditionalField {
+export interface FormConditionalField {
   showWhen: string;
   id: string;
   title: string;
   placeholder: string;
 }
 
-export interface QuizQuestion {
+export interface FormQuestion {
   id: string;
   order: number;
   title: string;
-  type: QuizQuestionType;
+  type: FormQuestionType;
   required: boolean;
   placeholder?: string;
-  options?: QuizOption[];
-  conditionalField?: QuizConditionalField;
+  options?: FormOption[];
+  conditionalField?: FormConditionalField;
 }
 
-export interface QuizConfig {
-  questions: QuizQuestion[];
+export interface FormConfig {
+  questions: FormQuestion[];
   maxScore: number;
   thresholds: {
     hot: number;
@@ -473,6 +480,7 @@ export const companySettings = pgTable("company_settings", {
   heroTitle: text("hero_title").default('Your 5-Star Cleaning Company'),
   heroSubtitle: text("hero_subtitle").default('Book your cleaning service today and enjoy a sparkling clean home'),
   heroImageUrl: text("hero_image_url").default(''),
+  aboutImageUrl: text("about_image_url").default(''),
   ctaText: text("cta_text").default('Book Now'),
   timeFormat: text("time_format").default('12h'), // '12h' or '24h'
   businessHours: jsonb("business_hours"), // Day-by-day business hours
@@ -502,12 +510,12 @@ export const companySettings = pgTable("company_settings", {
   ga4Enabled: boolean("ga4_enabled").default(false),
   facebookPixelEnabled: boolean("facebook_pixel_enabled").default(false),
   homepageContent: jsonb("homepage_content").$type<HomepageContent>().default({}),
-  quizConfig: jsonb("quiz_config").$type<QuizConfig>(),
+  formConfig: jsonb("form_config").$type<FormConfig>(),
 });
 
 export const insertCompanySettingsSchema = createInsertSchema(companySettings, {
   homepageContent: z.custom<HomepageContent>().optional().nullable(),
-  quizConfig: z.custom<QuizConfig>().optional().nullable(),
+  formConfig: z.custom<FormConfig>().optional().nullable(),
 }).omit({ id: true });
 export type CompanySettings = typeof companySettings.$inferSelect;
 export type InsertCompanySettings = z.infer<typeof insertCompanySettingsSchema>;

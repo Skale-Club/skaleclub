@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertBookingSchema, categories, services, bookings, quizLeadProgressSchema, quizLeads, leadStatusEnum, leadClassificationEnum } from './schema';
+import { insertBookingSchema, categories, services, bookings, formLeadProgressSchema, formLeads, leadStatusEnum, leadClassificationEnum } from './schema';
 
 const urlRuleSchema = z.object({
   pattern: z.string(),
@@ -159,54 +159,54 @@ export const api = {
       },
     },
   },
-  quizLeads: {
+  formLeads: {
     progress: {
       method: 'POST' as const,
-      path: '/api/quiz-leads/progress',
-      input: quizLeadProgressSchema,
+      path: '/api/form-leads/progress',
+      input: formLeadProgressSchema,
       responses: {
-        200: z.custom<typeof quizLeads.$inferSelect>(),
+        200: z.custom<typeof formLeads.$inferSelect>(),
         400: errorSchemas.validation,
         409: errorSchemas.conflict,
       },
     },
     get: {
       method: 'GET' as const,
-      path: '/api/quiz-leads/:sessionId',
+      path: '/api/form-leads/:sessionId',
       responses: {
-        200: z.custom<typeof quizLeads.$inferSelect>(),
+        200: z.custom<typeof formLeads.$inferSelect>(),
         404: errorSchemas.notFound,
       },
     },
     list: {
       method: 'GET' as const,
-      path: '/api/quiz-leads',
+      path: '/api/form-leads',
       input: z.object({
         status: z.enum(leadStatusValues).optional(),
         classificacao: z.enum(leadClassificationValues).optional(),
-        quizCompleto: z.coerce.boolean().optional(),
+        formCompleto: z.coerce.boolean().optional(),
         search: z.string().optional(),
       }).optional(),
       responses: {
-        200: z.array(z.custom<typeof quizLeads.$inferSelect>()),
+        200: z.array(z.custom<typeof formLeads.$inferSelect>()),
       },
     },
     update: {
       method: 'PATCH' as const,
-      path: '/api/quiz-leads/:id',
+      path: '/api/form-leads/:id',
       input: z.object({
         status: z.enum(leadStatusValues).optional(),
         observacoes: z.string().optional(),
         notificacaoEnviada: z.boolean().optional(),
       }),
       responses: {
-        200: z.custom<typeof quizLeads.$inferSelect>(),
+        200: z.custom<typeof formLeads.$inferSelect>(),
         404: errorSchemas.notFound,
       },
     },
     delete: {
       method: 'DELETE' as const,
-      path: '/api/quiz-leads/:id',
+      path: '/api/form-leads/:id',
       responses: {
         200: z.object({ message: z.string() }),
         404: errorSchemas.notFound,

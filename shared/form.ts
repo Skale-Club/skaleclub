@@ -1,13 +1,13 @@
-import type { LeadClassification, QuizConfig, QuizQuestion, QuizOption as SchemaQuizOption } from "./schema";
+import type { LeadClassification, FormConfig, FormQuestion, FormOption as SchemaFormOption } from "./schema";
 
 // Legacy type for backward compatibility
-export type QuizOption = {
+export type FormOption = {
   value: string;
   label: string;
   points: number;
 };
 
-export type QuizAnswers = {
+export type FormAnswers = {
   nome?: string;
   email?: string;
   telefone?: string;
@@ -23,8 +23,8 @@ export type QuizAnswers = {
   [key: string]: string | undefined; // Support for custom questions
 };
 
-// Default quiz configuration - used as fallback when no config in database
-export const DEFAULT_QUIZ_CONFIG: QuizConfig = {
+// Default form configuration - used as fallback when no config in database
+export const DEFAULT_FORM_CONFIG: FormConfig = {
   questions: [
     {
       id: "nome",
@@ -172,18 +172,17 @@ export const DEFAULT_QUIZ_CONFIG: QuizConfig = {
 };
 
 // Legacy exports for backward compatibility
-export const QUIZ_TOTAL_QUESTIONS = DEFAULT_QUIZ_CONFIG.questions.length;
-export const QUIZ_MAX_SCORE = DEFAULT_QUIZ_CONFIG.maxScore;
+export const FORM_TOTAL_QUESTIONS = DEFAULT_FORM_CONFIG.questions.length;
+export const FORM_MAX_SCORE = DEFAULT_FORM_CONFIG.maxScore;
 
-// Legacy quizOptions object - used by old code, built from DEFAULT_QUIZ_CONFIG
-export const quizOptions: Record<string, QuizOption[]> = DEFAULT_QUIZ_CONFIG.questions
+export const formOptions: Record<string, FormOption[]> = DEFAULT_FORM_CONFIG.questions
   .filter((q) => q.type === "select" && q.options)
   .reduce((acc, q) => {
     acc[q.id] = q.options!;
     return acc;
-  }, {} as Record<string, QuizOption[]>);
+  }, {} as Record<string, FormOption[]>);
 
-// Known field IDs that map to columns in quiz_leads table
+// Known field IDs that map to columns in form_leads table
 export const KNOWN_FIELD_IDS = [
   "nome",
   "email",
@@ -210,14 +209,14 @@ export const SCORE_FIELD_MAPPING: Record<string, string> = {
   expectativaResultado: "scoreExpectativa",
 };
 
-function resolvePoints(options: SchemaQuizOption[] | undefined, value?: string, fallback = 0): number {
+function resolvePoints(options: SchemaFormOption[] | undefined, value?: string, fallback = 0): number {
   if (!value || !options) return 0;
   const match = options.find((option) => option.value === value || option.label === value);
   return match?.points ?? fallback;
 }
 
 // Calculate scores using config (supports dynamic questions)
-export function calculateQuizScoresWithConfig(answers: QuizAnswers, config: QuizConfig) {
+export function calculateFormScoresWithConfig(answers: FormAnswers, config: FormConfig) {
   const breakdown: Record<string, number> = {};
   let total = 0;
 
@@ -246,8 +245,8 @@ export function calculateQuizScoresWithConfig(answers: QuizAnswers, config: Quiz
 }
 
 // Legacy function - uses default config for backward compatibility
-export function calculateQuizScores(answers: Partial<QuizAnswers>) {
-  const result = calculateQuizScoresWithConfig(answers as QuizAnswers, DEFAULT_QUIZ_CONFIG);
+export function calculateFormScores(answers: Partial<FormAnswers>) {
+  const result = calculateFormScoresWithConfig(answers as FormAnswers, DEFAULT_FORM_CONFIG);
 
   // Map to legacy format
   return {
@@ -264,8 +263,8 @@ export function calculateQuizScores(answers: Partial<QuizAnswers>) {
   };
 }
 
-export function classifyLead(score: number, thresholds?: QuizConfig["thresholds"]): LeadClassification {
-  const t = thresholds || DEFAULT_QUIZ_CONFIG.thresholds;
+export function classifyLead(score: number, thresholds?: FormConfig["thresholds"]): LeadClassification {
+  const t = thresholds || DEFAULT_FORM_CONFIG.thresholds;
   if (score >= t.hot) return "QUENTE";
   if (score >= t.warm) return "MORNO";
   if (score >= t.cold) return "FRIO";
@@ -273,7 +272,7 @@ export function classifyLead(score: number, thresholds?: QuizConfig["thresholds"
 }
 
 // Helper to calculate max possible score from config
-export function calculateMaxScore(config: QuizConfig): number {
+export function calculateMaxScore(config: FormConfig): number {
   return config.questions
     .filter((q) => q.type === "select" && q.options)
     .reduce((sum, q) => {
@@ -283,6 +282,6 @@ export function calculateMaxScore(config: QuizConfig): number {
 }
 
 // Helper to get questions sorted by order
-export function getSortedQuestions(config: QuizConfig): QuizQuestion[] {
+export function getSortedQuestions(config: FormConfig): FormQuestion[] {
   return [...config.questions].sort((a, b) => a.order - b.order);
 }

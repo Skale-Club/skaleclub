@@ -43,7 +43,7 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
   const stepsLoop = useMemo(() => [...sortedSteps, ...sortedSteps], [sortedSteps]);
   const practicalBullets = section.practicalBullets?.length ? section.practicalBullets : [];
   const ctaLabel = section.ctaButtonLabel || 'Agendar Conversa Gratuita';
-  const ctaHref = section.ctaButtonLink || '#lead-quiz';
+  const ctaHref = section.ctaButtonLink || '#lead-form';
   const helperText = section.helperText;
   const sectionId = section.sectionId || 'como-funciona';
   const practicalTitle = section.practicalBlockTitle || 'Na prática';
@@ -56,6 +56,10 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
   });
   const resumeTimerRef = useRef<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const velocityRef = useRef<number>(0);
+  const lastMoveTimeRef = useRef<number>(0);
+  const lastMoveXRef = useRef<number>(0);
+  const momentumFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
     const track = trackRef.current;
@@ -97,35 +101,84 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
     }, delayMs);
   };
 
-  // Drag to scroll
+  // Drag to scroll with momentum
   useEffect(() => {
     const track = trackRef.current;
     if (!track) return;
 
+    const applyMomentum = () => {
+      const track = trackRef.current;
+      if (!track) return;
+
+      const friction = 0.95;
+      velocityRef.current *= friction;
+
+      if (Math.abs(velocityRef.current) > 0.5) {
+        track.scrollLeft -= velocityRef.current;
+        momentumFrameRef.current = requestAnimationFrame(applyMomentum);
+      } else {
+        velocityRef.current = 0;
+        if (momentumFrameRef.current) {
+          cancelAnimationFrame(momentumFrameRef.current);
+          momentumFrameRef.current = null;
+        }
+        resumeAutoScroll(1200);
+      }
+    };
+
     const handlePointerDown = (e: PointerEvent) => {
       pauseAutoScroll();
+
+      // Cancel any ongoing momentum
+      if (momentumFrameRef.current) {
+        cancelAnimationFrame(momentumFrameRef.current);
+        momentumFrameRef.current = null;
+      }
+
+      velocityRef.current = 0;
       setIsDragging(true);
       dragStateRef.current = {
         isDown: true,
         startX: e.clientX,
         startScroll: track.scrollLeft,
       };
+      lastMoveXRef.current = e.clientX;
+      lastMoveTimeRef.current = Date.now();
       track.setPointerCapture?.(e.pointerId);
     };
 
     const handlePointerMove = (e: PointerEvent) => {
       if (!dragStateRef.current.isDown) return;
       e.preventDefault();
+
+      const now = Date.now();
+      const timeDelta = now - lastMoveTimeRef.current;
       const diff = e.clientX - dragStateRef.current.startX;
+
+      // Calculate velocity for momentum
+      if (timeDelta > 0) {
+        const moveDelta = e.clientX - lastMoveXRef.current;
+        velocityRef.current = moveDelta / Math.max(timeDelta, 1) * 10;
+      }
+
       track.scrollLeft = dragStateRef.current.startScroll - diff;
+
+      lastMoveXRef.current = e.clientX;
+      lastMoveTimeRef.current = now;
     };
 
     const handlePointerUp = (e: PointerEvent) => {
       if (dragStateRef.current.isDown) {
         dragStateRef.current.isDown = false;
         track.releasePointerCapture?.(e.pointerId);
-        resumeAutoScroll();
         setIsDragging(false);
+
+        // Apply momentum if there's significant velocity
+        if (Math.abs(velocityRef.current) > 1) {
+          applyMomentum();
+        } else {
+          resumeAutoScroll(800);
+        }
       }
     };
 
@@ -133,12 +186,18 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
     track.addEventListener('pointermove', handlePointerMove);
     track.addEventListener('pointerup', handlePointerUp);
     track.addEventListener('pointerleave', handlePointerUp);
+    track.addEventListener('pointercancel', handlePointerUp);
 
     return () => {
       track.removeEventListener('pointerdown', handlePointerDown);
       track.removeEventListener('pointermove', handlePointerMove);
       track.removeEventListener('pointerup', handlePointerUp);
       track.removeEventListener('pointerleave', handlePointerUp);
+      track.removeEventListener('pointercancel', handlePointerUp);
+
+      if (momentumFrameRef.current) {
+        cancelAnimationFrame(momentumFrameRef.current);
+      }
     };
   }, []);
 
@@ -186,7 +245,8 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
           <div className="pointer-events-none absolute right-0 top-0 h-full w-12 sm:w-16 bg-gradient-to-l from-[#f7f9fc] via-[#f7f9fc] to-transparent z-10" />
           <div
             ref={trackRef}
-            className={`flex gap-6 md:gap-7 xl:gap-8 overflow-x-scroll overflow-y-visible no-scrollbar scroll-smooth pt-2 pb-10 select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+            className={`flex gap-6 md:gap-7 xl:gap-8 overflow-x-scroll overflow-y-visible no-scrollbar pt-2 pb-10 select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+            style={{ scrollBehavior: isDragging ? 'auto' : 'smooth' }}
           >
             {stepsLoop.map((step, index) => {
               const Icon = getStepIcon(step.icon);
@@ -262,7 +322,7 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
               href={ctaHref}
               onClick={handleCta}
               className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-[#406EF1] hover:bg-[#355CD0] text-white font-semibold shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#406EF1]"
-              data-quiz-trigger="lead-quiz"
+              data-form-trigger="lead-form"
             >
               {ctaLabel}
               <ArrowRight className="w-4 h-4" />

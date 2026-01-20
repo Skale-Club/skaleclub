@@ -1,5 +1,5 @@
 import { db, pool } from "./db";
-import { DEFAULT_QUIZ_CONFIG, calculateQuizScoresWithConfig, classifyLead } from "@shared/quiz";
+import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead } from "@shared/form";
 import {
   categories,
   subcategories,
@@ -7,7 +7,7 @@ import {
   serviceAddons,
   bookings,
   bookingItems,
-  quizLeads,
+  formLeads,
   chatSettings,
   chatIntegrations,
   twilioSettings,
@@ -33,8 +33,8 @@ import {
   type TwilioSettings,
   type Conversation,
   type ConversationMessage,
-  type QuizLead,
-  type QuizConfig,
+  type FormLead,
+  type FormConfig,
   type LeadStatus,
   type LeadClassification,
   type Faq,
@@ -53,7 +53,7 @@ import {
   type InsertTwilioSettings,
   type InsertConversation,
   type InsertConversationMessage,
-  type QuizLeadProgressInput,
+  type FormLeadProgressInput,
   type InsertFaq,
   type InsertIntegrationSettings,
   type InsertBlogPost,
@@ -65,12 +65,12 @@ import { z } from "zod";
 
 // Ensure optional GHL columns exist even if migration hasn't been applied yet
 let ensureGhlColumnsPromise: Promise<void> | null = null;
-async function ensureQuizLeadGhlColumns() {
+async function ensureFormLeadGhlColumns() {
   if (ensureGhlColumnsPromise) return ensureGhlColumnsPromise;
   ensureGhlColumnsPromise = pool
     .query(`
-      ALTER TABLE quiz_leads ADD COLUMN IF NOT EXISTS ghl_contact_id text;
-      ALTER TABLE quiz_leads ADD COLUMN IF NOT EXISTS ghl_sync_status text DEFAULT 'pending';
+      ALTER TABLE form_leads ADD COLUMN IF NOT EXISTS ghl_contact_id text;
+      ALTER TABLE form_leads ADD COLUMN IF NOT EXISTS ghl_sync_status text DEFAULT 'pending';
     `)
     .then(() => undefined)
     .catch((err) => {
@@ -161,12 +161,12 @@ export interface IStorage {
   getConversationMessages(conversationId: string): Promise<ConversationMessage[]>;
   
   // Leads
-  upsertQuizLeadProgress(progress: QuizLeadProgressInput, metadata?: { userAgent?: string }, quizConfig?: QuizConfig): Promise<QuizLead>;
-  getQuizLeadBySession(sessionId: string): Promise<QuizLead | undefined>;
-  listQuizLeads(filters?: { status?: LeadStatus; classificacao?: LeadClassification; quizCompleto?: boolean; search?: string }): Promise<QuizLead[]>;
-  updateQuizLead(id: number, updates: Partial<Pick<QuizLead, "status" | "observacoes" | "notificacaoEnviada" | "ghlContactId" | "ghlSyncStatus">>): Promise<QuizLead | undefined>;
-  getQuizLeadByEmail(email: string): Promise<QuizLead | undefined>;
-  deleteQuizLead(id: number): Promise<boolean>;
+  upsertFormLeadProgress(progress: FormLeadProgressInput, metadata?: { userAgent?: string }, formConfig?: FormConfig): Promise<FormLead>;
+  getFormLeadBySession(sessionId: string): Promise<FormLead | undefined>;
+  listFormLeads(filters?: { status?: LeadStatus; classificacao?: LeadClassification; formCompleto?: boolean; search?: string }): Promise<FormLead[]>;
+  updateFormLead(id: number, updates: Partial<Pick<FormLead, "status" | "observacoes" | "notificacaoEnviada" | "ghlContactId" | "ghlSyncStatus">>): Promise<FormLead | undefined>;
+  getFormLeadByEmail(email: string): Promise<FormLead | undefined>;
+  deleteFormLead(id: number): Promise<boolean>;
   
   // Blog Posts
   getBlogPosts(status?: string): Promise<BlogPost[]>;
@@ -628,28 +628,28 @@ export class DatabaseStorage implements IStorage {
       .orderBy(asc(conversationMessages.createdAt));
   }
   
-  async getQuizLeadBySession(sessionId: string): Promise<QuizLead | undefined> {
-    await ensureQuizLeadGhlColumns();
-    const [lead] = await db.select().from(quizLeads).where(eq(quizLeads.sessionId, sessionId));
+  async getFormLeadBySession(sessionId: string): Promise<FormLead | undefined> {
+    await ensureFormLeadGhlColumns();
+    const [lead] = await db.select().from(formLeads).where(eq(formLeads.sessionId, sessionId));
     return lead;
   }
 
-  async getQuizLeadByEmail(email: string): Promise<QuizLead | undefined> {
-    await ensureQuizLeadGhlColumns();
-    const [lead] = await db.select().from(quizLeads).where(eq(quizLeads.email, email));
+  async getFormLeadByEmail(email: string): Promise<FormLead | undefined> {
+    await ensureFormLeadGhlColumns();
+    const [lead] = await db.select().from(formLeads).where(eq(formLeads.email, email));
     return lead;
   }
 
-  async upsertQuizLeadProgress(progress: QuizLeadProgressInput, metadata: { userAgent?: string } = {}, quizConfig?: QuizConfig): Promise<QuizLead> {
-    await ensureQuizLeadGhlColumns();
+  async upsertFormLeadProgress(progress: FormLeadProgressInput, metadata: { userAgent?: string } = {}, formConfig?: FormConfig): Promise<FormLead> {
+    await ensureFormLeadGhlColumns();
 
-    const existing = await this.getQuizLeadBySession(progress.sessionId);
+    const existing = await this.getFormLeadBySession(progress.sessionId);
     if (!existing && !progress.nome) {
-      throw new Error("Nome é obrigatório para iniciar o quiz");
+      throw new Error("Nome é obrigatório para iniciar o formulário");
     }
 
-    const config = quizConfig || (await this.getCompanySettings()).quizConfig || DEFAULT_QUIZ_CONFIG;
-    const totalQuestions = config.questions.length || DEFAULT_QUIZ_CONFIG.questions.length;
+    const config = formConfig || (await this.getCompanySettings()).formConfig || DEFAULT_FORM_CONFIG;
+    const totalQuestions = config.questions.length || DEFAULT_FORM_CONFIG.questions.length;
     const safeQuestionNumber = Math.max(1, Math.min(progress.questionNumber, totalQuestions));
 
     const mergedCustomAnswers = Object.fromEntries(
@@ -675,15 +675,15 @@ export class DatabaseStorage implements IStorage {
       expectativaResultado: progress.expectativaResultado ?? existing?.expectativaResultado ?? undefined,
     };
 
-    const scoreResult = calculateQuizScoresWithConfig(answersForScoring, config);
-    const isComplete = progress.quizCompleto || safeQuestionNumber >= totalQuestions;
+    const scoreResult = calculateFormScoresWithConfig(answersForScoring, config);
+    const isComplete = progress.formCompleto || safeQuestionNumber >= totalQuestions;
     const classification: LeadClassification | undefined = isComplete
       ? classifyLead(scoreResult.total, config.thresholds)
       : (existing?.classificacao ?? (progress.classificacao as LeadClassification | undefined));
     const now = new Date();
     const latestQuestion = Math.max(safeQuestionNumber, existing?.ultimaPerguntaRespondida ?? 0);
 
-    const payload: Partial<typeof quizLeads.$inferInsert> = {
+    const payload: Partial<typeof formLeads.$inferInsert> = {
       sessionId: progress.sessionId,
       nome: progress.nome ?? existing?.nome ?? "",
       email: progress.email ?? existing?.email,
@@ -714,7 +714,7 @@ export class DatabaseStorage implements IStorage {
       utmMedium: progress.utmMedium ?? existing?.utmMedium,
       utmCampaign: progress.utmCampaign ?? existing?.utmCampaign,
       status: existing?.status ?? "novo",
-      quizCompleto: isComplete || existing?.quizCompleto || false,
+      formCompleto: isComplete || existing?.formCompleto || false,
       ultimaPerguntaRespondida: latestQuestion,
       notificacaoEnviada: existing?.notificacaoEnviada ?? false,
       updatedAt: now,
@@ -725,7 +725,7 @@ export class DatabaseStorage implements IStorage {
     if (!existing) {
       const startedAt = progress.startedAt ? new Date(progress.startedAt) : now;
       const safeStartedAt = isNaN(startedAt.getTime()) ? now : startedAt;
-      const insertPayload: typeof quizLeads.$inferInsert = {
+      const insertPayload: typeof formLeads.$inferInsert = {
         sessionId: progress.sessionId,
         nome: progress.nome || "",
         email: payload.email,
@@ -756,7 +756,7 @@ export class DatabaseStorage implements IStorage {
         utmMedium: payload.utmMedium ?? null,
         utmCampaign: payload.utmCampaign ?? null,
         status: payload.status ?? "novo",
-        quizCompleto: payload.quizCompleto ?? false,
+        formCompleto: payload.formCompleto ?? false,
         ultimaPerguntaRespondida: payload.ultimaPerguntaRespondida ?? latestQuestion,
         notificacaoEnviada: payload.notificacaoEnviada ?? false,
         dataContato: null,
@@ -767,20 +767,20 @@ export class DatabaseStorage implements IStorage {
         updatedAt: now,
       };
       try {
-        const [created] = await db.insert(quizLeads).values(insertPayload).returning();
+        const [created] = await db.insert(formLeads).values(insertPayload).returning();
         return created;
       } catch (err: any) {
         if (err?.code === "23505" && payload.email) {
-          const existingByEmail = await this.getQuizLeadByEmail(payload.email);
+          const existingByEmail = await this.getFormLeadByEmail(payload.email);
           if (existingByEmail) {
             const [updatedExisting] = await db
-              .update(quizLeads)
+              .update(formLeads)
               .set({
                 ...insertPayload,
                 sessionId: existingByEmail.sessionId,
                 updatedAt: now,
               })
-              .where(eq(quizLeads.id, existingByEmail.id))
+              .where(eq(formLeads.id, existingByEmail.id))
               .returning();
             return updatedExisting;
           }
@@ -790,54 +790,54 @@ export class DatabaseStorage implements IStorage {
     }
 
     const [updated] = await db
-      .update(quizLeads)
+      .update(formLeads)
       .set(payload)
-      .where(eq(quizLeads.id, existing.id))
+      .where(eq(formLeads.id, existing.id))
       .returning();
     return updated;
   }
 
-  async listQuizLeads(filters: { status?: LeadStatus; classificacao?: LeadClassification; quizCompleto?: boolean; search?: string } = {}): Promise<QuizLead[]> {
-    await ensureQuizLeadGhlColumns();
+  async listFormLeads(filters: { status?: LeadStatus; classificacao?: LeadClassification; formCompleto?: boolean; search?: string } = {}): Promise<FormLead[]> {
+    await ensureFormLeadGhlColumns();
     const conditions: any[] = [];
-    if (filters.status) conditions.push(eq(quizLeads.status, filters.status));
-    if (filters.classificacao) conditions.push(eq(quizLeads.classificacao, filters.classificacao));
-    if (typeof filters.quizCompleto === "boolean") conditions.push(eq(quizLeads.quizCompleto, filters.quizCompleto));
+    if (filters.status) conditions.push(eq(formLeads.status, filters.status));
+    if (filters.classificacao) conditions.push(eq(formLeads.classificacao, filters.classificacao));
+    if (typeof filters.formCompleto === "boolean") conditions.push(eq(formLeads.formCompleto, filters.formCompleto));
     if (filters.search) {
       const likeValue = `%${filters.search.toLowerCase()}%`;
       conditions.push(
         or(
-          ilike(quizLeads.nome, likeValue),
-          ilike(quizLeads.email, likeValue),
-          ilike(quizLeads.telefone, likeValue),
+          ilike(formLeads.nome, likeValue),
+          ilike(formLeads.email, likeValue),
+          ilike(formLeads.telefone, likeValue),
         )
       );
     }
 
     if (conditions.length) {
-      return await db.select().from(quizLeads).where(and(...conditions)).orderBy(desc(quizLeads.createdAt));
+      return await db.select().from(formLeads).where(and(...conditions)).orderBy(desc(formLeads.createdAt));
     }
-    return await db.select().from(quizLeads).orderBy(desc(quizLeads.createdAt));
+    return await db.select().from(formLeads).orderBy(desc(formLeads.createdAt));
   }
 
-  async updateQuizLead(id: number, updates: Partial<Pick<QuizLead, "status" | "observacoes" | "notificacaoEnviada" | "ghlContactId" | "ghlSyncStatus">>): Promise<QuizLead | undefined> {
-    await ensureQuizLeadGhlColumns();
-    const [existing] = await db.select().from(quizLeads).where(eq(quizLeads.id, id));
+  async updateFormLead(id: number, updates: Partial<Pick<FormLead, "status" | "observacoes" | "notificacaoEnviada" | "ghlContactId" | "ghlSyncStatus">>): Promise<FormLead | undefined> {
+    await ensureFormLeadGhlColumns();
+    const [existing] = await db.select().from(formLeads).where(eq(formLeads.id, id));
     if (!existing) return undefined;
 
     const [updated] = await db
-      .update(quizLeads)
+      .update(formLeads)
       .set({ ...updates, updatedAt: new Date() })
-      .where(eq(quizLeads.id, id))
+      .where(eq(formLeads.id, id))
       .returning();
     return updated;
   }
 
-  async deleteQuizLead(id: number): Promise<boolean> {
-    await ensureQuizLeadGhlColumns();
-    const [existing] = await db.select().from(quizLeads).where(eq(quizLeads.id, id));
+  async deleteFormLead(id: number): Promise<boolean> {
+    await ensureFormLeadGhlColumns();
+    const [existing] = await db.select().from(formLeads).where(eq(formLeads.id, id));
     if (!existing) return false;
-    await db.delete(quizLeads).where(eq(quizLeads.id, id));
+    await db.delete(formLeads).where(eq(formLeads.id, id));
     return true;
   }
 

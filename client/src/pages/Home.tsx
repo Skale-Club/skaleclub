@@ -3,14 +3,14 @@ import { useCategories, useServices } from "@/hooks/use-booking";
 import { Link, useLocation } from "wouter";
 import { ArrowRight, Star, Shield, Clock, Sparkles, Heart, BadgeCheck, ThumbsUp, Trophy, Phone, Calendar, FileText } from "lucide-react";
 import { CartSummary } from "@/components/CartSummary";
-import { AreasServedMap } from "@/components/AreasServedMap";
+import { AboutSection } from "@/components/AboutSection";
 import heroImage from "@assets/Persona-Mobile_1767749022412.png";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings, BlogPost, HomepageContent } from "@shared/schema";
 import { format } from "date-fns";
 import { trackCTAClick } from "@/lib/analytics";
 import { DEFAULT_HOMEPAGE_CONTENT } from "@/lib/homepageDefaults";
-import { LeadQuizModal } from "@/components/LeadQuizModal";
+import { LeadFormModal } from "@/components/LeadFormModal";
 import { ConsultingStepsSection } from "@/components/ConsultingStepsSection";
 
 function BlogSection({ content }: { content: HomepageContent['blogSection'] }) {
@@ -141,6 +141,10 @@ export default function Home() {
       ...DEFAULT_HOMEPAGE_CONTENT.blogSection,
       ...(companySettings?.homepageContent?.blogSection || {}),
     },
+    aboutSection: {
+      ...DEFAULT_HOMEPAGE_CONTENT.aboutSection,
+      ...(companySettings?.homepageContent?.aboutSection || {}),
+    },
     areasServedSection: {
       ...DEFAULT_HOMEPAGE_CONTENT.areasServedSection,
       ...(companySettings?.homepageContent?.areasServedSection || {}),
@@ -162,9 +166,9 @@ export default function Home() {
 
   const displayPhone = companySettings?.companyPhone || "(303) 309 4226";
   const telPhone = displayPhone.replace(/\D/g, '');
-  const [isQuizOpen, setIsQuizOpen] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const handleConsultingCta = () => {
-    setIsQuizOpen(true);
+    setIsFormOpen(true);
     trackCTAClick('consulting-steps', consultingStepsSection.ctaButtonLabel || 'Agendar Conversa Gratuita');
   };
 
@@ -193,7 +197,7 @@ export default function Home() {
     services?.some(service => service.categoryId === category.id)
   );
 
-  // Handle hash navigation on mount (e.g., /#areas-served)
+  // Handle hash navigation on mount (e.g., /#about)
   useEffect(() => {
     const hash = window.location.hash.replace('#', '');
     if (hash) {
@@ -211,12 +215,12 @@ export default function Home() {
     const clickHandler = (event: Event) => {
       const target = event.target as HTMLElement | null;
       if (!target) return;
-      const trigger = target.closest('[data-quiz-trigger], button, a') as HTMLElement | null;
+      const trigger = target.closest('[data-form-trigger], button, a') as HTMLElement | null;
       if (!trigger) return;
       const text = (trigger.textContent || '').trim().toLowerCase();
-      if (trigger.dataset.quizTrigger === 'lead-quiz' || text === 'agendar conversa gratuita') {
+      if (trigger.dataset.formTrigger === 'lead-form' || text === 'agendar conversa gratuita') {
         event.preventDefault();
-        setIsQuizOpen(true);
+        setIsFormOpen(true);
       }
     };
     document.addEventListener('click', clickHandler);
@@ -242,25 +246,25 @@ export default function Home() {
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">{companySettings.heroTitle}</span>
                 ) : (
                   <>
-                    <span className="text-white">Your 5-star</span> <br />
+                    <span className="text-white">Gere clientes</span> <br />
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">
-                      cleaning company
+                      de forma previsível
                     </span>
                   </>
                 )}
               </h1>
               <p className="text-base sm:text-xl text-blue-50/80 mb-4 lg:mb-8 leading-relaxed max-w-xl">
-                {companySettings?.heroSubtitle || "We provide top-quality cleaning services ensuring a spotless environment for your home and office."}
+                {companySettings?.heroSubtitle || "Consultoria em marketing digital para prestadores de serviço nos EUA. Transforme seu negócio com estratégias comprovadas de aquisição e conversão de clientes."}
               </p>
               <div className="flex flex-col sm:flex-row gap-3 lg:gap-5 flex-wrap">
                 <button
-                  data-quiz-trigger="lead-quiz"
+                  data-form-trigger="lead-form"
                   className="w-full sm:w-auto shrink-0 px-6 sm:px-8 py-3 sm:py-4 bg-[#406EF1] hover:bg-[#355CD0] hover:scale-105 text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
                   onClick={() => {
-                    setIsQuizOpen(true);
+                    setIsFormOpen(true);
                     trackCTAClick('hero', 'Agendar Conversa Gratuita');
                   }}
-                  data-testid="button-hero-quiz"
+                  data-testid="button-hero-form"
                 >
                   Agendar Conversa Gratuita
                 </button>
@@ -359,14 +363,14 @@ export default function Home() {
         </div>
       </section>
       <BlogSection content={homepageContent.blogSection} />
-      <section id="areas-served" className="bg-white py-20">
-        <AreasServedMap 
-          mapEmbedUrl={companySettings?.mapEmbedUrl} 
-          content={homepageContent.areasServedSection} 
+      <section id="about" className="bg-white py-20">
+        <AboutSection
+          aboutImageUrl={companySettings?.aboutImageUrl}
+          content={homepageContent.aboutSection}
         />
       </section>
       <CartSummary />
-      <LeadQuizModal open={isQuizOpen} onClose={() => setIsQuizOpen(false)} />
+      <LeadFormModal open={isFormOpen} onClose={() => setIsFormOpen(false)} />
     </div>
   );
 }
