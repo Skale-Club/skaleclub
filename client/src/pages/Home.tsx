@@ -306,7 +306,6 @@ export default function Home() {
       </section>
       {/* Trust Badges */}
       <section className="relative z-20 -mt-16 sm:-mt-16 lg:-mt-24 bg-[#111111] pb-4 sm:pb-6 lg:pb-8">
-        <div className="absolute inset-x-0 bottom-0 top-[88%] sm:top-[72%] bg-[#111111] -z-10 pt-[0px] pb-[0px] mt-[-25px] mb-[-25px]"></div>
         <div className="container-custom mx-auto relative">
           <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-100 overflow-hidden relative z-30 -translate-y-10 sm:-translate-y-6 lg:-translate-y-8">
             {trustBadges.map((feature, i) => {
