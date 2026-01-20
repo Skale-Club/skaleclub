@@ -304,7 +304,28 @@ export default function Home() {
           }}
         ></div>
       </section>
-      
+      {/* Trust Badges */}
+      <section className="relative z-20 -mt-16 sm:-mt-16 lg:-mt-24 bg-[#111111] pb-4 sm:pb-6 lg:pb-8">
+        <div className="container-custom mx-auto relative">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-100 overflow-hidden relative z-30 -translate-y-10 sm:-translate-y-6 lg:-translate-y-8">
+            {trustBadges.map((feature, i) => {
+              const iconKey = (feature.icon || '').toLowerCase();
+              const Icon = badgeIconMap[iconKey] || badgeIconMap.star || Star;
+              return (
+                <div key={i} className="p-8 flex items-center gap-6 hover:bg-gray-50 transition-colors">
+                  <div className="w-12 h-12 bg-blue-50 text-primary rounded-full flex items-center justify-center shrink-0">
+                    <Icon className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-[#1D1D1D]">{feature.title}</h3>
+                    <p className="text-sm text-slate-500">{feature.description}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
       <ConsultingStepsSection
         section={homepageContent.consultingStepsSection}
         onCtaClick={handleConsultingCta}
