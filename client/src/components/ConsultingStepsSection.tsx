@@ -61,6 +61,16 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
   const lastMoveXRef = useRef<number>(0);
   const momentumFrameRef = useRef<number | null>(null);
 
+  // Helper to wrap scroll position for infinite loop
+  const wrapScrollPosition = (track: HTMLDivElement) => {
+    const maxScroll = track.scrollWidth / 2;
+    if (track.scrollLeft >= maxScroll) {
+      track.scrollLeft -= maxScroll;
+    } else if (track.scrollLeft < 0) {
+      track.scrollLeft += maxScroll;
+    }
+  };
+
   useEffect(() => {
     const track = trackRef.current;
     if (!track) return;
@@ -70,10 +80,7 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
     const step = () => {
       if (!isPaused) {
         track.scrollLeft += speed;
-        const maxScroll = track.scrollWidth / 2;
-        if (track.scrollLeft >= maxScroll) {
-          track.scrollLeft -= maxScroll;
-        }
+        wrapScrollPosition(track);
       }
       animationFrame = requestAnimationFrame(step);
     };
@@ -110,11 +117,12 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
       const track = trackRef.current;
       if (!track) return;
 
-      const friction = 0.95;
+      const friction = 0.92;
       velocityRef.current *= friction;
 
-      if (Math.abs(velocityRef.current) > 0.5) {
+      if (Math.abs(velocityRef.current) > 0.3) {
         track.scrollLeft -= velocityRef.current;
+        wrapScrollPosition(track);
         momentumFrameRef.current = requestAnimationFrame(applyMomentum);
       } else {
         velocityRef.current = 0;
@@ -211,7 +219,7 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
   return (
     <section
       id={sectionId}
-      className="relative py-14 md:py-16 bg-gradient-to-br from-[#f7f9fc] via-white to-[#eaf1ff] overflow-hidden"
+      className="relative pt-24 md:pt-28 pb-14 md:pb-16 -mt-16 sm:-mt-16 lg:-mt-20 bg-gradient-to-br from-[#f7f9fc] via-white to-[#eaf1ff] overflow-hidden"
     >
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute w-80 h-80 bg-primary/5 blur-3xl -left-20 top-0 rounded-full" />
@@ -246,7 +254,6 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
           <div
             ref={trackRef}
             className={`flex gap-6 md:gap-7 xl:gap-8 overflow-x-scroll overflow-y-visible no-scrollbar pt-2 pb-10 select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-            style={{ scrollBehavior: isDragging ? 'auto' : 'smooth' }}
           >
             {stepsLoop.map((step, index) => {
               const Icon = getStepIcon(step.icon);

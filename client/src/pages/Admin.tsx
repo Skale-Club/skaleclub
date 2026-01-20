@@ -1430,19 +1430,62 @@ function HeroSettingsSection() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Imagem URL</Label>
-            <div className="relative">
-              <Input
-                value={aboutImageUrl}
-                onChange={(e) => {
-                  setAboutImageUrl(e.target.value);
-                  handleFieldUpdate('aboutImageUrl', e.target.value);
-                }}
-                placeholder="https://example.com/about-image.jpg"
-              />
-              <SavedIndicator field="aboutImageUrl" />
+            <Label>Imagem de Quem Somos</Label>
+            <div className="flex flex-col gap-3">
+              <div className="aspect-video w-full max-w-md rounded-lg border-2 border-dashed border-border bg-card flex items-center justify-center overflow-hidden relative group">
+                {aboutImageUrl ? (
+                  <img src={aboutImageUrl} alt="About preview" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="text-center p-4">
+                    <Image className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-xs text-muted-foreground">Imagem da Seção</p>
+                  </div>
+                )}
+                <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      try {
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        const res = await fetch('/api/upload-local', {
+                          method: 'POST',
+                          body: formData
+                        });
+                        if (!res.ok) throw new Error('Upload failed');
+                        const { path } = await res.json();
+                        setAboutImageUrl(path);
+                        handleFieldUpdate('aboutImageUrl', path);
+                        toast({ title: 'Sucesso', description: 'Imagem enviada com sucesso!' });
+                      } catch (error: any) {
+                        toast({ 
+                          title: 'Erro no upload', 
+                          description: error.message, 
+                          variant: 'destructive' 
+                        });
+                      }
+                    }} 
+                    accept="image/*" 
+                  />
+                  <Plus className="w-8 h-8 text-white" />
+                </label>
+              </div>
+              <div className="relative max-w-md">
+                <Input
+                  value={aboutImageUrl}
+                  onChange={(e) => {
+                    setAboutImageUrl(e.target.value);
+                    handleFieldUpdate('aboutImageUrl', e.target.value);
+                  }}
+                  placeholder="Ou cole a URL da imagem (https://...)"
+                  data-testid="input-about-image"
+                />
+                <SavedIndicator field="aboutImageUrl" />
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">URL da imagem para a seção "Quem Somos"</p>
           </div>
         </div>
 
