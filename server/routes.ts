@@ -989,6 +989,7 @@ export async function registerRoutes(
       const parsed = formLeadProgressSchema.parse(req.body);
       const settings = await storage.getCompanySettings();
       const formConfig = settings?.formConfig || DEFAULT_FORM_CONFIG;
+      const companyName = settings?.companyName || 'Skleanings';
       const totalQuestions = formConfig.questions.length || DEFAULT_FORM_CONFIG.questions.length;
       const questionNumber = Math.min(parsed.questionNumber, totalQuestions);
       const payload = {
@@ -998,11 +999,11 @@ export async function registerRoutes(
       };
       let lead = await storage.upsertFormLeadProgress(payload, { userAgent: req.get('user-agent') || undefined }, formConfig);
 
-      if (lead.formCompleto && lead.classificacao === 'QUENTE' && !lead.notificacaoEnviada) {
+      if (lead.formCompleto && !lead.notificacaoEnviada) {
         try {
           const twilioSettings = await storage.getTwilioSettings();
           if (twilioSettings) {
-            const notifyResult = await sendHotLeadNotification(twilioSettings, lead);
+            const notifyResult = await sendHotLeadNotification(twilioSettings, lead, companyName);
             if (notifyResult.success) {
               const updated = await storage.updateFormLead(lead.id, { notificacaoEnviada: true });
               lead = updated || { ...lead, notificacaoEnviada: true };
@@ -1798,7 +1799,9 @@ Sitemap: ${canonicalUrl}/sitemap.xml
         if (avgSeconds >= threshold && canAlert) {
           const twilioSettings = await storage.getTwilioSettings();
           if (twilioSettings) {
-            const result = await sendLowPerformanceAlert(twilioSettings, avgSeconds, samples);
+            const company = await storage.getCompanySettings();
+            const companyName = company?.companyName || 'Skleanings';
+            const result = await sendLowPerformanceAlert(twilioSettings, avgSeconds, samples, companyName);
             if (result.success) {
               lastLowPerformanceAlertAt = now;
             }
@@ -1970,9 +1973,11 @@ Sitemap: ${canonicalUrl}/sitemap.xml
         });
 
         // Send Twilio notification for new chat
+        const company = await storage.getCompanySettings();
+        const companyName = company?.companyName || 'Skleanings';
         const twilioSettings = await storage.getTwilioSettings();
         if (twilioSettings && isNewConversation) {
-          sendNewChatNotification(twilioSettings, conversationId, input.pageUrl).catch(err => {
+          sendNewChatNotification(twilioSettings, conversationId, input.pageUrl, companyName).catch(err => {
             console.error('Failed to send Twilio notification:', err);
           });
         }
@@ -2560,6 +2565,34 @@ You: "Thanks John! What's your email?"
   // Twilio Integration Routes
   // ===============================
 
+  const cleanPhone = (value?: string | null): string =>
+    (value || "").toString().replace(/[\s()-]/g, "").trim();
+
+  const parseRecipients = (numbers?: string[] | null, fallback?: string | null): string[] => {
+    const recipients: string[] = [];
+    const push = (val?: string | null) => {
+      const cleaned = cleanPhone(val);
+      if (cleaned) recipients.push(cleaned);
+    };
+
+    if (Array.isArray(numbers)) {
+      for (const num of numbers) push(num);
+    }
+    push(fallback);
+
+    return Array.from(new Set(recipients));
+  };
+
+  const twilioSettingsSchema = z.object({
+    accountSid: z.string().trim().optional(),
+    authToken: z.string().trim().optional(),
+    fromPhoneNumber: z.string().trim().optional(),
+    toPhoneNumber: z.string().trim().optional(),
+    toPhoneNumbers: z.array(z.string().trim()).optional(),
+    notifyOnNewChat: z.boolean().optional(),
+    enabled: z.boolean().optional(),
+  });
+
   // Get Twilio settings
   app.get('/api/integrations/twilio', requireAdmin, async (_req, res) => {
     try {
@@ -2571,11 +2604,15 @@ You: "Thanks John! What's your email?"
           authToken: '',
           fromPhoneNumber: '',
           toPhoneNumber: '',
+          toPhoneNumbers: [],
           notifyOnNewChat: true
         });
       }
+      const recipients = parseRecipients(settings.toPhoneNumbers as string[] | undefined, settings.toPhoneNumber);
       res.json({
         ...settings,
+        toPhoneNumbers: recipients,
+        toPhoneNumber: recipients[0] || '',
         authToken: settings.authToken ? '********' : ''
       });
     } catch (err) {
@@ -2586,21 +2623,37 @@ You: "Thanks John! What's your email?"
   // Save Twilio settings
   app.put('/api/integrations/twilio', requireAdmin, async (req, res) => {
     try {
-      const { accountSid, authToken, fromPhoneNumber, toPhoneNumber, notifyOnNewChat, enabled } = req.body;
-
+      const parsed = twilioSettingsSchema.parse(req.body);
       const existingSettings = await storage.getTwilioSettings();
+
+      const accountSid = parsed.accountSid?.trim() || existingSettings?.accountSid;
+      const fromPhoneNumber = parsed.fromPhoneNumber?.trim() || existingSettings?.fromPhoneNumber;
+      const toPhoneNumbers = parseRecipients(
+        parsed.toPhoneNumbers,
+        parsed.toPhoneNumber || existingSettings?.toPhoneNumber
+      );
+      const tokenFromRequest = parsed.authToken && parsed.authToken !== '********'
+        ? parsed.authToken.trim()
+        : undefined;
+      const authTokenToPersist = tokenFromRequest || existingSettings?.authToken;
+      const enabled = parsed.enabled ?? existingSettings?.enabled ?? false;
+
+      if (enabled && (!accountSid || !authTokenToPersist || !fromPhoneNumber || !toPhoneNumbers.length)) {
+        return res.status(400).json({ message: 'All Twilio fields are required to enable notifications' });
+      }
 
       const settingsToSave: any = {
         accountSid,
         fromPhoneNumber,
-        toPhoneNumber,
-        notifyOnNewChat: notifyOnNewChat ?? true,
-        enabled: enabled ?? false
+        toPhoneNumber: toPhoneNumbers[0] || null,
+        toPhoneNumbers,
+        notifyOnNewChat: parsed.notifyOnNewChat ?? existingSettings?.notifyOnNewChat ?? true,
+        enabled
       };
 
       // Only update authToken if a new one is provided (not masked)
-      if (authToken && authToken !== '********') {
-        settingsToSave.authToken = authToken;
+      if (tokenFromRequest) {
+        settingsToSave.authToken = tokenFromRequest;
       } else if (existingSettings?.authToken) {
         settingsToSave.authToken = existingSettings.authToken;
       }
@@ -2612,6 +2665,9 @@ You: "Thanks John! What's your email?"
         authToken: settings.authToken ? '********' : ''
       });
     } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid Twilio settings payload', errors: err.errors });
+      }
       res.status(400).json({ message: (err as Error).message });
     }
   });
@@ -2619,36 +2675,53 @@ You: "Thanks John! What's your email?"
   // Test Twilio connection
   app.post('/api/integrations/twilio/test', requireAdmin, async (req, res) => {
     try {
-      const { accountSid, authToken, fromPhoneNumber, toPhoneNumber } = req.body;
+      const parsed = twilioSettingsSchema.parse(req.body);
+      const existingSettings = await storage.getTwilioSettings();
 
-      let tokenToTest = authToken;
-      if (authToken === '********' || !authToken) {
-        const existingSettings = await storage.getTwilioSettings();
-        tokenToTest = existingSettings?.authToken;
-      }
+      const accountSid = parsed.accountSid?.trim() || existingSettings?.accountSid;
+      const fromPhoneNumber = parsed.fromPhoneNumber?.trim() || existingSettings?.fromPhoneNumber;
+      const toPhoneNumbers = parseRecipients(
+        parsed.toPhoneNumbers,
+        parsed.toPhoneNumber || existingSettings?.toPhoneNumber
+      );
+      const tokenToTest = parsed.authToken && parsed.authToken !== '********'
+        ? parsed.authToken.trim()
+        : existingSettings?.authToken;
 
-      if (!accountSid || !tokenToTest || !fromPhoneNumber || !toPhoneNumber) {
+      if (!accountSid || !tokenToTest || !fromPhoneNumber || !toPhoneNumbers.length) {
         return res.status(400).json({
           success: false,
           message: 'All fields are required to test Twilio connection'
         });
       }
 
+      const company = await storage.getCompanySettings();
+      const companyName = company?.companyName || 'Skleanings';
+
       // Send test SMS using Twilio
       const twilio = await import('twilio');
       const client = twilio.default(accountSid, tokenToTest);
 
-      await client.messages.create({
-        body: 'Test message from Skleanings - Your Twilio integration is working!',
-        from: fromPhoneNumber,
-        to: toPhoneNumber
-      });
+      for (const to of toPhoneNumbers) {
+        await client.messages.create({
+          body: `Test message from ${companyName} - Your Twilio integration is working!`,
+          from: fromPhoneNumber,
+          to
+        });
+      }
 
       res.json({
         success: true,
         message: 'Test SMS sent successfully!'
       });
     } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid Twilio test payload',
+          errors: err.errors
+        });
+      }
       res.status(500).json({
         success: false,
         message: err?.message || 'Failed to send test SMS'

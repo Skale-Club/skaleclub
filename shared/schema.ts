@@ -122,6 +122,7 @@ export const twilioSettings = pgTable("twilio_settings", {
   authToken: text("auth_token"),
   fromPhoneNumber: text("from_phone_number"),
   toPhoneNumber: text("to_phone_number"),
+  toPhoneNumbers: jsonb("to_phone_numbers").$type<string[]>().default([]),
   notifyOnNewChat: boolean("notify_on_new_chat").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

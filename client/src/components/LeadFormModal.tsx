@@ -231,11 +231,13 @@ export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
   const [utmParams, setUtmParams] = useState({ source: "", medium: "", campaign: "" });
   const [selectedCountryCode, setSelectedCountryCode] = useState<string>(DEFAULT_COUNTRY);
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 256 });
   const autoSaveRef = useRef<number>();
   const answersRef = useRef<Answers>(buildInitialAnswers(DEFAULT_FORM_CONFIG));
   const syncedOnOpenRef = useRef(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const countryDropdownRef = useRef<HTMLDivElement | null>(null);
+  const countryButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const selectedCountry = useMemo(() =>
     COUNTRIES.find(c => c.code === selectedCountryCode) || COUNTRIES[0],
@@ -636,24 +638,24 @@ export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
         exit={{ opacity: 0 }}
       >
         <div className="w-full max-w-[640px]">
-          <div className="relative overflow-hidden bg-white text-slate-900 h-full sm:h-auto rounded-none sm:rounded-3xl shadow-2xl" ref={containerRef}>
+          <div className="relative bg-white text-slate-900 h-full sm:h-auto rounded-none sm:rounded-3xl shadow-2xl overflow-hidden" ref={containerRef}>
             <button
               className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
               aria-label="Fechar formulário"
               onClick={handleClose}
             >
               <X className="h-5 w-5" />
-            </button>
+          </button>
 
-            <div className="flex flex-col h-full">
-              <div className="w-full h-1 bg-slate-100">
-                <div
-                  className="h-full bg-[#406EF1] transition-all duration-300"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
+          <div className="flex flex-col h-full">
+            <div className="absolute inset-x-6 sm:inset-x-10 h-3 -top-[6px] bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[#406EF1] transition-all duration-300 rounded-full"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
 
-              <div className="px-6 pb-6 pt-14 sm:pt-12 sm:px-10 space-y-4 overflow-y-auto max-h-[85vh]">
+            <div className="px-6 pb-6 pt-14 sm:pt-12 sm:px-10 space-y-4 overflow-y-auto max-h-[85vh]">
                 {storageAvailable ? null : (
                   <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm flex items-start gap-2">
                     <AlertCircle className="h-4 w-4 mt-0.5" />
@@ -703,35 +705,51 @@ export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
                         {currentQuestion.type === "tel" && (
                           <div className="flex gap-2">
                             {/* Country selector */}
-                            <div className="relative" ref={countryDropdownRef}>
+                            <div className="relative flex-shrink-0" ref={countryDropdownRef}>
                               <button
+                                ref={countryButtonRef}
                                 type="button"
-                                onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
+                                onClick={() => {
+                                  if (!isCountryDropdownOpen && countryButtonRef.current) {
+                                    const rect = countryButtonRef.current.getBoundingClientRect();
+                                    setDropdownPosition({
+                                      top: rect.bottom + 4,
+                                      left: rect.left,
+                                      width: Math.max(256, rect.width),
+                                    });
+                                  }
+                                  setIsCountryDropdownOpen(!isCountryDropdownOpen);
+                                }}
                                 className={clsx(
-                                  "flex items-center gap-1 rounded-xl border px-3 py-3 text-lg transition-colors h-[52px] min-w-[100px]",
+                                  "flex items-center gap-1 rounded-xl border px-2 sm:px-3 py-3 text-base sm:text-lg transition-colors h-[52px]",
                                   errorMessage ? "border-red-400" : "border-slate-200",
                                   "hover:border-[#406EF1]/70 focus:border-[#406EF1] focus:ring-2 focus:ring-[#406EF1]/30"
                                 )}
                               >
-                                <span className="text-xl">{selectedCountry.flag}</span>
-                                <span className="text-sm text-slate-600">{selectedCountry.dialCode}</span>
+                                <span className="text-lg sm:text-xl">{selectedCountry.flag}</span>
+                                <span className="text-xs sm:text-sm text-slate-600">{selectedCountry.dialCode}</span>
                                 <ChevronDown className={clsx(
-                                  "h-4 w-4 text-slate-400 transition-transform",
+                                  "h-3 w-3 sm:h-4 sm:w-4 text-slate-400 transition-transform",
                                   isCountryDropdownOpen && "rotate-180"
                                 )} />
                               </button>
 
-                              {/* Dropdown */}
-                              <AnimatePresence>
-                                {isCountryDropdownOpen && (
+                              {/* Dropdown - rendered via portal to avoid overflow clipping */}
+                              {isCountryDropdownOpen && createPortal(
+                                <AnimatePresence>
                                   <motion.div
                                     initial={{ opacity: 0, y: -10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -10 }}
                                     transition={{ duration: 0.15 }}
-                                    className="absolute z-50 mt-1 w-64 rounded-xl border border-slate-200 bg-white shadow-lg overflow-hidden"
+                                    className="fixed z-[200] rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden"
+                                    style={{
+                                      top: dropdownPosition.top,
+                                      left: dropdownPosition.left,
+                                      width: dropdownPosition.width,
+                                    }}
                                   >
-                                    <div className="max-h-60 overflow-y-auto py-1">
+                                    <div className="max-h-48 overflow-y-auto py-1">
                                       {COUNTRIES.map((country) => (
                                         <button
                                           key={country.code}
@@ -754,8 +772,9 @@ export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
                                       ))}
                                     </div>
                                   </motion.div>
-                                )}
-                              </AnimatePresence>
+                                </AnimatePresence>,
+                                document.body
+                              )}
                             </div>
 
                             {/* Phone input */}
@@ -765,7 +784,7 @@ export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
                               onChange={e => handleAnswerChange(currentQuestion.id, e.target.value)}
                               placeholder={selectedCountry.format.replace(/#/g, "0")}
                               className={clsx(
-                                "flex-1 rounded-xl border px-4 py-3 text-lg transition-colors",
+                                "flex-1 min-w-0 rounded-xl border px-3 sm:px-4 py-3 text-base sm:text-lg transition-colors",
                                 errorMessage ? "border-red-400" : "border-slate-200",
                                 "focus:border-[#406EF1] focus:ring-2 focus:ring-[#406EF1]/30"
                               )}

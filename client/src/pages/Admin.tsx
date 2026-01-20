@@ -8632,6 +8632,7 @@ interface TwilioSettings {
   authToken: string;
   fromPhoneNumber: string;
   toPhoneNumber: string;
+  toPhoneNumbers: string[];
   notifyOnNewChat: boolean;
 }
 
@@ -8643,8 +8644,10 @@ function TwilioSection() {
     authToken: '',
     fromPhoneNumber: '',
     toPhoneNumber: '',
+    toPhoneNumbers: [],
     notifyOnNewChat: true
   });
+  const [newRecipient, setNewRecipient] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<'idle' | 'success' | 'error'>('idle');
@@ -8654,16 +8657,50 @@ function TwilioSection() {
     queryKey: ['/api/integrations/twilio']
   });
 
+  const cleanPhone = useCallback((value: string) => value.replace(/[\s()-]/g, '').trim(), []);
+
   useEffect(() => {
     if (twilioSettings) {
-      setSettings(twilioSettings);
+      const recipients = (twilioSettings.toPhoneNumbers && twilioSettings.toPhoneNumbers.length)
+        ? twilioSettings.toPhoneNumbers
+        : twilioSettings.toPhoneNumber
+          ? [twilioSettings.toPhoneNumber]
+          : [];
+
+      setSettings({
+        ...twilioSettings,
+        toPhoneNumbers: recipients,
+        toPhoneNumber: recipients[0] || '',
+      });
     }
   }, [twilioSettings]);
+
+  const handleAddRecipient = () => {
+    const cleaned = cleanPhone(newRecipient);
+    if (!cleaned) return;
+    if (settings.toPhoneNumbers.includes(cleaned)) {
+      setNewRecipient('');
+      return;
+    }
+    const updated = [...settings.toPhoneNumbers, cleaned];
+    setSettings(prev => ({ ...prev, toPhoneNumbers: updated, toPhoneNumber: updated[0] || '' }));
+    setNewRecipient('');
+  };
+
+  const handleRemoveRecipient = (value: string) => {
+    const updated = settings.toPhoneNumbers.filter(num => num !== value);
+    setSettings(prev => ({ ...prev, toPhoneNumbers: updated, toPhoneNumber: updated[0] || '' }));
+  };
 
   const saveSettings = async () => {
     setIsSaving(true);
     try {
-      await apiRequest('PUT', '/api/integrations/twilio', settings);
+      const recipients = settings.toPhoneNumbers;
+      await apiRequest('PUT', '/api/integrations/twilio', {
+        ...settings,
+        toPhoneNumbers: recipients,
+        toPhoneNumber: recipients[0] || ''
+      });
       queryClient.invalidateQueries({ queryKey: ['/api/integrations/twilio'] });
       toast({ title: 'Twilio settings saved successfully' });
     } catch (error: any) {
@@ -8689,6 +8726,7 @@ function TwilioSection() {
           accountSid: settings.accountSid,
           authToken: settings.authToken,
           fromPhoneNumber: settings.fromPhoneNumber,
+          toPhoneNumbers: settings.toPhoneNumbers,
           toPhoneNumber: settings.toPhoneNumber
         }),
         credentials: 'include'
@@ -8730,7 +8768,16 @@ function TwilioSection() {
       });
       return;
     }
-    const newSettings = { ...settings, enabled: checked };
+    const recipients = settings.toPhoneNumbers;
+    if (checked && !recipients.length) {
+      toast({
+        title: 'Add at least one recipient',
+        description: 'Include at least one To phone number before enabling Twilio.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    const newSettings = { ...settings, enabled: checked, toPhoneNumbers: recipients, toPhoneNumber: recipients[0] || '' };
     setSettings(newSettings);
     setIsSaving(true);
     try {
@@ -8830,18 +8877,47 @@ function TwilioSection() {
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="twilio-to-phone">To Phone Number</Label>
-              <Input
-                id="twilio-to-phone"
-                type="tel"
-                value={settings.toPhoneNumber}
-                onChange={(e) => setSettings(prev => ({ ...prev, toPhoneNumber: e.target.value }))}
-                placeholder="+1234567890"
-                data-testid="input-twilio-to-phone"
-              />
-              <p className="text-xs text-muted-foreground">
-                Phone number to receive notifications
-              </p>
+              <Label htmlFor="twilio-to-phone">To Phone Numbers</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="twilio-to-phone"
+                  type="tel"
+                  value={newRecipient}
+                  onChange={(e) => setNewRecipient(e.target.value)}
+                  placeholder="+1234567890"
+                  data-testid="input-twilio-to-phone"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleAddRecipient}
+                  disabled={!newRecipient.trim()}
+                >
+                  + Add
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Phone numbers to receive notifications</p>
+              {settings.toPhoneNumbers.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {settings.toPhoneNumbers.map((num) => (
+                    <div
+                      key={num}
+                      className="flex items-center gap-2 px-3 py-1 rounded-full bg-muted text-sm"
+                    >
+                      <span>{num}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveRecipient(num)}
+                        className="h-6 px-2"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -8870,7 +8946,13 @@ function TwilioSection() {
               variant="outline"
               className={testButtonClass}
               onClick={testConnection}
-              disabled={isTesting || !settings.accountSid || !settings.authToken || !settings.fromPhoneNumber || !settings.toPhoneNumber}
+              disabled={
+                isTesting
+                || !settings.accountSid
+                || !settings.authToken
+                || !settings.fromPhoneNumber
+                || !(settings.toPhoneNumbers?.length)
+              }
               data-testid="button-test-twilio"
             >
               {isTesting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}

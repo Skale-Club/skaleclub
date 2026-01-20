@@ -15,7 +15,7 @@ export default function PrivacyPolicy() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Header */}
-      <div className="bg-primary text-white py-16">
+      <div className="bg-primary text-white pt-28 pb-16">
         <div className="container-custom">
           <div className="flex items-center gap-3 mb-4">
             <Shield className="w-10 h-10" />

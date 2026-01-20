@@ -25,8 +25,30 @@ function getStepIcon(icon?: string) {
   return iconMap[key] || Sparkles;
 }
 
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return false;
+
+    const media = window.matchMedia(query);
+    setMatches(media.matches);
+
+    const listener = (event: MediaQueryListEvent) => setMatches(event.matches);
+    media.addEventListener('change', listener);
+
+    return () => {
+      media.removeEventListener('change', listener);
+    };
+  }, [query]);
+
+  return matches;
+}
+
 export function ConsultingStepsSection({ section, onCtaClick }: Props) {
   if (!section || section.enabled === false) return null;
+
+  const isMobile = useMediaQuery('(max-width: 767px)');
 
   const sortedSteps = useMemo(() => {
     const steps = (section.steps || []).length ? [...(section.steps || [])] : [];
@@ -54,12 +76,18 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
     startX: 0,
     startScroll: 0,
   });
+  const isPausedRef = useRef(isPaused);
   const resumeTimerRef = useRef<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const velocityRef = useRef<number>(0);
   const lastMoveTimeRef = useRef<number>(0);
   const lastMoveXRef = useRef<number>(0);
   const momentumFrameRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (isMobile) return;
+    isPausedRef.current = isPaused;
+  }, [isPaused, isMobile]);
 
   // Helper to wrap scroll position for infinite loop
   const wrapScrollPosition = (track: HTMLDivElement) => {
@@ -72,13 +100,14 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
   };
 
   useEffect(() => {
+    if (isMobile) return;
     const track = trackRef.current;
     if (!track) return;
     let animationFrame: number;
     const speed = 0.6;
 
     const step = () => {
-      if (!isPaused) {
+      if (!isPausedRef.current && track.scrollWidth > track.clientWidth) {
         track.scrollLeft += speed;
         wrapScrollPosition(track);
       }
@@ -87,7 +116,18 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
 
     animationFrame = requestAnimationFrame(step);
     return () => cancelAnimationFrame(animationFrame);
-  }, [isPaused, stepsLoop.length]);
+  }, [isMobile, stepsLoop.length]);
+
+  // Avoid getting stuck paused on touch devices (e.g., missed touchend)
+  useEffect(() => {
+    if (isMobile || !isPaused || dragStateRef.current.isDown) return;
+
+    const resumeFallback = window.setTimeout(() => {
+      setIsPaused(false);
+    }, 1500);
+
+    return () => window.clearTimeout(resumeFallback);
+  }, [isPaused, isMobile]);
 
   // Helpers to pause/resume auto-scroll when user interacts
   const pauseAutoScroll = () => {
@@ -108,10 +148,12 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
     }, delayMs);
   };
 
-  // Drag to scroll with momentum
+  // Drag to scroll with momentum (supports both mouse and touch)
   useEffect(() => {
+    if (isMobile) return;
     const track = trackRef.current;
     if (!track) return;
+    const supportsPointerEvents = typeof window !== 'undefined' && 'PointerEvent' in window;
 
     const applyMomentum = () => {
       const track = trackRef.current;
@@ -134,54 +176,70 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
       }
     };
 
-    const handlePointerDown = (e: PointerEvent) => {
+    const getClientX = (e: PointerEvent | TouchEvent): number => {
+      if ('touches' in e) {
+        return e.touches[0]?.clientX ?? 0;
+      }
+      return e.clientX;
+    };
+
+    const handleStart = (e: PointerEvent | TouchEvent) => {
       pauseAutoScroll();
 
-      // Cancel any ongoing momentum
       if (momentumFrameRef.current) {
         cancelAnimationFrame(momentumFrameRef.current);
         momentumFrameRef.current = null;
       }
 
+      const clientX = getClientX(e);
       velocityRef.current = 0;
       setIsDragging(true);
       dragStateRef.current = {
         isDown: true,
-        startX: e.clientX,
+        startX: clientX,
         startScroll: track.scrollLeft,
       };
-      lastMoveXRef.current = e.clientX;
+      lastMoveXRef.current = clientX;
       lastMoveTimeRef.current = Date.now();
-      track.setPointerCapture?.(e.pointerId);
+
+      if ('pointerId' in e) {
+        track.setPointerCapture?.(e.pointerId);
+      }
     };
 
-    const handlePointerMove = (e: PointerEvent) => {
+    const handleMove = (e: PointerEvent | TouchEvent) => {
       if (!dragStateRef.current.isDown) return;
-      e.preventDefault();
 
+      if (('touches' in e && e.cancelable) || ('pointerType' in e && e.pointerType === 'touch')) {
+        e.preventDefault();
+      }
+
+      const clientX = getClientX(e);
       const now = Date.now();
       const timeDelta = now - lastMoveTimeRef.current;
-      const diff = e.clientX - dragStateRef.current.startX;
+      const diff = clientX - dragStateRef.current.startX;
 
-      // Calculate velocity for momentum
       if (timeDelta > 0) {
-        const moveDelta = e.clientX - lastMoveXRef.current;
+        const moveDelta = clientX - lastMoveXRef.current;
         velocityRef.current = moveDelta / Math.max(timeDelta, 1) * 10;
       }
 
       track.scrollLeft = dragStateRef.current.startScroll - diff;
 
-      lastMoveXRef.current = e.clientX;
+      lastMoveXRef.current = clientX;
       lastMoveTimeRef.current = now;
     };
 
-    const handlePointerUp = (e: PointerEvent) => {
+    const handleEnd = (e: PointerEvent | TouchEvent) => {
       if (dragStateRef.current.isDown) {
         dragStateRef.current.isDown = false;
-        track.releasePointerCapture?.(e.pointerId);
+
+        if ('pointerId' in e) {
+          track.releasePointerCapture?.(e.pointerId);
+        }
+
         setIsDragging(false);
 
-        // Apply momentum if there's significant velocity
         if (Math.abs(velocityRef.current) > 1) {
           applyMomentum();
         } else {
@@ -190,30 +248,82 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
       }
     };
 
-    track.addEventListener('pointerdown', handlePointerDown);
-    track.addEventListener('pointermove', handlePointerMove);
-    track.addEventListener('pointerup', handlePointerUp);
-    track.addEventListener('pointerleave', handlePointerUp);
-    track.addEventListener('pointercancel', handlePointerUp);
+    if (supportsPointerEvents) {
+      track.addEventListener('pointerdown', handleStart);
+      track.addEventListener('pointermove', handleMove);
+      track.addEventListener('pointerup', handleEnd);
+      track.addEventListener('pointerleave', handleEnd);
+      track.addEventListener('pointercancel', handleEnd);
+    } else {
+      track.addEventListener('touchstart', handleStart, { passive: false });
+      track.addEventListener('touchmove', handleMove, { passive: false });
+      track.addEventListener('touchend', handleEnd);
+      track.addEventListener('touchcancel', handleEnd);
+    }
 
     return () => {
-      track.removeEventListener('pointerdown', handlePointerDown);
-      track.removeEventListener('pointermove', handlePointerMove);
-      track.removeEventListener('pointerup', handlePointerUp);
-      track.removeEventListener('pointerleave', handlePointerUp);
-      track.removeEventListener('pointercancel', handlePointerUp);
+      if (supportsPointerEvents) {
+        track.removeEventListener('pointerdown', handleStart);
+        track.removeEventListener('pointermove', handleMove);
+        track.removeEventListener('pointerup', handleEnd);
+        track.removeEventListener('pointerleave', handleEnd);
+        track.removeEventListener('pointercancel', handleEnd);
+      } else {
+        track.removeEventListener('touchstart', handleStart);
+        track.removeEventListener('touchmove', handleMove);
+        track.removeEventListener('touchend', handleEnd);
+        track.removeEventListener('touchcancel', handleEnd);
+      }
 
       if (momentumFrameRef.current) {
         cancelAnimationFrame(momentumFrameRef.current);
       }
     };
-  }, []);
+  }, [isMobile]);
 
   const handleCta = (event: MouseEvent<HTMLAnchorElement>) => {
     if (onCtaClick) {
       event.preventDefault();
       onCtaClick();
     }
+  };
+
+  const renderStep = (step: any, index: number) => {
+    const Icon = getStepIcon(step.icon);
+    const numberLabel = step.numberLabel || String(index + 1).padStart(2, '0');
+    return (
+      <div
+        key={`${numberLabel}-${step.title}-${index}`}
+        className="group relative overflow-visible rounded-3xl bg-white/90 border border-slate-100 shadow-[0_24px_60px_-60px_rgba(15,23,42,0.45)] hover:-translate-y-2 hover:shadow-[0_28px_70px_-55px_rgba(23,37,84,0.4)] transition-all duration-300 backdrop-blur flex-shrink-0 w-full md:w-[88%] sm:w-[70%] md:w-[52%] lg:w-[36%] xl:w-[30%]"
+      >
+        <div className="absolute right-4 top-3 text-6xl font-black text-slate-100/80 pointer-events-none">
+          {numberLabel}
+        </div>
+        <div className="relative z-10 p-6 space-y-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 min-w-12 flex-shrink-0 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+                <Icon className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-[11px] uppercase tracking-[0.12em] text-slate-500 font-semibold">Etapa {numberLabel}</p>
+                <h3 className="text-xl font-bold text-slate-900 leading-tight">{step.title}</h3>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-px">
+            <div className="rounded-t-2xl border border-slate-100 bg-slate-50/80 p-4">
+              <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500 font-semibold">O que fazemos</p>
+              <p className="text-slate-700 leading-relaxed mt-2 text-sm">{step.whatWeDo}</p>
+            </div>
+            <div className="rounded-b-2xl border border-blue-100 bg-gradient-to-r from-[#eef2ff] to-[#e0eaff] p-4">
+              <p className="text-[11px] uppercase tracking-[0.14em] text-blue-700 font-semibold">Você sai com</p>
+              <p className="text-slate-800 leading-relaxed mt-2 text-sm font-semibold">{step.outcome}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -244,56 +354,27 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
         </div>
 
         <div
-          className="relative w-screen left-1/2 -translate-x-1/2 px-4 sm:px-6 md:px-10 overflow-hidden"
-          onMouseEnter={() => setIsPaused(true)}
-          onMouseLeave={() => setIsPaused(false)}
-          aria-label="Etapas da consultoria em carrossel"
+          className="relative w-screen left-1/2 -translate-x-1/2 px-4 sm:px-6 md:px-10"
+          onMouseEnter={isMobile ? undefined : () => setIsPaused(true)}
+          onMouseLeave={isMobile ? undefined : () => setIsPaused(false)}
+          aria-label="Etapas da consultoria"
         >
-          <div className="pointer-events-none absolute left-0 top-0 h-full w-12 sm:w-16 bg-gradient-to-r from-[#f7f9fc] via-[#f7f9fc] to-transparent z-10" />
-          <div className="pointer-events-none absolute right-0 top-0 h-full w-12 sm:w-16 bg-gradient-to-l from-[#f7f9fc] via-[#f7f9fc] to-transparent z-10" />
-          <div
-            ref={trackRef}
-            className={`flex gap-6 md:gap-7 xl:gap-8 overflow-x-scroll overflow-y-visible no-scrollbar pt-2 pb-10 select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-          >
-            {stepsLoop.map((step, index) => {
-              const Icon = getStepIcon(step.icon);
-              const numberLabel = step.numberLabel || String(index + 1).padStart(2, '0');
-              return (
-                <div
-                  key={`${numberLabel}-${step.title}-${index}`}
-                  className="group relative overflow-visible rounded-3xl bg-white/90 border border-slate-100 shadow-[0_24px_60px_-60px_rgba(15,23,42,0.45)] hover:-translate-y-2 hover:shadow-[0_28px_70px_-55px_rgba(23,37,84,0.4)] transition-all duration-300 backdrop-blur flex-shrink-0 w-[88%] sm:w-[70%] md:w-[52%] lg:w-[36%] xl:w-[30%]"
-                >
-                    <div className="absolute right-4 top-3 text-6xl font-black text-slate-100/80 pointer-events-none">
-                      {numberLabel}
-                    </div>
-                  <div className="relative z-10 p-6 space-y-5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 min-w-12 flex-shrink-0 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
-                          <Icon className="w-6 h-6" />
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-[11px] uppercase tracking-[0.12em] text-slate-500 font-semibold">Etapa {numberLabel}</p>
-                          <h3 className="text-xl font-bold text-slate-900 leading-tight">{step.title}</h3>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-px">
-                      <div className="rounded-t-2xl border border-slate-100 bg-slate-50/80 p-4">
-                        <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500 font-semibold">O que fazemos</p>
-                        <p className="text-slate-700 leading-relaxed mt-2 text-sm">{step.whatWeDo}</p>
-                      </div>
-                      <div className="rounded-b-2xl border border-blue-100 bg-gradient-to-r from-[#eef2ff] to-[#e0eaff] p-4">
-                        <p className="text-[11px] uppercase tracking-[0.14em] text-blue-700 font-semibold">Você sai com</p>
-                        <p className="text-slate-800 leading-relaxed mt-2 text-sm font-semibold">{step.outcome}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          {isMobile ? (
+            <div className="flex flex-col items-center gap-6">
+              {sortedSteps.map(renderStep)}
+            </div>
+          ) : (
+            <>
+              <div className="pointer-events-none absolute left-0 top-0 h-full w-12 sm:w-16 bg-gradient-to-r from-[#f7f9fc] via-[#f7f9fc] to-transparent z-10" />
+              <div className="pointer-events-none absolute right-0 top-0 h-full w-12 sm:w-16 bg-gradient-to-l from-[#f7f9fc] via-[#f7f9fc] to-transparent z-10" />
+              <div
+                ref={trackRef}
+                className={`flex gap-6 md:gap-7 xl:gap-8 overflow-x-scroll overflow-y-visible no-scrollbar pt-2 pb-10 select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+              >
+                {stepsLoop.map(renderStep)}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="container-custom mx-auto px-4 sm:px-6 md:px-10 grid gap-6 lg:grid-cols-[2fr_1fr] items-stretch -mt-6 md:-mt-10">

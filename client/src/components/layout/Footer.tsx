@@ -81,9 +81,9 @@ export function Footer() {
         </div>
       </div>
       <div className="container-custom mx-auto px-4 mt-8 pt-6 border-t border-[#2A2A2A]">
-        <div className="flex flex-col items-center space-y-4 text-center">
+        <div className="flex flex-col md:flex-row items-center md:items-center justify-between gap-4 text-center md:text-left">
           <p className="text-gray-400 text-xs md:text-sm">© {new Date().getFullYear()} {companyName}. Todos os direitos reservados.</p>
-          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 text-xs md:text-sm">
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 text-xs md:text-sm md:justify-end">
             <Link href="/privacy-policy" className="text-gray-400 hover:text-gray-200 transition-colors">Política de Privacidade</Link>
             <Link href="/terms-of-service" className="text-gray-400 hover:text-gray-200 transition-colors">Termos de Serviço</Link>
           </div>

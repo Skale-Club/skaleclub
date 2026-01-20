@@ -566,9 +566,16 @@ export class DatabaseStorage implements IStorage {
 
   async saveTwilioSettings(settings: InsertTwilioSettings): Promise<TwilioSettings> {
     const existing = await this.getTwilioSettings();
+    const toPhoneNumbers = Array.isArray(settings.toPhoneNumbers)
+      ? settings.toPhoneNumbers.map(num => num?.toString() || "").filter(Boolean)
+      : Array.isArray(existing?.toPhoneNumbers)
+        ? (existing.toPhoneNumbers as string[]).map(num => num?.toString() || "").filter(Boolean)
+        : [];
+
     if (existing) {
       const payload = {
         ...settings,
+        toPhoneNumbers,
         authToken: settings.authToken ?? existing.authToken,
         updatedAt: new Date(),
       };
@@ -580,7 +587,10 @@ export class DatabaseStorage implements IStorage {
       return updated;
     }
 
-    const [created] = await db.insert(twilioSettings).values(settings).returning();
+    const [created] = await db.insert(twilioSettings).values({
+      ...settings,
+      toPhoneNumbers,
+    }).returning();
     return created;
   }
 
