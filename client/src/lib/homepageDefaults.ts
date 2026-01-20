@@ -27,7 +27,7 @@ export const DEFAULT_HOMEPAGE_CONTENT: HomepageContent = {
   aboutSection: {
     label: 'Sobre Nós',
     heading: 'Quem Somos',
-    description: 'Somos especialistas em marketing digital para prestadores de serviço nos EUA. Ajudamos empresas de cleaning, landscaping, handyman e outros serviços a gerarem clientes de forma previsível e escalável através de estratégias de aquisição, conversão e otimização.',
+    description: 'Somos especialistas em marketing digital para prestadores de serviço nos EUA. Ajudamos empresas a gerarem clientes de forma previsível e escalável através de estratégias de aquisição, conversão e otimização.',
     defaultImageUrl: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80',
     highlights: [
       {

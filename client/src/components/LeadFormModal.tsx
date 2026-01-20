@@ -831,26 +831,26 @@ export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
                       </motion.div>
                     </AnimatePresence>
 
-                    <div className="mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="mt-8 flex items-center justify-between gap-3">
                       <button
                         type="button"
                         onClick={handleBack}
                         disabled={currentStep === 1}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-3 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full sm:w-auto"
+                        className="inline-flex items-center justify-center rounded-xl border border-slate-300 p-3 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        aria-label="Voltar"
                       >
-                        <ArrowLeft className="h-4 w-4" />
-                        Voltar
+                        <ArrowLeft className="h-5 w-5" />
                       </button>
                       <button
                         type="submit"
                         aria-disabled={!canProceed}
                         className={clsx(
-                          "inline-flex items-center justify-center gap-2 rounded-xl bg-[#406EF1] px-5 py-3 text-white font-semibold hover:bg-[#355CD0] transition-colors w-full sm:w-auto",
+                          "inline-flex items-center justify-center gap-2 rounded-xl bg-[#406EF1] px-6 py-3 text-white font-semibold hover:bg-[#355CD0] transition-colors flex-1",
                           !canProceed && "opacity-60 cursor-not-allowed"
                         )}
                       >
                         {isLastStep ? "Finalizar" : "Próximo"}
-                        <ArrowRight className="h-4 w-4" />
+                        <ArrowRight className="h-4 w-4 flex-shrink-0" />
                       </button>
                     </div>
                   </form>

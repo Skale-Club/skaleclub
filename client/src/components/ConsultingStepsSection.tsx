@@ -299,7 +299,7 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
         <div className="container-custom mx-auto px-4 sm:px-6 md:px-10 grid gap-6 lg:grid-cols-[2fr_1fr] items-stretch -mt-6 md:-mt-10">
           <div className="rounded-3xl bg-white/90 border border-slate-100 shadow-[0_24px_70px_-50px_rgba(15,23,42,0.45)] px-8 py-8 space-y-4 h-full">
             <div className="flex items-center gap-3">
-              <div className="h-11 w-11 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+              <div className="h-11 w-11 min-w-[44px] flex-shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center">
                 <CheckCircle2 className="w-6 h-6" />
               </div>
               <div>
@@ -311,9 +311,8 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
               {practicalBullets.map((bullet, idx) => (
                 <div
                   key={`${bullet}-${idx}`}
-                  className="flex items-start gap-3 p-4 rounded-2xl bg-slate-50/90 border border-slate-100 shadow-sm"
+                  className="p-4 rounded-2xl bg-slate-50/90 border border-slate-100 shadow-sm"
                 >
-                  <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5" />
                   <p className="text-sm text-slate-700 leading-relaxed">{bullet}</p>
                 </div>
               ))}
@@ -328,11 +327,11 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
             <a
               href={ctaHref}
               onClick={handleCta}
-              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-[#406EF1] hover:bg-[#355CD0] text-white font-semibold shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#406EF1]"
+              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-[#406EF1] hover:bg-[#355CD0] text-white font-semibold shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#406EF1] whitespace-nowrap"
               data-form-trigger="lead-form"
             >
               {ctaLabel}
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-4 h-4 flex-shrink-0" />
             </a>
             {helperText && <p className="text-sm text-slate-600 leading-relaxed">{helperText}</p>}
           </div>

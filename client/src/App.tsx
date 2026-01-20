@@ -60,7 +60,6 @@ const Admin = lazy(() => import("@/pages/Admin").then(m => ({ default: () => <Pa
 const AdminLogin = lazy(() => import("@/pages/AdminLogin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const TermsOfService = lazy(() => import("@/pages/TermsOfService").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const AboutUs = lazy(() => import("@/pages/AboutUs").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Contact = lazy(() => import("@/pages/Contact").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Faq = lazy(() => import("@/pages/Faq").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Blog = lazy(() => import("@/pages/Blog").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
@@ -146,7 +145,6 @@ function Router() {
             <Route path="/lead-thank-you" component={LeadThankYou} />
             <Route path="/privacy-policy" component={PrivacyPolicy} />
             <Route path="/terms-of-service" component={TermsOfService} />
-            <Route path="/about" component={AboutUs} />
             <Route path="/contact" component={Contact} />
             <Route path="/faq" component={Faq} />
             <Route path="/blog" component={Blog} />

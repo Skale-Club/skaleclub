@@ -46,11 +46,11 @@ export function AboutSection({ content, aboutImageUrl }: AboutSectionProps) {
           )}
         </div>
 
-        <div className="order-1 lg:order-2 h-[450px] rounded-2xl overflow-hidden shadow-2xl border border-slate-100 relative">
+        <div className="order-1 lg:order-2 aspect-square max-h-[500px] rounded-2xl overflow-hidden shadow-2xl border border-slate-100 relative">
           <img
             src={aboutImageUrl || DEFAULT_HOMEPAGE_CONTENT.aboutSection?.defaultImageUrl || '/placeholder-about.jpg'}
             alt={sectionContent?.heading || 'Sobre nossa empresa'}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-center"
           />
         </div>
       </div>
