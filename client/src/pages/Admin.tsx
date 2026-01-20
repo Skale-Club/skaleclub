@@ -1449,17 +1449,24 @@ function HeroSettingsSection() {
                       const file = e.target.files?.[0];
                       if (!file) return;
                       try {
-                        const formData = new FormData();
-                        formData.append('file', file);
-                        const res = await fetch('/api/upload-local', {
-                          method: 'POST',
-                          body: formData
-                        });
-                        if (!res.ok) throw new Error('Upload failed');
-                        const { path } = await res.json();
-                        setAboutImageUrl(path);
-                        handleFieldUpdate('aboutImageUrl', path);
-                        toast({ title: 'Sucesso', description: 'Imagem enviada com sucesso!' });
+                        const reader = new FileReader();
+                        reader.onload = async () => {
+                          const base64 = (reader.result as string).split(',')[1];
+                          const res = await fetch('/api/upload-local', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ filename: file.name, data: base64 })
+                          });
+                          if (!res.ok) throw new Error('Upload failed');
+                          const { path } = await res.json();
+                          setAboutImageUrl(path);
+                          handleFieldUpdate('aboutImageUrl', path);
+                          toast({ title: 'Sucesso', description: 'Imagem enviada com sucesso!' });
+                        };
+                        reader.onerror = () => {
+                          toast({ title: 'Erro', description: 'Falha ao ler arquivo', variant: 'destructive' });
+                        };
+                        reader.readAsDataURL(file);
                       } catch (error: any) {
                         toast({ 
                           title: 'Erro no upload', 
