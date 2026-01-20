@@ -80,6 +80,28 @@ async function ensureFormLeadGhlColumns() {
   return ensureGhlColumnsPromise;
 }
 
+// Ensure Twilio multi-recipient column exists to avoid runtime errors
+let ensureTwilioColumnsPromise: Promise<void> | null = null;
+async function ensureTwilioSchema() {
+  if (ensureTwilioColumnsPromise) return ensureTwilioColumnsPromise;
+  ensureTwilioColumnsPromise = pool
+    .query(`
+      ALTER TABLE twilio_settings ADD COLUMN IF NOT EXISTS to_phone_numbers jsonb DEFAULT '[]';
+      UPDATE twilio_settings
+      SET to_phone_numbers = CASE
+        WHEN to_phone_number IS NOT NULL AND to_phone_number <> '' THEN jsonb_build_array(to_phone_number)
+        ELSE '[]'::jsonb
+      END
+      WHERE to_phone_numbers IS NULL OR jsonb_typeof(to_phone_numbers) IS NULL;
+    `)
+    .then(() => undefined)
+    .catch((err) => {
+      ensureTwilioColumnsPromise = null;
+      throw err;
+    });
+  return ensureTwilioColumnsPromise;
+}
+
 export const insertSubcategorySchema = z.object({
   categoryId: z.number(),
   name: z.string().min(1),
@@ -560,11 +582,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTwilioSettings(): Promise<TwilioSettings | undefined> {
+    await ensureTwilioSchema();
     const [settings] = await db.select().from(twilioSettings).limit(1);
     return settings;
   }
 
   async saveTwilioSettings(settings: InsertTwilioSettings): Promise<TwilioSettings> {
+    await ensureTwilioSchema();
     const existing = await this.getTwilioSettings();
     const toPhoneNumbers = Array.isArray(settings.toPhoneNumbers)
       ? settings.toPhoneNumbers.map(num => num?.toString() || "").filter(Boolean)
