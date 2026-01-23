@@ -6559,6 +6559,17 @@ function ChatSection() {
   const [pageIndex, setPageIndex] = useState(0);
   const [isKbDocumentDialogOpen, setIsKbDocumentDialogOpen] = useState(false);
   const [isKbCategoryDialogOpen, setIsKbCategoryDialogOpen] = useState(false);
+  const kbCategories: any[] = [];
+  const kbCategoriesLoading = false;
+  const kbDocuments: any[] = [];
+  const kbDocumentsLoading = false;
+  const kbAssistantLinks: Record<number, boolean> = {};
+  const kbAssistantLinksLoading = false;
+  const [kbSelectedCategoryId, setKbSelectedCategoryId] = useState<number | null>(null);
+  const [kbDocumentFormData, setKbDocumentFormData] = useState<any>({ categoryId: 0, title: '', content: '', order: 0, isActive: true });
+  const [kbCategoryFormData, setKbCategoryFormData] = useState<any>({ name: '', description: '' });
+  const [editingKbDocument, setEditingKbDocument] = useState<any>(null);
+  const [editingKbCategory, setEditingKbCategory] = useState<any>(null);
 
   const { data: settings, isLoading: loadingSettings } = useQuery<ChatSettingsData>({
     queryKey: ['/api/chat/settings'],
