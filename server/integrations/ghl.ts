@@ -81,7 +81,22 @@ export async function testGHLConnection(apiKey: string, locationId: string): Pro
 export async function getGHLCustomFields(
   apiKey: string,
   locationId: string
-): Promise<{ success: boolean; customFields?: GHLCustomField[]; message?: string }> {
+): Promise<{ success: boolean; customFields?: GHLCustomField[]; standardFields?: GHLCustomField[]; message?: string }> {
+  // Standard GHL contact fields that can be mapped
+  const standardFields: GHLCustomField[] = [
+    { id: 'firstName', name: 'Nome (First Name)', fieldKey: 'firstName', dataType: 'TEXT' },
+    { id: 'lastName', name: 'Sobrenome (Last Name)', fieldKey: 'lastName', dataType: 'TEXT' },
+    { id: 'name', name: 'Nome Completo (Full Name)', fieldKey: 'name', dataType: 'TEXT' },
+    { id: 'email', name: 'Email', fieldKey: 'email', dataType: 'TEXT' },
+    { id: 'phone', name: 'Telefone (Phone)', fieldKey: 'phone', dataType: 'PHONE' },
+    { id: 'address1', name: 'Endereço (Address)', fieldKey: 'address1', dataType: 'TEXT' },
+    { id: 'city', name: 'Cidade (City)', fieldKey: 'city', dataType: 'TEXT' },
+    { id: 'state', name: 'Estado (State)', fieldKey: 'state', dataType: 'TEXT' },
+    { id: 'postalCode', name: 'CEP/Zip Code', fieldKey: 'postalCode', dataType: 'TEXT' },
+    { id: 'companyName', name: 'Nome da Empresa (Company)', fieldKey: 'companyName', dataType: 'TEXT' },
+    { id: 'website', name: 'Website', fieldKey: 'website', dataType: 'TEXT' },
+  ];
+
   try {
     const response = await ghlFetch(`/locations/${locationId}/customFields`, apiKey);
 
@@ -91,6 +106,7 @@ export async function getGHLCustomFields(
       const fields = data.customFields || [];
       return {
         success: true,
+        standardFields,
         customFields: fields.map((f: any) => ({
           id: f.id,
           name: f.name,
@@ -102,12 +118,14 @@ export async function getGHLCustomFields(
       const error = await response.json().catch(() => ({}));
       return {
         success: false,
+        standardFields,
         message: error.message || `Failed to get custom fields: ${response.status}`
       };
     }
   } catch (error: any) {
     return {
       success: false,
+      standardFields,
       message: error.message || "Failed to fetch custom fields"
     };
   }

@@ -5821,7 +5821,11 @@ function QuestionForm({
   const { data: ghlStatus } = useQuery<{ enabled: boolean }>({
     queryKey: ['/api/integrations/ghl/status'],
   });
-  const { data: ghlCustomFields, isLoading: isLoadingGhlFields } = useQuery<{ success: boolean; customFields?: Array<{ id: string; name: string; fieldKey: string; dataType: string }> }>({
+  const { data: ghlFieldsData, isLoading: isLoadingGhlFields } = useQuery<{ 
+    success: boolean; 
+    standardFields?: Array<{ id: string; name: string; fieldKey: string; dataType: string }>;
+    customFields?: Array<{ id: string; name: string; fieldKey: string; dataType: string }> 
+  }>({
     queryKey: ['/api/integrations/ghl/custom-fields'],
     enabled: ghlStatus?.enabled === true,
   });
@@ -6001,14 +6005,35 @@ function QuestionForm({
                     <Loader2 className="w-3 h-3 animate-spin" /> Carregando campos...
                   </div>
                 )}
-                {ghlCustomFields?.customFields?.map((field) => (
-                  <SelectItem key={field.id} value={field.id}>
-                    {field.name}
-                  </SelectItem>
-                ))}
-                {ghlCustomFields?.success && ghlCustomFields.customFields?.length === 0 && (
+                {/* Standard GHL Fields */}
+                {ghlFieldsData?.standardFields && ghlFieldsData.standardFields.length > 0 && (
+                  <>
+                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1">
+                      Campos Padrão
+                    </div>
+                    {ghlFieldsData.standardFields.map((field) => (
+                      <SelectItem key={field.id} value={field.id}>
+                        {field.name}
+                      </SelectItem>
+                    ))}
+                  </>
+                )}
+                {/* Custom GHL Fields */}
+                {ghlFieldsData?.customFields && ghlFieldsData.customFields.length > 0 && (
+                  <>
+                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1">
+                      Campos Personalizados
+                    </div>
+                    {ghlFieldsData.customFields.map((field) => (
+                      <SelectItem key={field.id} value={field.id}>
+                        {field.name}
+                      </SelectItem>
+                    ))}
+                  </>
+                )}
+                {ghlFieldsData?.success && (!ghlFieldsData.customFields || ghlFieldsData.customFields.length === 0) && (!ghlFieldsData.standardFields || ghlFieldsData.standardFields.length === 0) && (
                   <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                    Nenhum custom field encontrado no GHL
+                    Nenhum campo encontrado no GHL
                   </div>
                 )}
               </SelectContent>
