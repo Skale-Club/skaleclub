@@ -6565,6 +6565,8 @@ function ChatSection() {
   const kbDocumentsLoading = false;
   const kbAssistantLinks: Record<number, boolean> = {};
   const kbAssistantLinksLoading = false;
+  const kbArticles: any[] = [];
+  const kbArticlesLoading = false;
   const [kbSelectedCategoryId, setKbSelectedCategoryId] = useState<number | null>(null);
   const [kbDocumentFormData, setKbDocumentFormData] = useState<any>({ categoryId: 0, title: '', content: '', order: 0, isActive: true });
   const [kbCategoryFormData, setKbCategoryFormData] = useState<any>({ name: '', description: '' });
