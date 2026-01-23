@@ -76,8 +76,8 @@ export const DEFAULT_FORM_CONFIG: FormConfig = {
       conditionalField: {
         showWhen: "Outro",
         id: "tipoNegocioOutro",
-        title: "Conte qual é o seu negócio",
-        placeholder: "Descreva seu tipo de negócio",
+        title: "Descreva seu tipo de negócio",
+        placeholder: "Ex: Consultoria, Educação, Tecnologia, etc.",
       },
     },
     {

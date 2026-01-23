@@ -876,21 +876,29 @@ export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
                         {/* Conditional field (e.g., "Outro" text input) */}
                         {currentQuestion.conditionalField &&
                          answers[currentQuestion.id] === currentQuestion.conditionalField.showWhen && (
-                          <div className="mt-2">
-                            <label className="text-sm font-semibold text-slate-700">{currentQuestion.conditionalField.title}</label>
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200"
+                          >
+                            <label htmlFor={`conditional-${currentQuestion.conditionalField.id}`} className="text-sm font-semibold text-slate-700 block mb-2">
+                              {currentQuestion.conditionalField.title}
+                            </label>
                             <input
+                              id={`conditional-${currentQuestion.conditionalField.id}`}
                               ref={conditionalInputRef}
                               value={answers[currentQuestion.conditionalField.id] || ""}
                               onChange={e => handleAnswerChange(currentQuestion.conditionalField!.id, e.target.value)}
                               onFocus={handleFieldFocus}
                               placeholder={currentQuestion.conditionalField.placeholder}
                               className={clsx(
-                                "mt-1 w-full rounded-xl border px-4 py-3 text-base transition-colors",
-                                errorMessage ? "border-red-400" : "border-slate-200",
+                                "w-full rounded-lg border px-4 py-2 text-base transition-colors",
+                                errorMessage ? "border-red-400 bg-red-50" : "border-blue-300 bg-white",
                                 "focus:border-[#406EF1] focus:ring-2 focus:ring-[#406EF1]/30"
                               )}
                             />
-                          </div>
+                          </motion.div>
                         )}
 
                         {errorMessage && (

@@ -5813,9 +5813,18 @@ function QuestionForm({
   const [options, setOptions] = useState<FormOption[]>(question?.options || []);
   const [hasConditional, setHasConditional] = useState(!!question?.conditionalField);
   const [conditionalShowWhen, setConditionalShowWhen] = useState(question?.conditionalField?.showWhen || '');
-  const [conditionalId, setConditionalId] = useState(question?.conditionalField?.id || '');
   const [conditionalTitle, setConditionalTitle] = useState(question?.conditionalField?.title || '');
   const [conditionalPlaceholder, setConditionalPlaceholder] = useState(question?.conditionalField?.placeholder || '');
+  const [ghlFieldId, setGhlFieldId] = useState(question?.ghlFieldId || '');
+
+  // Fetch GHL custom fields
+  const { data: ghlStatus } = useQuery<{ enabled: boolean }>({
+    queryKey: ['/api/integrations/ghl/status'],
+  });
+  const { data: ghlCustomFields, isLoading: isLoadingGhlFields } = useQuery<{ success: boolean; customFields?: Array<{ id: string; name: string; fieldKey: string; dataType: string }> }>({
+    queryKey: ['/api/integrations/ghl/custom-fields'],
+    enabled: ghlStatus?.enabled === true,
+  });
 
   useEffect(() => {
     setId(question?.id || '');
@@ -5827,13 +5836,12 @@ function QuestionForm({
     setOptions(question?.options || []);
     setHasConditional(!!question?.conditionalField);
     setConditionalShowWhen(question?.conditionalField?.showWhen || '');
-    setConditionalId(question?.conditionalField?.id || '');
     setConditionalTitle(question?.conditionalField?.title || '');
     setConditionalPlaceholder(question?.conditionalField?.placeholder || '');
+    setGhlFieldId(question?.ghlFieldId || '');
   }, [question, nextOrder]);
 
   const isEditing = !!question;
-  const idError = !isEditing && existingIds.includes(id) ? 'Este ID já está em uso' : '';
 
   const handleAddOption = () => {
     setOptions([...options, { value: '', label: '', points: 0 }]);
@@ -5859,23 +5867,50 @@ function QuestionForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!id || !title) return;
-    if (idError) return;
+    if (!title) return;
+
+    // Auto-generate ID from title if creating new question
+    let finalId = id;
+    if (!isEditing) {
+      finalId = title
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '') // Remove special chars
+        .trim()
+        .split(/\s+/)
+        .slice(0, 3) // Take first 3 words
+        .join('_');
+
+      // If ID already exists, append number
+      let counter = 1;
+      let testId = finalId;
+      while (existingIds.includes(testId)) {
+        testId = `${finalId}${counter}`;
+        counter++;
+      }
+      finalId = testId;
+    }
+
+    // Generate conditional field ID automatically: {questionId}_{optionName}
+    let generatedConditionalId = '';
+    if (hasConditional && conditionalShowWhen) {
+      generatedConditionalId = `${finalId}_${conditionalShowWhen.replace(/\s+/g, '').toLowerCase()}`;
+    }
 
     const questionData: FormQuestion = {
-      id,
-      order,
+      id: finalId,
+      order: isEditing ? order : nextOrder,
       title,
       type,
       required,
       placeholder: placeholder || undefined,
       options: type === 'select' ? options.filter(o => o.label && o.value) : undefined,
-      conditionalField: hasConditional && conditionalId && conditionalShowWhen ? {
+      conditionalField: hasConditional && conditionalShowWhen ? {
         showWhen: conditionalShowWhen,
-        id: conditionalId,
+        id: generatedConditionalId,
         title: conditionalTitle,
         placeholder: conditionalPlaceholder,
       } : undefined,
+      ghlFieldId: ghlFieldId || undefined,
     };
 
     onSave(questionData);
@@ -5887,33 +5922,6 @@ function QuestionForm({
         <DialogTitle>{isEditing ? 'Editar Pergunta' : 'Nova Pergunta'}</DialogTitle>
       </DialogHeader>
       <div className="space-y-4 py-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="question-id">ID (único)</Label>
-            <Input
-              id="question-id"
-              value={id}
-              onChange={(e) => setId(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))}
-              placeholder="ex: minhaPergunta"
-              disabled={isEditing}
-              required
-            />
-            {idError && <p className="text-xs text-red-500">{idError}</p>}
-            <p className="text-xs text-muted-foreground">Use apenas letras, números e _</p>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="question-order">Ordem</Label>
-            <Input
-              id="question-order"
-              type="number"
-              value={order}
-              onChange={(e) => setOrder(Number(e.target.value))}
-              min={1}
-              required
-            />
-          </div>
-        </div>
-
         <div className="space-y-2">
           <Label htmlFor="question-title">Texto da Pergunta</Label>
           <Textarea
@@ -5924,6 +5932,24 @@ function QuestionForm({
             required
             rows={2}
           />
+          {!isEditing && title && (
+            <p className="text-xs text-muted-foreground">
+              ID será: <code className="bg-muted px-1.5 py-0.5 rounded font-mono">
+                {title
+                  .toLowerCase()
+                  .replace(/[^a-z0-9\s]/g, '')
+                  .trim()
+                  .split(/\s+/)
+                  .slice(0, 3)
+                  .join('_') || 'seu_id_aqui'}
+              </code>
+            </p>
+          )}
+          {isEditing && (
+            <p className="text-xs text-muted-foreground">
+              ID: <code className="bg-muted px-1.5 py-0.5 rounded font-mono">{id}</code> · Ordem: <strong>{order}</strong>
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -5956,6 +5982,42 @@ function QuestionForm({
           <Checkbox id="question-required" checked={required} onCheckedChange={(c) => setRequired(!!c)} />
           <Label htmlFor="question-required" className="text-sm">Pergunta obrigatória</Label>
         </div>
+
+        {/* GHL Custom Field Mapping */}
+        {ghlStatus?.enabled && (
+          <div className="space-y-2 p-3 bg-purple-50/50 dark:bg-purple-950/30 rounded-lg border border-purple-200/50 dark:border-purple-900/50">
+            <Label className="text-sm font-semibold flex items-center gap-2">
+              <ExternalLink className="w-4 h-4" />
+              Vincular ao GoHighLevel
+            </Label>
+            <Select value={ghlFieldId || "none"} onValueChange={(val) => setGhlFieldId(val === "none" ? "" : val)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Não vincular" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Não vincular</SelectItem>
+                {isLoadingGhlFields && (
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground flex items-center gap-2">
+                    <Loader2 className="w-3 h-3 animate-spin" /> Carregando campos...
+                  </div>
+                )}
+                {ghlCustomFields?.customFields?.map((field) => (
+                  <SelectItem key={field.id} value={field.id}>
+                    {field.name}
+                  </SelectItem>
+                ))}
+                {ghlCustomFields?.success && ghlCustomFields.customFields?.length === 0 && (
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                    Nenhum custom field encontrado no GHL
+                  </div>
+                )}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              O valor desta pergunta será enviado para o campo selecionado no GHL
+            </p>
+          </div>
+        )}
 
         {type === 'select' && (
           <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
@@ -5993,43 +6055,49 @@ function QuestionForm({
             </div>
 
             {/* Conditional field */}
-            <div className="pt-3 border-t">
-              <div className="flex items-center gap-2 mb-3">
+            <div className="pt-3 border-t space-y-3">
+              <div className="flex items-center gap-2">
                 <Checkbox id="has-conditional" checked={hasConditional} onCheckedChange={(c) => setHasConditional(!!c)} />
-                <Label htmlFor="has-conditional" className="text-sm">Adicionar campo condicional</Label>
+                <Label htmlFor="has-conditional" className="text-sm font-semibold">Adicionar campo condicional</Label>
+                <span className="text-xs text-muted-foreground">(aparece somente quando uma opção é selecionada)</span>
               </div>
               {hasConditional && (
-                <div className="space-y-3 pl-6">
+                <div className="space-y-3 p-3 bg-blue-50/50 dark:bg-blue-950/30 rounded-lg border border-blue-200/50 dark:border-blue-900/50">
                   <div className="space-y-2">
-                    <Label className="text-xs">Mostrar quando selecionado:</Label>
+                    <Label className="text-sm font-semibold">Ativar este campo quando:</Label>
+                    <p className="text-xs text-muted-foreground mb-2">Selecione qual opção acima irá ativar o campo adicional</p>
                     <Select value={conditionalShowWhen} onValueChange={setConditionalShowWhen}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma opção" />
+                        <SelectValue placeholder="Selecione uma opção..." />
                       </SelectTrigger>
                       <SelectContent>
+                        {options.length === 0 && <div className="px-2 py-1.5 text-xs text-muted-foreground">Adicione opções acima primeiro</div>}
                         {options.filter(o => o.value).map((opt) => (
                           <SelectItem key={opt.value} value={opt.value}>{opt.label || opt.value}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+
+                  <div className="space-y-2">
+                    <Label htmlFor="conditional-title" className="text-sm font-semibold">Pergunta do campo adicional</Label>
                     <Input
-                      value={conditionalId}
-                      onChange={(e) => setConditionalId(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))}
-                      placeholder="ID do campo"
-                    />
-                    <Input
-                      value={conditionalPlaceholder}
-                      onChange={(e) => setConditionalPlaceholder(e.target.value)}
-                      placeholder="Placeholder"
+                      id="conditional-title"
+                      value={conditionalTitle}
+                      onChange={(e) => setConditionalTitle(e.target.value)}
+                      placeholder="Ex: Por favor descreva seu negócio"
                     />
                   </div>
-                  <Input
-                    value={conditionalTitle}
-                    onChange={(e) => setConditionalTitle(e.target.value)}
-                    placeholder="Título do campo condicional"
-                  />
+
+                  <div className="space-y-2">
+                    <Label htmlFor="conditional-placeholder" className="text-sm font-semibold">Texto de ajuda (Placeholder)</Label>
+                    <Input
+                      id="conditional-placeholder"
+                      value={conditionalPlaceholder}
+                      onChange={(e) => setConditionalPlaceholder(e.target.value)}
+                      placeholder="Ex: Digite seu tipo de negócio..."
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -6040,7 +6108,7 @@ function QuestionForm({
         <DialogClose asChild>
           <Button variant="outline" type="button">Cancelar</Button>
         </DialogClose>
-        <Button type="submit" disabled={isLoading || !!idError}>
+        <Button type="submit" disabled={isLoading}>
           {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
           {isEditing ? 'Atualizar' : 'Criar'}
         </Button>

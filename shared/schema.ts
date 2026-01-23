@@ -441,6 +441,7 @@ export interface FormQuestion {
   placeholder?: string;
   options?: FormOption[];
   conditionalField?: FormConditionalField;
+  ghlFieldId?: string; // ID do custom field no GHL para sincronização
 }
 
 export interface FormConfig {

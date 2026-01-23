@@ -30,6 +30,13 @@ export interface GHLAppointment {
   status: string;
 }
 
+export interface GHLCustomField {
+  id: string;
+  name: string;
+  fieldKey: string;
+  dataType: string;
+}
+
 async function ghlFetch(
   endpoint: string,
   apiKey: string,
@@ -53,20 +60,55 @@ async function ghlFetch(
 export async function testGHLConnection(apiKey: string, locationId: string): Promise<{ success: boolean; message: string }> {
   try {
     const response = await ghlFetch(`/locations/${locationId}`, apiKey);
-    
+
     if (response.ok) {
       return { success: true, message: "Connection successful" };
     } else {
       const error = await response.json().catch(() => ({}));
-      return { 
-        success: false, 
-        message: error.message || `Connection failed: ${response.status}` 
+      return {
+        success: false,
+        message: error.message || `Connection failed: ${response.status}`
       };
     }
   } catch (error: any) {
-    return { 
-      success: false, 
-      message: error.message || "Connection failed" 
+    return {
+      success: false,
+      message: error.message || "Connection failed"
+    };
+  }
+}
+
+export async function getGHLCustomFields(
+  apiKey: string,
+  locationId: string
+): Promise<{ success: boolean; customFields?: GHLCustomField[]; message?: string }> {
+  try {
+    const response = await ghlFetch(`/locations/${locationId}/customFields`, apiKey);
+
+    if (response.ok) {
+      const data = await response.json();
+      // GHL returns { customFields: [...] }
+      const fields = data.customFields || [];
+      return {
+        success: true,
+        customFields: fields.map((f: any) => ({
+          id: f.id,
+          name: f.name,
+          fieldKey: f.fieldKey,
+          dataType: f.dataType,
+        }))
+      };
+    } else {
+      const error = await response.json().catch(() => ({}));
+      return {
+        success: false,
+        message: error.message || `Failed to get custom fields: ${response.status}`
+      };
+    }
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.message || "Failed to fetch custom fields"
     };
   }
 }
@@ -144,19 +186,27 @@ export async function createGHLContact(
     lastName: string;
     phone: string;
     address?: string;
+    customFields?: Array<{ id: string; field_value: string }>;
   }
 ): Promise<{ success: boolean; contactId?: string; message?: string }> {
   try {
+    const body: any = {
+      locationId,
+      email: contact.email,
+      firstName: contact.firstName,
+      lastName: contact.lastName,
+      phone: contact.phone,
+      address1: contact.address,
+    };
+
+    // Add custom fields if provided
+    if (contact.customFields && contact.customFields.length > 0) {
+      body.customFields = contact.customFields;
+    }
+
     const response = await ghlFetch("/contacts/", apiKey, {
       method: "POST",
-      body: JSON.stringify({
-        locationId,
-        email: contact.email,
-        firstName: contact.firstName,
-        lastName: contact.lastName,
-        phone: contact.phone,
-        address1: contact.address,
-      }),
+      body: JSON.stringify(body),
     });
 
     if (response.ok) {
@@ -164,15 +214,15 @@ export async function createGHLContact(
       return { success: true, contactId: data.contact?.id };
     } else {
       const error = await response.json().catch(() => ({}));
-      return { 
-        success: false, 
-        message: error.message || `Failed to create contact: ${response.status}` 
+      return {
+        success: false,
+        message: error.message || `Failed to create contact: ${response.status}`
       };
     }
   } catch (error: any) {
-    return { 
-      success: false, 
-      message: error.message || "Failed to create contact" 
+    return {
+      success: false,
+      message: error.message || "Failed to create contact"
     };
   }
 }
@@ -316,6 +366,7 @@ export async function updateGHLContact(
     lastName?: string;
     phone?: string;
     address?: string;
+    customFields?: Array<{ id: string; field_value: string }>;
   }
 ): Promise<{ success: boolean; message?: string }> {
   try {
@@ -324,13 +375,18 @@ export async function updateGHLContact(
     if (updates.firstName) body.firstName = updates.firstName;
     if (updates.lastName) body.lastName = updates.lastName;
     if (updates.phone) body.phone = updates.phone;
-    
+
     if (updates.address) {
       const parsed = parseAddress(updates.address);
       body.address1 = parsed.street;
       if (parsed.city) body.city = parsed.city;
       if (parsed.state) body.state = parsed.state;
       console.log(`Parsed address: street="${parsed.street}", city="${parsed.city}", state="${parsed.state}"`);
+    }
+
+    // Add custom fields if provided
+    if (updates.customFields && updates.customFields.length > 0) {
+      body.customFields = updates.customFields;
     }
 
     const response = await ghlFetch(`/contacts/${contactId}`, apiKey, {
@@ -344,16 +400,16 @@ export async function updateGHLContact(
     } else {
       const error = await response.json().catch(() => ({}));
       console.log(`GHL contact update failed: ${error.message || response.status}`);
-      return { 
-        success: false, 
-        message: error.message || `Failed to update contact: ${response.status}` 
+      return {
+        success: false,
+        message: error.message || `Failed to update contact: ${response.status}`
       };
     }
   } catch (error: any) {
     console.log(`GHL contact update error: ${error.message}`);
-    return { 
-      success: false, 
-      message: error.message || "Failed to update contact" 
+    return {
+      success: false,
+      message: error.message || "Failed to update contact"
     };
   }
 }
@@ -367,28 +423,37 @@ export async function getOrCreateGHLContact(
     lastName: string;
     phone: string;
     address?: string;
+    customFields?: Array<{ id: string; field_value: string }>;
   }
 ): Promise<{ success: boolean; contactId?: string; message?: string }> {
   const existingByEmail = await findGHLContactByEmail(apiKey, locationId, contact.email);
-  
+
   if (existingByEmail.contactId) {
     console.log(`GHL contact found by email: ${existingByEmail.contactId}`);
-    if (contact.address) {
-      await updateGHLContact(apiKey, existingByEmail.contactId, { address: contact.address });
+    // Update with address and/or custom fields if provided
+    if (contact.address || (contact.customFields && contact.customFields.length > 0)) {
+      await updateGHLContact(apiKey, existingByEmail.contactId, {
+        address: contact.address,
+        customFields: contact.customFields
+      });
     }
     return { success: true, contactId: existingByEmail.contactId };
   }
-  
+
   const existingByPhone = await findGHLContactByPhone(apiKey, locationId, contact.phone);
-  
+
   if (existingByPhone.contactId) {
     console.log(`GHL contact found by phone: ${existingByPhone.contactId}`);
-    if (contact.address) {
-      await updateGHLContact(apiKey, existingByPhone.contactId, { address: contact.address });
+    // Update with address and/or custom fields if provided
+    if (contact.address || (contact.customFields && contact.customFields.length > 0)) {
+      await updateGHLContact(apiKey, existingByPhone.contactId, {
+        address: contact.address,
+        customFields: contact.customFields
+      });
     }
     return { success: true, contactId: existingByPhone.contactId };
   }
-  
+
   console.log('GHL contact not found, creating new contact');
   return createGHLContact(apiKey, locationId, contact);
 }

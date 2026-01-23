@@ -14,7 +14,7 @@ import type { FormConfig } from "@shared/schema";
 import { insertSubcategorySchema } from "./storage";
 import { ObjectStorageService, registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { authStorage } from "./replit_integrations/auth/storage";
-import { testGHLConnection, getGHLFreeSlots, getOrCreateGHLContact, createGHLAppointment } from "./integrations/ghl";
+import { testGHLConnection, getGHLFreeSlots, getOrCreateGHLContact, createGHLAppointment, getGHLCustomFields } from "./integrations/ghl";
 import { sendHotLeadNotification, sendLowPerformanceAlert, sendNewChatNotification } from "./integrations/twilio";
 
 // Admin authentication middleware - uses Replit Auth + isAdmin check
@@ -1024,6 +1024,39 @@ export async function registerRoutes(
             const firstName = nameParts.shift() || lead.nome || 'Lead';
             const lastName = nameParts.join(' ');
 
+            // Build custom fields from form config mappings
+            const customFields: Array<{ id: string; field_value: string }> = [];
+            const allAnswers: Record<string, string | undefined> = {
+              nome: lead.nome || undefined,
+              email: lead.email || undefined,
+              telefone: lead.telefone || undefined,
+              cidadeEstado: lead.cidadeEstado || undefined,
+              tipoNegocio: lead.tipoNegocio || undefined,
+              tipoNegocioOutro: lead.tipoNegocioOutro || undefined,
+              tempoNegocio: lead.tempoNegocio || undefined,
+              experienciaMarketing: lead.experienciaMarketing || undefined,
+              orcamentoAnuncios: lead.orcamentoAnuncios || undefined,
+              principalDesafio: lead.principalDesafio || undefined,
+              disponibilidade: lead.disponibilidade || undefined,
+              expectativaResultado: lead.expectativaResultado || undefined,
+              ...(lead.customAnswers || {}),
+            };
+
+            // Map form questions with ghlFieldId to custom fields
+            for (const question of formConfig.questions) {
+              if (question.ghlFieldId && allAnswers[question.id]) {
+                customFields.push({
+                  id: question.ghlFieldId,
+                  field_value: allAnswers[question.id]!,
+                });
+              }
+              // Also check conditional field
+              if (question.conditionalField?.id && allAnswers[question.conditionalField.id]) {
+                // For conditional fields, use parent's ghlFieldId if set (or a custom one if we add it later)
+                // For now, skip conditional fields as they don't have their own ghlFieldId
+              }
+            }
+
             const contactResult = await getOrCreateGHLContact(
               ghlSettings.apiKey,
               ghlSettings.locationId,
@@ -1033,6 +1066,7 @@ export async function registerRoutes(
                 lastName,
                 phone: lead.telefone || '',
                 address: lead.cidadeEstado || undefined,
+                customFields: customFields.length > 0 ? customFields : undefined,
               }
             );
 
@@ -2478,12 +2512,34 @@ You: "Thanks John! What's your email?"
   app.get('/api/integrations/ghl/status', async (req, res) => {
     try {
       const settings = await storage.getIntegrationSettings('gohighlevel');
-      res.json({ 
+      res.json({
         enabled: settings?.isEnabled || false,
         hasCalendar: !!settings?.calendarId
       });
     } catch (err) {
       res.json({ enabled: false, hasCalendar: false });
+    }
+  });
+
+  // Get GHL custom fields (for mapping form fields)
+  app.get('/api/integrations/ghl/custom-fields', requireAdmin, async (req, res) => {
+    try {
+      const settings = await storage.getIntegrationSettings('gohighlevel');
+
+      if (!settings?.isEnabled || !settings.apiKey || !settings.locationId) {
+        return res.status(400).json({
+          success: false,
+          message: 'GHL não está configurado. Configure a API Key e Location ID primeiro.'
+        });
+      }
+
+      const result = await getGHLCustomFields(settings.apiKey, settings.locationId);
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({
+        success: false,
+        message: err.message || 'Erro ao buscar custom fields'
+      });
     }
   });
 
