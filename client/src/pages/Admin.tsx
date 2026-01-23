@@ -97,8 +97,7 @@ import {
   PhoneCall,
   LineChart,
   Moon,
-  Sun,
-  BookOpen
+  Sun
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
@@ -111,7 +110,7 @@ import heroImage from '@assets/Persona-Mobile_1767749022412.png';
 import ghlLogo from '@assets/ghl-logo.webp';
 import { SiFacebook, SiGoogleanalytics, SiGoogletagmanager, SiOpenai, SiTwilio } from 'react-icons/si';
 
-type AdminSection = 'dashboard' | 'bookings' | 'leads' | 'hero' | 'company' | 'seo' | 'faqs' | 'users' | 'availability' | 'chat' | 'integrations' | 'blog' | 'knowledge-base';
+type AdminSection = 'dashboard' | 'bookings' | 'leads' | 'hero' | 'company' | 'seo' | 'faqs' | 'users' | 'availability' | 'chat' | 'integrations' | 'blog';
 
 const menuItems = [
   { id: 'dashboard' as AdminSection, title: 'Dashboard', icon: LayoutDashboard },
@@ -121,7 +120,6 @@ const menuItems = [
   { id: 'leads' as AdminSection, title: 'Leads', icon: Sparkles },
   { id: 'availability' as AdminSection, title: 'Availability', icon: Clock },
   { id: 'chat' as AdminSection, title: 'Chat', icon: MessageSquare },
-  { id: 'knowledge-base' as AdminSection, title: 'Knowledge Base', icon: BookOpen },
   { id: 'faqs' as AdminSection, title: 'FAQs', icon: HelpCircle },
   { id: 'users' as AdminSection, title: 'Users', icon: Users },
   { id: 'blog' as AdminSection, title: 'Blog', icon: FileText },
@@ -318,7 +316,7 @@ function AdminContent() {
             className="font-semibold text-primary select-none text-left"
             onClick={toggleSidebar}
           >
-            {companySettings?.companyName || 'Skleanings'}
+            {companySettings?.companyName || 'Skale Club'}
           </button>
         </header>
         <div className="p-6 pb-16 md:p-8 md:pb-10">
@@ -347,7 +345,6 @@ function AdminContent() {
           )}
           {activeSection === 'availability' && <AvailabilitySection />}
           {activeSection === 'chat' && <ChatSection />}
-          {activeSection === 'knowledge-base' && <KnowledgeBaseSection />}
           {activeSection === 'integrations' && <IntegrationsSection />}
           {activeSection === 'blog' && <BlogSection resetSignal={blogResetSignal} />}
         </div>
@@ -386,7 +383,7 @@ function DashboardSection({ goToBookings }: { goToBookings: () => void }) {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">{dashboardMenuTitle}</h1>
-        <p className="text-muted-foreground">Overview of your cleaning business</p>
+        <p className="text-muted-foreground">Overview of your marketing business</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -2042,9 +2039,8 @@ interface SEOSettingsData {
 function CompanySettingsSection() {
   const { toast } = useToast();
   const [settings, setSettings] = useState<CompanySettingsData>({
-    companyName: 'Skleanings',
-    companyEmail: 'contact@skleanings.com',
-    companyPhone: '',
+    companyName: 'Skale Club',
+    companyEmail: 'contact@skaleclub.com',    companyPhone: '',
     companyAddress: '',
     workingHoursStart: '08:00',
     workingHoursEnd: '18:00',
@@ -2585,7 +2581,7 @@ function SEOSection() {
                   id="seoKeywords" 
                   value={settings.seoKeywords || ''} 
                   onChange={(e) => updateField('seoKeywords', e.target.value)}
-                  placeholder="cleaning services, house cleaning, professional cleaners"
+                  placeholder="marketing services, business consulting, professional marketers"
                   data-testid="input-seo-keywords"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -3719,7 +3715,7 @@ function ServicesSection() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Services</h1>
-        <p className="text-muted-foreground">Manage your cleaning services</p>
+        <p className="text-muted-foreground">Manage your marketing services</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
@@ -6495,7 +6491,6 @@ interface ChatSettingsData {
   lowPerformanceThresholdSeconds?: number;
   intakeObjectives?: IntakeObjective[];
   excludedUrlRules: UrlRule[];
-  useKnowledgeBase?: boolean;
   useFaqs?: boolean;
 }
 
@@ -6527,7 +6522,7 @@ function ChatSection() {
   const { toast } = useToast();
   const [settingsDraft, setSettingsDraft] = useState<ChatSettingsData>({
     enabled: false,
-    agentName: 'Skleanings Assistant',
+    agentName: 'Skale Club Assistant',
     agentAvatarUrl: '',
     systemPrompt: '',
     welcomeMessage: 'Hi! How can I help you today?',
@@ -6541,7 +6536,6 @@ function ChatSection() {
     lowPerformanceThresholdSeconds: 300,
     intakeObjectives: [],
     excludedUrlRules: [],
-    useKnowledgeBase: true,
     useFaqs: true,
   });
   const [selectedConversation, setSelectedConversation] = useState<ConversationSummary | null>(null);
@@ -6552,8 +6546,6 @@ function ChatSection() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const [kbDriveLink, setKbDriveLink] = useState('');
-  const [isKbUploading, setIsKbUploading] = useState(false);
   const objectivesSensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -6562,27 +6554,11 @@ function ChatSection() {
   );
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const avatarFileInputRef = useRef<HTMLInputElement | null>(null);
-  const kbFileInputRef = useRef<HTMLInputElement | null>(null);
   const [statusFilter, setStatusFilter] = useState<'open' | 'closed' | 'all'>('open');
   const [pageSize, setPageSize] = useState<10 | 20 | 50>(10);
   const [pageIndex, setPageIndex] = useState(0);
-  const [kbSelectedCategoryId, setKbSelectedCategoryId] = useState<number | null>(null);
-  const [isKbCategoryDialogOpen, setIsKbCategoryDialogOpen] = useState(false);
   const [isKbDocumentDialogOpen, setIsKbDocumentDialogOpen] = useState(false);
-  const [kbCategoryFormData, setKbCategoryFormData] = useState({
-    name: '',
-    slug: '',
-    description: '',
-    icon: 'BookOpen',
-    order: 0,
-  });
-  const [kbDocumentFormData, setKbDocumentFormData] = useState({
-    categoryId: 0,
-    title: '',
-    content: '',
-    order: 0,
-    isActive: true,
-  });
+  const [isKbCategoryDialogOpen, setIsKbCategoryDialogOpen] = useState(false);
 
   const { data: settings, isLoading: loadingSettings } = useQuery<ChatSettingsData>({
     queryKey: ['/api/chat/settings'],
@@ -6595,8 +6571,8 @@ function ChatSection() {
   });
 
   const defaultSystemPrompt = useMemo(() => {
-    const companyName = companySettings?.companyName || 'Skleanings';
-    return `You are a friendly, efficient cleaning service assistant for ${companyName}. Balance being consultative with being efficient - don't over-ask.
+    const companyName = companySettings?.companyName || 'Skale Club';
+    return `You are a friendly, efficient marketing assistant for ${companyName}. Balance being consultative with being efficient - don't over-ask.
 
 SMART QUALIFICATION:
 1. When a customer mentions a need, assess if you have ENOUGH info to recommend:
@@ -6640,8 +6616,7 @@ BOOKING FLOW:
 - If availability changes, propose the next 3-5 slots and continue.
 
 SOURCES:
-- Knowledge base is enabled. Use search_knowledge_base for company-specific policies, prep instructions, service coverage, and internal knowledge.
-- FAQs are enabled. If the knowledge base has no relevant info, use search_faqs for general policies, process, products, guarantees, cancellation, payment methods, and common questions.
+- FAQs are enabled. Use search_faqs for general policies, process, products, guarantees, cancellation, payment methods, and common questions.
 
 TOOLS:
 - list_services: As soon as you know what they need
@@ -6650,7 +6625,6 @@ TOOLS:
 - update_contact: When you get name/email/phone
 - create_booking: After slot selection and all required info collected
 - get_business_policies: Check minimums only if needed
-- search_knowledge_base: Use for company-specific policies, prep instructions, service coverage, or internal knowledge.
 - search_faqs: Use when customer asks about general policies, process, products, guarantees, cancellation, payment methods, or common questions.
 
 RULES:
@@ -6659,10 +6633,9 @@ RULES:
 - Keep responses 1-2 sentences max
 - Use markdown for emphasis: **bold** for prices and service names
 - Complete bookings in chat
-- When asked about policies, products, process, or general questions, ALWAYS use search_knowledge_base first before answering (if enabled).
-- If no relevant knowledge base docs are found and FAQs are enabled, use search_faqs next.
-- If a knowledge base doc or FAQ provides the answer, use it. Never make up policy information.
-- If knowledge base or FAQs are disabled in settings, do not call those tools.
+- When asked about policies, products, process, or general questions, ALWAYS use search_faqs before answering (if enabled).
+- If an FAQ provides the answer, use it. Never make up policy information.
+- If FAQs are disabled in settings, do not call search_faqs.
 - If a source is enabled in the chat settings, you MUST use it to answer relevant questions by reading its content first.
 - If GoHighLevel is enabled, contacts and appointments must be created; if any tool returns an error, ask the user to retry.
 - Be direct: lead with the answer and avoid filler phrases.
@@ -6714,48 +6687,14 @@ You: "Thanks John! What's your email?"
     },
   });
 
-  const { data: kbCategories, isLoading: kbCategoriesLoading } = useQuery({
-    queryKey: ['/api/knowledge-base/categories'],
-    queryFn: async () => {
-      const response = await fetch('/api/knowledge-base/categories');
-      if (!response.ok) throw new Error('Failed to fetch knowledge base categories');
-      return response.json();
-    },
-  });
-
-  const { data: kbArticles, isLoading: kbArticlesLoading } = useQuery({
-    queryKey: ['/api/knowledge-base/articles'],
-    queryFn: async () => {
-      const response = await fetch('/api/knowledge-base/articles');
-      if (!response.ok) throw new Error('Failed to fetch knowledge base articles');
-      return response.json();
-    },
-  });
-
-  const { data: kbAssistantLinks, isLoading: kbAssistantLinksLoading } = useQuery({
-    queryKey: ['/api/knowledge-base/assistant-links', kbCategories?.map((category: any) => category.id).join(',')],
-    enabled: !!kbCategories?.length,
-    queryFn: async () => {
-      const entries = await Promise.all(
-        (kbCategories || []).map(async (category: any) => {
-          const response = await fetch(`/api/knowledge-base/categories/${category.id}/link-assistant`);
-          if (!response.ok) throw new Error('Failed to fetch assistant link status');
-          const { isLinked } = await response.json();
-          return [category.id, isLinked] as const;
-        })
-      );
-      return Object.fromEntries(entries) as Record<number, boolean>;
-    },
-  });
-
   useEffect(() => {
     if (!settings && !companySettings) return;
 
-    const defaultName = companySettings?.companyName || 'Skleanings Assistant';
+    const defaultName = companySettings?.companyName || 'Skale Club Assistant';
     const defaultAvatar = companySettings?.logoIcon || '/favicon.ico';
 
     if (settings) {
-      const hasCustomName = settings.agentName && settings.agentName !== 'Skleanings Assistant';
+      const hasCustomName = settings.agentName && settings.agentName !== 'Skale Club Assistant';
       setSettingsDraft({
         enabled: settings.enabled,
         agentName: hasCustomName ? settings.agentName : defaultName,
@@ -6774,7 +6713,6 @@ You: "Thanks John! What's your email?"
           ? settings.intakeObjectives
           : DEFAULT_CHAT_OBJECTIVES,
         excludedUrlRules: settings.excludedUrlRules || [],
-        useKnowledgeBase: settings.useKnowledgeBase ?? true,
         useFaqs: settings.useFaqs ?? true,
       });
       return;
@@ -6796,15 +6734,9 @@ You: "Thanks John! What's your email?"
       defaultLanguage: prev.defaultLanguage || 'en',
       lowPerformanceSmsEnabled: prev.lowPerformanceSmsEnabled ?? false,
       lowPerformanceThresholdSeconds: prev.lowPerformanceThresholdSeconds ?? 300,
-      useKnowledgeBase: prev.useKnowledgeBase ?? true,
       useFaqs: prev.useFaqs ?? true,
     }));
   }, [settings, companySettings, defaultSystemPrompt]);
-
-  useEffect(() => {
-    if (kbSelectedCategoryId || !kbCategories?.length) return;
-    setKbSelectedCategoryId(kbCategories[0].id);
-  }, [kbCategories, kbSelectedCategoryId]);
 
   useEffect(() => {
     return () => {
@@ -6813,20 +6745,6 @@ You: "Thanks John! What's your email?"
       }
     };
   }, []);
-
-  const kbArticleCounts = useMemo(() => {
-    const counts: Record<number, number> = {};
-    (kbArticles || []).forEach((article: any) => {
-      counts[article.categoryId] = (counts[article.categoryId] || 0) + 1;
-    });
-    return counts;
-  }, [kbArticles]);
-
-  const visibleKbDocuments = useMemo(() => {
-    if (!kbArticles) return [];
-    if (!kbSelectedCategoryId) return kbArticles;
-    return kbArticles.filter((article: any) => article.categoryId === kbSelectedCategoryId);
-  }, [kbArticles, kbSelectedCategoryId]);
 
   const saveSettings = useCallback(async (dataToSave: Partial<ChatSettingsData>) => {
     setIsSaving(true);
@@ -6853,100 +6771,6 @@ You: "Thanks John! What's your email?"
     }, 800);
   }, [saveSettings]);
 
-  const createKbCategoryMutation = useMutation({
-    mutationFn: async (data: typeof kbCategoryFormData) => {
-      const response = await apiRequest('POST', '/api/knowledge-base/categories', data);
-      return response.json();
-    },
-    onSuccess: (category: any) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/categories'] });
-      setKbSelectedCategoryId(category.id);
-      toast({ title: 'Category created' });
-      setIsKbCategoryDialogOpen(false);
-      setKbCategoryFormData({ name: '', slug: '', description: '', icon: 'BookOpen', order: 0 });
-    },
-    onError: (error: any) => {
-      toast({ title: 'Failed to create category', description: error.message, variant: 'destructive' });
-    },
-  });
-
-  const createKbDocumentMutation = useMutation({
-    mutationFn: (data: typeof kbDocumentFormData) => apiRequest('POST', '/api/knowledge-base/articles', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/articles'] });
-      toast({ title: 'Document added' });
-      setIsKbDocumentDialogOpen(false);
-      setKbDocumentFormData({ categoryId: kbSelectedCategoryId || 0, title: '', content: '', order: 0, isActive: true });
-    },
-    onError: (error: any) => {
-      toast({ title: 'Failed to add document', description: error.message, variant: 'destructive' });
-    },
-  });
-
-  const deleteKbCategoryMutation = useMutation({
-    mutationFn: (id: number) => apiRequest('DELETE', `/api/knowledge-base/categories/${id}`),
-    onSuccess: (_res, id) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/categories'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/articles'] });
-      if (kbSelectedCategoryId === id) {
-        setKbSelectedCategoryId(null);
-      }
-      toast({ title: 'Category deleted' });
-    },
-    onError: (error: any) => {
-      toast({ title: 'Failed to delete category', description: error.message, variant: 'destructive' });
-    },
-  });
-
-  const deleteKbDocumentMutation = useMutation({
-    mutationFn: (id: number) => apiRequest('DELETE', `/api/knowledge-base/articles/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/articles'] });
-      toast({ title: 'Document deleted' });
-    },
-    onError: (error: any) => {
-      toast({ title: 'Failed to delete document', description: error.message, variant: 'destructive' });
-    },
-  });
-
-  const toggleKbAssistantLinkMutation = useMutation({
-    mutationFn: ({ categoryId, isLinked }: { categoryId: number; isLinked: boolean }) =>
-      apiRequest('POST', `/api/knowledge-base/categories/${categoryId}/link-assistant`, { isLinked }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/assistant-links'] });
-    },
-    onError: (error: any) => {
-      toast({ title: 'Failed to update chat link', description: error.message, variant: 'destructive' });
-    },
-  });
-
-  const generateKbSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim();
-  };
-
-  const handleKbCategoryNameChange = (value: string) => {
-    setKbCategoryFormData((prev) => ({
-      ...prev,
-      name: value,
-      slug: prev.slug || generateKbSlug(value),
-    }));
-  };
-
-  const openKbDocumentDialog = () => {
-    if (!kbCategories?.length) {
-      toast({ title: 'Create a category first', description: 'Add a category before adding documents.', variant: 'destructive' });
-      return;
-    }
-    const fallbackCategoryId = kbSelectedCategoryId || kbCategories[0].id;
-    setKbDocumentFormData((prev) => ({ ...prev, categoryId: fallbackCategoryId }));
-    setIsKbDocumentDialogOpen(true);
-  };
-
   const addCalendarStaff = () => {
     const next = [...(settingsDraft.calendarStaff || []), { name: '', calendarId: '' }];
     updateField('calendarStaff', next);
@@ -6961,65 +6785,6 @@ You: "Thanks John! What's your email?"
   const removeCalendarStaff = (index: number) => {
     const next = (settingsDraft.calendarStaff || []).filter((_, i) => i !== index);
     updateField('calendarStaff', next);
-  };
-
-  const handleKbFileAttach = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsKbUploading(true);
-    try {
-      const isTextFile = file.type.startsWith('text/')
-        || /\.(md|txt|csv|json)$/i.test(file.name);
-
-      if (isTextFile) {
-        const text = await file.text();
-        const snippet = `# Source: ${file.name}\n${text}`;
-        setKbDocumentFormData(prev => ({
-          ...prev,
-          content: prev.content ? `${prev.content}\n\n${snippet}` : snippet,
-        }));
-        toast({ title: 'File imported', description: `${file.name} added to the document.` });
-      } else {
-        const uploadRes = await apiRequest('POST', '/api/upload');
-        const { uploadURL, objectPath } = await uploadRes.json() as { uploadURL: string; objectPath: string };
-
-        await fetch(uploadURL, {
-          method: 'PUT',
-          body: file,
-          headers: { 'Content-Type': file.type },
-        });
-
-        const linkLine = `Attachment: ${objectPath}`;
-        setKbDocumentFormData(prev => ({
-          ...prev,
-          content: prev.content ? `${prev.content}\n\n${linkLine}` : linkLine,
-        }));
-        toast({ title: 'File attached', description: `${file.name} uploaded.` });
-      }
-    } catch (error: any) {
-      toast({ title: 'Attachment failed', description: error.message, variant: 'destructive' });
-    } finally {
-      setIsKbUploading(false);
-      if (kbFileInputRef.current) {
-        kbFileInputRef.current.value = '';
-      }
-    }
-  };
-
-  const attachKbDriveLink = () => {
-    const link = kbDriveLink.trim();
-    if (!link) {
-      toast({ title: 'Add a Drive link first', variant: 'destructive' });
-      return;
-    }
-    const line = `Drive link: ${link}`;
-    setKbDocumentFormData(prev => ({
-      ...prev,
-      content: prev.content ? `${prev.content}\n\n${line}` : line,
-    }));
-    setKbDriveLink('');
-    toast({ title: 'Drive link attached' });
   };
 
   const handleToggleChat = async (checked: boolean) => {
@@ -7448,7 +7213,7 @@ You: "Thanks John! What's your email?"
               <Plus className="w-4 h-4 mr-2" />
               New Category
             </Button>
-            <Button size="sm" onClick={openKbDocumentDialog}>
+            <Button size="sm" onClick={() => setIsKbDocumentDialogOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               New Document
             </Button>
@@ -10275,7 +10040,7 @@ function BlogSection({ resetSignal }: { resetSignal: number }) {
     tags: '' as string,
     featureImageUrl: '',
     status: 'published',
-    authorName: 'Skleanings',
+    authorName: 'Skale Club',
     publishedAt: new Date().toISOString().split('T')[0] as string | null,
     serviceIds: [] as number[],
   });
@@ -10376,7 +10141,7 @@ function BlogSection({ resetSignal }: { resetSignal: number }) {
       tags: '',
       featureImageUrl: '',
       status: 'published',
-      authorName: 'Skleanings',
+      authorName: 'Skale Club',
       publishedAt: new Date().toISOString().split('T')[0] as string | null,
       serviceIds: [],
     });
@@ -11063,7 +10828,7 @@ function BlogSection({ resetSignal }: { resetSignal: number }) {
             id="authorName"
             value={formData.authorName}
             onChange={(e) => setFormData(prev => ({ ...prev, authorName: e.target.value }))}
-            placeholder="Skleanings"
+            placeholder="Skale Club"
             className="border-0 bg-background"
             data-testid="input-blog-author"
           />

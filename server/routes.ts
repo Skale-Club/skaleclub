@@ -132,7 +132,7 @@ export async function registerRoutes(
       type: "function",
       function: {
         name: "list_services",
-        description: "List all available cleaning services with price and duration",
+        description: "List all available services with price and duration",
         parameters: {
           type: "object",
           properties: {
@@ -989,7 +989,7 @@ export async function registerRoutes(
       const parsed = formLeadProgressSchema.parse(req.body);
       const settings = await storage.getCompanySettings();
       const formConfig = settings?.formConfig || DEFAULT_FORM_CONFIG;
-      const companyName = settings?.companyName || 'Skleanings';
+      const companyName = settings?.companyName || 'Skale Club';
       const totalQuestions = formConfig.questions.length || DEFAULT_FORM_CONFIG.questions.length;
       const questionNumber = Math.min(parsed.questionNumber, totalQuestions);
       const payload = {
@@ -999,7 +999,8 @@ export async function registerRoutes(
       };
       let lead = await storage.upsertFormLeadProgress(payload, { userAgent: req.get('user-agent') || undefined }, formConfig);
 
-      if (lead.formCompleto && !lead.notificacaoEnviada) {
+      const hasPhone = !!lead.telefone?.trim();
+      if (hasPhone && !lead.notificacaoEnviada) {
         try {
           const twilioSettings = await storage.getTwilioSettings();
           if (twilioSettings) {
@@ -1059,7 +1060,13 @@ export async function registerRoutes(
         return res.status(400).json({ message: err.errors?.[0]?.message || 'Erro de validação' });
       }
       if (err?.code === '23505') {
-        return res.status(409).json({ message: 'Email já está cadastrado em outro lead' });
+        const sessionId = typeof req.body?.sessionId === 'string' ? req.body.sessionId : null;
+        if (sessionId) {
+          const existing = await storage.getFormLeadBySession(sessionId);
+          if (existing) {
+            return res.json(existing);
+          }
+        }
       }
       res.status(400).json({ message: (err as Error).message });
     }
@@ -1719,9 +1726,9 @@ Sitemap: ${canonicalUrl}/sitemap.xml
     try {
       const settings = await storage.getChatSettings();
       const company = await storage.getCompanySettings();
-      const defaultName = company?.companyName || 'Skleanings Assistant';
+      const defaultName = company?.companyName || 'Skale Club Assistant';
       const fallbackName =
-        settings.agentName && settings.agentName !== 'Skleanings Assistant'
+        settings.agentName && settings.agentName !== 'Skale Club Assistant'
           ? settings.agentName
           : defaultName;
       const companyIcon = company?.logoIcon || '/favicon.ico';
@@ -1800,7 +1807,7 @@ Sitemap: ${canonicalUrl}/sitemap.xml
           const twilioSettings = await storage.getTwilioSettings();
           if (twilioSettings) {
             const company = await storage.getCompanySettings();
-            const companyName = company?.companyName || 'Skleanings';
+            const companyName = company?.companyName || 'Skale Club';
             const result = await sendLowPerformanceAlert(twilioSettings, avgSeconds, samples, companyName);
             if (result.success) {
               lastLowPerformanceAlertAt = now;
@@ -1974,7 +1981,7 @@ Sitemap: ${canonicalUrl}/sitemap.xml
 
         // Send Twilio notification for new chat
         const company = await storage.getCompanySettings();
-        const companyName = company?.companyName || 'Skleanings';
+        const companyName = company?.companyName || 'Skale Club';
         const twilioSettings = await storage.getTwilioSettings();
         if (twilioSettings && isNewConversation) {
           sendNewChatNotification(twilioSettings, conversationId, input.pageUrl, companyName).catch(err => {
@@ -2032,7 +2039,7 @@ Sitemap: ${canonicalUrl}/sitemap.xml
         ? `LANGUAGE:\n- Respond in ${input.language}.`
         : '';
 
-      const defaultSystemPrompt = `You are a friendly, efficient cleaning service assistant for ${company?.companyName || 'Skleanings'}. Balance being consultative with being efficient - don't over-ask.
+      const defaultSystemPrompt = `You are a friendly, efficient marketing assistant for ${company?.companyName || 'Skale Club'}. Balance being consultative with being efficient - don't over-ask.
 
 SMART QUALIFICATION:
 1. When a customer mentions a need, assess if you have ENOUGH info to recommend:
@@ -2696,7 +2703,7 @@ You: "Thanks John! What's your email?"
       }
 
       const company = await storage.getCompanySettings();
-      const companyName = company?.companyName || 'Skleanings';
+      const companyName = company?.companyName || 'Skale Club';
 
       // Send test SMS using Twilio
       const twilio = await import('twilio');

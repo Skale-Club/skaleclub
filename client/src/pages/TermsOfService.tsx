@@ -24,8 +24,8 @@ export default function TermsOfService() {
     queryKey: ['/api/company-settings'],
   });
 
-  const companyName = settings?.companyName || "Skleanings";
-  const companyEmail = settings?.companyEmail || "contact@skleanings.com";
+  const companyName = settings?.companyName || "Skale Club";
+  const companyEmail = settings?.companyEmail || "";
   const companyPhone = settings?.companyPhone || "";
   const companyAddress = settings?.companyAddress || "";
 
@@ -38,7 +38,7 @@ export default function TermsOfService() {
             <h1 className="text-4xl font-bold font-heading text-white">Terms of Service</h1>
           </div>
           <p className="text-primary-foreground/80 text-lg max-w-2xl">
-            These terms govern your use of {companyName}'s website and cleaning services. Please read them carefully before booking or using our platform.
+            These terms govern your use of {companyName}'s website and services. Please read them carefully before booking or using our platform.
           </p>
           <p className="text-primary-foreground/60 mt-4 text-sm">
             Last updated: January 10, 2026

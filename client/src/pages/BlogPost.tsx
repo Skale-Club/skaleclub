@@ -327,11 +327,11 @@ export default function BlogPostPage() {
 
                 <Card className="border-0 shadow-none rounded-none bg-transparent p-0 pt-8">
                   <CardHeader className="p-0 pb-3">
-                    <CardTitle className="text-lg">Need Cleaning Services?</CardTitle>
+                    <CardTitle className="text-lg">Need Marketing Services?</CardTitle>
                   </CardHeader>
                   <CardContent className="p-0">
                     <p className="text-sm text-muted-foreground mb-4">
-                      Book our professional cleaning services today and enjoy a spotless home.
+                      Book our professional marketing services today and watch your business grow.
                     </p>
                     <Link href="/services">
                       <Button className="w-full" data-testid="button-browse-services">
@@ -361,7 +361,7 @@ export default function BlogPostPage() {
           },
           "publisher": {
             "@type": "Organization",
-            "name": settings?.companyName || "Skleanings",
+            "name": settings?.companyName || "Skale Club",
             "logo": {
               "@type": "ImageObject",
               "url": settings?.logoMain || ""

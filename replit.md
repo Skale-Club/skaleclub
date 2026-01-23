@@ -1,8 +1,8 @@
-# Skleanings - Service Booking Platform
+# Skale Club - Service Booking Platform
 
 ## Overview
 
-This is a full-stack service booking application for a cleaning company (Skleanings) built with React, Express, and PostgreSQL. The platform allows customers to browse cleaning services by category, add multiple services to a cart, select available time slots based on total service duration, and complete bookings with customer details. It includes an admin dashboard for viewing and managing bookings.
+This is a full-stack service booking application for a marketing company (Skale Club) built with React, Express, and PostgreSQL. The platform allows customers to browse marketing services by category, add multiple services to a cart, select available time slots based on total service duration, and complete bookings with customer details. It includes an admin dashboard for viewing and managing bookings.
 
 ## User Preferences
 
@@ -33,7 +33,7 @@ Preferred communication style: Simple, everyday language.
 - **Schema Location**: `shared/schema.ts` using Drizzle ORM table definitions
 - **Key Tables**:
   - `categories` - Service categories (e.g., Upholstery Cleaning, Carpet Cleaning)
-  - `services` - Individual cleaning services with pricing and duration
+  - `services` - Individual marketing services with pricing and duration
   - `bookings` - Customer booking records with scheduling info
   - `bookingItems` - Line items linking bookings to services (snapshot pricing)
 

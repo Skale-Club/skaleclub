@@ -20,16 +20,16 @@ export function DotsLoader({ size = "md", className }: DotsLoaderProps) {
       role="status"
       aria-label="Loading"
     >
-      <div className={cn(dot, "rounded-full bg-primary animate-dot-pulse [animation-delay:0ms]")} />
-      <div className={cn(dot, "rounded-full bg-primary animate-dot-pulse [animation-delay:150ms]")} />
-      <div className={cn(dot, "rounded-full bg-primary animate-dot-pulse [animation-delay:300ms]")} />
+      <div className={cn(dot, "rounded-full bg-[#406EF1] animate-dot-pulse [animation-delay:0ms]")} />
+      <div className={cn(dot, "rounded-full bg-[#406EF1] animate-dot-pulse [animation-delay:150ms]")} />
+      <div className={cn(dot, "rounded-full bg-[#406EF1] animate-dot-pulse [animation-delay:300ms]")} />
     </div>
   );
 }
 
 export function PageLoader() {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0f1014]">
       <DotsLoader size="lg" />
     </div>
   );

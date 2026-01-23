@@ -238,6 +238,9 @@ export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const countryDropdownRef = useRef<HTMLDivElement | null>(null);
   const countryButtonRef = useRef<HTMLButtonElement | null>(null);
+  const primaryInputRef = useRef<HTMLInputElement | null>(null);
+  const conditionalInputRef = useRef<HTMLInputElement | null>(null);
+  const lastFocusedInputRef = useRef<HTMLInputElement | null>(null);
 
   const selectedCountry = useMemo(() =>
     COUNTRIES.find(c => c.code === selectedCountryCode) || COUNTRIES[0],
@@ -259,6 +262,10 @@ export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
 
   const currentQuestion = sortedQuestions[currentStep - 1];
   const currentQuestionId = currentQuestion?.id;
+
+  const handleFieldFocus = (event: React.FocusEvent<HTMLInputElement>) => {
+    lastFocusedInputRef.current = event.currentTarget;
+  };
 
   useEffect(() => {
     try {
@@ -334,6 +341,30 @@ export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
       document.body.style.overflow = "";
     };
   }, [open, ensureSession]);
+
+  useEffect(() => {
+    lastFocusedInputRef.current = null;
+  }, [currentQuestionId]);
+
+  // Auto-focus input when changing steps
+  useEffect(() => {
+    if (!open || view !== "form") return;
+
+    // Use requestAnimationFrame to ensure DOM is ready after AnimatePresence animation
+    const rafId = requestAnimationFrame(() => {
+      // Add a small delay to ensure the animation has completed
+      const timerId = setTimeout(() => {
+        const target = lastFocusedInputRef.current || primaryInputRef.current || conditionalInputRef.current;
+        if (target && document.activeElement !== target) {
+          target.focus();
+        }
+      }, 50);
+
+      return () => clearTimeout(timerId);
+    });
+
+    return () => cancelAnimationFrame(rafId);
+  }, [currentQuestionId, open, view]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -514,32 +545,47 @@ export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
   };
 
   const handleNext = async () => {
+    // Clear any pending auto-save to avoid race conditions
+    if (autoSaveRef.current) {
+      window.clearTimeout(autoSaveRef.current);
+      autoSaveRef.current = undefined;
+    }
+
     const error = getFieldError(currentQuestion, answers, selectedCountry);
     if (error) {
       setErrorMessage(error);
       containerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
+
+    // Clear error and advance step immediately for responsive UI
+    setErrorMessage(null);
     const questionNumber = currentStep;
     const nextStep = Math.min(currentStep + 1, totalQuestions);
     setDirection(1);
+    setCurrentStep(nextStep);
+
     try {
-      setCurrentStep(nextStep);
       const lead = await persistProgress(questionNumber, { stepToResume: nextStep });
       if (lead) {
         setLastAnsweredStep(questionNumber);
       }
       trackEvent("form_step_completed", { step: questionNumber, classificationPreview: classification, score: score.total });
     } catch (err: any) {
+      // Don't revert step on network errors - just mark as pending sync
+      // This allows the user to continue filling the form
       setErrorMessage(err?.message || "Não conseguimos enviar agora. Tente novamente em instantes.");
       setPendingSync(true);
-      setView("form");
-      setCurrentStep(questionNumber); // keep user on same step if fail
     }
   };
 
   const handleBack = () => {
     if (currentStep === 1) return;
+    // Clear any pending auto-save to avoid race conditions
+    if (autoSaveRef.current) {
+      window.clearTimeout(autoSaveRef.current);
+      autoSaveRef.current = undefined;
+    }
     setDirection(-1);
     setCurrentStep(prev => Math.max(1, prev - 1));
     setErrorMessage(null);
@@ -571,7 +617,7 @@ export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
           synced: true,
         });
         onClose();
-        window.location.href = "/lead-thank-you";
+        window.location.href = "/thankyou";
         return;
       }
 
@@ -688,9 +734,11 @@ export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
                         {/* Text input fields */}
                         {(currentQuestion.type === "text" || currentQuestion.type === "email") && (
                           <input
+                            ref={primaryInputRef}
                             type={currentQuestion.type === "email" ? "email" : "text"}
                             value={answers[currentQuestion.id] || ""}
                             onChange={e => handleAnswerChange(currentQuestion.id, e.target.value)}
+                            onFocus={handleFieldFocus}
                             placeholder={currentQuestion.placeholder || ""}
                             className={clsx(
                               "w-full rounded-xl border px-4 py-3 text-lg transition-colors",
@@ -779,9 +827,11 @@ export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
 
                             {/* Phone input */}
                             <input
+                              ref={primaryInputRef}
                               type="tel"
                               value={answers[currentQuestion.id] || ""}
                               onChange={e => handleAnswerChange(currentQuestion.id, e.target.value)}
+                              onFocus={handleFieldFocus}
                               placeholder={selectedCountry.format.replace(/#/g, "0")}
                               className={clsx(
                                 "flex-1 min-w-0 rounded-xl border px-3 sm:px-4 py-3 text-base sm:text-lg transition-colors",
@@ -829,8 +879,10 @@ export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
                           <div className="mt-2">
                             <label className="text-sm font-semibold text-slate-700">{currentQuestion.conditionalField.title}</label>
                             <input
+                              ref={conditionalInputRef}
                               value={answers[currentQuestion.conditionalField.id] || ""}
                               onChange={e => handleAnswerChange(currentQuestion.conditionalField!.id, e.target.value)}
+                              onFocus={handleFieldFocus}
                               placeholder={currentQuestion.conditionalField.placeholder}
                               className={clsx(
                                 "mt-1 w-full rounded-xl border px-4 py-3 text-base transition-colors",

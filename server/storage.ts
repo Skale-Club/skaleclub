@@ -71,6 +71,9 @@ async function ensureFormLeadGhlColumns() {
     .query(`
       ALTER TABLE form_leads ADD COLUMN IF NOT EXISTS ghl_contact_id text;
       ALTER TABLE form_leads ADD COLUMN IF NOT EXISTS ghl_sync_status text DEFAULT 'pending';
+      DROP INDEX IF EXISTS form_leads_email_unique;
+      DROP INDEX IF EXISTS quiz_leads_email_unique;
+      CREATE INDEX IF NOT EXISTS form_leads_email_idx ON form_leads (email);
     `)
     .then(() => undefined)
     .catch((err) => {
@@ -804,17 +807,13 @@ export class DatabaseStorage implements IStorage {
         const [created] = await db.insert(formLeads).values(insertPayload).returning();
         return created;
       } catch (err: any) {
-        if (err?.code === "23505" && payload.email) {
-          const existingByEmail = await this.getFormLeadByEmail(payload.email);
-          if (existingByEmail) {
+        if (err?.code === "23505") {
+          const existingBySession = await this.getFormLeadBySession(progress.sessionId);
+          if (existingBySession) {
             const [updatedExisting] = await db
               .update(formLeads)
-              .set({
-                ...insertPayload,
-                sessionId: existingByEmail.sessionId,
-                updatedAt: now,
-              })
-              .where(eq(formLeads.id, existingByEmail.id))
+              .set(payload)
+              .where(eq(formLeads.id, existingBySession.id))
               .returning();
             return updatedExisting;
           }

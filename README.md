@@ -1,10 +1,10 @@
-# Skleanings
+# Skale Club
 
-A full-stack service booking platform for a cleaning company. Customers can browse services by category, add items to cart, select available time slots, and complete bookings. Includes an admin dashboard and GoHighLevel CRM integration.
+A full-stack service booking platform for a marketing company. Customers can browse services by category, add items to cart, select available time slots, and complete bookings. Includes an admin dashboard and GoHighLevel CRM integration.
 
 ## Features
 
-- **Service Catalog** - Browse cleaning services organized by categories and subcategories
+- **Service Catalog** - Browse marketing services organized by categories and subcategories
 - **Shopping Cart** - Add multiple services, view totals, and manage selections
 - **Booking System** - Select available time slots based on business hours and existing bookings
 - **Admin Dashboard** - Manage services, categories, bookings, and business settings
@@ -97,7 +97,7 @@ shared/
 
 - `categories` - Service categories
 - `subcategories` - Service subcategories
-- `services` - Individual cleaning services with pricing
+- `services` - Individual marketing services with pricing
 - `serviceAddons` - Cross-sell relationships between services
 - `bookings` - Customer booking records
 - `bookingItems` - Services included in each booking

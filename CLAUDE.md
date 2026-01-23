@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Skleanings is a full-stack service booking platform for a cleaning company. Customers browse services by category, add to cart, select available time slots, and complete bookings. Includes admin dashboard and GoHighLevel CRM integration.
+Skale Club is a full-stack service booking platform for a marketing company. Customers browse services by category, add to cart, select available time slots, and complete bookings. Includes admin dashboard and GoHighLevel CRM integration.
 
 ## Commands
 

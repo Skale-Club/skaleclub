@@ -19,7 +19,7 @@ export default function FaqPage() {
         <div className="text-center mb-12">
           <h1 className="text-3xl md:text-5xl font-bold mb-4">Frequently Asked Questions</h1>
           <p className="text-slate-600 max-w-2xl mx-auto text-lg">
-            Find answers to common questions about our cleaning services.
+            Find answers to common questions about our services.
           </p>
         </div>
         

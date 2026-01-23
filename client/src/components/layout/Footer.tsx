@@ -25,34 +25,34 @@ export function Footer() {
     queryKey: ['/api/company-settings'],
   });
 
-  const companyName = companySettings?.companyName?.trim() || "Skleanings";
+  const companyName = companySettings?.companyName?.trim() || "Skale Club";
   const tagline =
     companySettings?.heroSubtitle?.trim() ||
     companySettings?.seoDescription?.trim() ||
     "Mentoria 1-a-1 em marketing digital para empresários brasileiros que querem escalar nos EUA. Estratégia personalizada, suporte contínuo e foco em resultados reais.";
 
   return (
-    <footer className="bg-[#1F1F1F] text-slate-300 py-8 md:py-10">
-      <div className="container-custom mx-auto px-4">
+    <footer className="bg-[#18191f] text-slate-300 py-8 md:py-10">
+      <div className="container-custom mx-auto">
         <div className="flex flex-col items-center md:items-start text-center md:text-left space-y-6">
           <Link href="/" className="flex items-center gap-2">
             {companySettings?.logoDark ? (
               <img
                 src={companySettings.logoDark}
                 alt={companyName}
-                className="h-auto w-[52px]"
+                className="h-auto w-[54px] object-contain p-1.5"
               />
             ) : companySettings?.logoIcon ? (
               <img
                 src={companySettings.logoIcon}
                 alt={companyName}
-                className="h-auto w-[52px] brightness-0 invert"
+                className="h-auto w-[54px] object-contain p-1.5 brightness-0 invert"
               />
             ) : (
               <img
                 src="https://storage.googleapis.com/msgsndr/q6UKnlWOQwyTk82yZPAs/media/695dbac289c99d91ea25f488.svg"
                 alt={companyName}
-                className="h-auto w-[52px] brightness-0 invert"
+                className="h-auto w-[54px] object-contain p-1.5 brightness-0 invert"
               />
             )}
           </Link>
@@ -80,7 +80,7 @@ export function Footer() {
           )}
         </div>
       </div>
-      <div className="container-custom mx-auto px-4 mt-8 pt-6 border-t border-[#2A2A2A]">
+      <div className="container-custom mx-auto mt-8 pt-6 border-t border-[#25262c]">
         <div className="flex flex-col md:flex-row items-center md:items-center justify-between gap-4 text-center md:text-left">
           <p className="text-gray-400 text-xs md:text-sm">© {new Date().getFullYear()} {companyName}. Todos os direitos reservados.</p>
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 text-xs md:text-sm md:justify-end">

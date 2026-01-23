@@ -48,7 +48,7 @@ function createLocalBusinessSchema(settings: SeoSettings): string {
   const schema = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
-    "name": settings.companyName || settings.ogSiteName || "Cleaning Service",
+    "name": settings.companyName || settings.ogSiteName || "Skale Club",
     "description": settings.seoDescription || "",
     "@id": settings.seoCanonicalUrl || window.location.origin,
     "url": settings.seoCanonicalUrl || window.location.origin,
@@ -62,7 +62,7 @@ function createLocalBusinessSchema(settings: SeoSettings): string {
     }),
     ...(settings.ogImage && { "image": settings.ogImage }),
     "priceRange": "$$",
-    "serviceType": "Cleaning Service"
+    "serviceType": "Marketing Service"
   };
   
   return JSON.stringify(schema);

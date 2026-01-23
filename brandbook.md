@@ -1,7 +1,7 @@
-# Skleanings Brandbook
+# Skale Club Brandbook
 
 ## Core Identity
-Skleanings is a professional cleaning service platform that emphasizes trust, quality, and ease of use.
+Skale Club is a professional marketing service platform that emphasizes trust, quality, and ease of use.
 
 ## Color Palette
 The brand uses a high-contrast blue and yellow scheme to project professionalism and energy.

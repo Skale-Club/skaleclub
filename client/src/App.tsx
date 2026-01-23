@@ -142,7 +142,7 @@ function Router() {
             <Route path="/services" component={Services} />
             <Route path="/booking" component={BookingPage} />
             <Route path="/confirmation" component={Confirmation} />
-            <Route path="/lead-thank-you" component={LeadThankYou} />
+            <Route path="/thankyou" component={LeadThankYou} />
             <Route path="/privacy-policy" component={PrivacyPolicy} />
             <Route path="/terms-of-service" component={TermsOfService} />
             <Route path="/contact" component={Contact} />

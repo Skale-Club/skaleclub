@@ -7,8 +7,8 @@ export default function PrivacyPolicy() {
     queryKey: ['/api/company-settings'],
   });
 
-  const companyName = settings?.companyName || "Skleanings";
-  const companyEmail = settings?.companyEmail || "contact@skleanings.com";
+  const companyName = settings?.companyName || "Skale Club";
+  const companyEmail = settings?.companyEmail || "contact@skaleclub.com";
   const companyPhone = settings?.companyPhone || "";
   const companyAddress = settings?.companyAddress || "";
 
@@ -40,7 +40,7 @@ export default function PrivacyPolicy() {
             title="1. Introduction"
           >
             <p>
-              Welcome to {companyName} ("we," "our," or "us"). We are committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our cleaning services.
+              Welcome to {companyName} ("we," "our," or "us"). We are committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our marketing services.
             </p>
             <p>
               By using our services, you agree to the collection and use of information in accordance with this policy. If you do not agree with our policies and practices, please do not use our services.
@@ -78,7 +78,7 @@ export default function PrivacyPolicy() {
           >
             <p>We use the information we collect for various purposes, including:</p>
             <ul className="list-disc pl-6 space-y-2 mt-4">
-              <li><strong>Service Delivery:</strong> To schedule, provide, and manage your cleaning services</li>
+              <li><strong>Service Delivery:</strong> To schedule, provide, and manage your marketing services</li>
               <li><strong>Communication:</strong> To send booking confirmations, reminders, and service updates</li>
               <li><strong>Customer Support:</strong> To respond to your inquiries and resolve issues</li>
               <li><strong>Payment Processing:</strong> To process transactions and send invoices</li>
@@ -96,7 +96,7 @@ export default function PrivacyPolicy() {
             <p>We do not sell your personal information. We may share your information in the following circumstances:</p>
             <ul className="list-disc pl-6 space-y-2 mt-4">
               <li><strong>Service Providers:</strong> With trusted third parties who assist in operating our business (payment processors, scheduling software, email services)</li>
-              <li><strong>Cleaning Professionals:</strong> With our cleaning staff to the extent necessary to provide services at your location</li>
+              <li><strong>Cleaning Professionals:</strong> With our marketing staff to the extent necessary to provide services at your location</li>
               <li><strong>Legal Requirements:</strong> When required by law, court order, or government request</li>
               <li><strong>Business Transfers:</strong> In connection with a merger, acquisition, or sale of assets</li>
               <li><strong>With Your Consent:</strong> When you have given us permission to share your information</li>

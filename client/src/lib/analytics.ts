@@ -171,6 +171,7 @@ export function trackEvent(eventName: AnalyticsEventName, payload: AnalyticsEven
       'view_item': 'ViewContent',
       'view_item_list': 'ViewContent',
       'contact_click': 'Contact',
+      'form_completed': 'Lead',
     };
 
     const fbEvent = fbEventMap[eventName];

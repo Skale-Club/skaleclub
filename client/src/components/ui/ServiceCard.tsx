@@ -64,7 +64,7 @@ export function ServiceCard({ service }: ServiceCardProps) {
         </h3>
         
         <p className="text-slate-500 text-sm mb-4 flex-grow">
-          {service.description || "Professional cleaning service tailored to your needs."}
+          {service.description || "Professional service tailored to your needs."}
         </p>
         
         <div className="flex flex-col">

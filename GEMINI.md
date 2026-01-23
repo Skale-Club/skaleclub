@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This is a full-stack service booking platform for a cleaning company called "Skleanings". It allows customers to browse services, book appointments, and manage their bookings. The application includes an admin dashboard for managing services, bookings, and company settings. It also integrates with GoHighLevel CRM.
+This is a full-stack service booking platform for a marketing company called "Skale Club". It allows customers to browse services, book appointments, and manage their bookings. The application includes an admin dashboard for managing services, bookings, and company settings. It also integrates with GoHighLevel CRM.
 
 The project is built with a modern tech stack:
 

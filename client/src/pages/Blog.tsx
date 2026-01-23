@@ -72,7 +72,7 @@ export default function Blog() {
                 Our Blog
               </h1>
               <p className="text-base md:text-lg text-muted-foreground max-w-2xl">
-                Tips, guides, and insights about professional cleaning services
+                Tips, guides, and insights about marketing services
               </p>
             </div>
             <div className="w-full max-w-md md:max-w-sm">

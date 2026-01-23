@@ -32,7 +32,7 @@ export default function AdminLogin() {
             <Lock className="w-6 h-6 text-primary" />
           </div>
           <CardTitle className="text-2xl">Admin Login</CardTitle>
-          <CardDescription>Sign in to manage your cleaning services</CardDescription>
+          <CardDescription>Sign in to manage your services</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-center text-sm text-muted-foreground">

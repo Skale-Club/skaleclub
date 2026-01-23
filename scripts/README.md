@@ -1,6 +1,6 @@
 # FAQ Management Scripts
 
-This directory contains utility scripts for managing FAQs in the Skleanings chat system.
+This directory contains utility scripts for managing FAQs in the Skale Club chat system.
 
 ## Available Scripts
 
@@ -41,7 +41,7 @@ npx tsx scripts/test-faq-search.ts
 ## Current FAQ Topics (21 Total)
 
 ### Service Information
-- Types of cleaning services offered
+- Types of marketing services offered
 - Service areas covered
 - Operating hours (Monday-Saturday, 8am-6pm)
 - Minimum charge per appointment ($120)
@@ -50,7 +50,7 @@ npx tsx scripts/test-faq-search.ts
 
 ### Professional Quality
 - Professional qualifications and training
-- Why choose Skleanings
+- Why choose Skale Club
 
 ### Cleaning Process
 - Step-by-step cleaning process

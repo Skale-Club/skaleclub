@@ -51,7 +51,7 @@ export function Navbar() {
   }, [location]);
 
   return (
-    <nav className="bg-[#242424]/85 backdrop-blur-md fixed top-0 left-0 right-0 z-50">
+    <nav className="bg-[#1c1e24]/85 backdrop-blur-md fixed top-0 left-0 right-0 z-50">
       <div className="container-custom mx-auto">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -59,13 +59,13 @@ export function Navbar() {
             {companySettings?.logoMain ? (
               <img 
                 src={companySettings.logoMain} 
-                alt={companySettings.companyName || "Skleanings"} 
+                alt={companySettings.companyName || "Skale Club"} 
                 className="h-auto w-[54px] object-contain p-1.5"
               />
             ) : (
               <img 
                 src="https://storage.googleapis.com/msgsndr/q6UKnlWOQwyTk82yZPAs/media/695dbac289c99d91ea25f488.svg" 
-                alt="Skleanings" 
+                alt="Skale Club" 
                 className="h-auto w-[54px] object-contain p-1.5"
               />
             )}

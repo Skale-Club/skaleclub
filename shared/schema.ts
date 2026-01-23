@@ -82,7 +82,7 @@ export const integrationSettings = pgTable("integration_settings", {
 export const chatSettings = pgTable("chat_settings", {
   id: serial("id").primaryKey(),
   enabled: boolean("enabled").default(false),
-  agentName: text("agent_name").default("Skleanings Assistant"),
+  agentName: text("agent_name").default("Skale Club Assistant"),
   agentAvatarUrl: text("agent_avatar_url").default(""),
   systemPrompt: text("system_prompt").default(
     "You are our helpful chat assistant. Provide concise, friendly answers. Use the provided tools to fetch services, details, and availability. Do not guess prices or availability; always use tool data when relevant. If booking is requested, gather details and direct the user to the booking page at /booking."
@@ -466,8 +466,8 @@ export const DEFAULT_BUSINESS_HOURS: BusinessHours = {
 // Company Settings (singleton table - only one row)
 export const companySettings = pgTable("company_settings", {
   id: serial("id").primaryKey(),
-  companyName: text("company_name").default('Skleanings'),
-  companyEmail: text("company_email").default('contact@skleanings.com'),
+  companyName: text("company_name").default('Skale Club'),
+  companyEmail: text("company_email").default('contact@skaleclub.com'),
   companyPhone: text("company_phone").default(''),
   companyAddress: text("company_address").default(''),
   workingHoursStart: text("working_hours_start").default('08:00'),
@@ -478,16 +478,16 @@ export const companySettings = pgTable("company_settings", {
   sectionsOrder: text("sections_order").array(),
   socialLinks: jsonb("social_links").default([]),
   mapEmbedUrl: text("map_embed_url").default('https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d259505.12434421625!2d-71.37915684523166!3d42.296281796774615!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sus!4v1767905922570!5m2!1sen!2sus'),
-  heroTitle: text("hero_title").default('Your 5-Star Cleaning Company'),
-  heroSubtitle: text("hero_subtitle").default('Book your cleaning service today and enjoy a sparkling clean home'),
+  heroTitle: text("hero_title").default('Your 5-Star Marketing Company'),
+  heroSubtitle: text("hero_subtitle").default('Book your marketing service today and watch your business grow'),
   heroImageUrl: text("hero_image_url").default(''),
   aboutImageUrl: text("about_image_url").default(''),
   ctaText: text("cta_text").default('Book Now'),
   timeFormat: text("time_format").default('12h'), // '12h' or '24h'
   businessHours: jsonb("business_hours"), // Day-by-day business hours
   minimumBookingValue: numeric("minimum_booking_value", { precision: 10, scale: 2 }).default('0'), // Minimum cart value required
-  seoTitle: text("seo_title").default('Skleanings - Professional Cleaning Services'),
-  seoDescription: text("seo_description").default('Professional cleaning services for homes and businesses. Book your cleaning appointment online.'),
+  seoTitle: text("seo_title").default('Skale Club - Professional Marketing Services'),
+  seoDescription: text("seo_description").default('Professional marketing services for homes and businesses. Book your marketing appointment online.'),
   ogImage: text("og_image").default(''),
   // Extended SEO fields
   seoKeywords: text("seo_keywords").default(''),

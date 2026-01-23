@@ -1,4 +1,4 @@
-# Design System - Skleanings Admin
+# Design System - Skale Club Admin
 
 Sistema de design unificado com suporte completo a light/dark mode.
 

@@ -67,7 +67,7 @@ function validateConfig(
       authToken,
       from,
       recipients,
-      companyName: (options?.companyName || "Skleanings").trim(),
+      companyName: (options?.companyName || "Skale Club").trim(),
     },
   };
 }

@@ -3,9 +3,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
+import type { CompanySettings } from "@shared/schema";
 
 export default function Contact() {
   const { toast } = useToast();
+  const { data: companySettings } = useQuery<CompanySettings>({
+    queryKey: ['/api/company-settings'],
+  });
+
+  const phone = companySettings?.companyPhone || "";
+  const email = companySettings?.companyEmail || "";
+  const address = companySettings?.companyAddress || "";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +72,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <p className="font-medium">Call Us</p>
-                    <p className="text-slate-600">(555) 123-4567</p>
+                    <p className="text-slate-600">{phone || "Contact us for phone"}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -72,7 +81,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <p className="font-medium">Email Us</p>
-                    <p className="text-slate-600">contact@skleanings.com</p>
+                    <p className="text-slate-600">{email || "Contact us for email"}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -81,7 +90,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <p className="font-medium">Visit Us</p>
-                    <p className="text-slate-600">123 Cleaning St, Framingham, MA</p>
+                    <p className="text-slate-600">{address || "Contact us for address"}</p>
                   </div>
                 </div>
               </div>
