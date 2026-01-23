@@ -6662,6 +6662,7 @@ function ChatSection() {
   const kbArticlesLoading = false;
   const [kbSelectedCategoryId, setKbSelectedCategoryId] = useState<number | null>(null);
   const [kbDocumentFormData, setKbDocumentFormData] = useState<any>({ categoryId: 0, title: '', content: '', order: 0, isActive: true });
+  const [kbDriveLink, setKbDriveLink] = useState<string>('');
   const [kbCategoryFormData, setKbCategoryFormData] = useState<any>({ name: '', description: '' });
   const [editingKbDocument, setEditingKbDocument] = useState<any>(null);
   const [editingKbCategory, setEditingKbCategory] = useState<any>(null);
