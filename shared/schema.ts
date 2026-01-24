@@ -287,7 +287,10 @@ export const formLeadProgressSchema = z.object({
   sessionId: z.string().uuid(),
   questionNumber: z.number().int().min(1).max(50),
   nome: z.string().min(3).max(100).optional(),
-  email: z.string().email().max(255).optional(),
+  email: z.string().max(255).optional().refine(
+    (val) => !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+    { message: 'Invalid email' }
+  ),
   telefone: z.string().min(7).max(20).optional(),
   cidadeEstado: z.string().min(3).max(100).optional(),
   tipoNegocio: z.string().max(120).optional(),

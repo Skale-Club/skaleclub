@@ -946,7 +946,113 @@ export async function registerRoutes(
   app.get('/api/form-config', async (req, res) => {
     try {
       const settings = await storage.getCompanySettings();
-      res.json(settings?.formConfig || DEFAULT_FORM_CONFIG);
+      const existing = settings?.formConfig || DEFAULT_FORM_CONFIG;
+      const spec = DEFAULT_FORM_CONFIG;
+      const specById = new Map(spec.questions.map(q => [q.id, q]));
+
+      // 1) Normalize known questions to spec (text, type, options, placeholders)
+      let normalizedQuestions = existing.questions.map(q => {
+        const specQ = specById.get(q.id);
+        if (!specQ) return q;
+        return {
+          ...q,
+          title: specQ.title,
+          type: specQ.type,
+          required: specQ.required,
+          placeholder: specQ.placeholder,
+          options: specQ.options,
+          conditionalField: specQ.conditionalField,
+        };
+      });
+
+      // 1.1) Add missing spec questions that are not present in existing config
+      for (const specQ of spec.questions) {
+        if (!normalizedQuestions.some(q => q.id === specQ.id)) {
+          normalizedQuestions.push({ ...specQ });
+        }
+      }
+
+      // 2) Merge standalone conditional questions back into their parent
+      const idxLocalizacao = normalizedQuestions.findIndex(q => q.id === 'localizacao');
+      if (idxLocalizacao >= 0) {
+        const hasStandaloneCidadeEstado = normalizedQuestions.some(q => q.id === 'cidadeEstado');
+        if (hasStandaloneCidadeEstado) {
+          normalizedQuestions = normalizedQuestions.filter(q => q.id !== 'cidadeEstado');
+          const specLocalizacao = specById.get('localizacao');
+          if (specLocalizacao?.conditionalField) {
+            normalizedQuestions[idxLocalizacao] = {
+              ...normalizedQuestions[idxLocalizacao],
+              conditionalField: {
+                showWhen: specLocalizacao.conditionalField.showWhen,
+                id: specLocalizacao.conditionalField.id,
+                title: specLocalizacao.conditionalField.title,
+                placeholder: specLocalizacao.conditionalField.placeholder,
+              },
+            };
+          }
+        } else {
+          // Ensure conditional field is present even if never existed
+          const specLocalizacao = specById.get('localizacao');
+          if (specLocalizacao?.conditionalField) {
+            normalizedQuestions[idxLocalizacao] = {
+              ...normalizedQuestions[idxLocalizacao],
+              conditionalField: specLocalizacao.conditionalField,
+            };
+          }
+        }
+      }
+
+      const idxTipoNegocio = normalizedQuestions.findIndex(q => q.id === 'tipoNegocio');
+      if (idxTipoNegocio >= 0) {
+        const hasStandaloneOutro = normalizedQuestions.some(q => q.id === 'tipoNegocioOutro');
+        if (hasStandaloneOutro) {
+          normalizedQuestions = normalizedQuestions.filter(q => q.id !== 'tipoNegocioOutro');
+          const specTipo = specById.get('tipoNegocio');
+          if (specTipo?.conditionalField) {
+            normalizedQuestions[idxTipoNegocio] = {
+              ...normalizedQuestions[idxTipoNegocio],
+              conditionalField: {
+                showWhen: specTipo.conditionalField.showWhen,
+                id: specTipo.conditionalField.id,
+                title: specTipo.conditionalField.title,
+                placeholder: specTipo.conditionalField.placeholder,
+              },
+            };
+          }
+        } else {
+          const specTipo = specById.get('tipoNegocio');
+          if (specTipo?.conditionalField) {
+            normalizedQuestions[idxTipoNegocio] = {
+              ...normalizedQuestions[idxTipoNegocio],
+              conditionalField: specTipo.conditionalField,
+            };
+          }
+        }
+      }
+
+      // 3) Sort known spec questions by spec order; unknowns follow after in their current order
+      const isKnown = (qId: string) => specById.has(qId);
+      normalizedQuestions = normalizedQuestions
+        .sort((a, b) => {
+          const aKnown = isKnown(a.id);
+          const bKnown = isKnown(b.id);
+          if (aKnown && bKnown) {
+            const aSpec = specById.get(a.id)!.order;
+            const bSpec = specById.get(b.id)!.order;
+            return aSpec - bSpec;
+          }
+          if (aKnown && !bKnown) return -1;
+          if (!aKnown && bKnown) return 1;
+          return (a.order ?? 999) - (b.order ?? 999);
+        })
+        .map((q, i) => ({ ...q, order: i + 1 }));
+
+      const normalizedConfig = {
+        questions: normalizedQuestions,
+        maxScore: calculateMaxScore({ ...existing, questions: normalizedQuestions }),
+        thresholds: existing.thresholds || spec.thresholds,
+      };
+      res.json(normalizedConfig);
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
     }

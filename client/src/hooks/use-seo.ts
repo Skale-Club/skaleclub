@@ -82,11 +82,15 @@ export function useSEO() {
   const { data: settings } = useQuery<SeoSettings>({
     queryKey: ['/api/company-settings'],
     staleTime: 1000 * 60 * 5,
+    // Prioritize this query to load SEO data as early as possible
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 
   useEffect(() => {
     if (!settings) return;
 
+    // Update title immediately when data arrives
     if (settings.seoTitle) {
       document.title = settings.seoTitle;
     }

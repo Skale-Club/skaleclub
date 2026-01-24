@@ -141,7 +141,17 @@ function AdminContent() {
   const { toast } = useToast();
   const { isAdmin, email, firstName, lastName, loading, signOut } = useAdminAuth();
   const [, setLocation] = useLocation();
-  const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
+  // Persist activeSection in localStorage
+  const getInitialSection = (): AdminSection => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('admin-active-section');
+      if (stored && menuItems.some(item => item.id === stored)) {
+        return stored as AdminSection;
+      }
+    }
+    return 'dashboard';
+  };
+  const [activeSection, setActiveSection] = useState<AdminSection>(getInitialSection());
   const [blogResetSignal, setBlogResetSignal] = useState(0);
   const [sectionsOrder, setSectionsOrder] = useState<AdminSection[]>(menuItems.map(item => item.id));
   const { toggleSidebar } = useSidebar();
@@ -178,10 +188,18 @@ function AdminContent() {
         setBlogResetSignal(prev => prev + 1);
       } else {
         setActiveSection(section);
+        localStorage.setItem('admin-active-section', section);
       }
       return;
     }
     setActiveSection(section);
+    localStorage.setItem('admin-active-section', section);
+  }, [activeSection]);
+  // Always sync localStorage when section changes (for programmatic changes)
+  useEffect(() => {
+    if (activeSection) {
+      localStorage.setItem('admin-active-section', activeSection);
+    }
   }, [activeSection]);
 
   const handleSidebarDragEnd = (event: DragEndEvent) => {
@@ -403,12 +421,17 @@ function DashboardSection({ goToBookings }: { goToBookings: () => void }) {
       </div>
 
       <div className="bg-muted rounded-lg overflow-hidden">
-        <div className="p-6 pb-4 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="p-6 pb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
             <Calendar className="w-5 h-5 text-primary" />
             Recent Bookings
           </h2>
-          <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={goToBookings}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="bg-primary text-white border-none shadow-none sm:ml-auto"
+            onClick={goToBookings}
+          >
             Go to Bookings
           </Button>
         </div>
@@ -2013,6 +2036,7 @@ interface CompanySettingsData {
   heroTitle: string | null;
   heroSubtitle: string | null;
   heroImageUrl: string | null;
+  aboutImageUrl: string | null;
   ctaText: string | null;
   homepageContent: HomepageContent | null;
   timeFormat: string | null;
@@ -2053,6 +2077,7 @@ function CompanySettingsSection() {
     heroTitle: '',
     heroSubtitle: '',
     heroImageUrl: '',
+    aboutImageUrl: '',
     ctaText: '',
     homepageContent: DEFAULT_HOMEPAGE_CONTENT,
     timeFormat: '12h',
@@ -4682,7 +4707,7 @@ function BookingRow({ booking, onUpdate, onDelete }: {
         <td className="px-6 py-4 align-middle">
           <div className="flex items-center min-h-[56px]">
             <Select value={booking.status} onValueChange={handleStatusChange}>
-              <SelectTrigger className="w-[140px] h-10 text-xs" data-testid={`select-status-${booking.id}`}>
+            <SelectTrigger className="w-[140px] h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0" data-testid={`select-status-${booking.id}`}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -4710,7 +4735,7 @@ function BookingRow({ booking, onUpdate, onDelete }: {
         </td>
         <td className="px-6 py-4">
           <Select value={booking.paymentStatus} onValueChange={handlePaymentChange}>
-            <SelectTrigger className="w-[120px] h-10 text-xs" data-testid={`select-payment-${booking.id}`}>
+            <SelectTrigger className="w-[120px] h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0" data-testid={`select-payment-${booking.id}`}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -4847,7 +4872,7 @@ function BookingMobileCard({
 
         <div className="grid gap-2">
           <Select onValueChange={handleStatusChange} defaultValue={booking.status}>
-            <SelectTrigger className="h-9 text-xs w-full">
+            <SelectTrigger className="h-9 w-full rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -4859,7 +4884,7 @@ function BookingMobileCard({
           </Select>
 
           <Select onValueChange={handlePaymentStatusChange} defaultValue={booking.paymentStatus}>
-            <SelectTrigger className="h-9 text-xs w-full">
+            <SelectTrigger className="h-9 w-full rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
               <SelectValue placeholder="Payment" />
             </SelectTrigger>
             <SelectContent>
@@ -5181,7 +5206,7 @@ function LeadsSection() {
               value={filters.classification}
               onValueChange={(value) => setFilters(prev => ({ ...prev, classification: value as LeadClassification | 'all' }))}
             >
-              <SelectTrigger className="w-full sm:w-48">
+            <SelectTrigger className="w-full sm:w-64 h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
                 <SelectValue placeholder="Classificação" />
               </SelectTrigger>
               <SelectContent>
@@ -5194,7 +5219,7 @@ function LeadsSection() {
               value={filters.status}
               onValueChange={(value) => setFilters(prev => ({ ...prev, status: value as LeadStatus | 'all' }))}
             >
-              <SelectTrigger className="w-full sm:w-40">
+            <SelectTrigger className="w-full sm:w-64 h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -5207,7 +5232,7 @@ function LeadsSection() {
               value={filters.completion}
               onValueChange={(value) => setFilters(prev => ({ ...prev, completion: value as 'all' | 'complete' | 'incomplete' }))}
             >
-              <SelectTrigger className="w-full sm:w-40">
+            <SelectTrigger className="w-full sm:w-64 h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
                 <SelectValue placeholder="Conclusão" />
               </SelectTrigger>
               <SelectContent>
@@ -5276,7 +5301,7 @@ function LeadsSection() {
                       value={lead.status || 'novo'}
                       onValueChange={(value) => updateLead.mutate({ id: lead.id, status: value as LeadStatus })}
                     >
-                      <SelectTrigger className="w-40">
+                      <SelectTrigger className="w-40 h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
                         <SelectValue placeholder="Status" />
                       </SelectTrigger>
                       <SelectContent>
@@ -6650,22 +6675,6 @@ function ChatSection() {
   const [statusFilter, setStatusFilter] = useState<'open' | 'closed' | 'all'>('open');
   const [pageSize, setPageSize] = useState<10 | 20 | 50>(10);
   const [pageIndex, setPageIndex] = useState(0);
-  const [isKbDocumentDialogOpen, setIsKbDocumentDialogOpen] = useState(false);
-  const [isKbCategoryDialogOpen, setIsKbCategoryDialogOpen] = useState(false);
-  const kbCategories: any[] = [];
-  const kbCategoriesLoading = false;
-  const kbDocuments: any[] = [];
-  const kbDocumentsLoading = false;
-  const kbAssistantLinks: Record<number, boolean> = {};
-  const kbAssistantLinksLoading = false;
-  const kbArticles: any[] = [];
-  const kbArticlesLoading = false;
-  const [kbSelectedCategoryId, setKbSelectedCategoryId] = useState<number | null>(null);
-  const [kbDocumentFormData, setKbDocumentFormData] = useState<any>({ categoryId: 0, title: '', content: '', order: 0, isActive: true });
-  const [kbDriveLink, setKbDriveLink] = useState<string>('');
-  const [kbCategoryFormData, setKbCategoryFormData] = useState<any>({ name: '', description: '' });
-  const [editingKbDocument, setEditingKbDocument] = useState<any>(null);
-  const [editingKbCategory, setEditingKbCategory] = useState<any>(null);
 
   const { data: settings, isLoading: loadingSettings } = useQuery<ChatSettingsData>({
     queryKey: ['/api/chat/settings'],
@@ -7304,412 +7313,6 @@ You: "Thanks John! What's your email?"
           )}
         </CardContent>
       </Card>
-
-      <Card className="shadow-sm border-0 bg-muted dark:bg-slate-800/70">
-        <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <CardTitle>Knowledge Base for Chat</CardTitle>
-            <p className="text-sm text-muted-foreground">Add documents and link categories so the assistant can answer with your content.</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsKbCategoryDialogOpen(true)}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              New Category
-            </Button>
-            <Button size="sm" onClick={() => setIsKbDocumentDialogOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              New Document
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span
-              className={clsx(
-                'rounded-full px-2.5 py-1 font-semibold',
-                settingsDraft.enabled
-                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                  : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
-              )}
-            >
-              Chat {settingsDraft.enabled ? 'enabled' : 'disabled'}
-            </span>
-            <span className="text-muted-foreground">
-              Link categories to make their documents available to the assistant.
-            </span>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-3 rounded-lg border border-border/70 bg-card/70 px-3 py-2">
-              <div>
-                <p className="text-sm font-medium">Use knowledge base</p>
-                <p className="text-xs text-muted-foreground">Allow the assistant to read linked documents.</p>
-              </div>
-              <Switch
-                checked={settingsDraft.useKnowledgeBase ?? true}
-                onCheckedChange={(checked) => updateField('useKnowledgeBase', checked)}
-                data-testid="switch-chat-use-knowledge-base"
-              />
-            </div>
-            <div className="flex items-center gap-3 rounded-lg border border-border/70 bg-card/70 px-3 py-2">
-              <div>
-                <p className="text-sm font-medium">Use FAQs</p>
-                <p className="text-xs text-muted-foreground">Allow the assistant to read FAQ content.</p>
-              </div>
-              <Switch
-                checked={settingsDraft.useFaqs ?? true}
-                onCheckedChange={(checked) => updateField('useFaqs', checked)}
-                data-testid="switch-chat-use-faqs"
-              />
-            </div>
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold">Categories</p>
-                <span className="text-xs text-muted-foreground">
-                  {kbCategories?.length || 0} total
-                </span>
-              </div>
-              {kbCategoriesLoading ? (
-                <div className="flex justify-center py-6">
-                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                </div>
-              ) : kbCategories && kbCategories.length > 0 ? (
-                <div className="space-y-2">
-                  {kbCategories.map((category: any) => {
-                    const isLinked = !!kbAssistantLinks?.[category.id];
-                    return (
-                      <div
-                        key={category.id}
-                        className={clsx(
-                          'rounded-lg border bg-card/70 px-3 py-3 transition-colors cursor-pointer',
-                          kbSelectedCategoryId === category.id && 'border-primary/50 bg-primary/5'
-                        )}
-                        onClick={() => setKbSelectedCategoryId(category.id)}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="font-medium">{category.name}</p>
-                            {category.description && (
-                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                {category.description}
-                              </p>
-                            )}
-                            <p className="mt-2 text-[11px] text-muted-foreground">
-                              {kbArticleCounts[category.id] || 0} documents
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-3" onClick={(event) => event.stopPropagation()}>
-                            <div className="flex flex-col items-end gap-2">
-                              <span className="text-[11px] text-muted-foreground">Use in chat</span>
-                              <Switch
-                                checked={isLinked}
-                                onCheckedChange={(checked) =>
-                                  toggleKbAssistantLinkMutation.mutate({ categoryId: category.id, isLinked: checked })
-                                }
-                                disabled={kbAssistantLinksLoading}
-                              />
-                            </div>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                  onClick={(event) => event.stopPropagation()}
-                                  aria-label="Delete category"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent onClick={(event) => event.stopPropagation()}>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete category?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    This removes the category and all documents inside it.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => deleteKbCategoryMutation.mutate(category.id)}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                  >
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="rounded-lg border border-dashed border-border/70 bg-card/60 p-4 text-sm text-muted-foreground">
-                  No categories yet. Create one to start adding documents.
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold">Documents</p>
-                {kbSelectedCategoryId && (
-                  <span className="text-xs text-muted-foreground">
-                    {visibleKbDocuments.length} in this category
-                  </span>
-                )}
-              </div>
-              {kbArticlesLoading ? (
-                <div className="flex justify-center py-6">
-                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                </div>
-              ) : !kbSelectedCategoryId ? (
-                <div className="rounded-lg border border-dashed border-border/70 bg-card/60 p-4 text-sm text-muted-foreground">
-                  Select a category to view its documents.
-                </div>
-              ) : visibleKbDocuments.length > 0 ? (
-                <div className="space-y-3">
-                  {visibleKbDocuments.map((doc: any) => (
-                    <div key={doc.id} className="rounded-lg border bg-card/70 px-4 py-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="font-medium">{doc.title}</p>
-                          <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
-                            {doc.content}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={doc.isActive ? 'default' : 'secondary'}>
-                            {doc.isActive ? 'Active' : 'Inactive'}
-                          </Badge>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                aria-label="Delete document"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete document?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This document will be permanently removed.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteKbDocumentMutation.mutate(doc.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-lg border border-dashed border-border/70 bg-card/60 p-4 text-sm text-muted-foreground">
-                  No documents yet. Add one to power the assistant responses.
-                </div>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Dialog open={isKbCategoryDialogOpen} onOpenChange={(open) => {
-        if (!open) {
-          setIsKbCategoryDialogOpen(false);
-          setKbCategoryFormData({ name: '', slug: '', description: '', icon: 'BookOpen', order: 0 });
-        }
-      }}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>New Knowledge Base Category</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="kb-category-name">Name</Label>
-              <Input
-                id="kb-category-name"
-                value={kbCategoryFormData.name}
-                onChange={(e) => handleKbCategoryNameChange(e.target.value)}
-                placeholder="Policies, Services, Pricing..."
-              />
-            </div>
-            <div>
-              <Label htmlFor="kb-category-slug">Slug</Label>
-              <Input
-                id="kb-category-slug"
-                value={kbCategoryFormData.slug}
-                onChange={(e) => setKbCategoryFormData((prev) => ({ ...prev, slug: e.target.value }))}
-                placeholder="policies"
-              />
-            </div>
-            <div>
-              <Label htmlFor="kb-category-description">Description</Label>
-              <Textarea
-                id="kb-category-description"
-                value={kbCategoryFormData.description}
-                onChange={(e) => setKbCategoryFormData((prev) => ({ ...prev, description: e.target.value }))}
-                rows={3}
-                placeholder="Short description for the assistant context."
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsKbCategoryDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => createKbCategoryMutation.mutate(kbCategoryFormData)}
-              disabled={!kbCategoryFormData.name.trim() || !kbCategoryFormData.slug.trim()}
-            >
-              Create Category
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isKbDocumentDialogOpen} onOpenChange={(open) => {
-        if (!open) {
-          setIsKbDocumentDialogOpen(false);
-          setKbDocumentFormData({ categoryId: kbSelectedCategoryId || 0, title: '', content: '', order: 0, isActive: true });
-          setKbDriveLink('');
-        }
-      }}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>New Knowledge Base Document</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="kb-document-category">Category</Label>
-              <Select
-                value={String(kbDocumentFormData.categoryId || '')}
-                onValueChange={(value) => setKbDocumentFormData((prev) => ({ ...prev, categoryId: Number(value) }))}
-              >
-                <SelectTrigger id="kb-document-category">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {kbCategories?.map((category: any) => (
-                    <SelectItem key={category.id} value={String(category.id)}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="kb-document-title">Title</Label>
-              <Input
-                id="kb-document-title"
-                value={kbDocumentFormData.title}
-                onChange={(e) => setKbDocumentFormData((prev) => ({ ...prev, title: e.target.value }))}
-                placeholder="Cancellation policy, Service areas..."
-              />
-            </div>
-            <div>
-              <Label htmlFor="kb-document-content">Content</Label>
-              <Textarea
-                id="kb-document-content"
-                value={kbDocumentFormData.content}
-                onChange={(e) => setKbDocumentFormData((prev) => ({ ...prev, content: e.target.value }))}
-                rows={8}
-                placeholder="Write the content the assistant should reference."
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Attachments</Label>
-              <div className="grid gap-2 md:grid-cols-[1fr_auto]">
-                <Input
-                  value={kbDriveLink}
-                  onChange={(e) => setKbDriveLink(e.target.value)}
-                  placeholder="Paste Google Drive link"
-                />
-                <Button type="button" variant="outline" onClick={attachKbDriveLink}>
-                  Attach link
-                </Button>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <input
-                  ref={kbFileInputRef}
-                  type="file"
-                  accept=".txt,.md,.csv,.json,.pdf,.doc,.docx"
-                  className="hidden"
-                  onChange={handleKbFileAttach}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => kbFileInputRef.current?.click()}
-                  disabled={isKbUploading}
-                >
-                  {isKbUploading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      Uploading...
-                    </>
-                  ) : (
-                    'Upload file'
-                  )}
-                </Button>
-                <p className="text-xs text-muted-foreground">
-                  Text files are imported into the document. Other files are attached as links.
-                </p>
-              </div>
-            </div>
-            <div className="grid gap-4 md:grid-cols-[1fr_auto]">
-              <div>
-                <Label htmlFor="kb-document-order">Order</Label>
-                <Input
-                  id="kb-document-order"
-                  type="number"
-                  value={kbDocumentFormData.order}
-                  onChange={(e) => setKbDocumentFormData((prev) => ({ ...prev, order: parseInt(e.target.value) || 0 }))}
-                />
-              </div>
-              <div className="flex items-center gap-2 pt-6">
-                <Checkbox
-                  id="kb-document-active"
-                  checked={kbDocumentFormData.isActive}
-                  onCheckedChange={(checked) => setKbDocumentFormData((prev) => ({ ...prev, isActive: checked as boolean }))}
-                />
-                <Label htmlFor="kb-document-active">Active</Label>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsKbDocumentDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => createKbDocumentMutation.mutate(kbDocumentFormData)}
-              disabled={!kbDocumentFormData.title.trim() || !kbDocumentFormData.content.trim() || !kbDocumentFormData.categoryId}
-            >
-              Add Document
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Card className="shadow-sm border-0 bg-muted dark:bg-slate-800/70">
         <CardHeader>
@@ -9532,592 +9135,6 @@ function IntegrationsSection() {
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function KnowledgeBaseSection() {
-  const { toast } = useToast();
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
-  const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState(false);
-  const [isCreateArticleOpen, setIsCreateArticleOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<any | null>(null);
-  const [editingArticle, setEditingArticle] = useState<any | null>(null);
-
-  const [categoryFormData, setCategoryFormData] = useState({
-    name: '',
-    slug: '',
-    description: '',
-    icon: 'Package',
-    order: 0,
-  });
-
-  const [articleFormData, setArticleFormData] = useState({
-    categoryId: 0,
-    title: '',
-    content: '',
-    order: 0,
-    isActive: true,
-  });
-
-  const { data: categories, isLoading: categoriesLoading } = useQuery({
-    queryKey: ['/api/knowledge-base/categories'],
-    queryFn: async () => {
-      const response = await fetch('/api/knowledge-base/categories');
-      if (!response.ok) throw new Error('Failed to fetch categories');
-      return response.json();
-    },
-  });
-
-  const { data: articles, isLoading: articlesLoading } = useQuery({
-    queryKey: ['/api/knowledge-base/articles', selectedCategoryId],
-    queryFn: async () => {
-      const url = selectedCategoryId
-        ? `/api/knowledge-base/articles?categoryId=${selectedCategoryId}`
-        : '/api/knowledge-base/articles';
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Failed to fetch articles');
-      return response.json();
-    },
-  });
-
-  const createCategoryMutation = useMutation({
-    mutationFn: (data: typeof categoryFormData) => apiRequest('POST', '/api/knowledge-base/categories', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/categories'] });
-      toast({ title: 'Category created successfully' });
-      setIsCreateCategoryOpen(false);
-      resetCategoryForm();
-    },
-    onError: (err: any) => {
-      toast({ title: 'Error creating category', description: err.message, variant: 'destructive' });
-    },
-  });
-
-  const updateCategoryMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: typeof categoryFormData }) =>
-      apiRequest('PUT', `/api/knowledge-base/categories/${id}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/categories'] });
-      toast({ title: 'Category updated successfully' });
-      setEditingCategory(null);
-      resetCategoryForm();
-    },
-    onError: (err: any) => {
-      toast({ title: 'Error updating category', description: err.message, variant: 'destructive' });
-    },
-  });
-
-  const deleteCategoryMutation = useMutation({
-    mutationFn: (id: number) => apiRequest('DELETE', `/api/knowledge-base/categories/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/categories'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/articles'] });
-      toast({ title: 'Category deleted' });
-    },
-    onError: (err: any) => {
-      toast({ title: 'Error deleting category', description: err.message, variant: 'destructive' });
-    },
-  });
-
-  const createArticleMutation = useMutation({
-    mutationFn: (data: typeof articleFormData) => apiRequest('POST', '/api/knowledge-base/articles', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/articles'] });
-      toast({ title: 'Article created successfully' });
-      setIsCreateArticleOpen(false);
-      resetArticleForm();
-    },
-    onError: (err: any) => {
-      toast({ title: 'Error creating article', description: err.message, variant: 'destructive' });
-    },
-  });
-
-  const updateArticleMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: typeof articleFormData }) =>
-      apiRequest('PUT', `/api/knowledge-base/articles/${id}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/articles'] });
-      toast({ title: 'Article updated successfully' });
-      setEditingArticle(null);
-      resetArticleForm();
-    },
-    onError: (err: any) => {
-      toast({ title: 'Error updating article', description: err.message, variant: 'destructive' });
-    },
-  });
-
-  const deleteArticleMutation = useMutation({
-    mutationFn: (id: number) => apiRequest('DELETE', `/api/knowledge-base/articles/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/articles'] });
-      toast({ title: 'Article deleted' });
-    },
-    onError: (err: any) => {
-      toast({ title: 'Error deleting article', description: err.message, variant: 'destructive' });
-    },
-  });
-
-  const toggleAssistantLinkMutation = useMutation({
-    mutationFn: ({ categoryId, isLinked }: { categoryId: number; isLinked: boolean }) =>
-      apiRequest('POST', `/api/knowledge-base/categories/${categoryId}/link-assistant`, { isLinked }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/knowledge-base/categories'] });
-      toast({ title: 'Assistant link updated successfully' });
-    },
-    onError: (err: any) => {
-      toast({ title: 'Error updating assistant link', description: err.message, variant: 'destructive' });
-    },
-  });
-
-  const resetCategoryForm = () => {
-    setCategoryFormData({
-      name: '',
-      slug: '',
-      description: '',
-      icon: 'Package',
-      order: 0,
-    });
-  };
-
-  const resetArticleForm = () => {
-    setArticleFormData({
-      categoryId: selectedCategoryId || 0,
-      title: '',
-      content: '',
-      order: 0,
-      isActive: true,
-    });
-  };
-
-  const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim();
-  };
-
-  const handleCategoryNameChange = (value: string) => {
-    setCategoryFormData(prev => ({
-      ...prev,
-      name: value,
-      slug: prev.slug || generateSlug(value),
-    }));
-  };
-
-  const handleEditCategory = (category: any) => {
-    setEditingCategory(category);
-    setCategoryFormData({
-      name: category.name,
-      slug: category.slug,
-      description: category.description || '',
-      icon: category.icon || 'Package',
-      order: category.order || 0,
-    });
-  };
-
-  const handleEditArticle = (article: any) => {
-    setEditingArticle(article);
-    setArticleFormData({
-      categoryId: article.categoryId,
-      title: article.title,
-      content: article.content,
-      order: article.order || 0,
-      isActive: article.isActive ?? true,
-    });
-  };
-
-  const handleSaveCategory = () => {
-    if (editingCategory) {
-      updateCategoryMutation.mutate({ id: editingCategory.id, data: categoryFormData });
-    } else {
-      createCategoryMutation.mutate(categoryFormData);
-    }
-  };
-
-  const handleSaveArticle = () => {
-    if (editingArticle) {
-      updateArticleMutation.mutate({ id: editingArticle.id, data: articleFormData });
-    } else {
-      createArticleMutation.mutate(articleFormData);
-    }
-  };
-
-  const handleToggleAssistantLink = async (categoryId: number) => {
-    try {
-      const response = await fetch(`/api/knowledge-base/categories/${categoryId}/link-assistant`);
-      const { isLinked } = await response.json();
-      toggleAssistantLinkMutation.mutate({ categoryId, isLinked: !isLinked });
-    } catch (err) {
-      toast({ title: 'Error', description: 'Failed to toggle assistant link', variant: 'destructive' });
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Knowledge Base</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage knowledge base categories and articles for your AI assistant
-          </p>
-        </div>
-        <Button onClick={() => setIsCreateCategoryOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          New Category
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="md:col-span-1 border-0 bg-muted">
-          <CardHeader>
-            <CardTitle>Categories</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {categoriesLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin" />
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {categories && categories.length > 0 ? (
-                  categories.map((category: any) => (
-                    <div
-                      key={category.id}
-                      className={clsx(
-                        'p-3 rounded-lg cursor-pointer transition-colors hover:bg-accent',
-                        selectedCategoryId === category.id && 'bg-accent'
-                      )}
-                      onClick={() => setSelectedCategoryId(category.id)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-medium">{category.name}</h4>
-                          {category.description && (
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                              {category.description}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1 ml-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleAssistantLink(category.id);
-                            }}
-                          >
-                            <Sparkles className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditCategory(category);
-                            }}
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Category</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This will delete the category and all its articles. This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteCategoryMutation.mutate(category.id)}
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    No categories yet. Create one to get started.
-                  </p>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="md:col-span-2 border-0 bg-muted">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>
-                {selectedCategoryId
-                  ? `Articles - ${categories?.find((c: any) => c.id === selectedCategoryId)?.name}`
-                  : 'Articles'}
-              </CardTitle>
-              <Button
-                onClick={() => {
-                  if (!selectedCategoryId) {
-                    toast({
-                      title: 'Select a category first',
-                      description: 'Please select a category to add articles to',
-                      variant: 'destructive',
-                    });
-                    return;
-                  }
-                  setArticleFormData(prev => ({ ...prev, categoryId: selectedCategoryId }));
-                  setIsCreateArticleOpen(true);
-                }}
-                disabled={!selectedCategoryId}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                New Article
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {articlesLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin" />
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {articles && articles.length > 0 ? (
-                  articles.map((article: any) => (
-                    <div key={article.id} className="p-4 border rounded-lg">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-medium">{article.title}</h4>
-                          <p className="text-sm text-muted-foreground mt-2 line-clamp-3">
-                            {article.content.substring(0, 200)}...
-                          </p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <Badge variant={article.isActive ? 'default' : 'secondary'}>
-                              {article.isActive ? 'Active' : 'Inactive'}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 ml-4">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEditArticle(article)}
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button size="sm" variant="ghost">
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Article</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This will permanently delete this article. This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteArticleMutation.mutate(article.id)}
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    {selectedCategoryId
-                      ? 'No articles in this category yet.'
-                      : 'Select a category to view articles.'}
-                  </p>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Dialog open={isCreateCategoryOpen || editingCategory !== null} onOpenChange={(open) => {
-        if (!open) {
-          setIsCreateCategoryOpen(false);
-          setEditingCategory(null);
-          resetCategoryForm();
-        }
-      }}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{editingCategory ? 'Edit Category' : 'Create Category'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="category-name">Name</Label>
-              <Input
-                id="category-name"
-                value={categoryFormData.name}
-                onChange={(e) => handleCategoryNameChange(e.target.value)}
-                placeholder="Products Used"
-              />
-            </div>
-            <div>
-              <Label htmlFor="category-slug">Slug</Label>
-              <Input
-                id="category-slug"
-                value={categoryFormData.slug}
-                onChange={(e) => setCategoryFormData(prev => ({ ...prev, slug: e.target.value }))}
-                placeholder="products-used"
-              />
-            </div>
-            <div>
-              <Label htmlFor="category-description">Description</Label>
-              <Textarea
-                id="category-description"
-                value={categoryFormData.description}
-                onChange={(e) => setCategoryFormData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Information about products used in our services"
-                rows={3}
-              />
-            </div>
-            <div>
-              <Label htmlFor="category-icon">Icon (Lucide icon name)</Label>
-              <Input
-                id="category-icon"
-                value={categoryFormData.icon}
-                onChange={(e) => setCategoryFormData(prev => ({ ...prev, icon: e.target.value }))}
-                placeholder="Package"
-              />
-            </div>
-            <div>
-              <Label htmlFor="category-order">Order</Label>
-              <Input
-                id="category-order"
-                type="number"
-                value={categoryFormData.order}
-                onChange={(e) => setCategoryFormData(prev => ({ ...prev, order: parseInt(e.target.value) || 0 }))}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setIsCreateCategoryOpen(false);
-              setEditingCategory(null);
-              resetCategoryForm();
-            }}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveCategory}>
-              {editingCategory ? 'Update' : 'Create'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isCreateArticleOpen || editingArticle !== null} onOpenChange={(open) => {
-        if (!open) {
-          setIsCreateArticleOpen(false);
-          setEditingArticle(null);
-          resetArticleForm();
-        }
-      }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingArticle ? 'Edit Article' : 'Create Article'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="article-category">Category</Label>
-              <Select
-                value={articleFormData.categoryId.toString()}
-                onValueChange={(value) => setArticleFormData(prev => ({ ...prev, categoryId: parseInt(value) }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories?.map((category: any) => (
-                    <SelectItem key={category.id} value={category.id.toString()}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="article-title">Title</Label>
-              <Input
-                id="article-title"
-                value={articleFormData.title}
-                onChange={(e) => setArticleFormData(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="All-Purpose Cleaner Usage Guide"
-              />
-            </div>
-            <div>
-              <Label htmlFor="article-content">Content</Label>
-              <Textarea
-                id="article-content"
-                value={articleFormData.content}
-                onChange={(e) => setArticleFormData(prev => ({ ...prev, content: e.target.value }))}
-                placeholder="Detailed information about the topic..."
-                rows={12}
-              />
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex-1">
-                <Label htmlFor="article-order">Order</Label>
-                <Input
-                  id="article-order"
-                  type="number"
-                  value={articleFormData.order}
-                  onChange={(e) => setArticleFormData(prev => ({ ...prev, order: parseInt(e.target.value) || 0 }))}
-                />
-              </div>
-              <div className="flex items-center space-x-2 pt-6">
-                <Checkbox
-                  id="article-active"
-                  checked={articleFormData.isActive}
-                  onCheckedChange={(checked) => setArticleFormData(prev => ({ ...prev, isActive: checked as boolean }))}
-                />
-                <Label htmlFor="article-active">Active</Label>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setIsCreateArticleOpen(false);
-              setEditingArticle(null);
-              resetArticleForm();
-            }}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveArticle}>
-              {editingArticle ? 'Update' : 'Create'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
