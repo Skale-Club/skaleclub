@@ -9,7 +9,8 @@ import fs from "fs";
 import path from "path";
 import { WORKING_HOURS, DEFAULT_BUSINESS_HOURS, insertCategorySchema, insertServiceSchema, insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema, insertBlogPostSchema, BusinessHours, DayHours, insertChatSettingsSchema, insertChatIntegrationsSchema, insertKnowledgeBaseCategorySchema, insertKnowledgeBaseArticleSchema, formLeadProgressSchema } from "@shared/schema";
 import type { LeadClassification, LeadStatus } from "@shared/schema";
-import { DEFAULT_FORM_CONFIG, calculateMaxScore } from "@shared/form";
+import { DEFAULT_FORM_CONFIG, calculateMaxScore, calculateFormScoresWithConfig, classifyLead, getSortedQuestions, KNOWN_FIELD_IDS } from "@shared/form";
+import type { FormAnswers } from "@shared/form";
 import type { FormConfig } from "@shared/schema";
 import { insertSubcategorySchema } from "./storage";
 import { ObjectStorageService, registerObjectStorageRoutes } from "./replit_integrations/object_storage";
@@ -127,17 +128,16 @@ export async function registerRoutes(
 
   let runtimeOpenAiKey = process.env.OPENAI_API_KEY || "";
 
+  // Chat tools for lead qualification flow
   const chatTools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     {
       type: "function",
       function: {
-        name: "list_services",
-        description: "List all available services with price and duration",
+        name: "get_form_config",
+        description: "Get the qualification form configuration including all questions, options, and scoring thresholds. Call this at the start to know what questions to ask.",
         parameters: {
           type: "object",
-          properties: {
-            query: { type: "string", description: "Optional search string to filter services by name" },
-          },
+          properties: {},
           additionalProperties: false,
         },
       },
@@ -145,62 +145,21 @@ export async function registerRoutes(
     {
       type: "function",
       function: {
-        name: "get_service_details",
-        description: "Get details for a specific service",
+        name: "save_lead_answer",
+        description: "Save a lead's answer to a question and get the updated score and next question",
         parameters: {
           type: "object",
           properties: {
-            service_id: { type: "number", description: "ID of the service" },
-          },
-          required: ["service_id"],
-          additionalProperties: false,
-        },
-      },
-    },
-    {
-      type: "function",
-      function: {
-        name: "get_availability",
-        description: "Get available start times between two dates",
-        parameters: {
-          type: "object",
-          properties: {
-            service_id: { type: "number", description: "ID of the service to determine duration" },
-            start_date: { type: "string", description: "Start date (YYYY-MM-DD)" },
-            end_date: { type: "string", description: "End date (YYYY-MM-DD)" },
-          },
-          required: ["start_date", "end_date"],
-          additionalProperties: false,
-        },
-      },
-    },
-    {
-      type: "function",
-      function: {
-        name: "create_booking",
-        description: "Create a booking for one or more services once the customer has provided all details",
-        parameters: {
-          type: "object",
-          properties: {
-            service_ids: {
-              type: "array",
-              items: { type: "number" },
-              description: "IDs of services to book",
-            },
-            booking_date: { type: "string", description: "Booking date in YYYY-MM-DD (America/New_York time)" },
-            start_time: { type: "string", description: "Start time in HH:mm (24h, America/New_York)" },
-            customer_name: { type: "string", description: "Customer full name" },
-            customer_email: { type: "string", description: "Customer email" },
-            customer_phone: { type: "string", description: "Customer phone" },
-            customer_address: { type: "string", description: "Full address with street, city, state, and unit if applicable" },
-            payment_method: {
+            question_id: {
               type: "string",
-              enum: ["site", "online"],
-              description: "Payment method; defaults to site",
+              description: "The ID of the question being answered (e.g., 'nome', 'email', 'tipoNegocio')"
             },
-            notes: { type: "string", description: "Any additional notes from the customer", nullable: true },
+            answer: {
+              type: "string",
+              description: "The lead's answer to the question"
+            },
           },
-          required: ["service_ids", "booking_date", "start_time", "customer_name", "customer_email", "customer_phone", "customer_address"],
+          required: ["question_id", "answer"],
           additionalProperties: false,
         },
       },
@@ -208,15 +167,11 @@ export async function registerRoutes(
     {
       type: "function",
       function: {
-        name: "update_contact",
-        description: "Save visitor contact info (name/email/phone) to the conversation as soon as it is provided",
+        name: "get_lead_state",
+        description: "Get the current state of the lead including answers collected so far, current score, and next question to ask",
         parameters: {
           type: "object",
-          properties: {
-            name: { type: "string", description: "Visitor name" },
-            email: { type: "string", description: "Visitor email" },
-            phone: { type: "string", description: "Visitor phone" },
-          },
+          properties: {},
           additionalProperties: false,
         },
       },
@@ -224,8 +179,8 @@ export async function registerRoutes(
     {
       type: "function",
       function: {
-        name: "get_business_policies",
-        description: "Get business hours and any minimum booking rules",
+        name: "complete_lead",
+        description: "Mark the lead as complete and sync to CRM. Call this after all questions have been answered.",
         parameters: {
           type: "object",
           properties: {},
@@ -243,7 +198,7 @@ export async function registerRoutes(
           properties: {
             query: {
               type: "string",
-              description: "Optional keywords to search documents (e.g., 'prep', 'pets', 'reschedule'). Leave empty to fetch all linked docs."
+              description: "Optional keywords to search documents. Leave empty to fetch all linked docs."
             },
           },
           additionalProperties: false,
@@ -254,13 +209,13 @@ export async function registerRoutes(
       type: "function",
       function: {
         name: "search_faqs",
-        description: "Search frequently asked questions database to answer questions about policies, cleaning process, products, guarantees, cancellation, and other common inquiries",
+        description: "Search frequently asked questions database to answer questions about Skale Club services, pricing, process, and other common inquiries",
         parameters: {
           type: "object",
           properties: {
             query: {
               type: "string",
-              description: "Optional search keywords to filter FAQs (e.g., 'cancellation', 'products', 'guarantee'). Leave empty to get all FAQs."
+              description: "Optional search keywords to filter FAQs. Leave empty to get all FAQs."
             },
           },
           additionalProperties: false,
@@ -405,6 +360,68 @@ export async function registerRoutes(
     return result;
   }
 
+  // Helper to get or create a lead for a conversation
+  async function getOrCreateLeadForConversation(conversationId: string): Promise<{ lead: any; formConfig: FormConfig }> {
+    const settings = await storage.getCompanySettings();
+    const formConfig = settings?.formConfig || DEFAULT_FORM_CONFIG;
+
+    // Try to find existing lead by conversation ID
+    let lead = await storage.getFormLeadByConversationId(conversationId);
+
+    if (!lead) {
+      // Create a new lead with conversation source
+      const sessionId = crypto.randomUUID();
+      lead = await storage.upsertFormLeadProgress({
+        sessionId,
+        nome: '', // Will be filled when we get the name
+        questionNumber: 0,
+        formCompleto: false,
+      }, { conversationId, source: 'chat' }, formConfig);
+    }
+
+    return { lead, formConfig };
+  }
+
+  // Helper to get next unanswered question
+  function getNextQuestion(lead: any, formConfig: FormConfig): any {
+    const sortedQuestions = getSortedQuestions(formConfig);
+    const answers: Record<string, string | undefined> = {
+      nome: lead.nome || undefined,
+      email: lead.email || undefined,
+      telefone: lead.telefone || undefined,
+      cidadeEstado: lead.cidadeEstado || undefined,
+      tipoNegocio: lead.tipoNegocio || undefined,
+      tipoNegocioOutro: lead.tipoNegocioOutro || undefined,
+      tempoNegocio: lead.tempoNegocio || undefined,
+      experienciaMarketing: lead.experienciaMarketing || undefined,
+      orcamentoAnuncios: lead.orcamentoAnuncios || undefined,
+      principalDesafio: lead.principalDesafio || undefined,
+      disponibilidade: lead.disponibilidade || undefined,
+      expectativaResultado: lead.expectativaResultado || undefined,
+      ...(lead.customAnswers || {}),
+    };
+
+    for (const question of sortedQuestions) {
+      // Check if this question is answered
+      const answer = answers[question.id];
+      if (!answer || answer.trim() === '') {
+        return question;
+      }
+      // Check conditional field if applicable
+      if (question.conditionalField && answer === question.conditionalField.showWhen) {
+        const conditionalAnswer = answers[question.conditionalField.id];
+        if (!conditionalAnswer || conditionalAnswer.trim() === '') {
+          return {
+            ...question,
+            isConditional: true,
+            conditionalQuestion: question.conditionalField,
+          };
+        }
+      }
+    }
+    return null; // All questions answered
+  }
+
   async function runChatTool(
     toolName: string,
     args: any,
@@ -412,43 +429,278 @@ export async function registerRoutes(
     options?: { allowFaqs?: boolean; allowKnowledgeBase?: boolean }
   ) {
     switch (toolName) {
-      case 'list_services': {
-        const services = await storage.getServices(undefined, undefined, false);
-        const query = (args?.query as string | undefined)?.toLowerCase?.();
-        const filtered = query
-          ? services.filter(s => s.name.toLowerCase().includes(query))
-          : services;
-        return { services: filtered.map(formatServiceForTool) };
-      }
-      case 'get_service_details': {
-        const id = Number(args?.service_id);
-        if (!id) return { error: 'service_id is required' };
-        const service = await storage.getService(id);
-        if (!service) return { error: 'Service not found' };
-        return { service: formatServiceForTool(service) };
-      }
-      case 'get_availability': {
-        const startDate = args?.start_date as string;
-        const endDate = args?.end_date as string;
-        let durationMinutes = 60;
-        if (args?.service_id) {
-          const service = await storage.getService(Number(args.service_id));
-          if (service?.durationMinutes) {
-            durationMinutes = service.durationMinutes;
-          }
-        }
-        const availability = await getAvailabilityRange(startDate, endDate, durationMinutes);
-        return { availability, durationMinutes };
-      }
-      case 'get_business_policies': {
-        const company = await storage.getCompanySettings();
+      case 'get_form_config': {
+        const settings = await storage.getCompanySettings();
+        const formConfig = settings?.formConfig || DEFAULT_FORM_CONFIG;
+        const sortedQuestions = getSortedQuestions(formConfig);
+
         return {
-          workingHoursStart: company.workingHoursStart,
-          workingHoursEnd: company.workingHoursEnd,
-          businessHours: company.businessHours || DEFAULT_BUSINESS_HOURS,
-          minimumBookingValue: company.minimumBookingValue?.toString?.() || company.minimumBookingValue,
+          questions: sortedQuestions.map(q => ({
+            id: q.id,
+            order: q.order,
+            title: q.title,
+            type: q.type,
+            required: q.required,
+            placeholder: q.placeholder,
+            options: q.options?.map(o => ({ value: o.value, label: o.label })),
+            conditionalField: q.conditionalField ? {
+              showWhen: q.conditionalField.showWhen,
+              id: q.conditionalField.id,
+              title: q.conditionalField.title,
+              placeholder: q.conditionalField.placeholder,
+            } : undefined,
+          })),
+          thresholds: formConfig.thresholds,
+          maxScore: formConfig.maxScore,
+          totalQuestions: sortedQuestions.length,
         };
       }
+
+      case 'save_lead_answer': {
+        if (!conversationId) return { error: 'Conversation ID missing' };
+
+        const questionId = args?.question_id as string;
+        const answer = args?.answer as string;
+
+        if (!questionId || !answer) {
+          return { error: 'question_id and answer are required' };
+        }
+
+        const settings = await storage.getCompanySettings();
+        const formConfig = settings?.formConfig || DEFAULT_FORM_CONFIG;
+
+        // Get or create lead for this conversation
+        let lead = await storage.getFormLeadByConversationId(conversationId);
+        const sortedQuestions = getSortedQuestions(formConfig);
+
+        // Build current answers
+        const currentAnswers: FormAnswers = lead ? {
+          nome: lead.nome || undefined,
+          email: lead.email || undefined,
+          telefone: lead.telefone || undefined,
+          cidadeEstado: lead.cidadeEstado || undefined,
+          tipoNegocio: lead.tipoNegocio || undefined,
+          tipoNegocioOutro: lead.tipoNegocioOutro || undefined,
+          tempoNegocio: lead.tempoNegocio || undefined,
+          experienciaMarketing: lead.experienciaMarketing || undefined,
+          orcamentoAnuncios: lead.orcamentoAnuncios || undefined,
+          principalDesafio: lead.principalDesafio || undefined,
+          disponibilidade: lead.disponibilidade || undefined,
+          expectativaResultado: lead.expectativaResultado || undefined,
+          ...(lead.customAnswers || {}),
+        } : {};
+
+        // Add the new answer
+        currentAnswers[questionId] = answer;
+
+        // Find the question index
+        const questionIndex = sortedQuestions.findIndex(q => q.id === questionId);
+        const questionNumber = questionIndex >= 0 ? questionIndex + 1 : (lead?.ultimaPerguntaRespondida || 0) + 1;
+
+        // Check if form is complete
+        const answeredCount = Object.entries(currentAnswers).filter(([k, v]) => v && v.trim() !== '').length;
+        const formCompleto = answeredCount >= sortedQuestions.length;
+
+        // Determine nome for upsert (required field)
+        const nome = currentAnswers.nome || lead?.nome || answer; // Use first answer as nome if nome not yet set
+
+        // Upsert the lead
+        const sessionId = lead?.sessionId || crypto.randomUUID();
+        lead = await storage.upsertFormLeadProgress({
+          sessionId,
+          nome: nome || '',
+          email: currentAnswers.email,
+          telefone: currentAnswers.telefone,
+          cidadeEstado: currentAnswers.cidadeEstado,
+          tipoNegocio: currentAnswers.tipoNegocio,
+          tipoNegocioOutro: currentAnswers.tipoNegocioOutro,
+          tempoNegocio: currentAnswers.tempoNegocio,
+          experienciaMarketing: currentAnswers.experienciaMarketing,
+          orcamentoAnuncios: currentAnswers.orcamentoAnuncios,
+          principalDesafio: currentAnswers.principalDesafio,
+          disponibilidade: currentAnswers.disponibilidade,
+          expectativaResultado: currentAnswers.expectativaResultado,
+          questionNumber,
+          formCompleto,
+          customAnswers: lead?.customAnswers || undefined,
+        }, { conversationId, source: 'chat' }, formConfig);
+
+        // Get next question
+        const nextQuestion = getNextQuestion(lead, formConfig);
+
+        // Send SMS notification if phone is provided
+        if (lead.telefone && !lead.notificacaoEnviada) {
+          try {
+            const twilioSettings = await storage.getTwilioSettings();
+            const companyName = settings?.companyName || 'Skale Club';
+            if (twilioSettings) {
+              const notifyResult = await sendHotLeadNotification(twilioSettings, lead, companyName);
+              if (notifyResult.success) {
+                await storage.updateFormLead(lead.id, { notificacaoEnviada: true });
+              }
+            }
+          } catch (err) {
+            console.error('Lead notification error:', err);
+          }
+        }
+
+        return {
+          success: true,
+          currentScore: lead.scoreTotal,
+          classification: lead.classificacao,
+          isComplete: !nextQuestion,
+          nextQuestion: nextQuestion ? {
+            id: nextQuestion.isConditional ? nextQuestion.conditionalQuestion.id : nextQuestion.id,
+            title: nextQuestion.isConditional ? nextQuestion.conditionalQuestion.title : nextQuestion.title,
+            type: nextQuestion.type,
+            placeholder: nextQuestion.isConditional ? nextQuestion.conditionalQuestion.placeholder : nextQuestion.placeholder,
+            options: nextQuestion.options?.map((o: any) => ({ value: o.value, label: o.label })),
+          } : null,
+          answeredQuestions: answeredCount,
+          totalQuestions: sortedQuestions.length,
+        };
+      }
+
+      case 'get_lead_state': {
+        if (!conversationId) return { error: 'Conversation ID missing' };
+
+        const settings = await storage.getCompanySettings();
+        const formConfig = settings?.formConfig || DEFAULT_FORM_CONFIG;
+        const lead = await storage.getFormLeadByConversationId(conversationId);
+
+        if (!lead) {
+          const sortedQuestions = getSortedQuestions(formConfig);
+          return {
+            answers: {},
+            currentScore: 0,
+            classification: null,
+            isComplete: false,
+            nextQuestion: sortedQuestions[0] ? {
+              id: sortedQuestions[0].id,
+              title: sortedQuestions[0].title,
+              type: sortedQuestions[0].type,
+              placeholder: sortedQuestions[0].placeholder,
+              options: sortedQuestions[0].options?.map(o => ({ value: o.value, label: o.label })),
+            } : null,
+            answeredQuestions: 0,
+            totalQuestions: sortedQuestions.length,
+          };
+        }
+
+        const answers: Record<string, string> = {};
+        if (lead.nome) answers.nome = lead.nome;
+        if (lead.email) answers.email = lead.email;
+        if (lead.telefone) answers.telefone = lead.telefone;
+        if (lead.cidadeEstado) answers.cidadeEstado = lead.cidadeEstado;
+        if (lead.tipoNegocio) answers.tipoNegocio = lead.tipoNegocio;
+        if (lead.tipoNegocioOutro) answers.tipoNegocioOutro = lead.tipoNegocioOutro;
+        if (lead.tempoNegocio) answers.tempoNegocio = lead.tempoNegocio;
+        if (lead.experienciaMarketing) answers.experienciaMarketing = lead.experienciaMarketing;
+        if (lead.orcamentoAnuncios) answers.orcamentoAnuncios = lead.orcamentoAnuncios;
+        if (lead.principalDesafio) answers.principalDesafio = lead.principalDesafio;
+        if (lead.customAnswers) Object.assign(answers, lead.customAnswers);
+
+        const nextQuestion = getNextQuestion(lead, formConfig);
+        const sortedQuestions = getSortedQuestions(formConfig);
+
+        return {
+          answers,
+          currentScore: lead.scoreTotal,
+          classification: lead.classificacao,
+          isComplete: !nextQuestion,
+          nextQuestion: nextQuestion ? {
+            id: nextQuestion.isConditional ? nextQuestion.conditionalQuestion.id : nextQuestion.id,
+            title: nextQuestion.isConditional ? nextQuestion.conditionalQuestion.title : nextQuestion.title,
+            type: nextQuestion.type,
+            placeholder: nextQuestion.isConditional ? nextQuestion.conditionalQuestion.placeholder : nextQuestion.placeholder,
+            options: nextQuestion.options?.map((o: any) => ({ value: o.value, label: o.label })),
+          } : null,
+          answeredQuestions: Object.keys(answers).length,
+          totalQuestions: sortedQuestions.length,
+        };
+      }
+
+      case 'complete_lead': {
+        if (!conversationId) return { error: 'Conversation ID missing' };
+
+        const lead = await storage.getFormLeadByConversationId(conversationId);
+        if (!lead) {
+          return { error: 'No lead found for this conversation' };
+        }
+
+        // Mark as complete
+        await storage.updateFormLead(lead.id, { formCompleto: true } as any);
+
+        // Sync to GoHighLevel
+        let ghlContactId: string | undefined;
+        try {
+          const ghlSettings = await storage.getIntegrationSettings('gohighlevel');
+          const settings = await storage.getCompanySettings();
+          const formConfig = settings?.formConfig || DEFAULT_FORM_CONFIG;
+
+          if (ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.locationId && lead.telefone) {
+            const nameParts = (lead.nome || '').trim().split(' ').filter(Boolean);
+            const firstName = nameParts.shift() || lead.nome || 'Lead';
+            const lastName = nameParts.join(' ');
+
+            // Build custom fields from form config mappings
+            const customFields: Array<{ id: string; field_value: string }> = [];
+            const allAnswers: Record<string, string | undefined> = {
+              nome: lead.nome || undefined,
+              email: lead.email || undefined,
+              telefone: lead.telefone || undefined,
+              cidadeEstado: lead.cidadeEstado || undefined,
+              tipoNegocio: lead.tipoNegocio || undefined,
+              tipoNegocioOutro: lead.tipoNegocioOutro || undefined,
+              tempoNegocio: lead.tempoNegocio || undefined,
+              experienciaMarketing: lead.experienciaMarketing || undefined,
+              orcamentoAnuncios: lead.orcamentoAnuncios || undefined,
+              principalDesafio: lead.principalDesafio || undefined,
+              disponibilidade: lead.disponibilidade || undefined,
+              expectativaResultado: lead.expectativaResultado || undefined,
+              ...(lead.customAnswers || {}),
+            };
+
+            for (const question of formConfig.questions) {
+              if (question.ghlFieldId && allAnswers[question.id]) {
+                customFields.push({
+                  id: question.ghlFieldId,
+                  field_value: allAnswers[question.id]!,
+                });
+              }
+            }
+
+            const contactResult = await getOrCreateGHLContact(
+              ghlSettings.apiKey,
+              ghlSettings.locationId,
+              {
+                email: lead.email || '',
+                firstName,
+                lastName,
+                phone: lead.telefone || '',
+                address: lead.cidadeEstado || undefined,
+                customFields: customFields.length > 0 ? customFields : undefined,
+              }
+            );
+
+            if (contactResult.success && contactResult.contactId) {
+              await storage.updateFormLead(lead.id, { ghlContactId: contactResult.contactId, ghlSyncStatus: 'synced' });
+              ghlContactId = contactResult.contactId;
+            }
+          }
+        } catch (err) {
+          console.error('GHL sync error:', err);
+          await storage.updateFormLead(lead.id, { ghlSyncStatus: 'failed' });
+        }
+
+        return {
+          success: true,
+          classification: lead.classificacao,
+          score: lead.scoreTotal,
+          ghlContactId,
+        };
+      }
+
       case 'search_knowledge_base': {
         if (options?.allowKnowledgeBase === false) {
           return { error: 'Knowledge base is disabled for this chat.' };
@@ -477,6 +729,7 @@ export async function registerRoutes(
           searchQuery: query,
         };
       }
+
       case 'search_faqs': {
         if (options?.allowFaqs === false) {
           return { error: 'FAQ search is disabled for this chat.' };
@@ -484,7 +737,6 @@ export async function registerRoutes(
         const query = (args?.query as string | undefined)?.toLowerCase?.()?.trim();
         const allFaqs = await storage.getFaqs();
 
-        // If no query, return all FAQs
         if (!query) {
           return {
             faqs: allFaqs.map(faq => ({
@@ -494,7 +746,6 @@ export async function registerRoutes(
           };
         }
 
-        // Filter FAQs by query (search in both question and answer)
         const filtered = allFaqs.filter(faq =>
           faq.question.toLowerCase().includes(query) ||
           faq.answer.toLowerCase().includes(query)
@@ -508,200 +759,7 @@ export async function registerRoutes(
           searchQuery: query,
         };
       }
-      case 'update_contact': {
-        const name = (args?.name as string | undefined)?.trim();
-        const email = (args?.email as string | undefined)?.trim();
-        const phone = (args?.phone as string | undefined)?.trim();
-        if (!conversationId) return { error: 'Conversation ID missing' };
-        if (!name && !email && !phone) return { error: 'Provide at least one of name, email, or phone' };
 
-        const updates: any = {};
-        if (name) updates.visitorName = name;
-        if (email) updates.visitorEmail = email;
-        if (phone) updates.visitorPhone = phone;
-
-        const updated = await storage.updateConversation(conversationId, updates);
-        const ghlSettings = await storage.getIntegrationSettings('gohighlevel');
-        const canSyncGhl = !!(ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.locationId);
-        let contactId: string | undefined;
-
-        if (canSyncGhl) {
-          const contactName = updated?.visitorName || name || '';
-          const nameParts = contactName.split(' ');
-          const firstName = nameParts[0] || '';
-          const lastName = nameParts.slice(1).join(' ') || '';
-          const contactEmail = updated?.visitorEmail || email || '';
-          const contactPhone = updated?.visitorPhone || phone || '';
-
-          if (contactEmail || contactPhone) {
-            const contactResult = await getOrCreateGHLContact(
-              ghlSettings.apiKey as string,
-              ghlSettings.locationId as string,
-              {
-                email: contactEmail || "",
-                firstName,
-                lastName,
-                phone: contactPhone || "",
-                address: undefined,
-              }
-            );
-            if (!contactResult.success || !contactResult.contactId) {
-              return { error: contactResult.message || 'Failed to create contact in GoHighLevel.' };
-            }
-            contactId = contactResult.contactId;
-          }
-        }
-
-        return {
-          success: true,
-          visitorName: updated?.visitorName,
-          visitorEmail: updated?.visitorEmail,
-          visitorPhone: updated?.visitorPhone,
-          ghlContactId: contactId,
-        };
-      }
-      case 'create_booking': {
-        const serviceIds = Array.isArray(args?.service_ids) ? args.service_ids.map((id: any) => Number(id)).filter(Boolean) : [];
-        const bookingDate = args?.booking_date as string;
-        const startTime = args?.start_time as string;
-        const paymentMethod = (args?.payment_method as string) || 'site';
-        const customerName = (args?.customer_name as string)?.trim();
-        const customerEmail = (args?.customer_email as string)?.trim();
-        const customerPhone = (args?.customer_phone as string)?.trim();
-        const customerAddress = (args?.customer_address as string)?.trim();
-
-        if (
-          serviceIds.length === 0 ||
-          !bookingDate ||
-          !startTime ||
-          !customerName ||
-          !customerEmail ||
-          !customerPhone ||
-          !customerAddress
-        ) {
-          return { error: 'Missing required booking fields.' };
-        }
-
-        const services = [];
-        let totalPrice = 0;
-        let totalDuration = 0;
-
-        for (const id of serviceIds) {
-          const service = await storage.getService(id);
-          if (!service) {
-            return { error: `Service ID ${id} not found` };
-          }
-          services.push(service);
-          totalPrice += Number(service.price);
-          totalDuration += service.durationMinutes;
-        }
-
-        const [startHour, startMinute] = startTime.split(':').map(Number);
-        const startDate = new Date(`2000-01-01T${startTime}:00`);
-        startDate.setMinutes(startDate.getMinutes() + totalDuration);
-        const endHour = startDate.getHours().toString().padStart(2, '0');
-        const endMinute = startDate.getMinutes().toString().padStart(2, '0');
-        const endTime = `${endHour}:${endMinute}`;
-
-        const existingBookings = await storage.getBookingsByDate(bookingDate);
-        const hasConflict = existingBookings.some(b => startTime < b.endTime && endTime > b.startTime);
-        if (hasConflict) {
-          return { error: 'Time slot is no longer available.' };
-        }
-
-        const ghlSettings = await storage.getIntegrationSettings('gohighlevel');
-        const chatSettings = await storage.getChatSettings();
-        const calendarProvider = chatSettings?.calendarProvider || 'gohighlevel';
-        const calendarIdOverride = chatSettings?.calendarId || '';
-        const effectiveCalendarId = calendarIdOverride || ghlSettings?.calendarId || '';
-        const useGhl = calendarProvider === 'gohighlevel' && !!(ghlSettings?.isEnabled && ghlSettings.apiKey && effectiveCalendarId);
-        const slotsForDay = await getAvailabilityForDate(
-          bookingDate,
-          totalDuration,
-          useGhl,
-          useGhl ? { ...ghlSettings, calendarId: effectiveCalendarId } : ghlSettings
-        );
-        if (slotsForDay.length > 0 && !slotsForDay.includes(startTime)) {
-          return { error: 'Selected time is unavailable. Choose another slot.', availableSlots: slotsForDay };
-        }
-
-        const company = await storage.getCompanySettings();
-        const minimumBookingValue = parseFloat(company?.minimumBookingValue as any) || 0;
-        if (minimumBookingValue > 0 && totalPrice < minimumBookingValue) {
-          totalPrice = minimumBookingValue;
-        }
-
-        let ghlContactId: string | undefined;
-        let ghlAppointmentId: string | undefined;
-        if (useGhl && ghlSettings?.apiKey && ghlSettings.locationId && effectiveCalendarId) {
-          const serviceNames = services.map(s => s.name).join(', ');
-          const nameParts = customerName.split(' ');
-          const firstName = nameParts[0] || '';
-          const lastName = nameParts.slice(1).join(' ') || '';
-
-          const contactResult = await getOrCreateGHLContact(ghlSettings.apiKey, ghlSettings.locationId, {
-            email: customerEmail,
-            firstName,
-            lastName,
-            phone: customerPhone,
-            address: customerAddress,
-          });
-
-          if (!contactResult.success || !contactResult.contactId) {
-            return { error: contactResult.message || 'Failed to create contact in GoHighLevel.' };
-          }
-          ghlContactId = contactResult.contactId;
-
-          const startTimeISO = `${bookingDate}T${startTime}:00-05:00`;
-          const endTimeISO = `${bookingDate}T${endTime}:00-05:00`;
-          const appointmentResult = await createGHLAppointment(
-            ghlSettings.apiKey,
-            effectiveCalendarId,
-            ghlSettings.locationId,
-            {
-              contactId: contactResult.contactId,
-              startTime: startTimeISO,
-              endTime: endTimeISO,
-              title: `Cleaning: ${serviceNames}`,
-              address: customerAddress,
-            }
-          );
-
-          if (!appointmentResult.success || !appointmentResult.appointmentId) {
-            return { error: appointmentResult.message || 'Failed to create appointment in GoHighLevel.' };
-          }
-          ghlAppointmentId = appointmentResult.appointmentId;
-        }
-
-        const booking = await storage.createBooking({
-          serviceIds,
-          bookingDate,
-          startTime,
-          endTime,
-          totalDurationMinutes: totalDuration,
-          totalPrice: totalPrice.toFixed(2),
-          customerName,
-          customerEmail,
-          customerPhone,
-          customerAddress,
-          paymentMethod,
-        });
-
-        if (useGhl && ghlContactId && ghlAppointmentId) {
-          await storage.updateBookingGHLSync(booking.id, ghlContactId, ghlAppointmentId, 'synced');
-        }
-
-        return {
-          success: true,
-          bookingId: booking.id,
-          bookingDate,
-          startTime,
-          endTime,
-          totalDurationMinutes: totalDuration,
-          totalPrice: totalPrice.toFixed(2),
-          services: services.map(s => ({ id: s.id, name: s.name })),
-        };
-      }
       default:
         return { error: 'Unknown tool' };
     }
@@ -2165,11 +2223,8 @@ Sitemap: ${canonicalUrl}/sitemap.xml
         content: m.content,
       }));
 
-      const intakeObjectives = (settings.intakeObjectives as IntakeObjective[] | null) || DEFAULT_INTAKE_OBJECTIVES;
-      const enabledObjectives = intakeObjectives.filter(obj => obj.enabled);
-      const objectivesText = enabledObjectives.length
-        ? `Collect info in this order: ${enabledObjectives.map((o, idx) => `${idx + 1}) ${o.label}`).join('; ')}. Only ask enabled items and avoid repeating already provided details.`
-        : 'Collect booking details efficiently and avoid repeating questions.';
+      // Lead qualification uses dynamic form config instead of static intake objectives
+      const objectivesText = 'IMPORTANT: Use get_form_config and get_lead_state at the start to know which questions to ask. Follow the form configuration order. Save each answer with save_lead_answer before asking the next question.';
       const allowKnowledgeBase = settings.useKnowledgeBase !== false;
       const allowFaqs = settings.useFaqs !== false;
       const sourceRules = `SOURCES:
@@ -2179,99 +2234,62 @@ Sitemap: ${canonicalUrl}/sitemap.xml
         ? `LANGUAGE:\n- Respond in ${input.language}.`
         : '';
 
-      const defaultSystemPrompt = `You are a friendly, efficient marketing assistant for ${company?.companyName || 'Skale Club'}. Balance being consultative with being efficient - don't over-ask.
+      const defaultSystemPrompt = `You are a friendly, consultative lead qualification assistant for ${company?.companyName || 'Skale Club'}, a digital marketing agency that helps service businesses grow.
 
-SMART QUALIFICATION:
-1. When a customer mentions a need, assess if you have ENOUGH info to recommend:
-   - "clean my 3-seater sofa" → SUFFICIENT, search services immediately
-   - "clean my sofa" → Ask: "How many seats?" then proceed
-   - "carpet cleaning" → Ask: "Which room?" then proceed
+YOUR GOAL:
+Qualify potential clients by collecting information through a natural conversation. Ask questions from the form configuration one at a time, in order.
 
-2. Only ask 1-2 critical questions if info is missing. Don't interrogate:
-   ❌ DON'T: Ask about material, stains, age, usage, etc. unless customer mentions issues
-   ✅ DO: Ask only what's needed to identify the right service (size/type)
+STARTUP FLOW:
+1. Call get_form_config to get the qualification questions
+2. Call get_lead_state to check what info has already been collected
+3. Start with a warm greeting and ask the first unanswered question
 
-3. SMART CONFIRMATION - only if unclear:
-   - If customer said "3-seater sofa" → Search immediately, no confirmation needed
-   - If customer said "big sofa" → Confirm: "By big, do you mean 3-seater or larger?"
+CONVERSATION FLOW:
+- Ask one question at a time, conversationally
+- After each answer, call save_lead_answer with the question_id and answer
+- The tool returns the next question to ask - follow that order
+- For select/multiple choice questions, present options naturally
+- If the user's answer is unclear, clarify before saving
+- When isComplete is true, call complete_lead to sync to CRM
 
-4. After suggesting service, ask if they want to book - don't ask more questions
-
-QUALIFICATION GUARDRAILS:
-- Ask only for the minimum info needed to identify the correct service (type + size/room). One question at a time.
-- If the user already gave the detail, do NOT ask again. Move to the next missing item.
-- Never ask for address, email, or phone until they agree to book.
-- If they mention multiple services, pick the primary one and confirm in one sentence.
-- If the request is unclear, ask a single clarifying question then proceed.
-
-NATURAL INFO COLLECTION:
-- After they agree to book, collect info smoothly:
-  "Great! What's your name?" → "Email?" → "Phone?" → "Full address?"
-- Use update_contact immediately when you get name/email/phone
-- Keep it fast - one question per message
-- Intake flow order is mandatory: only ask the next missing item from the configured intake objectives.
-- Never skip ahead or reorder intake questions. If the user already provided an item, mark it as done and move to the next.
-
-BOOKING FLOW:
-- Confirm timezone (America/New_York)
-- Use get_availability with service_id
-- Show 3-5 slots within 14 days
-- After they pick a time and provide address, create booking immediately
-- Don't ask "are you sure?" - just confirm after booking is done
-- Booking must be completed inside chat using create_booking once all required fields are collected.
-- Required fields for create_booking: service_id(s), booking_date, start_time, customer_name, customer_email, customer_phone, customer_address.
-- If availability changes, propose the next 3-5 slots and continue.
+FINALIZATION (after complete_lead):
+Based on the classification returned:
+- QUENTE (Hot): "Excelente! Um especialista entrará em contato em até 24 horas para discutir como podemos ajudar seu negócio a crescer!"
+- MORNO (Warm): "Obrigado pelas informações! Vamos analisar seu perfil e entrar em contato em breve."
+- FRIO (Cold): "Obrigado pelo interesse! Vamos enviar alguns conteúdos úteis para você."
 
 SOURCES:
-- Knowledge base is enabled. Use search_knowledge_base for company-specific policies, prep instructions, service coverage, and internal knowledge.
-- FAQs are enabled. If the knowledge base has no relevant info, use search_faqs for general policies, process, products, guarantees, cancellation, payment methods, and common questions.
+${allowKnowledgeBase ? '- Knowledge base is enabled. Use search_knowledge_base for company-specific information.' : ''}
+${allowFaqs ? '- FAQs are enabled. Use search_faqs for common questions about Skale Club services.' : ''}
 
 TOOLS:
-- list_services: As soon as you know what they need
-- get_service_details: If they ask about a specific service
-- get_availability: With service_id after they agree to book
-- update_contact: When you get name/email/phone
-- create_booking: After slot selection and all required info collected
-- get_business_policies: Check minimums only if needed
-- search_knowledge_base: Use for company-specific policies, prep instructions, service coverage, or internal knowledge.
-- search_faqs: Use when customer asks about general policies, process, products, guarantees, cancellation, payment methods, or common questions. Search with keywords or get all FAQs.
+- get_form_config: Get the qualification questions (call at start)
+- get_lead_state: Check current progress and next question
+- save_lead_answer: Save each answer and get next question
+- complete_lead: Finalize lead and sync to CRM
+- search_knowledge_base: For company-specific info${!allowKnowledgeBase ? ' (disabled)' : ''}
+- search_faqs: For common questions${!allowFaqs ? ' (disabled)' : ''}
 
 RULES:
-- Never guess prices/availability
-- Never invent slots
-- Keep responses 1-2 sentences max
-- Use markdown for emphasis: **bold** for prices and service names
-- Complete bookings in chat
-- When asked about policies, products, process, or general questions, ALWAYS use search_knowledge_base first before answering (if enabled).
-- If no relevant knowledge base docs are found and FAQs are enabled, use search_faqs next.
-- If a knowledge base doc or FAQ provides the answer, use it. Never make up policy information.
-- If knowledge base or FAQs are disabled in settings, do not call those tools.
-- If a source is enabled in the chat settings, you MUST use it to answer relevant questions by reading its content first.
-- If GoHighLevel is enabled, contacts and appointments must be created; if any tool returns an error, ask the user to retry.
-- Be direct: lead with the answer and avoid filler phrases.
+- Keep responses concise (1-2 sentences)
+- Be warm and professional, not robotic
+- Never skip questions or change the order
+- Support Portuguese, English, and Spanish - respond in the user's language
+- If user asks about Skale Club services, answer then return to qualification
+- Don't make up information - use search tools when needed
 
-EFFICIENT EXAMPLES:
+EXAMPLE CONVERSATION:
 
-Example 1 (Sufficient info):
-Customer: "I need my 3-seater sofa cleaned"
-You: "Perfect! Let me find our sofa cleaning options for you..."
-[Use list_services]
-You: "I recommend **3-Seat Sofa Deep Cleaning** - $120, 2 hours. Want to book it?"
-
-Example 2 (Missing size):
-Customer: "I need my sofa cleaned"
-You: "Great! How many seats is your sofa?"
-Customer: "3 seats"
-You: "Perfect! Let me find the right service..."
-[Use list_services]
-You: "I recommend **3-Seat Sofa Deep Cleaning** - $120, 2 hours. Want to book it?"
-
-Example 3 (Ready to book):
-Customer: "Yes, book it"
-You: "Awesome! What's your name?"
-Customer: "John Smith"
-You: "Thanks John! What's your email?"
-[Continue collecting info smoothly, no extra questions]`;
+You: "Olá! Sou o assistente da Skale Club. Estamos aqui para ajudar seu negócio a crescer! Para começar, qual é o seu nome completo?"
+User: "João Silva"
+[Call save_lead_answer with question_id="nome", answer="João Silva"]
+You: "Prazer, João! Qual é o seu email?"
+User: "joao@email.com"
+[Call save_lead_answer with question_id="email", answer="joao@email.com"]
+You: "Ótimo! E qual é o seu número de WhatsApp?"
+[Continue through all questions...]
+[When complete, call complete_lead]
+You: "Excelente, João! Um especialista entrará em contato em até 24 horas para discutir como podemos ajudar seu negócio a crescer!"`;
       const systemPrompt = settings.systemPrompt || defaultSystemPrompt;
 
       const chatMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
@@ -2334,12 +2352,9 @@ You: "Thanks John! What's your email?"
               }
             }
 
-            // Track booking completion
-            if (call.function.name === 'create_booking' && toolResult.success) {
-              bookingCompleted = {
-                value: parseFloat(String(toolResult.totalPrice ?? '0')) || 0,
-                services: toolResult.services?.map((s: any) => s.name) || []
-              };
+            // Track lead completion
+            if (call.function.name === 'complete_lead' && toolResult.success) {
+              leadCaptured = true;
             }
 
             toolResponses.push({

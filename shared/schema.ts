@@ -213,13 +213,18 @@ export const formLeads = pgTable("form_leads", {
   customAnswers: jsonb("custom_answers").$type<Record<string, string>>().default({}),
   ghlContactId: text("ghl_contact_id"),
   ghlSyncStatus: text("ghl_sync_status").default("pending"),
+  // Source tracking: 'form' or 'chat'
+  source: text("source").default("form"),
+  // Link to conversation for chat-originated leads
+  conversationId: text("conversation_id"),
 }, (table) => ({
   emailIdx: index("form_leads_email_idx").on(table.email),
   classificacaoIdx: index("form_leads_classificacao_idx").on(table.classificacao),
   createdAtIdx: index("form_leads_created_at_idx").on(table.createdAt),
   statusIdx: index("form_leads_status_idx").on(table.status),
   sessionIdx: uniqueIndex("form_leads_session_idx").on(table.sessionId),
-  scoreTotalRange: check("form_leads_score_total_check", sql`${table.scoreTotal} >= 0 AND ${table.scoreTotal} <= 78`),
+  sourceIdx: index("form_leads_source_idx").on(table.source),
+  conversationIdx: index("form_leads_conversation_idx").on(table.conversationId),
 }));
 
 // === SCHEMAS ===

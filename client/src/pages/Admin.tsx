@@ -2998,7 +2998,7 @@ function CategoriesSection() {
     });
   };
 
-  if (isLoading) {
+  if (isLoading && !categories) {
     return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
 
@@ -3363,7 +3363,7 @@ function SubcategoriesSection() {
     return filterCategory === 'all' || sub.categoryId === Number(filterCategory);
   });
 
-  if (isLoading) {
+  if (isLoading && !subcategories) {
     return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
 
@@ -3732,7 +3732,7 @@ function ServicesSection() {
     reorderServices.mutate(orderData);
   };
 
-  if (isLoading) {
+  if (isLoading && !services) {
     return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
 
@@ -5195,18 +5195,18 @@ function LeadsSection() {
 
       <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
         <div className="p-4 border-b border-border flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
-          <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
+          <div className="grid grid-cols-2 sm:flex sm:flex-row gap-3 w-full lg:w-auto">
             <Input
               placeholder="Buscar por nome, email ou telefone"
               value={filters.search}
               onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-              className="w-full sm:w-64"
+              className="col-span-2 sm:w-64"
             />
             <Select
               value={filters.classification}
               onValueChange={(value) => setFilters(prev => ({ ...prev, classification: value as LeadClassification | 'all' }))}
             >
-            <SelectTrigger className="w-full sm:w-64 h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
+            <SelectTrigger className="w-full sm:w-40 h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
                 <SelectValue placeholder="Classificação" />
               </SelectTrigger>
               <SelectContent>
@@ -5219,7 +5219,7 @@ function LeadsSection() {
               value={filters.status}
               onValueChange={(value) => setFilters(prev => ({ ...prev, status: value as LeadStatus | 'all' }))}
             >
-            <SelectTrigger className="w-full sm:w-64 h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
+            <SelectTrigger className="w-full sm:w-40 h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -5232,7 +5232,7 @@ function LeadsSection() {
               value={filters.completion}
               onValueChange={(value) => setFilters(prev => ({ ...prev, completion: value as 'all' | 'complete' | 'incomplete' }))}
             >
-            <SelectTrigger className="w-full sm:w-64 h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
+            <SelectTrigger className="w-full sm:w-40 h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
                 <SelectValue placeholder="Conclusão" />
               </SelectTrigger>
               <SelectContent>
@@ -5572,7 +5572,7 @@ function FormEditorContent() {
     return Math.max(...question.options.map(o => o.points));
   };
 
-  if (isLoading) {
+  if (isLoading && !formConfig) {
     return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
 
@@ -6211,7 +6211,7 @@ function BookingsSection() {
     deleteMutation.mutate(id);
   };
 
-  if (isLoading) {
+  if (isLoading && !bookings) {
     return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
 
@@ -6443,7 +6443,7 @@ function FaqsSection() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && !faqs) {
     return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
 
@@ -6688,96 +6688,56 @@ function ChatSection() {
 
   const defaultSystemPrompt = useMemo(() => {
     const companyName = companySettings?.companyName || 'Skale Club';
-    return `You are a friendly, efficient marketing assistant for ${companyName}. Balance being consultative with being efficient - don't over-ask.
+    return `You are a friendly, consultative lead qualification assistant for ${companyName}, a digital marketing agency that helps service businesses grow.
 
-SMART QUALIFICATION:
-1. When a customer mentions a need, assess if you have ENOUGH info to recommend:
-   - "clean my 3-seater sofa" → SUFFICIENT, search services immediately
-   - "clean my sofa" → Ask: "How many seats?" then proceed
-   - "carpet cleaning" → Ask: "Which room?" then proceed
+YOUR GOAL:
+Qualify potential clients by collecting information through a natural conversation. Ask questions from the form configuration one at a time, in order.
 
-2. Only ask 1-2 critical questions if info is missing. Don't interrogate:
-   ❌ DON'T: Ask about material, stains, age, usage, etc. unless customer mentions issues
-   ✅ DO: Ask only what's needed to identify the right service (size/type)
+STARTUP FLOW:
+1. Call get_form_config to get the qualification questions
+2. Call get_lead_state to check what info has already been collected
+3. Start with a warm greeting and ask the first unanswered question
 
-3. SMART CONFIRMATION - only if unclear:
-   - If customer said "3-seater sofa" → Search immediately, no confirmation needed
-   - If customer said "big sofa" → Confirm: "By big, do you mean 3-seater or larger?"
+CONVERSATION FLOW:
+- Ask one question at a time, conversationally
+- After each answer, call save_lead_answer with the question_id and answer
+- The tool returns the next question to ask - follow that order
+- For select/multiple choice questions, present options naturally
+- If the user's answer is unclear, clarify before saving
+- When isComplete is true, call complete_lead to sync to CRM
 
-4. After suggesting service, ask if they want to book - don't ask more questions
-
-QUALIFICATION GUARDRAILS:
-- Ask only for the minimum info needed to identify the correct service (type + size/room). One question at a time.
-- If the user already gave the detail, do NOT ask again. Move to the next missing item.
-- Never ask for address, email, or phone until they agree to book.
-- If they mention multiple services, pick the primary one and confirm in one sentence.
-- If the request is unclear, ask a single clarifying question then proceed.
-
-NATURAL INFO COLLECTION:
-- After they agree to book, collect info smoothly:
-  "Great! What's your name?" → "Email?" → "Phone?" → "Full address?"
-- Use update_contact immediately when you get name/email/phone
-- Keep it fast - one question per message
-- Intake flow order is mandatory: only ask the next missing item from the configured intake objectives.
-- Never skip ahead or reorder intake questions. If the user already provided an item, mark it as done and move to the next.
-
-BOOKING FLOW:
-- Confirm timezone (America/New_York)
-- Use get_availability with service_id
-- Show 3-5 slots within 14 days
-- After they pick a time and provide address, create booking immediately
-- Don't ask "are you sure?" - just confirm after booking is done
-- Booking must be completed inside chat using create_booking once all required fields are collected.
-- Required fields for create_booking: service_id(s), booking_date, start_time, customer_name, customer_email, customer_phone, customer_address.
-- If availability changes, propose the next 3-5 slots and continue.
-
-SOURCES:
-- FAQs are enabled. Use search_faqs for general policies, process, products, guarantees, cancellation, payment methods, and common questions.
+FINALIZATION (after complete_lead):
+Based on the classification returned:
+- QUENTE (Hot): "Excelente! Um especialista entrará em contato em até 24 horas para discutir como podemos ajudar seu negócio a crescer!"
+- MORNO (Warm): "Obrigado pelas informações! Vamos analisar seu perfil e entrar em contato em breve."
+- FRIO (Cold): "Obrigado pelo interesse! Vamos enviar alguns conteúdos úteis para você."
 
 TOOLS:
-- list_services: As soon as you know what they need
-- get_service_details: If they ask about a specific service
-- get_availability: With service_id after they agree to book
-- update_contact: When you get name/email/phone
-- create_booking: After slot selection and all required info collected
-- get_business_policies: Check minimums only if needed
-- search_faqs: Use when customer asks about general policies, process, products, guarantees, cancellation, payment methods, or common questions.
+- get_form_config: Get the qualification questions (call at start)
+- get_lead_state: Check current progress and next question
+- save_lead_answer: Save each answer and get next question
+- complete_lead: Finalize lead and sync to CRM
+- search_faqs: For common questions about ${companyName}
 
 RULES:
-- Never guess prices/availability
-- Never invent slots
-- Keep responses 1-2 sentences max
-- Use markdown for emphasis: **bold** for prices and service names
-- Complete bookings in chat
-- When asked about policies, products, process, or general questions, ALWAYS use search_faqs before answering (if enabled).
-- If an FAQ provides the answer, use it. Never make up policy information.
-- If FAQs are disabled in settings, do not call search_faqs.
-- If a source is enabled in the chat settings, you MUST use it to answer relevant questions by reading its content first.
-- If GoHighLevel is enabled, contacts and appointments must be created; if any tool returns an error, ask the user to retry.
-- Be direct: lead with the answer and avoid filler phrases.
+- Keep responses concise (1-2 sentences)
+- Be warm and professional, not robotic
+- Never skip questions or change the order
+- Support Portuguese, English, and Spanish - respond in the user's language
+- If user asks about ${companyName} services, answer then return to qualification
+- Don't make up information - use search tools when needed
 
-EFFICIENT EXAMPLES:
+EXAMPLE CONVERSATION:
 
-Example 1 (Sufficient info):
-Customer: "I need my 3-seater sofa cleaned"
-You: "Perfect! Let me find our sofa cleaning options for you..."
-[Use list_services]
-You: "I recommend **3-Seat Sofa Deep Cleaning** - $120, 2 hours. Want to book it?"
-
-Example 2 (Missing size):
-Customer: "I need my sofa cleaned"
-You: "Great! How many seats is your sofa?"
-Customer: "3 seats"
-You: "Perfect! Let me find the right service..."
-[Use list_services]
-You: "I recommend **3-Seat Sofa Deep Cleaning** - $120, 2 hours. Want to book it?"
-
-Example 3 (Ready to book):
-Customer: "Yes, book it"
-You: "Awesome! What's your name?"
-Customer: "John Smith"
-You: "Thanks John! What's your email?"
-[Continue collecting info smoothly, no extra questions]`;
+You: "Olá! Sou o assistente da ${companyName}. Estamos aqui para ajudar seu negócio a crescer! Para começar, qual é o seu nome completo?"
+User: "João Silva"
+[Call save_lead_answer with question_id="nome", answer="João Silva"]
+You: "Prazer, João! Qual é o seu email?"
+User: "joao@email.com"
+[Call save_lead_answer with question_id="email", answer="joao@email.com"]
+[Continue through all questions...]
+[When complete, call complete_lead]
+You: "Excelente, João! Um especialista entrará em contato em até 24 horas!"`;
   }, [companySettings?.companyName]);
 
   const { data: conversations, isLoading: loadingConversations, refetch: refetchConversations } = useQuery<ConversationSummary[]>({
@@ -7314,86 +7274,7 @@ You: "Thanks John! What's your email?"
         </CardContent>
       </Card>
 
-      <Card className="shadow-sm border-0 bg-muted dark:bg-slate-800/70">
-        <CardHeader>
-          <CardTitle>Calendars & Staff</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Configure which calendar the chat should use for availability and bookings.
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="chat-calendar-provider">Calendar provider</Label>
-              <Select
-                value={settingsDraft.calendarProvider || 'gohighlevel'}
-                onValueChange={(value) => updateField('calendarProvider', value)}
-              >
-                <SelectTrigger id="chat-calendar-provider">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="gohighlevel">GoHighLevel</SelectItem>
-                  <SelectItem value="google">Google Calendar</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="chat-calendar-id">Calendar ID</Label>
-              <Input
-                id="chat-calendar-id"
-                value={settingsDraft.calendarId || ''}
-                onChange={(e) => updateField('calendarId', e.target.value)}
-                placeholder="Primary calendar ID"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Staff calendars</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addCalendarStaff}>
-                <Plus className="w-4 h-4 mr-1" /> Add staff
-              </Button>
-            </div>
-            {(settingsDraft.calendarStaff || []).length === 0 ? (
-              <div className="rounded-lg border border-dashed border-border/70 bg-card/60 p-4 text-sm text-muted-foreground">
-                No staff calendars yet. Add one if you want to route bookings by staff.
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {(settingsDraft.calendarStaff || []).map((staff, index) => (
-                  <div key={`${staff.name}-${index}`} className="grid gap-2 md:grid-cols-[1fr_1fr_auto] items-center">
-                    <Input
-                      value={staff.name}
-                      onChange={(e) => updateCalendarStaff(index, 'name', e.target.value)}
-                      placeholder="Staff name"
-                    />
-                    <Input
-                      value={staff.calendarId}
-                      onChange={(e) => updateCalendarStaff(index, 'calendarId', e.target.value)}
-                      placeholder="Staff calendar ID"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9 text-muted-foreground hover:text-foreground"
-                      onClick={() => removeCalendarStaff(index)}
-                      aria-label="Remove staff calendar"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <p className="text-xs text-muted-foreground">
-              Staff calendars are stored for routing; booking logic can use them when enabled.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Calendar & Staff section removed - chat now uses dynamic form qualification */}
 
       <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen} className="rounded-xl bg-card/80 dark:bg-slate-900/70 shadow-none border border-border/70 dark:border-slate-800/70">
         <div className="flex items-center justify-between px-4 py-3">
@@ -7675,30 +7556,16 @@ You: "Thanks John! What's your email?"
             </Card>
           )}
 
+          {/* Intake flow section removed - chat now follows dynamic Form Editor configuration */}
           <Card className="border-0 bg-muted dark:bg-slate-800/60 shadow-none">
             <CardHeader>
-              <CardTitle>Intake flow</CardTitle>
-              <p className="text-sm text-muted-foreground">Enable, disable, or reorder the data the bot collects before booking.</p>
+              <CardTitle>Lead Qualification</CardTitle>
+              <p className="text-sm text-muted-foreground">The chat follows the same questions configured in the Form Editor.</p>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <DndContext sensors={objectivesSensors} collisionDetection={closestCenter} onDragEnd={handleObjectivesDragEnd}>
-                <SortableContext
-                  items={(settingsDraft.intakeObjectives || DEFAULT_CHAT_OBJECTIVES).map((o) => o.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <div className="space-y-2">
-                    {(settingsDraft.intakeObjectives || DEFAULT_CHAT_OBJECTIVES).map((objective) => (
-                      <ObjectiveRow
-                        key={objective.id}
-                        objective={objective}
-                        onToggle={toggleObjective}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
-              <p className="text-[11px] text-muted-foreground">
-                The assistant will follow this order when gathering details.
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Go to <strong>Leads → Form Editor</strong> to customize the qualification questions.
+                Both the lead form and chat will use the same configuration.
               </p>
             </CardContent>
           </Card>
@@ -10009,7 +9876,7 @@ function BlogSection({ resetSignal }: { resetSignal: number }) {
     );
   };
 
-  if (isLoading) {
+  if (isLoading && !posts) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />

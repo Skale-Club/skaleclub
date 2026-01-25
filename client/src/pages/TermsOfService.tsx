@@ -53,7 +53,7 @@ export default function TermsOfService() {
           </Section>
 
           <Section icon={<Sparkles className="w-6 h-6" />} title="2. Services and Scope">
-            <p>We provide residential and commercial cleaning and related offerings as described on the site. Service details, checklists, and exclusions may vary by package and location.</p>
+            <p>We provide digital marketing services including lead generation, advertising management, and growth consulting for service businesses. Service details, deliverables, and exclusions may vary by package and engagement type.</p>
           </Section>
 
           <Section icon={<Users className="w-6 h-6" />} title="3. Eligibility and Accounts">
@@ -104,10 +104,10 @@ export default function TermsOfService() {
             </ul>
           </Section>
 
-          <Section icon={<Package className="w-6 h-6" />} title="9. Supplies, Equipment, and Property Care">
+          <Section icon={<Package className="w-6 h-6" />} title="9. Marketing Materials and Assets">
             <ul className="list-disc pl-6 space-y-2">
-              <li>We supply standard cleaning products and tools unless otherwise noted. If you request specific products or equipment, you may need to provide them.</li>
-              <li>Certain delicate or high-value items may be cleaned only with your explicit permission or may be excluded to prevent damage.</li>
+              <li>We may create marketing materials, ads, and content as part of our services. You grant us permission to use your business information and approved assets for marketing purposes.</li>
+              <li>You are responsible for providing accurate business information and approving any public-facing materials before launch.</li>
             </ul>
           </Section>
 

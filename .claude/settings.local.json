@@ -28,7 +28,8 @@
       "Bash(chmod:*)",
       "Bash(grep:*)",
       "Bash(pgrep:*)",
-      "Bash(psql:*)"
+      "Bash(psql:*)",
+      "Bash(npx drizzle-kit:*)"
     ]
   }
 }

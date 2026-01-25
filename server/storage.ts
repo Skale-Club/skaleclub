@@ -186,8 +186,9 @@ export interface IStorage {
   getConversationMessages(conversationId: string): Promise<ConversationMessage[]>;
   
   // Leads
-  upsertFormLeadProgress(progress: FormLeadProgressInput, metadata?: { userAgent?: string }, formConfig?: FormConfig): Promise<FormLead>;
+  upsertFormLeadProgress(progress: FormLeadProgressInput, metadata?: { userAgent?: string; conversationId?: string; source?: string }, formConfig?: FormConfig): Promise<FormLead>;
   getFormLeadBySession(sessionId: string): Promise<FormLead | undefined>;
+  getFormLeadByConversationId(conversationId: string): Promise<FormLead | undefined>;
   listFormLeads(filters?: { status?: LeadStatus; classificacao?: LeadClassification; formCompleto?: boolean; search?: string }): Promise<FormLead[]>;
   updateFormLead(id: number, updates: Partial<Pick<FormLead, "status" | "observacoes" | "notificacaoEnviada" | "ghlContactId" | "ghlSyncStatus">>): Promise<FormLead | undefined>;
   getFormLeadByEmail(email: string): Promise<FormLead | undefined>;
@@ -671,16 +672,29 @@ export class DatabaseStorage implements IStorage {
     return lead;
   }
 
+  async getFormLeadByConversationId(conversationId: string): Promise<FormLead | undefined> {
+    await ensureFormLeadGhlColumns();
+    const [lead] = await db.select().from(formLeads).where(eq(formLeads.conversationId, conversationId));
+    return lead;
+  }
+
   async getFormLeadByEmail(email: string): Promise<FormLead | undefined> {
     await ensureFormLeadGhlColumns();
     const [lead] = await db.select().from(formLeads).where(eq(formLeads.email, email));
     return lead;
   }
 
-  async upsertFormLeadProgress(progress: FormLeadProgressInput, metadata: { userAgent?: string } = {}, formConfig?: FormConfig): Promise<FormLead> {
+  async upsertFormLeadProgress(progress: FormLeadProgressInput, metadata: { userAgent?: string; conversationId?: string; source?: string } = {}, formConfig?: FormConfig): Promise<FormLead> {
     await ensureFormLeadGhlColumns();
 
-    const existing = await this.getFormLeadBySession(progress.sessionId);
+    // For chat source, try to find by conversationId first
+    let existing = metadata.conversationId
+      ? await this.getFormLeadByConversationId(metadata.conversationId)
+      : await this.getFormLeadBySession(progress.sessionId);
+
+    if (!existing) {
+      existing = await this.getFormLeadBySession(progress.sessionId);
+    }
     if (!existing && !progress.nome) {
       throw new Error("Nome é obrigatório para iniciar o formulário");
     }
@@ -757,6 +771,8 @@ export class DatabaseStorage implements IStorage {
       updatedAt: now,
       ghlContactId: existing?.ghlContactId ?? null,
       ghlSyncStatus: existing?.ghlSyncStatus ?? "pending",
+      source: metadata.source ?? existing?.source ?? "form",
+      conversationId: metadata.conversationId ?? existing?.conversationId ?? null,
     };
 
     if (!existing) {
@@ -800,6 +816,8 @@ export class DatabaseStorage implements IStorage {
         observacoes: payload.observacoes ?? null,
         ghlContactId: null,
         ghlSyncStatus: payload.ghlSyncStatus ?? "pending",
+        source: metadata.source ?? "form",
+        conversationId: metadata.conversationId ?? null,
         createdAt: safeStartedAt,
         updatedAt: now,
       };
