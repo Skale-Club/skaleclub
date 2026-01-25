@@ -185,6 +185,7 @@ export const api = {
         status: z.enum(leadStatusValues).optional(),
         classificacao: z.enum(leadClassificationValues).optional(),
         formCompleto: z.enum(['true', 'false']).transform(v => v === 'true').optional(),
+        completionStatus: z.enum(['completo', 'em_progresso', 'abandonado']).optional(),
         search: z.string().optional(),
       }).optional(),
       responses: {

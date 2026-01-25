@@ -59,8 +59,13 @@ import {
   type InsertBlogPost,
   type InsertKnowledgeBaseCategory,
   type InsertKnowledgeBaseArticle,
+<<<<<<< HEAD
 } from "#shared/schema.js";
 import { eq, and, or, ilike, gte, lte, inArray, desc, asc, sql, ne } from "drizzle-orm";
+=======
+} from "@shared/schema";
+import { eq, and, or, ilike, gte, lte, lt, inArray, desc, asc, sql, ne } from "drizzle-orm";
+>>>>>>> 320f9bb (alteracao de filtro)
 import { z } from "zod";
 
 // Ensure optional GHL columns exist even if migration hasn't been applied yet
@@ -189,7 +194,7 @@ export interface IStorage {
   upsertFormLeadProgress(progress: FormLeadProgressInput, metadata?: { userAgent?: string; conversationId?: string; source?: string }, formConfig?: FormConfig): Promise<FormLead>;
   getFormLeadBySession(sessionId: string): Promise<FormLead | undefined>;
   getFormLeadByConversationId(conversationId: string): Promise<FormLead | undefined>;
-  listFormLeads(filters?: { status?: LeadStatus; classificacao?: LeadClassification; formCompleto?: boolean; search?: string }): Promise<FormLead[]>;
+  listFormLeads(filters?: { status?: LeadStatus; classificacao?: LeadClassification; formCompleto?: boolean; completionStatus?: 'completo' | 'em_progresso' | 'abandonado'; search?: string }): Promise<FormLead[]>;
   updateFormLead(id: number, updates: Partial<Pick<FormLead, "status" | "observacoes" | "notificacaoEnviada" | "ghlContactId" | "ghlSyncStatus">>): Promise<FormLead | undefined>;
   getFormLeadByEmail(email: string): Promise<FormLead | undefined>;
   deleteFormLead(id: number): Promise<boolean>;
@@ -848,12 +853,31 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
-  async listFormLeads(filters: { status?: LeadStatus; classificacao?: LeadClassification; formCompleto?: boolean; search?: string } = {}): Promise<FormLead[]> {
+  async listFormLeads(filters: { status?: LeadStatus; classificacao?: LeadClassification; formCompleto?: boolean; completionStatus?: 'completo' | 'em_progresso' | 'abandonado'; search?: string } = {}): Promise<FormLead[]> {
     await ensureFormLeadGhlColumns();
     const conditions: any[] = [];
     if (filters.status) conditions.push(eq(formLeads.status, filters.status));
     if (filters.classificacao) conditions.push(eq(formLeads.classificacao, filters.classificacao));
-    if (typeof filters.formCompleto === "boolean") conditions.push(eq(formLeads.formCompleto, filters.formCompleto));
+
+    // New 3-stage completion filter
+    if (filters.completionStatus) {
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      if (filters.completionStatus === 'completo') {
+        conditions.push(eq(formLeads.formCompleto, true));
+      } else if (filters.completionStatus === 'em_progresso') {
+        // Not complete AND updated within last 24 hours
+        conditions.push(eq(formLeads.formCompleto, false));
+        conditions.push(gte(formLeads.updatedAt, oneDayAgo));
+      } else if (filters.completionStatus === 'abandonado') {
+        // Not complete AND updated more than 24 hours ago
+        conditions.push(eq(formLeads.formCompleto, false));
+        conditions.push(lt(formLeads.updatedAt, oneDayAgo));
+      }
+    } else if (typeof filters.formCompleto === "boolean") {
+      // Legacy filter support
+      conditions.push(eq(formLeads.formCompleto, filters.formCompleto));
+    }
+
     if (filters.search) {
       const likeValue = `%${filters.search.toLowerCase()}%`;
       conditions.push(

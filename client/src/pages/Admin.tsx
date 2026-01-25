@@ -4971,7 +4971,7 @@ function LeadsSection() {
     search: string;
     classification: LeadClassification | 'all';
     status: LeadStatus | 'all';
-    completion: 'all' | 'complete' | 'incomplete';
+    completion: 'all' | 'completo' | 'em_progresso' | 'abandonado';
   }>({
     search: '',
     classification: 'all',
@@ -4994,8 +4994,7 @@ function LeadsSection() {
       if (filters.search) params.set('search', filters.search);
       if (filters.classification !== 'all') params.set('classificacao', filters.classification);
       if (filters.status !== 'all') params.set('status', filters.status);
-      if (filters.completion === 'complete') params.set('formCompleto', 'true');
-      if (filters.completion === 'incomplete') params.set('formCompleto', 'false');
+      if (filters.completion !== 'all') params.set('completionStatus', filters.completion);
       const res = await apiRequest('GET', `/api/form-leads${params.toString() ? `?${params.toString()}` : ''}`);
       return res.json();
     }
@@ -5047,12 +5046,16 @@ function LeadsSection() {
 
   const stats = useMemo(() => {
     const list = leads || [];
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const incomplete = list.filter(l => !l.formCompleto);
     return {
       total: list.length,
       hot: list.filter(l => l.classificacao === 'QUENTE').length,
       warm: list.filter(l => l.classificacao === 'MORNO').length,
       cold: list.filter(l => l.classificacao === 'FRIO').length,
-      inProgress: list.filter(l => !l.formCompleto).length,
+      complete: list.filter(l => l.formCompleto).length,
+      inProgress: incomplete.filter(l => l.updatedAt && new Date(l.updatedAt) >= oneDayAgo).length,
+      abandoned: incomplete.filter(l => !l.updatedAt || new Date(l.updatedAt) < oneDayAgo).length,
     };
   }, [leads]);
 
@@ -5073,10 +5076,11 @@ function LeadsSection() {
     { value: 'DESQUALIFICADO', label: 'Desqualificado' },
   ];
 
-  const completionOptions: { value: 'all' | 'complete' | 'incomplete'; label: string }[] = [
+  const completionOptions: { value: 'all' | 'completo' | 'em_progresso' | 'abandonado'; label: string }[] = [
     { value: 'all', label: 'Todos os formulários' },
-    { value: 'complete', label: 'Formulário completo' },
-    { value: 'incomplete', label: 'Em progresso' },
+    { value: 'completo', label: 'Completo' },
+    { value: 'em_progresso', label: 'Em progresso' },
+    { value: 'abandonado', label: 'Abandonado' },
   ];
 
   const formatDate = (value?: string | null) => {
@@ -5103,6 +5107,30 @@ function LeadsSection() {
     if (lead.formCompleto) return 'Formulário completo';
     const step = lead.ultimaPerguntaRespondida || 1;
     return `Pergunta ${step} de ${totalQuestions}`;
+  };
+
+  const getCompletionStatus = (lead: FormLead): 'completo' | 'em_progresso' | 'abandonado' => {
+    if (lead.formCompleto) return 'completo';
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const updatedAt = lead.updatedAt ? new Date(lead.updatedAt) : null;
+    if (updatedAt && updatedAt >= oneDayAgo) return 'em_progresso';
+    return 'abandonado';
+  };
+
+  const completionStatusLabel = (status: 'completo' | 'em_progresso' | 'abandonado') => {
+    switch (status) {
+      case 'completo': return 'Completo';
+      case 'em_progresso': return 'Em progresso';
+      case 'abandonado': return 'Abandonado';
+    }
+  };
+
+  const completionStatusClass = (status: 'completo' | 'em_progresso' | 'abandonado') => {
+    switch (status) {
+      case 'completo': return 'text-green-600';
+      case 'em_progresso': return 'text-amber-600';
+      case 'abandonado': return 'text-red-600';
+    }
   };
 
   const ghlBadgeClass = (status?: string | null) => {
@@ -5200,7 +5228,7 @@ function LeadsSection() {
         </div>
         <div className="p-4 rounded-xl border bg-card shadow-sm">
           <p className="text-xs text-muted-foreground">Em progresso</p>
-          <p className="text-2xl font-bold text-rose-600">{stats.inProgress}</p>
+          <p className="text-2xl font-bold text-amber-500">{stats.inProgress}</p>
         </div>
       </div>
 
@@ -5241,7 +5269,7 @@ function LeadsSection() {
             </Select>
             <Select
               value={filters.completion}
-              onValueChange={(value) => setFilters(prev => ({ ...prev, completion: value as 'all' | 'complete' | 'incomplete' }))}
+              onValueChange={(value) => setFilters(prev => ({ ...prev, completion: value as 'all' | 'completo' | 'em_progresso' | 'abandonado' }))}
             >
             <SelectTrigger className="w-full sm:w-[220px] h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
                 <SelectValue placeholder="Conclusão" />
@@ -5303,8 +5331,8 @@ function LeadsSection() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="text-sm font-medium text-foreground">{questionLabel(lead)}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {lead.formCompleto ? 'Completo' : 'Em progresso'}
+                    <div className={clsx("text-xs", completionStatusClass(getCompletionStatus(lead)))}>
+                      {completionStatusLabel(getCompletionStatus(lead))}
                     </div>
                   </td>
                   <td className="px-4 py-3">
