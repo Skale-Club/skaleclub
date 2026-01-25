@@ -184,7 +184,7 @@ export const api = {
       input: z.object({
         status: z.enum(leadStatusValues).optional(),
         classificacao: z.enum(leadClassificationValues).optional(),
-        formCompleto: z.coerce.boolean().optional(),
+        formCompleto: z.enum(['true', 'false']).transform(v => v === 'true').optional(),
         search: z.string().optional(),
       }).optional(),
       responses: {

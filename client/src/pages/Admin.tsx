@@ -5074,9 +5074,9 @@ function LeadsSection() {
   ];
 
   const completionOptions: { value: 'all' | 'complete' | 'incomplete'; label: string }[] = [
-    { value: 'all', label: 'Todos' },
+    { value: 'all', label: 'Todos os formulários' },
     { value: 'complete', label: 'Formulário completo' },
-    { value: 'incomplete', label: 'Abandonado' },
+    { value: 'incomplete', label: 'Em progresso' },
   ];
 
   const formatDate = (value?: string | null) => {
@@ -5199,7 +5199,7 @@ function LeadsSection() {
           <p className="text-2xl font-bold text-blue-600">{stats.cold}</p>
         </div>
         <div className="p-4 rounded-xl border bg-card shadow-sm">
-          <p className="text-xs text-muted-foreground">Abandonos</p>
+          <p className="text-xs text-muted-foreground">Em progresso</p>
           <p className="text-2xl font-bold text-rose-600">{stats.inProgress}</p>
         </div>
       </div>
@@ -5217,7 +5217,7 @@ function LeadsSection() {
               value={filters.classification}
               onValueChange={(value) => setFilters(prev => ({ ...prev, classification: value as LeadClassification | 'all' }))}
             >
-            <SelectTrigger className="w-full sm:w-40 h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
+            <SelectTrigger className="w-full sm:w-[220px] h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
                 <SelectValue placeholder="Classificação" />
               </SelectTrigger>
               <SelectContent>
@@ -5243,7 +5243,7 @@ function LeadsSection() {
               value={filters.completion}
               onValueChange={(value) => setFilters(prev => ({ ...prev, completion: value as 'all' | 'complete' | 'incomplete' }))}
             >
-            <SelectTrigger className="w-full sm:w-40 h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
+            <SelectTrigger className="w-full sm:w-[220px] h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
                 <SelectValue placeholder="Conclusão" />
               </SelectTrigger>
               <SelectContent>
