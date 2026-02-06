@@ -1,13 +1,38 @@
 # 🔧 Correção de Erros 500 no Vercel
 
-## Problema Identificado
+## 🎯 Causa Raiz Identificada
 
-Suas variáveis de ambiente estão no Vercel, mas **faltam 2 variáveis críticas** que estão causando os erros 500:
+O servidor está **crashando no startup** porque está faltando `SESSION_SECRET`. 
+
+### Por que TODOS os endpoints retornam 500?
+
+O código em [server/auth/supabaseAuth.ts](server/auth/supabaseAuth.ts#L23) tenta configurar o middleware de sessão assim:
+
+```typescript
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET!,  // ❌ UNDEFINED no Vercel
+    store: sessionStore,
+    // ...
+  })
+);
+```
+
+Quando `SESSION_SECRET` não existe, o `express-session` **falha** e **todas as requisições crasham** antes mesmo de chegar aos handlers das rotas. Por isso todos os endpoints (incluindo públicos como `/api/form-config`, `/api/categories`, etc.) retornam 500.
+
+### Verificar no Vercel Logs
+
+Acesse: **Vercel Dashboard → Deployments → [Latest] → Functions → Logs**
+
+Você vai ver um erro similar a:
+```
+Error: express-session secret option required
+```
 
 ## ❌ Variáveis Faltando no Vercel
 
-### 1. `SESSION_SECRET` (CRÍTICO)
-**Erro causado:** Sessões não podem ser criadas, causando falha em todas as requisições autenticadas
+### 1. `SESSION_SECRET` (CRÍTICO - CAUSA DO 500)
+**Erro causado:** Servidor crasha no startup, TODOS os endpoints retornam 500
 
 **Como adicionar:**
 1. No Vercel, vá em **Settings → Environment Variables**
