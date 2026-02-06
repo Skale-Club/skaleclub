@@ -29,7 +29,8 @@
       "Bash(grep:*)",
       "Bash(pgrep:*)",
       "Bash(psql:*)",
-      "Bash(npx drizzle-kit:*)"
+      "Bash(npx drizzle-kit:*)",
+      "Bash(dir:*)"
     ]
   }
 }

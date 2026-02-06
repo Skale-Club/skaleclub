@@ -114,6 +114,9 @@ export default function Home() {
   const homepageContent: Partial<HomepageContent> = companySettings?.homepageContent || {};
 
   const trustBadges = homepageContent.trustBadges || [];
+  const reviewsEmbedUrl = homepageContent.reviewsSection?.embedUrl || '';
+  const reviewsTitle = homepageContent.reviewsSection?.title || '';
+  const reviewsSubtitle = homepageContent.reviewsSection?.subtitle || '';
   const badgeIconMap: Record<string, React.ComponentType<any>> = {
     star: Star,
     shield: Shield,
