@@ -2,18 +2,18 @@ import type { Express, Request, Response, NextFunction, RequestHandler } from "e
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { getSupabaseAdmin } from "../lib/supabase.js";
-import { db } from "../db.js";
+import { db, pool } from "../db.js";
 import { users } from "#shared/models/auth.js";
 import { eq } from "drizzle-orm";
 
 export async function setupSupabaseAuth(app: Express) {
   app.set("trust proxy", 1);
 
-  // Setup session store (same pattern as Replit auth)
+  // Setup session store — reuses the existing pool (already configured with SSL)
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
+    pool: pool,
     createTableIfMissing: true,
     ttl: sessionTtl,
     tableName: "sessions",
