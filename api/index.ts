@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { createApp } from "../server/app";
+import { createApp } from "../server/app.js";
 import type express from "express";
 
 let app: express.Express | null = null;

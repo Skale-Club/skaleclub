@@ -8,7 +8,7 @@ const isReplit = !!process.env.REPL_ID;
 export async function registerStorageRoutes(app: Express, requireAdmin: any) {
   if (isReplit) {
     // Replit: use Object Storage (existing implementation)
-    const { ObjectStorageService, registerObjectStorageRoutes } = await import("../replit_integrations/object_storage");
+    const { ObjectStorageService, registerObjectStorageRoutes } = await import("../replit_integrations/object_storage/index.js");
     const objectStorageService = new ObjectStorageService();
 
     app.post("/api/upload", requireAdmin, async (req: Request, res: Response) => {
@@ -65,7 +65,7 @@ export async function registerStorageRoutes(app: Express, requireAdmin: any) {
     registerObjectStorageRoutes(app);
   } else {
     // Vercel: use Supabase Storage
-    const { SupabaseStorageService } = await import("./supabaseStorage");
+    const { SupabaseStorageService } = await import("./supabaseStorage.js");
     const storageService = new SupabaseStorageService();
 
     app.post("/api/upload", requireAdmin, async (_req: Request, res: Response) => {

@@ -1,6 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import type { Server } from "http";
-import { storage } from "./storage";
+import { storage } from "./storage.js";
 import { api, errorSchemas, buildUrl } from "@shared/routes";
 import { z } from "zod";
 import OpenAI from "openai";
@@ -12,11 +12,11 @@ import type { LeadClassification, LeadStatus } from "@shared/schema";
 import { DEFAULT_FORM_CONFIG, calculateMaxScore, calculateFormScoresWithConfig, classifyLead, getSortedQuestions, KNOWN_FIELD_IDS } from "@shared/form";
 import type { FormAnswers } from "@shared/form";
 import type { FormConfig } from "@shared/schema";
-import { insertSubcategorySchema } from "./storage";
-import { testGHLConnection, getGHLFreeSlots, getOrCreateGHLContact, createGHLAppointment, getGHLCustomFields } from "./integrations/ghl";
-import { sendHotLeadNotification, sendLowPerformanceAlert, sendNewChatNotification } from "./integrations/twilio";
-import { registerStorageRoutes } from "./storage/storageAdapter";
-import { db } from "./db";
+import { insertSubcategorySchema } from "./storage.js";
+import { testGHLConnection, getGHLFreeSlots, getOrCreateGHLContact, createGHLAppointment, getGHLCustomFields } from "./integrations/ghl.js";
+import { sendHotLeadNotification, sendLowPerformanceAlert, sendNewChatNotification } from "./integrations/twilio.js";
+import { registerStorageRoutes } from "./storage/storageAdapter.js";
+import { db } from "./db.js";
 import { users } from "@shared/models/auth";
 import { eq } from "drizzle-orm";
 
@@ -31,7 +31,7 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
       return res.status(401).json({ message: 'Authentication required' });
     }
     try {
-      const { authStorage } = await import("./replit_integrations/auth/storage");
+      const { authStorage } = await import("./replit_integrations/auth/storage.js");
       const dbUser = await authStorage.getUser(user.claims.sub);
       if (!dbUser?.isAdmin) {
         return res.status(403).json({ message: 'Admin access required' });
@@ -138,7 +138,7 @@ export async function registerRoutes(
       }
 
       try {
-        const { authStorage } = await import("./replit_integrations/auth/storage");
+        const { authStorage } = await import("./replit_integrations/auth/storage.js");
         const dbUser = await authStorage.getUser(user.claims.sub);
         res.json({
           isAdmin: dbUser?.isAdmin || false,

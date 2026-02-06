@@ -1,5 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
+import { registerRoutes } from "./routes.js";
 import path from "path";
 import { createServer, type Server } from "http";
 
@@ -67,11 +67,11 @@ export async function createApp(): Promise<{ app: express.Express; httpServer: S
 
   // Setup auth based on environment
   if (isReplit) {
-    const { setupAuth, registerAuthRoutes } = await import("./replit_integrations/auth");
+    const { setupAuth, registerAuthRoutes } = await import("./replit_integrations/auth/index.js");
     await setupAuth(app);
     registerAuthRoutes(app);
   } else {
-    const { setupSupabaseAuth } = await import("./auth/supabaseAuth");
+    const { setupSupabaseAuth } = await import("./auth/supabaseAuth.js");
     await setupSupabaseAuth(app);
   }
 

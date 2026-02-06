@@ -1,4 +1,4 @@
-import { db, pool } from "./db";
+import { db, pool } from "./db.js";
 import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead } from "@shared/form";
 import {
   categories,

@@ -1,4 +1,4 @@
-import { getSupabaseAdmin } from "../lib/supabase";
+import { getSupabaseAdmin } from "../lib/supabase.js";
 import { randomUUID } from "crypto";
 import type { Response } from "express";
 

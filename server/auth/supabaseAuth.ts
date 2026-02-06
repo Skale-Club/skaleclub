@@ -1,8 +1,8 @@
 import type { Express, Request, Response, NextFunction, RequestHandler } from "express";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
-import { getSupabaseAdmin } from "../lib/supabase";
-import { db } from "../db";
+import { getSupabaseAdmin } from "../lib/supabase.js";
+import { db } from "../db.js";
 import { users } from "@shared/models/auth";
 import { eq } from "drizzle-orm";
 
