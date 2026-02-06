@@ -3,7 +3,7 @@ import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { getSupabaseAdmin } from "../lib/supabase.js";
 import { db } from "../db.js";
-import { users } from "#shared/models/auth";
+import { users } from "#shared/models/auth.js";
 import { eq } from "drizzle-orm";
 
 export async function setupSupabaseAuth(app: Express) {

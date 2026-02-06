@@ -1,4 +1,4 @@
-import type { TwilioSettings, FormLead } from "#shared/schema";
+import type { TwilioSettings, FormLead } from "#shared/schema.js";
 
 type TwilioResult = { success: boolean; message?: string };
 

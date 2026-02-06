@@ -1,5 +1,5 @@
 import { db, pool } from "./db.js";
-import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead } from "#shared/form";
+import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead } from "#shared/form.js";
 import {
   categories,
   subcategories,
@@ -59,7 +59,7 @@ import {
   type InsertBlogPost,
   type InsertKnowledgeBaseCategory,
   type InsertKnowledgeBaseArticle,
-} from "#shared/schema";
+} from "#shared/schema.js";
 import { eq, and, or, ilike, gte, lte, inArray, desc, asc, sql, ne } from "drizzle-orm";
 import { z } from "zod";
 
