@@ -4,7 +4,6 @@ import { Link, useLocation } from "wouter";
 import { ArrowRight, Star, Shield, Clock, Sparkles, Heart, BadgeCheck, ThumbsUp, Trophy, Phone, Calendar, FileText } from "lucide-react";
 import { CartSummary } from "@/components/CartSummary";
 import { AboutSection } from "@/components/AboutSection";
-import heroImage from "@assets/Persona-Mobile_1767749022412.png";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings, BlogPost, HomepageContent } from "@shared/schema";
 import { format } from "date-fns";
@@ -167,6 +166,7 @@ export default function Home() {
   const displayPhone = companySettings?.companyPhone || "(303) 309 4226";
   const telPhone = displayPhone.replace(/\D/g, '');
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const heroImageUrl = (companySettings?.heroImageUrl || '').trim();
   const handleConsultingCta = () => {
     setIsFormOpen(true);
     trackCTAClick('consulting-steps', consultingStepsSection.ctaButtonLabel || 'Agendar Conversa Gratuita');
@@ -271,11 +271,15 @@ export default function Home() {
               </div>
             </div>
             <div className="order-2 lg:order-1 relative flex h-full items-end justify-center lg:justify-end self-end w-full lg:min-h-[400px] z-10 lg:ml-[-3%] mt-0 sm:mt-0 lg:-mt-10">
-              <img
-                src={companySettings?.heroImageUrl || heroImage}
-                alt="Cleaning Professionals"
-                className="w-[92vw] sm:w-[98%] lg:w-full max-w-[380px] sm:max-w-[360px] md:max-w-[430px] lg:max-w-[500px] xl:max-w-[560px] object-contain drop-shadow-2xl -translate-y-[2%] sm:-translate-y-[1%] lg:translate-y-[0%] scale-100 sm:scale-100 lg:scale-98 origin-bottom"
-              />
+              {heroImageUrl ? (
+                <img
+                  src={heroImageUrl}
+                  alt="Cleaning Professionals"
+                  className="w-[92vw] sm:w-[98%] lg:w-full max-w-[380px] sm:max-w-[360px] md:max-w-[430px] lg:max-w-[500px] xl:max-w-[560px] object-contain drop-shadow-2xl -translate-y-[2%] sm:-translate-y-[1%] lg:translate-y-[0%] scale-100 sm:scale-100 lg:scale-98 origin-bottom"
+                />
+              ) : (
+                <div className="w-[92vw] sm:w-[98%] lg:w-full max-w-[380px] sm:max-w-[360px] md:max-w-[430px] lg:max-w-[500px] xl:max-w-[560px]" />
+              )}
             </div>
           </div>
         </div>

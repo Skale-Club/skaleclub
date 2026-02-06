@@ -106,7 +106,6 @@ import { useTheme } from '@/context/ThemeContext';
 import type { Category, Service, Booking, Subcategory, Faq, BlogPost, HomepageContent, FormLead, LeadClassification, LeadStatus, FormConfig, FormQuestion, FormOption, ConsultingStep } from '@shared/schema';
 import { DEFAULT_FORM_CONFIG, calculateMaxScore, getSortedQuestions } from '@shared/form';
 import { HelpCircle, FileText, AlertCircle, ExternalLink } from 'lucide-react';
-import heroImage from '@assets/Persona-Mobile_1767749022412.png';
 import ghlLogo from '@assets/ghl-logo.webp';
 import { SiFacebook, SiGoogleanalytics, SiGoogletagmanager, SiOpenai, SiTwilio } from 'react-icons/si';
 
@@ -491,7 +490,7 @@ function HeroSettingsSection() {
     title: 'Gere clientes de forma previsível',
     subtitle: 'Consultoria em marketing digital para prestadores de serviço nos EUA. Transforme seu negócio com estratégias comprovadas de aquisição e conversão de clientes.',
     ctaText: 'Agendar Conversa Gratuita',
-    image: heroImage,
+    image: '',
   };
 
   const [heroTitle, setHeroTitle] = useState('');
