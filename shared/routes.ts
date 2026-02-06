@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertBookingSchema, categories, services, bookings, formLeadProgressSchema, formLeads, leadStatusEnum, leadClassificationEnum } from './schema';
+import { insertBookingSchema, categories, services, bookings, formLeadProgressSchema, formLeads, leadStatusEnum, leadClassificationEnum } from './schema.js';
 
 const urlRuleSchema = z.object({
   pattern: z.string(),

@@ -4,7 +4,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Re-export auth models (required for Replit Auth)
-export * from "./models/auth";
+export * from "./models/auth.js";
 
 // === TABLE DEFINITIONS ===
 

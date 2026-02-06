@@ -1,4 +1,4 @@
-import type { LeadClassification, FormConfig, FormQuestion, FormOption as SchemaFormOption } from "./schema";
+import type { LeadClassification, FormConfig, FormQuestion, FormOption as SchemaFormOption } from "./schema.js";
 
 // Legacy type for backward compatibility
 export type FormOption = {
