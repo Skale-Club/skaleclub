@@ -13,14 +13,19 @@ if (!databaseUrl) {
 }
 
 const isServerless = !!process.env.VERCEL;
+const isCloudDb =
+  databaseUrl.includes('.supabase.') ||
+  databaseUrl.includes('.neon.') ||
+  databaseUrl.includes('sslmode=require');
 export const shouldUseSsl =
+  isCloudDb ||
   process.env.PGSSLMODE === "require" ||
   process.env.POSTGRES_SSL === "true" ||
   Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
 
 export const pool = new Pool({
   connectionString: databaseUrl,
-  ssl: shouldUseSsl ? { rejectUnauthorized: false } : undefined,
+  ssl: shouldUseSsl ? { rejectUnauthorized: false } : false,
   max: isServerless ? 5 : 20,
   idleTimeoutMillis: isServerless ? 30000 : undefined,
   connectionTimeoutMillis: isServerless ? 10000 : undefined,
