@@ -6,36 +6,46 @@
  * Usage: npm run build (automatically runs after Vite build)
  */
 
-import { db } from "../server/db";
-import { companySettings } from "../shared/schema";
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
 
 async function injectSEOData() {
   try {
-    console.log("🔍 Fetching SEO data from database...");
+    if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL) {
+      console.warn(
+        "DATABASE_URL or POSTGRES_URL not set. Skipping SEO injection and using default tags.",
+      );
+      return;
+    }
+
+    console.log("Fetching SEO data from database...");
+
+    const [{ db }, { companySettings }] = await Promise.all([
+      import("../server/db"),
+      import("../shared/schema"),
+    ]);
 
     // Fetch company settings from database
     const settings = await db.select().from(companySettings).limit(1);
     const seoData = settings[0];
 
     if (!seoData) {
-      console.warn("⚠️  No company settings found in database. Using defaults.");
+      console.warn("No company settings found in database. Using defaults.");
       return;
     }
 
-    console.log("✅ SEO data fetched successfully");
+    console.log("SEO data fetched successfully");
 
     // Path to built index.html
     const indexPath = join(process.cwd(), "dist", "public", "index.html");
 
     if (!existsSync(indexPath)) {
-      console.error("❌ index.html not found at:", indexPath);
-      console.log("💡 Make sure to run 'npm run build' first");
+      console.error("index.html not found at:", indexPath);
+      console.log("Make sure to run 'npm run build' first");
       return;
     }
 
-    console.log("📄 Reading index.html...");
+    console.log("Reading index.html...");
     let html = readFileSync(indexPath, "utf-8");
 
     // Extract and prepare values with fallbacks
@@ -51,7 +61,7 @@ async function injectSEOData() {
     const ogSiteName = seoData.ogSiteName || seoData.companyName || "Skale Club";
     const twitterCard = seoData.twitterCard || "summary_large_image";
 
-    console.log("✏️  Injecting SEO data:");
+    console.log("Injecting SEO data:");
     console.log(`   - Title: ${title}`);
     console.log(`   - Description: ${description.substring(0, 50)}...`);
 
@@ -130,14 +140,14 @@ async function injectSEOData() {
     // Write updated HTML back
     writeFileSync(indexPath, html, "utf-8");
 
-    console.log("✅ SEO data injected successfully!");
-    console.log(`📦 Updated file: ${indexPath}`);
+    console.log("SEO data injected successfully!");
+    console.log(`Updated file: ${indexPath}`);
 
     process.exit(0);
   } catch (error) {
-    console.error("❌ Error injecting SEO data:", error);
+    console.error("Error injecting SEO data:", error);
     // Don't fail the build, just warn
-    console.warn("⚠️  Build will continue with default SEO tags");
+    console.warn("Build will continue with default SEO tags");
     process.exit(0);
   }
 }
