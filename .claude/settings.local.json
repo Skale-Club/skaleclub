@@ -31,7 +31,8 @@
       "Bash(psql:*)",
       "Bash(npx drizzle-kit:*)",
       "Bash(dir:*)",
-      "Bash(where:*)"
+      "Bash(where:*)",
+      "Bash(git push)"
     ]
   }
 }
