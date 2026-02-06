@@ -4,9 +4,9 @@ import * as schema from "#shared/schema.js";
 
 const { Pool } = pg;
 
-export const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+const rawDatabaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
-if (!databaseUrl) {
+if (!rawDatabaseUrl) {
   throw new Error(
     "DATABASE_URL or POSTGRES_URL must be set. Did you forget to provision a database?",
   );
@@ -14,14 +14,22 @@ if (!databaseUrl) {
 
 const isServerless = !!process.env.VERCEL;
 const isCloudDb =
-  databaseUrl.includes('.supabase.') ||
-  databaseUrl.includes('.neon.') ||
-  databaseUrl.includes('sslmode=require');
+  rawDatabaseUrl.includes('.supabase.') ||
+  rawDatabaseUrl.includes('.neon.') ||
+  rawDatabaseUrl.includes('sslmode=');
 export const shouldUseSsl =
   isCloudDb ||
   process.env.PGSSLMODE === "require" ||
   process.env.POSTGRES_SSL === "true" ||
   Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
+
+// Strip sslmode from URL so pg doesn't override our ssl config
+export const databaseUrl = shouldUseSsl
+  ? rawDatabaseUrl.replace(/[?&]sslmode=[^&]*/g, (match) =>
+      match.startsWith('?') ? '?' : '')
+    .replace(/\?$/, '')
+    .replace(/\?&/, '?')
+  : rawDatabaseUrl;
 
 export const pool = new Pool({
   connectionString: databaseUrl,
