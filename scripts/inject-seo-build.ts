@@ -11,6 +11,11 @@ import { join } from "path";
 
 async function injectSEOData() {
   try {
+    if (process.env.VERCEL || process.env.VERCEL_ENV) {
+      // Allow self-signed certs for build-time DB access on Vercel.
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+    }
+
     if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL) {
       console.warn(
         "DATABASE_URL or POSTGRES_URL not set. Skipping SEO injection and using default tags.",
@@ -145,6 +150,12 @@ async function injectSEOData() {
 
     process.exit(0);
   } catch (error) {
+    if ((error as any)?.code === "SELF_SIGNED_CERT_IN_CHAIN") {
+      console.warn(
+        "Skipping SEO injection due to self-signed certificate in chain.",
+      );
+      process.exit(0);
+    }
     console.error("Error injecting SEO data:", error);
     // Don't fail the build, just warn
     console.warn("Build will continue with default SEO tags");

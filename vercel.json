@@ -4,7 +4,7 @@
   "functions": {
     "api/index.ts": {
       "maxDuration": 60,
-      "includeFiles": "server/**,shared/**,drizzle.config.ts"
+      "includeFiles": ["server/**", "shared/**", "drizzle.config.ts"]
     }
   },
   "rewrites": [
