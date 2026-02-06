@@ -132,6 +132,25 @@ export async function setupSupabaseAuth(app: Express) {
     }
   });
 
+  // Get current authenticated user (mirrors Replit auth's /api/auth/user)
+  app.get("/api/auth/user", async (req: Request, res: Response) => {
+    const sess = req.session as any;
+
+    if (!sess?.userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const [dbUser] = await db.select().from(users).where(eq(users.id, sess.userId));
+      if (!dbUser) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      res.json(dbUser);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
   // Supabase config endpoint for client
   app.get("/api/supabase-config", (_req: Request, res: Response) => {
     res.json({

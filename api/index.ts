@@ -4,13 +4,25 @@ import { createApp } from "../server/app.js";
 import type express from "express";
 
 let app: express.Express | null = null;
+let initPromise: Promise<express.Express> | null = null;
 
 async function getApp() {
-  if (!app) {
-    const result = await createApp();
-    app = result.app;
+  if (app) return app;
+
+  if (!initPromise) {
+    initPromise = createApp()
+      .then((result) => {
+        app = result.app;
+        return app;
+      })
+      .catch((err) => {
+        // Reset so next request retries initialization
+        initPromise = null;
+        throw err;
+      });
   }
-  return app;
+
+  return initPromise;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

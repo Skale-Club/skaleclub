@@ -18,6 +18,15 @@ async function fetchUser(): Promise<User | null> {
 }
 
 async function logout(): Promise<void> {
+  // Try Supabase logout first (POST), fall back to Replit logout (redirect)
+  const res = await fetch("/api/auth/logout", {
+    method: "POST",
+    credentials: "include",
+  });
+  if (res.ok) {
+    window.location.href = "/";
+    return;
+  }
   window.location.href = "/api/logout";
 }
 
