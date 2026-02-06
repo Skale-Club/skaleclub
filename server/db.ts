@@ -13,9 +13,14 @@ if (!databaseUrl) {
 }
 
 const isServerless = !process.env.REPL_ID;
+const shouldUseSsl =
+  process.env.PGSSLMODE === "require" ||
+  process.env.POSTGRES_SSL === "true" ||
+  Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
 
 export const pool = new Pool({
   connectionString: databaseUrl,
+  ssl: shouldUseSsl ? { rejectUnauthorized: false } : undefined,
   max: isServerless ? 5 : 20,
   idleTimeoutMillis: isServerless ? 30000 : undefined,
 });
