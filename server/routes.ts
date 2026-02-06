@@ -13,27 +13,48 @@ import { DEFAULT_FORM_CONFIG, calculateMaxScore, calculateFormScoresWithConfig, 
 import type { FormAnswers } from "@shared/form";
 import type { FormConfig } from "@shared/schema";
 import { insertSubcategorySchema } from "./storage";
-import { ObjectStorageService, registerObjectStorageRoutes } from "./replit_integrations/object_storage";
-import { authStorage } from "./replit_integrations/auth/storage";
 import { testGHLConnection, getGHLFreeSlots, getOrCreateGHLContact, createGHLAppointment, getGHLCustomFields } from "./integrations/ghl";
 import { sendHotLeadNotification, sendLowPerformanceAlert, sendNewChatNotification } from "./integrations/twilio";
+import { registerStorageRoutes } from "./storage/storageAdapter";
+import { db } from "./db";
+import { users } from "@shared/models/auth";
+import { eq } from "drizzle-orm";
 
-// Admin authentication middleware - uses Replit Auth + isAdmin check
+const isReplit = !!process.env.REPL_ID;
+
+// Admin authentication middleware - environment-aware
 async function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  const user = (req as any).user;
-  
-  if (!req.isAuthenticated || !req.isAuthenticated() || !user?.claims?.sub) {
-    return res.status(401).json({ message: 'Authentication required' });
-  }
-  
-  try {
-    const dbUser = await authStorage.getUser(user.claims.sub);
-    if (!dbUser?.isAdmin) {
-      return res.status(403).json({ message: 'Admin access required' });
+  if (isReplit) {
+    // Replit Auth: check Passport session + isAdmin in DB
+    const user = (req as any).user;
+    if (!req.isAuthenticated || !req.isAuthenticated() || !user?.claims?.sub) {
+      return res.status(401).json({ message: 'Authentication required' });
     }
-    next();
-  } catch (error) {
-    return res.status(500).json({ message: 'Failed to verify admin status' });
+    try {
+      const { authStorage } = await import("./replit_integrations/auth/storage");
+      const dbUser = await authStorage.getUser(user.claims.sub);
+      if (!dbUser?.isAdmin) {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      next();
+    } catch (error) {
+      return res.status(500).json({ message: 'Failed to verify admin status' });
+    }
+  } else {
+    // Supabase Auth: check express-session
+    const sess = req.session as any;
+    if (!sess?.userId) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+    try {
+      const [dbUser] = await db.select().from(users).where(eq(users.id, sess.userId));
+      if (!dbUser?.isAdmin) {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      next();
+    } catch (error) {
+      return res.status(500).json({ message: 'Failed to verify admin status' });
+    }
   }
 }
 
@@ -105,26 +126,31 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
 
-  // Check admin session status - uses Replit Auth
-  app.get('/api/admin/session', async (req, res) => {
-    const user = (req as any).user;
-    
-    if (!req.isAuthenticated || !req.isAuthenticated() || !user?.claims?.sub) {
-      return res.json({ isAdmin: false });
-    }
-    
-    try {
-      const dbUser = await authStorage.getUser(user.claims.sub);
-      res.json({ 
-        isAdmin: dbUser?.isAdmin || false, 
-        email: dbUser?.email || null,
-        firstName: dbUser?.firstName || null,
-        lastName: dbUser?.lastName || null
-      });
-    } catch (error) {
-      res.json({ isAdmin: false });
-    }
-  });
+  // Check admin session status - environment-aware
+  // On Vercel (Supabase Auth), this is handled by server/auth/supabaseAuth.ts
+  // On Replit, we handle it here with Replit Auth
+  if (isReplit) {
+    app.get('/api/admin/session', async (req, res) => {
+      const user = (req as any).user;
+
+      if (!req.isAuthenticated || !req.isAuthenticated() || !user?.claims?.sub) {
+        return res.json({ isAdmin: false, email: null, firstName: null, lastName: null });
+      }
+
+      try {
+        const { authStorage } = await import("./replit_integrations/auth/storage");
+        const dbUser = await authStorage.getUser(user.claims.sub);
+        res.json({
+          isAdmin: dbUser?.isAdmin || false,
+          email: dbUser?.email || null,
+          firstName: dbUser?.firstName || null,
+          lastName: dbUser?.lastName || null
+        });
+      } catch (error) {
+        res.json({ isAdmin: false, email: null, firstName: null, lastName: null });
+      }
+    });
+  }
 
   let runtimeOpenAiKey = process.env.OPENAI_API_KEY || "";
 
@@ -908,74 +934,8 @@ export async function registerRoutes(
     res.json(relationships);
   });
 
-  const objectStorageService = new ObjectStorageService();
-
-  app.post("/api/upload", requireAdmin, async (req, res) => {
-    try {
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-      const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
-      res.json({ uploadURL, objectPath });
-    } catch (error) {
-      console.error("Upload error:", error);
-      res.status(500).json({ error: "Failed to generate upload URL" });
-    }
-  });
-
-  // Local file upload endpoint (fallback when Object Storage doesn't work)
-  app.post("/api/upload-local", requireAdmin, async (req, res) => {
-    try {
-      const { filename, data } = req.body;
-      if (!filename || !data) {
-        return res.status(400).json({ error: "Missing filename or data" });
-      }
-
-      // Sanitize filename
-      const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const timestamp = Date.now();
-      const ext = path.extname(safeName) || '.png';
-      const finalName = `upload_${timestamp}${ext}`;
-
-      // Decode base64 and save
-      const buffer = Buffer.from(data, 'base64');
-      const filePath = path.join(process.cwd(), 'attached_assets', finalName);
-      fs.writeFileSync(filePath, buffer);
-
-      res.json({ path: `/attached_assets/${finalName}` });
-    } catch (error) {
-      console.error("Local upload error:", error);
-      res.status(500).json({ error: "Failed to save file" });
-    }
-  });
-
-  // Update favicon endpoint - replaces the system favicon
-  app.post("/api/update-favicon", requireAdmin, async (req, res) => {
-    try {
-      const { data, filename } = req.body;
-      if (!data) {
-        return res.status(400).json({ error: "Missing image data" });
-      }
-
-      const buffer = Buffer.from(data, 'base64');
-      
-      // Update favicon.png in client/public
-      const faviconPath = path.join(process.cwd(), 'client', 'public', 'favicon.png');
-      fs.writeFileSync(faviconPath, buffer);
-      
-      // Also update in dist if it exists (for production builds)
-      const distFaviconPath = path.join(process.cwd(), 'dist', 'public', 'favicon.png');
-      if (fs.existsSync(path.dirname(distFaviconPath))) {
-        fs.writeFileSync(distFaviconPath, buffer);
-      }
-
-      res.json({ success: true, message: 'Favicon updated successfully' });
-    } catch (error) {
-      console.error("Favicon update error:", error);
-      res.status(500).json({ error: "Failed to update favicon" });
-    }
-  });
-
-  // Register object storage routes
-  registerObjectStorageRoutes(app);
+  // Register upload/storage routes (environment-aware: Replit Object Storage or Supabase Storage)
+  await registerStorageRoutes(app, requireAdmin);
 
   // Company Settings (public GET, admin PUT)
   app.get('/api/company-settings', async (req, res) => {

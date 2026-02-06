@@ -10,5 +10,11 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const isServerless = !process.env.REPL_ID;
+
+export const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: isServerless ? 5 : 20,
+  idleTimeoutMillis: isServerless ? 30000 : undefined,
+});
 export const db = drizzle(pool, { schema });
