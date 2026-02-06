@@ -1,20 +1,18 @@
 import { useEffect, useState } from "react";
 import { useCategories, useServices } from "@/hooks/use-booking";
 import { Link, useLocation } from "wouter";
-import { ArrowRight, Star, Shield, Clock, Sparkles, Heart, BadgeCheck, ThumbsUp, Trophy, Phone, Calendar, FileText } from "lucide-react";
+import { ArrowRight, Star, Shield, Clock, Sparkles, Heart, BadgeCheck, ThumbsUp, Trophy, Calendar, FileText } from "lucide-react";
 import { CartSummary } from "@/components/CartSummary";
 import { AboutSection } from "@/components/AboutSection";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings, BlogPost, HomepageContent } from "@shared/schema";
 import { format } from "date-fns";
 import { trackCTAClick } from "@/lib/analytics";
-import { DEFAULT_HOMEPAGE_CONTENT } from "@/lib/homepageDefaults";
 import { LeadFormModal } from "@/components/LeadFormModal";
 import { ConsultingStepsSection } from "@/components/ConsultingStepsSection";
 
 function BlogSection({ content }: { content: HomepageContent['blogSection'] }) {
   const sectionContent = {
-    ...DEFAULT_HOMEPAGE_CONTENT.blogSection,
     ...(content || {}),
   };
 
@@ -112,44 +110,8 @@ export default function Home() {
   });
 
   const isLoading = isCategoriesLoading || isServicesLoading;
-  const consultingStepsSection = (() => {
-    const base = {
-      ...DEFAULT_HOMEPAGE_CONTENT.consultingStepsSection,
-      ...(companySettings?.homepageContent?.consultingStepsSection || {}),
-    };
-    const steps = base.steps?.length
-      ? base.steps
-      : DEFAULT_HOMEPAGE_CONTENT.consultingStepsSection?.steps || [];
-    return { ...base, steps };
-  })();
-  const homepageContent = {
-    ...DEFAULT_HOMEPAGE_CONTENT,
-    ...(companySettings?.homepageContent || {}),
-    trustBadges: companySettings?.homepageContent?.trustBadges?.length
-      ? companySettings.homepageContent.trustBadges
-      : DEFAULT_HOMEPAGE_CONTENT.trustBadges,
-    categoriesSection: {
-      ...DEFAULT_HOMEPAGE_CONTENT.categoriesSection,
-      ...(companySettings?.homepageContent?.categoriesSection || {}),
-    },
-    reviewsSection: {
-      ...DEFAULT_HOMEPAGE_CONTENT.reviewsSection,
-      ...(companySettings?.homepageContent?.reviewsSection || {}),
-    },
-    blogSection: {
-      ...DEFAULT_HOMEPAGE_CONTENT.blogSection,
-      ...(companySettings?.homepageContent?.blogSection || {}),
-    },
-    aboutSection: {
-      ...DEFAULT_HOMEPAGE_CONTENT.aboutSection,
-      ...(companySettings?.homepageContent?.aboutSection || {}),
-    },
-    areasServedSection: {
-      ...DEFAULT_HOMEPAGE_CONTENT.areasServedSection,
-      ...(companySettings?.homepageContent?.areasServedSection || {}),
-    },
-    consultingStepsSection,
-  };
+  const consultingStepsSection: HomepageContent["consultingStepsSection"] = companySettings?.homepageContent?.consultingStepsSection || { enabled: false, steps: [] };
+  const homepageContent: Partial<HomepageContent> = companySettings?.homepageContent || {};
 
   const trustBadges = homepageContent.trustBadges || [];
   const badgeIconMap: Record<string, React.ComponentType<any>> = {
@@ -163,31 +125,12 @@ export default function Home() {
     trophy: Trophy,
   };
 
-  const displayPhone = companySettings?.companyPhone || "(303) 309 4226";
-  const telPhone = displayPhone.replace(/\D/g, '');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const heroImageUrl = (companySettings?.heroImageUrl || '').trim();
   const handleConsultingCta = () => {
     setIsFormOpen(true);
-    trackCTAClick('consulting-steps', consultingStepsSection.ctaButtonLabel || 'Agendar Conversa Gratuita');
+    trackCTAClick('consulting-steps', consultingStepsSection.ctaButtonLabel || '{companySettings?.ctaText || ""}');
   };
-
-  const REVIEWS_TITLE_PT = 'Avaliações de Clientes';
-  const REVIEWS_SUBTITLE_PT = 'Veja o que nossos clientes dizem sobre nossos serviços 5 estrelas.';
-  const reviewsTitle = (() => {
-    const title = homepageContent.reviewsSection?.title?.trim();
-    if (!title) return REVIEWS_TITLE_PT;
-    if (title.toLowerCase() === 'customer reviews') return REVIEWS_TITLE_PT;
-    return title;
-  })();
-  const reviewsSubtitle = (() => {
-    const subtitle = homepageContent.reviewsSection?.subtitle?.trim();
-    const defaultEn = 'see what our customers are saying about our 5-star services.';
-    if (!subtitle) return REVIEWS_SUBTITLE_PT;
-    if (subtitle.toLowerCase() === defaultEn) return REVIEWS_SUBTITLE_PT;
-    return subtitle;
-  })();
-
   const handleCategoryClick = (categoryId: number) => {
     setLocation(`/services?category=${categoryId}&scroll=true`);
   };
@@ -217,8 +160,7 @@ export default function Home() {
       if (!target) return;
       const trigger = target.closest('[data-form-trigger], button, a') as HTMLElement | null;
       if (!trigger) return;
-      const text = (trigger.textContent || '').trim().toLowerCase();
-      if (trigger.dataset.formTrigger === 'lead-form' || text === 'agendar conversa gratuita') {
+      if (trigger.dataset.formTrigger === 'lead-form') {
         event.preventDefault();
         setIsFormOpen(true);
       }
@@ -234,47 +176,44 @@ export default function Home() {
         <div className="container-custom mx-auto relative z-10 w-full">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-1 sm:gap-6 lg:gap-8 items-center lg:items-center">
             <div className="order-1 lg:order-2 text-white pt-6 sm:pt-8 lg:pt-16 pb-1 sm:pb-5 lg:pb-[5.5rem] lg:translate-y-0 relative z-20">
-              <div className="mt-4 sm:mt-0 mb-3 lg:mb-6">
-                <img
-                  src={homepageContent.heroBadgeImageUrl || DEFAULT_HOMEPAGE_CONTENT.heroBadgeImageUrl}
-                  alt={homepageContent.heroBadgeAlt || DEFAULT_HOMEPAGE_CONTENT.heroBadgeAlt || 'Trusted Experts'}
-                  className="h-5 sm:h-6 w-auto object-contain"
-                />
-              </div>
+              {homepageContent.heroBadgeImageUrl ? (
+                <div className="mt-4 sm:mt-0 mb-3 lg:mb-6">
+                  <img
+                    src={homepageContent.heroBadgeImageUrl}
+                    alt={homepageContent.heroBadgeAlt || ''}
+                    className="h-5 sm:h-6 w-auto object-contain"
+                  />
+                </div>
+              ) : null}
               <h1 className="text-[11vw] sm:text-5xl md:text-6xl lg:text-4xl xl:text-5xl font-bold mb-3 lg:mb-6 font-display leading-[1.05] sm:leading-[1.1]">
                 {companySettings?.heroTitle ? (
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">{companySettings.heroTitle}</span>
-                ) : (
-                  <>
-                    <span className="text-white">Gere clientes</span> <br />
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">
-                      de forma previsível
-                    </span>
-                  </>
-                )}
+                ) : null}
               </h1>
               <p className="text-base sm:text-xl text-blue-50/80 mb-4 lg:mb-8 leading-relaxed max-w-xl">
-                {companySettings?.heroSubtitle || "Consultoria em marketing digital para prestadores de serviço nos EUA. Transforme seu negócio com estratégias comprovadas de aquisição e conversão de clientes."}
+                {companySettings?.heroSubtitle || ""}
               </p>
               <div className="flex flex-col sm:flex-row gap-3 lg:gap-5 flex-wrap">
-                <button
-                  data-form-trigger="lead-form"
-                  className="w-full sm:w-auto shrink-0 px-6 sm:px-8 py-3 sm:py-4 bg-[#406EF1] hover:bg-[#355CD0] hover:scale-105 text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
-                  onClick={() => {
-                    setIsFormOpen(true);
-                    trackCTAClick('hero', 'Agendar Conversa Gratuita');
-                  }}
-                  data-testid="button-hero-form"
-                >
-                  Agendar Conversa Gratuita
-                </button>
+                {companySettings?.ctaText ? (
+                  <button
+                    data-form-trigger="lead-form"
+                    className="w-full sm:w-auto shrink-0 px-6 sm:px-8 py-3 sm:py-4 bg-[#406EF1] hover:bg-[#355CD0] hover:scale-105 text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
+                    onClick={() => {
+                      setIsFormOpen(true);
+                      trackCTAClick('hero', companySettings?.ctaText || '');
+                    }}
+                    data-testid="button-hero-form"
+                  >
+                    {companySettings?.ctaText}
+                  </button>
+                ) : null}
               </div>
             </div>
             <div className="order-2 lg:order-1 relative flex h-full items-end justify-center lg:justify-end self-end w-full lg:min-h-[400px] z-10 lg:ml-[-3%] mt-0 sm:mt-0 lg:-mt-10">
               {heroImageUrl ? (
                 <img
                   src={heroImageUrl}
-                  alt="Cleaning Professionals"
+                  alt={companySettings?.companyName || ""}
                   className="w-[92vw] sm:w-[98%] lg:w-full max-w-[380px] sm:max-w-[360px] md:max-w-[430px] lg:max-w-[500px] xl:max-w-[560px] object-contain drop-shadow-2xl -translate-y-[2%] sm:-translate-y-[1%] lg:translate-y-[0%] scale-100 sm:scale-100 lg:scale-98 origin-bottom"
                 />
               ) : (
@@ -309,6 +248,7 @@ export default function Home() {
         ></div>
       </section>
       {/* Trust Badges */}
+      {trustBadges.length > 0 && (
       <section className="relative z-20 -mt-16 sm:-mt-16 lg:-mt-24 bg-transparent">
         <div className="container-custom mx-auto relative">
           <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-100 overflow-hidden relative z-30 -translate-y-10 sm:-translate-y-6 lg:-translate-y-8">
@@ -330,12 +270,14 @@ export default function Home() {
           </div>
         </div>
       </section>
+      )}
       <ConsultingStepsSection
-        section={homepageContent.consultingStepsSection}
+        section={consultingStepsSection}
         onCtaClick={handleConsultingCta}
       />
       <div className="h-0 bg-[#111111]"></div>
       {/* Reviews Section */}
+      {(reviewsEmbedUrl || reviewsTitle || reviewsSubtitle) && (
       <section className="pt-6 sm:pt-10 lg:pt-12 pb-0 bg-[#111111] overflow-hidden mb-0 text-white">
         <div className="w-full">
           <div className="container-custom mx-auto mb-16 text-center">
@@ -346,25 +288,28 @@ export default function Home() {
               {reviewsSubtitle}
             </p>
           </div>
-          <div className="w-full px-0">
-            <div className="pb-0 bg-[#111111] -mt-6 sm:-mt-8 lg:-mt-10">
-              <iframe 
-                className="lc_reviews_widget rounded-none" 
-                src={homepageContent.reviewsSection?.embedUrl || DEFAULT_HOMEPAGE_CONTENT.reviewsSection?.embedUrl}
-                frameBorder='0' 
-                scrolling='no' 
-                style={{ minWidth: '100%', width: '100%', height: '488px', border: 'none', display: 'block', borderRadius: '0', background: '#111111' }}
-                onLoad={() => {
-                  const script = document.createElement('script');
-                  script.type = 'text/javascript';
-                  script.src = 'https://reputationhub.site/reputation/assets/review-widget.js';
-                  document.body.appendChild(script);
-                }}
-              ></iframe>
+          {reviewsEmbedUrl ? (
+            <div className="w-full px-0">
+              <div className="pb-0 bg-[#111111] -mt-6 sm:-mt-8 lg:-mt-10">
+                <iframe 
+                  className="lc_reviews_widget rounded-none" 
+                  src={reviewsEmbedUrl}
+                  frameBorder='0' 
+                  scrolling='no' 
+                  style={{ minWidth: '100%', width: '100%', height: '488px', border: 'none', display: 'block', borderRadius: '0', background: '#111111' }}
+                  onLoad={() => {
+                    const script = document.createElement('script');
+                    script.type = 'text/javascript';
+                    script.src = 'https://reputationhub.site/reputation/assets/review-widget.js';
+                    document.body.appendChild(script);
+                  }}
+                ></iframe>
+              </div>
             </div>
-          </div>
+          ) : null}
         </div>
       </section>
+      )}
       <BlogSection content={homepageContent.blogSection} />
       <section id="about" className="bg-white py-20">
         <AboutSection

@@ -25,11 +25,11 @@ export function Footer() {
     queryKey: ['/api/company-settings'],
   });
 
-  const companyName = companySettings?.companyName?.trim() || "Skale Club";
+  const companyName = companySettings?.companyName?.trim() || "";
   const tagline =
     companySettings?.heroSubtitle?.trim() ||
     companySettings?.seoDescription?.trim() ||
-    "Mentoria 1-a-1 em marketing digital para empresários brasileiros que querem escalar nos EUA. Estratégia personalizada, suporte contínuo e foco em resultados reais.";
+    '';
 
   return (
     <footer className="bg-[#18191f] text-slate-300 py-8 md:py-10">
@@ -49,16 +49,14 @@ export function Footer() {
                 className="h-auto w-[54px] object-contain p-1.5 brightness-0 invert"
               />
             ) : (
-              <img
-                src="https://storage.googleapis.com/msgsndr/q6UKnlWOQwyTk82yZPAs/media/695dbac289c99d91ea25f488.svg"
-                alt={companyName}
-                className="h-auto w-[54px] object-contain p-1.5 brightness-0 invert"
-              />
+              companyName ? <span className="text-white font-semibold">{companyName}</span> : null
             )}
           </Link>
-          <p className="text-gray-400 max-w-md text-sm leading-relaxed">
-            {tagline}
-          </p>
+          {tagline ? (
+            <p className="text-gray-400 max-w-md text-sm leading-relaxed">
+              {tagline}
+            </p>
+          ) : null}
 
           {companySettings && (companySettings as any).socialLinks && Array.isArray((companySettings as any).socialLinks) && (companySettings as any).socialLinks.length > 0 && (
             <div className="flex gap-4">

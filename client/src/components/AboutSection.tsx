@@ -1,6 +1,5 @@
-import { User, Award, Heart, CheckCircle } from "lucide-react";
+import { User, CheckCircle } from "lucide-react";
 import type { HomepageContent } from "@shared/schema";
-import { DEFAULT_HOMEPAGE_CONTENT } from "@/lib/homepageDefaults";
 
 interface AboutSectionProps {
   content?: HomepageContent['aboutSection'] | null;
@@ -8,12 +7,9 @@ interface AboutSectionProps {
 }
 
 export function AboutSection({ content, aboutImageUrl }: AboutSectionProps) {
-  const sectionContent = {
-    ...DEFAULT_HOMEPAGE_CONTENT.aboutSection,
-    ...(content || {}),
-  };
+  const sectionContent = content || {};
 
-  const highlights = sectionContent?.highlights || DEFAULT_HOMEPAGE_CONTENT.aboutSection?.highlights || [];
+  const highlights = sectionContent?.highlights || [];
 
   return (
     <div className="container-custom mx-auto">
@@ -24,7 +20,7 @@ export function AboutSection({ content, aboutImageUrl }: AboutSectionProps) {
             {sectionContent?.label || 'Sobre Nós'}
           </div>
           <h2 className="text-3xl md:text-5xl font-bold mb-6 text-[#1D1D1D]">
-            {sectionContent?.heading || 'Quem Somos'}
+            {sectionContent?.heading || ""}
           </h2>
 
           <p className="text-slate-600 text-lg mb-6 leading-relaxed">
@@ -47,11 +43,13 @@ export function AboutSection({ content, aboutImageUrl }: AboutSectionProps) {
         </div>
 
         <div className="order-1 lg:order-2 aspect-square max-h-[500px] rounded-2xl overflow-hidden shadow-2xl border border-slate-100 relative">
-          <img
-            src={aboutImageUrl || DEFAULT_HOMEPAGE_CONTENT.aboutSection?.defaultImageUrl || '/placeholder-about.jpg'}
-            alt={sectionContent?.heading || 'Sobre nossa empresa'}
-            className="w-full h-full object-cover object-center"
-          />
+          {aboutImageUrl || sectionContent?.defaultImageUrl ? (
+            <img
+              src={aboutImageUrl || sectionContent?.defaultImageUrl}
+              alt={sectionContent?.heading || ""}
+              className="w-full h-full object-cover object-center"
+            />
+          ) : null}
         </div>
       </div>
     </div>

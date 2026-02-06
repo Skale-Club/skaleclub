@@ -1,13 +1,9 @@
 import type { HomepageContent } from '@shared/schema';
 
 export const DEFAULT_HOMEPAGE_CONTENT: HomepageContent = {
-  heroBadgeImageUrl: 'https://storage.googleapis.com/msgsndr/q6UKnlWOQwyTk82yZPAs/media/696016120597df5bbeeba997.png',
-  heroBadgeAlt: 'Especialistas em Marketing',
-  trustBadges: [
-    { title: 'Resultados Comprovados', description: 'Estratégias testadas que geram leads.', icon: 'trophy' },
-    { title: 'Foco em Service-Based Business', description: 'Expertise exclusivo no seu mercado.', icon: 'target' },
-    { title: 'Consultoria Personalizada', description: 'Acompanhamento 1:1 toda semana.', icon: 'heart' },
-  ],
+  heroBadgeImageUrl: '',
+  heroBadgeAlt: '',
+  trustBadges: [],
   categoriesSection: {
     title: 'Pronto para Crescer?',
     subtitle: 'Selecione uma categoria para conhecer nossas soluções.',
@@ -16,7 +12,7 @@ export const DEFAULT_HOMEPAGE_CONTENT: HomepageContent = {
   reviewsSection: {
     title: 'Avaliações de Clientes',
     subtitle: 'Veja o que nossos clientes dizem sobre nossos serviços.',
-    embedUrl: 'https://reputationhub.site/reputation/widgets/review_widget/q6UKnlWOQwyTk82yZPAs',
+    embedUrl: '',
   },
   blogSection: {
     title: 'Insights e Estratégias',
@@ -28,7 +24,7 @@ export const DEFAULT_HOMEPAGE_CONTENT: HomepageContent = {
     label: 'Sobre Nós',
     heading: 'Quem Somos',
     description: 'Somos especialistas em marketing digital para prestadores de serviço nos EUA. Ajudamos empresas a gerarem clientes de forma previsível e escalável através de estratégias de aquisição, conversão e otimização.',
-    defaultImageUrl: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80',
+    defaultImageUrl: '',
     highlights: [
       {
         title: 'Especialistas em Service-Based Business',

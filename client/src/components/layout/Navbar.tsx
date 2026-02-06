@@ -24,7 +24,7 @@ export function Navbar() {
     queryKey: ['/api/company-settings'],
   });
 
-  const displayPhone = companySettings?.companyPhone || "(303) 309 4226";
+  const displayPhone = companySettings?.companyPhone || "";
   const telPhone = displayPhone.replace(/\D/g, '');
 
   const navLinks = [
@@ -59,24 +59,24 @@ export function Navbar() {
             {companySettings?.logoMain ? (
               <img 
                 src={companySettings.logoMain} 
-                alt={companySettings.companyName || "Skale Club"} 
+                alt={companySettings.companyName || ''} 
                 className="h-auto w-[54px] object-contain p-1.5"
               />
             ) : (
-              <img 
-                src="https://storage.googleapis.com/msgsndr/q6UKnlWOQwyTk82yZPAs/media/695dbac289c99d91ea25f488.svg" 
-                alt="Skale Club" 
-                className="h-auto w-[54px] object-contain p-1.5"
-              />
+              companySettings?.companyName ? (
+                <span className="text-white font-semibold">{companySettings.companyName}</span>
+              ) : null
             )}
           </Link>
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8">
+            {displayPhone && (
             <a href={`tel:${telPhone}`} className="px-4 py-2 bg-[#406EF1] hover:bg-[#355CD0] text-white font-bold rounded-full hover-elevate transition-all text-sm flex items-center gap-2">
               <Phone className="w-4 h-4 fill-current" />
               {displayPhone}
             </a>
+            )}
 
             {/* User Login/Profile */}
             {!isLoading && (
