@@ -38,7 +38,8 @@
       "Bash(netstat:*)",
       "Bash(findstr:*)",
       "Bash(where:*)",
-      "Bash(git push)"
+      "Bash(git push)",
+      "Bash(timeout 15 bash -c 'while ! curl -s http://localhost:5000/api/chat/config > /dev/null 2>&1; do sleep 2; done; echo \"\"Server is ready\"\"')"
     ]
   }
 }

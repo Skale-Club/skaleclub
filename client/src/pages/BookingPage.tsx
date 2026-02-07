@@ -27,10 +27,7 @@ const bookingFormSchema = z.object({
   customerName: z.string().min(2, "Name is required"),
   customerEmail: z.string().email("Invalid email"),
   customerPhone: z.string().min(10, "Valid phone number required"),
-  customerStreet: z.string().min(5, "Street address is required"),
-  customerUnit: z.string().optional(),
-  customerCity: z.string().min(2, "City is required"),
-  customerState: z.string().min(2, "State is required"),
+  customerAddress: z.string().min(5, "Address is required"),
   paymentMethod: z.enum(["site", "online"]),
 });
 
@@ -38,6 +35,7 @@ type BookingFormValues = z.infer<typeof bookingFormSchema>;
 
 export default function BookingPage() {
   const [step, setStep] = useState<2 | 3 | 4>(2);
+  const [contactFieldStep, setContactFieldStep] = useState<0 | 1 | 2>(0);
   const { items, totalPrice, totalDuration, removeItem, updateQuantity } = useCart();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -98,6 +96,10 @@ export default function BookingPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  useEffect(() => {
+    if (step === 3) setContactFieldStep(0);
+  }, [step]);
+
   const onSubmit = (data: BookingFormValues) => {
     if (!selectedDate || !selectedTime) return;
 
@@ -108,11 +110,8 @@ export default function BookingPage() {
     endDate.setHours(hours, minutes + totalDuration);
     const endTime = format(endDate, "HH:mm");
 
-    const fullAddress = `${data.customerStreet}${data.customerUnit ? `, ${data.customerUnit}` : ""}, ${data.customerCity}, ${data.customerState}`;
-
     createBooking.mutate({
       ...data,
-      customerAddress: fullAddress,
       serviceIds: items.map(i => i.id),
       bookingDate: selectedDate,
       startTime: selectedTime,
@@ -288,7 +287,13 @@ export default function BookingPage() {
 
             {/* STEP 3: CONTACT INFORMATION */}
             {step === 3 && (
-              <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-4">
+              <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-4 relative overflow-hidden">
+                <div className="absolute left-0 top-0 h-[2px] w-full bg-slate-100">
+                  <div
+                    className="h-full bg-primary transition-[width] duration-300"
+                    style={{ width: `${((contactFieldStep + 1) / 3) * 100}%` }}
+                  />
+                </div>
                 <div className="flex items-center gap-4 mb-6">
                   <button onClick={() => setStep(2)} className="p-2 hover:bg-slate-100 rounded-full">
                     <ArrowLeft className="w-5 h-5" />
@@ -297,69 +302,121 @@ export default function BookingPage() {
                 </div>
 
                 <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
+                  {contactFieldStep === 0 && (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2">
                       <label className="text-sm font-medium text-slate-700">Full Name</label>
                       <input
                         {...form.register("customerName")}
+                        onKeyDown={async (e) => {
+                          if (e.key !== "Enter") return;
+                          e.preventDefault();
+                          const ok = await form.trigger("customerName");
+                          if (ok) setContactFieldStep(1);
+                        }}
                         className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                         placeholder="John Doe"
+                        autoComplete="name"
                       />
                       {form.formState.errors.customerName && <p className="text-red-500 text-xs">{form.formState.errors.customerName.message}</p>}
                     </div>
+                  )}
 
-                    <div className="space-y-2">
+                  {contactFieldStep === 1 && (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2">
                       <label className="text-sm font-medium text-slate-700">Email</label>
                       <input
                         {...form.register("customerEmail")}
+                        onKeyDown={async (e) => {
+                          if (e.key !== "Enter") return;
+                          e.preventDefault();
+                          const ok = await form.trigger("customerEmail");
+                          if (ok) setContactFieldStep(2);
+                        }}
                         className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                         placeholder="john@example.com"
+                        autoComplete="email"
+                        inputMode="email"
                       />
                       {form.formState.errors.customerEmail && <p className="text-red-500 text-xs">{form.formState.errors.customerEmail.message}</p>}
                     </div>
-                  </div>
+                  )}
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Phone Number</label>
-                    <input
-                      {...form.register("customerPhone")}
-                      onChange={(e) => {
-                        let value = e.target.value.replace(/\D/g, "");
-                        if (value.length > 10) value = value.slice(0, 10);
-                        
-                        let maskedValue = "";
-                        if (value.length > 0) {
-                          maskedValue = "(" + value.slice(0, 3);
-                          if (value.length > 3) {
-                            maskedValue += ") " + value.slice(3, 6);
-                          }
-                          if (value.length > 6) {
-                            maskedValue += "-" + value.slice(6, 10);
-                          }
-                        }
-                        e.target.value = maskedValue;
-                        form.setValue("customerPhone", maskedValue, { shouldValidate: true });
-                      }}
-                      className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                      placeholder="(555) 123-4567"
-                    />
-                    {form.formState.errors.customerPhone && <p className="text-red-500 text-xs">{form.formState.errors.customerPhone.message}</p>}
-                  </div>
+                  {contactFieldStep === 2 && (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2">
+                      <label className="text-sm font-medium text-slate-700">Phone Number</label>
+                      <input
+                        {...form.register("customerPhone")}
+                        onKeyDown={async (e) => {
+                          if (e.key !== "Enter") return;
+                          e.preventDefault();
+                          const ok = await form.trigger("customerPhone");
+                          if (ok) handleNextStep(4);
+                        }}
+                        onChange={(e) => {
+                          let value = e.target.value.replace(/\D/g, "");
+                          if (value.length > 10) value = value.slice(0, 10);
 
-                  {step === 3 && (
-                    <button 
+                          let maskedValue = "";
+                          if (value.length > 0) {
+                            maskedValue = "(" + value.slice(0, 3);
+                            if (value.length > 3) {
+                              maskedValue += ") " + value.slice(3, 6);
+                            }
+                            if (value.length > 6) {
+                              maskedValue += "-" + value.slice(6, 10);
+                            }
+                          }
+                          e.target.value = maskedValue;
+                          form.setValue("customerPhone", maskedValue, { shouldValidate: true });
+                        }}
+                        className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                        placeholder="(555) 123-4567"
+                        autoComplete="tel"
+                        inputMode="tel"
+                      />
+                      {form.formState.errors.customerPhone && <p className="text-red-500 text-xs">{form.formState.errors.customerPhone.message}</p>}
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setContactFieldStep((s) => (s > 0 ? ((s - 1) as 0 | 1 | 2) : s))}
+                      disabled={contactFieldStep === 0}
+                      className="px-4 py-3 rounded-xl border border-gray-200 text-slate-700 font-semibold hover:bg-slate-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Back
+                    </button>
+
+                    <button
                       type="button"
                       onClick={async () => {
-                        const isValid = await form.trigger(["customerName", "customerEmail", "customerPhone"]);
-                        if (isValid) {
-                          handleNextStep(4);
+                        if (contactFieldStep === 0) {
+                          const ok = await form.trigger("customerName");
+                          if (ok) setContactFieldStep(1);
+                          return;
                         }
+                        if (contactFieldStep === 1) {
+                          const ok = await form.trigger("customerEmail");
+                          if (ok) setContactFieldStep(2);
+                          return;
+                        }
+                        const ok = await form.trigger("customerPhone");
+                        if (ok) handleNextStep(4);
                       }}
-                      className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+                      className="flex-1 py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
                     >
-                      Continue to Address <ChevronRight className="w-4 h-4" />
+                      {contactFieldStep < 2 ? (
+                        <>
+                          Continue <ChevronRight className="w-4 h-4" />
+                        </>
+                      ) : (
+                        <>
+                          Continue to Address <ChevronRight className="w-4 h-4" />
+                        </>
+                      )}
                     </button>
-                  )}
+                  </div>
                 </div>
               </div>
             )}
@@ -377,44 +434,14 @@ export default function BookingPage() {
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-700">Street Address</label>
+                      <label className="text-sm font-medium text-slate-700">Address</label>
                       <input
-                        {...form.register("customerStreet")}
+                        {...form.register("customerAddress")}
                         className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                        placeholder="123 Main St"
+                        placeholder="123 Main St, Apt 4B, Boston, MA"
+                        autoComplete="street-address"
                       />
-                      {form.formState.errors.customerStreet && <p className="text-red-500 text-xs">{form.formState.errors.customerStreet.message}</p>}
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="space-y-2 col-span-2">
-                        <label className="text-sm font-medium text-slate-700">City</label>
-                        <input
-                          {...form.register("customerCity")}
-                          className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                          placeholder="Boston"
-                        />
-                        {form.formState.errors.customerCity && <p className="text-red-500 text-xs">{form.formState.errors.customerCity.message}</p>}
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700">State</label>
-                        <input
-                          {...form.register("customerState")}
-                          className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                          placeholder="MA"
-                        />
-                        {form.formState.errors.customerState && <p className="text-red-500 text-xs">{form.formState.errors.customerState.message}</p>}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-700">Unit / Apt <span className="text-slate-400 font-normal">(Optional)</span></label>
-                      <input
-                        {...form.register("customerUnit")}
-                        className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                        placeholder="Apt 4B"
-                      />
+                      {form.formState.errors.customerAddress && <p className="text-red-500 text-xs">{form.formState.errors.customerAddress.message}</p>}
                     </div>
                   </div>
 
