@@ -59,13 +59,8 @@ import {
   type InsertBlogPost,
   type InsertKnowledgeBaseCategory,
   type InsertKnowledgeBaseArticle,
-<<<<<<< HEAD
-} from "#shared/schema.js";
-import { eq, and, or, ilike, gte, lte, inArray, desc, asc, sql, ne } from "drizzle-orm";
-=======
 } from "@shared/schema";
 import { eq, and, or, ilike, gte, lte, lt, inArray, desc, asc, sql, ne } from "drizzle-orm";
->>>>>>> 320f9bb (alteracao de filtro)
 import { z } from "zod";
 
 // Ensure optional GHL columns exist even if migration hasn't been applied yet
