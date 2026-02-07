@@ -13,15 +13,19 @@ if (!rawDatabaseUrl) {
 }
 
 const isServerless = !!process.env.VERCEL;
+const sslExplicitlyDisabled =
+  rawDatabaseUrl.includes('sslmode=disable') ||
+  process.env.PGSSLMODE === "disable";
 const isCloudDb =
   rawDatabaseUrl.includes('.supabase.') ||
   rawDatabaseUrl.includes('.neon.') ||
-  rawDatabaseUrl.includes('sslmode=');
+  (rawDatabaseUrl.includes('sslmode=') && !rawDatabaseUrl.includes('sslmode=disable'));
 export const shouldUseSsl =
-  isCloudDb ||
+  !sslExplicitlyDisabled &&
+  (isCloudDb ||
   process.env.PGSSLMODE === "require" ||
   process.env.POSTGRES_SSL === "true" ||
-  Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
+  Boolean(process.env.VERCEL || process.env.VERCEL_ENV));
 
 // Strip sslmode from URL so pg doesn't override our ssl config
 export const databaseUrl = shouldUseSsl

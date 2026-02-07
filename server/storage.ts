@@ -59,7 +59,7 @@ import {
   type InsertBlogPost,
   type InsertKnowledgeBaseCategory,
   type InsertKnowledgeBaseArticle,
-} from "@shared/schema";
+} from "#shared/schema.js";
 import { eq, and, or, ilike, gte, lte, lt, inArray, desc, asc, sql, ne } from "drizzle-orm";
 import { z } from "zod";
 
