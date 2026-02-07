@@ -70,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
       setIsSupabaseAuth(_isSupabaseAuth);
-      const sess = await checkSession();
+      let sess = await checkSession();
 
       // If Supabase has a browser session (e.g. after OAuth redirect) but the server session
       // is missing, sync it by exchanging the access token for a server-side session.
@@ -89,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             });
 
             if (res.ok) {
-              await checkSession();
+              sess = await checkSession();
             }
           }
         } catch {
@@ -97,19 +97,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // If we just completed an OAuth login and landed on a non-admin route (often "/"),
-      // send admins into the admin area instead of leaving them on the homepage.
-      try {
-        const postLoginRedirect = window.sessionStorage.getItem('adminPostLoginRedirect');
-        if (postLoginRedirect && window.location.pathname && !window.location.pathname.startsWith('/admin')) {
-          const latest = await checkSession();
-          if (latest?.isAdmin) {
-            window.sessionStorage.removeItem('adminPostLoginRedirect');
-            window.location.replace(postLoginRedirect);
-          }
+      // Clear any transient post-login redirect hint once the admin session is established.
+      if (sess?.isAdmin) {
+        try {
+          window.sessionStorage.removeItem('adminPostLoginRedirect');
+        } catch {
+          // Ignore storage errors.
         }
-      } catch {
-        // Ignore storage/navigation errors.
       }
     })();
   }, [checkSession]);

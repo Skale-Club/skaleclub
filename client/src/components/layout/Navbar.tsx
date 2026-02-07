@@ -55,11 +55,11 @@ export function Navbar() {
       <div className="container-custom mx-auto">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2 min-h-[40px] min-w-[54px]">
             {companySettings?.logoMain ? (
-              <img 
-                src={companySettings.logoMain} 
-                alt={companySettings.companyName || ''} 
+              <img
+                src={companySettings.logoMain}
+                alt={companySettings.companyName || ''}
                 className="h-auto w-[54px] object-contain p-1.5"
               />
             ) : (
@@ -78,54 +78,56 @@ export function Navbar() {
             </a>
             )}
 
-            {/* User Login/Profile */}
-            {!isLoading && (
-              isAuthenticated && user ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" data-testid="button-user-menu">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.profileImageUrl || undefined} alt={user.firstName || 'User'} />
-                        <AvatarFallback>{getInitials(user.firstName, user.lastName)}</AvatarFallback>
-                      </Avatar>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 bg-white border border-gray-100 shadow-lg">
-                    <div className="px-2 py-2 border-b border-gray-100 mb-1">
-                      <p className="font-medium text-sm leading-none">{user.firstName} {user.lastName}</p>
-                      <p className="text-xs text-muted-foreground mt-1.5 leading-none">{user.email}</p>
-                    </div>
-                    {user.isAdmin && (
+            {/* User Login/Profile — fixed-size wrapper prevents layout shift */}
+            <div className="w-10 h-10 flex items-center justify-center">
+              {!isLoading && (
+                isAuthenticated && user ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" data-testid="button-user-menu">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={user.profileImageUrl || undefined} alt={user.firstName || 'User'} />
+                          <AvatarFallback>{getInitials(user.firstName, user.lastName)}</AvatarFallback>
+                        </Avatar>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56 bg-white border border-gray-100 shadow-lg">
+                      <div className="px-2 py-2 border-b border-gray-100 mb-1">
+                        <p className="font-medium text-sm leading-none">{user.firstName} {user.lastName}</p>
+                        <p className="text-xs text-muted-foreground mt-1.5 leading-none">{user.email}</p>
+                      </div>
+                      {user.isAdmin && (
+                        <DropdownMenuItem
+                          asChild
+                          className="cursor-pointer data-[highlighted]:bg-slate-100 data-[highlighted]:text-[#1D1D1D]"
+                        >
+                          <Link href="/admin" className="w-full flex items-center" data-testid="link-admin">
+                            <User className="mr-2 h-4 w-4" />
+                            Admin Panel
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem
-                        asChild
-                        className="cursor-pointer data-[highlighted]:bg-slate-100 data-[highlighted]:text-[#1D1D1D]"
+                        onClick={() => logout()}
+                        data-testid="button-logout"
+                        className="text-[#1D1D1D] focus:text-[#1D1D1D] data-[highlighted]:bg-slate-100 data-[highlighted]:text-[#1D1D1D] cursor-pointer"
                       >
-                        <Link href="/admin" className="w-full flex items-center" data-testid="link-admin">
-                          <User className="mr-2 h-4 w-4" />
-                          Admin Panel
-                        </Link>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Logout
                       </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem
-                      onClick={() => logout()}
-                      data-testid="button-logout"
-                      className="text-[#1D1D1D] focus:text-[#1D1D1D] data-[highlighted]:bg-slate-100 data-[highlighted]:text-[#1D1D1D] cursor-pointer"
-                    >
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Logout
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                <Link
-                  href="/admin/login"
-                  className="text-sm font-semibold text-white bg-transparent border border-white/40 px-4 py-2 rounded-full hover:bg-white/10 transition-colors"
-                  data-testid="button-login"
-                >
-                  Login
-                </Link>
-              )
-            )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Link
+                    href="/admin/login"
+                    className="text-sm font-semibold text-white bg-transparent border border-white/40 px-4 py-2 rounded-full hover:bg-white/10 transition-colors"
+                    data-testid="button-login"
+                  >
+                    Login
+                  </Link>
+                )
+              )}
+            </div>
           </div>
 
           {/* Mobile Menu Button */}

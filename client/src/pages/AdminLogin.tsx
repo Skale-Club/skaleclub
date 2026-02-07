@@ -52,19 +52,24 @@ export default function AdminLogin() {
       // After OAuth callback, Supabase can sometimes land the user on "/" (Site URL fallback).
       // Keep a small hint so the app can send admins into the admin panel post-login.
       try {
-        window.sessionStorage.setItem('adminPostLoginRedirect', '/admin');
+        window.sessionStorage.setItem('adminPostLoginRedirect', JSON.stringify({ to: '/admin', ts: Date.now() }));
       } catch {
         // Ignore storage errors.
       }
       await signIn(undefined, undefined, 'google');
     } catch (err: any) {
       setError(err.message || 'Login failed');
+      try {
+        window.sessionStorage.removeItem('adminPostLoginRedirect');
+      } catch {
+        // Ignore storage errors.
+      }
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+    <main className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
@@ -153,6 +158,6 @@ export default function AdminLogin() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </main>
   );
 }

@@ -2093,7 +2093,19 @@ function CompanySettingsSection() {
 
   useEffect(() => {
     if (fetchedSettings) {
-      setSettings(fetchedSettings);
+      const parsed = { ...fetchedSettings };
+      // Ensure socialLinks is always an array (may come as JSON string from DB)
+      if (typeof parsed.socialLinks === 'string') {
+        try {
+          parsed.socialLinks = JSON.parse(parsed.socialLinks);
+        } catch {
+          parsed.socialLinks = [];
+        }
+      }
+      if (!Array.isArray(parsed.socialLinks)) {
+        parsed.socialLinks = [];
+      }
+      setSettings(parsed);
     }
   }, [fetchedSettings]);
 
