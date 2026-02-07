@@ -109,6 +109,15 @@ import { HelpCircle, FileText, AlertCircle, ExternalLink } from 'lucide-react';
 import ghlLogo from '@assets/ghl-logo.webp';
 import { SiFacebook, SiGoogleanalytics, SiGoogletagmanager, SiOpenai, SiTwilio } from 'react-icons/si';
 
+// jsonb columns may arrive as JSON strings instead of parsed arrays/objects
+function ensureArray<T>(value: T[] | string | null | undefined): T[] {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    try { const parsed = JSON.parse(value); if (Array.isArray(parsed)) return parsed; } catch {}
+  }
+  return [];
+}
+
 type AdminSection = 'dashboard' | 'bookings' | 'leads' | 'hero' | 'company' | 'seo' | 'faqs' | 'users' | 'availability' | 'chat' | 'integrations' | 'blog';
 
 const menuItems = [
@@ -2093,19 +2102,10 @@ function CompanySettingsSection() {
 
   useEffect(() => {
     if (fetchedSettings) {
-      const parsed = { ...fetchedSettings };
-      // Ensure socialLinks is always an array (may come as JSON string from DB)
-      if (typeof parsed.socialLinks === 'string') {
-        try {
-          parsed.socialLinks = JSON.parse(parsed.socialLinks);
-        } catch {
-          parsed.socialLinks = [];
-        }
-      }
-      if (!Array.isArray(parsed.socialLinks)) {
-        parsed.socialLinks = [];
-      }
-      setSettings(parsed);
+      setSettings({
+        ...fetchedSettings,
+        socialLinks: ensureArray(fetchedSettings.socialLinks),
+      });
     }
   }, [fetchedSettings]);
 
@@ -6791,15 +6791,15 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas!"`;
         avgResponseTime: settings.avgResponseTime || '',
         calendarProvider: settings.calendarProvider || 'gohighlevel',
         calendarId: settings.calendarId || '',
-        calendarStaff: settings.calendarStaff || [],
+        calendarStaff: ensureArray(settings.calendarStaff),
         languageSelectorEnabled: settings.languageSelectorEnabled ?? false,
         defaultLanguage: settings.defaultLanguage || 'en',
         lowPerformanceSmsEnabled: settings.lowPerformanceSmsEnabled ?? false,
         lowPerformanceThresholdSeconds: settings.lowPerformanceThresholdSeconds ?? 300,
-        intakeObjectives: settings.intakeObjectives && settings.intakeObjectives.length > 0
-          ? settings.intakeObjectives
+        intakeObjectives: ensureArray(settings.intakeObjectives).length > 0
+          ? ensureArray(settings.intakeObjectives)
           : DEFAULT_CHAT_OBJECTIVES,
-        excludedUrlRules: settings.excludedUrlRules || [],
+        excludedUrlRules: ensureArray(settings.excludedUrlRules),
         useFaqs: settings.useFaqs ?? true,
       });
       return;
