@@ -49,6 +49,13 @@ export default function AdminLogin() {
     setSubmitting(true);
 
     try {
+      // After OAuth callback, Supabase can sometimes land the user on "/" (Site URL fallback).
+      // Keep a small hint so the app can send admins into the admin panel post-login.
+      try {
+        window.sessionStorage.setItem('adminPostLoginRedirect', '/admin');
+      } catch {
+        // Ignore storage errors.
+      }
       await signIn(undefined, undefined, 'google');
     } catch (err: any) {
       setError(err.message || 'Login failed');

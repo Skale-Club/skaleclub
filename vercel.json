@@ -7,6 +7,14 @@
       "includeFiles": "server/**,shared/**,drizzle.config.ts"
     }
   },
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "skaleclub-skaleclub.vercel.app" }],
+      "destination": "https://skaleclub.vercel.app/$1",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api" },
     { "source": "/(.*)", "destination": "/index.html" }

@@ -96,6 +96,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Best-effort sync; UI will stay logged out on the server if this fails.
         }
       }
+
+      // If we just completed an OAuth login and landed on a non-admin route (often "/"),
+      // send admins into the admin area instead of leaving them on the homepage.
+      try {
+        const postLoginRedirect = window.sessionStorage.getItem('adminPostLoginRedirect');
+        if (postLoginRedirect && window.location.pathname && !window.location.pathname.startsWith('/admin')) {
+          const latest = await checkSession();
+          if (latest?.isAdmin) {
+            window.sessionStorage.removeItem('adminPostLoginRedirect');
+            window.location.replace(postLoginRedirect);
+          }
+        }
+      } catch {
+        // Ignore storage/navigation errors.
+      }
     })();
   }, [checkSession]);
 
@@ -104,10 +119,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const supabase = await initSupabase();
 
       if (provider === 'google') {
+        // Ensure we always return to the canonical domain even if the user started on a wrong Vercel alias.
+        const canonicalOrigin = window.location.origin.replace('skaleclub-skaleclub.vercel.app', 'skaleclub.vercel.app');
         const { error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
-            redirectTo: `${window.location.origin}/admin/login`,
+            redirectTo: `${canonicalOrigin}/admin/login`,
           },
         });
         if (error) throw new Error(error.message);
