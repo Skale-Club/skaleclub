@@ -27,6 +27,22 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // if it returns valid config, we're in Supabase mode; otherwise Replit mode
 let _isSupabaseAuth: boolean | null = null;
 
+function getCanonicalOrigin() {
+  const env = (import.meta as any).env?.VITE_CANONICAL_ORIGIN as string | undefined;
+  const normalizedEnv = env?.trim().replace(/\/+$/, '');
+  if (normalizedEnv) return normalizedEnv;
+
+  // Keep localhost (and other non-prod origins) intact for dev.
+  const { hostname, origin } = window.location;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') return origin;
+
+  // If user started on a Vercel alias, force the real domain.
+  if (hostname.endsWith('.vercel.app')) return 'https://skale.club';
+
+  // Default: current origin.
+  return origin;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
@@ -113,8 +129,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const supabase = await initSupabase();
 
       if (provider === 'google') {
-        // Ensure we always return to the canonical domain even if the user started on a wrong Vercel alias.
-        const canonicalOrigin = window.location.origin.replace('skaleclub-skaleclub.vercel.app', 'skaleclub.vercel.app');
+        // Ensure we always return to the canonical domain even if the user started on a Vercel alias.
+        const canonicalOrigin = getCanonicalOrigin();
         const { error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {

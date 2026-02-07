@@ -11,7 +11,19 @@
     {
       "source": "/(.*)",
       "has": [{ "type": "host", "value": "skaleclub-skaleclub.vercel.app" }],
-      "destination": "https://skaleclub.vercel.app/$1",
+      "destination": "https://skale.club/$1",
+      "permanent": true
+    },
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "skaleclub.vercel.app" }],
+      "destination": "https://skale.club/$1",
+      "permanent": true
+    },
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "www.skale.club" }],
+      "destination": "https://skale.club/$1",
       "permanent": true
     }
   ],

@@ -1277,7 +1277,11 @@ export async function registerRoutes(
   app.get('/robots.txt', async (req, res) => {
     try {
       const settings = await storage.getCompanySettings();
-      const canonicalUrl = settings?.seoCanonicalUrl || `https://${req.get('host')}`;
+      const hostname = req.hostname || '';
+      const isVercelAlias = hostname.endsWith('.vercel.app');
+      const canonicalUrl =
+        settings?.seoCanonicalUrl ||
+        (isVercelAlias ? 'https://skale.club' : `${req.protocol}://${hostname}`);
       
       const robotsTxt = `User-agent: *
 Allow: /
@@ -1296,7 +1300,11 @@ Sitemap: ${canonicalUrl}/sitemap.xml
       const settings = await storage.getCompanySettings();
       const categories = await storage.getCategories();
       const blogPostsList = await storage.getPublishedBlogPosts(100, 0);
-      const canonicalUrl = settings?.seoCanonicalUrl || `https://${req.get('host')}`;
+      const hostname = req.hostname || '';
+      const isVercelAlias = hostname.endsWith('.vercel.app');
+      const canonicalUrl =
+        settings?.seoCanonicalUrl ||
+        (isVercelAlias ? 'https://skale.club' : `${req.protocol}://${hostname}`);
       const lastMod = new Date().toISOString().split('T')[0];
 
       let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
