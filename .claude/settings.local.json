@@ -36,7 +36,9 @@
       "Bash(npm run print:db:dev:*)",
       "Bash(nslookup:*)",
       "Bash(netstat:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(where:*)",
+      "Bash(git push)"
     ]
   }
 }

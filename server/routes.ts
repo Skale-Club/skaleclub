@@ -3234,8 +3234,12 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
     }
   });
 
-  // Seed Data
-  await seedDatabase();
+  // Seed Data (non-blocking — failure must not crash the app)
+  try {
+    await seedDatabase();
+  } catch (err) {
+    console.error("seedDatabase failed (non-fatal):", err);
+  }
 
   return httpServer;
 }

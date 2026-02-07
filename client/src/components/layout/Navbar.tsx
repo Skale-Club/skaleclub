@@ -117,13 +117,13 @@ export function Navbar() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <button 
-                  onClick={() => window.location.href = '/api/login'}
+                <Link
+                  href="/admin/login"
                   className="text-sm font-semibold text-white bg-transparent border border-white/40 px-4 py-2 rounded-full hover:bg-white/10 transition-colors"
                   data-testid="button-login"
                 >
                   Login
-                </button>
+                </Link>
               )
             )}
           </div>
@@ -220,14 +220,15 @@ export function Navbar() {
                   </div>
                 </div>
               ) : (
-                <button 
-                  onClick={() => window.location.href = '/api/login'}
+                <Link
+                  href="/admin/login"
                   className="flex items-center gap-3 text-lg font-bold text-primary hover:opacity-80 transition-opacity"
                   data-testid="button-mobile-login"
+                  onClick={() => setIsMenuOpen(false)}
                 >
                   <User className="w-6 h-6" />
                   Login
-                </button>
+                </Link>
               )
             )}
           </div>

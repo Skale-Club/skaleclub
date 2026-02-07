@@ -4,19 +4,32 @@ import * as schema from "#shared/schema.js";
 
 const { Pool } = pg;
 
-const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+const rawDatabaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
-if (!databaseUrl) {
+if (!rawDatabaseUrl) {
   throw new Error(
     "DATABASE_URL or POSTGRES_URL must be set. Did you forget to provision a database?",
   );
 }
 
-const isServerless = !process.env.REPL_ID;
-const shouldUseSsl =
+const isServerless = !!process.env.VERCEL;
+const isCloudDb =
+  rawDatabaseUrl.includes('.supabase.') ||
+  rawDatabaseUrl.includes('.neon.') ||
+  rawDatabaseUrl.includes('sslmode=');
+export const shouldUseSsl =
+  isCloudDb ||
   process.env.PGSSLMODE === "require" ||
   process.env.POSTGRES_SSL === "true" ||
   Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
+
+// Strip sslmode from URL so pg doesn't override our ssl config
+export const databaseUrl = shouldUseSsl
+  ? rawDatabaseUrl.replace(/[?&]sslmode=[^&]*/g, (match) =>
+      match.startsWith('?') ? '?' : '')
+    .replace(/\?$/, '')
+    .replace(/\?&/, '?')
+  : rawDatabaseUrl;
 
 export const pool = new Pool({
   connectionString: databaseUrl,
@@ -26,8 +39,9 @@ export const pool = new Pool({
         // Handle self-signed certificates in Vercel and other serverless environments
         checkServerIdentity: () => undefined,
       }
-    : undefined,
+    : false,
   max: isServerless ? 5 : 20,
   idleTimeoutMillis: isServerless ? 30000 : undefined,
+  connectionTimeoutMillis: isServerless ? 10000 : undefined,
 });
 export const db = drizzle(pool, { schema });

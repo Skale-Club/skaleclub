@@ -2,18 +2,18 @@ import type { Express, Request, Response, NextFunction, RequestHandler } from "e
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { getSupabaseAdmin } from "../lib/supabase.js";
-import { db } from "../db.js";
-import { users } from "#shared/schema.js";
+import { db, pool } from "../db.js";
+import { users } from "#shared/models/auth.js";
 import { eq } from "drizzle-orm";
 
 export async function setupSupabaseAuth(app: Express) {
   app.set("trust proxy", 1);
 
-  // Setup session store (same pattern as Replit auth)
+  // Setup session store — reuses the existing pool (already configured with SSL)
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
+    pool: pool,
     createTableIfMissing: true,
     ttl: sessionTtl,
     tableName: "sessions",
@@ -132,6 +132,25 @@ export async function setupSupabaseAuth(app: Express) {
     }
   });
 
+  // Get current authenticated user (mirrors Replit auth's /api/auth/user)
+  app.get("/api/auth/user", async (req: Request, res: Response) => {
+    const sess = req.session as any;
+
+    if (!sess?.userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const [dbUser] = await db.select().from(users).where(eq(users.id, sess.userId));
+      if (!dbUser) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      res.json(dbUser);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
   // Supabase config endpoint for client
   app.get("/api/supabase-config", (_req: Request, res: Response) => {
     res.json({
@@ -143,23 +162,6 @@ export async function setupSupabaseAuth(app: Express) {
   // Login redirect - sends user to the Supabase login page
   app.get("/api/login", (_req: Request, res: Response) => {
     res.redirect("/admin/login");
-  });
-
-  // Get current authenticated user (mirrors Replit auth's /api/auth/user)
-  app.get("/api/auth/user", async (req: Request, res: Response) => {
-    const sess = req.session as any;
-    if (!sess?.userId) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    try {
-      const [dbUser] = await db.select().from(users).where(eq(users.id, sess.userId));
-      if (!dbUser) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-      res.json(dbUser);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
   });
 
   // Logout via GET (mirrors Replit auth's /api/logout)
