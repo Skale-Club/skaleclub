@@ -68,17 +68,8 @@ export async function registerStorageRoutes(app: Express, requireAdmin: any) {
     const { SupabaseStorageService } = await import("./supabaseStorage.js");
     const storageService = new SupabaseStorageService();
 
-    app.post("/api/upload", requireAdmin, async (_req: Request, res: Response) => {
-      try {
-        const { uploadURL, objectPath } = await storageService.getUploadURL();
-        res.json({ uploadURL, objectPath });
-      } catch (error) {
-        console.error("Upload error:", error);
-        res.status(500).json({ error: "Failed to generate upload URL" });
-      }
-    });
-
-    app.post("/api/upload-local", requireAdmin, async (req: Request, res: Response) => {
+    // Both /api/upload and /api/upload-local use direct Supabase upload (base64 body)
+    const handleUpload = async (req: Request, res: Response) => {
       try {
         const { filename, data } = req.body;
         if (!filename || !data) {
@@ -91,7 +82,10 @@ export async function registerStorageRoutes(app: Express, requireAdmin: any) {
         console.error("Upload error:", error);
         res.status(500).json({ error: "Failed to upload file" });
       }
-    });
+    };
+
+    app.post("/api/upload", requireAdmin, handleUpload);
+    app.post("/api/upload-local", requireAdmin, handleUpload);
 
     app.post("/api/update-favicon", requireAdmin, async (req: Request, res: Response) => {
       try {
