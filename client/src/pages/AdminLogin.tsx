@@ -44,6 +44,18 @@ export default function AdminLogin() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setError('');
+    setSubmitting(true);
+
+    try {
+      await signIn(undefined, undefined, 'google');
+    } catch (err: any) {
+      setError(err.message || 'Login failed');
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
       <Card className="w-full max-w-md">
@@ -56,43 +68,67 @@ export default function AdminLogin() {
         </CardHeader>
         <CardContent className="space-y-4">
           {isSupabaseAuth ? (
-            <form onSubmit={handleSupabaseLogin} className="space-y-4">
+            <>
               {error && (
                 <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
                   {error}
                 </div>
               )}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="admin@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
+
               <Button
-                type="submit"
+                type="button"
+                onClick={handleGoogleLogin}
                 className="w-full"
                 disabled={submitting}
-                data-testid="button-login"
+                data-testid="button-login-google"
               >
-                {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Sign In
+                {submitting ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <SiGoogle className="w-4 h-4 mr-2" />
+                )}
+                Sign in with Google
               </Button>
-            </form>
+
+              <div className="flex items-center gap-3">
+                <div className="h-px flex-1 bg-slate-200" />
+                <div className="text-xs uppercase tracking-wider text-slate-500">or</div>
+                <div className="h-px flex-1 bg-slate-200" />
+              </div>
+
+              <form onSubmit={handleSupabaseLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="admin@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={submitting}
+                  data-testid="button-login"
+                >
+                  {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Sign In
+                </Button>
+              </form>
+            </>
           ) : (
             <>
               <p className="text-center text-sm text-muted-foreground">

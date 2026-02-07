@@ -15,9 +15,9 @@ interface AuthContextType {
   lastName: string | null;
   loading: boolean;
   isSupabaseAuth: boolean;
-  signIn: (email?: string, password?: string) => Promise<void>;
+  signIn: (email?: string, password?: string, provider?: 'google') => Promise<void>;
   signOut: () => void;
-  checkSession: () => Promise<void>;
+  checkSession: () => Promise<AdminSession | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,11 +45,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setEmail(data.email);
       setFirstName(data.firstName);
       setLastName(data.lastName);
+      return data;
     } catch (err) {
       setIsAdmin(false);
       setEmail(null);
       setFirstName(null);
       setLastName(null);
+      return null;
     } finally {
       setLoading(false);
     }
@@ -68,43 +70,86 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
       setIsSupabaseAuth(_isSupabaseAuth);
-      await checkSession();
+      const sess = await checkSession();
+
+      // If Supabase has a browser session (e.g. after OAuth redirect) but the server session
+      // is missing, sync it by exchanging the access token for a server-side session.
+      if (_isSupabaseAuth && !sess?.email) {
+        try {
+          const supabase = await initSupabase();
+          const { data } = await supabase.auth.getSession();
+          const accessToken = data.session?.access_token;
+
+          if (accessToken) {
+            const res = await fetch('/api/auth/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({ accessToken }),
+            });
+
+            if (res.ok) {
+              await checkSession();
+            }
+          }
+        } catch {
+          // Best-effort sync; UI will stay logged out on the server if this fails.
+        }
+      }
     })();
   }, [checkSession]);
 
-  const signIn = async (emailArg?: string, passwordArg?: string) => {
-    if (isSupabaseAuth && emailArg && passwordArg) {
-      // Supabase Auth: sign in with email/password
+  const signIn = async (emailArg?: string, passwordArg?: string, provider?: 'google') => {
+    if (isSupabaseAuth) {
       const supabase = await initSupabase();
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: emailArg,
-        password: passwordArg,
-      });
 
-      if (error) {
-        throw new Error(error.message);
+      if (provider === 'google') {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/admin/login`,
+          },
+        });
+        if (error) throw new Error(error.message);
+        return;
       }
 
-      if (data.session?.access_token) {
-        // Send the token to our server to create a server session
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ accessToken: data.session.access_token }),
+      if (emailArg && passwordArg) {
+        // Supabase Auth: sign in with email/password
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: emailArg,
+          password: passwordArg,
         });
 
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.message || 'Login failed');
+        if (error) {
+          throw new Error(error.message);
         }
 
-        await checkSession();
+        if (data.session?.access_token) {
+          // Send the token to our server to create a server session
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ accessToken: data.session.access_token }),
+          });
+
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.message || 'Login failed');
+          }
+
+          await checkSession();
+        }
+
+        return;
       }
-    } else {
-      // Replit Auth: redirect to OIDC login
-      window.location.href = '/api/login';
+
+      throw new Error('Email and password are required');
     }
+
+    // Replit Auth: redirect to OIDC login
+    window.location.href = '/api/login';
   };
 
   const signOut = async () => {

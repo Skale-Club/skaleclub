@@ -7,13 +7,13 @@
     "#shared/*": "./shared/*"
   },
   "scripts": {
-    "dev": "NODE_ENV=development tsx server/index.ts",
+    "dev": "cross-env NODE_ENV=development tsx server/index.ts",
     "build": "tsx script/build.ts",
     "build:vercel": "tsx script/build-vercel.ts",
-    "start": "NODE_ENV=production node dist/index.cjs",
+    "start": "cross-env NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
     "db:push": "drizzle-kit push",
-    "print:db:dev": "NODE_ENV=development tsx temp_db_url.ts"
+    "print:db:dev": "cross-env NODE_ENV=development tsx temp_db_url.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -118,6 +118,7 @@
     "@vercel/node": "^5.5.32",
     "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.4.20",
+    "cross-env": "^10.1.0",
     "drizzle-kit": "^0.31.8",
     "esbuild": "^0.25.0",
     "postcss": "^8.4.47",

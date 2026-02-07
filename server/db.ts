@@ -20,7 +20,13 @@ const shouldUseSsl =
 
 export const pool = new Pool({
   connectionString: databaseUrl,
-  ssl: shouldUseSsl ? { rejectUnauthorized: false } : undefined,
+  ssl: shouldUseSsl
+    ? {
+        rejectUnauthorized: false,
+        // Handle self-signed certificates in Vercel and other serverless environments
+        checkServerIdentity: () => undefined,
+      }
+    : undefined,
   max: isServerless ? 5 : 20,
   idleTimeoutMillis: isServerless ? 30000 : undefined,
 });

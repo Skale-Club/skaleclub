@@ -30,7 +30,13 @@
       "Bash(pgrep:*)",
       "Bash(psql:*)",
       "Bash(npx drizzle-kit:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(git -C \"z:\\\\Dev\\\\skaleclub\" diff server/db.ts)",
+      "Bash(git -C \"z:\\\\Dev\\\\skaleclub\" diff shared/schema.ts)",
+      "Bash(npm run print:db:dev:*)",
+      "Bash(nslookup:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)"
     ]
   }
 }

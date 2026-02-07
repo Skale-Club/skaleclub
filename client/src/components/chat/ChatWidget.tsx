@@ -58,7 +58,8 @@ function matchesRule(url: string, rule: UrlRule) {
 }
 
 function isUrlExcluded(url: string, rules: UrlRule[]) {
-  return rules?.some((rule) => matchesRule(url, rule));
+  if (!Array.isArray(rules)) return false;
+  return rules.some((rule) => matchesRule(url, rule));
 }
 
 function makeId() {

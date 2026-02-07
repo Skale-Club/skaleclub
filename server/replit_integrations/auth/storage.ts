@@ -1,4 +1,4 @@
-import { users, type User, type UpsertUser } from "#shared/models/auth.js";
+import { users, type User, type UpsertUser } from "#shared/schema.js";
 import { db } from "../../db.js";
 import { eq } from "drizzle-orm";
 

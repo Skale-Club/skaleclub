@@ -17,7 +17,7 @@ import { testGHLConnection, getGHLFreeSlots, getOrCreateGHLContact, createGHLApp
 import { sendHotLeadNotification, sendLowPerformanceAlert, sendNewChatNotification } from "./integrations/twilio.js";
 import { registerStorageRoutes } from "./storage/storageAdapter.js";
 import { db } from "./db.js";
-import { users } from "#shared/models/auth.js";
+import { users } from "#shared/schema.js";
 import { eq } from "drizzle-orm";
 
 const isReplit = !!process.env.REPL_ID;
