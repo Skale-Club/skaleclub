@@ -4,12 +4,14 @@ import { Link, useLocation } from "wouter";
 import { ArrowRight, Star, Shield, Clock, Sparkles, Heart, BadgeCheck, ThumbsUp, Trophy, Calendar, FileText } from "lucide-react";
 import { CartSummary } from "@/components/CartSummary";
 import { AboutSection } from "@/components/AboutSection";
+import { AreasServedMap } from "@/components/AreasServedMap";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings, BlogPost, HomepageContent } from "@shared/schema";
 import { format } from "date-fns";
 import { trackCTAClick } from "@/lib/analytics";
 import { LeadFormModal } from "@/components/LeadFormModal";
 import { ConsultingStepsSection } from "@/components/ConsultingStepsSection";
+import { DEFAULT_HOMEPAGE_CONTENT } from "@/lib/homepageDefaults";
 
 function BlogSection({ content }: { content: HomepageContent['blogSection'] }) {
   const sectionContent = {
@@ -112,6 +114,10 @@ export default function Home() {
   const isLoading = isCategoriesLoading || isServicesLoading;
   const consultingStepsSection: HomepageContent["consultingStepsSection"] = companySettings?.homepageContent?.consultingStepsSection || { enabled: false, steps: [] };
   const homepageContent: Partial<HomepageContent> = companySettings?.homepageContent || {};
+  const areasServedSection: HomepageContent["areasServedSection"] = {
+    ...DEFAULT_HOMEPAGE_CONTENT.areasServedSection,
+    ...(homepageContent.areasServedSection || {}),
+  };
 
   const trustBadges = homepageContent.trustBadges || [];
   const reviewsEmbedUrl = homepageContent.reviewsSection?.embedUrl || '';
@@ -278,6 +284,14 @@ export default function Home() {
         section={consultingStepsSection}
         onCtaClick={handleConsultingCta}
       />
+      {(companySettings?.mapEmbedUrl || areasServedSection?.heading || areasServedSection?.description) && (
+      <section id="areas-served" className="bg-white py-20">
+        <AreasServedMap
+          mapEmbedUrl={companySettings?.mapEmbedUrl}
+          content={areasServedSection}
+        />
+      </section>
+      )}
       <div className="h-0 bg-[#111111]"></div>
       {/* Reviews Section */}
       {(reviewsEmbedUrl || reviewsTitle || reviewsSubtitle) && (

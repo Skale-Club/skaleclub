@@ -7,10 +7,28 @@ interface AreasServedMapProps {
   content?: HomepageContent['areasServedSection'] | null;
 }
 
+function normalizeEmbedUrl(raw: string) {
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+
+  // Admin UI asks for the iframe `src`, but users sometimes paste the full <iframe ...> snippet.
+  if (/<iframe\b/i.test(trimmed)) {
+    const srcMatch = trimmed.match(/\bsrc\s*=\s*["']([^"']+)["']/i);
+    if (srcMatch?.[1]) return srcMatch[1].trim();
+    return '';
+  }
+
+  // Sometimes people paste `src="..."` without the iframe wrapper.
+  const bareSrcMatch = trimmed.match(/\bsrc\s*=\s*["']([^"']+)["']/i);
+  if (bareSrcMatch?.[1]) return bareSrcMatch[1].trim();
+
+  return trimmed;
+}
+
 export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
   const sectionContent = content || {};
 
-  const embedUrl = (mapEmbedUrl || "").trim();
+  const embedUrl = normalizeEmbedUrl(mapEmbedUrl || "");
 
   return (
     <div className="container-custom mx-auto">
