@@ -1,3 +1,4 @@
+import http from "http";
 import type { Express, Request, Response, NextFunction } from "express";
 import type { Server } from "http";
 import { storage } from "./storage.js";
@@ -19,44 +20,13 @@ import { registerStorageRoutes } from "./storage/storageAdapter.js";
 import { db } from "./db.js";
 import { users } from "#shared/schema.js";
 import { eq } from "drizzle-orm";
+import userRoutes from "./routes/user-routes.js";
+import authRoutes from "./routes/auth-routes.js";
 
 const isReplit = !!process.env.REPL_ID;
 
-// Admin authentication middleware - environment-aware
-async function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  if (isReplit) {
-    // Replit Auth: check Passport session + isAdmin in DB
-    const user = (req as any).user;
-    if (!req.isAuthenticated || !req.isAuthenticated() || !user?.claims?.sub) {
-      return res.status(401).json({ message: 'Authentication required' });
-    }
-    try {
-      const { authStorage } = await import("./replit_integrations/auth/storage.js");
-      const dbUser = await authStorage.getUser(user.claims.sub);
-      if (!dbUser?.isAdmin) {
-        return res.status(403).json({ message: 'Admin access required' });
-      }
-      next();
-    } catch (error) {
-      return res.status(500).json({ message: 'Failed to verify admin status' });
-    }
-  } else {
-    // Supabase Auth: check express-session
-    const sess = req.session as any;
-    if (!sess?.userId) {
-      return res.status(401).json({ message: 'Authentication required' });
-    }
-    try {
-      const [dbUser] = await db.select().from(users).where(eq(users.id, sess.userId));
-      if (!dbUser?.isAdmin) {
-        return res.status(403).json({ message: 'Admin access required' });
-      }
-      next();
-    } catch (error) {
-      return res.status(500).json({ message: 'Failed to verify admin status' });
-    }
-  }
-}
+import { requireAdmin } from "./middleware/auth";
+export { requireAdmin };
 
 // Chat helpers
 const urlRuleSchema = z.object({
@@ -151,6 +121,12 @@ export async function registerRoutes(
       }
     });
   }
+
+  // Mount User Management Routes
+  app.use("/api/users", userRoutes);
+
+  // Mount Auth Routes (Registration)
+  app.use("/api", authRoutes);
 
   let runtimeOpenAiKey = process.env.OPENAI_API_KEY || "";
 
@@ -760,6 +736,7 @@ export async function registerRoutes(
         if (options?.allowFaqs === false) {
           return { error: 'FAQ search is disabled for this chat.' };
         }
+
         const query = (args?.query as string | undefined)?.toLowerCase?.()?.trim();
         const allFaqs = await storage.getFaqs();
 
@@ -769,6 +746,7 @@ export async function registerRoutes(
               question: faq.question,
               answer: faq.answer,
             })),
+            searchQuery: query,
           };
         }
 
@@ -1282,7 +1260,7 @@ export async function registerRoutes(
       const canonicalUrl =
         settings?.seoCanonicalUrl ||
         (isVercelAlias ? 'https://skale.club' : `${req.protocol}://${hostname}`);
-      
+
       const robotsTxt = `User-agent: *
 Allow: /
 
@@ -1432,11 +1410,11 @@ Sitemap: ${canonicalUrl}/sitemap.xml
       // 1. Calculate totals
       let totalPrice = 0;
       let totalDuration = 0;
-      
+
       for (const serviceId of input.serviceIds) {
         const service = await storage.getService(serviceId);
         if (!service) {
-           return res.status(400).json({ message: `Service ID ${serviceId} not found` });
+          return res.status(400).json({ message: `Service ID ${serviceId} not found` });
         }
         totalPrice += Number(service.price);
         totalDuration += service.durationMinutes;
@@ -1446,7 +1424,7 @@ Sitemap: ${canonicalUrl}/sitemap.xml
       const [startHour, startMinute] = input.startTime.split(':').map(Number);
       const startDate = new Date(`2000-01-01T${input.startTime}:00`);
       startDate.setMinutes(startDate.getMinutes() + totalDuration);
-      
+
       const endHour = startDate.getHours().toString().padStart(2, '0');
       const endMinute = startDate.getMinutes().toString().padStart(2, '0');
       const endTime = `${endHour}:${endMinute}`;
@@ -1480,11 +1458,11 @@ Sitemap: ${canonicalUrl}/sitemap.xml
             if (service) serviceNames.push(service.name);
           }
           const serviceSummary = serviceNames.join(', ');
-          
+
           const nameParts = input.customerName.split(' ');
           const firstName = nameParts[0] || '';
           const lastName = nameParts.slice(1).join(' ') || '';
-          
+
           // Create/find contact in GHL
           const contactResult = await getOrCreateGHLContact(
             ghlSettings.apiKey,
@@ -1497,13 +1475,13 @@ Sitemap: ${canonicalUrl}/sitemap.xml
               address: input.customerAddress
             }
           );
-          
+
           if (contactResult.success && contactResult.contactId) {
             // Create appointment in GHL - use EST/EDT timezone format (America/New_York)
             // GHL expects format like "2026-01-27T12:00:00-05:00" not UTC
             const startTimeISO = `${input.bookingDate}T${input.startTime}:00-05:00`;
             const endTimeISO = `${input.bookingDate}T${endTime}:00-05:00`;
-            
+
             const appointmentResult = await createGHLAppointment(
               ghlSettings.apiKey,
               ghlSettings.calendarId,
@@ -1516,7 +1494,7 @@ Sitemap: ${canonicalUrl}/sitemap.xml
                 address: input.customerAddress
               }
             );
-            
+
             // Update booking with GHL sync status
             if (appointmentResult.success && appointmentResult.appointmentId) {
               await storage.updateBookingGHLSync(
@@ -1559,7 +1537,7 @@ Sitemap: ${canonicalUrl}/sitemap.xml
       if (!existing) {
         return res.status(404).json({ message: 'Booking not found' });
       }
-      
+
       const input = api.bookings.update.input.parse(req.body);
       const updated = await storage.updateBooking(id, input);
       res.json(updated);
@@ -1579,7 +1557,7 @@ Sitemap: ${canonicalUrl}/sitemap.xml
       if (!existing) {
         return res.status(404).json({ message: 'Booking not found' });
       }
-      
+
       await storage.deleteBooking(id);
       res.json({ message: 'Booking deleted' });
     } catch (err) {
@@ -1606,25 +1584,25 @@ Sitemap: ${canonicalUrl}/sitemap.xml
     // Get company settings for business hours
     const companySettings = await storage.getCompanySettings();
     const businessHours: BusinessHours = (companySettings?.businessHours as BusinessHours) || DEFAULT_BUSINESS_HOURS;
-    
+
     // Get the day of week for the selected date
     const selectedDate = new Date(date + 'T12:00:00');
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
     const dayName = dayNames[selectedDate.getDay()];
     const dayHours: DayHours = businessHours[dayName];
-    
+
     // If business is closed on this day, return empty slots
     if (!dayHours.isOpen) {
       return res.json([]);
     }
 
     const existingBookings = await storage.getBookingsByDate(date);
-    
+
     // Check if GHL integration is enabled and get GHL free slots
     const ghlSettings = await storage.getIntegrationSettings('gohighlevel');
     let ghlFreeSlots: string[] = [];
     let useGhlSlots = false;
-    
+
     if (ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.calendarId) {
       try {
         const startDate = new Date(date + 'T00:00:00');
@@ -1636,9 +1614,9 @@ Sitemap: ${canonicalUrl}/sitemap.xml
           endDate,
           'America/New_York'
         );
-        
+
         console.log('GHL free slots result:', JSON.stringify(result, null, 2));
-        
+
         if (result.success && result.slots) {
           // Filter slots for the requested date and extract time parts
           ghlFreeSlots = result.slots
@@ -1653,7 +1631,7 @@ Sitemap: ${canonicalUrl}/sitemap.xml
               return timePart?.substring(0, 5) || '';
             })
             .filter((time: string) => time !== '');
-          
+
           console.log('Extracted GHL free time slots for', date, ':', ghlFreeSlots);
           useGhlSlots = true;
         } else if (result.success) {
@@ -1704,28 +1682,28 @@ Sitemap: ${canonicalUrl}/sitemap.xml
         // Calculate proposed end time
         const slotDate = new Date(`2000-01-01T${startTime}:00`);
         slotDate.setMinutes(slotDate.getMinutes() + totalDurationMinutes);
-        
+
         // Check if ends after working hours for this day
         if (slotDate.getHours() > endHr || (slotDate.getHours() === endHr && slotDate.getMinutes() > endMn)) {
-             continue; // Exceeds working hours
+          continue; // Exceeds working hours
         }
-        
+
         const endHour = slotDate.getHours().toString().padStart(2, '0');
         const endMinute = slotDate.getMinutes().toString().padStart(2, '0');
         const endTime = `${endHour}:${endMinute}`;
 
         // Check availability
         let isAvailable = true;
-        
+
         // If using GHL, check if this slot is in the GHL free slots list
         if (useGhlSlots) {
           isAvailable = ghlFreeSlots.includes(startTime);
         }
-        
+
         // Also check local bookings (in case there are bookings not synced to GHL)
         if (isAvailable) {
           isAvailable = !existingBookings.some(b => {
-             return startTime < b.endTime && endTime > b.startTime;
+            return startTime < b.endTime && endTime > b.startTime;
           });
         }
 
@@ -1749,15 +1727,15 @@ Sitemap: ${canonicalUrl}/sitemap.xml
     // Get company settings for business hours
     const companySettings = await storage.getCompanySettings();
     const businessHours: BusinessHours = (companySettings?.businessHours as BusinessHours) || DEFAULT_BUSINESS_HOURS;
-    
+
     // Get GHL settings once
     const ghlSettings = await storage.getIntegrationSettings('gohighlevel');
     const useGhl = ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.calendarId;
-    
+
     // Get date range for the month
     const daysInMonth = new Date(year, month, 0).getDate();
     const result: Record<string, boolean> = {};
-    
+
     // Current date/time in EST
     const now = new Date();
     const estNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
@@ -1778,7 +1756,7 @@ Sitemap: ${canonicalUrl}/sitemap.xml
           endDate,
           'America/New_York'
         );
-        
+
         if (ghlResult.success && ghlResult.slots) {
           for (const slot of ghlResult.slots) {
             const slotDate = slot.startTime?.split('T')[0];
@@ -1798,89 +1776,89 @@ Sitemap: ${canonicalUrl}/sitemap.xml
         console.error('Error fetching GHL slots for month:', error);
       }
     }
-    
+
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
-    
+
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const dateObj = new Date(dateStr + 'T12:00:00');
       const dayName = dayNames[dateObj.getDay()];
       const dayHours: DayHours = businessHours[dayName];
-      
+
       // Check if in the past
       if (dateStr < todayStr) {
         result[dateStr] = false;
         continue;
       }
-      
+
       // Check if business is closed
       if (!dayHours.isOpen) {
         result[dateStr] = false;
         continue;
       }
-      
+
       const isToday = dateStr === todayStr;
       const [startHr, startMn] = dayHours.start.split(':').map(Number);
       const [endHr, endMn] = dayHours.end.split(':').map(Number);
-      
+
       // Get existing bookings for this day
       const existingBookings = await storage.getBookingsByDate(dateStr);
-      
+
       // Get GHL free slots for this day if using GHL
       const ghlFreeSlots = useGhl ? (ghlMonthSlots.get(dateStr) || []) : [];
-      
+
       let hasAvailableSlot = false;
-      
+
       // Check each potential slot
       for (let h = startHr; h < endHr || (h === endHr && 0 < endMn); h++) {
         if (hasAvailableSlot) break;
-        
+
         for (let m = 0; m < 60; m += 30) {
           if (hasAvailableSlot) break;
           if (h === startHr && m < startMn) continue;
           if (h > endHr || (h === endHr && m >= endMn)) continue;
-          
+
           const slotHour = h.toString().padStart(2, '0');
           const slotMinute = m.toString().padStart(2, '0');
           const startTime = `${slotHour}:${slotMinute}`;
-          
+
           // Skip past slots if today
           if (isToday && (h < currentHour || (h === currentHour && m <= currentMinute))) {
             continue;
           }
-          
+
           // Calculate end time
           const slotDate = new Date(`2000-01-01T${startTime}:00`);
           slotDate.setMinutes(slotDate.getMinutes() + totalDurationMinutes);
-          
+
           if (slotDate.getHours() > endHr || (slotDate.getHours() === endHr && slotDate.getMinutes() > endMn)) {
             continue;
           }
-          
+
           const endHour = slotDate.getHours().toString().padStart(2, '0');
           const endMinute = slotDate.getMinutes().toString().padStart(2, '0');
           const endTime = `${endHour}:${endMinute}`;
-          
+
           // Check availability
           let isAvailable = true;
-          
+
           if (useGhl) {
             isAvailable = ghlFreeSlots.includes(startTime);
           }
-          
+
           if (isAvailable) {
             isAvailable = !existingBookings.some(b => startTime < b.endTime && endTime > b.startTime);
           }
-          
+
           if (isAvailable) {
             hasAvailableSlot = true;
           }
         }
       }
-      
+
       result[dateStr] = hasAvailableSlot;
     }
-    
+
     res.json(result);
   });
 
@@ -2489,7 +2467,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
     try {
       const settings = await storage.getIntegrationSettings('gohighlevel');
       if (!settings) {
-        return res.json({ 
+        return res.json({
           provider: 'gohighlevel',
           apiKey: '',
           locationId: '',
@@ -2510,22 +2488,22 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
   app.put('/api/integrations/ghl', requireAdmin, async (req, res) => {
     try {
       const { apiKey, locationId, calendarId, isEnabled } = req.body;
-      
+
       const existingSettings = await storage.getIntegrationSettings('gohighlevel');
-      
+
       const settingsToSave: any = {
         provider: 'gohighlevel',
         locationId,
         calendarId: calendarId || '2irhr47AR6K0AQkFqEQl',
         isEnabled: isEnabled ?? false
       };
-      
+
       if (apiKey && apiKey !== '********') {
         settingsToSave.apiKey = apiKey;
       } else if (existingSettings?.apiKey) {
         settingsToSave.apiKey = existingSettings.apiKey;
       }
-      
+
       const settings = await storage.upsertIntegrationSettings(settingsToSave);
       res.json({
         ...settings,
@@ -2540,26 +2518,26 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
   app.post('/api/integrations/ghl/test', requireAdmin, async (req, res) => {
     try {
       const { apiKey, locationId } = req.body;
-      
+
       let keyToTest = apiKey;
       if (apiKey === '********' || !apiKey) {
         const existingSettings = await storage.getIntegrationSettings('gohighlevel');
         keyToTest = existingSettings?.apiKey;
       }
-      
+
       if (!keyToTest || !locationId) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'API key and Location ID are required' 
+        return res.status(400).json({
+          success: false,
+          message: 'API key and Location ID are required'
         });
       }
-      
+
       const result = await testGHLConnection(keyToTest, locationId);
       res.json(result);
     } catch (err) {
-      res.status(500).json({ 
-        success: false, 
-        message: (err as Error).message 
+      res.status(500).json({
+        success: false,
+        message: (err as Error).message
       });
     }
   });
@@ -2568,19 +2546,19 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
   app.get('/api/integrations/ghl/free-slots', async (req, res) => {
     try {
       const settings = await storage.getIntegrationSettings('gohighlevel');
-      
+
       if (!settings?.isEnabled || !settings.apiKey || !settings.calendarId) {
         return res.json({ enabled: false, slots: {} });
       }
-      
+
       const startDate = new Date(req.query.startDate as string);
       const endDate = new Date(req.query.endDate as string);
       const timezone = (req.query.timezone as string) || 'America/New_York';
-      
+
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
         return res.status(400).json({ message: 'Invalid date range' });
       }
-      
+
       const result = await getGHLFreeSlots(
         settings.apiKey,
         settings.calendarId,
@@ -2588,10 +2566,10 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
         endDate,
         timezone
       );
-      
-      res.json({ 
-        enabled: true, 
-        ...result 
+
+      res.json({
+        enabled: true,
+        ...result
       });
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
@@ -2637,17 +2615,17 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
   app.post('/api/integrations/ghl/sync-booking', async (req, res) => {
     try {
       const settings = await storage.getIntegrationSettings('gohighlevel');
-      
+
       if (!settings?.isEnabled || !settings.apiKey || !settings.locationId || !settings.calendarId) {
         return res.json({ synced: false, reason: 'GHL not enabled' });
       }
-      
+
       const { bookingId, customerName, customerEmail, customerPhone, customerAddress, bookingDate, startTime, endTime, serviceSummary } = req.body;
-      
+
       const nameParts = customerName.split(' ');
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
-      
+
       const contactResult = await getOrCreateGHLContact(
         settings.apiKey,
         settings.locationId,
@@ -2659,20 +2637,20 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
           address: customerAddress
         }
       );
-      
+
       if (!contactResult.success || !contactResult.contactId) {
         await storage.updateBookingGHLSync(bookingId, '', '', 'failed');
-        return res.json({ 
-          synced: false, 
-          reason: contactResult.message || 'Failed to create contact' 
+        return res.json({
+          synced: false,
+          reason: contactResult.message || 'Failed to create contact'
         });
       }
-      
+
       // Use EST/EDT timezone format (America/New_York)
       // GHL expects format like "2026-01-27T12:00:00-05:00" not UTC
       const startTimeISO = `${bookingDate}T${startTime}:00-05:00`;
       const endTimeISO = `${bookingDate}T${endTime}:00-05:00`;
-      
+
       const appointmentResult = await createGHLAppointment(
         settings.apiKey,
         settings.calendarId,
@@ -2685,31 +2663,31 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
           address: customerAddress
         }
       );
-      
+
       if (!appointmentResult.success || !appointmentResult.appointmentId) {
         await storage.updateBookingGHLSync(bookingId, contactResult.contactId, '', 'failed');
-        return res.json({ 
-          synced: false, 
-          reason: appointmentResult.message || 'Failed to create appointment' 
+        return res.json({
+          synced: false,
+          reason: appointmentResult.message || 'Failed to create appointment'
         });
       }
-      
+
       await storage.updateBookingGHLSync(
-        bookingId, 
-        contactResult.contactId, 
-        appointmentResult.appointmentId, 
+        bookingId,
+        contactResult.contactId,
+        appointmentResult.appointmentId,
         'synced'
       );
-      
-      res.json({ 
-        synced: true, 
+
+      res.json({
+        synced: true,
         contactId: contactResult.contactId,
         appointmentId: appointmentResult.appointmentId
       });
     } catch (err) {
-      res.status(500).json({ 
-        synced: false, 
-        reason: (err as Error).message 
+      res.status(500).json({
+        synced: false,
+        reason: (err as Error).message
       });
     }
   });
@@ -2888,7 +2866,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
       const status = req.query.status as string | undefined;
       const limit = req.query.limit ? Number(req.query.limit) : undefined;
       const offset = req.query.offset ? Number(req.query.offset) : 0;
-      
+
       if (status === 'published' && limit) {
         const posts = await storage.getPublishedBlogPosts(limit, offset);
         res.json(posts);
@@ -2899,10 +2877,19 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
         const posts = await storage.getBlogPosts();
         res.json(posts);
       }
-    } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
     }
   });
+
+  // User Management Routes - MOUNTED AT TOP
+  // app.use("/api/users", userRoutes);
+
+  // Auth Routes (Registration) - MOUNTED AT TOP
+  // app.use("/api", authRoutes);
+
+  // Legacy inline routes removed in favor of mounted routes
+  // (The routes were previously here but are now in ./routes/user-routes.ts and ./routes/auth-routes.ts)
 
   app.get('/api/blog/count', async (req, res) => {
     try {
@@ -2995,13 +2982,13 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
     try {
       const param = req.params.idOrSlug;
       let post;
-      
+
       if (/^\d+$/.test(param)) {
         post = await storage.getBlogPost(Number(param));
       } else {
         post = await storage.getBlogPostBySlug(param);
       }
-      
+
       if (!post) {
         return res.status(404).json({ message: 'Blog post not found' });
       }
@@ -3070,10 +3057,15 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
     try {
       const categories = await storage.getKnowledgeBaseCategories();
       res.json(categories);
-    } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
     }
   });
+
+  /*
+   * User routes are now mounted in the main router block at the top.
+   * See app.use("/api/users", userRoutes);
+   */
 
   app.get('/api/knowledge-base/categories/:id', requireAdmin, async (req, res) => {
     try {

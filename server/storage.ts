@@ -59,6 +59,9 @@ import {
   type InsertBlogPost,
   type InsertKnowledgeBaseCategory,
   type InsertKnowledgeBaseArticle,
+  type User,
+  type UpsertUser,
+  users,
 } from "#shared/schema.js";
 import { eq, and, or, ilike, gte, lte, lt, inArray, desc, asc, sql, ne } from "drizzle-orm";
 import { z } from "zod";
@@ -112,24 +115,34 @@ export const insertSubcategorySchema = z.object({
 });
 export type InsertSubcategory = z.infer<typeof insertSubcategorySchema>;
 
+
+
 export interface IStorage {
+  // Users
+  getUsers(): Promise<User[]>;
+  getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(user: UpsertUser): Promise<User>;
+  updateUser(id: string, user: Partial<UpsertUser>): Promise<User>;
+  deleteUser(id: string): Promise<void>;
+
   // Categories & Services
   getCategories(): Promise<Category[]>;
   getCategoryBySlug(slug: string): Promise<Category | undefined>;
   getServices(categoryId?: number, subcategoryId?: number, includeHidden?: boolean): Promise<Service[]>;
   getService(id: number): Promise<Service | undefined>;
-  
+
   // Subcategories
   getSubcategories(categoryId?: number): Promise<Subcategory[]>;
   createSubcategory(subcategory: InsertSubcategory): Promise<Subcategory>;
   updateSubcategory(id: number, subcategory: Partial<InsertSubcategory>): Promise<Subcategory>;
   deleteSubcategory(id: number): Promise<void>;
-  
+
   // Service Addons
   getServiceAddons(serviceId: number): Promise<Service[]>;
   setServiceAddons(serviceId: number, addonServiceIds: number[]): Promise<void>;
   getAddonRelationships(): Promise<ServiceAddon[]>;
-  
+
   // Bookings
   createBooking(booking: InsertBooking & { totalPrice: string, totalDurationMinutes: number, endTime: string }): Promise<Booking>;
   getBookings(): Promise<Booking[]>;
@@ -138,35 +151,35 @@ export interface IStorage {
   updateBooking(id: number, updates: Partial<{ status: string; paymentStatus: string; totalPrice: string }>): Promise<Booking>;
   deleteBooking(id: number): Promise<void>;
   getBookingItems(bookingId: number): Promise<BookingItem[]>;
-  
+
   // Category CRUD
   createCategory(category: InsertCategory): Promise<Category>;
   updateCategory(id: number, category: Partial<InsertCategory>): Promise<Category>;
   deleteCategory(id: number): Promise<void>;
-  
+
   // Service CRUD
   createService(service: InsertService): Promise<Service>;
   updateService(id: number, service: Partial<InsertService>): Promise<Service>;
   deleteService(id: number): Promise<void>;
   reorderServices(order: { id: number; order: number }[]): Promise<void>;
-  
+
   // Company Settings
   getCompanySettings(): Promise<CompanySettings>;
   updateCompanySettings(settings: Partial<CompanySettings>): Promise<CompanySettings>;
-  
+
   // FAQs
   getFaqs(): Promise<Faq[]>;
   createFaq(faq: InsertFaq): Promise<Faq>;
   updateFaq(id: number, faq: Partial<InsertFaq>): Promise<Faq>;
   deleteFaq(id: number): Promise<void>;
-  
+
   // Integration Settings
   getIntegrationSettings(provider: string): Promise<IntegrationSettings | undefined>;
   upsertIntegrationSettings(settings: InsertIntegrationSettings): Promise<IntegrationSettings>;
-  
+
   // Booking GHL sync
   updateBookingGHLSync(bookingId: number, ghlContactId: string, ghlAppointmentId: string, syncStatus: string): Promise<void>;
-  
+
   // Chat
   getChatSettings(): Promise<ChatSettings>;
   updateChatSettings(settings: Partial<InsertChatSettings>): Promise<ChatSettings>;
@@ -184,7 +197,7 @@ export interface IStorage {
   createConversation(conversation: InsertConversation): Promise<Conversation>;
   addConversationMessage(message: InsertConversationMessage): Promise<ConversationMessage>;
   getConversationMessages(conversationId: string): Promise<ConversationMessage[]>;
-  
+
   // Leads
   upsertFormLeadProgress(progress: FormLeadProgressInput, metadata?: { userAgent?: string; conversationId?: string; source?: string }, formConfig?: FormConfig): Promise<FormLead>;
   getFormLeadBySession(sessionId: string): Promise<FormLead | undefined>;
@@ -193,7 +206,7 @@ export interface IStorage {
   updateFormLead(id: number, updates: Partial<Pick<FormLead, "status" | "observacoes" | "notificacaoEnviada" | "ghlContactId" | "ghlSyncStatus">>): Promise<FormLead | undefined>;
   getFormLeadByEmail(email: string): Promise<FormLead | undefined>;
   deleteFormLead(id: number): Promise<boolean>;
-  
+
   // Blog Posts
   getBlogPosts(status?: string): Promise<BlogPost[]>;
   getBlogPost(id: number): Promise<BlogPost | undefined>;
@@ -246,6 +259,36 @@ export class DatabaseStorage implements IStorage {
       console.error("ensureChatSchema error:", err);
       this.chatSchemaEnsured = false;
     }
+  }
+
+
+
+  async getUsers(): Promise<User[]> {
+    return await db.select().from(users);
+  }
+
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async createUser(user: UpsertUser): Promise<User> {
+    const [newUser] = await db.insert(users).values(user).returning();
+    return newUser;
+  }
+
+  async updateUser(id: string, user: Partial<UpsertUser>): Promise<User> {
+    const [updated] = await db.update(users).set({ ...user, updatedAt: new Date() }).where(eq(users.id, id)).returning();
+    return updated;
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
   }
 
   async getCategories(): Promise<Category[]> {
@@ -320,7 +363,7 @@ export class DatabaseStorage implements IStorage {
   async getServiceAddons(serviceId: number): Promise<Service[]> {
     const addonRelations = await db.select().from(serviceAddons).where(eq(serviceAddons.serviceId, serviceId));
     if (addonRelations.length === 0) return [];
-    
+
     const addonIds = addonRelations.map(r => r.addonServiceId);
     return await db
       .select()
@@ -330,7 +373,7 @@ export class DatabaseStorage implements IStorage {
 
   async setServiceAddons(serviceId: number, addonServiceIds: number[]): Promise<void> {
     await db.delete(serviceAddons).where(eq(serviceAddons.serviceId, serviceId));
-    
+
     if (addonServiceIds.length > 0) {
       const values = addonServiceIds.map(addonId => ({
         serviceId,
@@ -463,7 +506,7 @@ export class DatabaseStorage implements IStorage {
   async getCompanySettings(): Promise<CompanySettings> {
     const [settings] = await db.select().from(companySettings);
     if (settings) return settings;
-    
+
     // Create default settings if none exist
     const [newSettings] = await db.insert(companySettings).values({}).returning();
     return newSettings;
@@ -500,7 +543,7 @@ export class DatabaseStorage implements IStorage {
 
   async upsertIntegrationSettings(settings: InsertIntegrationSettings): Promise<IntegrationSettings> {
     const existing = await this.getIntegrationSettings(settings.provider || "gohighlevel");
-    
+
     if (existing) {
       const [updated] = await db
         .update(integrationSettings)
@@ -665,7 +708,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(conversationMessages.conversationId, conversationId))
       .orderBy(asc(conversationMessages.createdAt));
   }
-  
+
   async getFormLeadBySession(sessionId: string): Promise<FormLead | undefined> {
     await ensureFormLeadGhlColumns();
     const [lead] = await db.select().from(formLeads).where(eq(formLeads.sessionId, sessionId));
@@ -951,11 +994,11 @@ export class DatabaseStorage implements IStorage {
   async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
     const { serviceIds, ...postData } = post;
     const [newPost] = await db.insert(blogPosts).values(postData).returning();
-    
+
     if (serviceIds && serviceIds.length > 0) {
       await this.setBlogPostServices(newPost.id, serviceIds);
     }
-    
+
     return newPost;
   }
 
@@ -965,11 +1008,11 @@ export class DatabaseStorage implements IStorage {
       .set({ ...postData, updatedAt: new Date() })
       .where(eq(blogPosts.id, id))
       .returning();
-    
+
     if (serviceIds !== undefined) {
       await this.setBlogPostServices(id, serviceIds);
     }
-    
+
     return updated;
   }
 
@@ -981,14 +1024,14 @@ export class DatabaseStorage implements IStorage {
   async getBlogPostServices(postId: number): Promise<Service[]> {
     const relations = await db.select().from(blogPostServices).where(eq(blogPostServices.blogPostId, postId));
     if (relations.length === 0) return [];
-    
+
     const serviceIds = relations.map(r => r.serviceId);
     return await db.select().from(services).where(inArray(services.id, serviceIds));
   }
 
   async setBlogPostServices(postId: number, serviceIds: number[]): Promise<void> {
     await db.delete(blogPostServices).where(eq(blogPostServices.blogPostId, postId));
-    
+
     if (serviceIds.length > 0) {
       const values = serviceIds.map(serviceId => ({
         blogPostId: postId,
