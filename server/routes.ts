@@ -72,7 +72,7 @@ function isUrlExcluded(url: string, rules: UrlRule[] = []): boolean {
   });
 }
 
-const DEFAULT_CHAT_MODEL = 'gpt-4o-mini';
+const DEFAULT_CHAT_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
 type IntakeObjective = {
   id: 'zipcode' | 'name' | 'phone' | 'serviceType' | 'serviceDetails' | 'date' | 'address';
@@ -269,7 +269,7 @@ export async function registerRoutes(
           ghlSettings.calendarId,
           startDate,
           endDate,
-          'America/New_York'
+          process.env.APP_TIMEZONE || 'America/New_York'
         );
         if (result.success && result.slots) {
           ghlFreeSlots = result.slots
@@ -283,7 +283,7 @@ export async function registerRoutes(
     }
 
     const now = new Date();
-    const estNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const estNow = new Date(now.toLocaleString('en-US', { timeZone: process.env.APP_TIMEZONE || 'America/New_York' }));
     const todayStr = estNow.toISOString().split('T')[0];
     const isToday = date === todayStr;
     const currentHour = estNow.getHours();
@@ -1612,7 +1612,7 @@ Sitemap: ${canonicalUrl}/sitemap.xml
           ghlSettings.calendarId,
           startDate,
           endDate,
-          'America/New_York'
+          process.env.APP_TIMEZONE || 'America/New_York'
         );
 
         console.log('GHL free slots result:', JSON.stringify(result, null, 2));
@@ -1650,7 +1650,7 @@ Sitemap: ${canonicalUrl}/sitemap.xml
 
     // Check if the selected date is today (in EST/America/New_York timezone)
     const now = new Date();
-    const estNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const estNow = new Date(now.toLocaleString('en-US', { timeZone: process.env.APP_TIMEZONE || 'America/New_York' }));
     const todayStr = estNow.toISOString().split('T')[0];
     const isToday = date === todayStr;
     const currentHour = estNow.getHours();
@@ -1738,7 +1738,7 @@ Sitemap: ${canonicalUrl}/sitemap.xml
 
     // Current date/time in EST
     const now = new Date();
-    const estNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const estNow = new Date(now.toLocaleString('en-US', { timeZone: process.env.APP_TIMEZONE || 'America/New_York' }));
     const todayStr = estNow.toISOString().split('T')[0];
     const currentHour = estNow.getHours();
     const currentMinute = estNow.getMinutes();
@@ -1754,7 +1754,7 @@ Sitemap: ${canonicalUrl}/sitemap.xml
           ghlSettings.calendarId!,
           startDate,
           endDate,
-          'America/New_York'
+          process.env.APP_TIMEZONE || 'America/New_York'
         );
 
         if (ghlResult.success && ghlResult.slots) {
@@ -2471,7 +2471,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
           provider: 'gohighlevel',
           apiKey: '',
           locationId: '',
-          calendarId: '2irhr47AR6K0AQkFqEQl',
+          calendarId: process.env.GHL_CALENDAR_ID || '',
           isEnabled: false
         });
       }
@@ -2494,7 +2494,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
       const settingsToSave: any = {
         provider: 'gohighlevel',
         locationId,
-        calendarId: calendarId || '2irhr47AR6K0AQkFqEQl',
+        calendarId: calendarId || process.env.GHL_CALENDAR_ID || '',
         isEnabled: isEnabled ?? false
       };
 
@@ -2553,7 +2553,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
 
       const startDate = new Date(req.query.startDate as string);
       const endDate = new Date(req.query.endDate as string);
-      const timezone = (req.query.timezone as string) || 'America/New_York';
+      const timezone = (req.query.timezone as string) || process.env.APP_TIMEZONE || 'America/New_York';
 
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
         return res.status(400).json({ message: 'Invalid date range' });

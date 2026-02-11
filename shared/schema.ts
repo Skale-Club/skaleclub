@@ -94,7 +94,7 @@ export const integrationSettings = pgTable("integration_settings", {
   provider: text("provider").notNull().default("gohighlevel"), // gohighlevel, etc.
   apiKey: text("api_key"), // Encrypted API key
   locationId: text("location_id"),
-  calendarId: text("calendar_id").default("2irhr47AR6K0AQkFqEQl"),
+  calendarId: text("calendar_id"),
   isEnabled: boolean("is_enabled").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

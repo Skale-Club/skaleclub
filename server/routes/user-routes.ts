@@ -38,6 +38,19 @@ router.patch("/:id", requireAdmin, async (req, res) => {
     try {
         const userId = req.params.id;
         const updates = req.body;
+
+        // Last Admin Rule: If demoting an admin, check if they are the last one
+        if (updates.isAdmin === false) {
+            const user = await storage.getUser(userId);
+            if (user?.isAdmin) {
+                const allUsers = await storage.getUsers();
+                const adminCount = allUsers.filter(u => u.isAdmin).length;
+                if (adminCount <= 1) {
+                    return res.status(400).json({ message: "Cannot remove the last administrator" });
+                }
+            }
+        }
+
         const updatedUser = await storage.updateUser(userId, updates);
         res.json(updatedUser);
     } catch (error: any) {
@@ -49,6 +62,17 @@ router.patch("/:id", requireAdmin, async (req, res) => {
 router.delete("/:id", requireAdmin, async (req, res) => {
     try {
         const userId = req.params.id;
+        
+        // Last Admin Rule: Check if the user is an admin and if they are the last one
+        const user = await storage.getUser(userId);
+        if (user?.isAdmin) {
+            const allUsers = await storage.getUsers();
+            const adminCount = allUsers.filter(u => u.isAdmin).length;
+            if (adminCount <= 1) {
+                return res.status(400).json({ message: "Cannot delete the last administrator" });
+            }
+        }
+
         await storage.deleteUser(userId);
         res.status(204).send();
     } catch (error: any) {

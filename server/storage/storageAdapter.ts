@@ -71,6 +71,12 @@ export async function registerStorageRoutes(app: Express, requireAdmin: any) {
     // Both /api/upload and /api/upload-local use direct Supabase upload (base64 body)
     const handleUpload = async (req: Request, res: Response) => {
       try {
+        // If no data is provided, return a presigned URL for client-side upload
+        if (!req.body.data) {
+          const { uploadURL, objectPath } = await storageService.getUploadURL();
+          return res.json({ uploadURL, objectPath });
+        }
+
         const { filename, data } = req.body;
         if (!filename || !data) {
           return res.status(400).json({ error: "Missing filename or data" });
@@ -78,9 +84,9 @@ export async function registerStorageRoutes(app: Express, requireAdmin: any) {
         const buffer = Buffer.from(data, 'base64');
         const publicUrl = await storageService.uploadBuffer(buffer, filename);
         res.json({ path: publicUrl });
-      } catch (error) {
+      } catch (error: any) {
         console.error("Upload error:", error);
-        res.status(500).json({ error: "Failed to upload file" });
+        res.status(500).json({ error: error.message || "Failed to upload file" });
       }
     };
 

@@ -10,7 +10,7 @@ export async function setupSupabaseAuth(app: Express) {
   app.set("trust proxy", 1);
 
   // Setup session store — reuses the existing pool (already configured with SSL)
-  const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
+  const sessionTtl = (parseInt(process.env.SESSION_TTL_DAYS || "7", 10)) * 24 * 60 * 60 * 1000;
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
     pool: pool,

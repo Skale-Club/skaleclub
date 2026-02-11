@@ -136,7 +136,7 @@ export async function getGHLFreeSlots(
   calendarId: string,
   startDate: Date,
   endDate: Date,
-  timezone: string = "America/New_York"
+  timezone: string = process.env.APP_TIMEZONE || "America/New_York"
 ): Promise<{ success: boolean; slots?: GHLSlotItem[]; message?: string }> {
   try {
     const startTimestamp = Math.floor(startDate.getTime());

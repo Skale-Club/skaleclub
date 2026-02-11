@@ -28,10 +28,13 @@ import { useToast } from "@/hooks/use-toast";
 import type { User } from "@shared/schema";
 import { Loader2 } from "lucide-react";
 
+import { ObjectUploader } from "@/components/ui/ObjectUploader";
+
 const userSchema = z.object({
     email: z.string().email("Invalid email address"),
     firstName: z.string().min(1, "First name is required"),
     lastName: z.string().min(1, "Last name is required"),
+    profileImageUrl: z.string().optional(),
     isAdmin: z.boolean().default(false),
     // Password handling is omitted for basic profile management as per current plan
     // If we need password management, it should be added here
@@ -55,6 +58,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
             email: "",
             firstName: "",
             lastName: "",
+            profileImageUrl: "",
             isAdmin: false,
         },
     });
@@ -65,6 +69,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
                 email: user.email || "",
                 firstName: user.firstName || "",
                 lastName: user.lastName || "",
+                profileImageUrl: user.profileImageUrl || "",
                 isAdmin: user.isAdmin || false,
             });
         } else {
@@ -72,6 +77,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
                 email: "",
                 firstName: "",
                 lastName: "",
+                profileImageUrl: "",
                 isAdmin: false,
             });
         }
@@ -121,6 +127,24 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
 
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <div className="flex justify-center mb-4">
+                            <FormField
+                                control={form.control}
+                                name="profileImageUrl"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormControl>
+                                            <ObjectUploader
+                                                defaultImage={field.value}
+                                                onUploadComplete={(url) => field.onChange(url)}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+
                         <FormField
                             control={form.control}
                             name="email"
@@ -128,7 +152,11 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
                                 <FormItem>
                                     <FormLabel>Email</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="john.doe@example.com" {...field} />
+                                        <Input 
+                                            placeholder="john.doe@example.com" 
+                                            {...field} 
+                                            disabled={!!user} // Email immutable when editing
+                                        />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>

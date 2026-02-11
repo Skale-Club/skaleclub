@@ -2,7 +2,7 @@ import { getSupabaseAdmin } from "../lib/supabase.js";
 import { randomUUID } from "crypto";
 import type { Response } from "express";
 
-const BUCKET_NAME = "uploads";
+const BUCKET_NAME = process.env.SUPABASE_STORAGE_BUCKET || "uploads";
 let bucketEnsured = false;
 
 async function ensureBucket() {
