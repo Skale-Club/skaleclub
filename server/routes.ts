@@ -3241,6 +3241,176 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
     }
   });
 
+  // ===============================
+  // User Management Routes
+  // ===============================
+
+  // Get all users from Supabase Auth and local DB
+  app.get('/api/users', requireAdmin, async (_req, res) => {
+    try {
+      const { getSupabaseAdmin } = await import('./lib/supabase.js');
+      const supabaseAdmin = getSupabaseAdmin();
+      
+      // Fetch users from Supabase Auth
+      const { data: authUsers, error } = await supabaseAdmin.auth.admin.listUsers();
+      
+      if (error) {
+        console.error('Error fetching users from Supabase:', error);
+        return res.status(500).json({ message: 'Failed to fetch users from Supabase' });
+      }
+
+      // Fetch local user data (roles, names)
+      const localUsers = await db.select().from(users);
+      const localUserMap = new Map(localUsers.map(u => [u.id, u]));
+
+      // Merge Supabase auth data with local DB data
+      const mergedUsers = authUsers.users.map(authUser => {
+        const localUser = localUserMap.get(authUser.id);
+        return {
+          id: authUser.id,
+          email: authUser.email,
+          firstName: localUser?.firstName || authUser.user_metadata?.first_name || '',
+          lastName: localUser?.lastName || authUser.user_metadata?.last_name || '',
+          profileImageUrl: localUser?.profileImageUrl || authUser.user_metadata?.avatar_url || '',
+          isAdmin: localUser?.isAdmin || false,
+          createdAt: authUser.created_at,
+          lastSignInAt: authUser.last_sign_in_at,
+          emailConfirmed: authUser.email_confirmed_at != null,
+        };
+      });
+
+      res.json(mergedUsers);
+    } catch (err) {
+      console.error('Error in /api/users:', err);
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  // Update user role (admin status)
+  app.patch('/api/users/:id', requireAdmin, async (req, res) => {
+    try {
+      const { isAdmin } = z.object({ isAdmin: z.boolean() }).parse(req.body);
+      const userId = req.params.id;
+
+      // Update local database
+      const [existingUser] = await db.select().from(users).where(eq(users.id, userId));
+      
+      if (existingUser) {
+        const [updated] = await db
+          .update(users)
+          .set({ isAdmin, updatedAt: new Date() })
+          .where(eq(users.id, userId))
+          .returning();
+        res.json(updated);
+      } else {
+        // User exists in Supabase but not in local DB, create entry
+        const { getSupabaseAdmin } = await import('./lib/supabase.js');
+        const supabaseAdmin = getSupabaseAdmin();
+        const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId);
+        
+        if (!authUser?.user) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+
+        const [newUser] = await db
+          .insert(users)
+          .values({
+            id: userId,
+            email: authUser.user.email,
+            isAdmin,
+            firstName: authUser.user.user_metadata?.first_name || '',
+            lastName: authUser.user.user_metadata?.last_name || '',
+            profileImageUrl: authUser.user.user_metadata?.avatar_url || '',
+          })
+          .returning();
+        
+        res.json(newUser);
+      }
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  // Delete user
+  app.delete('/api/users/:id', requireAdmin, async (req, res) => {
+    try {
+      const userId = req.params.id;
+
+      // Delete from Supabase Auth
+      const { getSupabaseAdmin } = await import('./lib/supabase.js');
+      const supabaseAdmin = getSupabaseAdmin();
+      const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+
+      if (error) {
+        console.error('Error deleting user from Supabase:', error);
+        return res.status(500).json({ message: 'Failed to delete user from Supabase' });
+      }
+
+      // Delete from local database
+      await db.delete(users).where(eq(users.id, userId));
+
+      res.json({ success: true, message: 'User deleted successfully' });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  // Invite/create new user
+  app.post('/api/users', requireAdmin, async (req, res) => {
+    try {
+      const { email, firstName, lastName, isAdmin: makeAdmin } = z.object({
+        email: z.string().email(),
+        firstName: z.string().optional(),
+        lastName: z.string().optional(),
+        isAdmin: z.boolean().default(false),
+      }).parse(req.body);
+
+      const { getSupabaseAdmin } = await import('./lib/supabase.js');
+      const supabaseAdmin = getSupabaseAdmin();
+
+      // Create user in Supabase Auth
+      const { data: authUser, error } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        email_confirm: true,
+        user_metadata: {
+          first_name: firstName,
+          last_name: lastName,
+        },
+      });
+
+      if (error) {
+        console.error('Error creating user in Supabase:', error);
+        return res.status(500).json({ message: error.message });
+      }
+
+      if (!authUser?.user) {
+        return res.status(500).json({ message: 'Failed to create user' });
+      }
+
+      // Create user in local database
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          id: authUser.user.id,
+          email,
+          firstName: firstName || '',
+          lastName: lastName || '',
+          isAdmin: makeAdmin,
+        })
+        .returning();
+
+      res.status(201).json(newUser);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
   // Seed Data (non-blocking — failure must not crash the app)
   try {
     await seedDatabase();

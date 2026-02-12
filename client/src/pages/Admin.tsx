@@ -39,8 +39,9 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Calendar as CalendarPicker } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
+import { UsersSection } from './UsersSection';
 import { 
-  Sidebar, 
+  Sidebar,
   SidebarContent, 
   SidebarFooter,
   SidebarGroup, 
@@ -391,12 +392,7 @@ function AdminContent() {
           {activeSection === 'company' && <CompanySettingsSection />}
           {activeSection === 'seo' && <SEOSection />}
           {activeSection === 'faqs' && <FaqsSection />}
-          {activeSection === 'users' && (
-            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground bg-card rounded-lg border-2 border-dashed border-border">
-              <Users className="w-12 h-12 mb-4 opacity-40" />
-              <p>User management coming soon</p>
-            </div>
-          )}
+          {activeSection === 'users' && <UsersSection />}
           {activeSection === 'availability' && <AvailabilitySection />}
           {activeSection === 'chat' && <ChatSection />}
           {activeSection === 'integrations' && <IntegrationsSection />}
