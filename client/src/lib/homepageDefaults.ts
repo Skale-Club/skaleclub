@@ -1,0 +1,105 @@
+import type { HomepageContent } from '@shared/schema';
+
+export const DEFAULT_HOMEPAGE_CONTENT: HomepageContent = {
+  heroBadgeImageUrl: '',
+  heroBadgeAlt: '',
+  trustBadges: [],
+  categoriesSection: {
+    title: 'Nossos Serviços',
+    subtitle: 'Selecione uma categoria para conhecer nossas soluções.',
+    ctaText: 'Agendar Agora',
+  },
+  reviewsSection: {
+    title: 'Avaliações de Clientes',
+    subtitle: 'Veja o que nossos clientes dizem sobre nossos serviços.',
+    embedUrl: '',
+  },
+  blogSection: {
+    title: 'Blog',
+    subtitle: 'Novidades e artigos recentes',
+    viewAllText: 'Ver Todos',
+    readMoreText: 'Ler Mais',
+  },
+  aboutSection: {
+    label: 'Sobre Nós',
+    heading: 'Quem Somos',
+    description: 'Somos especialistas em [Seu Nicho]. Ajudamos nossos clientes a alcançarem seus objetivos através de serviços de alta qualidade e atendimento personalizado.',
+    defaultImageUrl: '',
+    highlights: [
+      {
+        title: 'Excelência',
+        description: 'Compromisso com a qualidade em cada entrega.',
+      },
+      {
+        title: 'Experiência',
+        description: 'Anos de experiência no mercado.',
+      },
+      {
+        title: 'Atendimento Personalizado',
+        description: 'Soluções feitas sob medida para você.',
+      },
+    ],
+  },
+  areasServedSection: {
+    label: 'Onde Atendemos',
+    heading: 'Área de Atuação',
+    description: 'Atendemos em [Sua Região/Cidade]. Entre em contato para verificar a disponibilidade em sua área.',
+    ctaText: 'Verificar Disponibilidade',
+  },
+  consultingStepsSection: {
+    enabled: true,
+    sectionId: 'como-funciona',
+    title: 'Como Funciona',
+    subtitle: 'Nosso processo simplificado para melhor atendê-lo.',
+    steps: [
+      {
+        order: 1,
+        numberLabel: '01',
+        icon: 'search',
+        title: 'Diagnóstico',
+        whatWeDo: 'Entendemos sua necessidade e objetivos.',
+        outcome: 'Clareza sobre o que precisa ser feito.',
+      },
+      {
+        order: 2,
+        numberLabel: '02',
+        icon: 'sparkles',
+        title: 'Proposta',
+        whatWeDo: 'Apresentamos a melhor solução para o seu caso.',
+        outcome: 'Um plano claro e orçamento transparente.',
+      },
+      {
+        order: 3,
+        numberLabel: '03',
+        icon: 'layout',
+        title: 'Execução',
+        whatWeDo: 'Colocamos o plano em prática com excelência.',
+        outcome: 'Serviço realizado conforme combinado.',
+      },
+      {
+        order: 4,
+        numberLabel: '04',
+        icon: 'target',
+        title: 'Entrega',
+        whatWeDo: 'Revisamos e entregamos o resultado final.',
+        outcome: 'Sua satisfação garantida.',
+      },
+    ],
+    practicalBlockTitle: 'Na prática',
+    practicalBullets: [
+      'Atendimento ágil e eficiente.',
+      'Profissionais qualificados.',
+      'Suporte contínuo.',
+    ],
+    ctaButtonLabel: 'Fale Conosco',
+    ctaButtonLink: '#lead-form',
+    helperText: 'Estamos prontos para ajudar você.',
+    tagLabel: 'Consultoria',
+    stepLabel: 'Etapa',
+    whatWeDoLabel: 'O que fazemos',
+    outcomeLabel: 'Você sai com',
+    practicalBlockSubtitle: 'Como o trabalho acontece no dia a dia',
+    nextStepLabel: 'Próximo passo',
+    nextStepText: 'Agenda aberta para novos projetos',
+  },
+};
