@@ -1,13 +1,12 @@
 
 import { useEffect, useState } from "react";
 import Uppy from "@uppy/core";
-import { Dashboard } from "@uppy/react";
+import type { UploadResult } from "@uppy/core";
 import AwsS3 from "@uppy/aws-s3";
-import "@uppy/core/dist/style.css";
-import "@uppy/dashboard/dist/style.css";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { Upload, X } from "lucide-react";
+import DashboardModal from "@uppy/react/dashboard-modal";
+import "@uppy/core/css/style.min.css";
+import "@uppy/dashboard/css/style.min.css";
+import { Upload } from "lucide-react";
 
 interface ObjectUploaderProps {
   onUploadComplete: (url: string) => void;
@@ -17,7 +16,7 @@ interface ObjectUploaderProps {
 
 export function ObjectUploader({ onUploadComplete, defaultImage, className }: ObjectUploaderProps) {
   const [open, setOpen] = useState(false);
-  
+
   const [uppy] = useState(() => {
     const uppyInstance = new Uppy({
       restrictions: {
@@ -29,6 +28,7 @@ export function ObjectUploader({ onUploadComplete, defaultImage, className }: Ob
     });
 
     uppyInstance.use(AwsS3, {
+      shouldUseMultipart: false,
       getUploadParameters: async (file) => {
         const response = await fetch("/api/upload", {
           method: "POST",
@@ -52,9 +52,8 @@ export function ObjectUploader({ onUploadComplete, defaultImage, className }: Ob
         return {
           method: "PUT",
           url: data.uploadURL,
-          fields: {},
           headers: {
-            "Content-Type": file.type,
+            "Content-Type": file.type || "application/octet-stream",
           },
         };
       },
@@ -64,40 +63,52 @@ export function ObjectUploader({ onUploadComplete, defaultImage, className }: Ob
   });
 
   useEffect(() => {
-    const onUploadSuccess = (file: any, response: any) => {
-        const objectPath = file.meta.objectPath;
-        if (objectPath) {
-            onUploadComplete(objectPath);
-            setOpen(false);
-        }
+    const onComplete = (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+      const uploaded = (result.successful || [])[0];
+      const objectPath = uploaded?.meta?.objectPath;
+      if (typeof objectPath === "string" && objectPath.length > 0) {
+        onUploadComplete(objectPath);
+        setOpen(false);
+      }
     };
-    
-    uppy.on('upload-success', onUploadSuccess);
-    
+
+    uppy.on("complete", onComplete);
+
     return () => {
-        uppy.off('upload-success', onUploadSuccess);
+      uppy.off("complete", onComplete);
     };
   }, [uppy, onUploadComplete]);
 
+  useEffect(() => {
+    return () => {
+      uppy.destroy();
+    };
+  }, [uppy]);
+
   return (
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <div className={`cursor-pointer group relative w-24 h-24 rounded-full bg-muted flex items-center justify-center overflow-hidden border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 transition-colors ${className}`}>
-            {defaultImage ? (
-                <img src={defaultImage} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
-                <Upload className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors" />
-            )}
-             <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                 <p className="text-white text-xs font-medium">Change</p>
-             </div>
-          </div>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-md p-0 overflow-hidden">
-           <div className="h-[400px] w-full">
-             <Dashboard uppy={uppy} hideUploadButton={false} width="100%" height="100%" showProgressDetails={true} />
-           </div>
-        </DialogContent>
-      </Dialog>
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={`cursor-pointer group relative w-24 h-24 rounded-full bg-muted flex items-center justify-center overflow-hidden border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 transition-colors ${className || ""}`}
+      >
+        {defaultImage ? (
+          <img src={defaultImage} alt="Profile" className="w-full h-full object-cover" />
+        ) : (
+          <Upload className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors" />
+        )}
+        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <p className="text-white text-xs font-medium">Change</p>
+        </div>
+      </button>
+
+      <DashboardModal
+        uppy={uppy}
+        open={open}
+        onRequestClose={() => setOpen(false)}
+        proudlyDisplayPoweredByUppy={false}
+        closeAfterFinish
+      />
+    </>
   );
 }

@@ -54,7 +54,7 @@ async function injectSEOData() {
     let html = readFileSync(indexPath, "utf-8");
 
     // Extract and prepare values with fallbacks
-    const title = seoData.seoTitle || seoData.companyName || "Skale Club";
+    const title = seoData.seoTitle || seoData.companyName || "Your Company";
     const description = seoData.seoDescription || "";
     const ogImage = seoData.ogImage || "";
     const favicon = seoData.logoIcon || "/favicon.png";
@@ -63,7 +63,7 @@ async function injectSEOData() {
     const canonicalUrl = seoData.seoCanonicalUrl || "";
     const robotsTag = seoData.seoRobotsTag || "index, follow";
     const ogType = seoData.ogType || "website";
-    const ogSiteName = seoData.ogSiteName || seoData.companyName || "Skale Club";
+    const ogSiteName = seoData.ogSiteName || seoData.companyName || "Your Company";
     const twitterCard = seoData.twitterCard || "summary_large_image";
 
     console.log("Injecting SEO data:");
@@ -108,8 +108,14 @@ async function injectSEOData() {
     metaTags.push(`<meta property="og:type" content="${escapeHtml(ogType)}" />`);
     metaTags.push(`<meta property="og:site_name" content="${escapeHtml(ogSiteName)}" />`);
 
+    const baseImageUrl = (canonicalUrl || process.env.APP_CANONICAL_URL || '').trim().replace(/\/+$/, '');
+
     if (ogImage) {
-      const fullImageUrl = ogImage.startsWith('http') ? ogImage : `https://yourdomain.com${ogImage}`;
+      const fullImageUrl = ogImage.startsWith('http')
+        ? ogImage
+        : baseImageUrl
+          ? `${baseImageUrl}${ogImage.startsWith('/') ? '' : '/'}${ogImage}`
+          : ogImage;
       metaTags.push(`<meta property="og:image" content="${escapeHtml(fullImageUrl)}" />`);
     }
 
@@ -124,7 +130,11 @@ async function injectSEOData() {
     metaTags.push(`<meta name="twitter:description" content="${escapeHtml(description)}" />`);
 
     if (ogImage) {
-      const fullImageUrl = ogImage.startsWith('http') ? ogImage : `https://yourdomain.com${ogImage}`;
+      const fullImageUrl = ogImage.startsWith('http')
+        ? ogImage
+        : baseImageUrl
+          ? `${baseImageUrl}${ogImage.startsWith('/') ? '' : '/'}${ogImage}`
+          : ogImage;
       metaTags.push(`<meta name="twitter:image" content="${escapeHtml(fullImageUrl)}" />`);
     }
 

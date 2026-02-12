@@ -10,11 +10,8 @@ export default function LeadThankYou() {
     queryKey: ["/api/company-settings"],
   });
 
-  const companyName = companySettings?.companyName || "Skale Club";
-  const isSkale = companyName.trim().toLowerCase() === "skale club";
-  const headline = isSkale
-    ? "Obrigado por confiar na Skale Club."
-    : `Obrigado por confiar no ${companyName}.`;
+  const companyName = companySettings?.companyName || "Your Company";
+  const headline = `Obrigado por confiar no ${companyName}.`;
 
   const heroGradient = `
     linear-gradient(

@@ -204,6 +204,13 @@ export async function createGHLContact(
     lastName: string;
     phone: string;
     address?: string;
+    address1?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    companyName?: string;
+    website?: string;
+    name?: string;
     customFields?: Array<{ id: string; field_value: string }>;
   }
 ): Promise<{ success: boolean; contactId?: string; message?: string }> {
@@ -216,6 +223,14 @@ export async function createGHLContact(
       phone: contact.phone,
       address1: contact.address,
     };
+
+    if (contact.name) body.name = contact.name;
+    if (contact.address1) body.address1 = contact.address1;
+    if (contact.city) body.city = contact.city;
+    if (contact.state) body.state = contact.state;
+    if (contact.postalCode) body.postalCode = contact.postalCode;
+    if (contact.companyName) body.companyName = contact.companyName;
+    if (contact.website) body.website = contact.website;
 
     // Add custom fields if provided
     if (contact.customFields && contact.customFields.length > 0) {
@@ -384,6 +399,13 @@ export async function updateGHLContact(
     lastName?: string;
     phone?: string;
     address?: string;
+    address1?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    companyName?: string;
+    website?: string;
+    name?: string;
     customFields?: Array<{ id: string; field_value: string }>;
   }
 ): Promise<{ success: boolean; message?: string }> {
@@ -393,8 +415,15 @@ export async function updateGHLContact(
     if (updates.firstName) body.firstName = updates.firstName;
     if (updates.lastName) body.lastName = updates.lastName;
     if (updates.phone) body.phone = updates.phone;
+    if (updates.name) body.name = updates.name;
+    if (updates.address1) body.address1 = updates.address1;
+    if (updates.city) body.city = updates.city;
+    if (updates.state) body.state = updates.state;
+    if (updates.postalCode) body.postalCode = updates.postalCode;
+    if (updates.companyName) body.companyName = updates.companyName;
+    if (updates.website) body.website = updates.website;
 
-    if (updates.address) {
+    if (updates.address && !updates.address1) {
       const parsed = parseAddress(updates.address);
       body.address1 = parsed.street;
       if (parsed.city) body.city = parsed.city;
@@ -441,6 +470,13 @@ export async function getOrCreateGHLContact(
     lastName: string;
     phone: string;
     address?: string;
+    address1?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    companyName?: string;
+    website?: string;
+    name?: string;
     customFields?: Array<{ id: string; field_value: string }>;
   }
 ): Promise<{ success: boolean; contactId?: string; message?: string }> {
@@ -449,9 +485,26 @@ export async function getOrCreateGHLContact(
   if (existingByEmail.contactId) {
     console.log(`GHL contact found by email: ${existingByEmail.contactId}`);
     // Update with address and/or custom fields if provided
-    if (contact.address || (contact.customFields && contact.customFields.length > 0)) {
+    if (
+      contact.address ||
+      contact.address1 ||
+      contact.city ||
+      contact.state ||
+      contact.postalCode ||
+      contact.companyName ||
+      contact.website ||
+      contact.name ||
+      (contact.customFields && contact.customFields.length > 0)
+    ) {
       await updateGHLContact(apiKey, existingByEmail.contactId, {
         address: contact.address,
+        address1: contact.address1,
+        city: contact.city,
+        state: contact.state,
+        postalCode: contact.postalCode,
+        companyName: contact.companyName,
+        website: contact.website,
+        name: contact.name,
         customFields: contact.customFields
       });
     }
@@ -463,9 +516,26 @@ export async function getOrCreateGHLContact(
   if (existingByPhone.contactId) {
     console.log(`GHL contact found by phone: ${existingByPhone.contactId}`);
     // Update with address and/or custom fields if provided
-    if (contact.address || (contact.customFields && contact.customFields.length > 0)) {
+    if (
+      contact.address ||
+      contact.address1 ||
+      contact.city ||
+      contact.state ||
+      contact.postalCode ||
+      contact.companyName ||
+      contact.website ||
+      contact.name ||
+      (contact.customFields && contact.customFields.length > 0)
+    ) {
       await updateGHLContact(apiKey, existingByPhone.contactId, {
         address: contact.address,
+        address1: contact.address1,
+        city: contact.city,
+        state: contact.state,
+        postalCode: contact.postalCode,
+        companyName: contact.companyName,
+        website: contact.website,
+        name: contact.name,
         customFields: contact.customFields
       });
     }

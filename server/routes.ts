@@ -9,8 +9,8 @@ import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 import { WORKING_HOURS, DEFAULT_BUSINESS_HOURS, insertCategorySchema, insertServiceSchema, insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema, insertBlogPostSchema, BusinessHours, DayHours, insertChatSettingsSchema, insertChatIntegrationsSchema, insertKnowledgeBaseCategorySchema, insertKnowledgeBaseArticleSchema, formLeadProgressSchema } from "#shared/schema.js";
-import type { LeadClassification, LeadStatus } from "#shared/schema.js";
-import { DEFAULT_FORM_CONFIG, calculateMaxScore, calculateFormScoresWithConfig, classifyLead, getSortedQuestions, KNOWN_FIELD_IDS } from "#shared/form.js";
+import type { LeadClassification, LeadStatus, FormLead } from "#shared/schema.js";
+import { DEFAULT_FORM_CONFIG, calculateMaxScore, calculateFormScoresWithConfig, classifyLead, getSortedQuestions } from "#shared/form.js";
 import type { FormAnswers } from "#shared/form.js";
 import type { FormConfig } from "#shared/schema.js";
 import { insertSubcategorySchema } from "./storage.js";
@@ -70,6 +70,13 @@ function isUrlExcluded(url: string, rules: UrlRule[] = []): boolean {
     if (rule.match === 'starts_with') return url.startsWith(pattern);
     return url === pattern;
   });
+}
+
+function getCanonicalBaseUrl(req: Request, configuredCanonical?: string | null): string {
+  const configured = (configuredCanonical || process.env.APP_CANONICAL_URL || '').trim().replace(/\/+$/, '');
+  if (configured) return configured;
+  const hostname = req.hostname || 'localhost';
+  return `${req.protocol}://${hostname}`;
 }
 
 const DEFAULT_CHAT_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
@@ -211,7 +218,7 @@ export async function registerRoutes(
       type: "function",
       function: {
         name: "search_faqs",
-        description: "Search frequently asked questions database to answer questions about Skale Club services, pricing, process, and other common inquiries",
+        description: "Search frequently asked questions database to answer questions about company services, pricing, process, and other common inquiries",
         parameters: {
           type: "object",
           properties: {
@@ -424,6 +431,197 @@ export async function registerRoutes(
     return null; // All questions answered
   }
 
+  const LEAD_ANSWER_FIELD_MAP: Record<string, keyof FormLead> = {
+    nome: "nome",
+    email: "email",
+    telefone: "telefone",
+    cidadeEstado: "cidadeEstado",
+    tipoNegocio: "tipoNegocio",
+    tipoNegocioOutro: "tipoNegocioOutro",
+    tempoNegocio: "tempoNegocio",
+    experienciaMarketing: "experienciaMarketing",
+    situacaoMarketing: "experienciaMarketing",
+    orcamentoAnuncios: "orcamentoAnuncios",
+    principalDesafio: "principalDesafio",
+    disponibilidade: "disponibilidade",
+    expectativaResultado: "expectativaResultado",
+    expectativaTempo: "expectativaResultado",
+  };
+
+  const GHL_STANDARD_FIELD_IDS = new Set([
+    "firstName",
+    "lastName",
+    "name",
+    "email",
+    "phone",
+    "address1",
+    "city",
+    "state",
+    "postalCode",
+    "companyName",
+    "website",
+  ]);
+
+  function normalizeText(value: unknown): string | undefined {
+    if (typeof value !== "string") return undefined;
+    const trimmed = value.trim();
+    return trimmed.length ? trimmed : undefined;
+  }
+
+  function getLeadAnswerValue(lead: FormLead, questionId: string): string | undefined {
+    const fromCustom = normalizeText(lead.customAnswers?.[questionId]);
+    if (fromCustom) return fromCustom;
+
+    const mappedField = LEAD_ANSWER_FIELD_MAP[questionId];
+    if (!mappedField) return undefined;
+    return normalizeText(lead[mappedField]);
+  }
+
+  function getAllLeadAnswers(lead: FormLead, formConfig: FormConfig): Record<string, string> {
+    const answers: Record<string, string> = {};
+
+    for (const question of formConfig.questions) {
+      const value = getLeadAnswerValue(lead, question.id);
+      if (value) answers[question.id] = value;
+
+      if (question.conditionalField) {
+        const conditionalValue = getLeadAnswerValue(lead, question.conditionalField.id);
+        if (conditionalValue) answers[question.conditionalField.id] = conditionalValue;
+      }
+    }
+
+    return answers;
+  }
+
+  function buildGhlContactPayload(lead: FormLead, formConfig: FormConfig) {
+    const baseName = normalizeText(lead.nome) || "Lead";
+    const baseNameParts = baseName.split(" ").filter(Boolean);
+    const baseFirstName = baseNameParts.shift() || "Lead";
+    const baseLastName = baseNameParts.join(" ");
+    const allAnswers = getAllLeadAnswers(lead, formConfig);
+
+    const draft: {
+      email: string;
+      firstName: string;
+      lastName: string;
+      phone: string;
+      address?: string;
+      address1?: string;
+      city?: string;
+      state?: string;
+      postalCode?: string;
+      companyName?: string;
+      website?: string;
+      name?: string;
+      customFields?: Array<{ id: string; field_value: string }>;
+    } = {
+      email: normalizeText(lead.email) || "",
+      firstName: baseFirstName,
+      lastName: baseLastName,
+      phone: normalizeText(lead.telefone) || "",
+      address: normalizeText(lead.cidadeEstado),
+    };
+
+    const customFields: Array<{ id: string; field_value: string }> = [];
+    const applyFieldMapping = (ghlFieldId: string | undefined, answerId: string) => {
+      if (!ghlFieldId) return;
+      const value = allAnswers[answerId];
+      if (!value) return;
+
+      if (!GHL_STANDARD_FIELD_IDS.has(ghlFieldId)) {
+        customFields.push({ id: ghlFieldId, field_value: value });
+        return;
+      }
+
+      switch (ghlFieldId) {
+        case "firstName":
+          draft.firstName = value;
+          break;
+        case "lastName":
+          draft.lastName = value;
+          break;
+        case "name":
+          draft.name = value;
+          break;
+        case "email":
+          draft.email = value;
+          break;
+        case "phone":
+          draft.phone = value;
+          break;
+        case "address1":
+          draft.address1 = value;
+          draft.address = value;
+          break;
+        case "city":
+          draft.city = value;
+          break;
+        case "state":
+          draft.state = value;
+          break;
+        case "postalCode":
+          draft.postalCode = value;
+          break;
+        case "companyName":
+          draft.companyName = value;
+          break;
+        case "website":
+          draft.website = value;
+          break;
+      }
+    };
+
+    for (const question of formConfig.questions) {
+      applyFieldMapping(question.ghlFieldId, question.id);
+      if (question.conditionalField?.ghlFieldId) {
+        applyFieldMapping(question.conditionalField.ghlFieldId, question.conditionalField.id);
+      }
+    }
+
+    if (draft.name && (!draft.firstName || !draft.lastName)) {
+      const parts = draft.name.split(" ").filter(Boolean);
+      if (parts.length) {
+        draft.firstName = draft.firstName || parts[0];
+        draft.lastName = draft.lastName || parts.slice(1).join(" ");
+      }
+    }
+
+    draft.firstName = normalizeText(draft.firstName) || "Lead";
+    draft.lastName = normalizeText(draft.lastName) || "";
+    draft.phone = normalizeText(draft.phone) || "";
+    draft.email = normalizeText(draft.email) || "";
+
+    if (customFields.length > 0) {
+      draft.customFields = customFields;
+    }
+
+    return draft;
+  }
+
+  async function syncLeadToGhl(lead: FormLead, formConfig: FormConfig): Promise<{ success: boolean; contactId?: string; error?: string }> {
+    const ghlSettings = await storage.getIntegrationSettings("gohighlevel");
+    if (!ghlSettings?.isEnabled || !ghlSettings.apiKey || !ghlSettings.locationId) {
+      return { success: false };
+    }
+
+    const contactPayload = buildGhlContactPayload(lead, formConfig);
+    if (!contactPayload.phone) {
+      return { success: false, error: "Phone is required for GHL sync" };
+    }
+
+    const contactResult = await getOrCreateGHLContact(
+      ghlSettings.apiKey,
+      ghlSettings.locationId,
+      contactPayload,
+    );
+
+    if (contactResult.success && contactResult.contactId) {
+      return { success: true, contactId: contactResult.contactId };
+    }
+
+    return { success: false, error: contactResult.message || "Failed to sync lead to GHL" };
+  }
+
   async function runChatTool(
     toolName: string,
     args: any,
@@ -534,7 +732,7 @@ export async function registerRoutes(
         if (lead.telefone && !lead.notificacaoEnviada) {
           try {
             const twilioSettings = await storage.getTwilioSettings();
-            const companyName = settings?.companyName || 'Skale Club';
+            const companyName = settings?.companyName || 'Your Company';
             if (twilioSettings) {
               const notifyResult = await sendHotLeadNotification(twilioSettings, lead, companyName);
               if (notifyResult.success) {
@@ -636,63 +834,29 @@ export async function registerRoutes(
         // Sync to GoHighLevel
         let ghlContactId: string | undefined;
         try {
-          const ghlSettings = await storage.getIntegrationSettings('gohighlevel');
           const settings = await storage.getCompanySettings();
           const formConfig = settings?.formConfig || DEFAULT_FORM_CONFIG;
+          const syncResult = await syncLeadToGhl(lead, formConfig);
 
-          if (ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.locationId && lead.telefone) {
-            const nameParts = (lead.nome || '').trim().split(' ').filter(Boolean);
-            const firstName = nameParts.shift() || lead.nome || 'Lead';
-            const lastName = nameParts.join(' ');
-
-            // Build custom fields from form config mappings
-            const customFields: Array<{ id: string; field_value: string }> = [];
-            const allAnswers: Record<string, string | undefined> = {
-              nome: lead.nome || undefined,
-              email: lead.email || undefined,
-              telefone: lead.telefone || undefined,
-              cidadeEstado: lead.cidadeEstado || undefined,
-              tipoNegocio: lead.tipoNegocio || undefined,
-              tipoNegocioOutro: lead.tipoNegocioOutro || undefined,
-              tempoNegocio: lead.tempoNegocio || undefined,
-              experienciaMarketing: lead.experienciaMarketing || undefined,
-              orcamentoAnuncios: lead.orcamentoAnuncios || undefined,
-              principalDesafio: lead.principalDesafio || undefined,
-              disponibilidade: lead.disponibilidade || undefined,
-              expectativaResultado: lead.expectativaResultado || undefined,
-              ...(lead.customAnswers || {}),
-            };
-
-            for (const question of formConfig.questions) {
-              if (question.ghlFieldId && allAnswers[question.id]) {
-                customFields.push({
-                  id: question.ghlFieldId,
-                  field_value: allAnswers[question.id]!,
-                });
-              }
-            }
-
-            const contactResult = await getOrCreateGHLContact(
-              ghlSettings.apiKey,
-              ghlSettings.locationId,
-              {
-                email: lead.email || '',
-                firstName,
-                lastName,
-                phone: lead.telefone || '',
-                address: lead.cidadeEstado || undefined,
-                customFields: customFields.length > 0 ? customFields : undefined,
-              }
-            );
-
-            if (contactResult.success && contactResult.contactId) {
-              await storage.updateFormLead(lead.id, { ghlContactId: contactResult.contactId, ghlSyncStatus: 'synced' });
-              ghlContactId = contactResult.contactId;
-            }
+          if (syncResult.success && syncResult.contactId) {
+            await storage.updateFormLead(lead.id, {
+              ghlContactId: syncResult.contactId,
+              ghlSyncStatus: 'synced',
+              ghlSyncError: null,
+            });
+            ghlContactId = syncResult.contactId;
+          } else if (syncResult.error) {
+            await storage.updateFormLead(lead.id, {
+              ghlSyncStatus: 'failed',
+              ghlSyncError: syncResult.error,
+            });
           }
         } catch (err) {
           console.error('GHL sync error:', err);
-          await storage.updateFormLead(lead.id, { ghlSyncStatus: 'failed' });
+          await storage.updateFormLead(lead.id, {
+            ghlSyncStatus: 'failed',
+            ghlSyncError: err instanceof Error ? err.message : 'Unknown GHL sync error',
+          });
         }
 
         return {
@@ -957,7 +1121,12 @@ export async function registerRoutes(
           required: specQ.required,
           placeholder: specQ.placeholder,
           options: specQ.options,
-          conditionalField: specQ.conditionalField,
+          conditionalField: specQ.conditionalField
+            ? {
+                ...specQ.conditionalField,
+                ghlFieldId: q.conditionalField?.ghlFieldId,
+              }
+            : undefined,
         };
       });
 
@@ -983,6 +1152,7 @@ export async function registerRoutes(
                 id: specLocalizacao.conditionalField.id,
                 title: specLocalizacao.conditionalField.title,
                 placeholder: specLocalizacao.conditionalField.placeholder,
+                ghlFieldId: normalizedQuestions[idxLocalizacao].conditionalField?.ghlFieldId,
               },
             };
           }
@@ -992,7 +1162,10 @@ export async function registerRoutes(
           if (specLocalizacao?.conditionalField) {
             normalizedQuestions[idxLocalizacao] = {
               ...normalizedQuestions[idxLocalizacao],
-              conditionalField: specLocalizacao.conditionalField,
+              conditionalField: {
+                ...specLocalizacao.conditionalField,
+                ghlFieldId: normalizedQuestions[idxLocalizacao].conditionalField?.ghlFieldId,
+              },
             };
           }
         }
@@ -1012,6 +1185,7 @@ export async function registerRoutes(
                 id: specTipo.conditionalField.id,
                 title: specTipo.conditionalField.title,
                 placeholder: specTipo.conditionalField.placeholder,
+                ghlFieldId: normalizedQuestions[idxTipoNegocio].conditionalField?.ghlFieldId,
               },
             };
           }
@@ -1020,7 +1194,10 @@ export async function registerRoutes(
           if (specTipo?.conditionalField) {
             normalizedQuestions[idxTipoNegocio] = {
               ...normalizedQuestions[idxTipoNegocio],
-              conditionalField: specTipo.conditionalField,
+              conditionalField: {
+                ...specTipo.conditionalField,
+                ghlFieldId: normalizedQuestions[idxTipoNegocio].conditionalField?.ghlFieldId,
+              },
             };
           }
         }
@@ -1091,7 +1268,7 @@ export async function registerRoutes(
       const parsed = formLeadProgressSchema.parse(req.body);
       const settings = await storage.getCompanySettings();
       const formConfig = settings?.formConfig || DEFAULT_FORM_CONFIG;
-      const companyName = settings?.companyName || 'Skale Club';
+      const companyName = settings?.companyName || 'Your Company';
       const totalQuestions = formConfig.questions.length || DEFAULT_FORM_CONFIG.questions.length;
       const questionNumber = Math.min(parsed.questionNumber, totalQuestions);
       const payload = {
@@ -1119,72 +1296,30 @@ export async function registerRoutes(
 
       if (lead.formCompleto) {
         try {
-          const ghlSettings = await storage.getIntegrationSettings('gohighlevel');
-          // GHL sync requires at least phone number
-          if (ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.locationId && lead.telefone) {
-            const nameParts = (lead.nome || '').trim().split(' ').filter(Boolean);
-            const firstName = nameParts.shift() || lead.nome || 'Lead';
-            const lastName = nameParts.join(' ');
+          const syncResult = await syncLeadToGhl(lead, formConfig);
 
-            // Build custom fields from form config mappings
-            const customFields: Array<{ id: string; field_value: string }> = [];
-            const allAnswers: Record<string, string | undefined> = {
-              nome: lead.nome || undefined,
-              email: lead.email || undefined,
-              telefone: lead.telefone || undefined,
-              cidadeEstado: lead.cidadeEstado || undefined,
-              tipoNegocio: lead.tipoNegocio || undefined,
-              tipoNegocioOutro: lead.tipoNegocioOutro || undefined,
-              tempoNegocio: lead.tempoNegocio || undefined,
-              experienciaMarketing: lead.experienciaMarketing || undefined,
-              orcamentoAnuncios: lead.orcamentoAnuncios || undefined,
-              principalDesafio: lead.principalDesafio || undefined,
-              disponibilidade: lead.disponibilidade || undefined,
-              expectativaResultado: lead.expectativaResultado || undefined,
-              ...(lead.customAnswers || {}),
-            };
-
-            // Map form questions with ghlFieldId to custom fields
-            for (const question of formConfig.questions) {
-              if (question.ghlFieldId && allAnswers[question.id]) {
-                customFields.push({
-                  id: question.ghlFieldId,
-                  field_value: allAnswers[question.id]!,
-                });
-              }
-              // Also check conditional field
-              if (question.conditionalField?.id && allAnswers[question.conditionalField.id]) {
-                // For conditional fields, use parent's ghlFieldId if set (or a custom one if we add it later)
-                // For now, skip conditional fields as they don't have their own ghlFieldId
-              }
+          if (syncResult.success && syncResult.contactId) {
+            const synced = await storage.updateFormLead(lead.id, {
+              ghlContactId: syncResult.contactId,
+              ghlSyncStatus: 'synced',
+              ghlSyncError: null,
+            });
+            if (synced) {
+              lead = synced;
             }
-
-            const contactResult = await getOrCreateGHLContact(
-              ghlSettings.apiKey,
-              ghlSettings.locationId,
-              {
-                email: lead.email || '',
-                firstName,
-                lastName,
-                phone: lead.telefone || '',
-                address: lead.cidadeEstado || undefined,
-                customFields: customFields.length > 0 ? customFields : undefined,
-              }
-            );
-
-            if (contactResult.success && contactResult.contactId) {
-              const synced = await storage.updateFormLead(lead.id, { ghlContactId: contactResult.contactId, ghlSyncStatus: 'synced' });
-              if (synced) {
-                lead = synced;
-              }
-            } else if (lead.ghlSyncStatus !== 'synced') {
-              await storage.updateFormLead(lead.id, { ghlSyncStatus: 'failed' });
-            }
+          } else if (syncResult.error && lead.ghlSyncStatus !== 'synced') {
+            await storage.updateFormLead(lead.id, {
+              ghlSyncStatus: 'failed',
+              ghlSyncError: syncResult.error,
+            });
           }
         } catch (ghlError) {
           console.log('GHL lead sync error (non-blocking):', ghlError);
           try {
-            await storage.updateFormLead(lead.id, { ghlSyncStatus: 'failed' });
+            await storage.updateFormLead(lead.id, {
+              ghlSyncStatus: 'failed',
+              ghlSyncError: ghlError instanceof Error ? ghlError.message : 'Unknown GHL sync error',
+            });
           } catch {
             // ignore best-effort update
           }
@@ -1255,11 +1390,7 @@ export async function registerRoutes(
   app.get('/robots.txt', async (req, res) => {
     try {
       const settings = await storage.getCompanySettings();
-      const hostname = req.hostname || '';
-      const isVercelAlias = hostname.endsWith('.vercel.app');
-      const canonicalUrl =
-        settings?.seoCanonicalUrl ||
-        (isVercelAlias ? 'https://skale.club' : `${req.protocol}://${hostname}`);
+      const canonicalUrl = getCanonicalBaseUrl(req, settings?.seoCanonicalUrl);
 
       const robotsTxt = `User-agent: *
 Allow: /
@@ -1278,11 +1409,7 @@ Sitemap: ${canonicalUrl}/sitemap.xml
       const settings = await storage.getCompanySettings();
       const categories = await storage.getCategories();
       const blogPostsList = await storage.getPublishedBlogPosts(100, 0);
-      const hostname = req.hostname || '';
-      const isVercelAlias = hostname.endsWith('.vercel.app');
-      const canonicalUrl =
-        settings?.seoCanonicalUrl ||
-        (isVercelAlias ? 'https://skale.club' : `${req.protocol}://${hostname}`);
+      const canonicalUrl = getCanonicalBaseUrl(req, settings?.seoCanonicalUrl);
       const lastMod = new Date().toISOString().split('T')[0];
 
       let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -1871,9 +1998,9 @@ Sitemap: ${canonicalUrl}/sitemap.xml
     try {
       const settings = await storage.getChatSettings();
       const company = await storage.getCompanySettings();
-      const defaultName = company?.companyName || 'Skale Club Assistant';
+      const defaultName = company?.companyName || 'Company Assistant';
       const fallbackName =
-        settings.agentName && settings.agentName !== 'Skale Club Assistant'
+        settings.agentName && settings.agentName !== 'Company Assistant'
           ? settings.agentName
           : defaultName;
       const companyIcon = company?.logoIcon || '/favicon.ico';
@@ -1952,7 +2079,7 @@ Sitemap: ${canonicalUrl}/sitemap.xml
           const twilioSettings = await storage.getTwilioSettings();
           if (twilioSettings) {
             const company = await storage.getCompanySettings();
-            const companyName = company?.companyName || 'Skale Club';
+            const companyName = company?.companyName || 'Your Company';
             const result = await sendLowPerformanceAlert(twilioSettings, avgSeconds, samples, companyName);
             if (result.success) {
               lastLowPerformanceAlertAt = now;
@@ -2126,7 +2253,7 @@ Sitemap: ${canonicalUrl}/sitemap.xml
 
         // Send Twilio notification for new chat
         const company = await storage.getCompanySettings();
-        const companyName = company?.companyName || 'Skale Club';
+        const companyName = company?.companyName || 'Your Company';
         const twilioSettings = await storage.getTwilioSettings();
         if (twilioSettings && isNewConversation) {
           sendNewChatNotification(twilioSettings, conversationId, input.pageUrl, companyName).catch(err => {
@@ -2181,7 +2308,7 @@ Sitemap: ${canonicalUrl}/sitemap.xml
         ? `LANGUAGE:\n- Respond in ${input.language}.`
         : '';
 
-      const defaultSystemPrompt = `You are a friendly, consultative lead qualification assistant for ${company?.companyName || 'Skale Club'}, a digital marketing agency that helps service businesses grow.
+      const defaultSystemPrompt = `You are a friendly, consultative lead qualification assistant for ${company?.companyName || 'Your Company'}, a digital marketing agency that helps service businesses grow.
 
 YOUR GOAL:
 Qualify potential clients by collecting information through a natural conversation. Ask questions from the form configuration one at a time, in order.
@@ -2207,7 +2334,7 @@ Based on the classification returned:
 
 SOURCES:
 ${allowKnowledgeBase ? '- Knowledge base is enabled. Use search_knowledge_base for company-specific information.' : ''}
-${allowFaqs ? '- FAQs are enabled. Use search_faqs for common questions about Skale Club services.' : ''}
+${allowFaqs ? '- FAQs are enabled. Use search_faqs for common questions about company services.' : ''}
 
 TOOLS:
 - get_form_config: Get the qualification questions (call at start)
@@ -2222,12 +2349,12 @@ RULES:
 - Be warm and professional, not robotic
 - Never skip questions or change the order
 - Support Portuguese, English, and Spanish - respond in the user's language
-- If user asks about Skale Club services, answer then return to qualification
+- If user asks about company services, answer then return to qualification
 - Don't make up information - use search tools when needed
 
 EXAMPLE CONVERSATION:
 
-You: "Olá! Sou o assistente da Skale Club. Estamos aqui para ajudar seu negócio a crescer! Para começar, qual é o seu nome completo?"
+You: "Olá! Sou o assistente da ${company?.companyName || 'Your Company'}. Estamos aqui para ajudar seu negócio a crescer! Para começar, qual é o seu nome completo?"
 User: "João Silva"
 [Call save_lead_answer with question_id="nome", answer="João Silva"]
 You: "Prazer, João! Qual é o seu email?"
@@ -2827,7 +2954,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
       }
 
       const company = await storage.getCompanySettings();
-      const companyName = company?.companyName || 'Skale Club';
+      const companyName = company?.companyName || 'Your Company';
 
       // Send test SMS using Twilio
       const twilio = await import('twilio');

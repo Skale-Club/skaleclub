@@ -370,7 +370,7 @@ function AdminContent() {
             className="font-semibold text-primary select-none text-left"
             onClick={toggleSidebar}
           >
-            {companySettings?.companyName || 'Skale Club'}
+            {companySettings?.companyName || 'Your Company'}
           </button>
         </header>
         <div className="p-6 pb-16 md:p-8 md:pb-10">
@@ -2051,8 +2051,8 @@ interface SEOSettingsData {
 function CompanySettingsSection() {
   const { toast } = useToast();
   const [settings, setSettings] = useState<CompanySettingsData>({
-    companyName: 'Skale Club',
-    companyEmail: 'contact@skaleclub.com',    companyPhone: '',
+    companyName: 'Your Company',
+    companyEmail: 'contact@example.com',    companyPhone: '',
     companyAddress: '',
     workingHoursStart: '08:00',
     workingHoursEnd: '18:00',
@@ -5556,6 +5556,7 @@ function FormEditorContent() {
               isLoading={saveConfig.isPending}
               nextOrder={sortedQuestions.length + 1}
               existingIds={config.questions.map(q => q.id)}
+              existingQuestions={config.questions}
             />
           </DialogContent>
         </Dialog>
@@ -5784,12 +5785,14 @@ function QuestionForm({
   isLoading,
   nextOrder,
   existingIds,
+  existingQuestions,
 }: {
   question: FormQuestion | null;
   onSave: (q: FormQuestion) => void;
   isLoading: boolean;
   nextOrder: number;
   existingIds: string[];
+  existingQuestions: FormQuestion[];
 }) {
   const [id, setId] = useState(question?.id || '');
   const [title, setTitle] = useState(question?.title || '');
@@ -5802,6 +5805,7 @@ function QuestionForm({
   const [conditionalShowWhen, setConditionalShowWhen] = useState(question?.conditionalField?.showWhen || '');
   const [conditionalTitle, setConditionalTitle] = useState(question?.conditionalField?.title || '');
   const [conditionalPlaceholder, setConditionalPlaceholder] = useState(question?.conditionalField?.placeholder || '');
+  const [conditionalGhlFieldId, setConditionalGhlFieldId] = useState(question?.conditionalField?.ghlFieldId || '');
   const [ghlFieldId, setGhlFieldId] = useState(question?.ghlFieldId || '');
 
   // Fetch GHL custom fields
@@ -5829,8 +5833,22 @@ function QuestionForm({
     setConditionalShowWhen(question?.conditionalField?.showWhen || '');
     setConditionalTitle(question?.conditionalField?.title || '');
     setConditionalPlaceholder(question?.conditionalField?.placeholder || '');
+    setConditionalGhlFieldId(question?.conditionalField?.ghlFieldId || '');
     setGhlFieldId(question?.ghlFieldId || '');
   }, [question, nextOrder]);
+
+  const usedGhlFieldIds = useMemo(() => {
+    const used = new Set<string>();
+    for (const q of existingQuestions) {
+      if (question?.id && q.id === question.id) continue;
+      if (q.ghlFieldId) used.add(q.ghlFieldId);
+      if (q.conditionalField?.ghlFieldId) used.add(q.conditionalField.ghlFieldId);
+    }
+    return used;
+  }, [existingQuestions, question?.id]);
+
+  const duplicatePrimaryMapping = !!ghlFieldId && usedGhlFieldIds.has(ghlFieldId);
+  const duplicateConditionalMapping = !!conditionalGhlFieldId && usedGhlFieldIds.has(conditionalGhlFieldId);
 
   const isEditing = !!question;
 
@@ -5900,6 +5918,7 @@ function QuestionForm({
         id: generatedConditionalId,
         title: conditionalTitle,
         placeholder: conditionalPlaceholder,
+        ghlFieldId: conditionalGhlFieldId || undefined,
       } : undefined,
       ghlFieldId: ghlFieldId || undefined,
     };
@@ -6028,6 +6047,12 @@ function QuestionForm({
             <p className="text-xs text-muted-foreground">
               O valor desta pergunta será enviado para o campo selecionado no GHL
             </p>
+            {duplicatePrimaryMapping && (
+              <p className="text-xs text-amber-700 dark:text-amber-300 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" />
+                Este campo GHL ja esta vinculado a outra pergunta. O ultimo valor enviado sobrescreve os anteriores.
+              </p>
+            )}
           </div>
         )}
 
@@ -6110,6 +6135,50 @@ function QuestionForm({
                       placeholder="Ex: Digite seu tipo de negócio..."
                     />
                   </div>
+
+                  {ghlStatus?.enabled && (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold">Vincular campo condicional ao GoHighLevel</Label>
+                      <Select value={conditionalGhlFieldId || "none"} onValueChange={(val) => setConditionalGhlFieldId(val === "none" ? "" : val)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Nao vincular" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Nao vincular</SelectItem>
+                          {ghlFieldsData?.standardFields && ghlFieldsData.standardFields.length > 0 && (
+                            <>
+                              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1">
+                                Campos Padrão
+                              </div>
+                              {ghlFieldsData.standardFields.map((field) => (
+                                <SelectItem key={`conditional-${field.id}`} value={field.id}>
+                                  {field.name}
+                                </SelectItem>
+                              ))}
+                            </>
+                          )}
+                          {ghlFieldsData?.customFields && ghlFieldsData.customFields.length > 0 && (
+                            <>
+                              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1">
+                                Campos Personalizados
+                              </div>
+                              {ghlFieldsData.customFields.map((field) => (
+                                <SelectItem key={`conditional-${field.id}`} value={field.id}>
+                                  {field.name}
+                                </SelectItem>
+                              ))}
+                            </>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      {duplicateConditionalMapping && (
+                        <p className="text-xs text-amber-700 dark:text-amber-300 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          Este campo GHL ja esta vinculado a outra pergunta. O ultimo valor enviado sobrescreve os anteriores.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -6602,7 +6671,7 @@ function ChatSection() {
   const { toast } = useToast();
   const [settingsDraft, setSettingsDraft] = useState<ChatSettingsData>({
     enabled: false,
-    agentName: 'Skale Club Assistant',
+    agentName: 'Company Assistant',
     agentAvatarUrl: '',
     systemPrompt: '',
     welcomeMessage: 'Hi! How can I help you today?',
@@ -6649,7 +6718,7 @@ function ChatSection() {
   });
 
   const defaultSystemPrompt = useMemo(() => {
-    const companyName = companySettings?.companyName || 'Skale Club';
+    const companyName = companySettings?.companyName || 'Your Company';
     return `You are a friendly, consultative lead qualification assistant for ${companyName}, a digital marketing agency that helps service businesses grow.
 
 YOUR GOAL:
@@ -6728,11 +6797,11 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas!"`;
   useEffect(() => {
     if (!settings && !companySettings) return;
 
-    const defaultName = companySettings?.companyName || 'Skale Club Assistant';
+    const defaultName = companySettings?.companyName || 'Company Assistant';
     const defaultAvatar = companySettings?.logoIcon || '/favicon.ico';
 
     if (settings) {
-      const hasCustomName = settings.agentName && settings.agentName !== 'Skale Club Assistant';
+      const hasCustomName = settings.agentName && settings.agentName !== 'Company Assistant';
       setSettingsDraft({
         enabled: settings.enabled,
         agentName: hasCustomName ? settings.agentName : defaultName,
@@ -8985,7 +9054,7 @@ function BlogSection({ resetSignal }: { resetSignal: number }) {
     tags: '' as string,
     featureImageUrl: '',
     status: 'published',
-    authorName: 'Skale Club',
+    authorName: 'Your Company',
     publishedAt: new Date().toISOString().split('T')[0] as string | null,
     serviceIds: [] as number[],
   });
@@ -9086,7 +9155,7 @@ function BlogSection({ resetSignal }: { resetSignal: number }) {
       tags: '',
       featureImageUrl: '',
       status: 'published',
-      authorName: 'Skale Club',
+      authorName: 'Your Company',
       publishedAt: new Date().toISOString().split('T')[0] as string | null,
       serviceIds: [],
     });
@@ -9763,7 +9832,7 @@ function BlogSection({ resetSignal }: { resetSignal: number }) {
             id="authorName"
             value={formData.authorName}
             onChange={(e) => setFormData(prev => ({ ...prev, authorName: e.target.value }))}
-            placeholder="Skale Club"
+            placeholder="Your Company"
             className="border-0 bg-background"
             data-testid="input-blog-author"
           />

@@ -104,7 +104,7 @@ export const integrationSettings = pgTable("integration_settings", {
 export const chatSettings = pgTable("chat_settings", {
   id: serial("id").primaryKey(),
   enabled: boolean("enabled").default(false),
-  agentName: text("agent_name").default("Skale Club Assistant"),
+  agentName: text("agent_name").default("Company Assistant"),
   agentAvatarUrl: text("agent_avatar_url").default(""),
   systemPrompt: text("system_prompt").default(
     "You are our helpful chat assistant. Provide concise, friendly answers. Use the provided tools to fetch services, details, and availability. Do not guess prices or availability; always use tool data when relevant. If booking is requested, gather details and direct the user to the booking page at /booking."
@@ -235,6 +235,7 @@ export const formLeads = pgTable("form_leads", {
   customAnswers: jsonb("custom_answers").$type<Record<string, string>>().default({}),
   ghlContactId: text("ghl_contact_id"),
   ghlSyncStatus: text("ghl_sync_status").default("pending"),
+  ghlSyncError: text("ghl_sync_error"),
   // Source tracking: 'form' or 'chat'
   source: text("source").default("form"),
   // Link to conversation for chat-originated leads
@@ -305,6 +306,7 @@ export const insertFormLeadSchema = createInsertSchema(formLeads).omit({
   dataContato: true,
   ghlContactId: true,
   ghlSyncStatus: true,
+  ghlSyncError: true,
 });
 
 const leadClassificationValues = leadClassificationEnum.enumValues as [string, ...string[]];
@@ -460,6 +462,7 @@ export interface FormConditionalField {
   id: string;
   title: string;
   placeholder: string;
+  ghlFieldId?: string;
 }
 
 export interface FormQuestion {
@@ -497,8 +500,8 @@ export const DEFAULT_BUSINESS_HOURS: BusinessHours = {
 // Company Settings (singleton table - only one row)
 export const companySettings = pgTable("company_settings", {
   id: serial("id").primaryKey(),
-  companyName: text("company_name").default('Skale Club'),
-  companyEmail: text("company_email").default('contact@skaleclub.com'),
+  companyName: text("company_name").default('Your Company'),
+  companyEmail: text("company_email").default('contact@example.com'),
   companyPhone: text("company_phone").default(''),
   companyAddress: text("company_address").default(''),
   workingHoursStart: text("working_hours_start").default('08:00'),
@@ -517,7 +520,7 @@ export const companySettings = pgTable("company_settings", {
   timeFormat: text("time_format").default('12h'), // '12h' or '24h'
   businessHours: jsonb("business_hours"), // Day-by-day business hours
   minimumBookingValue: numeric("minimum_booking_value", { precision: 10, scale: 2 }).default('0'), // Minimum cart value required
-  seoTitle: text("seo_title").default('Skale Club - Professional Marketing Services'),
+  seoTitle: text("seo_title").default('Your Company - Professional Marketing Services'),
   seoDescription: text("seo_description").default('Professional marketing services for homes and businesses. Book your marketing appointment online.'),
   ogImage: text("og_image").default(''),
   // Extended SEO fields

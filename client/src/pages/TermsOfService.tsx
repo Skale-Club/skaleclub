@@ -24,7 +24,7 @@ export default function TermsOfService() {
     queryKey: ['/api/company-settings'],
   });
 
-  const companyName = settings?.companyName || "Skale Club";
+  const companyName = settings?.companyName || "Your Company";
   const companyEmail = settings?.companyEmail || "";
   const companyPhone = settings?.companyPhone || "";
   const companyAddress = settings?.companyAddress || "";

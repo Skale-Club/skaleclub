@@ -1,6 +1,6 @@
 # FAQ Management Scripts
 
-This directory contains utility scripts for managing FAQs in the Skale Club chat system.
+This directory contains utility scripts for FAQ management and white-label setup.
 
 ## Available Scripts
 
@@ -36,6 +36,13 @@ Tests the FAQ search functionality with various queries.
 
 ```bash
 npx tsx scripts/test-faq-search.ts
+```
+
+### 5. `setup-brand.ts`
+Applies brand/company settings from a JSON file into `company_settings` (idempotent).
+
+```bash
+npm run setup:brand -- --file ./scripts/brand.sample.json
 ```
 
 ## Current FAQ Topics (21 Total)

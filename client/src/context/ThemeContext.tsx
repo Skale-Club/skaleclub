@@ -12,7 +12,8 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
-const THEME_STORAGE_KEY = 'skale-club-admin-theme';
+const THEME_STORAGE_KEY = 'wl-admin-theme';
+const LEGACY_THEME_STORAGE_KEY = 'skale-club-admin-theme';
 
 function getSystemTheme(): 'light' | 'dark' {
   if (typeof window === 'undefined') return 'light';
@@ -21,8 +22,12 @@ function getSystemTheme(): 'light' | 'dark' {
 
 function getStoredTheme(): Theme {
   if (typeof window === 'undefined') return 'light';
-  const stored = localStorage.getItem(THEME_STORAGE_KEY);
+  const stored = localStorage.getItem(THEME_STORAGE_KEY) || localStorage.getItem(LEGACY_THEME_STORAGE_KEY);
   if (stored === 'light' || stored === 'dark' || stored === 'system') {
+    if (!localStorage.getItem(THEME_STORAGE_KEY)) {
+      localStorage.setItem(THEME_STORAGE_KEY, stored);
+      localStorage.removeItem(LEGACY_THEME_STORAGE_KEY);
+    }
     return stored;
   }
   return 'light';

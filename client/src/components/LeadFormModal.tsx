@@ -5,7 +5,7 @@ import { AlertCircle, ArrowLeft, ArrowRight, Check, ChevronDown, Loader2, X } fr
 import clsx from "clsx";
 import { useQuery } from "@tanstack/react-query";
 import { trackEvent } from "@/lib/analytics";
-import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead, getSortedQuestions, KNOWN_FIELD_IDS } from "@shared/form";
+import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead, getSortedQuestions } from "@shared/form";
 import type { LeadClassification, FormLead, FormConfig, FormQuestion } from "@shared/schema";
 
 type FormView = "form" | "loading";
@@ -49,7 +49,8 @@ const COUNTRIES: CountryConfig[] = [
 
 const DEFAULT_COUNTRY = "US";
 
-const STORAGE_KEY = "skale-form-state";
+const STORAGE_KEY = "wl-form-state";
+const LEGACY_STORAGE_KEY = "skale-form-state";
 const EXPIRATION_HOURS = 24;
 const NAME_REGEX = /^[A-Za-zÀ-ÿ\s]{3,100}$/;
 
@@ -115,12 +116,17 @@ function isExpired(timestamp: string) {
 
 function loadStoredState(): StoredFormState | null {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(STORAGE_KEY) || window.localStorage.getItem(LEGACY_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as StoredFormState;
     if (!parsed.sessionId || !parsed.startedAt || isExpired(parsed.lastUpdatedAt)) {
       window.localStorage.removeItem(STORAGE_KEY);
+      window.localStorage.removeItem(LEGACY_STORAGE_KEY);
       return null;
+    }
+    if (!window.localStorage.getItem(STORAGE_KEY)) {
+      window.localStorage.setItem(STORAGE_KEY, raw);
+      window.localStorage.removeItem(LEGACY_STORAGE_KEY);
     }
     return parsed;
   } catch {
@@ -139,6 +145,7 @@ function saveStoredState(state: StoredFormState) {
 function clearStoredState() {
   try {
     window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
   } catch {
     // ignore
   }
@@ -408,9 +415,23 @@ export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
       const session = ensureSession();
       const effectiveAnswers = { ...answersRef.current, ...(opts?.overrideAnswers || {}) };
       const effectiveScore = calculateFormScoresWithConfig(effectiveAnswers, config);
+      const persistedLeadFields = new Set([
+        "nome",
+        "email",
+        "telefone",
+        "cidadeEstado",
+        "tipoNegocio",
+        "tipoNegocioOutro",
+        "tempoNegocio",
+        "experienciaMarketing",
+        "orcamentoAnuncios",
+        "principalDesafio",
+        "disponibilidade",
+        "expectativaResultado",
+      ]);
       const customAnswers = Object.fromEntries(
         Object.entries(effectiveAnswers)
-          .filter(([key, value]) => !KNOWN_FIELD_IDS.includes(key) && typeof value === "string" && value.trim())
+          .filter(([key, value]) => !persistedLeadFields.has(key) && typeof value === "string" && value.trim())
           .map(([key, value]) => [key, (value as string).trim()])
       );
       const payload: any = {

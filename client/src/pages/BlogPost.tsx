@@ -361,7 +361,7 @@ export default function BlogPostPage() {
           },
           "publisher": {
             "@type": "Organization",
-            "name": settings?.companyName || "Skale Club",
+            "name": settings?.companyName || "Your Company",
             "logo": {
               "@type": "ImageObject",
               "url": settings?.logoMain || ""

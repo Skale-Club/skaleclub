@@ -67,7 +67,7 @@ function validateConfig(
       authToken,
       from,
       recipients,
-      companyName: (options?.companyName || "Skale Club").trim(),
+      companyName: (options?.companyName || "Your Company").trim(),
     },
   };
 }
@@ -158,7 +158,7 @@ export async function sendHotLeadNotification(
     const { config } = validation;
     const cleanName = lead.nome?.trim() || "Sem nome";
     const cleanPhone = lead.telefone?.trim() || "Sem telefone";
-    const companyLabel = companyName?.trim() || config.companyName || "Skale Club";
+    const companyLabel = companyName?.trim() || config.companyName || "Your Company";
     const message = `🧲 NEW LEAD | ${companyLabel} | Consultoria | ${cleanName} | ${cleanPhone}`;
 
     return await sendSms(config, message);

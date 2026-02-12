@@ -36,8 +36,9 @@ function getCanonicalOrigin() {
   const { hostname, origin } = window.location;
   if (hostname === 'localhost' || hostname === '127.0.0.1') return origin;
 
-  // If user started on a Vercel alias, force the real domain.
-  if (hostname.endsWith('.vercel.app')) return 'https://skale.club';
+  // If user started on a Vercel alias but no canonical origin is configured,
+  // keep current origin to avoid hardcoded project domains.
+  if (hostname.endsWith('.vercel.app')) return origin;
 
   // Default: current origin.
   return origin;

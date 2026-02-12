@@ -118,6 +118,10 @@ export default function Home() {
     ...DEFAULT_HOMEPAGE_CONTENT.areasServedSection,
     ...(homepageContent.areasServedSection || {}),
   };
+  const aboutSection: HomepageContent["aboutSection"] = {
+    ...DEFAULT_HOMEPAGE_CONTENT.aboutSection,
+    ...(homepageContent.aboutSection || {}),
+  };
 
   const trustBadges = homepageContent.trustBadges || [];
   const reviewsEmbedUrl = homepageContent.reviewsSection?.embedUrl || '';
@@ -331,7 +335,7 @@ export default function Home() {
       <section id="about" className="bg-white py-20">
         <AboutSection
           aboutImageUrl={companySettings?.aboutImageUrl}
-          content={homepageContent.aboutSection}
+          content={aboutSection}
         />
       </section>
       <CartSummary />

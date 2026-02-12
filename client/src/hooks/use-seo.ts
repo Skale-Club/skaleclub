@@ -48,7 +48,7 @@ function createLocalBusinessSchema(settings: SeoSettings): string {
   const schema = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
-    "name": settings.companyName || settings.ogSiteName || "Skale Club",
+    "name": settings.companyName || settings.ogSiteName || "Your Company",
     "description": settings.seoDescription || "",
     "@id": settings.seoCanonicalUrl || window.location.origin,
     "url": settings.seoCanonicalUrl || window.location.origin,

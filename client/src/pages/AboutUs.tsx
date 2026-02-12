@@ -7,7 +7,7 @@ export default function AboutUs() {
     queryKey: ['/api/company-settings'],
   });
 
-  const companyName = companySettings?.companyName || "Skale Club";
+  const companyName = companySettings?.companyName || "Your Company";
 
   return (
     <div className="pt-24 pb-20">
