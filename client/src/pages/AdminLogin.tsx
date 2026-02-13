@@ -7,14 +7,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, Lock } from 'lucide-react';
 import { SiGoogle } from 'react-icons/si';
+import { useQuery } from '@tanstack/react-query';
+import type { CompanySettings } from '@shared/schema';
 
 export default function AdminLogin() {
   const { isAdmin, loading, signIn, isSupabaseAuth } = useAdminAuth();
+  const { data: companySettings } = useQuery<CompanySettings>({
+    queryKey: ['/api/company-settings'],
+  });
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
+  const [emailSubmitting, setEmailSubmitting] = useState(false);
 
   useEffect(() => {
     if (!loading && isAdmin) {
@@ -33,20 +39,20 @@ export default function AdminLogin() {
   const handleSupabaseLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setSubmitting(true);
+    setEmailSubmitting(true);
 
     try {
       await signIn(email, password);
     } catch (err: any) {
       setError(err.message || 'Login failed');
     } finally {
-      setSubmitting(false);
+      setEmailSubmitting(false);
     }
   };
 
   const handleGoogleLogin = async () => {
     setError('');
-    setSubmitting(true);
+    setGoogleSubmitting(true);
 
     try {
       // After OAuth callback, Supabase can sometimes land the user on "/" (Site URL fallback).
@@ -64,7 +70,7 @@ export default function AdminLogin() {
       } catch {
         // Ignore storage errors.
       }
-      setSubmitting(false);
+      setGoogleSubmitting(false);
     }
   };
 
@@ -72,10 +78,21 @@ export default function AdminLogin() {
     <main className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-            <Lock className="w-6 h-6 text-primary" />
+          <div className="mx-auto w-12 h-12 flex items-center justify-center mb-4 overflow-hidden">
+            {companySettings?.logoIcon ? (
+              <img
+                src={companySettings.logoIcon}
+                alt="Logo"
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+            ) : null}
+            <Lock className={`w-6 h-6 text-primary ${companySettings?.logoIcon ? 'hidden' : ''}`} />
           </div>
-          <CardTitle className="text-2xl">Admin Login</CardTitle>
+          <CardTitle className="text-2xl">{companySettings?.companyName || 'Admin Login'}</CardTitle>
           <CardDescription>Sign in to manage your services</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -91,10 +108,10 @@ export default function AdminLogin() {
                 type="button"
                 onClick={handleGoogleLogin}
                 className="w-full"
-                disabled={submitting}
+                disabled={googleSubmitting}
                 data-testid="button-login-google"
               >
-                {submitting ? (
+                {googleSubmitting ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 ) : (
                   <SiGoogle className="w-4 h-4 mr-2" />
@@ -133,10 +150,10 @@ export default function AdminLogin() {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={submitting}
+                  disabled={emailSubmitting}
                   data-testid="button-login"
                 >
-                  {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  {emailSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Sign In
                 </Button>
               </form>
