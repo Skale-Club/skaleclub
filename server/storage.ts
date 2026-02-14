@@ -5,8 +5,6 @@ import {
   subcategories,
   services,
   serviceAddons,
-  bookings,
-  bookingItems,
   formLeads,
   chatSettings,
   chatIntegrations,
@@ -18,15 +16,10 @@ import {
   integrationSettings,
   blogPosts,
   blogPostServices,
-  knowledgeBaseCategories,
-  knowledgeBaseArticles,
-  knowledgeBaseAssistantLink,
   type Category,
   type Subcategory,
   type Service,
   type ServiceAddon,
-  type Booking,
-  type BookingItem,
   type CompanySettings,
   type ChatSettings,
   type ChatIntegrations,
@@ -41,13 +34,9 @@ import {
   type IntegrationSettings,
   type BlogPost,
   type BlogPostService,
-  type KnowledgeBaseCategory,
-  type KnowledgeBaseArticle,
-  type KnowledgeBaseAssistantLink,
   type InsertCategory,
   type InsertService,
   type InsertServiceAddon,
-  type InsertBooking,
   type InsertChatSettings,
   type InsertChatIntegrations,
   type InsertTwilioSettings,
@@ -57,8 +46,6 @@ import {
   type InsertFaq,
   type InsertIntegrationSettings,
   type InsertBlogPost,
-  type InsertKnowledgeBaseCategory,
-  type InsertKnowledgeBaseArticle,
 } from "#shared/schema.js";
 import { eq, and, or, ilike, gte, lte, lt, inArray, desc, asc, sql, ne } from "drizzle-orm";
 import { z } from "zod";
@@ -130,15 +117,6 @@ export interface IStorage {
   setServiceAddons(serviceId: number, addonServiceIds: number[]): Promise<void>;
   getAddonRelationships(): Promise<ServiceAddon[]>;
   
-  // Bookings
-  createBooking(booking: InsertBooking & { totalPrice: string, totalDurationMinutes: number, endTime: string }): Promise<Booking>;
-  getBookings(): Promise<Booking[]>;
-  getBookingsByDate(date: string): Promise<Booking[]>;
-  getBooking(id: number): Promise<Booking | undefined>;
-  updateBooking(id: number, updates: Partial<{ status: string; paymentStatus: string; totalPrice: string }>): Promise<Booking>;
-  deleteBooking(id: number): Promise<void>;
-  getBookingItems(bookingId: number): Promise<BookingItem[]>;
-  
   // Category CRUD
   createCategory(category: InsertCategory): Promise<Category>;
   updateCategory(id: number, category: Partial<InsertCategory>): Promise<Category>;
@@ -163,9 +141,6 @@ export interface IStorage {
   // Integration Settings
   getIntegrationSettings(provider: string): Promise<IntegrationSettings | undefined>;
   upsertIntegrationSettings(settings: InsertIntegrationSettings): Promise<IntegrationSettings>;
-  
-  // Booking GHL sync
-  updateBookingGHLSync(bookingId: number, ghlContactId: string, ghlAppointmentId: string, syncStatus: string): Promise<void>;
   
   // Chat
   getChatSettings(): Promise<ChatSettings>;
@@ -208,18 +183,6 @@ export interface IStorage {
   countPublishedBlogPosts(): Promise<number>;
 
   // Knowledge Base
-  getKnowledgeBaseCategories(): Promise<KnowledgeBaseCategory[]>;
-  getKnowledgeBaseCategory(id: number): Promise<KnowledgeBaseCategory | undefined>;
-  createKnowledgeBaseCategory(category: InsertKnowledgeBaseCategory): Promise<KnowledgeBaseCategory>;
-  updateKnowledgeBaseCategory(id: number, category: Partial<InsertKnowledgeBaseCategory>): Promise<KnowledgeBaseCategory>;
-  deleteKnowledgeBaseCategory(id: number): Promise<void>;
-  getKnowledgeBaseArticles(categoryId?: number): Promise<KnowledgeBaseArticle[]>;
-  getKnowledgeBaseArticle(id: number): Promise<KnowledgeBaseArticle | undefined>;
-  createKnowledgeBaseArticle(article: InsertKnowledgeBaseArticle): Promise<KnowledgeBaseArticle>;
-  updateKnowledgeBaseArticle(id: number, article: Partial<InsertKnowledgeBaseArticle>): Promise<KnowledgeBaseArticle>;
-  deleteKnowledgeBaseArticle(id: number): Promise<void>;
-  toggleKnowledgeBaseCategoryAssistantLink(categoryId: number, isLinked: boolean): Promise<void>;
-  getKnowledgeBaseCategoryAssistantLink(categoryId: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -229,7 +192,7 @@ export class DatabaseStorage implements IStorage {
     if (this.chatSchemaEnsured) return;
     try {
       await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "agent_avatar_url" text DEFAULT ''`);
-      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "system_prompt" text DEFAULT 'You are our helpful chat assistant. Provide concise, friendly answers. Use the provided tools to fetch services, details, and availability. Do not guess prices or availability; always use tool data when relevant. If booking is requested, gather details and direct the user to the booking page at /booking.'`);
+      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "system_prompt" text DEFAULT 'You are our helpful chat assistant. Provide concise, friendly answers. Use the provided tools to fetch services and details. Do not guess prices; always use tool data when relevant.'`);
       await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "intake_objectives" jsonb DEFAULT '[]'`);
       await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "avg_response_time" text DEFAULT ''`);
       await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "calendar_provider" text DEFAULT 'gohighlevel'`);
@@ -239,8 +202,8 @@ export class DatabaseStorage implements IStorage {
       await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "default_language" text DEFAULT 'en'`);
       await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "low_performance_sms_enabled" boolean DEFAULT false`);
       await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "low_performance_threshold_seconds" integer DEFAULT 300`);
-      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "use_knowledge_base" boolean DEFAULT true`);
       await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "use_faqs" boolean DEFAULT true`);
+      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "active_ai_provider" text DEFAULT 'openai'`);
       this.chatSchemaEnsured = true;
     } catch (err) {
       console.error("ensureChatSchema error:", err);
@@ -352,66 +315,6 @@ export class DatabaseStorage implements IStorage {
     return service;
   }
 
-  async createBooking(booking: InsertBooking & { totalPrice: string, totalDurationMinutes: number, endTime: string }): Promise<Booking> {
-    // 1. Create Booking
-    const [newBooking] = await db.insert(bookings).values({
-      customerName: booking.customerName,
-      customerEmail: booking.customerEmail,
-      customerPhone: booking.customerPhone,
-      customerAddress: booking.customerAddress,
-      bookingDate: booking.bookingDate,
-      startTime: booking.startTime,
-      endTime: booking.endTime,
-      totalDurationMinutes: booking.totalDurationMinutes,
-      totalPrice: booking.totalPrice,
-      paymentMethod: booking.paymentMethod,
-    }).returning();
-
-    // 2. Create Booking Items
-    for (const serviceId of booking.serviceIds) {
-      const service = await this.getService(serviceId);
-      if (service) {
-        await db.insert(bookingItems).values({
-          bookingId: newBooking.id,
-          serviceId: service.id,
-          serviceName: service.name,
-          price: service.price,
-        });
-      }
-    }
-
-    return newBooking;
-  }
-
-  async getBookings(): Promise<Booking[]> {
-    return await db.select().from(bookings).orderBy(bookings.bookingDate);
-  }
-
-  async getBookingsByDate(date: string): Promise<Booking[]> {
-    return await db.select().from(bookings).where(eq(bookings.bookingDate, date));
-  }
-
-  async getBooking(id: number): Promise<Booking | undefined> {
-    const [booking] = await db.select().from(bookings).where(eq(bookings.id, id));
-    return booking;
-  }
-
-  async updateBooking(id: number, updates: Partial<{ status: string; paymentStatus: string; totalPrice: string }>): Promise<Booking> {
-    const [updated] = await db.update(bookings).set(updates).where(eq(bookings.id, id)).returning();
-    return updated;
-  }
-
-  async deleteBooking(id: number): Promise<void> {
-    // First delete booking items
-    await db.delete(bookingItems).where(eq(bookingItems.bookingId, id));
-    // Then delete the booking
-    await db.delete(bookings).where(eq(bookings.id, id));
-  }
-
-  async getBookingItems(bookingId: number): Promise<BookingItem[]> {
-    return await db.select().from(bookingItems).where(eq(bookingItems.bookingId, bookingId));
-  }
-
   async createCategory(category: InsertCategory): Promise<Category> {
     const [newCategory] = await db.insert(categories).values(category).returning();
     return newCategory;
@@ -512,13 +415,6 @@ export class DatabaseStorage implements IStorage {
       const [created] = await db.insert(integrationSettings).values(settings).returning();
       return created;
     }
-  }
-
-  async updateBookingGHLSync(bookingId: number, ghlContactId: string, ghlAppointmentId: string, syncStatus: string): Promise<void> {
-    await db
-      .update(bookings)
-      .set({ ghlContactId, ghlAppointmentId, ghlSyncStatus: syncStatus })
-      .where(eq(bookings.id, bookingId));
   }
 
   async getChatSettings(): Promise<ChatSettings> {
@@ -1003,111 +899,6 @@ export class DatabaseStorage implements IStorage {
       .from(blogPosts)
       .where(eq(blogPosts.status, 'published'));
     return Number(result[0]?.count || 0);
-  }
-
-  // Knowledge Base Methods
-  async getKnowledgeBaseCategories(): Promise<KnowledgeBaseCategory[]> {
-    return await db.select().from(knowledgeBaseCategories).orderBy(asc(knowledgeBaseCategories.order));
-  }
-
-  async getKnowledgeBaseCategory(id: number): Promise<KnowledgeBaseCategory | undefined> {
-    const [category] = await db.select().from(knowledgeBaseCategories).where(eq(knowledgeBaseCategories.id, id));
-    return category;
-  }
-
-  async createKnowledgeBaseCategory(category: InsertKnowledgeBaseCategory): Promise<KnowledgeBaseCategory> {
-    const [created] = await db.insert(knowledgeBaseCategories).values(category).returning();
-    return created;
-  }
-
-  async updateKnowledgeBaseCategory(id: number, category: Partial<InsertKnowledgeBaseCategory>): Promise<KnowledgeBaseCategory> {
-    const [updated] = await db.update(knowledgeBaseCategories)
-      .set({ ...category, updatedAt: new Date() })
-      .where(eq(knowledgeBaseCategories.id, id))
-      .returning();
-    return updated;
-  }
-
-  async deleteKnowledgeBaseCategory(id: number): Promise<void> {
-    await db.delete(knowledgeBaseArticles).where(eq(knowledgeBaseArticles.categoryId, id));
-    await db.delete(knowledgeBaseAssistantLink).where(eq(knowledgeBaseAssistantLink.categoryId, id));
-    await db.delete(knowledgeBaseCategories).where(eq(knowledgeBaseCategories.id, id));
-  }
-
-  async getKnowledgeBaseArticles(categoryId?: number): Promise<KnowledgeBaseArticle[]> {
-    if (categoryId) {
-      return await db.select().from(knowledgeBaseArticles)
-        .where(eq(knowledgeBaseArticles.categoryId, categoryId))
-        .orderBy(asc(knowledgeBaseArticles.order));
-    }
-    return await db.select().from(knowledgeBaseArticles).orderBy(asc(knowledgeBaseArticles.order));
-  }
-
-  async getKnowledgeBaseArticle(id: number): Promise<KnowledgeBaseArticle | undefined> {
-    const [article] = await db.select().from(knowledgeBaseArticles).where(eq(knowledgeBaseArticles.id, id));
-    return article;
-  }
-
-  async createKnowledgeBaseArticle(article: InsertKnowledgeBaseArticle): Promise<KnowledgeBaseArticle> {
-    const [created] = await db.insert(knowledgeBaseArticles).values(article).returning();
-    return created;
-  }
-
-  async updateKnowledgeBaseArticle(id: number, article: Partial<InsertKnowledgeBaseArticle>): Promise<KnowledgeBaseArticle> {
-    const [updated] = await db.update(knowledgeBaseArticles)
-      .set({ ...article, updatedAt: new Date() })
-      .where(eq(knowledgeBaseArticles.id, id))
-      .returning();
-    return updated;
-  }
-
-  async deleteKnowledgeBaseArticle(id: number): Promise<void> {
-    await db.delete(knowledgeBaseArticles).where(eq(knowledgeBaseArticles.id, id));
-  }
-
-  async getLinkedKnowledgeBaseDocuments(): Promise<(KnowledgeBaseArticle & { categoryName: string })[]> {
-    const linked = await db.select().from(knowledgeBaseAssistantLink)
-      .where(eq(knowledgeBaseAssistantLink.isLinkedToAssistant, true));
-    if (linked.length === 0) return [];
-
-    const categoryIds = linked.map((link) => link.categoryId);
-    const categories = await db.select().from(knowledgeBaseCategories)
-      .where(inArray(knowledgeBaseCategories.id, categoryIds));
-    const categoryNameMap = new Map(categories.map((category) => [category.id, category.name]));
-
-    const articles = await db.select().from(knowledgeBaseArticles)
-      .where(and(
-        inArray(knowledgeBaseArticles.categoryId, categoryIds),
-        eq(knowledgeBaseArticles.isActive, true)
-      ))
-      .orderBy(asc(knowledgeBaseArticles.order));
-
-    return articles.map((article) => ({
-      ...article,
-      categoryName: categoryNameMap.get(article.categoryId) || 'General',
-    }));
-  }
-
-  async toggleKnowledgeBaseCategoryAssistantLink(categoryId: number, isLinked: boolean): Promise<void> {
-    const [existing] = await db.select().from(knowledgeBaseAssistantLink)
-      .where(eq(knowledgeBaseAssistantLink.categoryId, categoryId));
-
-    if (existing) {
-      await db.update(knowledgeBaseAssistantLink)
-        .set({ isLinkedToAssistant: isLinked, updatedAt: new Date() })
-        .where(eq(knowledgeBaseAssistantLink.categoryId, categoryId));
-    } else {
-      await db.insert(knowledgeBaseAssistantLink).values({
-        categoryId,
-        isLinkedToAssistant: isLinked,
-      });
-    }
-  }
-
-  async getKnowledgeBaseCategoryAssistantLink(categoryId: number): Promise<boolean> {
-    const [link] = await db.select().from(knowledgeBaseAssistantLink)
-      .where(eq(knowledgeBaseAssistantLink.categoryId, categoryId));
-    return link?.isLinkedToAssistant || false;
   }
 }
 

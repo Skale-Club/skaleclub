@@ -1,7 +1,6 @@
 import { Link, useLocation } from "wouter";
-import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/hooks/use-auth";
-import { ShoppingBag, Menu, X, User, LogOut, Phone } from "lucide-react";
+import { Menu, X, User, LogOut, Phone } from "lucide-react";
 import { useState, useCallback } from "react";
 import { clsx } from "clsx";
 import { Button } from "@/components/ui/button";
@@ -17,7 +16,6 @@ import type { CompanySettings } from "@shared/schema";
 
 export function Navbar() {
   const [location] = useLocation();
-  const { items } = useCart();
   const { user, isLoading, isAuthenticated, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { data: companySettings } = useQuery<CompanySettings>({
@@ -181,13 +179,6 @@ export function Navbar() {
           </div>
 
           <div className="pt-6 border-t border-gray-100 flex flex-col gap-6">
-            <Link href="/booking" onClick={() => setIsMenuOpen(false)}>
-              <div className="flex items-center gap-3 text-primary font-bold text-lg">
-                <ShoppingBag className="w-6 h-6" />
-                <span>Cart ({items.length})</span>
-              </div>
-            </Link>
-            
             {/* Mobile Login/User */}
             {!isLoading && (
               isAuthenticated && user ? (

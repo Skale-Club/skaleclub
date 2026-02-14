@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
-import { useCategories, useServices } from "@/hooks/use-booking";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { ArrowRight, Star, Shield, Clock, Sparkles, Heart, BadgeCheck, ThumbsUp, Trophy, Calendar, FileText } from "lucide-react";
-import { CartSummary } from "@/components/CartSummary";
 import { AboutSection } from "@/components/AboutSection";
 import { AreasServedMap } from "@/components/AreasServedMap";
 import { useQuery } from "@tanstack/react-query";
@@ -104,14 +102,10 @@ function BlogSection({ content }: { content: HomepageContent['blogSection'] }) {
 }
 
 export default function Home() {
-  const { data: categories, isLoading: isCategoriesLoading } = useCategories();
-  const { data: services, isLoading: isServicesLoading } = useServices();
-  const [, setLocation] = useLocation();
   const { data: companySettings } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
   });
 
-  const isLoading = isCategoriesLoading || isServicesLoading;
   const consultingStepsSection: HomepageContent["consultingStepsSection"] = companySettings?.homepageContent?.consultingStepsSection || { enabled: false, steps: [] };
   const homepageContent: Partial<HomepageContent> = companySettings?.homepageContent || {};
   const areasServedSection: HomepageContent["areasServedSection"] = {
@@ -140,14 +134,6 @@ export default function Home() {
     setIsFormOpen(true);
     trackCTAClick('consulting-steps', consultingStepsSection.ctaButtonLabel || '{companySettings?.ctaText || ""}');
   };
-  const handleCategoryClick = (categoryId: number) => {
-    setLocation(`/services?category=${categoryId}&scroll=true`);
-  };
-
-  // Filter categories that have at least one service
-  const activeCategories = categories?.filter(category =>
-    services?.some(service => service.categoryId === category.id)
-  );
 
   // Handle hash navigation on mount (e.g., /#about)
   useEffect(() => {
@@ -334,7 +320,6 @@ export default function Home() {
           content={homepageContent.aboutSection}
         />
       </section>
-      <CartSummary />
       <LeadFormModal open={isFormOpen} onClose={() => setIsFormOpen(false)} />
     </div>
   );

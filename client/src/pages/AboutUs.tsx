@@ -24,7 +24,7 @@ export default function AboutUs() {
             { icon: Building2, title: "Local Expertise", desc: "Serving our community with pride and dedication." },
             { icon: CheckCircle, title: "Quality Guaranteed", desc: "We don't stop until you see results." },
             { icon: Users, title: "Professional Team", desc: "Experienced and highly trained specialists." },
-            { icon: Award, title: "Premium Service", desc: "Transparent pricing and easy booking." }
+            { icon: Award, title: "Premium Service", desc: "Transparent pricing and clear project scope." }
           ].map((item, i) => (
             <div key={i} className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
               <item.icon className="w-10 h-10 text-blue-600 mb-4" />

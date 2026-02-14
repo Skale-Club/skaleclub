@@ -75,8 +75,8 @@ export default function AdminLogin() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-6 md:py-8">
-      <div className="mx-auto w-full max-w-md">
+    <main className="min-h-screen bg-slate-100 px-4 flex flex-col items-center justify-center">
+      <div className="w-full max-w-md">
         <button
           type="button"
           onClick={() => setLocation('/')}
@@ -102,7 +102,7 @@ export default function AdminLogin() {
               ) : null}
               <Lock className={`h-6 w-6 text-primary ${companySettings?.logoIcon ? 'hidden' : ''}`} />
             </div>
-            <CardTitle className="text-4xl leading-none tracking-tight text-slate-900">
+            <CardTitle className="text-2xl leading-none tracking-tight text-slate-900">
               {companySettings?.companyName || 'Admin Login'}
             </CardTitle>
             <CardDescription className="pt-2 text-base text-slate-600">

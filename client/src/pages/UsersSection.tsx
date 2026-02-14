@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -10,7 +10,34 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Plus, Pencil, Trash2, Check, Users } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, Check, Users, Upload } from 'lucide-react';
+
+async function uploadFileToServer(file: File): Promise<string> {
+  const base64Data = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      resolve(result.split(',')[1]);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+  const res = await fetch('/api/upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ filename: file.name, data: base64Data }),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Upload failed');
+  }
+
+  const { path } = await res.json();
+  return path;
+}
 
 // User type for the users section
 interface UserData {
@@ -30,6 +57,8 @@ export function UsersSection() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [deletingUser, setDeletingUser] = useState<UserData | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const avatarFileInputRef = useRef<HTMLInputElement | null>(null);
   const [newUser, setNewUser] = useState({
     email: '',
     firstName: '',
@@ -46,11 +75,16 @@ export function UsersSection() {
   });
 
   const updateUser = useMutation({
-    mutationFn: async ({ id, isAdmin }: { id: string; isAdmin: boolean }) => {
-      const res = await apiRequest('PATCH', `/api/users/${id}`, { isAdmin });
+    mutationFn: async (data: { id: string; isAdmin?: boolean; firstName?: string; lastName?: string; profileImageUrl?: string }) => {
+      const { id, ...body } = data;
+      const res = await apiRequest('PATCH', `/api/users/${id}`, body);
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (updatedUser: Partial<UserData> & { id: string }) => {
+      queryClient.setQueryData<UserData[]>(['/api/users'], (currentUsers) => {
+        if (!currentUsers) return currentUsers;
+        return currentUsers.map((u) => (u.id === updatedUser.id ? { ...u, ...updatedUser } : u));
+      });
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       toast({ title: 'User updated successfully' });
       setEditingUser(null);
@@ -118,6 +152,18 @@ export function UsersSection() {
       return user.email[0].toUpperCase();
     }
     return 'U';
+  };
+
+  const handleSaveUser = () => {
+    if (!editingUser) return;
+
+    updateUser.mutate({
+      id: editingUser.id,
+      isAdmin: Boolean(editingUser.isAdmin),
+      firstName: editingUser.firstName ?? '',
+      lastName: editingUser.lastName ?? '',
+      profileImageUrl: editingUser.profileImageUrl ?? '',
+    });
   };
 
   return (
@@ -267,23 +313,71 @@ export function UsersSection() {
                               <DialogHeader>
                                 <DialogTitle>Edit User</DialogTitle>
                               </DialogHeader>
-                              <div className="py-4">
-                                <div className="flex items-center gap-3 mb-4">
-                                  {user.profileImageUrl ? (
-                                    <img
-                                      src={user.profileImageUrl}
-                                      alt={getDisplayName(user)}
-                                      className="w-12 h-12 rounded-full object-cover"
-                                      crossOrigin="anonymous"
-                                    />
-                                  ) : (
-                                    <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-medium text-lg">
-                                      {getInitials(user)}
+                              <div className="py-4 space-y-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="relative group cursor-pointer" onClick={() => avatarFileInputRef.current?.click()}>
+                                    {editingUser?.profileImageUrl ? (
+                                      <img
+                                        src={editingUser.profileImageUrl}
+                                        alt={getDisplayName(editingUser)}
+                                        className="w-16 h-16 rounded-full object-cover"
+                                        crossOrigin="anonymous"
+                                      />
+                                    ) : (
+                                      <div className="w-16 h-16 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-medium text-xl">
+                                        {editingUser ? getInitials(editingUser) : ''}
+                                      </div>
+                                    )}
+                                    <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                      {isUploadingAvatar ? (
+                                        <Loader2 className="w-5 h-5 animate-spin text-white" />
+                                      ) : (
+                                        <Upload className="w-5 h-5 text-white" />
+                                      )}
                                     </div>
-                                  )}
+                                    <input
+                                      ref={avatarFileInputRef}
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file || !editingUser) return;
+                                        setIsUploadingAvatar(true);
+                                        try {
+                                          const path = await uploadFileToServer(file);
+                                          setEditingUser(prev => prev ? { ...prev, profileImageUrl: path } : null);
+                                          toast({ title: 'Avatar uploaded' });
+                                        } catch (error: any) {
+                                          toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+                                        } finally {
+                                          setIsUploadingAvatar(false);
+                                          if (avatarFileInputRef.current) avatarFileInputRef.current.value = '';
+                                        }
+                                      }}
+                                    />
+                                  </div>
                                   <div>
-                                    <p className="font-medium">{getDisplayName(user)}</p>
+                                    <p className="font-medium">{editingUser ? getDisplayName(editingUser) : ''}</p>
                                     <p className="text-sm text-muted-foreground">{user.email}</p>
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <Label htmlFor="edit-firstName">First Name</Label>
+                                    <Input
+                                      id="edit-firstName"
+                                      value={editingUser?.firstName || ''}
+                                      onChange={(e) => setEditingUser(prev => prev ? { ...prev, firstName: e.target.value } : null)}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="edit-lastName">Last Name</Label>
+                                    <Input
+                                      id="edit-lastName"
+                                      value={editingUser?.lastName || ''}
+                                      onChange={(e) => setEditingUser(prev => prev ? { ...prev, lastName: e.target.value } : null)}
+                                    />
                                   </div>
                                 </div>
                                 <div className="flex items-center space-x-2">
@@ -300,11 +394,12 @@ export function UsersSection() {
                                 </div>
                               </div>
                               <DialogFooter>
-                                <Button variant="outline" onClick={() => setEditingUser(null)}>
+                                <Button type="button" variant="outline" onClick={() => setEditingUser(null)}>
                                   Cancel
                                 </Button>
                                 <Button
-                                  onClick={() => editingUser && updateUser.mutate({ id: user.id, isAdmin: editingUser.isAdmin })}
+                                  type="button"
+                                  onClick={handleSaveUser}
                                   disabled={updateUser.isPending}
                                   className="bg-blue-600 hover:bg-blue-700"
                                 >

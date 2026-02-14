@@ -1,19 +1,21 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import type { Server } from "http";
 import { storage } from "./storage.js";
-import { api, errorSchemas, buildUrl } from "#shared/routes.js";
+import { api } from "#shared/routes.js";
 import { z } from "zod";
 import OpenAI from "openai";
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
-import { WORKING_HOURS, DEFAULT_BUSINESS_HOURS, insertCategorySchema, insertServiceSchema, insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema, insertBlogPostSchema, BusinessHours, DayHours, insertChatSettingsSchema, insertChatIntegrationsSchema, insertKnowledgeBaseCategorySchema, insertKnowledgeBaseArticleSchema, formLeadProgressSchema } from "#shared/schema.js";
+import { getGeminiClient } from "./lib/gemini.js";
+import { getActiveAIClient, setRuntimeOpenAiKey, setRuntimeGeminiKey, getRuntimeOpenAiKey, getRuntimeGeminiKey } from "./lib/ai-provider.js";
+import { insertCategorySchema, insertServiceSchema, insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema, insertBlogPostSchema, insertChatSettingsSchema, insertChatIntegrationsSchema, formLeadProgressSchema } from "#shared/schema.js";
 import type { LeadClassification, LeadStatus } from "#shared/schema.js";
 import { DEFAULT_FORM_CONFIG, calculateMaxScore, calculateFormScoresWithConfig, classifyLead, getSortedQuestions, KNOWN_FIELD_IDS } from "#shared/form.js";
 import type { FormAnswers } from "#shared/form.js";
 import type { FormConfig } from "#shared/schema.js";
 import { insertSubcategorySchema } from "./storage.js";
-import { testGHLConnection, getGHLFreeSlots, getOrCreateGHLContact, createGHLAppointment, getGHLCustomFields } from "./integrations/ghl.js";
+import { testGHLConnection, getOrCreateGHLContact, getGHLCustomFields } from "./integrations/ghl.js";
 import { sendHotLeadNotification, sendLowPerformanceAlert, sendNewChatNotification } from "./integrations/twilio.js";
 import { registerStorageRoutes } from "./storage/storageAdapter.js";
 import { db } from "./db.js";
@@ -153,6 +155,11 @@ export async function registerRoutes(
   }
 
   let runtimeOpenAiKey = process.env.OPENAI_API_KEY || "";
+  let runtimeGeminiKey = process.env.GEMINI_API_KEY || "";
+
+  // Initialize runtime keys in the ai-provider module
+  if (runtimeOpenAiKey) setRuntimeOpenAiKey(runtimeOpenAiKey);
+  if (runtimeGeminiKey) setRuntimeGeminiKey(runtimeGeminiKey);
 
   // Chat tools for lead qualification flow
   const chatTools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
@@ -217,23 +224,6 @@ export async function registerRoutes(
     {
       type: "function",
       function: {
-        name: "search_knowledge_base",
-        description: "Search linked knowledge base documents to answer company-specific questions or policies",
-        parameters: {
-          type: "object",
-          properties: {
-            query: {
-              type: "string",
-              description: "Optional keywords to search documents. Leave empty to fetch all linked docs."
-            },
-          },
-          additionalProperties: false,
-        },
-      },
-    },
-    {
-      type: "function",
-      function: {
         name: "search_faqs",
         description: "Search frequently asked questions database to answer questions about services, pricing, process, and other common inquiries",
         parameters: {
@@ -251,9 +241,15 @@ export async function registerRoutes(
   ];
 
   function getOpenAIClient(apiKey?: string) {
-    const key = apiKey || runtimeOpenAiKey || process.env.OPENAI_API_KEY;
+    const key = apiKey || getRuntimeOpenAiKey() || runtimeOpenAiKey || process.env.OPENAI_API_KEY;
     if (!key) return null;
     return new OpenAI({ apiKey: key });
+  }
+
+  function getGeminiOpenAIClient(apiKey?: string) {
+    const key = apiKey || getRuntimeGeminiKey() || runtimeGeminiKey || process.env.GEMINI_API_KEY;
+    if (!key) return null;
+    return getGeminiClient(key);
   }
 
   function formatServiceForTool(service: any) {
@@ -264,126 +260,6 @@ export async function registerRoutes(
       price: service.price?.toString?.() || service.price,
       durationMinutes: service.durationMinutes,
     };
-  }
-
-  async function getAvailabilityForDate(
-    date: string,
-    durationMinutes: number,
-    useGhl: boolean,
-    ghlSettings: any
-  ) {
-    const company = await storage.getCompanySettings();
-    const businessHours: BusinessHours = (company?.businessHours as BusinessHours) || DEFAULT_BUSINESS_HOURS;
-    const selectedDate = new Date(date + 'T12:00:00');
-    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
-    const dayName = dayNames[selectedDate.getDay()];
-    const dayHours: DayHours = businessHours[dayName];
-
-    if (!dayHours?.isOpen) return [];
-
-    const existingBookings = await storage.getBookingsByDate(date);
-    let ghlFreeSlots: string[] = [];
-
-    if (useGhl && ghlSettings?.apiKey && ghlSettings.calendarId) {
-      try {
-        const startDate = new Date(date + 'T00:00:00');
-        const endDate = new Date(date + 'T23:59:59');
-        const result = await getGHLFreeSlots(
-          ghlSettings.apiKey,
-          ghlSettings.calendarId,
-          startDate,
-          endDate,
-          'America/New_York'
-        );
-        if (result.success && result.slots) {
-          ghlFreeSlots = result.slots
-            .filter((slot: any) => slot.startTime?.startsWith(date))
-            .map((slot: any) => slot.startTime.split('T')[1]?.substring(0, 5))
-            .filter((t: string) => !!t);
-        }
-      } catch {
-        // fall back silently
-      }
-    }
-
-    const now = new Date();
-    const estNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-    const todayStr = estNow.toISOString().split('T')[0];
-    const isToday = date === todayStr;
-    const currentHour = estNow.getHours();
-    const currentMinute = estNow.getMinutes();
-
-    const [startHr, startMn] = dayHours.start.split(':').map(Number);
-    const [endHr, endMn] = dayHours.end.split(':').map(Number);
-
-    const slots: string[] = [];
-
-    for (let h = startHr; h < endHr || (h === endHr && 0 < endMn); h++) {
-      for (let m = 0; m < 60; m += 30) {
-        if (h === startHr && m < startMn) continue;
-        if (h > endHr || (h === endHr && m >= endMn)) continue;
-
-        const slotHour = h.toString().padStart(2, '0');
-        const slotMinute = m.toString().padStart(2, '0');
-        const startTime = `${slotHour}:${slotMinute}`;
-
-        if (isToday) {
-          if (h < currentHour || (h === currentHour && m <= currentMinute)) continue;
-        }
-
-        const slotDate = new Date(`2000-01-01T${startTime}:00`);
-        slotDate.setMinutes(slotDate.getMinutes() + durationMinutes);
-        if (slotDate.getHours() > endHr || (slotDate.getHours() === endHr && slotDate.getMinutes() > endMn)) {
-          continue;
-        }
-
-        const endHour = slotDate.getHours().toString().padStart(2, '0');
-        const endMinute = slotDate.getMinutes().toString().padStart(2, '0');
-        const endTime = `${endHour}:${endMinute}`;
-
-        let available = true;
-
-        if (useGhl) {
-          available = ghlFreeSlots.includes(startTime);
-        }
-
-        if (available) {
-          available = !existingBookings.some(b => startTime < b.endTime && endTime > b.startTime);
-        }
-
-        if (available) {
-          slots.push(startTime);
-        }
-      }
-    }
-
-    return slots;
-  }
-
-  async function getAvailabilityRange(
-    startDate: string,
-    endDate: string,
-    durationMinutes: number
-  ) {
-    const start = new Date(startDate + 'T00:00:00');
-    const end = new Date(endDate + 'T00:00:00');
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) return {};
-
-    const result: Record<string, string[]> = {};
-    const ghlSettings = await storage.getIntegrationSettings('gohighlevel');
-    const useGhl = !!(ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.calendarId);
-
-    for (
-      let cursor = new Date(start);
-      cursor.getTime() <= end.getTime();
-      cursor.setDate(cursor.getDate() + 1)
-    ) {
-      const dateStr = cursor.toISOString().split('T')[0];
-      const slots = await getAvailabilityForDate(dateStr, durationMinutes, useGhl, ghlSettings);
-      result[dateStr] = slots;
-    }
-
-    return result;
   }
 
   // Helper to get or create a lead for a conversation
@@ -452,7 +328,7 @@ export async function registerRoutes(
     toolName: string,
     args: any,
     conversationId?: string,
-    options?: { allowFaqs?: boolean; allowKnowledgeBase?: boolean }
+    options?: { allowFaqs?: boolean }
   ) {
     switch (toolName) {
       case 'get_form_config': {
@@ -724,35 +600,6 @@ export async function registerRoutes(
           classification: lead.classificacao,
           score: lead.scoreTotal,
           ghlContactId,
-        };
-      }
-
-      case 'search_knowledge_base': {
-        if (options?.allowKnowledgeBase === false) {
-          return { error: 'Knowledge base is disabled for this chat.' };
-        }
-        const query = (args?.query as string | undefined)?.toLowerCase?.()?.trim();
-        const docs = await storage.getLinkedKnowledgeBaseDocuments();
-        if (!docs.length) {
-          return { documents: [], message: 'No linked knowledge base documents available.' };
-        }
-
-        const filtered = query
-          ? docs.filter(doc =>
-            doc.title.toLowerCase().includes(query) ||
-            doc.content.toLowerCase().includes(query) ||
-            doc.categoryName.toLowerCase().includes(query)
-          )
-          : docs;
-
-        return {
-          documents: filtered.slice(0, 8).map(doc => ({
-            id: doc.id,
-            title: doc.title,
-            category: doc.categoryName,
-            content: doc.content,
-          })),
-          searchQuery: query,
         };
       }
 
@@ -1324,12 +1171,6 @@ Sitemap: ${canonicalUrl}/sitemap.xml
     <lastmod>${lastMod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>${canonicalUrl}/cart</loc>
-    <lastmod>${lastMod}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
   </url>`;
 
       for (const category of categories) {
@@ -1415,471 +1256,6 @@ Sitemap: ${canonicalUrl}/sitemap.xml
     } catch (err) {
       res.status(400).json({ message: (err as Error).message });
     }
-  });
-
-  // Bookings
-  app.get(api.bookings.list.path, async (req, res) => {
-    const bookings = await storage.getBookings();
-    res.json(bookings);
-  });
-
-  app.post(api.bookings.create.path, async (req, res) => {
-    try {
-      const input = api.bookings.create.input.parse(req.body);
-
-      // 1. Calculate totals
-      let totalPrice = 0;
-      let totalDuration = 0;
-      
-      for (const serviceId of input.serviceIds) {
-        const service = await storage.getService(serviceId);
-        if (!service) {
-           return res.status(400).json({ message: `Service ID ${serviceId} not found` });
-        }
-        totalPrice += Number(service.price);
-        totalDuration += service.durationMinutes;
-      }
-
-      // 2. Calculate End Time
-      const [startHour, startMinute] = input.startTime.split(':').map(Number);
-      const startDate = new Date(`2000-01-01T${input.startTime}:00`);
-      startDate.setMinutes(startDate.getMinutes() + totalDuration);
-      
-      const endHour = startDate.getHours().toString().padStart(2, '0');
-      const endMinute = startDate.getMinutes().toString().padStart(2, '0');
-      const endTime = `${endHour}:${endMinute}`;
-
-      // 3. Check for Conflicts (Double check)
-      const existingBookings = await storage.getBookingsByDate(input.bookingDate);
-      const hasConflict = existingBookings.some(b => {
-        // Simple overlap check: (StartA < EndB) and (EndA > StartB)
-        return input.startTime < b.endTime && endTime > b.startTime;
-      });
-
-      if (hasConflict) {
-        return res.status(409).json({ message: "Time slot is no longer available." });
-      }
-
-      const booking = await storage.createBooking({
-        ...input,
-        totalPrice: totalPrice.toFixed(2),
-        totalDurationMinutes: totalDuration,
-        endTime
-      });
-
-      // Try to sync with GoHighLevel (non-blocking)
-      try {
-        const ghlSettings = await storage.getIntegrationSettings('gohighlevel');
-        if (ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.locationId && ghlSettings.calendarId) {
-          // Build service summary
-          const serviceNames: string[] = [];
-          for (const serviceId of input.serviceIds) {
-            const service = await storage.getService(serviceId);
-            if (service) serviceNames.push(service.name);
-          }
-          const serviceSummary = serviceNames.join(', ');
-          
-          const nameParts = input.customerName.split(' ');
-          const firstName = nameParts[0] || '';
-          const lastName = nameParts.slice(1).join(' ') || '';
-          
-          // Create/find contact in GHL
-          const contactResult = await getOrCreateGHLContact(
-            ghlSettings.apiKey,
-            ghlSettings.locationId,
-            {
-              email: input.customerEmail,
-              firstName,
-              lastName,
-              phone: input.customerPhone,
-              address: input.customerAddress
-            }
-          );
-          
-          if (contactResult.success && contactResult.contactId) {
-            // Create appointment in GHL - use EST/EDT timezone format (America/New_York)
-            // GHL expects format like "2026-01-27T12:00:00-05:00" not UTC
-            const startTimeISO = `${input.bookingDate}T${input.startTime}:00-05:00`;
-            const endTimeISO = `${input.bookingDate}T${endTime}:00-05:00`;
-            
-            const appointmentResult = await createGHLAppointment(
-              ghlSettings.apiKey,
-              ghlSettings.calendarId,
-              ghlSettings.locationId,
-              {
-                contactId: contactResult.contactId,
-                startTime: startTimeISO,
-                endTime: endTimeISO,
-                title: `Cleaning: ${serviceSummary}`,
-                address: input.customerAddress
-              }
-            );
-            
-            // Update booking with GHL sync status
-            if (appointmentResult.success && appointmentResult.appointmentId) {
-              await storage.updateBookingGHLSync(
-                booking.id,
-                contactResult.contactId,
-                appointmentResult.appointmentId,
-                'synced'
-              );
-            } else {
-              await storage.updateBookingGHLSync(booking.id, contactResult.contactId, '', 'failed');
-              console.log('GHL appointment sync failed:', appointmentResult.message);
-            }
-          } else {
-            await storage.updateBookingGHLSync(booking.id, '', '', 'failed');
-            console.log('GHL contact sync failed:', contactResult.message);
-          }
-        }
-      } catch (ghlError) {
-        console.log('GHL sync error (non-blocking):', ghlError);
-        // Don't fail the booking if GHL sync fails
-      }
-
-      res.status(201).json(booking);
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({
-          message: err.errors[0].message,
-          field: err.errors[0].path.join('.'),
-        });
-      }
-      throw err;
-    }
-  });
-
-  // Update Booking
-  app.patch('/api/bookings/:id', requireAdmin, async (req, res) => {
-    try {
-      const id = Number(req.params.id);
-      const existing = await storage.getBooking(id);
-      if (!existing) {
-        return res.status(404).json({ message: 'Booking not found' });
-      }
-      
-      const input = api.bookings.update.input.parse(req.body);
-      const updated = await storage.updateBooking(id, input);
-      res.json(updated);
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({ message: 'Validation error', errors: err.errors });
-      }
-      res.status(400).json({ message: (err as Error).message });
-    }
-  });
-
-  // Delete Booking
-  app.delete('/api/bookings/:id', requireAdmin, async (req, res) => {
-    try {
-      const id = Number(req.params.id);
-      const existing = await storage.getBooking(id);
-      if (!existing) {
-        return res.status(404).json({ message: 'Booking not found' });
-      }
-      
-      await storage.deleteBooking(id);
-      res.json({ message: 'Booking deleted' });
-    } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
-    }
-  });
-
-  // Get Booking Items
-  app.get('/api/bookings/:id/items', async (req, res) => {
-    const id = Number(req.params.id);
-    const items = await storage.getBookingItems(id);
-    res.json(items);
-  });
-
-  // Availability Logic
-  app.get(api.availability.check.path, async (req, res) => {
-    const date = req.query.date as string;
-    const totalDurationMinutes = Number(req.query.totalDurationMinutes);
-
-    if (!date || isNaN(totalDurationMinutes)) {
-      return res.status(400).json({ message: "Missing date or duration" });
-    }
-
-    // Get company settings for business hours
-    const companySettings = await storage.getCompanySettings();
-    const businessHours: BusinessHours = (companySettings?.businessHours as BusinessHours) || DEFAULT_BUSINESS_HOURS;
-    
-    // Get the day of week for the selected date
-    const selectedDate = new Date(date + 'T12:00:00');
-    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
-    const dayName = dayNames[selectedDate.getDay()];
-    const dayHours: DayHours = businessHours[dayName];
-    
-    // If business is closed on this day, return empty slots
-    if (!dayHours.isOpen) {
-      return res.json([]);
-    }
-
-    const existingBookings = await storage.getBookingsByDate(date);
-    
-    // Check if GHL integration is enabled and get GHL free slots
-    const ghlSettings = await storage.getIntegrationSettings('gohighlevel');
-    let ghlFreeSlots: string[] = [];
-    let useGhlSlots = false;
-    
-    if (ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.calendarId) {
-      try {
-        const startDate = new Date(date + 'T00:00:00');
-        const endDate = new Date(date + 'T23:59:59');
-        const result = await getGHLFreeSlots(
-          ghlSettings.apiKey,
-          ghlSettings.calendarId,
-          startDate,
-          endDate,
-          'America/New_York'
-        );
-        
-        console.log('GHL free slots result:', JSON.stringify(result, null, 2));
-        
-        if (result.success && result.slots) {
-          // Filter slots for the requested date and extract time parts
-          ghlFreeSlots = result.slots
-            .filter((slot: any) => {
-              // Check if slot is for the requested date
-              const slotDate = slot.startTime?.split('T')[0];
-              return slotDate === date;
-            })
-            .map((slot: any) => {
-              // Extract HH:MM from startTime (e.g., "2026-01-13T08:00:00.000Z" -> "08:00")
-              const timePart = slot.startTime?.includes('T') ? slot.startTime.split('T')[1] : slot.startTime;
-              return timePart?.substring(0, 5) || '';
-            })
-            .filter((time: string) => time !== '');
-          
-          console.log('Extracted GHL free time slots for', date, ':', ghlFreeSlots);
-          useGhlSlots = true;
-        } else if (result.success) {
-          // GHL returned success but empty/no slots
-          console.log('GHL returned success but no slots data');
-          useGhlSlots = true;
-          ghlFreeSlots = [];
-        }
-      } catch (error) {
-        console.error('Error fetching GHL slots:', error);
-        // Fall back to local availability check only on error
-      }
-    }
-
-    const slots = [];
-
-    // Check if the selected date is today (in EST/America/New_York timezone)
-    const now = new Date();
-    const estNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-    const todayStr = estNow.toISOString().split('T')[0];
-    const isToday = date === todayStr;
-    const currentHour = estNow.getHours();
-    const currentMinute = estNow.getMinutes();
-
-    // Parse business hours for this day
-    const [startHr, startMn] = dayHours.start.split(':').map(Number);
-    const [endHr, endMn] = dayHours.end.split(':').map(Number);
-
-    // Generate slots every 30 minutes based on day-specific business hours
-    for (let h = startHr; h < endHr || (h === endHr && 0 < endMn); h++) {
-      for (let m = 0; m < 60; m += 30) {
-        // Skip if before start time
-        if (h === startHr && m < startMn) continue;
-        // Skip if at or after end time
-        if (h > endHr || (h === endHr && m >= endMn)) continue;
-
-        const slotHour = h.toString().padStart(2, '0');
-        const slotMinute = m.toString().padStart(2, '0');
-        const startTime = `${slotHour}:${slotMinute}`;
-
-        // Skip past slots if today
-        if (isToday) {
-          if (h < currentHour || (h === currentHour && m <= currentMinute)) {
-            continue; // This slot is in the past
-          }
-        }
-
-        // Calculate proposed end time
-        const slotDate = new Date(`2000-01-01T${startTime}:00`);
-        slotDate.setMinutes(slotDate.getMinutes() + totalDurationMinutes);
-        
-        // Check if ends after working hours for this day
-        if (slotDate.getHours() > endHr || (slotDate.getHours() === endHr && slotDate.getMinutes() > endMn)) {
-             continue; // Exceeds working hours
-        }
-        
-        const endHour = slotDate.getHours().toString().padStart(2, '0');
-        const endMinute = slotDate.getMinutes().toString().padStart(2, '0');
-        const endTime = `${endHour}:${endMinute}`;
-
-        // Check availability
-        let isAvailable = true;
-        
-        // If using GHL, check if this slot is in the GHL free slots list
-        if (useGhlSlots) {
-          isAvailable = ghlFreeSlots.includes(startTime);
-        }
-        
-        // Also check local bookings (in case there are bookings not synced to GHL)
-        if (isAvailable) {
-          isAvailable = !existingBookings.some(b => {
-             return startTime < b.endTime && endTime > b.startTime;
-          });
-        }
-
-        slots.push({ time: startTime, available: isAvailable });
-      }
-    }
-
-    res.json(slots);
-  });
-
-  // Monthly Availability Summary - returns which dates have at least one available slot
-  app.get(api.availability.month.path, async (req, res) => {
-    const year = Number(req.query.year);
-    const month = Number(req.query.month); // 1-12
-    const totalDurationMinutes = Number(req.query.totalDurationMinutes);
-
-    if (!year || !month || isNaN(totalDurationMinutes)) {
-      return res.status(400).json({ message: "Missing year, month, or duration" });
-    }
-
-    // Get company settings for business hours
-    const companySettings = await storage.getCompanySettings();
-    const businessHours: BusinessHours = (companySettings?.businessHours as BusinessHours) || DEFAULT_BUSINESS_HOURS;
-    
-    // Get GHL settings once
-    const ghlSettings = await storage.getIntegrationSettings('gohighlevel');
-    const useGhl = ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.calendarId;
-    
-    // Get date range for the month
-    const daysInMonth = new Date(year, month, 0).getDate();
-    const result: Record<string, boolean> = {};
-    
-    // Current date/time in EST
-    const now = new Date();
-    const estNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-    const todayStr = estNow.toISOString().split('T')[0];
-    const currentHour = estNow.getHours();
-    const currentMinute = estNow.getMinutes();
-
-    // Fetch GHL free slots for the entire month if enabled
-    let ghlMonthSlots: Map<string, string[]> = new Map();
-    if (useGhl) {
-      try {
-        const startDate = new Date(year, month - 1, 1);
-        const endDate = new Date(year, month, 0, 23, 59, 59);
-        const ghlResult = await getGHLFreeSlots(
-          ghlSettings.apiKey!,
-          ghlSettings.calendarId!,
-          startDate,
-          endDate,
-          'America/New_York'
-        );
-        
-        if (ghlResult.success && ghlResult.slots) {
-          for (const slot of ghlResult.slots) {
-            const slotDate = slot.startTime?.split('T')[0];
-            if (slotDate) {
-              const timePart = slot.startTime?.includes('T') ? slot.startTime.split('T')[1] : slot.startTime;
-              const timeStr = timePart?.substring(0, 5) || '';
-              if (timeStr) {
-                if (!ghlMonthSlots.has(slotDate)) {
-                  ghlMonthSlots.set(slotDate, []);
-                }
-                ghlMonthSlots.get(slotDate)!.push(timeStr);
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching GHL slots for month:', error);
-      }
-    }
-    
-    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
-    
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      const dateObj = new Date(dateStr + 'T12:00:00');
-      const dayName = dayNames[dateObj.getDay()];
-      const dayHours: DayHours = businessHours[dayName];
-      
-      // Check if in the past
-      if (dateStr < todayStr) {
-        result[dateStr] = false;
-        continue;
-      }
-      
-      // Check if business is closed
-      if (!dayHours.isOpen) {
-        result[dateStr] = false;
-        continue;
-      }
-      
-      const isToday = dateStr === todayStr;
-      const [startHr, startMn] = dayHours.start.split(':').map(Number);
-      const [endHr, endMn] = dayHours.end.split(':').map(Number);
-      
-      // Get existing bookings for this day
-      const existingBookings = await storage.getBookingsByDate(dateStr);
-      
-      // Get GHL free slots for this day if using GHL
-      const ghlFreeSlots = useGhl ? (ghlMonthSlots.get(dateStr) || []) : [];
-      
-      let hasAvailableSlot = false;
-      
-      // Check each potential slot
-      for (let h = startHr; h < endHr || (h === endHr && 0 < endMn); h++) {
-        if (hasAvailableSlot) break;
-        
-        for (let m = 0; m < 60; m += 30) {
-          if (hasAvailableSlot) break;
-          if (h === startHr && m < startMn) continue;
-          if (h > endHr || (h === endHr && m >= endMn)) continue;
-          
-          const slotHour = h.toString().padStart(2, '0');
-          const slotMinute = m.toString().padStart(2, '0');
-          const startTime = `${slotHour}:${slotMinute}`;
-          
-          // Skip past slots if today
-          if (isToday && (h < currentHour || (h === currentHour && m <= currentMinute))) {
-            continue;
-          }
-          
-          // Calculate end time
-          const slotDate = new Date(`2000-01-01T${startTime}:00`);
-          slotDate.setMinutes(slotDate.getMinutes() + totalDurationMinutes);
-          
-          if (slotDate.getHours() > endHr || (slotDate.getHours() === endHr && slotDate.getMinutes() > endMn)) {
-            continue;
-          }
-          
-          const endHour = slotDate.getHours().toString().padStart(2, '0');
-          const endMinute = slotDate.getMinutes().toString().padStart(2, '0');
-          const endTime = `${endHour}:${endMinute}`;
-          
-          // Check availability
-          let isAvailable = true;
-          
-          if (useGhl) {
-            isAvailable = ghlFreeSlots.includes(startTime);
-          }
-          
-          if (isAvailable) {
-            isAvailable = !existingBookings.some(b => startTime < b.endTime && endTime > b.startTime);
-          }
-          
-          if (isAvailable) {
-            hasAvailableSlot = true;
-          }
-        }
-      }
-      
-      result[dateStr] = hasAvailableSlot;
-    }
-    
-    res.json(result);
   });
 
   // ===============================
@@ -1999,7 +1375,6 @@ Sitemap: ${canonicalUrl}/sitemap.xml
             description: z.string(),
             enabled: z.boolean()
           })).optional(),
-          useKnowledgeBase: z.boolean().optional(),
           useFaqs: z.boolean().optional(),
           calendarProvider: z.string().optional(),
           calendarId: z.string().optional(),
@@ -2011,6 +1386,7 @@ Sitemap: ${canonicalUrl}/sitemap.xml
           defaultLanguage: z.string().optional(),
           lowPerformanceSmsEnabled: z.boolean().optional(),
           lowPerformanceThresholdSeconds: z.number().int().positive().optional(),
+          activeAiProvider: z.enum(['openai', 'gemini']).optional(),
         })
         .parse(req.body);
       const updated = await storage.updateChatSettings(payload);
@@ -2119,17 +1495,16 @@ Sitemap: ${canonicalUrl}/sitemap.xml
         return res.status(403).json({ message: 'Chat is not available on this page.' });
       }
 
-      const integration = await storage.getChatIntegration('openai');
-      if (!integration?.enabled) {
-        return res.status(503).json({ message: 'OpenAI integration is not enabled. Please enable it in Admin → Integrations.' });
+      // Get active AI provider (OpenAI or Gemini)
+      const aiConfig = await getActiveAIClient();
+      if (!aiConfig) {
+        return res.status(503).json({
+          message: 'AI chat is not configured. Please enable an AI provider (OpenAI or Gemini) in Admin → Integrations.'
+        });
       }
 
-      const apiKey = runtimeOpenAiKey || process.env.OPENAI_API_KEY || integration?.apiKey;
-      if (!apiKey) {
-        return res.status(503).json({ message: 'OpenAI API key is missing. Please configure it in Admin → Integrations.' });
-      }
-
-      const model = integration.model || DEFAULT_CHAT_MODEL;
+      const { client: openai, model, provider } = aiConfig;
+      console.log(`Using ${provider} provider with model ${model}`);
       const conversationId = input.conversationId || crypto.randomUUID();
 
       let conversation = await storage.getConversation(conversationId);
@@ -2192,11 +1567,9 @@ Sitemap: ${canonicalUrl}/sitemap.xml
 
       // Lead qualification uses dynamic form config instead of static intake objectives
       const objectivesText = 'IMPORTANT: Use get_form_config and get_lead_state at the start to know which questions to ask. Follow the form configuration order. Save each answer with save_lead_answer before asking the next question.';
-      const allowKnowledgeBase = settings.useKnowledgeBase !== false;
       const allowFaqs = settings.useFaqs !== false;
       const sourceRules = `SOURCES:
-- Knowledge base is ${allowKnowledgeBase ? 'enabled' : 'disabled'}. ${allowKnowledgeBase ? 'Use search_knowledge_base for company-specific policies, prep instructions, service coverage, and internal knowledge.' : 'Do not call search_knowledge_base.'}
-- FAQs are ${allowFaqs ? 'enabled' : 'disabled'}. ${allowFaqs ? 'If the knowledge base has no relevant info, use search_faqs for general policies, process, products, guarantees, cancellation, payment methods, and common questions.' : 'Do not call search_faqs.'}`;
+- FAQs are ${allowFaqs ? 'enabled' : 'disabled'}. ${allowFaqs ? 'Use search_faqs for general policies, process, products, guarantees, cancellation, payment methods, and common questions.' : 'Do not call search_faqs.'}`;
       const languageInstruction = input.language
         ? `LANGUAGE:\n- Respond in ${input.language}.`
         : '';
@@ -2226,7 +1599,6 @@ Based on the classification returned:
 - FRIO (Cold): "Obrigado pelo interesse! Vamos enviar alguns conteúdos úteis para você."
 
 SOURCES:
-${allowKnowledgeBase ? '- Knowledge base is enabled. Use search_knowledge_base for company-specific information.' : ''}
 ${allowFaqs ? '- FAQs are enabled. Use search_faqs for common questions about our services.' : ''}
 
 TOOLS:
@@ -2234,7 +1606,6 @@ TOOLS:
 - get_lead_state: Check current progress and next question
 - save_lead_answer: Save each answer and get next question
 - complete_lead: Finalize lead and sync to CRM
-- search_knowledge_base: For company-specific info${!allowKnowledgeBase ? ' (disabled)' : ''}
 - search_faqs: For common questions${!allowFaqs ? ' (disabled)' : ''}
 
 RULES:
@@ -2276,14 +1647,8 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
         ...historyMessages,
       ];
 
-      const openai = getOpenAIClient(apiKey);
-      if (!openai) {
-        return res.status(503).json({ message: 'Chat is currently unavailable.' });
-      }
-
       let assistantResponse = 'Sorry, I could not process that request.';
       let leadCaptured = false;
-      let bookingCompleted: { value: number; services: string[] } | null = null;
 
       try {
         const first = await openai.chat.completions.create({
@@ -2308,7 +1673,6 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
             }
             const toolResult = await runChatTool(call.function.name, args, conversationId, {
               allowFaqs,
-              allowKnowledgeBase,
             });
 
             // Track lead capture (first time contact info is saved)
@@ -2357,8 +1721,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
       res.json({
         conversationId,
         response: assistantResponse,
-        leadCaptured,
-        bookingCompleted
+        leadCaptured
       });
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
@@ -2376,7 +1739,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
         provider: 'openai',
         enabled: integration?.enabled || false,
         model: integration?.model || DEFAULT_CHAT_MODEL,
-        hasKey: !!(runtimeOpenAiKey || process.env.OPENAI_API_KEY || integration?.apiKey),
+        hasKey: !!(getRuntimeOpenAiKey() || runtimeOpenAiKey || process.env.OPENAI_API_KEY || integration?.apiKey),
       });
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
@@ -2394,9 +1757,10 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
         .parse({ ...req.body, provider: 'openai' });
 
       const providedKey = payload.apiKey && payload.apiKey !== '********' ? payload.apiKey : undefined;
-      const keyToPersist = providedKey ?? existing?.apiKey ?? runtimeOpenAiKey ?? process.env.OPENAI_API_KEY;
+      const keyToPersist = providedKey ?? existing?.apiKey ?? getRuntimeOpenAiKey() ?? runtimeOpenAiKey ?? process.env.OPENAI_API_KEY;
       if (providedKey) {
         runtimeOpenAiKey = providedKey;
+        setRuntimeOpenAiKey(providedKey);
       }
 
       const willEnable = payload.enabled ?? false;
@@ -2465,6 +1829,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
 
       // Cache key in memory for runtime use
       runtimeOpenAiKey = keyToUse;
+      setRuntimeOpenAiKey(keyToUse);
       await storage.upsertChatIntegration({
         provider: 'openai',
         enabled: existing?.enabled ?? false,
@@ -2475,6 +1840,122 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
       res.json({ success: true, message: 'Connection successful' });
     } catch (err: any) {
       res.status(500).json({ success: false, message: err?.message || 'Failed to test OpenAI connection' });
+    }
+  });
+
+  // ===============================
+  // Gemini Integration Routes
+  // ===============================
+
+  app.get('/api/integrations/gemini', requireAdmin, async (_req, res) => {
+    try {
+      const integration = await storage.getChatIntegration('gemini');
+      res.json({
+        provider: 'gemini',
+        enabled: integration?.enabled || false,
+        model: integration?.model || 'gemini-1.5-flash',
+        hasKey: !!(getRuntimeGeminiKey() || runtimeGeminiKey || process.env.GEMINI_API_KEY || integration?.apiKey),
+      });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.put('/api/integrations/gemini', requireAdmin, async (req, res) => {
+    try {
+      const existing = await storage.getChatIntegration('gemini');
+      const payload = insertChatIntegrationsSchema
+        .partial()
+        .extend({
+          apiKey: z.string().min(10).optional(),
+        })
+        .parse({ ...req.body, provider: 'gemini' });
+
+      const providedKey = payload.apiKey && payload.apiKey !== '********' ? payload.apiKey : undefined;
+      const keyToPersist = providedKey ?? existing?.apiKey ?? getRuntimeGeminiKey() ?? runtimeGeminiKey ?? process.env.GEMINI_API_KEY;
+      if (providedKey) {
+        runtimeGeminiKey = providedKey;
+        setRuntimeGeminiKey(providedKey);
+      }
+
+      const willEnable = payload.enabled ?? false;
+      const keyAvailable = !!keyToPersist;
+      if (willEnable && !keyAvailable) {
+        return res.status(400).json({ message: 'Provide a valid API key and test it before enabling.' });
+      }
+
+      const updated = await storage.upsertChatIntegration({
+        provider: 'gemini',
+        enabled: payload.enabled ?? false,
+        model: payload.model || 'gemini-1.5-flash',
+        apiKey: keyToPersist,
+      });
+
+      res.json({
+        ...updated,
+        hasKey: !!keyToPersist,
+        apiKey: undefined,
+      });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.post('/api/integrations/gemini/test', requireAdmin, async (req, res) => {
+    try {
+      const bodySchema = z.object({
+        apiKey: z.string().min(10).optional(),
+        model: z.string().optional(),
+      });
+      const { apiKey, model } = bodySchema.parse(req.body);
+      const existing = await storage.getChatIntegration('gemini');
+      const keyToUse =
+        (apiKey && apiKey !== '********' ? apiKey : undefined) ||
+        getRuntimeGeminiKey() ||
+        runtimeGeminiKey ||
+        process.env.GEMINI_API_KEY ||
+        existing?.apiKey;
+
+      if (!keyToUse) {
+        return res.status(400).json({ success: false, message: 'API key is required' });
+      }
+
+      const client = getGeminiOpenAIClient(keyToUse);
+      if (!client) {
+        return res.status(400).json({ success: false, message: 'Invalid API key' });
+      }
+
+      try {
+        await client.chat.completions.create({
+          model: model || 'gemini-1.5-flash',
+          messages: [{ role: 'user', content: 'Say pong' }],
+          max_tokens: 5,
+        });
+      } catch (err: any) {
+        const message = err?.message || 'Failed to test Gemini connection';
+        const status = err?.status || err?.response?.status;
+        return res.status(500).json({
+          success: false,
+          message: status ? `Gemini error (${status}): ${message}` : message,
+        });
+      }
+
+      // Cache key in memory for runtime use
+      runtimeGeminiKey = keyToUse;
+      setRuntimeGeminiKey(keyToUse);
+      await storage.upsertChatIntegration({
+        provider: 'gemini',
+        enabled: existing?.enabled ?? false,
+        model: model || existing?.model || 'gemini-1.5-flash',
+        apiKey: keyToUse,
+      });
+
+      res.json({ success: true, message: 'Connection successful' });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err?.message || 'Failed to test Gemini connection' });
     }
   });
 
@@ -2562,40 +2043,6 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
     }
   });
 
-  // Get GHL free slots (public - needed for booking flow)
-  app.get('/api/integrations/ghl/free-slots', async (req, res) => {
-    try {
-      const settings = await storage.getIntegrationSettings('gohighlevel');
-      
-      if (!settings?.isEnabled || !settings.apiKey || !settings.calendarId) {
-        return res.json({ enabled: false, slots: {} });
-      }
-      
-      const startDate = new Date(req.query.startDate as string);
-      const endDate = new Date(req.query.endDate as string);
-      const timezone = (req.query.timezone as string) || 'America/New_York';
-      
-      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        return res.status(400).json({ message: 'Invalid date range' });
-      }
-      
-      const result = await getGHLFreeSlots(
-        settings.apiKey,
-        settings.calendarId,
-        startDate,
-        endDate,
-        timezone
-      );
-      
-      res.json({ 
-        enabled: true, 
-        ...result 
-      });
-    } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
-    }
-  });
-
   // Check if GHL is enabled (public - for frontend to know whether to use GHL)
   app.get('/api/integrations/ghl/status', async (req, res) => {
     try {
@@ -2627,87 +2074,6 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
       res.status(500).json({
         success: false,
         message: err.message || 'Erro ao buscar custom fields'
-      });
-    }
-  });
-
-  // Sync booking to GHL (called after local booking is created)
-  app.post('/api/integrations/ghl/sync-booking', async (req, res) => {
-    try {
-      const settings = await storage.getIntegrationSettings('gohighlevel');
-      
-      if (!settings?.isEnabled || !settings.apiKey || !settings.locationId || !settings.calendarId) {
-        return res.json({ synced: false, reason: 'GHL not enabled' });
-      }
-      
-      const { bookingId, customerName, customerEmail, customerPhone, customerAddress, bookingDate, startTime, endTime, serviceSummary } = req.body;
-      
-      const nameParts = customerName.split(' ');
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
-      
-      const contactResult = await getOrCreateGHLContact(
-        settings.apiKey,
-        settings.locationId,
-        {
-          email: customerEmail,
-          firstName,
-          lastName,
-          phone: customerPhone,
-          address: customerAddress
-        }
-      );
-      
-      if (!contactResult.success || !contactResult.contactId) {
-        await storage.updateBookingGHLSync(bookingId, '', '', 'failed');
-        return res.json({ 
-          synced: false, 
-          reason: contactResult.message || 'Failed to create contact' 
-        });
-      }
-      
-      // Use EST/EDT timezone format (America/New_York)
-      // GHL expects format like "2026-01-27T12:00:00-05:00" not UTC
-      const startTimeISO = `${bookingDate}T${startTime}:00-05:00`;
-      const endTimeISO = `${bookingDate}T${endTime}:00-05:00`;
-      
-      const appointmentResult = await createGHLAppointment(
-        settings.apiKey,
-        settings.calendarId,
-        settings.locationId,
-        {
-          contactId: contactResult.contactId,
-          startTime: startTimeISO,
-          endTime: endTimeISO,
-          title: `Cleaning: ${serviceSummary}`,
-          address: customerAddress
-        }
-      );
-      
-      if (!appointmentResult.success || !appointmentResult.appointmentId) {
-        await storage.updateBookingGHLSync(bookingId, contactResult.contactId, '', 'failed');
-        return res.json({ 
-          synced: false, 
-          reason: appointmentResult.message || 'Failed to create appointment' 
-        });
-      }
-      
-      await storage.updateBookingGHLSync(
-        bookingId, 
-        contactResult.contactId, 
-        appointmentResult.appointmentId, 
-        'synced'
-      );
-      
-      res.json({ 
-        synced: true, 
-        contactId: contactResult.contactId,
-        appointmentId: appointmentResult.appointmentId
-      });
-    } catch (err) {
-      res.status(500).json({ 
-        synced: false, 
-        reason: (err as Error).message 
       });
     }
   });
@@ -3063,139 +2429,6 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
     }
   });
 
-  // Knowledge Base (admin CRUD)
-  app.get('/api/knowledge-base/categories', requireAdmin, async (req, res) => {
-    try {
-      const categories = await storage.getKnowledgeBaseCategories();
-      res.json(categories);
-    } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
-    }
-  });
-
-  app.get('/api/knowledge-base/categories/:id', requireAdmin, async (req, res) => {
-    try {
-      const category = await storage.getKnowledgeBaseCategory(Number(req.params.id));
-      if (!category) {
-        return res.status(404).json({ message: 'Category not found' });
-      }
-      res.json(category);
-    } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
-    }
-  });
-
-  app.post('/api/knowledge-base/categories', requireAdmin, async (req, res) => {
-    try {
-      const validatedData = insertKnowledgeBaseCategorySchema.parse(req.body);
-      const category = await storage.createKnowledgeBaseCategory(validatedData);
-      res.status(201).json(category);
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({ message: 'Validation error', errors: err.errors });
-      }
-      res.status(400).json({ message: (err as Error).message });
-    }
-  });
-
-  app.put('/api/knowledge-base/categories/:id', requireAdmin, async (req, res) => {
-    try {
-      const validatedData = insertKnowledgeBaseCategorySchema.partial().parse(req.body);
-      const category = await storage.updateKnowledgeBaseCategory(Number(req.params.id), validatedData);
-      res.json(category);
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({ message: 'Validation error', errors: err.errors });
-      }
-      res.status(400).json({ message: (err as Error).message });
-    }
-  });
-
-  app.delete('/api/knowledge-base/categories/:id', requireAdmin, async (req, res) => {
-    try {
-      await storage.deleteKnowledgeBaseCategory(Number(req.params.id));
-      res.json({ success: true });
-    } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
-    }
-  });
-
-  app.get('/api/knowledge-base/articles', requireAdmin, async (req, res) => {
-    try {
-      const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
-      const articles = await storage.getKnowledgeBaseArticles(categoryId);
-      res.json(articles);
-    } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
-    }
-  });
-
-  app.get('/api/knowledge-base/articles/:id', requireAdmin, async (req, res) => {
-    try {
-      const article = await storage.getKnowledgeBaseArticle(Number(req.params.id));
-      if (!article) {
-        return res.status(404).json({ message: 'Article not found' });
-      }
-      res.json(article);
-    } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
-    }
-  });
-
-  app.post('/api/knowledge-base/articles', requireAdmin, async (req, res) => {
-    try {
-      const validatedData = insertKnowledgeBaseArticleSchema.parse(req.body);
-      const article = await storage.createKnowledgeBaseArticle(validatedData);
-      res.status(201).json(article);
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({ message: 'Validation error', errors: err.errors });
-      }
-      res.status(400).json({ message: (err as Error).message });
-    }
-  });
-
-  app.put('/api/knowledge-base/articles/:id', requireAdmin, async (req, res) => {
-    try {
-      const validatedData = insertKnowledgeBaseArticleSchema.partial().parse(req.body);
-      const article = await storage.updateKnowledgeBaseArticle(Number(req.params.id), validatedData);
-      res.json(article);
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({ message: 'Validation error', errors: err.errors });
-      }
-      res.status(400).json({ message: (err as Error).message });
-    }
-  });
-
-  app.delete('/api/knowledge-base/articles/:id', requireAdmin, async (req, res) => {
-    try {
-      await storage.deleteKnowledgeBaseArticle(Number(req.params.id));
-      res.json({ success: true });
-    } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
-    }
-  });
-
-  app.post('/api/knowledge-base/categories/:id/link-assistant', requireAdmin, async (req, res) => {
-    try {
-      const { isLinked } = req.body;
-      await storage.toggleKnowledgeBaseCategoryAssistantLink(Number(req.params.id), isLinked);
-      res.json({ success: true });
-    } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
-    }
-  });
-
-  app.get('/api/knowledge-base/categories/:id/link-assistant', requireAdmin, async (req, res) => {
-    try {
-      const isLinked = await storage.getKnowledgeBaseCategoryAssistantLink(Number(req.params.id));
-      res.json({ isLinked });
-    } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
-    }
-  });
-
   // FAQs (public GET, admin CRUD)
   app.get('/api/faqs', async (req, res) => {
     try {
@@ -3269,9 +2502,9 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
         return {
           id: authUser.id,
           email: authUser.email,
-          firstName: localUser?.firstName || authUser.user_metadata?.first_name || '',
-          lastName: localUser?.lastName || authUser.user_metadata?.last_name || '',
-          profileImageUrl: localUser?.profileImageUrl || authUser.user_metadata?.avatar_url || '',
+          firstName: localUser?.firstName ?? authUser.user_metadata?.first_name ?? '',
+          lastName: localUser?.lastName ?? authUser.user_metadata?.last_name ?? '',
+          profileImageUrl: localUser?.profileImageUrl ?? authUser.user_metadata?.avatar_url ?? '',
           isAdmin: localUser?.isAdmin || false,
           createdAt: authUser.created_at,
           lastSignInAt: authUser.last_sign_in_at,
@@ -3286,47 +2519,87 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
     }
   });
 
-  // Update user role (admin status)
+  // Update user
   app.patch('/api/users/:id', requireAdmin, async (req, res) => {
     try {
-      const { isAdmin } = z.object({ isAdmin: z.boolean() }).parse(req.body);
+      const updateSchema = z.object({
+        isAdmin: z.boolean().optional(),
+        firstName: z.string().optional(),
+        lastName: z.string().optional(),
+        profileImageUrl: z.string().optional(),
+      });
+      const updates = updateSchema.parse(req.body);
       const userId = req.params.id;
 
-      // Update local database
+      // Upsert local database record (insert if not exists, update if exists)
       const [existingUser] = await db.select().from(users).where(eq(users.id, userId));
-      
+
+      let localUser;
       if (existingUser) {
         const [updated] = await db
           .update(users)
-          .set({ isAdmin, updatedAt: new Date() })
+          .set({ ...updates, updatedAt: new Date() })
           .where(eq(users.id, userId))
           .returning();
-        res.json(updated);
+        localUser = updated;
       } else {
-        // User exists in Supabase but not in local DB, create entry
-        const { getSupabaseAdmin } = await import('./lib/supabase.js');
-        const supabaseAdmin = getSupabaseAdmin();
-        const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId);
-        
-        if (!authUser?.user) {
-          return res.status(404).json({ message: 'User not found' });
+        // User exists in Supabase Auth but not in local DB — create local record
+        let email: string | undefined;
+        if (!isReplit) {
+          const { getSupabaseAdmin } = await import("./lib/supabase.js");
+          const supabase = getSupabaseAdmin();
+          const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+          email = authUser?.user?.email ?? undefined;
         }
 
         const [newUser] = await db
           .insert(users)
           .values({
             id: userId,
-            email: authUser.user.email,
-            isAdmin,
-            firstName: authUser.user.user_metadata?.first_name || '',
-            lastName: authUser.user.user_metadata?.last_name || '',
-            profileImageUrl: authUser.user.user_metadata?.avatar_url || '',
+            email: email ?? null,
+            isAdmin: updates.isAdmin ?? false,
+            firstName: updates.firstName ?? '',
+            lastName: updates.lastName ?? '',
+            profileImageUrl: updates.profileImageUrl ?? '',
           })
           .returning();
-        
-        res.json(newUser);
+        localUser = newUser;
       }
+
+      // Also update Supabase Auth user_metadata so GET /api/users picks up changes
+      if (!isReplit) {
+        try {
+          const { getSupabaseAdmin } = await import("./lib/supabase.js");
+          const supabase = getSupabaseAdmin();
+
+          const metadata: Record<string, unknown> = {};
+          if (updates.firstName !== undefined) metadata.first_name = updates.firstName;
+          if (updates.lastName !== undefined) metadata.last_name = updates.lastName;
+          if (updates.profileImageUrl !== undefined) metadata.avatar_url = updates.profileImageUrl;
+
+          if (Object.keys(metadata).length > 0) {
+            await supabase.auth.admin.updateUserById(userId, {
+              user_metadata: metadata,
+            });
+          }
+        } catch (metaErr) {
+          console.error('[PATCH /api/users/:id] Failed to update Supabase metadata:', metaErr);
+          // Non-fatal — local DB was already updated
+        }
+      }
+
+      // Return merged data matching GET /api/users shape
+      res.json({
+        id: localUser.id,
+        email: localUser.email,
+        firstName: localUser.firstName,
+        lastName: localUser.lastName,
+        profileImageUrl: localUser.profileImageUrl,
+        isAdmin: localUser.isAdmin,
+        createdAt: localUser.createdAt,
+      });
     } catch (err) {
+      console.error('[PATCH /api/users/:id] Error:', err);
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: 'Validation error', errors: err.errors });
       }

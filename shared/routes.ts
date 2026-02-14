@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertBookingSchema, categories, services, bookings, formLeadProgressSchema, formLeads, leadStatusEnum, leadClassificationEnum } from './schema.js';
+import { categories, services, formLeadProgressSchema, formLeads, leadStatusEnum, leadClassificationEnum } from './schema.js';
 
 const urlRuleSchema = z.object({
   pattern: z.string(),
@@ -106,59 +106,6 @@ export const api = {
       },
     },
   },
-  bookings: {
-    create: {
-      method: 'POST' as const,
-      path: '/api/bookings',
-      input: insertBookingSchema,
-      responses: {
-        201: z.custom<typeof bookings.$inferSelect>(),
-        400: errorSchemas.validation,
-        409: errorSchemas.conflict, // Time slot taken
-      },
-    },
-    list: {
-      method: 'GET' as const,
-      path: '/api/bookings',
-      responses: {
-        200: z.array(z.custom<typeof bookings.$inferSelect>()),
-      },
-    },
-    update: {
-      method: 'PATCH' as const,
-      path: '/api/bookings/:id',
-      input: z.object({
-        status: z.enum(['pending', 'confirmed', 'cancelled', 'completed']).optional(),
-        paymentStatus: z.enum(['paid', 'unpaid']).optional(),
-        totalPrice: z.string().optional(),
-      }),
-      responses: {
-        200: z.custom<typeof bookings.$inferSelect>(),
-        404: errorSchemas.notFound,
-      },
-    },
-    delete: {
-      method: 'DELETE' as const,
-      path: '/api/bookings/:id',
-      responses: {
-        200: z.object({ message: z.string() }),
-        404: errorSchemas.notFound,
-      },
-    },
-    getItems: {
-      method: 'GET' as const,
-      path: '/api/bookings/:id/items',
-      responses: {
-        200: z.array(z.object({
-          id: z.number(),
-          bookingId: z.number(),
-          serviceId: z.number(),
-          serviceName: z.string(),
-          price: z.string(),
-        })),
-      },
-    },
-  },
   formLeads: {
     progress: {
       method: 'POST' as const,
@@ -211,34 +158,6 @@ export const api = {
       responses: {
         200: z.object({ message: z.string() }),
         404: errorSchemas.notFound,
-      },
-    },
-  },
-  availability: {
-    check: {
-      method: 'GET' as const,
-      path: '/api/availability',
-      input: z.object({
-        date: z.string(), // YYYY-MM-DD
-        totalDurationMinutes: z.coerce.number(),
-      }),
-      responses: {
-        200: z.array(z.object({
-          time: z.string(),
-          available: z.boolean(),
-        })),
-      },
-    },
-    month: {
-      method: 'GET' as const,
-      path: '/api/availability/month',
-      input: z.object({
-        year: z.coerce.number(),
-        month: z.coerce.number(), // 1-12
-        totalDurationMinutes: z.coerce.number(),
-      }),
-      responses: {
-        200: z.record(z.string(), z.boolean()), // { "2026-01-13": true, "2026-01-14": false, ... }
       },
     },
   },

@@ -1,6 +1,5 @@
-import { useCategories, useServices, useSubcategories } from "@/hooks/use-booking";
+import { useCategories, useServices, useSubcategories } from "@/hooks/use-services";
 import { ServiceCard } from "@/components/ui/ServiceCard";
-import { CartSummary } from "@/components/CartSummary";
 import { useLocation } from "wouter";
 import { useState, useEffect, useRef } from "react";
 import { clsx } from "clsx";
@@ -243,7 +242,6 @@ export default function Services() {
           </div>
         )}
       </div>
-      <CartSummary />
     </div>
   );
 }

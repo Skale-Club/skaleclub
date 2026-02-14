@@ -3,7 +3,6 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { Navbar } from "@/components/layout/Navbar";
@@ -53,8 +52,6 @@ function PageWrapper({ children }: { children: React.ReactNode }) {
 const NotFound = lazy(() => import("@/pages/not-found").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Home = lazy(() => import("@/pages/Home").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Services = lazy(() => import("@/pages/Services").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const BookingPage = lazy(() => import("@/pages/BookingPage").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const Confirmation = lazy(() => import("@/pages/Confirmation").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const LeadThankYou = lazy(() => import("@/pages/LeadThankYou").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Admin = lazy(() => import("@/pages/Admin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const AdminLogin = lazy(() => import("@/pages/AdminLogin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
@@ -142,8 +139,6 @@ function Router() {
           <Switch>
             <Route path="/" component={Home} />
             <Route path="/services" component={Services} />
-            <Route path="/booking" component={BookingPage} />
-            <Route path="/confirmation" component={Confirmation} />
             <Route path="/thankyou" component={LeadThankYou} />
             <Route path="/privacy-policy" component={PrivacyPolicy} />
             <Route path="/terms-of-service" component={TermsOfService} />
@@ -171,13 +166,11 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <AuthProvider>
-              <CartProvider>
-                <SEOProvider>
-                  <AnalyticsProvider>
-                    <Router />
-                  </AnalyticsProvider>
-                </SEOProvider>
-              </CartProvider>
+              <SEOProvider>
+                <AnalyticsProvider>
+                  <Router />
+                </AnalyticsProvider>
+              </SEOProvider>
             </AuthProvider>
           </TooltipProvider>
         </QueryClientProvider>

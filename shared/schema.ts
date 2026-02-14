@@ -67,27 +67,6 @@ export const serviceAddons = pgTable("service_addons", {
   addonServiceId: integer("addon_service_id").references(() => services.id).notNull(), // The add-on service
 });
 
-export const bookings = pgTable("bookings", {
-  id: serial("id").primaryKey(),
-  customerName: text("customer_name").notNull(),
-  customerEmail: text("customer_email").notNull(),
-  customerPhone: text("customer_phone").notNull(),
-  customerAddress: text("customer_address").notNull(),
-  bookingDate: date("booking_date").notNull(), // YYYY-MM-DD
-  startTime: text("start_time").notNull(), // HH:MM
-  endTime: text("end_time").notNull(), // HH:MM, calculated from duration
-  totalDurationMinutes: integer("total_duration_minutes").notNull(),
-  totalPrice: numeric("total_price", { precision: 10, scale: 2 }).notNull(),
-  paymentMethod: text("payment_method").notNull(), // "site" or "online"
-  paymentStatus: text("payment_status").notNull().default("unpaid"), // paid, unpaid
-  status: text("status").notNull().default("pending"), // pending, confirmed, cancelled, completed
-  createdAt: timestamp("created_at").defaultNow(),
-  // GHL integration fields
-  ghlAppointmentId: text("ghl_appointment_id"),
-  ghlContactId: text("ghl_contact_id"),
-  ghlSyncStatus: text("ghl_sync_status").default("pending"), // pending, synced, failed
-});
-
 // GoHighLevel Integration Settings
 export const integrationSettings = pgTable("integration_settings", {
   id: serial("id").primaryKey(),
@@ -107,7 +86,7 @@ export const chatSettings = pgTable("chat_settings", {
   agentName: text("agent_name").default("Company Assistant"),
   agentAvatarUrl: text("agent_avatar_url").default(""),
   systemPrompt: text("system_prompt").default(
-    "You are our helpful chat assistant. Provide concise, friendly answers. Use the provided tools to fetch services, details, and availability. Do not guess prices or availability; always use tool data when relevant. If booking is requested, gather details and direct the user to the booking page at /booking."
+    "You are our helpful chat assistant. Provide concise, friendly answers. Use the provided tools to fetch services and details. Do not guess prices; always use tool data when relevant."
   ),
   welcomeMessage: text("welcome_message").default("Hi! How can I help you today?"),
   avgResponseTime: text("avg_response_time").default(""),
@@ -120,8 +99,8 @@ export const chatSettings = pgTable("chat_settings", {
   lowPerformanceThresholdSeconds: integer("low_performance_threshold_seconds").default(300),
   intakeObjectives: jsonb("intake_objectives").default([]),
   excludedUrlRules: jsonb("excluded_url_rules").default([]),
-  useKnowledgeBase: boolean("use_knowledge_base").default(true),
   useFaqs: boolean("use_faqs").default(true),
+  activeAiProvider: text("active_ai_provider").default("openai"),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
@@ -169,14 +148,6 @@ export const conversationMessages = pgTable("conversation_messages", {
   content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   metadata: jsonb("metadata"),
-});
-
-export const bookingItems = pgTable("booking_items", {
-  id: serial("id").primaryKey(),
-  bookingId: integer("booking_id").references(() => bookings.id).notNull(),
-  serviceId: integer("service_id").references(() => services.id).notNull(),
-  serviceName: text("service_name").notNull(), // Snapshot in case service changes
-  price: numeric("price", { precision: 10, scale: 2 }).notNull(), // Snapshot price
 });
 
 export const leadClassificationEnum = pgEnum("lead_classificacao", [
@@ -255,18 +226,6 @@ export const insertCategorySchema = createInsertSchema(categories).omit({ id: tr
 export const insertSubcategorySchema = createInsertSchema(subcategories).omit({ id: true });
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true });
 export const insertServiceAddonSchema = createInsertSchema(serviceAddons).omit({ id: true });
-export const insertBookingSchema = createInsertSchema(bookings).omit({ 
-  id: true, 
-  createdAt: true,
-  status: true,
-  ghlAppointmentId: true,
-  ghlContactId: true,
-  ghlSyncStatus: true,
-}).extend({
-  // Frontend sends service IDs, backend calculates totals/snapshots
-  serviceIds: z.array(z.number()).min(1, "Select at least one service"),
-  bookingDate: z.string(), // Provide as string YYYY-MM-DD
-});
 export const insertIntegrationSettingsSchema = createInsertSchema(integrationSettings).omit({ 
   id: true, 
   createdAt: true, 
@@ -353,8 +312,6 @@ export type Category = typeof categories.$inferSelect;
 export type Subcategory = typeof subcategories.$inferSelect;
 export type Service = typeof services.$inferSelect;
 export type ServiceAddon = typeof serviceAddons.$inferSelect;
-export type Booking = typeof bookings.$inferSelect;
-export type BookingItem = typeof bookingItems.$inferSelect;
 export type IntegrationSettings = typeof integrationSettings.$inferSelect;
 export type ChatSettings = typeof chatSettings.$inferSelect;
 export type ChatIntegrations = typeof chatIntegrations.$inferSelect;
@@ -368,7 +325,6 @@ export type LeadStatus = typeof leadStatusEnum.enumValues[number];
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type InsertService = z.infer<typeof insertServiceSchema>;
 export type InsertServiceAddon = z.infer<typeof insertServiceAddonSchema>;
-export type InsertBooking = z.infer<typeof insertBookingSchema>;
 export type InsertIntegrationSettings = z.infer<typeof insertIntegrationSettingsSchema>;
 export type InsertChatSettings = z.infer<typeof insertChatSettingsSchema>;
 export type InsertChatIntegrations = z.infer<typeof insertChatIntegrationsSchema>;
@@ -377,34 +333,6 @@ export type InsertConversation = z.infer<typeof insertConversationSchema>;
 export type InsertConversationMessage = z.infer<typeof insertConversationMessageSchema>;
 export type InsertFormLead = z.infer<typeof insertFormLeadSchema>;
 export type FormLeadProgressInput = z.infer<typeof formLeadProgressSchema>;
-
-// For availability checking
-export interface TimeSlot {
-  time: string; // HH:MM
-  available: boolean;
-}
-
-export const WORKING_HOURS = {
-  start: 8, // 8 AM
-  end: 18,  // 6 PM
-};
-
-// Day-by-day business hours type
-export interface DayHours {
-  isOpen: boolean;
-  start: string; // HH:MM
-  end: string;   // HH:MM
-}
-
-export interface BusinessHours {
-  monday: DayHours;
-  tuesday: DayHours;
-  wednesday: DayHours;
-  thursday: DayHours;
-  friday: DayHours;
-  saturday: DayHours;
-  sunday: DayHours;
-}
 
 export interface ConsultingStep {
   order: number;
@@ -492,16 +420,6 @@ export interface FormConfig {
   };
 }
 
-export const DEFAULT_BUSINESS_HOURS: BusinessHours = {
-  monday: { isOpen: true, start: '08:00', end: '18:00' },
-  tuesday: { isOpen: true, start: '08:00', end: '18:00' },
-  wednesday: { isOpen: true, start: '08:00', end: '18:00' },
-  thursday: { isOpen: true, start: '08:00', end: '18:00' },
-  friday: { isOpen: true, start: '08:00', end: '18:00' },
-  saturday: { isOpen: false, start: '09:00', end: '14:00' },
-  sunday: { isOpen: false, start: '09:00', end: '14:00' },
-};
-
 // Company Settings (singleton table - only one row)
 export const companySettings = pgTable("company_settings", {
   id: serial("id").primaryKey(),
@@ -524,9 +442,8 @@ export const companySettings = pgTable("company_settings", {
   ctaText: text("cta_text").default('Book Now'),
   timeFormat: text("time_format").default('12h'), // '12h' or '24h'
   businessHours: jsonb("business_hours"), // Day-by-day business hours
-  minimumBookingValue: numeric("minimum_booking_value", { precision: 10, scale: 2 }).default('0'), // Minimum cart value required
   seoTitle: text("seo_title").default('Company Name - Professional Services'),
-  seoDescription: text("seo_description").default('Professional marketing services for homes and businesses. Book your marketing appointment online.'),
+  seoDescription: text("seo_description").default('Professional marketing services for homes and businesses.'),
   ogImage: text("og_image").default(''),
   // Extended SEO fields
   seoKeywords: text("seo_keywords").default(''),
@@ -613,59 +530,3 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({
 export type BlogPost = typeof blogPosts.$inferSelect;
 export type BlogPostService = typeof blogPostServices.$inferSelect;
 export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
-
-// Knowledge Base Categories
-export const knowledgeBaseCategories = pgTable("knowledge_base_categories", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  slug: text("slug").notNull().unique(),
-  description: text("description"),
-  icon: text("icon"), // Lucide icon name
-  order: integer("order").default(0),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Knowledge Base Articles
-export const knowledgeBaseArticles = pgTable("knowledge_base_articles", {
-  id: serial("id").primaryKey(),
-  categoryId: integer("category_id").references(() => knowledgeBaseCategories.id).notNull(),
-  title: text("title").notNull(),
-  content: text("content").notNull(),
-  order: integer("order").default(0),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Knowledge Base to Assistant Integration
-export const knowledgeBaseAssistantLink = pgTable("knowledge_base_assistant_link", {
-  id: serial("id").primaryKey(),
-  categoryId: integer("category_id").references(() => knowledgeBaseCategories.id).notNull(),
-  isLinkedToAssistant: boolean("is_linked_to_assistant").default(false),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const insertKnowledgeBaseCategorySchema = createInsertSchema(knowledgeBaseCategories).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertKnowledgeBaseArticleSchema = createInsertSchema(knowledgeBaseArticles).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertKnowledgeBaseAssistantLinkSchema = createInsertSchema(knowledgeBaseAssistantLink).omit({
-  id: true,
-  updatedAt: true,
-});
-
-export type KnowledgeBaseCategory = typeof knowledgeBaseCategories.$inferSelect;
-export type KnowledgeBaseArticle = typeof knowledgeBaseArticles.$inferSelect;
-export type KnowledgeBaseAssistantLink = typeof knowledgeBaseAssistantLink.$inferSelect;
-export type InsertKnowledgeBaseCategory = z.infer<typeof insertKnowledgeBaseCategorySchema>;
-export type InsertKnowledgeBaseArticle = z.infer<typeof insertKnowledgeBaseArticleSchema>;
-export type InsertKnowledgeBaseAssistantLink = z.infer<typeof insertKnowledgeBaseAssistantLinkSchema>;

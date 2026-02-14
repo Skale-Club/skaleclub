@@ -13,7 +13,6 @@ import {
   trackChatMessageReceived,
   trackChatNewConversation,
   trackChatLeadCaptured,
-  trackChatBookingCompleted,
 } from "@/lib/analytics";
 import { renderMarkdown } from "@/lib/markdown";
 
@@ -308,15 +307,6 @@ export function ChatWidget() {
         trackChatLeadCaptured(window.location.pathname, data.conversationId || conversationId || undefined);
       }
 
-      // Track booking completion (conversion)
-      if (data.bookingCompleted) {
-        trackChatBookingCompleted(
-          window.location.pathname,
-          data.conversationId || conversationId || undefined,
-          data.bookingCompleted.value,
-          data.bookingCompleted.services
-        );
-      }
     } catch (error: any) {
       const errorData = error?.data || {};
       if (errorData.limitReached) {
@@ -497,7 +487,7 @@ export function ChatWidget() {
               </div>
             )}
             {messages.length === 0 && !loadingHistory && (
-              <p className="text-sm text-muted-foreground text-center py-8">Ask us anything about services or availability.</p>
+              <p className="text-sm text-muted-foreground text-center py-8">Ask us anything about services or lead qualification.</p>
             )}
           </div>
 

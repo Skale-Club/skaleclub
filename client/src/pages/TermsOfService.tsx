@@ -38,7 +38,7 @@ export default function TermsOfService() {
             <h1 className="text-4xl font-bold font-heading text-white">Terms of Service</h1>
           </div>
           <p className="text-primary-foreground/80 text-lg max-w-2xl">
-            These terms govern your use of {companyName}'s website and services. Please read them carefully before booking or using our platform.
+            These terms govern your use of {companyName}'s website and services. Please read them carefully before using our platform.
           </p>
           <p className="text-primary-foreground/60 mt-4 text-sm">
             Last updated: January 10, 2026
@@ -49,7 +49,7 @@ export default function TermsOfService() {
       <div className="container-custom py-12">
         <div className="space-y-12">
           <Section icon={<ShieldCheck className="w-6 h-6" />} title="1. Acceptance of Terms">
-            <p>By accessing the site, creating an account, or booking services with {companyName}, you agree to these Terms of Service and our Privacy Policy. If you do not agree, do not use our services.</p>
+            <p>By accessing the site, creating an account, or requesting services with {companyName}, you agree to these Terms of Service and our Privacy Policy. If you do not agree, do not use our services.</p>
           </Section>
 
           <Section icon={<Sparkles className="w-6 h-6" />} title="2. Services and Scope">
@@ -66,16 +66,16 @@ export default function TermsOfService() {
 
           <Section icon={<CreditCard className="w-6 h-6" />} title="4. Quotes, Pricing, and Payments">
             <ul className="list-disc pl-6 space-y-2">
-              <li>Prices, estimates, and promotions are shown at checkout and may adjust based on property size, condition, add-ons, or special requests.</li>
-              <li>Taxes and fees may apply. We may place an authorization hold or charge your payment method per the booking terms.</li>
-              <li>If on-site conditions differ materially from the booking details, we may adjust the scope or pricing with your consent before proceeding.</li>
+              <li>Prices, estimates, and promotions are shown in your proposal and may adjust based on scope, add-ons, or special requests.</li>
+              <li>Taxes and fees may apply. We may place an authorization hold or charge your payment method per your signed service terms.</li>
+              <li>If project conditions differ materially from the approved scope, we may adjust deliverables or pricing with your consent before proceeding.</li>
             </ul>
           </Section>
 
           <Section icon={<Calendar className="w-6 h-6" />} title="5. Scheduling, Rescheduling, and Cancellations">
             <ul className="list-disc pl-6 space-y-2">
               <li>Appointments are subject to availability. Arrival times may include a service window to account for traffic and prior jobs.</li>
-              <li>Reschedules or cancellations should be requested as early as possible. Late changes may incur a fee if notice is shorter than the policy shown at booking.</li>
+              <li>Reschedules or cancellations should be requested as early as possible. Late changes may incur a fee if notice is shorter than the policy in your service agreement.</li>
               <li>We may reschedule or cancel due to unsafe conditions, severe weather, or events outside our control; in such cases we will work with you to find a new time.</li>
             </ul>
           </Section>
@@ -115,7 +115,7 @@ export default function TermsOfService() {
             <ul className="list-disc pl-6 space-y-2">
               <li>Recurring schedules (weekly, biweekly, monthly) are subject to calendar availability and may shift around holidays.</li>
               <li>Pricing may change if the scope, frequency, or property condition changes. We will notify you of adjustments before charging.</li>
-              <li>You may pause or cancel recurring services with notice as described during booking.</li>
+              <li>You may pause or cancel recurring services with notice as described in your service agreement.</li>
             </ul>
           </Section>
 

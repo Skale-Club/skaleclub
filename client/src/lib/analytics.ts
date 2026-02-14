@@ -115,9 +115,6 @@ export type AnalyticsEventName =
   | 'cta_click'
   | 'view_item_list'
   | 'view_item'
-  | 'add_to_cart'
-  | 'remove_from_cart'
-  | 'begin_checkout'
   | 'add_payment_info'
   | 'purchase'
   | 'contact_click'
@@ -128,7 +125,6 @@ export type AnalyticsEventName =
   | 'chat_message_received'
   | 'chat_new_conversation'
   | 'chat_lead_captured'
-  | 'chat_booking_completed'
   | 'form_open'
   | 'form_step_completed'
   | 'form_completed'
@@ -173,8 +169,6 @@ export function trackEvent(eventName: AnalyticsEventName, payload: AnalyticsEven
 
   if (config.facebookPixelEnabled && config.facebookPixelId && isFbqAvailable()) {
     const fbEventMap: Record<string, string> = {
-      'add_to_cart': 'AddToCart',
-      'begin_checkout': 'InitiateCheckout',
       'purchase': 'Purchase',
       'view_item': 'ViewContent',
       'view_item_list': 'ViewContent',
@@ -204,48 +198,6 @@ export function trackPageView(path: string, title?: string) {
   trackEvent('page_view', { 
     page_path: path, 
     page_title: title || document.title 
-  });
-}
-
-export function trackAddToCart(item: { id: number | string; name: string; price: number; quantity?: number; category?: string }) {
-  const quantity = item.quantity || 1;
-  trackEvent('add_to_cart', {
-    value: item.price * quantity,
-    currency: 'USD',
-    items: [{
-      item_id: String(item.id),
-      item_name: item.name,
-      price: item.price,
-      quantity: quantity,
-      item_category: item.category
-    }]
-  });
-}
-
-export function trackRemoveFromCart(item: { id: number | string; name: string; price: number; quantity?: number }) {
-  const quantity = item.quantity || 1;
-  trackEvent('remove_from_cart', {
-    value: item.price * quantity,
-    currency: 'USD',
-    items: [{
-      item_id: String(item.id),
-      item_name: item.name,
-      price: item.price,
-      quantity: quantity
-    }]
-  });
-}
-
-export function trackBeginCheckout(items: Array<{ id: number | string; name: string; price: number; quantity?: number }>, total: number) {
-  trackEvent('begin_checkout', {
-    value: total,
-    currency: 'USD',
-    items: items.map(item => ({
-      item_id: String(item.id),
-      item_name: item.name,
-      price: item.price,
-      quantity: item.quantity || 1
-    }))
   });
 }
 
@@ -328,22 +280,5 @@ export function trackChatLeadCaptured(pageUrl: string, conversationId?: string) 
     label: 'Lead Captured via Chat',
     conversation_id: conversationId,
     category: 'lead_generation'
-  });
-}
-
-export function trackChatBookingCompleted(
-  pageUrl: string,
-  conversationId: string | undefined,
-  bookingValue: number,
-  services: string[]
-) {
-  trackEvent('chat_booking_completed', {
-    location: pageUrl,
-    label: 'Booking Completed via Chat',
-    conversation_id: conversationId,
-    value: bookingValue,
-    currency: 'USD',
-    category: 'conversion',
-    services: services.join(', ')
   });
 }

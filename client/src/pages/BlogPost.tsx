@@ -18,14 +18,9 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import type { BlogPost, Service, CompanySettings } from '@shared/schema';
-import { useCart } from '@/context/CartContext';
-import { useToast } from '@/hooks/use-toast';
-import { CartSummary } from '@/components/CartSummary';
 
 export default function BlogPostPage() {
   const params = useParams<{ slug: string }>();
-  const { addItem } = useCart();
-  const { toast } = useToast();
 
   const { data: post, isLoading, error } = useQuery<BlogPost>({
     queryKey: ['/api/blog', params.slug],
@@ -81,11 +76,6 @@ export default function BlogPostPage() {
     twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`,
     linkedin: `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent(shareText)}`,
     whatsapp: `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`,
-  };
-
-  const handleAddToCart = (service: Service) => {
-    addItem(service);
-    toast({ title: `${service.name} added to cart` });
   };
 
   if (isLoading) {
@@ -311,13 +301,14 @@ export default function BlogPostPage() {
                             <p className="text-sm font-bold text-primary" data-testid={`text-service-price-${service.id}`}>
                               ${service.price}
                             </p>
-                            <button
-                              className="mt-auto h-7 text-xs px-3 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 transition-colors"
-                              onClick={() => handleAddToCart(service)}
-                              data-testid={`button-add-to-cart-${service.id}`}
-                            >
-                              Add to Booking
-                            </button>
+                            <Link href="/services">
+                              <button
+                                className="mt-auto h-7 text-xs px-3 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 transition-colors"
+                                data-testid={`button-view-service-${service.id}`}
+                              >
+                                View Services
+                              </button>
+                            </Link>
                           </div>
                         </div>
                       ))}
@@ -370,7 +361,6 @@ export default function BlogPostPage() {
         })
       }} />
 
-      <CartSummary />
     </div>
   );
 }

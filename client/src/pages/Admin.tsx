@@ -29,7 +29,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -95,20 +95,24 @@ import {
   ThumbsUp,
   Trophy,
   Target,
+  Flame,
   PhoneCall,
   LineChart,
   Moon,
-  Sun
+  Sun,
+  Send,
+  Settings,
+  Upload
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useTheme } from '@/context/ThemeContext';
-import type { Category, Service, Booking, Subcategory, Faq, BlogPost, HomepageContent, FormLead, LeadClassification, LeadStatus, FormConfig, FormQuestion, FormOption, ConsultingStep } from '@shared/schema';
+import type { Category, Service, Subcategory, Faq, BlogPost, HomepageContent, FormLead, LeadClassification, LeadStatus, FormConfig, FormQuestion, FormOption, ConsultingStep } from '@shared/schema';
 import { DEFAULT_FORM_CONFIG, calculateMaxScore, getSortedQuestions } from '@shared/form';
 import { HelpCircle, FileText, AlertCircle, ExternalLink } from 'lucide-react';
 import ghlLogo from '@assets/ghl-logo.webp';
-import { SiFacebook, SiGoogleanalytics, SiGoogletagmanager, SiOpenai, SiTwilio } from 'react-icons/si';
+import { SiFacebook, SiGoogleanalytics, SiGoogletagmanager, SiOpenai, SiGoogle, SiTwilio } from 'react-icons/si';
 
 // jsonb columns may arrive as JSON strings instead of parsed arrays/objects
 function ensureArray<T>(value: T[] | string | null | undefined): T[] {
@@ -147,15 +151,13 @@ async function uploadFileToServer(file: File): Promise<string> {
   return path;
 }
 
-type AdminSection = 'dashboard' | 'bookings' | 'leads' | 'hero' | 'company' | 'seo' | 'faqs' | 'users' | 'availability' | 'chat' | 'integrations' | 'blog';
+type AdminSection = 'dashboard' | 'leads' | 'hero' | 'company' | 'seo' | 'faqs' | 'users' | 'chat' | 'integrations' | 'blog';
 
 const menuItems = [
   { id: 'dashboard' as AdminSection, title: 'Dashboard', icon: LayoutDashboard },
   { id: 'company' as AdminSection, title: 'Company Infos', icon: Building2 },
   { id: 'hero' as AdminSection, title: 'Website', icon: Image },
-  { id: 'bookings' as AdminSection, title: 'Bookings', icon: Calendar },
   { id: 'leads' as AdminSection, title: 'Leads', icon: Sparkles },
-  { id: 'availability' as AdminSection, title: 'Availability', icon: Clock },
   { id: 'chat' as AdminSection, title: 'Chat', icon: MessageSquare },
   { id: 'faqs' as AdminSection, title: 'FAQs', icon: HelpCircle },
   { id: 'users' as AdminSection, title: 'Users', icon: Users },
@@ -375,25 +377,13 @@ function AdminContent() {
           </button>
         </header>
         <div className="p-6 pb-16 md:p-8 md:pb-10">
-          {activeSection === 'dashboard' && (
-            <DashboardSection 
-              goToBookings={() => {
-                if (!sectionsOrder.includes('bookings')) {
-                  setSectionsOrder(prev => [...prev, 'bookings']);
-                }
-                setActiveSection('bookings');
-                document.getElementById('admin-top')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-            />
-          )}
-          {activeSection === 'bookings' && <BookingsSection />}
+          {activeSection === 'dashboard' && <DashboardSection onNavigate={handleSectionSelect} />}
           {activeSection === 'leads' && <LeadsSection />}
           {activeSection === 'hero' && <HeroSettingsSection />}
           {activeSection === 'company' && <CompanySettingsSection />}
           {activeSection === 'seo' && <SEOSection />}
           {activeSection === 'faqs' && <FaqsSection />}
           {activeSection === 'users' && <UsersSection />}
-          {activeSection === 'availability' && <AvailabilitySection />}
           {activeSection === 'chat' && <ChatSection />}
           {activeSection === 'integrations' && <IntegrationsSection />}
           {activeSection === 'blog' && <BlogSection resetSignal={blogResetSignal} />}
@@ -416,98 +406,466 @@ export default function Admin() {
   );
 }
 
-function DashboardSection({ goToBookings }: { goToBookings: () => void }) {
-  const { data: categories } = useQuery<Category[]>({ queryKey: ['/api/categories'] });
-  const { data: services } = useQuery<Service[]>({ queryKey: ['/api/services'] });
-  const { data: bookings } = useQuery<Booking[]>({ queryKey: ['/api/bookings'] });
+function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSection) => void }) {
   const dashboardMenuTitle = menuItems.find((item) => item.id === 'dashboard')?.title ?? 'Dashboard';
+  const { data: companySettings } = useQuery<CompanySettingsData>({ queryKey: ['/api/company-settings'] });
+  const { data: leads } = useQuery<FormLead[]>({
+    queryKey: ['/api/form-leads'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/form-leads');
+      return res.json();
+    }
+  });
+  const { data: conversations } = useQuery<ConversationSummary[]>({
+    queryKey: ['/api/chat/conversations'],
+  });
+  const { data: chatSettings } = useQuery<ChatSettingsData>({
+    queryKey: ['/api/chat/settings'],
+  });
+  const { data: responseTimeData } = useQuery<{ averageSeconds: number; formatted: string; samples: number }>({
+    queryKey: ['/api/chat/response-time'],
+    queryFn: async () => {
+      const response = await fetch('/api/chat/response-time', { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch response time');
+      return response.json();
+    },
+  });
+  const { data: openaiSettings } = useQuery<{ enabled: boolean; hasKey: boolean }>({
+    queryKey: ['/api/integrations/openai'],
+  });
+  const { data: ghlSettings } = useQuery<GHLSettings>({
+    queryKey: ['/api/integrations/ghl'],
+  });
+  const { data: twilioSettings } = useQuery<TwilioSettings>({
+    queryKey: ['/api/integrations/twilio'],
+  });
+  const { data: publishedPosts } = useQuery<BlogPost[]>({
+    queryKey: ['/api/blog', 'published'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/blog?status=published');
+      return res.json();
+    }
+  });
+  const { data: faqs } = useQuery<Faq[]>({
+    queryKey: ['/api/faqs'],
+  });
 
-  const stats = [
-    { label: 'Total Categories', value: categories?.length || 0, icon: FolderOpen, color: 'text-blue-500' },
-    { label: 'Total Services', value: services?.length || 0, icon: Package, color: 'text-green-500' },
-    { label: 'Total Bookings', value: bookings?.length || 0, icon: Calendar, color: 'text-purple-500' },
-    { label: 'Revenue', value: `$${bookings?.reduce((sum, b) => sum + Number(b.totalPrice), 0).toFixed(2) || '0.00'}`, icon: DollarSign, color: 'text-orange-500' },
+  const leadsList = leads || [];
+  const conversationsList = conversations || [];
+  const publishedPostsList = publishedPosts || [];
+  const faqList = faqs || [];
+
+  const funnelStages: { label: string; value: LeadStatus }[] = [
+    { label: 'New', value: 'novo' },
+    { label: 'Contacted', value: 'contatado' },
+    { label: 'Qualified', value: 'qualificado' },
+    { label: 'Converted', value: 'convertido' },
+    { label: 'Discarded', value: 'descartado' },
   ];
+
+  const dashboardData = useMemo(() => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const totalLeads = leadsList.length;
+    const leadsToday = leadsList.filter((lead) => {
+      if (!lead.createdAt) return false;
+      const dt = new Date(lead.createdAt);
+      return !Number.isNaN(dt.getTime()) && dt >= todayStart;
+    }).length;
+    const leadsLast7Days = leadsList.filter((lead) => {
+      if (!lead.createdAt) return false;
+      const dt = new Date(lead.createdAt);
+      return !Number.isNaN(dt.getTime()) && dt >= sevenDaysAgo;
+    }).length;
+
+    const openChats = conversationsList.filter((conversation) => conversation.status === 'open').length;
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    const funnel = {
+      novo: 0,
+      contatado: 0,
+      qualificado: 0,
+      convertido: 0,
+      descartado: 0,
+    };
+    for (const lead of leadsList) {
+      if (lead.status && lead.status in funnel) {
+        funnel[lead.status] += 1;
+      }
+    }
+
+    const leadSources = {
+      form: leadsList.filter((lead) => lead.source !== 'chat').length,
+      chat: leadsList.filter((lead) => lead.source === 'chat').length,
+    };
+
+    const qualification = {
+      hot: leadsList.filter((lead) => lead.classificacao === 'QUENTE').length,
+      complete: leadsList.filter((lead) => lead.formCompleto).length,
+    };
+    const completion = {
+      inProgress: leadsList.filter((lead) => {
+        if (lead.formCompleto) return false;
+        if (!lead.updatedAt) return false;
+        const updated = new Date(lead.updatedAt);
+        return !Number.isNaN(updated.getTime()) && updated >= oneDayAgo;
+      }).length,
+      abandoned: leadsList.filter((lead) => {
+        if (lead.formCompleto) return false;
+        if (!lead.updatedAt) return true;
+        const updated = new Date(lead.updatedAt);
+        return Number.isNaN(updated.getTime()) || updated < oneDayAgo;
+      }).length,
+    };
+
+    return {
+      totalLeads,
+      leadsToday,
+      leadsLast7Days,
+      openChats,
+      funnel,
+      leadSources,
+      qualification,
+      completion,
+      completionRate: totalLeads ? (funnel.convertido / totalLeads) * 100 : 0,
+      recentLeads: leadsList.slice(0, 6),
+    };
+  }, [conversationsList, leadsList]);
+
+  const formatDateLabel = (value?: string | Date | null) => {
+    if (!value) return 'No date';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'No date';
+    return format(date, 'MMM d, yyyy');
+  };
+
+  const statusLabel = (status?: LeadStatus | null) => {
+    switch (status) {
+      case 'novo':
+        return 'New';
+      case 'contatado':
+        return 'Contacted';
+      case 'qualificado':
+        return 'Qualified';
+      case 'convertido':
+        return 'Converted';
+      case 'descartado':
+        return 'Discarded';
+      default:
+        return 'Unknown';
+    }
+  };
+
+  const profileChecks = [
+    { label: 'Company name', done: !!companySettings?.companyName?.trim() },
+    { label: 'Primary email', done: !!companySettings?.companyEmail?.trim() },
+    { label: 'Phone', done: !!companySettings?.companyPhone?.trim() },
+    { label: 'Address', done: !!companySettings?.companyAddress?.trim() },
+    { label: 'Main logo', done: !!(companySettings?.logoMain || companySettings?.logoIcon) },
+    { label: 'Hero content', done: !!(companySettings?.heroTitle || companySettings?.heroSubtitle) },
+  ];
+  const completedProfileChecks = profileChecks.filter((item) => item.done).length;
+  const brandProfilePercent = profileChecks.length ? Math.round((completedProfileChecks / profileChecks.length) * 100) : 0;
+
+  const integrationCards = [
+    {
+      label: 'Chat Widget',
+      status: chatSettings?.enabled ? 'Enabled' : 'Disabled',
+      active: !!chatSettings?.enabled,
+    },
+    {
+      label: 'OpenAI',
+      status: openaiSettings?.enabled ? 'Enabled' : (openaiSettings?.hasKey ? 'Configured' : 'Disabled'),
+      active: !!openaiSettings?.enabled,
+    },
+    {
+      label: 'GoHighLevel',
+      status: ghlSettings?.isEnabled ? 'Enabled' : (ghlSettings?.locationId ? 'Configured' : 'Disconnected'),
+      active: !!ghlSettings?.isEnabled,
+    },
+    {
+      label: 'Twilio',
+      status: twilioSettings?.enabled ? 'Enabled' : (twilioSettings?.accountSid ? 'Configured' : 'Disabled'),
+      active: !!twilioSettings?.enabled,
+    },
+  ];
+
+  const topCards = [
+    {
+      label: 'Total Leads',
+      value: dashboardData.totalLeads,
+      helper: `${dashboardData.qualification.hot} hot leads`,
+      icon: Users,
+      iconColor: 'text-blue-600'
+    },
+    {
+      label: 'Leads (7 Days)',
+      value: dashboardData.leadsLast7Days,
+      helper: `${dashboardData.leadsToday} today`,
+      icon: Sparkles,
+      iconColor: 'text-violet-600'
+    },
+    {
+      label: 'Hot Leads',
+      value: dashboardData.qualification.hot,
+      helper: 'High priority contacts',
+      icon: Flame,
+      iconColor: 'text-emerald-600'
+    },
+    {
+      label: 'Open Chats',
+      value: dashboardData.openChats,
+      helper: `${conversationsList.length} total threads`,
+      icon: MessageSquare,
+      iconColor: 'text-amber-600'
+    },
+    {
+      label: 'Complete Forms',
+      value: dashboardData.qualification.complete,
+      helper: `${dashboardData.qualification.hot} hot leads`,
+      icon: BadgeCheck,
+      iconColor: 'text-cyan-600'
+    },
+    {
+      label: 'In Progress',
+      value: dashboardData.completion.inProgress,
+      helper: 'Last 24h activity',
+      icon: Loader2,
+      iconColor: 'text-green-600'
+    },
+    {
+      label: 'Abandoned',
+      value: dashboardData.completion.abandoned,
+      helper: 'Needs follow-up',
+      icon: Archive,
+      iconColor: 'text-red-600'
+    },
+    {
+      label: 'Chat Response',
+      value: responseTimeData?.formatted || '--',
+      helper: responseTimeData?.samples
+        ? `${responseTimeData.samples} samples`
+        : 'No responses yet',
+      icon: Clock,
+      iconColor: 'text-sky-600'
+    },
+  ];
+
+  const funnelMax = Math.max(
+    dashboardData.funnel.novo,
+    dashboardData.funnel.contatado,
+    dashboardData.funnel.qualificado,
+    dashboardData.funnel.convertido,
+    dashboardData.funnel.descartado,
+    1
+  );
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">{dashboardMenuTitle}</h1>
-        <p className="text-muted-foreground">Overview of your marketing business</p>
+      <div className="rounded-2xl border bg-card p-5 sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4 min-w-0">
+            {companySettings?.logoIcon ? (
+              <img
+                src={companySettings.logoIcon}
+                alt={companySettings.companyName || 'Logo'}
+                className="h-14 w-14 rounded-xl border object-contain bg-muted/40 p-1.5"
+              />
+            ) : (
+              <div className="h-14 w-14 rounded-xl border bg-muted/40 flex items-center justify-center text-lg font-semibold">
+                {companySettings?.companyName?.[0] || 'A'}
+              </div>
+            )}
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold truncate">{dashboardMenuTitle}</h1>
+              <p className="text-sm text-muted-foreground truncate">
+                {companySettings?.companyName || 'Your business'} performance snapshot for leads, chat and growth
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" className="border-0 bg-muted/60" onClick={() => onNavigate('leads')}>
+              <Users className="w-4 h-4 mr-2" />
+              Leads
+            </Button>
+            <Button variant="outline" className="border-0 bg-muted/60" onClick={() => onNavigate('chat')}>
+              <MessageSquare className="w-4 h-4 mr-2" />
+              Chat
+            </Button>
+            <Button variant="outline" className="border-0 bg-muted/60" onClick={() => onNavigate('integrations')}>
+              <Puzzle className="w-4 h-4 mr-2" />
+              Integrations
+            </Button>
+          </div>
+        </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <div key={stat.label} className="bg-muted p-6 rounded-lg transition-all hover:bg-muted/80">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
-                <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {topCards.map((card) => (
+          <div key={card.label} className="rounded-2xl border bg-card p-5 transition-colors hover:bg-muted/30">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">{card.label}</p>
+                <p className="mt-1 text-3xl font-semibold leading-none">{card.value}</p>
+                <p className="mt-2 text-sm text-muted-foreground">{card.helper}</p>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-card/70 flex items-center justify-center">
-                <stat.icon className={clsx("w-6 h-6", stat.color)} />
+              <div className="h-10 w-10 rounded-xl bg-muted/60 flex items-center justify-center shrink-0">
+                <card.icon className={clsx('w-5 h-5', card.iconColor)} />
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="bg-muted rounded-lg overflow-hidden">
-        <div className="p-6 pb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-primary" />
-            Recent Bookings
-          </h2>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="bg-primary text-white border-none shadow-none sm:ml-auto"
-            onClick={goToBookings}
-          >
-            Go to Bookings
-          </Button>
-        </div>
-        <div className="px-6 pb-6">
-          {bookings?.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">No bookings yet</p>
-          ) : (
-            <div className="space-y-4">
-              {bookings?.slice(0, 5).map((booking) => (
-                <div key={booking.id} className="flex flex-col gap-3 p-3 rounded-lg bg-card/70 dark:bg-slate-900/70 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">{booking.customerName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(booking.bookingDate), "MMM dd, yyyy")} • {booking.startTime} - {booking.endTime}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate">{booking.customerAddress}</p>
+      <div className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
+        <div className="rounded-2xl border bg-card p-5">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <h3 className="text-xl font-semibold">Lead Funnel</h3>
+            <Badge variant="secondary" className="border-0 bg-muted">
+              Completion {dashboardData.completionRate.toFixed(1)}%
+            </Badge>
+          </div>
+          <div className="space-y-4">
+            {funnelStages.map((stage) => {
+              const count = dashboardData.funnel[stage.value];
+              const width = (count / funnelMax) * 100;
+              return (
+                <div key={stage.value}>
+                  <div className="mb-1 flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">{stage.label}</span>
+                    <span className="font-semibold">{count}</span>
                   </div>
-                  <div className="flex flex-col items-start gap-2 sm:items-end sm:text-right">
-                    <p className="text-2xl sm:text-xl font-bold">${booking.totalPrice}</p>
-                    <div className="flex items-center gap-2 flex-wrap sm:justify-end">
-                      <Badge
-                        variant={booking.status === 'confirmed' ? 'default' : booking.status === 'completed' ? 'secondary' : 'destructive'}
-                        className="text-xs font-semibold leading-5 px-3 py-1 min-w-[88px] justify-center capitalize"
-                      >
-                        {booking.status}
-                      </Badge>
-                      <Badge
-                        className={`text-xs font-semibold leading-5 px-3 py-1 min-w-[88px] justify-center border ${
-                          booking.paymentStatus === 'paid'
-                            ? 'border-primary/30 bg-primary/10 text-primary dark:border-primary/40 dark:bg-primary/20'
-                            : 'border-border bg-muted text-muted-foreground'
-                        }`}
-                      >
-                        {booking.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
-                      </Badge>
-                    </div>
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full rounded-full bg-primary/80" style={{ width: `${width}%` }} />
                   </div>
                 </div>
+              );
+            })}
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl bg-muted/60 p-3">
+              <p className="text-xs text-muted-foreground">Lead Sources</p>
+              <p className="text-sm font-medium mt-1">Form: {dashboardData.leadSources.form}</p>
+              <p className="text-sm font-medium">Chat: {dashboardData.leadSources.chat}</p>
+            </div>
+            <div className="rounded-xl bg-muted/60 p-3">
+              <p className="text-xs text-muted-foreground">Qualification</p>
+              <p className="text-sm font-medium mt-1">Hot: {dashboardData.qualification.hot}</p>
+              <p className="text-sm font-medium">Complete: {dashboardData.qualification.complete}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border bg-card p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-xl font-semibold">Recent Leads</h3>
+            <Button variant="ghost" className="h-auto p-0 hover:bg-transparent hover:underline" onClick={() => onNavigate('leads')}>
+              View all
+            </Button>
+          </div>
+          {dashboardData.recentLeads.length ? (
+            <div className="space-y-3">
+              {dashboardData.recentLeads.map((lead) => (
+                <button
+                  key={lead.id}
+                  type="button"
+                  onClick={() => onNavigate('leads')}
+                  className="w-full rounded-xl border bg-muted/40 px-3 py-2.5 text-left transition-colors hover:bg-muted/70"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-medium truncate">{lead.nome || lead.email || `Lead #${lead.id}`}</p>
+                    <Badge variant="secondary" className="border-0 bg-card/80">
+                      {statusLabel(lead.status)}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {lead.classificacao || 'No classification'} . {formatDateLabel(lead.createdAt)}
+                  </p>
+                </button>
               ))}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed p-8 text-center text-muted-foreground">
+              No leads yet.
             </div>
           )}
         </div>
       </div>
 
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="rounded-2xl border bg-card p-5">
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <h3 className="text-xl font-semibold">Brand Profile</h3>
+            <Badge variant="secondary" className="border-0 bg-muted">{brandProfilePercent}%</Badge>
+          </div>
+          <div className="h-2 rounded-full bg-muted overflow-hidden">
+            <div className="h-full rounded-full bg-primary" style={{ width: `${brandProfilePercent}%` }} />
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+            {profileChecks.map((item) => (
+              <div key={item.label} className="flex items-center gap-2 text-muted-foreground">
+                {item.done ? (
+                  <Check className="w-4 h-4 text-green-600" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-slate-400" />
+                )}
+                <span>{item.label}</span>
+              </div>
+            ))}
+          </div>
+          <Button className="mt-5 w-full" onClick={() => onNavigate('company')}>
+            Complete Company Profile
+          </Button>
+        </div>
+
+        <div className="rounded-2xl border bg-card p-5">
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <h3 className="text-xl font-semibold">Integrations</h3>
+            <Button variant="ghost" className="h-auto p-0 hover:bg-transparent hover:underline" onClick={() => onNavigate('integrations')}>
+              Manage
+            </Button>
+          </div>
+          <div className="space-y-2.5">
+            {integrationCards.map((integration) => (
+              <div key={integration.label} className="flex items-center justify-between rounded-xl border bg-muted/40 px-3 py-2.5">
+                <div>
+                  <p className="text-sm font-medium">{integration.label}</p>
+                  <p className="text-xs text-muted-foreground">{integration.status}</p>
+                </div>
+                <span className={clsx(
+                  'w-2.5 h-2.5 rounded-full',
+                  integration.active ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'
+                )} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border bg-card p-5">
+          <h3 className="text-xl font-semibold mb-4">Quick Actions</h3>
+          <div className="space-y-2.5">
+            <Button variant="outline" className="w-full justify-start border-0 bg-muted/60" onClick={() => onNavigate('hero')}>
+              <Globe className="w-4 h-4 mr-2" />
+              Edit Website
+            </Button>
+            <Button variant="outline" className="w-full justify-start border-0 bg-muted/60" onClick={() => onNavigate('blog')}>
+              <FileText className="w-4 h-4 mr-2" />
+              Publish Content
+            </Button>
+            <Button variant="outline" className="w-full justify-start border-0 bg-muted/60" onClick={() => onNavigate('chat')}>
+              <MessageSquare className="w-4 h-4 mr-2" />
+              Review Conversations
+            </Button>
+            <Button variant="outline" className="w-full justify-start border-0 bg-muted/60" onClick={() => onNavigate('leads')}>
+              <Sparkles className="w-4 h-4 mr-2" />
+              Qualify Leads
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -2143,7 +2501,6 @@ interface CompanySettingsData {
   homepageContent: HomepageContent | null;
   timeFormat: string | null;
   businessHours: BusinessHours | null;
-  minimumBookingValue: string | null;
 }
 
 interface SEOSettingsData {
@@ -2184,7 +2541,6 @@ function CompanySettingsSection() {
     homepageContent: DEFAULT_HOMEPAGE_CONTENT,
     timeFormat: '12h',
     businessHours: DEFAULT_BUSINESS_HOURS,
-    minimumBookingValue: '0',
   });
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -4664,341 +5020,6 @@ function ServiceForm({ service, categories, subcategories, allServices, addonRel
   );
 }
 
-interface BookingItem {
-  id: number;
-  bookingId: number;
-  serviceId: number;
-  serviceName: string;
-  price: string;
-}
-
-function getBookingStatusColor(status: string) {
-  switch (status) {
-    case 'pending': return 'bg-warning/10 text-warning dark:text-warning border-warning/20';
-    case 'confirmed': return 'bg-primary/10 text-primary border-primary/20';
-    case 'completed': return 'bg-success/10 text-success border-success/20';
-    case 'cancelled': return 'bg-destructive/10 text-destructive border-destructive/20';
-    default: return 'bg-muted text-muted-foreground border-border';
-  }
-}
-
-function useBookingItems(bookingId: number, enabled: boolean = true) {
-  return useQuery<BookingItem[]>({
-    queryKey: ['/api/bookings', bookingId, 'items'],
-    queryFn: async () => {
-      const res = await fetch(`/api/bookings/${bookingId}/items`);
-      return res.json();
-    },
-    enabled
-  });
-}
-
-function BookingRow({ booking, onUpdate, onDelete }: { 
-  booking: Booking; 
-  onUpdate: (id: number, updates: Partial<{ status: string; paymentStatus: string; totalPrice: string }>) => void;
-  onDelete: (id: number) => void;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const { toast } = useToast();
-
-  const { data: bookingItems } = useBookingItems(booking.id, expanded);
-
-  const handleStatusChange = (status: string) => {
-    onUpdate(booking.id, { status });
-    toast({ title: `Status changed to ${status}` });
-  };
-
-  const handlePaymentChange = (paymentStatus: string) => {
-    onUpdate(booking.id, { paymentStatus });
-    toast({ title: `Payment status changed to ${paymentStatus}` });
-  };
-
-  return (
-    <>
-      <tr className="hover:bg-muted/30 dark:hover:bg-slate-700/30 transition-colors">
-        <td className="px-6 py-4">
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => setExpanded(!expanded)}
-              className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-muted dark:hover:bg-slate-700 transition-colors"
-              data-testid={`button-expand-booking-${booking.id}`}
-            >
-              <ChevronDown className={clsx("w-4 h-4 transition-transform", expanded && "rotate-180")} />
-            </button>
-            <div>
-              <p className="font-semibold text-foreground">{booking.customerName}</p>
-              <p className="text-xs text-slate-500">{booking.customerEmail}</p>
-              <p className="text-xs text-slate-400">{booking.customerPhone}</p>
-            </div>
-          </div>
-        </td>
-        <td className="px-6 py-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">
-              <Calendar className="w-3.5 h-3.5 text-slate-400" />
-              {format(new Date(booking.bookingDate), "MMM dd, yyyy")}
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-slate-500">
-              <Clock className="w-3.5 h-3.5 text-slate-400" />
-              {booking.startTime} - {booking.endTime}
-            </div>
-          </div>
-        </td>
-        <td className="px-6 py-4">
-          <div className="text-sm text-slate-600 dark:text-slate-400 flex items-start gap-1.5">
-            <MapPin className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
-            <span className="truncate max-w-[200px]" title={booking.customerAddress}>
-              {booking.customerAddress}
-            </span>
-          </div>
-        </td>
-        <td className="px-6 py-4 align-middle">
-          <div className="flex items-center min-h-[56px]">
-            <Select value={booking.status} onValueChange={handleStatusChange}>
-            <SelectTrigger className="w-[140px] h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0" data-testid={`select-status-${booking.id}`}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="confirmed">
-                  <span className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full border border-primary/40 bg-primary/15" />
-                    Confirmed
-                  </span>
-                </SelectItem>
-                <SelectItem value="completed">
-                  <span className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full border border-secondary/70 bg-secondary/40" />
-                    Completed
-                  </span>
-                </SelectItem>
-                <SelectItem value="cancelled">
-                  <span className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full border border-destructive/40 bg-destructive/15" />
-                    Cancelled
-                  </span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </td>
-        <td className="px-6 py-4">
-          <Select value={booking.paymentStatus} onValueChange={handlePaymentChange}>
-            <SelectTrigger className="w-[120px] h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0" data-testid={`select-payment-${booking.id}`}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="paid">
-                <span className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full border border-primary/40 bg-primary/15" />
-                  Paid
-                </span>
-              </SelectItem>
-              <SelectItem value="unpaid">
-                <span className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full border border-muted-foreground/30 bg-muted-foreground/15" />
-                  Unpaid
-                </span>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </td>
-        <td className="px-6 py-4">
-          <span
-            className="font-bold text-foreground"
-            data-testid={`text-amount-${booking.id}`}
-          >
-            ${booking.totalPrice}
-          </span>
-        </td>
-        <td className="px-6 py-4 text-right align-middle">
-          <div className="flex items-center justify-end min-h-[56px]">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-10 w-10 items-center justify-center"
-                  data-testid={`button-delete-booking-${booking.id}`}
-                  aria-label="Delete booking"
-                >
-                  <Trash2 className="w-4 h-4 text-red-500" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Booking?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete the booking for {booking.customerName}. This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction 
-                    onClick={() => onDelete(booking.id)}
-                    variant="destructive"
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </td>
-      </tr>
-      {expanded && (
-        <tr className="bg-muted/60">
-          <td colSpan={7} className="px-6 py-4">
-            <div className="space-y-3">
-              <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300">Booked Services</h4>
-              {bookingItems && bookingItems.length > 0 ? (
-                <div className="divide-y divide-gray-200 dark:divide-slate-700">
-                  {bookingItems.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between py-2">
-                      <span className="text-sm text-slate-700 dark:text-slate-300">{item.serviceName}</span>
-                      <span className="text-sm font-medium text-foreground">${item.price}</span>
-                    </div>
-                  ))}
-                  <div className="h-px bg-gray-200 dark:bg-slate-700" />
-                </div>
-              ) : (
-                <p className="text-sm text-slate-500">Loading services...</p>
-              )}
-            </div>
-          </td>
-        </tr>
-      )}
-    </>
-  );
-}
-
-
-function BookingMobileCard({ 
-  booking, 
-  onUpdate, 
-  onDelete 
-}: { 
-  booking: Booking; 
-  onUpdate: (id: number, data: any) => void;
-  onDelete: (id: number) => void;
-}) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const { toast } = useToast();
-  const { data: items, isLoading: itemsLoading } = useBookingItems(booking.id, isExpanded);
-  const isItemsLoading = isExpanded && itemsLoading;
-
-  const handleStatusChange = (status: string) => {
-    onUpdate(booking.id, { status });
-    toast({ title: `Status changed to ${status}` });
-  };
-
-  const handlePaymentStatusChange = (paymentStatus: string) => {
-    onUpdate(booking.id, { paymentStatus });
-    toast({ title: `Payment status changed to ${paymentStatus}` });
-  };
-
-  return (
-    <Card className="mb-4 overflow-hidden border-0 bg-muted">
-      <CardHeader className="p-4 pb-3 space-y-0">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="font-semibold text-base truncate">{booking.customerName}</p>
-            <p className="text-xs text-muted-foreground">
-              {format(new Date(booking.bookingDate), 'MMM dd, yyyy')} • {booking.startTime} - {booking.endTime}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-lg font-bold text-foreground">${booking.totalPrice}</p>
-            <p className="text-xs text-muted-foreground">#{booking.id}</p>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="p-4 pt-0 space-y-3">
-        <div className="flex items-start gap-2 text-xs text-muted-foreground">
-          <MapPin className="w-4 h-4 mt-0.5" />
-          <span className="truncate">{booking.customerAddress}</span>
-        </div>
-
-        <div className="grid gap-2">
-          <Select onValueChange={handleStatusChange} defaultValue={booking.status}>
-            <SelectTrigger className="h-9 w-full rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="confirmed">Confirmed</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select onValueChange={handlePaymentStatusChange} defaultValue={booking.paymentStatus}>
-            <SelectTrigger className="h-9 w-full rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
-              <SelectValue placeholder="Payment" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="paid">Paid</SelectItem>
-              <SelectItem value="unpaid">Unpaid</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex items-center justify-between gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 px-0"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            {isExpanded ? 'Hide Details' : 'Show Services'}
-            <ChevronDown className={clsx("w-4 h-4 ml-2 transition-transform", isExpanded && "rotate-180")} />
-          </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete Booking?</AlertDialogTitle>
-                <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={() => onDelete(booking.id)} className="bg-destructive text-destructive-foreground">Delete</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-
-        {isExpanded && (
-          <div className="mt-2 p-3 bg-card/70 dark:bg-slate-900/70 rounded-md space-y-2">
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Services</h4>
-            {isItemsLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-            ) : items && items.length > 0 ? (
-              <ul className="space-y-1">
-                {items.map((item: any) => (
-                  <li key={item.id} className="text-sm flex justify-between items-center">
-                    <span>{item.serviceName}</span>
-                    <span className="font-medium">${item.price}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-muted-foreground italic">No services listed</p>
-            )}
-            <div className="pt-2 border-t border-slate-200 dark:border-slate-700 text-xs text-muted-foreground">
-              <p>Email: {booking.customerEmail}</p>
-              <p>Phone: {booking.customerPhone}</p>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
 function LeadsSection() {
   const { toast } = useToast();
   const [isFormEditorOpen, setIsFormEditorOpen] = useState(false);
@@ -5121,7 +5142,7 @@ function LeadsSection() {
   ];
 
   const formatDate = (value?: string | null) => {
-    if (!value) return '—';
+    if (!value) return '?';
     return format(new Date(value), 'MMM d, yyyy');
   };
 
@@ -5210,7 +5231,7 @@ function LeadsSection() {
   const DetailItem = ({ label, value }: { label: string; value: ReactNode }) => (
     <div className="p-3 rounded-lg border bg-muted/40">
       <p className="text-xs uppercase text-muted-foreground">{label}</p>
-      <div className="text-sm font-medium text-foreground break-words">{value || '—'}</div>
+      <div className="text-sm font-medium text-foreground break-words">{value || '?'}</div>
     </div>
   );
 
@@ -5327,7 +5348,7 @@ function LeadsSection() {
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Lead</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Contato</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Classificação</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Última etapa</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">?ltima etapa</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Atualizado</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Ações</th>
@@ -5358,12 +5379,12 @@ function LeadsSection() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="text-sm text-foreground">{lead.email || '—'}</div>
+                    <div className="text-sm text-foreground">{lead.email || '?'}</div>
                     <div className="text-xs text-muted-foreground">{lead.telefone || 'Sem telefone'}</div>
                   </td>
                   <td className="px-4 py-3">
                     <Badge className={clsx("border", classificationBadge(lead.classificacao))}>
-                      {lead.classificacao || '—'}
+                      {lead.classificacao || '?'}
                     </Badge>
                   </td>
                   <td className="px-4 py-3">
@@ -5438,7 +5459,7 @@ function LeadsSection() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Badge className={clsx("border", classificationBadge(selectedLead.classificacao))}>
-                    {selectedLead.classificacao || '—'}
+                    {selectedLead.classificacao || '?'}
                   </Badge>
                   <Badge variant="outline">{selectedLead.status || 'novo'}</Badge>
                   <Badge variant="secondary">{questionLabel(selectedLead)}</Badge>
@@ -5451,18 +5472,18 @@ function LeadsSection() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <DetailItem label="Email" value={selectedLead.email || '—'} />
-                <DetailItem label="Telefone" value={selectedLead.telefone || '—'} />
-                <DetailItem label="Cidade/Estado" value={selectedLead.cidadeEstado || '—'} />
-                <DetailItem label="Tipo de negócio" value={selectedLead.tipoNegocio || '—'} />
-                <DetailItem label="Experiência em marketing" value={selectedLead.experienciaMarketing || '—'} />
-                <DetailItem label="Orçamento em anúncios" value={selectedLead.orcamentoAnuncios || '—'} />
-                <DetailItem label="Principal desafio" value={selectedLead.principalDesafio || '—'} />
-                <DetailItem label="Disponibilidade" value={selectedLead.disponibilidade || '—'} />
-                <DetailItem label="Expectativa de resultado" value={selectedLead.expectativaResultado || '—'} />
+                <DetailItem label="Email" value={selectedLead.email || '?'} />
+                <DetailItem label="Telefone" value={selectedLead.telefone || '?'} />
+                <DetailItem label="Cidade/Estado" value={selectedLead.cidadeEstado || '?'} />
+                <DetailItem label="Tipo de negócio" value={selectedLead.tipoNegocio || '?'} />
+                <DetailItem label="Experiência em marketing" value={selectedLead.experienciaMarketing || '?'} />
+                <DetailItem label="Orçamento em anúncios" value={selectedLead.orcamentoAnuncios || '?'} />
+                <DetailItem label="Principal desafio" value={selectedLead.principalDesafio || '?'} />
+                <DetailItem label="Disponibilidade" value={selectedLead.disponibilidade || '?'} />
+                <DetailItem label="Expectativa de resultado" value={selectedLead.expectativaResultado || '?'} />
                 <DetailItem label="Score total" value={selectedLead.scoreTotal ?? '—'} />
-                <DetailItem label="Classificação" value={selectedLead.classificacao || '—'} />
-                <DetailItem label="Última atualização" value={formatDate((selectedLead.updatedAt as any) || (selectedLead.createdAt as any))} />
+                <DetailItem label="Classificação" value={selectedLead.classificacao || '?'} />
+                <DetailItem label="?ltima atualização" value={formatDate((selectedLead.updatedAt as any) || (selectedLead.createdAt as any))} />
               </div>
 
               {selectedLead.observacoes && (
@@ -5488,7 +5509,7 @@ function LeadsSection() {
                         <div key={question.id} className="p-3">
                           <p className="text-xs uppercase text-muted-foreground mb-1">{question.id}</p>
                           <p className="font-semibold text-sm text-foreground">{question.title}</p>
-                          <p className="text-sm text-muted-foreground mt-1">{answer || '—'}</p>
+                          <p className="text-sm text-muted-foreground mt-1">{answer || '?'}</p>
                           {conditionalAnswer && (
                             <p className="text-xs text-muted-foreground mt-1">
                               {(question.conditionalField?.title || 'Detalhe')}: <span className="text-foreground">{conditionalAnswer}</span>
@@ -5697,15 +5718,15 @@ function FormEditorContent() {
       <div className="grid grid-cols-2 gap-2">
         <div className="p-3 rounded-xl border bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800">
           <p className="text-xs text-green-600 dark:text-green-400 font-semibold">QUENTE</p>
-          <p className="text-lg font-bold text-green-700 dark:text-green-300">≥ {config.thresholds.hot} pts</p>
+          <p className="text-lg font-bold text-green-700 dark:text-green-300">? {config.thresholds.hot} pts</p>
         </div>
         <div className="p-3 rounded-xl border bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800">
           <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold">MORNO</p>
-          <p className="text-lg font-bold text-amber-700 dark:text-amber-300">≥ {config.thresholds.warm} pts</p>
+          <p className="text-lg font-bold text-amber-700 dark:text-amber-300">? {config.thresholds.warm} pts</p>
         </div>
         <div className="p-3 rounded-xl border bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
           <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">FRIO</p>
-          <p className="text-lg font-bold text-blue-700 dark:text-blue-300">≥ {config.thresholds.cold} pts</p>
+          <p className="text-lg font-bold text-blue-700 dark:text-blue-300">? {config.thresholds.cold} pts</p>
         </div>
         <div className="p-3 rounded-xl border bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700">
           <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">DESQUALIFICADO</p>
@@ -5860,17 +5881,17 @@ function ThresholdsForm({
         </p>
         <div className="space-y-3">
           <div className="flex items-center gap-4">
-            <Label className="w-32 text-green-600">QUENTE (≥)</Label>
+            <Label className="w-32 text-green-600">QUENTE (?)</Label>
             <Input type="number" value={hot} onChange={(e) => setHot(Number(e.target.value))} min={0} className="w-24" />
             <span className="text-sm text-muted-foreground">pontos</span>
           </div>
           <div className="flex items-center gap-4">
-            <Label className="w-32 text-amber-600">MORNO (≥)</Label>
+            <Label className="w-32 text-amber-600">MORNO (?)</Label>
             <Input type="number" value={warm} onChange={(e) => setWarm(Number(e.target.value))} min={0} className="w-24" />
             <span className="text-sm text-muted-foreground">pontos</span>
           </div>
           <div className="flex items-center gap-4">
-            <Label className="w-32 text-blue-600">FRIO (≥)</Label>
+            <Label className="w-32 text-blue-600">FRIO (?)</Label>
             <Input type="number" value={cold} onChange={(e) => setCold(Number(e.target.value))} min={0} className="w-24" />
             <span className="text-sm text-muted-foreground">pontos</span>
           </div>
@@ -6052,7 +6073,7 @@ function QuestionForm({
           )}
           {isEditing && (
             <p className="text-xs text-muted-foreground">
-              ID: <code className="bg-muted px-1.5 py-0.5 rounded font-mono">{id}</code> · Ordem: <strong>{order}</strong>
+              ID: <code className="bg-muted px-1.5 py-0.5 rounded font-mono">{id}</code> ? Ordem: <strong>{order}</strong>
             </p>
           )}
         </div>
@@ -6240,118 +6261,6 @@ function QuestionForm({
         </Button>
       </DialogFooter>
     </form>
-  );
-}
-
-// ============================================
-// BOOKINGS SECTION
-// ============================================
-
-function BookingsSection() {
-  const { data: bookings, isLoading } = useQuery<Booking[]>({
-    queryKey: ['/api/bookings']
-  });
-  const { toast } = useToast();
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, updates }: { id: number; updates: Partial<{ status: string; paymentStatus: string; totalPrice: string }> }) => {
-      const res = await apiRequest('PATCH', `/api/bookings/${id}`, updates);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/bookings'] });
-    },
-    onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await apiRequest('DELETE', `/api/bookings/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/bookings'] });
-      toast({ title: 'Booking deleted' });
-    },
-    onError: (error: Error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    }
-  });
-
-  const handleUpdate = (id: number, updates: Partial<{ status: string; paymentStatus: string; totalPrice: string }>) => {
-    updateMutation.mutate({ id, updates });
-  };
-
-  const handleDelete = (id: number) => {
-    deleteMutation.mutate(id);
-  };
-
-  if (isLoading && !bookings) {
-    return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Bookings</h1>
-          <p className="text-muted-foreground">Manage all customer bookings</p>
-        </div>
-        <Badge variant="secondary" className="text-lg px-4 py-2 border-0 bg-muted dark:text-white">
-          {bookings?.length || 0} Total
-        </Badge>
-      </div>
-
-      {bookings?.length === 0 ? (
-        <div className="p-12 text-center rounded-lg bg-card border border-border">
-          <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="font-semibold text-lg mb-2">No bookings yet</h3>
-          <p className="text-muted-foreground">Bookings will appear here when customers make them</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div className="hidden md:block bg-muted rounded-lg overflow-hidden transition-all">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-muted/50 dark:bg-slate-700/50 text-slate-500 text-xs uppercase tracking-wider font-semibold">
-                  <tr>
-                    <th className="px-6 py-4 text-left">Customer</th>
-                    <th className="px-6 py-4 text-left">Schedule</th>
-                    <th className="px-6 py-4 text-left">Address</th>
-                    <th className="px-6 py-4 text-left">Status</th>
-                    <th className="px-6 py-4 text-left">Payment</th>
-                    <th className="px-6 py-4 text-left">Amount</th>
-                    <th className="px-6 py-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-card/70 dark:bg-slate-800/70 divide-y divide-gray-200/70 dark:divide-slate-600/40">
-                  {bookings?.map((booking) => (
-                    <BookingRow 
-                      key={booking.id} 
-                      booking={booking} 
-                      onUpdate={handleUpdate}
-                      onDelete={handleDelete}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-          
-          <div className="md:hidden space-y-4">
-            {bookings?.map((booking) => (
-              <BookingMobileCard
-                key={booking.id}
-                booking={booking}
-                onUpdate={handleUpdate}
-                onDelete={handleDelete}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
   );
 }
 
@@ -6686,6 +6595,7 @@ interface ChatSettingsData {
   intakeObjectives?: IntakeObjective[];
   excludedUrlRules: UrlRule[];
   useFaqs?: boolean;
+  activeAiProvider?: string;
 }
 
 interface ConversationSummary {
@@ -6710,6 +6620,80 @@ interface ConversationMessage {
   content: string;
   createdAt: string;
   metadata?: Record<string, any> | null;
+}
+
+function ChatBubble({ message, assistantAvatar }: { message: ConversationMessage; assistantAvatar?: string }) {
+  const isAssistant = message.role === "assistant";
+
+  return (
+    <div className={`flex w-full ${isAssistant ? "justify-start" : "justify-end"}`}>
+      <div className={`flex max-w-[80%] gap-2 ${isAssistant ? "flex-row" : "flex-row-reverse"}`}>
+        
+        {/* Avatar Pequeno (Apenas para o assistente) */}
+        {isAssistant && (
+          <div className="h-8 w-8 rounded-full bg-slate-200 shrink-0 overflow-hidden mt-1 border border-slate-200 flex items-center justify-center">
+            {assistantAvatar ? (
+              <img src={assistantAvatar} alt="Assistant" className="h-full w-full object-cover" />
+            ) : (
+              <MessageSquare className="w-4 h-4 text-slate-500" />
+            )}
+          </div>
+        )}
+
+        {/* O Balão de Texto */}
+        <div
+          className={`p-3 text-sm shadow-sm relative ${
+            isAssistant
+              ? "bg-white text-slate-800 rounded-tr-xl rounded-br-xl rounded-bl-xl border border-slate-100" // Formato bolha esquerda
+              : "bg-blue-600 text-white rounded-tl-xl rounded-bl-xl rounded-br-xl" // Formato bolha direita
+          }`}
+        >
+          {/* Conteúdo da Mensagem */}
+          <div className="leading-relaxed whitespace-pre-wrap">
+            {renderMarkdown(message.content)}
+          </div>
+          
+          {/* Hora da mensagem */}
+          <span className={`text-[10px] block mt-1 ${
+            isAssistant ? "text-slate-400" : "text-blue-100"
+          }`}>
+            {format(new Date(message.createdAt), 'HH:mm')}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SortableObjectiveItem({ objective, onToggle }: { objective: IntakeObjective; onToggle: (enabled: boolean) => void }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: objective.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-3 p-2 bg-card border rounded-md mb-2">
+      <div {...attributes} {...listeners} className="cursor-grab text-muted-foreground hover:text-foreground">
+        <GripVertical className="w-4 h-4" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate">{objective.label}</p>
+        <p className="text-xs text-muted-foreground truncate">{objective.description}</p>
+      </div>
+      <Switch 
+        checked={objective.enabled}
+        onCheckedChange={onToggle}
+      />
+    </div>
+  );
 }
 
 function ChatSection() {
@@ -6751,6 +6735,8 @@ function ChatSection() {
   const [statusFilter, setStatusFilter] = useState<'open' | 'closed' | 'all'>('open');
   const [pageSize, setPageSize] = useState<10 | 20 | 50>(10);
   const [pageIndex, setPageIndex] = useState(0);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [newMessage, setNewMessage] = useState("");
 
   const { data: settings, isLoading: loadingSettings } = useQuery<ChatSettingsData>({
     queryKey: ['/api/chat/settings'],
@@ -7080,9 +7066,26 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas!"`;
   const closedConversations = conversations?.filter((conv) => conv.status === 'closed').length || 0;
   const visibleConversations = useMemo(() => {
     if (!conversations) return [];
-    if (statusFilter === 'all') return conversations;
-    return conversations.filter((conv) => conv.status === statusFilter);
-  }, [conversations, statusFilter]);
+    let result = conversations;
+    
+    // Filter by Status
+    if (statusFilter !== 'all') {
+      result = result.filter((conv) => conv.status === statusFilter);
+    }
+    
+    // Filter by Search Term
+    if (searchTerm) {
+      const lower = searchTerm.toLowerCase();
+      result = result.filter(c => 
+        (c.visitorName?.toLowerCase().includes(lower)) ||
+        (c.visitorEmail?.toLowerCase().includes(lower)) ||
+        (c.lastMessage?.toLowerCase().includes(lower)) ||
+        (c.id.includes(lower))
+      );
+    }
+    
+    return result;
+  }, [conversations, statusFilter, searchTerm]);
   const totalConversations = visibleConversations.length;
   const totalPages = Math.max(1, Math.ceil(totalConversations / pageSize));
   const clampedPageIndex = Math.min(pageIndex, totalPages - 1);
@@ -7107,700 +7110,391 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas!"`;
     }
   }, [messages, isMessagesLoading]);
 
+  const handleSendMessage = () => {
+    if (!newMessage.trim()) return;
+    toast({ title: "Sending messages not implemented yet", description: "This feature requires backend support." });
+    setNewMessage("");
+  };
+
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold">Chat</h1>
-        <p className="text-muted-foreground">Prioritize conversations, then open the settings drawer when needed.</p>
+    <div className="flex flex-col h-[calc(100vh-140px)] gap-4">
+      <div className="flex items-center justify-between shrink-0">
+        <div>
+          <h1 className="text-2xl font-bold">Inbox</h1>
+          <p className="text-muted-foreground">Manage your conversations.</p>
+        </div>
+        <div className="flex items-center gap-2">
+           <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
+             <SheetTrigger asChild>
+               <Button variant="outline" size="sm" className="gap-2">
+                 <Settings className="w-4 h-4" />
+                 Settings
+               </Button>
+             </SheetTrigger>
+             <SheetContent className="w-[400px] sm:w-[540px] overflow-y-auto">
+               <SheetHeader>
+                 <SheetTitle>Chat Settings</SheetTitle>
+                 <SheetDescription>Configure your AI assistant and widget.</SheetDescription>
+               </SheetHeader>
+               
+               <div className="mt-6 space-y-6 pb-10">
+                  {/* General Settings */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">General</h3>
+                    
+                    <div className="flex items-center justify-between p-3 border rounded-lg bg-card">
+                      <div className="space-y-0.5">
+                        <Label className="text-base">Enable Chat Widget</Label>
+                        <p className="text-xs text-muted-foreground">Show the chat bubble on your website</p>
+                      </div>
+                      <Switch 
+                        checked={settingsDraft.enabled}
+                        onCheckedChange={handleToggleChat}
+                      />
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label>Agent Name</Label>
+                      <Input 
+                        value={settingsDraft.agentName || ''} 
+                        onChange={(e) => updateField('agentName', e.target.value)}
+                        placeholder="e.g. Sarah"
+                      />
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label>Avatar</Label>
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 rounded-full overflow-hidden border bg-muted flex items-center justify-center relative group">
+                           {settingsDraft.agentAvatarUrl ? (
+                             <img src={settingsDraft.agentAvatarUrl} alt="Avatar" className="h-full w-full object-cover" />
+                           ) : (
+                             <User className="h-6 w-6 text-muted-foreground" />
+                           )}
+                           {isUploadingAvatar && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><Loader2 className="w-4 h-4 animate-spin text-white" /></div>}
+                        </div>
+                        <div className="flex-1">
+                           <Input 
+                             ref={avatarFileInputRef}
+                             type="file" 
+                             accept="image/*" 
+                             onChange={handleAvatarUpload}
+                             className="text-xs"
+                           />
+                           <p className="text-[10px] text-muted-foreground mt-1">Recommended: 100x100px PNG or JPG</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label>Welcome Message</Label>
+                      <Textarea 
+                        value={settingsDraft.welcomeMessage || ''} 
+                        onChange={(e) => updateField('welcomeMessage', e.target.value)}
+                        placeholder="Hi! How can I help you?"
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="h-px bg-border" />
+
+                  {/* AI Configuration */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">AI Configuration</h3>
+                    
+                    <div className="grid gap-2">
+                      <Label>System Prompt</Label>
+                      <Textarea
+                        value={settingsDraft.systemPrompt || ''}
+                        onChange={(e) => updateField('systemPrompt', e.target.value)}
+                        placeholder="Define the behavior of your assistant..."
+                        className="min-h-[150px] font-mono text-xs"
+                      />
+                      <p className="text-[10px] text-muted-foreground">
+                        Instructions for the AI model on how to behave and qualify leads.
+                      </p>
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label>Active AI Provider</Label>
+                      <Select
+                        value={settingsDraft.activeAiProvider || 'openai'}
+                        onValueChange={(val) => updateField('activeAiProvider', val)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select AI provider" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="openai">
+                            <div className="flex items-center gap-2">
+                              <SiOpenai className="w-4 h-4" />
+                              <span>OpenAI (GPT)</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="gemini">
+                            <div className="flex items-center gap-2">
+                              <SiGoogle className="w-4 h-4" />
+                              <span>Google Gemini</span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[10px] text-muted-foreground">
+                        Select which AI will respond to chat messages. Make sure the selected provider is enabled in Integrations.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 border rounded-lg bg-card">
+                      <div className="flex items-center gap-2">
+                        <SiOpenai className={clsx("w-5 h-5", openaiSettings?.enabled ? "text-green-600" : "text-slate-400")} />
+                        <div className="space-y-0.5">
+                          <span className="text-sm font-medium">OpenAI Integration</span>
+                          <p className="text-xs text-muted-foreground">{openaiSettings?.enabled ? 'Active and connected' : 'Not configured'}</p>
+                        </div>
+                      </div>
+                      {!openaiSettings?.enabled && (
+                         <Button variant="outline" size="sm" asChild>
+                           <Link href="/admin/integrations">Configure</Link>
+                         </Button>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 border rounded-lg bg-card">
+                      <div className="flex items-center gap-2">
+                        <SiGoogle className={clsx("w-5 h-5", geminiSettings?.enabled ? "text-green-600" : "text-slate-400")} />
+                        <div className="space-y-0.5">
+                          <span className="text-sm font-medium">Gemini Integration</span>
+                          <p className="text-xs text-muted-foreground">{geminiSettings?.enabled ? 'Active and connected' : 'Not configured'}</p>
+                        </div>
+                      </div>
+                      {!geminiSettings?.enabled && (
+                         <Button variant="outline" size="sm" asChild>
+                           <Link href="/admin/integrations">Configure</Link>
+                         </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="h-px bg-border" />
+
+                  {/* Lead Qualification */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                       <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Lead Qualification</h3>
+                       <Button variant="ghost" size="sm" onClick={() => setSettingsDraft(prev => ({ ...prev, intakeObjectives: DEFAULT_CHAT_OBJECTIVES }))}>
+                         Reset Defaults
+                       </Button>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <DndContext 
+                        sensors={objectivesSensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleObjectivesDragEnd}
+                      >
+                        <SortableContext 
+                          items={(settingsDraft.intakeObjectives || DEFAULT_CHAT_OBJECTIVES).map(o => o.id)}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          {(settingsDraft.intakeObjectives || DEFAULT_CHAT_OBJECTIVES).map((objective) => (
+                            <SortableObjectiveItem 
+                              key={objective.id} 
+                              objective={objective} 
+                              onToggle={(enabled) => toggleObjective(objective.id, enabled)}
+                            />
+                          ))}
+                        </SortableContext>
+                      </DndContext>
+                    </div>
+                  </div>
+               </div>
+             </SheetContent>
+           </Sheet>
+        </div>
       </div>
 
-      <Card className="shadow-sm border-0 bg-muted dark:bg-slate-800/70">
-        <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <CardTitle>Conversations</CardTitle>
-            <p className="text-sm text-muted-foreground">Review and respond first, then open the settings submenu if needed.</p>
+      <div className="flex flex-1 gap-4 overflow-hidden">
+        {/* Left Sidebar - Conversation List */}
+        <Card className="w-80 md:w-96 flex flex-col border-0 shadow-sm bg-muted/50 dark:bg-slate-900/50 shrink-0">
+          <div className="p-3 border-b border-border/50 space-y-3">
+             <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                   <Input 
+                     placeholder="Search..." 
+                     className="pl-9 h-9 bg-background" 
+                     value={searchTerm}
+                     onChange={(e) => setSearchTerm(e.target.value)}
+                   />
+                </div>
+                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => refetchConversations()}>
+                   <RotateCcw className={clsx("w-4 h-4", loadingConversations && "animate-spin")} />
+                </Button>
+             </div>
+             
+             <div className="flex gap-1 bg-muted p-1 rounded-md">
+                <button 
+                  onClick={() => setStatusFilter('open')}
+                  className={clsx("flex-1 text-xs font-medium py-1.5 rounded-sm transition-all", statusFilter === 'open' ? "bg-white dark:bg-slate-800 shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}
+                >
+                  Open ({openConversations})
+                </button>
+                <button 
+                  onClick={() => setStatusFilter('closed')}
+                  className={clsx("flex-1 text-xs font-medium py-1.5 rounded-sm transition-all", statusFilter === 'closed' ? "bg-white dark:bg-slate-800 shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}
+                >
+                  Archived ({closedConversations})
+                </button>
+             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <Select
-                value={statusFilter}
-                onValueChange={(val) => setStatusFilter(val as 'open' | 'closed' | 'all')}
-              >
-                <SelectTrigger className="w-[120px] h-9 bg-card/70 border border-border/60 shadow-none focus-visible:ring-0 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-              <SelectContent className="border-0 shadow-none bg-card text-foreground">
-                <SelectItem value="open">Open</SelectItem>
-                <SelectItem value="closed">Archived</SelectItem>
-                <SelectItem value="all">All</SelectItem>
-              </SelectContent>
-              </Select>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-9 min-w-[110px] border-0 bg-slate-200 hover:bg-slate-300 text-slate-950 font-semibold dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-100"
-              onClick={() => refetchConversations()}
-              disabled={loadingConversations}
-            >
-              {loadingConversations ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Refresh'}
-            </Button>
-            <div className="h-9 min-w-[110px] flex items-center justify-center bg-[#FFFF01] text-black font-bold rounded-md px-4 text-sm">
-              {paginatedConversations.length} shown
-            </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-9 min-w-[72px] rounded-md border border-border/60 bg-card/80 px-3 flex items-center gap-2">
-                <p className="text-[11px] text-muted-foreground">Open</p>
-                <p className="text-sm font-semibold text-foreground">{openConversations}</p>
-              </div>
-              <div className="h-9 min-w-[72px] rounded-md border border-border/60 bg-card/80 px-3 flex items-center gap-2">
-                <p className="text-[11px] text-muted-foreground">Archived</p>
-                <p className="text-sm font-semibold text-foreground">{closedConversations}</p>
-              </div>
-              <div className="h-9 min-w-[72px] rounded-md border border-border/60 bg-card/80 px-3 flex items-center gap-2">
-                <p className="text-[11px] text-muted-foreground">Total</p>
-                <p className="text-sm font-semibold text-foreground">{conversations?.length || 0}</p>
-              </div>
-            </div>
+          
+          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+             {loadingConversations ? (
+                <div className="flex justify-center py-8">
+                   <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+             ) : visibleConversations.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground text-sm">
+                   No conversations found.
+                </div>
+             ) : (
+                visibleConversations.map(conv => (
+                   <div 
+                      key={conv.id}
+                      onClick={() => openConversation(conv)}
+                      className={clsx(
+                        "p-3 rounded-lg cursor-pointer transition-colors border",
+                        selectedConversation?.id === conv.id 
+                          ? "bg-white dark:bg-slate-800 border-primary/20 shadow-sm ring-1 ring-primary/20" 
+                          : "bg-transparent border-transparent hover:bg-white/50 dark:hover:bg-slate-800/50"
+                      )}
+                   >
+                      <div className="flex justify-between items-start mb-1">
+                         <span className={clsx("font-semibold text-sm", selectedConversation?.id === conv.id ? "text-primary" : "text-foreground")}>
+                            {conv.visitorName || 'Guest'}
+                         </span>
+                         <span className="text-[10px] text-muted-foreground">
+                            {conv.lastMessageAt ? format(new Date(conv.lastMessageAt), 'MMM d, HH:mm') : ''}
+                         </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground line-clamp-2">
+                         {conv.lastMessage || 'No messages'}
+                      </p>
+                   </div>
+                ))
+             )}
           </div>
-        </CardHeader>
-        <CardContent>
-          {loadingConversations ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
-            </div>
-          ) : conversations && conversations.length > 0 ? (
-            <>
-            <div className="overflow-auto rounded-lg bg-muted dark:bg-slate-800/70">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                  <tr>
-                    <th className="px-4 py-3 text-left">Visitor</th>
-                    <th className="px-4 py-3 text-left">Source</th>
-                    <th className="px-4 py-3 text-left">Last Message</th>
-                    <th className="px-4 py-3 text-left">Updated</th>
-                    <th className="px-4 py-3 text-left">Status</th>
-                    <th className="px-4 py-3 text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-card/70 dark:bg-slate-800/60 divide-y divide-border/60 dark:divide-slate-700/60">
-                  {paginatedConversations.map((conv) => (
-                    <tr key={conv.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/50">
-                      <td className="px-4 py-3">
-                        <div className="font-medium">{conv.visitorName || 'Guest'}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {conv.visitorEmail || conv.visitorPhone || 'Unknown contact'}
-                        </div>
-                        <div className="text-[11px] text-muted-foreground/80">ID: {conv.id}</div>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">{conv.firstPageUrl || 'n/a'}</td>
-                      <td className="px-4 py-3 max-w-[280px]">
-                        <p className="line-clamp-2 text-sm">{conv.lastMessage || 'No messages yet'}</p>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">
-                        {conv.lastMessageAt ? format(new Date(conv.lastMessageAt), 'PP p') : format(new Date(conv.createdAt), 'PP p')}
-                      </td>
-                      <td className="px-4 py-3">{statusBadge(conv.status)}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-center gap-3">
-                      <Button size="sm" variant="ghost" className="min-w-[88px] h-8 justify-center text-sm font-semibold border-0 bg-slate-600 hover:bg-slate-700 text-white dark:bg-slate-600 dark:hover:bg-slate-500 dark:text-white" onClick={() => openConversation(conv)}>
-                        View
-                      </Button>
-                        <div className="flex items-center gap-1">
-                          {conv.status === 'open' ? (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-slate-100"
-                                  aria-label="Archive conversation"
-                                  data-testid={`button-archive-conversation-${conv.id}`}
-                                >
-                                  <Archive className="w-4 h-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Archive conversation?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    This conversation will be moved to archived. You can reopen it later.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => statusMutation.mutate({ id: conv.id, status: 'closed' })}
-                                  >
-                                    Archive
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          ) : (
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-slate-100"
-                              onClick={() => statusMutation.mutate({ id: conv.id, status: 'open' })}
-                              aria-label="Reopen conversation"
-                              data-testid={`button-reopen-conversation-${conv.id}`}
-                            >
-                              <RotateCcw className="w-4 h-4" />
-                            </Button>
-                          )}
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="text-red-500"
-                                data-testid={`button-delete-conversation-${conv.id}`}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This action cannot be undone. All messages in this conversation will be permanently deleted.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteMutation.mutate(conv.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {totalConversations > 10 && (
-              <div className="mt-3 flex flex-col gap-3 border-t border-border/60 pt-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="text-xs text-muted-foreground">
-                  Page {clampedPageIndex + 1} of {totalPages}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-3"
-                    onClick={() => setPageIndex((prev) => Math.max(0, prev - 1))}
-                    disabled={clampedPageIndex === 0}
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-3"
-                    onClick={() => setPageIndex((prev) => Math.min(totalPages - 1, prev + 1))}
-                    disabled={clampedPageIndex >= totalPages - 1}
-                  >
-                    Next
-                  </Button>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Rows</span>
-                  <Select
-                    value={String(pageSize)}
-                    onValueChange={(value) => setPageSize(Number(value) as 10 | 20 | 50)}
-                  >
-                    <SelectTrigger className="h-8 w-[90px] text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="10">10</SelectItem>
-                      <SelectItem value="20">20</SelectItem>
-                      <SelectItem value="50">50</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            )}
-            </>
+        </Card>
+
+        {/* Right Area - Chat Interface */}
+        <Card className="flex-1 flex flex-col border-0 shadow-sm overflow-hidden bg-background">
+          {selectedConversation ? (
+             <>
+               {/* Chat Header */}
+               <div className="h-16 border-b border-border/50 flex items-center justify-between px-6 bg-muted/30 shrink-0">
+                  <div className="flex items-center gap-3">
+                     <div className="h-9 w-9 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
+                        {(selectedConversation.visitorName?.[0] || 'G').toUpperCase()}
+                     </div>
+                     <div>
+                        <h3 className="font-semibold text-sm">{selectedConversation.visitorName || 'Guest'}</h3>
+                        <p className="text-xs text-muted-foreground">{selectedConversation.visitorEmail || selectedConversation.visitorPhone || 'No contact info'}</p>
+                     </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                     <Button 
+                       variant="ghost" 
+                       size="icon" 
+                       onClick={() => statusMutation.mutate({ id: selectedConversation.id, status: selectedConversation.status === 'open' ? 'closed' : 'open' })}
+                       title={selectedConversation.status === 'open' ? "Archive" : "Reopen"}
+                     >
+                        {selectedConversation.status === 'open' ? <Archive className="w-4 h-4" /> : <RotateCcw className="w-4 h-4" />}
+                     </Button>
+                     
+                     <AlertDialog>
+                       <AlertDialogTrigger asChild>
+                         <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600 hover:bg-red-50">
+                            <Trash2 className="w-4 h-4" />
+                         </Button>
+                       </AlertDialogTrigger>
+                       <AlertDialogContent>
+                         <AlertDialogHeader>
+                           <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
+                           <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                         </AlertDialogHeader>
+                         <AlertDialogFooter>
+                           <AlertDialogCancel>Cancel</AlertDialogCancel>
+                           <AlertDialogAction onClick={() => deleteMutation.mutate(selectedConversation.id)} className="bg-destructive">Delete</AlertDialogAction>
+                         </AlertDialogFooter>
+                       </AlertDialogContent>
+                     </AlertDialog>
+                  </div>
+               </div>
+
+               {/* Messages Area */}
+               <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50 dark:bg-slate-950/50">
+                  {isMessagesLoading ? (
+                     <div className="flex justify-center py-10">
+                        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                     </div>
+                  ) : messages.length === 0 ? (
+                     <div className="flex flex-col items-center justify-center h-full text-muted-foreground opacity-50">
+                        <MessageSquare className="w-10 h-10 mb-2" />
+                        <p>No messages yet</p>
+                     </div>
+                  ) : (
+                     messages.map(msg => (
+                        <ChatBubble 
+                           key={msg.id} 
+                           message={msg} 
+                           assistantAvatar={assistantAvatar} 
+                        />
+                     ))
+                  )}
+                  <div ref={messagesEndRef} />
+               </div>
+
+               {/* Input Area */}
+               <div className="p-4 bg-background border-t border-border/50 shrink-0">
+                  <div className="relative">
+                     <Textarea
+                       value={newMessage}
+                       onChange={(e) => setNewMessage(e.target.value)}
+                       placeholder="Type your message..."
+                       className="min-h-[60px] resize-none pr-12"
+                       onKeyDown={(e) => {
+                         if (e.key === 'Enter' && !e.shiftKey) {
+                           e.preventDefault();
+                           handleSendMessage();
+                         }
+                       }}
+                     />
+                     <Button 
+                       size="icon" 
+                       className="absolute right-2 bottom-2 h-8 w-8"
+                       onClick={handleSendMessage}
+                       disabled={!newMessage.trim()}
+                     >
+                       <Send className="w-4 h-4" />
+                     </Button>
+                  </div>
+               </div>
+             </>
           ) : (
-            <div className="p-8 text-center bg-card/80 dark:bg-slate-900/70 rounded-lg">
-              <p className="text-muted-foreground">
-                {conversations && conversations.length > 0
-                  ? 'No conversations match this filter.'
-                  : 'No conversations yet.'}
-              </p>
-            </div>
+             <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
+               <MessageSquare className="h-12 w-12 mb-4 opacity-20" />
+               <p>Select a conversation to start chatting</p>
+             </div>
           )}
-        </CardContent>
-      </Card>
+        </Card>
+      </div>
 
       {/* Calendar & Staff section removed - chat now uses dynamic form qualification */}
 
-      <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen} className="rounded-xl bg-card/80 dark:bg-slate-900/70 shadow-none border border-border/70 dark:border-slate-800/70">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div>
-            <p className="font-semibold text-base">Widget & assistant settings</p>
-            <p className="text-xs text-muted-foreground">Open only when you need to tweak the assistant.</p>
-          </div>
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="sm" className="gap-2">
-              {settingsOpen ? 'Hide' : 'Show'} settings
-              <ChevronDown className={clsx('w-4 h-4 transition-transform', settingsOpen && 'rotate-180')} />
-            </Button>
-          </CollapsibleTrigger>
-        </div>
-        <CollapsibleContent className="p-4 border-t border-border/70 dark:border-slate-800/70 space-y-6">
-          <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-            <Card className="border-0 bg-muted dark:bg-slate-800/60 shadow-none">
-              <CardHeader>
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <CardTitle>General Settings</CardTitle>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      {isSaving ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>Saving...</span>
-                        </>
-                      ) : lastSaved ? (
-                        <>
-                          <Check className="h-4 w-4 text-green-500" />
-                          <span>Auto-saved</span>
-                        </>
-                      ) : null}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Label className="text-sm">
-                      {settingsDraft.enabled ? 'Enabled' : 'Disabled'}
-                    </Label>
-                    <Switch
-                      checked={settingsDraft.enabled}
-                      onCheckedChange={handleToggleChat}
-                      disabled={loadingSettings || isSaving}
-                      data-testid="switch-chat-enabled"
-                    />
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground">Control availability, branding, and welcome message</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3 bg-card rounded-lg border border-border/70 dark:bg-slate-900/80 dark:border-slate-800/70 p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-full overflow-hidden bg-white/80 dark:bg-slate-800 flex items-center justify-center border border-border/60 dark:border-slate-700/60">
-                      {assistantAvatar ? (
-                        <img src={assistantAvatar} alt={assistantName} className="h-full w-full object-cover" />
-                      ) : (
-                        <MessageSquare className="w-4 h-4" />
-                      )}
-                    </div>
-                    <div className="text-sm">
-                      <p className="font-semibold">{assistantName}</p>
-                      <p className="text-xs text-muted-foreground">Defaults to company name and favicon.</p>
-                    </div>
-                  </div>
 
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="agent-name">Agent name</Label>
-                      <Input
-                        id="agent-name"
-                        value={settingsDraft.agentName}
-                        onChange={(e) => updateField('agentName', e.target.value)}
-                        placeholder={companySettings?.companyName || 'Assistant'}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="agent-avatar">Avatar (URL)</Label>
-                      <div className="flex flex-col gap-2">
-                        <div className="flex flex-col sm:flex-row gap-2">
-                          <Input
-                            id="agent-avatar"
-                            value={settingsDraft.agentAvatarUrl || ''}
-                            onChange={(e) => updateField('agentAvatarUrl', e.target.value)}
-                            placeholder={companySettings?.logoIcon || '/favicon.ico'}
-                          />
-                          <input
-                            ref={avatarFileInputRef}
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={handleAvatarUpload}
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => avatarFileInputRef.current?.click()}
-                            disabled={isUploadingAvatar || isSaving}
-                          >
-                            {isUploadingAvatar ? (
-                              <>
-                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                Uploading...
-                              </>
-                            ) : (
-                              'Upload'
-                            )}
-                          </Button>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          If empty, the admin favicon/logo is used. You can upload a custom image.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="avg-response-time">Average response time</Label>
-                  <div className="flex items-center justify-between rounded-md border border-border/70 bg-card px-3 py-2">
-                    <div>
-                      <p className="text-sm font-medium">
-                        {responseTimeLoading ? 'Calculating...' : responseTimeData?.formatted || 'No responses yet'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {responseTimeData?.samples ? `${responseTimeData.samples} reply samples` : 'Based on chat history'}
-                      </p>
-                    </div>
-                    <span className="text-xs text-muted-foreground">Auto</span>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between rounded-lg border border-border/70 bg-card/70 px-3 py-2">
-                    <div>
-                      <p className="text-sm font-medium">Low performance SMS alert</p>
-                      <p className="text-xs text-muted-foreground">Send Twilio SMS when response time is too high.</p>
-                    </div>
-                    <Switch
-                      checked={settingsDraft.lowPerformanceSmsEnabled ?? false}
-                      onCheckedChange={(checked) => updateField('lowPerformanceSmsEnabled', checked)}
-                      data-testid="switch-chat-low-performance-sms"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="low-performance-threshold">Alert threshold (seconds)</Label>
-                    <Input
-                      id="low-performance-threshold"
-                      type="number"
-                      min="30"
-                      step="30"
-                      value={settingsDraft.lowPerformanceThresholdSeconds ?? 300}
-                      onChange={(e) => updateField('lowPerformanceThresholdSeconds', Number(e.target.value) || 300)}
-                    />
-                    <p className="text-xs text-muted-foreground">Alert triggers when average response exceeds this.</p>
-                  </div>
-                </div>
 
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between rounded-lg border border-border/70 bg-card/70 px-3 py-2">
-                    <div>
-                      <p className="text-sm font-medium">Language selector</p>
-                      <p className="text-xs text-muted-foreground">Allow visitors to choose the chat language.</p>
-                    </div>
-                    <Switch
-                      checked={settingsDraft.languageSelectorEnabled ?? false}
-                      onCheckedChange={(checked) => updateField('languageSelectorEnabled', checked)}
-                      data-testid="switch-chat-language-selector"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="default-language">Default language</Label>
-                    <Select
-                      value={settingsDraft.defaultLanguage || 'en'}
-                      onValueChange={(value) => updateField('defaultLanguage', value)}
-                    >
-                      <SelectTrigger id="default-language">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="en">English</SelectItem>
-                        <SelectItem value="pt-BR">Portuguese (Brazil)</SelectItem>
-                        <SelectItem value="es">Spanish</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="welcome-message">Welcome message</Label>
-                  <Textarea
-                    id="welcome-message"
-                    value={settingsDraft.welcomeMessage}
-                    onChange={(e) => updateField('welcomeMessage', e.target.value)}
-                    rows={2}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="system-prompt">System prompt</Label>
-                  <Textarea
-                    id="system-prompt"
-                    value={settingsDraft.systemPrompt || ''}
-                    onChange={(e) => updateField('systemPrompt', e.target.value)}
-                    rows={20}
-                    placeholder={defaultSystemPrompt}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Controls assistant behavior sent to the AI. Leave blank to use the default prompt.
-                  </p>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label>URL Exclusions</Label>
-                      <p className="text-xs text-muted-foreground">Hide the widget on specific paths</p>
-                    </div>
-                    <Button size="sm" variant="outline" onClick={addRule} data-testid="button-add-url-rule">
-                      <Plus className="w-4 h-4 mr-1" /> Add Rule
-                    </Button>
-                  </div>
-                  {settingsDraft.excludedUrlRules?.length === 0 && (
-                    <div className="text-sm text-muted-foreground bg-card/80 dark:bg-slate-900/70 border border-border/60 dark:border-slate-800/60 rounded-md p-3">
-                      No rules yet. Add paths like <code>/admin</code>, <code>/checkout</code>, or <code>/privacy</code>.
-                    </div>
-                  )}
-                  <div className="space-y-3">
-                    {settingsDraft.excludedUrlRules?.map((rule, idx) => (
-                      <div key={`${rule.pattern}-${idx}`} className="grid gap-3 md:grid-cols-[1.4fr_1fr_auto] items-center">
-                        <Input
-                          placeholder="/admin"
-                          value={rule.pattern}
-                          onChange={(e) => updateRule(idx, 'pattern', e.target.value)}
-                        />
-                        <Select
-                          value={rule.match}
-                          onValueChange={(val) => updateRule(idx, 'match', val as UrlRule['match'])}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="contains">Contains</SelectItem>
-                            <SelectItem value="starts_with">Starts with</SelectItem>
-                            <SelectItem value="equals">Equals</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-9 w-9 text-red-500"
-                          onClick={() => removeRule(idx)}
-                          data-testid={`button-remove-rule-${idx}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-        <div className="space-y-4">
-          {(!openaiSettings?.enabled || !openaiSettings?.hasKey) && (
-            <Card className="border-amber-200 bg-amber-50 dark:bg-amber-900/20">
-              <CardContent className="pt-4">
-                <div className="flex items-start gap-3">
-                      <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-amber-800 dark:text-amber-200">OpenAI not configured</p>
-                        <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                          {!openaiSettings?.hasKey
-                            ? 'Add your OpenAI API key in Integrations → OpenAI to enable chat responses.'
-                            : 'Enable the OpenAI integration in Integrations → OpenAI to activate chat responses.'}
-                        </p>
-                      </div>
-                    </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Intake flow section removed - chat now follows dynamic Form Editor configuration */}
-          <Card className="border-0 bg-muted dark:bg-slate-800/60 shadow-none">
-            <CardHeader>
-              <CardTitle>Lead Qualification</CardTitle>
-              <p className="text-sm text-muted-foreground">The chat follows the same questions configured in the Form Editor.</p>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Go to <strong>Leads → Form Editor</strong> to customize the qualification questions.
-                Both the lead form and chat will use the same configuration.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 bg-muted dark:bg-slate-800/60 shadow-none">
-            <CardHeader>
-              <CardTitle>Widget Tips</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm text-muted-foreground">
-              <ul className="list-disc pl-4 space-y-1">
-                <li>Exclude payment or admin pages to avoid distractions.</li>
-                <li>Use the welcome message to set expectations (hours, response time).</li>
-                <li>Conversation status can be closed and reopened from the dashboard.</li>
-              </ul>
-            </CardContent>
-          </Card>
-
-          {settingsDraft.enabled && openaiSettings?.enabled && openaiSettings?.hasKey && (
-            <Card className="border-green-200 bg-green-50 dark:bg-green-900/20">
-              <CardContent className="pt-4">
-                <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
-                  <Check className="w-4 h-4" />
-                  <span className="font-medium text-sm">Chat is active</span>
-                </div>
-                <p className="text-xs text-green-600 dark:text-green-500 mt-1">
-                  Visitors can now chat with your AI assistant
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </div>
-        </CollapsibleContent>
-      </Collapsible>
-
-      <Dialog open={!!selectedConversation} onOpenChange={(open) => !open && setSelectedConversation(null)}>
-        <DialogContent className="w-[95vw] max-w-[640px] p-0 gap-0 overflow-hidden rounded-2xl border-0 bg-white dark:bg-[#0b1220] text-slate-900 dark:text-slate-100 shadow-2xl">
-          <DialogHeader className="border-0 bg-slate-50 dark:bg-[#0d1526] px-6 py-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <DialogTitle className="text-lg">Conversation</DialogTitle>
-                {selectedConversation && (
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                    <span>{visitorName}</span>
-                    {statusBadge(selectedConversation.status)}
-                    {selectedConversation.firstPageUrl && (
-                      <span className="rounded-full bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 text-[11px] text-slate-600 dark:text-slate-300">
-                        {selectedConversation.firstPageUrl}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-              {selectedConversation && conversationLastUpdated && (
-                <div className="text-xs text-slate-500 dark:text-slate-400">
-                  Updated {format(new Date(conversationLastUpdated), 'PP p')}
-                </div>
-              )}
-            </div>
-          </DialogHeader>
-
-          {isMessagesLoading ? (
-            <div className="flex justify-center py-12 bg-slate-200 dark:bg-[#0a1222]">
-              <Loader2 className="w-5 h-5 animate-spin text-blue-500 dark:text-blue-400" />
-            </div>
-          ) : (
-            <div className="max-h-[450px] overflow-auto bg-slate-200 dark:bg-[#0a1222] px-6 py-6 space-y-6">
-              {messages.map((msg) => {
-                const isAssistant = msg.role === 'assistant';
-                const nameLabel = isAssistant ? assistantName : visitorName;
-                return (
-                  <div
-                    key={msg.id}
-                    className={clsx('flex items-end gap-3', isAssistant ? 'justify-start' : 'justify-end')}
-                  >
-                    {isAssistant && (
-                      <div className="h-9 w-9 rounded-full bg-white dark:bg-[#0b1220] border border-slate-200 dark:border-slate-700 overflow-hidden flex items-center justify-center shadow-sm">
-                        {assistantAvatar ? (
-                          <img src={assistantAvatar} alt={assistantName} className="h-full w-full object-cover" />
-                        ) : (
-                          <MessageSquare className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                        )}
-                      </div>
-                    )}
-                    <div className="max-w-[78%]">
-                      <div
-                        className={clsx(
-                          'rounded-2xl px-4 py-3 text-sm shadow-sm',
-                          isAssistant
-                            ? 'bg-white dark:bg-[#111a2e] text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-800/80'
-                            : 'bg-[#3b82f6] text-white'
-                        )}
-                      >
-                        <div className="whitespace-pre-wrap leading-relaxed">{renderMarkdown(msg.content)}</div>
-                      </div>
-                      <div className={clsx('mt-1 flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400', !isAssistant && 'justify-end')}>
-                        <span className="font-medium">{nameLabel}</span>
-                        <span>•</span>
-                        <span>{format(new Date(msg.createdAt), 'PP p')}</span>
-                      </div>
-                      {msg.metadata?.pageUrl && (
-                        <div className={clsx('mt-1 text-[11px] text-slate-500 dark:text-slate-400', !isAssistant && 'text-right')}>
-                          Page: {msg.metadata.pageUrl}
-                        </div>
-                      )}
-                    </div>
-                    {!isAssistant && (
-                      <div className="h-9 w-9 rounded-full bg-[#3b82f6] text-white flex items-center justify-center shadow-sm">
-                        <User className="w-4 h-4" />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-              {messages.length === 0 && <p className="text-sm text-slate-500 dark:text-slate-400 text-center">No messages yet.</p>}
-              <div ref={messagesEndRef} />
-            </div>
-          )}
-
-          {selectedConversation && (
-            <div className="border-0 bg-slate-50 dark:bg-[#0d1526] px-6 py-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-2 rounded-full bg-slate-200 dark:bg-slate-800/70 px-4 py-2 text-xs text-slate-600 dark:text-slate-300">
-                  <MessageSquare className="w-4 h-4" />
-                  <span>Read-only transcript in admin.</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    className="bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-100"
-                    onClick={() =>
-                      statusMutation.mutate({
-                        id: selectedConversation.id,
-                        status: selectedConversation.status === 'open' ? 'closed' : 'open',
-                      })
-                    }
-                  >
-                    {selectedConversation.status === 'open' ? 'Archive' : 'Reopen'}
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" className="text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300">
-                        Delete
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
-                        <AlertDialogDescription>This will remove all messages for this conversation.</AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => selectedConversation && deleteMutation.mutate(selectedConversation.id)}
-                          className="bg-destructive text-destructive-foreground"
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
@@ -7851,191 +7545,6 @@ interface OpenAISettings {
   hasKey: boolean;
 }
 
-function AvailabilitySection() {
-  const { toast } = useToast();
-  const { data: settings, isLoading } = useQuery<any>({
-    queryKey: ['/api/company-settings']
-  });
-  const availabilityMenuTitle = menuItems.find((item) => item.id === 'availability')?.title ?? 'Availability & Business Hours';
-
-  const updateSettingsMutation = useMutation({
-    mutationFn: async (newSettings: any) => {
-      return apiRequest('PUT', '/api/company-settings', newSettings);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/company-settings'] });
-    },
-    onError: (error: Error) => {
-      toast({ title: 'Failed to update settings', description: error.message, variant: 'destructive' });
-    }
-  });
-
-  const updateField = (field: string, value: any) => {
-    if (!settings) return;
-    updateSettingsMutation.mutate({ ...settings, [field]: value });
-  };
-
-  if (isLoading || !settings) {
-    return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
-  }
-
-  const DEFAULT_BUSINESS_HOURS = {
-    monday: { isOpen: true, start: '08:00', end: '18:00' },
-    tuesday: { isOpen: true, start: '08:00', end: '18:00' },
-    wednesday: { isOpen: true, start: '08:00', end: '18:00' },
-    thursday: { isOpen: true, start: '08:00', end: '18:00' },
-    friday: { isOpen: true, start: '08:00', end: '18:00' },
-    saturday: { isOpen: false, start: '08:00', end: '18:00' },
-    sunday: { isOpen: false, start: '08:00', end: '18:00' }
-  };
-
-  const formatTimeDisplay = (time24: string) => {
-    const timeFormat = settings.timeFormat || '12h';
-    if (timeFormat === '24h') return time24;
-    const [hours, minutes] = time24.split(':').map(Number);
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const displayHours = hours % 12 || 12;
-    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
-  };
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">{availabilityMenuTitle}</h1>
-        <p className="text-muted-foreground">Manage your working hours and time display preferences</p>
-      </div>
-
-      <div className="grid gap-6">
-        <div className="bg-muted p-6 rounded-lg space-y-6 transition-all">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-primary" />
-            Booking Constraints
-          </h2>
-          <div>
-            <div className="max-w-xs space-y-2">
-              <Label htmlFor="minimumBookingValue">Minimum Booking Value ($)</Label>
-              <Input 
-                id="minimumBookingValue" 
-                type="number"
-                min="0"
-                step="0.01"
-                value={settings.minimumBookingValue || '0'} 
-                onChange={(e) => updateField('minimumBookingValue', e.target.value)}
-                placeholder="0.00"
-                data-testid="input-minimum-booking-value"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Customers must reach this cart total before proceeding to checkout. Set to 0 to disable.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-muted p-6 rounded-lg space-y-6 transition-all">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Clock className="w-5 h-5 text-primary" />
-            Time Display & Hours
-          </h2>
-          <div className="space-y-6">
-            <div className="max-w-xs space-y-2">
-              <Label htmlFor="timeFormat">Time Display Format</Label>
-              <Select 
-                value={settings.timeFormat || '12h'} 
-                onValueChange={(value) => updateField('timeFormat', value)}
-              >
-                <SelectTrigger id="timeFormat">
-                  <SelectValue placeholder="Select format" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="12h">12-hour (AM/PM)</SelectItem>
-                  <SelectItem value="24h">24-hour</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Choose how times are displayed in the booking calendar
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <Label className="text-base font-semibold">Business Hours by Day</Label>
-              <div className="space-y-3">
-                {(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const).map((day) => {
-                  const dayHours = (settings.businessHours || DEFAULT_BUSINESS_HOURS)[day];
-
-                  return (
-                    <div key={day} className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-card rounded-lg border border-border">
-                      <div className="flex items-center justify-between sm:justify-start gap-3 sm:w-auto">
-                        <div className="w-24 capitalize font-medium text-sm">{day}</div>
-                        <div className="flex items-center gap-2">
-                          <Switch
-                            checked={dayHours.isOpen}
-                            onCheckedChange={(checked) => {
-                              const newHours = { ...(settings.businessHours || DEFAULT_BUSINESS_HOURS) };
-                              newHours[day] = { ...newHours[day], isOpen: checked };
-                              updateField('businessHours', newHours);
-                            }}
-                          />
-                          <span className="text-sm text-muted-foreground w-12">{dayHours.isOpen ? 'Open' : 'Closed'}</span>
-                        </div>
-                      </div>
-                      {dayHours.isOpen && (
-                        <div className="flex items-center gap-2 flex-1">
-                          <Select
-                            value={dayHours.start}
-                            onValueChange={(value) => {
-                              const newHours = { ...(settings.businessHours || DEFAULT_BUSINESS_HOURS) };
-                              newHours[day] = { ...newHours[day], start: value };
-                              updateField('businessHours', newHours);
-                            }}
-                          >
-                            <SelectTrigger className="w-full sm:w-32">
-                              <SelectValue>{formatTimeDisplay(dayHours.start)}</SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              {Array.from({ length: 24 }, (_, h) => (
-                                <SelectItem key={h} value={`${h.toString().padStart(2, '0')}:00`}>
-                                  {formatTimeDisplay(`${h.toString().padStart(2, '0')}:00`)}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <span className="text-muted-foreground shrink-0">to</span>
-                          <Select
-                            value={dayHours.end}
-                            onValueChange={(value) => {
-                              const newHours = { ...(settings.businessHours || DEFAULT_BUSINESS_HOURS) };
-                              newHours[day] = { ...newHours[day], end: value };
-                              updateField('businessHours', newHours);
-                            }}
-                          >
-                            <SelectTrigger className="w-full sm:w-32">
-                              <SelectValue>{formatTimeDisplay(dayHours.end)}</SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              {Array.from({ length: 24 }, (_, h) => (
-                                <SelectItem key={h} value={`${h.toString().padStart(2, '0')}:00`}>
-                                  {formatTimeDisplay(`${h.toString().padStart(2, '0')}:00`)}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Set different business hours for each day of the week. Days marked as closed won't show any available time slots.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 interface TwilioSettings {
   enabled: boolean;
   accountSid: string;
@@ -8044,6 +7553,15 @@ interface TwilioSettings {
   toPhoneNumber: string;
   toPhoneNumbers: string[];
   notifyOnNewChat: boolean;
+}
+
+interface AnalyticsSettings {
+  gtmContainerId: string;
+  ga4MeasurementId: string;
+  facebookPixelId: string;
+  gtmEnabled: boolean;
+  ga4Enabled: boolean;
+  facebookPixelEnabled: boolean;
 }
 
 function TwilioSection() {
@@ -8265,7 +7783,7 @@ function TwilioSection() {
                 type="password"
                 value={settings.authToken}
                 onChange={(e) => setSettings(prev => ({ ...prev, authToken: e.target.value }))}
-                placeholder="••••••••••••••••••••••••••••••••"
+                placeholder="â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢"
                 data-testid="input-twilio-auth-token"
               />
             </div>
@@ -8397,17 +7915,9 @@ function TwilioSection() {
   );
 }
 
-interface AnalyticsSettings {
-  gtmContainerId: string;
-  ga4MeasurementId: string;
-  facebookPixelId: string;
-  gtmEnabled: boolean;
-  ga4Enabled: boolean;
-  facebookPixelEnabled: boolean;
-}
-
 function IntegrationsSection() {
   const { toast } = useToast();
+  const MASKED_OPENAI_KEY = '********';
   const [settings, setSettings] = useState<GHLSettings>({
     provider: 'gohighlevel',
     apiKey: '',
@@ -8426,6 +7936,20 @@ function IntegrationsSection() {
   const [isSavingOpenAI, setIsSavingOpenAI] = useState(false);
   const [openAITestResult, setOpenAITestResult] = useState<'idle' | 'success' | 'error'>('idle');
   const [openAITestMessage, setOpenAITestMessage] = useState<string | null>(null);
+
+  // Gemini Integration State
+  const [geminiSettings, setGeminiSettings] = useState<OpenAISettings>({
+    provider: 'gemini',
+    enabled: false,
+    model: 'gemini-1.5-flash',
+    hasKey: false
+  });
+  const [geminiApiKey, setGeminiApiKey] = useState('');
+  const [isTestingGemini, setIsTestingGemini] = useState(false);
+  const [isSavingGemini, setIsSavingGemini] = useState(false);
+  const [geminiTestResult, setGeminiTestResult] = useState<'idle' | 'success' | 'error'>('idle');
+  const [geminiTestMessage, setGeminiTestMessage] = useState<string | null>(null);
+
   const [analyticsSettings, setAnalyticsSettings] = useState<AnalyticsSettings>({
     gtmContainerId: '',
     ga4MeasurementId: '',
@@ -8450,6 +7974,10 @@ function IntegrationsSection() {
     queryKey: ['/api/integrations/openai']
   });
 
+  const { data: geminiSettingsData } = useQuery<OpenAISettings>({
+    queryKey: ['/api/integrations/gemini']
+  });
+
   const { data: companySettings } = useQuery<any>({
     queryKey: ['/api/company-settings']
   });
@@ -8466,12 +7994,29 @@ function IntegrationsSection() {
       if (openaiSettingsData.hasKey) {
         setOpenAITestResult('success');
         setOpenAITestMessage(openaiSettingsData.enabled ? 'OpenAI is enabled.' : 'Key saved. Run test to verify connection.');
+        setOpenAIApiKey((current) => current || MASKED_OPENAI_KEY);
       } else {
         setOpenAITestResult('idle');
         setOpenAITestMessage(null);
+        setOpenAIApiKey('');
       }
     }
   }, [openaiSettingsData]);
+
+  useEffect(() => {
+    if (geminiSettingsData) {
+      setGeminiSettings(geminiSettingsData);
+      if (geminiSettingsData.hasKey) {
+        setGeminiTestResult('success');
+        setGeminiTestMessage(geminiSettingsData.enabled ? 'Gemini is enabled.' : 'Key saved. Run test to verify connection.');
+        setGeminiApiKey((current) => current || MASKED_OPENAI_KEY);
+      } else {
+        setGeminiTestResult('idle');
+        setGeminiTestMessage(null);
+        setGeminiApiKey('');
+      }
+    }
+  }, [geminiSettingsData]);
 
   useEffect(() => {
     if (companySettings) {
@@ -8625,6 +8170,108 @@ function IntegrationsSection() {
     }
   };
 
+  const saveGeminiSettings = async (settingsToSave?: Partial<OpenAISettings> & { apiKey?: string }) => {
+    setIsSavingGemini(true);
+    try {
+      await apiRequest('PUT', '/api/integrations/gemini', {
+        enabled: settingsToSave?.enabled ?? geminiSettings.enabled,
+        model: settingsToSave?.model || geminiSettings.model,
+        apiKey: settingsToSave?.apiKey || geminiApiKey || undefined
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/integrations/gemini'] });
+      setGeminiApiKey('');
+      toast({ title: 'Gemini settings saved' });
+    } catch (error: any) {
+      toast({
+        title: 'Failed to save Gemini settings',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSavingGemini(false);
+    }
+  };
+
+  const handleToggleGemini = async (checked: boolean) => {
+    if (checked && !(geminiTestResult === 'success' || geminiSettings.hasKey)) {
+      toast({
+        title: 'Please run Test Connection',
+        description: 'You must have a successful test before enabling Gemini.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    const next = { ...geminiSettings, enabled: checked };
+    setGeminiSettings(next);
+    if (checked) {
+      setGeminiTestResult('success');
+      setGeminiTestMessage('Gemini is enabled.');
+    } else {
+      setGeminiTestResult('idle');
+      setGeminiTestMessage(null);
+    }
+    await saveGeminiSettings(next);
+  };
+
+  const testGeminiConnection = async () => {
+    setIsTestingGemini(true);
+    setGeminiTestResult('idle');
+    setGeminiTestMessage(null);
+    try {
+      const response = await fetch('/api/integrations/gemini/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiKey: geminiApiKey || undefined,
+          model: geminiSettings.model
+        }),
+        credentials: 'include'
+      });
+      const text = await response.text();
+      const contentType = response.headers.get('content-type') || '';
+      let result: any = {};
+      if (contentType.includes('application/json')) {
+        try {
+          result = text ? JSON.parse(text) : {};
+        } catch {
+          result = { success: false, message: text || 'Unexpected response from server' };
+        }
+      } else {
+        const snippet = (text || '').replace(/\s+/g, ' ').slice(0, 140);
+        result = {
+          success: false,
+          message: `Unexpected response (status ${response.status}, content-type: ${contentType || 'unknown'}). The API route may not be running. Try restarting the server and testing again. Snippet: ${snippet}`
+        };
+      }
+      if (result.success) {
+        setGeminiTestResult('success');
+        setGeminiTestMessage('Connection successful. You can now enable Gemini.');
+        setGeminiSettings(prev => ({ ...prev, hasKey: true }));
+        setGeminiApiKey('');
+        queryClient.invalidateQueries({ queryKey: ['/api/integrations/gemini'] });
+        toast({ title: 'Gemini connected', description: 'API key saved. You can now enable the integration.' });
+      } else {
+        setGeminiTestResult('error');
+        setGeminiTestMessage(result.message || 'Could not reach Gemini.');
+        toast({
+          title: 'Gemini test failed',
+          description: result.message || 'Could not reach Gemini',
+          variant: 'destructive'
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Gemini test failed',
+        description: error.message,
+        variant: 'destructive'
+      });
+      setGeminiTestResult('error');
+      setGeminiTestMessage(error.message || 'Connection failed.');
+    } finally {
+      setIsTestingGemini(false);
+    }
+  };
+
   const ghlTestButtonClass =
     ghlTestResult === 'success'
       ? 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200'
@@ -8636,6 +8283,13 @@ function IntegrationsSection() {
     openAITestResult === 'success'
       ? 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200'
       : openAITestResult === 'error'
+      ? 'bg-red-100 text-red-700 border-red-300 hover:bg-red-200'
+      : '';
+
+  const geminiTestButtonClass =
+    geminiTestResult === 'success'
+      ? 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200'
+      : geminiTestResult === 'error'
       ? 'bg-red-100 text-red-700 border-red-300 hover:bg-red-200'
       : '';
 
@@ -8721,7 +8375,7 @@ function IntegrationsSection() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold">{integrationsMenuTitle}</h1>
-        <p className="text-muted-foreground">Connect your booking system with external services</p>
+        <p className="text-muted-foreground">Connect your lead and chat workflows with external services</p>
       </div>
 
       <div className="space-y-4">
@@ -8760,7 +8414,17 @@ function IntegrationsSection() {
                   type="password"
                   value={openAIApiKey}
                   onChange={(e) => setOpenAIApiKey(e.target.value)}
-                  placeholder={openAISettings.hasKey ? '••••••••••••' : 'sk-...'}
+                  onFocus={() => {
+                    if (openAIApiKey === MASKED_OPENAI_KEY) {
+                      setOpenAIApiKey('');
+                    }
+                  }}
+                  onBlur={() => {
+                    if (!openAIApiKey && openAISettings.hasKey) {
+                      setOpenAIApiKey(MASKED_OPENAI_KEY);
+                    }
+                  }}
+                  placeholder="sk-..."
                   data-testid="input-openai-api-key"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -8812,6 +8476,109 @@ function IntegrationsSection() {
             {!openAISettings.hasKey && !openAISettings.enabled && (
               <div className="text-xs text-muted-foreground">
                 Add a key and test the connection to enable OpenAI responses.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 bg-muted">
+          <CardHeader>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <SiGoogle className="w-5 h-5 text-black dark:text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Google Gemini</CardTitle>
+                  <p className="text-sm text-muted-foreground">Power the chat assistant with Gemini responses</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {isSavingGemini && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                <Label className="text-sm">
+                  {geminiSettings.enabled ? 'Enabled' : 'Disabled'}
+                </Label>
+                <Switch
+                  checked={geminiSettings.enabled}
+                  onCheckedChange={handleToggleGemini}
+                  disabled={isSavingGemini}
+                  data-testid="switch-gemini-enabled"
+                />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="gemini-api-key">API Key</Label>
+                <Input
+                  id="gemini-api-key"
+                  type="password"
+                  value={geminiApiKey}
+                  onChange={(e) => setGeminiApiKey(e.target.value)}
+                  onFocus={() => {
+                    if (geminiApiKey === MASKED_OPENAI_KEY) {
+                      setGeminiApiKey('');
+                    }
+                  }}
+                  onBlur={() => {
+                    if (!geminiApiKey && geminiSettings.hasKey) {
+                      setGeminiApiKey(MASKED_OPENAI_KEY);
+                    }
+                  }}
+                  placeholder="AI..."
+                  data-testid="input-gemini-api-key"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Stored securely on the server. Not returned after saving.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="gemini-model">Model</Label>
+                <Select
+                  value={geminiSettings.model}
+                  onValueChange={(val) => setGeminiSettings(prev => ({ ...prev, model: val }))}
+                >
+                  <SelectTrigger id="gemini-model">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="gemini-1.5-flash">gemini-1.5-flash</SelectItem>
+                    <SelectItem value="gemini-1.5-pro">gemini-1.5-pro</SelectItem>
+                    <SelectItem value="gemini-2.0-flash">gemini-2.0-flash</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-4 border-t">
+              <Button
+                variant="outline"
+                className={geminiTestButtonClass}
+                onClick={testGeminiConnection}
+                disabled={isTestingGemini || (!geminiApiKey && !geminiSettings.hasKey)}
+                data-testid="button-test-gemini"
+              >
+                {isTestingGemini && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {geminiTestResult === 'success' ? 'Test OK' : geminiTestResult === 'error' ? 'Test Failed' : 'Test Connection'}
+              </Button>
+            </div>
+
+            {geminiSettings.enabled && (
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                  <Check className="w-4 h-4" />
+                  <span className="font-medium text-sm">Gemini is enabled.</span>
+                </div>
+                <p className="text-xs text-green-600 dark:text-green-500 mt-1">
+                  The chat assistant will use Gemini to respond to visitors
+                </p>
+              </div>
+            )}
+
+            {!geminiSettings.hasKey && !geminiSettings.enabled && (
+              <div className="text-xs text-muted-foreground">
+                Add a key and test the connection to enable Gemini responses.
               </div>
             )}
           </CardContent>
@@ -8910,7 +8677,7 @@ function IntegrationsSection() {
                   <span className="font-medium text-sm">Integration Active</span>
                 </div>
                 <p className="text-xs text-green-600 dark:text-green-500 mt-1">
-                  New bookings will be synced to GoHighLevel automatically
+                  New captured leads can be synced to GoHighLevel automatically
                 </p>
               </div>
             )}
@@ -9055,11 +8822,8 @@ function IntegrationsSection() {
           </p>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {[
-              { event: 'cta_click', desc: 'Button clicks (Book Now, etc.)' },
-              { event: 'add_to_cart', desc: 'Service added to cart' },
-              { event: 'remove_from_cart', desc: 'Service removed from cart' },
-              { event: 'begin_checkout', desc: 'Booking form started' },
-              { event: 'purchase', desc: 'Booking confirmed (conversion)' },
+              { event: 'cta_click', desc: 'Button clicks' },
+              { event: 'purchase', desc: 'Conversion tracked' },
               { event: 'view_item_list', desc: 'Services page viewed' },
             ].map(({ event, desc }) => (
               <div key={event} className="text-xs bg-muted/40 p-2 rounded">
@@ -9663,7 +9427,7 @@ function BlogSection({ resetSignal }: { resetSignal: number }) {
             className="min-h-[100px] border-0 bg-background"
             data-testid="textarea-blog-meta"
           />
-          <p className="text-xs text-muted-foreground">{formData.metaDescription.length}/155 characters · Used for SEO and blog cards</p>
+          <p className="text-xs text-muted-foreground">{formData.metaDescription.length}/155 characters ? Used for SEO and blog cards</p>
         </div>
         <div className="space-y-2">
           <Label>Feature Image</Label>
@@ -9734,7 +9498,7 @@ function BlogSection({ resetSignal }: { resetSignal: number }) {
                   }}
                   className="hover:text-destructive"
                 >
-                  ×
+                  ?
                 </button>
               </span>
             ))}
@@ -10198,3 +9962,6 @@ function BlogSection({ resetSignal }: { resetSignal: number }) {
     </div>
   );
 }
+
+
+

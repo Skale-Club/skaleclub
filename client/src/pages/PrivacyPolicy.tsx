@@ -57,7 +57,7 @@ export default function PrivacyPolicy() {
             <h4 className="font-semibold text-gray-900 mt-6 mb-3">Personal Information You Provide</h4>
             <ul className="list-disc space-y-2">
               <li><strong>Contact Information:</strong> Name, email address, phone number, and mailing address</li>
-              <li><strong>Booking Details:</strong> Service preferences, appointment dates and times, property information</li>
+              <li><strong>Service Details:</strong> Service preferences, campaign goals, and project information</li>
               <li><strong>Payment Information:</strong> Credit card numbers, billing address (processed securely through our payment providers)</li>
               <li><strong>Communications:</strong> Messages, feedback, and correspondence you send to us</li>
               <li><strong>Account Information:</strong> Username, password, and profile preferences</li>
@@ -79,7 +79,7 @@ export default function PrivacyPolicy() {
             <p>We use the information we collect for various purposes, including:</p>
             <ul className="list-disc pl-6 space-y-2 mt-4">
               <li><strong>Service Delivery:</strong> To schedule, provide, and manage your marketing services</li>
-              <li><strong>Communication:</strong> To send booking confirmations, reminders, and service updates</li>
+              <li><strong>Communication:</strong> To send service updates, reminders, and project notifications</li>
               <li><strong>Customer Support:</strong> To respond to your inquiries and resolve issues</li>
               <li><strong>Payment Processing:</strong> To process transactions and send invoices</li>
               <li><strong>Improvement:</strong> To analyze usage patterns and improve our services</li>
@@ -132,7 +132,7 @@ export default function PrivacyPolicy() {
 
             <h4 className="font-semibold text-gray-900 mt-6 mb-3">Types of Cookies We Use</h4>
             <ul className="list-disc space-y-2">
-              <li><strong>Essential Cookies:</strong> Required for the website to function properly (e.g., session management, shopping cart)</li>
+              <li><strong>Essential Cookies:</strong> Required for the website to function properly (e.g., session management)</li>
               <li><strong>Analytics Cookies:</strong> Help us understand how visitors interact with our website (e.g., Google Analytics)</li>
               <li><strong>Marketing Cookies:</strong> Used to deliver relevant advertisements and track campaign effectiveness</li>
             </ul>
@@ -171,7 +171,7 @@ export default function PrivacyPolicy() {
             </p>
             <ul className="list-disc pl-6 space-y-2 mt-4">
               <li>Account information is retained while your account remains active</li>
-              <li>Booking records are retained for 7 years for tax and legal purposes</li>
+              <li>Service records are retained for 7 years for tax and legal purposes</li>
               <li>Marketing preferences are retained until you opt out</li>
               <li>Analytics data is retained in anonymized form indefinitely</li>
             </ul>
