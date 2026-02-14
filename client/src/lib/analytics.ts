@@ -20,6 +20,12 @@ let config: AnalyticsConfig = {};
 let initializedProviders = { gtm: false, ga4: false, fbq: false };
 
 export function initAnalytics(settings: AnalyticsConfig) {
+  // Only initialize analytics in production
+  if (import.meta.env.DEV) {
+    console.log('[Analytics] Initialization skipped in development mode');
+    return;
+  }
+
   config = settings;
 
   if (settings.gtmEnabled && settings.gtmContainerId && !initializedProviders.gtm) {
@@ -147,8 +153,10 @@ export interface AnalyticsEventPayload {
 }
 
 export function trackEvent(eventName: AnalyticsEventName, payload: AnalyticsEventPayload = {}) {
+  // Skip analytics tracking in development mode
   if (import.meta.env.DEV) {
     console.log('[Analytics]', eventName, payload);
+    return;
   }
 
   if (config.gtmEnabled) {

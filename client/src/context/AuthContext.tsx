@@ -16,6 +16,7 @@ interface AuthContextType {
   loading: boolean;
   isSupabaseAuth: boolean;
   signIn: (email?: string, password?: string, provider?: 'google') => Promise<void>;
+  signUp: (email: string, password: string) => Promise<{ needsEmailConfirmation: boolean }>;
   signOut: () => void;
   checkSession: () => Promise<AdminSession | null>;
 }
@@ -179,6 +180,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = '/api/login';
   };
 
+  const signUp = async (emailArg: string, passwordArg: string) => {
+    if (!isSupabaseAuth) {
+      throw new Error('Sign up is only available in Supabase auth mode');
+    }
+
+    const supabase = await initSupabase();
+    const canonicalOrigin = getCanonicalOrigin();
+
+    const { data, error } = await supabase.auth.signUp({
+      email: emailArg,
+      password: passwordArg,
+      options: {
+        emailRedirectTo: `${canonicalOrigin}/admin/login`,
+      },
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const accessToken = data.session?.access_token;
+    if (accessToken) {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ accessToken }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Sign up failed');
+      }
+
+      await checkSession();
+      return { needsEmailConfirmation: false };
+    }
+
+    return { needsEmailConfirmation: true };
+  };
+
   const signOut = async () => {
     if (isSupabaseAuth) {
       try {
@@ -202,7 +244,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ isAdmin, email, firstName, lastName, loading, isSupabaseAuth, signIn, signOut, checkSession }}>
+    <AuthContext.Provider value={{ isAdmin, email, firstName, lastName, loading, isSupabaseAuth, signIn, signUp, signOut, checkSession }}>
       {children}
     </AuthContext.Provider>
   );

@@ -9,18 +9,20 @@ import { ArrowLeft, Loader2, Lock, Mail } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import type { CompanySettings } from '@shared/schema';
 
-export default function AdminLogin() {
+export default function AdminSignup() {
   const googleLogoUrl = 'https://commons.wikimedia.org/wiki/Special:FilePath/Google_Favicon_2025.svg';
-  const { isAdmin, loading, signIn, isSupabaseAuth } = useAdminAuth();
+  const { isAdmin, loading, signIn, signUp, isSupabaseAuth } = useAdminAuth();
   const { data: companySettings } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
   });
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
-  const [emailSubmitting, setEmailSubmitting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!loading && isAdmin) {
@@ -36,27 +38,12 @@ export default function AdminLogin() {
     );
   }
 
-  const handleSupabaseLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleGoogleSignup = async () => {
     setError('');
-    setEmailSubmitting(true);
-
-    try {
-      await signIn(email, password);
-    } catch (err: any) {
-      setError(err.message || 'Login failed');
-    } finally {
-      setEmailSubmitting(false);
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    setError('');
+    setSuccess('');
     setGoogleSubmitting(true);
 
     try {
-      // After OAuth callback, Supabase can sometimes land the user on "/" (Site URL fallback).
-      // Keep a small hint so the app can send admins into the admin panel post-login.
       try {
         window.sessionStorage.setItem('adminPostLoginRedirect', JSON.stringify({ to: '/admin', ts: Date.now() }));
       } catch {
@@ -64,13 +51,43 @@ export default function AdminLogin() {
       }
       await signIn(undefined, undefined, 'google');
     } catch (err: any) {
-      setError(err.message || 'Login failed');
+      setError(err.message || 'Google sign up failed');
       try {
         window.sessionStorage.removeItem('adminPostLoginRedirect');
       } catch {
         // Ignore storage errors.
       }
       setGoogleSubmitting(false);
+    }
+  };
+
+  const handleEmailSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const result = await signUp(email, password);
+      if (result.needsEmailConfirmation) {
+        setSuccess('Account created. Check your email to confirm your account before signing in.');
+      } else {
+        setLocation('/admin');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Sign up failed');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -103,10 +120,10 @@ export default function AdminLogin() {
               <Lock className={`h-6 w-6 text-primary ${companySettings?.logoIcon ? 'hidden' : ''}`} />
             </div>
             <CardTitle className="text-4xl leading-none tracking-tight text-slate-900">
-              {companySettings?.companyName || 'Admin Login'}
+              {companySettings?.companyName || 'Create Account'}
             </CardTitle>
-            <CardDescription className="pt-2 text-base text-slate-600">
-              Sign in to access the admin dashboard
+            <CardDescription className="pt-2 text-xl text-slate-600">
+              Create your account to access the admin dashboard
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5 px-5 pb-7 md:px-6">
@@ -117,13 +134,17 @@ export default function AdminLogin() {
                     {error}
                   </div>
                 )}
+                {success && (
+                  <div className="rounded-md bg-green-50 p-3 text-sm text-green-700">
+                    {success}
+                  </div>
+                )}
 
                 <Button
                   type="button"
-                  onClick={handleGoogleLogin}
+                  onClick={handleGoogleSignup}
                   className="h-12 w-full border border-slate-300 bg-white text-slate-900 hover:bg-slate-50"
                   disabled={googleSubmitting}
-                  data-testid="button-login-google"
                 >
                   {googleSubmitting ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -139,7 +160,7 @@ export default function AdminLogin() {
                   <div className="h-px flex-1 bg-slate-200" />
                 </div>
 
-                <form onSubmit={handleSupabaseLogin} className="space-y-5">
+                <form onSubmit={handleEmailSignup} className="space-y-5">
                   <div className="space-y-2">
                     <Label htmlFor="email" className="text-xl font-semibold text-slate-900">Email</Label>
                     <div className="relative">
@@ -170,36 +191,49 @@ export default function AdminLogin() {
                       />
                     </div>
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-password" className="text-xl font-semibold text-slate-900">Confirm Password</Label>
+                    <div className="relative">
+                      <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                      <Input
+                        id="confirm-password"
+                        type="password"
+                        placeholder="*****"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="h-12 border-slate-200 bg-slate-100/80 pl-10 text-base"
+                        required
+                      />
+                    </div>
+                  </div>
                   <Button
                     type="submit"
                     className="h-12 w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                    disabled={emailSubmitting}
-                    data-testid="button-login"
+                    disabled={submitting}
                   >
-                    {emailSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Sign In
+                    {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Sign Up
                   </Button>
                 </form>
                 <p className="text-center text-base text-slate-600">
-                  Don&apos;t have an account?{' '}
+                  Already have an account?{' '}
                   <button
                     type="button"
-                    onClick={() => setLocation('/admin/signup')}
+                    onClick={() => setLocation('/admin/login')}
                     className="font-medium text-[#2459A8]"
                   >
-                    Sign up
+                    Sign in
                   </button>
                 </p>
               </>
             ) : (
               <>
                 <p className="text-center text-sm text-muted-foreground">
-                  Use your Google account to sign in. Only authorized administrators can access this panel.
+                  Sign up is not available in this authentication mode. Please sign in with Google.
                 </p>
                 <Button
                   onClick={() => signIn()}
                   className="h-12 w-full border border-slate-300 bg-white text-slate-900 hover:bg-slate-50"
-                  data-testid="button-login"
                 >
                   <img src={googleLogoUrl} alt="" aria-hidden="true" className="mr-2 h-4 w-4" />
                   Continue with Google

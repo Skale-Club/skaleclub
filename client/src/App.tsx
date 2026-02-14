@@ -58,6 +58,7 @@ const Confirmation = lazy(() => import("@/pages/Confirmation").then(m => ({ defa
 const LeadThankYou = lazy(() => import("@/pages/LeadThankYou").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Admin = lazy(() => import("@/pages/Admin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const AdminLogin = lazy(() => import("@/pages/AdminLogin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const AdminSignup = lazy(() => import("@/pages/AdminSignup").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const TermsOfService = lazy(() => import("@/pages/TermsOfService").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Contact = lazy(() => import("@/pages/Contact").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
@@ -122,6 +123,7 @@ function Router() {
       <Suspense fallback={fallback}>
         <Switch>
           <Route path="/admin/login" component={AdminLogin} />
+          <Route path="/admin/signup" component={AdminSignup} />
           <Route path="/admin" component={Admin} />
           <Route path="/admin/:rest*" component={Admin} />
           <Route component={NotFound} />

@@ -46,36 +46,31 @@ function useMediaQuery(query: string): boolean {
 }
 
 export function ConsultingStepsSection({ section, onCtaClick }: Props) {
-  if (!section || section.enabled === false) return null;
-
   const isMobile = useMediaQuery('(max-width: 767px)');
 
   const sortedSteps = useMemo(() => {
-    const steps = (section.steps || []).length ? [...(section.steps || [])] : [];
+    const steps = (section?.steps || []).length ? [...(section?.steps || [])] : [];
     return steps
       .sort((a, b) => (a.order || 0) - (b.order || 0) || a.numberLabel.localeCompare(b.numberLabel))
       .map((step, index) => ({
         ...step,
         numberLabel: step.numberLabel || String(index + 1).padStart(2, '0'),
       }));
-  }, [section.steps]);
-
-  if (sortedSteps.length === 0) return null;
+  }, [section?.steps]);
 
   const stepsLoop = useMemo(() => [...sortedSteps, ...sortedSteps], [sortedSteps]);
-  const practicalBullets = section.practicalBullets?.length ? section.practicalBullets : [];
-  const ctaLabel = section.ctaButtonLabel || 'Agendar Conversa Gratuita';
-  const ctaHref = section.ctaButtonLink || '#lead-form';
-  const helperText = section.helperText;
-  const sectionId = section.sectionId || 'como-funciona';
-  const practicalTitle = section.practicalBlockTitle || 'Na prática';
-  const tagLabel = section.tagLabel || 'Consultoria';
-  const stepLabel = section.stepLabel || 'Etapa';
-  const whatWeDoLabel = section.whatWeDoLabel || 'O que fazemos';
-  const outcomeLabel = section.outcomeLabel || 'Você sai com';
-  const practicalBlockSubtitle = section.practicalBlockSubtitle || 'Como o trabalho acontece no dia a dia';
-  const nextStepLabel = section.nextStepLabel || 'Próximo passo';
-  const nextStepText = section.nextStepText || 'Agenda aberta para novos projetos';
+  const practicalBullets = section?.practicalBullets?.length ? section.practicalBullets : [];
+  const ctaLabel = section?.ctaButtonLabel || 'Agendar Conversa Gratuita';
+  const ctaHref = section?.ctaButtonLink || '#lead-form';
+  const helperText = section?.helperText;
+  const sectionId = section?.sectionId || 'como-funciona';
+  const practicalTitle = section?.practicalBlockTitle || 'Na prática';
+  const stepLabel = section?.stepLabel || 'Etapa';
+  const whatWeDoLabel = section?.whatWeDoLabel || 'O que fazemos';
+  const outcomeLabel = section?.outcomeLabel || 'Você sai com';
+  const practicalBlockSubtitle = section?.practicalBlockSubtitle || 'Como o trabalho acontece no dia a dia';
+  const nextStepLabel = section?.nextStepLabel || 'Próximo passo';
+  const nextStepText = section?.nextStepText || 'Agenda aberta para novos projetos';
 
   const [isPaused, setIsPaused] = useState(false);
   const trackRef = useRef<HTMLDivElement | null>(null);
@@ -288,6 +283,9 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
       }
     };
   }, [isMobile]);
+
+  if (!section || section.enabled === false) return null;
+  if (sortedSteps.length === 0) return null;
 
   const handleCta = (event: MouseEvent<HTMLAnchorElement>) => {
     if (onCtaClick) {
