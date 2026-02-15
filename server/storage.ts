@@ -1,10 +1,6 @@
 import { db, pool } from "./db.js";
 import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead } from "#shared/form.js";
 import {
-  categories,
-  subcategories,
-  services,
-  serviceAddons,
   formLeads,
   chatSettings,
   chatIntegrations,
@@ -15,11 +11,6 @@ import {
   faqs,
   integrationSettings,
   blogPosts,
-  blogPostServices,
-  type Category,
-  type Subcategory,
-  type Service,
-  type ServiceAddon,
   type CompanySettings,
   type ChatSettings,
   type ChatIntegrations,
@@ -33,10 +24,6 @@ import {
   type Faq,
   type IntegrationSettings,
   type BlogPost,
-  type BlogPostService,
-  type InsertCategory,
-  type InsertService,
-  type InsertServiceAddon,
   type InsertChatSettings,
   type InsertChatIntegrations,
   type InsertTwilioSettings,
@@ -47,8 +34,7 @@ import {
   type InsertIntegrationSettings,
   type InsertBlogPost,
 } from "#shared/schema.js";
-import { eq, and, or, ilike, gte, lte, lt, inArray, desc, asc, sql, ne } from "drizzle-orm";
-import { z } from "zod";
+import { eq, and, or, ilike, gte, lt, desc, asc, sql, ne } from "drizzle-orm";
 
 // Ensure optional GHL columns exist even if migration hasn't been applied yet
 let ensureGhlColumnsPromise: Promise<void> | null = null;
@@ -92,42 +78,7 @@ async function ensureTwilioSchema() {
   return ensureTwilioColumnsPromise;
 }
 
-export const insertSubcategorySchema = z.object({
-  categoryId: z.number(),
-  name: z.string().min(1),
-  slug: z.string().min(1),
-});
-export type InsertSubcategory = z.infer<typeof insertSubcategorySchema>;
-
 export interface IStorage {
-  // Categories & Services
-  getCategories(): Promise<Category[]>;
-  getCategoryBySlug(slug: string): Promise<Category | undefined>;
-  getServices(categoryId?: number, subcategoryId?: number, includeHidden?: boolean): Promise<Service[]>;
-  getService(id: number): Promise<Service | undefined>;
-  
-  // Subcategories
-  getSubcategories(categoryId?: number): Promise<Subcategory[]>;
-  createSubcategory(subcategory: InsertSubcategory): Promise<Subcategory>;
-  updateSubcategory(id: number, subcategory: Partial<InsertSubcategory>): Promise<Subcategory>;
-  deleteSubcategory(id: number): Promise<void>;
-  
-  // Service Addons
-  getServiceAddons(serviceId: number): Promise<Service[]>;
-  setServiceAddons(serviceId: number, addonServiceIds: number[]): Promise<void>;
-  getAddonRelationships(): Promise<ServiceAddon[]>;
-  
-  // Category CRUD
-  createCategory(category: InsertCategory): Promise<Category>;
-  updateCategory(id: number, category: Partial<InsertCategory>): Promise<Category>;
-  deleteCategory(id: number): Promise<void>;
-  
-  // Service CRUD
-  createService(service: InsertService): Promise<Service>;
-  updateService(id: number, service: Partial<InsertService>): Promise<Service>;
-  deleteService(id: number): Promise<void>;
-  reorderServices(order: { id: number; order: number }[]): Promise<void>;
-  
   // Company Settings
   getCompanySettings(): Promise<CompanySettings>;
   updateCompanySettings(settings: Partial<CompanySettings>): Promise<CompanySettings>;
@@ -178,8 +129,6 @@ export interface IStorage {
   createBlogPost(post: InsertBlogPost): Promise<BlogPost>;
   updateBlogPost(id: number, post: Partial<InsertBlogPost>): Promise<BlogPost>;
   deleteBlogPost(id: number): Promise<void>;
-  getBlogPostServices(postId: number): Promise<Service[]>;
-  setBlogPostServices(postId: number, serviceIds: number[]): Promise<void>;
   countPublishedBlogPosts(): Promise<number>;
 
   // Knowledge Base
@@ -210,159 +159,6 @@ export class DatabaseStorage implements IStorage {
       this.chatSchemaEnsured = false;
     }
   }
-
-  async getCategories(): Promise<Category[]> {
-    return await db.select().from(categories).orderBy(categories.order);
-  }
-
-  async getCategoryBySlug(slug: string): Promise<Category | undefined> {
-    const [category] = await db.select().from(categories).where(eq(categories.slug, slug));
-    return category;
-  }
-
-  async getServices(categoryId?: number, subcategoryId?: number, includeHidden: boolean = false): Promise<Service[]> {
-    if (subcategoryId) {
-      if (includeHidden) {
-        return await db
-          .select()
-          .from(services)
-          .where(and(eq(services.subcategoryId, subcategoryId), eq(services.isArchived, false)))
-          .orderBy(asc(services.order), asc(services.id));
-      }
-      return await db
-        .select()
-        .from(services)
-        .where(and(eq(services.subcategoryId, subcategoryId), eq(services.isHidden, false), eq(services.isArchived, false)))
-        .orderBy(asc(services.order), asc(services.id));
-    }
-    if (categoryId) {
-      if (includeHidden) {
-        return await db
-          .select()
-          .from(services)
-          .where(and(eq(services.categoryId, categoryId), eq(services.isArchived, false)))
-          .orderBy(asc(services.order), asc(services.id));
-      }
-      return await db
-        .select()
-        .from(services)
-        .where(and(eq(services.categoryId, categoryId), eq(services.isHidden, false), eq(services.isArchived, false)))
-        .orderBy(asc(services.order), asc(services.id));
-    }
-    if (includeHidden) {
-      return await db.select().from(services).where(eq(services.isArchived, false)).orderBy(asc(services.order), asc(services.id));
-    }
-    return await db
-      .select()
-      .from(services)
-      .where(and(eq(services.isHidden, false), eq(services.isArchived, false)))
-      .orderBy(asc(services.order), asc(services.id));
-  }
-
-  async getSubcategories(categoryId?: number): Promise<Subcategory[]> {
-    if (categoryId) {
-      return await db.select().from(subcategories).where(eq(subcategories.categoryId, categoryId));
-    }
-    return await db.select().from(subcategories);
-  }
-
-  async createSubcategory(subcategory: InsertSubcategory): Promise<Subcategory> {
-    const [newSubcategory] = await db.insert(subcategories).values(subcategory).returning();
-    return newSubcategory;
-  }
-
-  async updateSubcategory(id: number, subcategory: Partial<InsertSubcategory>): Promise<Subcategory> {
-    const [updated] = await db.update(subcategories).set(subcategory).where(eq(subcategories.id, id)).returning();
-    return updated;
-  }
-
-  async deleteSubcategory(id: number): Promise<void> {
-    await db.delete(subcategories).where(eq(subcategories.id, id));
-  }
-
-  async getServiceAddons(serviceId: number): Promise<Service[]> {
-    const addonRelations = await db.select().from(serviceAddons).where(eq(serviceAddons.serviceId, serviceId));
-    if (addonRelations.length === 0) return [];
-    
-    const addonIds = addonRelations.map(r => r.addonServiceId);
-    return await db
-      .select()
-      .from(services)
-      .where(and(inArray(services.id, addonIds), eq(services.isArchived, false)));
-  }
-
-  async setServiceAddons(serviceId: number, addonServiceIds: number[]): Promise<void> {
-    await db.delete(serviceAddons).where(eq(serviceAddons.serviceId, serviceId));
-    
-    if (addonServiceIds.length > 0) {
-      const values = addonServiceIds.map(addonId => ({
-        serviceId,
-        addonServiceId: addonId
-      }));
-      await db.insert(serviceAddons).values(values);
-    }
-  }
-
-  async getAddonRelationships(): Promise<ServiceAddon[]> {
-    return await db.select().from(serviceAddons);
-  }
-
-  async getService(id: number): Promise<Service | undefined> {
-    const [service] = await db
-      .select()
-      .from(services)
-      .where(and(eq(services.id, id), eq(services.isArchived, false)));
-    return service;
-  }
-
-  async createCategory(category: InsertCategory): Promise<Category> {
-    const [newCategory] = await db.insert(categories).values(category).returning();
-    return newCategory;
-  }
-
-  async updateCategory(id: number, category: Partial<InsertCategory>): Promise<Category> {
-    const [updated] = await db.update(categories).set(category).where(eq(categories.id, id)).returning();
-    return updated;
-  }
-
-  async deleteCategory(id: number): Promise<void> {
-    await db.delete(categories).where(eq(categories.id, id));
-  }
-
-  async createService(service: InsertService): Promise<Service> {
-    let nextOrder = service.order;
-    if (nextOrder === undefined || nextOrder === null) {
-      const [{ maxOrder }] = await db
-        .select({ maxOrder: sql<number>`coalesce(max(${services.order}), 0)` })
-        .from(services);
-      nextOrder = Number(maxOrder ?? 0) + 1;
-    }
-    const [newService] = await db.insert(services).values({ ...service, order: nextOrder }).returning();
-    return newService;
-  }
-
-  async updateService(id: number, service: Partial<InsertService>): Promise<Service> {
-    const [updated] = await db.update(services).set(service).where(eq(services.id, id)).returning();
-    return updated;
-  }
-
-  async deleteService(id: number): Promise<void> {
-    await db.transaction(async (tx) => {
-      await tx.delete(serviceAddons).where(eq(serviceAddons.serviceId, id));
-      await tx.delete(serviceAddons).where(eq(serviceAddons.addonServiceId, id));
-      await tx.delete(blogPostServices).where(eq(blogPostServices.serviceId, id));
-      await tx.update(services).set({ isArchived: true }).where(eq(services.id, id));
-    });
-  }
-
-  async reorderServices(order: { id: number; order: number }[]): Promise<void> {
-    await db.transaction(async (tx) => {
-      for (const item of order) {
-        await tx.update(services).set({ order: item.order }).where(eq(services.id, item.id));
-      }
-    });
-  }
-
   async getCompanySettings(): Promise<CompanySettings> {
     const [settings] = await db.select().from(companySettings);
     if (settings) return settings;
@@ -845,53 +641,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
-    const { serviceIds, ...postData } = post;
-    const [newPost] = await db.insert(blogPosts).values(postData).returning();
-    
-    if (serviceIds && serviceIds.length > 0) {
-      await this.setBlogPostServices(newPost.id, serviceIds);
-    }
-    
+    const [newPost] = await db.insert(blogPosts).values(post).returning();
     return newPost;
   }
 
   async updateBlogPost(id: number, post: Partial<InsertBlogPost>): Promise<BlogPost> {
-    const { serviceIds, ...postData } = post;
     const [updated] = await db.update(blogPosts)
-      .set({ ...postData, updatedAt: new Date() })
+      .set({ ...post, updatedAt: new Date() })
       .where(eq(blogPosts.id, id))
       .returning();
-    
-    if (serviceIds !== undefined) {
-      await this.setBlogPostServices(id, serviceIds);
-    }
-    
     return updated;
   }
 
   async deleteBlogPost(id: number): Promise<void> {
-    await db.delete(blogPostServices).where(eq(blogPostServices.blogPostId, id));
     await db.delete(blogPosts).where(eq(blogPosts.id, id));
-  }
-
-  async getBlogPostServices(postId: number): Promise<Service[]> {
-    const relations = await db.select().from(blogPostServices).where(eq(blogPostServices.blogPostId, postId));
-    if (relations.length === 0) return [];
-    
-    const serviceIds = relations.map(r => r.serviceId);
-    return await db.select().from(services).where(inArray(services.id, serviceIds));
-  }
-
-  async setBlogPostServices(postId: number, serviceIds: number[]): Promise<void> {
-    await db.delete(blogPostServices).where(eq(blogPostServices.blogPostId, postId));
-    
-    if (serviceIds.length > 0) {
-      const values = serviceIds.map(serviceId => ({
-        blogPostId: postId,
-        serviceId
-      }));
-      await db.insert(blogPostServices).values(values);
-    }
   }
 
   async countPublishedBlogPosts(): Promise<number> {
@@ -903,3 +666,4 @@ export class DatabaseStorage implements IStorage {
 }
 
 export const storage = new DatabaseStorage();
+

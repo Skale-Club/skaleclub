@@ -51,7 +51,6 @@ function PageWrapper({ children }: { children: React.ReactNode }) {
 // Lazy load page components for route transitions
 const NotFound = lazy(() => import("@/pages/not-found").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Home = lazy(() => import("@/pages/Home").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const Services = lazy(() => import("@/pages/Services").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const LeadThankYou = lazy(() => import("@/pages/LeadThankYou").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Admin = lazy(() => import("@/pages/Admin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const AdminLogin = lazy(() => import("@/pages/AdminLogin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
@@ -138,7 +137,6 @@ function Router() {
         <Suspense fallback={fallback}>
           <Switch>
             <Route path="/" component={Home} />
-            <Route path="/services" component={Services} />
             <Route path="/thankyou" component={LeadThankYou} />
             <Route path="/privacy-policy" component={PrivacyPolicy} />
             <Route path="/terms-of-service" component={TermsOfService} />

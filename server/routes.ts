@@ -9,12 +9,11 @@ import fs from "fs";
 import path from "path";
 import { getGeminiClient } from "./lib/gemini.js";
 import { getActiveAIClient, setRuntimeOpenAiKey, setRuntimeGeminiKey, getRuntimeOpenAiKey, getRuntimeGeminiKey } from "./lib/ai-provider.js";
-import { insertCategorySchema, insertServiceSchema, insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema, insertBlogPostSchema, insertChatSettingsSchema, insertChatIntegrationsSchema, formLeadProgressSchema } from "#shared/schema.js";
+import { insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema, insertBlogPostSchema, insertChatSettingsSchema, insertChatIntegrationsSchema, formLeadProgressSchema } from "#shared/schema.js";
 import type { LeadClassification, LeadStatus } from "#shared/schema.js";
 import { DEFAULT_FORM_CONFIG, calculateMaxScore, calculateFormScoresWithConfig, classifyLead, getSortedQuestions, KNOWN_FIELD_IDS } from "#shared/form.js";
 import type { FormAnswers } from "#shared/form.js";
 import type { FormConfig } from "#shared/schema.js";
-import { insertSubcategorySchema } from "./storage.js";
 import { testGHLConnection, getOrCreateGHLContact, getGHLCustomFields } from "./integrations/ghl.js";
 import { sendHotLeadNotification, sendLowPerformanceAlert, sendNewChatNotification } from "./integrations/twilio.js";
 import { registerStorageRoutes } from "./storage/storageAdapter.js";
@@ -638,149 +637,6 @@ export async function registerRoutes(
     }
   }
 
-  // Categories
-  app.get(api.categories.list.path, async (req, res) => {
-    const categories = await storage.getCategories();
-    res.json(categories);
-  });
-
-  app.get(api.categories.get.path, async (req, res) => {
-    const category = await storage.getCategoryBySlug(req.params.slug);
-    if (!category) return res.status(404).json({ message: "Category not found" });
-    res.json(category);
-  });
-
-  // Admin Category CRUD (protected routes)
-  app.post('/api/categories', requireAdmin, async (req, res) => {
-    try {
-      const validatedData = insertCategorySchema.parse(req.body);
-      const category = await storage.createCategory(validatedData);
-      res.status(201).json(category);
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({ message: 'Validation error', errors: err.errors });
-      }
-      res.status(400).json({ message: (err as Error).message });
-    }
-  });
-
-  app.put('/api/categories/reorder', requireAdmin, async (req, res) => {
-    try {
-      const orderData = z.array(z.object({
-        id: z.number(),
-        order: z.number()
-      })).parse(req.body.order);
-
-      for (const item of orderData) {
-        await storage.updateCategory(item.id, { order: item.order });
-      }
-
-      res.json({ success: true });
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({ message: 'Validation error', errors: err.errors });
-      }
-      res.status(400).json({ message: (err as Error).message });
-    }
-  });
-
-  app.put('/api/categories/:id', requireAdmin, async (req, res) => {
-    try {
-      const validatedData = insertCategorySchema.partial().parse(req.body);
-      const category = await storage.updateCategory(Number(req.params.id), validatedData);
-      res.json(category);
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({ message: 'Validation error', errors: err.errors });
-      }
-      res.status(400).json({ message: (err as Error).message });
-    }
-  });
-
-  app.delete('/api/categories/:id', requireAdmin, async (req, res) => {
-    try {
-      await storage.deleteCategory(Number(req.params.id));
-      res.json({ success: true });
-    } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
-    }
-  });
-
-  // Subcategories
-  app.get('/api/subcategories', async (req, res) => {
-    const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
-    const subcategories = await storage.getSubcategories(categoryId);
-    res.json(subcategories);
-  });
-
-  app.post('/api/subcategories', requireAdmin, async (req, res) => {
-    try {
-      const validatedData = insertSubcategorySchema.parse(req.body);
-      const subcategory = await storage.createSubcategory(validatedData);
-      res.status(201).json(subcategory);
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({ message: 'Validation error', errors: err.errors });
-      }
-      res.status(400).json({ message: (err as Error).message });
-    }
-  });
-
-  app.put('/api/subcategories/:id', requireAdmin, async (req, res) => {
-    try {
-      const validatedData = insertSubcategorySchema.partial().parse(req.body);
-      const subcategory = await storage.updateSubcategory(Number(req.params.id), validatedData);
-      res.json(subcategory);
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({ message: 'Validation error', errors: err.errors });
-      }
-      res.status(400).json({ message: (err as Error).message });
-    }
-  });
-
-  app.delete('/api/subcategories/:id', requireAdmin, async (req, res) => {
-    try {
-      await storage.deleteSubcategory(Number(req.params.id));
-      res.json({ success: true });
-    } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
-    }
-  });
-
-  // Services
-  app.get(api.services.list.path, async (req, res) => {
-    const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
-    const subcategoryId = req.query.subcategoryId ? Number(req.query.subcategoryId) : undefined;
-    const includeHidden = req.query.includeHidden === 'true';
-    const services = await storage.getServices(categoryId, subcategoryId, includeHidden);
-    res.json(services);
-  });
-
-  // Service Addons
-  app.get('/api/services/:id/addons', async (req, res) => {
-    const addons = await storage.getServiceAddons(Number(req.params.id));
-    res.json(addons);
-  });
-
-  app.put('/api/services/:id/addons', requireAdmin, async (req, res) => {
-    try {
-      const addonIds = z.array(z.number()).parse(req.body.addonIds);
-      await storage.setServiceAddons(Number(req.params.id), addonIds);
-      res.json({ success: true });
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({ message: 'Invalid addon IDs' });
-      }
-      res.status(400).json({ message: (err as Error).message });
-    }
-  });
-
-  app.get('/api/service-addons', requireAdmin, async (req, res) => {
-    const relationships = await storage.getAddonRelationships();
-    res.json(relationships);
-  });
-
   // Register upload/storage routes (environment-aware: Replit Object Storage or Supabase Storage)
   await registerStorageRoutes(app, requireAdmin);
 
@@ -1144,7 +1000,6 @@ Sitemap: ${canonicalUrl}/sitemap.xml
   app.get('/sitemap.xml', async (req, res) => {
     try {
       const settings = await storage.getCompanySettings();
-      const categories = await storage.getCategories();
       const blogPostsList = await storage.getPublishedBlogPosts(100, 0);
       const hostname = req.hostname || '';
       const canonicalUrl =
@@ -1161,27 +1016,11 @@ Sitemap: ${canonicalUrl}/sitemap.xml
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>${canonicalUrl}/services</loc>
-    <lastmod>${lastMod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
     <loc>${canonicalUrl}/blog</loc>
     <lastmod>${lastMod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>`;
-
-      for (const category of categories) {
-        sitemap += `
-  <url>
-    <loc>${canonicalUrl}/services/${category.slug}</loc>
-    <lastmod>${lastMod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>`;
-      }
 
       for (const post of blogPostsList) {
         const postDate = post.updatedAt ? new Date(post.updatedAt).toISOString().split('T')[0] : lastMod;
@@ -1200,61 +1039,6 @@ Sitemap: ${canonicalUrl}/sitemap.xml
       res.type('application/xml').send(sitemap);
     } catch (err) {
       res.status(500).send('Error generating sitemap');
-    }
-  });
-
-  // Admin Service CRUD (protected routes)
-  app.post('/api/services', requireAdmin, async (req, res) => {
-    try {
-      const validatedData = insertServiceSchema.parse(req.body);
-      const service = await storage.createService(validatedData);
-      res.status(201).json(service);
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({ message: 'Validation error', errors: err.errors });
-      }
-      res.status(400).json({ message: (err as Error).message });
-    }
-  });
-
-  // IMPORTANT: This route must come BEFORE /api/services/:id to avoid route conflict
-  app.put('/api/services/reorder', requireAdmin, async (req, res) => {
-    try {
-      const orderData = z.array(z.object({
-        id: z.number(),
-        order: z.number()
-      })).parse(req.body.order);
-
-      await storage.reorderServices(orderData);
-      const updated = await storage.getServices(undefined, undefined, true);
-      res.json(updated);
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({ message: 'Validation error', errors: err.errors });
-      }
-      res.status(400).json({ message: (err as Error).message });
-    }
-  });
-
-  app.put('/api/services/:id', requireAdmin, async (req, res) => {
-    try {
-      const validatedData = insertServiceSchema.partial().parse(req.body);
-      const service = await storage.updateService(Number(req.params.id), validatedData);
-      res.json(service);
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({ message: 'Validation error', errors: err.errors });
-      }
-      res.status(400).json({ message: (err as Error).message });
-    }
-  });
-
-  app.delete('/api/services/:id', requireAdmin, async (req, res) => {
-    try {
-      await storage.deleteService(Number(req.params.id));
-      res.json({ success: true });
-    } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
     }
   });
 
@@ -2375,15 +2159,6 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
     }
   });
 
-  app.get('/api/blog/:id/services', async (req, res) => {
-    try {
-      const services = await storage.getBlogPostServices(Number(req.params.id));
-      res.json(services);
-    } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
-    }
-  });
-
   app.get('/api/blog/:id/related', async (req, res) => {
     try {
       const limit = req.query.limit ? Number(req.query.limit) : 4;
@@ -2684,58 +2459,6 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
     }
   });
 
-  // Seed Data (non-blocking — failure must not crash the app)
-  try {
-    await seedDatabase();
-  } catch (err) {
-    console.error("seedDatabase failed (non-fatal):", err);
-  }
-
   return httpServer;
 }
 
-async function seedDatabase() {
-  const existingCategories = await storage.getCategories();
-  if (existingCategories.length > 0) return;
-
-  const upholstery = await storage.createCategory({
-    name: "Upholstery Cleaning",
-    slug: "upholstery-cleaning",
-    description: "Deep cleaning for your sofas, mattresses, and chairs.",
-    imageUrl: "https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?w=800&auto=format&fit=crop"
-  });
-
-  const carpet = await storage.createCategory({
-    name: "Carpet & Rug Cleaning",
-    slug: "carpet-cleaning",
-    description: "Revitalize your home with our carpet cleaning services.",
-    imageUrl: "https://images.unsplash.com/photo-1527513192501-1e9671d18f5d?w=800&auto=format&fit=crop"
-  });
-
-  await storage.createService({
-    categoryId: upholstery.id,
-    name: "3-Seater Sofa Cleaning",
-    description: "Deep clean for a standard 3-seater sofa.",
-    price: "120.00",
-    durationMinutes: 120, // 2 hours
-    imageUrl: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&auto=format&fit=crop"
-  });
-
-  await storage.createService({
-    categoryId: upholstery.id,
-    name: "Mattress Cleaning (Queen)",
-    description: "Hygienic steam clean for a Queen size mattress.",
-    price: "80.00",
-    durationMinutes: 60,
-    imageUrl: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&auto=format&fit=crop"
-  });
-
-  await storage.createService({
-    categoryId: carpet.id,
-    name: "Room Carpet Cleaning (up to 20sqm)",
-    description: "Standard room carpet cleaning.",
-    price: "50.00",
-    durationMinutes: 45,
-    imageUrl: "https://images.unsplash.com/photo-1562663474-6cbb3eaa4d14?w=800&auto=format&fit=crop"
-  });
-}

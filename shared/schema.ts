@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, numeric, timestamp, boolean, date, jsonb, uuid, pgEnum, uniqueIndex, index, check } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean, date, jsonb, uuid, pgEnum, uniqueIndex, index } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -29,43 +29,6 @@ export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
 // === TABLE DEFINITIONS ===
-
-export const categories = pgTable("categories", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  slug: text("slug").notNull().unique(),
-  description: text("description"),
-  imageUrl: text("image_url"), // For category card
-  order: integer("order").default(0),
-});
-
-export const subcategories = pgTable("subcategories", {
-  id: serial("id").primaryKey(),
-  categoryId: integer("category_id").references(() => categories.id).notNull(),
-  name: text("name").notNull(),
-  slug: text("slug").notNull().unique(),
-});
-
-export const services = pgTable("services", {
-  id: serial("id").primaryKey(),
-  categoryId: integer("category_id").references(() => categories.id).notNull(),
-  subcategoryId: integer("subcategory_id").references(() => subcategories.id),
-  name: text("name").notNull(),
-  description: text("description"),
-  price: numeric("price", { precision: 10, scale: 2 }).notNull(), // Fixed price
-  durationMinutes: integer("duration_minutes").notNull(), // Duration in minutes
-  imageUrl: text("image_url"),
-  isHidden: boolean("is_hidden").default(false), // Hidden services only appear as add-ons
-  isArchived: boolean("is_archived").default(false), // Soft delete flag
-  order: integer("order").default(0),
-});
-
-// Service add-on relationships (e.g., Sofa can suggest Ottoman as add-on)
-export const serviceAddons = pgTable("service_addons", {
-  id: serial("id").primaryKey(),
-  serviceId: integer("service_id").references(() => services.id).notNull(), // The main service
-  addonServiceId: integer("addon_service_id").references(() => services.id).notNull(), // The add-on service
-});
 
 // GoHighLevel Integration Settings
 export const integrationSettings = pgTable("integration_settings", {
@@ -222,10 +185,6 @@ export const formLeads = pgTable("form_leads", {
 
 // === SCHEMAS ===
 
-export const insertCategorySchema = createInsertSchema(categories).omit({ id: true });
-export const insertSubcategorySchema = createInsertSchema(subcategories).omit({ id: true });
-export const insertServiceSchema = createInsertSchema(services).omit({ id: true });
-export const insertServiceAddonSchema = createInsertSchema(serviceAddons).omit({ id: true });
 export const insertIntegrationSettingsSchema = createInsertSchema(integrationSettings).omit({ 
   id: true, 
   createdAt: true, 
@@ -308,10 +267,6 @@ export const formLeadProgressSchema = z.object({
 
 // === TYPES ===
 
-export type Category = typeof categories.$inferSelect;
-export type Subcategory = typeof subcategories.$inferSelect;
-export type Service = typeof services.$inferSelect;
-export type ServiceAddon = typeof serviceAddons.$inferSelect;
 export type IntegrationSettings = typeof integrationSettings.$inferSelect;
 export type ChatSettings = typeof chatSettings.$inferSelect;
 export type ChatIntegrations = typeof chatIntegrations.$inferSelect;
@@ -322,9 +277,6 @@ export type FormLead = typeof formLeads.$inferSelect;
 export type LeadClassification = typeof leadClassificationEnum.enumValues[number];
 export type LeadStatus = typeof leadStatusEnum.enumValues[number];
 
-export type InsertCategory = z.infer<typeof insertCategorySchema>;
-export type InsertService = z.infer<typeof insertServiceSchema>;
-export type InsertServiceAddon = z.infer<typeof insertServiceAddonSchema>;
 export type InsertIntegrationSettings = z.infer<typeof insertIntegrationSettingsSchema>;
 export type InsertChatSettings = z.infer<typeof insertChatSettingsSchema>;
 export type InsertChatIntegrations = z.infer<typeof insertChatIntegrationsSchema>;
@@ -507,19 +459,11 @@ export const blogPosts = pgTable("blog_posts", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Junction table for blog posts and services (related products)
-export const blogPostServices = pgTable("blog_post_services", {
-  id: serial("id").primaryKey(),
-  blogPostId: integer("blog_post_id").references(() => blogPosts.id).notNull(),
-  serviceId: integer("service_id").references(() => services.id).notNull(),
-});
-
 export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({ 
   id: true, 
   createdAt: true, 
   updatedAt: true 
 }).extend({
-  serviceIds: z.array(z.number()).optional(),
   publishedAt: z.union([z.string(), z.date(), z.null()]).optional().transform(val => {
     if (!val) return null;
     if (val instanceof Date) return val;
@@ -528,5 +472,4 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({
 });
 
 export type BlogPost = typeof blogPosts.$inferSelect;
-export type BlogPostService = typeof blogPostServices.$inferSelect;
 export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;

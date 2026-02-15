@@ -13,11 +13,10 @@ import {
   Facebook, 
   Twitter, 
   Linkedin,
-  Share2,
-  ShoppingCart
+  Share2
 } from 'lucide-react';
 import { format } from 'date-fns';
-import type { BlogPost, Service, CompanySettings } from '@shared/schema';
+import type { BlogPost, CompanySettings } from '@shared/schema';
 
 export default function BlogPostPage() {
   const params = useParams<{ slug: string }>();
@@ -33,12 +32,6 @@ export default function BlogPostPage() {
   const { data: relatedPosts } = useQuery<BlogPost[]>({
     queryKey: ['/api/blog', post?.id, 'related'],
     queryFn: () => fetch(`/api/blog/${post?.id}/related?limit=2`).then(r => r.json()),
-    enabled: !!post?.id,
-  });
-
-  const { data: relatedServices } = useQuery<Service[]>({
-    queryKey: ['/api/blog', post?.id, 'services'],
-    queryFn: () => fetch(`/api/blog/${post?.id}/services`).then(r => r.json()),
     enabled: !!post?.id,
   });
 
@@ -270,52 +263,6 @@ export default function BlogPostPage() {
                   </Card>
                 )}
 
-                {relatedServices && relatedServices.length > 0 && (
-                  <Card className="border-0 shadow-none rounded-none bg-transparent p-0 pt-8">
-                    <CardHeader className="p-0 pb-3">
-                      <CardTitle className="text-lg" data-testid="text-related-services-title">
-                        Related Services
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4 p-0">
-                      {relatedServices.map(service => (
-                        <div key={service.id} className="flex gap-3 items-stretch" data-testid={`card-service-${service.id}`}>
-                          {service.imageUrl ? (
-                            <div className="w-20 aspect-[4/3] overflow-hidden rounded flex-shrink-0">
-                              <img
-                                src={service.imageUrl}
-                                alt={service.name}
-                                className="w-full h-full object-cover"
-                                data-testid={`img-service-${service.id}`}
-                              />
-                            </div>
-                          ) : (
-                            <div className="w-20 aspect-[4/3] bg-muted rounded flex items-center justify-center flex-shrink-0">
-                              <ShoppingCart className="w-4 h-4 text-muted-foreground" />
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0 flex flex-col">
-                            <h4 className="text-base font-semibold text-foreground line-clamp-1" data-testid={`text-service-name-${service.id}`}>
-                              {service.name}
-                            </h4>
-                            <p className="text-sm font-bold text-primary" data-testid={`text-service-price-${service.id}`}>
-                              ${service.price}
-                            </p>
-                            <Link href="/services">
-                              <button
-                                className="mt-auto h-7 text-xs px-3 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 transition-colors"
-                                data-testid={`button-view-service-${service.id}`}
-                              >
-                                View Services
-                              </button>
-                            </Link>
-                          </div>
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                )}
-
                 <Card className="border-0 shadow-none rounded-none bg-transparent p-0 pt-8">
                   <CardHeader className="p-0 pb-3">
                     <CardTitle className="text-lg">Need Marketing Services?</CardTitle>
@@ -324,9 +271,9 @@ export default function BlogPostPage() {
                     <p className="text-sm text-muted-foreground mb-4">
                       Book our professional marketing services today and watch your business grow.
                     </p>
-                    <Link href="/services">
+                    <Link href="/contact">
                       <Button className="w-full" data-testid="button-browse-services">
-                        Browse Services
+                        Contact Us
                       </Button>
                     </Link>
                   </CardContent>

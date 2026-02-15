@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { categories, services, formLeadProgressSchema, formLeads, leadStatusEnum, leadClassificationEnum } from './schema.js';
+import { formLeadProgressSchema, formLeads, leadStatusEnum, leadClassificationEnum } from './schema.js';
 
 const urlRuleSchema = z.object({
   pattern: z.string(),
@@ -34,35 +34,6 @@ export const errorSchemas = {
 };
 
 export const api = {
-  categories: {
-    list: {
-      method: 'GET' as const,
-      path: '/api/categories',
-      responses: {
-        200: z.array(z.custom<typeof categories.$inferSelect>()),
-      },
-    },
-    get: {
-      method: 'GET' as const,
-      path: '/api/categories/:slug',
-      responses: {
-        200: z.custom<typeof categories.$inferSelect>(),
-        404: errorSchemas.notFound,
-      },
-    },
-  },
-  services: {
-    list: {
-      method: 'GET' as const,
-      path: '/api/services',
-      input: z.object({
-        categoryId: z.coerce.number().optional(),
-      }).optional(),
-      responses: {
-        200: z.array(z.custom<typeof services.$inferSelect>()),
-      },
-    },
-  },
   chat: {
     config: {
       method: 'GET' as const,
