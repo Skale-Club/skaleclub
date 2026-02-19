@@ -10,8 +10,10 @@ import { trackCTAClick } from "@/lib/analytics";
 import { LeadFormModal } from "@/components/LeadFormModal";
 import { ConsultingStepsSection } from "@/components/ConsultingStepsSection";
 import { DEFAULT_HOMEPAGE_CONTENT } from "@/lib/homepageDefaults";
+import { useTranslation } from "@/hooks/useTranslation";
 
 function BlogSection({ content }: { content: HomepageContent['blogSection'] }) {
+  const { t } = useTranslation();
   const sectionContent = {
     ...(content || {}),
   };
@@ -37,12 +39,12 @@ function BlogSection({ content }: { content: HomepageContent['blogSection'] }) {
         <div className="flex items-center justify-between mb-12">
           <div>
             <h2 className="text-3xl md:text-4xl font-bold text-[#1D1D1D] mb-2" data-testid="text-blog-section-title">
-              {sectionContent.title}
+              {t(sectionContent.title || '')}
             </h2>
-            <p className="text-slate-600 text-lg">{sectionContent.subtitle}</p>
+            <p className="text-slate-600 text-lg">{t(sectionContent.subtitle || '')}</p>
           </div>
           <Link href="/blog" className="hidden md:flex items-center gap-2 text-primary font-semibold hover:underline" data-testid="link-view-all-blog">
-            {sectionContent.viewAllText}
+            {t(sectionContent.viewAllText || '')}
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
@@ -80,7 +82,7 @@ function BlogSection({ content }: { content: HomepageContent['blogSection'] }) {
                   </p>
                   <div className="mt-4 pt-4 border-t border-gray-100">
                     <span className="text-primary font-semibold text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
-                      {sectionContent.readMoreText}
+                      {t(sectionContent.readMoreText || '')}
                       <ArrowRight className="w-4 h-4" />
                     </span>
                   </div>
@@ -92,7 +94,7 @@ function BlogSection({ content }: { content: HomepageContent['blogSection'] }) {
 
         <div className="mt-10 text-center md:hidden">
           <Link href="/blog" className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white font-bold rounded-full hover:bg-primary/90 transition-colors" data-testid="link-view-all-blog-mobile">
-            {sectionContent.viewAllText}
+            {t(sectionContent.viewAllText || '')}
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
@@ -102,6 +104,7 @@ function BlogSection({ content }: { content: HomepageContent['blogSection'] }) {
 }
 
 export default function Home() {
+  const { t } = useTranslation();
   const { data: companySettings } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
   });
@@ -182,11 +185,11 @@ export default function Home() {
               ) : null}
               <h1 className="text-[11vw] sm:text-5xl md:text-6xl lg:text-4xl xl:text-5xl font-bold mb-3 lg:mb-6 font-display leading-[1.05] sm:leading-[1.1]">
                 {companySettings?.heroTitle ? (
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">{companySettings.heroTitle}</span>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">{t(companySettings.heroTitle)}</span>
                 ) : null}
               </h1>
               <p className="text-base sm:text-xl text-blue-50/80 mb-4 lg:mb-8 leading-relaxed max-w-xl">
-                {companySettings?.heroSubtitle || ""}
+                {companySettings?.heroSubtitle ? t(companySettings.heroSubtitle) : ""}
               </p>
               <div className="flex flex-col sm:flex-row gap-3 lg:gap-5 flex-wrap">
                 {companySettings?.ctaText ? (
@@ -199,7 +202,7 @@ export default function Home() {
                     }}
                     data-testid="button-hero-form"
                   >
-                    {companySettings?.ctaText}
+                    {t(companySettings.ctaText)}
                   </button>
                 ) : null}
               </div>
@@ -256,8 +259,8 @@ export default function Home() {
                     <Icon className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-[#1D1D1D]">{feature.title}</h3>
-                    <p className="text-sm text-slate-500">{feature.description}</p>
+                    <h3 className="font-bold text-[#1D1D1D]">{t(feature.title)}</h3>
+                    <p className="text-sm text-slate-500">{t(feature.description)}</p>
                   </div>
                 </div>
               );
@@ -285,10 +288,10 @@ export default function Home() {
         <div className="w-full">
           <div className="container-custom mx-auto mb-16 text-center">
             <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white">
-              {reviewsTitle}
+              {t(reviewsTitle)}
             </h2>
             <p className="text-slate-300 max-w-2xl mx-auto text-lg">
-              {reviewsSubtitle}
+              {t(reviewsSubtitle)}
             </p>
           </div>
           {reviewsEmbedUrl ? (

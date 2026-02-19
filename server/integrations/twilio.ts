@@ -156,10 +156,10 @@ export async function sendHotLeadNotification(
     if (!validation.success) return validation;
 
     const { config } = validation;
-    const cleanName = lead.nome?.trim() || "Sem nome";
-    const cleanPhone = lead.telefone?.trim() || "Sem telefone";
+    const cleanName = lead.nome?.trim() || "No name";
+    const cleanPhone = lead.telefone?.trim() || "No phone";
     const companyLabel = companyName?.trim() || config.companyName || "My Company";
-    const message = `🧲 NEW LEAD | ${companyLabel} | Consultoria | ${cleanName} | ${cleanPhone}`;
+    const message = `🧲 NEW LEAD | ${companyLabel} | ${cleanName} | ${cleanPhone}`;
 
     return await sendSms(config, message);
   } catch (error: any) {

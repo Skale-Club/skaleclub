@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { LanguageProvider } from "@/context/LanguageContext";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useSEO } from "@/hooks/use-seo";
@@ -163,16 +164,19 @@ function App() {
       <ThemeProvider>
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
-            <AuthProvider>
-              <SEOProvider>
-                <AnalyticsProvider>
-                  <Router />
-                </AnalyticsProvider>
-              </SEOProvider>
-            </AuthProvider>
+            <LanguageProvider>
+              <AuthProvider>
+                <SEOProvider>
+                  <AnalyticsProvider>
+                    <Router />
+                  </AnalyticsProvider>
+                </SEOProvider>
+              </AuthProvider>
+            </LanguageProvider>
           </TooltipProvider>
         </QueryClientProvider>
       </ThemeProvider>
+      <Toaster />
     </InitialLoadContext.Provider>
   );
 }

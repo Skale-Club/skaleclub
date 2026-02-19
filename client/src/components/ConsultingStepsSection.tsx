@@ -2,6 +2,7 @@ import type { ComponentType, MouseEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, CheckCircle2, LayoutGrid, LineChart, PhoneCall, Search, Sparkles, Target } from 'lucide-react';
 import type { HomepageContent } from '@shared/schema';
+import { useTranslation } from '@/hooks/useTranslation';
 
 type Props = {
   section?: HomepageContent['consultingStepsSection'] | null;
@@ -46,6 +47,7 @@ function useMediaQuery(query: string): boolean {
 }
 
 export function ConsultingStepsSection({ section, onCtaClick }: Props) {
+  const { t } = useTranslation();
   const isMobile = useMediaQuery('(max-width: 767px)');
 
   const sortedSteps = useMemo(() => {
@@ -60,17 +62,17 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
 
   const stepsLoop = useMemo(() => [...sortedSteps, ...sortedSteps], [sortedSteps]);
   const practicalBullets = section?.practicalBullets?.length ? section.practicalBullets : [];
-  const ctaLabel = section?.ctaButtonLabel || 'Agendar Conversa Gratuita';
+  const ctaLabel = section?.ctaButtonLabel || '';
   const ctaHref = section?.ctaButtonLink || '#lead-form';
   const helperText = section?.helperText;
-  const sectionId = section?.sectionId || 'como-funciona';
-  const practicalTitle = section?.practicalBlockTitle || 'Na prática';
-  const stepLabel = section?.stepLabel || 'Etapa';
-  const whatWeDoLabel = section?.whatWeDoLabel || 'O que fazemos';
-  const outcomeLabel = section?.outcomeLabel || 'Você sai com';
-  const practicalBlockSubtitle = section?.practicalBlockSubtitle || 'Como o trabalho acontece no dia a dia';
-  const nextStepLabel = section?.nextStepLabel || 'Próximo passo';
-  const nextStepText = section?.nextStepText || 'Agenda aberta para novos projetos';
+  const sectionId = section?.sectionId || 'how-it-works';
+  const practicalTitle = section?.practicalBlockTitle || '';
+  const stepLabel = section?.stepLabel || '';
+  const whatWeDoLabel = section?.whatWeDoLabel || '';
+  const outcomeLabel = section?.outcomeLabel || '';
+  const practicalBlockSubtitle = section?.practicalBlockSubtitle || '';
+  const nextStepLabel = section?.nextStepLabel || '';
+  const nextStepText = section?.nextStepText || '';
 
   const [isPaused, setIsPaused] = useState(false);
   const trackRef = useRef<HTMLDivElement | null>(null);
@@ -312,19 +314,20 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
                 <Icon className="w-6 h-6" />
               </div>
               <div className="space-y-1">
-                <p className="text-[11px] uppercase tracking-[0.12em] text-slate-500 font-semibold">{stepLabel} {numberLabel}</p>
-                <h3 className="text-xl font-bold text-slate-900 leading-tight">{step.title}</h3>
+                <p className="text-[11px] uppercase tracking-[0.12em] text-slate-500 font-semibold">{t(stepLabel)} {numberLabel}</p>
+                <h3 className="text-xl font-bold text-slate-900 leading-tight">{t(step.title)}</h3>
               </div>
             </div>
           </div>
-          <div className="space-y-px">
-            <div className="rounded-t-2xl border border-slate-100 bg-slate-50/80 p-4">
-              <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500 font-semibold">{whatWeDoLabel}</p>
-              <p className="text-slate-700 leading-relaxed mt-2 text-sm">{step.whatWeDo}</p>
+          <div className="space-y-5 pt-1">
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{t(whatWeDoLabel)}</p>
+              <p className="text-slate-700 leading-relaxed">{t(step.whatWeDo)}</p>
             </div>
-            <div className="rounded-b-2xl border border-blue-100 bg-gradient-to-r from-[#eef2ff] to-[#e0eaff] p-4">
-              <p className="text-[11px] uppercase tracking-[0.14em] text-blue-700 font-semibold">{outcomeLabel}</p>
-              <p className="text-slate-800 leading-relaxed mt-2 text-sm font-semibold">{step.outcome}</p>
+
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-primary uppercase tracking-wider">{t(outcomeLabel)}</p>
+              <p className="text-slate-900 leading-relaxed font-medium">{t(step.outcome)}</p>
             </div>
           </div>
         </div>
@@ -349,11 +352,11 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
               <span>Consultoria</span>
             </div>
             <h2 className="text-3xl md:text-4xl font-bold text-slate-900 leading-tight">
-              {section.title || 'Como Funciona a Consultoria'}
+              {t(section?.title || '')}
             </h2>
-            {section.subtitle && (
+            {section?.subtitle && (
               <p className="text-lg md:text-xl text-slate-600 leading-relaxed">
-                {section.subtitle}
+                {t(section.subtitle)}
               </p>
             )}
           </div>
@@ -390,8 +393,8 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
                 <CheckCircle2 className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-lg font-bold text-slate-900">{practicalTitle}</p>
-                <p className="text-sm text-slate-500">Como o trabalho acontece no dia a dia</p>
+                <p className="text-lg font-bold text-slate-900">{t(practicalTitle)}</p>
+                <p className="text-sm text-slate-500">{t(practicalBlockSubtitle)}</p>
               </div>
             </div>
             <div className="grid gap-3 md:grid-cols-3">
@@ -400,7 +403,7 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
                   key={`${bullet}-${idx}`}
                   className="p-4 rounded-2xl bg-slate-50/90 border border-slate-100 shadow-sm"
                 >
-                  <p className="text-sm text-slate-700 leading-relaxed">{bullet}</p>
+                  <p className="text-sm text-slate-700 leading-relaxed">{t(bullet)}</p>
                 </div>
               ))}
             </div>
@@ -408,8 +411,8 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
 
           <div className="rounded-3xl bg-white/95 border border-slate-100 shadow-[0_24px_70px_-50px_rgba(15,23,42,0.45)] px-8 py-8 flex flex-col gap-4 justify-center h-full">
             <div className="space-y-2">
-              <p className="text-sm font-semibold text-slate-700 uppercase tracking-[0.12em]">{nextStepLabel}</p>
-              <p className="text-xl font-bold text-slate-900 leading-tight">{nextStepText}</p>
+              <p className="text-sm font-semibold text-slate-700 uppercase tracking-[0.12em]">{t(nextStepLabel)}</p>
+              <p className="text-xl font-bold text-slate-900 leading-tight">{t(nextStepText)}</p>
             </div>
             <a
               href={ctaHref}
@@ -417,10 +420,10 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
               className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-[#406EF1] hover:bg-[#355CD0] text-white font-semibold shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#406EF1] whitespace-nowrap"
               data-form-trigger="lead-form"
             >
-              {ctaLabel}
+              {t(ctaLabel)}
               <ArrowRight className="w-4 h-4 flex-shrink-0" />
             </a>
-            {helperText && <p className="text-sm text-slate-600 leading-relaxed">{helperText}</p>}
+            {helperText && <p className="text-sm text-slate-600 leading-relaxed">{t(helperText)}</p>}
           </div>
         </div>
       </div>

@@ -36,6 +36,8 @@ export function HeroSettingsSection() {
   const [ctaText, setCtaText] = useState('');
   const [homepageContent, setHomepageContent] = useState<HomepageContent>(DEFAULT_HOMEPAGE_CONTENT);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingHeroImage, setIsUploadingHeroImage] = useState(false);
+  const [isUploadingBadgeImage, setIsUploadingBadgeImage] = useState(false);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedFieldTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const [savedFields, setSavedFields] = useState<Record<string, boolean>>({});
@@ -324,14 +326,25 @@ export function HeroSettingsSection() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setIsUploadingHeroImage(true);
     try {
       const imagePath = await uploadFileToServer(file);
       console.log('Saving hero image URL:', imagePath);
       setHeroImageUrl(imagePath);
       await saveHeroSettings({ heroImageUrl: imagePath }, ['heroImageUrl']);
-      toast({ title: 'Hero image uploaded and saved' });
+      toast({ 
+        title: 'Success!', 
+        description: 'Hero image uploaded and saved successfully',
+        duration: 3000
+      });
     } catch (error: any) {
-      toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+      toast({ 
+        title: 'Upload failed', 
+        description: error.message, 
+        variant: 'destructive' 
+      });
+    } finally {
+      setIsUploadingHeroImage(false);
     }
   };
 
@@ -433,6 +446,12 @@ export function HeroSettingsSection() {
               <Label htmlFor="heroImage">Hero Image</Label>
               <div className="flex flex-col gap-3">
                 <div className="aspect-[4/3] w-full max-w-xs rounded-lg border-2 border-dashed border-border bg-card flex items-center justify-center overflow-hidden relative group">
+                  {isUploadingHeroImage ? (
+                    <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-3 z-10">
+                      <Loader2 className="w-8 h-8 text-white animate-spin" />
+                      <p className="text-sm text-white font-medium">Uploading...</p>
+                    </div>
+                  ) : null}
                   {heroImageUrl ? (
                     <img src={heroImageUrl} alt="Hero preview" className="w-full h-full object-cover" />
                   ) : (
@@ -441,24 +460,18 @@ export function HeroSettingsSection() {
                       <p className="text-xs text-muted-foreground">Background Image</p>
                     </div>
                   )}
-                  <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                    <input type="file" className="hidden" onChange={handleImageUpload} accept="image/*" />
+                  <label className={`absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer ${
+                    isUploadingHeroImage ? 'pointer-events-none' : ''
+                  }`}>
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      onChange={handleImageUpload} 
+                      accept="image/*"
+                      disabled={isUploadingHeroImage}
+                    />
                     <Plus className="w-8 h-8 text-white" />
                   </label>
-                </div>
-                <div className="flex gap-2 max-w-xs">
-                  <div className="relative w-full">
-                    <Input 
-                      value={heroImageUrl} 
-                      onChange={(e) => {
-                        setHeroImageUrl(e.target.value);
-                        triggerAutoSave({ heroImageUrl: e.target.value }, ['heroImageUrl']);
-                      }}
-                      placeholder="Or enter image URL (https://...)"
-                      data-testid="input-hero-image"
-                    />
-                    <SavedIndicator field="heroImageUrl" />
-                  </div>
                 </div>
               </div>
             </div>
@@ -470,84 +483,105 @@ export function HeroSettingsSection() {
             <BadgeCheck className="w-4 h-4 text-primary" />
             Hero Badge
           </h3>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+            {/* Badge Image Preview */}
             <div className="space-y-2">
-              <Label>Badge Image URL</Label>
-              <div className="flex flex-col gap-2">
-                <div className="relative">
-                  <Input
-                    value={homepageContent.heroBadgeImageUrl || ''}
-                    onChange={(e) =>
-                      updateHomepageContent(prev => ({ ...prev, heroBadgeImageUrl: e.target.value }), 'homepageContent.heroBadgeImageUrl')
-                    }
-                    placeholder="https://..."
-                  />
-                  <SavedIndicator field="homepageContent.heroBadgeImageUrl" />
-                </div>
-                <div>
-                  <Input
+              <Label>Badge Image</Label>
+              <div className="aspect-video w-full rounded-lg border-2 border-dashed border-border bg-card flex items-center justify-center overflow-hidden relative group">
+                {isUploadingBadgeImage ? (
+                  <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2 z-10">
+                    <Loader2 className="w-6 h-6 text-white animate-spin" />
+                    <p className="text-xs text-white font-medium">Uploading...</p>
+                  </div>
+                ) : null}
+                {homepageContent.heroBadgeImageUrl ? (
+                  <img src={homepageContent.heroBadgeImageUrl} alt="Badge preview" className="w-full h-full object-contain p-2" />
+                ) : (
+                  <div className="text-center p-4">
+                    <BadgeCheck className="w-5 h-5 text-muted-foreground mx-auto mb-1" />
+                    <p className="text-xs text-muted-foreground">Click to upload</p>
+                  </div>
+                )}
+                <label className={`absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer ${
+                  isUploadingBadgeImage ? 'pointer-events-none' : ''
+                }`}>
+                  <input
                     type="file"
+                    className="hidden"
                     accept="image/*"
+                    disabled={isUploadingBadgeImage}
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
+                      setIsUploadingBadgeImage(true);
                       try {
                         const imagePath = await uploadFileToServer(file);
                         updateHomepageContent(prev => ({ ...prev, heroBadgeImageUrl: imagePath }), 'homepageContent.heroBadgeImageUrl');
                         setHomepageContent(prev => ({ ...prev, heroBadgeImageUrl: imagePath }));
                         triggerAutoSave({ homepageContent: { ...(homepageContent || {}), heroBadgeImageUrl: imagePath } }, ['homepageContent.heroBadgeImageUrl']);
-                        toast({ title: 'Badge uploaded and saved' });
+                        toast({ 
+                          title: 'Success!', 
+                          description: 'Badge image uploaded and saved successfully',
+                          duration: 3000
+                        });
                       } catch (error: any) {
                         toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
                       } finally {
+                        setIsUploadingBadgeImage(false);
                         if (e.target) {
                           e.target.value = '';
                         }
                       }
                     }}
                   />
+                  <Plus className="w-6 h-6 text-white" />
+                </label>
+              </div>
+            </div>
+
+            {/* Badge Settings */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Badge Alt Text</Label>
+                <div className="relative">
+                  <Input
+                    value={homepageContent.heroBadgeAlt || ''}
+                    onChange={(e) =>
+                      updateHomepageContent(prev => ({ ...prev, heroBadgeAlt: e.target.value }), 'homepageContent.heroBadgeAlt')
+                    }
+                    placeholder="Trusted Experts"
+                  />
+                  <SavedIndicator field="homepageContent.heroBadgeAlt" />
                 </div>
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Badge Alt Text</Label>
-              <div className="relative">
-                <Input
-                  value={homepageContent.heroBadgeAlt || ''}
-                  onChange={(e) =>
-                    updateHomepageContent(prev => ({ ...prev, heroBadgeAlt: e.target.value }), 'homepageContent.heroBadgeAlt')
-                  }
-                  placeholder="Trusted Experts"
-                />
-                <SavedIndicator field="homepageContent.heroBadgeAlt" />
+              
+              <div className="space-y-2">
+                <Label>Badge Icon</Label>
+                <Select
+                  value={homepageContent.trustBadges?.[0]?.icon || 'star'}
+                  onValueChange={(value) => {
+                    updateHomepageContent(prev => {
+                      const badges = [...(prev.trustBadges || DEFAULT_HOMEPAGE_CONTENT.trustBadges || [])];
+                      badges[0] = { ...(badges[0] || {}), icon: value };
+                      return { ...prev, trustBadges: badges };
+                    }, 'homepageContent.trustBadges.0.icon');
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {badgeIconOptions.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        <div className="flex items-center gap-2">
+                          <option.icon className="w-4 h-4" />
+                          <span>{option.label}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Badge Icon</Label>
-              <Select
-                value={homepageContent.trustBadges?.[0]?.icon || 'star'}
-                onValueChange={(value) => {
-                  updateHomepageContent(prev => {
-                    const badges = [...(prev.trustBadges || DEFAULT_HOMEPAGE_CONTENT.trustBadges || [])];
-                    badges[0] = { ...(badges[0] || {}), icon: value };
-                    return { ...prev, trustBadges: badges };
-                  }, 'homepageContent.trustBadges.0.icon');
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {badgeIconOptions.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      <div className="flex items-center gap-2">
-                        <option.icon className="w-4 h-4" />
-                        <span>{option.label}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
           </div>
         </div>
@@ -973,10 +1007,10 @@ export function HeroSettingsSection() {
                         const imagePath = await uploadFileToServer(file);
                         setAboutImageUrl(imagePath);
                         triggerAutoSave({ aboutImageUrl: imagePath }, ['aboutImageUrl']);
-                        toast({ title: 'Sucesso', description: 'Imagem enviada com sucesso!' });
+                        toast({ title: 'Success', description: 'Image uploaded successfully!' });
                       } catch (error: any) {
                         toast({
-                          title: 'Erro no upload',
+                          title: 'Upload error',
                           description: error.message,
                           variant: 'destructive'
                         });
@@ -1108,7 +1142,7 @@ export function HeroSettingsSection() {
                 }
               />
               <span className="text-sm text-muted-foreground">
-                {consultingStepsSection.enabled ? 'Seção ativa' : 'Seção oculta'}
+                {consultingStepsSection.enabled ? 'Section active' : 'Section hidden'}
               </span>
             </div>
           </div>
@@ -1126,7 +1160,7 @@ export function HeroSettingsSection() {
                     'homepageContent.consultingStepsSection.title'
                   )
                 }
-                placeholder="Como Funciona a Consultoria"
+                placeholder="How the Consulting Works"
               />
               <SavedIndicator field="homepageContent.consultingStepsSection.title" />
             </div>
@@ -1143,7 +1177,7 @@ export function HeroSettingsSection() {
                   )
                 }
                 className="min-h-[96px]"
-                placeholder="Um processo claro, em etapas, para você gerar clientes de forma previsível nos EUA."
+                placeholder="A clear, step-by-step process to generate clients predictably in the USA."
               />
               <SavedIndicator field="homepageContent.consultingStepsSection.subtitle" />
             </div>
@@ -1212,10 +1246,10 @@ export function HeroSettingsSection() {
               />
               <SavedIndicator field="homepageContent.consultingStepsSection.ctaButtonLink" />
             </div>
-            <p className="text-xs text-muted-foreground">Use um anchor (#lead-form) ou um link interno.</p>
+            <p className="text-xs text-muted-foreground">Use an anchor (#lead-form) or an internal link.</p>
           </div>
           <div className="space-y-2">
-            <Label>Bloco Na prática - Título</Label>
+            <Label>Practical Block - Title</Label>
             <div className="relative">
               <Input
                 value={consultingStepsSection.practicalBlockTitle || ''}
@@ -1225,13 +1259,13 @@ export function HeroSettingsSection() {
                     'homepageContent.consultingStepsSection.practicalBlockTitle'
                   )
                 }
-                placeholder="Na prática"
+                placeholder="In practice"
               />
               <SavedIndicator field="homepageContent.consultingStepsSection.practicalBlockTitle" />
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Bloco Na prática - Subtítulo</Label>
+            <Label>Practical Block - Subtitle</Label>
             <div className="relative">
               <Input
                 value={consultingStepsSection.practicalBlockSubtitle || ''}
@@ -1241,7 +1275,7 @@ export function HeroSettingsSection() {
                     'homepageContent.consultingStepsSection.practicalBlockSubtitle'
                   )
                 }
-                placeholder="Como o trabalho acontece no dia a dia"
+                placeholder="How the work happens day by day"
               />
               <SavedIndicator field="homepageContent.consultingStepsSection.practicalBlockSubtitle" />
             </div>
@@ -1249,10 +1283,10 @@ export function HeroSettingsSection() {
         </div>
         
         <div className="bg-muted p-6 rounded-lg transition-all space-y-4">
-          <h2 className="text-lg font-semibold">Rótulos Personalizados</h2>
+          <h2 className="text-lg font-semibold">Custom Labels</h2>
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="space-y-2">
-              <Label>Label da Tag (ex: Consultoria)</Label>
+              <Label>Tag Label (e.g., Consulting)</Label>
               <div className="relative">
                 <Input
                   value={consultingStepsSection.tagLabel || ''}
@@ -1262,13 +1296,13 @@ export function HeroSettingsSection() {
                       'homepageContent.consultingStepsSection.tagLabel'
                     )
                   }
-                  placeholder="Consultoria"
+                  placeholder="Consulting"
                 />
                 <SavedIndicator field="homepageContent.consultingStepsSection.tagLabel" />
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Label de Etapa (ex: Etapa)</Label>
+              <Label>Stage Label (e.g., Stage)</Label>
               <div className="relative">
                 <Input
                   value={consultingStepsSection.stepLabel || ''}
@@ -1278,13 +1312,13 @@ export function HeroSettingsSection() {
                       'homepageContent.consultingStepsSection.stepLabel'
                     )
                   }
-                  placeholder="Etapa"
+                  placeholder="Stage"
                 />
                 <SavedIndicator field="homepageContent.consultingStepsSection.stepLabel" />
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Label O que fazemos</Label>
+              <Label>What We Do Label</Label>
               <div className="relative">
                 <Input
                   value={consultingStepsSection.whatWeDoLabel || ''}
@@ -1294,13 +1328,13 @@ export function HeroSettingsSection() {
                       'homepageContent.consultingStepsSection.whatWeDoLabel'
                     )
                   }
-                  placeholder="O que fazemos"
+                  placeholder="What we do"
                 />
                 <SavedIndicator field="homepageContent.consultingStepsSection.whatWeDoLabel" />
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Label Resultado (ex: Você sai com)</Label>
+              <Label>Outcome Label (e.g., You leave with)</Label>
               <div className="relative">
                 <Input
                   value={consultingStepsSection.outcomeLabel || ''}
@@ -1310,13 +1344,13 @@ export function HeroSettingsSection() {
                       'homepageContent.consultingStepsSection.outcomeLabel'
                     )
                   }
-                  placeholder="Você sai com"
+                  placeholder="You leave with"
                 />
                 <SavedIndicator field="homepageContent.consultingStepsSection.outcomeLabel" />
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Label Próximo Passo</Label>
+              <Label>Next Step Label</Label>
               <div className="relative">
                 <Input
                   value={consultingStepsSection.nextStepLabel || ''}
@@ -1326,13 +1360,13 @@ export function HeroSettingsSection() {
                       'homepageContent.consultingStepsSection.nextStepLabel'
                     )
                   }
-                  placeholder="Próximo passo"
+                  placeholder="Next step"
                 />
                 <SavedIndicator field="homepageContent.consultingStepsSection.nextStepLabel" />
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Texto Próximo Passo</Label>
+              <Label>Next Step Text</Label>
               <div className="relative">
                 <Input
                   value={consultingStepsSection.nextStepText || ''}
@@ -1342,7 +1376,7 @@ export function HeroSettingsSection() {
                       'homepageContent.consultingStepsSection.nextStepText'
                     )
                   }
-                  placeholder="Agenda aberta para novos projetos"
+                  placeholder="Open schedule for new projects"
                 />
                 <SavedIndicator field="homepageContent.consultingStepsSection.nextStepText" />
               </div>
@@ -1352,7 +1386,7 @@ export function HeroSettingsSection() {
 
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-3 flex-wrap">
-            <Label>Bullets do bloco Na prática</Label>
+            <Label>Practical Block Bullets</Label>
             {practicalBullets.length < 6 && (
               <Button
                 variant="outline"
@@ -1362,13 +1396,13 @@ export function HeroSettingsSection() {
                   updateConsultingSection(
                     section => ({
                       ...section,
-                      practicalBullets: [...(section.practicalBullets || []), 'Novo bullet'],
+                      practicalBullets: [...(section.practicalBullets || []), 'New bullet'],
                     }),
                     'homepageContent.consultingStepsSection.practicalBullets'
                   )
                 }
               >
-                <Plus className="w-4 h-4 mr-2" /> Adicionar bullet
+                <Plus className="w-4 h-4 mr-2" /> Add bullet
               </Button>
             )}
           </div>
@@ -1425,7 +1459,7 @@ export function HeroSettingsSection() {
               <p className="text-sm text-muted-foreground">Reordene pelas setas ou ajustando o campo Ordem.</p>
             </div>
             <Button variant="outline" size="sm" className="border-dashed" onClick={handleAddStep}>
-              <Plus className="w-4 h-4 mr-2" /> Adicionar etapa
+              <Plus className="w-4 h-4 mr-2" /> Add stage
             </Button>
           </div>
 
@@ -1488,7 +1522,7 @@ export function HeroSettingsSection() {
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <Label>Número</Label>
+                    <Label>Number</Label>
                     <div className="relative">
                       <Input
                         value={step.numberLabel || ''}
@@ -1505,7 +1539,7 @@ export function HeroSettingsSection() {
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <Label>Ícone</Label>
+                    <Label>Icon</Label>
                     <Select
                       value={step.icon || consultingIconOptions[0].value}
                       onValueChange={(value) =>
@@ -1534,7 +1568,7 @@ export function HeroSettingsSection() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Título</Label>
+                  <Label>Title</Label>
                   <div className="relative">
                     <Input
                       value={step.title}

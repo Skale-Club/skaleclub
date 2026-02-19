@@ -109,8 +109,12 @@ async function injectSEOData() {
     metaTags.push(`<meta property="og:site_name" content="${escapeHtml(ogSiteName)}" />`);
 
     if (ogImage) {
-      const fullImageUrl = ogImage.startsWith('http') ? ogImage : `https://yourdomain.com${ogImage}`;
+      const baseUrl = canonicalUrl ? new URL(canonicalUrl).origin : 'https://skale.club';
+      const fullImageUrl = ogImage.startsWith('http') ? ogImage : `${baseUrl}${ogImage}`;
       metaTags.push(`<meta property="og:image" content="${escapeHtml(fullImageUrl)}" />`);
+      metaTags.push(`<meta property="og:image:width" content="1200" />`);
+      metaTags.push(`<meta property="og:image:height" content="630" />`);
+      metaTags.push(`<meta property="og:image:alt" content="${escapeHtml(title)}" />`);
     }
 
     if (canonicalUrl) {
@@ -124,7 +128,8 @@ async function injectSEOData() {
     metaTags.push(`<meta name="twitter:description" content="${escapeHtml(description)}" />`);
 
     if (ogImage) {
-      const fullImageUrl = ogImage.startsWith('http') ? ogImage : `https://yourdomain.com${ogImage}`;
+      const baseUrl = canonicalUrl ? new URL(canonicalUrl).origin : 'https://skale.club';
+      const fullImageUrl = ogImage.startsWith('http') ? ogImage : `${baseUrl}${ogImage}`;
       metaTags.push(`<meta name="twitter:image" content="${escapeHtml(fullImageUrl)}" />`);
     }
 

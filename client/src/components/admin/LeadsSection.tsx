@@ -76,12 +76,12 @@ export function LeadsSection() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/form-leads'] });
-      toast({ title: 'Lead deletado' });
+      toast({ title: 'Lead deleted' });
     },
     onError: (error: any) => {
       toast({
-        title: 'Erro ao deletar lead',
-        description: error?.message || 'Tente novamente',
+        title: 'Failed to delete lead',
+        description: error?.message || 'Please try again',
         variant: 'destructive'
       });
     }
@@ -94,12 +94,12 @@ export function LeadsSection() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/form-leads'] });
-      toast({ title: 'Lead atualizado' });
+      toast({ title: 'Lead updated' });
     },
     onError: (error: any) => {
       toast({
-        title: 'Erro ao atualizar lead',
-        description: error?.message || 'Tente novamente',
+        title: 'Failed to update lead',
+        description: error?.message || 'Please try again',
         variant: 'destructive'
       });
     }
@@ -126,16 +126,16 @@ export function LeadsSection() {
   }, [leads]);
 
   const statusOptions: { value: LeadStatus | 'all'; label: string }[] = [
-    { value: 'all', label: 'Todos status' },
-    { value: 'novo', label: 'Novo' },
-    { value: 'contatado', label: 'Contatado' },
-    { value: 'qualificado', label: 'Qualificado' },
-    { value: 'convertido', label: 'Convertido' },
-    { value: 'descartado', label: 'Descartado' },
+    { value: 'all', label: 'All status' },
+    { value: 'novo', label: 'New' },
+    { value: 'contatado', label: 'Contacted' },
+    { value: 'qualificado', label: 'Qualified' },
+    { value: 'convertido', label: 'Converted' },
+    { value: 'descartado', label: 'Discarded' },
   ];
 
   const classificationOptions: { value: LeadClassification | 'all'; label: string }[] = [
-    { value: 'all', label: 'Todas as classificações' },
+    { value: 'all', label: 'All ratings' },
     { value: 'QUENTE', label: 'Lead Quente' },
     { value: 'MORNO', label: 'Lead Morno' },
     { value: 'FRIO', label: 'Lead Frio' },
@@ -143,10 +143,10 @@ export function LeadsSection() {
   ];
 
   const completionOptions: { value: 'all' | 'completo' | 'em_progresso' | 'abandonado'; label: string }[] = [
-    { value: 'all', label: 'Todos os formulários' },
-    { value: 'completo', label: 'Completo' },
-    { value: 'em_progresso', label: 'Em progresso' },
-    { value: 'abandonado', label: 'Abandonado' },
+    { value: 'all', label: 'All forms' },
+    { value: 'completo', label: 'Complete' },
+    { value: 'em_progresso', label: 'In Progress' },
+    { value: 'abandonado', label: 'Abandoned' },
   ];
 
   const formatDate = (value?: string | null) => {
@@ -170,9 +170,9 @@ export function LeadsSection() {
   };
 
   const questionLabel = (lead: FormLead) => {
-    if (lead.formCompleto) return 'Formulário completo';
+    if (lead.formCompleto) return 'Form complete';
     const step = lead.ultimaPerguntaRespondida || 1;
-    return `Pergunta ${step} de ${totalQuestions}`;
+    return `Question ${step} of ${totalQuestions}`;
   };
 
   const getCompletionStatus = (lead: FormLead): 'completo' | 'em_progresso' | 'abandonado' => {
@@ -185,9 +185,9 @@ export function LeadsSection() {
 
   const completionStatusLabel = (status: 'completo' | 'em_progresso' | 'abandonado') => {
     switch (status) {
-      case 'completo': return 'Completo';
-      case 'em_progresso': return 'Em progresso';
-      case 'abandonado': return 'Abandonado';
+      case 'completo': return 'Complete';
+      case 'em_progresso': return 'In Progress';
+      case 'abandonado': return 'Abandoned';
     }
   };
 
@@ -247,25 +247,25 @@ export function LeadsSection() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <p className="text-sm text-muted-foreground uppercase tracking-wide">Leads do Formulário</p>
-          <h1 className="text-2xl font-bold">Acompanhamento de qualificações</h1>
-          <p className="text-muted-foreground">Veja quem iniciou o formulário, onde parou e atualize o status rapidamente.</p>
+          <p className="text-sm text-muted-foreground uppercase tracking-wide">Form Leads</p>
+          <h1 className="text-2xl font-bold">Lead Qualification Tracking</h1>
+          <p className="text-muted-foreground">See who started the form, where they stopped, and update status quickly.</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/form-leads'] })}>
             <RotateCcw className="w-4 h-4 mr-2" />
-            Atualizar
+            Refresh
           </Button>
           <Sheet open={isFormEditorOpen} onOpenChange={setIsFormEditorOpen}>
             <SheetTrigger asChild>
               <Button variant="outline">
                 <Pencil className="w-4 h-4 mr-2" />
-                Editar Formulário
+                Edit Form
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
               <SheetHeader>
-                <SheetTitle>Editor de Formulário</SheetTitle>
+                <SheetTitle>Form Editor</SheetTitle>
               </SheetHeader>
               <div className="mt-6">
                 <FormEditorContent />
@@ -281,19 +281,19 @@ export function LeadsSection() {
           <p className="text-2xl font-bold">{stats.total}</p>
         </div>
         <div className="p-4 rounded-xl border bg-card shadow-sm">
-          <p className="text-xs text-muted-foreground">Quentes</p>
+          <p className="text-xs text-muted-foreground">Hot</p>
           <p className="text-2xl font-bold text-green-600">{stats.hot}</p>
         </div>
         <div className="p-4 rounded-xl border bg-card shadow-sm">
-          <p className="text-xs text-muted-foreground">Mornos</p>
+          <p className="text-xs text-muted-foreground">Warm</p>
           <p className="text-2xl font-bold text-amber-600">{stats.warm}</p>
         </div>
         <div className="p-4 rounded-xl border bg-card shadow-sm">
-          <p className="text-xs text-muted-foreground">Frios</p>
+          <p className="text-xs text-muted-foreground">Cold</p>
           <p className="text-2xl font-bold text-blue-600">{stats.cold}</p>
         </div>
         <div className="p-4 rounded-xl border bg-card shadow-sm">
-          <p className="text-xs text-muted-foreground">Em progresso</p>
+          <p className="text-xs text-muted-foreground">In Progress</p>
           <p className="text-2xl font-bold text-amber-500">{stats.inProgress}</p>
         </div>
       </div>
@@ -302,7 +302,7 @@ export function LeadsSection() {
         <div className="p-4 border-b border-border flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
           <div className="grid grid-cols-2 sm:flex sm:flex-row gap-3 w-full lg:w-auto">
             <Input
-              placeholder="Buscar por nome, email ou telefone"
+              placeholder="Search by name, email or phone"
               value={filters.search}
               onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
               className="col-span-2 sm:w-64"
@@ -354,12 +354,12 @@ export function LeadsSection() {
             <thead className="bg-muted/50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Lead</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Contato</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Classificação</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">?ltima etapa</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Contact</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Rating</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Last Step</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Atualizado</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Ações</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Updated</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -367,28 +367,28 @@ export function LeadsSection() {
                 <tr>
                   <td colSpan={7} className="px-4 py-6 text-center text-muted-foreground">
                     <Loader2 className="w-5 h-5 animate-spin inline-block mr-2" />
-                    Carregando leads...
+                    Loading leads...
                   </td>
                 </tr>
               )}
               {!isLoading && (!leads || leads.length === 0) && (
                 <tr>
                   <td colSpan={7} className="px-4 py-10 text-center text-muted-foreground">
-                    Nenhum lead encontrado ainda.
+                    No leads found yet.
                   </td>
                 </tr>
               )}
               {leads?.map(lead => (
                 <tr key={lead.id} className="hover:bg-muted/50 transition-colors">
                   <td className="px-4 py-3">
-                    <div className="font-semibold text-foreground">{lead.nome || 'Sem nome'}</div>
+                    <div className="font-semibold text-foreground">{lead.nome || 'No name'}</div>
                     <div className="text-sm text-muted-foreground">
-                      {lead.cidadeEstado || 'Cidade não informada'}
+                      {lead.cidadeEstado || 'City not provided'}
                     </div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="text-sm text-foreground">{lead.email || '?'}</div>
-                    <div className="text-xs text-muted-foreground">{lead.telefone || 'Sem telefone'}</div>
+                    <div className="text-xs text-muted-foreground">{lead.telefone || 'No phone'}</div>
                   </td>
                   <td className="px-4 py-3">
                     <Badge className={clsx("border", classificationBadge(lead.classificacao))}>
@@ -434,7 +434,7 @@ export function LeadsSection() {
                         size="icon"
                         className="h-8 w-8"
                         onClick={() => {
-                          if (window.confirm('Deletar este lead?')) {
+                          if (window.confirm('Delete this lead?')) {
                             deleteLead.mutate(lead.id);
                           }
                         }}
@@ -462,8 +462,8 @@ export function LeadsSection() {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase text-muted-foreground">Lead</p>
-                  <h2 className="text-xl font-semibold leading-tight">{selectedLead.nome || 'Sem nome'}</h2>
-                  <p className="text-sm text-muted-foreground">{selectedLead.cidadeEstado || 'Cidade não informada'}</p>
+                  <h2 className="text-xl font-semibold leading-tight">{selectedLead.nome || 'No name'}</h2>
+                  <p className="text-sm text-muted-foreground">{selectedLead.cidadeEstado || 'City not provided'}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Badge className={clsx("border", classificationBadge(selectedLead.classificacao))}>
@@ -481,33 +481,33 @@ export function LeadsSection() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <DetailItem label="Email" value={selectedLead.email || '?'} />
-                <DetailItem label="Telefone" value={selectedLead.telefone || '?'} />
-                <DetailItem label="Cidade/Estado" value={selectedLead.cidadeEstado || '?'} />
-                <DetailItem label="Tipo de negócio" value={selectedLead.tipoNegocio || '?'} />
-                <DetailItem label="Experiência em marketing" value={selectedLead.experienciaMarketing || '?'} />
-                <DetailItem label="Orçamento em anúncios" value={selectedLead.orcamentoAnuncios || '?'} />
-                <DetailItem label="Principal desafio" value={selectedLead.principalDesafio || '?'} />
-                <DetailItem label="Disponibilidade" value={selectedLead.disponibilidade || '?'} />
-                <DetailItem label="Expectativa de resultado" value={selectedLead.expectativaResultado || '?'} />
-                <DetailItem label="Score total" value={selectedLead.scoreTotal ?? '—'} />
-                <DetailItem label="Classificação" value={selectedLead.classificacao || '?'} />
-                <DetailItem label="?ltima atualização" value={formatDate((selectedLead.updatedAt as any) || (selectedLead.createdAt as any))} />
+                <DetailItem label="Phone" value={selectedLead.telefone || '?'} />
+                <DetailItem label="City/State" value={selectedLead.cidadeEstado || '?'} />
+                <DetailItem label="Business Type" value={selectedLead.tipoNegocio || '?'} />
+                <DetailItem label="Marketing Experience" value={selectedLead.experienciaMarketing || '?'} />
+                <DetailItem label="Ads Budget" value={selectedLead.orcamentoAnuncios || '?'} />
+                <DetailItem label="Main Challenge" value={selectedLead.principalDesafio || '?'} />
+                <DetailItem label="Availability" value={selectedLead.disponibilidade || '?'} />
+                <DetailItem label="Results Expectation" value={selectedLead.expectativaResultado || '?'} />
+                <DetailItem label="Total Score" value={selectedLead.scoreTotal ?? '—'} />
+                <DetailItem label="Rating" value={selectedLead.classificacao || '?'} />
+                <DetailItem label="Last Update" value={formatDate((selectedLead.updatedAt as any) || (selectedLead.createdAt as any))} />
               </div>
 
               {selectedLead.observacoes && (
                 <div className="p-3 rounded-lg border bg-muted/40">
-                  <p className="text-xs uppercase text-muted-foreground">Observações</p>
+                  <p className="text-xs uppercase text-muted-foreground">Notes</p>
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">{selectedLead.observacoes}</p>
                 </div>
               )}
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-base">Respostas do formulário</h3>
-                  <span className="text-xs text-muted-foreground">{questionsForDisplay.length} perguntas</span>
+                  <h3 className="font-semibold text-base">Form Responses</h3>
+                  <span className="text-xs text-muted-foreground">{questionsForDisplay.length} questions</span>
                 </div>
                 {questionsForDisplay.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nenhuma pergunta configurada.</p>
+                  <p className="text-sm text-muted-foreground">No questions configured.</p>
                 ) : (
                   <div className="divide-y divide-border rounded-lg border bg-card">
                     {questionsForDisplay.map((question) => {
@@ -537,7 +537,7 @@ export function LeadsSection() {
               </div>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Selecione um lead para ver detalhes.</p>
+            <p className="text-sm text-muted-foreground">Select a lead to view details.</p>
           )}
         </DialogContent>
       </Dialog>
@@ -586,10 +586,10 @@ function FormEditorContent() {
     onSuccess: (data: FormConfig) => {
       setConfig(data);
       queryClient.invalidateQueries({ queryKey: ['/api/form-config'] });
-      toast({ title: 'Configuração salva com sucesso' });
+      toast({ title: 'Configuration saved successfully' });
     },
     onError: (error: Error) => {
-      toast({ title: 'Erro ao salvar configuração', description: error.message, variant: 'destructive' });
+      toast({ title: 'Failed to save configuration', description: error.message, variant: 'destructive' });
     }
   });
 
@@ -764,7 +764,7 @@ function FormEditorContent() {
                     question={question}
                     onEdit={(q) => { setEditingQuestion(q); setIsDialogOpen(true); }}
                     onDelete={(id) => {
-                      if (window.confirm('Tem certeza que deseja excluir esta pergunta?')) {
+                      if (window.confirm('Are you sure you want to delete this question?')) {
                         handleDeleteQuestion(id);
                       }
                     }}
@@ -841,15 +841,15 @@ function SortableQuestionItem({
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Excluir pergunta?</AlertDialogTitle>
+                <AlertDialogTitle>Delete question?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Esta ação não pode ser desfeita. A pergunta será removida do formulário.
+                  This action cannot be undone. The question will be removed from the form.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction onClick={() => onDelete(question.id)} className="bg-red-600 hover:bg-red-700">
-                  Excluir
+                  Delete
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -881,11 +881,11 @@ function ThresholdsForm({
   return (
     <form onSubmit={handleSubmit}>
       <DialogHeader>
-        <DialogTitle>Limites de Classificação</DialogTitle>
+        <DialogTitle>Rating Thresholds</DialogTitle>
       </DialogHeader>
       <div className="space-y-4 py-4">
         <p className="text-sm text-muted-foreground">
-          Defina os pontos mínimos para cada classificação de lead.
+          Set minimum points for each lead rating.
         </p>
         <div className="space-y-3">
           <div className="flex items-center gap-4">
@@ -910,11 +910,11 @@ function ThresholdsForm({
       </div>
       <DialogFooter>
         <DialogClose asChild>
-          <Button variant="outline" type="button">Cancelar</Button>
+          <Button variant="outline" type="button">Cancel</Button>
         </DialogClose>
         <Button type="submit" disabled={isLoading}>
           {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-          Salvar
+          Save
         </Button>
       </DialogFooter>
     </form>
@@ -1053,7 +1053,7 @@ function QuestionForm({
   return (
     <form onSubmit={handleSubmit}>
       <DialogHeader>
-        <DialogTitle>{isEditing ? 'Editar Pergunta' : 'Nova Pergunta'}</DialogTitle>
+        <DialogTitle>{isEditing ? 'Edit Question' : 'New Question'}</DialogTitle>
       </DialogHeader>
       <div className="space-y-4 py-4">
         <div className="space-y-2">
@@ -1126,13 +1126,13 @@ function QuestionForm({
             </Label>
             <Select value={ghlFieldId || "none"} onValueChange={(val) => setGhlFieldId(val === "none" ? "" : val)}>
               <SelectTrigger>
-                <SelectValue placeholder="Não vincular" />
+                <SelectValue placeholder="Don't link" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Não vincular</SelectItem>
+                <SelectItem value="none">Don't link</SelectItem>
                 {isLoadingGhlFields && (
                   <div className="px-2 py-1.5 text-xs text-muted-foreground flex items-center gap-2">
-                    <Loader2 className="w-3 h-3 animate-spin" /> Carregando campos...
+                    <Loader2 className="w-3 h-3 animate-spin" /> Loading fields...
                   </div>
                 )}
                 {/* Standard GHL Fields */}
@@ -1240,7 +1240,7 @@ function QuestionForm({
                       id="conditional-title"
                       value={conditionalTitle}
                       onChange={(e) => setConditionalTitle(e.target.value)}
-                      placeholder="Ex: Por favor descreva seu negócio"
+                      placeholder="e.g., Please describe your business"
                     />
                   </div>
 
@@ -1261,11 +1261,11 @@ function QuestionForm({
       </div>
       <DialogFooter>
         <DialogClose asChild>
-          <Button variant="outline" type="button">Cancelar</Button>
+          <Button variant="outline" type="button">Cancel</Button>
         </DialogClose>
         <Button type="submit" disabled={isLoading}>
           {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-          {isEditing ? 'Atualizar' : 'Criar'}
+          {isEditing ? 'Update' : 'Create'}
         </Button>
       </DialogFooter>
     </form>

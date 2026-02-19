@@ -1,5 +1,6 @@
 import { User, CheckCircle } from "lucide-react";
 import type { HomepageContent } from "@shared/schema";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface AboutSectionProps {
   content?: HomepageContent['aboutSection'] | null;
@@ -7,6 +8,7 @@ interface AboutSectionProps {
 }
 
 export function AboutSection({ content, aboutImageUrl }: AboutSectionProps) {
+  const { t } = useTranslation();
   const sectionContent = content || {};
 
   const highlights = sectionContent?.highlights || [];
@@ -17,14 +19,14 @@ export function AboutSection({ content, aboutImageUrl }: AboutSectionProps) {
         <div className="order-2 lg:order-1">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-sm font-medium mb-6">
             <User className="w-4 h-4" />
-            {sectionContent?.label || 'Sobre Nós'}
+            {t(sectionContent?.label || '')}
           </div>
           <h2 className="text-3xl md:text-5xl font-bold mb-6 text-[#1D1D1D]">
-            {sectionContent?.heading || ""}
+            {t(sectionContent?.heading || "")}
           </h2>
 
           <p className="text-slate-600 text-lg mb-6 leading-relaxed">
-            {sectionContent?.description || 'Somos especialistas em nossa área, dedicados a proporcionar os melhores resultados para nossos clientes. Com anos de experiência, oferecemos serviços de alta qualidade com comprometimento e excelência.'}
+            {t(sectionContent?.description || '')}
           </p>
 
           {highlights.length > 0 && (
@@ -33,8 +35,8 @@ export function AboutSection({ content, aboutImageUrl }: AboutSectionProps) {
                 <div key={index} className="flex items-start gap-3">
                   <CheckCircle className="w-6 h-6 text-green-500 shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="font-semibold text-[#1D1D1D] mb-1">{highlight.title}</h4>
-                    <p className="text-slate-600">{highlight.description}</p>
+                    <h4 className="font-semibold text-[#1D1D1D] mb-1">{t(highlight.title)}</h4>
+                    <p className="text-slate-600">{t(highlight.description)}</p>
                   </div>
                 </div>
               ))}

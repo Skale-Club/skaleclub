@@ -111,6 +111,11 @@ export function useSEO() {
     setMetaTag('og:title', settings.seoTitle, true);
     setMetaTag('og:description', settings.seoDescription, true);
     setMetaTag('og:image', fullImageUrl, true);
+    if (fullImageUrl) {
+      setMetaTag('og:image:width', '1200', true);
+      setMetaTag('og:image:height', '630', true);
+      setMetaTag('og:image:alt', settings.seoTitle || settings.ogSiteName || 'Company image', true);
+    }
     setMetaTag('og:type', settings.ogType || 'website', true);
     setMetaTag('og:site_name', settings.ogSiteName, true);
     setMetaTag('og:url', settings.seoCanonicalUrl || window.location.href, true);

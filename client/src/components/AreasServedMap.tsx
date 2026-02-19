@@ -1,6 +1,7 @@
 import { MapPin, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
 import type { HomepageContent } from "@shared/schema";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface AreasServedMapProps {
   mapEmbedUrl?: string | null;
@@ -26,6 +27,7 @@ function normalizeEmbedUrl(raw: string) {
 }
 
 export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
+  const { t } = useTranslation();
   const sectionContent = content || {};
 
   const embedUrl = normalizeEmbedUrl(mapEmbedUrl || "");
@@ -36,21 +38,21 @@ export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-sm font-medium mb-6">
             <MapPin className="w-4 h-4" />
-            {sectionContent?.label || ""}
+            {t(sectionContent?.label || "")}
           </div>
           <h2 className="text-3xl md:text-5xl font-bold mb-6">
-            {sectionContent?.heading || ""}
+            {t(sectionContent?.heading || "")}
           </h2>
           
           <p className="text-slate-600 text-lg mb-8 leading-relaxed">
-            {sectionContent?.description || ""}
+            {t(sectionContent?.description || "")}
           </p>
 
           {sectionContent?.ctaText ? (
             <div className="mb-4">
               <Link href="/contact">
                 <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5">
-                  {sectionContent.ctaText}
+                  {t(sectionContent.ctaText)}
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </Link>
