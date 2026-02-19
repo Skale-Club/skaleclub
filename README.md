@@ -44,6 +44,7 @@ DATABASE_URL=postgresql://user:password@host:port/database
 SESSION_SECRET=your-session-secret
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD_HASH=bcrypt-hashed-password
+CRON_SECRET=your-vercel-cron-secret
 ```
 
 ### Installation
@@ -70,6 +71,13 @@ The app will be available at `http://localhost:5000`.
 | `npm run start` | Run production server |
 | `npm run check` | TypeScript type checking |
 | `npm run db:push` | Apply database schema changes |
+
+## Supabase Keep-Alive (Vercel Cron)
+
+- Cron route: `GET /api/cron/supabase-keepalive`
+- Schedule: every 6 hours (`0 */6 * * *`) via `vercel.json`
+- Security: set `CRON_SECRET` in Vercel env vars
+- Storage: each run writes a timestamp row into `system_heartbeats`
 
 ## Project Structure
 

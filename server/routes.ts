@@ -18,10 +18,30 @@ import { testGHLConnection, getOrCreateGHLContact, getGHLCustomFields } from "./
 import { sendHotLeadNotification, sendLowPerformanceAlert, sendNewChatNotification } from "./integrations/twilio.js";
 import { registerStorageRoutes } from "./storage/storageAdapter.js";
 import { db } from "./db.js";
-import { users } from "#shared/schema.js";
-import { eq } from "drizzle-orm";
+import { users, systemHeartbeats } from "#shared/schema.js";
+import { eq, sql } from "drizzle-orm";
 
 const isReplit = !!process.env.REPL_ID;
+
+function isAuthorizedCronRequest(req: Request): boolean {
+  const cronSecret = process.env.CRON_SECRET;
+  const authHeader = req.headers.authorization;
+  const bearerToken =
+    typeof authHeader === "string" && authHeader.startsWith("Bearer ")
+      ? authHeader.slice("Bearer ".length)
+      : null;
+  const hasVercelCronHeader = typeof req.headers["x-vercel-cron"] === "string";
+
+  if (cronSecret) {
+    return bearerToken === cronSecret;
+  }
+
+  if (process.env.NODE_ENV !== "production") {
+    return true;
+  }
+
+  return hasVercelCronHeader;
+}
 
 // Admin authentication middleware - environment-aware
 async function requireAdmin(req: Request, res: Response, next: NextFunction) {
@@ -126,6 +146,46 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  app.get('/api/cron/supabase-keepalive', async (req, res) => {
+    if (!isAuthorizedCronRequest(req)) {
+      return res.status(401).json({ message: 'Unauthorized cron request' });
+    }
+
+    const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
+    const isSupabaseDatabase = databaseUrl.includes('.supabase.');
+    if (!isSupabaseDatabase) {
+      return res.json({
+        ok: true,
+        skipped: true,
+        reason: 'DATABASE_URL is not Supabase',
+      });
+    }
+
+    try {
+      await db.execute(sql`select now()`);
+      const [heartbeat] = await db
+        .insert(systemHeartbeats)
+        .values({
+          source: 'vercel-cron',
+          note: 'supabase-keepalive',
+        })
+        .returning({
+          id: systemHeartbeats.id,
+          createdAt: systemHeartbeats.createdAt,
+        });
+
+      return res.json({
+        ok: true,
+        heartbeatId: heartbeat?.id ?? null,
+        createdAt: heartbeat?.createdAt ?? null,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        ok: false,
+        message: (error as Error).message,
+      });
+    }
+  });
 
   // Check admin session status - environment-aware
   // On Vercel (Supabase Auth), this is handled by server/auth/supabaseAuth.ts

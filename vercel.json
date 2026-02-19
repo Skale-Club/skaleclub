@@ -7,6 +7,12 @@
       "includeFiles": "server/**,shared/**,drizzle.config.ts,migrations/**"
     }
   },
+  "crons": [
+    {
+      "path": "/api/cron/supabase-keepalive",
+      "schedule": "0 */6 * * *"
+    }
+  ],
   "redirects": [
     {
       "source": "/(.*)",

@@ -28,6 +28,20 @@ export const users = pgTable("users", {
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
+export const systemHeartbeats = pgTable("system_heartbeats", {
+  id: serial("id").primaryKey(),
+  source: text("source").notNull().default("vercel-cron"),
+  note: text("note").default(""),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertSystemHeartbeatSchema = createInsertSchema(systemHeartbeats).omit({
+  id: true,
+  createdAt: true,
+});
+export type SystemHeartbeat = typeof systemHeartbeats.$inferSelect;
+export type InsertSystemHeartbeat = z.infer<typeof insertSystemHeartbeatSchema>;
+
 // === TABLE DEFINITIONS ===
 
 // GoHighLevel Integration Settings

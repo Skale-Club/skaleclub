@@ -120,6 +120,11 @@ SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
+### Vercel Cron (Supabase Keep-Alive)
+```env
+CRON_SECRET=your-vercel-cron-secret
+```
+
 ## Troubleshooting
 
 ### Still Getting 500 Errors?
