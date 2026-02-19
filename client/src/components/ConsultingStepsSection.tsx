@@ -285,7 +285,7 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
         cancelAnimationFrame(momentumFrameRef.current);
       }
     };
-  }, [isMobile]);
+  }, [isMobile, stepsLoop.length]);
 
   if (!section || section.enabled === false) return null;
   if (sortedSteps.length === 0) return null;
