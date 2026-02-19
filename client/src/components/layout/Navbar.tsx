@@ -12,6 +12,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { LanguageToggle } from "@/components/ui/LanguageToggle";
+import { MobileLanguageToggle } from "@/components/ui/MobileLanguageToggle";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
 
@@ -78,41 +80,8 @@ export function Navbar() {
             </a>
             )}
 
-            {/* Language Selector */}
-            <div className="flex items-center gap-2 bg-white/10 rounded-full p-1">
-              <button
-                onClick={() => setLanguage('en')}
-                className={clsx(
-                  "w-9 h-9 rounded-full flex items-center justify-center transition-all overflow-hidden",
-                  language === 'en' ? "bg-white shadow-md scale-110 ring-2 ring-white/50" : "hover:bg-white/20 hover:scale-105"
-                )}
-                title="English"
-                aria-label="Switch to English"
-              >
-                <img 
-                  src="https://flagcdn.com/w40/us.png"
-                  srcSet="https://flagcdn.com/w80/us.png 2x"
-                  alt="USA" 
-                  className="w-6 h-4 object-contain"
-                />
-              </button>
-              <button
-                onClick={() => setLanguage('pt')}
-                className={clsx(
-                  "w-9 h-9 rounded-full flex items-center justify-center transition-all overflow-hidden",
-                  language === 'pt' ? "bg-white shadow-md scale-110 ring-2 ring-white/50" : "hover:bg-white/20 hover:scale-105"
-                )}
-                title="Português"
-                aria-label="Mudar para Português"
-              >
-                <img 
-                  src="https://flagcdn.com/w40/br.png"
-                  srcSet="https://flagcdn.com/w80/br.png 2x"
-                  alt="Brasil" 
-                  className="w-6 h-4 object-contain"
-                />
-              </button>
-            </div>
+            {/* Language Toggle */}
+            <LanguageToggle />
 
             {/* User Login/Profile — fixed-size wrapper prevents layout shift */}
             <div className="w-10 h-10 flex items-center justify-center">
@@ -218,43 +187,8 @@ export function Navbar() {
 
           {/* Mobile Language Selector */}
           <div className="pt-4 border-t border-gray-100">
-            <p className="text-sm font-semibold text-slate-600 mb-3">Language / Idioma</p>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setLanguage('en')}
-                className={clsx(
-                  "flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all text-base font-medium",
-                  language === 'en' 
-                    ? "bg-primary text-white shadow-md ring-2 ring-primary/30" 
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                )}
-              >
-                <img 
-                  src="https://flagcdn.com/w40/us.png"
-                  srcSet="https://flagcdn.com/w80/us.png 2x"
-                  alt="USA" 
-                  className="w-6 h-4 object-contain"
-                />
-                English
-              </button>
-              <button
-                onClick={() => setLanguage('pt')}
-                className={clsx(
-                  "flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all text-base font-medium",
-                  language === 'pt' 
-                    ? "bg-primary text-white shadow-md ring-2 ring-primary/30" 
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                )}
-              >
-                <img 
-                  src="https://flagcdn.com/w40/br.png"
-                  srcSet="https://flagcdn.com/w80/br.png 2x"
-                  alt="Brasil" 
-                  className="w-6 h-4 object-contain"
-                />
-                Português
-              </button>
-            </div>
+            <p className="text-sm font-semibold text-slate-600 mb-4">Language</p>
+            <MobileLanguageToggle />
           </div>
 
           <div className="pt-6 border-t border-gray-100 flex flex-col gap-6">

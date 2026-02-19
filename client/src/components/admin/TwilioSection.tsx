@@ -23,16 +23,58 @@ export function TwilioSection() {
     notifyOnNewChat: true
   });
   const [newRecipient, setNewRecipient] = useState('');
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editValue, setEditValue] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<'idle' | 'success' | 'error'>('idle');
   const [testMessage, setTestMessage] = useState<string | null>(null);
 
-  const { data: twilioSettings, isLoading } = useQuery<TwilioSettings>({
+  const { data: twilioSettings, isLoading, error: twilioLoadError } = useQuery<TwilioSettings>({
     queryKey: ['/api/integrations/twilio']
   });
 
-  const cleanPhone = useCallback((value: string) => value.replace(/[\s()-]/g, '').trim(), []);
+  const cleanPhone = useCallback((value: string) => value.replace(/[^\d+]/g, '').trim(), []);
+
+  const extractUsDigits = useCallback((value: string) => {
+    const digits = value.replace(/\D/g, '');
+    if (!digits) return '';
+    return digits.startsWith('1') ? digits.slice(1, 11) : digits.slice(0, 10);
+  }, []);
+
+  const toUsE164 = useCallback((value: string) => {
+    const usDigits = extractUsDigits(value);
+    return usDigits.length === 10 ? `+1${usDigits}` : '';
+  }, [extractUsDigits]);
+
+  const formatUsPhone = useCallback((value: string) => {
+    const usDigits = extractUsDigits(value);
+    if (!usDigits) return '';
+    if (usDigits.length <= 3) return `+1 (${usDigits}`;
+    if (usDigits.length <= 6) return `+1 (${usDigits.slice(0, 3)}) ${usDigits.slice(3)}`;
+    return `+1 (${usDigits.slice(0, 3)}) ${usDigits.slice(3, 6)}-${usDigits.slice(6, 10)}`;
+  }, [extractUsDigits]);
+
+  const isCompleteUsPhone = useCallback((value: string) => extractUsDigits(value).length === 10, [extractUsDigits]);
+
+  const formatPhone = useCallback((value: string) => {
+    const digits = value.replace(/[^\d+]/g, '');
+    // US format: +1 (XXX) XXX-XXXX
+    if (digits.startsWith('+1') && digits.length > 2) {
+      const num = digits.slice(2);
+      if (num.length <= 3) return `+1 (${num}`;
+      if (num.length <= 6) return `+1 (${num.slice(0, 3)}) ${num.slice(3)}`;
+      return `+1 (${num.slice(0, 3)}) ${num.slice(3, 6)}-${num.slice(6, 10)}`;
+    }
+    // BR format: +55 (XX) XXXXX-XXXX
+    if (digits.startsWith('+55') && digits.length > 3) {
+      const num = digits.slice(3);
+      if (num.length <= 2) return `+55 (${num}`;
+      if (num.length <= 7) return `+55 (${num.slice(0, 2)}) ${num.slice(2)}`;
+      return `+55 (${num.slice(0, 2)}) ${num.slice(2, 7)}-${num.slice(7, 11)}`;
+    }
+    return digits;
+  }, []);
 
   useEffect(() => {
     if (twilioSettings) {
@@ -42,51 +84,103 @@ export function TwilioSection() {
           ? [twilioSettings.toPhoneNumber]
           : [];
 
+      const normalizedRecipients = recipients
+        .map(num => toUsE164(String(num)))
+        .filter(Boolean);
+
       setSettings({
         ...twilioSettings,
-        toPhoneNumbers: recipients,
-        toPhoneNumber: recipients[0] || '',
+        toPhoneNumbers: normalizedRecipients,
+        toPhoneNumber: normalizedRecipients[0] || '',
       });
     }
-  }, [twilioSettings]);
+  }, [twilioSettings, toUsE164]);
 
-  const handleAddRecipient = () => {
-    const cleaned = cleanPhone(newRecipient);
-    if (!cleaned) return;
-    if (settings.toPhoneNumbers.includes(cleaned)) {
-      setNewRecipient('');
-      return;
+  useEffect(() => {
+    if (twilioLoadError) {
+      toast({
+        title: 'Failed to load Twilio settings',
+        description: twilioLoadError instanceof Error ? twilioLoadError.message : 'Could not fetch settings',
+        variant: 'destructive'
+      });
     }
-    const updated = [...settings.toPhoneNumbers, cleaned];
-    setSettings(prev => ({ ...prev, toPhoneNumbers: updated, toPhoneNumber: updated[0] || '' }));
-    setNewRecipient('');
-  };
+  }, [twilioLoadError, toast]);
 
-  const handleRemoveRecipient = (value: string) => {
-    const updated = settings.toPhoneNumbers.filter(num => num !== value);
-    setSettings(prev => ({ ...prev, toPhoneNumbers: updated, toPhoneNumber: updated[0] || '' }));
-  };
+  const resolveRecipients = useCallback((numbers: string[]) => {
+    const pending = toUsE164(newRecipient);
+    if (!pending || numbers.includes(pending)) return numbers;
+    return [...numbers, pending];
+  }, [newRecipient, toUsE164]);
 
-  const saveSettings = async () => {
+  const persistSettings = useCallback(async (
+    nextSettings: TwilioSettings,
+    options?: { successTitle?: string }
+  ) => {
     setIsSaving(true);
     try {
-      const recipients = settings.toPhoneNumbers;
       await apiRequest('PUT', '/api/integrations/twilio', {
-        ...settings,
-        toPhoneNumbers: recipients,
-        toPhoneNumber: recipients[0] || ''
+        ...nextSettings,
+        toPhoneNumbers: nextSettings.toPhoneNumbers,
+        toPhoneNumber: nextSettings.toPhoneNumbers[0] || ''
       });
       queryClient.invalidateQueries({ queryKey: ['/api/integrations/twilio'] });
-      toast({ title: 'Twilio settings saved successfully' });
+      if (options?.successTitle) {
+        toast({ title: options.successTitle });
+      }
     } catch (error: any) {
       toast({
         title: 'Failed to save Twilio settings',
         description: error.message,
         variant: 'destructive'
       });
+      throw error;
     } finally {
       setIsSaving(false);
     }
+  }, [toast]);
+
+  const handleAddRecipient = () => {
+    const normalized = toUsE164(newRecipient);
+    if (!normalized) return;
+    if (settings.toPhoneNumbers.includes(normalized)) {
+      setNewRecipient('');
+      return;
+    }
+    const updated = [...settings.toPhoneNumbers, normalized];
+    const nextSettings = { ...settings, toPhoneNumbers: updated, toPhoneNumber: updated[0] || '' };
+    setSettings(nextSettings);
+    setNewRecipient('');
+    void persistSettings(nextSettings);
+  };
+
+  const handleRemoveRecipient = (value: string) => {
+    const updated = settings.toPhoneNumbers.filter(num => num !== value);
+    const nextSettings = { ...settings, toPhoneNumbers: updated, toPhoneNumber: updated[0] || '' };
+    setSettings(nextSettings);
+    void persistSettings(nextSettings);
+  };
+
+  const handleStartEdit = (index: number) => {
+    setEditingIndex(index);
+    setEditValue(extractUsDigits(settings.toPhoneNumbers[index]));
+  };
+
+  const handleSaveEdit = () => {
+    if (editingIndex === null) return;
+    const normalized = toUsE164(editValue);
+    if (!normalized) return;
+    const updated = [...settings.toPhoneNumbers];
+    updated[editingIndex] = normalized;
+    const nextSettings = { ...settings, toPhoneNumbers: updated, toPhoneNumber: updated[0] || '' };
+    setSettings(nextSettings);
+    setEditingIndex(null);
+    setEditValue('');
+    void persistSettings(nextSettings);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingIndex(null);
+    setEditValue('');
   };
 
   const testConnection = async () => {
@@ -94,6 +188,7 @@ export function TwilioSection() {
     setTestResult('idle');
     setTestMessage(null);
     try {
+      const recipients = resolveRecipients(settings.toPhoneNumbers);
       const response = await fetch('/api/integrations/twilio/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -101,8 +196,8 @@ export function TwilioSection() {
           accountSid: settings.accountSid,
           authToken: settings.authToken,
           fromPhoneNumber: settings.fromPhoneNumber,
-          toPhoneNumbers: settings.toPhoneNumbers,
-          toPhoneNumber: settings.toPhoneNumber
+          toPhoneNumbers: recipients,
+          toPhoneNumber: recipients[0] || ''
         }),
         credentials: 'include'
       });
@@ -143,7 +238,7 @@ export function TwilioSection() {
       });
       return;
     }
-    const recipients = settings.toPhoneNumbers;
+    const recipients = resolveRecipients(settings.toPhoneNumbers);
     if (checked && !recipients.length) {
       toast({
         title: 'Add at least one recipient',
@@ -154,21 +249,17 @@ export function TwilioSection() {
     }
     const newSettings = { ...settings, enabled: checked, toPhoneNumbers: recipients, toPhoneNumber: recipients[0] || '' };
     setSettings(newSettings);
-    setIsSaving(true);
     try {
-      await apiRequest('PUT', '/api/integrations/twilio', newSettings);
-      queryClient.invalidateQueries({ queryKey: ['/api/integrations/twilio'] });
-      toast({ title: checked ? 'Twilio enabled' : 'Twilio disabled' });
+      await persistSettings(newSettings, { successTitle: checked ? 'Twilio enabled' : 'Twilio disabled' });
     } catch (error: any) {
-      toast({
-        title: 'Failed to update settings',
-        description: error.message,
-        variant: 'destructive'
-      });
       setSettings(prev => ({ ...prev, enabled: !checked }));
-    } finally {
-      setIsSaving(false);
     }
+  };
+
+  const handleNotifyOnNewChatChange = (checked: boolean) => {
+    const nextSettings = { ...settings, notifyOnNewChat: checked };
+    setSettings(nextSettings);
+    void persistSettings(nextSettings);
   };
 
   const testButtonClass =
@@ -219,6 +310,7 @@ export function TwilioSection() {
                 type="text"
                 value={settings.accountSid}
                 onChange={(e) => setSettings(prev => ({ ...prev, accountSid: e.target.value }))}
+                onBlur={() => void persistSettings(settings)}
                 placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                 data-testid="input-twilio-account-sid"
               />
@@ -230,7 +322,8 @@ export function TwilioSection() {
                 type="password"
                 value={settings.authToken}
                 onChange={(e) => setSettings(prev => ({ ...prev, authToken: e.target.value }))}
-                placeholder="â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢â¬¢"
+                onBlur={() => void persistSettings(settings)}
+                placeholder="Your Twilio Auth Token"
                 data-testid="input-twilio-auth-token"
               />
             </div>
@@ -242,9 +335,10 @@ export function TwilioSection() {
               <Input
                 id="twilio-from-phone"
                 type="tel"
-                value={settings.fromPhoneNumber}
-                onChange={(e) => setSettings(prev => ({ ...prev, fromPhoneNumber: e.target.value }))}
-                placeholder="+1234567890"
+                value={formatPhone(settings.fromPhoneNumber)}
+                onChange={(e) => setSettings(prev => ({ ...prev, fromPhoneNumber: cleanPhone(e.target.value) }))}
+                onBlur={() => void persistSettings(settings)}
+                placeholder="+1 (555) 123-4567"
                 data-testid="input-twilio-from-phone"
               />
               <p className="text-xs text-muted-foreground">
@@ -257,38 +351,71 @@ export function TwilioSection() {
                 <Input
                   id="twilio-to-phone"
                   type="tel"
-                  value={newRecipient}
-                  onChange={(e) => setNewRecipient(e.target.value)}
-                  placeholder="+1234567890"
+                  value={formatUsPhone(newRecipient)}
+                  onChange={(e) => setNewRecipient(extractUsDigits(e.target.value))}
+                  placeholder="+1 (555) 123-4567"
                   data-testid="input-twilio-to-phone"
                 />
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleAddRecipient}
-                  disabled={!newRecipient.trim()}
+                  disabled={!isCompleteUsPhone(newRecipient)}
                 >
                   + Add
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">Phone numbers to receive notifications</p>
               {settings.toPhoneNumbers.length > 0 && (
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {settings.toPhoneNumbers.map((num) => (
+                <div className="flex flex-col gap-2 pt-1">
+                  {settings.toPhoneNumbers.map((num, index) => (
                     <div
-                      key={num}
-                      className="flex items-center gap-2 px-3 py-1 rounded-full bg-muted text-sm"
+                      key={index}
+                      className="flex items-center gap-2"
                     >
-                      <span>{num}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveRecipient(num)}
-                        className="h-6 px-2"
-                      >
-                        Remove
-                      </Button>
+                      {editingIndex === index ? (
+                        <>
+                          <Input
+                            type="tel"
+                            value={formatUsPhone(editValue)}
+                            onChange={(e) => setEditValue(extractUsDigits(e.target.value))}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveEdit();
+                              if (e.key === 'Escape') handleCancelEdit();
+                            }}
+                            className="h-8 text-sm flex-1"
+                            autoFocus
+                          />
+                          <Button type="button" variant="outline" size="sm" onClick={handleSaveEdit} className="h-8 px-2 text-xs">
+                            Save
+                          </Button>
+                          <Button type="button" variant="ghost" size="sm" onClick={handleCancelEdit} className="h-8 px-2 text-xs">
+                            Cancel
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-sm">{formatUsPhone(num)}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleStartEdit(index)}
+                            className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveRecipient(num)}
+                            className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive"
+                          >
+                            Remove
+                          </Button>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -300,7 +427,7 @@ export function TwilioSection() {
             <Checkbox
               id="notify-new-chat"
               checked={settings.notifyOnNewChat}
-              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, notifyOnNewChat: checked as boolean }))}
+              onCheckedChange={(checked) => handleNotifyOnNewChatChange(checked as boolean)}
               data-testid="checkbox-notify-new-chat"
             />
             <Label htmlFor="notify-new-chat" className="text-sm font-normal cursor-pointer">
@@ -310,14 +437,6 @@ export function TwilioSection() {
 
           <div className="flex items-center gap-3 pt-4 border-t">
             <Button
-              onClick={saveSettings}
-              disabled={isSaving}
-              data-testid="button-save-twilio"
-            >
-              {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Save Settings
-            </Button>
-            <Button
               variant="outline"
               className={testButtonClass}
               onClick={testConnection}
@@ -326,7 +445,7 @@ export function TwilioSection() {
                 || !settings.accountSid
                 || !settings.authToken
                 || !settings.fromPhoneNumber
-                || !(settings.toPhoneNumbers?.length)
+                || !(settings.toPhoneNumbers?.length || isCompleteUsPhone(newRecipient))
               }
               data-testid="button-test-twilio"
             >

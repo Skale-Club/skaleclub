@@ -72,7 +72,7 @@ function SidebarSortableItem({
         data-testid={`menu-${item.id}`}
       >
         <span {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
-          <GripVertical className="w-4 h-4 text-muted-foreground/60 group-hover/item:text-sidebar-accent-foreground transition-colors" />
+          <GripVertical className="w-4 h-4 opacity-0 group-hover/item:opacity-100 text-muted-foreground/60 group-hover/item:text-sidebar-accent-foreground transition-all" />
         </span>
         <item.icon className="w-4 h-4" />
         <span className="font-medium">{item.title}</span>

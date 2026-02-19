@@ -77,7 +77,7 @@ export async function getActiveAIClient(): Promise<{
 
     return {
       client: getGeminiClient(apiKey),
-      model: geminiIntegration.model || 'gemini-1.5-flash',
+      model: geminiIntegration.model || 'gemini-2.0-flash',
       provider: 'gemini'
     };
   }

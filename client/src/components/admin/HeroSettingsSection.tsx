@@ -23,9 +23,9 @@ export function HeroSettingsSection() {
   const heroMenuTitle = SIDEBAR_MENU_ITEMS.find((item) => item.id === 'hero')?.title ?? 'Hero Section';
 
   const HERO_DEFAULTS = {
-    title: 'Gere clientes de forma previsível',
-    subtitle: 'Consultoria em marketing digital para prestadores de serviço nos EUA. Transforme seu negócio com estratégias comprovadas de aquisição e conversão de clientes.',
-    ctaText: 'Agendar Conversa Gratuita',
+    title: 'Learn How to Generate Your Own Clients in the USA',
+    subtitle: '1-on-1 mentorship in digital marketing for Brazilian entrepreneurs.',
+    ctaText: 'Schedule Free Consultation',
     image: '',
   };
 
@@ -1226,7 +1226,7 @@ export function HeroSettingsSection() {
                     'homepageContent.consultingStepsSection.ctaButtonLabel'
                   )
                 }
-                placeholder="Agendar Conversa Gratuita"
+                placeholder="Schedule Free Consultation"
               />
               <SavedIndicator field="homepageContent.consultingStepsSection.ctaButtonLabel" />
             </div>

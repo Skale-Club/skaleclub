@@ -133,6 +133,11 @@ export const translations = {
     'October': 'Outubro',
     'November': 'Novembro',
     'December': 'Dezembro',
+    
+    // Footer
+    'All rights reserved.': 'Todos os direitos reservados.',
+    'Privacy Policy': 'Política de Privacidade',
+    'Terms of Service': 'Termos de Serviço',
   }
 } as const;
 

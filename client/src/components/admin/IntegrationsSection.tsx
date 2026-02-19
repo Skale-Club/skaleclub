@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Check, LayoutGrid, Loader2 } from 'lucide-react';
+import { Bot, Check, LayoutGrid, Loader2 } from 'lucide-react';
 import { SiFacebook, SiGoogle, SiGoogleanalytics, SiGoogletagmanager, SiOpenai } from 'react-icons/si';
 import ghlLogo from '@assets/ghl-logo.webp';
 import { Button } from '@/components/ui/button';
@@ -12,11 +12,15 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { SIDEBAR_MENU_ITEMS } from './shared/constants';
-import type { AnalyticsSettings, GHLSettings, OpenAISettings } from './shared/types';
+import type { AnalyticsSettings, ChatSettingsData, GHLSettings, OpenAISettings } from './shared/types';
 import { TwilioSection } from './TwilioSection';
+
+type AIProviderTab = 'openai' | 'gemini';
+
 export function IntegrationsSection() {
   const { toast } = useToast();
   const MASKED_OPENAI_KEY = '********';
+  const [activeTab, setActiveTab] = useState<AIProviderTab>('openai');
   const [settings, setSettings] = useState<GHLSettings>({
     provider: 'gohighlevel',
     apiKey: '',
@@ -40,7 +44,7 @@ export function IntegrationsSection() {
   const [geminiSettings, setGeminiSettings] = useState<OpenAISettings>({
     provider: 'gemini',
     enabled: false,
-    model: 'gemini-1.5-flash',
+    model: 'gemini-2.0-flash',
     hasKey: false
   });
   const [geminiApiKey, setGeminiApiKey] = useState('');
@@ -81,6 +85,17 @@ export function IntegrationsSection() {
     queryKey: ['/api/company-settings']
   });
 
+  const { data: chatSettingsData } = useQuery<ChatSettingsData>({
+    queryKey: ['/api/chat/settings']
+  });
+
+  // Sync active tab with persisted activeAiProvider
+  useEffect(() => {
+    if (chatSettingsData?.activeAiProvider) {
+      setActiveTab(chatSettingsData.activeAiProvider as AIProviderTab);
+    }
+  }, [chatSettingsData]);
+
   useEffect(() => {
     if (ghlSettings) {
       setSettings(ghlSettings);
@@ -102,9 +117,14 @@ export function IntegrationsSection() {
     }
   }, [openaiSettingsData]);
 
+  const VALID_GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro'];
+
   useEffect(() => {
     if (geminiSettingsData) {
-      setGeminiSettings(geminiSettingsData);
+      const model = VALID_GEMINI_MODELS.includes(geminiSettingsData.model)
+        ? geminiSettingsData.model
+        : 'gemini-2.0-flash';
+      setGeminiSettings({ ...geminiSettingsData, model });
       if (geminiSettingsData.hasKey) {
         setGeminiTestResult('success');
         setGeminiTestMessage(geminiSettingsData.enabled ? 'Gemini is enabled.' : 'Key saved. Run test to verify connection.');
@@ -173,7 +193,8 @@ export function IntegrationsSection() {
       await apiRequest('PUT', '/api/integrations/openai', {
         enabled: settingsToSave?.enabled ?? openAISettings.enabled,
         model: settingsToSave?.model || openAISettings.model,
-        apiKey: settingsToSave?.apiKey || openAIApiKey || undefined
+        apiKey: (settingsToSave?.apiKey && settingsToSave.apiKey !== MASKED_OPENAI_KEY ? settingsToSave.apiKey : undefined) ||
+               (openAIApiKey && openAIApiKey !== MASKED_OPENAI_KEY ? openAIApiKey : undefined)
       });
       queryClient.invalidateQueries({ queryKey: ['/api/integrations/openai'] });
       setOpenAIApiKey('');
@@ -219,7 +240,7 @@ export function IntegrationsSection() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          apiKey: openAIApiKey || undefined,
+          apiKey: openAIApiKey && openAIApiKey !== MASKED_OPENAI_KEY ? openAIApiKey : undefined,
           model: openAISettings.model
         }),
         credentials: 'include'
@@ -275,7 +296,8 @@ export function IntegrationsSection() {
       await apiRequest('PUT', '/api/integrations/gemini', {
         enabled: settingsToSave?.enabled ?? geminiSettings.enabled,
         model: settingsToSave?.model || geminiSettings.model,
-        apiKey: settingsToSave?.apiKey || geminiApiKey || undefined
+        apiKey: (settingsToSave?.apiKey && settingsToSave.apiKey !== MASKED_OPENAI_KEY ? settingsToSave.apiKey : undefined) ||
+               (geminiApiKey && geminiApiKey !== MASKED_OPENAI_KEY ? geminiApiKey : undefined)
       });
       queryClient.invalidateQueries({ queryKey: ['/api/integrations/gemini'] });
       setGeminiApiKey('');
@@ -321,7 +343,7 @@ export function IntegrationsSection() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          apiKey: geminiApiKey || undefined,
+          apiKey: geminiApiKey && geminiApiKey !== MASKED_OPENAI_KEY ? geminiApiKey : undefined,
           model: geminiSettings.model
         }),
         credentials: 'include'
@@ -368,6 +390,20 @@ export function IntegrationsSection() {
       setGeminiTestMessage(error.message || 'Connection failed.');
     } finally {
       setIsTestingGemini(false);
+    }
+  };
+
+  const switchActiveProvider = async (provider: AIProviderTab) => {
+    setActiveTab(provider);
+    try {
+      await apiRequest('PUT', '/api/chat/settings', { activeAiProvider: provider });
+      queryClient.invalidateQueries({ queryKey: ['/api/chat/settings'] });
+    } catch (error: any) {
+      toast({
+        title: 'Failed to switch active provider',
+        description: error.message,
+        variant: 'destructive'
+      });
     }
   };
 
@@ -477,24 +513,74 @@ export function IntegrationsSection() {
         <p className="text-muted-foreground">Connect your lead and chat workflows with external services</p>
       </div>
 
-      <div className="space-y-4">
-        <Card className="border-0 bg-muted">
-          <CardHeader>
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <SiOpenai className="w-5 h-5 text-black dark:text-white" />
-                </div>
+      <Card className="border-0 bg-muted">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Bot className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-lg">AI Assistant</CardTitle>
+              <p className="text-sm text-muted-foreground">Configure your AI-powered chat assistant</p>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Provider tabs */}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => switchActiveProvider('openai')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-all flex-1 ${
+                activeTab === 'openai'
+                  ? 'bg-white dark:bg-card border-border shadow-sm'
+                  : 'bg-transparent border-transparent hover:bg-white/50 dark:hover:bg-card/50'
+              }`}
+            >
+              <SiOpenai className="w-4 h-4" />
+              <span>OpenAI</span>
+              <span className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                openAISettings.enabled
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                  : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+              }`}>
+                {openAISettings.enabled ? 'ON' : 'OFF'}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => switchActiveProvider('gemini')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-all flex-1 ${
+                activeTab === 'gemini'
+                  ? 'bg-white dark:bg-card border-border shadow-sm'
+                  : 'bg-transparent border-transparent hover:bg-white/50 dark:hover:bg-card/50'
+              }`}
+            >
+              <SiGoogle className="w-4 h-4" />
+              <span>Gemini</span>
+              <span className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                geminiSettings.enabled
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                  : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+              }`}>
+                {geminiSettings.enabled ? 'ON' : 'OFF'}
+              </span>
+            </button>
+          </div>
+
+          {/* Active in chat indicator */}
+          <p className="text-xs text-muted-foreground">
+            Active in chat now: <span className="font-semibold text-foreground">{activeTab === 'openai' ? 'OpenAI' : 'Gemini'}</span>
+          </p>
+
+          {/* OpenAI panel */}
+          {activeTab === 'openai' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between p-4 bg-white dark:bg-card rounded-lg border">
                 <div>
-                  <CardTitle className="text-lg">OpenAI</CardTitle>
-                  <p className="text-sm text-muted-foreground">Power the chat assistant with OpenAI responses</p>
+                  <p className="font-medium text-sm">Enable OpenAI</p>
+                  <p className="text-xs text-muted-foreground">Use ChatGPT models for responses</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {isSavingOpenAI && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
-                <Label className="text-sm">
-                  {openAISettings.enabled ? 'Enabled' : 'Disabled'}
-                </Label>
                 <Switch
                   checked={openAISettings.enabled}
                   onCheckedChange={handleToggleOpenAI}
@@ -502,52 +588,49 @@ export function IntegrationsSection() {
                   data-testid="switch-openai-enabled"
                 />
               </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="openai-api-key">API Key</Label>
-                <Input
-                  id="openai-api-key"
-                  type="password"
-                  value={openAIApiKey}
-                  onChange={(e) => setOpenAIApiKey(e.target.value)}
-                  onFocus={() => {
-                    if (openAIApiKey === MASKED_OPENAI_KEY) {
-                      setOpenAIApiKey('');
-                    }
-                  }}
-                  onBlur={() => {
-                    if (!openAIApiKey && openAISettings.hasKey) {
-                      setOpenAIApiKey(MASKED_OPENAI_KEY);
-                    }
-                  }}
-                  placeholder="sk-..."
-                  data-testid="input-openai-api-key"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Stored securely on the server. Not returned after saving.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="openai-model">Model</Label>
-                <Select
-                  value={openAISettings.model}
-                  onValueChange={(val) => setOpenAISettings(prev => ({ ...prev, model: val }))}
-                >
-                  <SelectTrigger id="openai-model">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="gpt-4o-mini">gpt-4o-mini</SelectItem>
-                    <SelectItem value="gpt-4o">gpt-4o</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
 
-            <div className="flex items-center gap-3 pt-4 border-t">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="openai-api-key">API Key</Label>
+                  <Input
+                    id="openai-api-key"
+                    type="password"
+                    value={openAIApiKey}
+                    onChange={(e) => setOpenAIApiKey(e.target.value)}
+                    onFocus={() => {
+                      if (openAIApiKey === MASKED_OPENAI_KEY) {
+                        setOpenAIApiKey('');
+                      }
+                    }}
+                    onBlur={() => {
+                      if (!openAIApiKey && openAISettings.hasKey) {
+                        setOpenAIApiKey(MASKED_OPENAI_KEY);
+                      }
+                    }}
+                    placeholder="sk-..."
+                    data-testid="input-openai-api-key"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Stored securely on the server. Not returned after saving.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="openai-model">Model</Label>
+                  <Select
+                    value={openAISettings.model}
+                    onValueChange={(val) => setOpenAISettings(prev => ({ ...prev, model: val }))}
+                  >
+                    <SelectTrigger id="openai-model">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="gpt-4o-mini">gpt-4o-mini</SelectItem>
+                      <SelectItem value="gpt-4o">gpt-4o</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <Button
                 variant="outline"
                 className={openAITestButtonClass}
@@ -558,45 +641,23 @@ export function IntegrationsSection() {
                 {isTestingOpenAI && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {openAITestResult === 'success' ? 'Test OK' : openAITestResult === 'error' ? 'Test Failed' : 'Test Connection'}
               </Button>
+
+              {!openAISettings.hasKey && !openAISettings.enabled && (
+                <div className="text-xs text-muted-foreground">
+                  Add a key and test the connection to enable OpenAI responses.
+                </div>
+              )}
             </div>
+          )}
 
-            {openAISettings.enabled && (
-              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
-                  <Check className="w-4 h-4" />
-                  <span className="font-medium text-sm">OpenAI is enabled.</span>
-                </div>
-                <p className="text-xs text-green-600 dark:text-green-500 mt-1">
-                  The chat assistant will use OpenAI to respond to visitors
-                </p>
-              </div>
-            )}
-
-            {!openAISettings.hasKey && !openAISettings.enabled && (
-              <div className="text-xs text-muted-foreground">
-                Add a key and test the connection to enable OpenAI responses.
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 bg-muted">
-          <CardHeader>
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <SiGoogle className="w-5 h-5 text-black dark:text-white" />
-                </div>
+          {/* Gemini panel */}
+          {activeTab === 'gemini' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between p-4 bg-white dark:bg-card rounded-lg border">
                 <div>
-                  <CardTitle className="text-lg">Google Gemini</CardTitle>
-                  <p className="text-sm text-muted-foreground">Power the chat assistant with Gemini responses</p>
+                  <p className="font-medium text-sm">Enable Gemini</p>
+                  <p className="text-xs text-muted-foreground">Use Google Gemini models for responses</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {isSavingGemini && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
-                <Label className="text-sm">
-                  {geminiSettings.enabled ? 'Enabled' : 'Disabled'}
-                </Label>
                 <Switch
                   checked={geminiSettings.enabled}
                   onCheckedChange={handleToggleGemini}
@@ -604,53 +665,52 @@ export function IntegrationsSection() {
                   data-testid="switch-gemini-enabled"
                 />
               </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="gemini-api-key">API Key</Label>
-                <Input
-                  id="gemini-api-key"
-                  type="password"
-                  value={geminiApiKey}
-                  onChange={(e) => setGeminiApiKey(e.target.value)}
-                  onFocus={() => {
-                    if (geminiApiKey === MASKED_OPENAI_KEY) {
-                      setGeminiApiKey('');
-                    }
-                  }}
-                  onBlur={() => {
-                    if (!geminiApiKey && geminiSettings.hasKey) {
-                      setGeminiApiKey(MASKED_OPENAI_KEY);
-                    }
-                  }}
-                  placeholder="AI..."
-                  data-testid="input-gemini-api-key"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Stored securely on the server. Not returned after saving.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="gemini-model">Model</Label>
-                <Select
-                  value={geminiSettings.model}
-                  onValueChange={(val) => setGeminiSettings(prev => ({ ...prev, model: val }))}
-                >
-                  <SelectTrigger id="gemini-model">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="gemini-1.5-flash">gemini-1.5-flash</SelectItem>
-                    <SelectItem value="gemini-1.5-pro">gemini-1.5-pro</SelectItem>
-                    <SelectItem value="gemini-2.0-flash">gemini-2.0-flash</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
 
-            <div className="flex items-center gap-3 pt-4 border-t">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="gemini-api-key">API Key</Label>
+                  <Input
+                    id="gemini-api-key"
+                    type="password"
+                    value={geminiApiKey}
+                    onChange={(e) => setGeminiApiKey(e.target.value)}
+                    onFocus={() => {
+                      if (geminiApiKey === MASKED_OPENAI_KEY) {
+                        setGeminiApiKey('');
+                      }
+                    }}
+                    onBlur={() => {
+                      if (!geminiApiKey && geminiSettings.hasKey) {
+                        setGeminiApiKey(MASKED_OPENAI_KEY);
+                      }
+                    }}
+                    placeholder="AI..."
+                    data-testid="input-gemini-api-key"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Stored securely on the server. Not returned after saving.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="gemini-model">Model</Label>
+                  <Select
+                    value={geminiSettings.model}
+                    onValueChange={(val) => setGeminiSettings(prev => ({ ...prev, model: val }))}
+                  >
+                    <SelectTrigger id="gemini-model">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="gemini-2.0-flash">gemini-2.0-flash</SelectItem>
+                      <SelectItem value="gemini-2.0-flash-lite">gemini-2.0-flash-lite</SelectItem>
+                      <SelectItem value="gemini-2.5-flash">gemini-2.5-flash</SelectItem>
+                      <SelectItem value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</SelectItem>
+                      <SelectItem value="gemini-2.5-pro">gemini-2.5-pro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <Button
                 variant="outline"
                 className={geminiTestButtonClass}
@@ -661,28 +721,16 @@ export function IntegrationsSection() {
                 {isTestingGemini && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {geminiTestResult === 'success' ? 'Test OK' : geminiTestResult === 'error' ? 'Test Failed' : 'Test Connection'}
               </Button>
-            </div>
 
-            {geminiSettings.enabled && (
-              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
-                  <Check className="w-4 h-4" />
-                  <span className="font-medium text-sm">Gemini is enabled.</span>
+              {!geminiSettings.hasKey && !geminiSettings.enabled && (
+                <div className="text-xs text-muted-foreground">
+                  Add a key and test the connection to enable Gemini responses.
                 </div>
-                <p className="text-xs text-green-600 dark:text-green-500 mt-1">
-                  The chat assistant will use Gemini to respond to visitors
-                </p>
-              </div>
-            )}
-
-            {!geminiSettings.hasKey && !geminiSettings.enabled && (
-              <div className="text-xs text-muted-foreground">
-                Add a key and test the connection to enable Gemini responses.
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="space-y-4">
         <Card className="border-0 bg-muted">
@@ -787,36 +835,37 @@ export function IntegrationsSection() {
       <TwilioSection />
 
       <div className="space-y-6">
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card className="border-0 bg-muted">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <Card className="border-0 bg-muted min-w-0">
+            <CardHeader className="pb-2">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
                     <SiGoogletagmanager className="w-4 h-4 text-[#1A73E8] dark:text-[#8AB4F8]" />
                   </div>
-                  <CardTitle className="text-base">Google Tag Manager</CardTitle>
+                  <CardTitle className="text-sm sm:text-base leading-tight">Google Tag Manager</CardTitle>
                 </div>
                 <Switch
                   checked={analyticsSettings.gtmEnabled}
                   onCheckedChange={(checked) => updateAnalyticsField('gtmEnabled', checked)}
+                  className="shrink-0"
                   data-testid="switch-gtm-enabled"
                 />
               </div>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2.5">
               <div className="space-y-2">
-                <Label htmlFor="gtm-id" className="text-sm">Container ID</Label>
+                <Label htmlFor="gtm-id" className="text-xs sm:text-sm">Container ID</Label>
                 <Input
                   id="gtm-id"
                   value={analyticsSettings.gtmContainerId}
                   onChange={(e) => updateAnalyticsField('gtmContainerId', e.target.value)}
                   placeholder="GTM-XXXXXXX"
-                  className="text-sm"
+                  className="h-9 text-sm"
                   data-testid="input-gtm-id"
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground leading-snug">
                 Find this in GTM under Admin {'->'} Container Settings
               </p>
               {analyticsSettings.gtmEnabled && hasGtmId && (
@@ -828,35 +877,36 @@ export function IntegrationsSection() {
             </CardContent>
           </Card>
 
-          <Card className="border-0 bg-muted">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+          <Card className="border-0 bg-muted min-w-0">
+            <CardHeader className="pb-2">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
                     <SiGoogleanalytics className="w-4 h-4 text-[#E37400] dark:text-[#FFB74D]" />
                   </div>
-                  <CardTitle className="text-base">Google Analytics 4</CardTitle>
+                  <CardTitle className="text-sm sm:text-base leading-tight">Google Analytics 4</CardTitle>
                 </div>
                 <Switch
                   checked={analyticsSettings.ga4Enabled}
                   onCheckedChange={(checked) => updateAnalyticsField('ga4Enabled', checked)}
+                  className="shrink-0"
                   data-testid="switch-ga4-enabled"
                 />
               </div>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2.5">
               <div className="space-y-2">
-                <Label htmlFor="ga4-id" className="text-sm">Measurement ID</Label>
+                <Label htmlFor="ga4-id" className="text-xs sm:text-sm">Measurement ID</Label>
                 <Input
                   id="ga4-id"
                   value={analyticsSettings.ga4MeasurementId}
                   onChange={(e) => updateAnalyticsField('ga4MeasurementId', e.target.value)}
                   placeholder="G-XXXXXXXXXX"
-                  className="text-sm"
+                  className="h-9 text-sm"
                   data-testid="input-ga4-id"
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground leading-snug">
                 Find this in GA4 Admin {'->'} Data Streams
               </p>
               {analyticsSettings.ga4Enabled && hasGa4Id && (
@@ -868,35 +918,36 @@ export function IntegrationsSection() {
             </CardContent>
           </Card>
 
-          <Card className="border-0 bg-muted">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+          <Card className="border-0 bg-muted min-w-0">
+            <CardHeader className="pb-2">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
                     <SiFacebook className="w-4 h-4 text-[#1877F2] dark:text-[#5AA2FF]" />
                   </div>
-                  <CardTitle className="text-base">Facebook Pixel</CardTitle>
+                  <CardTitle className="text-sm sm:text-base leading-tight">Facebook Pixel</CardTitle>
                 </div>
                 <Switch
                   checked={analyticsSettings.facebookPixelEnabled}
                   onCheckedChange={(checked) => updateAnalyticsField('facebookPixelEnabled', checked)}
+                  className="shrink-0"
                   data-testid="switch-fb-pixel-enabled"
                 />
               </div>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2.5">
               <div className="space-y-2">
-                <Label htmlFor="fb-pixel-id" className="text-sm">Pixel ID</Label>
+                <Label htmlFor="fb-pixel-id" className="text-xs sm:text-sm">Pixel ID</Label>
                 <Input
                   id="fb-pixel-id"
                   value={analyticsSettings.facebookPixelId}
                   onChange={(e) => updateAnalyticsField('facebookPixelId', e.target.value)}
                   placeholder="123456789012345"
-                  className="text-sm"
+                  className="h-9 text-sm"
                   data-testid="input-fb-pixel-id"
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground leading-snug">
                 Find this in Meta Events Manager
               </p>
               {analyticsSettings.facebookPixelEnabled && hasFacebookPixelId && (

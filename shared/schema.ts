@@ -42,6 +42,25 @@ export const insertSystemHeartbeatSchema = createInsertSchema(systemHeartbeats).
 export type SystemHeartbeat = typeof systemHeartbeats.$inferSelect;
 export type InsertSystemHeartbeat = z.infer<typeof insertSystemHeartbeatSchema>;
 
+// Translations Table (AI-powered dynamic translations)
+export const translations = pgTable("translations", {
+  id: serial("id").primaryKey(),
+  sourceText: text("source_text").notNull(),
+  sourceLanguage: text("source_language").notNull().default("en"),
+  targetLanguage: text("target_language").notNull(),
+  translatedText: text("translated_text").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertTranslationSchema = createInsertSchema(translations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type Translation = typeof translations.$inferSelect;
+export type InsertTranslation = z.infer<typeof insertTranslationSchema>;
+
 // === TABLE DEFINITIONS ===
 
 // GoHighLevel Integration Settings

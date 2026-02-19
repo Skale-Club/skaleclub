@@ -62,6 +62,17 @@ async function ensureTwilioSchema() {
   if (ensureTwilioColumnsPromise) return ensureTwilioColumnsPromise;
   ensureTwilioColumnsPromise = pool
     .query(`
+      CREATE TABLE IF NOT EXISTS twilio_settings (
+        id SERIAL PRIMARY KEY,
+        enabled BOOLEAN DEFAULT false,
+        account_sid TEXT,
+        auth_token TEXT,
+        from_phone_number TEXT,
+        to_phone_number TEXT,
+        notify_on_new_chat BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
       ALTER TABLE twilio_settings ADD COLUMN IF NOT EXISTS to_phone_numbers jsonb DEFAULT '[]';
       UPDATE twilio_settings
       SET to_phone_numbers = CASE
@@ -279,8 +290,12 @@ export class DatabaseStorage implements IStorage {
 
   async getTwilioSettings(): Promise<TwilioSettings | undefined> {
     await ensureTwilioSchema();
-    const [settings] = await db.select().from(twilioSettings).limit(1);
-    return settings;
+    const [settings] = await db.select().from(twilioSettings).orderBy(asc(twilioSettings.id)).limit(1);
+    if (settings) return settings;
+
+    // Keep Twilio settings as a singleton row to simplify reads/updates.
+    const [created] = await db.insert(twilioSettings).values({}).returning();
+    return created;
   }
 
   async saveTwilioSettings(settings: InsertTwilioSettings): Promise<TwilioSettings> {

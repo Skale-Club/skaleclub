@@ -18,8 +18,8 @@ import { testGHLConnection, getOrCreateGHLContact, getGHLCustomFields } from "./
 import { sendHotLeadNotification, sendLowPerformanceAlert, sendNewChatNotification } from "./integrations/twilio.js";
 import { registerStorageRoutes } from "./storage/storageAdapter.js";
 import { db } from "./db.js";
-import { users, systemHeartbeats } from "#shared/schema.js";
-import { eq, sql } from "drizzle-orm";
+import { users, systemHeartbeats, translations } from "#shared/schema.js";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 const isReplit = !!process.env.REPL_ID;
 
@@ -1697,7 +1697,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
       res.json({
         provider: 'gemini',
         enabled: integration?.enabled || false,
-        model: integration?.model || 'gemini-1.5-flash',
+        model: integration?.model || 'gemini-2.0-flash',
         hasKey: !!(getRuntimeGeminiKey() || runtimeGeminiKey || process.env.GEMINI_API_KEY || integration?.apiKey),
       });
     } catch (err) {
@@ -1731,7 +1731,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
       const updated = await storage.upsertChatIntegration({
         provider: 'gemini',
         enabled: payload.enabled ?? false,
-        model: payload.model || 'gemini-1.5-flash',
+        model: payload.model || 'gemini-2.0-flash',
         apiKey: keyToPersist,
       });
 
@@ -1774,7 +1774,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
 
       try {
         await client.chat.completions.create({
-          model: model || 'gemini-1.5-flash',
+          model: model || 'gemini-2.0-flash',
           messages: [{ role: 'user', content: 'Say pong' }],
           max_tokens: 5,
         });
@@ -1793,7 +1793,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
       await storage.upsertChatIntegration({
         provider: 'gemini',
         enabled: existing?.enabled ?? false,
-        model: model || existing?.model || 'gemini-1.5-flash',
+        model: model || existing?.model || 'gemini-2.0-flash',
         apiKey: keyToUse,
       });
 
@@ -2516,6 +2516,112 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
         return res.status(400).json({ message: 'Validation error', errors: err.errors });
       }
       res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  // === TRANSLATION API (Dynamic AI-powered translations) ===
+  app.post('/api/translate', async (req, res) => {
+    try {
+      const { texts, targetLanguage = 'pt' } = z.object({
+        texts: z.array(z.string()),
+        targetLanguage: z.string().default('pt'),
+      }).parse(req.body);
+
+      if (texts.length === 0) {
+        return res.json({ translations: {} });
+      }
+
+      // Check cache for existing translations
+      const cached = await db
+        .select()
+        .from(translations)
+        .where(
+          and(
+            eq(translations.sourceLanguage, 'en'),
+            eq(translations.targetLanguage, targetLanguage),
+            inArray(translations.sourceText, texts)
+          )
+        );
+
+      const cacheMap = new Map(cached.map(t => [t.sourceText, t.translatedText]));
+      const untranslated = texts.filter(text => !cacheMap.has(text));
+
+      // If all translations are cached, return immediately
+      if (untranslated.length === 0) {
+        const result: Record<string, string> = {};
+        texts.forEach(text => {
+          result[text] = cacheMap.get(text)!;
+        });
+        return res.json({ translations: result });
+      }
+
+      // Use Gemini to translate untranslated texts
+      const aiClient = await getActiveAIClient();
+      if (!aiClient || !aiClient.client) {
+        // Fallback: return original texts
+        const result: Record<string, string> = {};
+        texts.forEach(text => {
+          result[text] = cacheMap.get(text) || text;
+        });
+        return res.json({ translations: result });
+      }
+
+      const prompt = `Translate the following English texts to ${targetLanguage === 'pt' ? 'Brazilian Portuguese (pt-BR)' : targetLanguage}.
+Return ONLY a JSON object where keys are the original English texts and values are the translations.
+Do not add any explanations or markdown formatting. Just pure JSON.
+
+Texts to translate:
+${untranslated.map((t, i) => `${i + 1}. ${t}`).join('\n')}`;
+
+      const completion = await aiClient.client.chat.completions.create({
+        model: aiClient.model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.3,
+      });
+
+      const responseText = completion.choices[0]?.message?.content?.trim() || '{}';
+      let translationsFromAI: Record<string, string> = {};
+      
+      try {
+        // Try to parse JSON from response
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          translationsFromAI = JSON.parse(jsonMatch[0]);
+        }
+      } catch (parseErr) {
+        console.error('Failed to parse AI translation response:', parseErr);
+      }
+
+      // Save new translations to database
+      const toInsert = untranslated
+        .filter(text => translationsFromAI[text])
+        .map(text => ({
+          sourceText: text,
+          sourceLanguage: 'en' as const,
+          targetLanguage,
+          translatedText: translationsFromAI[text],
+        }));
+
+      if (toInsert.length > 0) {
+        await db.insert(translations).values(toInsert).onConflictDoNothing();
+      }
+
+      // Combine cached and new translations
+      const result: Record<string, string> = {};
+      texts.forEach(text => {
+        result[text] = cacheMap.get(text) || translationsFromAI[text] || text;
+      });
+
+      res.json({ translations: result });
+    } catch (err) {
+      console.error('Translation error:', err);
+      // Fallback: return original texts
+      const texts = Array.isArray(req.body?.texts) ? req.body.texts : [];
+      const result: Record<string, string> = {};
+      texts.forEach((text: string) => {
+        result[text] = text;
+      });
+      res.json({ translations: result });
     }
   });
 
