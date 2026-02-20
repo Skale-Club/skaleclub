@@ -120,10 +120,17 @@ SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
-### Vercel Cron (Supabase Keep-Alive)
+### GitHub Actions Cron (Supabase Keep-Alive)
 ```env
-CRON_SECRET=your-vercel-cron-secret
+CRON_SECRET=your-cron-secret
 ```
+
+Configure these GitHub repository secrets:
+- `SUPABASE_KEEPALIVE_URL` (example: `https://skale.club/api/cron/supabase-keepalive`)
+- `CRON_SECRET` (must match the app/server environment variable)
+
+Workflow file:
+- `.github/workflows/supabase-keepalive.yml` with schedule `0 0 * * *`
 
 ## Troubleshooting
 

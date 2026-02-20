@@ -44,7 +44,7 @@ DATABASE_URL=postgresql://user:password@host:port/database
 SESSION_SECRET=your-session-secret
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD_HASH=bcrypt-hashed-password
-CRON_SECRET=your-vercel-cron-secret
+CRON_SECRET=your-cron-secret
 ```
 
 ### Installation
@@ -72,11 +72,14 @@ The app will be available at `http://localhost:5000`.
 | `npm run check` | TypeScript type checking |
 | `npm run db:push` | Apply database schema changes |
 
-## Supabase Keep-Alive (Vercel Cron)
+## Supabase Keep-Alive (GitHub Actions)
 
 - Cron route: `GET /api/cron/supabase-keepalive`
-- Schedule: once per day (`0 0 * * *`) via `vercel.json` (Hobby-compatible)
-- Security: set `CRON_SECRET` in Vercel env vars
+- Schedule: once per day (`0 0 * * *`) via `.github/workflows/supabase-keepalive.yml`
+- Security: set `CRON_SECRET` in app env vars and in GitHub repo secrets
+- Required GitHub secrets:
+  - `SUPABASE_KEEPALIVE_URL` (example: `https://skale.club/api/cron/supabase-keepalive`)
+  - `CRON_SECRET`
 - Storage: each run writes a timestamp row into `system_heartbeats`
 
 ## Project Structure

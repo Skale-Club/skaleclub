@@ -166,7 +166,7 @@ export async function registerRoutes(
       const [heartbeat] = await db
         .insert(systemHeartbeats)
         .values({
-          source: 'vercel-cron',
+          source: 'github-actions',
           note: 'supabase-keepalive',
         })
         .returning({
