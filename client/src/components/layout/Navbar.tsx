@@ -16,6 +16,7 @@ import { LanguageToggle } from "@/components/ui/LanguageToggle";
 import { MobileLanguageToggle } from "@/components/ui/MobileLanguageToggle";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
+import { trackEvent } from "@/lib/analytics";
 
 export function Navbar() {
   const [location] = useLocation();
@@ -73,21 +74,26 @@ export function Navbar() {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8">
-            {displayPhone && (
-            <a href={`tel:${telPhone}`} className="px-4 py-2 bg-[#406EF1] hover:bg-[#355CD0] text-white font-bold rounded-full hover-elevate transition-all text-sm flex items-center gap-2">
-              <Phone className="w-4 h-4 fill-current" />
-              {displayPhone}
-            </a>
-            )}
-
             {/* Language Toggle */}
             <LanguageToggle />
+
+            {/* Phone Button */}
+            {displayPhone && (
+              <a
+                href={`tel:${telPhone}`}
+                onClick={() => trackEvent('click_call', { location: 'navbar', label: displayPhone })}
+                className="px-4 py-2 bg-[#406EF1] hover:bg-[#355CD0] text-white font-bold rounded-full hover-elevate transition-all text-sm flex items-center gap-2"
+              >
+                <Phone className="w-4 h-4 fill-current" />
+                {displayPhone}
+              </a>
+            )}
 
             {/* User Login/Profile — fixed-size wrapper prevents layout shift */}
             <div className="w-10 h-10 flex items-center justify-center">
               {!isLoading && (
                 isAuthenticated && user ? (
-                  <DropdownMenu>
+                  <DropdownMenu modal={false}>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" data-testid="button-user-menu">
                         <Avatar className="h-8 w-8">
@@ -135,13 +141,18 @@ export function Navbar() {
             </div>
           </div>
 
-          {/* Mobile Menu Button */}
-          <button 
-            className="md:hidden p-2 text-white"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            {isMenuOpen ? <X /> : <Menu />}
-          </button>
+          {/* Mobile Right Actions */}
+          <div className="flex md:hidden items-center gap-3">
+            <div className="scale-90 origin-right">
+              <LanguageToggle />
+            </div>
+            <button
+              className="p-2 -mr-2 text-white"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? <X /> : <Menu />}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -185,12 +196,6 @@ export function Navbar() {
             })}
           </div>
 
-          {/* Mobile Language Selector */}
-          <div className="pt-4 border-t border-gray-100">
-            <p className="text-sm font-semibold text-slate-600 mb-4">Language</p>
-            <MobileLanguageToggle />
-          </div>
-
           <div className="pt-6 border-t border-gray-100 flex flex-col gap-6">
             {/* Mobile Login/User */}
             {!isLoading && (
@@ -216,7 +221,7 @@ export function Navbar() {
                         {t("Admin Panel")}
                       </Link>
                     )}
-                    <button 
+                    <button
                       onClick={() => { setIsMenuOpen(false); logout(); }}
                       className="flex items-center gap-2 text-base font-semibold text-slate-500 hover:text-red-500 transition-colors"
                     >

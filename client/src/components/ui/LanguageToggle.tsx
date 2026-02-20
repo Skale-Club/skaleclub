@@ -13,9 +13,10 @@ export function LanguageToggle() {
     <div className="flex items-center gap-3 select-none">
       {/* EN Label */}
       <span
+        onClick={() => setLanguage('en')}
         className={clsx(
-          "text-sm font-bold transition-colors duration-200",
-          !isPortuguese ? "text-white" : "text-gray-500"
+          "text-sm font-bold transition-colors duration-200 cursor-pointer",
+          !isPortuguese ? "text-white" : "text-gray-500 hover:text-gray-300"
         )}
       >
         EN
@@ -53,9 +54,10 @@ export function LanguageToggle() {
 
       {/* PT Label */}
       <span
+        onClick={() => setLanguage('pt')}
         className={clsx(
-          "text-sm font-bold transition-colors duration-200",
-          isPortuguese ? "text-white" : "text-gray-500"
+          "text-sm font-bold transition-colors duration-200 cursor-pointer",
+          isPortuguese ? "text-white" : "text-gray-500 hover:text-gray-300"
         )}
       >
         PT

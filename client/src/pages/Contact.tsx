@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
+import { trackEvent } from "@/lib/analytics";
 
 export default function Contact() {
   const { toast } = useToast();
@@ -72,7 +73,17 @@ export default function Contact() {
                   </div>
                   <div>
                     <p className="font-medium">Call Us</p>
-                    <p className="text-slate-600">{phone || "Contact us for phone"}</p>
+                    {phone ? (
+                      <a
+                        href={`tel:${phone.replace(/\D/g, '')}`}
+                        onClick={() => trackEvent('click_call', { location: 'contact_page', label: phone })}
+                        className="text-primary hover:underline"
+                      >
+                        {phone}
+                      </a>
+                    ) : (
+                      <p className="text-slate-600">Contact us for phone</p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -81,7 +92,17 @@ export default function Contact() {
                   </div>
                   <div>
                     <p className="font-medium">Email Us</p>
-                    <p className="text-slate-600">{email || "Contact us for email"}</p>
+                    {email ? (
+                      <a
+                        href={`mailto:${email}`}
+                        onClick={() => trackEvent('click_email', { location: 'contact_page', label: email })}
+                        className="text-primary hover:underline break-all"
+                      >
+                        {email}
+                      </a>
+                    ) : (
+                      <p className="text-slate-600">Contact us for email</p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-start gap-4">

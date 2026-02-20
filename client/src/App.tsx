@@ -10,7 +10,8 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useSEO } from "@/hooks/use-seo";
 import { initAnalytics, trackPageView } from "@/lib/analytics";
-import { PageLoader } from "@/components/ui/spinner";
+import { PageLoader, DotsLoader } from "@/components/ui/spinner";
+import { useTranslation } from "@/hooks/useTranslation";
 import { useEffect, Suspense, lazy, useRef, useState, createContext, useContext } from "react";
 import type { CompanySettings } from "@shared/schema";
 import { ChatWidget } from "@/components/chat/ChatWidget";
@@ -155,6 +156,16 @@ function Router() {
   );
 }
 
+function TranslationLoadingOverlay() {
+  const { isTranslating } = useTranslation();
+  if (!isTranslating) return null;
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#0f1014]/80 backdrop-blur-sm transition-opacity duration-200">
+      <DotsLoader size="lg" />
+    </div>
+  );
+}
+
 function App() {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const markLoaded = useRef(() => setIsInitialLoad(false)).current;
@@ -169,6 +180,7 @@ function App() {
                 <SEOProvider>
                   <AnalyticsProvider>
                     <Router />
+                    <TranslationLoadingOverlay />
                   </AnalyticsProvider>
                 </SEOProvider>
               </AuthProvider>

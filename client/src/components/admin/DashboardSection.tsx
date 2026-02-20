@@ -450,7 +450,7 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
         <div className="rounded-2xl border bg-card p-5">
           <h3 className="text-xl font-semibold mb-4">Quick Actions</h3>
           <div className="space-y-2.5">
-            <Button variant="outline" className="w-full justify-start border-0 bg-muted/60" onClick={() => onNavigate('hero')}>
+            <Button variant="outline" className="w-full justify-start border-0 bg-muted/60" onClick={() => onNavigate('website' as any)}>
               <Globe className="w-4 h-4 mr-2" />
               Edit Website
             </Button>

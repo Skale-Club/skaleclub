@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
-import { ArrowRight, Star, Shield, Clock, Sparkles, Heart, BadgeCheck, ThumbsUp, Trophy, Calendar, FileText } from "lucide-react";
+import { ArrowRight, Star, Shield, Clock, Sparkles, Heart, BadgeCheck, ThumbsUp, Trophy, Calendar, FileText, Zap, Rocket, Users, Award } from "lucide-react";
 import { AboutSection } from "@/components/AboutSection";
 import { AreasServedMap } from "@/components/AreasServedMap";
 import { useQuery } from "@tanstack/react-query";
@@ -8,7 +8,7 @@ import type { CompanySettings, BlogPost, HomepageContent } from "@shared/schema"
 import { format } from "date-fns";
 import { trackCTAClick } from "@/lib/analytics";
 import { LeadFormModal } from "@/components/LeadFormModal";
-import { ConsultingStepsSection } from "@/components/ConsultingStepsSection";
+import { ServicesSection } from "@/components/ServicesSection";
 import { DEFAULT_HOMEPAGE_CONTENT } from "@/lib/homepageDefaults";
 import { useTranslation } from "@/hooks/useTranslation";
 
@@ -111,6 +111,10 @@ export default function Home() {
 
   const consultingStepsSection: HomepageContent["consultingStepsSection"] = companySettings?.homepageContent?.consultingStepsSection || { enabled: false, steps: [] };
   const homepageContent: Partial<HomepageContent> = companySettings?.homepageContent || {};
+
+  // Use new unified horizontal scroll section, fallback to old consultingStepsSection
+  const horizontalScrollSection = homepageContent.horizontalScrollSection || consultingStepsSection;
+
   const areasServedSection: HomepageContent["areasServedSection"] = {
     ...DEFAULT_HOMEPAGE_CONTENT.areasServedSection,
     ...(homepageContent.areasServedSection || {}),
@@ -126,16 +130,20 @@ export default function Home() {
     clock: Clock,
     sparkles: Sparkles,
     heart: Heart,
-    badgeCheck: BadgeCheck,
-    thumbsUp: ThumbsUp,
+    badgecheck: BadgeCheck,
+    thumbsup: ThumbsUp,
     trophy: Trophy,
+    zap: Zap,
+    rocket: Rocket,
+    users: Users,
+    award: Award,
   };
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const heroImageUrl = (companySettings?.heroImageUrl || '').trim();
   const handleConsultingCta = () => {
     setIsFormOpen(true);
-    trackCTAClick('consulting-steps', consultingStepsSection.ctaButtonLabel || '{companySettings?.ctaText || ""}');
+    trackCTAClick('horizontal-scroll', horizontalScrollSection?.ctaButtonLabel || companySettings?.ctaText || '');
   };
 
   // Handle hash navigation on mount (e.g., /#about)
@@ -170,10 +178,11 @@ export default function Home() {
   return (
     <div className="pb-0">
       {/* Hero Section */}
-      <section className="relative flex items-center lg:items-end pt-16 sm:pt-20 lg:pt-16 pb-12 sm:pb-16 lg:pb-20 overflow-hidden bg-[#1C53A3] min-h-[65vh] sm:min-h-[50vh] lg:min-h-[500px] xl:min-h-[550px]">
+      {/* Added responsive bottom padding (pb-36 sm:pb-48 lg:pb-0) to create a void for the absolute badges to occupy without covering the image */}
+      <section className="relative flex items-end pt-16 sm:pt-20 lg:pt-16 pb-36 sm:pb-48 lg:pb-0 overflow-hidden bg-[#1C53A3] min-h-[65vh] sm:min-h-[50vh] lg:min-h-[500px]">
         <div className="container-custom mx-auto relative z-10 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-1 sm:gap-6 lg:gap-8 items-center lg:items-center">
-            <div className="order-1 lg:order-2 text-white pt-6 sm:pt-8 lg:pt-16 pb-1 sm:pb-5 lg:pb-[5.5rem] lg:translate-y-0 relative z-20">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-1 sm:gap-6 lg:gap-8 items-end">
+            <div className="order-1 lg:order-2 text-white pt-6 sm:pt-8 lg:pt-16 pb-16 sm:pb-24 lg:pb-32 lg:translate-y-0 relative z-20">
               {homepageContent.heroBadgeImageUrl ? (
                 <div className="mt-4 sm:mt-0 mb-3 lg:mb-6">
                   <img
@@ -207,12 +216,12 @@ export default function Home() {
                 ) : null}
               </div>
             </div>
-            <div className="order-2 lg:order-1 relative flex h-full items-end justify-center lg:justify-end self-end w-full lg:min-h-[400px] z-10 lg:ml-[-3%] mt-0 sm:mt-0 lg:-mt-10">
+            <div className="order-2 lg:order-1 relative flex h-full items-end justify-center lg:justify-end self-end w-full lg:min-h-[400px] z-10 lg:ml-[-3%]">
               {heroImageUrl ? (
                 <img
                   src={heroImageUrl}
                   alt={companySettings?.companyName || ""}
-                  className="w-[92vw] sm:w-[98%] lg:w-full max-w-[380px] sm:max-w-[360px] md:max-w-[430px] lg:max-w-[500px] xl:max-w-[560px] object-contain drop-shadow-2xl -translate-y-[2%] sm:-translate-y-[1%] lg:translate-y-[0%] scale-100 sm:scale-100 lg:scale-98 origin-bottom"
+                  className="w-[92vw] sm:w-[98%] lg:w-full max-w-[380px] sm:max-w-[360px] md:max-w-[430px] lg:max-w-[500px] xl:max-w-[560px] object-contain drop-shadow-2xl origin-bottom"
                 />
               ) : (
                 <div className="w-[92vw] sm:w-[98%] lg:w-full max-w-[380px] sm:max-w-[360px] md:max-w-[430px] lg:max-w-[500px] xl:max-w-[560px]" />
@@ -245,76 +254,81 @@ export default function Home() {
           }}
         ></div>
       </section>
-      {/* Trust Badges */}
-      {trustBadges.length > 0 && (
-      <section className="relative z-20 -mt-16 sm:-mt-16 lg:-mt-24 bg-transparent">
-        <div className="container-custom mx-auto relative">
-          <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-100 overflow-hidden relative z-30 -translate-y-10 sm:-translate-y-6 lg:-translate-y-8">
-            {trustBadges.map((feature, i) => {
-              const iconKey = (feature.icon || '').toLowerCase();
-              const Icon = badgeIconMap[iconKey] || badgeIconMap.star || Star;
-              return (
-                <div key={i} className="p-8 flex items-center gap-6 hover:bg-gray-50 transition-colors">
-                  <div className="w-12 h-12 bg-blue-50 text-primary rounded-full flex items-center justify-center shrink-0">
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-[#1D1D1D]">{t(feature.title)}</h3>
-                    <p className="text-sm text-slate-500">{t(feature.description)}</p>
-                  </div>
-                </div>
-              );
-            })}
+
+      {/* Wrapper to connect backgrounds and eliminate white gap */}
+      <div className="bg-gradient-to-br from-[#f7f9fc] via-white to-[#eaf1ff] relative w-full mt-0 pt-0">
+
+        {/* Trust Badges - Absolute container 50/50 intersecting the section break */}
+        {trustBadges.length > 0 && (
+          <div className="absolute left-0 right-0 z-20 top-0 -translate-y-1/2">
+            <div className="container-custom mx-auto px-4 sm:px-6">
+              <div className="bg-white rounded-2xl shadow-xl border border-gray-100 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-100 overflow-hidden">
+                {trustBadges.map((feature, i) => {
+                  const iconKey = (feature.icon || '').toLowerCase();
+                  const Icon = badgeIconMap[iconKey] || badgeIconMap.star || Star;
+                  return (
+                    <div key={i} className="p-8 flex items-center gap-6 hover:bg-gray-50 transition-colors">
+                      <div className="w-12 h-12 bg-blue-50 text-primary rounded-full flex items-center justify-center shrink-0">
+                        <Icon className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-[#1D1D1D]">{t(feature.title)}</h3>
+                        <p className="text-sm text-slate-500">{t(feature.description)}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
-      )}
-      <ConsultingStepsSection
-        section={consultingStepsSection}
-        onCtaClick={handleConsultingCta}
-      />
-      {(companySettings?.mapEmbedUrl || areasServedSection?.heading || areasServedSection?.description) && (
-      <section id="areas-served" className="bg-white py-20">
-        <AreasServedMap
-          mapEmbedUrl={companySettings?.mapEmbedUrl}
-          content={areasServedSection}
+        )}
+        <ServicesSection
+          section={horizontalScrollSection}
+          onCtaClick={handleConsultingCta}
         />
-      </section>
+      </div>
+      {(companySettings?.mapEmbedUrl || areasServedSection?.heading || areasServedSection?.description) && (
+        <section id="areas-served" className="bg-white py-20">
+          <AreasServedMap
+            mapEmbedUrl={companySettings?.mapEmbedUrl}
+            content={areasServedSection}
+          />
+        </section>
       )}
       <div className="h-0 bg-[#111111]"></div>
       {/* Reviews Section */}
       {(reviewsEmbedUrl || reviewsTitle || reviewsSubtitle) && (
-      <section className="pt-6 sm:pt-10 lg:pt-12 pb-0 bg-[#111111] overflow-hidden mb-0 text-white">
-        <div className="w-full">
-          <div className="container-custom mx-auto mb-16 text-center">
-            <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white">
-              {t(reviewsTitle)}
-            </h2>
-            <p className="text-slate-300 max-w-2xl mx-auto text-lg">
-              {t(reviewsSubtitle)}
-            </p>
-          </div>
-          {reviewsEmbedUrl ? (
-            <div className="w-full px-0">
-              <div className="pb-0 bg-[#111111] -mt-6 sm:-mt-8 lg:-mt-10">
-                <iframe 
-                  className="lc_reviews_widget rounded-none" 
-                  src={reviewsEmbedUrl}
-                  frameBorder='0' 
-                  scrolling='no' 
-                  style={{ minWidth: '100%', width: '100%', height: '488px', border: 'none', display: 'block', borderRadius: '0', background: '#111111' }}
-                  onLoad={() => {
-                    const script = document.createElement('script');
-                    script.type = 'text/javascript';
-                    script.src = 'https://reputationhub.site/reputation/assets/review-widget.js';
-                    document.body.appendChild(script);
-                  }}
-                ></iframe>
-              </div>
+        <section className="pt-6 sm:pt-10 lg:pt-12 pb-0 bg-[#111111] overflow-hidden mb-0 text-white">
+          <div className="w-full">
+            <div className="container-custom mx-auto mb-16 text-center">
+              <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white">
+                {t(reviewsTitle)}
+              </h2>
+              <p className="text-slate-300 max-w-2xl mx-auto text-lg">
+                {t(reviewsSubtitle)}
+              </p>
             </div>
-          ) : null}
-        </div>
-      </section>
+            {reviewsEmbedUrl ? (
+              <div className="w-full px-0">
+                <div className="pb-0 bg-[#111111] -mt-6 sm:-mt-8 lg:-mt-10">
+                  <iframe
+                    className="lc_reviews_widget rounded-none"
+                    src={reviewsEmbedUrl}
+                    frameBorder='0'
+                    scrolling='no'
+                    style={{ minWidth: '100%', width: '100%', height: '488px', border: 'none', display: 'block', borderRadius: '0', background: '#111111' }}
+                    onLoad={() => {
+                      const script = document.createElement('script');
+                      script.type = 'text/javascript';
+                      script.src = 'https://reputationhub.site/reputation/assets/review-widget.js';
+                      document.body.appendChild(script);
+                    }}
+                  ></iframe>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </section>
       )}
       <BlogSection content={homepageContent.blogSection} />
       <section id="about" className="bg-white py-20">

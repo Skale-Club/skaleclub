@@ -349,6 +349,46 @@ export interface ConsultingStepsSection {
   nextStepText?: string;
 }
 
+// Unified horizontal scroll section - supports both process steps and service cards
+export interface HorizontalScrollCard {
+  order: number;
+  numberLabel: string;
+  icon?: string;
+  title: string;
+  // For process/steps type
+  whatWeDo?: string;
+  outcome?: string;
+  // For services type
+  description?: string;
+  features?: string[];
+}
+
+export interface HorizontalScrollSection {
+  enabled?: boolean;
+  sectionId?: string;
+  mode?: 'steps' | 'services'; // Type of cards to display
+  // Header
+  tagLabel?: string;
+  title?: string;
+  subtitle?: string;
+  // Cards
+  cards?: HorizontalScrollCard[];
+  // Labels (for steps mode)
+  stepLabel?: string;
+  whatWeDoLabel?: string;
+  outcomeLabel?: string;
+  // Practical block
+  practicalBlockTitle?: string;
+  practicalBlockSubtitle?: string;
+  practicalBullets?: string[];
+  // CTA
+  ctaButtonLabel?: string;
+  ctaButtonLink?: string;
+  helperText?: string | null;
+  nextStepLabel?: string;
+  nextStepText?: string;
+}
+
 export interface HomepageContent {
   heroBadgeImageUrl?: string;
   heroBadgeAlt?: string;
@@ -364,6 +404,9 @@ export interface HomepageContent {
     highlights?: { title: string; description: string }[];
   };
   areasServedSection?: { label?: string; heading?: string; description?: string; ctaText?: string };
+  // Main horizontal scroll section (replaces both servicesSection and consultingStepsSection)
+  horizontalScrollSection?: HorizontalScrollSection;
+  // Keep for backwards compatibility during migration
   consultingStepsSection?: ConsultingStepsSection;
 }
 

@@ -128,6 +128,10 @@ export type AnalyticsEventName =
   | 'form_open'
   | 'form_step_completed'
   | 'form_completed'
+  | 'click_call'
+  | 'click_email'
+  | 'click_whatsapp'
+  | 'click_social'
   | 'form_abandoned'
   | 'form_result_action';
 
@@ -174,6 +178,9 @@ export function trackEvent(eventName: AnalyticsEventName, payload: AnalyticsEven
       'view_item_list': 'ViewContent',
       'contact_click': 'Contact',
       'form_completed': 'Lead',
+      'click_call': 'Contact',
+      'click_email': 'Contact',
+      'click_whatsapp': 'Contact',
     };
 
     const fbEvent = fbEventMap[eventName];

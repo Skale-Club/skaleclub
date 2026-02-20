@@ -14,7 +14,7 @@ import { ChatSection } from '@/components/admin/ChatSection';
 import { CompanySettingsSection } from '@/components/admin/CompanySettingsSection';
 import { DashboardSection } from '@/components/admin/DashboardSection';
 import { FaqsSection } from '@/components/admin/FaqsSection';
-import { HeroSettingsSection } from '@/components/admin/HeroSettingsSection';
+import { WebsiteSettingsSection } from '@/components/admin/WebsiteSettingsSection';
 import { IntegrationsSection } from '@/components/admin/IntegrationsSection';
 import { LeadsSection } from '@/components/admin/LeadsSection';
 import { SEOSection } from '@/components/admin/SEOSection';
@@ -55,8 +55,8 @@ function AdminContent() {
       await apiRequest('PUT', '/api/company-settings', { sectionsOrder: newOrder });
       queryClient.invalidateQueries({ queryKey: ['/api/company-settings'] });
     } catch (error: any) {
-      toast({ 
-        title: 'Error saving section order', 
+      toast({
+        title: 'Error saving section order',
         description: error.message,
         variant: 'destructive'
       });
@@ -145,7 +145,7 @@ function AdminContent() {
         <div className="p-6 pb-16 md:p-8 md:pb-10">
           {activeSection === 'dashboard' && <DashboardSection onNavigate={handleSectionSelect} />}
           {activeSection === 'leads' && <LeadsSection />}
-          {activeSection === 'hero' && <HeroSettingsSection />}
+          {activeSection === 'website' && <WebsiteSettingsSection />}
           {activeSection === 'company' && <CompanySettingsSection />}
           {activeSection === 'seo' && <SEOSection />}
           {activeSection === 'faqs' && <FaqsSection />}

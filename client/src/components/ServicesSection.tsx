@@ -1,15 +1,20 @@
 import type { ComponentType, MouseEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, CheckCircle2, LayoutGrid, LineChart, PhoneCall, Search, Sparkles, Target } from 'lucide-react';
+import {
+  ArrowRight, CheckCircle2, LayoutGrid, LineChart, PhoneCall, Search, Sparkles, Target,
+  Bot, Globe, BarChart3, Zap, MessageSquare, Brain, Wrench
+} from 'lucide-react';
 import type { HomepageContent } from '@shared/schema';
 import { useTranslation } from '@/hooks/useTranslation';
 
 type Props = {
-  section?: HomepageContent['consultingStepsSection'] | null;
+  section?: HomepageContent['consultingStepsSection'] | HomepageContent['horizontalScrollSection'] | null;
+  mode?: 'steps' | 'services'; // Explicitly set mode
   onCtaClick?: () => void;
 };
 
 const iconMap: Record<string, ComponentType<{ className?: string }>> = {
+  // Process icons
   search: Search,
   sparkles: Sparkles,
   layout: LayoutGrid,
@@ -19,6 +24,15 @@ const iconMap: Record<string, ComponentType<{ className?: string }>> = {
   phone: PhoneCall,
   linechart: LineChart,
   chart: LineChart,
+  // Service icons
+  bot: Bot,
+  brain: Brain,
+  globe: Globe,
+  chartbar: BarChart3,
+  barchart3: BarChart3,
+  zap: Zap,
+  messagesquare: MessageSquare,
+  wrench: Wrench,
 };
 
 function getStepIcon(icon?: string) {
@@ -46,19 +60,25 @@ function useMediaQuery(query: string): boolean {
   return matches;
 }
 
-export function ConsultingStepsSection({ section, onCtaClick }: Props) {
+export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Props) {
   const { t } = useTranslation();
   const isMobile = useMediaQuery('(max-width: 767px)');
 
+  // Determine mode: explicit prop > section.mode > fallback to 'steps'
+  const displayMode = explicitMode || (section as any)?.mode || 'steps';
+
+  // Support both old 'steps' structure and new 'cards' structure
+  const rawItems = (section as any)?.cards || (section as any)?.steps || [];
+
   const sortedSteps = useMemo(() => {
-    const steps = (section?.steps || []).length ? [...(section?.steps || [])] : [];
-    return steps
+    const items = rawItems.length ? [...rawItems] : [];
+    return items
       .sort((a, b) => (a.order || 0) - (b.order || 0) || a.numberLabel.localeCompare(b.numberLabel))
-      .map((step, index) => ({
-        ...step,
-        numberLabel: step.numberLabel || String(index + 1).padStart(2, '0'),
+      .map((item, index) => ({
+        ...item,
+        numberLabel: item.numberLabel || String(index + 1).padStart(2, '0'),
       }));
-  }, [section?.steps]);
+  }, [rawItems]);
 
   const stepsLoop = useMemo(() => [...sortedSteps, ...sortedSteps], [sortedSteps]);
   const practicalBullets = section?.practicalBullets?.length ? section.practicalBullets : [];
@@ -300,6 +320,43 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
   const renderStep = (step: any, index: number) => {
     const Icon = getStepIcon(step.icon);
     const numberLabel = step.numberLabel || String(index + 1).padStart(2, '0');
+
+    // Render for services mode
+    if (displayMode === 'services') {
+      return (
+        <div
+          key={`${numberLabel}-${step.title}-${index}`}
+          className="group relative overflow-visible rounded-3xl bg-white/90 border border-slate-100 shadow-[0_24px_60px_-60px_rgba(15,23,42,0.45)] hover:-translate-y-2 hover:shadow-[0_28px_70px_-55px_rgba(23,37,84,0.4)] transition-all duration-300 backdrop-blur flex-shrink-0 w-full md:w-[88%] sm:w-[70%] md:w-[52%] lg:w-[36%] xl:w-[30%]"
+        >
+          <div className="relative z-10 p-6 space-y-5">
+            <div className="flex items-start gap-4">
+              <div className="h-14 w-14 min-w-14 flex-shrink-0 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 text-primary flex items-center justify-center group-hover:from-primary/25 group-hover:to-primary/10 transition-all">
+                <Icon className="w-7 h-7" />
+              </div>
+              <div className="space-y-2 flex-1">
+                <h3 className="text-xl font-bold text-slate-900 leading-tight group-hover:text-primary transition-colors">{t(step.title)}</h3>
+                {step.description && (
+                  <p className="text-slate-600 leading-relaxed">{t(step.description)}</p>
+                )}
+              </div>
+            </div>
+
+            {step.features && step.features.length > 0 && (
+              <div className="space-y-2 pt-2">
+                {step.features.map((feature: string, featureIdx: number) => (
+                  <div key={featureIdx} className="flex items-start gap-2">
+                    <Sparkles className="w-4 h-4 text-primary shrink-0 mt-1" />
+                    <span className="text-sm text-slate-700 leading-relaxed">{t(feature)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Render for steps mode (default)
     return (
       <div
         key={`${numberLabel}-${step.title}-${index}`}
@@ -339,13 +396,14 @@ export function ConsultingStepsSection({ section, onCtaClick }: Props) {
   return (
     <section
       id={sectionId}
-      className="relative pt-24 md:pt-28 pb-14 md:pb-16 -mt-16 sm:-mt-16 lg:-mt-20 bg-gradient-to-br from-[#f7f9fc] via-white to-[#eaf1ff] overflow-hidden"
+      className="relative pt-0 pb-14 md:pb-16 bg-gradient-to-br from-[#f7f9fc] via-white to-[#eaf1ff] overflow-hidden"
     >
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute w-80 h-80 bg-primary/5 blur-3xl -left-20 top-0 rounded-full" />
         <div className="absolute w-[420px] h-[420px] bg-indigo-200/30 blur-3xl right-[-10%] bottom-[-20%] rounded-full" />
       </div>
-      <div className="relative z-10 space-y-6 md:space-y-8 pb-4 md:pb-8">
+      {/* Heavy top padding on mobile to guard against the absolute absolute overlay half (-translate-y-1/2) */}
+      <div className="relative z-10 pt-64 sm:pt-[22rem] md:pt-48 lg:pt-24 space-y-6 md:space-y-8 pb-4 md:pb-8">
         <div className="container-custom mx-auto px-4 sm:px-6 md:px-10">
           <div className="max-w-4xl space-y-3">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/70 border border-slate-200 rounded-full shadow-sm text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600">

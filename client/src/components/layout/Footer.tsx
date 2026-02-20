@@ -2,13 +2,14 @@ import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
-import { 
-  SiFacebook, 
-  SiInstagram, 
-  SiX, 
-  SiYoutube, 
-  SiLinkedin, 
-  SiTiktok 
+import { trackEvent } from "@/lib/analytics";
+import {
+  SiFacebook,
+  SiInstagram,
+  SiX,
+  SiYoutube,
+  SiLinkedin,
+  SiTiktok
 } from "react-icons/si";
 
 const platformIcons: Record<string, any> = {
@@ -62,7 +63,7 @@ export function Footer() {
 
           {companySettings && (companySettings as any).socialLinks && Array.isArray((companySettings as any).socialLinks) && (companySettings as any).socialLinks.length > 0 && (
             <div className="flex gap-4">
-              {((companySettings as any).socialLinks as {platform: string, url: string}[]).map((link, i) => {
+              {((companySettings as any).socialLinks as { platform: string, url: string }[]).map((link, i) => {
                 const Icon = platformIcons[link.platform.toLowerCase()] || SiFacebook;
                 return (
                   <a
@@ -70,6 +71,7 @@ export function Footer() {
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={() => trackEvent('click_social', { location: 'footer', label: link.platform })}
                     className="text-gray-400 hover:text-gray-200 transition-colors"
                   >
                     <Icon className="w-5 h-5" />

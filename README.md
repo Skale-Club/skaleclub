@@ -75,7 +75,7 @@ The app will be available at `http://localhost:5000`.
 ## Supabase Keep-Alive (Vercel Cron)
 
 - Cron route: `GET /api/cron/supabase-keepalive`
-- Schedule: every 6 hours (`0 */6 * * *`) via `vercel.json`
+- Schedule: once per day (`0 0 * * *`) via `vercel.json` (Hobby-compatible)
 - Security: set `CRON_SECRET` in Vercel env vars
 - Storage: each run writes a timestamp row into `system_heartbeats`
 

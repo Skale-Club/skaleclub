@@ -15,12 +15,12 @@ import type { ConsultingStep, HomepageContent } from '@shared/schema';
 import { SIDEBAR_MENU_ITEMS } from './shared/constants';
 import type { CompanySettingsData } from './shared/types';
 import { uploadFileToServer } from './shared/utils';
-export function HeroSettingsSection() {
+export function WebsiteSettingsSection() {
   const { toast } = useToast();
   const { data: settings, isLoading } = useQuery<CompanySettingsData>({
     queryKey: ['/api/company-settings']
   });
-  const heroMenuTitle = SIDEBAR_MENU_ITEMS.find((item) => item.id === 'hero')?.title ?? 'Hero Section';
+  const websiteMenuTitle = SIDEBAR_MENU_ITEMS.find((item) => item.id === 'website' as any)?.title ?? 'Hero Section';
 
   const HERO_DEFAULTS = {
     title: 'Learn How to Generate Your Own Clients in the USA',
@@ -202,8 +202,8 @@ export function HeroSettingsSection() {
         markFieldsSaved(keysToMark);
       }
     } catch (error: any) {
-      toast({ 
-        title: 'Error saving hero settings', 
+      toast({
+        title: 'Error saving hero settings',
         description: error.message,
         variant: 'destructive'
       });
@@ -280,7 +280,7 @@ export function HeroSettingsSection() {
       order: nextOrder,
       numberLabel: String(nextOrder).padStart(2, '0'),
       icon: 'sparkles',
-      title: 'Nova Etapa',
+      title: 'New Stage',
       whatWeDo: '',
       outcome: '',
     };
@@ -311,8 +311,8 @@ export function HeroSettingsSection() {
           ordered[index] = updater(ordered[index]);
           const next = resort
             ? [...ordered].sort(
-                (a, b) => (a.order || 0) - (b.order || 0) || a.numberLabel.localeCompare(b.numberLabel)
-              )
+              (a, b) => (a.order || 0) - (b.order || 0) || a.numberLabel.localeCompare(b.numberLabel)
+            )
             : ordered;
           return next;
         },
@@ -332,16 +332,16 @@ export function HeroSettingsSection() {
       console.log('Saving hero image URL:', imagePath);
       setHeroImageUrl(imagePath);
       await saveHeroSettings({ heroImageUrl: imagePath }, ['heroImageUrl']);
-      toast({ 
-        title: 'Success!', 
+      toast({
+        title: 'Success!',
         description: 'Hero image uploaded and saved successfully',
         duration: 3000
       });
     } catch (error: any) {
-      toast({ 
-        title: 'Upload failed', 
-        description: error.message, 
-        variant: 'destructive' 
+      toast({
+        title: 'Upload failed',
+        description: error.message,
+        variant: 'destructive'
       });
     } finally {
       setIsUploadingHeroImage(false);
@@ -360,7 +360,7 @@ export function HeroSettingsSection() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold">{heroMenuTitle}</h1>
+          <h1 className="text-2xl font-bold">{websiteMenuTitle}</h1>
           <p className="text-muted-foreground">Customize hero and homepage content</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap justify-end">
@@ -391,9 +391,9 @@ export function HeroSettingsSection() {
             <div className="space-y-2">
               <Label htmlFor="heroTitle">Hero Title</Label>
               <div className="relative">
-                <Input 
-                  id="heroTitle" 
-                  value={heroTitle} 
+                <Input
+                  id="heroTitle"
+                  value={heroTitle}
                   onChange={(e) => {
                     setHeroTitle(e.target.value);
                     triggerAutoSave({ heroTitle: e.target.value }, ['heroTitle']);
@@ -408,9 +408,9 @@ export function HeroSettingsSection() {
             <div className="space-y-2">
               <Label htmlFor="heroSubtitle">Hero Subtitle</Label>
               <div className="relative">
-                <Textarea 
-                  id="heroSubtitle" 
-                  value={heroSubtitle} 
+                <Textarea
+                  id="heroSubtitle"
+                  value={heroSubtitle}
                   onChange={(e) => {
                     setHeroSubtitle(e.target.value);
                     triggerAutoSave({ heroSubtitle: e.target.value }, ['heroSubtitle']);
@@ -426,9 +426,9 @@ export function HeroSettingsSection() {
             <div className="space-y-2">
               <Label htmlFor="ctaText">Call to Action Button Text</Label>
               <div className="relative">
-                <Input 
-                  id="ctaText" 
-                  value={ctaText} 
+                <Input
+                  id="ctaText"
+                  value={ctaText}
                   onChange={(e) => {
                     setCtaText(e.target.value);
                     triggerAutoSave({ ctaText: e.target.value }, ['ctaText']);
@@ -460,13 +460,12 @@ export function HeroSettingsSection() {
                       <p className="text-xs text-muted-foreground">Background Image</p>
                     </div>
                   )}
-                  <label className={`absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer ${
-                    isUploadingHeroImage ? 'pointer-events-none' : ''
-                  }`}>
-                    <input 
-                      type="file" 
-                      className="hidden" 
-                      onChange={handleImageUpload} 
+                  <label className={`absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer ${isUploadingHeroImage ? 'pointer-events-none' : ''
+                    }`}>
+                    <input
+                      type="file"
+                      className="hidden"
+                      onChange={handleImageUpload}
                       accept="image/*"
                       disabled={isUploadingHeroImage}
                     />
@@ -502,9 +501,8 @@ export function HeroSettingsSection() {
                     <p className="text-xs text-muted-foreground">Click to upload</p>
                   </div>
                 )}
-                <label className={`absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer ${
-                  isUploadingBadgeImage ? 'pointer-events-none' : ''
-                }`}>
+                <label className={`absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer ${isUploadingBadgeImage ? 'pointer-events-none' : ''
+                  }`}>
                   <input
                     type="file"
                     className="hidden"
@@ -519,8 +517,8 @@ export function HeroSettingsSection() {
                         updateHomepageContent(prev => ({ ...prev, heroBadgeImageUrl: imagePath }), 'homepageContent.heroBadgeImageUrl');
                         setHomepageContent(prev => ({ ...prev, heroBadgeImageUrl: imagePath }));
                         triggerAutoSave({ homepageContent: { ...(homepageContent || {}), heroBadgeImageUrl: imagePath } }, ['homepageContent.heroBadgeImageUrl']);
-                        toast({ 
-                          title: 'Success!', 
+                        toast({
+                          title: 'Success!',
                           description: 'Badge image uploaded and saved successfully',
                           duration: 3000
                         });
@@ -554,7 +552,7 @@ export function HeroSettingsSection() {
                   <SavedIndicator field="homepageContent.heroBadgeAlt" />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label>Badge Icon</Label>
                 <Select
@@ -924,7 +922,7 @@ export function HeroSettingsSection() {
         <div className="bg-muted p-6 rounded-lg transition-all space-y-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <User className="w-5 h-5 text-primary" />
-            Seção Quem Somos
+            About Us Section
           </h2>
           <div className="space-y-2">
             <Label>Label</Label>
@@ -946,7 +944,7 @@ export function HeroSettingsSection() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Título</Label>
+            <Label>Title</Label>
             <div className="relative">
               <Input
                 value={aboutSection.heading || ''}
@@ -965,7 +963,7 @@ export function HeroSettingsSection() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Descrição</Label>
+            <Label>Description</Label>
             <div className="relative">
               <Textarea
                 value={aboutSection.description || ''}
@@ -985,7 +983,7 @@ export function HeroSettingsSection() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Imagem de Quem Somos</Label>
+            <Label>About Us Image</Label>
             <div className="flex flex-col gap-3">
               <div className="aspect-video w-full max-w-md rounded-lg border-2 border-dashed border-border bg-card flex items-center justify-center overflow-hidden relative group">
                 {aboutImageUrl ? (
@@ -993,13 +991,13 @@ export function HeroSettingsSection() {
                 ) : (
                   <div className="text-center p-4">
                     <Image className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-xs text-muted-foreground">Imagem da Seção</p>
+                    <p className="text-xs text-muted-foreground">Section Image</p>
                   </div>
                 )}
                 <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                  <input 
-                    type="file" 
-                    className="hidden" 
+                  <input
+                    type="file"
+                    className="hidden"
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
@@ -1015,24 +1013,13 @@ export function HeroSettingsSection() {
                           variant: 'destructive'
                         });
                       }
-                    }} 
-                    accept="image/*" 
+                    }}
+                    accept="image/*"
                   />
                   <Plus className="w-8 h-8 text-white" />
                 </label>
               </div>
-              <div className="relative max-w-md">
-                <Input
-                  value={aboutImageUrl}
-                  onChange={(e) => {
-                    setAboutImageUrl(e.target.value);
-                    triggerAutoSave({ aboutImageUrl: e.target.value }, ['aboutImageUrl']);
-                  }}
-                  placeholder="Ou cole a URL da imagem (https://...)"
-                  data-testid="input-about-image"
-                />
-                <SavedIndicator field="aboutImageUrl" />
-              </div>
+
             </div>
           </div>
         </div>
@@ -1126,9 +1113,9 @@ export function HeroSettingsSection() {
           <div>
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <LayoutGrid className="w-5 h-5 text-primary" />
-              Consultoria - Como Funciona
+              Consulting - How It Works
             </h2>
-            <p className="text-sm text-muted-foreground">Edite o passo a passo exibido na landing.</p>
+            <p className="text-sm text-muted-foreground">Edit the step-by-step displayed on the landing page.</p>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
@@ -1150,7 +1137,7 @@ export function HeroSettingsSection() {
 
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="space-y-2">
-            <Label>Título</Label>
+            <Label>Title</Label>
             <div className="relative">
               <Input
                 value={consultingStepsSection.title || ''}
@@ -1166,7 +1153,7 @@ export function HeroSettingsSection() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Subtítulo</Label>
+            <Label>Subtitle</Label>
             <div className="relative">
               <Textarea
                 value={consultingStepsSection.subtitle || ''}
@@ -1183,7 +1170,7 @@ export function HeroSettingsSection() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Slug/ID da seção</Label>
+            <Label>Section Slug/ID</Label>
             <div className="relative">
               <Input
                 value={consultingStepsSection.sectionId || ''}
@@ -1193,13 +1180,13 @@ export function HeroSettingsSection() {
                     'homepageContent.consultingStepsSection.sectionId'
                   )
                 }
-                placeholder="como-funciona"
+                placeholder="how-it-works"
               />
               <SavedIndicator field="homepageContent.consultingStepsSection.sectionId" />
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Texto auxiliar (opcional)</Label>
+            <Label>Helper Text (optional)</Label>
             <div className="relative">
               <Textarea
                 value={consultingStepsSection.helperText || ''}
@@ -1210,13 +1197,13 @@ export function HeroSettingsSection() {
                   )
                 }
                 className="min-h-[80px]"
-                placeholder="Texto curto abaixo do CTA"
+                placeholder="Short text below CTA"
               />
               <SavedIndicator field="homepageContent.consultingStepsSection.helperText" />
             </div>
           </div>
           <div className="space-y-2">
-            <Label>CTA - Texto do botão</Label>
+            <Label>CTA - Button Text</Label>
             <div className="relative">
               <Input
                 value={consultingStepsSection.ctaButtonLabel || ''}
@@ -1232,7 +1219,7 @@ export function HeroSettingsSection() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>CTA - Link/ação</Label>
+            <Label>CTA - Link/Action</Label>
             <div className="relative">
               <Input
                 value={consultingStepsSection.ctaButtonLink || ''}
@@ -1281,7 +1268,7 @@ export function HeroSettingsSection() {
             </div>
           </div>
         </div>
-        
+
         <div className="bg-muted p-6 rounded-lg transition-all space-y-4">
           <h2 className="text-lg font-semibold">Custom Labels</h2>
           <div className="grid gap-4 lg:grid-cols-2">
@@ -1444,7 +1431,7 @@ export function HeroSettingsSection() {
               </div>
             ))}
             {practicalBullets.length === 0 && (
-              <p className="text-sm text-muted-foreground">Sem bullets cadastrados.</p>
+              <p className="text-sm text-muted-foreground">No bullets registered.</p>
             )}
           </div>
         </div>
@@ -1454,9 +1441,9 @@ export function HeroSettingsSection() {
             <div>
               <h3 className="text-base font-semibold flex items-center gap-2">
                 <List className="w-4 h-4 text-primary" />
-                Etapas (cards)
+                Stages (cards)
               </h3>
-              <p className="text-sm text-muted-foreground">Reordene pelas setas ou ajustando o campo Ordem.</p>
+              <p className="text-sm text-muted-foreground">Reorder using the arrows or adjusting the Order field.</p>
             </div>
             <Button variant="outline" size="sm" className="border-dashed" onClick={handleAddStep}>
               <Plus className="w-4 h-4 mr-2" /> Add stage
@@ -1475,8 +1462,8 @@ export function HeroSettingsSection() {
                       {step.numberLabel || String(index + 1).padStart(2, '0')}
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-sm font-semibold">{step.title || 'Etapa'}</p>
-                      <p className="text-xs text-muted-foreground">Ordem {step.order ?? index + 1}</p>
+                      <p className="text-sm font-semibold">{step.title || 'Stage'}</p>
+                      <p className="text-xs text-muted-foreground">Order {step.order ?? index + 1}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
@@ -1504,7 +1491,7 @@ export function HeroSettingsSection() {
 
                 <div className="grid gap-3 md:grid-cols-4">
                   <div className="space-y-1">
-                    <Label>Ordem</Label>
+                    <Label>Order</Label>
                     <div className="relative">
                       <Input
                         type="number"
@@ -1586,7 +1573,7 @@ export function HeroSettingsSection() {
 
                 <div className="grid gap-3 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>O que fazemos</Label>
+                    <Label>What we do</Label>
                     <div className="relative">
                       <Textarea
                         value={step.whatWeDo}
@@ -1603,7 +1590,7 @@ export function HeroSettingsSection() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>Você sai com</Label>
+                    <Label>You leave with</Label>
                     <div className="relative">
                       <Textarea
                         value={step.outcome}
@@ -1623,7 +1610,7 @@ export function HeroSettingsSection() {
               </div>
             ))}
             {consultingSteps.length === 0 && (
-              <p className="text-sm text-muted-foreground">Nenhuma etapa cadastrada.</p>
+              <p className="text-sm text-muted-foreground">No stages registered.</p>
             )}
           </div>
         </div>

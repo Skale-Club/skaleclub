@@ -1,24 +1,50 @@
-# FAQ Management Scripts
+# Skale Club - Utility Scripts
 
-This directory contains utility scripts for managing FAQs in the Skale Club chat system.
+This directory contains utility scripts for managing content, settings, and data in the Skale Club platform.
 
 ## Available Scripts
 
-### 1. `view-faqs.ts`
+### Content Management
+
+#### `seed-tech-content.ts` ⭐ NEW
+Seeds the database with complete tech company content including services, trust badges, process steps, and all homepage sections.
+
+```bash
+npx tsx scripts/seed-tech-content.ts
+```
+
+**What it does:**
+- Updates company settings with tech-focused hero content
+- Creates 5 service cards (AI Solutions, Smart Websites, Internal Systems, Automation, Consulting)
+- Sets up 3 trust badges
+- Configures 4-step process section
+- Updates about section with tech company description
+- Sets SEO metadata for tech company
+
+**Use when:**
+- Initial setup of a new tech company site
+- Resetting homepage content to tech defaults
+- After schema changes to homepage content structure
+
+---
+
+### FAQ Management
+
+#### `view-faqs.ts`
 View all FAQs currently in the database.
 
 ```bash
 npx tsx scripts/view-faqs.ts
 ```
 
-### 2. `seed-faqs.ts`
+#### `seed-faqs.ts`
 Initial seeding script with 12 FAQs in Portuguese. Only runs if database is empty.
 
 ```bash
 npx tsx scripts/seed-faqs.ts
 ```
 
-### 3. `add-more-faqs.ts`
+#### `add-more-faqs.ts`
 Adds 10 additional FAQs in English covering important topics like:
 - Cancellation policy
 - Eco-friendly products
@@ -31,14 +57,27 @@ Adds 10 additional FAQs in English covering important topics like:
 npx tsx scripts/add-more-faqs.ts
 ```
 
-### 4. `test-faq-search.ts`
+#### `test-faq-search.ts`
 Tests the FAQ search functionality with various queries.
 
 ```bash
 npx tsx scripts/test-faq-search.ts
 ```
 
-## Current FAQ Topics (21 Total)
+---
+
+### Settings & Configuration
+
+#### `check-settings.ts`
+View current company and chat settings from database.
+
+```bash
+npx tsx scripts/check-settings.ts
+```
+
+---
+
+## Current Content Structure
 
 ### Service Information
 - Types of marketing services offered

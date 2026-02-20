@@ -1,11 +1,13 @@
-import { useContext, useCallback, useEffect, useRef } from 'react';
+import { useContext, useCallback, useEffect, useState } from 'react';
 import { LanguageContext } from '@/context/LanguageContext';
+import { translations as staticTranslations } from '@/lib/translations';
 
 // In-memory translation cache
 const translationCache = new Map<string, string>();
 const pendingTranslations = new Set<string>();
 let batchTimeout: NodeJS.Timeout | null = null;
 const pendingBatch = new Set<string>();
+let activeBatchCount = 0;
 
 /**
  * Fetch translations from API and update cache
@@ -23,7 +25,7 @@ async function fetchTranslations(texts: string[], targetLanguage: string) {
     }
 
     const { translations } = await response.json();
-    
+
     // Update cache
     Object.entries(translations).forEach(([key, value]) => {
       const cacheKey = `${targetLanguage}:${key}`;
@@ -42,7 +44,7 @@ async function fetchTranslations(texts: string[], targetLanguage: string) {
  */
 function scheduleBatchTranslation(text: string, targetLanguage: string) {
   const cacheKey = `${targetLanguage}:${text}`;
-  
+
   // Already translated or being fetched
   if (translationCache.has(cacheKey) || pendingTranslations.has(cacheKey)) {
     return;
@@ -61,6 +63,9 @@ function scheduleBatchTranslation(text: string, targetLanguage: string) {
     const textsToTranslate = Array.from(pendingBatch);
     pendingBatch.clear();
 
+    activeBatchCount++;
+    window.dispatchEvent(new CustomEvent('translations-batch-start'));
+
     await fetchTranslations(textsToTranslate, targetLanguage);
 
     // Remove from pending
@@ -68,33 +73,46 @@ function scheduleBatchTranslation(text: string, targetLanguage: string) {
       pendingTranslations.delete(`${targetLanguage}:${t}`);
     });
 
-    // Trigger re-render by dispatching custom event
-    window.dispatchEvent(new CustomEvent('translations-updated'));
+    activeBatchCount--;
+    window.dispatchEvent(new CustomEvent('translations-updated', {
+      detail: { allDone: activeBatchCount === 0 },
+    }));
   }, 50);
 }
 
 export function useTranslation() {
   const context = useContext(LanguageContext);
-  const forceUpdateRef = useRef(0);
-  
+  const [updateCounter, setUpdateCounter] = useState(0);
+  const [isTranslating, setIsTranslating] = useState(false);
+
   if (!context) {
     throw new Error('useTranslation must be used within a LanguageProvider');
   }
 
   const { language, setLanguage } = context;
 
-  // Listen for translation updates
+  // Listen for translation batch start/finish
   useEffect(() => {
-    const handler = () => {
-      forceUpdateRef.current += 1;
+    const handleStart = () => setIsTranslating(true);
+    const handleDone = (e: Event) => {
+      setUpdateCounter(c => c + 1);
+      if ((e as CustomEvent).detail?.allDone) {
+        setIsTranslating(false);
+      }
     };
-    window.addEventListener('translations-updated', handler);
-    return () => window.removeEventListener('translations-updated', handler);
+    window.addEventListener('translations-batch-start', handleStart);
+    window.addEventListener('translations-updated', handleDone);
+    return () => {
+      window.removeEventListener('translations-batch-start', handleStart);
+      window.removeEventListener('translations-updated', handleDone);
+    };
   }, []);
 
   /**
    * Translate a string to the current language
-   * Returns original text immediately, then updates when translation is fetched
+   * 1. Runtime cache (in-memory)
+   * 2. Static dictionary (instant, no API)
+   * 3. API batch (50ms debounce)
    */
   const t = useCallback((text: string): string => {
     if (language === 'en' || !text) {
@@ -102,18 +120,27 @@ export function useTranslation() {
     }
 
     const cacheKey = `${language}:${text}`;
-    
-    // Return from cache if available
+
+    // 1. Return from runtime cache if available
     if (translationCache.has(cacheKey)) {
       return translationCache.get(cacheKey)!;
     }
 
-    // Schedule batch translation
+    // 2. Check static dictionary (instant, no API call)
+    if (language === 'pt') {
+      const staticValue = staticTranslations.pt[text as keyof typeof staticTranslations.pt];
+      if (staticValue) {
+        translationCache.set(cacheKey, staticValue);
+        return staticValue;
+      }
+    }
+
+    // 3. Schedule batch translation via API
     scheduleBatchTranslation(text, language);
 
-    // Return original text as fallback
+    // Return original text as fallback while loading
     return text;
-  }, [language, forceUpdateRef.current]);
+  }, [language, updateCounter]);
 
   return {
     language,
@@ -121,5 +148,6 @@ export function useTranslation() {
     t,
     isEnglish: language === 'en',
     isPortuguese: language === 'pt',
+    isTranslating,
   };
 }

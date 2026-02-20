@@ -14,9 +14,10 @@ export function MobileLanguageToggle() {
       <div className="flex items-center gap-4 select-none">
         {/* EN Label */}
         <span
+          onClick={() => setLanguage('en')}
           className={clsx(
-            "text-base font-bold transition-colors duration-200",
-            !isPortuguese ? "text-slate-700" : "text-slate-400"
+            "text-base font-bold transition-colors duration-200 cursor-pointer",
+            !isPortuguese ? "text-slate-700" : "text-slate-400 hover:text-slate-600"
           )}
         >
           EN
@@ -54,9 +55,10 @@ export function MobileLanguageToggle() {
 
         {/* PT Label */}
         <span
+          onClick={() => setLanguage('pt')}
           className={clsx(
-            "text-base font-bold transition-colors duration-200",
-            isPortuguese ? "text-slate-700" : "text-slate-400"
+            "text-base font-bold transition-colors duration-200 cursor-pointer",
+            isPortuguese ? "text-slate-700" : "text-slate-400 hover:text-slate-600"
           )}
         >
           PT
