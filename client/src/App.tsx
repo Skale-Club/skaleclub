@@ -19,7 +19,7 @@ import { ChatWidget } from "@/components/chat/ChatWidget";
 // Context to track initial app load state
 const InitialLoadContext = createContext<{ isInitialLoad: boolean; markLoaded: () => void }>({
   isInitialLoad: true,
-  markLoaded: () => {},
+  markLoaded: () => { },
 });
 
 // Hook to hide initial loader after first page renders
@@ -63,6 +63,7 @@ const Contact = lazy(() => import("@/pages/Contact").then(m => ({ default: () =>
 const Faq = lazy(() => import("@/pages/Faq").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Blog = lazy(() => import("@/pages/Blog").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const BlogPost = lazy(() => import("@/pages/BlogPost").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const Portfolio = lazy(() => import("@/pages/Portfolio").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 
 function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const { data: settings } = useQuery<CompanySettings>({
@@ -99,6 +100,7 @@ function Router() {
   const [location] = useLocation();
   const { isInitialLoad } = useContext(InitialLoadContext);
   const isAdminRoute = location.startsWith('/admin');
+  const isPortfolioRoute = location.startsWith('/portfolio');
   const prevLocation = useRef(location);
 
   // Scroll to top when navigating to a new page (not hash links)
@@ -127,6 +129,19 @@ function Router() {
           <Route component={NotFound} />
         </Switch>
       </Suspense>
+    );
+  }
+
+  if (isPortfolioRoute) {
+    return (
+      <div className={`flex flex-col min-h-screen ${isInitialLoad ? 'invisible' : ''}`}>
+        <Suspense fallback={fallback}>
+          <Switch>
+            <Route path="/portfolio" component={Portfolio} />
+            <Route component={NotFound} />
+          </Switch>
+        </Suspense>
+      </div>
     );
   }
 
