@@ -5,6 +5,7 @@ import { AlertCircle, ArrowLeft, ArrowRight, Check, ChevronDown, Loader2, X } fr
 import clsx from "clsx";
 import { useQuery } from "@tanstack/react-query";
 import { trackEvent } from "@/lib/analytics";
+import { useTranslation } from "@/hooks/useTranslation";
 import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead, getSortedQuestions, KNOWN_FIELD_IDS } from "@shared/form";
 import type { LeadClassification, FormLead, FormConfig, FormQuestion } from "@shared/schema";
 
@@ -202,6 +203,7 @@ type LeadFormModalProps = {
 };
 
 export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
+  const { t } = useTranslation();
   // Fetch form config
   const { data: formConfig, isLoading: isConfigLoading } = useQuery<FormConfig>({
     queryKey: ['/api/form-config'],
@@ -665,7 +667,7 @@ export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
         <div className="bg-white rounded-2xl p-8 flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-[#406EF1]" />
-          <p className="text-slate-600">Loading form...</p>
+          <p className="text-slate-600">{t('Loading form...')}</p>
         </div>
       </div>,
       document.body
@@ -706,8 +708,8 @@ export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
                   <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm flex items-start gap-2">
                     <AlertCircle className="h-4 w-4 mt-0.5" />
                     <div>
-                      <p className="font-semibold">Important</p>
-                      <p>Don't close this window until you complete the form. Your browser doesn't allow local saves.</p>
+                      <p className="font-semibold">{t('Important')}</p>
+                      <p>{t("Don't close this window until you complete the form. Your browser doesn't allow local saves.")}</p>
                     </div>
                   </div>
                 )}
@@ -716,8 +718,8 @@ export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
                   <form onSubmit={handleSubmit}>
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="text-sm font-semibold text-[#406EF1] uppercase tracking-wide">Let's begin!</p>
-                        <h2 className="text-2xl sm:text-3xl font-bold leading-tight mt-1">{currentQuestion.title}</h2>
+                        <p className="text-sm font-semibold text-[#406EF1] uppercase tracking-wide">{t("Let's begin!")}</p>
+                        <h2 className="text-2xl sm:text-3xl font-bold leading-tight mt-1">{t(currentQuestion.title)}</h2>
                       </div>
                     </div>
 
@@ -861,7 +863,7 @@ export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
                                 )}
                               >
                                 <div>
-                                  <p className="font-semibold text-slate-900">{option.label}</p>
+                                  <p className="font-semibold text-slate-900">{t(option.label)}</p>
                                 </div>
                                 {answers[currentQuestion.id] === option.value && (
                                   <span className="h-8 w-8 min-h-8 min-w-8 rounded-full bg-[#406EF1] text-white flex items-center justify-center shrink-0">
@@ -883,7 +885,7 @@ export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
                             className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200"
                           >
                             <label htmlFor={`conditional-${currentQuestion.conditionalField.id}`} className="text-sm font-semibold text-slate-700 block mb-2">
-                              {currentQuestion.conditionalField.title}
+                              {t(currentQuestion.conditionalField.title)}
                             </label>
                             <input
                               id={`conditional-${currentQuestion.conditionalField.id}`}
@@ -904,7 +906,7 @@ export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
                         {errorMessage && (
                           <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 animate-form-shake">
                             <AlertCircle className="h-5 w-5 mt-0.5" />
-                            <p className="font-medium">{errorMessage}</p>
+                            <p className="font-medium">{t(errorMessage)}</p>
                           </div>
                         )}
                       </motion.div>
@@ -928,7 +930,7 @@ export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
                           !canProceed && "opacity-60 cursor-not-allowed"
                         )}
                       >
-                        {isLastStep ? "Finish" : "Next"}
+                        {isLastStep ? t("Finish") : t("Next")}
                         <ArrowRight className="h-4 w-4 flex-shrink-0" />
                       </button>
                     </div>
@@ -939,8 +941,8 @@ export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
                   <div className="py-12 flex flex-col items-center justify-center gap-4">
                     <div className="h-14 w-14 rounded-full border-4 border-slate-200 border-t-[#406EF1] animate-spin" />
                     <div className="text-center space-y-2">
-                      <p className="text-xl font-semibold text-slate-900">Analyzing your profile...</p>
-                      <p className="text-slate-500">This takes just a few moments.</p>
+                      <p className="text-xl font-semibold text-slate-900">{t('Analyzing your profile...')}</p>
+                      <p className="text-slate-500">{t('This takes just a few moments.')}</p>
                     </div>
                   </div>
                 )}
