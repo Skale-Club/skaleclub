@@ -1076,6 +1076,48 @@ Sitemap: ${canonicalUrl}/sitemap.xml
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>${canonicalUrl}/about-us</loc>
+    <lastmod>${lastMod}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${canonicalUrl}/contact</loc>
+    <lastmod>${lastMod}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${canonicalUrl}/faq</loc>
+    <lastmod>${lastMod}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>${canonicalUrl}/portfolio</loc>
+    <lastmod>${lastMod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${canonicalUrl}/privacy-policy</loc>
+    <lastmod>${lastMod}</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>${canonicalUrl}/terms-of-service</loc>
+    <lastmod>${lastMod}</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>${canonicalUrl}/thank-you</loc>
+    <lastmod>${lastMod}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>${canonicalUrl}/blog</loc>
     <lastmod>${lastMod}</lastmod>
     <changefreq>weekly</changefreq>
