@@ -11,7 +11,7 @@ import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from '@dnd-kit/utilities';
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Archive, GripVertical, Loader2, MessageSquare, RotateCcw, Search, Send, Settings, Trash2, User } from 'lucide-react';
+import { Archive, GripVertical, LayoutGrid, Loader2, MessageSquare, RotateCcw, Search, Send, Settings, Trash2, User } from 'lucide-react';
 import { SiGoogle, SiOpenai } from 'react-icons/si';
 import { Link } from 'wouter';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -222,6 +222,9 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas!"`;
   });
   const { data: geminiSettings } = useQuery<{ enabled: boolean; hasKey: boolean }>({
     queryKey: ['/api/integrations/gemini'],
+  });
+  const { data: openRouterSettings } = useQuery<{ enabled: boolean; hasKey: boolean }>({
+    queryKey: ['/api/integrations/openrouter'],
   });
 
   const { data: responseTimeData, isLoading: responseTimeLoading } = useQuery<{
@@ -650,6 +653,12 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas!"`;
                               <span>Google Gemini</span>
                             </div>
                           </SelectItem>
+                          <SelectItem value="openrouter">
+                            <div className="flex items-center gap-2">
+                              <LayoutGrid className="w-4 h-4" />
+                              <span>OpenRouter</span>
+                            </div>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                       <p className="text-[10px] text-muted-foreground">
@@ -681,6 +690,21 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas!"`;
                         </div>
                       </div>
                       {!geminiSettings?.enabled && (
+                         <Button variant="outline" size="sm" asChild>
+                           <Link href="/admin/integrations">Configure</Link>
+                         </Button>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 border rounded-lg bg-card">
+                      <div className="flex items-center gap-2">
+                        <LayoutGrid className={clsx("w-5 h-5", openRouterSettings?.enabled ? "text-green-600" : "text-slate-400")} />
+                        <div className="space-y-0.5">
+                          <span className="text-sm font-medium">OpenRouter Integration</span>
+                          <p className="text-xs text-muted-foreground">{openRouterSettings?.enabled ? 'Active and connected' : 'Not configured'}</p>
+                        </div>
+                      </div>
+                      {!openRouterSettings?.enabled && (
                          <Button variant="outline" size="sm" asChild>
                            <Link href="/admin/integrations">Configure</Link>
                          </Button>

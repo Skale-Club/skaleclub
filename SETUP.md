@@ -113,6 +113,16 @@ TWILIO_HOT_LEAD_RECIPIENTS=+1111111111,+2222222222
 OPENAI_API_KEY=sk-your-api-key
 ```
 
+### Gemini (AI Features)
+```env
+GEMINI_API_KEY=your-gemini-api-key
+```
+
+### OpenRouter (AI Features)
+```env
+OPENROUTER_API_KEY=sk-or-v1-your-api-key
+```
+
 ### Supabase Storage
 ```env
 SUPABASE_URL=https://your-project.supabase.co

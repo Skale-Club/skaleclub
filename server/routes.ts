@@ -8,7 +8,16 @@ import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 import { getGeminiClient } from "./lib/gemini.js";
-import { getActiveAIClient, setRuntimeOpenAiKey, setRuntimeGeminiKey, getRuntimeOpenAiKey, getRuntimeGeminiKey } from "./lib/ai-provider.js";
+import { getOpenRouterClient } from "./lib/openrouter.js";
+import {
+  getActiveAIClient,
+  setRuntimeOpenAiKey,
+  setRuntimeGeminiKey,
+  setRuntimeOpenRouterKey,
+  getRuntimeOpenAiKey,
+  getRuntimeGeminiKey,
+  getRuntimeOpenRouterKey,
+} from "./lib/ai-provider.js";
 import { insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema, insertBlogPostSchema, insertChatSettingsSchema, insertChatIntegrationsSchema, formLeadProgressSchema } from "#shared/schema.js";
 import type { LeadClassification, LeadStatus } from "#shared/schema.js";
 import { DEFAULT_FORM_CONFIG, calculateMaxScore, calculateFormScoresWithConfig, classifyLead, getSortedQuestions, KNOWN_FIELD_IDS } from "#shared/form.js";
@@ -124,6 +133,28 @@ function isUrlExcluded(url: string, rules: UrlRule[] = []): boolean {
 }
 
 const DEFAULT_CHAT_MODEL = 'gpt-4o-mini';
+const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
+const DEFAULT_OPENROUTER_MODEL = "openai/gpt-4o-mini";
+
+type OpenRouterModelItem = {
+  id: string;
+  name?: string;
+  description?: string;
+  contextLength?: number;
+  pricing?: {
+    prompt?: string;
+    completion?: string;
+  };
+};
+
+const OPENROUTER_MODEL_FALLBACKS: OpenRouterModelItem[] = [
+  { id: "openai/gpt-4o-mini", name: "OpenAI: GPT-4o mini" },
+  { id: "openai/gpt-4o", name: "OpenAI: GPT-4o" },
+  { id: "anthropic/claude-3.5-sonnet", name: "Anthropic: Claude 3.5 Sonnet" },
+  { id: "meta-llama/llama-3.1-70b-instruct", name: "Meta: Llama 3.1 70B Instruct" },
+  { id: "google/gemini-2.0-flash-001", name: "Google: Gemini 2.0 Flash" },
+  { id: "z-ai/glm-5", name: "Z.AI: GLM-5" },
+];
 
 type IntakeObjective = {
   id: 'zipcode' | 'name' | 'phone' | 'serviceType' | 'serviceDetails' | 'date' | 'address';
@@ -215,10 +246,13 @@ export async function registerRoutes(
 
   let runtimeOpenAiKey = process.env.OPENAI_API_KEY || "";
   let runtimeGeminiKey = process.env.GEMINI_API_KEY || "";
+  let runtimeOpenRouterKey = process.env.OPENROUTER_API_KEY || "";
+  let openRouterModelsCache: { expiresAt: number; models: OpenRouterModelItem[] } | null = null;
 
   // Initialize runtime keys in the ai-provider module
   if (runtimeOpenAiKey) setRuntimeOpenAiKey(runtimeOpenAiKey);
   if (runtimeGeminiKey) setRuntimeGeminiKey(runtimeGeminiKey);
+  if (runtimeOpenRouterKey) setRuntimeOpenRouterKey(runtimeOpenRouterKey);
 
   // Chat tools for lead qualification flow
   const chatTools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
@@ -309,6 +343,71 @@ export async function registerRoutes(
     const key = apiKey || getRuntimeGeminiKey() || runtimeGeminiKey || process.env.GEMINI_API_KEY;
     if (!key) return null;
     return getGeminiClient(key);
+  }
+
+  function getOpenRouterOpenAIClient(apiKey?: string) {
+    const key = apiKey || getRuntimeOpenRouterKey() || runtimeOpenRouterKey || process.env.OPENROUTER_API_KEY;
+    if (!key) return null;
+    return getOpenRouterClient(key);
+  }
+
+  async function getOpenRouterModels(): Promise<OpenRouterModelItem[]> {
+    if (openRouterModelsCache && Date.now() < openRouterModelsCache.expiresAt) {
+      return openRouterModelsCache.models;
+    }
+
+    const keyToUse =
+      getRuntimeOpenRouterKey() ||
+      runtimeOpenRouterKey ||
+      process.env.OPENROUTER_API_KEY ||
+      (await storage.getChatIntegration("openrouter"))?.apiKey;
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "HTTP-Referer": process.env.OPENROUTER_HTTP_REFERER || process.env.APP_URL || "http://localhost:5000",
+      "X-Title": process.env.OPENROUTER_APP_NAME || "SkaleClub",
+    };
+    if (keyToUse) {
+      headers.Authorization = `Bearer ${keyToUse}`;
+    }
+
+    const response = await fetch("https://openrouter.ai/api/v1/models", {
+      method: "GET",
+      headers,
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`Failed to fetch OpenRouter models (${response.status}): ${body.slice(0, 200)}`);
+    }
+
+    const json = (await response.json()) as { data?: any[] };
+    const models = (Array.isArray(json.data) ? json.data : [])
+      .map((item): OpenRouterModelItem | null => {
+        const id = typeof item?.id === "string" ? item.id : "";
+        if (!id) return null;
+        return {
+          id,
+          name: typeof item?.name === "string" ? item.name : undefined,
+          description: typeof item?.description === "string" ? item.description : undefined,
+          contextLength: typeof item?.context_length === "number" ? item.context_length : undefined,
+          pricing: item?.pricing && typeof item.pricing === "object"
+            ? {
+                prompt: typeof item.pricing.prompt === "string" ? item.pricing.prompt : undefined,
+                completion: typeof item.pricing.completion === "string" ? item.pricing.completion : undefined,
+              }
+            : undefined,
+        };
+      })
+      .filter((item): item is OpenRouterModelItem => Boolean(item))
+      .sort((a, b) => a.id.localeCompare(b.id));
+
+    openRouterModelsCache = {
+      models,
+      expiresAt: Date.now() + 5 * 60 * 1000,
+    };
+
+    return models;
   }
 
   function formatServiceForTool(service: any) {
@@ -1272,7 +1371,7 @@ Sitemap: ${canonicalUrl}/sitemap.xml
           defaultLanguage: z.string().optional(),
           lowPerformanceSmsEnabled: z.boolean().optional(),
           lowPerformanceThresholdSeconds: z.number().int().positive().optional(),
-          activeAiProvider: z.enum(['openai', 'gemini']).optional(),
+          activeAiProvider: z.enum(['openai', 'gemini', 'openrouter']).optional(),
         })
         .parse(req.body);
       const updated = await storage.updateChatSettings(payload);
@@ -1381,11 +1480,11 @@ Sitemap: ${canonicalUrl}/sitemap.xml
         return res.status(403).json({ message: 'Chat is not available on this page.' });
       }
 
-      // Get active AI provider (OpenAI or Gemini)
+      // Get active AI provider (OpenAI, Gemini, or OpenRouter)
       const aiConfig = await getActiveAIClient();
       if (!aiConfig) {
         return res.status(503).json({
-          message: 'AI chat is not configured. Please enable an AI provider (OpenAI or Gemini) in Admin → Integrations.'
+          message: 'AI chat is not configured. Please enable an AI provider (OpenAI, Gemini, or OpenRouter) in Admin → Integrations.'
         });
       }
 
@@ -1739,7 +1838,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
       res.json({
         provider: 'gemini',
         enabled: integration?.enabled || false,
-        model: integration?.model || 'gemini-2.0-flash',
+        model: integration?.model || DEFAULT_GEMINI_MODEL,
         hasKey: !!(getRuntimeGeminiKey() || runtimeGeminiKey || process.env.GEMINI_API_KEY || integration?.apiKey),
       });
     } catch (err) {
@@ -1773,7 +1872,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
       const updated = await storage.upsertChatIntegration({
         provider: 'gemini',
         enabled: payload.enabled ?? false,
-        model: payload.model || 'gemini-2.0-flash',
+        model: payload.model || DEFAULT_GEMINI_MODEL,
         apiKey: keyToPersist,
       });
 
@@ -1816,7 +1915,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
 
       try {
         await client.chat.completions.create({
-          model: model || 'gemini-2.0-flash',
+          model: model || DEFAULT_GEMINI_MODEL,
           messages: [{ role: 'user', content: 'Say pong' }],
           max_tokens: 5,
         });
@@ -1835,13 +1934,152 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
       await storage.upsertChatIntegration({
         provider: 'gemini',
         enabled: existing?.enabled ?? false,
-        model: model || existing?.model || 'gemini-2.0-flash',
+        model: model || existing?.model || DEFAULT_GEMINI_MODEL,
         apiKey: keyToUse,
       });
 
       res.json({ success: true, message: 'Connection successful' });
     } catch (err: any) {
       res.status(500).json({ success: false, message: err?.message || 'Failed to test Gemini connection' });
+    }
+  });
+
+  // ===============================
+  // OpenRouter Integration Routes
+  // ===============================
+
+  app.get('/api/integrations/openrouter', requireAdmin, async (_req, res) => {
+    try {
+      const integration = await storage.getChatIntegration('openrouter');
+      res.json({
+        provider: 'openrouter',
+        enabled: integration?.enabled || false,
+        model: integration?.model || DEFAULT_OPENROUTER_MODEL,
+        hasKey: !!(getRuntimeOpenRouterKey() || runtimeOpenRouterKey || process.env.OPENROUTER_API_KEY || integration?.apiKey),
+      });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.put('/api/integrations/openrouter', requireAdmin, async (req, res) => {
+    try {
+      const existing = await storage.getChatIntegration('openrouter');
+      const payload = insertChatIntegrationsSchema
+        .partial()
+        .extend({
+          apiKey: z.string().min(10).optional(),
+        })
+        .parse({ ...req.body, provider: 'openrouter' });
+
+      const providedKey = payload.apiKey && payload.apiKey !== '********' ? payload.apiKey : undefined;
+      const keyToPersist =
+        providedKey ??
+        existing?.apiKey ??
+        getRuntimeOpenRouterKey() ??
+        runtimeOpenRouterKey ??
+        process.env.OPENROUTER_API_KEY;
+
+      if (providedKey) {
+        runtimeOpenRouterKey = providedKey;
+        setRuntimeOpenRouterKey(providedKey);
+        openRouterModelsCache = null;
+      }
+
+      const willEnable = payload.enabled ?? false;
+      const keyAvailable = !!keyToPersist;
+      if (willEnable && !keyAvailable) {
+        return res.status(400).json({ message: 'Provide a valid API key and test it before enabling.' });
+      }
+
+      const updated = await storage.upsertChatIntegration({
+        provider: 'openrouter',
+        enabled: payload.enabled ?? false,
+        model: payload.model || DEFAULT_OPENROUTER_MODEL,
+        apiKey: keyToPersist,
+      });
+
+      res.json({
+        ...updated,
+        hasKey: !!keyToPersist,
+        apiKey: undefined,
+      });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.post('/api/integrations/openrouter/test', requireAdmin, async (req, res) => {
+    try {
+      const bodySchema = z.object({
+        apiKey: z.string().min(10).optional(),
+        model: z.string().optional(),
+      });
+      const { apiKey, model } = bodySchema.parse(req.body);
+      const existing = await storage.getChatIntegration('openrouter');
+      const keyToUse =
+        (apiKey && apiKey !== '********' ? apiKey : undefined) ||
+        getRuntimeOpenRouterKey() ||
+        runtimeOpenRouterKey ||
+        process.env.OPENROUTER_API_KEY ||
+        existing?.apiKey;
+
+      if (!keyToUse) {
+        return res.status(400).json({ success: false, message: 'API key is required' });
+      }
+
+      const client = getOpenRouterOpenAIClient(keyToUse);
+      if (!client) {
+        return res.status(400).json({ success: false, message: 'Invalid API key' });
+      }
+
+      try {
+        await client.chat.completions.create({
+          model: model || existing?.model || DEFAULT_OPENROUTER_MODEL,
+          messages: [{ role: 'user', content: 'Say pong' }],
+          max_tokens: 5,
+        });
+      } catch (err: any) {
+        const message = err?.message || 'Failed to test OpenRouter connection';
+        const status = err?.status || err?.response?.status;
+        return res.status(500).json({
+          success: false,
+          message: status ? `OpenRouter error (${status}): ${message}` : message,
+        });
+      }
+
+      runtimeOpenRouterKey = keyToUse;
+      setRuntimeOpenRouterKey(keyToUse);
+
+      await storage.upsertChatIntegration({
+        provider: 'openrouter',
+        enabled: existing?.enabled ?? false,
+        model: model || existing?.model || DEFAULT_OPENROUTER_MODEL,
+        apiKey: keyToUse,
+      });
+
+      res.json({ success: true, message: 'Connection successful' });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err?.message || 'Failed to test OpenRouter connection' });
+    }
+  });
+
+  app.get('/api/integrations/openrouter/models', requireAdmin, async (_req, res) => {
+    try {
+      const models = await getOpenRouterModels();
+      res.json({
+        models,
+        count: models.length,
+      });
+    } catch (err) {
+      res.json({
+        models: OPENROUTER_MODEL_FALLBACKS,
+        count: OPENROUTER_MODEL_FALLBACKS.length,
+        warning: (err as Error).message,
+      });
     }
   });
 

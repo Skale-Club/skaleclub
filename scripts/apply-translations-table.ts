@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { db } from "../server/db";
 import { sql } from "drizzle-orm";
 import * as fs from "fs";

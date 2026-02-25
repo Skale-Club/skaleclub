@@ -9,6 +9,9 @@ CREATE TABLE IF NOT EXISTS "translations" (
   "updated_at" TIMESTAMP DEFAULT NOW()
 );
 
+-- Enable RLS to satisfy Supabase Security Advisor checks
+ALTER TABLE "translations" ENABLE ROW LEVEL SECURITY;
+
 -- Create unique index to prevent duplicate translations
 CREATE UNIQUE INDEX IF NOT EXISTS "idx_translations_unique" ON "translations" (
   "source_text",
