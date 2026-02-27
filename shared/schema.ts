@@ -549,3 +549,38 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({
 
 export type BlogPost = typeof blogPosts.$inferSelect;
 export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
+
+// Portfolio Settings (singleton table)
+export interface PortfolioSlide {
+  id: string;
+  title: string;
+  description: string;
+  price: string;
+  priceLabel: string;
+  priceBadge: string;
+  features: string[];
+  ctaText: string;
+  imageUrl: string;
+  bgColor: string;
+  accentColor: string;
+  enabled: boolean;
+}
+
+export const portfolioSettings = pgTable("portfolio_settings", {
+  id: serial("id").primaryKey(),
+  heroTitle: text("hero_title").default("Scale Your Business"),
+  heroSubtitle: text("hero_subtitle").default("We help companies achieve unprecedented growth through modern marketing systems."),
+  heroBadgeText: text("hero_badge_text").default("Portfolio"),
+  ctaTitle: text("cta_title").default("Ready to Redefine Your Potential?"),
+  ctaSubtitle: text("cta_subtitle").default("Join the forward-thinking companies already scaling with us."),
+  ctaButtonText: text("cta_button_text").default("Book a Strategy Session"),
+  slides: jsonb("slides").$type<PortfolioSlide[]>().default([]),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertPortfolioSettingsSchema = createInsertSchema(portfolioSettings, {
+  slides: z.custom<PortfolioSlide[]>().optional().nullable(),
+}).omit({ id: true, updatedAt: true });
+
+export type PortfolioSettings = typeof portfolioSettings.$inferSelect;
+export type InsertPortfolioSettings = z.infer<typeof insertPortfolioSettingsSchema>;

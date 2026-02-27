@@ -18,7 +18,7 @@ import {
   getRuntimeGeminiKey,
   getRuntimeOpenRouterKey,
 } from "./lib/ai-provider.js";
-import { insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema, insertBlogPostSchema, insertChatSettingsSchema, insertChatIntegrationsSchema, formLeadProgressSchema } from "#shared/schema.js";
+import { insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema, insertBlogPostSchema, insertChatSettingsSchema, insertChatIntegrationsSchema, formLeadProgressSchema, insertPortfolioSettingsSchema } from "#shared/schema.js";
 import type { LeadClassification, LeadStatus } from "#shared/schema.js";
 import { DEFAULT_FORM_CONFIG, calculateMaxScore, calculateFormScoresWithConfig, classifyLead, getSortedQuestions, KNOWN_FIELD_IDS } from "#shared/form.js";
 import type { FormAnswers } from "#shared/form.js";
@@ -813,6 +813,29 @@ export async function registerRoutes(
     try {
       const validatedData = insertCompanySettingsSchema.partial().parse(req.body);
       const settings = await storage.updateCompanySettings(validatedData);
+      res.json(settings);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  // Portfolio Settings (public GET, admin PUT)
+  app.get('/api/portfolio-settings', async (req, res) => {
+    try {
+      const settings = await storage.getPortfolioSettings();
+      res.json(settings);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.put('/api/portfolio-settings', requireAdmin, async (req, res) => {
+    try {
+      const validatedData = insertPortfolioSettingsSchema.partial().parse(req.body);
+      const settings = await storage.updatePortfolioSettings(validatedData);
       res.json(settings);
     } catch (err) {
       if (err instanceof z.ZodError) {

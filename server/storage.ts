@@ -11,6 +11,7 @@ import {
   faqs,
   integrationSettings,
   blogPosts,
+  portfolioSettings,
   type CompanySettings,
   type ChatSettings,
   type ChatIntegrations,
@@ -33,6 +34,8 @@ import {
   type InsertFaq,
   type InsertIntegrationSettings,
   type InsertBlogPost,
+  type PortfolioSettings,
+  type InsertPortfolioSettings,
 } from "#shared/schema.js";
 import { eq, and, or, ilike, gte, lt, desc, asc, sql, ne } from "drizzle-orm";
 
@@ -54,6 +57,32 @@ async function ensureFormLeadGhlColumns() {
       throw err;
     });
   return ensureGhlColumnsPromise;
+}
+
+// Ensure portfolio_settings table exists
+let ensurePortfolioTablePromise: Promise<void> | null = null;
+async function ensurePortfolioTable() {
+  if (ensurePortfolioTablePromise) return ensurePortfolioTablePromise;
+  ensurePortfolioTablePromise = pool
+    .query(`
+      CREATE TABLE IF NOT EXISTS portfolio_settings (
+        id SERIAL PRIMARY KEY,
+        hero_title TEXT DEFAULT 'Scale Your Business',
+        hero_subtitle TEXT DEFAULT 'We help companies achieve unprecedented growth through modern marketing systems.',
+        hero_badge_text TEXT DEFAULT 'Portfolio',
+        cta_title TEXT DEFAULT 'Ready to Redefine Your Potential?',
+        cta_subtitle TEXT DEFAULT 'Join the forward-thinking companies already scaling with us.',
+        cta_button_text TEXT DEFAULT 'Book a Strategy Session',
+        slides JSONB DEFAULT '[]',
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+    `)
+    .then(() => undefined)
+    .catch((err) => {
+      ensurePortfolioTablePromise = null;
+      throw err;
+    });
+  return ensurePortfolioTablePromise;
 }
 
 // Ensure Twilio multi-recipient column exists to avoid runtime errors
@@ -143,6 +172,10 @@ export interface IStorage {
   countPublishedBlogPosts(): Promise<number>;
 
   // Knowledge Base
+
+  // Portfolio Settings
+  getPortfolioSettings(): Promise<PortfolioSettings>;
+  updatePortfolioSettings(settings: Partial<InsertPortfolioSettings>): Promise<PortfolioSettings>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -677,6 +710,25 @@ export class DatabaseStorage implements IStorage {
       .from(blogPosts)
       .where(eq(blogPosts.status, 'published'));
     return Number(result[0]?.count || 0);
+  }
+
+  async getPortfolioSettings(): Promise<PortfolioSettings> {
+    await ensurePortfolioTable();
+    const [existing] = await db.select().from(portfolioSettings).limit(1);
+    if (existing) return existing;
+    const [created] = await db.insert(portfolioSettings).values({}).returning();
+    return created;
+  }
+
+  async updatePortfolioSettings(settings: Partial<InsertPortfolioSettings>): Promise<PortfolioSettings> {
+    await ensurePortfolioTable();
+    const existing = await this.getPortfolioSettings();
+    const [updated] = await db
+      .update(portfolioSettings)
+      .set({ ...settings, updatedAt: new Date() })
+      .where(eq(portfolioSettings.id, existing.id))
+      .returning();
+    return updated;
   }
 }
 

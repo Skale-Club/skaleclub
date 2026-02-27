@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useQuery } from "@tanstack/react-query";
-import type { CompanySettings } from "@shared/schema";
+import type { CompanySettings, PortfolioSettings } from "@shared/schema";
 import { ArrowRight, ChevronDown, Rocket, Users, Target, BarChart, ExternalLink, Monitor, CheckCircle2, Bot, CalendarDays, Share2 } from "lucide-react";
 import { trackCTAClick } from "@/lib/analytics";
 import { LeadFormModal } from "@/components/LeadFormModal";
@@ -54,6 +54,9 @@ export default function Portfolio() {
     const { data: companySettings } = useQuery<CompanySettings>({
         queryKey: ['/api/company-settings'],
     });
+    const { data: portfolioSettings } = useQuery<PortfolioSettings>({
+        queryKey: ['/api/portfolio-settings'],
+    });
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -90,13 +93,13 @@ export default function Portfolio() {
                             <img src={companySettings.logoMain} alt="Logo" className="h-10 md:h-12 absolute top-8 left-8 z-20" />
                         ) : null}
                         <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-full mb-8 inline-flex items-center gap-2 border border-white/20 z-20">
-                            <span className="text-white font-medium uppercase tracking-wider text-xs md:text-sm">{t("Skale Club Portfolio")}</span>
+                            <span className="text-white font-medium uppercase tracking-wider text-xs md:text-sm">{t(portfolioSettings?.heroBadgeText || "Portfolio")}</span>
                         </div>
                         <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight z-20">
-                            {t(companySettings?.heroTitle || "Scale Your Business")}
+                            {t(portfolioSettings?.heroTitle || companySettings?.heroTitle || "Scale Your Business")}
                         </h1>
                         <p className="text-lg md:text-2xl text-blue-100 max-w-2xl mx-auto mb-12 leading-relaxed font-light z-20">
-                            {t(companySettings?.heroSubtitle || "We help companies achieve unprecedented growth through modern marketing systems.")}
+                            {t(portfolioSettings?.heroSubtitle || companySettings?.heroSubtitle || "We help companies achieve unprecedented growth through modern marketing systems.")}
                         </p>
                         <button
                             onClick={() => handleCta('hero')}
@@ -370,16 +373,16 @@ export default function Portfolio() {
             content: (
                 <div className="flex flex-col items-center justify-center h-full text-center px-6 relative z-10 w-full max-w-4xl mx-auto">
                     <h2 className="text-5xl md:text-7xl font-bold text-white mb-6 font-display leading-tight">
-                        {t("Ready to Redefine Your Potential?")}
+                        {t(portfolioSettings?.ctaTitle || "Ready to Redefine Your Potential?")}
                     </h2>
                     <p className="text-xl md:text-2xl text-blue-100 mb-12 font-light">
-                        {t("Join the forward-thinking companies already scaling with Skale Club.")}
+                        {t(portfolioSettings?.ctaSubtitle || "Join the forward-thinking companies already scaling with us.")}
                     </p>
                     <button
                         onClick={() => handleCta('footer')}
                         className="px-8 md:px-10 py-4 md:py-5 bg-white text-[#0A192F] font-bold rounded-full text-xl md:text-2xl hover:scale-105 transition-transform flex items-center justify-center gap-3 shadow-[0_20px_40px_rgba(255,255,255,0.2)]"
                     >
-                        {t("Book a Strategy Session")}
+                        {t(portfolioSettings?.ctaButtonText || "Book a Strategy Session")}
                         <Rocket className="w-6 h-6 text-[#406EF1]" />
                     </button>
 
