@@ -18,7 +18,7 @@ import {
   getRuntimeGeminiKey,
   getRuntimeOpenRouterKey,
 } from "./lib/ai-provider.js";
-import { insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema, insertBlogPostSchema, insertChatSettingsSchema, insertChatIntegrationsSchema, formLeadProgressSchema } from "#shared/schema.js";
+import { insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema, insertBlogPostSchema, insertChatSettingsSchema, insertChatIntegrationsSchema, insertPortfolioServiceSchema, formLeadProgressSchema } from "#shared/schema.js";
 import type { LeadClassification, LeadStatus } from "#shared/schema.js";
 import { DEFAULT_FORM_CONFIG, calculateMaxScore, calculateFormScoresWithConfig, classifyLead, getSortedQuestions, KNOWN_FIELD_IDS } from "#shared/form.js";
 import type { FormAnswers } from "#shared/form.js";
@@ -393,9 +393,9 @@ export async function registerRoutes(
           contextLength: typeof item?.context_length === "number" ? item.context_length : undefined,
           pricing: item?.pricing && typeof item.pricing === "object"
             ? {
-                prompt: typeof item.pricing.prompt === "string" ? item.pricing.prompt : undefined,
-                completion: typeof item.pricing.completion === "string" ? item.pricing.completion : undefined,
-              }
+              prompt: typeof item.pricing.prompt === "string" ? item.pricing.prompt : undefined,
+              completion: typeof item.pricing.completion === "string" ? item.pricing.completion : undefined,
+            }
             : undefined,
         };
       })
@@ -1143,7 +1143,7 @@ export async function registerRoutes(
       const canonicalUrl =
         settings?.seoCanonicalUrl ||
         `${req.protocol}://${hostname}`;
-      
+
       const robotsTxt = `User-agent: *
 Allow: /
 
@@ -2092,7 +2092,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
     try {
       const settings = await storage.getIntegrationSettings('gohighlevel');
       if (!settings) {
-        return res.json({ 
+        return res.json({
           provider: 'gohighlevel',
           apiKey: '',
           locationId: '',
@@ -2113,22 +2113,22 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
   app.put('/api/integrations/ghl', requireAdmin, async (req, res) => {
     try {
       const { apiKey, locationId, calendarId, isEnabled } = req.body;
-      
+
       const existingSettings = await storage.getIntegrationSettings('gohighlevel');
-      
+
       const settingsToSave: any = {
         provider: 'gohighlevel',
         locationId,
         calendarId: calendarId || '2irhr47AR6K0AQkFqEQl',
         isEnabled: isEnabled ?? false
       };
-      
+
       if (apiKey && apiKey !== '********') {
         settingsToSave.apiKey = apiKey;
       } else if (existingSettings?.apiKey) {
         settingsToSave.apiKey = existingSettings.apiKey;
       }
-      
+
       const settings = await storage.upsertIntegrationSettings(settingsToSave);
       res.json({
         ...settings,
@@ -2143,26 +2143,26 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
   app.post('/api/integrations/ghl/test', requireAdmin, async (req, res) => {
     try {
       const { apiKey, locationId } = req.body;
-      
+
       let keyToTest = apiKey;
       if (apiKey === '********' || !apiKey) {
         const existingSettings = await storage.getIntegrationSettings('gohighlevel');
         keyToTest = existingSettings?.apiKey;
       }
-      
+
       if (!keyToTest || !locationId) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'API key and Location ID are required' 
+        return res.status(400).json({
+          success: false,
+          message: 'API key and Location ID are required'
         });
       }
-      
+
       const result = await testGHLConnection(keyToTest, locationId);
       res.json(result);
     } catch (err) {
-      res.status(500).json({ 
-        success: false, 
-        message: (err as Error).message 
+      res.status(500).json({
+        success: false,
+        message: (err as Error).message
       });
     }
   });
@@ -2376,7 +2376,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
       const status = req.query.status as string | undefined;
       const limit = req.query.limit ? Number(req.query.limit) : undefined;
       const offset = req.query.offset ? Number(req.query.offset) : 0;
-      
+
       if (status === 'published' && limit) {
         const posts = await storage.getPublishedBlogPosts(limit, offset);
         res.json(posts);
@@ -2483,13 +2483,13 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
     try {
       const param = req.params.idOrSlug;
       let post;
-      
+
       if (/^\d+$/.test(param)) {
         post = await storage.getBlogPost(Number(param));
       } else {
         post = await storage.getBlogPostBySlug(param);
       }
-      
+
       if (!post) {
         return res.status(404).json({ message: 'Blog post not found' });
       }
@@ -2589,6 +2589,69 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
     }
   });
 
+  // Portfolio Services (public GET, admin CRUD)
+  app.get('/api/portfolio-services', async (req, res) => {
+    try {
+      const services = await storage.getPortfolioServices();
+      res.json(services);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.get('/api/portfolio-services/:idOrSlug', async (req, res) => {
+    try {
+      const { idOrSlug } = req.params;
+      let service;
+      if (/^\d+$/.test(idOrSlug)) {
+        service = await storage.getPortfolioService(Number(idOrSlug));
+      } else {
+        service = await storage.getPortfolioServiceBySlug(idOrSlug);
+      }
+      if (!service) {
+        return res.status(404).json({ message: 'Service not found' });
+      }
+      res.json(service);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.post('/api/portfolio-services', requireAdmin, async (req, res) => {
+    try {
+      const validatedData = insertPortfolioServiceSchema.parse(req.body);
+      const service = await storage.createPortfolioService(validatedData);
+      res.status(201).json(service);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.put('/api/portfolio-services/:id', requireAdmin, async (req, res) => {
+    try {
+      const validatedData = insertPortfolioServiceSchema.partial().parse(req.body);
+      const service = await storage.updatePortfolioService(Number(req.params.id), validatedData);
+      res.json(service);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.delete('/api/portfolio-services/:id', requireAdmin, async (req, res) => {
+    try {
+      await storage.deletePortfolioService(Number(req.params.id));
+      res.json({ success: true });
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
   // ===============================
   // User Management Routes
   // ===============================
@@ -2598,10 +2661,10 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
     try {
       const { getSupabaseAdmin } = await import('./lib/supabase.js');
       const supabaseAdmin = getSupabaseAdmin();
-      
+
       // Fetch users from Supabase Auth
       const { data: authUsers, error } = await supabaseAdmin.auth.admin.listUsers();
-      
+
       if (error) {
         console.error('Error fetching users from Supabase:', error);
         return res.status(500).json({ message: 'Failed to fetch users from Supabase' });
@@ -2861,7 +2924,7 @@ ${untranslated.map((t, i) => `${i + 1}. ${t}`).join('\n')}`;
 
       const responseText = completion.choices[0]?.message?.content?.trim() || '{}';
       let translationsFromAI: Record<string, string> = {};
-      
+
       try {
         // Try to parse JSON from response
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);

@@ -10,7 +10,8 @@ export type AdminSection =
   | 'users'
   | 'chat'
   | 'integrations'
-  | 'blog';
+  | 'blog'
+  | 'portfolio';
 
 export interface DayHours {
   isOpen: boolean;

@@ -11,6 +11,7 @@ import {
   faqs,
   integrationSettings,
   blogPosts,
+  portfolioServices,
   type CompanySettings,
   type ChatSettings,
   type ChatIntegrations,
@@ -24,6 +25,8 @@ import {
   type Faq,
   type IntegrationSettings,
   type BlogPost,
+  type PortfolioService,
+  type InsertPortfolioService,
   type InsertChatSettings,
   type InsertChatIntegrations,
   type InsertTwilioSettings,
@@ -93,17 +96,17 @@ export interface IStorage {
   // Company Settings
   getCompanySettings(): Promise<CompanySettings>;
   updateCompanySettings(settings: Partial<CompanySettings>): Promise<CompanySettings>;
-  
+
   // FAQs
   getFaqs(): Promise<Faq[]>;
   createFaq(faq: InsertFaq): Promise<Faq>;
   updateFaq(id: number, faq: Partial<InsertFaq>): Promise<Faq>;
   deleteFaq(id: number): Promise<void>;
-  
+
   // Integration Settings
   getIntegrationSettings(provider: string): Promise<IntegrationSettings | undefined>;
   upsertIntegrationSettings(settings: InsertIntegrationSettings): Promise<IntegrationSettings>;
-  
+
   // Chat
   getChatSettings(): Promise<ChatSettings>;
   updateChatSettings(settings: Partial<InsertChatSettings>): Promise<ChatSettings>;
@@ -121,7 +124,7 @@ export interface IStorage {
   createConversation(conversation: InsertConversation): Promise<Conversation>;
   addConversationMessage(message: InsertConversationMessage): Promise<ConversationMessage>;
   getConversationMessages(conversationId: string): Promise<ConversationMessage[]>;
-  
+
   // Leads
   upsertFormLeadProgress(progress: FormLeadProgressInput, metadata?: { userAgent?: string; conversationId?: string; source?: string }, formConfig?: FormConfig): Promise<FormLead>;
   getFormLeadBySession(sessionId: string): Promise<FormLead | undefined>;
@@ -130,7 +133,7 @@ export interface IStorage {
   updateFormLead(id: number, updates: Partial<Pick<FormLead, "status" | "observacoes" | "notificacaoEnviada" | "ghlContactId" | "ghlSyncStatus">>): Promise<FormLead | undefined>;
   getFormLeadByEmail(email: string): Promise<FormLead | undefined>;
   deleteFormLead(id: number): Promise<boolean>;
-  
+
   // Blog Posts
   getBlogPosts(status?: string): Promise<BlogPost[]>;
   getBlogPost(id: number): Promise<BlogPost | undefined>;
@@ -141,6 +144,14 @@ export interface IStorage {
   updateBlogPost(id: number, post: Partial<InsertBlogPost>): Promise<BlogPost>;
   deleteBlogPost(id: number): Promise<void>;
   countPublishedBlogPosts(): Promise<number>;
+
+  // Portfolio Services
+  getPortfolioServices(): Promise<PortfolioService[]>;
+  getPortfolioService(id: number): Promise<PortfolioService | undefined>;
+  getPortfolioServiceBySlug(slug: string): Promise<PortfolioService | undefined>;
+  createPortfolioService(service: InsertPortfolioService): Promise<PortfolioService>;
+  updatePortfolioService(id: number, service: Partial<InsertPortfolioService>): Promise<PortfolioService>;
+  deletePortfolioService(id: number): Promise<void>;
 
   // Knowledge Base
 }
@@ -173,7 +184,7 @@ export class DatabaseStorage implements IStorage {
   async getCompanySettings(): Promise<CompanySettings> {
     const [settings] = await db.select().from(companySettings);
     if (settings) return settings;
-    
+
     // Create default settings if none exist
     const [newSettings] = await db.insert(companySettings).values({}).returning();
     return newSettings;
@@ -210,7 +221,7 @@ export class DatabaseStorage implements IStorage {
 
   async upsertIntegrationSettings(settings: InsertIntegrationSettings): Promise<IntegrationSettings> {
     const existing = await this.getIntegrationSettings(settings.provider || "gohighlevel");
-    
+
     if (existing) {
       const [updated] = await db
         .update(integrationSettings)
@@ -372,7 +383,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(conversationMessages.conversationId, conversationId))
       .orderBy(asc(conversationMessages.createdAt));
   }
-  
+
   async getFormLeadBySession(sessionId: string): Promise<FormLead | undefined> {
     await ensureFormLeadGhlColumns();
     const [lead] = await db.select().from(formLeads).where(eq(formLeads.sessionId, sessionId));
@@ -677,6 +688,38 @@ export class DatabaseStorage implements IStorage {
       .from(blogPosts)
       .where(eq(blogPosts.status, 'published'));
     return Number(result[0]?.count || 0);
+  }
+
+  // Portfolio Services
+  async getPortfolioServices(): Promise<PortfolioService[]> {
+    return await db.select().from(portfolioServices).where(eq(portfolioServices.isActive, true)).orderBy(asc(portfolioServices.order));
+  }
+
+  async getPortfolioService(id: number): Promise<PortfolioService | undefined> {
+    const [service] = await db.select().from(portfolioServices).where(eq(portfolioServices.id, id));
+    return service;
+  }
+
+  async getPortfolioServiceBySlug(slug: string): Promise<PortfolioService | undefined> {
+    const [service] = await db.select().from(portfolioServices).where(eq(portfolioServices.slug, slug));
+    return service;
+  }
+
+  async createPortfolioService(service: InsertPortfolioService): Promise<PortfolioService> {
+    const [newService] = await db.insert(portfolioServices).values(service).returning();
+    return newService;
+  }
+
+  async updatePortfolioService(id: number, service: Partial<InsertPortfolioService>): Promise<PortfolioService> {
+    const [updated] = await db.update(portfolioServices)
+      .set({ ...service, updatedAt: new Date() })
+      .where(eq(portfolioServices.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deletePortfolioService(id: number): Promise<void> {
+    await db.delete(portfolioServices).where(eq(portfolioServices.id, id));
   }
 }
 

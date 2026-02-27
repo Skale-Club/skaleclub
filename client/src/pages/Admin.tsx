@@ -14,6 +14,7 @@ import { ChatSection } from '@/components/admin/ChatSection';
 import { CompanySettingsSection } from '@/components/admin/CompanySettingsSection';
 import { DashboardSection } from '@/components/admin/DashboardSection';
 import { FaqsSection } from '@/components/admin/FaqsSection';
+import { PortfolioSection } from '@/components/admin/PortfolioSection';
 import { WebsiteSettingsSection } from '@/components/admin/WebsiteSettingsSection';
 import { IntegrationsSection } from '@/components/admin/IntegrationsSection';
 import { LeadsSection } from '@/components/admin/LeadsSection';
@@ -146,6 +147,7 @@ function AdminContent() {
           {activeSection === 'dashboard' && <DashboardSection onNavigate={handleSectionSelect} />}
           {activeSection === 'leads' && <LeadsSection />}
           {activeSection === 'website' && <WebsiteSettingsSection />}
+          {activeSection === 'portfolio' && <PortfolioSection />}
           {activeSection === 'company' && <CompanySettingsSection />}
           {activeSection === 'seo' && <SEOSection />}
           {activeSection === 'faqs' && <FaqsSection />}

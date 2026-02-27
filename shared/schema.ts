@@ -218,10 +218,10 @@ export const formLeads = pgTable("form_leads", {
 
 // === SCHEMAS ===
 
-export const insertIntegrationSettingsSchema = createInsertSchema(integrationSettings).omit({ 
-  id: true, 
-  createdAt: true, 
-  updatedAt: true 
+export const insertIntegrationSettingsSchema = createInsertSchema(integrationSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
 });
 export const insertChatSettingsSchema = createInsertSchema(chatSettings).omit({
   id: true,
@@ -535,10 +535,10 @@ export const blogPosts = pgTable("blog_posts", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({ 
-  id: true, 
-  createdAt: true, 
-  updatedAt: true 
+export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
 }).extend({
   publishedAt: z.union([z.string(), z.date(), z.null()]).optional().transform(val => {
     if (!val) return null;
@@ -549,3 +549,37 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({
 
 export type BlogPost = typeof blogPosts.$inferSelect;
 export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
+
+// Portfolio Services table
+export const portfolioServices = pgTable("portfolio_services", {
+  id: serial("id").primaryKey(),
+  slug: text("slug").notNull().unique(), // unique identifier: social-cash, voice-ai, crm, etc.
+  title: text("title").notNull(),
+  subtitle: text("subtitle").notNull(),
+  description: text("description").notNull(),
+  price: text("price").notNull(), // e.g. "$1,999.00"
+  priceLabel: text("price_label").notNull().default("One-time"), // e.g. "One-time", "per month"
+  badgeText: text("badge_text").notNull().default("One-time Fee"), // e.g. "One-time Fee", "Subscription"
+  features: jsonb("features").$type<string[]>().default([]),
+  imageUrl: text("image_url"),
+  iconName: text("icon_name").default("Rocket"), // Lucide icon name
+  ctaText: text("cta_text").notNull(),
+  ctaButtonColor: text("cta_button_color").default("#406EF1"), // hex color
+  backgroundColor: text("background_color").default("bg-white"), // Tailwind class
+  textColor: text("text_color").default("text-slate-900"), // Tailwind class
+  accentColor: text("accent_color").default("blue"), // for badges/checks
+  layout: text("layout").notNull().default("left"), // 'left' or 'right' (image position)
+  order: integer("order").default(0),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertPortfolioServiceSchema = createInsertSchema(portfolioServices).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type PortfolioService = typeof portfolioServices.$inferSelect;
+export type InsertPortfolioService = z.infer<typeof insertPortfolioServiceSchema>;
