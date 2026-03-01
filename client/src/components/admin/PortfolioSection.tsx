@@ -64,6 +64,19 @@ export function PortfolioSection() {
         }
     });
 
+    const seedServices = useMutation({
+        mutationFn: async () => {
+            return apiRequest('POST', '/api/portfolio-services/seed', {});
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['/api/portfolio-services'] });
+            toast({ title: 'Default services seeded successfully!' });
+        },
+        onError: (error: Error) => {
+            toast({ title: 'Failed to seed services', description: error.message, variant: 'destructive' });
+        }
+    });
+
     const handleEdit = (service: PortfolioService) => {
         setEditingService(service);
         setIsDialogOpen(true);
@@ -114,6 +127,19 @@ export function PortfolioSection() {
                     <Briefcase className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                     <h3 className="font-semibold text-lg mb-2">No services yet</h3>
                     <p className="text-muted-foreground mb-4">Create services to display on your portfolio page</p>
+                    <Button
+                        onClick={() => seedServices.mutate()}
+                        disabled={seedServices.isPending}
+                        variant="outline"
+                        className="mt-2"
+                    >
+                        {seedServices.isPending ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                            <Plus className="w-4 h-4 mr-2" />
+                        )}
+                        Seed Default Services
+                    </Button>
                 </div>
             ) : (
                 <div className="grid gap-4">

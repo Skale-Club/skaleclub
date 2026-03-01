@@ -135,6 +135,7 @@ function Router() {
   if (isPortfolioRoute) {
     return (
       <div className={`flex flex-col min-h-screen ${isInitialLoad ? 'invisible' : ''}`}>
+        <Navbar />
         <Suspense fallback={fallback}>
           <Switch>
             <Route path="/portfolio" component={Portfolio} />

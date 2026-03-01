@@ -31,7 +31,7 @@ export function Navbar() {
   const telPhone = displayPhone.replace(/\D/g, '');
 
   const navLinks = [
-    { href: "/", label: t("Home") },
+    { href: "/portfolio", label: t("Portfolio") },
   ];
 
   const getInitials = (firstName?: string | null, lastName?: string | null) => {
@@ -74,6 +74,41 @@ export function Navbar() {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8">
+            {/* Nav Links */}
+            {navLinks.map((link) => {
+              const isHashLink = link.href.startsWith("/#");
+              const isActive = location === link.href;
+
+              if (isHashLink) {
+                const hash = link.href.replace("/#", "");
+                return (
+                  <button
+                    key={link.href}
+                    onClick={() => handleHashNavigation(hash)}
+                    className={clsx(
+                      "text-sm font-semibold transition-colors",
+                      isActive ? "text-white" : "text-white/70 hover:text-white"
+                    )}
+                  >
+                    {link.label}
+                  </button>
+                );
+              }
+
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={clsx(
+                    "text-sm font-semibold transition-colors",
+                    isActive ? "text-white" : "text-white/70 hover:text-white"
+                  )}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
+
             {/* Language Toggle */}
             <LanguageToggle />
 
