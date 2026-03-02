@@ -2,7 +2,12 @@ import { ArrowRight } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { PortfolioService } from "@shared/schema";
 
-// Badge color mappings - shared across portfolio pages
+// Helper to check if string is a hex color
+function isHexColor(color: string): boolean {
+    return /^#[0-9A-Fa-f]{6}$/.test(color);
+}
+
+// Badge color mappings for named colors (fallback)
 export const badgeColorMap: Record<string, { bg: string; text: string }> = {
     blue: { bg: "bg-blue-500", text: "text-white" },
     purple: { bg: "bg-purple-500", text: "text-white" },
@@ -25,8 +30,9 @@ interface PortfolioCardProps {
  */
 export function PortfolioCard({ service, onClick, className = "", variant = 'dark' }: PortfolioCardProps) {
     const { t } = useTranslation();
-    const accentColor = service.accentColor || 'blue';
-    const badgeColors = badgeColorMap[accentColor] || badgeColorMap.blue;
+    const accentColor = service.accentColor || '#406EF1';
+    const isHex = isHexColor(accentColor);
+    const badgeColors = isHex ? null : (badgeColorMap[accentColor] || badgeColorMap.blue);
 
     // Theme-specific classes
     const themeClasses = variant === 'dark'
@@ -62,11 +68,18 @@ export function PortfolioCard({ service, onClick, className = "", variant = 'dar
                         draggable={false}
                     />
                     {/* Badge positioned on top-right of image */}
-                    {service.badgeText && (
+                    {service.badgeText && (isHex ? (
+                        <span
+                            className="absolute top-3 right-3 text-xs font-bold px-3 py-1 rounded-full shadow-lg text-white"
+                            style={{ backgroundColor: accentColor }}
+                        >
+                            {t(service.badgeText)}
+                        </span>
+                    ) : badgeColors ? (
                         <span className={`absolute top-3 right-3 ${badgeColors.bg} ${badgeColors.text} text-xs font-bold px-3 py-1 rounded-full shadow-lg`}>
                             {t(service.badgeText)}
                         </span>
-                    )}
+                    ) : null)}
                 </div>
             )}
 

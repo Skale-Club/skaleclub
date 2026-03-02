@@ -568,7 +568,6 @@ export const portfolioServices = pgTable("portfolio_services", {
   backgroundColor: text("background_color").default("bg-white"), // Tailwind class
   textColor: text("text_color").default("text-slate-900"), // Tailwind class
   accentColor: text("accent_color").default("blue"), // for badges/checks
-  layout: text("layout").notNull().default("left"), // 'left' or 'right' (image position)
   order: integer("order").default(0),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),

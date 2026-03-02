@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Briefcase, Loader2, Pencil, Plus, Trash2, Eye, EyeOff, GripVertical, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Briefcase, Loader2, Pencil, Plus, Trash2, Eye, EyeOff, GripVertical, Image } from 'lucide-react';
+import { uploadFileToServer } from './shared/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -12,6 +13,9 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import type { PortfolioService, InsertPortfolioService } from '@shared/schema';
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 
 export function PortfolioSection() {
     const { toast } = useToast();
@@ -77,6 +81,34 @@ export function PortfolioSection() {
         }
     });
 
+    const reorderServices = useMutation({
+        mutationFn: async (orders: { id: number; order: number }[]) => {
+            return apiRequest('PUT', '/api/portfolio-services/reorder', { orders });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['/api/portfolio-services'] });
+            toast({ title: 'Order updated successfully' });
+        },
+        onError: (error: Error) => {
+            toast({ title: 'Failed to update order', description: error.message, variant: 'destructive' });
+        }
+    });
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+
+        const sortedServices = [...(services || [])].sort((a, b) => a.order - b.order);
+        const oldIndex = sortedServices.findIndex(s => s.id === active.id);
+        const newIndex = sortedServices.findIndex(s => s.id === over.id);
+
+        if (oldIndex === -1 || newIndex === -1) return;
+
+        const reordered = arrayMove(sortedServices, oldIndex, newIndex);
+        const orders = reordered.map((s, idx) => ({ id: s.id, order: idx }));
+        reorderServices.mutate(orders);
+    };
+
     const handleEdit = (service: PortfolioService) => {
         setEditingService(service);
         setIsDialogOpen(true);
@@ -91,12 +123,14 @@ export function PortfolioSection() {
         return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
     }
 
+    const sortedServices = [...(services || [])].sort((a, b) => a.order - b.order);
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold">Portfolio Services</h1>
-                    <p className="text-muted-foreground">Manage services displayed on the portfolio page</p>
+                    <p className="text-muted-foreground">Drag to reorder, click to edit</p>
                 </div>
                 <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingService(null); }}>
                     <DialogTrigger asChild>
@@ -142,49 +176,68 @@ export function PortfolioSection() {
                     </Button>
                 </div>
             ) : (
-                <div className="grid gap-4">
-                    {services?.sort((a, b) => a.order - b.order).map((service) => (
-                        <ServiceCard
-                            key={service.id}
-                            service={service}
-                            onEdit={handleEdit}
-                            onDelete={(id) => deleteService.mutate(id)}
-                        />
-                    ))}
-                </div>
+                <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <SortableContext items={sortedServices.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                        <div className="grid gap-4">
+                            {sortedServices.map((service) => (
+                                <SortableServiceCard
+                                    key={service.id}
+                                    service={service}
+                                    onEdit={handleEdit}
+                                    onDelete={(id) => deleteService.mutate(id)}
+                                />
+                            ))}
+                        </div>
+                    </SortableContext>
+                </DndContext>
             )}
         </div>
     );
 }
 
-function ServiceCard({ service, onEdit, onDelete }: {
+function SortableServiceCard({ service, onEdit, onDelete }: {
     service: PortfolioService;
     onEdit: (service: PortfolioService) => void;
     onDelete: (id: number) => void;
 }) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: service.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    };
+
     return (
         <div
+            ref={setNodeRef}
+            style={style}
             className="p-4 rounded-lg bg-card border transition-all hover:shadow-md"
             data-testid={`service-item-${service.id}`}
         >
             <div className="flex items-start gap-4">
-                <div className="flex-1 min-w-0">
+                <button
+                    {...attributes}
+                    {...listeners}
+                    className="p-2 cursor-grab hover:bg-muted rounded touch-none"
+                >
+                    <GripVertical className="w-5 h-5 text-muted-foreground" />
+                </button>
+                <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onEdit(service)}>
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <h3 className="font-semibold text-lg">{service.title}</h3>
+                        <h3 className="font-semibold text-lg hover:text-primary transition-colors">{service.title}</h3>
                         <Badge variant={service.isActive ? "default" : "secondary"}>
                             {service.isActive ? 'Active' : 'Inactive'}
                         </Badge>
-                        <Badge variant="outline">{service.layout === 'left' ? <ArrowLeft className="w-3 h-3 mr-1" /> : <ArrowRight className="w-3 h-3 mr-1" />} {service.layout}</Badge>
                     </div>
                     <p className="text-muted-foreground text-sm mb-2">{service.subtitle}</p>
                     <div className="flex items-center gap-4 text-sm">
                         <span className="font-medium text-primary">{service.price}</span>
                         <span className="text-muted-foreground">{service.priceLabel}</span>
-                        <span className="text-muted-foreground">Order: {service.order}</span>
                     </div>
                     {service.features && service.features.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
-                            {service.features.slice(0, 3).map((feature, idx) => (
+                            {service.features.slice(0, 3).map((feature: string, idx: number) => (
                                 <Badge key={idx} variant="outline" className="text-xs">{feature}</Badge>
                             ))}
                             {service.features.length > 3 && (
@@ -239,6 +292,7 @@ function ServiceForm({ service, onSubmit, isLoading, nextOrder }: {
     isLoading: boolean;
     nextOrder: number;
 }) {
+    const { toast } = useToast();
     const [formData, setFormData] = useState<Partial<InsertPortfolioService>>({
         slug: service?.slug || '',
         title: service?.title || '',
@@ -251,11 +305,9 @@ function ServiceForm({ service, onSubmit, isLoading, nextOrder }: {
         imageUrl: service?.imageUrl || '',
         iconName: service?.iconName || 'Rocket',
         ctaText: service?.ctaText || 'Get Started',
-        ctaButtonColor: service?.ctaButtonColor || '#406EF1',
         backgroundColor: service?.backgroundColor || 'bg-white',
         textColor: service?.textColor || 'text-slate-900',
-        accentColor: service?.accentColor || 'blue',
-        layout: service?.layout || 'left',
+        accentColor: service?.accentColor || '#406EF1',
         order: service?.order ?? nextOrder,
         isActive: service?.isActive ?? true,
     });
@@ -280,7 +332,7 @@ function ServiceForm({ service, onSubmit, isLoading, nextOrder }: {
     const removeFeature = (index: number) => {
         setFormData(prev => ({
             ...prev,
-            features: prev.features?.filter((_, i) => i !== index) || []
+            features: prev.features?.filter((_: string, i: number) => i !== index) || []
         }));
     };
 
@@ -300,16 +352,6 @@ function ServiceForm({ service, onSubmit, isLoading, nextOrder }: {
                             onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
                             required
                             placeholder="e.g., social-cash"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="order">Display Order</Label>
-                        <Input
-                            id="order"
-                            type="number"
-                            value={formData.order}
-                            onChange={(e) => setFormData(prev => ({ ...prev, order: Number(e.target.value) }))}
-                            min={0}
                         />
                     </div>
                 </div>
@@ -351,13 +393,17 @@ function ServiceForm({ service, onSubmit, isLoading, nextOrder }: {
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <Label htmlFor="price">Price</Label>
-                        <Input
-                            id="price"
-                            value={formData.price}
-                            onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
-                            required
-                            placeholder="e.g., $1,999.00"
-                        />
+                        <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                            <Input
+                                id="price"
+                                value={formData.price?.replace(/^\$/, '') || ''}
+                                onChange={(e) => setFormData(prev => ({ ...prev, price: '$' + e.target.value.replace(/^\$/, '') }))}
+                                required
+                                placeholder="e.g., 1,999.00"
+                                className="pl-7"
+                            />
+                        </div>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="priceLabel">Price Label</Label>
@@ -393,7 +439,7 @@ function ServiceForm({ service, onSubmit, isLoading, nextOrder }: {
                         <Button type="button" onClick={addFeature} variant="secondary">Add</Button>
                     </div>
                     <div className="flex flex-wrap gap-2 mt-2">
-                        {formData.features?.map((feature, idx) => (
+                        {formData.features?.map((feature: string, idx: number) => (
                             <Badge key={idx} variant="secondary" className="cursor-pointer" onClick={() => removeFeature(idx)}>
                                 {feature} ×
                             </Badge>
@@ -403,45 +449,81 @@ function ServiceForm({ service, onSubmit, isLoading, nextOrder }: {
 
                 {/* Media */}
                 <div className="space-y-2">
-                    <Label htmlFor="imageUrl">Image URL</Label>
-                    <Input
-                        id="imageUrl"
-                        value={formData.imageUrl}
-                        onChange={(e) => setFormData(prev => ({ ...prev, imageUrl: e.target.value }))}
-                        placeholder="https://..."
-                    />
+                    <Label>Service Image</Label>
+                    {formData.imageUrl ? (
+                        <div className="relative w-32 h-32 rounded-lg overflow-hidden border">
+                            <img src={formData.imageUrl} alt="Service" className="w-full h-full object-cover" />
+                            <button
+                                type="button"
+                                onClick={() => setFormData(prev => ({ ...prev, imageUrl: '' }))}
+                                className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                            >
+                                <EyeOff className="w-3 h-3" />
+                            </button>
+                        </div>
+                    ) : (
+                        <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                            <Image className="w-8 h-8 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground mt-2">Click to upload</span>
+                            <input
+                                type="file"
+                                className="hidden"
+                                accept="image/*"
+                                onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        try {
+                                            const imagePath = await uploadFileToServer(file);
+                                            setFormData(prev => ({ ...prev, imageUrl: imagePath }));
+                                            toast({ title: 'Image uploaded successfully' });
+                                        } catch (error: any) {
+                                            toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+                                        }
+                                    }
+                                }}
+                            />
+                        </label>
+                    )}
                 </div>
 
                 <div className="space-y-2">
-                    <Label htmlFor="iconName">Icon Name (Lucide)</Label>
-                    <Input
+                    <Label htmlFor="iconName">Icon</Label>
+                    <select
                         id="iconName"
-                        value={formData.iconName}
+                        value={formData.iconName || 'Rocket'}
                         onChange={(e) => setFormData(prev => ({ ...prev, iconName: e.target.value }))}
-                        placeholder="e.g., Rocket, Bot, Calendar"
-                    />
+                        className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                    >
+                        <option value="sparkles">✨ Sparkles</option>
+                        <option value="globe">🌐 Globe</option>
+                        <option value="message-circle">💬 Message Circle</option>
+                        <option value="credit-card">💳 Credit Card</option>
+                        <option value="phone">📞 Phone</option>
+                        <option value="calendar">📅 Calendar</option>
+                        <option value="users">👥 Users</option>
+                        <option value="cpu">🖥️ CPU</option>
+                        <option value="rocket">🚀 Rocket</option>
+                        <option value="bot">🤖 Bot</option>
+                        <option value="zap">⚡ Zap</option>
+                        <option value="star">⭐ Star</option>
+                        <option value="heart">❤️ Heart</option>
+                        <option value="settings">⚙️ Settings</option>
+                        <option value="code">💻 Code</option>
+                        <option value="database">🗄️ Database</option>
+                        <option value="mail">📧 Mail</option>
+                        <option value="bell">🔔 Bell</option>
+                    </select>
                 </div>
 
                 {/* CTA */}
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="ctaText">CTA Text</Label>
-                        <Input
-                            id="ctaText"
-                            value={formData.ctaText}
-                            onChange={(e) => setFormData(prev => ({ ...prev, ctaText: e.target.value }))}
-                            placeholder="e.g., Get Started"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="ctaButtonColor">CTA Button Color (hex)</Label>
-                        <Input
-                            id="ctaButtonColor"
-                            value={formData.ctaButtonColor}
-                            onChange={(e) => setFormData(prev => ({ ...prev, ctaButtonColor: e.target.value }))}
-                            placeholder="#406EF1"
-                        />
-                    </div>
+                <div className="space-y-2">
+                    <Label htmlFor="ctaText">CTA Text</Label>
+                    <Input
+                        id="ctaText"
+                        value={formData.ctaText}
+                        onChange={(e) => setFormData(prev => ({ ...prev, ctaText: e.target.value }))}
+                        placeholder="e.g., Get Started"
+                    />
                 </div>
 
                 {/* Styling */}
@@ -466,28 +548,14 @@ function ServiceForm({ service, onSubmit, isLoading, nextOrder }: {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="accentColor">Accent Color</Label>
-                        <Input
-                            id="accentColor"
-                            value={formData.accentColor}
-                            onChange={(e) => setFormData(prev => ({ ...prev, accentColor: e.target.value }))}
-                            placeholder="e.g., blue, purple, emerald"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="layout">Layout</Label>
-                        <select
-                            id="layout"
-                            value={formData.layout}
-                            onChange={(e) => setFormData(prev => ({ ...prev, layout: e.target.value as 'left' | 'right' }))}
-                            className="w-full h-10 px-3 rounded-md border border-input bg-background"
-                        >
-                            <option value="left">Image Left</option>
-                            <option value="right">Image Right</option>
-                        </select>
-                    </div>
+                <div className="space-y-2">
+                    <Label>Accent Color</Label>
+                    <input
+                        type="color"
+                        value={formData.accentColor || '#406EF1'}
+                        onChange={(e) => setFormData(prev => ({ ...prev, accentColor: e.target.value }))}
+                        className="w-12 h-12 rounded border cursor-pointer"
+                    />
                 </div>
 
                 {/* Active Toggle */}
@@ -498,7 +566,7 @@ function ServiceForm({ service, onSubmit, isLoading, nextOrder }: {
                     </div>
                     <Switch
                         id="isActive"
-                        checked={formData.isActive}
+                        checked={formData.isActive ?? true}
                         onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
                     />
                 </div>

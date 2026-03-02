@@ -2652,6 +2652,24 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
     }
   });
 
+  // Reorder portfolio services (admin only)
+  app.put('/api/portfolio-services/reorder', requireAdmin, async (req, res) => {
+    try {
+      const { orders } = req.body as { orders: { id: number; order: number }[] };
+      if (!Array.isArray(orders)) {
+        return res.status(400).json({ message: 'Orders must be an array' });
+      }
+
+      for (const item of orders) {
+        await storage.updatePortfolioService(item.id, { order: item.order });
+      }
+
+      res.json({ success: true, count: orders.length });
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
   // Seed default portfolio services (admin only)
   app.post('/api/portfolio-services/seed', requireAdmin, async (req, res) => {
     try {
@@ -2662,93 +2680,147 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
 
       const defaultServices = [
         {
-          slug: 'social-cash',
-          title: 'Social Cash',
-          subtitle: 'Transform social media into revenue',
-          description: 'Turn your social media presence into a predictable revenue stream with our proven social selling system.',
-          price: '$997',
+          slug: 'astropilot',
+          title: 'Astropilot',
+          subtitle: 'Social Media AI Creator',
+          description: 'Automate your social media presence with AI-powered content creation. Generate engaging posts, captions, and visuals that resonate with your audience.',
+          price: '$497',
           priceLabel: '/month',
-          badgeText: 'Best Seller',
-          features: ['Social Media Strategy', 'Content Creation', 'Lead Generation', 'Sales Funnel Integration', 'Monthly Analytics Report'],
-          iconName: 'trending-up',
+          badgeText: 'AI Powered',
+          features: ['AI Content Generation', 'Multi-Platform Posting', 'Hashtag Optimization', 'Engagement Analytics', 'Content Calendar'],
+          iconName: 'sparkles',
           ctaText: 'Get Started',
-          ctaButtonColor: '#406EF1',
-          backgroundColor: 'bg-gradient-to-br from-[#1a1a2e] to-[#16213e]',
-          accentColor: 'blue',
+          ctaButtonColor: '#8B5CF6',
+          backgroundColor: 'bg-gradient-to-br from-[#1a1a2e] to-[#2d1b4e]',
+          accentColor: 'purple',
           layout: 'right',
           order: 1,
           isActive: true
         },
         {
-          slug: 'voice-ai',
-          title: 'Voice AI',
-          subtitle: '24/7 AI-powered customer service',
-          description: 'Deploy intelligent voice agents that handle calls, book appointments, and answer questions around the clock.',
-          price: '$1,497',
-          priceLabel: '/month',
-          badgeText: 'New',
-          features: ['AI Voice Agent', '24/7 Availability', 'Multi-language Support', 'CRM Integration', 'Call Transcription'],
-          iconName: 'phone',
-          ctaText: 'Learn More',
-          ctaButtonColor: '#10B981',
+          slug: 'websites',
+          title: 'Websites',
+          subtitle: 'Basic & Custom Solutions',
+          description: 'Professional websites tailored to your business needs. From simple landing pages to complex web applications, we build solutions that convert visitors into customers.',
+          price: '$1,997',
+          priceLabel: 'starting',
+          badgeText: 'Popular',
+          features: ['Responsive Design', 'SEO Optimized', 'Fast Loading', 'Contact Forms', 'Analytics Integration'],
+          iconName: 'globe',
+          ctaText: 'Start Project',
+          ctaButtonColor: '#406EF1',
           backgroundColor: 'bg-gradient-to-br from-[#0f2027] to-[#203a43]',
-          accentColor: 'green',
+          accentColor: 'blue',
           layout: 'left',
           order: 2,
           isActive: true
         },
         {
-          slug: 'crm-system',
-          title: 'CRM System',
-          subtitle: 'Complete customer relationship management',
-          description: 'A powerful CRM tailored to your business needs, helping you track leads, manage customers, and close more deals.',
-          price: '$497',
+          slug: 'chatbot',
+          title: 'Chatbot',
+          subtitle: 'SMS / WhatsApp / Telegram / Web',
+          description: 'Intelligent chatbots that engage customers across all major messaging platforms. Automate support, qualify leads, and book appointments 24/7.',
+          price: '$797',
           priceLabel: '/month',
-          badgeText: 'Popular',
-          features: ['Contact Management', 'Pipeline Tracking', 'Email Automation', 'Task Management', 'Reporting Dashboard'],
-          iconName: 'users',
-          ctaText: 'Get Started',
-          ctaButtonColor: '#8B5CF6',
-          backgroundColor: 'bg-gradient-to-br from-[#2d1b4e] to-[#1a1a2e]',
-          accentColor: 'purple',
+          badgeText: 'Multi-Channel',
+          features: ['SMS Integration', 'WhatsApp Business', 'Telegram Bot', 'Website Widget', 'Lead Qualification'],
+          iconName: 'message-circle',
+          ctaText: 'Learn More',
+          ctaButtonColor: '#10B981',
+          backgroundColor: 'bg-gradient-to-br from-[#0d3b2e] to-[#0f2027]',
+          accentColor: 'green',
           layout: 'right',
           order: 3,
           isActive: true
         },
         {
-          slug: 'scheduling-automation',
-          title: 'Scheduling Automation',
-          subtitle: 'Never miss a booking again',
-          description: 'Automated scheduling system that syncs with your calendar, sends reminders, and reduces no-shows.',
-          price: '$297',
-          priceLabel: '/month',
+          slug: 'payment-system',
+          title: 'Payment System',
+          subtitle: 'Stripe Integration',
+          description: 'Seamless payment processing with Stripe integration. Accept payments online, set up subscriptions, and manage invoices with ease.',
+          price: '$397',
+          priceLabel: 'one-time',
           badgeText: 'Essential',
-          features: ['Calendar Integration', 'Automated Reminders', 'Online Booking Page', 'Team Scheduling', 'Timezone Detection'],
-          iconName: 'calendar',
-          ctaText: 'Book Demo',
-          ctaButtonColor: '#F59E0B',
-          backgroundColor: 'bg-gradient-to-br from-[#1e3a5f] to-[#0d1b2a]',
-          accentColor: 'orange',
+          features: ['Stripe Setup', 'Payment Forms', 'Subscription Management', 'Invoice Generation', 'Secure Transactions'],
+          iconName: 'credit-card',
+          ctaText: 'Get Started',
+          ctaButtonColor: '#6366F1',
+          backgroundColor: 'bg-gradient-to-br from-[#1e1b4b] to-[#312e81]',
+          accentColor: 'blue',
           layout: 'left',
           order: 4,
           isActive: true
         },
         {
-          slug: 'custom-websites',
-          title: 'Custom Websites',
-          subtitle: 'Professional web presence that converts',
-          description: 'Beautiful, fast, and SEO-optimized websites designed to turn visitors into customers.',
-          price: '$2,997',
+          slug: 'voice-assistant',
+          title: 'Voice Assistant',
+          subtitle: 'AI Helping With Your Needs',
+          description: 'Deploy intelligent voice assistants that handle calls, answer questions, and provide customer support around the clock with natural conversation.',
+          price: '$1,297',
+          priceLabel: '/month',
+          badgeText: 'AI Powered',
+          features: ['24/7 Availability', 'Natural Voice', 'Call Routing', 'Appointment Booking', 'Multi-Language'],
+          iconName: 'phone',
+          ctaText: 'Book Demo',
+          ctaButtonColor: '#F59E0B',
+          backgroundColor: 'bg-gradient-to-br from-[#1a1a2e] to-[#16213e]',
+          accentColor: 'orange',
+          layout: 'right',
+          order: 5,
+          isActive: true
+        },
+        {
+          slug: 'scheduling-system',
+          title: 'Scheduling System',
+          subtitle: 'Never Miss a Booking',
+          description: 'Automated scheduling that syncs with your calendar, sends reminders, and reduces no-shows. Perfect for service-based businesses.',
+          price: '$297',
+          priceLabel: '/month',
+          badgeText: 'Essential',
+          features: ['Calendar Sync', 'Automated Reminders', 'Online Booking', 'Timezone Support', 'Team Scheduling'],
+          iconName: 'calendar',
+          ctaText: 'Get Started',
+          ctaButtonColor: '#EC4899',
+          backgroundColor: 'bg-gradient-to-br from-[#831843] to-[#1a1a2e]',
+          accentColor: 'red',
+          layout: 'left',
+          order: 6,
+          isActive: true
+        },
+        {
+          slug: 'crm-setup',
+          title: 'CRM Setup',
+          subtitle: 'Go High Level Integration',
+          description: 'Complete CRM setup with Go High Level. Manage leads, automate follow-ups, and track your sales pipeline in one powerful platform.',
+          price: '$597',
           priceLabel: 'one-time',
+          badgeText: 'Recommended',
+          features: ['GHL Setup', 'Pipeline Configuration', 'Email Automation', 'SMS Campaigns', 'Reporting Dashboard'],
+          iconName: 'users',
+          ctaText: 'Get Started',
+          ctaButtonColor: '#14B8A6',
+          backgroundColor: 'bg-gradient-to-br from-[#134e4a] to-[#0f2027]',
+          accentColor: 'green',
+          layout: 'right',
+          order: 7,
+          isActive: true
+        },
+        {
+          slug: 'openclaw-deployment',
+          title: 'OpenClaw Deployment',
+          subtitle: 'Custom AI Deployment',
+          description: 'Deploy custom AI solutions tailored to your business needs. Automate complex workflows and integrate AI into your existing systems.',
+          price: '$2,497',
+          priceLabel: 'starting',
           badgeText: 'Premium',
-          features: ['Custom Design', 'Mobile Responsive', 'SEO Optimized', 'Contact Forms', 'Analytics Setup'],
-          iconName: 'globe',
-          ctaText: 'Start Project',
+          features: ['Custom AI Models', 'Workflow Automation', 'API Integration', 'Training & Support', 'Scalable Infrastructure'],
+          iconName: 'cpu',
+          ctaText: 'Contact Us',
           ctaButtonColor: '#EF4444',
           backgroundColor: 'bg-gradient-to-br from-[#1a1a1a] to-[#2d2d2d]',
           accentColor: 'red',
-          layout: 'right',
-          order: 5,
+          layout: 'left',
+          order: 8,
           isActive: true
         }
       ];

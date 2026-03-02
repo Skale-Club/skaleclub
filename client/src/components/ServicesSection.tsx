@@ -104,8 +104,7 @@ function ServiceDetailModal({
                   onClose();
                   onCta();
                 }}
-                style={{ backgroundColor: service.ctaButtonColor || '#406EF1' }}
-                className="w-full px-8 py-4 text-white font-bold rounded-full text-lg hover:shadow-lg hover:-translate-y-1 transition-all flex items-center justify-center gap-2"
+                className="w-full px-8 py-4 bg-primary text-white font-bold rounded-full text-lg hover:shadow-lg hover:-translate-y-1 transition-all flex items-center justify-center gap-2"
               >
                 {t(service.ctaText)}
                 <ArrowRight className="w-5 h-5" />
