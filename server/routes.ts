@@ -177,6 +177,43 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  app.get('/sitemap_index.xml', (req, res) => {
+    res.redirect(301, '/sitemap.xml');
+  });
+
+  app.get('/sitemap.xml', (req, res) => {
+    const BASE_URL = process.env.APP_URL || 'https://skale.club';
+    const routes = [
+      '',
+      'about-us',
+      'blog',
+      'contact',
+      'faq',
+      'portfolio',
+      'privacy-policy',
+      'terms-of-service',
+      'users',
+      'thank-you',
+    ];
+
+    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${routes.map(route => `  <url>
+    <loc>${BASE_URL}${route ? `/${route}` : ''}</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>${route === '' ? '1.0' : '0.8'}</priority>
+  </url>`).join('\n')}
+</urlset>`;
+
+    res.header('Content-Type', 'application/xml');
+    res.send(sitemap.trim());
+  });
+
+  app.get('/sitemap_index.xml', (req, res) => {
+    res.redirect(301, '/sitemap.xml');
+  });
+
   app.get('/api/cron/supabase-keepalive', async (req, res) => {
     if (!isAuthorizedCronRequest(req)) {
       return res.status(401).json({ message: 'Unauthorized cron request' });
@@ -217,6 +254,8 @@ export async function registerRoutes(
       });
     }
   });
+
+
 
   // Check admin session status - environment-aware
   // On Vercel (Supabase Auth), this is handled by server/auth/supabaseAuth.ts
