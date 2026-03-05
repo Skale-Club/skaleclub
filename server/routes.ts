@@ -177,6 +177,13 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  app.get('/robots.txt', (req, res) => {
+    const rawBaseUrl = process.env.APP_URL || 'https://skale.club';
+    const BASE_URL = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
+    res.type('text/plain');
+    res.send(`User-agent: *\nAllow: /\n\nSitemap: ${BASE_URL}/sitemap.xml\n`);
+  });
+
   app.get('/sitemap_index.xml', (req, res) => {
     res.redirect(301, '/sitemap.xml');
   });
@@ -195,8 +202,6 @@ export async function registerRoutes(
       'portfolio',
       'privacy-policy',
       'terms-of-service',
-      'users',
-      'thank-you',
     ];
 
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
