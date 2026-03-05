@@ -182,7 +182,10 @@ export async function registerRoutes(
   });
 
   app.get('/sitemap.xml', (req, res) => {
-    const BASE_URL = process.env.APP_URL || 'https://skale.club';
+    const rawBaseUrl = process.env.APP_URL || 'https://skale.club';
+    // Ensure base URL doesn't end with a slash for consistent joining
+    const BASE_URL = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
+
     const routes = [
       '',
       'about-us',
@@ -206,12 +209,8 @@ ${routes.map(route => `  <url>
   </url>`).join('\n')}
 </urlset>`;
 
-    res.header('Content-Type', 'application/xml');
+    res.type('application/xml');
     res.send(sitemap.trim());
-  });
-
-  app.get('/sitemap_index.xml', (req, res) => {
-    res.redirect(301, '/sitemap.xml');
   });
 
   app.get('/api/cron/supabase-keepalive', async (req, res) => {
