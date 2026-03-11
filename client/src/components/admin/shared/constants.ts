@@ -1,4 +1,4 @@
-import { Building2, Briefcase, FileText, HelpCircle, Image, LayoutDashboard, MessageSquare, Puzzle, Search, Sparkles, Users } from 'lucide-react';
+import { Building2, Briefcase, FileText, HelpCircle, Image, LayoutDashboard, Link, MessageSquare, Puzzle, Search, Sparkles, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { AdminSection, BusinessHours, IntakeObjective } from './types';
 
@@ -40,4 +40,5 @@ export const SIDEBAR_MENU_ITEMS: SidebarMenuItem[] = [
   { id: 'blog', title: 'Blog', icon: FileText },
   { id: 'seo', title: 'SEO', icon: Search },
   { id: 'integrations', title: 'Integrations', icon: Puzzle },
+  { id: 'links', title: 'Links Page', icon: Link },
 ];

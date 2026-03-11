@@ -19,6 +19,7 @@ import { WebsiteSettingsSection } from '@/components/admin/WebsiteSettingsSectio
 import { IntegrationsSection } from '@/components/admin/IntegrationsSection';
 import { LeadsSection } from '@/components/admin/LeadsSection';
 import { SEOSection } from '@/components/admin/SEOSection';
+import { LinksSection } from '@/components/admin/LinksSection';
 import { SIDEBAR_MENU_ITEMS } from '@/components/admin/shared/constants';
 import type { AdminSection, CompanySettingsData } from '@/components/admin/shared/types';
 import { SidebarProvider } from '@/components/ui/sidebar';
@@ -155,6 +156,7 @@ function AdminContent() {
           {activeSection === 'chat' && <ChatSection />}
           {activeSection === 'integrations' && <IntegrationsSection />}
           {activeSection === 'blog' && <BlogSection resetSignal={blogResetSignal} />}
+          {activeSection === 'links' && <LinksSection />}
         </div>
       </main>
     </div>

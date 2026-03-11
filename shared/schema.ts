@@ -448,6 +448,27 @@ export interface FormConfig {
   };
 }
 
+export interface LinksPageLink {
+  title: string;
+  url: string;
+  icon?: string;
+  order: number;
+}
+
+export interface LinksPageSocial {
+  platform: string;
+  url: string;
+  order: number;
+}
+
+export interface LinksPageConfig {
+  avatarUrl: string;
+  title: string;
+  description: string;
+  links: LinksPageLink[];
+  socialLinks: LinksPageSocial[];
+}
+
 // Company Settings (singleton table - only one row)
 export const companySettings = pgTable("company_settings", {
   id: serial("id").primaryKey(),
@@ -496,11 +517,19 @@ export const companySettings = pgTable("company_settings", {
   facebookPixelEnabled: boolean("facebook_pixel_enabled").default(false),
   homepageContent: jsonb("homepage_content").$type<HomepageContent>().default({}),
   formConfig: jsonb("form_config").$type<FormConfig>(),
+  linksPageConfig: jsonb("links_page_config").$type<LinksPageConfig>().default({
+    avatarUrl: '/attached_assets/ghl-logo.webp',
+    title: 'Skale Club',
+    description: 'Data-Driven Marketing & Scalable Growth Solutions',
+    links: [],
+    socialLinks: []
+  }),
 });
 
 export const insertCompanySettingsSchema = createInsertSchema(companySettings, {
   homepageContent: z.custom<HomepageContent>().optional().nullable(),
   formConfig: z.custom<FormConfig>().optional().nullable(),
+  linksPageConfig: z.custom<LinksPageConfig>().optional().nullable(),
 }).omit({ id: true });
 export type CompanySettings = typeof companySettings.$inferSelect;
 export type InsertCompanySettings = z.infer<typeof insertCompanySettingsSchema>;

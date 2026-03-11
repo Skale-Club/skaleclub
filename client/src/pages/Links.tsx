@@ -1,63 +1,67 @@
 import { motion } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ExternalLink, Instagram, Linkedin, Twitter, Youtube, Globe, Mail } from "lucide-react";
+import { ExternalLink, Instagram, Linkedin, Twitter, Youtube, Globe, Mail, Github, Facebook, Send, Loader2 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useQuery } from "@tanstack/react-query";
+import type { CompanySettingsData } from "@/components/admin/shared/types";
+
+const iconMap: Record<string, React.ReactNode> = {
+  instagram: <Instagram className="w-6 h-6" />,
+  linkedin: <Linkedin className="w-6 h-6" />,
+  twitter: <Twitter className="w-6 h-6" />,
+  x: <Twitter className="w-6 h-6" />,
+  youtube: <Youtube className="w-6 h-6" />,
+  github: <Github className="w-6 h-6" />,
+  facebook: <Facebook className="w-6 h-6" />,
+  telegram: <Send className="w-6 h-6" />,
+  email: <Mail className="w-6 h-6" />,
+  website: <Globe className="w-6 h-6" />,
+};
+
+const getSocialIcon = (platform: string) => {
+  const p = platform.toLowerCase();
+  return iconMap[p] || <ExternalLink className="w-6 h-6" />;
+};
+
+const getLinkIcon = (url: string) => {
+  if (url.includes('mailto:')) return <Mail className="w-5 h-5 mr-3" />;
+  if (url.includes('skale.club') || url.startsWith('/')) return <Globe className="w-5 h-5 mr-3" />;
+  return <ExternalLink className="w-5 h-5 mr-3" />;
+};
 
 export default function Links() {
   const { t } = useTranslation();
+  const { data: settings, isLoading } = useQuery<CompanySettingsData>({
+    queryKey: ['/api/company-settings'],
+  });
 
-  const links = [
-    {
-      title: "Skale Club Official Website",
-      url: "https://skale.club",
-      icon: <Globe className="w-5 h-5 mr-3" />,
-    },
-    {
-      title: "Book a Strategy Call",
-      url: "https://skale.club/contact",
-      icon: <ExternalLink className="w-5 h-5 mr-3" />,
-    },
-    {
-      title: "View Our Portfolio",
-      url: "https://skale.club/portfolio",
-      icon: <ExternalLink className="w-5 h-5 mr-3" />,
-    },
-    {
-      title: "Read Our Blog",
-      url: "https://skale.club/blog",
-      icon: <ExternalLink className="w-5 h-5 mr-3" />,
-    }
-  ];
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0f1014] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
-  const socialLinks = [
-    {
-      icon: <Instagram className="w-6 h-6" />,
-      url: "#", // Replace with actual
-      label: "Instagram"
-    },
-    {
-      icon: <Linkedin className="w-6 h-6" />,
-      url: "#", // Replace with actual
-      label: "LinkedIn"
-    },
-    {
-      icon: <Twitter className="w-6 h-6" />,
-      url: "#", // Replace with actual
-      label: "Twitter"
-    },
-    {
-      icon: <Youtube className="w-6 h-6" />,
-      url: "#", // Replace with actual
-      label: "YouTube"
-    },
-    {
-      icon: <Mail className="w-6 h-6" />,
-      url: "mailto:hello@skale.club", 
-      label: "Email"
-    }
-  ];
+  const config = settings?.linksPageConfig || {
+    avatarUrl: "/attached_assets/ghl-logo.webp",
+    title: "Skale Club",
+    description: "Data-Driven Marketing & Scalable Growth Solutions",
+    links: [
+      { title: "Skale Club Official Website", url: "https://skale.club" },
+      { title: "Book a Strategy Call", url: "https://skale.club/contact" },
+      { title: "View Our Portfolio", url: "https://skale.club/portfolio" },
+      { title: "Read Our Blog", url: "https://skale.club/blog" }
+    ],
+    socialLinks: [
+      { platform: "instagram", url: "#" },
+      { platform: "linkedin", url: "#" },
+      { platform: "twitter", url: "#" },
+      { platform: "youtube", url: "#" },
+      { platform: "email", url: "mailto:hello@skale.club" }
+    ]
+  };
 
   return (
     <div className="min-h-screen bg-[#0f1014] text-white flex flex-col items-center py-16 px-4 sm:px-6 relative overflow-hidden">
@@ -72,17 +76,19 @@ export default function Links() {
         transition={{ duration: 0.5 }}
       >
         <Avatar className="w-28 h-28 border-4 border-white/10 shadow-xl mb-4">
-          <AvatarImage src="/attached_assets/ghl-logo.webp" alt="Skale Club" className="object-cover" />
-          <AvatarFallback className="bg-primary/20 text-primary text-2xl font-bold">SC</AvatarFallback>
+          <AvatarImage src={config.avatarUrl} alt={config.title} className="object-cover" />
+          <AvatarFallback className="bg-primary/20 text-primary text-2xl font-bold">
+            {config.title.substring(0, 2).toUpperCase()}
+          </AvatarFallback>
         </Avatar>
 
-        <h1 className="text-2xl font-bold mb-2 tracking-tight">Skale Club</h1>
-        <p className="text-gray-400 text-center mb-10 px-4">
-          Data-Driven Marketing & Scalable Growth Solutions
+        <h1 className="text-2xl font-bold mb-2 tracking-tight text-center">{config.title}</h1>
+        <p className="text-gray-400 text-center mb-10 px-4 whitespace-pre-wrap">
+          {config.description}
         </p>
 
         <div className="w-full space-y-4 mb-12">
-          {links.map((link, index) => (
+          {config.links.map((link, index) => (
             <motion.a
               key={index}
               href={link.url}
@@ -97,7 +103,7 @@ export default function Links() {
             >
               <Card className="p-4 bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer flex items-center justify-between group rounded-xl">
                 <div className="flex items-center text-gray-100 group-hover:text-white transition-colors">
-                  {link.icon}
+                  {getLinkIcon(link.url)}
                   <span className="font-medium text-lg">{link.title}</span>
                 </div>
               </Card>
@@ -106,21 +112,21 @@ export default function Links() {
         </div>
 
         <motion.div 
-          className="flex justify-center gap-6"
+          className="flex flex-wrap justify-center gap-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.6 }}
         >
-          {socialLinks.map((social, index) => (
+          {config.socialLinks.map((social, index) => (
             <a
               key={index}
               href={social.url}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label={social.label}
+              aria-label={social.platform}
               className="text-gray-400 hover:text-white transition-colors hover:scale-110 transform duration-200"
             >
-              {social.icon}
+              {getSocialIcon(social.platform)}
             </a>
           ))}
         </motion.div>

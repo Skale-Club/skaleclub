@@ -1,4 +1,4 @@
-import type { HomepageContent } from '@shared/schema';
+import type { HomepageContent, LinksPageConfig } from '@shared/schema';
 
 export type AdminSection =
   | 'dashboard'
@@ -11,7 +11,8 @@ export type AdminSection =
   | 'chat'
   | 'integrations'
   | 'blog'
-  | 'portfolio';
+  | 'portfolio'
+  | 'links';
 
 export interface DayHours {
   isOpen: boolean;
@@ -51,6 +52,7 @@ export interface CompanySettingsData {
   homepageContent: HomepageContent | null;
   timeFormat: string | null;
   businessHours: BusinessHours | null;
+  linksPageConfig: LinksPageConfig | null;
 }
 
 export interface SEOSettingsData {
