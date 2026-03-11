@@ -64,6 +64,7 @@ const Faq = lazy(() => import("@/pages/Faq").then(m => ({ default: () => <PageWr
 const Blog = lazy(() => import("@/pages/Blog").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const BlogPost = lazy(() => import("@/pages/BlogPost").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Portfolio = lazy(() => import("@/pages/Portfolio").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const Links = lazy(() => import("@/pages/Links").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 
 function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const { data: settings } = useQuery<CompanySettings>({
@@ -101,6 +102,7 @@ function Router() {
   const { isInitialLoad } = useContext(InitialLoadContext);
   const isAdminRoute = location.startsWith('/admin');
   const isPortfolioRoute = location.startsWith('/portfolio');
+  const isLinksRoute = location.startsWith('/links');
   const prevLocation = useRef(location);
 
   // Scroll to top when navigating to a new page (not hash links)
@@ -143,6 +145,17 @@ function Router() {
           </Switch>
         </Suspense>
       </div>
+    );
+  }
+
+  if (isLinksRoute) {
+    return (
+      <Suspense fallback={fallback}>
+        <Switch>
+          <Route path="/links" component={Links} />
+          <Route component={NotFound} />
+        </Switch>
+      </Suspense>
     );
   }
 
