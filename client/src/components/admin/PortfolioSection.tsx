@@ -98,7 +98,7 @@ export function PortfolioSection() {
         const { active, over } = event;
         if (!over || active.id === over.id) return;
 
-        const sortedServices = [...(services || [])].sort((a, b) => a.order - b.order);
+        const sortedServices = [...(services || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
         const oldIndex = sortedServices.findIndex(s => s.id === active.id);
         const newIndex = sortedServices.findIndex(s => s.id === over.id);
 
@@ -123,7 +123,7 @@ export function PortfolioSection() {
         return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
     }
 
-    const sortedServices = [...(services || [])].sort((a, b) => a.order - b.order);
+    const sortedServices = [...(services || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
     return (
         <div className="space-y-6">
@@ -532,7 +532,7 @@ function ServiceForm({ service, onSubmit, isLoading, nextOrder }: {
                         <Label htmlFor="backgroundColor">Background Class</Label>
                         <Input
                             id="backgroundColor"
-                            value={formData.backgroundColor}
+                            value={formData.backgroundColor ?? ''}
                             onChange={(e) => setFormData(prev => ({ ...prev, backgroundColor: e.target.value }))}
                             placeholder="e.g., bg-white, bg-[#1C1936]"
                         />
@@ -541,7 +541,7 @@ function ServiceForm({ service, onSubmit, isLoading, nextOrder }: {
                         <Label htmlFor="textColor">Text Color Class</Label>
                         <Input
                             id="textColor"
-                            value={formData.textColor}
+                            value={formData.textColor ?? ''}
                             onChange={(e) => setFormData(prev => ({ ...prev, textColor: e.target.value }))}
                             placeholder="e.g., text-slate-900, text-white"
                         />

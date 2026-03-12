@@ -607,6 +607,8 @@ export const insertPortfolioServiceSchema = createInsertSchema(portfolioServices
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  features: z.array(z.string()).nullable().optional(),
 });
 
 export type PortfolioService = typeof portfolioServices.$inferSelect;

@@ -33,6 +33,7 @@ export function CompanySettingsSection() {
     homepageContent: DEFAULT_HOMEPAGE_CONTENT,
     timeFormat: '12h',
     businessHours: DEFAULT_BUSINESS_HOURS,
+    linksPageConfig: null,
   });
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);

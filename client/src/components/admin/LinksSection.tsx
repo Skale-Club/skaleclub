@@ -293,7 +293,7 @@ export function LinksSection() {
               {config.links.length === 0 && (
                 <div className="text-center py-12 border-2 border-dashed rounded-lg">
                   <p className="text-muted-foreground">You haven't added any links yet.</p>
-                  <Button variant="link" onClick={addLink}>Add your first link</Button>
+                  <Button variant="ghost" onClick={addLink}>Add your first link</Button>
                 </div>
               )}
             </CardContent>

@@ -30,8 +30,22 @@ async function injectSEOData() {
       import("../shared/schema"),
     ]);
 
-    // Fetch company settings from database
-    const settings = await db.select().from(companySettings).limit(1);
+    // Fetch only SEO-relevant columns so deployments with older schemas
+    // (missing newer columns like links_page_config) still work.
+    const settings = await db.select({
+      companyName: companySettings.companyName,
+      seoTitle: companySettings.seoTitle,
+      seoDescription: companySettings.seoDescription,
+      ogImage: companySettings.ogImage,
+      logoIcon: companySettings.logoIcon,
+      seoKeywords: companySettings.seoKeywords,
+      seoAuthor: companySettings.seoAuthor,
+      seoCanonicalUrl: companySettings.seoCanonicalUrl,
+      seoRobotsTag: companySettings.seoRobotsTag,
+      ogType: companySettings.ogType,
+      ogSiteName: companySettings.ogSiteName,
+      twitterCard: companySettings.twitterCard,
+    }).from(companySettings).limit(1);
     const seoData = settings[0];
 
     if (!seoData) {
