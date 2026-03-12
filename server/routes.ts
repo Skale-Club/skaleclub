@@ -177,47 +177,6 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  app.get('/robots.txt', (req, res) => {
-    const rawBaseUrl = process.env.APP_URL || 'https://skale.club';
-    const BASE_URL = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
-    res.type('text/plain');
-    res.send(`User-agent: *\nAllow: /\n\nSitemap: ${BASE_URL}/sitemap.xml\n`);
-  });
-
-  app.get('/sitemap_index.xml', (req, res) => {
-    res.redirect(301, '/sitemap.xml');
-  });
-
-  app.get('/sitemap.xml', (req, res) => {
-    const rawBaseUrl = process.env.APP_URL || 'https://skale.club';
-    // Ensure base URL doesn't end with a slash for consistent joining
-    const BASE_URL = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
-
-    const routes = [
-      '',
-      'about-us',
-      'blog',
-      'contact',
-      'faq',
-      'portfolio',
-      'privacy-policy',
-      'terms-of-service',
-    ];
-
-    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${routes.map(route => `  <url>
-    <loc>${BASE_URL}${route ? `/${route}` : ''}</loc>
-    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>${route === '' ? '1.0' : '0.8'}</priority>
-  </url>`).join('\n')}
-</urlset>`;
-
-    res.type('application/xml');
-    res.send(sitemap.trim());
-  });
-
   app.get('/api/cron/supabase-keepalive', async (req, res) => {
     if (!isAuthorizedCronRequest(req)) {
       return res.status(401).json({ message: 'Unauthorized cron request' });
@@ -1176,6 +1135,10 @@ ${routes.map(route => `  <url>
     const deleted = await storage.deleteFormLead(id);
     if (!deleted) return res.status(404).json({ message: 'Lead not found' });
     res.json({ message: 'Lead deleted' });
+  });
+
+  app.get('/sitemap_index.xml', (req, res) => {
+    res.redirect(301, '/sitemap.xml');
   });
 
   // Robots.txt endpoint
