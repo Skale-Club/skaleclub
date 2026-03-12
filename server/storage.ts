@@ -199,6 +199,7 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   private chatSchemaEnsured = false;
+  private companySchemaEnsured = false;
 
   private async ensureChatSchema(): Promise<void> {
     if (this.chatSchemaEnsured) return;
@@ -222,7 +223,23 @@ export class DatabaseStorage implements IStorage {
       this.chatSchemaEnsured = false;
     }
   }
+
+  private async ensureCompanySchema(): Promise<void> {
+    if (this.companySchemaEnsured) return;
+    try {
+      await db.execute(sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "homepage_content" jsonb DEFAULT '{}'::jsonb`);
+      await db.execute(sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "form_config" jsonb`);
+      await db.execute(sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "time_format" text DEFAULT '12h'`);
+      await db.execute(sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "business_hours" jsonb`);
+      await db.execute(sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "links_page_config" jsonb DEFAULT '{"avatarUrl":"/attached_assets/ghl-logo.webp","title":"Skale Club","description":"Data-Driven Marketing & Scalable Growth Solutions","links":[],"socialLinks":[]}'::jsonb`);
+      this.companySchemaEnsured = true;
+    } catch (err) {
+      console.error("ensureCompanySchema error:", err);
+      this.companySchemaEnsured = false;
+    }
+  }
   async getCompanySettings(): Promise<CompanySettings> {
+    await this.ensureCompanySchema();
     const [settings] = await db.select().from(companySettings);
     if (settings) return settings;
 
@@ -232,6 +249,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateCompanySettings(settings: Partial<CompanySettings>): Promise<CompanySettings> {
+    await this.ensureCompanySchema();
     const existing = await this.getCompanySettings();
     const [updated] = await db.update(companySettings).set(settings).where(eq(companySettings.id, existing.id)).returning();
     return updated;
