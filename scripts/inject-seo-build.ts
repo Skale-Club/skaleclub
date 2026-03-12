@@ -67,6 +67,26 @@ async function injectSEOData() {
     console.log("Reading index.html...");
     let html = readFileSync(indexPath, "utf-8");
 
+    // Remove existing SEO tags to avoid duplicates (e.g., og:temporal:* in Facebook debugger).
+    html = removeMetaByName(html, "description");
+    html = removeMetaByName(html, "keywords");
+    html = removeMetaByName(html, "author");
+    html = removeMetaByName(html, "robots");
+    html = removeMetaByName(html, "twitter:card");
+    html = removeMetaByName(html, "twitter:title");
+    html = removeMetaByName(html, "twitter:description");
+    html = removeMetaByName(html, "twitter:image");
+    html = removeMetaByProperty(html, "og:url");
+    html = removeMetaByProperty(html, "og:title");
+    html = removeMetaByProperty(html, "og:description");
+    html = removeMetaByProperty(html, "og:type");
+    html = removeMetaByProperty(html, "og:site_name");
+    html = removeMetaByProperty(html, "og:image");
+    html = removeMetaByProperty(html, "og:image:width");
+    html = removeMetaByProperty(html, "og:image:height");
+    html = removeMetaByProperty(html, "og:image:alt");
+    html = removeCanonical(html);
+
     // Extract and prepare values with fallbacks
     const title = seoData.seoTitle || seoData.companyName || "Company Name";
     const description = seoData.seoDescription || "";
@@ -90,21 +110,9 @@ async function injectSEOData() {
       `<title>${escapeHtml(title)}</title>`
     );
 
-    // Replace or inject meta description
-    if (html.includes('name="description"')) {
-      html = html.replace(
-        /<meta name="description" content=".*?".*?\/>/,
-        `<meta name="description" content="${escapeHtml(description)}" />`
-      );
-    } else {
-      html = html.replace(
-        /<\/head>/,
-        `  <meta name="description" content="${escapeHtml(description)}" />\n  </head>`
-      );
-    }
-
-    // Inject additional meta tags (after description meta tag)
+    // Inject SEO tags
     const metaTags: string[] = [];
+    metaTags.push(`<meta name="description" content="${escapeHtml(description)}" />`);
 
     if (keywords) {
       metaTags.push(`<meta name="keywords" content="${escapeHtml(keywords)}" />`);
@@ -190,6 +198,22 @@ function escapeHtml(unsafe: string | null | undefined): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+function removeMetaByName(html: string, name: string): string {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(`<meta\\s+[^>]*name=["']${escaped}["'][^>]*>`, "gi");
+  return html.replace(regex, "");
+}
+
+function removeMetaByProperty(html: string, property: string): string {
+  const escaped = property.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(`<meta\\s+[^>]*property=["']${escaped}["'][^>]*>`, "gi");
+  return html.replace(regex, "");
+}
+
+function removeCanonical(html: string): string {
+  return html.replace(/<link\s+[^>]*rel=["']canonical["'][^>]*>/gi, "");
 }
 
 // Run the script
