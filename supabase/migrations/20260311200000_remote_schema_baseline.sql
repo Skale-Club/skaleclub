@@ -1,0 +1,1 @@
+-- Remote baseline placeholder to align local Supabase CLI history with the existing database.

@@ -149,8 +149,7 @@ export function ChatSection() {
 
   const { data: settings, isLoading: loadingSettings } = useQuery<ChatSettingsData>({
     queryKey: ['/api/chat/settings'],
-    staleTime: 0,
-    refetchOnWindowFocus: true,
+    staleTime: 60000,
   });
 
   const { data: companySettings } = useQuery<CompanySettingsData>({
@@ -213,8 +212,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas!"`;
 
   const { data: conversations, isLoading: loadingConversations, refetch: refetchConversations } = useQuery<ConversationSummary[]>({
     queryKey: ['/api/chat/conversations'],
-    staleTime: 30000, // 30 seconds
-    refetchOnWindowFocus: true,
+    staleTime: 30000,
   });
 
   const { data: openaiSettings } = useQuery<{ enabled: boolean; hasKey: boolean }>({

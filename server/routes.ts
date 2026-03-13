@@ -26,7 +26,7 @@ import type { FormConfig } from "#shared/schema.js";
 import { testGHLConnection, getOrCreateGHLContact, getGHLCustomFields } from "./integrations/ghl.js";
 import { sendHotLeadNotification, sendLowPerformanceAlert, sendNewChatNotification } from "./integrations/twilio.js";
 import { registerStorageRoutes } from "./storage/storageAdapter.js";
-import { db } from "./db.js";
+import { db, pool } from "./db.js";
 import { users, systemHeartbeats, translations } from "#shared/schema.js";
 import { and, eq, inArray, sql } from "drizzle-orm";
 
@@ -130,6 +130,10 @@ function isUrlExcluded(url: string, rules: UrlRule[] = []): boolean {
     if (rule.match === 'starts_with') return url.startsWith(pattern);
     return url === pattern;
   });
+}
+
+function setPublicCache(res: Response, seconds: number) {
+  res.set("Cache-Control", `public, max-age=0, s-maxage=${seconds}, stale-while-revalidate=${seconds * 12}`);
 }
 
 const DEFAULT_CHAT_MODEL = 'gpt-4o-mini';
@@ -805,6 +809,7 @@ export async function registerRoutes(
   app.get('/api/company-settings', async (req, res) => {
     try {
       const settings = await storage.getCompanySettings();
+      setPublicCache(res, 300);
       res.json(settings);
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
@@ -934,6 +939,7 @@ export async function registerRoutes(
         maxScore: calculateMaxScore({ ...existing, questions: normalizedQuestions }),
         thresholds: existing.thresholds || spec.thresholds,
       };
+      setPublicCache(res, 300);
       res.json(normalizedConfig);
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
@@ -1155,6 +1161,7 @@ Allow: /
 
 Sitemap: ${canonicalUrl}/sitemap.xml
 `;
+      setPublicCache(res, 3600);
       res.type('text/plain').send(robotsTxt);
     } catch (err) {
       res.type('text/plain').send('User-agent: *\nAllow: /');
@@ -1243,6 +1250,7 @@ Sitemap: ${canonicalUrl}/sitemap.xml
       sitemap += `
 </urlset>`;
 
+      setPublicCache(res, 3600);
       res.type('application/xml').send(sitemap);
     } catch (err) {
       res.status(500).send('Error generating sitemap');
@@ -1269,6 +1277,7 @@ Sitemap: ${canonicalUrl}/sitemap.xml
       const intakeObjectives = (settings.intakeObjectives as IntakeObjective[] | null) || [];
       const effectiveObjectives = intakeObjectives.length ? intakeObjectives : DEFAULT_INTAKE_OBJECTIVES;
 
+      setPublicCache(res, 300);
       res.json({
         enabled: !!settings.enabled,
         agentName: fallbackName,
@@ -1300,27 +1309,28 @@ Sitemap: ${canonicalUrl}/sitemap.xml
 
   app.get('/api/chat/response-time', requireAdmin, async (_req, res) => {
     try {
-      const conversations = await storage.listConversations();
-      let totalMs = 0;
-      let samples = 0;
+      const statsResult = await pool.query<{ average_seconds: string | null; samples: string }>(`
+        WITH ordered_messages AS (
+          SELECT
+            conversation_id,
+            role,
+            created_at,
+            LEAD(role) OVER (PARTITION BY conversation_id ORDER BY created_at) AS next_role,
+            LEAD(created_at) OVER (PARTITION BY conversation_id ORDER BY created_at) AS next_created_at
+          FROM conversation_messages
+        )
+        SELECT
+          AVG(EXTRACT(EPOCH FROM (next_created_at - created_at))) AS average_seconds,
+          COUNT(*)::text AS samples
+        FROM ordered_messages
+        WHERE role = 'visitor'
+          AND next_role = 'assistant'
+          AND next_created_at IS NOT NULL
+      `);
 
-      for (const conversation of conversations) {
-        const messages = await storage.getConversationMessages(conversation.id);
-        for (let i = 0; i < messages.length; i++) {
-          const msg = messages[i];
-          if (msg.role !== 'visitor') continue;
-          const nextAssistant = messages.slice(i + 1).find((m) => m.role === 'assistant');
-          if (!nextAssistant || !msg.createdAt || !nextAssistant.createdAt) continue;
-          const start = new Date(msg.createdAt).getTime();
-          const end = new Date(nextAssistant.createdAt).getTime();
-          if (!Number.isFinite(start) || !Number.isFinite(end)) continue;
-          if (end < start) continue;
-          totalMs += end - start;
-          samples += 1;
-        }
-      }
-
-      const avgSeconds = samples ? Math.round(totalMs / samples / 1000) : 0;
+      const statsRow = statsResult.rows[0];
+      const samples = Number(statsRow?.samples || 0);
+      const avgSeconds = samples ? Math.round(Number(statsRow?.average_seconds || 0)) : 0;
       const minutes = Math.floor(avgSeconds / 60);
       const seconds = avgSeconds % 60;
       const formatted = samples
@@ -1393,20 +1403,56 @@ Sitemap: ${canonicalUrl}/sitemap.xml
   // Admin conversations
   app.get('/api/chat/conversations', requireAdmin, async (_req, res) => {
     try {
-      const conversations = await storage.listConversations();
-      const withPreview = await Promise.all(
-        conversations.map(async (conv) => {
-          const messages = await storage.getConversationMessages(conv.id);
-          const lastMessage = messages[messages.length - 1];
-          return {
-            ...conv,
-            lastMessage: lastMessage?.content || '',
-            lastMessageRole: lastMessage?.role || null,
-            messageCount: messages.length,
-          };
-        })
-      );
-      res.json(withPreview);
+      const result = await pool.query<{
+        id: string;
+        status: string;
+        createdAt: string;
+        updatedAt: string;
+        lastMessageAt: string | null;
+        firstPageUrl: string | null;
+        visitorName: string | null;
+        visitorEmail: string | null;
+        visitorPhone: string | null;
+        lastMessage: string | null;
+        lastMessageRole: string | null;
+        messageCount: string;
+      }>(`
+        WITH message_counts AS (
+          SELECT conversation_id, COUNT(*)::text AS message_count
+          FROM conversation_messages
+          GROUP BY conversation_id
+        ),
+        latest_messages AS (
+          SELECT DISTINCT ON (conversation_id)
+            conversation_id,
+            content,
+            role
+          FROM conversation_messages
+          ORDER BY conversation_id, created_at DESC
+        )
+        SELECT
+          c.id,
+          c.status,
+          c.created_at AS "createdAt",
+          c.updated_at AS "updatedAt",
+          c.last_message_at AS "lastMessageAt",
+          c.first_page_url AS "firstPageUrl",
+          c.visitor_name AS "visitorName",
+          c.visitor_email AS "visitorEmail",
+          c.visitor_phone AS "visitorPhone",
+          lm.content AS "lastMessage",
+          lm.role AS "lastMessageRole",
+          COALESCE(mc.message_count, '0') AS "messageCount"
+        FROM conversations c
+        LEFT JOIN message_counts mc ON mc.conversation_id = c.id
+        LEFT JOIN latest_messages lm ON lm.conversation_id = c.id
+        ORDER BY COALESCE(c.last_message_at, c.created_at) DESC
+      `);
+
+      res.json(result.rows.map((row) => ({
+        ...row,
+        messageCount: Number(row.messageCount || 0),
+      })));
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
     }
@@ -1495,8 +1541,12 @@ Sitemap: ${canonicalUrl}/sitemap.xml
       }
 
       const { client: openai, model, provider } = aiConfig;
-      console.log(`Using ${provider} provider with model ${model}`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`Using ${provider} provider with model ${model}`);
+      }
       const conversationId = input.conversationId || crypto.randomUUID();
+      const company = await storage.getCompanySettings();
+      const companyName = company?.companyName || 'Skale Club';
 
       let conversation = await storage.getConversation(conversationId);
       const isNewConversation = !conversation;
@@ -1511,8 +1561,6 @@ Sitemap: ${canonicalUrl}/sitemap.xml
         });
 
         // Send Twilio notification for new chat
-        const company = await storage.getCompanySettings();
-        const companyName = company?.companyName || 'Skale Club';
         const twilioSettings = await storage.getTwilioSettings();
         if (twilioSettings && isNewConversation) {
           sendNewChatNotification(twilioSettings, conversationId, input.pageUrl, companyName).catch(err => {
@@ -1536,8 +1584,9 @@ Sitemap: ${canonicalUrl}/sitemap.xml
         });
       }
 
-      await storage.addConversationMessage({
-        id: crypto.randomUUID(),
+      const visitorMessageId = crypto.randomUUID();
+      const visitorMessage = {
+        id: visitorMessageId,
         conversationId,
         role: 'visitor',
         content: input.message.trim(),
@@ -1547,11 +1596,10 @@ Sitemap: ${canonicalUrl}/sitemap.xml
           visitorId: input.visitorId,
           language: input.language,
         },
-      });
+      };
+      await storage.addConversationMessage(visitorMessage);
 
-      const company = await storage.getCompanySettings();
-      const history = await storage.getConversationMessages(conversationId);
-      const historyMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = history.map((m) => ({
+      const historyMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [...existingMessages, visitorMessage].map((m) => ({
         role: (m.role === 'assistant' ? 'assistant' : 'user') as 'assistant' | 'user',
         content: m.content,
       }));
@@ -1565,7 +1613,7 @@ Sitemap: ${canonicalUrl}/sitemap.xml
         ? `LANGUAGE:\n- Respond in ${input.language}.`
         : '';
 
-      const defaultSystemPrompt = `You are a friendly, consultative lead qualification assistant for ${company?.companyName || 'Skale Club'}, a digital marketing agency that helps service businesses grow.
+      const defaultSystemPrompt = `You are a friendly, consultative lead qualification assistant for ${companyName}, a digital marketing agency that helps service businesses grow.
 
 YOUR GOAL:
 Qualify potential clients by collecting information through a natural conversation. Ask questions from the form configuration one at a time, in order.
@@ -2385,6 +2433,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
 
       if (status === 'published' && limit) {
         const posts = await storage.getPublishedBlogPosts(limit, offset);
+        setPublicCache(res, 300);
         res.json(posts);
       } else if (status) {
         const posts = await storage.getBlogPosts(status);
@@ -2401,6 +2450,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
   app.get('/api/blog/count', async (req, res) => {
     try {
       const count = await storage.countPublishedBlogPosts();
+      setPublicCache(res, 300);
       res.json({ count });
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
@@ -2509,6 +2559,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
     try {
       const limit = req.query.limit ? Number(req.query.limit) : 4;
       const posts = await storage.getRelatedBlogPosts(Number(req.params.id), limit);
+      setPublicCache(res, 300);
       res.json(posts);
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
@@ -2554,6 +2605,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
   app.get('/api/faqs', async (req, res) => {
     try {
       const faqList = await storage.getFaqs();
+      setPublicCache(res, 300);
       res.json(faqList);
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
@@ -2599,6 +2651,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
   app.get('/api/portfolio-services', async (req, res) => {
     try {
       const services = await storage.getPortfolioServices();
+      setPublicCache(res, 300);
       res.json(services);
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
@@ -2617,6 +2670,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
       if (!service) {
         return res.status(404).json({ message: 'Service not found' });
       }
+      setPublicCache(res, 300);
       res.json(service);
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });

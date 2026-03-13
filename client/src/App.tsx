@@ -122,15 +122,17 @@ function Router() {
 
   if (isAdminRoute) {
     return (
-      <Suspense fallback={fallback}>
-        <Switch>
-          <Route path="/admin/login" component={AdminLogin} />
-          <Route path="/admin/signup" component={AdminSignup} />
-          <Route path="/admin" component={Admin} />
-          <Route path="/admin/:rest*" component={Admin} />
-          <Route component={NotFound} />
-        </Switch>
-      </Suspense>
+      <AuthProvider>
+        <Suspense fallback={fallback}>
+          <Switch>
+            <Route path="/admin/login" component={AdminLogin} />
+            <Route path="/admin/signup" component={AdminSignup} />
+            <Route path="/admin" component={Admin} />
+            <Route path="/admin/:rest*" component={Admin} />
+            <Route component={NotFound} />
+          </Switch>
+        </Suspense>
+      </AuthProvider>
     );
   }
 
@@ -205,14 +207,12 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <LanguageProvider>
-              <AuthProvider>
-                <SEOProvider>
-                  <AnalyticsProvider>
-                    <Router />
-                    <TranslationLoadingOverlay />
-                  </AnalyticsProvider>
-                </SEOProvider>
-              </AuthProvider>
+              <SEOProvider>
+                <AnalyticsProvider>
+                  <Router />
+                  <TranslationLoadingOverlay />
+                </AnalyticsProvider>
+              </SEOProvider>
             </LanguageProvider>
           </TooltipProvider>
         </QueryClientProvider>

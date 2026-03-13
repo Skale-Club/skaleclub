@@ -1,4 +1,4 @@
-import { db, pool } from "./db.js";
+import { db } from "./db.js";
 import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead } from "#shared/form.js";
 import {
   formLeads,
@@ -38,100 +38,6 @@ import {
   type InsertBlogPost,
 } from "#shared/schema.js";
 import { eq, and, or, ilike, gte, lt, desc, asc, sql, ne } from "drizzle-orm";
-
-// Ensure optional GHL columns exist even if migration hasn't been applied yet
-let ensureGhlColumnsPromise: Promise<void> | null = null;
-async function ensureFormLeadGhlColumns() {
-  if (ensureGhlColumnsPromise) return ensureGhlColumnsPromise;
-  ensureGhlColumnsPromise = pool
-    .query(`
-      ALTER TABLE form_leads ADD COLUMN IF NOT EXISTS ghl_contact_id text;
-      ALTER TABLE form_leads ADD COLUMN IF NOT EXISTS ghl_sync_status text DEFAULT 'pending';
-      DROP INDEX IF EXISTS form_leads_email_unique;
-      DROP INDEX IF EXISTS quiz_leads_email_unique;
-      CREATE INDEX IF NOT EXISTS form_leads_email_idx ON form_leads (email);
-    `)
-    .then(() => undefined)
-    .catch((err) => {
-      ensureGhlColumnsPromise = null;
-      throw err;
-    });
-  return ensureGhlColumnsPromise;
-}
-
-// Ensure Twilio multi-recipient column exists to avoid runtime errors
-let ensureTwilioColumnsPromise: Promise<void> | null = null;
-async function ensureTwilioSchema() {
-  if (ensureTwilioColumnsPromise) return ensureTwilioColumnsPromise;
-  ensureTwilioColumnsPromise = pool
-    .query(`
-      CREATE TABLE IF NOT EXISTS twilio_settings (
-        id SERIAL PRIMARY KEY,
-        enabled BOOLEAN DEFAULT false,
-        account_sid TEXT,
-        auth_token TEXT,
-        from_phone_number TEXT,
-        to_phone_number TEXT,
-        notify_on_new_chat BOOLEAN DEFAULT true,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
-      );
-      ALTER TABLE twilio_settings ADD COLUMN IF NOT EXISTS to_phone_numbers jsonb DEFAULT '[]';
-      UPDATE twilio_settings
-      SET to_phone_numbers = CASE
-        WHEN to_phone_number IS NOT NULL AND to_phone_number <> '' THEN jsonb_build_array(to_phone_number)
-        ELSE '[]'::jsonb
-      END
-      WHERE to_phone_numbers IS NULL OR jsonb_typeof(to_phone_numbers) IS NULL;
-    `)
-    .then(() => undefined)
-    .catch((err) => {
-      ensureTwilioColumnsPromise = null;
-      throw err;
-    });
-  return ensureTwilioColumnsPromise;
-}
-
-// Ensure portfolio_services table exists
-let ensurePortfolioTablePromise: Promise<void> | null = null;
-async function ensurePortfolioTable() {
-  if (ensurePortfolioTablePromise) return ensurePortfolioTablePromise;
-  ensurePortfolioTablePromise = pool
-    .query(`
-      CREATE TABLE IF NOT EXISTS portfolio_services (
-        id SERIAL PRIMARY KEY,
-        slug TEXT NOT NULL UNIQUE,
-        title TEXT NOT NULL,
-        subtitle TEXT NOT NULL,
-        description TEXT NOT NULL,
-        price TEXT NOT NULL,
-        price_label TEXT NOT NULL DEFAULT 'One-time',
-        badge_text TEXT NOT NULL DEFAULT 'One-time Fee',
-        features JSONB DEFAULT '[]'::jsonb,
-        image_url TEXT,
-        icon_name TEXT DEFAULT 'Rocket',
-        cta_text TEXT NOT NULL,
-        cta_button_color TEXT DEFAULT '#406EF1',
-        background_color TEXT DEFAULT 'bg-white',
-        text_color TEXT DEFAULT 'text-slate-900',
-        accent_color TEXT DEFAULT 'blue',
-        layout TEXT NOT NULL DEFAULT 'left',
-        "order" INTEGER DEFAULT 0,
-        is_active BOOLEAN DEFAULT true,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
-      );
-      CREATE INDEX IF NOT EXISTS idx_portfolio_services_slug ON portfolio_services(slug);
-      CREATE INDEX IF NOT EXISTS idx_portfolio_services_order ON portfolio_services("order");
-      CREATE INDEX IF NOT EXISTS idx_portfolio_services_active ON portfolio_services(is_active);
-    `)
-    .then(() => undefined)
-    .catch((err) => {
-      ensurePortfolioTablePromise = null;
-      throw err;
-    });
-  return ensurePortfolioTablePromise;
-}
 
 export interface IStorage {
   // Company Settings
@@ -198,48 +104,7 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  private chatSchemaEnsured = false;
-  private companySchemaEnsured = false;
-
-  private async ensureChatSchema(): Promise<void> {
-    if (this.chatSchemaEnsured) return;
-    try {
-      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "agent_avatar_url" text DEFAULT ''`);
-      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "system_prompt" text DEFAULT 'You are our helpful chat assistant. Provide concise, friendly answers. Use the provided tools to fetch services and details. Do not guess prices; always use tool data when relevant.'`);
-      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "intake_objectives" jsonb DEFAULT '[]'`);
-      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "avg_response_time" text DEFAULT ''`);
-      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "calendar_provider" text DEFAULT 'gohighlevel'`);
-      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "calendar_id" text DEFAULT ''`);
-      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "calendar_staff" jsonb DEFAULT '[]'`);
-      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "language_selector_enabled" boolean DEFAULT false`);
-      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "default_language" text DEFAULT 'en'`);
-      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "low_performance_sms_enabled" boolean DEFAULT false`);
-      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "low_performance_threshold_seconds" integer DEFAULT 300`);
-      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "use_faqs" boolean DEFAULT true`);
-      await db.execute(sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "active_ai_provider" text DEFAULT 'openai'`);
-      this.chatSchemaEnsured = true;
-    } catch (err) {
-      console.error("ensureChatSchema error:", err);
-      this.chatSchemaEnsured = false;
-    }
-  }
-
-  private async ensureCompanySchema(): Promise<void> {
-    if (this.companySchemaEnsured) return;
-    try {
-      await db.execute(sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "homepage_content" jsonb DEFAULT '{}'::jsonb`);
-      await db.execute(sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "form_config" jsonb`);
-      await db.execute(sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "time_format" text DEFAULT '12h'`);
-      await db.execute(sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "business_hours" jsonb`);
-      await db.execute(sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "links_page_config" jsonb DEFAULT '{"avatarUrl":"/attached_assets/ghl-logo.webp","title":"Skale Club","description":"Data-Driven Marketing & Scalable Growth Solutions","links":[],"socialLinks":[]}'::jsonb`);
-      this.companySchemaEnsured = true;
-    } catch (err) {
-      console.error("ensureCompanySchema error:", err);
-      this.companySchemaEnsured = false;
-    }
-  }
   async getCompanySettings(): Promise<CompanySettings> {
-    await this.ensureCompanySchema();
     const [settings] = await db.select().from(companySettings);
     if (settings) return settings;
 
@@ -249,7 +114,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateCompanySettings(settings: Partial<CompanySettings>): Promise<CompanySettings> {
-    await this.ensureCompanySchema();
     const existing = await this.getCompanySettings();
     const [updated] = await db.update(companySettings).set(settings).where(eq(companySettings.id, existing.id)).returning();
     return updated;
@@ -295,42 +159,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getChatSettings(): Promise<ChatSettings> {
-    try {
-      await this.ensureChatSchema();
-      const [settings] = await db.select().from(chatSettings);
-      if (settings) return settings;
-    } catch (err) {
-      console.error("getChatSettings initial read failed, retrying after ensuring schema:", err);
-      this.chatSchemaEnsured = false;
-      await this.ensureChatSchema();
-    }
+    const [settings] = await db.select().from(chatSettings);
+    if (settings) return settings;
 
     const [created] = await db.insert(chatSettings).values({}).returning();
     return created;
   }
 
   async updateChatSettings(settings: Partial<InsertChatSettings>): Promise<ChatSettings> {
-    try {
-      await this.ensureChatSchema();
-      const existing = await this.getChatSettings();
-      const [updated] = await db
-        .update(chatSettings)
-        .set({ ...settings, updatedAt: new Date() })
-        .where(eq(chatSettings.id, existing.id))
-        .returning();
-      return updated;
-    } catch (err) {
-      console.error("updateChatSettings failed, retrying after ensuring schema:", err);
-      this.chatSchemaEnsured = false;
-      await this.ensureChatSchema();
-      const existing = await this.getChatSettings();
-      const [updated] = await db
-        .update(chatSettings)
-        .set({ ...settings, updatedAt: new Date() })
-        .where(eq(chatSettings.id, existing.id))
-        .returning();
-      return updated;
-    }
+    const existing = await this.getChatSettings();
+    const [updated] = await db
+      .update(chatSettings)
+      .set({ ...settings, updatedAt: new Date() })
+      .where(eq(chatSettings.id, existing.id))
+      .returning();
+    return updated;
   }
 
   async getChatIntegration(provider: string): Promise<ChatIntegrations | undefined> {
@@ -359,7 +202,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTwilioSettings(): Promise<TwilioSettings | undefined> {
-    await ensureTwilioSchema();
     const [settings] = await db.select().from(twilioSettings).orderBy(asc(twilioSettings.id)).limit(1);
     if (settings) return settings;
 
@@ -369,7 +211,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async saveTwilioSettings(settings: InsertTwilioSettings): Promise<TwilioSettings> {
-    await ensureTwilioSchema();
     const existing = await this.getTwilioSettings();
     const toPhoneNumbers = Array.isArray(settings.toPhoneNumbers)
       ? settings.toPhoneNumbers.map(num => num?.toString() || "").filter(Boolean)
@@ -444,26 +285,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFormLeadBySession(sessionId: string): Promise<FormLead | undefined> {
-    await ensureFormLeadGhlColumns();
     const [lead] = await db.select().from(formLeads).where(eq(formLeads.sessionId, sessionId));
     return lead;
   }
 
   async getFormLeadByConversationId(conversationId: string): Promise<FormLead | undefined> {
-    await ensureFormLeadGhlColumns();
     const [lead] = await db.select().from(formLeads).where(eq(formLeads.conversationId, conversationId));
     return lead;
   }
 
   async getFormLeadByEmail(email: string): Promise<FormLead | undefined> {
-    await ensureFormLeadGhlColumns();
     const [lead] = await db.select().from(formLeads).where(eq(formLeads.email, email));
     return lead;
   }
 
   async upsertFormLeadProgress(progress: FormLeadProgressInput, metadata: { userAgent?: string; conversationId?: string; source?: string } = {}, formConfig?: FormConfig): Promise<FormLead> {
-    await ensureFormLeadGhlColumns();
-
     // For chat source, try to find by conversationId first
     let existing = metadata.conversationId
       ? await this.getFormLeadByConversationId(metadata.conversationId)
@@ -626,7 +462,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async listFormLeads(filters: { status?: LeadStatus; classificacao?: LeadClassification; formCompleto?: boolean; completionStatus?: 'completo' | 'em_progresso' | 'abandonado'; search?: string } = {}): Promise<FormLead[]> {
-    await ensureFormLeadGhlColumns();
     const conditions: any[] = [];
     if (filters.status) conditions.push(eq(formLeads.status, filters.status));
     if (filters.classificacao) conditions.push(eq(formLeads.classificacao, filters.classificacao));
@@ -668,7 +503,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateFormLead(id: number, updates: Partial<Pick<FormLead, "status" | "observacoes" | "notificacaoEnviada" | "ghlContactId" | "ghlSyncStatus">>): Promise<FormLead | undefined> {
-    await ensureFormLeadGhlColumns();
     const [existing] = await db.select().from(formLeads).where(eq(formLeads.id, id));
     if (!existing) return undefined;
 
@@ -681,7 +515,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteFormLead(id: number): Promise<boolean> {
-    await ensureFormLeadGhlColumns();
     const [existing] = await db.select().from(formLeads).where(eq(formLeads.id, id));
     if (!existing) return false;
     await db.delete(formLeads).where(eq(formLeads.id, id));
@@ -751,30 +584,25 @@ export class DatabaseStorage implements IStorage {
 
   // Portfolio Services
   async getPortfolioServices(): Promise<PortfolioService[]> {
-    await ensurePortfolioTable();
     return await db.select().from(portfolioServices).where(eq(portfolioServices.isActive, true)).orderBy(asc(portfolioServices.order));
   }
 
   async getPortfolioService(id: number): Promise<PortfolioService | undefined> {
-    await ensurePortfolioTable();
     const [service] = await db.select().from(portfolioServices).where(eq(portfolioServices.id, id));
     return service;
   }
 
   async getPortfolioServiceBySlug(slug: string): Promise<PortfolioService | undefined> {
-    await ensurePortfolioTable();
     const [service] = await db.select().from(portfolioServices).where(eq(portfolioServices.slug, slug));
     return service;
   }
 
   async createPortfolioService(service: InsertPortfolioService): Promise<PortfolioService> {
-    await ensurePortfolioTable();
     const [newService] = await db.insert(portfolioServices).values(service).returning();
     return newService;
   }
 
   async updatePortfolioService(id: number, service: Partial<InsertPortfolioService>): Promise<PortfolioService> {
-    await ensurePortfolioTable();
     const [updated] = await db.update(portfolioServices)
       .set({ ...service, updatedAt: new Date() })
       .where(eq(portfolioServices.id, id))
@@ -783,7 +611,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deletePortfolioService(id: number): Promise<void> {
-    await ensurePortfolioTable();
     await db.delete(portfolioServices).where(eq(portfolioServices.id, id));
   }
 }

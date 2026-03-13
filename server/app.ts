@@ -43,22 +43,11 @@ export async function createApp(): Promise<{ app: express.Express; httpServer: S
   app.use((req, res, next) => {
     const start = Date.now();
     const reqPath = req.path;
-    let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-    const originalResJson = res.json;
-    res.json = function (bodyJson, ...args) {
-      capturedJsonResponse = bodyJson;
-      return originalResJson.apply(res, [bodyJson, ...args]);
-    };
 
     res.on("finish", () => {
       const duration = Date.now() - start;
       if (reqPath.startsWith("/api")) {
-        let logLine = `${req.method} ${reqPath} ${res.statusCode} in ${duration}ms`;
-        if (capturedJsonResponse) {
-          logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-        }
-        log(logLine);
+        log(`${req.method} ${reqPath} ${res.statusCode} in ${duration}ms`);
       }
     });
 

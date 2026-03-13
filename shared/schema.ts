@@ -144,7 +144,10 @@ export const conversationMessages = pgTable("conversation_messages", {
   content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   metadata: jsonb("metadata"),
-});
+}, (table) => ({
+  conversationIdIdx: index("conversation_messages_conversation_idx").on(table.conversationId),
+  conversationCreatedAtIdx: index("conversation_messages_conversation_created_idx").on(table.conversationId, table.createdAt),
+}));
 
 export const leadClassificationEnum = pgEnum("lead_classificacao", [
   "QUENTE",
