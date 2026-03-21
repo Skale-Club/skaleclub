@@ -10,25 +10,35 @@ export interface VCardContact {
   note?: string | null;
 }
 
+function escapeVCardValue(value: string): string {
+  return value
+    .replace(/\\/g, "\\\\")
+    .replace(/\n/g, "\\n")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,");
+}
+
 export function generateVCard(contact: VCardContact): string {
+  const firstName = escapeVCardValue(contact.firstName);
+  const lastName = escapeVCardValue(contact.lastName);
   const vcf = [
     'BEGIN:VCARD',
     'VERSION:3.0',
-    `N:${contact.lastName};${contact.firstName};;;`,
-    `FN:${contact.firstName} ${contact.lastName}`,
+    `N:${lastName};${firstName};;;`,
+    `FN:${firstName} ${lastName}`,
   ];
 
-  if (contact.organization) vcf.push(`ORG:${contact.organization}`);
-  if (contact.title) vcf.push(`TITLE:${contact.title}`);
-  if (contact.workPhone) vcf.push(`TEL;TYPE=WORK,VOICE:${contact.workPhone}`);
-  if (contact.cellPhone) vcf.push(`TEL;TYPE=CELL,VOICE:${contact.cellPhone}`);
-  if (contact.email) vcf.push(`EMAIL;TYPE=PREF,INTERNET:${contact.email}`);
-  if (contact.url) vcf.push(`URL:${contact.url}`);
-  if (contact.note) vcf.push(`NOTE:${contact.note}`);
+  if (contact.organization) vcf.push(`ORG:${escapeVCardValue(contact.organization)}`);
+  if (contact.title) vcf.push(`TITLE:${escapeVCardValue(contact.title)}`);
+  if (contact.workPhone) vcf.push(`TEL;TYPE=WORK,VOICE:${escapeVCardValue(contact.workPhone)}`);
+  if (contact.cellPhone) vcf.push(`TEL;TYPE=CELL,VOICE:${escapeVCardValue(contact.cellPhone)}`);
+  if (contact.email) vcf.push(`EMAIL;TYPE=PREF,INTERNET:${escapeVCardValue(contact.email)}`);
+  if (contact.url) vcf.push(`URL:${escapeVCardValue(contact.url)}`);
+  if (contact.note) vcf.push(`NOTE:${escapeVCardValue(contact.note)}`);
 
   vcf.push('END:VCARD');
   
-  return vcf.join('\n');
+  return vcf.join('\r\n');
 }
 
 export function downloadVCard(contact: VCardContact, filename: string = 'contact.vcf') {

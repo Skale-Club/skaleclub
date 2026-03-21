@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -12,21 +12,7 @@ import { Loader2, Plus, Edit, Trash2, ExternalLink, Upload, Copy, Link as LinkIc
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import QRCode from "react-qr-code";
 import type { VCard } from "@shared/schema";
-
-async function uploadFileToServer(file: File): Promise<string> {
-  const formData = new FormData();
-  formData.append('file', file);
-  const res = await fetch('/api/upload', {
-    method: 'POST',
-    body: formData,
-  });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || 'Upload failed');
-  }
-  const data = await res.json();
-  return data.url;
-}
+import { uploadFileToServer } from "./shared/utils";
 
 const formatPhoneNumber = (value: string) => {
   if (!value) return value;
@@ -63,6 +49,7 @@ export function VCardsManager() {
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [usernameValue, setUsernameValue] = useState("");
+  const avatarFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const { data: vcards, isLoading } = useQuery<VCard[]>({
     queryKey: ['/api/vcards'],
@@ -152,6 +139,7 @@ export function VCardsManager() {
     }
 
     const fd = new FormData(e.currentTarget);
+    const validSocialLinks = socialLinks.filter((link) => link.url.trim());
     const data = {
       username: usernameValue,
       firstName: fd.get("firstName") as string,
@@ -165,8 +153,8 @@ export function VCardsManager() {
       couponCode: fd.get("couponCode") as string,
       couponAmount: fd.get("couponAmount") as string,
       avatarUrl: fd.get("avatarUrl") as string,
-      socialLinks: socialLinks,
-      isActive: true,
+      socialLinks: validSocialLinks,
+      isActive: editingCard?.isActive ?? true,
     };
 
     if (editingCard?.id) {
@@ -289,7 +277,20 @@ export function VCardsManager() {
         </Table>
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog
+        open={isDialogOpen}
+        onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) {
+            setEditingCard(null);
+            setAvatarPreview(null);
+            setPhoneValue("");
+            setSocialLinks([]);
+            setUsernameValue("");
+            setUsernameError(null);
+          }
+        }}
+      >
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingCard?.id ? 'Edit VCard' : 'New VCard'}</DialogTitle>
@@ -338,7 +339,7 @@ export function VCardsManager() {
                   <button
                     type="button"
                     disabled={isUploading}
-                    onClick={() => document.getElementById('avatar-upload')?.click()}
+                    onClick={() => avatarFileInputRef.current?.click()}
                     className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-dashed border-gray-300 bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-colors group cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   >
                     {isUploading && (
@@ -364,6 +365,7 @@ export function VCardsManager() {
                   </button>
                   <input
                     id="avatar-upload"
+                    ref={avatarFileInputRef}
                     type="file"
                     className="hidden"
                     accept="image/*"
@@ -379,6 +381,9 @@ export function VCardsManager() {
                           toast({ title: "Upload Failed", description: err.message, variant: "destructive" });
                         } finally {
                           setIsUploading(false);
+                          if (avatarFileInputRef.current) {
+                            avatarFileInputRef.current.value = "";
+                          }
                         }
                       }
                     }}

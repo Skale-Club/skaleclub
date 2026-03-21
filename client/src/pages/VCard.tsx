@@ -93,7 +93,16 @@ export default function VCard() {
 
   const handleSaveContact = async () => {
     // Download the vCard first
-    downloadVCard(contactData!, `${contactData!.firstName}_${contactData!.lastName}.vcf`);
+    downloadVCard({
+      firstName: contactData.firstName,
+      lastName: contactData.lastName,
+      organization: contactData.organization,
+      title: contactData.title,
+      cellPhone: contactData.cellPhone,
+      email: contactData.email,
+      url: contactData.url,
+      note: contactData.bio,
+    }, `${contactData.firstName}_${contactData.lastName}.vcf`);
     // Track download after successful download initiation
     trackDownloadMutation();
     toast({ title: "Contact Saved", description: "vCard has been downloaded to your device." });
