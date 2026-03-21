@@ -65,6 +65,7 @@ const Blog = lazy(() => import("@/pages/Blog").then(m => ({ default: () => <Page
 const BlogPost = lazy(() => import("@/pages/BlogPost").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Portfolio = lazy(() => import("@/pages/Portfolio").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Links = lazy(() => import("@/pages/Links").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const VCard = lazy(() => import("@/pages/VCard").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 
 function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const { data: settings } = useQuery<CompanySettings>({
@@ -103,6 +104,7 @@ function Router() {
   const isAdminRoute = location.startsWith('/admin');
   const isPortfolioRoute = location.startsWith('/portfolio');
   const isLinksRoute = location.startsWith('/links');
+  const isVCardRoute = location.startsWith('/vcard');
   const prevLocation = useRef(location);
 
   // Scroll to top when navigating to a new page (not hash links)
@@ -155,6 +157,18 @@ function Router() {
       <Suspense fallback={fallback}>
         <Switch>
           <Route path="/links" component={Links} />
+          <Route component={NotFound} />
+        </Switch>
+      </Suspense>
+    );
+  }
+
+  if (isVCardRoute) {
+    return (
+      <Suspense fallback={fallback}>
+        <Switch>
+          <Route path="/vcard" component={VCard} />
+          <Route path="/vcard/:username" component={VCard} />
           <Route component={NotFound} />
         </Switch>
       </Suspense>

@@ -616,3 +616,42 @@ export const insertPortfolioServiceSchema = createInsertSchema(portfolioServices
 
 export type PortfolioService = typeof portfolioServices.$inferSelect;
 export type InsertPortfolioService = z.infer<typeof insertPortfolioServiceSchema>;
+
+// VCards table (Digital Business Cards)
+export const vcards = pgTable("vcards", {
+  id: serial("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  title: text("title"),
+  organization: text("organization"),
+  cellPhone: text("cell_phone"),
+  email: text("email"),
+  url: text("url"),
+  bio: text("bio"),
+  couponCode: text("coupon_code"),
+  couponAmount: text("coupon_amount"),
+  avatarUrl: text("avatar_url"),
+  socialLinks: jsonb("social_links").$type<{ platform: string; url: string }[]>().default([]),
+  isActive: boolean("is_active").default(true),
+  viewCount: integer("view_count").default(0),
+  downloadCount: integer("download_count").default(0),
+  lastViewedAt: timestamp("last_viewed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertVCardSchema = createInsertSchema(vcards).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  socialLinks: z.array(z.object({
+    platform: z.string(),
+    url: z.string()
+  })).optional().default([]),
+  isActive: z.boolean().optional().default(true),
+});
+
+export type VCard = typeof vcards.$inferSelect;
+export type InsertVCard = z.infer<typeof insertVCardSchema>;
