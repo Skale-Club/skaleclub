@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { DEFAULT_HOMEPAGE_CONTENT } from '@/lib/homepageDefaults';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { DEFAULT_PAGE_SLUGS } from '@shared/pageSlugs';
 import { DEFAULT_BUSINESS_HOURS } from './shared/constants';
 import type { CompanySettingsData } from './shared/types';
 import { ensureArray, uploadFileToServer } from './shared/utils';
@@ -33,6 +34,7 @@ export function CompanySettingsSection() {
     homepageContent: DEFAULT_HOMEPAGE_CONTENT,
     timeFormat: '12h',
     businessHours: DEFAULT_BUSINESS_HOURS,
+    pageSlugs: DEFAULT_PAGE_SLUGS,
     linksPageConfig: null,
   });
   const [isSaving, setIsSaving] = useState(false);

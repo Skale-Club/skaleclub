@@ -11,9 +11,11 @@ import { LeadFormModal } from "@/components/LeadFormModal";
 import { ServicesSection } from "@/components/ServicesSection";
 import { DEFAULT_HOMEPAGE_CONTENT } from "@/lib/homepageDefaults";
 import { useTranslation } from "@/hooks/useTranslation";
+import { usePagePaths } from "@/lib/pagePaths";
 
 function BlogSection({ content }: { content: HomepageContent['blogSection'] }) {
   const { t } = useTranslation();
+  const pagePaths = usePagePaths();
   const sectionContent = {
     ...(content || {}),
   };
@@ -43,7 +45,7 @@ function BlogSection({ content }: { content: HomepageContent['blogSection'] }) {
             </h2>
             <p className="text-slate-600 text-lg">{t(sectionContent.subtitle || '')}</p>
           </div>
-          <Link href="/blog" className="hidden md:flex items-center gap-2 text-primary font-semibold hover:underline" data-testid="link-view-all-blog">
+          <Link href={pagePaths.blog} className="hidden md:flex items-center gap-2 text-primary font-semibold hover:underline" data-testid="link-view-all-blog">
             {t(sectionContent.viewAllText || '')}
             <ArrowRight className="w-4 h-4" />
           </Link>
@@ -51,7 +53,7 @@ function BlogSection({ content }: { content: HomepageContent['blogSection'] }) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {posts.map(post => (
-            <Link key={post.id} href={`/blog/${post.slug}`} className="group" data-testid={`link-blog-card-${post.id}`}>
+            <Link key={post.id} href={pagePaths.blogPost(post.slug)} className="group" data-testid={`link-blog-card-${post.id}`}>
               <div className="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 h-full flex flex-col">
                 {post.featureImageUrl ? (
                   <div className="aspect-video overflow-hidden">
@@ -93,7 +95,7 @@ function BlogSection({ content }: { content: HomepageContent['blogSection'] }) {
         </div>
 
         <div className="mt-10 text-center md:hidden">
-          <Link href="/blog" className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white font-bold rounded-full hover:bg-primary/90 transition-colors" data-testid="link-view-all-blog-mobile">
+          <Link href={pagePaths.blog} className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white font-bold rounded-full hover:bg-primary/90 transition-colors" data-testid="link-view-all-blog-mobile">
             {t(sectionContent.viewAllText || '')}
             <ArrowRight className="w-4 h-4" />
           </Link>

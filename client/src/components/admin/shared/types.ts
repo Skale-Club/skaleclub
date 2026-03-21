@@ -1,4 +1,5 @@
 import type { HomepageContent, LinksPageConfig } from '@shared/schema';
+import type { PageSlugs } from '@shared/pageSlugs';
 
 export type AdminSection =
   | 'dashboard'
@@ -53,6 +54,7 @@ export interface CompanySettingsData {
   homepageContent: HomepageContent | null;
   timeFormat: string | null;
   businessHours: BusinessHours | null;
+  pageSlugs: PageSlugs | null;
   linksPageConfig: LinksPageConfig | null;
 }
 
@@ -70,6 +72,7 @@ export interface SEOSettingsData {
   twitterSite: string | null;
   twitterCreator: string | null;
   schemaLocalBusiness: Record<string, any> | null;
+  pageSlugs: PageSlugs | null;
 }
 
 export type UrlRule = {

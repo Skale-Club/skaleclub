@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
+import { buildPagePaths } from "@shared/pageSlugs";
 import { useTranslation } from "@/hooks/useTranslation";
 import { trackEvent } from "@/lib/analytics";
 import {
@@ -27,6 +28,7 @@ export function Footer() {
   const { data: companySettings } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
   });
+  const pagePaths = buildPagePaths(companySettings?.pageSlugs);
 
   const companyName = companySettings?.companyName?.trim() || "";
   const tagline =
@@ -86,8 +88,8 @@ export function Footer() {
         <div className="flex flex-col md:flex-row items-center md:items-center justify-between gap-4 text-center md:text-left">
           <p className="text-gray-400 text-xs md:text-sm">&copy; {new Date().getFullYear()} {companyName}. {t('All rights reserved.')}</p>
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 text-xs md:text-sm md:justify-end">
-            <Link href="/privacy-policy" className="text-gray-400 hover:text-gray-200 transition-colors">{t('Privacy Policy')}</Link>
-            <Link href="/terms-of-service" className="text-gray-400 hover:text-gray-200 transition-colors">{t('Terms of Service')}</Link>
+            <Link href={pagePaths.privacyPolicy} className="text-gray-400 hover:text-gray-200 transition-colors">{t('Privacy Policy')}</Link>
+            <Link href={pagePaths.termsOfService} className="text-gray-400 hover:text-gray-200 transition-colors">{t('Terms of Service')}</Link>
           </div>
         </div>
       </div>

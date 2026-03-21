@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import type { Server } from "http";
 import { storage } from "./storage.js";
 import { api } from "#shared/routes.js";
+import { buildPagePaths, getPageSlugsValidationError, resolvePageSlugs } from "#shared/pageSlugs.js";
 import { z } from "zod";
 import OpenAI from "openai";
 import crypto from "crypto";
@@ -819,6 +820,18 @@ export async function registerRoutes(
   app.put('/api/company-settings', requireAdmin, async (req, res) => {
     try {
       const validatedData = insertCompanySettingsSchema.partial().parse(req.body);
+      if (validatedData.pageSlugs) {
+        const currentSettings = await storage.getCompanySettings();
+        const mergedPageSlugs = resolvePageSlugs({
+          ...(currentSettings.pageSlugs || {}),
+          ...validatedData.pageSlugs,
+        });
+        const pageSlugError = getPageSlugsValidationError(mergedPageSlugs);
+        if (pageSlugError) {
+          return res.status(400).json({ message: pageSlugError });
+        }
+        validatedData.pageSlugs = mergedPageSlugs;
+      }
       const settings = await storage.updateCompanySettings(validatedData);
       res.json(settings);
     } catch (err) {
@@ -1173,74 +1186,38 @@ Sitemap: ${canonicalUrl}/sitemap.xml
     try {
       const settings = await storage.getCompanySettings();
       const blogPostsList = await storage.getPublishedBlogPosts(100, 0);
+      const pagePaths = buildPagePaths(settings?.pageSlugs);
       const hostname = req.hostname || '';
       const canonicalUrl =
         settings?.seoCanonicalUrl ||
         `${req.protocol}://${hostname}`;
       const lastMod = new Date().toISOString().split('T')[0];
+      const publicPages = [
+        { path: "/", changefreq: "weekly", priority: "1.0" },
+        { path: pagePaths.contact, changefreq: "monthly", priority: "0.8" },
+        { path: pagePaths.faq, changefreq: "monthly", priority: "0.7" },
+        { path: pagePaths.portfolio, changefreq: "weekly", priority: "0.8" },
+        { path: pagePaths.privacyPolicy, changefreq: "yearly", priority: "0.5" },
+        { path: pagePaths.termsOfService, changefreq: "yearly", priority: "0.5" },
+        { path: pagePaths.thankYou, changefreq: "monthly", priority: "0.6" },
+        { path: pagePaths.blog, changefreq: "weekly", priority: "0.8" },
+        { path: pagePaths.links, changefreq: "monthly", priority: "0.6" },
+      ];
 
       let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>${canonicalUrl}/</loc>
+${publicPages.map((page) => `  <url>
+    <loc>${canonicalUrl}${page.path}</loc>
     <lastmod>${lastMod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>${canonicalUrl}/about-us</loc>
-    <lastmod>${lastMod}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>${canonicalUrl}/contact</loc>
-    <lastmod>${lastMod}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>${canonicalUrl}/faq</loc>
-    <lastmod>${lastMod}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>${canonicalUrl}/portfolio</loc>
-    <lastmod>${lastMod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>${canonicalUrl}/privacy-policy</loc>
-    <lastmod>${lastMod}</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>${canonicalUrl}/terms-of-service</loc>
-    <lastmod>${lastMod}</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>${canonicalUrl}/thank-you</loc>
-    <lastmod>${lastMod}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>${canonicalUrl}/blog</loc>
-    <lastmod>${lastMod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>`;
+    <changefreq>${page.changefreq}</changefreq>
+    <priority>${page.priority}</priority>
+  </url>`).join('\n')}`;
 
       for (const post of blogPostsList) {
         const postDate = post.updatedAt ? new Date(post.updatedAt).toISOString().split('T')[0] : lastMod;
         sitemap += `
   <url>
-    <loc>${canonicalUrl}/blog/${post.slug}</loc>
+    <loc>${canonicalUrl}${pagePaths.blogPost(post.slug)}</loc>
     <lastmod>${postDate}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>

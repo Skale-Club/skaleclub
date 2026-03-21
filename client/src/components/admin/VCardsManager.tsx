@@ -12,6 +12,7 @@ import { Loader2, Plus, Edit, Trash2, ExternalLink, Upload, Copy, Link as LinkIc
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import QRCode from "react-qr-code";
 import type { VCard } from "@shared/schema";
+import { usePagePaths } from "@/lib/pagePaths";
 import { uploadFileToServer } from "./shared/utils";
 
 const formatPhoneNumber = (value: string) => {
@@ -41,6 +42,7 @@ interface SocialLink {
 
 export function VCardsManager() {
   const { toast } = useToast();
+  const pagePaths = usePagePaths();
   const [editingCard, setEditingCard] = useState<Partial<VCard> | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -194,7 +196,7 @@ export function VCardsManager() {
   };
 
   const getVCardUrl = (username: string) => {
-    return `${window.location.origin}/vcard/${username}`;
+    return `${window.location.origin}${pagePaths.vcardUser(username)}`;
   };
 
   return (
@@ -238,8 +240,8 @@ export function VCardsManager() {
                 <TableRow key={card.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
-                      <a href={`/vcard/${card.username}`} target="_blank" rel="noreferrer" className="flex items-center text-blue-600 hover:underline">
-                        /{card.username} <ExternalLink className="w-3 h-3 ml-1" />
+                      <a href={pagePaths.vcardUser(card.username)} target="_blank" rel="noreferrer" className="flex items-center text-blue-600 hover:underline">
+                        {pagePaths.vcardUser(card.username)} <ExternalLink className="w-3 h-3 ml-1" />
                       </a>
                       <Button
                         variant="ghost"
@@ -302,8 +304,8 @@ export function VCardsManager() {
               <div className="space-y-2">
                 <Label htmlFor="username">Username (URL Identifier)</Label>
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">/vcard/</span>
+                  <div className="flex flex-1 items-center rounded-md border border-input bg-background">
+                    <span className="px-3 text-sm text-gray-400 border-r border-input">{`${pagePaths.vcard}/`}</span>
                     <Input
                       id="username"
                       name="username"
@@ -313,7 +315,7 @@ export function VCardsManager() {
                         setUsernameValue(value);
                         validateUsername(value);
                       }}
-                      className="pl-20"
+                      className="border-0 shadow-none focus-visible:ring-0"
                       placeholder="johnsmith"
                     />
                   </div>

@@ -5,6 +5,7 @@ import { AlertCircle, ArrowLeft, ArrowRight, Check, ChevronDown, Loader2, X } fr
 import clsx from "clsx";
 import { useQuery } from "@tanstack/react-query";
 import { trackEvent } from "@/lib/analytics";
+import { usePagePaths } from "@/lib/pagePaths";
 import { useTranslation } from "@/hooks/useTranslation";
 import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead, getSortedQuestions, KNOWN_FIELD_IDS } from "@shared/form";
 import type { LeadClassification, FormLead, FormConfig, FormQuestion } from "@shared/schema";
@@ -203,6 +204,7 @@ type LeadFormModalProps = {
 };
 
 export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
+  const pagePaths = usePagePaths();
   const { t } = useTranslation();
   // Fetch form config
   const { data: formConfig, isLoading: isConfigLoading } = useQuery<FormConfig>({
@@ -619,7 +621,7 @@ export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
           synced: true,
         });
         onClose();
-        window.location.href = "/thankyou";
+        window.location.href = pagePaths.thankYou;
         return;
       }
 

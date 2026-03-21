@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Check, Loader2, Plus, Trash2, GripVertical, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { usePagePaths } from '@/lib/pagePaths';
 import type { CompanySettingsData } from './shared/types';
 import type { LinksPageConfig, LinksPageLink, LinksPageSocial } from '@shared/schema';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,6 +23,7 @@ const LINKS_PAGE_DEFAULTS: LinksPageConfig = {
 
 export function LinksSection() {
   const { toast } = useToast();
+  const pagePaths = usePagePaths();
   const { data: settings, isLoading } = useQuery<CompanySettingsData>({
     queryKey: ['/api/company-settings'],
   });
@@ -138,7 +140,7 @@ export function LinksSection() {
             </div>
           )}
           <Button variant="outline" size="sm" asChild>
-            <a href="/links" target="_blank" className="flex items-center gap-2">
+            <a href={pagePaths.links} target="_blank" className="flex items-center gap-2">
               <ExternalLink className="h-4 w-4" />
               View Page
             </a>

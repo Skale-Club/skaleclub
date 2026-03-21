@@ -7,12 +7,14 @@ import { FileText, Calendar, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 import type { BlogPost } from '@shared/schema';
+import { usePagePaths } from '@/lib/pagePaths';
 
 const POSTS_PER_PAGE = 9;
 
 export default function Blog() {
   const [searchTerm, setSearchTerm] = useState('');
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const pagePaths = usePagePaths();
 
   const {
     data,
@@ -109,7 +111,7 @@ export default function Blog() {
           <>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {filteredPosts.map(post => (
-                <Link key={post.id} href={`/blog/${post.slug}`}>
+                <Link key={post.id} href={pagePaths.blogPost(post.slug)}>
                   <Card 
                     className="overflow-hidden hover-elevate cursor-pointer h-full flex flex-col border-0"
                     data-testid={`card-blog-${post.id}`}

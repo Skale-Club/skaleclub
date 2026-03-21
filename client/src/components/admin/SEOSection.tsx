@@ -9,7 +9,21 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import type { SEOSettingsData } from './shared/types';
+import { DEFAULT_PAGE_SLUGS, resolvePageSlugs, type PageSlugs } from '@shared/pageSlugs';
 import { uploadFileToServer } from './shared/utils';
+
+const PAGE_SLUG_FIELDS: { key: keyof PageSlugs; label: string; placeholder: string; helpText: string }[] = [
+  { key: 'contact', label: 'Contact', placeholder: 'contact', helpText: 'Public contact page.' },
+  { key: 'faq', label: 'FAQ', placeholder: 'faq', helpText: 'Frequently asked questions page.' },
+  { key: 'portfolio', label: 'Portfolio', placeholder: 'portfolio', helpText: 'Portfolio/services listing page.' },
+  { key: 'blog', label: 'Blog', placeholder: 'blog', helpText: 'Blog index. Posts become /blog-slug/post-slug.' },
+  { key: 'links', label: 'Links', placeholder: 'links', helpText: 'Bio links landing page.' },
+  { key: 'vcard', label: 'VCard', placeholder: 'vcard', helpText: 'Digital card prefix. Profiles become /vcard-slug/username.' },
+  { key: 'thankYou', label: 'Thank You', placeholder: 'thankyou', helpText: 'Post-form confirmation page.' },
+  { key: 'privacyPolicy', label: 'Privacy Policy', placeholder: 'privacy-policy', helpText: 'Privacy policy page.' },
+  { key: 'termsOfService', label: 'Terms of Service', placeholder: 'terms-of-service', helpText: 'Terms page.' },
+];
+
 export function SEOSection() {
   const { toast } = useToast();
   const [settings, setSettings] = useState<SEOSettingsData>({
@@ -26,6 +40,7 @@ export function SEOSection() {
     twitterSite: '',
     twitterCreator: '',
     schemaLocalBusiness: null,
+    pageSlugs: DEFAULT_PAGE_SLUGS,
   });
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -52,6 +67,7 @@ export function SEOSection() {
         twitterSite: fetchedSettings.twitterSite || '',
         twitterCreator: fetchedSettings.twitterCreator || '',
         schemaLocalBusiness: fetchedSettings.schemaLocalBusiness || null,
+        pageSlugs: resolvePageSlugs(fetchedSettings.pageSlugs),
       }));
     }
   }, [fetchedSettings]);
@@ -92,6 +108,28 @@ export function SEOSection() {
       saveSettings({ [field]: value });
     }, 800);
   }, [saveSettings]);
+
+  const updatePageSlug = useCallback((field: keyof PageSlugs, value: string) => {
+    const nextPageSlugs = {
+      ...(settings.pageSlugs || DEFAULT_PAGE_SLUGS),
+      [field]: value,
+    };
+
+    setSettings(prev => ({
+      ...prev,
+      pageSlugs: nextPageSlugs,
+    }));
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(() => {
+      const sanitized = resolvePageSlugs(nextPageSlugs);
+      setSettings(prev => ({ ...prev, pageSlugs: sanitized }));
+      saveSettings({ pageSlugs: sanitized });
+    }, 800);
+  }, [saveSettings, settings.pageSlugs]);
 
   if (isLoading) {
     return (
@@ -359,6 +397,32 @@ export function SEOSection() {
                   data-testid="input-twitter-creator"
                 />
               </div>
+            </div>
+          </div>
+
+          <div className="bg-muted p-6 rounded-lg space-y-6 transition-all">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Globe className="w-5 h-5 text-primary" />
+              Page Slugs
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {PAGE_SLUG_FIELDS.map((field) => (
+                <div key={field.key} className="space-y-2">
+                  <Label htmlFor={`page-slug-${field.key}`}>{field.label}</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">/</span>
+                    <Input
+                      id={`page-slug-${field.key}`}
+                      value={settings.pageSlugs?.[field.key] || ''}
+                      onChange={(e) => updatePageSlug(field.key, e.target.value)}
+                      placeholder={field.placeholder}
+                      className="pl-7"
+                      data-testid={`input-page-slug-${field.key}`}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">{field.helpText}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>

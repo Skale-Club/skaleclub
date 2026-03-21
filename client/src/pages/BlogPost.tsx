@@ -17,9 +17,11 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import type { BlogPost, CompanySettings } from '@shared/schema';
+import { usePagePaths } from '@/lib/pagePaths';
 
 export default function BlogPostPage() {
   const params = useParams<{ slug: string }>();
+  const pagePaths = usePagePaths();
 
   const { data: post, isLoading, error } = useQuery<BlogPost>({
     queryKey: ['/api/blog', params.slug],
@@ -95,7 +97,7 @@ export default function BlogPostPage() {
           <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-foreground mb-2">Post Not Found</h1>
           <p className="text-muted-foreground mb-4">The blog post you're looking for doesn't exist.</p>
-          <Link href="/blog">
+          <Link href={pagePaths.blog}>
             <Button>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Blog
@@ -114,7 +116,7 @@ export default function BlogPostPage() {
             <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-4" data-testid="nav-post-breadcrumb">
               <Link href="/" className="hover:text-primary">Home</Link>
               <span>/</span>
-              <Link href="/blog" className="hover:text-primary">Blog</Link>
+              <Link href={pagePaths.blog} className="hover:text-primary">Blog</Link>
               <span>/</span>
               <span className="text-foreground truncate max-w-[200px]">{post.title}</span>
             </nav>
@@ -226,7 +228,7 @@ export default function BlogPostPage() {
                       {relatedPosts.map(relatedPost => (
                         <Link
                           key={relatedPost.id}
-                          href={`/blog/${relatedPost.slug}`}
+                          href={pagePaths.blogPost(relatedPost.slug)}
                           className="block group"
                         >
                           <div
@@ -271,7 +273,7 @@ export default function BlogPostPage() {
                     <p className="text-sm text-muted-foreground mb-4">
                       Book our professional marketing services today and watch your business grow.
                     </p>
-                    <Link href="/contact">
+                    <Link href={pagePaths.contact}>
                       <Button className="w-full" data-testid="button-browse-services">
                         Contact Us
                       </Button>

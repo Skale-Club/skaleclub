@@ -6,6 +6,7 @@ import { clsx } from "clsx";
 import { LanguageToggle } from "@/components/ui/LanguageToggle";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
+import { buildPagePaths } from "@shared/pageSlugs";
 import { trackEvent } from "@/lib/analytics";
 
 export function Navbar() {
@@ -15,12 +16,13 @@ export function Navbar() {
   const { data: companySettings } = useQuery<CompanySettings>({
     queryKey: ["/api/company-settings"],
   });
+  const pagePaths = buildPagePaths(companySettings?.pageSlugs);
 
   const displayPhone = companySettings?.companyPhone || "";
   const telPhone = displayPhone.replace(/\D/g, "");
 
   const navLinks = [
-    { href: "/portfolio", label: t("Portfolio") },
+    { href: pagePaths.portfolio, label: t("Portfolio") },
   ];
 
   const handleHashNavigation = useCallback((hash: string) => {

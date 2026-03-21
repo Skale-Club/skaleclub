@@ -2,6 +2,7 @@ import { MapPin, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
 import type { HomepageContent } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
+import { usePagePaths } from "@/lib/pagePaths";
 
 interface AreasServedMapProps {
   mapEmbedUrl?: string | null;
@@ -28,6 +29,7 @@ function normalizeEmbedUrl(raw: string) {
 
 export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
   const { t } = useTranslation();
+  const pagePaths = usePagePaths();
   const sectionContent = content || {};
 
   const embedUrl = normalizeEmbedUrl(mapEmbedUrl || "");
@@ -50,7 +52,7 @@ export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
 
           {sectionContent?.ctaText ? (
             <div className="mb-4">
-              <Link href="/contact">
+              <Link href={pagePaths.contact}>
                 <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5">
                   {t(sectionContent.ctaText)}
                   <ArrowRight className="w-4 h-4" />

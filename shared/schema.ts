@@ -2,6 +2,7 @@ import { pgTable, text, serial, integer, timestamp, boolean, date, jsonb, uuid, 
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { DEFAULT_PAGE_SLUGS, type PageSlugs } from "./pageSlugs.js";
 
 // Auth models (inlined for drizzle-kit compatibility)
 export const sessions = pgTable(
@@ -520,6 +521,7 @@ export const companySettings = pgTable("company_settings", {
   facebookPixelEnabled: boolean("facebook_pixel_enabled").default(false),
   homepageContent: jsonb("homepage_content").$type<HomepageContent>().default({}),
   formConfig: jsonb("form_config").$type<FormConfig>(),
+  pageSlugs: jsonb("page_slugs").$type<PageSlugs>().default(DEFAULT_PAGE_SLUGS),
   linksPageConfig: jsonb("links_page_config").$type<LinksPageConfig>().default({
     avatarUrl: '/attached_assets/ghl-logo.webp',
     title: 'Skale Club',
@@ -532,6 +534,7 @@ export const companySettings = pgTable("company_settings", {
 export const insertCompanySettingsSchema = createInsertSchema(companySettings, {
   homepageContent: z.custom<HomepageContent>().optional().nullable(),
   formConfig: z.custom<FormConfig>().optional().nullable(),
+  pageSlugs: z.custom<PageSlugs>().optional().nullable(),
   linksPageConfig: z.custom<LinksPageConfig>().optional().nullable(),
 }).omit({ id: true });
 export type CompanySettings = typeof companySettings.$inferSelect;

@@ -14,6 +14,7 @@ import { PageLoader, DotsLoader } from "@/components/ui/spinner";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useEffect, Suspense, lazy, useRef, useState, createContext, useContext } from "react";
 import type { CompanySettings } from "@shared/schema";
+import { buildPagePaths, DEFAULT_PAGE_SLUGS, isRoutePrefixMatch } from "@shared/pageSlugs";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 
 // Context to track initial app load state
@@ -101,10 +102,14 @@ function SEOProvider({ children }: { children: React.ReactNode }) {
 function Router() {
   const [location] = useLocation();
   const { isInitialLoad } = useContext(InitialLoadContext);
+  const { data: settings, isLoading } = useQuery<CompanySettings>({
+    queryKey: ['/api/company-settings'],
+  });
+  const pagePaths = buildPagePaths(settings?.pageSlugs);
+  const legacyPaths = buildPagePaths(DEFAULT_PAGE_SLUGS);
   const isAdminRoute = location.startsWith('/admin');
-  const isPortfolioRoute = location.startsWith('/portfolio');
-  const isLinksRoute = location.startsWith('/links');
-  const isVCardRoute = location.startsWith('/vcard');
+  const isLinksRoute = isRoutePrefixMatch(location, pagePaths.links) || isRoutePrefixMatch(location, legacyPaths.links);
+  const isVCardRoute = isRoutePrefixMatch(location, pagePaths.vcard) || isRoutePrefixMatch(location, legacyPaths.vcard);
   const prevLocation = useRef(location);
 
   // Scroll to top when navigating to a new page (not hash links)
@@ -138,25 +143,16 @@ function Router() {
     );
   }
 
-  if (isPortfolioRoute) {
-    return (
-      <div className={`flex flex-col min-h-screen ${isInitialLoad ? 'invisible' : ''}`}>
-        <Navbar />
-        <Suspense fallback={fallback}>
-          <Switch>
-            <Route path="/portfolio" component={Portfolio} />
-            <Route component={NotFound} />
-          </Switch>
-        </Suspense>
-      </div>
-    );
+  if (isLoading && !settings) {
+    return fallback;
   }
 
   if (isLinksRoute) {
     return (
       <Suspense fallback={fallback}>
         <Switch>
-          <Route path="/links" component={Links} />
+          <Route path={pagePaths.links} component={Links} />
+          {pagePaths.links !== legacyPaths.links && <Route path={legacyPaths.links} component={Links} />}
           <Route component={NotFound} />
         </Switch>
       </Suspense>
@@ -167,8 +163,10 @@ function Router() {
     return (
       <Suspense fallback={fallback}>
         <Switch>
-          <Route path="/vcard" component={VCard} />
-          <Route path="/vcard/:username" component={VCard} />
+          <Route path={pagePaths.vcard} component={VCard} />
+          <Route path={pagePaths.vcardPattern} component={VCard} />
+          {pagePaths.vcard !== legacyPaths.vcard && <Route path={legacyPaths.vcard} component={VCard} />}
+          {pagePaths.vcardPattern !== legacyPaths.vcardPattern && <Route path={legacyPaths.vcardPattern} component={VCard} />}
           <Route component={NotFound} />
         </Switch>
       </Suspense>
@@ -184,13 +182,22 @@ function Router() {
         <Suspense fallback={fallback}>
           <Switch>
             <Route path="/" component={Home} />
-            <Route path="/thankyou" component={LeadThankYou} />
-            <Route path="/privacy-policy" component={PrivacyPolicy} />
-            <Route path="/terms-of-service" component={TermsOfService} />
-            <Route path="/contact" component={Contact} />
-            <Route path="/faq" component={Faq} />
-            <Route path="/blog" component={Blog} />
-            <Route path="/blog/:slug" component={BlogPost} />
+            <Route path={pagePaths.thankYou} component={LeadThankYou} />
+            {pagePaths.thankYou !== legacyPaths.thankYou && <Route path={legacyPaths.thankYou} component={LeadThankYou} />}
+            <Route path={pagePaths.privacyPolicy} component={PrivacyPolicy} />
+            {pagePaths.privacyPolicy !== legacyPaths.privacyPolicy && <Route path={legacyPaths.privacyPolicy} component={PrivacyPolicy} />}
+            <Route path={pagePaths.termsOfService} component={TermsOfService} />
+            {pagePaths.termsOfService !== legacyPaths.termsOfService && <Route path={legacyPaths.termsOfService} component={TermsOfService} />}
+            <Route path={pagePaths.contact} component={Contact} />
+            {pagePaths.contact !== legacyPaths.contact && <Route path={legacyPaths.contact} component={Contact} />}
+            <Route path={pagePaths.faq} component={Faq} />
+            {pagePaths.faq !== legacyPaths.faq && <Route path={legacyPaths.faq} component={Faq} />}
+            <Route path={pagePaths.blog} component={Blog} />
+            {pagePaths.blog !== legacyPaths.blog && <Route path={legacyPaths.blog} component={Blog} />}
+            <Route path={pagePaths.blogPostPattern} component={BlogPost} />
+            {pagePaths.blogPostPattern !== legacyPaths.blogPostPattern && <Route path={legacyPaths.blogPostPattern} component={BlogPost} />}
+            <Route path={pagePaths.portfolio} component={Portfolio} />
+            {pagePaths.portfolio !== legacyPaths.portfolio && <Route path={legacyPaths.portfolio} component={Portfolio} />}
             <Route component={NotFound} />
           </Switch>
         </Suspense>

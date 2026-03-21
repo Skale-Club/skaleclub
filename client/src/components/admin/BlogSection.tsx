@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { renderMarkdown } from '@/lib/markdown';
+import { usePagePaths } from '@/lib/pagePaths';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { clsx } from 'clsx';
 import { format } from 'date-fns';
@@ -21,6 +22,7 @@ import { SIDEBAR_MENU_ITEMS } from './shared/constants';
 import { uploadFileToServer } from './shared/utils';
 export function BlogSection({ resetSignal }: { resetSignal: number }) {
   const { toast } = useToast();
+  const pagePaths = usePagePaths();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'title-asc' | 'title-desc' | 'status'>('newest');
@@ -855,7 +857,7 @@ export function BlogSection({ resetSignal }: { resetSignal: number }) {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => window.open(`/blog/${formData.slug}`, '_blank')}
+              onClick={() => window.open(pagePaths.blogPost(formData.slug), '_blank')}
               className="border-0"
             >
               <ExternalLink className="w-4 h-4 mr-2" />

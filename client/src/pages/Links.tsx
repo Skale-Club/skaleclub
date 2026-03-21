@@ -5,6 +5,7 @@ import { ExternalLink, Instagram, Linkedin, Twitter, Youtube, Globe, Mail, Githu
 import { useTranslation } from "@/hooks/useTranslation";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettingsData } from "@/components/admin/shared/types";
+import { buildPagePaths } from "@shared/pageSlugs";
 
 const iconMap: Record<string, React.ReactNode> = {
   instagram: <Instagram className="w-6 h-6" />,
@@ -35,6 +36,7 @@ export default function Links() {
   const { data: settings, isLoading } = useQuery<CompanySettingsData>({
     queryKey: ['/api/company-settings'],
   });
+  const pagePaths = buildPagePaths(settings?.pageSlugs);
 
   if (isLoading) {
     return (
@@ -49,10 +51,10 @@ export default function Links() {
     title: "Skale Club",
     description: "Data-Driven Marketing & Scalable Growth Solutions",
     links: [
-      { title: "Skale Club Official Website", url: "https://skale.club" },
-      { title: "Book a Strategy Call", url: "https://skale.club/contact" },
-      { title: "View Our Portfolio", url: "https://skale.club/portfolio" },
-      { title: "Read Our Blog", url: "https://skale.club/blog" }
+      { title: "Skale Club Official Website", url: pagePaths.home },
+      { title: "Book a Strategy Call", url: pagePaths.contact },
+      { title: "View Our Portfolio", url: pagePaths.portfolio },
+      { title: "Read Our Blog", url: pagePaths.blog }
     ],
     socialLinks: [
       { platform: "instagram", url: "#" },
