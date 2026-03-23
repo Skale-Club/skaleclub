@@ -72,6 +72,57 @@ import {
 } from "#shared/schema.js";
 import { eq, and, or, ilike, gte, lt, desc, asc, sql, ne } from "drizzle-orm";
 
+const companySettingsSchemaPatches = [
+  sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "seo_keywords" text DEFAULT ''`,
+  sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "seo_author" text DEFAULT ''`,
+  sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "seo_canonical_url" text DEFAULT ''`,
+  sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "seo_robots_tag" text DEFAULT 'index, follow'`,
+  sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "og_type" text DEFAULT 'website'`,
+  sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "og_site_name" text DEFAULT ''`,
+  sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "twitter_card" text DEFAULT 'summary_large_image'`,
+  sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "twitter_site" text DEFAULT ''`,
+  sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "twitter_creator" text DEFAULT ''`,
+  sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "schema_local_business" jsonb DEFAULT '{}'::jsonb`,
+  sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "gtm_container_id" text DEFAULT ''`,
+  sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "ga4_measurement_id" text DEFAULT ''`,
+  sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "facebook_pixel_id" text DEFAULT ''`,
+  sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "gtm_enabled" boolean DEFAULT false`,
+  sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "ga4_enabled" boolean DEFAULT false`,
+  sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "facebook_pixel_enabled" boolean DEFAULT false`,
+  sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "page_slugs" jsonb DEFAULT '{"thankYou":"thankyou","privacyPolicy":"privacy-policy","termsOfService":"terms-of-service","contact":"contact","faq":"faq","blog":"blog","portfolio":"portfolio","links":"links","vcard":"vcard"}'::jsonb`,
+];
+
+const chatSettingsSchemaPatches = [
+  sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "excluded_url_rules" jsonb DEFAULT '[]'::jsonb`,
+];
+
+let companySettingsSchemaReady = false;
+let chatSettingsSchemaReady = false;
+
+async function ensureCompanySettingsSchema() {
+  if (companySettingsSchemaReady) {
+    return;
+  }
+
+  for (const statement of companySettingsSchemaPatches) {
+    await db.execute(statement);
+  }
+
+  companySettingsSchemaReady = true;
+}
+
+async function ensureChatSettingsSchema() {
+  if (chatSettingsSchemaReady) {
+    return;
+  }
+
+  for (const statement of chatSettingsSchemaPatches) {
+    await db.execute(statement);
+  }
+
+  chatSettingsSchemaReady = true;
+}
+
 export interface IStorage {
   // Company Settings
   getCompanySettings(): Promise<CompanySettings>;
@@ -168,6 +219,8 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   async getCompanySettings(): Promise<CompanySettings> {
+    await ensureCompanySettingsSchema();
+
     const [settings] = await db.select().from(companySettings);
     if (settings) return settings;
 
@@ -222,6 +275,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getChatSettings(): Promise<ChatSettings> {
+    await ensureChatSettingsSchema();
+
     const [settings] = await db.select().from(chatSettings);
     if (settings) return settings;
 

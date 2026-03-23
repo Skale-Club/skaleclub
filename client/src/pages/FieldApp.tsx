@@ -1,16 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import * as SliderPrimitive from "@radix-ui/react-slider";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import {
   Activity,
   Building2,
   Check,
+  ChevronRight,
   Clock3,
   DollarSign,
+  ExternalLink,
   Loader2,
   LogOut,
   MapPinned,
   RefreshCw,
+  Search,
   Target,
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -20,6 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 type FieldUser = {
   userId: string;
@@ -56,7 +61,9 @@ type SalesAccount = {
   name: string;
   phone?: string | null;
   email?: string | null;
+  website?: string | null;
   industry?: string | null;
+  source?: string | null;
   status: string;
   ghlContactId?: string | null;
   locations?: SalesAccountLocation[];
@@ -116,6 +123,43 @@ type FieldMeResponse = {
   activeVisit: SalesVisit | null;
 };
 
+type GooglePlaceResult = {
+  placeId: string;
+  name: string;
+  address: string;
+  phone?: string;
+  website?: string;
+  primaryType?: string;
+  lat?: number;
+  lng?: number;
+};
+
+type PlaceSearchResponse = {
+  results: GooglePlaceResult[];
+};
+
+type SalesAccountPayload = {
+  name: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  industry?: string;
+  source?: string;
+  status?: string;
+  notes?: string;
+  primaryLocation?: {
+    label?: string;
+    addressLine1: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    lat?: number;
+    lng?: number;
+    geofenceRadiusMeters?: number;
+    isPrimary?: boolean;
+  };
+};
+
 const tabs = [
   { id: "check-in", label: "Check-In", icon: MapPinned },
   { id: "accounts", label: "Accounts", icon: Building2 },
@@ -146,15 +190,161 @@ function formatDuration(seconds?: number | null) {
   return `${hours}h ${remainingMinutes}m`;
 }
 
+function normalizeSearchValue(value?: string | null) {
+  return (value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function parseAddress(address?: string) {
+  if (!address) {
+    return { addressLine1: "", city: "", state: "" };
+  }
+
+  const parts = address.split(",").map((part) => part.trim()).filter(Boolean);
+  return {
+    addressLine1: parts[0] || address,
+    city: parts[1] || "",
+    state: parts[2]?.split(" ")[0] || "",
+  };
+}
+
+function findMatchingAccount(place: GooglePlaceResult, accounts: SalesAccount[]) {
+  const placeName = normalizeSearchValue(place.name);
+  const placeAddress = normalizeSearchValue(place.address);
+
+  return accounts.find((account) => {
+    const accountName = normalizeSearchValue(account.name);
+    const locationAddress = normalizeSearchValue(
+      account.locations?.map((location) => `${location.addressLine1} ${location.city || ""} ${location.state || ""}`).join(" ") || "",
+    );
+
+    return (
+      accountName === placeName ||
+      (placeAddress.length > 10 && locationAddress.includes(placeAddress)) ||
+      (locationAddress.length > 10 && placeAddress.includes(locationAddress))
+    );
+  });
+}
+
+function usePlaceSearch(
+  search: string,
+  enabled: boolean,
+  geoState: { lat?: number; lng?: number },
+) {
+  const deferredSearch = useDeferredValue(search.trim());
+
+  return useQuery<PlaceSearchResponse>({
+    queryKey: ["/api/field/place-search", deferredSearch, geoState.lat ?? "", geoState.lng ?? ""],
+    enabled: enabled && deferredSearch.length >= 2,
+    queryFn: async () => {
+      const params = new URLSearchParams({ q: deferredSearch });
+      if (typeof geoState.lat === "number" && typeof geoState.lng === "number") {
+        params.set("lat", String(geoState.lat));
+        params.set("lng", String(geoState.lng));
+      }
+
+      const response = await fetch(`/api/field/place-search?${params.toString()}`, {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const text = (await response.text()) || response.statusText;
+        throw new Error(text);
+      }
+
+      return response.json();
+    },
+  });
+}
+
+function ConfirmSlider({
+  label,
+  helperText,
+  loading,
+  disabled,
+  onConfirm,
+  accentClassName,
+}: {
+  label: string;
+  helperText: string;
+  loading?: boolean;
+  disabled?: boolean;
+  onConfirm: () => void;
+  accentClassName?: string;
+}) {
+  const [value, setValue] = useState([0]);
+  const hasTriggeredRef = useRef(false);
+
+  useEffect(() => {
+    if (!loading) {
+      hasTriggeredRef.current = false;
+      setValue([0]);
+    }
+  }, [loading, label]);
+
+  const progress = value[0] || 0;
+
+  return (
+    <div className="space-y-2">
+      <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[#08120f]">
+        <div
+          className={cn("absolute inset-y-0 left-0 rounded-[28px] bg-emerald-500/18 transition-[width] duration-200", accentClassName)}
+          style={{ width: `${progress}%` }}
+        />
+        <div className="absolute inset-0 flex items-center justify-center px-16 text-center text-sm font-semibold tracking-[0.16em] text-emerald-200">
+          {loading ? "PROCESSING..." : label}
+        </div>
+        <SliderPrimitive.Root
+          value={value}
+          max={100}
+          step={1}
+          disabled={disabled || loading}
+          onValueChange={(next) => {
+            setValue(next);
+            if (next[0] >= 96 && !hasTriggeredRef.current && !disabled && !loading) {
+              hasTriggeredRef.current = true;
+              onConfirm();
+            }
+          }}
+          onValueCommit={(next) => {
+            if (next[0] < 96) {
+              setValue([0]);
+            }
+          }}
+          className="relative flex h-16 w-full touch-none select-none items-center px-2"
+        >
+          <SliderPrimitive.Track className="relative h-12 w-full rounded-[24px] bg-transparent">
+            <SliderPrimitive.Range className="absolute h-full rounded-[24px] bg-transparent" />
+          </SliderPrimitive.Track>
+          <SliderPrimitive.Thumb className="flex h-12 w-12 items-center justify-center rounded-[20px] bg-emerald-400 text-black shadow-[0_12px_35px_rgba(16,185,129,0.35)] outline-none ring-0 transition-transform focus-visible:scale-105 disabled:opacity-60">
+            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ChevronRight className="h-5 w-5" />}
+          </SliderPrimitive.Thumb>
+        </SliderPrimitive.Root>
+      </div>
+      <div className="text-center text-xs text-white/45">{helperText}</div>
+    </div>
+  );
+}
+
 export default function FieldApp() {
-  const [, setLocation] = useLocation();
-  const [pathname] = useLocation();
+  const [pathname, setLocation] = useLocation();
   const { toast } = useToast();
   const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
   const [selectedAccountId, setSelectedAccountId] = useState<number | "">("");
   const [geoState, setGeoState] = useState<{ lat?: number; lng?: number; accuracy?: number; error?: string }>({});
   const [visitNoteForm, setVisitNoteForm] = useState({ summary: "", outcome: "", nextStep: "", followUpRequired: false });
-  const [accountForm, setAccountForm] = useState({ name: "", phone: "", email: "", industry: "", addressLine1: "", city: "", state: "" });
+  const [accountForm, setAccountForm] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    website: "",
+    industry: "",
+    addressLine1: "",
+    city: "",
+    state: "",
+  });
+  const [selectedAccountPlace, setSelectedAccountPlace] = useState<GooglePlaceResult | null>(null);
+  const [checkInSearch, setCheckInSearch] = useState("");
+  const [accountLookupSearch, setAccountLookupSearch] = useState("");
   const [opportunityForm, setOpportunityForm] = useState({ accountId: "", title: "", value: "", pipelineKey: "", stageKey: "" });
   const [taskForm, setTaskForm] = useState({ title: "", dueAt: "" });
 
@@ -195,6 +385,9 @@ export default function FieldApp() {
   const opportunitiesQuery = useQuery<SalesOpportunity[]>({ queryKey: ["/api/field/opportunities"], enabled: fieldMeQuery.isSuccess });
   const tasksQuery = useQuery<SalesTask[]>({ queryKey: ["/api/field/tasks"], enabled: fieldMeQuery.isSuccess });
 
+  const checkInPlaceQuery = usePlaceSearch(checkInSearch, fieldMeQuery.isSuccess && activeTab === "check-in", geoState);
+  const accountPlaceQuery = usePlaceSearch(accountLookupSearch, fieldMeQuery.isSuccess && activeTab === "accounts", geoState);
+
   const activeVisit = useMemo(() => {
     const currentId = fieldMeQuery.data?.activeVisit?.id;
     if (!currentId) return null;
@@ -212,6 +405,49 @@ export default function FieldApp() {
     }
   }, [activeVisit?.id, activeVisit?.note]);
 
+  const filteredAccountsForCheckIn = useMemo(() => {
+    const search = checkInSearch.trim().toLowerCase();
+    if (!search) {
+      return (accountsQuery.data || []).slice(0, 6);
+    }
+
+    return (accountsQuery.data || []).filter((account) => {
+      const haystack = [
+        account.name,
+        account.industry,
+        account.phone,
+        account.email,
+        account.locations?.map((location) => `${location.addressLine1} ${location.city || ""} ${location.state || ""}`).join(" "),
+      ].filter(Boolean).join(" ").toLowerCase();
+
+      return haystack.includes(search);
+    }).slice(0, 6);
+  }, [accountsQuery.data, checkInSearch]);
+
+  const filteredAccountsForList = useMemo(() => {
+    const search = accountLookupSearch.trim().toLowerCase();
+    if (!search) {
+      return accountsQuery.data || [];
+    }
+
+    return (accountsQuery.data || []).filter((account) => {
+      const haystack = [
+        account.name,
+        account.industry,
+        account.phone,
+        account.email,
+        account.locations?.map((location) => `${location.addressLine1} ${location.city || ""} ${location.state || ""}`).join(" "),
+      ].filter(Boolean).join(" ").toLowerCase();
+
+      return haystack.includes(search);
+    });
+  }, [accountsQuery.data, accountLookupSearch]);
+
+  const selectedAccount = useMemo(
+    () => (typeof selectedAccountId === "number" ? accountsQuery.data?.find((account) => account.id === selectedAccountId) || null : null),
+    [accountsQuery.data, selectedAccountId],
+  );
+
   const invalidateFieldData = async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["/api/field/me"] }),
@@ -225,26 +461,9 @@ export default function FieldApp() {
   };
 
   const createAccountMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/field/accounts", {
-        name: accountForm.name,
-        phone: accountForm.phone || undefined,
-        email: accountForm.email || undefined,
-        industry: accountForm.industry || undefined,
-        primaryLocation: accountForm.addressLine1 ? {
-          label: "Main",
-          addressLine1: accountForm.addressLine1,
-          city: accountForm.city || undefined,
-          state: accountForm.state || undefined,
-          country: "US",
-        } : undefined,
-      });
-      return response.json();
-    },
-    onSuccess: async () => {
-      toast({ title: "Account created" });
-      setAccountForm({ name: "", phone: "", email: "", industry: "", addressLine1: "", city: "", state: "" });
-      await invalidateFieldData();
+    mutationFn: async (payload: SalesAccountPayload) => {
+      const response = await apiRequest("POST", "/api/field/accounts", payload);
+      return response.json() as Promise<{ account: SalesAccount }>;
     },
     onError: (error: Error) => {
       toast({ title: "Failed to create account", description: error.message, variant: "destructive" });
@@ -395,6 +614,106 @@ export default function FieldApp() {
     setLocation("/field/login");
   };
 
+  const applyPlaceToAccountForm = (place: GooglePlaceResult) => {
+    const parsedAddress = parseAddress(place.address);
+    setSelectedAccountPlace(place);
+    setAccountLookupSearch(place.name);
+    setAccountForm({
+      name: place.name,
+      phone: place.phone || "",
+      email: "",
+      website: place.website || "",
+      industry: place.primaryType || "",
+      addressLine1: parsedAddress.addressLine1,
+      city: parsedAddress.city,
+      state: parsedAddress.state,
+    });
+  };
+
+  const createAccountFromForm = async () => {
+    const payload: SalesAccountPayload = {
+      name: accountForm.name,
+      phone: accountForm.phone || undefined,
+      email: accountForm.email || undefined,
+      website: accountForm.website || undefined,
+      industry: accountForm.industry || undefined,
+      source: selectedAccountPlace ? "google_places" : "field",
+      status: "lead",
+      notes: selectedAccountPlace ? `Imported from Google Places (${selectedAccountPlace.placeId})` : undefined,
+      primaryLocation: accountForm.addressLine1
+        ? {
+            label: "Main",
+            addressLine1: accountForm.addressLine1,
+            city: accountForm.city || undefined,
+            state: accountForm.state || undefined,
+            country: "US",
+            lat: selectedAccountPlace?.lat,
+            lng: selectedAccountPlace?.lng,
+            geofenceRadiusMeters: 150,
+            isPrimary: true,
+          }
+        : undefined,
+    };
+
+    const result = await createAccountMutation.mutateAsync(payload);
+    toast({ title: selectedAccountPlace ? "Business imported" : "Account created" });
+    setAccountForm({
+      name: "",
+      phone: "",
+      email: "",
+      website: "",
+      industry: "",
+      addressLine1: "",
+      city: "",
+      state: "",
+    });
+    setSelectedAccountPlace(null);
+    await invalidateFieldData();
+    return result.account;
+  };
+
+  const pickLocalAccountForCheckIn = (account: SalesAccount) => {
+    setSelectedAccountId(account.id);
+    setCheckInSearch(account.name);
+  };
+
+  const pickGooglePlaceForCheckIn = async (place: GooglePlaceResult) => {
+    const existingAccount = findMatchingAccount(place, accountsQuery.data || []);
+    if (existingAccount) {
+      setSelectedAccountId(existingAccount.id);
+      setCheckInSearch(existingAccount.name);
+      toast({ title: "Local account selected", description: existingAccount.name });
+      return;
+    }
+
+    const parsedAddress = parseAddress(place.address);
+    const createdAccount = await createAccountMutation.mutateAsync({
+      name: place.name,
+      phone: place.phone || undefined,
+      website: place.website || undefined,
+      industry: place.primaryType || undefined,
+      source: "google_places",
+      status: "lead",
+      notes: `Imported from Google Places (${place.placeId})`,
+      primaryLocation: {
+        label: "Main",
+        addressLine1: parsedAddress.addressLine1 || place.address,
+        city: parsedAddress.city || undefined,
+        state: parsedAddress.state || undefined,
+        country: "US",
+        lat: place.lat,
+        lng: place.lng,
+        geofenceRadiusMeters: 150,
+        isPrimary: true,
+      },
+    });
+
+    setSelectedAccountId(createdAccount.account.id);
+    setCheckInSearch(place.name);
+    toast({ title: "Business imported for check-in", description: place.name });
+    await invalidateFieldData();
+  };
+
   if (fieldMeQuery.isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#06090f] text-white">
@@ -487,28 +806,98 @@ export default function FieldApp() {
           {activeTab === "accounts" ? (
             <>
               <Card className="border-white/10 bg-white/5 text-white">
+                <CardHeader><CardTitle className="text-base">Find Business With Google Places</CardTitle></CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
+                    <Input
+                      value={accountLookupSearch}
+                      onChange={(event) => setAccountLookupSearch(event.target.value)}
+                      placeholder="Search businesses or addresses"
+                      className="border-white/10 bg-white/5 pl-10 text-white placeholder:text-white/35"
+                    />
+                  </div>
+                  <Button variant="outline" className="w-full border-white/10 bg-transparent text-white hover:bg-white/10" onClick={loadCurrentLocation}>
+                    <MapPinned className="mr-2 h-4 w-4" />
+                    Use Current Location For Nearby Search
+                  </Button>
+                  <div className="rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white/60">
+                    {geoState.error ? geoState.error : geoState.lat && geoState.lng ? `Location bias enabled at ${geoState.lat.toFixed(5)}, ${geoState.lng.toFixed(5)}` : "Search works without GPS, but current location improves nearby matches."}
+                  </div>
+                  <div className="space-y-2">
+                    {accountPlaceQuery.isFetching ? (
+                      <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white/55">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Searching Google Places...
+                      </div>
+                    ) : null}
+                    {accountPlaceQuery.error ? (
+                      <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
+                        {(accountPlaceQuery.error as Error).message}
+                      </div>
+                    ) : null}
+                    {accountPlaceQuery.data?.results.map((place) => (
+                      <button
+                        key={place.placeId}
+                        type="button"
+                        onClick={() => applyPlaceToAccountForm(place)}
+                        className="w-full rounded-2xl border border-white/10 bg-black/20 p-3 text-left transition hover:border-emerald-400/40 hover:bg-black/30"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="font-semibold">{place.name}</div>
+                            <div className="mt-1 text-sm text-white/55">{place.address}</div>
+                          </div>
+                          <Badge className="bg-emerald-500/10 text-emerald-300">{place.primaryType || "Place"}</Badge>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-2 text-xs text-white/45">
+                          {place.phone ? <span>{place.phone}</span> : null}
+                          {place.website ? (
+                            <span className="inline-flex items-center gap-1">
+                              Website
+                              <ExternalLink className="h-3 w-3" />
+                            </span>
+                          ) : null}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-white/10 bg-white/5 text-white">
                 <CardHeader><CardTitle className="text-base">Create Account</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
+                  {selectedAccountPlace ? (
+                    <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-3">
+                      <div className="text-xs uppercase tracking-[0.2em] text-emerald-200/75">Selected Place</div>
+                      <div className="mt-1 font-semibold">{selectedAccountPlace.name}</div>
+                      <div className="text-sm text-white/60">{selectedAccountPlace.address}</div>
+                    </div>
+                  ) : null}
                   <Input value={accountForm.name} onChange={(event) => setAccountForm((prev) => ({ ...prev, name: event.target.value }))} placeholder="Business name" className="border-white/10 bg-white/5 text-white placeholder:text-white/35" />
                   <div className="grid grid-cols-2 gap-3">
                     <Input value={accountForm.phone} onChange={(event) => setAccountForm((prev) => ({ ...prev, phone: event.target.value }))} placeholder="Phone" className="border-white/10 bg-white/5 text-white placeholder:text-white/35" />
                     <Input value={accountForm.email} onChange={(event) => setAccountForm((prev) => ({ ...prev, email: event.target.value }))} placeholder="Email" className="border-white/10 bg-white/5 text-white placeholder:text-white/35" />
                   </div>
-                  <Input value={accountForm.industry} onChange={(event) => setAccountForm((prev) => ({ ...prev, industry: event.target.value }))} placeholder="Industry" className="border-white/10 bg-white/5 text-white placeholder:text-white/35" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input value={accountForm.website} onChange={(event) => setAccountForm((prev) => ({ ...prev, website: event.target.value }))} placeholder="Website" className="border-white/10 bg-white/5 text-white placeholder:text-white/35" />
+                    <Input value={accountForm.industry} onChange={(event) => setAccountForm((prev) => ({ ...prev, industry: event.target.value }))} placeholder="Industry" className="border-white/10 bg-white/5 text-white placeholder:text-white/35" />
+                  </div>
                   <Input value={accountForm.addressLine1} onChange={(event) => setAccountForm((prev) => ({ ...prev, addressLine1: event.target.value }))} placeholder="Address" className="border-white/10 bg-white/5 text-white placeholder:text-white/35" />
                   <div className="grid grid-cols-2 gap-3">
                     <Input value={accountForm.city} onChange={(event) => setAccountForm((prev) => ({ ...prev, city: event.target.value }))} placeholder="City" className="border-white/10 bg-white/5 text-white placeholder:text-white/35" />
                     <Input value={accountForm.state} onChange={(event) => setAccountForm((prev) => ({ ...prev, state: event.target.value }))} placeholder="State" className="border-white/10 bg-white/5 text-white placeholder:text-white/35" />
                   </div>
-                  <Button disabled={createAccountMutation.isPending || !accountForm.name.trim()} onClick={() => createAccountMutation.mutate()} className="w-full bg-emerald-500 text-black hover:bg-emerald-400">
+                  <Button disabled={createAccountMutation.isPending || !accountForm.name.trim()} onClick={createAccountFromForm} className="w-full bg-emerald-500 text-black hover:bg-emerald-400">
                     {createAccountMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Create Account
+                    {selectedAccountPlace ? "Import Business" : "Create Account"}
                   </Button>
                 </CardContent>
               </Card>
 
               <div className="space-y-3">
-                {accountsQuery.data?.map((account) => (
+                {filteredAccountsForList.map((account) => (
                   <Card key={account.id} className="border-white/10 bg-white/5 text-white">
                     <CardContent className="space-y-3 p-4">
                       <div className="flex items-start justify-between gap-3">
@@ -521,9 +910,9 @@ export default function FieldApp() {
                       {account.locations?.[0] ? <div className="text-sm text-white/55">{account.locations[0].addressLine1}</div> : null}
                       <div className="flex flex-wrap gap-2">
                         <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-300">{account.openOpportunities || 0} open opportunities</Badge>
-                        <Badge variant="secondary" className="bg-white/10 text-white/70">{account.ghlContactId ? "GHL linked" : "Local only"}</Badge>
+                        <Badge variant="secondary" className="bg-white/10 text-white/70">{account.source === "google_places" ? "Imported from Places" : account.ghlContactId ? "GHL linked" : "Local only"}</Badge>
                       </div>
-                      <Button variant="outline" className="w-full border-white/10 bg-transparent text-white hover:bg-white/10" onClick={() => { setSelectedAccountId(account.id); setLocation("/field/check-in"); }}>
+                      <Button variant="outline" className="w-full border-white/10 bg-transparent text-white hover:bg-white/10" onClick={() => { setSelectedAccountId(account.id); setCheckInSearch(account.name); setLocation("/field/check-in"); }}>
                         Use for Check-In
                       </Button>
                     </CardContent>
@@ -537,18 +926,109 @@ export default function FieldApp() {
             <Card className="border-white/10 bg-white/5 text-white">
               <CardHeader><CardTitle className="text-base">Field Check-In</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <select value={selectedAccountId} onChange={(event) => setSelectedAccountId(event.target.value ? Number(event.target.value) : "")} className="h-11 w-full rounded-md border border-white/10 bg-white/5 px-3 text-sm text-white focus:outline-none">
-                  <option value="">Choose an account</option>
-                  {accountsQuery.data?.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}
-                </select>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
+                  <Input
+                    value={checkInSearch}
+                    onChange={(event) => setCheckInSearch(event.target.value)}
+                    placeholder="Search local accounts or Google Places"
+                    className="border-white/10 bg-white/5 pl-10 text-white placeholder:text-white/35"
+                  />
+                </div>
                 <Button variant="outline" className="w-full border-white/10 bg-transparent text-white hover:bg-white/10" onClick={loadCurrentLocation}>
                   <MapPinned className="mr-2 h-4 w-4" />
                   Use Current Location
                 </Button>
                 <div className="rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white/60">
-                  {geoState.error ? geoState.error : geoState.lat && geoState.lng ? `GPS locked at ${geoState.lat.toFixed(5)}, ${geoState.lng.toFixed(5)} (accuracy ${geoState.accuracy || "?"}m)` : "No GPS fix yet."}
+                  {geoState.error ? geoState.error : geoState.lat && geoState.lng ? `GPS locked at ${geoState.lat.toFixed(5)}, ${geoState.lng.toFixed(5)} (accuracy ${geoState.accuracy || "?"}m)` : "No GPS fix yet. Location improves nearby business search and check-in validation."}
                 </div>
-                {activeVisit ? (
+                {!activeVisit ? (
+                  <>
+                    {selectedAccount ? (
+                      <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
+                        <div className="text-xs uppercase tracking-[0.2em] text-emerald-200/70">Selected Account</div>
+                        <div className="mt-1 text-xl font-semibold">{selectedAccount.name}</div>
+                        <div className="mt-1 text-sm text-white/60">{selectedAccount.locations?.[0]?.addressLine1 || "No address saved yet"}</div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <Badge className="bg-emerald-500 text-black">{selectedAccount.status}</Badge>
+                          <Badge variant="secondary" className="bg-white/10 text-white/70">{selectedAccount.source === "google_places" ? "Imported from Places" : "Local account"}</Badge>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <div className="space-y-2">
+                      {filteredAccountsForCheckIn.map((account) => (
+                        <button
+                          key={account.id}
+                          type="button"
+                          onClick={() => pickLocalAccountForCheckIn(account)}
+                          className="w-full rounded-2xl border border-white/10 bg-black/20 p-3 text-left transition hover:border-emerald-400/40 hover:bg-black/30"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <div className="font-semibold">{account.name}</div>
+                              <div className="mt-1 text-sm text-white/55">{account.locations?.[0]?.addressLine1 || account.industry || "Local account"}</div>
+                            </div>
+                            <Badge variant="secondary" className="bg-white/10 text-white">Local</Badge>
+                          </div>
+                        </button>
+                      ))}
+
+                      {checkInPlaceQuery.isFetching ? (
+                        <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white/55">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Searching Google Places...
+                        </div>
+                      ) : null}
+
+                      {checkInPlaceQuery.error ? (
+                        <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
+                          {(checkInPlaceQuery.error as Error).message}
+                        </div>
+                      ) : null}
+
+                      {checkInPlaceQuery.data?.results.map((place) => {
+                        const existingAccount = findMatchingAccount(place, accountsQuery.data || []);
+                        return (
+                          <button
+                            key={place.placeId}
+                            type="button"
+                            onClick={() => pickGooglePlaceForCheckIn(place)}
+                            className="w-full rounded-2xl border border-white/10 bg-black/20 p-3 text-left transition hover:border-cyan-400/40 hover:bg-black/30"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <div className="font-semibold">{place.name}</div>
+                                <div className="mt-1 text-sm text-white/55">{place.address}</div>
+                              </div>
+                              <Badge className={existingAccount ? "bg-white/10 text-white" : "bg-cyan-400/15 text-cyan-200"}>
+                                {existingAccount ? "Use local" : "Google Places"}
+                              </Badge>
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-2 text-xs text-white/45">
+                              {place.primaryType ? <span>{place.primaryType}</span> : null}
+                              {place.phone ? <span>{place.phone}</span> : null}
+                            </div>
+                          </button>
+                        );
+                      })}
+
+                      {!filteredAccountsForCheckIn.length && !checkInPlaceQuery.data?.results?.length && checkInSearch.trim().length < 2 ? (
+                        <div className="rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white/50">
+                          Start typing to search local accounts and Google Places.
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <ConfirmSlider
+                      label={selectedAccount ? "SLIDE TO CHECK IN" : "SELECT AN ACCOUNT FIRST"}
+                      helperText={selectedAccount ? `Confirm visit start for ${selectedAccount.name}` : "Choose a local account or Google Place to enable check-in."}
+                      loading={checkInMutation.isPending || createAccountMutation.isPending}
+                      disabled={!selectedAccountId || createAccountMutation.isPending}
+                      onConfirm={() => checkInMutation.mutate()}
+                    />
+                  </>
+                ) : (
                   <div className="space-y-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
                     <div className="flex items-center justify-between gap-3">
                       <div>
@@ -571,17 +1051,14 @@ export default function FieldApp() {
                         {saveNoteMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                         Save Note
                       </Button>
-                      <Button className="flex-1 bg-emerald-500 text-black hover:bg-emerald-400" onClick={() => checkOutMutation.mutate()}>
-                        {checkOutMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        Check Out
-                      </Button>
                     </div>
+                    <ConfirmSlider
+                      label="SLIDE TO CHECK OUT"
+                      helperText="Complete the visit and close the timer."
+                      loading={checkOutMutation.isPending}
+                      onConfirm={() => checkOutMutation.mutate()}
+                    />
                   </div>
-                ) : (
-                  <Button disabled={checkInMutation.isPending || !selectedAccountId} onClick={() => checkInMutation.mutate()} className="h-12 w-full bg-emerald-500 text-black hover:bg-emerald-400">
-                    {checkInMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Start Visit
-                  </Button>
                 )}
               </CardContent>
             </Card>
