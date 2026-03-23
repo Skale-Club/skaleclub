@@ -12,6 +12,16 @@ import {
   integrationSettings,
   blogPosts,
   portfolioServices,
+  salesReps,
+  salesAccounts,
+  salesAccountLocations,
+  salesAccountContacts,
+  salesVisits,
+  salesVisitNotes,
+  salesOpportunitiesLocal,
+  salesTasks,
+  salesSyncEvents,
+  salesAppSettings,
   type CompanySettings,
   type ChatSettings,
   type ChatIntegrations,
@@ -26,6 +36,16 @@ import {
   type IntegrationSettings,
   type BlogPost,
   type PortfolioService,
+  type SalesRep,
+  type SalesAccount,
+  type SalesAccountLocation,
+  type SalesAccountContact,
+  type SalesVisit,
+  type SalesVisitNote,
+  type SalesOpportunity,
+  type SalesTask,
+  type SalesSyncEvent,
+  type SalesAppSettings,
   type InsertPortfolioService,
   type InsertChatSettings,
   type InsertChatIntegrations,
@@ -36,6 +56,19 @@ import {
   type InsertFaq,
   type InsertIntegrationSettings,
   type InsertBlogPost,
+  type InsertSalesRep,
+  type InsertSalesAccount,
+  type InsertSalesAccountLocation,
+  type InsertSalesAccountContact,
+  type InsertSalesVisit,
+  type InsertSalesVisitNote,
+  type InsertSalesOpportunity,
+  type InsertSalesTask,
+  type InsertSalesSyncEvent,
+  type InsertSalesAppSettings,
+  type SalesRepRole,
+  type SalesOpportunityStatus,
+  type SalesTaskStatus,
 } from "#shared/schema.js";
 import { eq, and, or, ilike, gte, lt, desc, asc, sql, ne } from "drizzle-orm";
 
@@ -100,7 +133,37 @@ export interface IStorage {
   updatePortfolioService(id: number, service: Partial<InsertPortfolioService>): Promise<PortfolioService>;
   deletePortfolioService(id: number): Promise<void>;
 
-  // Knowledge Base
+  // Field Sales
+  getSalesAppSettings(): Promise<SalesAppSettings>;
+  updateSalesAppSettings(settings: Partial<InsertSalesAppSettings>): Promise<SalesAppSettings>;
+  listSalesReps(): Promise<SalesRep[]>;
+  getSalesRep(id: number): Promise<SalesRep | undefined>;
+  getSalesRepByUserId(userId: string): Promise<SalesRep | undefined>;
+  upsertSalesRep(input: InsertSalesRep): Promise<SalesRep>;
+  listSalesAccounts(filters?: { ownerRepId?: number; search?: string }): Promise<SalesAccount[]>;
+  getSalesAccount(id: number): Promise<SalesAccount | undefined>;
+  createSalesAccount(input: InsertSalesAccount): Promise<SalesAccount>;
+  updateSalesAccount(id: number, input: Partial<InsertSalesAccount>): Promise<SalesAccount | undefined>;
+  listSalesAccountLocations(accountId: number): Promise<SalesAccountLocation[]>;
+  createSalesAccountLocation(input: InsertSalesAccountLocation): Promise<SalesAccountLocation>;
+  listSalesAccountContacts(accountId: number): Promise<SalesAccountContact[]>;
+  createSalesAccountContact(input: InsertSalesAccountContact): Promise<SalesAccountContact>;
+  listSalesVisits(filters?: { repId?: number; accountId?: number; activeOnly?: boolean }): Promise<SalesVisit[]>;
+  getSalesVisit(id: number): Promise<SalesVisit | undefined>;
+  getActiveSalesVisitForRep(repId: number): Promise<SalesVisit | undefined>;
+  createSalesVisit(input: InsertSalesVisit): Promise<SalesVisit>;
+  updateSalesVisit(id: number, input: Partial<InsertSalesVisit>): Promise<SalesVisit | undefined>;
+  getSalesVisitNote(visitId: number): Promise<SalesVisitNote | undefined>;
+  upsertSalesVisitNote(input: InsertSalesVisitNote): Promise<SalesVisitNote>;
+  listSalesOpportunities(filters?: { repId?: number; accountId?: number; status?: SalesOpportunityStatus }): Promise<SalesOpportunity[]>;
+  createSalesOpportunity(input: InsertSalesOpportunity): Promise<SalesOpportunity>;
+  updateSalesOpportunity(id: number, input: Partial<InsertSalesOpportunity>): Promise<SalesOpportunity | undefined>;
+  listSalesTasks(filters?: { repId?: number; status?: SalesTaskStatus }): Promise<SalesTask[]>;
+  createSalesTask(input: InsertSalesTask): Promise<SalesTask>;
+  updateSalesTask(id: number, input: Partial<InsertSalesTask>): Promise<SalesTask | undefined>;
+  listSalesSyncEvents(limit?: number): Promise<SalesSyncEvent[]>;
+  createSalesSyncEvent(input: InsertSalesSyncEvent): Promise<SalesSyncEvent>;
+  updateSalesSyncEvent(id: number, input: Partial<InsertSalesSyncEvent>): Promise<SalesSyncEvent | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -519,6 +582,252 @@ export class DatabaseStorage implements IStorage {
     if (!existing) return false;
     await db.delete(formLeads).where(eq(formLeads.id, id));
     return true;
+  }
+
+  async getSalesAppSettings(): Promise<SalesAppSettings> {
+    const [settings] = await db.select().from(salesAppSettings).limit(1);
+    if (settings) return settings;
+    const [created] = await db.insert(salesAppSettings).values({}).returning();
+    return created;
+  }
+
+  async updateSalesAppSettings(settings: Partial<InsertSalesAppSettings>): Promise<SalesAppSettings> {
+    const existing = await this.getSalesAppSettings();
+    const [updated] = await db
+      .update(salesAppSettings)
+      .set({ ...settings, updatedAt: new Date() })
+      .where(eq(salesAppSettings.id, existing.id))
+      .returning();
+    return updated;
+  }
+
+  async listSalesReps(): Promise<SalesRep[]> {
+    return await db.select().from(salesReps).orderBy(asc(salesReps.displayName));
+  }
+
+  async getSalesRep(id: number): Promise<SalesRep | undefined> {
+    const [rep] = await db.select().from(salesReps).where(eq(salesReps.id, id));
+    return rep;
+  }
+
+  async getSalesRepByUserId(userId: string): Promise<SalesRep | undefined> {
+    const [rep] = await db.select().from(salesReps).where(eq(salesReps.userId, userId));
+    return rep;
+  }
+
+  async upsertSalesRep(input: InsertSalesRep): Promise<SalesRep> {
+    const existing = await this.getSalesRepByUserId(input.userId);
+    if (existing) {
+      const [updated] = await db
+        .update(salesReps)
+        .set({ ...input, updatedAt: new Date() })
+        .where(eq(salesReps.id, existing.id))
+        .returning();
+      return updated;
+    }
+
+    const [created] = await db.insert(salesReps).values(input).returning();
+    return created;
+  }
+
+  async listSalesAccounts(filters: { ownerRepId?: number; search?: string } = {}): Promise<SalesAccount[]> {
+    const conditions: any[] = [];
+    if (filters.ownerRepId) conditions.push(eq(salesAccounts.ownerRepId, filters.ownerRepId));
+    if (filters.search) {
+      const likeValue = `%${filters.search}%`;
+      conditions.push(
+        or(
+          ilike(salesAccounts.name, likeValue),
+          ilike(salesAccounts.legalName, likeValue),
+          ilike(salesAccounts.email, likeValue),
+          ilike(salesAccounts.phone, likeValue),
+        )
+      );
+    }
+
+    if (conditions.length) {
+      return await db.select().from(salesAccounts).where(and(...conditions)).orderBy(desc(salesAccounts.updatedAt));
+    }
+
+    return await db.select().from(salesAccounts).orderBy(desc(salesAccounts.updatedAt));
+  }
+
+  async getSalesAccount(id: number): Promise<SalesAccount | undefined> {
+    const [account] = await db.select().from(salesAccounts).where(eq(salesAccounts.id, id));
+    return account;
+  }
+
+  async createSalesAccount(input: InsertSalesAccount): Promise<SalesAccount> {
+    const [created] = await db.insert(salesAccounts).values(input).returning();
+    return created;
+  }
+
+  async updateSalesAccount(id: number, input: Partial<InsertSalesAccount>): Promise<SalesAccount | undefined> {
+    const [updated] = await db
+      .update(salesAccounts)
+      .set({ ...input, updatedAt: new Date() })
+      .where(eq(salesAccounts.id, id))
+      .returning();
+    return updated;
+  }
+
+  async listSalesAccountLocations(accountId: number): Promise<SalesAccountLocation[]> {
+    return await db
+      .select()
+      .from(salesAccountLocations)
+      .where(eq(salesAccountLocations.accountId, accountId))
+      .orderBy(desc(salesAccountLocations.isPrimary), asc(salesAccountLocations.id));
+  }
+
+  async createSalesAccountLocation(input: InsertSalesAccountLocation): Promise<SalesAccountLocation> {
+    const [created] = await db.insert(salesAccountLocations).values(input).returning();
+    return created;
+  }
+
+  async listSalesAccountContacts(accountId: number): Promise<SalesAccountContact[]> {
+    return await db
+      .select()
+      .from(salesAccountContacts)
+      .where(eq(salesAccountContacts.accountId, accountId))
+      .orderBy(desc(salesAccountContacts.isPrimary), asc(salesAccountContacts.id));
+  }
+
+  async createSalesAccountContact(input: InsertSalesAccountContact): Promise<SalesAccountContact> {
+    const [created] = await db.insert(salesAccountContacts).values(input).returning();
+    return created;
+  }
+
+  async listSalesVisits(filters: { repId?: number; accountId?: number; activeOnly?: boolean } = {}): Promise<SalesVisit[]> {
+    const conditions: any[] = [];
+    if (filters.repId) conditions.push(eq(salesVisits.repId, filters.repId));
+    if (filters.accountId) conditions.push(eq(salesVisits.accountId, filters.accountId));
+    if (filters.activeOnly) conditions.push(eq(salesVisits.status, "in_progress"));
+
+    if (conditions.length) {
+      return await db.select().from(salesVisits).where(and(...conditions)).orderBy(desc(salesVisits.createdAt));
+    }
+
+    return await db.select().from(salesVisits).orderBy(desc(salesVisits.createdAt));
+  }
+
+  async getSalesVisit(id: number): Promise<SalesVisit | undefined> {
+    const [visit] = await db.select().from(salesVisits).where(eq(salesVisits.id, id));
+    return visit;
+  }
+
+  async getActiveSalesVisitForRep(repId: number): Promise<SalesVisit | undefined> {
+    const [visit] = await db
+      .select()
+      .from(salesVisits)
+      .where(and(eq(salesVisits.repId, repId), eq(salesVisits.status, "in_progress")))
+      .orderBy(desc(salesVisits.checkedInAt))
+      .limit(1);
+    return visit;
+  }
+
+  async createSalesVisit(input: InsertSalesVisit): Promise<SalesVisit> {
+    const [created] = await db.insert(salesVisits).values(input).returning();
+    return created;
+  }
+
+  async updateSalesVisit(id: number, input: Partial<InsertSalesVisit>): Promise<SalesVisit | undefined> {
+    const [updated] = await db
+      .update(salesVisits)
+      .set({ ...input, updatedAt: new Date() })
+      .where(eq(salesVisits.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getSalesVisitNote(visitId: number): Promise<SalesVisitNote | undefined> {
+    const [note] = await db.select().from(salesVisitNotes).where(eq(salesVisitNotes.visitId, visitId));
+    return note;
+  }
+
+  async upsertSalesVisitNote(input: InsertSalesVisitNote): Promise<SalesVisitNote> {
+    const existing = await this.getSalesVisitNote(input.visitId);
+    if (existing) {
+      const [updated] = await db
+        .update(salesVisitNotes)
+        .set({ ...input, updatedAt: new Date() })
+        .where(eq(salesVisitNotes.id, existing.id))
+        .returning();
+      return updated;
+    }
+
+    const [created] = await db.insert(salesVisitNotes).values(input).returning();
+    return created;
+  }
+
+  async listSalesOpportunities(filters: { repId?: number; accountId?: number; status?: SalesOpportunityStatus } = {}): Promise<SalesOpportunity[]> {
+    const conditions: any[] = [];
+    if (filters.repId) conditions.push(eq(salesOpportunitiesLocal.repId, filters.repId));
+    if (filters.accountId) conditions.push(eq(salesOpportunitiesLocal.accountId, filters.accountId));
+    if (filters.status) conditions.push(eq(salesOpportunitiesLocal.status, filters.status));
+
+    if (conditions.length) {
+      return await db.select().from(salesOpportunitiesLocal).where(and(...conditions)).orderBy(desc(salesOpportunitiesLocal.updatedAt));
+    }
+
+    return await db.select().from(salesOpportunitiesLocal).orderBy(desc(salesOpportunitiesLocal.updatedAt));
+  }
+
+  async createSalesOpportunity(input: InsertSalesOpportunity): Promise<SalesOpportunity> {
+    const [created] = await db.insert(salesOpportunitiesLocal).values(input).returning();
+    return created;
+  }
+
+  async updateSalesOpportunity(id: number, input: Partial<InsertSalesOpportunity>): Promise<SalesOpportunity | undefined> {
+    const [updated] = await db
+      .update(salesOpportunitiesLocal)
+      .set({ ...input, updatedAt: new Date() })
+      .where(eq(salesOpportunitiesLocal.id, id))
+      .returning();
+    return updated;
+  }
+
+  async listSalesTasks(filters: { repId?: number; status?: SalesTaskStatus } = {}): Promise<SalesTask[]> {
+    const conditions: any[] = [];
+    if (filters.repId) conditions.push(eq(salesTasks.repId, filters.repId));
+    if (filters.status) conditions.push(eq(salesTasks.status, filters.status));
+
+    if (conditions.length) {
+      return await db.select().from(salesTasks).where(and(...conditions)).orderBy(asc(salesTasks.dueAt), desc(salesTasks.createdAt));
+    }
+
+    return await db.select().from(salesTasks).orderBy(asc(salesTasks.dueAt), desc(salesTasks.createdAt));
+  }
+
+  async createSalesTask(input: InsertSalesTask): Promise<SalesTask> {
+    const [created] = await db.insert(salesTasks).values(input).returning();
+    return created;
+  }
+
+  async updateSalesTask(id: number, input: Partial<InsertSalesTask>): Promise<SalesTask | undefined> {
+    const [updated] = await db
+      .update(salesTasks)
+      .set({ ...input, updatedAt: new Date() })
+      .where(eq(salesTasks.id, id))
+      .returning();
+    return updated;
+  }
+
+  async listSalesSyncEvents(limit = 50): Promise<SalesSyncEvent[]> {
+    return await db.select().from(salesSyncEvents).orderBy(desc(salesSyncEvents.createdAt)).limit(limit);
+  }
+
+  async createSalesSyncEvent(input: InsertSalesSyncEvent): Promise<SalesSyncEvent> {
+    const [created] = await db.insert(salesSyncEvents).values(input).returning();
+    return created;
+  }
+
+  async updateSalesSyncEvent(id: number, input: Partial<InsertSalesSyncEvent>): Promise<SalesSyncEvent | undefined> {
+    const [updated] = await db
+      .update(salesSyncEvents)
+      .set(input)
+      .where(eq(salesSyncEvents.id, id))
+      .returning();
+    return updated;
   }
 
   async getBlogPosts(status?: string): Promise<BlogPost[]> {

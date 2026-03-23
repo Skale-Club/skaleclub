@@ -30,6 +30,17 @@ Addresses technical debt and improves type safety:
 
 ---
 
+### 3. [Field Sales Platform + GoHighLevel Integration Plan](./field-sales-ghl-platform-plan.md)
+**Priority: HIGH** | **Estimated Time: 4-6 weeks (phased)**
+
+Defines a new in-project field sales product integrated with the current site and GoHighLevel:
+- mobile-first PWA for reps
+- account, visit, opportunity, and task data model
+- local-first sync architecture with GHL reconciliation
+- admin reporting, assignment, and sync health tools
+
+---
+
 ## Quick Reference
 
 ### Current Error Count
@@ -52,6 +63,7 @@ npm run check
 2. **Short-term:** Eliminate `as any` casts (Plan 2, Phase 1)
 3. **Medium-term:** Improve error typing (Plan 2, Phase 2)
 4. **Long-term:** Logging cleanup and schema improvements (Plan 2, Phases 3-4)
+5. **Product expansion:** Execute the field sales platform plan (Plan 3)
 
 ---
 

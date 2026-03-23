@@ -21,6 +21,7 @@ import { LeadsSection } from '@/components/admin/LeadsSection';
 import { SEOSection } from '@/components/admin/SEOSection';
 import { LinksSection } from '@/components/admin/LinksSection';
 import { VCardsManager } from '@/components/admin/VCardsManager';
+import { FieldSalesSection } from '@/components/admin/FieldSalesSection';
 import { SIDEBAR_MENU_ITEMS } from '@/components/admin/shared/constants';
 import type { AdminSection, CompanySettingsData } from '@/components/admin/shared/types';
 import { SidebarProvider } from '@/components/ui/sidebar';
@@ -159,6 +160,7 @@ function AdminContent() {
           {activeSection === 'blog' && <BlogSection resetSignal={blogResetSignal} />}
           {activeSection === 'links' && <LinksSection />}
           {activeSection === 'vcards' && <VCardsManager />}
+          {activeSection === 'fieldSales' && <FieldSalesSection />}
         </div>
       </main>
     </div>

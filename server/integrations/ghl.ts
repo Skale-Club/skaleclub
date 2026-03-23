@@ -30,6 +30,17 @@ export interface GHLAppointment {
   status: string;
 }
 
+export interface GHLPipelineStage {
+  id: string;
+  name: string;
+}
+
+export interface GHLPipeline {
+  id: string;
+  name: string;
+  stages?: GHLPipelineStage[];
+}
+
 export interface GHLCustomField {
   id: string;
   name: string;
@@ -474,4 +485,121 @@ export async function getOrCreateGHLContact(
 
   console.log('GHL contact not found, creating new contact');
   return createGHLContact(apiKey, locationId, contact);
+}
+
+export async function getGHLPipelines(
+  apiKey: string,
+  locationId: string
+): Promise<{ success: boolean; pipelines?: GHLPipeline[]; message?: string }> {
+  try {
+    const params = new URLSearchParams({ locationId });
+    const response = await ghlFetch(`/opportunities/pipelines?${params.toString()}`, apiKey);
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      return {
+        success: false,
+        message: error.message || `Failed to fetch pipelines: ${response.status}`,
+      };
+    }
+
+    const data = await response.json();
+    const rawPipelines = data.pipelines || data.data || data || [];
+    const pipelines = Array.isArray(rawPipelines) ? rawPipelines.map((pipeline: any) => ({
+      id: String(pipeline.id),
+      name: pipeline.name || pipeline.title || "Pipeline",
+      stages: Array.isArray(pipeline.stages)
+        ? pipeline.stages.map((stage: any) => ({
+          id: String(stage.id),
+          name: stage.name || stage.title || "Stage",
+        }))
+        : [],
+    })) : [];
+
+    return { success: true, pipelines };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.message || "Failed to fetch pipelines",
+    };
+  }
+}
+
+export async function createGHLOpportunity(
+  apiKey: string,
+  locationId: string,
+  opportunity: {
+    contactId: string;
+    name: string;
+    monetaryValue?: number;
+    pipelineId?: string;
+    pipelineStageId?: string;
+    source?: string;
+  }
+): Promise<{ success: boolean; opportunityId?: string; message?: string }> {
+  try {
+    const response = await ghlFetch("/opportunities/", apiKey, {
+      method: "POST",
+      body: JSON.stringify({
+        locationId,
+        contactId: opportunity.contactId,
+        name: opportunity.name,
+        monetaryValue: opportunity.monetaryValue ?? 0,
+        pipelineId: opportunity.pipelineId,
+        pipelineStageId: opportunity.pipelineStageId,
+        source: opportunity.source || "field-sales-app",
+        status: "open",
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      return {
+        success: false,
+        message: error.message || `Failed to create opportunity: ${response.status}`,
+      };
+    }
+
+    const data = await response.json();
+    return { success: true, opportunityId: data.id || data.opportunity?.id };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.message || "Failed to create opportunity",
+    };
+  }
+}
+
+export async function updateGHLOpportunity(
+  apiKey: string,
+  opportunityId: string,
+  updates: {
+    name?: string;
+    monetaryValue?: number;
+    pipelineId?: string;
+    pipelineStageId?: string;
+    status?: string;
+  }
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    const response = await ghlFetch(`/opportunities/${opportunityId}`, apiKey, {
+      method: "PUT",
+      body: JSON.stringify(updates),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      return {
+        success: false,
+        message: error.message || `Failed to update opportunity: ${response.status}`,
+      };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.message || "Failed to update opportunity",
+    };
+  }
 }

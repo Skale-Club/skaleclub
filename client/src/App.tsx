@@ -67,6 +67,8 @@ const BlogPost = lazy(() => import("@/pages/BlogPost").then(m => ({ default: () 
 const Portfolio = lazy(() => import("@/pages/Portfolio").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Links = lazy(() => import("@/pages/Links").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const VCard = lazy(() => import("@/pages/VCard").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const FieldApp = lazy(() => import("@/pages/FieldApp").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const FieldLogin = lazy(() => import("@/pages/FieldLogin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 
 function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const { data: settings } = useQuery<CompanySettings>({
@@ -108,6 +110,7 @@ function Router() {
   const pagePaths = buildPagePaths(settings?.pageSlugs);
   const legacyPaths = buildPagePaths(DEFAULT_PAGE_SLUGS);
   const isAdminRoute = location.startsWith('/admin');
+  const isFieldRoute = location.startsWith('/field');
   const isLinksRoute = isRoutePrefixMatch(location, pagePaths.links) || isRoutePrefixMatch(location, legacyPaths.links);
   const isVCardRoute = isRoutePrefixMatch(location, pagePaths.vcard) || isRoutePrefixMatch(location, legacyPaths.vcard);
   const prevLocation = useRef(location);
@@ -140,6 +143,19 @@ function Router() {
           </Switch>
         </Suspense>
       </AuthProvider>
+    );
+  }
+
+  if (isFieldRoute) {
+    return (
+      <Suspense fallback={fallback}>
+        <Switch>
+          <Route path="/field/login" component={FieldLogin} />
+          <Route path="/field" component={FieldApp} />
+          <Route path="/field/:rest*" component={FieldApp} />
+          <Route component={NotFound} />
+        </Switch>
+      </Suspense>
     );
   }
 
