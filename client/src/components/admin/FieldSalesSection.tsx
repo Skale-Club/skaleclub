@@ -48,9 +48,9 @@ export function FieldSalesSection() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Field Sales</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">Check In</h2>
           <p className="text-sm text-muted-foreground">
-            Monitor rep activity, sync health, and live pipeline creation from the field app.
+            Monitor rep activity, sync health, and live pipeline creation from the Check In app.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -62,8 +62,8 @@ export function FieldSalesSection() {
             Refresh
           </Button>
           <Button asChild>
-            <a href="/field" target="_blank" rel="noreferrer">
-              Open Field App
+            <a href="/checkin" target="_blank" rel="noreferrer">
+              Open Check In
             </a>
           </Button>
         </div>

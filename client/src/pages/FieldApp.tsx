@@ -287,10 +287,10 @@ function ConfirmSlider({
     <div className="space-y-2">
       <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[#08120f]">
         <div
-          className={cn("absolute inset-y-0 left-0 rounded-[28px] bg-emerald-500/18 transition-[width] duration-200", accentClassName)}
+          className={cn("absolute inset-y-0 left-0 rounded-[28px] bg-primary/18 transition-[width] duration-200", accentClassName)}
           style={{ width: `${progress}%` }}
         />
-        <div className="absolute inset-0 flex items-center justify-center px-16 text-center text-sm font-semibold tracking-[0.16em] text-emerald-200">
+        <div className="absolute inset-0 flex items-center justify-center px-16 text-center text-sm font-semibold tracking-[0.16em] text-primary">
           {loading ? "PROCESSING..." : label}
         </div>
         <SliderPrimitive.Root
@@ -315,7 +315,7 @@ function ConfirmSlider({
           <SliderPrimitive.Track className="relative h-12 w-full rounded-[24px] bg-transparent">
             <SliderPrimitive.Range className="absolute h-full rounded-[24px] bg-transparent" />
           </SliderPrimitive.Track>
-          <SliderPrimitive.Thumb className="flex h-12 w-12 items-center justify-center rounded-[20px] bg-emerald-400 text-black shadow-[0_12px_35px_rgba(16,185,129,0.35)] outline-none ring-0 transition-transform focus-visible:scale-105 disabled:opacity-60">
+          <SliderPrimitive.Thumb className="flex h-12 w-12 items-center justify-center rounded-[20px] bg-primary text-black shadow-[0_12px_35px_rgba(16,185,129,0.35)] outline-none ring-0 transition-transform focus-visible:scale-105 disabled:opacity-60">
             {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ChevronRight className="h-5 w-5" />}
           </SliderPrimitive.Thumb>
         </SliderPrimitive.Root>
@@ -332,6 +332,12 @@ export default function FieldApp() {
   const [selectedAccountId, setSelectedAccountId] = useState<number | "">("");
   const [geoState, setGeoState] = useState<{ lat?: number; lng?: number; accuracy?: number; error?: string }>({});
   const [visitNoteForm, setVisitNoteForm] = useState({ summary: "", outcome: "", nextStep: "", followUpRequired: false });
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [isUploadingAudio, setIsUploadingAudio] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
   const [accountForm, setAccountForm] = useState({
     name: "",
     phone: "",
@@ -374,7 +380,7 @@ export default function FieldApp() {
     if (fieldMeQuery.error) {
       const message = (fieldMeQuery.error as Error).message || "";
       if (message.startsWith("401")) {
-        setLocation("/field/login");
+setLocation("/checkin/login");
       }
     }
   }, [fieldMeQuery.error, setLocation]);
@@ -506,6 +512,80 @@ export default function FieldApp() {
     },
   });
 
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunksRef.current.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        setAudioBlob(blob);
+        stream.getTracks().forEach((track) => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+
+      const interval = setInterval(() => {
+        setRecordingTime((prev) => {
+          if (prev >= 300) {
+            stopRecording();
+            return prev;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+
+      (mediaRecorder as any).intervalId = interval;
+    } catch (error) {
+      toast({ title: "Failed to start recording", description: "Please grant microphone permission", variant: "destructive" });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      const intervalId = (mediaRecorderRef.current as any).intervalId;
+      clearInterval(intervalId);
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const uploadAudioMutation = useMutation({
+    mutationFn: async () => {
+      if (!audioBlob || !activeVisit?.id) return;
+      const reader = new FileReader();
+      const audioData = await new Promise<string>((resolve) => {
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(audioBlob);
+      });
+
+      const response = await apiRequest("POST", `/api/field/visits/${activeVisit.id}/audio`, {
+        audioData,
+        durationSeconds: recordingTime,
+      });
+      return response.json();
+    },
+    onSuccess: async () => {
+      toast({ title: "Audio uploaded successfully" });
+      setAudioBlob(null);
+      setRecordingTime(0);
+      await invalidateFieldData();
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to upload audio", description: error.message, variant: "destructive" });
+    },
+  });
+
   const saveNoteMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("PATCH", `/api/field/visits/${activeVisit?.id}/note`, visitNoteForm);
@@ -611,7 +691,7 @@ export default function FieldApp() {
 
   const signOut = async () => {
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
-    setLocation("/field/login");
+    setLocation("/checkin/login");
   };
 
   const applyPlaceToAccountForm = (place: GooglePlaceResult) => {
@@ -717,7 +797,7 @@ export default function FieldApp() {
   if (fieldMeQuery.isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#06090f] text-white">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -734,7 +814,7 @@ export default function FieldApp() {
       <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 pb-28 pt-5">
         <header className="mb-5 flex items-center justify-between gap-3">
           <div>
-            <div className="text-xs uppercase tracking-[0.24em] text-emerald-300/75">{isOnline ? "Online" : "Offline"}</div>
+            <div className="text-xs uppercase tracking-[0.24em] text-primary/75">{isOnline ? "Online" : "Offline"}</div>
             <div className="mt-1 text-lg font-semibold">{repName}</div>
             <div className="text-sm text-white/45">{me.rep.role}</div>
           </div>
@@ -748,7 +828,7 @@ export default function FieldApp() {
           </div>
         </header>
 
-        <div className="mb-4 rounded-2xl border border-white/10 bg-gradient-to-br from-emerald-500/15 to-cyan-500/10 p-4">
+        <div className="mb-4 rounded-2xl border border-white/10 bg-gradient-to-br from-primary/15 to-cyan-500/10 p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="text-xs uppercase tracking-[0.24em] text-white/45">Live Status</div>
@@ -756,7 +836,7 @@ export default function FieldApp() {
                 {activeVisit ? `Checked in at ${activeVisit.account?.name || `Account #${activeVisit.accountId}`}` : "Ready for next visit"}
               </div>
             </div>
-            <Badge className={activeVisit ? "bg-emerald-500 text-black" : "bg-white/10 text-white"}>
+            <Badge className={activeVisit ? "bg-primary text-black" : "bg-white/10 text-white"}>
               {activeVisit ? "Active" : "Idle"}
             </Badge>
           </div>
@@ -778,7 +858,7 @@ export default function FieldApp() {
                         <div className="text-xs uppercase tracking-[0.2em] text-white/40">{label}</div>
                         <div className="mt-2 text-2xl font-semibold">{value}</div>
                       </div>
-                      <div className="rounded-xl bg-emerald-500/10 p-2 text-emerald-400">
+                      <div className="rounded-xl bg-primary/10 p-2 text-primary">
                         <Icon className="h-4 w-4" />
                       </div>
                     </CardContent>
@@ -841,14 +921,14 @@ export default function FieldApp() {
                         key={place.placeId}
                         type="button"
                         onClick={() => applyPlaceToAccountForm(place)}
-                        className="w-full rounded-2xl border border-white/10 bg-black/20 p-3 text-left transition hover:border-emerald-400/40 hover:bg-black/30"
+                        className="w-full rounded-2xl border border-white/10 bg-black/20 p-3 text-left transition hover:border-primary/40 hover:bg-black/30"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <div className="font-semibold">{place.name}</div>
                             <div className="mt-1 text-sm text-white/55">{place.address}</div>
                           </div>
-                          <Badge className="bg-emerald-500/10 text-emerald-300">{place.primaryType || "Place"}</Badge>
+                          <Badge className="bg-primary/10 text-primary">{place.primaryType || "Place"}</Badge>
                         </div>
                         <div className="mt-2 flex flex-wrap gap-2 text-xs text-white/45">
                           {place.phone ? <span>{place.phone}</span> : null}
@@ -869,8 +949,8 @@ export default function FieldApp() {
                 <CardHeader><CardTitle className="text-base">Create Account</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
                   {selectedAccountPlace ? (
-                    <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-3">
-                      <div className="text-xs uppercase tracking-[0.2em] text-emerald-200/75">Selected Place</div>
+                    <div className="rounded-2xl border border-primary/20 bg-primary/10 p-3">
+                      <div className="text-xs uppercase tracking-[0.2em] text-primary/75">Selected Place</div>
                       <div className="mt-1 font-semibold">{selectedAccountPlace.name}</div>
                       <div className="text-sm text-white/60">{selectedAccountPlace.address}</div>
                     </div>
@@ -889,7 +969,7 @@ export default function FieldApp() {
                     <Input value={accountForm.city} onChange={(event) => setAccountForm((prev) => ({ ...prev, city: event.target.value }))} placeholder="City" className="border-white/10 bg-white/5 text-white placeholder:text-white/35" />
                     <Input value={accountForm.state} onChange={(event) => setAccountForm((prev) => ({ ...prev, state: event.target.value }))} placeholder="State" className="border-white/10 bg-white/5 text-white placeholder:text-white/35" />
                   </div>
-                  <Button disabled={createAccountMutation.isPending || !accountForm.name.trim()} onClick={createAccountFromForm} className="w-full bg-emerald-500 text-black hover:bg-emerald-400">
+                  <Button disabled={createAccountMutation.isPending || !accountForm.name.trim()} onClick={createAccountFromForm} className="w-full bg-primary text-black hover:bg-primary">
                     {createAccountMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     {selectedAccountPlace ? "Import Business" : "Create Account"}
                   </Button>
@@ -909,10 +989,10 @@ export default function FieldApp() {
                       </div>
                       {account.locations?.[0] ? <div className="text-sm text-white/55">{account.locations[0].addressLine1}</div> : null}
                       <div className="flex flex-wrap gap-2">
-                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-300">{account.openOpportunities || 0} open opportunities</Badge>
+                        <Badge variant="secondary" className="bg-primary/10 text-primary">{account.openOpportunities || 0} open opportunities</Badge>
                         <Badge variant="secondary" className="bg-white/10 text-white/70">{account.source === "google_places" ? "Imported from Places" : account.ghlContactId ? "GHL linked" : "Local only"}</Badge>
                       </div>
-                      <Button variant="outline" className="w-full border-white/10 bg-transparent text-white hover:bg-white/10" onClick={() => { setSelectedAccountId(account.id); setCheckInSearch(account.name); setLocation("/field/check-in"); }}>
+                      <Button variant="outline" className="w-full border-white/10 bg-transparent text-white hover:bg-white/10" onClick={() => { setSelectedAccountId(account.id); setCheckInSearch(account.name); setLocation("/checkin/check-in"); }}>
                         Use for Check-In
                       </Button>
                     </CardContent>
@@ -945,12 +1025,12 @@ export default function FieldApp() {
                 {!activeVisit ? (
                   <>
                     {selectedAccount ? (
-                      <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
-                        <div className="text-xs uppercase tracking-[0.2em] text-emerald-200/70">Selected Account</div>
+                      <div className="rounded-2xl border border-primary/20 bg-primary/10 p-4">
+                        <div className="text-xs uppercase tracking-[0.2em] text-primary/70">Selected Account</div>
                         <div className="mt-1 text-xl font-semibold">{selectedAccount.name}</div>
                         <div className="mt-1 text-sm text-white/60">{selectedAccount.locations?.[0]?.addressLine1 || "No address saved yet"}</div>
                         <div className="mt-3 flex flex-wrap gap-2">
-                          <Badge className="bg-emerald-500 text-black">{selectedAccount.status}</Badge>
+                          <Badge className="bg-primary text-black">{selectedAccount.status}</Badge>
                           <Badge variant="secondary" className="bg-white/10 text-white/70">{selectedAccount.source === "google_places" ? "Imported from Places" : "Local account"}</Badge>
                         </div>
                       </div>
@@ -962,7 +1042,7 @@ export default function FieldApp() {
                           key={account.id}
                           type="button"
                           onClick={() => pickLocalAccountForCheckIn(account)}
-                          className="w-full rounded-2xl border border-white/10 bg-black/20 p-3 text-left transition hover:border-emerald-400/40 hover:bg-black/30"
+                          className="w-full rounded-2xl border border-white/10 bg-black/20 p-3 text-left transition hover:border-primary/40 hover:bg-black/30"
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div>
@@ -1029,17 +1109,47 @@ export default function FieldApp() {
                     />
                   </>
                 ) : (
-                  <div className="space-y-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
+                  <div className="space-y-4 rounded-2xl border border-primary/20 bg-primary/10 p-4">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <div className="text-xs uppercase tracking-[0.2em] text-emerald-200/70">Active Visit</div>
+                        <div className="text-xs uppercase tracking-[0.2em] text-primary/70">Active Visit</div>
                         <div className="mt-1 text-xl font-semibold">{activeVisit.account?.name || `Account #${activeVisit.accountId}`}</div>
                       </div>
-                      <Badge className="bg-emerald-500 text-black">{activeVisit.validationStatus}</Badge>
+                      <Badge className="bg-primary text-black">{activeVisit.validationStatus}</Badge>
                     </div>
                     <div className="grid grid-cols-2 gap-3 text-sm text-white/65">
                       <div><div className="text-white/40">Check-in</div><div>{formatDateTime(activeVisit.checkedInAt)}</div></div>
                       <div><div className="text-white/40">Distance</div><div>{activeVisit.distanceFromTargetMeters ? `${activeVisit.distanceFromTargetMeters} m` : "Unknown"}</div></div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Button
+                        type="button"
+                        variant={isRecording ? "destructive" : "outline"}
+                        className={isRecording ? "h-12 w-12 rounded-full bg-red-500 hover:bg-red-600" : "h-12 w-12 rounded-full border-white/10 bg-white/5 hover:bg-white/10"}
+                        onClick={isRecording ? stopRecording : startRecording}
+                      >
+                        {isRecording ? <div className="h-4 w-4 rounded-sm bg-white animate-pulse" /> : <div className="h-4 w-4 rounded-full bg-white/80" />}
+                      </Button>
+                      <div className="flex-1">
+                        {isRecording ? (
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                            <span className="text-sm text-white/80">Recording... {Math.floor(recordingTime / 60)}:{String(recordingTime % 60).padStart(2, "0")}</span>
+                          </div>
+                        ) : audioBlob ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-primary">Audio recorded ({recordingTime}s)</span>
+                            <Button size="sm" variant="ghost" className="h-6 text-white/60 hover:text-white" onClick={() => { setAudioBlob(null); setRecordingTime(0); }}>Clear</Button>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-white/40">Tap to record voice notes</span>
+                        )}
+                      </div>
+                      {audioBlob && !isRecording && (
+                        <Button size="sm" variant="outline" className="border-white/10 bg-primary text-black" onClick={() => uploadAudioMutation.mutate()} disabled={uploadAudioMutation.isPending}>
+                          {uploadAudioMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Upload"}
+                        </Button>
+                      )}
                     </div>
                     <Textarea value={visitNoteForm.summary} onChange={(event) => setVisitNoteForm((prev) => ({ ...prev, summary: event.target.value }))} placeholder="Visit summary" className="min-h-[96px] border-white/10 bg-black/20 text-white placeholder:text-white/35" />
                     <div className="grid grid-cols-2 gap-3">
@@ -1099,7 +1209,7 @@ export default function FieldApp() {
                     <Input value={opportunityForm.pipelineKey} onChange={(event) => setOpportunityForm((prev) => ({ ...prev, pipelineKey: event.target.value }))} placeholder="Pipeline ID" className="border-white/10 bg-white/5 text-white placeholder:text-white/35" />
                     <Input value={opportunityForm.stageKey} onChange={(event) => setOpportunityForm((prev) => ({ ...prev, stageKey: event.target.value }))} placeholder="Stage ID" className="border-white/10 bg-white/5 text-white placeholder:text-white/35" />
                   </div>
-                  <Button disabled={createOpportunityMutation.isPending || !opportunityForm.accountId || !opportunityForm.title.trim()} onClick={() => createOpportunityMutation.mutate()} className="w-full bg-emerald-500 text-black hover:bg-emerald-400">
+                  <Button disabled={createOpportunityMutation.isPending || !opportunityForm.accountId || !opportunityForm.title.trim()} onClick={() => createOpportunityMutation.mutate()} className="w-full bg-primary text-black hover:bg-primary">
                     {createOpportunityMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Create Opportunity
                   </Button>
@@ -1165,8 +1275,8 @@ export default function FieldApp() {
                 <button
                   key={id}
                   type="button"
-                  onClick={() => setLocation(id === "dashboard" ? "/field" : `/field/${id}`)}
-                  className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] transition-colors ${isActive ? "bg-emerald-500/15 text-emerald-300" : "text-white/45 hover:text-white"}`}
+                  onClick={() => setLocation(id === "dashboard" ? "/checkin" : `/checkin/${id}`)}
+                  className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] transition-colors ${isActive ? "bg-primary/15 text-primary" : "text-white/45 hover:text-white"}`}
                 >
                   <Icon className="h-4 w-4" />
                   <span className="truncate">{label}</span>

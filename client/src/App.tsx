@@ -110,7 +110,7 @@ function Router() {
   const pagePaths = buildPagePaths(settings?.pageSlugs);
   const legacyPaths = buildPagePaths(DEFAULT_PAGE_SLUGS);
   const isAdminRoute = location.startsWith('/admin');
-  const isFieldRoute = location.startsWith('/field');
+  const isFieldRoute = location.startsWith('/checkin');
   const isLinksRoute = isRoutePrefixMatch(location, pagePaths.links) || isRoutePrefixMatch(location, legacyPaths.links);
   const isVCardRoute = isRoutePrefixMatch(location, pagePaths.vcard) || isRoutePrefixMatch(location, legacyPaths.vcard);
   const prevLocation = useRef(location);
@@ -150,9 +150,9 @@ function Router() {
     return (
       <Suspense fallback={fallback}>
         <Switch>
-          <Route path="/field/login" component={FieldLogin} />
-          <Route path="/field" component={FieldApp} />
-          <Route path="/field/:rest*" component={FieldApp} />
+          <Route path="/checkin/login" component={FieldLogin} />
+          <Route path="/checkin" component={FieldApp} />
+          <Route path="/checkin/:rest*" component={FieldApp} />
           <Route component={NotFound} />
         </Switch>
       </Suspense>

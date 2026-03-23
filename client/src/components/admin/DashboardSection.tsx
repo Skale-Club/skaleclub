@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { AlertCircle, Archive, BadgeCheck, Check, Clock, FileText, Flame, Globe, Loader2, MessageSquare, Puzzle, Sparkles, Users } from 'lucide-react';
+import { AlertCircle, Archive, BadgeCheck, Check, Clock, FileText, Flame, Globe, Loader2, MapPin, MessageSquare, Puzzle, Sparkles, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { apiRequest } from '@/lib/queryClient';
@@ -301,6 +301,12 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
             <Button variant="outline" className="border-0 bg-muted/60" onClick={() => onNavigate('integrations')}>
               <Puzzle className="w-4 h-4 mr-2" />
               Integrations
+            </Button>
+            <Button variant="outline" className="border-0 bg-primary/10 text-primary" asChild>
+              <a href="/checkin" target="_blank" rel="noreferrer">
+                <MapPin className="w-4 h-4 mr-2" />
+                Check In
+              </a>
             </Button>
           </div>
         </div>

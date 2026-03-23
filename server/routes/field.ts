@@ -13,7 +13,7 @@ import {
   fieldTaskUpdateSchema,
   fieldVisitNoteUpsertSchema,
 } from "#shared/field.js";
-import { getGHLPipelines, getOrCreateGHLContact, createGHLOpportunity, updateGHLOpportunity } from "../integrations/ghl.js";
+import { getGHLPipelines, getOrCreateGHLContact, createGHLOpportunity, updateGHLOpportunity, createGHLTask } from "../integrations/ghl.js";
 
 const isReplit = !!process.env.REPL_ID;
 
@@ -230,6 +230,44 @@ async function syncOpportunityToGhl(opportunityId: number) {
   return { synced: true, ghlOpportunityId: createResult.opportunityId };
 }
 
+async function syncTaskToGhl(taskId: number) {
+  const integration = await storage.getIntegrationSettings("gohighlevel");
+  
+  if (!integration?.isEnabled || !integration.apiKey || !integration.locationId) {
+    return { synced: false, message: "GHL not configured" };
+  }
+
+  const task = (await storage.listSalesTasks()).find((t) => t.id === taskId);
+  if (!task) {
+    return { synced: false, message: "Task not found" };
+  }
+
+  if (task.ghlTaskId) {
+    return { synced: true, ghlTaskId: task.ghlTaskId };
+  }
+
+  let contactId: string | undefined;
+  if (task.accountId) {
+    const account = await storage.getSalesAccount(task.accountId);
+    contactId = account?.ghlContactId || undefined;
+  }
+
+  const createResult = await createGHLTask(integration.apiKey, integration.locationId, {
+    name: task.title,
+    description: task.description || undefined,
+    dueDate: task.dueAt ? new Date(task.dueAt).toISOString() : undefined,
+    contactId,
+  });
+
+  if (!createResult.success || !createResult.taskId) {
+    return { synced: false, message: createResult.message || "Failed to create task in GHL" };
+  }
+
+  await storage.updateSalesTask(task.id, { status: "pending" });
+
+  return { synced: true, ghlTaskId: createResult.taskId };
+}
+
 export function registerFieldRoutes(app: Express) {
   app.get("/api/field/place-search", requireFieldUser, async (req, res) => {
     const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
@@ -237,9 +275,18 @@ export function registerFieldRoutes(app: Express) {
       return res.json({ results: [] });
     }
 
-    const apiKey = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_MAPS_API_KEY;
+    // First try to get API key from database, then fall back to environment variables
+    const googlePlacesSettings = await storage.getIntegrationSettings("google_places");
+    let apiKey: string | null = googlePlacesSettings?.isEnabled && googlePlacesSettings.apiKey 
+      ? googlePlacesSettings.apiKey 
+      : null;
+    
     if (!apiKey) {
-      return res.status(503).json({ message: "Google Places is not configured" });
+      apiKey = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_MAPS_API_KEY || null;
+    }
+    
+    if (!apiKey) {
+      return res.status(503).json({ message: "Google Places is not configured. Please add API key in Admin > Integrations." });
     }
 
     const lat = typeof req.query.lat === "string" ? Number(req.query.lat) : undefined;
@@ -372,6 +419,84 @@ export function registerFieldRoutes(app: Express) {
         account: await storage.getSalesAccount(item.accountId),
       }))),
       pendingTasks: pendingTasks.slice(0, 5),
+    });
+  });
+
+  app.get("/api/field/metrics", requireFieldUser, async (req, res) => {
+    const actor = (req as any).fieldActor as Awaited<ReturnType<typeof ensureFieldRep>>;
+    const days = parseInt(req.query.days as string) || 7;
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const [visits, opportunities, tasks] = await Promise.all([
+      storage.listSalesVisits({ repId: actor!.rep.id }),
+      storage.listSalesOpportunities({ repId: actor!.rep.id }),
+      storage.listSalesTasks({ repId: actor!.rep.id }),
+    ]);
+
+    const visitsByDay: Record<string, { completed: number; total: number }> = {};
+    const opportunitiesByDay: Record<string, { created: number; won: number; value: number }> = {};
+    const tasksByDay: Record<string, { created: number; completed: number }> = {};
+
+    for (let i = 0; i < days; i++) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateKey = date.toISOString().split("T")[0];
+      visitsByDay[dateKey] = { completed: 0, total: 0 };
+      opportunitiesByDay[dateKey] = { created: 0, won: 0, value: 0 };
+      tasksByDay[dateKey] = { created: 0, completed: 0 };
+    }
+
+    visits.forEach((visit) => {
+      if (!visit.createdAt) return;
+      const dateKey = new Date(visit.createdAt).toISOString().split("T")[0];
+      if (visitsByDay[dateKey]) {
+        visitsByDay[dateKey].total++;
+        if (visit.status === "completed") {
+          visitsByDay[dateKey].completed++;
+        }
+      }
+    });
+
+    opportunities.forEach((opp) => {
+      if (!opp.createdAt) return;
+      const dateKey = new Date(opp.createdAt).toISOString().split("T")[0];
+      if (opportunitiesByDay[dateKey]) {
+        opportunitiesByDay[dateKey].created++;
+        if (opp.status === "won") {
+          opportunitiesByDay[dateKey].won++;
+          opportunitiesByDay[dateKey].value += opp.value || 0;
+        }
+      }
+    });
+
+    tasks.forEach((task) => {
+      if (!task.createdAt) return;
+      const dateKey = new Date(task.createdAt).toISOString().split("T")[0];
+      if (tasksByDay[dateKey]) {
+        tasksByDay[dateKey].created++;
+        if (task.status === "completed") {
+          tasksByDay[dateKey].completed++;
+        }
+      }
+    });
+
+    const totalVisits = Object.values(visitsByDay).reduce((sum, d) => sum + d.completed, 0);
+    const totalOpportunities = Object.values(opportunitiesByDay).reduce((sum, d) => sum + d.won, 0);
+    const totalPipeline = Object.values(opportunitiesByDay).reduce((sum, d) => sum + d.value, 0);
+    const totalTasks = Object.values(tasksByDay).reduce((sum, d) => sum + d.completed, 0);
+
+    res.json({
+      period: { days, startDate: startDate.toISOString(), endDate: new Date().toISOString() },
+      visits: visitsByDay,
+      opportunities: opportunitiesByDay,
+      tasks: tasksByDay,
+      totals: {
+        visits: totalVisits,
+        opportunities: totalOpportunities,
+        pipelineValue: totalPipeline,
+        tasksCompleted: totalTasks,
+      },
     });
   });
 
@@ -622,6 +747,65 @@ export function registerFieldRoutes(app: Express) {
     res.json(note);
   });
 
+  app.post("/api/field/visits/:id/audio", requireFieldUser, async (req, res) => {
+    const actor = (req as any).fieldActor as Awaited<ReturnType<typeof ensureFieldRep>>;
+    const visitId = Number(req.params.id);
+    const { audioData, durationSeconds } = req.body;
+
+    const visit = await storage.getSalesVisit(visitId);
+    if (!visit || visit.repId !== actor!.rep.id) {
+      return res.status(404).json({ message: "Visit not found" });
+    }
+
+    if (!audioData) {
+      return res.status(400).json({ message: "Audio data is required" });
+    }
+
+    try {
+      let audioUrl = "";
+      const base64Data = audioData.replace(/^data:audio\/\w+;base64,/, "");
+      const buffer = Buffer.from(base64Data, "base64");
+      const filename = `visit_${visitId}_${Date.now()}.webm`;
+
+      if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+        const { createClient } = await import("@supabase/supabase-js");
+        const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+        const path = `audio/${actor!.rep.id}/${filename}`;
+        const { error: uploadError } = await supabase.storage.from("uploads").upload(path, buffer, {
+          contentType: "audio/webm",
+          upsert: true,
+        });
+        if (uploadError) throw uploadError;
+        const { data: urlData } = supabase.storage.from("uploads").getPublicUrl(path);
+        audioUrl = urlData.publicUrl;
+      } else {
+        return res.status(503).json({ message: "Storage not configured" });
+      }
+
+      const existingNote = await storage.getSalesVisitNote(visitId);
+      if (existingNote) {
+        const note = await storage.upsertSalesVisitNote({
+          visitId,
+          createdByRepId: actor!.rep.id,
+          audioUrl,
+          audioDurationSeconds: durationSeconds || null,
+        });
+        return res.json(note);
+      } else {
+        const note = await storage.upsertSalesVisitNote({
+          visitId,
+          createdByRepId: actor!.rep.id,
+          audioUrl,
+          audioDurationSeconds: durationSeconds || null,
+        });
+        return res.json(note);
+      }
+    } catch (error: any) {
+      console.error("Audio upload error:", error);
+      res.status(500).json({ message: error.message || "Failed to upload audio" });
+    }
+  });
+
   app.get("/api/field/opportunities", requireFieldUser, async (req, res) => {
     const actor = (req as any).fieldActor as Awaited<ReturnType<typeof ensureFieldRep>>;
     const status = typeof req.query.status === "string"
@@ -723,6 +907,12 @@ export function registerFieldRoutes(app: Express) {
       repId: actor!.rep.id,
       status: "pending",
     });
+
+    const syncResult = await syncTaskToGhl(task.id);
+    if (syncResult.synced && syncResult.ghlTaskId) {
+      await storage.updateSalesTask(task.id, { ghlTaskId: syncResult.ghlTaskId });
+    }
+
     res.status(201).json(task);
   });
 
@@ -739,15 +929,19 @@ export function registerFieldRoutes(app: Express) {
   app.post("/api/field/sync/flush", requireFieldUser, async (_req, res) => {
     const accounts = await storage.listSalesAccounts();
     const opportunities = await storage.listSalesOpportunities();
+    const tasks = await storage.listSalesTasks();
 
     const accountResults = await Promise.all(accounts.filter((account) => !account.ghlContactId).map((account) => syncAccountToGhl(account.id)));
     const opportunityResults = await Promise.all(opportunities.filter((item) => item.syncStatus !== "synced").map((item) => syncOpportunityToGhl(item.id)));
+    const taskResults = await Promise.all(tasks.filter((task) => !task.ghlTaskId && task.status === "pending").map((task) => syncTaskToGhl(task.id)));
 
     res.json({
       accountsProcessed: accountResults.length,
       accountsSynced: accountResults.filter((item) => item.synced).length,
       opportunitiesProcessed: opportunityResults.length,
       opportunitiesSynced: opportunityResults.filter((item) => item.synced).length,
+      tasksProcessed: taskResults.length,
+      tasksSynced: taskResults.filter((item) => item.synced).length,
     });
   });
 

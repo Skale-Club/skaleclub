@@ -30,6 +30,8 @@ export const fieldVisitNoteUpsertSchema = insertSalesVisitNoteSchema.pick({
   competitorMentioned: true,
   nextStep: true,
   followUpRequired: true,
+  audioUrl: true,
+  audioDurationSeconds: true,
 }).partial();
 
 export const fieldAccountCreateSchema = insertSalesAccountSchema.extend({

@@ -37,6 +37,7 @@ export default function FieldLogin() {
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
   const [isSupabaseAuth, setIsSupabaseAuth] = useState(false);
   const googleLogoUrl = "https://commons.wikimedia.org/wiki/Special:FilePath/Google_Favicon_2025.svg";
+  const companyLogo = companySettings?.logoDark || companySettings?.logoMain || companySettings?.logoIcon || "";
 
   useEffect(() => {
     let mounted = true;
@@ -50,7 +51,7 @@ export default function FieldLogin() {
 
       const user = await getCurrentUser();
       if (mounted && user) {
-        setLocation("/field");
+        setLocation("/checkin");
       }
     }
 
@@ -98,7 +99,7 @@ export default function FieldLogin() {
         throw new Error(result.message || "Login failed");
       }
 
-      setLocation("/field");
+      setLocation("/checkin");
     } catch (loginError: any) {
       setError(loginError.message || "Login failed");
     } finally {
@@ -120,7 +121,7 @@ export default function FieldLogin() {
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${getCanonicalOrigin()}/field/login`,
+          redirectTo: `${getCanonicalOrigin()}/checkin/login`,
         },
       });
 
@@ -147,12 +148,22 @@ export default function FieldLogin() {
 
         <Card className="border border-white/10 bg-white/5 text-white shadow-2xl shadow-black/30 backdrop-blur">
           <CardHeader className="space-y-3 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/15">
-              <MapPinned className="h-6 w-6 text-emerald-400" />
-            </div>
-            <CardTitle className="text-2xl">{companySettings?.companyName || "Field Sales"}</CardTitle>
+            {companyLogo ? (
+              <div className="mx-auto">
+                <img 
+                  src={companyLogo} 
+                  alt="Company Logo" 
+                  className="mx-auto max-h-16 object-contain"
+                />
+              </div>
+            ) : (
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/20">
+                <MapPinned className="h-6 w-6 text-primary" />
+              </div>
+            )}
+            <CardTitle className="text-2xl">Check In</CardTitle>
             <CardDescription className="text-white/60">
-              Sign in to access the field sales workspace.
+              Sign in to access the Check In workspace.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -161,6 +172,17 @@ export default function FieldLogin() {
                 {error}
               </div>
             ) : null}
+
+            <p className="text-center text-sm text-white/50">
+              Are you an administrator?{' '}
+              <button
+                type="button"
+                onClick={() => setLocation('/admin/login')}
+                className="font-medium text-primary hover:underline"
+              >
+                Sign in to Admin
+              </button>
+            </p>
 
             {isSupabaseAuth ? (
               <>
@@ -216,7 +238,7 @@ export default function FieldLogin() {
                     </div>
                   </div>
 
-                  <Button type="submit" disabled={submitting} className="h-12 w-full bg-emerald-500 text-black hover:bg-emerald-400">
+                  <Button type="submit" disabled={submitting} className="h-12 w-full bg-primary text-primary-foreground hover:bg-primary/90">
                     {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Sign In
                   </Button>

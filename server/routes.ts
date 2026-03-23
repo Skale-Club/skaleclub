@@ -2404,6 +2404,106 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
     }
   });
 
+  // Google Places API Integration
+  app.get('/api/integrations/google-places', requireAdmin, async (_req, res) => {
+    try {
+      const settings = await storage.getIntegrationSettings('google_places');
+      if (!settings) {
+        return res.json({
+          provider: 'google_places',
+          apiKey: '',
+          isEnabled: false
+        });
+      }
+      res.json({
+        ...settings,
+        apiKey: settings.apiKey ? '********' : ''
+      });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  // Save Google Places settings
+  app.put('/api/integrations/google-places', requireAdmin, async (req, res) => {
+    try {
+      const { apiKey, isEnabled } = req.body;
+
+      const existingSettings = await storage.getIntegrationSettings('google_places');
+
+      const settingsToSave: any = {
+        provider: 'google_places',
+        isEnabled: isEnabled ?? false
+      };
+
+      if (apiKey && apiKey !== '********') {
+        settingsToSave.apiKey = apiKey;
+      } else if (existingSettings?.apiKey) {
+        settingsToSave.apiKey = existingSettings.apiKey;
+      }
+
+      const settings = await storage.upsertIntegrationSettings(settingsToSave);
+      res.json({
+        ...settings,
+        apiKey: settings.apiKey ? '********' : ''
+      });
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  // Test Google Places connection
+  app.post('/api/integrations/google-places/test', requireAdmin, async (req, res) => {
+    try {
+      const { apiKey } = req.body;
+
+      let keyToTest = apiKey;
+      if (apiKey === '********' || !apiKey) {
+        const existingSettings = await storage.getIntegrationSettings('google_places');
+        keyToTest = existingSettings?.apiKey;
+      }
+
+      if (!keyToTest) {
+        return res.status(400).json({
+          success: false,
+          message: 'API key is required'
+        });
+      }
+
+      // Test the API key by making a simple Places API request
+      const response = await fetch('https://places.googleapis.com/v1/places:searchText', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': keyToTest,
+          'X-Goog-FieldMask': 'places.id,places.displayName'
+        },
+        body: JSON.stringify({
+          textQuery: 'test',
+          pageSize: 1
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        return res.status(response.status).json({
+          success: false,
+          message: `Google Places API error: ${response.status} - ${errorText}`
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Google Places API connection successful'
+      });
+    } catch (err) {
+      res.status(500).json({
+        success: false,
+        message: (err as Error).message
+      });
+    }
+  });
+
   // Blog Posts (public GET, admin CRUD)
   app.get('/api/blog', async (req, res) => {
     try {

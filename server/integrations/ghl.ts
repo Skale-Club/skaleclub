@@ -595,11 +595,53 @@ export async function updateGHLOpportunity(
       };
     }
 
-    return { success: true };
+      return { success: true };
   } catch (error: any) {
     return {
       success: false,
       message: error.message || "Failed to update opportunity",
+    };
+  }
+}
+
+export async function createGHLTask(
+  apiKey: string,
+  locationId: string,
+  options: {
+    name: string;
+    description?: string;
+    dueDate?: string;
+    contactId?: string;
+    assignedTo?: string;
+  }
+): Promise<{ success: boolean; taskId?: string; message?: string }> {
+  try {
+    const response = await ghlFetch("/tasks", apiKey, {
+      method: "POST",
+      body: JSON.stringify({
+        name: options.name,
+        description: options.description,
+        dueDate: options.dueDate,
+        locationId,
+        ...(options.contactId && { contactId: options.contactId }),
+        ...(options.assignedTo && { assignedToUserId: options.assignedTo }),
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      return {
+        success: false,
+        message: error.message || "Failed to create task in GHL",
+      };
+    }
+
+    const data = await response.json();
+    return { success: true, taskId: data.id };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.message || "Failed to create task",
     };
   }
 }
