@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import { Analytics } from "@vercel/analytics/react";
 import App from "./App";
 import "./index.css";
+import { registerServiceWorker } from "./lib/pwa";
 
 // Supabase OAuth can sometimes return to "/" (Site URL fallback). If we have a transient hint that
 // the user is logging into the admin area, jump to /admin/login before rendering the homepage.
@@ -35,6 +36,8 @@ setTimeout(() => {
     setTimeout(() => loader.remove(), 150);
   }
 }, 5000);
+
+registerServiceWorker();
 
 createRoot(document.getElementById("root")!).render(
   <>
