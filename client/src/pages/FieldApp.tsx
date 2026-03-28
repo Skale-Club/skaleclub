@@ -285,12 +285,12 @@ function ConfirmSlider({
 
   return (
     <div className="space-y-2">
-      <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[#08120f]">
+      <div className="relative rounded-full border border-[#1C53A3]/30 bg-[#0c1a2e] p-[5px]">
         <div
-          className={cn("absolute inset-y-0 left-0 rounded-[28px] bg-primary/18 transition-[width] duration-200", accentClassName)}
+          className={cn("absolute inset-y-0 left-0 rounded-full bg-[#1C53A3]/30 transition-[width] duration-200", accentClassName)}
           style={{ width: `${progress}%` }}
         />
-        <div className="absolute inset-0 flex items-center justify-center px-16 text-center text-sm font-semibold tracking-[0.16em] text-primary">
+        <div className="absolute inset-0 flex items-center justify-center px-16 text-center text-sm font-semibold tracking-[0.16em] text-white">
           {loading ? "PROCESSING..." : label}
         </div>
         <SliderPrimitive.Root
@@ -310,13 +310,13 @@ function ConfirmSlider({
               setValue([0]);
             }
           }}
-          className="relative flex h-16 w-full touch-none select-none items-center px-2"
+          className="relative flex h-[44px] w-full touch-none select-none items-center"
         >
-          <SliderPrimitive.Track className="relative h-12 w-full rounded-[24px] bg-transparent">
-            <SliderPrimitive.Range className="absolute h-full rounded-[24px] bg-transparent" />
+          <SliderPrimitive.Track className="relative h-[44px] w-full rounded-full bg-transparent">
+            <SliderPrimitive.Range className="absolute h-full rounded-full bg-transparent" />
           </SliderPrimitive.Track>
-          <SliderPrimitive.Thumb className="flex h-12 w-12 items-center justify-center rounded-[20px] bg-primary text-black shadow-[0_12px_35px_rgba(16,185,129,0.35)] outline-none ring-0 transition-transform focus-visible:scale-105 disabled:opacity-60">
-            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ChevronRight className="h-5 w-5" />}
+          <SliderPrimitive.Thumb className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full bg-[#1C53A3] text-white shadow-[0_12px_35px_rgba(28,83,163,0.4)] outline-none ring-0 transition-transform focus-visible:scale-105 disabled:opacity-60">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ChevronRight className="h-5 w-5" />}
           </SliderPrimitive.Thumb>
         </SliderPrimitive.Root>
       </div>
