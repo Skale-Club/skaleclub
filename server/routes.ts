@@ -27,7 +27,7 @@ import type { FormConfig } from "#shared/schema.js";
 import { testGHLConnection, getOrCreateGHLContact, getGHLCustomFields } from "./integrations/ghl.js";
 import { sendHotLeadNotification, sendLowPerformanceAlert, sendNewChatNotification } from "./integrations/twilio.js";
 import { registerStorageRoutes } from "./storage/storageAdapter.js";
-import { registerFieldRoutes } from "./routes/field.js";
+import { registerXpotRoutes } from "./routes/xpot.js";
 import { db, pool } from "./db.js";
 import { users, systemHeartbeats, translations } from "#shared/schema.js";
 import { and, eq, inArray, sql } from "drizzle-orm";
@@ -183,7 +183,7 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  registerFieldRoutes(app);
+  registerXpotRoutes(app);
 
   app.get('/api/cron/supabase-keepalive', async (req, res) => {
     if (!isAuthorizedCronRequest(req)) {

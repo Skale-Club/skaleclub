@@ -8,7 +8,7 @@ import {
   insertSalesVisitNoteSchema,
 } from "./schema.js";
 
-export const fieldCheckInSchema = z.object({
+export const xpotCheckInSchema = z.object({
   accountId: z.number().int().positive(),
   locationId: z.number().int().positive().optional(),
   lat: z.number().min(-90).max(90).optional(),
@@ -17,12 +17,12 @@ export const fieldCheckInSchema = z.object({
   manualOverrideReason: z.string().max(500).optional(),
 });
 
-export const fieldCheckOutSchema = z.object({
+export const xpotCheckOutSchema = z.object({
   lat: z.number().min(-90).max(90).optional(),
   lng: z.number().min(-180).max(180).optional(),
 });
 
-export const fieldVisitNoteUpsertSchema = insertSalesVisitNoteSchema.pick({
+export const xpotVisitNoteUpsertSchema = insertSalesVisitNoteSchema.pick({
   summary: true,
   outcome: true,
   sentiment: true,
@@ -34,7 +34,7 @@ export const fieldVisitNoteUpsertSchema = insertSalesVisitNoteSchema.pick({
   audioDurationSeconds: true,
 }).partial();
 
-export const fieldAccountCreateSchema = insertSalesAccountSchema.extend({
+export const xpotAccountCreateSchema = insertSalesAccountSchema.extend({
   primaryLocation: insertSalesAccountLocationSchema.pick({
     label: true,
     addressLine1: true,
@@ -50,9 +50,9 @@ export const fieldAccountCreateSchema = insertSalesAccountSchema.extend({
   }).optional(),
 });
 
-export const fieldAccountUpdateSchema = fieldAccountCreateSchema.partial();
+export const xpotAccountUpdateSchema = xpotAccountCreateSchema.partial();
 
-export const fieldAccountContactCreateSchema = insertSalesAccountContactSchema.pick({
+export const xpotAccountContactCreateSchema = insertSalesAccountContactSchema.pick({
   name: true,
   jobTitle: true,
   email: true,
@@ -60,7 +60,7 @@ export const fieldAccountContactCreateSchema = insertSalesAccountContactSchema.p
   isPrimary: true,
 });
 
-export const fieldOpportunityCreateSchema = insertSalesOpportunitySchema.pick({
+export const xpotOpportunityCreateSchema = insertSalesOpportunitySchema.pick({
   accountId: true,
   visitId: true,
   title: true,
@@ -72,7 +72,7 @@ export const fieldOpportunityCreateSchema = insertSalesOpportunitySchema.pick({
   notes: true,
 });
 
-export const fieldOpportunityUpdateSchema = insertSalesOpportunitySchema.pick({
+export const xpotOpportunityUpdateSchema = insertSalesOpportunitySchema.pick({
   title: true,
   pipelineKey: true,
   stageKey: true,
@@ -84,7 +84,7 @@ export const fieldOpportunityUpdateSchema = insertSalesOpportunitySchema.pick({
   notes: true,
 }).partial();
 
-export const fieldTaskCreateSchema = insertSalesTaskSchema.pick({
+export const xpotTaskCreateSchema = insertSalesTaskSchema.pick({
   accountId: true,
   visitId: true,
   opportunityId: true,
@@ -94,20 +94,20 @@ export const fieldTaskCreateSchema = insertSalesTaskSchema.pick({
   dueAt: true,
 });
 
-export const fieldTaskUpdateSchema = insertSalesTaskSchema.pick({
+export const xpotTaskUpdateSchema = insertSalesTaskSchema.pick({
   title: true,
   description: true,
   dueAt: true,
   status: true,
 }).partial();
 
-export type FieldCheckInInput = z.infer<typeof fieldCheckInSchema>;
-export type FieldCheckOutInput = z.infer<typeof fieldCheckOutSchema>;
-export type FieldVisitNoteUpsertInput = z.infer<typeof fieldVisitNoteUpsertSchema>;
-export type FieldAccountCreateInput = z.infer<typeof fieldAccountCreateSchema>;
-export type FieldAccountUpdateInput = z.infer<typeof fieldAccountUpdateSchema>;
-export type FieldAccountContactCreateInput = z.infer<typeof fieldAccountContactCreateSchema>;
-export type FieldOpportunityCreateInput = z.infer<typeof fieldOpportunityCreateSchema>;
-export type FieldOpportunityUpdateInput = z.infer<typeof fieldOpportunityUpdateSchema>;
-export type FieldTaskCreateInput = z.infer<typeof fieldTaskCreateSchema>;
-export type FieldTaskUpdateInput = z.infer<typeof fieldTaskUpdateSchema>;
+export type XpotCheckInInput = z.infer<typeof xpotCheckInSchema>;
+export type XpotCheckOutInput = z.infer<typeof xpotCheckOutSchema>;
+export type XpotVisitNoteUpsertInput = z.infer<typeof xpotVisitNoteUpsertSchema>;
+export type XpotAccountCreateInput = z.infer<typeof xpotAccountCreateSchema>;
+export type XpotAccountUpdateInput = z.infer<typeof xpotAccountUpdateSchema>;
+export type XpotAccountContactCreateInput = z.infer<typeof xpotAccountContactCreateSchema>;
+export type XpotOpportunityCreateInput = z.infer<typeof xpotOpportunityCreateSchema>;
+export type XpotOpportunityUpdateInput = z.infer<typeof xpotOpportunityUpdateSchema>;
+export type XpotTaskCreateInput = z.infer<typeof xpotTaskCreateSchema>;
+export type XpotTaskUpdateInput = z.infer<typeof xpotTaskUpdateSchema>;

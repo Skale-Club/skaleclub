@@ -303,7 +303,7 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
               Integrations
             </Button>
             <Button variant="outline" className="border-0 bg-primary/10 text-primary" asChild>
-              <a href="/checkin" target="_blank" rel="noreferrer">
+              <a href="/xpot" target="_blank" rel="noreferrer">
                 <MapPin className="w-4 h-4 mr-2" />
                 Check In
               </a>

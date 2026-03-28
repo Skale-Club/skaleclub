@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { queryClient } from "@/lib/queryClient";
 
-type FieldOverviewResponse = {
+type XpotOverviewResponse = {
   reps: {
     id: number;
     displayName: string;
@@ -39,31 +39,31 @@ const metricCards = [
   { key: "syncIssues", label: "Sync Issues", icon: CircleAlert },
 ] as const;
 
-export function FieldSalesSection() {
-  const { data, isLoading } = useQuery<FieldOverviewResponse>({
-    queryKey: ["/api/field/admin/overview"],
+export function XpotSalesSection() {
+  const { data, isLoading } = useQuery<XpotOverviewResponse>({
+    queryKey: ["/api/xpot/admin/overview"],
   });
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Check In</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">Xpot</h2>
           <p className="text-sm text-muted-foreground">
-            Monitor rep activity, sync health, and live pipeline creation from the Check In app.
+            Monitor rep activity, sync health, and live pipeline creation from the Xpot app.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <Button
             variant="outline"
-            onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/field/admin/overview"] })}
+            onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/xpot/admin/overview"] })}
           >
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
           </Button>
           <Button asChild>
-            <a href="/checkin" target="_blank" rel="noreferrer">
-              Open Check In
+            <a href="/xpot" target="_blank" rel="noreferrer">
+              Open Xpot
             </a>
           </Button>
         </div>
@@ -114,7 +114,7 @@ export function FieldSalesSection() {
               ))
             ) : (
               <div className="rounded-lg border border-dashed border-border/70 px-4 py-6 text-sm text-muted-foreground">
-                No field reps yet. The first authenticated field user will be auto-provisioned.
+                No xpot reps yet. The first authenticated xpot user will be auto-provisioned.
               </div>
             )}
           </CardContent>

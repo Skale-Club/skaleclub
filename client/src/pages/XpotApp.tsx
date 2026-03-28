@@ -26,7 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-type FieldUser = {
+type XpotUser = {
   userId: string;
   email: string | null;
   firstName: string | null;
@@ -117,8 +117,8 @@ type DashboardResponse = {
   pendingTasks: SalesTask[];
 };
 
-type FieldMeResponse = {
-  user: FieldUser;
+type XpotMeResponse = {
+  user: XpotUser;
   rep: SalesRep;
   activeVisit: SalesVisit | null;
 };
@@ -233,7 +233,7 @@ function usePlaceSearch(
   const deferredSearch = useDeferredValue(search.trim());
 
   return useQuery<PlaceSearchResponse>({
-    queryKey: ["/api/field/place-search", deferredSearch, geoState.lat ?? "", geoState.lng ?? ""],
+    queryKey: ["/api/xpot/place-search", deferredSearch, geoState.lat ?? "", geoState.lng ?? ""],
     enabled: enabled && deferredSearch.length >= 2,
     queryFn: async () => {
       const params = new URLSearchParams({ q: deferredSearch });
@@ -242,7 +242,7 @@ function usePlaceSearch(
         params.set("lng", String(geoState.lng));
       }
 
-      const response = await fetch(`/api/field/place-search?${params.toString()}`, {
+      const response = await fetch(`/api/xpot/place-search?${params.toString()}`, {
         credentials: "include",
       });
 
@@ -325,7 +325,7 @@ function ConfirmSlider({
   );
 }
 
-export default function FieldApp() {
+export default function XpotApp() {
   const [pathname, setLocation] = useLocation();
   const { toast } = useToast();
   const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
@@ -371,34 +371,34 @@ export default function FieldApp() {
     return tabs.some((tab) => tab.id === section) ? section : "dashboard";
   }, [pathname]);
 
-  const fieldMeQuery = useQuery<FieldMeResponse>({
-    queryKey: ["/api/field/me"],
+  const xpotMeQuery = useQuery<XpotMeResponse>({
+    queryKey: ["/api/xpot/me"],
     retry: false,
   });
 
   useEffect(() => {
-    if (fieldMeQuery.error) {
-      const message = (fieldMeQuery.error as Error).message || "";
+    if (xpotMeQuery.error) {
+      const message = (xpotMeQuery.error as Error).message || "";
       if (message.startsWith("401")) {
-setLocation("/checkin/login");
+        setLocation("/xpot/login");
       }
     }
-  }, [fieldMeQuery.error, setLocation]);
+  }, [xpotMeQuery.error, setLocation]);
 
-  const dashboardQuery = useQuery<DashboardResponse>({ queryKey: ["/api/field/dashboard"], enabled: fieldMeQuery.isSuccess });
-  const accountsQuery = useQuery<SalesAccount[]>({ queryKey: ["/api/field/accounts"], enabled: fieldMeQuery.isSuccess });
-  const visitsQuery = useQuery<SalesVisit[]>({ queryKey: ["/api/field/visits"], enabled: fieldMeQuery.isSuccess });
-  const opportunitiesQuery = useQuery<SalesOpportunity[]>({ queryKey: ["/api/field/opportunities"], enabled: fieldMeQuery.isSuccess });
-  const tasksQuery = useQuery<SalesTask[]>({ queryKey: ["/api/field/tasks"], enabled: fieldMeQuery.isSuccess });
+  const dashboardQuery = useQuery<DashboardResponse>({ queryKey: ["/api/xpot/dashboard"], enabled: xpotMeQuery.isSuccess });
+  const accountsQuery = useQuery<SalesAccount[]>({ queryKey: ["/api/xpot/accounts"], enabled: xpotMeQuery.isSuccess });
+  const visitsQuery = useQuery<SalesVisit[]>({ queryKey: ["/api/xpot/visits"], enabled: xpotMeQuery.isSuccess });
+  const opportunitiesQuery = useQuery<SalesOpportunity[]>({ queryKey: ["/api/xpot/opportunities"], enabled: xpotMeQuery.isSuccess });
+  const tasksQuery = useQuery<SalesTask[]>({ queryKey: ["/api/xpot/tasks"], enabled: xpotMeQuery.isSuccess });
 
-  const checkInPlaceQuery = usePlaceSearch(checkInSearch, fieldMeQuery.isSuccess && activeTab === "check-in", geoState);
-  const accountPlaceQuery = usePlaceSearch(accountLookupSearch, fieldMeQuery.isSuccess && activeTab === "accounts", geoState);
+  const checkInPlaceQuery = usePlaceSearch(checkInSearch, xpotMeQuery.isSuccess && activeTab === "check-in", geoState);
+  const accountPlaceQuery = usePlaceSearch(accountLookupSearch, xpotMeQuery.isSuccess && activeTab === "accounts", geoState);
 
   const activeVisit = useMemo(() => {
-    const currentId = fieldMeQuery.data?.activeVisit?.id;
+    const currentId = xpotMeQuery.data?.activeVisit?.id;
     if (!currentId) return null;
-    return visitsQuery.data?.find((visit) => visit.id === currentId) || fieldMeQuery.data?.activeVisit || null;
-  }, [fieldMeQuery.data, visitsQuery.data]);
+    return visitsQuery.data?.find((visit) => visit.id === currentId) || xpotMeQuery.data?.activeVisit || null;
+  }, [xpotMeQuery.data, visitsQuery.data]);
 
   useEffect(() => {
     if (activeVisit?.note) {
@@ -454,21 +454,21 @@ setLocation("/checkin/login");
     [accountsQuery.data, selectedAccountId],
   );
 
-  const invalidateFieldData = async () => {
+  const invalidateXpotData = async () => {
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["/api/field/me"] }),
-      queryClient.invalidateQueries({ queryKey: ["/api/field/dashboard"] }),
-      queryClient.invalidateQueries({ queryKey: ["/api/field/accounts"] }),
-      queryClient.invalidateQueries({ queryKey: ["/api/field/visits"] }),
-      queryClient.invalidateQueries({ queryKey: ["/api/field/opportunities"] }),
-      queryClient.invalidateQueries({ queryKey: ["/api/field/tasks"] }),
-      queryClient.invalidateQueries({ queryKey: ["/api/field/admin/overview"] }),
+      queryClient.invalidateQueries({ queryKey: ["/api/xpot/me"] }),
+      queryClient.invalidateQueries({ queryKey: ["/api/xpot/dashboard"] }),
+      queryClient.invalidateQueries({ queryKey: ["/api/xpot/accounts"] }),
+      queryClient.invalidateQueries({ queryKey: ["/api/xpot/visits"] }),
+      queryClient.invalidateQueries({ queryKey: ["/api/xpot/opportunities"] }),
+      queryClient.invalidateQueries({ queryKey: ["/api/xpot/tasks"] }),
+      queryClient.invalidateQueries({ queryKey: ["/api/xpot/admin/overview"] }),
     ]);
   };
 
   const createAccountMutation = useMutation({
     mutationFn: async (payload: SalesAccountPayload) => {
-      const response = await apiRequest("POST", "/api/field/accounts", payload);
+      const response = await apiRequest("POST", "/api/xpot/accounts", payload);
       return response.json() as Promise<{ account: SalesAccount }>;
     },
     onError: (error: Error) => {
@@ -478,7 +478,7 @@ setLocation("/checkin/login");
 
   const checkInMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/field/visits/check-in", {
+      const response = await apiRequest("POST", "/api/xpot/visits/check-in", {
         accountId: Number(selectedAccountId),
         lat: geoState.lat,
         lng: geoState.lng,
@@ -488,7 +488,7 @@ setLocation("/checkin/login");
     },
     onSuccess: async () => {
       toast({ title: "Checked in successfully" });
-      await invalidateFieldData();
+      await invalidateXpotData();
     },
     onError: (error: Error) => {
       toast({ title: "Check-in failed", description: error.message, variant: "destructive" });
@@ -497,7 +497,7 @@ setLocation("/checkin/login");
 
   const checkOutMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/field/visits/${activeVisit?.id}/check-out`, {
+      const response = await apiRequest("POST", `/api/xpot/visits/${activeVisit?.id}/check-out`, {
         lat: geoState.lat,
         lng: geoState.lng,
       });
@@ -505,7 +505,7 @@ setLocation("/checkin/login");
     },
     onSuccess: async () => {
       toast({ title: "Visit completed" });
-      await invalidateFieldData();
+      await invalidateXpotData();
     },
     onError: (error: Error) => {
       toast({ title: "Check-out failed", description: error.message, variant: "destructive" });
@@ -569,7 +569,7 @@ setLocation("/checkin/login");
         reader.readAsDataURL(audioBlob);
       });
 
-      const response = await apiRequest("POST", `/api/field/visits/${activeVisit.id}/audio`, {
+      const response = await apiRequest("POST", `/api/xpot/visits/${activeVisit.id}/audio`, {
         audioData,
         durationSeconds: recordingTime,
       });
@@ -579,7 +579,7 @@ setLocation("/checkin/login");
       toast({ title: "Audio uploaded successfully" });
       setAudioBlob(null);
       setRecordingTime(0);
-      await invalidateFieldData();
+      await invalidateXpotData();
     },
     onError: (error: Error) => {
       toast({ title: "Failed to upload audio", description: error.message, variant: "destructive" });
@@ -588,12 +588,12 @@ setLocation("/checkin/login");
 
   const saveNoteMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("PATCH", `/api/field/visits/${activeVisit?.id}/note`, visitNoteForm);
+      const response = await apiRequest("PATCH", `/api/xpot/visits/${activeVisit?.id}/note`, visitNoteForm);
       return response.json();
     },
     onSuccess: async () => {
       toast({ title: "Visit note saved" });
-      await invalidateFieldData();
+      await invalidateXpotData();
     },
     onError: (error: Error) => {
       toast({ title: "Failed to save note", description: error.message, variant: "destructive" });
@@ -602,7 +602,7 @@ setLocation("/checkin/login");
 
   const createOpportunityMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/field/opportunities", {
+      const response = await apiRequest("POST", "/api/xpot/opportunities", {
         accountId: Number(opportunityForm.accountId),
         visitId: activeVisit?.id,
         title: opportunityForm.title,
@@ -616,7 +616,7 @@ setLocation("/checkin/login");
     onSuccess: async () => {
       toast({ title: "Opportunity created" });
       setOpportunityForm({ accountId: "", title: "", value: "", pipelineKey: "", stageKey: "" });
-      await invalidateFieldData();
+      await invalidateXpotData();
     },
     onError: (error: Error) => {
       toast({ title: "Failed to create opportunity", description: error.message, variant: "destructive" });
@@ -625,7 +625,7 @@ setLocation("/checkin/login");
 
   const createTaskMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/field/tasks", {
+      const response = await apiRequest("POST", "/api/xpot/tasks", {
         accountId: selectedAccountId ? Number(selectedAccountId) : undefined,
         visitId: activeVisit?.id,
         title: taskForm.title,
@@ -637,7 +637,7 @@ setLocation("/checkin/login");
     onSuccess: async () => {
       toast({ title: "Task created" });
       setTaskForm({ title: "", dueAt: "" });
-      await invalidateFieldData();
+      await invalidateXpotData();
     },
     onError: (error: Error) => {
       toast({ title: "Failed to create task", description: error.message, variant: "destructive" });
@@ -646,12 +646,12 @@ setLocation("/checkin/login");
 
   const syncMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/field/sync/flush");
+      const response = await apiRequest("POST", "/api/xpot/sync/flush");
       return response.json();
     },
     onSuccess: async (data) => {
       toast({ title: "Sync completed", description: `${data.accountsSynced} accounts and ${data.opportunitiesSynced} opportunities synced.` });
-      await invalidateFieldData();
+      await invalidateXpotData();
     },
     onError: (error: Error) => {
       toast({ title: "Sync failed", description: error.message, variant: "destructive" });
@@ -660,8 +660,8 @@ setLocation("/checkin/login");
 
   const updateTaskStatus = async (taskId: number, status: string) => {
     try {
-      await apiRequest("PATCH", `/api/field/tasks/${taskId}`, { status });
-      await invalidateFieldData();
+      await apiRequest("PATCH", `/api/xpot/tasks/${taskId}`, { status });
+      await invalidateXpotData();
       toast({ title: "Task updated" });
     } catch (error: any) {
       toast({ title: "Failed to update task", description: error.message, variant: "destructive" });
@@ -691,7 +691,7 @@ setLocation("/checkin/login");
 
   const signOut = async () => {
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
-    setLocation("/checkin/login");
+    setLocation("/xpot/login");
   };
 
   const applyPlaceToAccountForm = (place: GooglePlaceResult) => {
@@ -717,7 +717,7 @@ setLocation("/checkin/login");
       email: accountForm.email || undefined,
       website: accountForm.website || undefined,
       industry: accountForm.industry || undefined,
-      source: selectedAccountPlace ? "google_places" : "field",
+      source: selectedAccountPlace ? "google_places" : "xpot",
       status: "lead",
       notes: selectedAccountPlace ? `Imported from Google Places (${selectedAccountPlace.placeId})` : undefined,
       primaryLocation: accountForm.addressLine1
@@ -748,7 +748,7 @@ setLocation("/checkin/login");
       state: "",
     });
     setSelectedAccountPlace(null);
-    await invalidateFieldData();
+    await invalidateXpotData();
     return result.account;
   };
 
@@ -791,10 +791,10 @@ setLocation("/checkin/login");
     setSelectedAccountId(createdAccount.account.id);
     setCheckInSearch(place.name);
     toast({ title: "Business imported for check-in", description: place.name });
-    await invalidateFieldData();
+    await invalidateXpotData();
   };
 
-  if (fieldMeQuery.isLoading) {
+  if (xpotMeQuery.isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#06090f] text-white">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -802,12 +802,12 @@ setLocation("/checkin/login");
     );
   }
 
-  if (!fieldMeQuery.data) {
+  if (!xpotMeQuery.data) {
     return null;
   }
 
-  const me = fieldMeQuery.data;
-  const repName = me.rep.displayName || me.user.email || "Field Rep";
+  const me = xpotMeQuery.data;
+  const repName = me.rep.displayName || me.user.email || "Xpot Rep";
 
   return (
     <div className="min-h-screen bg-[#06090f] text-white">
@@ -992,7 +992,7 @@ setLocation("/checkin/login");
                         <Badge variant="secondary" className="bg-primary/10 text-primary">{account.openOpportunities || 0} open opportunities</Badge>
                         <Badge variant="secondary" className="bg-white/10 text-white/70">{account.source === "google_places" ? "Imported from Places" : account.ghlContactId ? "GHL linked" : "Local only"}</Badge>
                       </div>
-                      <Button variant="outline" className="w-full border-white/10 bg-transparent text-white hover:bg-white/10" onClick={() => { setSelectedAccountId(account.id); setCheckInSearch(account.name); setLocation("/checkin/check-in"); }}>
+                      <Button variant="outline" className="w-full border-white/10 bg-transparent text-white hover:bg-white/10" onClick={() => { setSelectedAccountId(account.id); setCheckInSearch(account.name); setLocation("/xpot/check-in"); }}>
                         Use for Check-In
                       </Button>
                     </CardContent>
@@ -1004,7 +1004,7 @@ setLocation("/checkin/login");
 
           {activeTab === "check-in" ? (
             <Card className="border-white/10 bg-white/5 text-white">
-              <CardHeader><CardTitle className="text-base">Field Check-In</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-base">Xpot Check-In</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
@@ -1275,7 +1275,7 @@ setLocation("/checkin/login");
                 <button
                   key={id}
                   type="button"
-                  onClick={() => setLocation(id === "dashboard" ? "/checkin" : `/checkin/${id}`)}
+                  onClick={() => setLocation(id === "dashboard" ? "/xpot" : `/xpot/${id}`)}
                   className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] transition-colors ${isActive ? "bg-primary/15 text-primary" : "text-white/45 hover:text-white"}`}
                 >
                   <Icon className="h-4 w-4" />

@@ -67,8 +67,8 @@ const BlogPost = lazy(() => import("@/pages/BlogPost").then(m => ({ default: () 
 const Portfolio = lazy(() => import("@/pages/Portfolio").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Links = lazy(() => import("@/pages/Links").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const VCard = lazy(() => import("@/pages/VCard").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const FieldApp = lazy(() => import("@/pages/FieldApp").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const FieldLogin = lazy(() => import("@/pages/FieldLogin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const XpotApp = lazy(() => import("@/pages/XpotApp").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const XpotLogin = lazy(() => import("@/pages/XpotLogin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 
 function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const { data: settings } = useQuery<CompanySettings>({
@@ -110,7 +110,7 @@ function Router() {
   const pagePaths = buildPagePaths(settings?.pageSlugs);
   const legacyPaths = buildPagePaths(DEFAULT_PAGE_SLUGS);
   const isAdminRoute = location.startsWith('/admin');
-  const isFieldRoute = location.startsWith('/checkin');
+  const isXpotRoute = location.startsWith('/xpot');
   const isLinksRoute = isRoutePrefixMatch(location, pagePaths.links) || isRoutePrefixMatch(location, legacyPaths.links);
   const isVCardRoute = isRoutePrefixMatch(location, pagePaths.vcard) || isRoutePrefixMatch(location, legacyPaths.vcard);
   const prevLocation = useRef(location);
@@ -146,13 +146,13 @@ function Router() {
     );
   }
 
-  if (isFieldRoute) {
+  if (isXpotRoute) {
     return (
       <Suspense fallback={fallback}>
         <Switch>
-          <Route path="/checkin/login" component={FieldLogin} />
-          <Route path="/checkin" component={FieldApp} />
-          <Route path="/checkin/:rest*" component={FieldApp} />
+          <Route path="/xpot/login" component={XpotLogin} />
+          <Route path="/xpot" component={XpotApp} />
+          <Route path="/xpot/:rest*" component={XpotApp} />
           <Route component={NotFound} />
         </Switch>
       </Suspense>

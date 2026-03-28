@@ -2,17 +2,17 @@ import type { Express, NextFunction, Request, Response } from "express";
 import { z } from "zod";
 import { storage } from "../storage.js";
 import {
-  fieldAccountContactCreateSchema,
-  fieldAccountCreateSchema,
-  fieldAccountUpdateSchema,
-  fieldCheckInSchema,
-  fieldCheckOutSchema,
-  fieldOpportunityCreateSchema,
-  fieldOpportunityUpdateSchema,
-  fieldTaskCreateSchema,
-  fieldTaskUpdateSchema,
-  fieldVisitNoteUpsertSchema,
-} from "#shared/field.js";
+  xpotAccountContactCreateSchema,
+  xpotAccountCreateSchema,
+  xpotAccountUpdateSchema,
+  xpotCheckInSchema,
+  xpotCheckOutSchema,
+  xpotOpportunityCreateSchema,
+  xpotOpportunityUpdateSchema,
+  xpotTaskCreateSchema,
+  xpotTaskUpdateSchema,
+  xpotVisitNoteUpsertSchema,
+} from "#shared/xpot.js";
 import { getGHLPipelines, getOrCreateGHLContact, createGHLOpportunity, updateGHLOpportunity, createGHLTask } from "../integrations/ghl.js";
 
 const isReplit = !!process.env.REPL_ID;
@@ -68,7 +68,7 @@ async function getCurrentSessionUser(req: Request): Promise<SessionUser | null> 
   };
 }
 
-async function ensureFieldRep(req: Request) {
+async function ensureXpotRep(req: Request) {
   const user = await getCurrentSessionUser(req);
   if (!user) {
     return null;
@@ -79,7 +79,7 @@ async function ensureFieldRep(req: Request) {
     return { user, rep: existingRep };
   }
 
-  const displayName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim() || user.email || "Field Rep";
+  const displayName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim() || user.email || "Xpot Rep";
   const rep = await storage.upsertSalesRep({
     userId: user.userId,
     displayName,
@@ -91,27 +91,27 @@ async function ensureFieldRep(req: Request) {
   return { user, rep };
 }
 
-async function requireFieldUser(req: Request, res: Response, next: NextFunction) {
-  const actor = await ensureFieldRep(req);
+async function requireXpotUser(req: Request, res: Response, next: NextFunction) {
+  const actor = await ensureXpotRep(req);
   if (!actor) {
     return res.status(401).json({ message: "Authentication required" });
   }
   if (!actor.rep.isActive) {
-    return res.status(403).json({ message: "Field access disabled" });
+    return res.status(403).json({ message: "Xpot access disabled" });
   }
-  (req as any).fieldActor = actor;
+  (req as any).xpotActor = actor;
   next();
 }
 
-async function requireFieldManager(req: Request, res: Response, next: NextFunction) {
-  const actor = await ensureFieldRep(req);
+async function requireXpotManager(req: Request, res: Response, next: NextFunction) {
+  const actor = await ensureXpotRep(req);
   if (!actor) {
     return res.status(401).json({ message: "Authentication required" });
   }
   if (!actor.user.isAdmin && !["manager", "admin"].includes(actor.rep.role)) {
     return res.status(403).json({ message: "Manager access required" });
   }
-  (req as any).fieldActor = actor;
+  (req as any).xpotActor = actor;
   next();
 }
 
@@ -268,8 +268,8 @@ async function syncTaskToGhl(taskId: number) {
   return { synced: true, ghlTaskId: createResult.taskId };
 }
 
-export function registerFieldRoutes(app: Express) {
-  app.get("/api/field/place-search", requireFieldUser, async (req, res) => {
+export function registerXpotRoutes(app: Express) {
+  app.get("/api/xpot/place-search", requireXpotUser, async (req, res) => {
     const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
     if (query.length < 2) {
       return res.json({ results: [] });
@@ -361,8 +361,8 @@ export function registerFieldRoutes(app: Express) {
     });
   });
 
-  app.get("/api/field/me", requireFieldUser, async (req, res) => {
-    const actor = (req as any).fieldActor as Awaited<ReturnType<typeof ensureFieldRep>>;
+  app.get("/api/xpot/me", requireXpotUser, async (req, res) => {
+    const actor = (req as any).xpotActor as Awaited<ReturnType<typeof ensureXpotRep>>;
     const activeVisit = await storage.getActiveSalesVisitForRep(actor!.rep.id);
     const enrichedVisit = activeVisit
       ? {
@@ -378,8 +378,8 @@ export function registerFieldRoutes(app: Express) {
     });
   });
 
-  app.get("/api/field/dashboard", requireFieldUser, async (req, res) => {
-    const actor = (req as any).fieldActor as Awaited<ReturnType<typeof ensureFieldRep>>;
+  app.get("/api/xpot/dashboard", requireXpotUser, async (req, res) => {
+    const actor = (req as any).xpotActor as Awaited<ReturnType<typeof ensureXpotRep>>;
     const [visits, opportunities, tasks, accounts] = await Promise.all([
       storage.listSalesVisits({ repId: actor!.rep.id }),
       storage.listSalesOpportunities({ repId: actor!.rep.id }),
@@ -422,8 +422,8 @@ export function registerFieldRoutes(app: Express) {
     });
   });
 
-  app.get("/api/field/metrics", requireFieldUser, async (req, res) => {
-    const actor = (req as any).fieldActor as Awaited<ReturnType<typeof ensureFieldRep>>;
+  app.get("/api/xpot/metrics", requireXpotUser, async (req, res) => {
+    const actor = (req as any).xpotActor as Awaited<ReturnType<typeof ensureXpotRep>>;
     const days = parseInt(req.query.days as string) || 7;
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
@@ -500,8 +500,8 @@ export function registerFieldRoutes(app: Express) {
     });
   });
 
-  app.get("/api/field/accounts", requireFieldUser, async (req, res) => {
-    const actor = (req as any).fieldActor as Awaited<ReturnType<typeof ensureFieldRep>>;
+  app.get("/api/xpot/accounts", requireXpotUser, async (req, res) => {
+    const actor = (req as any).xpotActor as Awaited<ReturnType<typeof ensureXpotRep>>;
     const search = typeof req.query.search === "string" ? req.query.search : undefined;
     const ownerRepId = actor!.user.isAdmin && req.query.all === "true" ? undefined : actor!.rep.id;
     const accounts = await storage.listSalesAccounts({ ownerRepId, search });
@@ -516,9 +516,9 @@ export function registerFieldRoutes(app: Express) {
     res.json(enriched);
   });
 
-  app.post("/api/field/accounts", requireFieldUser, async (req, res) => {
-    const actor = (req as any).fieldActor as Awaited<ReturnType<typeof ensureFieldRep>>;
-    const input = fieldAccountCreateSchema.parse(req.body);
+  app.post("/api/xpot/accounts", requireXpotUser, async (req, res) => {
+    const actor = (req as any).xpotActor as Awaited<ReturnType<typeof ensureXpotRep>>;
+    const input = xpotAccountCreateSchema.parse(req.body);
 
     const account = await storage.createSalesAccount({
       name: input.name,
@@ -556,7 +556,7 @@ export function registerFieldRoutes(app: Express) {
     res.status(201).json({ account: fullAccount, ghl: syncResult });
   });
 
-  app.get("/api/field/accounts/:id", requireFieldUser, async (req, res) => {
+  app.get("/api/xpot/accounts/:id", requireXpotUser, async (req, res) => {
     const accountId = Number(req.params.id);
     if (!Number.isFinite(accountId)) {
       return res.status(400).json({ message: "Invalid account id" });
@@ -585,9 +585,9 @@ export function registerFieldRoutes(app: Express) {
     });
   });
 
-  app.patch("/api/field/accounts/:id", requireFieldUser, async (req, res) => {
+  app.patch("/api/xpot/accounts/:id", requireXpotUser, async (req, res) => {
     const accountId = Number(req.params.id);
-    const input = fieldAccountUpdateSchema.parse(req.body);
+    const input = xpotAccountUpdateSchema.parse(req.body);
     const updated = await storage.updateSalesAccount(accountId, input);
 
     if (!updated) {
@@ -598,20 +598,20 @@ export function registerFieldRoutes(app: Express) {
     res.json({ account: updated, ghl: syncResult });
   });
 
-  app.get("/api/field/accounts/:id/contacts", requireFieldUser, async (req, res) => {
+  app.get("/api/xpot/accounts/:id/contacts", requireXpotUser, async (req, res) => {
     const accountId = Number(req.params.id);
     res.json(await storage.listSalesAccountContacts(accountId));
   });
 
-  app.post("/api/field/accounts/:id/contacts", requireFieldUser, async (req, res) => {
+  app.post("/api/xpot/accounts/:id/contacts", requireXpotUser, async (req, res) => {
     const accountId = Number(req.params.id);
-    const input = fieldAccountContactCreateSchema.parse(req.body);
+    const input = xpotAccountContactCreateSchema.parse(req.body);
     const contact = await storage.createSalesAccountContact({ ...input, accountId });
     res.status(201).json(contact);
   });
 
-  app.get("/api/field/visits", requireFieldUser, async (req, res) => {
-    const actor = (req as any).fieldActor as Awaited<ReturnType<typeof ensureFieldRep>>;
+  app.get("/api/xpot/visits", requireXpotUser, async (req, res) => {
+    const actor = (req as any).xpotActor as Awaited<ReturnType<typeof ensureXpotRep>>;
     const accountId = typeof req.query.accountId === "string" ? Number(req.query.accountId) : undefined;
     const visits = await storage.listSalesVisits({
       repId: actor!.user.isAdmin && req.query.all === "true" ? undefined : actor!.rep.id,
@@ -627,9 +627,9 @@ export function registerFieldRoutes(app: Express) {
     res.json(result);
   });
 
-  app.post("/api/field/visits/check-in", requireFieldUser, async (req, res) => {
-    const actor = (req as any).fieldActor as Awaited<ReturnType<typeof ensureFieldRep>>;
-    const input = fieldCheckInSchema.parse(req.body);
+  app.post("/api/xpot/visits/check-in", requireXpotUser, async (req, res) => {
+    const actor = (req as any).xpotActor as Awaited<ReturnType<typeof ensureXpotRep>>;
+    const input = xpotCheckInSchema.parse(req.body);
     const activeVisit = await storage.getActiveSalesVisitForRep(actor!.rep.id);
     if (activeVisit) {
       return res.status(409).json({ message: "Rep already has an active visit" });
@@ -700,10 +700,10 @@ export function registerFieldRoutes(app: Express) {
     res.status(201).json({ visit, account, location: selectedLocation ?? null });
   });
 
-  app.post("/api/field/visits/:id/check-out", requireFieldUser, async (req, res) => {
-    const actor = (req as any).fieldActor as Awaited<ReturnType<typeof ensureFieldRep>>;
+  app.post("/api/xpot/visits/:id/check-out", requireXpotUser, async (req, res) => {
+    const actor = (req as any).xpotActor as Awaited<ReturnType<typeof ensureXpotRep>>;
     const visitId = Number(req.params.id);
-    const input = fieldCheckOutSchema.parse(req.body);
+    const input = xpotCheckOutSchema.parse(req.body);
     const visit = await storage.getSalesVisit(visitId);
 
     if (!visit || visit.repId !== actor!.rep.id) {
@@ -729,10 +729,10 @@ export function registerFieldRoutes(app: Express) {
     res.json(updated);
   });
 
-  app.patch("/api/field/visits/:id/note", requireFieldUser, async (req, res) => {
-    const actor = (req as any).fieldActor as Awaited<ReturnType<typeof ensureFieldRep>>;
+  app.patch("/api/xpot/visits/:id/note", requireXpotUser, async (req, res) => {
+    const actor = (req as any).xpotActor as Awaited<ReturnType<typeof ensureXpotRep>>;
     const visitId = Number(req.params.id);
-    const input = fieldVisitNoteUpsertSchema.parse(req.body);
+    const input = xpotVisitNoteUpsertSchema.parse(req.body);
     const visit = await storage.getSalesVisit(visitId);
 
     if (!visit || visit.repId !== actor!.rep.id) {
@@ -747,8 +747,8 @@ export function registerFieldRoutes(app: Express) {
     res.json(note);
   });
 
-  app.post("/api/field/visits/:id/audio", requireFieldUser, async (req, res) => {
-    const actor = (req as any).fieldActor as Awaited<ReturnType<typeof ensureFieldRep>>;
+  app.post("/api/xpot/visits/:id/audio", requireXpotUser, async (req, res) => {
+    const actor = (req as any).xpotActor as Awaited<ReturnType<typeof ensureXpotRep>>;
     const visitId = Number(req.params.id);
     const { audioData, durationSeconds } = req.body;
 
@@ -806,8 +806,8 @@ export function registerFieldRoutes(app: Express) {
     }
   });
 
-  app.get("/api/field/opportunities", requireFieldUser, async (req, res) => {
-    const actor = (req as any).fieldActor as Awaited<ReturnType<typeof ensureFieldRep>>;
+  app.get("/api/xpot/opportunities", requireXpotUser, async (req, res) => {
+    const actor = (req as any).xpotActor as Awaited<ReturnType<typeof ensureXpotRep>>;
     const status = typeof req.query.status === "string"
       ? z.enum(["open", "won", "lost", "archived"]).parse(req.query.status)
       : undefined;
@@ -823,9 +823,9 @@ export function registerFieldRoutes(app: Express) {
     res.json(result);
   });
 
-  app.post("/api/field/opportunities", requireFieldUser, async (req, res) => {
-    const actor = (req as any).fieldActor as Awaited<ReturnType<typeof ensureFieldRep>>;
-    const input = fieldOpportunityCreateSchema.parse(req.body);
+  app.post("/api/xpot/opportunities", requireXpotUser, async (req, res) => {
+    const actor = (req as any).xpotActor as Awaited<ReturnType<typeof ensureXpotRep>>;
+    const input = xpotOpportunityCreateSchema.parse(req.body);
 
     const opportunity = await storage.createSalesOpportunity({
       ...input,
@@ -856,9 +856,9 @@ export function registerFieldRoutes(app: Express) {
     });
   });
 
-  app.patch("/api/field/opportunities/:id", requireFieldUser, async (req, res) => {
+  app.patch("/api/xpot/opportunities/:id", requireXpotUser, async (req, res) => {
     const opportunityId = Number(req.params.id);
-    const input = fieldOpportunityUpdateSchema.parse(req.body);
+    const input = xpotOpportunityUpdateSchema.parse(req.body);
     const updated = await storage.updateSalesOpportunity(opportunityId, {
       ...input,
       syncStatus: "pending",
@@ -887,8 +887,8 @@ export function registerFieldRoutes(app: Express) {
     });
   });
 
-  app.get("/api/field/tasks", requireFieldUser, async (req, res) => {
-    const actor = (req as any).fieldActor as Awaited<ReturnType<typeof ensureFieldRep>>;
+  app.get("/api/xpot/tasks", requireXpotUser, async (req, res) => {
+    const actor = (req as any).xpotActor as Awaited<ReturnType<typeof ensureXpotRep>>;
     const status = typeof req.query.status === "string"
       ? z.enum(["pending", "completed", "cancelled"]).parse(req.query.status)
       : undefined;
@@ -899,9 +899,9 @@ export function registerFieldRoutes(app: Express) {
     res.json(tasks);
   });
 
-  app.post("/api/field/tasks", requireFieldUser, async (req, res) => {
-    const actor = (req as any).fieldActor as Awaited<ReturnType<typeof ensureFieldRep>>;
-    const input = fieldTaskCreateSchema.parse(req.body);
+  app.post("/api/xpot/tasks", requireXpotUser, async (req, res) => {
+    const actor = (req as any).xpotActor as Awaited<ReturnType<typeof ensureXpotRep>>;
+    const input = xpotTaskCreateSchema.parse(req.body);
     const task = await storage.createSalesTask({
       ...input,
       repId: actor!.rep.id,
@@ -916,9 +916,9 @@ export function registerFieldRoutes(app: Express) {
     res.status(201).json(task);
   });
 
-  app.patch("/api/field/tasks/:id", requireFieldUser, async (req, res) => {
+  app.patch("/api/xpot/tasks/:id", requireXpotUser, async (req, res) => {
     const taskId = Number(req.params.id);
-    const input = fieldTaskUpdateSchema.parse(req.body);
+    const input = xpotTaskUpdateSchema.parse(req.body);
     const task = await storage.updateSalesTask(taskId, input);
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
@@ -926,7 +926,7 @@ export function registerFieldRoutes(app: Express) {
     res.json(task);
   });
 
-  app.post("/api/field/sync/flush", requireFieldUser, async (_req, res) => {
+  app.post("/api/xpot/sync/flush", requireXpotUser, async (_req, res) => {
     const accounts = await storage.listSalesAccounts();
     const opportunities = await storage.listSalesOpportunities();
     const tasks = await storage.listSalesTasks();
@@ -945,7 +945,7 @@ export function registerFieldRoutes(app: Express) {
     });
   });
 
-  app.get("/api/field/admin/overview", requireFieldManager, async (_req, res) => {
+  app.get("/api/xpot/admin/overview", requireXpotManager, async (_req, res) => {
     const [reps, accounts, visits, opportunities, tasks, syncEvents] = await Promise.all([
       storage.listSalesReps(),
       storage.listSalesAccounts(),
@@ -971,11 +971,11 @@ export function registerFieldRoutes(app: Express) {
     });
   });
 
-  app.get("/api/field/admin/reps", requireFieldManager, async (_req, res) => {
+  app.get("/api/xpot/admin/reps", requireXpotManager, async (_req, res) => {
     res.json(await storage.listSalesReps());
   });
 
-  app.post("/api/field/admin/reps", requireFieldManager, async (req, res) => {
+  app.post("/api/xpot/admin/reps", requireXpotManager, async (req, res) => {
     const input = z.object({
       userId: z.string().min(1),
       displayName: z.string().min(1),
@@ -992,11 +992,11 @@ export function registerFieldRoutes(app: Express) {
     res.status(201).json(rep);
   });
 
-  app.get("/api/field/admin/sync-events", requireFieldManager, async (_req, res) => {
+  app.get("/api/xpot/admin/sync-events", requireXpotManager, async (_req, res) => {
     res.json(await storage.listSalesSyncEvents());
   });
 
-  app.get("/api/field/admin/ghl/pipelines", requireFieldManager, async (_req, res) => {
+  app.get("/api/xpot/admin/ghl/pipelines", requireXpotManager, async (_req, res) => {
     const integration = await storage.getIntegrationSettings("gohighlevel");
     if (!integration?.isEnabled || !integration.apiKey || !integration.locationId) {
       return res.status(400).json({ message: "GHL integration not configured" });

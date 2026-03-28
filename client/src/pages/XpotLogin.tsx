@@ -24,7 +24,7 @@ function getCanonicalOrigin() {
   return origin;
 }
 
-export default function FieldLogin() {
+export default function XpotLogin() {
   const [, setLocation] = useLocation();
   const { data: companySettings } = useQuery<CompanySettings>({
     queryKey: ["/api/company-settings"],
@@ -51,7 +51,7 @@ export default function FieldLogin() {
 
       const user = await getCurrentUser();
       if (mounted && user) {
-        setLocation("/checkin");
+        setLocation("/xpot");
       }
     }
 
@@ -99,7 +99,7 @@ export default function FieldLogin() {
         throw new Error(result.message || "Login failed");
       }
 
-      setLocation("/checkin");
+      setLocation("/xpot");
     } catch (loginError: any) {
       setError(loginError.message || "Login failed");
     } finally {
@@ -121,7 +121,7 @@ export default function FieldLogin() {
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${getCanonicalOrigin()}/checkin/login`,
+          redirectTo: `${getCanonicalOrigin()}/xpot/login`,
         },
       });
 
@@ -161,9 +161,9 @@ export default function FieldLogin() {
                 <MapPinned className="h-6 w-6 text-primary" />
               </div>
             )}
-            <CardTitle className="text-2xl">Check In</CardTitle>
+            <CardTitle className="text-2xl">Xpot</CardTitle>
             <CardDescription className="text-white/60">
-              Sign in to access the Check In workspace.
+              Sign in to access the Xpot workspace.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -208,11 +208,11 @@ export default function FieldLogin() {
 
                 <form onSubmit={handleEmailLogin} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="field-email" className="text-white/80">Email</Label>
+                    <Label htmlFor="xpot-email" className="text-white/80">Email</Label>
                     <div className="relative">
                       <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
                       <Input
-                        id="field-email"
+                        id="xpot-email"
                         type="email"
                         value={email}
                         onChange={(event) => setEmail(event.target.value)}
@@ -223,11 +223,11 @@ export default function FieldLogin() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="field-password" className="text-white/80">Password</Label>
+                    <Label htmlFor="xpot-password" className="text-white/80">Password</Label>
                     <div className="relative">
                       <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
                       <Input
-                        id="field-password"
+                        id="xpot-password"
                         type="password"
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
