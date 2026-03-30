@@ -47,8 +47,6 @@ updateHero2.cjs
 # LLM chat attachments
 attached_assets/
 
-# AI-generated plans
-plan/
 
 # Cookies / credentials
 cookies.txt
