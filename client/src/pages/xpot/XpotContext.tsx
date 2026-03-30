@@ -22,7 +22,7 @@ type AnyMutation = ReturnType<typeof useMutation<any, any, any, any>>;
 export interface XpotAppContextValue {
   // Auth & user
   xpotMeQuery: ReturnType<typeof useQuery<XpotMeResponse>>;
-  me: XpotMeResponse;
+  me: XpotMeResponse | null;
   repName: string;
   signOut: () => Promise<void>;
   syncMutation: AnyMutation;
@@ -628,8 +628,8 @@ export function XpotAppProvider({ children }: { children: ReactNode }) {
     await invalidateXpotData();
   };
 
-  const me = xpotMeQuery.data!;
-  const repName = me.rep.displayName || me.user.email || "Xpot Rep";
+  const me = xpotMeQuery.data ?? null;
+  const repName = me ? me.rep.displayName || me.user.email || "Xpot Rep" : "Xpot Rep";
 
   const value: XpotAppContextValue = {
     xpotMeQuery,

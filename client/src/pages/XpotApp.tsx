@@ -11,7 +11,6 @@ import { XpotDashboard } from "./xpot/XpotDashboard";
 
 function XpotAppShell() {
   const {
-    xpotMeQuery,
     me,
     repName,
     isOnline,
@@ -22,16 +21,12 @@ function XpotAppShell() {
     setLocation,
   } = useXpotApp();
 
-  if (xpotMeQuery.isLoading) {
+  if (!me) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#06090f] text-white">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
-  }
-
-  if (!me) {
-    return null;
   }
 
   return (
