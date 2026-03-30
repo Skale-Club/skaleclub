@@ -182,12 +182,13 @@ export function XpotAppProvider({ children }: { children: ReactNode }) {
   const xpotMeQuery = useQuery<XpotMeResponse>({
     queryKey: ["/api/xpot/me"],
     retry: false,
+    refetchOnMount: true,
   });
 
   useEffect(() => {
     if (xpotMeQuery.error) {
       const message = (xpotMeQuery.error as Error).message || "";
-      if (message.startsWith("401")) {
+      if (message.startsWith("401") || message.startsWith("403")) {
         setLocation("/xpot/login");
       }
     }

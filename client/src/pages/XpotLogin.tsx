@@ -4,6 +4,7 @@ import { ArrowLeft, Loader2, Mail, MapPinned, Lock } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
 import { initSupabase } from "@/lib/supabase";
+import { queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -53,6 +54,7 @@ export default function XpotLogin() {
       // Check existing server session first
       const user = await getCurrentUser();
       if (mounted && user) {
+        queryClient.removeQueries({ queryKey: ["/api/xpot/me"] });
         setLocation("/xpot");
         return;
       }
@@ -74,6 +76,7 @@ export default function XpotLogin() {
             });
 
             if (mounted && loginResponse.ok) {
+              queryClient.removeQueries({ queryKey: ["/api/xpot/me"] });
               setLocation("/xpot");
             } else if (mounted) {
               const result = await loginResponse.json().catch(() => ({}));
@@ -130,6 +133,7 @@ export default function XpotLogin() {
         throw new Error(result.message || "Login failed");
       }
 
+      queryClient.removeQueries({ queryKey: ["/api/xpot/me"] });
       setLocation("/xpot");
     } catch (loginError: any) {
       setError(loginError.message || "Login failed");
