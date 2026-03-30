@@ -29,7 +29,7 @@ import type { FormConfig } from "#shared/schema.js";
 import { testGHLConnection, getOrCreateGHLContact, getGHLCustomFields } from "./integrations/ghl.js";
 import { sendHotLeadNotification, sendLowPerformanceAlert, sendNewChatNotification } from "./integrations/twilio.js";
 import { registerStorageRoutes } from "./storage/storageAdapter.js";
-import { registerXpotRoutes } from "./routes/xpot.js";
+import { registerXpotRoutes } from "./routes/xpot/index.js";
 import { db, pool } from "./db.js";
 import { users, systemHeartbeats, translations } from "#shared/schema.js";
 import { and, eq, inArray, sql } from "drizzle-orm";
