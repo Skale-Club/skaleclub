@@ -1,10 +1,54 @@
-node_modules
-dist
-.DS_Store
+# Dependencies
+node_modules/
+
+# Build output
+dist/
 server/public
-vite.config.ts.*
-*.tar.gz
+
+# Environment & secrets
 .env
 .env.*
-.claude
-.vercel
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+nul
+
+# AI agent configs
+.claude/
+.kilo/
+CLAUDE.md
+GEMINI.md
+
+# Platform configs
+.replit
+replit.md
+.vercel/
+
+# Generated / temporary files
+tsc-errors*.txt
+swap.js
+*.tar.gz
+vite.config.ts.*
+
+# One-off scripts (not part of the app)
+check-db.mjs
+reset-portfolio-services.ts
+seed-portfolio-services.ts
+updateHero.cjs
+updateHero2.cjs
+
+# LLM chat attachments
+attached_assets/
+
+# AI-generated plans
+plan/
+
+# Cookies / credentials
+cookies.txt
