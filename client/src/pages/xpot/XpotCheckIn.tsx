@@ -69,7 +69,7 @@ export function XpotCheckIn() {
               className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-y-auto rounded-xl border border-white/10 bg-[#0d1117] shadow-2xl"
               onPointerDown={(e) => e.stopPropagation()}
             >
-              {checkInSearch.trim().length >= 2 && (
+              {checkInSearch.trim().length >= 3 && (
                 <button
                   type="button"
                   onClick={createNewCompanyFromSearch}
@@ -144,8 +144,8 @@ export function XpotCheckIn() {
                 );
               })}
 
-              {!filteredAccountsForCheckIn.length && !checkInPlaceQuery.isFetching && !checkInPlaceQuery.data?.results?.length && checkInSearch.trim().length < 2 ? (
-                <div className="px-4 py-3 text-sm text-white/40">Type at least 2 characters to search</div>
+              {!filteredAccountsForCheckIn.length && !checkInPlaceQuery.isFetching && !checkInPlaceQuery.data?.results?.length && checkInSearch.trim().length < 3 ? (
+                <div className="px-4 py-3 text-sm text-white/40">Type at least 3 characters to search</div>
               ) : null}
             </div>
           )}
