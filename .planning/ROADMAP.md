@@ -27,7 +27,9 @@
   2. Validation errors (ZodError) from async handlers return structured 400 responses with `fieldErrors` instead of being silently swallowed
   3. All Xpot endpoints return errors in a consistent `{ message, errors? }` shape
   4. Existing `/api/xpot/*` behavior is identical for successful requests (no regressions)
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 01-01-PLAN.md — Fix error middleware crash bug, add async error catching, add ZodError handling
 
 ### Phase 2: Route File Splitting
 **Goal**: Replace the single 1,042-line `xpot.ts` with 10 focused domain router files while keeping all 33 routes working identically
@@ -70,7 +72,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Error Handling Standardization | 0/0 | Not started | - |
+| 1. Error Handling Standardization | 0/1 | Not started | - |
 | 2. Route File Splitting | 0/0 | Not started | - |
 | 3. Schema Organization | 0/0 | Not started | - |
 | 4. Context Refactoring | 0/0 | Not started | - |
