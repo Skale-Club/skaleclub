@@ -44,7 +44,7 @@ function XpotAppShell() {
             <div className="text-sm text-white/45">{me.rep.role}</div>
           </div>
           <div className="flex items-center gap-2">
-            <Button size="icon" variant="outline" className="border-white/10 bg-transparent text-white hover:bg-white/10" onClick={() => syncMutation.mutate(undefined as any)}>
+            <Button size="icon" variant="outline" className="border-white/10 bg-transparent text-white hover:bg-white/10" disabled={!isOnline || syncMutation.isPending} onClick={() => syncMutation.mutate(undefined as any)}>
               {syncMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             </Button>
             <Button size="icon" variant="outline" className="border-white/10 bg-transparent text-white hover:bg-white/10" onClick={signOut}>
@@ -52,6 +52,12 @@ function XpotAppShell() {
             </Button>
           </div>
         </header>
+
+        {!isOnline && (
+          <div className="mb-4 rounded-2xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-200">
+            You are offline. Check-in, check-out, and sync are disabled until connection is restored.
+          </div>
+        )}
 
         <div className="mb-4 rounded-2xl border border-white/10 bg-gradient-to-br from-primary/15 to-cyan-500/10 p-4">
           <div className="flex items-center justify-between gap-3">

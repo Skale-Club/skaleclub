@@ -37,7 +37,7 @@ export default function XpotLogin() {
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
   const [isSupabaseAuth, setIsSupabaseAuth] = useState(false);
   const googleLogoUrl = "https://commons.wikimedia.org/wiki/Special:FilePath/Google_Favicon_2025.svg";
-  const companyLogo = companySettings?.logoDark || companySettings?.logoMain || companySettings?.logoIcon || "";
+  const companyLogo = companySettings?.logoIcon || "";
 
   useEffect(() => {
     let mounted = true;
@@ -45,13 +45,44 @@ export default function XpotLogin() {
     async function initialize() {
       const response = await fetch("/api/supabase-config");
       const config = await response.json();
+      const hasSupabase = Boolean(config.url && config.anonKey);
       if (mounted) {
-        setIsSupabaseAuth(Boolean(config.url && config.anonKey));
+        setIsSupabaseAuth(hasSupabase);
       }
 
+      // Check existing server session first
       const user = await getCurrentUser();
       if (mounted && user) {
         setLocation("/xpot");
+        return;
+      }
+
+      // After Google OAuth redirect, Supabase sets a browser session from the URL hash
+      // but there's no server session yet — exchange it now.
+      if (hasSupabase) {
+        try {
+          const supabase = await initSupabase();
+          const { data } = await supabase.auth.getSession();
+          const accessToken = data.session?.access_token;
+
+          if (accessToken) {
+            const loginResponse = await fetch("/api/auth/login", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({ accessToken }),
+            });
+
+            if (mounted && loginResponse.ok) {
+              setLocation("/xpot");
+            } else if (mounted) {
+              const result = await loginResponse.json().catch(() => ({}));
+              setError(result.message || "Sign-in failed. Please try again.");
+            }
+          }
+        } catch (err: any) {
+          if (mounted) setError(err.message || "Sign-in failed. Please try again.");
+        }
       }
     }
 
@@ -135,54 +166,46 @@ export default function XpotLogin() {
   };
 
   return (
-    <main className="min-h-screen bg-[#070b12] px-4 py-10 text-white">
-      <div className="mx-auto w-full max-w-md">
+    <main className="min-h-screen bg-slate-100 px-4 flex flex-col items-center justify-center">
+      <div className="w-full max-w-md">
         <button
           type="button"
           onClick={() => setLocation("/")}
-          className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-white/80 transition-colors hover:text-white"
+          className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-slate-800 transition-colors hover:text-slate-900"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Back to Home
         </button>
 
-        <Card className="border border-white/10 bg-white/5 text-white shadow-2xl shadow-black/30 backdrop-blur">
-          <CardHeader className="space-y-3 text-center">
-            {companyLogo ? (
-              <div className="mx-auto">
-                <img 
-                  src={companyLogo} 
-                  alt="Company Logo" 
-                  className="mx-auto max-h-16 object-contain"
+        <Card className="w-full rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <CardHeader className="px-5 pb-4 pt-7 text-center md:px-6">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center overflow-hidden">
+              {companyLogo ? (
+                <img
+                  src={companyLogo}
+                  alt="Logo"
+                  className="h-full w-full object-contain"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                  }}
                 />
-              </div>
-            ) : (
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/20">
-                <MapPinned className="h-6 w-6 text-primary" />
-              </div>
-            )}
-            <CardTitle className="text-2xl">Xpot</CardTitle>
-            <CardDescription className="text-white/60">
-              Sign in to access the Xpot workspace.
+              ) : null}
+              <MapPinned className={`h-6 w-6 text-primary ${companyLogo ? 'hidden' : ''}`} />
+            </div>
+            <CardTitle className="text-2xl leading-none tracking-tight text-slate-900">
+              {companySettings?.companyName || 'Xpot'}
+            </CardTitle>
+            <CardDescription className="pt-2 text-base text-slate-600">
+              Sign in to access the Xpot workspace
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-5">
-            {error ? (
-              <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          <CardContent className="space-y-5 px-5 pb-7 md:px-6">
+            {error && (
+              <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">
                 {error}
               </div>
-            ) : null}
-
-            <p className="text-center text-sm text-white/50">
-              Are you an administrator?{' '}
-              <button
-                type="button"
-                onClick={() => setLocation('/admin/login')}
-                className="font-medium text-primary hover:underline"
-              >
-                Sign in to Admin
-              </button>
-            </p>
+            )}
 
             {isSupabaseAuth ? (
               <>
@@ -190,7 +213,7 @@ export default function XpotLogin() {
                   type="button"
                   onClick={handleGoogleLogin}
                   disabled={googleSubmitting}
-                  className="h-12 w-full bg-white text-slate-900 hover:bg-slate-100"
+                  className="h-12 w-full border border-slate-300 bg-white text-slate-900 hover:bg-slate-50"
                 >
                   {googleSubmitting ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -201,54 +224,63 @@ export default function XpotLogin() {
                 </Button>
 
                 <div className="flex items-center gap-3">
-                  <div className="h-px flex-1 bg-white/10" />
-                  <span className="text-xs uppercase tracking-[0.24em] text-white/40">or</span>
-                  <div className="h-px flex-1 bg-white/10" />
+                  <div className="h-px flex-1 bg-slate-200" />
+                  <div className="text-xs uppercase tracking-wider text-slate-500">or continue with</div>
+                  <div className="h-px flex-1 bg-slate-200" />
                 </div>
 
-                <form onSubmit={handleEmailLogin} className="space-y-4">
+                <form onSubmit={handleEmailLogin} className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="xpot-email" className="text-white/80">Email</Label>
+                    <Label htmlFor="xpot-email" className="text-xl font-semibold text-slate-900">Email</Label>
                     <div className="relative">
-                      <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
+                      <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
                       <Input
                         id="xpot-email"
                         type="email"
                         value={email}
                         onChange={(event) => setEmail(event.target.value)}
                         placeholder="rep@example.com"
-                        className="h-11 border-white/10 bg-white/5 pl-10 text-white placeholder:text-white/35"
+                        className="h-12 border-slate-200 bg-slate-100/80 pl-10 text-base placeholder:text-slate-500"
                         required
                       />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="xpot-password" className="text-white/80">Password</Label>
+                    <Label htmlFor="xpot-password" className="text-xl font-semibold text-slate-900">Password</Label>
                     <div className="relative">
-                      <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
+                      <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
                       <Input
                         id="xpot-password"
                         type="password"
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
-                        placeholder="********"
-                        className="h-11 border-white/10 bg-white/5 pl-10 text-white placeholder:text-white/35"
+                        placeholder="*****"
+                        className="h-12 border-slate-200 bg-slate-100/80 pl-10 text-base"
                         required
                       />
                     </div>
                   </div>
-
                   <Button type="submit" disabled={submitting} className="h-12 w-full bg-primary text-primary-foreground hover:bg-primary/90">
                     {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Sign In
                   </Button>
                 </form>
+                <p className="text-center text-base text-slate-600">
+                  Are you an administrator?{' '}
+                  <button
+                    type="button"
+                    onClick={() => setLocation('/admin/login')}
+                    className="font-medium text-[#2459A8]"
+                  >
+                    Sign in to Admin
+                  </button>
+                </p>
               </>
             ) : (
               <Button
                 type="button"
                 onClick={() => { window.location.href = "/api/login"; }}
-                className="h-12 w-full bg-white text-slate-900 hover:bg-slate-100"
+                className="h-12 w-full border border-slate-300 bg-white text-slate-900 hover:bg-slate-50"
               >
                 Continue with Google
               </Button>

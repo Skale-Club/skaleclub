@@ -177,7 +177,15 @@ export function XpotCheckIn() {
           <MapPinned className="mr-2 h-4 w-4" />
           Use Current Location
         </Button>
-        {geoState.error ? <div className="rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white/60">{geoState.error}</div> : geoState.lat && geoState.lng ? <div className="rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white/60">GPS locked at {geoState.lat.toFixed(5)}, {geoState.lng.toFixed(5)} (accuracy {geoState.accuracy || "?"}m)</div> : null}
+        {geoState.error ? (
+          <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/10 p-3 text-sm text-yellow-200/80">
+            GPS unavailable: {geoState.error}. You can still check in — the visit will be flagged for review.
+          </div>
+        ) : geoState.lat && geoState.lng ? (
+          <div className="rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white/60">
+            GPS locked · {geoState.accuracy ? `accuracy ${geoState.accuracy}m` : "accuracy unknown"}
+          </div>
+        ) : null}
         {!activeVisit ? (
           <>
             {selectedAccount ? (
@@ -259,9 +267,10 @@ export function XpotCheckIn() {
               </Button>
             </div>
             <ConfirmSlider
-              label="SLIDE TO CHECK OUT"
-              helperText="Slide right to complete · Slide left to cancel visit"
-              loading={checkOutMutation.isPending || cancelVisitMutation.isPending}
+              label={uploadAudioMutation.isPending ? "UPLOAD IN PROGRESS..." : "SLIDE TO CHECK OUT"}
+              helperText={uploadAudioMutation.isPending ? "Wait for audio upload to finish before checking out." : "Slide right to complete · Slide left to cancel visit"}
+              loading={checkOutMutation.isPending || cancelVisitMutation.isPending || uploadAudioMutation.isPending}
+              disabled={uploadAudioMutation.isPending}
               onConfirm={() => checkOutMutation.mutate(undefined as any)}
               onCancel={() => cancelVisitMutation.mutate(undefined as any)}
               cancelAccentClassName="bg-red-500/30"

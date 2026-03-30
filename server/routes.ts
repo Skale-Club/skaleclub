@@ -18,6 +18,8 @@ import {
   getRuntimeOpenAiKey,
   getRuntimeGeminiKey,
   getRuntimeOpenRouterKey,
+  setRuntimeGroqKey,
+  getRuntimeGroqKey,
 } from "./lib/ai-provider.js";
 import { insertCompanySettingsSchema, insertFaqSchema, insertIntegrationSettingsSchema, insertBlogPostSchema, insertChatSettingsSchema, insertChatIntegrationsSchema, insertPortfolioServiceSchema, formLeadProgressSchema } from "#shared/schema.js";
 import type { LeadClassification, LeadStatus } from "#shared/schema.js";
@@ -211,6 +213,7 @@ export async function registerRoutes(
   let runtimeOpenAiKey = process.env.OPENAI_API_KEY || "";
   let runtimeGeminiKey = process.env.GEMINI_API_KEY || "";
   let runtimeOpenRouterKey = process.env.OPENROUTER_API_KEY || "";
+  let runtimeGroqKey = "";
   let openRouterModelsCache: { expiresAt: number; models: OpenRouterModelItem[] } | null = null;
 
   // Initialize runtime keys in the ai-provider module
@@ -2068,6 +2071,98 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
         count: OPENROUTER_MODEL_FALLBACKS.length,
         warning: (err as Error).message,
       });
+    }
+  });
+
+  // ===============================
+  // Groq Integration Routes (audio transcription)
+  // ===============================
+
+  app.get('/api/integrations/groq', requireAdmin, async (_req, res) => {
+    try {
+      const integration = await storage.getChatIntegration('groq');
+      res.json({
+        provider: 'groq',
+        enabled: integration?.enabled || false,
+        hasKey: !!(getRuntimeGroqKey() || runtimeGroqKey || integration?.apiKey),
+      });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.put('/api/integrations/groq', requireAdmin, async (req, res) => {
+    try {
+      const existing = await storage.getChatIntegration('groq');
+      const bodySchema = z.object({ apiKey: z.string().min(10).optional(), enabled: z.boolean().optional() });
+      const payload = bodySchema.parse(req.body);
+      const providedKey = payload.apiKey && payload.apiKey !== '********' ? payload.apiKey : undefined;
+      const keyToPersist = providedKey ?? existing?.apiKey ?? getRuntimeGroqKey() ?? runtimeGroqKey;
+
+      if (providedKey) {
+        runtimeGroqKey = providedKey;
+        setRuntimeGroqKey(providedKey);
+      }
+
+      const willEnable = payload.enabled ?? false;
+      if (willEnable && !keyToPersist) {
+        return res.status(400).json({ message: 'Provide a valid API key and test it before enabling.' });
+      }
+
+      const updated = await storage.upsertChatIntegration({
+        provider: 'groq',
+        enabled: willEnable,
+        model: 'whisper-large-v3-turbo',
+        apiKey: keyToPersist,
+      });
+
+      res.json({ ...updated, hasKey: !!keyToPersist, apiKey: undefined });
+    } catch (err: any) {
+      res.status(500).json({ message: err?.message || 'Failed to save Groq settings' });
+    }
+  });
+
+  app.post('/api/integrations/groq/test', requireAdmin, async (req, res) => {
+    try {
+      const bodySchema = z.object({ apiKey: z.string().min(10).optional() });
+      const { apiKey } = bodySchema.parse(req.body);
+      const existing = await storage.getChatIntegration('groq');
+      const keyToUse =
+        (apiKey && apiKey !== '********' ? apiKey : undefined) ||
+        getRuntimeGroqKey() ||
+        runtimeGroqKey ||
+        existing?.apiKey;
+
+      if (!keyToUse) {
+        return res.status(400).json({ success: false, message: 'API key is required' });
+      }
+
+      try {
+        const Groq = (await import('groq-sdk')).default;
+        const groq = new Groq({ apiKey: keyToUse });
+        await groq.chat.completions.create({
+          model: 'llama-3.1-8b-instant',
+          messages: [{ role: 'user', content: 'pong' }],
+          max_tokens: 1,
+        });
+      } catch (err: any) {
+        const msg = err?.message || 'Failed to connect to Groq';
+        const status = err?.status || err?.response?.status;
+        return res.status(500).json({ success: false, message: status ? `Groq error (${status}): ${msg}` : msg });
+      }
+
+      runtimeGroqKey = keyToUse;
+      setRuntimeGroqKey(keyToUse);
+      await storage.upsertChatIntegration({
+        provider: 'groq',
+        enabled: existing?.enabled ?? false,
+        model: 'whisper-large-v3-turbo',
+        apiKey: keyToUse,
+      });
+
+      res.json({ success: true, message: 'Connection successful' });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err?.message || 'Failed to test Groq connection' });
     }
   });
 

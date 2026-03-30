@@ -787,9 +787,9 @@ export function registerXpotRoutes(app: Express) {
       const buffer = Buffer.from(base64Data, "base64");
       const filename = `visit_${visitId}_${Date.now()}.webm`;
 
-      if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+      if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
         const { createClient } = await import("@supabase/supabase-js");
-        const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+        const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
         const path = `audio/${actor!.rep.id}/${filename}`;
         const { error: uploadError } = await supabase.storage.from("uploads").upload(path, buffer, {
           contentType: "audio/webm",
@@ -802,24 +802,34 @@ export function registerXpotRoutes(app: Express) {
         return res.status(503).json({ message: "Storage not configured" });
       }
 
-      const existingNote = await storage.getSalesVisitNote(visitId);
-      if (existingNote) {
-        const note = await storage.upsertSalesVisitNote({
-          visitId,
-          createdByRepId: actor!.rep.id,
-          audioUrl,
-          audioDurationSeconds: durationSeconds || null,
-        });
-        return res.json(note);
-      } else {
-        const note = await storage.upsertSalesVisitNote({
-          visitId,
-          createdByRepId: actor!.rep.id,
-          audioUrl,
-          audioDurationSeconds: durationSeconds || null,
-        });
-        return res.json(note);
+      // Transcribe with Groq Whisper (best-effort — does not block save on failure)
+      let audioTranscription: string | null = null;
+      const groqIntegration = await storage.getChatIntegration("groq");
+      const groqApiKey = groqIntegration?.apiKey;
+      if (groqApiKey) {
+        try {
+          const Groq = (await import("groq-sdk")).default;
+          const groq = new Groq({ apiKey: groqApiKey });
+          const file = new File([buffer], filename, { type: "audio/webm" });
+          const transcription = await groq.audio.transcriptions.create({
+            file,
+            model: "whisper-large-v3-turbo",
+            response_format: "text",
+          });
+          audioTranscription = (transcription as unknown as string).trim() || null;
+        } catch (transcriptionError: any) {
+          console.error("Groq transcription error:", transcriptionError.message);
+        }
       }
+
+      const note = await storage.upsertSalesVisitNote({
+        visitId,
+        createdByRepId: actor!.rep.id,
+        audioUrl,
+        audioDurationSeconds: durationSeconds || null,
+        ...(audioTranscription !== null && { audioTranscription }),
+      });
+      return res.json(note);
     } catch (error: any) {
       console.error("Audio upload error:", error);
       res.status(500).json({ message: error.message || "Failed to upload audio" });

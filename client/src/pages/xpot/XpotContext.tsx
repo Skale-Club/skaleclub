@@ -294,6 +294,7 @@ export function XpotAppProvider({ children }: { children: ReactNode }) {
 
   const checkInMutation = useMutation({
     mutationFn: async (input: { accountId: number; lat?: number; lng?: number; gpsAccuracyMeters?: number | null }) => {
+      if (!isOnline) throw new Error("You are offline. Please check your connection.");
       checkingInRef.current = true;
       const response = await apiRequest("POST", "/api/xpot/visits/check-in", input);
       return response.json();
@@ -311,7 +312,9 @@ export function XpotAppProvider({ children }: { children: ReactNode }) {
 
   const checkOutMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/xpot/visits/${activeVisit?.id}/check-out`, {
+      if (!isOnline) throw new Error("You are offline. Please check your connection.");
+      if (!activeVisit?.id) throw new Error("No active visit to check out.");
+      const response = await apiRequest("POST", `/api/xpot/visits/${activeVisit.id}/check-out`, {
         lat: geoState.lat,
         lng: geoState.lng,
       });
@@ -328,7 +331,9 @@ export function XpotAppProvider({ children }: { children: ReactNode }) {
 
   const cancelVisitMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/xpot/visits/${activeVisit?.id}/cancel`);
+      if (!isOnline) throw new Error("You are offline. Please check your connection.");
+      if (!activeVisit?.id) throw new Error("No active visit to cancel.");
+      const response = await apiRequest("POST", `/api/xpot/visits/${activeVisit.id}/cancel`);
       return response.json();
     },
     onSuccess: async () => {
@@ -416,7 +421,8 @@ export function XpotAppProvider({ children }: { children: ReactNode }) {
 
   const saveNoteMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("PATCH", `/api/xpot/visits/${activeVisit?.id}/note`, visitNoteForm);
+      if (!activeVisit?.id) throw new Error("No active visit to save note for.");
+      const response = await apiRequest("PATCH", `/api/xpot/visits/${activeVisit.id}/note`, visitNoteForm);
       return response.json();
     },
     onSuccess: async () => {
@@ -519,6 +525,7 @@ export function XpotAppProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    queryClient.clear();
     setLocation("/xpot/login");
   };
 

@@ -9,6 +9,7 @@ export type AIProvider = "openai" | "gemini" | "openrouter";
 let runtimeOpenAiKey: string | undefined;
 let runtimeGeminiKey: string | undefined;
 let runtimeOpenRouterKey: string | undefined;
+let runtimeGroqKey: string | undefined;
 
 /**
  * Set OpenAI API key in runtime cache
@@ -56,6 +57,22 @@ export function getRuntimeGeminiKey(): string | undefined {
  */
 export function getRuntimeOpenRouterKey(): string | undefined {
   return runtimeOpenRouterKey;
+}
+
+/**
+ * Set Groq API key in runtime cache
+ * @param key - Groq API key
+ */
+export function setRuntimeGroqKey(key: string) {
+  runtimeGroqKey = key;
+}
+
+/**
+ * Get runtime Groq key (used for audio transcription)
+ * @returns Current runtime Groq key
+ */
+export function getRuntimeGroqKey(): string | undefined {
+  return runtimeGroqKey;
 }
 
 /**

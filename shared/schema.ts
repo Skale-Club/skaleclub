@@ -829,6 +829,7 @@ export const salesVisitNotes = pgTable("sales_visit_notes", {
   followUpRequired: boolean("follow_up_required").notNull().default(false),
   audioUrl: text("audio_url"),
   audioDurationSeconds: integer("audio_duration_seconds"),
+  audioTranscription: text("audio_transcription"),
   createdByRepId: integer("created_by_rep_id").references(() => salesReps.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
