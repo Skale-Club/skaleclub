@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Loader2, LogOut, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,10 @@ function XpotAppShell() {
     syncMutation,
     setLocation,
   } = useXpotApp();
+
+  useEffect(() => {
+    document.title = "Xpot";
+  }, []);
 
   if (!me) {
     return (
