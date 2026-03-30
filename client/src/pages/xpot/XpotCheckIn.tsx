@@ -1,4 +1,5 @@
-import { Building2, Loader2, MapPinned, Plus, Search, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Building2, Loader2, MapPinned, Plus, Search, Timer, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +43,27 @@ export function XpotCheckIn() {
     geoState,
     loadCurrentLocation,
   } = useXpotApp();
+
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!activeVisit?.checkedInAt) {
+      setElapsedSeconds(0);
+      return;
+    }
+    const checkedInAt = new Date(activeVisit.checkedInAt).getTime();
+    const tick = () => setElapsedSeconds(Math.max(0, Math.floor((Date.now() - checkedInAt) / 1000)));
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [activeVisit?.checkedInAt]);
+
+  const elapsedHours = Math.floor(elapsedSeconds / 3600);
+  const elapsedMins = Math.floor((elapsedSeconds % 3600) / 60);
+  const elapsedSecs = elapsedSeconds % 60;
+  const elapsedDisplay = elapsedHours > 0
+    ? `${elapsedHours}:${String(elapsedMins).padStart(2, "0")}:${String(elapsedSecs).padStart(2, "0")}`
+    : `${elapsedMins}:${String(elapsedSecs).padStart(2, "0")}`;
 
   return (
     <Card className="border-white/10 bg-white/5 text-white">
@@ -182,12 +204,14 @@ export function XpotCheckIn() {
           </>
         ) : (
           <div className="space-y-4 rounded-2xl border border-primary/20 bg-primary/10 p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="text-xs uppercase tracking-[0.2em] text-primary/70">Active Visit</div>
-                <div className="mt-1 text-xl font-semibold">{activeVisit.account?.name || `Account #${activeVisit.accountId}`}</div>
+            <div className="flex flex-col items-center gap-2 py-2">
+              <div className="flex items-center gap-2 text-primary/70">
+                <Timer className="h-4 w-4" />
+                <span className="text-xs uppercase tracking-[0.2em]">Visit Timer</span>
               </div>
-              <Badge className="bg-primary text-black">{activeVisit.validationStatus}</Badge>
+              <div className="text-4xl font-mono font-bold tracking-wider text-white tabular-nums">{elapsedDisplay}</div>
+              <div className="text-base font-semibold text-white">{activeVisit.account?.name || `Account #${activeVisit.accountId}`}</div>
+              <Badge className="bg-primary text-black text-[10px]">{activeVisit.validationStatus}</Badge>
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm text-white/65">
               <div><div className="text-white/40">Check-in</div><div>{formatDateTime(activeVisit.checkedInAt)}</div></div>
