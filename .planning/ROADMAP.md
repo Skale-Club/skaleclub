@@ -32,7 +32,7 @@ Plans:
 - [ ] 01-01-PLAN.md — Fix error middleware crash bug, add async error catching, add ZodError handling
 
 ### Phase 2: Route File Splitting
-**Goal**: Replace the single 1,042-line `xpot.ts` with 10 focused domain router files while keeping all 33 routes working identically
+**Goal**: Replace the single 1,042-line `xpot.ts` with 10 focused domain router files while keeping all 28 routes working identically
 **Depends on**: Phase 1
 **Requirements**: SPLIT-01, SPLIT-02, SPLIT-03, SPLIT-04, SPLIT-05
 **Success Criteria** (what must be TRUE):
@@ -40,7 +40,7 @@ Plans:
   2. Shared helpers (`getDistanceMeters`, `syncAccountToGhl`) are extracted into a shared utility module
   3. Each of the 10 domains (auth, dashboard, metrics, accounts, visits, opportunities, tasks, sync, place-search, admin) has its own route file under 200 lines
   4. `server/routes.ts` imports from a single `xpot/index.ts` barrel — no other changes needed
-  5. All 33 API endpoints respond identically (same URLs, same payloads, same behavior) verified via manual smoke test
+  5. All 28 API endpoints respond identically (same URLs, same payloads, same behavior) verified via manual smoke test
 **Plans**: 3 plans in 3 waves
 Plans:
 - [ ] 02-01-PLAN.md — Extract shared middleware and helpers (wave 1)

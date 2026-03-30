@@ -20,7 +20,7 @@ Requirements for technical debt cleanup. Each maps to a roadmap phase.
 - [ ] **SPLIT-02**: Extract shared helpers (`getDistanceMeters`, `syncAccountToGhl`) into `server/routes/xpot/helpers.ts`
 - [ ] **SPLIT-03**: Split `server/routes/xpot.ts` into 10 domain routers (auth, dashboard, metrics, accounts, visits, opportunities, tasks, sync, place-search, admin)
 - [ ] **SPLIT-04**: Update `server/routes.ts` import to use new `server/routes/xpot/index.ts` barrel
-- [ ] **SPLIT-05**: Verify all 33 routes respond identically (manual API smoke test)
+- [ ] **SPLIT-05**: Verify all 28 routes respond identically (manual API smoke test)
 
 ### Schema Organization
 
