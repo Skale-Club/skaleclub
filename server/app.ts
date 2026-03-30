@@ -3,8 +3,6 @@ import { registerRoutes } from "./routes.js";
 import path from "path";
 import { createServer, type Server } from "http";
 
-const isReplit = !!process.env.REPL_ID;
-
 declare module "http" {
   interface IncomingMessage {
     rawBody: unknown;
@@ -54,15 +52,8 @@ export async function createApp(): Promise<{ app: express.Express; httpServer: S
     next();
   });
 
-  // Setup auth based on environment
-  if (isReplit) {
-    const { setupAuth, registerAuthRoutes } = await import("./replit_integrations/auth/index.js");
-    await setupAuth(app);
-    registerAuthRoutes(app);
-  } else {
-    const { setupSupabaseAuth } = await import("./auth/supabaseAuth.js");
-    await setupSupabaseAuth(app);
-  }
+  const { setupSupabaseAuth } = await import("./auth/supabaseAuth.js");
+  await setupSupabaseAuth(app);
 
   const httpServer = createServer(app);
   await registerRoutes(httpServer, app);

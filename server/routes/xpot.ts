@@ -15,8 +15,6 @@ import {
 } from "#shared/xpot.js";
 import { getGHLPipelines, getOrCreateGHLContact, createGHLOpportunity, updateGHLOpportunity, createGHLTask } from "../integrations/ghl.js";
 
-const isReplit = !!process.env.REPL_ID;
-
 type SessionUser = {
   userId: string;
   email: string | null;
@@ -39,21 +37,6 @@ function getDistanceMeters(lat1: number, lng1: number, lat2: number, lng2: numbe
 }
 
 async function getCurrentSessionUser(req: Request): Promise<SessionUser | null> {
-  if (isReplit) {
-    const user = (req as any).user;
-    if (!req.isAuthenticated || !req.isAuthenticated() || !user?.claims?.sub) {
-      return null;
-    }
-
-    return {
-      userId: user.claims.sub,
-      email: typeof user.claims.email === "string" ? user.claims.email : null,
-      firstName: typeof user.claims.first_name === "string" ? user.claims.first_name : null,
-      lastName: typeof user.claims.last_name === "string" ? user.claims.last_name : null,
-      isAdmin: false,
-    };
-  }
-
   const sess = req.session as any;
   if (!sess?.userId) {
     return null;

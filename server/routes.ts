@@ -32,8 +32,6 @@ import { db, pool } from "./db.js";
 import { users, systemHeartbeats, translations } from "#shared/schema.js";
 import { and, eq, inArray, sql } from "drizzle-orm";
 
-const isReplit = !!process.env.REPL_ID;
-
 function isAuthorizedCronRequest(req: Request): boolean {
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = req.headers.authorization;
@@ -54,39 +52,20 @@ function isAuthorizedCronRequest(req: Request): boolean {
   return hasVercelCronHeader;
 }
 
-// Admin authentication middleware - environment-aware
+// Admin authentication middleware
 async function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  if (isReplit) {
-    // Replit Auth: check Passport session + isAdmin in DB
-    const user = (req as any).user;
-    if (!req.isAuthenticated || !req.isAuthenticated() || !user?.claims?.sub) {
-      return res.status(401).json({ message: 'Authentication required' });
+  const sess = req.session as any;
+  if (!sess?.userId) {
+    return res.status(401).json({ message: 'Authentication required' });
+  }
+  try {
+    const [dbUser] = await db.select().from(users).where(eq(users.id, sess.userId));
+    if (!dbUser?.isAdmin) {
+      return res.status(403).json({ message: 'Admin access required' });
     }
-    try {
-      const { authStorage } = await import("./replit_integrations/auth/storage.js");
-      const dbUser = await authStorage.getUser(user.claims.sub);
-      if (!dbUser?.isAdmin) {
-        return res.status(403).json({ message: 'Admin access required' });
-      }
-      next();
-    } catch (error) {
-      return res.status(500).json({ message: 'Failed to verify admin status' });
-    }
-  } else {
-    // Supabase Auth: check express-session
-    const sess = req.session as any;
-    if (!sess?.userId) {
-      return res.status(401).json({ message: 'Authentication required' });
-    }
-    try {
-      const [dbUser] = await db.select().from(users).where(eq(users.id, sess.userId));
-      if (!dbUser?.isAdmin) {
-        return res.status(403).json({ message: 'Admin access required' });
-      }
-      next();
-    } catch (error) {
-      return res.status(500).json({ message: 'Failed to verify admin status' });
-    }
+    next();
+  } catch (error) {
+    return res.status(500).json({ message: 'Failed to verify admin status' });
   }
 }
 
@@ -228,31 +207,6 @@ export async function registerRoutes(
 
 
 
-  // Check admin session status - environment-aware
-  // On Vercel (Supabase Auth), this is handled by server/auth/supabaseAuth.ts
-  // On Replit, we handle it here with Replit Auth
-  if (isReplit) {
-    app.get('/api/admin/session', async (req, res) => {
-      const user = (req as any).user;
-
-      if (!req.isAuthenticated || !req.isAuthenticated() || !user?.claims?.sub) {
-        return res.json({ isAdmin: false, email: null, firstName: null, lastName: null });
-      }
-
-      try {
-        const { authStorage } = await import("./replit_integrations/auth/storage.js");
-        const dbUser = await authStorage.getUser(user.claims.sub);
-        res.json({
-          isAdmin: dbUser?.isAdmin || false,
-          email: dbUser?.email || null,
-          firstName: dbUser?.firstName || null,
-          lastName: dbUser?.lastName || null
-        });
-      } catch (error) {
-        res.json({ isAdmin: false, email: null, firstName: null, lastName: null });
-      }
-    });
-  }
 
   let runtimeOpenAiKey = process.env.OPENAI_API_KEY || "";
   let runtimeGeminiKey = process.env.GEMINI_API_KEY || "";
@@ -3064,13 +3018,10 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
         localUser = updated;
       } else {
         // User exists in Supabase Auth but not in local DB — create local record
-        let email: string | undefined;
-        if (!isReplit) {
-          const { getSupabaseAdmin } = await import("./lib/supabase.js");
-          const supabase = getSupabaseAdmin();
-          const { data: authUser } = await supabase.auth.admin.getUserById(userId);
-          email = authUser?.user?.email ?? undefined;
-        }
+        const { getSupabaseAdmin } = await import("./lib/supabase.js");
+        const supabase = getSupabaseAdmin();
+        const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+        const email = authUser?.user?.email ?? undefined;
 
         const [newUser] = await db
           .insert(users)
@@ -3087,25 +3038,23 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
       }
 
       // Also update Supabase Auth user_metadata so GET /api/users picks up changes
-      if (!isReplit) {
-        try {
-          const { getSupabaseAdmin } = await import("./lib/supabase.js");
-          const supabase = getSupabaseAdmin();
+      try {
+        const { getSupabaseAdmin } = await import("./lib/supabase.js");
+        const supabase = getSupabaseAdmin();
 
-          const metadata: Record<string, unknown> = {};
-          if (updates.firstName !== undefined) metadata.first_name = updates.firstName;
-          if (updates.lastName !== undefined) metadata.last_name = updates.lastName;
-          if (updates.profileImageUrl !== undefined) metadata.avatar_url = updates.profileImageUrl;
+        const metadata: Record<string, unknown> = {};
+        if (updates.firstName !== undefined) metadata.first_name = updates.firstName;
+        if (updates.lastName !== undefined) metadata.last_name = updates.lastName;
+        if (updates.profileImageUrl !== undefined) metadata.avatar_url = updates.profileImageUrl;
 
-          if (Object.keys(metadata).length > 0) {
-            await supabase.auth.admin.updateUserById(userId, {
-              user_metadata: metadata,
-            });
-          }
-        } catch (metaErr) {
-          console.error('[PATCH /api/users/:id] Failed to update Supabase metadata:', metaErr);
-          // Non-fatal — local DB was already updated
+        if (Object.keys(metadata).length > 0) {
+          await supabase.auth.admin.updateUserById(userId, {
+            user_metadata: metadata,
+          });
         }
+      } catch (metaErr) {
+        console.error('[PATCH /api/users/:id] Failed to update Supabase metadata:', metaErr);
+        // Non-fatal — local DB was already updated
       }
 
       // Return merged data matching GET /api/users shape

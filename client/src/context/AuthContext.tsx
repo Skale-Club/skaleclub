@@ -23,9 +23,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Detect if we're on Replit (Replit sets REPL_ID which is exposed via the server)
-// We detect it by trying to fetch the supabase-config endpoint:
-// if it returns valid config, we're in Supabase mode; otherwise Replit mode
 let _isSupabaseAuth: boolean | null = null;
 
 function getCanonicalOrigin() {

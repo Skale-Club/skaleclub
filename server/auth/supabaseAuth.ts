@@ -111,7 +111,7 @@ export async function setupSupabaseAuth(app: Express) {
     });
   });
 
-  // Session check endpoint (matches the same interface as Replit auth)
+  // Session check endpoint
   app.get("/api/admin/session", async (req: Request, res: Response) => {
     const sess = req.session as any;
 
@@ -132,7 +132,7 @@ export async function setupSupabaseAuth(app: Express) {
     }
   });
 
-  // Get current authenticated user (mirrors Replit auth's /api/auth/user)
+  // Get current authenticated user
   app.get("/api/auth/user", async (req: Request, res: Response) => {
     const sess = req.session as any;
 
@@ -164,7 +164,7 @@ export async function setupSupabaseAuth(app: Express) {
     res.redirect("/admin/login");
   });
 
-  // Logout via GET (mirrors Replit auth's /api/logout)
+  // Logout via GET
   app.get("/api/logout", (req: Request, res: Response) => {
     req.session.destroy((err) => {
       if (err) console.error("Session destroy error:", err);
