@@ -1,6 +1,6 @@
 import type { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAdminAuth } from '@/context/AuthContext';
 import { useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
@@ -32,18 +32,27 @@ const menuItems = SIDEBAR_MENU_ITEMS;
 function AdminContent() {
   const { toast } = useToast();
   const { isAdmin, email, loading, signOut } = useAdminAuth();
-  const [, setLocation] = useLocation();
-  // Persist activeSection in localStorage
-  const getInitialSection = (): AdminSection => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('admin-active-section');
-      if (stored && menuItems.some(item => item.id === stored)) {
-        return stored as AdminSection;
-      }
-    }
-    return 'dashboard';
-  };
-  const [activeSection, setActiveSection] = useState<AdminSection>(getInitialSection());
+  const [location, setLocation] = useLocation();
+  const activeSection = useMemo((): AdminSection => {
+    const segment = location.replace(/^\/admin\/?/, '').split('/')[0] || 'dashboard';
+    const slugMap: Record<string, AdminSection> = {
+      dashboard: 'dashboard',
+      company: 'company',
+      website: 'website',
+      portfolio: 'portfolio',
+      leads: 'leads',
+      chat: 'chat',
+      faqs: 'faqs',
+      users: 'users',
+      blog: 'blog',
+      seo: 'seo',
+      integrations: 'integrations',
+      links: 'links',
+      vcards: 'vcards',
+      'field-sales': 'fieldSales',
+    };
+    return slugMap[segment] || 'dashboard';
+  }, [location]);
   const [blogResetSignal, setBlogResetSignal] = useState(0);
   const [sectionsOrder, setSectionsOrder] = useState<AdminSection[]>(menuItems.map(item => item.id));
 
@@ -72,20 +81,28 @@ function AdminContent() {
       if (activeSection === 'blog') {
         setBlogResetSignal(prev => prev + 1);
       } else {
-        setActiveSection(section);
-        localStorage.setItem('admin-active-section', section);
+        setLocation('/admin/blog');
       }
       return;
     }
-    setActiveSection(section);
-    localStorage.setItem('admin-active-section', section);
-  }, [activeSection]);
-  // Always sync localStorage when section changes (for programmatic changes)
-  useEffect(() => {
-    if (activeSection) {
-      localStorage.setItem('admin-active-section', activeSection);
-    }
-  }, [activeSection]);
+    const slugMap: Record<AdminSection, string> = {
+      dashboard: 'dashboard',
+      company: 'company',
+      website: 'website',
+      portfolio: 'portfolio',
+      leads: 'leads',
+      chat: 'chat',
+      faqs: 'faqs',
+      users: 'users',
+      blog: 'blog',
+      seo: 'seo',
+      integrations: 'integrations',
+      links: 'links',
+      vcards: 'vcards',
+      fieldSales: 'field-sales',
+    };
+    setLocation(`/admin/${slugMap[section]}`);
+  }, [activeSection, setLocation]);
 
   const handleSidebarDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
