@@ -1323,7 +1323,7 @@ export function IntegrationsSection() {
               </div>
               <div>
                 <CardTitle className="text-lg">Google Places API</CardTitle>
-                <p className="text-sm text-muted-foreground">Enable business search in Field Sales app</p>
+                <p className="text-sm text-muted-foreground">Enable business search in Xpot app</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -1387,7 +1387,7 @@ export function IntegrationsSection() {
                 <span className="font-medium text-sm">Integration Active</span>
               </div>
               <p className="text-xs text-green-600 dark:text-green-500 mt-1">
-                Field Sales app can now search businesses using Google Places
+                Xpot app can now search businesses using Google Places
               </p>
             </div>
           )}

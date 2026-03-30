@@ -184,7 +184,7 @@ export interface IStorage {
   updatePortfolioService(id: number, service: Partial<InsertPortfolioService>): Promise<PortfolioService>;
   deletePortfolioService(id: number): Promise<void>;
 
-  // Field Sales
+  // Xpot (Field Sales)
   getSalesAppSettings(): Promise<SalesAppSettings>;
   updateSalesAppSettings(settings: Partial<InsertSalesAppSettings>): Promise<SalesAppSettings>;
   listSalesReps(): Promise<SalesRep[]>;

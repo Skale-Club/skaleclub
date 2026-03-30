@@ -42,5 +42,5 @@ export const SIDEBAR_MENU_ITEMS: SidebarMenuItem[] = [
   { id: 'integrations', title: 'Integrations', icon: Puzzle },
   { id: 'links', title: 'Links Page', icon: Link },
   { id: 'vcards', title: 'VCards', icon: Smartphone },
-  { id: 'fieldSales', title: 'Field Sales', icon: MapPinned },
+  { id: 'fieldSales', title: 'Xpot', icon: MapPinned },
 ];
