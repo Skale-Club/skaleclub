@@ -13,7 +13,7 @@ export const xpotCheckInSchema = z.object({
   locationId: z.number().int().positive().optional(),
   lat: z.number().min(-90).max(90).optional(),
   lng: z.number().min(-180).max(180).optional(),
-  gpsAccuracyMeters: z.number().int().nonnegative().optional(),
+  gpsAccuracyMeters: z.number().int().nonnegative().nullable().optional(),
   manualOverrideReason: z.string().max(500).optional(),
 });
 

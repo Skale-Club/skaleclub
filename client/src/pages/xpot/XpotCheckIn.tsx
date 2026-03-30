@@ -38,6 +38,7 @@ export function XpotCheckIn() {
     uploadAudioMutation,
     saveNoteMutation,
     checkOutMutation,
+    cancelVisitMutation,
     geoState,
     loadCurrentLocation,
   } = useXpotApp();
@@ -235,9 +236,11 @@ export function XpotCheckIn() {
             </div>
             <ConfirmSlider
               label="SLIDE TO CHECK OUT"
-              helperText="Complete the visit and close the timer."
-              loading={checkOutMutation.isPending}
+              helperText="Slide right to complete · Slide left to cancel visit"
+              loading={checkOutMutation.isPending || cancelVisitMutation.isPending}
               onConfirm={() => checkOutMutation.mutate(undefined as any)}
+              onCancel={() => cancelVisitMutation.mutate(undefined as any)}
+              cancelAccentClassName="bg-red-500/30"
             />
           </div>
         )}

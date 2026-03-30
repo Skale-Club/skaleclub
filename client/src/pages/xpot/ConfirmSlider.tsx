@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as SliderPrimitive from "@radix-ui/react-slider";
-import { ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function ConfirmSlider({
@@ -9,33 +9,54 @@ export function ConfirmSlider({
   loading,
   disabled,
   onConfirm,
+  onCancel,
   accentClassName,
+  cancelAccentClassName,
 }: {
   label: string;
   helperText: string;
   loading?: boolean;
   disabled?: boolean;
   onConfirm: () => void;
+  onCancel?: () => void;
   accentClassName?: string;
+  cancelAccentClassName?: string;
 }) {
-  const [value, setValue] = useState([0]);
+  const hasCancel = Boolean(onCancel);
+  const startValue = hasCancel ? 50 : 0;
+  const [value, setValue] = useState([startValue]);
   const hasTriggeredRef = useRef(false);
+  const hasCancelledRef = useRef(false);
 
   useEffect(() => {
     if (!loading) {
       hasTriggeredRef.current = false;
-      setValue([0]);
+      hasCancelledRef.current = false;
+      setValue([startValue]);
     }
-  }, [loading, label]);
+  }, [loading, label, startValue]);
 
-  const progress = value[0] || 0;
+  const progress = value[0] ?? 0;
 
   return (
     <div className="space-y-2">
       <div className="relative rounded-full border border-[#1C53A3]/30 bg-[#0c1a2e] p-[5px]">
+        {hasCancel && (
+          <div
+            className={cn("absolute inset-y-0 left-0 rounded-full bg-red-500/30 transition-[width] duration-200", cancelAccentClassName)}
+            style={{ width: `${Math.max(0, 50 - progress)}%` }}
+          />
+        )}
         <div
-          className={cn("absolute inset-y-0 left-0 rounded-full bg-[#1C53A3]/30 transition-[width] duration-200", accentClassName)}
-          style={{ width: `${progress}%` }}
+          className={cn(
+            "absolute inset-y-0 rounded-full bg-[#1C53A3]/30 transition-[width] duration-200",
+            hasCancel ? "right-0" : "left-0",
+            accentClassName,
+          )}
+          style={{
+            width: hasCancel ? `${Math.max(0, progress - 50)}%` : `${progress}%`,
+            ...(hasCancel ? { right: 0 } : { left: 0 }),
+          }}
         />
         <div className="absolute inset-0 flex items-center justify-center px-16 text-center text-sm font-semibold tracking-[0.16em] text-white">
           {loading ? "PROCESSING..." : label}
@@ -51,10 +72,17 @@ export function ConfirmSlider({
               hasTriggeredRef.current = true;
               onConfirm();
             }
+            if (hasCancel && next[0] <= 4 && !hasCancelledRef.current && !disabled && !loading) {
+              hasCancelledRef.current = true;
+              onCancel!();
+            }
           }}
           onValueCommit={(next) => {
-            if (next[0] < 96) {
+            if (!hasCancel && next[0] < 96) {
               setValue([0]);
+            }
+            if (hasCancel && next[0] > 4 && next[0] < 96) {
+              setValue([50]);
             }
           }}
           className="relative flex h-[44px] w-full touch-none select-none items-center"

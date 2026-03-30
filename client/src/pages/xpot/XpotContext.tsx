@@ -70,6 +70,7 @@ export interface XpotAppContextValue {
   uploadAudioMutation: AnyMutation;
   saveNoteMutation: AnyMutation;
   checkOutMutation: AnyMutation;
+  cancelVisitMutation: AnyMutation;
 
   // Accounts tab
   accountLookupSearch: string;
@@ -322,6 +323,20 @@ export function XpotAppProvider({ children }: { children: ReactNode }) {
     },
     onError: (error: Error) => {
       toast({ title: "Check-out failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const cancelVisitMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/xpot/visits/${activeVisit?.id}/cancel`);
+      return response.json();
+    },
+    onSuccess: async () => {
+      toast({ title: "Visit cancelled" });
+      await invalidateXpotData();
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to cancel visit", description: error.message, variant: "destructive" });
     },
   });
 
@@ -675,6 +690,7 @@ export function XpotAppProvider({ children }: { children: ReactNode }) {
     uploadAudioMutation,
     saveNoteMutation,
     checkOutMutation,
+    cancelVisitMutation,
     accountLookupSearch,
     setAccountLookupSearch,
     accountForm,

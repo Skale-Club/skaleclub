@@ -740,6 +740,32 @@ export function registerXpotRoutes(app: Express) {
     res.json(updated);
   });
 
+  app.post("/api/xpot/visits/:id/cancel", requireXpotUser, async (req, res) => {
+    const actor = (req as any).xpotActor as Awaited<ReturnType<typeof ensureXpotRep>>;
+    const visitId = Number(req.params.id);
+    const visit = await storage.getSalesVisit(visitId);
+
+    if (!visit || visit.repId !== actor!.rep.id) {
+      return res.status(404).json({ message: "Visit not found" });
+    }
+
+    if (visit.status !== "in_progress") {
+      return res.status(400).json({ message: "Only in-progress visits can be cancelled" });
+    }
+
+    const checkedOutAt = new Date();
+    const checkedInAt = visit.checkedInAt ? new Date(visit.checkedInAt) : checkedOutAt;
+    const durationSeconds = Math.max(0, Math.round((checkedOutAt.getTime() - checkedInAt.getTime()) / 1000));
+
+    const updated = await storage.updateSalesVisit(visit.id, {
+      status: "cancelled",
+      checkedOutAt,
+      durationSeconds,
+    });
+
+    res.json(updated);
+  });
+
   app.patch("/api/xpot/visits/:id/note", requireXpotUser, async (req, res) => {
     const actor = (req as any).xpotActor as Awaited<ReturnType<typeof ensureXpotRep>>;
     const visitId = Number(req.params.id);
