@@ -2337,8 +2337,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
 
       res.json({
         ...settings,
-        apiKey: settings.apiKey ? '********' : '',
-        hasKey: !!settings.apiKey
+        authToken: settings.authToken ? '********' : ''
       });
     } catch (err) {
       if (err instanceof z.ZodError) {

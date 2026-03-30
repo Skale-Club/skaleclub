@@ -2,7 +2,7 @@ import { pgTable, text, serial, integer, timestamp, boolean, date, jsonb, uuid, 
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { DEFAULT_PAGE_SLUGS, type PageSlugs } from "./pageSlugs";
+import { DEFAULT_PAGE_SLUGS, type PageSlugs } from "./pageSlugs.js";
 
 // Auth models (inlined for drizzle-kit compatibility)
 export const sessions = pgTable(

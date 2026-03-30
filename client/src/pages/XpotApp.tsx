@@ -367,8 +367,8 @@ export default function XpotApp() {
 
   const activeTab = useMemo(() => {
     const section = pathname.split("/")[2];
-    if (!section) return "check-in";
-    return tabs.some((tab) => tab.id === section) ? section : "check-in";
+    if (!section) return "dashboard";
+    return tabs.some((tab) => tab.id === section) ? section : "dashboard";
   }, [pathname]);
 
   const xpotMeQuery = useQuery<XpotMeResponse>({
@@ -1275,7 +1275,7 @@ export default function XpotApp() {
                 <button
                   key={id}
                   type="button"
-                  onClick={() => setLocation(id === "check-in" ? "/xpot" : `/xpot/${id}`)}
+                  onClick={() => setLocation(id === "dashboard" ? "/xpot" : `/xpot/${id}`)}
                   className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] transition-colors ${isActive ? "bg-primary/15 text-primary" : "text-white/45 hover:text-white"}`}
                 >
                   <Icon className="h-4 w-4" />
