@@ -222,7 +222,7 @@ export function IntegrationsSection() {
   useEffect(() => {
     if (googlePlacesSettingsData) {
       setGooglePlacesSettings(googlePlacesSettingsData);
-      if (googlePlacesSettingsData.apiKey && googlePlacesSettingsData.apiKey !== MASKED_API_KEY) {
+      if (googlePlacesSettingsData.hasKey || googlePlacesSettingsData.apiKey) {
         setGooglePlacesTestResult('success');
         setGooglePlacesSettings(prev => ({ ...prev, hasKey: true }));
         setGooglePlacesApiKey(MASKED_API_KEY);

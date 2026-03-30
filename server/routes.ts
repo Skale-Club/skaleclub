@@ -2337,7 +2337,8 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
 
       res.json({
         ...settings,
-        authToken: settings.authToken ? '********' : ''
+        apiKey: settings.apiKey ? '********' : '',
+        hasKey: !!settings.apiKey
       });
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -2412,19 +2413,21 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
         return res.json({
           provider: 'google_places',
           apiKey: '',
-          isEnabled: false
-        });
-      }
-      res.json({
-        ...settings,
-        apiKey: settings.apiKey ? '********' : ''
-      });
-    } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
-    }
-  });
+          isEnabled: false,
+           hasKey: false
+         });
+       }
+       res.json({
+         ...settings,
+         apiKey: settings.apiKey ? '********' : '',
+         hasKey: !!settings.apiKey
+       });
+     } catch (err) {
+       res.status(500).json({ message: (err as Error).message });
+     }
+   });
 
-  // Save Google Places settings
+   // Save Google Places settings
   app.put('/api/integrations/google-places', requireAdmin, async (req, res) => {
     try {
       const { apiKey, isEnabled } = req.body;
