@@ -207,6 +207,14 @@ export function XpotAppProvider({ children }: { children: ReactNode }) {
     return visitsQuery.data?.find((visit) => visit.id === currentId) || xpotMeQuery.data?.activeVisit || null;
   }, [xpotMeQuery.data, visitsQuery.data]);
 
+  const checkingInRef = useRef(false);
+
+  const activeVisitStable = useMemo(() => {
+    if (activeVisit) return activeVisit;
+    if (checkingInRef.current) return xpotMeQuery.data?.activeVisit || null;
+    return null;
+  }, [activeVisit, xpotMeQuery.data?.activeVisit]);
+
   useEffect(() => {
     if (activeVisit?.note) {
       setVisitNoteForm({
@@ -284,20 +292,18 @@ export function XpotAppProvider({ children }: { children: ReactNode }) {
   });
 
   const checkInMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/xpot/visits/check-in", {
-        accountId: Number(selectedAccountId),
-        lat: geoState.lat,
-        lng: geoState.lng,
-        gpsAccuracyMeters: geoState.accuracy,
-      });
+    mutationFn: async (input: { accountId: number; lat?: number; lng?: number; gpsAccuracyMeters?: number | null }) => {
+      checkingInRef.current = true;
+      const response = await apiRequest("POST", "/api/xpot/visits/check-in", input);
       return response.json();
     },
     onSuccess: async () => {
       toast({ title: "Checked in successfully" });
       await invalidateXpotData();
+      setTimeout(() => { checkingInRef.current = false; }, 2000);
     },
     onError: (error: Error) => {
+      checkingInRef.current = false;
       toast({ title: "Check-in failed", description: error.message, variant: "destructive" });
     },
   });
@@ -641,7 +647,7 @@ export function XpotAppProvider({ children }: { children: ReactNode }) {
     pathname,
     setLocation,
     isOnline,
-    activeVisit,
+    activeVisit: activeVisitStable,
     accountsQuery,
     selectedAccountId,
     setSelectedAccountId,

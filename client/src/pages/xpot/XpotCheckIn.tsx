@@ -65,7 +65,10 @@ export function XpotCheckIn() {
             </button>
           )}
           {checkInDropdownOpen && !activeVisit && (
-            <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-y-auto rounded-xl border border-white/10 bg-[#0d1117] shadow-2xl">
+            <div
+              className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-y-auto rounded-xl border border-white/10 bg-[#0d1117] shadow-2xl"
+              onPointerDown={(e) => e.stopPropagation()}
+            >
               {checkInSearch.trim().length >= 2 && (
                 <button
                   type="button"
@@ -166,13 +169,15 @@ export function XpotCheckIn() {
               </div>
             ) : null}
 
-            <ConfirmSlider
-              label={selectedAccount ? "SLIDE TO CHECK IN" : "SELECT AN ACCOUNT FIRST"}
-              helperText={selectedAccount ? `Confirm visit start for ${selectedAccount.name}` : "Choose a local account or Google Place to enable check-in."}
-              loading={checkInMutation.isPending || createAccountMutation.isPending}
-              disabled={!selectedAccountId || createAccountMutation.isPending}
-              onConfirm={() => checkInMutation.mutate(undefined as any)}
-            />
+            <div className={checkInDropdownOpen ? "pointer-events-none" : ""}>
+              <ConfirmSlider
+                label={selectedAccount ? "SLIDE TO CHECK IN" : "SELECT AN ACCOUNT FIRST"}
+                helperText={selectedAccount ? `Confirm visit start for ${selectedAccount.name}` : "Choose a local account or Google Place to enable check-in."}
+                loading={checkInMutation.isPending || createAccountMutation.isPending}
+                disabled={!selectedAccountId || createAccountMutation.isPending}
+                onConfirm={() => checkInMutation.mutate({ accountId: Number(selectedAccountId), lat: geoState.lat, lng: geoState.lng, gpsAccuracyMeters: geoState.accuracy })}
+              />
+            </div>
           </>
         ) : (
           <div className="space-y-4 rounded-2xl border border-primary/20 bg-primary/10 p-4">
