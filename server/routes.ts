@@ -2458,10 +2458,10 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
   app.post('/api/integrations/google-places/test', requireAdmin, async (req, res) => {
     try {
       const { apiKey } = req.body;
+      const existingSettings = await storage.getIntegrationSettings('google_places');
 
       let keyToTest = apiKey;
       if (apiKey === '********' || !apiKey) {
-        const existingSettings = await storage.getIntegrationSettings('google_places');
         keyToTest = existingSettings?.apiKey;
       }
 
@@ -2491,6 +2491,21 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas par
         return res.status(response.status).json({
           success: false,
           message: `Google Places API error: ${response.status} - ${errorText}`
+        });
+      }
+
+      try {
+        await storage.upsertIntegrationSettings({
+          provider: 'google_places',
+          apiKey: keyToTest,
+          isEnabled: existingSettings?.isEnabled ?? false,
+          ...(existingSettings?.locationId ? { locationId: existingSettings.locationId } : {}),
+          ...(existingSettings?.calendarId ? { calendarId: existingSettings.calendarId } : {}),
+        });
+      } catch (saveErr) {
+        return res.status(500).json({
+          success: false,
+          message: `API key is valid but failed to save: ${(saveErr as Error).message}`
         });
       }
 
