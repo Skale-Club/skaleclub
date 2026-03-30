@@ -41,7 +41,11 @@ Plans:
   3. Each of the 10 domains (auth, dashboard, metrics, accounts, visits, opportunities, tasks, sync, place-search, admin) has its own route file under 200 lines
   4. `server/routes.ts` imports from a single `xpot/index.ts` barrel — no other changes needed
   5. All 33 API endpoints respond identically (same URLs, same payloads, same behavior) verified via manual smoke test
-**Plans**: TBD
+**Plans**: 3 plans in 3 waves
+Plans:
+- [ ] 02-01-PLAN.md — Extract shared middleware and helpers (wave 1)
+- [ ] 02-02-PLAN.md — Create 10 domain routers + index, delete old monolith (wave 2)
+- [ ] 02-03-PLAN.md — Update routes.ts import + smoke test verification (wave 3)
 
 ### Phase 3: Schema Organization
 **Goal**: Split the 1,000+ line `shared/schema.ts` into 6 domain-focused files while keeping all 64 import sites working unchanged
@@ -73,7 +77,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Error Handling Standardization | 1/1 | Complete | 2026-03-30 |
-| 2. Route File Splitting | 0/0 | Not started | - |
+| 2. Route File Splitting | 0/3 | Ready | - |
 | 3. Schema Organization | 0/0 | Not started | - |
 | 4. Context Refactoring | 0/0 | Not started | - |
 
