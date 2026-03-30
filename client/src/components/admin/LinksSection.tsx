@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 
 const LINKS_PAGE_DEFAULTS: LinksPageConfig = {
-  avatarUrl: '/attached_assets/ghl-logo.webp',
+  avatarUrl: '/ghl-logo.webp',
   title: 'Skale Club',
   description: 'Data-Driven Marketing & Scalable Growth Solutions',
   links: [],
@@ -167,7 +167,7 @@ export function LinksSection() {
                   value={config.avatarUrl}
                   onChange={(e) => setConfig({ ...config, avatarUrl: e.target.value })}
                   onBlur={() => saveSettings(config, 'avatarUrl')}
-                  placeholder="/attached_assets/logo.png"
+                  placeholder="/logo.png"
                 />
               </div>
               <div className="space-y-2">

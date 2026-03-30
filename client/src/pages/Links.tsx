@@ -47,7 +47,7 @@ export default function Links() {
   }
 
   const config = settings?.linksPageConfig || {
-    avatarUrl: "/attached_assets/ghl-logo.webp",
+    avatarUrl: "/ghl-logo.webp",
     title: "Skale Club",
     description: "Data-Driven Marketing & Scalable Growth Solutions",
     links: [

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Bot, Check, ChevronDown, LayoutGrid, Loader2 } from 'lucide-react';
 import { SiFacebook, SiGoogle, SiGoogleanalytics, SiGoogletagmanager, SiOpenai } from 'react-icons/si';
-import ghlLogo from '@assets/ghl-logo.webp';
+import ghlLogo from '@/assets/ghl-logo.webp';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
