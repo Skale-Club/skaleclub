@@ -38,6 +38,10 @@
     "api/index.ts": {
       "maxDuration": 60,
       "includeFiles": "server/**,shared/**,drizzle.config.ts,migrations/**"
+    },
+    "api/xpot.ts": {
+      "maxDuration": 30,
+      "includeFiles": "server/**,shared/**,drizzle.config.ts,migrations/**"
     }
   },
   "redirects": [
@@ -76,6 +80,10 @@
     }
   ],
   "rewrites": [
+    {
+      "source": "/api/xpot/(.*)",
+      "destination": "/api/xpot"
+    },
     {
       "source": "/api/(.*)",
       "destination": "/api/index"
