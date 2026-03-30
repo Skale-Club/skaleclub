@@ -1,3 +1,5 @@
+import 'express-async-errors';
+import { ZodError } from "zod";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes.js";
 import path from "path";
@@ -60,10 +62,29 @@ export async function createApp(): Promise<{ app: express.Express; httpServer: S
 
   // Error handling middleware
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    // Safety: if response already started, delegate to Express default handler
+    if (res.headersSent) {
+      return _next(err);
+    }
+
+    // Zod validation errors → 400 with field-level details
+    if (err instanceof ZodError) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: err.flatten().fieldErrors,
+      });
+    }
+
+    // All other errors → use status + message
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
+
+    // Log server errors for debugging
+    if (status >= 500) {
+      console.error(err);
+    }
+
     res.status(status).json({ message });
-    throw err;
   });
 
   return { app, httpServer };
