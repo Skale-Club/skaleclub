@@ -56,7 +56,11 @@ Plans:
   2. `shared/schema.ts` (outside the folder) acts as a barrel re-export — all 64 existing import sites resolve correctly
   3. `drizzle.config.ts` uses folder path `./shared/schema` and drizzle-kit detects all tables
   4. `npm run db:push` completes without errors, confirming schema detection works
-**Plans**: TBD
+**Plans**: 3 plans in 2 waves
+Plans:
+- [ ] 03-01-PLAN.md — Create domain files: auth.ts, chat.ts, forms.ts (wave 1)
+- [ ] 03-02-PLAN.md — Create domain files: cms.ts, settings.ts, sales.ts (wave 1)
+- [ ] 03-03-PLAN.md — Convert barrel, update drizzle.config.ts, verify (wave 2)
 
 ### Phase 4: Context Refactoring
 **Goal**: Replace the 729-line XpotContext with focused feature hooks that each consumer can import independently
@@ -78,7 +82,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Error Handling Standardization | 1/1 | Complete | 2026-03-30 |
 | 2. Route File Splitting | 3/3 | Complete | 2026-03-30 |
-| 3. Schema Organization | 0/0 | Not started | - |
+| 3. Schema Organization | 0/3 | Not started | - |
 | 4. Context Refactoring | 0/0 | Not started | - |
 
 ---
