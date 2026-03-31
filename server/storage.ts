@@ -351,6 +351,8 @@ const salesSchemaBootstrapStatements = [
   sql`CREATE INDEX IF NOT EXISTS "sales_tasks_status_idx" ON "sales_tasks" ("status")`,
   sql`CREATE INDEX IF NOT EXISTS "sales_sync_events_entity_idx" ON "sales_sync_events" ("entity_type", "entity_id")`,
   sql`CREATE INDEX IF NOT EXISTS "sales_sync_events_status_idx" ON "sales_sync_events" ("status")`,
+  sql`ALTER TABLE "sales_visit_notes" ADD COLUMN IF NOT EXISTS "audio_url" text`,
+  sql`ALTER TABLE "sales_visit_notes" ADD COLUMN IF NOT EXISTS "audio_duration_seconds" integer`,
   sql`ALTER TABLE "sales_visit_notes" ADD COLUMN IF NOT EXISTS "audio_transcription" text`,
 ];
 

@@ -48,25 +48,35 @@ export async function ensureXpotRep(req: Request) {
 }
 
 export async function requireXpotUser(req: Request, res: Response, next: NextFunction) {
-  const actor = await ensureXpotRep(req);
-  if (!actor) {
-    return res.status(401).json({ message: "Authentication required" });
+  try {
+    const actor = await ensureXpotRep(req);
+    if (!actor) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    if (!actor.rep.isActive) {
+      return res.status(403).json({ message: "Xpot access disabled" });
+    }
+    (req as any).xpotActor = actor;
+    next();
+  } catch (err) {
+    console.error("[requireXpotUser]", err);
+    res.status(500).json({ message: (err as Error).message || "Internal server error" });
   }
-  if (!actor.rep.isActive) {
-    return res.status(403).json({ message: "Xpot access disabled" });
-  }
-  (req as any).xpotActor = actor;
-  next();
 }
 
 export async function requireXpotManager(req: Request, res: Response, next: NextFunction) {
-  const actor = await ensureXpotRep(req);
-  if (!actor) {
-    return res.status(401).json({ message: "Authentication required" });
+  try {
+    const actor = await ensureXpotRep(req);
+    if (!actor) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    if (!actor.user.isAdmin && !["manager", "admin"].includes(actor.rep.role)) {
+      return res.status(403).json({ message: "Manager access required" });
+    }
+    (req as any).xpotActor = actor;
+    next();
+  } catch (err) {
+    console.error("[requireXpotManager]", err);
+    res.status(500).json({ message: (err as Error).message || "Internal server error" });
   }
-  if (!actor.user.isAdmin && !["manager", "admin"].includes(actor.rep.role)) {
-    return res.status(403).json({ message: "Manager access required" });
-  }
-  (req as any).xpotActor = actor;
-  next();
 }
