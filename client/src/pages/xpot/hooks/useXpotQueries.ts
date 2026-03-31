@@ -41,10 +41,7 @@ export function useXpotQueries() {
 
   useEffect(() => {
     if (xpotMeQuery.error) {
-      const message = (xpotMeQuery.error as Error).message || "";
-      if (message.startsWith("401") || message.startsWith("403")) {
-        setLocation("/xpot/login");
-      }
+      setLocation("/xpot/login");
     }
   }, [xpotMeQuery.error, setLocation]);
 

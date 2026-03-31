@@ -15,6 +15,7 @@ import { XpotDashboard } from "./xpot/XpotDashboard";
 function XpotAppShell() {
   const {
     me,
+    xpotMeQuery,
     repName,
     isOnline,
     activeTab,
@@ -30,8 +31,17 @@ function XpotAppShell() {
 
   if (!me) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#06090f] text-white">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#06090f] text-white">
+        {xpotMeQuery.isError ? (
+          <>
+            <p className="text-sm text-white/60">Failed to load session</p>
+            <Button variant="outline" className="border-white/10 bg-transparent text-white hover:bg-white/10" onClick={() => setLocation("/xpot/login")}>
+              Go to Login
+            </Button>
+          </>
+        ) : (
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        )}
       </div>
     );
   }
