@@ -1,8 +1,7 @@
 import 'dotenv/config';
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import express from "express";
-import { setupSupabaseAuth } from "../server/auth/supabaseAuth.js";
-import { registerXpotRoutes } from "../server/routes/xpot/index.js";
+import { createApp } from "../server/app.js";
+import type express from "express";
 
 let app: express.Express | null = null;
 let initPromise: Promise<express.Express> | null = null;
@@ -11,18 +10,15 @@ async function getApp() {
   if (app) return app;
 
   if (!initPromise) {
-    initPromise = (async () => {
-      const expressApp = express();
-      expressApp.set("trust proxy", 1);
-      expressApp.use(express.json({ limit: '50mb', verify: (_req, _res, buf) => { (_req as any).rawBody = buf; } }));
-      expressApp.use(express.urlencoded({ extended: false, limit: '50mb' }));
-      await setupSupabaseAuth(expressApp);
-      registerXpotRoutes(expressApp);
-      return expressApp;
-    })().catch((err) => {
-      initPromise = null;
-      throw err;
-    });
+    initPromise = createApp()
+      .then((result) => {
+        app = result.app;
+        return app;
+      })
+      .catch((err) => {
+        initPromise = null;
+        throw err;
+      });
   }
 
   return initPromise;
