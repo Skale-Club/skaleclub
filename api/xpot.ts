@@ -2,7 +2,7 @@ import 'dotenv/config';
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import express from "express";
 import { setupSupabaseAuth } from "../server/auth/supabaseAuth.js";
-import { registerXpotRoutes } from "../server/routes/xpot.js";
+import { registerXpotRoutes } from "../server/routes/xpot/index.js";
 
 let app: express.Express | null = null;
 let initPromise: Promise<express.Express> | null = null;
