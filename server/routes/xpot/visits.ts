@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { storage } from "../../storage.js";
 import { requireXpotUser, ensureXpotRep } from "./middleware.js";
-import { getDistanceMeters } from "./helpers.js";
+import { analyzeVisitTranscript, getDistanceMeters } from "./helpers.js";
 import { xpotCheckInSchema, xpotCheckOutSchema, xpotVisitNoteUpsertSchema } from "#shared/xpot.js";
 
 export function createVisitsRouter() {
@@ -226,14 +226,32 @@ export function createVisitsRouter() {
         }
       }
 
+      const existingNote = await storage.getSalesVisitNote(visitId);
+      const analysis = audioTranscription ? await analyzeVisitTranscript(audioTranscription) : null;
+
       const note = await storage.upsertSalesVisitNote({
         visitId,
         createdByRepId: actor!.rep.id,
         audioUrl,
         audioDurationSeconds: durationSeconds || null,
         ...(audioTranscription !== null && { audioTranscription }),
+        ...(analysis?.summary ? { summary: analysis.summary } : {}),
+        ...(analysis?.outcome ? { outcome: analysis.outcome } : {}),
+        ...(analysis?.nextStep ? { nextStep: analysis.nextStep } : {}),
+        ...(analysis?.sentiment ? { sentiment: analysis.sentiment } : {}),
+        ...(analysis?.objections ? { objections: analysis.objections } : {}),
+        ...(analysis?.competitorMentioned ? { competitorMentioned: analysis.competitorMentioned } : {}),
+        ...(analysis?.followUpRequired !== undefined
+          ? { followUpRequired: analysis.followUpRequired }
+          : existingNote
+            ? { followUpRequired: existingNote.followUpRequired }
+            : {}),
       });
-      return res.json(note);
+      return res.json({
+        note,
+        transcriptionAvailable: Boolean(audioTranscription),
+        analysisApplied: Boolean(analysis),
+      });
     } catch (error: any) {
       console.error("Audio upload error:", error);
       res.status(500).json({ message: error.message || "Failed to upload audio" });

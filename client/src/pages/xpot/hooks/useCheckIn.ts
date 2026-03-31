@@ -8,7 +8,7 @@ import { useXpotShared } from "./useXpotShared";
 import { useXpotQueries } from "./useXpotQueries";
 import { useAccounts } from "./useAccounts";
 import { useVisits } from "./useVisits";
-import type { GooglePlaceResult, SalesAccount, SalesAccountPayload } from "./types";
+import type { GooglePlaceResult, SalesAccount, SalesAccountPayload, SalesVisitNote } from "./types";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyMutation = ReturnType<typeof useMutation<any, any, any, any>>;
@@ -110,10 +110,21 @@ export function useCheckIn() {
         audioData,
         durationSeconds: recordingTime,
       });
-      return response.json();
+      return response.json() as Promise<{
+        note: SalesVisitNote;
+        transcriptionAvailable: boolean;
+        analysisApplied: boolean;
+      }>;
     },
-    onSuccess: async () => {
-      toast({ title: "Audio uploaded successfully" });
+    onSuccess: async (result) => {
+      toast({
+        title: result?.analysisApplied ? "Audio analyzed successfully" : "Audio uploaded successfully",
+        description: result?.analysisApplied
+          ? "The transcription was analyzed and the visit note was updated."
+          : result?.transcriptionAvailable
+            ? "The audio was transcribed and saved."
+            : "The audio was saved.",
+      });
       setAudioBlob(null);
       setRecordingTime(0);
       await invalidateXpotData();
@@ -176,7 +187,7 @@ export function useCheckIn() {
     if (existingAccount) {
       setSelectedAccountId(existingAccount.id);
       setCheckInSearch(existingAccount.name);
-      toast({ title: "Local account selected", description: existingAccount.name });
+      toast({ title: "Local lead selected", description: existingAccount.name });
       return;
     }
 

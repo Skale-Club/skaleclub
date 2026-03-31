@@ -106,6 +106,28 @@ export function createAccountsRouter() {
     res.json({ account: updated, ghl: syncResult });
   });
 
+  router.delete("/accounts/:id", async (req, res) => {
+    const actor = (req as any).xpotActor as Awaited<ReturnType<typeof ensureXpotRep>>;
+    const accountId = Number(req.params.id);
+
+    if (!Number.isFinite(accountId)) {
+      return res.status(400).json({ message: "Invalid lead id" });
+    }
+
+    const account = await storage.getSalesAccount(accountId);
+    if (!account) {
+      return res.status(404).json({ message: "Lead not found" });
+    }
+
+    const canDelete = actor!.user.isAdmin || account.ownerRepId === actor!.rep.id;
+    if (!canDelete) {
+      return res.status(403).json({ message: "You can only delete your own leads" });
+    }
+
+    await storage.deleteSalesAccount(accountId);
+    res.status(204).end();
+  });
+
   router.get("/accounts/:id/contacts", async (req, res) => {
     const accountId = Number(req.params.id);
     res.json(await storage.listSalesAccountContacts(accountId));

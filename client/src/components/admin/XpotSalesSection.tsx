@@ -34,7 +34,7 @@ type XpotOverviewResponse = {
 
 const metricCards = [
   { key: "activeReps", label: "Active Reps", icon: Users },
-  { key: "accounts", label: "Accounts", icon: BriefcaseBusiness },
+  { key: "accounts", label: "Leads", icon: BriefcaseBusiness },
   { key: "visitsInProgress", label: "Active Visits", icon: MapPinned },
   { key: "syncIssues", label: "Sync Issues", icon: CircleAlert },
 ] as const;

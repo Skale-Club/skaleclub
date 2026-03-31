@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { useXpotShared } from "./hooks/useXpotShared";
 import { useXpotQueries } from "./hooks/useXpotQueries";
 import { useAccounts } from "./hooks/useAccounts";
@@ -78,7 +80,7 @@ export function XpotCheckIn() {
             onFocus={() => setCheckInDropdownOpen(true)}
             onBlur={() => setTimeout(() => setCheckInDropdownOpen(false), 150)}
             onKeyDown={(e) => { if (e.key === "Escape") { setCheckInDropdownOpen(false); (e.target as HTMLInputElement).blur(); } }}
-            placeholder="Search local accounts or Google Places"
+            placeholder="Search local leads or Google Places"
             className="border-white/10 bg-white/5 pl-10 pr-9 text-white placeholder:text-white/35"
           />
           {checkInSearch && (
@@ -124,7 +126,7 @@ export function XpotCheckIn() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-medium text-white">{account.name}</div>
-                    <div className="truncate text-xs text-white/45">{account.locations?.[0]?.addressLine1 || account.industry || "Local account"}</div>
+                    <div className="truncate text-xs text-white/45">{account.locations?.[0]?.addressLine1 || account.industry || "Local lead"}</div>
                   </div>
                   <Badge variant="secondary" className="shrink-0 bg-white/10 text-white/60 text-[10px]">Local</Badge>
                 </button>
@@ -193,20 +195,20 @@ export function XpotCheckIn() {
           <>
             {selectedAccount ? (
               <div className="rounded-2xl border border-primary/20 bg-primary/10 p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-primary/70">Selected Account</div>
+                <div className="text-xs uppercase tracking-[0.2em] text-primary/70">Selected Lead</div>
                 <div className="mt-1 text-xl font-semibold">{selectedAccount.name}</div>
                 <div className="mt-1 text-sm text-white/60">{selectedAccount.locations?.[0]?.addressLine1 || "No address saved yet"}</div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Badge className="bg-primary text-black">{selectedAccount.status}</Badge>
-                  <Badge variant="secondary" className="bg-white/10 text-white/70">{selectedAccount.source === "google_places" ? "Imported from Places" : "Local account"}</Badge>
+                  <Badge variant="secondary" className="bg-white/10 text-white/70">{selectedAccount.source === "google_places" ? "Imported from Places" : "Local lead"}</Badge>
                 </div>
               </div>
             ) : null}
 
             <div className={checkInDropdownOpen ? "pointer-events-none" : ""}>
               <ConfirmSlider
-                label={selectedAccount ? "SLIDE TO CHECK IN" : "SELECT AN ACCOUNT FIRST"}
-                helperText={selectedAccount ? `Confirm visit start for ${selectedAccount.name}` : "Choose a local account or Google Place to enable check-in."}
+                label={selectedAccount ? "SLIDE TO CHECK IN" : "SELECT A LEAD FIRST"}
+                helperText={selectedAccount ? `Confirm visit start for ${selectedAccount.name}` : "Choose a local lead or Google Place to enable check-in."}
                 loading={checkInMutation.isPending || createAccountMutation.isPending}
                 disabled={!selectedAccountId || createAccountMutation.isPending}
                 onConfirm={() => checkInMutation.mutate({ accountId: Number(selectedAccountId), lat: geoState.lat, lng: geoState.lng, gpsAccuracyMeters: geoState.accuracy })}
@@ -221,7 +223,7 @@ export function XpotCheckIn() {
                 <span className="text-xs uppercase tracking-[0.2em]">Visit Timer</span>
               </div>
               <div className="text-4xl font-mono font-bold tracking-wider text-white tabular-nums">{elapsedDisplay}</div>
-              <div className="text-base font-semibold text-white">{activeVisit.account?.name || `Account #${activeVisit.accountId}`}</div>
+              <div className="text-base font-semibold text-white">{activeVisit.account?.name || `Lead #${activeVisit.accountId}`}</div>
               <Badge className="bg-primary text-black text-[10px]">{activeVisit.validationStatus}</Badge>
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm text-white/65">
@@ -258,10 +260,23 @@ export function XpotCheckIn() {
                 </Button>
               )}
             </div>
+            <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-white/50">
+              After upload, Xpot can transcribe the audio and generate an AI visit analysis.
+            </div>
             <Textarea value={visitNoteForm.summary} onChange={(event) => setVisitNoteForm((prev) => ({ ...prev, summary: event.target.value }))} placeholder="Visit summary" className="min-h-[96px] border-white/10 bg-black/20 text-white placeholder:text-white/35" />
             <div className="grid grid-cols-2 gap-3">
               <Input value={visitNoteForm.outcome} onChange={(event) => setVisitNoteForm((prev) => ({ ...prev, outcome: event.target.value }))} placeholder="Outcome" className="border-white/10 bg-black/20 text-white placeholder:text-white/35" />
               <Input value={visitNoteForm.nextStep} onChange={(event) => setVisitNoteForm((prev) => ({ ...prev, nextStep: event.target.value }))} placeholder="Next step" className="border-white/10 bg-black/20 text-white placeholder:text-white/35" />
+            </div>
+            <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/20 px-3 py-3">
+              <Checkbox
+                id="visit-follow-up-required"
+                checked={visitNoteForm.followUpRequired}
+                onCheckedChange={(checked) => setVisitNoteForm((prev) => ({ ...prev, followUpRequired: checked === true }))}
+              />
+              <Label htmlFor="visit-follow-up-required" className="text-sm text-white">
+                Follow-up required
+              </Label>
             </div>
             <div className="flex gap-3">
               <Button variant="outline" className="flex-1 border-white/10 bg-transparent text-white hover:bg-white/10" onClick={() => saveNoteMutation.mutate(undefined as any)}>

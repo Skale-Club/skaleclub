@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useVisits } from "./hooks/useVisits";
 import { formatDateTime, formatDuration } from "./utils";
-import type { SalesVisit } from "./types";
+import type { SalesVisit, SalesVisitNote } from "./types";
 
 function VisitAudioRecorder({ visit }: { visit: SalesVisit }) {
   const { toast } = useToast();
@@ -74,12 +74,24 @@ function VisitAudioRecorder({ visit }: { visit: SalesVisit }) {
         reader.readAsDataURL(audioBlob);
       });
 
-      await apiRequest("POST", `/api/xpot/visits/${visit.id}/audio`, {
+      const response = await apiRequest("POST", `/api/xpot/visits/${visit.id}/audio`, {
         audioData,
         durationSeconds: recordingTime,
       });
+      const result = await response.json() as {
+        note: SalesVisitNote;
+        transcriptionAvailable: boolean;
+        analysisApplied: boolean;
+      };
 
-      toast({ title: "Audio note saved" });
+      toast({
+        title: result.analysisApplied ? "Audio analyzed" : "Audio note saved",
+        description: result.analysisApplied
+          ? "Transcription and visit analysis were saved."
+          : result.transcriptionAvailable
+            ? "Transcription was saved with the audio note."
+            : undefined,
+      });
       setAudioBlob(null);
       setRecordingTime(0);
       await queryClient.invalidateQueries({ queryKey: ["/api/xpot/visits"] });
@@ -166,7 +178,7 @@ export function XpotVisits() {
         <Card key={visit.id} className="border-white/10 bg-white/5 text-white">
           <CardContent className="space-y-3 p-4">
             <div className="flex items-center justify-between gap-3">
-              <div className="font-semibold">{visit.account?.name || `Account #${visit.accountId}`}</div>
+              <div className="font-semibold">{visit.account?.name || `Lead #${visit.accountId}`}</div>
               <Badge variant="secondary" className="bg-white/10 text-white">{visit.status}</Badge>
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm text-white/60">
@@ -175,6 +187,15 @@ export function XpotVisits() {
             </div>
             {visit.note?.summary ? (
               <div className="rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white/70">{visit.note.summary}</div>
+            ) : null}
+            {visit.note?.outcome || visit.note?.nextStep || visit.note?.followUpRequired || visit.note?.sentiment ? (
+              <div className="space-y-2 rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white/70">
+                <div className="text-[10px] uppercase tracking-widest text-white/40">Visit Analysis</div>
+                {visit.note?.outcome ? <div><span className="text-white/40">Outcome:</span> {visit.note.outcome}</div> : null}
+                {visit.note?.nextStep ? <div><span className="text-white/40">Next step:</span> {visit.note.nextStep}</div> : null}
+                {visit.note?.sentiment ? <div><span className="text-white/40">Sentiment:</span> {visit.note.sentiment}</div> : null}
+                {visit.note?.followUpRequired ? <Badge className="bg-primary/15 text-primary">Follow-up required</Badge> : null}
+              </div>
             ) : null}
             <VisitAudioRecorder visit={visit} />
           </CardContent>

@@ -53,7 +53,7 @@ export function useXpotQueries() {
       return response.json();
     },
     onSuccess: async (data) => {
-      toast({ title: "Sync completed", description: `${data.accountsSynced} accounts and ${data.opportunitiesSynced} opportunities synced.` });
+      toast({ title: "Sync completed", description: `${data.accountsSynced} leads and ${data.opportunitiesSynced} opportunities synced.` });
       await invalidateXpotData();
     },
     onError: (error: Error) => {

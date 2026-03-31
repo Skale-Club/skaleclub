@@ -1,5 +1,96 @@
 import { storage } from "../../storage.js";
+import { getActiveAIClient, getRuntimeGroqKey } from "../../lib/ai-provider.js";
 import { getOrCreateGHLContact, createGHLOpportunity, updateGHLOpportunity, createGHLTask } from "../../integrations/ghl.js";
+import { z } from "zod";
+
+const visitAudioAnalysisSchema = z.object({
+  summary: z.string().trim().max(1500).nullable().optional(),
+  outcome: z.string().trim().max(300).nullable().optional(),
+  nextStep: z.string().trim().max(300).nullable().optional(),
+  sentiment: z.string().trim().max(100).nullable().optional(),
+  objections: z.string().trim().max(600).nullable().optional(),
+  competitorMentioned: z.string().trim().max(200).nullable().optional(),
+  followUpRequired: z.boolean().optional(),
+});
+
+export type VisitAudioAnalysis = z.infer<typeof visitAudioAnalysisSchema>;
+
+function buildVisitAudioAnalysisPrompt(transcript: string) {
+  return `You analyze short field-sales voice notes recorded after an in-person visit.
+
+Return ONLY a valid JSON object with these keys:
+- summary: short visit summary in the same language as the transcript
+- outcome: brief result of the visit
+- nextStep: concrete next step if one is mentioned or clearly implied
+- sentiment: one of positive, neutral, negative, or mixed
+- objections: short description of objections or blockers, or null
+- competitorMentioned: competitor name if explicitly mentioned, otherwise null
+- followUpRequired: true if the rep should follow up, otherwise false
+
+Rules:
+- Do not invent facts.
+- If a field is not supported by the transcript, use null.
+- Keep summary under 3 sentences.
+- Keep outcome and nextStep concise.
+- Return raw JSON only, with no markdown.
+
+Transcript:
+"""${transcript}"""`;
+}
+
+function parseVisitAudioAnalysis(content: string | null | undefined): VisitAudioAnalysis | null {
+  if (!content) return null;
+
+  try {
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
+    return visitAudioAnalysisSchema.parse(JSON.parse(jsonMatch[0]));
+  } catch (error) {
+    console.error("Failed to parse visit audio analysis:", error);
+    return null;
+  }
+}
+
+export async function analyzeVisitTranscript(transcript: string): Promise<VisitAudioAnalysis | null> {
+  const cleanedTranscript = transcript.trim();
+  if (!cleanedTranscript) return null;
+
+  const prompt = buildVisitAudioAnalysisPrompt(cleanedTranscript);
+
+  try {
+    const aiClient = await getActiveAIClient();
+    if (aiClient?.client) {
+      const completion = await aiClient.client.chat.completions.create({
+        model: aiClient.model,
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.2,
+      });
+      const parsed = parseVisitAudioAnalysis(completion.choices[0]?.message?.content);
+      if (parsed) return parsed;
+    }
+  } catch (error) {
+    console.error("Active AI provider analysis error:", error);
+  }
+
+  const groqIntegration = await storage.getChatIntegration("groq");
+  const groqApiKey = getRuntimeGroqKey() || groqIntegration?.apiKey;
+  if (!groqApiKey) return null;
+
+  try {
+    const Groq = (await import("groq-sdk")).default;
+    const groq = new Groq({ apiKey: groqApiKey });
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.1-8b-instant",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.2,
+    });
+
+    return parseVisitAudioAnalysis(completion.choices[0]?.message?.content || null);
+  } catch (error) {
+    console.error("Groq audio analysis error:", error);
+    return null;
+  }
+}
 
 export function getDistanceMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
   const toRadians = (value: number) => (value * Math.PI) / 180;

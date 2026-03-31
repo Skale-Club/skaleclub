@@ -70,7 +70,7 @@ import {
   type SalesOpportunityStatus,
   type SalesTaskStatus,
 } from "#shared/schema.js";
-import { eq, and, or, ilike, gte, lt, desc, asc, sql, ne } from "drizzle-orm";
+import { eq, and, or, ilike, gte, lt, desc, asc, sql, ne, inArray } from "drizzle-orm";
 
 const companySettingsSchemaPatches = [
   sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "seo_keywords" text DEFAULT ''`,
@@ -468,6 +468,7 @@ export interface IStorage {
   getSalesAccount(id: number): Promise<SalesAccount | undefined>;
   createSalesAccount(input: InsertSalesAccount): Promise<SalesAccount>;
   updateSalesAccount(id: number, input: Partial<InsertSalesAccount>): Promise<SalesAccount | undefined>;
+  deleteSalesAccount(id: number): Promise<void>;
   listSalesAccountLocations(accountId: number): Promise<SalesAccountLocation[]>;
   createSalesAccountLocation(input: InsertSalesAccountLocation): Promise<SalesAccountLocation>;
   listSalesAccountContacts(accountId: number): Promise<SalesAccountContact[]>;
@@ -1007,6 +1008,56 @@ export class DatabaseStorage implements IStorage {
       .where(eq(salesAccounts.id, id))
       .returning();
     return updated;
+  }
+
+  async deleteSalesAccount(id: number): Promise<void> {
+    await ensureSalesSchema();
+
+    await db.transaction(async (tx) => {
+      const visitIds = (await tx
+        .select({ id: salesVisits.id })
+        .from(salesVisits)
+        .where(eq(salesVisits.accountId, id)))
+        .map((visit) => visit.id);
+
+      const opportunityIds = (await tx
+        .select({ id: salesOpportunitiesLocal.id })
+        .from(salesOpportunitiesLocal)
+        .where(eq(salesOpportunitiesLocal.accountId, id)))
+        .map((opportunity) => opportunity.id);
+
+      await tx.delete(salesTasks).where(eq(salesTasks.accountId, id));
+
+      if (visitIds.length) {
+        await tx.delete(salesTasks).where(inArray(salesTasks.visitId, visitIds));
+        await tx.delete(salesVisitNotes).where(inArray(salesVisitNotes.visitId, visitIds));
+      }
+
+      if (opportunityIds.length) {
+        await tx.delete(salesTasks).where(inArray(salesTasks.opportunityId, opportunityIds));
+        await tx.delete(salesSyncEvents).where(
+          and(
+            eq(salesSyncEvents.entityType, "sales_opportunity"),
+            inArray(salesSyncEvents.entityId, opportunityIds.map(String)),
+          ),
+        );
+        await tx.delete(salesOpportunitiesLocal).where(inArray(salesOpportunitiesLocal.id, opportunityIds));
+      }
+
+      if (visitIds.length) {
+        await tx.delete(salesVisits).where(inArray(salesVisits.id, visitIds));
+      }
+
+      await tx.delete(salesAccountContacts).where(eq(salesAccountContacts.accountId, id));
+      await tx.delete(salesAccountLocations).where(eq(salesAccountLocations.accountId, id));
+      await tx.delete(salesSyncEvents).where(
+        and(
+          eq(salesSyncEvents.entityType, "sales_account"),
+          eq(salesSyncEvents.entityId, String(id)),
+        ),
+      );
+      await tx.delete(salesAccounts).where(eq(salesAccounts.id, id));
+    });
   }
 
   async listSalesAccountLocations(accountId: number): Promise<SalesAccountLocation[]> {

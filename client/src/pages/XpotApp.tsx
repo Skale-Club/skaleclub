@@ -76,7 +76,7 @@ function XpotAppShell() {
             <div>
               <div className="text-xs uppercase tracking-[0.24em] text-white/45">Live Status</div>
               <div className="mt-2 text-lg font-semibold">
-                {activeVisit ? `Checked in at ${activeVisit.account?.name || `Account #${activeVisit.accountId}`}` : "Ready for next visit"}
+                {activeVisit ? `Checked in at ${activeVisit.account?.name || `Lead #${activeVisit.accountId}`}` : "Ready for next visit"}
               </div>
             </div>
             <Badge className={activeVisit ? "bg-primary text-black" : "bg-white/10 text-white"}>

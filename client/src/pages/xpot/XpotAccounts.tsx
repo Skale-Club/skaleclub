@@ -1,16 +1,29 @@
-import { Loader2, Search, MapPinned, ExternalLink } from "lucide-react";
+import { useState } from "react";
+import { Loader2, Search, MapPinned, ExternalLink, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useXpotShared } from "./hooks/useXpotShared";
 import { useXpotQueries } from "./hooks/useXpotQueries";
 import { useAccounts } from "./hooks/useAccounts";
 import { useCheckIn } from "./hooks/useCheckIn";
+import type { SalesAccount } from "./types";
 
 export function XpotAccounts() {
   const { geoState, loadCurrentLocation } = useXpotShared();
   const { setLocation } = useXpotQueries();
+  const [leadPendingDelete, setLeadPendingDelete] = useState<SalesAccount | null>(null);
   const {
     accountLookupSearch,
     setAccountLookupSearch,
@@ -20,10 +33,22 @@ export function XpotAccounts() {
     filteredAccountsForList,
     accountPlaceQuery,
     createAccountMutation,
+    deleteAccountMutation,
     applyPlaceToAccountForm,
     createAccountFromForm,
   } = useAccounts();
   const { setSelectedAccountId, setCheckInSearch } = useCheckIn();
+
+  const handleDeleteLead = async () => {
+    if (!leadPendingDelete) return;
+
+    try {
+      await deleteAccountMutation.mutateAsync(leadPendingDelete.id);
+      setLeadPendingDelete(null);
+    } catch {
+      // Mutation toast already informs the user.
+    }
+  };
 
   return (
     <>
@@ -88,7 +113,7 @@ export function XpotAccounts() {
       </Card>
 
       <Card className="border-white/10 bg-white/5 text-white">
-        <CardHeader><CardTitle className="text-base">Create Account</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">Create Lead</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           {selectedAccountPlace ? (
             <div className="rounded-2xl border border-primary/20 bg-primary/10 p-3">
@@ -113,7 +138,7 @@ export function XpotAccounts() {
           </div>
           <Button disabled={createAccountMutation.isPending || !accountForm.name.trim()} onClick={createAccountFromForm} className="w-full bg-primary text-black hover:bg-primary">
             {createAccountMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            {selectedAccountPlace ? "Import Business" : "Create Account"}
+            {selectedAccountPlace ? "Import Business" : "Create Lead"}
           </Button>
         </CardContent>
       </Card>
@@ -127,7 +152,21 @@ export function XpotAccounts() {
                   <div className="font-semibold">{account.name}</div>
                   <div className="text-sm text-white/55">{account.industry || "Uncategorized"}</div>
                 </div>
-                <Badge variant="secondary" className="bg-white/10 text-white">{account.status}</Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="bg-white/10 text-white">{account.status}</Badge>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-red-300 hover:bg-red-500/10 hover:text-red-200"
+                    aria-label={`Delete lead ${account.name}`}
+                    data-testid={`delete-lead-${account.id}`}
+                    disabled={deleteAccountMutation.isPending}
+                    onClick={() => setLeadPendingDelete(account)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
               {account.locations?.[0] ? <div className="text-sm text-white/55">{account.locations[0].addressLine1}</div> : null}
               <div className="flex flex-wrap gap-2">
@@ -135,12 +174,49 @@ export function XpotAccounts() {
                 <Badge variant="secondary" className="bg-white/10 text-white/70">{account.source === "google_places" ? "Imported from Places" : account.ghlContactId ? "GHL linked" : "Local only"}</Badge>
               </div>
               <Button variant="outline" className="w-full border-white/10 bg-transparent text-white hover:bg-white/10" onClick={() => { setSelectedAccountId(account.id); setCheckInSearch(account.name); setLocation("/xpot/check-in"); }}>
-                Use for Check-In
+                Use Lead for Check-In
               </Button>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      <AlertDialog
+        open={Boolean(leadPendingDelete)}
+        onOpenChange={(open) => {
+          if (!open && !deleteAccountMutation.isPending) {
+            setLeadPendingDelete(null);
+          }
+        }}
+      >
+        <AlertDialogContent className="border-white/10 bg-[#0d1117] text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this lead?</AlertDialogTitle>
+            <AlertDialogDescription className="text-white/65">
+              {leadPendingDelete
+                ? `This will permanently remove ${leadPendingDelete.name} and its related visits, notes, tasks, and opportunities from the system.`
+                : "This lead will be permanently removed from the system."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteAccountMutation.isPending}>
+              Keep lead
+            </AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={deleteAccountMutation.isPending}
+              data-testid="confirm-delete-lead"
+              onClick={(event) => {
+                event.preventDefault();
+                void handleDeleteLead();
+              }}
+            >
+              {deleteAccountMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Delete lead
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

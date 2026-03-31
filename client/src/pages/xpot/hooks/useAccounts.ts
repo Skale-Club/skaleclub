@@ -51,7 +51,21 @@ export function useAccounts() {
       return response.json() as Promise<{ account: SalesAccount }>;
     },
     onError: (error: Error) => {
-      toast({ title: "Failed to create account", description: error.message, variant: "destructive" });
+      toast({ title: "Failed to create lead", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: async (accountId: number) => {
+      await apiRequest("DELETE", `/api/xpot/accounts/${accountId}`);
+      return accountId;
+    },
+    onSuccess: async () => {
+      toast({ title: "Lead deleted" });
+      await invalidateXpotData();
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to delete lead", description: error.message, variant: "destructive" });
     },
   });
 
@@ -97,7 +111,7 @@ export function useAccounts() {
     };
 
     const result = await createAccountMutation.mutateAsync(payload);
-    toast({ title: selectedAccountPlace ? "Business imported" : "Account created" });
+    toast({ title: selectedAccountPlace ? "Business imported" : "Lead created" });
     setAccountForm({ name: "", phone: "", email: "", website: "", industry: "", addressLine1: "", city: "", state: "" });
     setSelectedAccountPlace(null);
     await invalidateXpotData();
@@ -117,5 +131,6 @@ export function useAccounts() {
     applyPlaceToAccountForm,
     createAccountFromForm,
     createAccountMutation,
+    deleteAccountMutation,
   };
 }

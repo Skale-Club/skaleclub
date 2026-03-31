@@ -18,6 +18,9 @@ export type SalesVisitNote = {
   outcome?: string | null;
   nextStep?: string | null;
   followUpRequired?: boolean | null;
+  sentiment?: string | null;
+  objections?: string | null;
+  competitorMentioned?: string | null;
   audioUrl?: string | null;
   audioDurationSeconds?: number | null;
   audioTranscription?: string | null;
