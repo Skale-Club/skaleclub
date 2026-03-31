@@ -170,18 +170,18 @@ export default function XpotLogin() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 flex flex-col items-center justify-center">
+    <main className="min-h-screen bg-background text-foreground px-4 flex flex-col items-center justify-center">
       <div className="w-full max-w-md">
         <button
           type="button"
           onClick={() => setLocation("/")}
-          className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-slate-800 transition-colors hover:text-slate-900"
+          className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Back to Home
         </button>
 
-        <Card className="w-full rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <Card className="w-full rounded-2xl border-border bg-card shadow-sm">
           <CardHeader className="px-5 pb-4 pt-7 text-center md:px-6">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center overflow-hidden">
               {companyLogo ? (
@@ -197,16 +197,16 @@ export default function XpotLogin() {
               ) : null}
               <MapPinned className={`h-6 w-6 text-primary ${companyLogo ? 'hidden' : ''}`} />
             </div>
-            <CardTitle className="text-2xl leading-none tracking-tight text-slate-900">
+            <CardTitle className="text-2xl leading-none tracking-tight text-card-foreground">
               {companySettings?.companyName || 'Xpot'}
             </CardTitle>
-            <CardDescription className="pt-2 text-base text-slate-600">
+            <CardDescription className="pt-2 text-base text-muted-foreground">
               Sign in to access the Xpot workspace
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5 px-5 pb-7 md:px-6">
             {error && (
-              <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">
+              <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
                 {error}
               </div>
             )}
@@ -215,9 +215,10 @@ export default function XpotLogin() {
               <>
                 <Button
                   type="button"
+                  variant="outline"
                   onClick={handleGoogleLogin}
                   disabled={googleSubmitting}
-                  className="h-12 w-full border border-slate-300 bg-white text-slate-900 hover:bg-slate-50"
+                  className="h-12 w-full"
                 >
                   {googleSubmitting ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -228,53 +229,53 @@ export default function XpotLogin() {
                 </Button>
 
                 <div className="flex items-center gap-3">
-                  <div className="h-px flex-1 bg-slate-200" />
-                  <div className="text-xs uppercase tracking-wider text-slate-500">or continue with</div>
-                  <div className="h-px flex-1 bg-slate-200" />
+                  <div className="h-px flex-1 bg-border" />
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">or continue with</div>
+                  <div className="h-px flex-1 bg-border" />
                 </div>
 
                 <form onSubmit={handleEmailLogin} className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="xpot-email" className="text-xl font-semibold text-slate-900">Email</Label>
+                    <Label htmlFor="xpot-email" className="text-base font-medium">Email</Label>      
                     <div className="relative">
-                      <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                      <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
                         id="xpot-email"
                         type="email"
                         value={email}
                         onChange={(event) => setEmail(event.target.value)}
                         placeholder="rep@example.com"
-                        className="h-12 border-slate-200 bg-slate-100/80 pl-10 text-base placeholder:text-slate-500"
+                        className="h-12 bg-background pl-10 text-base"
                         required
                       />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="xpot-password" className="text-xl font-semibold text-slate-900">Password</Label>
+                    <Label htmlFor="xpot-password" className="text-base font-medium">Password</Label>
                     <div className="relative">
-                      <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                      <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
                         id="xpot-password"
                         type="password"
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
                         placeholder="*****"
-                        className="h-12 border-slate-200 bg-slate-100/80 pl-10 text-base"
+                        className="h-12 bg-background pl-10 text-base"
                         required
                       />
                     </div>
                   </div>
-                  <Button type="submit" disabled={submitting} className="h-12 w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                  <Button type="submit" disabled={submitting} className="h-12 w-full">
                     {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Sign In
                   </Button>
                 </form>
-                <p className="text-center text-base text-slate-600">
+                <p className="text-center text-sm text-muted-foreground">
                   Are you an administrator?{' '}
                   <button
                     type="button"
                     onClick={() => setLocation('/admin/login')}
-                    className="font-medium text-[#2459A8]"
+                    className="font-medium text-primary hover:underline"
                   >
                     Sign in to Admin
                   </button>
@@ -283,8 +284,9 @@ export default function XpotLogin() {
             ) : (
               <Button
                 type="button"
+                variant="outline"
                 onClick={() => { window.location.href = "/api/login"; }}
-                className="h-12 w-full border border-slate-300 bg-white text-slate-900 hover:bg-slate-50"
+                className="h-12 w-full"
               >
                 Continue with Google
               </Button>
@@ -293,5 +295,4 @@ export default function XpotLogin() {
         </Card>
       </div>
     </main>
-  );
-}
+  );}

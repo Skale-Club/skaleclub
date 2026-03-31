@@ -103,16 +103,16 @@ function VisitAudioRecorder({ visit }: { visit: EnrichedSalesVisit }) {
   };
 
   return (
-    <div className="space-y-2 border-t border-white/10 pt-3">
+    <div className="space-y-2 border-t border-border pt-3">
       {existingAudio ? (
         <div className="space-y-2">
-          <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/20 p-2">
+          <div className="flex items-center gap-2 rounded-xl border border-border bg-secondary/50 p-2">
             <Headphones className="h-4 w-4 shrink-0 text-primary" />
             <audio src={existingAudio} controls className="h-8 w-full min-w-0" />
-            {existingDuration ? <span className="shrink-0 text-xs text-white/40">{existingDuration}s</span> : null}
+            {existingDuration ? <span className="shrink-0 text-xs text-muted-foreground">{existingDuration}s</span> : null}
           </div>
           {existingTranscription ? (
-            <div className="rounded-xl border border-primary/15 bg-primary/5 p-3 text-sm text-white/70">
+            <div className="rounded-xl border border-primary/15 bg-primary/5 p-3 text-sm text-muted-foreground">
               <div className="mb-1 text-[10px] uppercase tracking-widest text-primary/60">Transcription</div>
               {existingTranscription}
             </div>
@@ -125,7 +125,7 @@ function VisitAudioRecorder({ visit }: { visit: EnrichedSalesVisit }) {
           type="button"
           size="sm"
           variant={isRecording ? "destructive" : "outline"}
-          className={isRecording ? "h-9 border-red-500 bg-red-500/20 text-red-300 hover:bg-red-500/30" : "h-9 border-white/10 bg-transparent text-white/60 hover:bg-white/10"}
+          className={isRecording ? "h-9" : "h-9"}
           onClick={isRecording ? stopRecording : startRecording}
           disabled={isUploading}
         >
@@ -146,7 +146,7 @@ function VisitAudioRecorder({ visit }: { visit: EnrichedSalesVisit }) {
           <Button
             type="button"
             size="sm"
-            className="h-9 bg-primary text-black hover:bg-primary/90"
+            className="h-9"
             onClick={uploadAudio}
             disabled={isUploading}
           >
@@ -158,7 +158,7 @@ function VisitAudioRecorder({ visit }: { visit: EnrichedSalesVisit }) {
         {audioBlob && !isRecording && !isUploading && (
           <button
             type="button"
-            className="text-xs text-white/35 hover:text-white/60"
+            className="text-xs text-muted-foreground hover:text-foreground"
             onClick={() => { setAudioBlob(null); setRecordingTime(0); }}
           >
             Discard
@@ -175,34 +175,34 @@ export function XpotVisits() {
   return (
     <div className="space-y-3">
       {visitsQuery.data?.length ? visitsQuery.data.map((visit) => (
-        <Card key={visit.id} className="border-white/10 bg-white/5 text-white">
+        <Card key={visit.id} className="border-border bg-card shadow-sm">
           <CardContent className="space-y-3 p-4">
             <div className="flex items-center justify-between gap-3">
-              <div className="font-semibold">{visit.lead?.name || `Lead #${visit.leadId}`}</div>
-              <Badge variant="secondary" className="bg-white/10 text-white">{visit.status}</Badge>
+              <div className="font-semibold text-foreground">{visit.lead?.name || `Lead #${visit.leadId}`}</div>
+              <Badge variant="secondary">{visit.status}</Badge>
             </div>
-            <div className="grid grid-cols-2 gap-3 text-sm text-white/60">
-              <div><div className="text-white/35">Check-in</div><div>{formatDateTime(visit.checkedInAt)}</div></div>
-              <div><div className="text-white/35">Duration</div><div>{formatDuration(visit.durationSeconds)}</div></div>
+            <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground">
+              <div><div className="text-muted-foreground/70">Check-in</div><div>{formatDateTime(visit.checkedInAt)}</div></div>
+              <div><div className="text-muted-foreground/70">Duration</div><div>{formatDuration(visit.durationSeconds)}</div></div>
             </div>
             {visit.note?.summary ? (
-              <div className="rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white/70">{visit.note.summary}</div>
+              <div className="rounded-xl border border-border bg-secondary/50 p-3 text-sm text-foreground/80">{visit.note.summary}</div>
             ) : null}
             {visit.note?.outcome || visit.note?.nextStep || visit.note?.followUpRequired || visit.note?.sentiment ? (
-              <div className="space-y-2 rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white/70">
-                <div className="text-[10px] uppercase tracking-widest text-white/40">Visit Analysis</div>
-                {visit.note?.outcome ? <div><span className="text-white/40">Outcome:</span> {visit.note.outcome}</div> : null}
-                {visit.note?.nextStep ? <div><span className="text-white/40">Next step:</span> {visit.note.nextStep}</div> : null}
-                {visit.note?.sentiment ? <div><span className="text-white/40">Sentiment:</span> {visit.note.sentiment}</div> : null}
-                {visit.note?.followUpRequired ? <Badge className="bg-primary/15 text-primary">Follow-up required</Badge> : null}
+              <div className="space-y-2 rounded-xl border border-border bg-secondary/50 p-3 text-sm text-muted-foreground">
+                <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">Visit Analysis</div>
+                {visit.note?.outcome ? <div><span className="text-muted-foreground/70">Outcome:</span> {visit.note.outcome}</div> : null}
+                {visit.note?.nextStep ? <div><span className="text-muted-foreground/70">Next step:</span> {visit.note.nextStep}</div> : null}
+                {visit.note?.sentiment ? <div><span className="text-muted-foreground/70">Sentiment:</span> {visit.note.sentiment}</div> : null}
+                {visit.note?.followUpRequired ? <Badge variant="outline" className="border-primary/20 text-primary">Follow-up required</Badge> : null}
               </div>
             ) : null}
             <VisitAudioRecorder visit={visit} />
           </CardContent>
         </Card>
       )) : (
-        <Card className="border-white/10 bg-white/5 text-white">
-          <CardContent className="p-6 text-sm text-white/50">No visits recorded yet.</CardContent>
+        <Card className="border-border bg-card shadow-sm">
+          <CardContent className="p-6 text-sm text-muted-foreground text-center">No visits recorded yet.</CardContent>
         </Card>
       )}
     </div>

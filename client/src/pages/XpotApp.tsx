@@ -32,11 +32,11 @@ function XpotAppShell() {
 
   if (!me) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#06090f] text-white">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background text-foreground">        
         {xpotMeQuery.isError ? (
           <>
-            <p className="text-sm text-white/60">Failed to load session</p>
-            <Button variant="outline" className="border-white/10 bg-transparent text-white hover:bg-white/10" onClick={() => setLocation("/xpot/login")}>
+            <p className="text-sm text-muted-foreground">Failed to load session</p>
+            <Button variant="outline" onClick={() => setLocation("/xpot/login")}>
               Go to Login
             </Button>
           </>
@@ -48,39 +48,39 @@ function XpotAppShell() {
   }
 
   return (
-    <div className="min-h-screen bg-[#06090f] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 pb-28 pt-5">
         <header className="mb-5 flex items-center justify-between gap-3">
           <div>
             <div className="text-xs uppercase tracking-[0.24em] text-primary/75">{isOnline ? "Online" : "Offline"}</div>
             <div className="mt-1 text-lg font-semibold">{repName}</div>
-            <div className="text-sm text-white/45">{me.rep.role}</div>
+            <div className="text-sm text-muted-foreground">{me.rep.role}</div>
           </div>
           <div className="flex items-center gap-2">
-            <Button size="icon" variant="outline" className="border-white/10 bg-transparent text-white hover:bg-white/10" disabled={!isOnline || syncMutation.isPending} onClick={() => syncMutation.mutate(undefined as any)}>
+            <Button size="icon" variant="outline" disabled={!isOnline || syncMutation.isPending} onClick={() => syncMutation.mutate(undefined as any)}>
               {syncMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             </Button>
-            <Button size="icon" variant="outline" className="border-white/10 bg-transparent text-white hover:bg-white/10" onClick={signOut}>
+            <Button size="icon" variant="outline" onClick={signOut}>
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
         </header>
 
         {!isOnline && (
-          <div className="mb-4 rounded-2xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-200">
+          <div className="mb-4 rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
             You are offline. Check-in, check-out, and sync are disabled until connection is restored.
           </div>
         )}
 
-        <div className="mb-4 rounded-2xl border border-white/10 bg-gradient-to-br from-primary/15 to-cyan-500/10 p-4">
+        <div className="mb-4 rounded-2xl border border-border bg-card p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="text-xs uppercase tracking-[0.24em] text-white/45">Live Status</div>
+              <div className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Live Status</div>
               <div className="mt-2 text-lg font-semibold">
                 {activeVisit ? `Checked in at ${activeVisit.lead?.name || `Lead #${activeVisit.leadId}`}` : "Ready for next visit"}
               </div>
             </div>
-            <Badge className={activeVisit ? "bg-primary text-black" : "bg-white/10 text-white"}>
+            <Badge variant={activeVisit ? "default" : "secondary"}>
               {activeVisit ? "Active" : "Idle"}
             </Badge>
           </div>
@@ -94,7 +94,7 @@ function XpotAppShell() {
           {activeTab === "sales" ? <XpotSales /> : null}
         </main>
 
-        <nav className="fixed inset-x-0 bottom-0 border-t border-white/10 bg-[#0a0e15]/95 px-3 py-3 backdrop-blur">
+        <nav className="fixed inset-x-0 bottom-0 border-t border-border bg-card/95 px-3 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/60"> 
           <div className="mx-auto flex max-w-md items-center justify-between gap-2">
             {tabs.map(({ id, label, icon: Icon }) => {
               const isActive = activeTab === id;
@@ -103,7 +103,7 @@ function XpotAppShell() {
                   key={id}
                   type="button"
                   onClick={() => setLocation(`/xpot/${id}`)}
-                  className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] transition-colors ${isActive ? "bg-primary/15 text-primary" : "text-white/45 hover:text-white"}`}
+                  className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] transition-colors ${isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
                 >
                   <Icon className="h-4 w-4" />
                   <span className="truncate">{label}</span>
@@ -116,7 +116,6 @@ function XpotAppShell() {
     </div>
   );
 }
-
 export default function XpotApp() {
   return (
     <GeoProvider>
