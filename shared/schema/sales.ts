@@ -4,14 +4,13 @@ import { z } from "zod";
 import { users } from "./auth.js";
 import { vcards } from "./cms.js";
 
-// Enums
 export const salesRepRoleEnum = pgEnum("sales_rep_role", [
   "rep",
   "manager",
   "admin",
 ]);
 
-export const salesAccountStatusEnum = pgEnum("sales_account_status", [
+export const salesLeadStatusEnum = pgEnum("sales_lead_status", [
   "lead",
   "active",
   "inactive",
@@ -58,7 +57,6 @@ export const salesSyncDirectionEnum = pgEnum("sales_sync_direction", [
   "inbound",
 ]);
 
-// Sales Reps
 export const salesReps = pgTable("sales_reps", {
   id: serial("id").primaryKey(),
   userId: text("user_id").references(() => users.id).notNull().unique(),
@@ -77,8 +75,7 @@ export const salesReps = pgTable("sales_reps", {
   roleIdx: index("sales_reps_role_idx").on(table.role),
 }));
 
-// Sales Accounts
-export const salesAccounts = pgTable("sales_accounts", {
+export const salesLeads = pgTable("sales_leads", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   legalName: text("legal_name"),
@@ -87,7 +84,7 @@ export const salesAccounts = pgTable("sales_accounts", {
   email: text("email"),
   industry: text("industry"),
   source: text("source").notNull().default("manual"),
-  status: salesAccountStatusEnum("status").notNull().default("lead"),
+  status: salesLeadStatusEnum("status").notNull().default("lead"),
   ownerRepId: integer("owner_rep_id").references(() => salesReps.id),
   territoryName: text("territory_name"),
   ghlContactId: text("ghl_contact_id"),
@@ -98,15 +95,14 @@ export const salesAccounts = pgTable("sales_accounts", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => ({
-  ownerIdx: index("sales_accounts_owner_idx").on(table.ownerRepId),
-  statusIdx: index("sales_accounts_status_idx").on(table.status),
-  nameIdx: index("sales_accounts_name_idx").on(table.name),
+  ownerIdx: index("sales_leads_owner_idx").on(table.ownerRepId),
+  statusIdx: index("sales_leads_status_idx").on(table.status),
+  nameIdx: index("sales_leads_name_idx").on(table.name),
 }));
 
-// Sales Account Locations
-export const salesAccountLocations = pgTable("sales_account_locations", {
+export const salesLeadLocations = pgTable("sales_lead_locations", {
   id: serial("id").primaryKey(),
-  accountId: integer("account_id").references(() => salesAccounts.id).notNull(),
+  leadId: integer("lead_id").references(() => salesLeads.id).notNull(),
   label: text("label").notNull().default("Main"),
   addressLine1: text("address_line_1").notNull(),
   addressLine2: text("address_line_2"),
@@ -121,13 +117,12 @@ export const salesAccountLocations = pgTable("sales_account_locations", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => ({
-  accountIdx: index("sales_account_locations_account_idx").on(table.accountId),
+  leadIdx: index("sales_lead_locations_lead_idx").on(table.leadId),
 }));
 
-// Sales Account Contacts
-export const salesAccountContacts = pgTable("sales_account_contacts", {
+export const salesLeadContacts = pgTable("sales_lead_contacts", {
   id: serial("id").primaryKey(),
-  accountId: integer("account_id").references(() => salesAccounts.id).notNull(),
+  leadId: integer("lead_id").references(() => salesLeads.id).notNull(),
   name: text("name").notNull(),
   jobTitle: text("job_title"),
   email: text("email"),
@@ -137,15 +132,14 @@ export const salesAccountContacts = pgTable("sales_account_contacts", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => ({
-  accountIdx: index("sales_account_contacts_account_idx").on(table.accountId),
+  leadIdx: index("sales_lead_contacts_lead_idx").on(table.leadId),
 }));
 
-// Sales Visits
 export const salesVisits = pgTable("sales_visits", {
   id: serial("id").primaryKey(),
   repId: integer("rep_id").references(() => salesReps.id).notNull(),
-  accountId: integer("account_id").references(() => salesAccounts.id).notNull(),
-  locationId: integer("location_id").references(() => salesAccountLocations.id),
+  leadId: integer("lead_id").references(() => salesLeads.id).notNull(),
+  locationId: integer("location_id").references(() => salesLeadLocations.id),
   status: salesVisitStatusEnum("status").notNull().default("planned"),
   scheduledAt: timestamp("scheduled_at"),
   checkedInAt: timestamp("checked_in_at"),
@@ -164,11 +158,10 @@ export const salesVisits = pgTable("sales_visits", {
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => ({
   repIdx: index("sales_visits_rep_idx").on(table.repId),
-  accountIdx: index("sales_visits_account_idx").on(table.accountId),
+  leadIdx: index("sales_visits_lead_idx").on(table.leadId),
   statusIdx: index("sales_visits_status_idx").on(table.status),
 }));
 
-// Sales Visit Notes
 export const salesVisitNotes = pgTable("sales_visit_notes", {
   id: serial("id").primaryKey(),
   visitId: integer("visit_id").references(() => salesVisits.id).notNull().unique(),
@@ -187,10 +180,9 @@ export const salesVisitNotes = pgTable("sales_visit_notes", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Sales Opportunities (Local)
 export const salesOpportunitiesLocal = pgTable("sales_opportunities_local", {
   id: serial("id").primaryKey(),
-  accountId: integer("account_id").references(() => salesAccounts.id).notNull(),
+  leadId: integer("lead_id").references(() => salesLeads.id).notNull(),
   repId: integer("rep_id").references(() => salesReps.id).notNull(),
   visitId: integer("visit_id").references(() => salesVisits.id),
   title: text("title").notNull(),
@@ -207,15 +199,14 @@ export const salesOpportunitiesLocal = pgTable("sales_opportunities_local", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => ({
-  accountIdx: index("sales_opportunities_account_idx").on(table.accountId),
+  leadIdx: index("sales_opportunities_lead_idx").on(table.leadId),
   repIdx: index("sales_opportunities_rep_idx").on(table.repId),
   statusIdx: index("sales_opportunities_status_idx").on(table.status),
 }));
 
-// Sales Tasks
 export const salesTasks = pgTable("sales_tasks", {
   id: serial("id").primaryKey(),
-  accountId: integer("account_id").references(() => salesAccounts.id),
+  leadId: integer("lead_id").references(() => salesLeads.id),
   visitId: integer("visit_id").references(() => salesVisits.id),
   opportunityId: integer("opportunity_id").references(() => salesOpportunitiesLocal.id),
   repId: integer("rep_id").references(() => salesReps.id).notNull(),
@@ -232,7 +223,6 @@ export const salesTasks = pgTable("sales_tasks", {
   statusIdx: index("sales_tasks_status_idx").on(table.status),
 }));
 
-// Sales Sync Events
 export const salesSyncEvents = pgTable("sales_sync_events", {
   id: serial("id").primaryKey(),
   provider: text("provider").notNull().default("gohighlevel"),
@@ -250,7 +240,6 @@ export const salesSyncEvents = pgTable("sales_sync_events", {
   statusIdx: index("sales_sync_events_status_idx").on(table.status),
 }));
 
-// Sales App Settings
 export const salesAppSettings = pgTable("sales_app_settings", {
   id: serial("id").primaryKey(),
   checkInRequiresGps: boolean("check_in_requires_gps").notNull().default(true),
@@ -264,26 +253,25 @@ export const salesAppSettings = pgTable("sales_app_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Insert schemas
 export const insertSalesRepSchema = createInsertSchema(salesReps).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
 });
 
-export const insertSalesAccountSchema = createInsertSchema(salesAccounts).omit({
+export const insertSalesLeadSchema = createInsertSchema(salesLeads).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
 });
 
-export const insertSalesAccountLocationSchema = createInsertSchema(salesAccountLocations).omit({
+export const insertSalesLeadLocationSchema = createInsertSchema(salesLeadLocations).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
 });
 
-export const insertSalesAccountContactSchema = createInsertSchema(salesAccountContacts).omit({
+export const insertSalesLeadContactSchema = createInsertSchema(salesLeadContacts).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -324,19 +312,18 @@ export const insertSalesAppSettingsSchema = createInsertSchema(salesAppSettings)
   updatedAt: true,
 });
 
-// Types
 export type SalesRep = typeof salesReps.$inferSelect;
 export type InsertSalesRep = z.infer<typeof insertSalesRepSchema>;
 export type SalesRepRole = typeof salesRepRoleEnum.enumValues[number];
 
-export type SalesAccount = typeof salesAccounts.$inferSelect;
-export type InsertSalesAccount = z.infer<typeof insertSalesAccountSchema>;
+export type SalesLead = typeof salesLeads.$inferSelect;
+export type InsertSalesLead = z.infer<typeof insertSalesLeadSchema>;
 
-export type SalesAccountLocation = typeof salesAccountLocations.$inferSelect;
-export type InsertSalesAccountLocation = z.infer<typeof insertSalesAccountLocationSchema>;
+export type SalesLeadLocation = typeof salesLeadLocations.$inferSelect;
+export type InsertSalesLeadLocation = z.infer<typeof insertSalesLeadLocationSchema>;
 
-export type SalesAccountContact = typeof salesAccountContacts.$inferSelect;
-export type InsertSalesAccountContact = z.infer<typeof insertSalesAccountContactSchema>;
+export type SalesLeadContact = typeof salesLeadContacts.$inferSelect;
+export type InsertSalesLeadContact = z.infer<typeof insertSalesLeadContactSchema>;
 
 export type SalesVisit = typeof salesVisits.$inferSelect;
 export type InsertSalesVisit = z.infer<typeof insertSalesVisitSchema>;

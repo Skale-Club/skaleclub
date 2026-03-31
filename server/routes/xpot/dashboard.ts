@@ -8,11 +8,11 @@ export function createDashboardRouter() {
 
   router.get("/dashboard", async (req, res) => {
     const actor = (req as any).xpotActor as Awaited<ReturnType<typeof ensureXpotRep>>;
-    const [visits, opportunities, tasks, accounts] = await Promise.all([
+    const [visits, opportunities, tasks, leads] = await Promise.all([
       storage.listSalesVisits({ repId: actor!.rep.id }),
       storage.listSalesOpportunities({ repId: actor!.rep.id }),
       storage.listSalesTasks({ repId: actor!.rep.id }),
-      storage.listSalesAccounts({ ownerRepId: actor!.rep.id }),
+      storage.listSalesLeads({ ownerRepId: actor!.rep.id }),
     ]);
 
     const activeVisit = visits.find((visit) => visit.status === "in_progress") || null;
@@ -35,16 +35,16 @@ export function createDashboardRouter() {
         openOpportunities: openOpportunities.length,
         pipelineValue: openOpportunities.reduce((sum, item) => sum + (item.value || 0), 0),
         pendingTasks: pendingTasks.length,
-        assignedAccounts: accounts.length,
+        assignedLeads: leads.length,
       },
       recentVisits: await Promise.all(visits.slice(0, 5).map(async (visit) => ({
         ...visit,
-        account: await storage.getSalesAccount(visit.accountId),
+        lead: await storage.getSalesLead(visit.leadId),
         note: await storage.getSalesVisitNote(visit.id),
       }))),
       openOpportunities: await Promise.all(openOpportunities.slice(0, 5).map(async (item) => ({
         ...item,
-        account: await storage.getSalesAccount(item.accountId),
+        lead: await storage.getSalesLead(item.leadId),
       }))),
       pendingTasks: pendingTasks.slice(0, 5),
     });

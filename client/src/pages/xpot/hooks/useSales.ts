@@ -13,7 +13,7 @@ export function useSales() {
   const { xpotMeQuery } = useXpotQueries();
   const { activeVisit } = useVisits();
 
-  const [opportunityForm, setOpportunityForm] = useState({ accountId: "", title: "", value: "", pipelineKey: "", stageKey: "" });
+  const [opportunityForm, setOpportunityForm] = useState({ leadId: "", title: "", value: "", pipelineKey: "", stageKey: "" });
   const [taskForm, setTaskForm] = useState({ title: "", dueAt: "" });
 
   const opportunitiesQuery = useQuery<SalesOpportunity[]>({ queryKey: ["/api/xpot/opportunities"], enabled: xpotMeQuery.isSuccess });
@@ -22,7 +22,7 @@ export function useSales() {
   const createOpportunityMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/xpot/opportunities", {
-        accountId: Number(opportunityForm.accountId),
+        leadId: Number(opportunityForm.leadId),
         visitId: activeVisit?.id,
         title: opportunityForm.title,
         value: Number(opportunityForm.value || 0),
@@ -34,7 +34,7 @@ export function useSales() {
     },
     onSuccess: async () => {
       toast({ title: "Opportunity created" });
-      setOpportunityForm({ accountId: "", title: "", value: "", pipelineKey: "", stageKey: "" });
+      setOpportunityForm({ leadId: "", title: "", value: "", pipelineKey: "", stageKey: "" });
       await invalidateXpotData();
     },
     onError: (error: Error) => {
@@ -43,9 +43,9 @@ export function useSales() {
   });
 
   const createTaskMutation = useMutation({
-    mutationFn: async ({ selectedAccountId }: { selectedAccountId?: number | "" }) => {
+    mutationFn: async ({ selectedLeadId }: { selectedLeadId?: number | "" }) => {
       const response = await apiRequest("POST", "/api/xpot/tasks", {
-        accountId: selectedAccountId ? Number(selectedAccountId) : undefined,
+        leadId: selectedLeadId ? Number(selectedLeadId) : undefined,
         visitId: activeVisit?.id,
         title: taskForm.title,
         dueAt: taskForm.dueAt ? new Date(taskForm.dueAt).toISOString() : undefined,

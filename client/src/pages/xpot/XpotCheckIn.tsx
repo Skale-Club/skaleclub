@@ -9,27 +9,27 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useXpotShared } from "./hooks/useXpotShared";
 import { useXpotQueries } from "./hooks/useXpotQueries";
-import { useAccounts } from "./hooks/useAccounts";
+import { useLeads } from "./hooks/useLeads";
 import { useCheckIn } from "./hooks/useCheckIn";
 import { useVisits } from "./hooks/useVisits";
 import { ConfirmSlider } from "./ConfirmSlider";
-import { findMatchingAccount, formatDateTime } from "./utils";
+import { findMatchingLead, formatDateTime } from "./utils";
 
 export function XpotCheckIn() {
   const { geoState, loadCurrentLocation } = useXpotShared();
   const {
-    selectedAccountId,
-    setSelectedAccountId,
-    selectedAccount,
+    selectedLeadId,
+    setSelectedLeadId,
+    selectedLead,
     checkInSearch,
     setCheckInSearch,
     checkInDropdownOpen,
     setCheckInDropdownOpen,
-    filteredAccountsForCheckIn,
+    filteredLeadsForCheckIn,
     checkInPlaceQuery,
     checkInMutation,
-    createAccountMutation,
-    pickLocalAccountForCheckIn,
+    createLeadMutation,
+    pickLocalLeadForCheckIn,
     pickGooglePlaceForCheckIn,
     createNewCompanyFromSearch,
     visitNoteForm,
@@ -44,7 +44,7 @@ export function XpotCheckIn() {
     uploadAudioMutation,
     saveNoteMutation,
   } = useCheckIn();
-  const { accountsQuery } = useAccounts();
+  const { leadsQuery } = useLeads();
   const { activeVisit, checkOutMutation, cancelVisitMutation } = useVisits();
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -86,7 +86,7 @@ export function XpotCheckIn() {
           {checkInSearch && (
             <button
               type="button"
-              onClick={() => { setCheckInSearch(""); setSelectedAccountId(""); }}
+              onClick={() => { setCheckInSearch(""); setSelectedLeadId(""); }}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-white/35 hover:text-white/60"
             >
               <X className="h-4 w-4" />
@@ -101,7 +101,7 @@ export function XpotCheckIn() {
                 <button
                   type="button"
                   onClick={createNewCompanyFromSearch}
-                  disabled={createAccountMutation.isPending}
+                  disabled={createLeadMutation.isPending}
                   className="flex w-full items-center gap-3 border-b border-white/5 px-4 py-3 text-left transition hover:bg-white/5 disabled:opacity-50"
                 >
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
@@ -114,19 +114,19 @@ export function XpotCheckIn() {
                 </button>
               )}
 
-              {filteredAccountsForCheckIn.map((account) => (
+              {filteredLeadsForCheckIn.map((lead) => (
                 <button
-                  key={account.id}
+                  key={lead.id}
                   type="button"
-                  onClick={() => { pickLocalAccountForCheckIn(account); setCheckInDropdownOpen(false); }}
+                  onClick={() => { pickLocalLeadForCheckIn(lead); setCheckInDropdownOpen(false); }}
                   className="flex w-full items-center gap-3 border-b border-white/5 px-4 py-3 text-left transition hover:bg-white/5"
                 >
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white/60">
                     <Building2 className="h-4 w-4" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate font-medium text-white">{account.name}</div>
-                    <div className="truncate text-xs text-white/45">{account.locations?.[0]?.addressLine1 || account.industry || "Local lead"}</div>
+                    <div className="truncate font-medium text-white">{lead.name}</div>
+                    <div className="truncate text-xs text-white/45">{lead.locations?.[0]?.addressLine1 || lead.industry || "Local lead"}</div>
                   </div>
                   <Badge variant="secondary" className="shrink-0 bg-white/10 text-white/60 text-[10px]">Local</Badge>
                 </button>
@@ -146,7 +146,7 @@ export function XpotCheckIn() {
               ) : null}
 
               {checkInPlaceQuery.data?.results.map((place) => {
-                const existingAccount = findMatchingAccount(place, accountsQuery.data || []);
+                const existingLead = findMatchingLead(place, leadsQuery.data || []);
                 return (
                   <button
                     key={place.placeId}
@@ -165,14 +165,14 @@ export function XpotCheckIn() {
                         {place.phone ? <span>{place.phone}</span> : null}
                       </div>
                     </div>
-                    <Badge className={existingAccount ? "shrink-0 bg-white/10 text-white/60 text-[10px]" : "shrink-0 bg-cyan-400/10 text-cyan-200 text-[10px]"}>
-                      {existingAccount ? "Match" : "Google"}
+                    <Badge className={existingLead ? "shrink-0 bg-white/10 text-white/60 text-[10px]" : "shrink-0 bg-cyan-400/10 text-cyan-200 text-[10px]"}>
+                      {existingLead ? "Match" : "Google"}
                     </Badge>
                   </button>
                 );
               })}
 
-              {!filteredAccountsForCheckIn.length && !checkInPlaceQuery.isFetching && !checkInPlaceQuery.data?.results?.length && checkInSearch.trim().length < 3 ? (
+              {!filteredLeadsForCheckIn.length && !checkInPlaceQuery.isFetching && !checkInPlaceQuery.data?.results?.length && checkInSearch.trim().length < 3 ? (
                 <div className="px-4 py-3 text-sm text-white/40">Type at least 3 characters to search</div>
               ) : null}
             </div>
@@ -193,25 +193,25 @@ export function XpotCheckIn() {
         ) : null}
         {!activeVisit ? (
           <>
-            {selectedAccount ? (
+            {selectedLead ? (
               <div className="rounded-2xl border border-primary/20 bg-primary/10 p-4">
                 <div className="text-xs uppercase tracking-[0.2em] text-primary/70">Selected Lead</div>
-                <div className="mt-1 text-xl font-semibold">{selectedAccount.name}</div>
-                <div className="mt-1 text-sm text-white/60">{selectedAccount.locations?.[0]?.addressLine1 || "No address saved yet"}</div>
+                <div className="mt-1 text-xl font-semibold">{selectedLead.name}</div>
+                <div className="mt-1 text-sm text-white/60">{selectedLead.locations?.[0]?.addressLine1 || "No address saved yet"}</div>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <Badge className="bg-primary text-black">{selectedAccount.status}</Badge>
-                  <Badge variant="secondary" className="bg-white/10 text-white/70">{selectedAccount.source === "google_places" ? "Imported from Places" : "Local lead"}</Badge>
+                  <Badge className="bg-primary text-black">{selectedLead.status}</Badge>
+                  <Badge variant="secondary" className="bg-white/10 text-white/70">{selectedLead.source === "google_places" ? "Imported from Places" : "Local lead"}</Badge>
                 </div>
               </div>
             ) : null}
 
             <div className={checkInDropdownOpen ? "pointer-events-none" : ""}>
               <ConfirmSlider
-                label={selectedAccount ? "SLIDE TO CHECK IN" : "SELECT A LEAD FIRST"}
-                helperText={selectedAccount ? `Confirm visit start for ${selectedAccount.name}` : "Choose a local lead or Google Place to enable check-in."}
-                loading={checkInMutation.isPending || createAccountMutation.isPending}
-                disabled={!selectedAccountId || createAccountMutation.isPending}
-                onConfirm={() => checkInMutation.mutate({ accountId: Number(selectedAccountId), lat: geoState.lat, lng: geoState.lng, gpsAccuracyMeters: geoState.accuracy })}
+                label={selectedLead ? "SLIDE TO CHECK IN" : "SELECT A LEAD FIRST"}
+                helperText={selectedLead ? `Confirm visit start for ${selectedLead.name}` : "Choose a local lead or Google Place to enable check-in."}
+                loading={checkInMutation.isPending || createLeadMutation.isPending}
+                disabled={!selectedLeadId || createLeadMutation.isPending}
+                onConfirm={() => checkInMutation.mutate({ leadId: Number(selectedLeadId), lat: geoState.lat, lng: geoState.lng, gpsAccuracyMeters: geoState.accuracy })}
               />
             </div>
           </>
@@ -223,7 +223,7 @@ export function XpotCheckIn() {
                 <span className="text-xs uppercase tracking-[0.2em]">Visit Timer</span>
               </div>
               <div className="text-4xl font-mono font-bold tracking-wider text-white tabular-nums">{elapsedDisplay}</div>
-              <div className="text-base font-semibold text-white">{activeVisit.account?.name || `Lead #${activeVisit.accountId}`}</div>
+              <div className="text-base font-semibold text-white">{activeVisit.lead?.name || `Lead #${activeVisit.leadId}`}</div>
               <Badge className="bg-primary text-black text-[10px]">{activeVisit.validationStatus}</Badge>
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm text-white/65">

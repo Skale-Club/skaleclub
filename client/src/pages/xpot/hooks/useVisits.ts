@@ -4,14 +4,14 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useXpotShared } from "./useXpotShared";
 import { useXpotQueries } from "./useXpotQueries";
-import type { SalesVisit } from "./types";
+import type { EnrichedSalesVisit } from "./types";
 
 export function useVisits() {
   const { toast } = useToast();
   const { geoState, invalidateXpotData } = useXpotShared();
   const { xpotMeQuery } = useXpotQueries();
 
-  const visitsQuery = useQuery<SalesVisit[]>({ queryKey: ["/api/xpot/visits"], enabled: xpotMeQuery.isSuccess });
+  const visitsQuery = useQuery<EnrichedSalesVisit[]>({ queryKey: ["/api/xpot/visits"], enabled: xpotMeQuery.isSuccess });
 
   const checkingInRef = useRef(false);
 

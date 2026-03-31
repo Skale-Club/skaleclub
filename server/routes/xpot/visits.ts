@@ -10,15 +10,15 @@ export function createVisitsRouter() {
 
   router.get("/visits", async (req, res) => {
     const actor = (req as any).xpotActor as Awaited<ReturnType<typeof ensureXpotRep>>;
-    const accountId = typeof req.query.accountId === "string" ? Number(req.query.accountId) : undefined;
+    const leadId = typeof req.query.leadId === "string" ? Number(req.query.leadId) : undefined;
     const visits = await storage.listSalesVisits({
       repId: actor!.user.isAdmin && req.query.all === "true" ? undefined : actor!.rep.id,
-      accountId,
+      leadId,
     });
 
     const result = await Promise.all(visits.map(async (visit) => ({
       ...visit,
-      account: await storage.getSalesAccount(visit.accountId),
+      lead: await storage.getSalesLead(visit.leadId),
       note: await storage.getSalesVisitNote(visit.id),
     })));
 
@@ -34,12 +34,12 @@ export function createVisitsRouter() {
     }
 
     const appSettings = await storage.getSalesAppSettings();
-    const account = await storage.getSalesAccount(input.accountId);
-    if (!account) {
-      return res.status(404).json({ message: "Account not found" });
+    const lead = await storage.getSalesLead(input.leadId);
+    if (!lead) {
+      return res.status(404).json({ message: "Lead not found" });
     }
 
-    const locations = await storage.listSalesAccountLocations(input.accountId);
+    const locations = await storage.listSalesLeadLocations(input.leadId);
     const selectedLocation = input.locationId
       ? locations.find((location) => location.id === input.locationId)
       : locations.find((location) => location.isPrimary) || locations[0];
@@ -72,7 +72,7 @@ export function createVisitsRouter() {
 
     const visit = await storage.createSalesVisit({
       repId: actor!.rep.id,
-      accountId: account.id,
+      leadId: lead.id,
       locationId: selectedLocation?.id,
       status: "in_progress",
       scheduledAt: null,
@@ -90,12 +90,12 @@ export function createVisitsRouter() {
       source: "field-mobile",
     });
 
-    await storage.updateSalesAccount(account.id, {
+    await storage.updateSalesLead(lead.id, {
       lastVisitAt: visit.checkedInAt,
       nextVisitDueAt: null,
     });
 
-    res.status(201).json({ visit, account, location: selectedLocation ?? null });
+    res.status(201).json({ visit, lead, location: selectedLocation ?? null });
   });
 
   router.post("/visits/:id/check-out", async (req, res) => {
@@ -120,7 +120,7 @@ export function createVisitsRouter() {
       checkOutLng: input.lng?.toString(),
     });
 
-    await storage.updateSalesAccount(visit.accountId, {
+    await storage.updateSalesLead(visit.leadId, {
       lastVisitAt: checkedOutAt,
     });
 

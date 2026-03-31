@@ -3,12 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { useAccounts } from "./hooks/useAccounts";
+import { useLeads } from "./hooks/useLeads";
 import { useSales } from "./hooks/useSales";
 import { formatCurrency, formatDateTime } from "./utils";
+import type { EnrichedSalesOpportunity } from "./types";
 
 export function XpotSales() {
-  const { accountsQuery } = useAccounts();
+  const { leadsQuery } = useLeads();
   const {
     opportunitiesQuery,
     tasksQuery,
@@ -26,9 +27,9 @@ export function XpotSales() {
       <Card className="border-white/10 bg-white/5 text-white">
         <CardHeader><CardTitle className="text-base">Create Opportunity</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <select value={opportunityForm.accountId} onChange={(event) => setOpportunityForm((prev) => ({ ...prev, accountId: event.target.value }))} className="h-11 w-full rounded-md border border-white/10 bg-white/5 px-3 text-sm text-white focus:outline-none">
+          <select value={opportunityForm.leadId} onChange={(event) => setOpportunityForm((prev) => ({ ...prev, leadId: event.target.value }))} className="h-11 w-full rounded-md border border-white/10 bg-white/5 px-3 text-sm text-white focus:outline-none">
             <option value="">Choose a lead</option>
-            {accountsQuery.data?.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}
+            {leadsQuery.data?.map((lead) => <option key={lead.id} value={lead.id}>{lead.name}</option>)}
           </select>
           <Input value={opportunityForm.title} onChange={(event) => setOpportunityForm((prev) => ({ ...prev, title: event.target.value }))} placeholder="Opportunity title" className="border-white/10 bg-white/5 text-white placeholder:text-white/35" />
           <div className="grid grid-cols-3 gap-3">
@@ -36,7 +37,7 @@ export function XpotSales() {
             <Input value={opportunityForm.pipelineKey} onChange={(event) => setOpportunityForm((prev) => ({ ...prev, pipelineKey: event.target.value }))} placeholder="Pipeline ID" className="border-white/10 bg-white/5 text-white placeholder:text-white/35" />
             <Input value={opportunityForm.stageKey} onChange={(event) => setOpportunityForm((prev) => ({ ...prev, stageKey: event.target.value }))} placeholder="Stage ID" className="border-white/10 bg-white/5 text-white placeholder:text-white/35" />
           </div>
-          <Button disabled={createOpportunityMutation.isPending || !opportunityForm.accountId || !opportunityForm.title.trim()} onClick={() => createOpportunityMutation.mutate(undefined as any)} className="w-full bg-primary text-black hover:bg-primary">
+          <Button disabled={createOpportunityMutation.isPending || !opportunityForm.leadId || !opportunityForm.title.trim()} onClick={() => createOpportunityMutation.mutate(undefined as any)} className="w-full bg-primary text-black hover:bg-primary">
             {createOpportunityMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Create Opportunity
           </Button>
@@ -56,13 +57,13 @@ export function XpotSales() {
       </Card>
 
       <div className="space-y-3">
-        {opportunitiesQuery.data?.map((opportunity) => (
+        {opportunitiesQuery.data?.map((opportunity: EnrichedSalesOpportunity) => (
           <Card key={opportunity.id} className="border-white/10 bg-white/5 text-white">
             <CardContent className="space-y-2 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="font-semibold">{opportunity.title}</div>
-                  <div className="text-sm text-white/55">{opportunity.account?.name || `Lead #${opportunity.accountId}`}</div>
+                  <div className="text-sm text-white/55">{opportunity.lead?.name || `Lead #${opportunity.leadId}`}</div>
                 </div>
                 <Badge variant="secondary" className="bg-white/10 text-white">{opportunity.syncStatus}</Badge>
               </div>

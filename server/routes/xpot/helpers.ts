@@ -105,53 +105,53 @@ export function getDistanceMeters(lat1: number, lng1: number, lat2: number, lng2
   return Math.round(earthRadiusMeters * c);
 }
 
-export async function syncAccountToGhl(accountId: number) {
+export async function syncLeadToGhl(leadId: number) {
   const integration = await storage.getIntegrationSettings("gohighlevel");
   if (!integration?.isEnabled || !integration.apiKey || !integration.locationId) {
     return { synced: false, message: "GHL not configured" };
   }
 
-  const account = await storage.getSalesAccount(accountId);
-  if (!account) {
-    return { synced: false, message: "Account not found" };
+  const lead = await storage.getSalesLead(leadId);
+  if (!lead) {
+    return { synced: false, message: "Lead not found" };
   }
 
-  if (!account.email && !account.phone) {
+  if (!lead.email && !lead.phone) {
     await storage.createSalesSyncEvent({
-      entityType: "sales_account",
-      entityId: String(account.id),
+      entityType: "sales_lead",
+      entityId: String(lead.id),
       status: "needs_review",
       payload: { reason: "Missing email and phone for GHL sync" },
       lastError: "Missing email and phone for GHL sync",
     });
-    return { synced: false, message: "Missing account email and phone" };
+    return { synced: false, message: "Missing lead email and phone" };
   }
 
-  const [firstName, ...rest] = account.name.split(" ");
+  const [firstName, ...rest] = lead.name.split(" ");
   const syncResult = await getOrCreateGHLContact(integration.apiKey, integration.locationId, {
-    email: account.email || "",
-    firstName: firstName || account.name,
-    lastName: rest.join(" ") || account.legalName || "Account",
-    phone: account.phone || "",
-    address: (await storage.listSalesAccountLocations(account.id))[0]?.addressLine1,
+    email: lead.email || "",
+    firstName: firstName || lead.name,
+    lastName: rest.join(" ") || lead.legalName || "Lead",
+    phone: lead.phone || "",
+    address: (await storage.listSalesLeadLocations(lead.id))[0]?.addressLine1,
   });
 
   if (!syncResult.success || !syncResult.contactId) {
     await storage.createSalesSyncEvent({
-      entityType: "sales_account",
-      entityId: String(account.id),
+      entityType: "sales_lead",
+      entityId: String(lead.id),
       status: "failed",
-      payload: { accountId: account.id },
-      lastError: syncResult.message || "Failed to sync account to GHL",
+      payload: { leadId: lead.id },
+      lastError: syncResult.message || "Failed to sync lead to GHL",
       lastAttemptAt: new Date(),
     });
-    return { synced: false, message: syncResult.message || "Failed to sync account" };
+    return { synced: false, message: syncResult.message || "Failed to sync lead" };
   }
 
-  await storage.updateSalesAccount(account.id, { ghlContactId: syncResult.contactId });
+  await storage.updateSalesLead(lead.id, { ghlContactId: syncResult.contactId });
   await storage.createSalesSyncEvent({
-    entityType: "sales_account",
-    entityId: String(account.id),
+    entityType: "sales_lead",
+    entityId: String(lead.id),
     status: "synced",
     payload: { ghlContactId: syncResult.contactId },
     lastAttemptAt: new Date(),
@@ -172,9 +172,9 @@ export async function syncOpportunityToGhl(opportunityId: number) {
     return { synced: false, message: "Opportunity not found" };
   }
 
-  const account = await storage.getSalesAccount(opportunity.accountId);
-  if (!account?.ghlContactId) {
-    return { synced: false, message: "Account is not synced to GHL yet" };
+  const lead = await storage.getSalesLead(opportunity.leadId);
+  if (!lead?.ghlContactId) {
+    return { synced: false, message: "Lead is not synced to GHL yet" };
   }
 
   const pipelineId = opportunity.pipelineKey || appSettings.defaultPipelineKey || undefined;
@@ -201,7 +201,7 @@ export async function syncOpportunityToGhl(opportunityId: number) {
   }
 
   const createResult = await createGHLOpportunity(integration.apiKey, integration.locationId, {
-    contactId: account.ghlContactId,
+    contactId: lead.ghlContactId,
     name: opportunity.title,
     monetaryValue: opportunity.value,
     pipelineId,
@@ -237,9 +237,9 @@ export async function syncTaskToGhl(taskId: number) {
   }
 
   let contactId: string | undefined;
-  if (task.accountId) {
-    const account = await storage.getSalesAccount(task.accountId);
-    contactId = account?.ghlContactId || undefined;
+  if (task.leadId) {
+    const lead = await storage.getSalesLead(task.leadId);
+    contactId = lead?.ghlContactId || undefined;
   }
 
   const createResult = await createGHLTask(integration.apiKey, integration.locationId, {

@@ -7,9 +7,9 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useVisits } from "./hooks/useVisits";
 import { formatDateTime, formatDuration } from "./utils";
-import type { SalesVisit, SalesVisitNote } from "./types";
+import type { EnrichedSalesVisit, SalesVisitNote } from "./types";
 
-function VisitAudioRecorder({ visit }: { visit: SalesVisit }) {
+function VisitAudioRecorder({ visit }: { visit: EnrichedSalesVisit }) {
   const { toast } = useToast();
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -178,7 +178,7 @@ export function XpotVisits() {
         <Card key={visit.id} className="border-white/10 bg-white/5 text-white">
           <CardContent className="space-y-3 p-4">
             <div className="flex items-center justify-between gap-3">
-              <div className="font-semibold">{visit.account?.name || `Lead #${visit.accountId}`}</div>
+              <div className="font-semibold">{visit.lead?.name || `Lead #${visit.leadId}`}</div>
               <Badge variant="secondary" className="bg-white/10 text-white">{visit.status}</Badge>
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm text-white/60">

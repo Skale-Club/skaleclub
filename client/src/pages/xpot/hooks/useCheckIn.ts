@@ -3,12 +3,12 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { usePlaceSearch } from "../usePlaceSearch";
-import { findMatchingAccount, parseAddress } from "../utils";
+import { findMatchingLead, parseAddress } from "../utils";
 import { useXpotShared } from "./useXpotShared";
 import { useXpotQueries } from "./useXpotQueries";
-import { useAccounts } from "./useAccounts";
+import { useLeads } from "./useLeads";
 import { useVisits } from "./useVisits";
-import type { GooglePlaceResult, SalesAccount, SalesAccountPayload, SalesVisitNote } from "./types";
+import type { GooglePlaceResult, FullSalesLead, SalesLeadPayload, SalesVisitNote } from "./types";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyMutation = ReturnType<typeof useMutation<any, any, any, any>>;
@@ -17,10 +17,10 @@ export function useCheckIn() {
   const { toast } = useToast();
   const { geoState, invalidateXpotData } = useXpotShared();
   const { xpotMeQuery, activeTab, isOnline } = useXpotQueries();
-  const { accountsQuery, createAccountMutation } = useAccounts();
+  const { leadsQuery, createLeadMutation } = useLeads();
   const { activeVisit, checkingInRef } = useVisits();
 
-  const [selectedAccountId, setSelectedAccountId] = useState<number | "">("");
+  const [selectedLeadId, setSelectedLeadId] = useState<number | "">("");
   const [checkInSearch, setCheckInSearch] = useState("");
   const [checkInDropdownOpen, setCheckInDropdownOpen] = useState(false);
   const [visitNoteForm, setVisitNoteForm] = useState({ summary: "", outcome: "", nextStep: "", followUpRequired: false });
@@ -32,26 +32,26 @@ export function useCheckIn() {
 
   const checkInPlaceQuery = usePlaceSearch(checkInSearch, xpotMeQuery.isSuccess && activeTab === "check-in", geoState);
 
-  const selectedAccount = useMemo(
-    () => (typeof selectedAccountId === "number" ? accountsQuery.data?.find((account) => account.id === selectedAccountId) || null : null),
-    [accountsQuery.data, selectedAccountId],
+  const selectedLead = useMemo(
+    () => (typeof selectedLeadId === "number" ? leadsQuery.data?.find((lead) => lead.id === selectedLeadId) || null : null),
+    [leadsQuery.data, selectedLeadId],
   );
 
-  const filteredAccountsForCheckIn = useMemo(() => {
+  const filteredLeadsForCheckIn = useMemo(() => {
     const search = checkInSearch.trim().toLowerCase();
-    if (!search) return (accountsQuery.data || []).slice(0, 6);
+    if (!search) return (leadsQuery.data || []).slice(0, 6);
 
-    return (accountsQuery.data || []).filter((account) => {
+    return (leadsQuery.data || []).filter((lead) => {
       const haystack = [
-        account.name,
-        account.industry,
-        account.phone,
-        account.email,
-        account.locations?.map((location) => `${location.addressLine1} ${location.city || ""} ${location.state || ""}`).join(" "),
+        lead.name,
+        lead.industry,
+        lead.phone,
+        lead.email,
+        lead.locations?.map((location) => `${location.addressLine1} ${location.city || ""} ${location.state || ""}`).join(" "),
       ].filter(Boolean).join(" ").toLowerCase();
       return haystack.includes(search);
     }).slice(0, 6);
-  }, [accountsQuery.data, checkInSearch]);
+  }, [leadsQuery.data, checkInSearch]);
 
   useEffect(() => {
     if (activeVisit?.note) {
@@ -65,7 +65,7 @@ export function useCheckIn() {
   }, [activeVisit?.id, activeVisit?.note]);
 
   const checkInMutation = useMutation({
-    mutationFn: async (input: { accountId: number; lat?: number; lng?: number; gpsAccuracyMeters?: number | null }) => {
+    mutationFn: async (input: { leadId: number; lat?: number; lng?: number; gpsAccuracyMeters?: number | null }) => {
       if (!isOnline) throw new Error("You are offline. Please check your connection.");
       checkingInRef.current = true;
       const response = await apiRequest("POST", "/api/xpot/visits/check-in", input);
@@ -177,22 +177,22 @@ export function useCheckIn() {
     }
   };
 
-  const pickLocalAccountForCheckIn = (account: SalesAccount) => {
-    setSelectedAccountId(account.id);
-    setCheckInSearch(account.name);
+  const pickLocalLeadForCheckIn = (lead: FullSalesLead) => {
+    setSelectedLeadId(lead.id);
+    setCheckInSearch(lead.name);
   };
 
   const pickGooglePlaceForCheckIn = async (place: GooglePlaceResult) => {
-    const existingAccount = findMatchingAccount(place, accountsQuery.data || []);
-    if (existingAccount) {
-      setSelectedAccountId(existingAccount.id);
-      setCheckInSearch(existingAccount.name);
-      toast({ title: "Local lead selected", description: existingAccount.name });
+    const existingLead = findMatchingLead(place, leadsQuery.data || []);
+    if (existingLead) {
+      setSelectedLeadId(existingLead.id);
+      setCheckInSearch(existingLead.name);
+      toast({ title: "Local lead selected", description: existingLead.name });
       return;
     }
 
     const parsedAddress = parseAddress(place.address);
-    const createdAccount = await createAccountMutation.mutateAsync({
+    const createdLead = await createLeadMutation.mutateAsync({
       name: place.name,
       phone: place.phone || undefined,
       website: place.website || undefined,
@@ -213,7 +213,7 @@ export function useCheckIn() {
       },
     });
 
-    setSelectedAccountId(createdAccount.account.id);
+    setSelectedLeadId(createdLead.lead.id);
     setCheckInSearch(place.name);
     toast({ title: "Business imported for check-in", description: place.name });
     await invalidateXpotData();
@@ -223,7 +223,7 @@ export function useCheckIn() {
     const name = checkInSearch.trim();
     if (!name) return;
 
-    const createdAccount = await createAccountMutation.mutateAsync({
+    const createdLead = await createLeadMutation.mutateAsync({
       name,
       source: "manual",
       status: "lead",
@@ -239,26 +239,26 @@ export function useCheckIn() {
       },
     });
 
-    setSelectedAccountId(createdAccount.account.id);
-    setCheckInSearch(createdAccount.account.name);
+    setSelectedLeadId(createdLead.lead.id);
+    setCheckInSearch(createdLead.lead.name);
     setCheckInDropdownOpen(false);
-    toast({ title: "Company created", description: createdAccount.account.name });
+    toast({ title: "Company created", description: createdLead.lead.name });
     await invalidateXpotData();
   };
 
   return {
-    selectedAccountId,
-    setSelectedAccountId,
-    selectedAccount,
+    selectedLeadId,
+    setSelectedLeadId,
+    selectedLead,
     checkInSearch,
     setCheckInSearch,
     checkInDropdownOpen,
     setCheckInDropdownOpen,
-    filteredAccountsForCheckIn,
+    filteredLeadsForCheckIn,
     checkInPlaceQuery,
     checkInMutation,
-    createAccountMutation,
-    pickLocalAccountForCheckIn,
+    createLeadMutation,
+    pickLocalLeadForCheckIn,
     pickGooglePlaceForCheckIn,
     createNewCompanyFromSearch,
     visitNoteForm,

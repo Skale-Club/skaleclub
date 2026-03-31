@@ -7,10 +7,11 @@ import { useVisits } from "./xpot/hooks/useVisits";
 import { GeoProvider } from "./xpot/hooks/GeoProvider";
 import { tabs } from "./xpot/utils";
 import { XpotCheckIn } from "./xpot/XpotCheckIn";
-import { XpotAccounts } from "./xpot/XpotAccounts";
+import { XpotLeads } from "./xpot/XpotLeads";
 import { XpotVisits } from "./xpot/XpotVisits";
 import { XpotSales } from "./xpot/XpotSales";
 import { XpotDashboard } from "./xpot/XpotDashboard";
+import type { EnrichedSalesVisit } from "./xpot/types";
 
 function XpotAppShell() {
   const {
@@ -76,7 +77,7 @@ function XpotAppShell() {
             <div>
               <div className="text-xs uppercase tracking-[0.24em] text-white/45">Live Status</div>
               <div className="mt-2 text-lg font-semibold">
-                {activeVisit ? `Checked in at ${activeVisit.account?.name || `Lead #${activeVisit.accountId}`}` : "Ready for next visit"}
+                {activeVisit ? `Checked in at ${activeVisit.lead?.name || `Lead #${activeVisit.leadId}`}` : "Ready for next visit"}
               </div>
             </div>
             <Badge className={activeVisit ? "bg-primary text-black" : "bg-white/10 text-white"}>
@@ -87,7 +88,7 @@ function XpotAppShell() {
 
         <main className="flex-1 space-y-4">
           {activeTab === "dashboard" ? <XpotDashboard /> : null}
-          {activeTab === "accounts" ? <XpotAccounts /> : null}
+          {activeTab === "leads" ? <XpotLeads /> : null}
           {activeTab === "check-in" ? <XpotCheckIn /> : null}
           {activeTab === "visits" ? <XpotVisits /> : null}
           {activeTab === "sales" ? <XpotSales /> : null}

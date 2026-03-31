@@ -8,7 +8,7 @@ export function useXpotShared() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["/api/xpot/me"] }),
       queryClient.invalidateQueries({ queryKey: ["/api/xpot/dashboard"] }),
-      queryClient.invalidateQueries({ queryKey: ["/api/xpot/accounts"] }),
+      queryClient.invalidateQueries({ queryKey: ["/api/xpot/leads"] }),
       queryClient.invalidateQueries({ queryKey: ["/api/xpot/visits"] }),
       queryClient.invalidateQueries({ queryKey: ["/api/xpot/opportunities"] }),
       queryClient.invalidateQueries({ queryKey: ["/api/xpot/tasks"] }),

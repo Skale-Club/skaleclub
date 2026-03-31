@@ -36,7 +36,7 @@ export function XpotDashboard() {
           {dashboardQuery.data?.recentVisits?.length ? dashboardQuery.data.recentVisits.map((visit) => (
             <div key={visit.id} className="rounded-xl border border-white/10 bg-black/20 p-3">
               <div className="flex items-center justify-between gap-3">
-                <div className="font-medium">{visit.account?.name || `Lead #${visit.accountId}`}</div>
+                <div className="font-medium">{visit.lead?.name || `Lead #${visit.leadId}`}</div>
                 <Badge variant="secondary" className="bg-white/10 text-white">{visit.status}</Badge>
               </div>
               <div className="mt-1 text-sm text-white/55">{formatDateTime(visit.checkedInAt)}</div>

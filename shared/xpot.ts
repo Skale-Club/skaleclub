@@ -1,15 +1,15 @@
 import { z } from "zod";
 import {
-  insertSalesAccountContactSchema,
-  insertSalesAccountLocationSchema,
-  insertSalesAccountSchema,
+  insertSalesLeadContactSchema,
+  insertSalesLeadLocationSchema,
+  insertSalesLeadSchema,
   insertSalesOpportunitySchema,
   insertSalesTaskSchema,
   insertSalesVisitNoteSchema,
 } from "./schema.js";
 
 export const xpotCheckInSchema = z.object({
-  accountId: z.number().int().positive(),
+  leadId: z.number().int().positive(),
   locationId: z.number().int().positive().optional(),
   lat: z.number().min(-90).max(90).optional(),
   lng: z.number().min(-180).max(180).optional(),
@@ -34,8 +34,8 @@ export const xpotVisitNoteUpsertSchema = insertSalesVisitNoteSchema.pick({
   audioDurationSeconds: true,
 }).partial();
 
-export const xpotAccountCreateSchema = insertSalesAccountSchema.extend({
-  primaryLocation: insertSalesAccountLocationSchema.pick({
+export const xpotLeadCreateSchema = insertSalesLeadSchema.extend({
+  primaryLocation: insertSalesLeadLocationSchema.pick({
     label: true,
     addressLine1: true,
     addressLine2: true,
@@ -50,9 +50,9 @@ export const xpotAccountCreateSchema = insertSalesAccountSchema.extend({
   }).optional(),
 });
 
-export const xpotAccountUpdateSchema = xpotAccountCreateSchema.partial();
+export const xpotLeadUpdateSchema = xpotLeadCreateSchema.partial();
 
-export const xpotAccountContactCreateSchema = insertSalesAccountContactSchema.pick({
+export const xpotLeadContactCreateSchema = insertSalesLeadContactSchema.pick({
   name: true,
   jobTitle: true,
   email: true,
@@ -61,7 +61,7 @@ export const xpotAccountContactCreateSchema = insertSalesAccountContactSchema.pi
 });
 
 export const xpotOpportunityCreateSchema = insertSalesOpportunitySchema.pick({
-  accountId: true,
+  leadId: true,
   visitId: true,
   title: true,
   pipelineKey: true,
@@ -85,7 +85,7 @@ export const xpotOpportunityUpdateSchema = insertSalesOpportunitySchema.pick({
 }).partial();
 
 export const xpotTaskCreateSchema = insertSalesTaskSchema.pick({
-  accountId: true,
+  leadId: true,
   visitId: true,
   opportunityId: true,
   type: true,
@@ -104,9 +104,9 @@ export const xpotTaskUpdateSchema = insertSalesTaskSchema.pick({
 export type XpotCheckInInput = z.infer<typeof xpotCheckInSchema>;
 export type XpotCheckOutInput = z.infer<typeof xpotCheckOutSchema>;
 export type XpotVisitNoteUpsertInput = z.infer<typeof xpotVisitNoteUpsertSchema>;
-export type XpotAccountCreateInput = z.infer<typeof xpotAccountCreateSchema>;
-export type XpotAccountUpdateInput = z.infer<typeof xpotAccountUpdateSchema>;
-export type XpotAccountContactCreateInput = z.infer<typeof xpotAccountContactCreateSchema>;
+export type XpotLeadCreateInput = z.infer<typeof xpotLeadCreateSchema>;
+export type XpotLeadUpdateInput = z.infer<typeof xpotLeadUpdateSchema>;
+export type XpotLeadContactCreateInput = z.infer<typeof xpotLeadContactCreateSchema>;
 export type XpotOpportunityCreateInput = z.infer<typeof xpotOpportunityCreateSchema>;
 export type XpotOpportunityUpdateInput = z.infer<typeof xpotOpportunityUpdateSchema>;
 export type XpotTaskCreateInput = z.infer<typeof xpotTaskCreateSchema>;

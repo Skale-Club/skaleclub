@@ -21,7 +21,7 @@ export function createOpportunitiesRouter() {
 
     const result = await Promise.all(opportunities.map(async (item) => ({
       ...item,
-      account: await storage.getSalesAccount(item.accountId),
+      lead: await storage.getSalesLead(item.leadId),
     })));
     res.json(result);
   });

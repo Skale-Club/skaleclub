@@ -9,9 +9,9 @@ export function createAdminRouter() {
   router.use(requireXpotManager);
 
   router.get("/admin/overview", async (_req, res) => {
-    const [reps, accounts, visits, opportunities, tasks, syncEvents] = await Promise.all([
+    const [reps, leads, visits, opportunities, tasks, syncEvents] = await Promise.all([
       storage.listSalesReps(),
-      storage.listSalesAccounts(),
+      storage.listSalesLeads(),
       storage.listSalesVisits(),
       storage.listSalesOpportunities(),
       storage.listSalesTasks(),
@@ -22,7 +22,7 @@ export function createAdminRouter() {
       reps,
       metrics: {
         activeReps: reps.filter((rep) => rep.isActive).length,
-        accounts: accounts.length,
+        leads: leads.length,
         visitsInProgress: visits.filter((visit) => visit.status === "in_progress").length,
         completedVisits: visits.filter((visit) => visit.status === "completed").length,
         openOpportunities: opportunities.filter((item) => item.status === "open").length,

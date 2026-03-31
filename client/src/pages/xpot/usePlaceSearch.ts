@@ -1,6 +1,8 @@
 import { useDeferredValue } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { PlaceSearchResponse } from "./types";
+import type { GooglePlaceResult } from "./types";
+
+type PlaceSearchResponse = { results: GooglePlaceResult[] };
 
 export function usePlaceSearch(
   search: string,

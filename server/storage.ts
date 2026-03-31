@@ -13,9 +13,9 @@ import {
   blogPosts,
   portfolioServices,
   salesReps,
-  salesAccounts,
-  salesAccountLocations,
-  salesAccountContacts,
+  salesLeads,
+  salesLeadLocations,
+  salesLeadContacts,
   salesVisits,
   salesVisitNotes,
   salesOpportunitiesLocal,
@@ -37,9 +37,9 @@ import {
   type BlogPost,
   type PortfolioService,
   type SalesRep,
-  type SalesAccount,
-  type SalesAccountLocation,
-  type SalesAccountContact,
+  type SalesLead,
+  type SalesLeadLocation,
+  type SalesLeadContact,
   type SalesVisit,
   type SalesVisitNote,
   type SalesOpportunity,
@@ -57,9 +57,9 @@ import {
   type InsertIntegrationSettings,
   type InsertBlogPost,
   type InsertSalesRep,
-  type InsertSalesAccount,
-  type InsertSalesAccountLocation,
-  type InsertSalesAccountContact,
+  type InsertSalesLead,
+  type InsertSalesLeadLocation,
+  type InsertSalesLeadContact,
   type InsertSalesVisit,
   type InsertSalesVisitNote,
   type InsertSalesOpportunity,
@@ -106,7 +106,7 @@ const salesSchemaBootstrapStatements = [
   `,
   sql`
     DO $$ BEGIN
-      CREATE TYPE "sales_account_status" AS ENUM ('lead', 'active', 'inactive', 'customer');
+      CREATE TYPE "sales_lead_status" AS ENUM ('lead', 'active', 'inactive', 'customer');
     EXCEPTION
       WHEN duplicate_object THEN NULL;
     END $$;
@@ -170,17 +170,17 @@ const salesSchemaBootstrapStatements = [
     );
   `,
   sql`
-    CREATE TABLE IF NOT EXISTS "sales_accounts" (
+    CREATE TABLE IF NOT EXISTS"sales_leads"(
       "id" SERIAL PRIMARY KEY,
-      "name" TEXT NOT NULL,
+      "name" TEXTNOT NULL,
       "legal_name" TEXT,
       "website" TEXT,
       "phone" TEXT,
       "email" TEXT,
       "industry" TEXT,
-      "source" TEXT NOT NULL DEFAULT 'manual',
-      "status" "sales_account_status" NOT NULL DEFAULT 'lead',
-      "owner_rep_id" INTEGER REFERENCES "sales_reps"("id"),
+      "source" TEXTNOT NULL DEFAULT 'manual',
+      "status" "sales_lead_status"NOT NULL DEFAULT 'lead',
+      "owner_rep_id" INTEGER REFERENCES"sales_reps"("id"),
       "territory_name" TEXT,
       "ghl_contact_id" TEXT,
       "ghl_company_id" TEXT,
@@ -192,11 +192,11 @@ const salesSchemaBootstrapStatements = [
     );
   `,
   sql`
-    CREATE TABLE IF NOT EXISTS "sales_account_locations" (
+    CREATE TABLE IF NOT EXISTS"sales_lead_locations"(
       "id" SERIAL PRIMARY KEY,
-      "account_id" INTEGER NOT NULL REFERENCES "sales_accounts"("id"),
-      "label" TEXT NOT NULL DEFAULT 'Main',
-      "address_line_1" TEXT NOT NULL,
+      "lead_id" INTEGERNOT NULLREFERENCES"sales_leads"("id"),
+      "label" TEXTNOT NULL DEFAULT 'Main',
+      "address_line_1" TEXTNOT NULL,
       "address_line_2" TEXT,
       "city" TEXT,
       "state" TEXT,
@@ -211,10 +211,10 @@ const salesSchemaBootstrapStatements = [
     );
   `,
   sql`
-    CREATE TABLE IF NOT EXISTS "sales_account_contacts" (
+    CREATE TABLE IF NOT EXISTS"sales_lead_contacts"(
       "id" SERIAL PRIMARY KEY,
-      "account_id" INTEGER NOT NULL REFERENCES "sales_accounts"("id"),
-      "name" TEXT NOT NULL,
+      "lead_id" INTEGERNOT NULLREFERENCES"sales_leads"("id"),
+      "name" TEXTNOT NULL,
       "job_title" TEXT,
       "email" TEXT,
       "phone" TEXT,
@@ -224,30 +224,31 @@ const salesSchemaBootstrapStatements = [
       "updated_at" TIMESTAMP DEFAULT NOW()
     );
   `,
+
   sql`
-    CREATE TABLE IF NOT EXISTS "sales_visits" (
+    CREATE table IF not exists "sales_visits" (
       "id" SERIAL PRIMARY KEY,
-      "rep_id" INTEGER NOT NULL REFERENCES "sales_reps"("id"),
-      "account_id" INTEGER NOT NULL REFERENCES "sales_accounts"("id"),
-      "location_id" INTEGER REFERENCES "sales_account_locations"("id"),
-      "status" "sales_visit_status" NOT NULL DEFAULT 'planned',
-      "scheduled_at" TIMESTAMP,
-      "checked_in_at" TIMESTAMP,
-      "checked_out_at" TIMESTAMP,
-      "duration_seconds" INTEGER,
-      "check_in_lat" TEXT,
-      "check_in_lng" TEXT,
-      "check_out_lat" TEXT,
-      "check_out_lng" TEXT,
-      "distance_from_target_meters" INTEGER,
-      "gps_accuracy_meters" INTEGER,
-      "validation_status" "sales_visit_validation_status" NOT NULL DEFAULT 'gps_unavailable',
-      "manual_override_reason" TEXT,
-      "source" TEXT NOT NULL DEFAULT 'mobile',
-      "created_at" TIMESTAMP DEFAULT NOW(),
-      "updated_at" TIMESTAMP DEFAULT NOW()
+      "rep_id" integer not null references "sales_reps"("id"),
+      "lead_id" integer not null references "sales_leads"("id"),
+      "location_id" integer references "sales_lead_locations"("id"),
+      "status" "sales_visit_status" not null default 'planned',
+      "scheduled_at" timestamp,
+      "checked_in_at" timestamp,
+      "checked_out_at" timestamp,
+      "duration_seconds" integer,
+      "check_in_lat" text,
+      "check_in_lng" text,
+      "check_out_lng" text,
+      "distance_from_target_meters" integer,
+      "gps_accuracy_meters" integer;
+      "validation_status" "sales_visit_validation_status" not null default 'gps_unavailable';
+      "manual_override_reason" text,
+      "source" text not null default 'mobile',
+      "created_at" timestamp default now(),
+      "updated_at" timestamp default now()
     );
   `,
+
   sql`
     CREATE TABLE IF NOT EXISTS "sales_visit_notes" (
       "id" SERIAL PRIMARY KEY,
@@ -270,7 +271,7 @@ const salesSchemaBootstrapStatements = [
   sql`
     CREATE TABLE IF NOT EXISTS "sales_opportunities_local" (
       "id" SERIAL PRIMARY KEY,
-      "account_id" INTEGER NOT NULL REFERENCES "sales_accounts"("id"),
+      "lead_id" INTEGER NOT NULL REFERENCES "sales_leads"("id"),
       "rep_id" INTEGER NOT NULL REFERENCES "sales_reps"("id"),
       "visit_id" INTEGER REFERENCES "sales_visits"("id"),
       "title" TEXT NOT NULL,
@@ -291,7 +292,7 @@ const salesSchemaBootstrapStatements = [
   sql`
     CREATE TABLE IF NOT EXISTS "sales_tasks" (
       "id" SERIAL PRIMARY KEY,
-      "account_id" INTEGER REFERENCES "sales_accounts"("id"),
+      "lead_id" INTEGER REFERENCES "sales_leads"("id"),
       "visit_id" INTEGER REFERENCES "sales_visits"("id"),
       "opportunity_id" INTEGER REFERENCES "sales_opportunities_local"("id"),
       "rep_id" INTEGER NOT NULL REFERENCES "sales_reps"("id"),
@@ -336,15 +337,15 @@ const salesSchemaBootstrapStatements = [
   `,
   sql`CREATE UNIQUE INDEX IF NOT EXISTS "sales_reps_user_id_idx" ON "sales_reps" ("user_id")`,
   sql`CREATE INDEX IF NOT EXISTS "sales_reps_role_idx" ON "sales_reps" ("role")`,
-  sql`CREATE INDEX IF NOT EXISTS "sales_accounts_owner_idx" ON "sales_accounts" ("owner_rep_id")`,
-  sql`CREATE INDEX IF NOT EXISTS "sales_accounts_status_idx" ON "sales_accounts" ("status")`,
-  sql`CREATE INDEX IF NOT EXISTS "sales_accounts_name_idx" ON "sales_accounts" ("name")`,
-  sql`CREATE INDEX IF NOT EXISTS "sales_account_locations_account_idx" ON "sales_account_locations" ("account_id")`,
-  sql`CREATE INDEX IF NOT EXISTS "sales_account_contacts_account_idx" ON "sales_account_contacts" ("account_id")`,
+  sql`CREATE INDEX IF NOT EXISTS "sales_leads_owner_idx" ON "sales_leads" ("owner_rep_id")`,
+  sql`CREATE INDEX IF NOT EXISTS "sales_leads_status_idx" ON "sales_leads" ("status")`,
+  sql`CREATE INDEX IF NOT EXISTS "sales_leads_name_idx" ON "sales_leads" ("name")`,
+  sql`CREATE INDEX IF NOT EXISTS "sales_lead_locations_lead_idx" ON "sales_lead_locations" ("lead_id")`,
+  sql`CREATE INDEX IF NOT EXISTS "sales_lead_contacts_lead_idx" ON "sales_lead_contacts" ("lead_id")`,
   sql`CREATE INDEX IF NOT EXISTS "sales_visits_rep_idx" ON "sales_visits" ("rep_id")`,
-  sql`CREATE INDEX IF NOT EXISTS "sales_visits_account_idx" ON "sales_visits" ("account_id")`,
+  sql`CREATE INDEX IF NOT EXISTS "sales_visits_lead_idx" ON "sales_visits" ("lead_id")`,
   sql`CREATE INDEX IF NOT EXISTS "sales_visits_status_idx" ON "sales_visits" ("status")`,
-  sql`CREATE INDEX IF NOT EXISTS "sales_opportunities_account_idx" ON "sales_opportunities_local" ("account_id")`,
+  sql`CREATE INDEX IF NOT EXISTS "sales_opportunities_lead_idx" ON "sales_opportunities_local" ("lead_id")`,
   sql`CREATE INDEX IF NOT EXISTS "sales_opportunities_rep_idx" ON "sales_opportunities_local" ("rep_id")`,
   sql`CREATE INDEX IF NOT EXISTS "sales_opportunities_status_idx" ON "sales_opportunities_local" ("status")`,
   sql`CREATE INDEX IF NOT EXISTS "sales_tasks_rep_idx" ON "sales_tasks" ("rep_id")`,
@@ -464,23 +465,23 @@ export interface IStorage {
   getSalesRep(id: number): Promise<SalesRep | undefined>;
   getSalesRepByUserId(userId: string): Promise<SalesRep | undefined>;
   upsertSalesRep(input: InsertSalesRep): Promise<SalesRep>;
-  listSalesAccounts(filters?: { ownerRepId?: number; search?: string }): Promise<SalesAccount[]>;
-  getSalesAccount(id: number): Promise<SalesAccount | undefined>;
-  createSalesAccount(input: InsertSalesAccount): Promise<SalesAccount>;
-  updateSalesAccount(id: number, input: Partial<InsertSalesAccount>): Promise<SalesAccount | undefined>;
-  deleteSalesAccount(id: number): Promise<void>;
-  listSalesAccountLocations(accountId: number): Promise<SalesAccountLocation[]>;
-  createSalesAccountLocation(input: InsertSalesAccountLocation): Promise<SalesAccountLocation>;
-  listSalesAccountContacts(accountId: number): Promise<SalesAccountContact[]>;
-  createSalesAccountContact(input: InsertSalesAccountContact): Promise<SalesAccountContact>;
-  listSalesVisits(filters?: { repId?: number; accountId?: number; activeOnly?: boolean }): Promise<SalesVisit[]>;
+  listSalesLeads(filters?: { ownerRepId?: number; search?: string }): Promise<SalesLead[]>;
+  getSalesLead(id: number): Promise<SalesLead | undefined>;
+  createSalesLead(input: InsertSalesLead): Promise<SalesLead>;
+  updateSalesLead(id: number, input: Partial<InsertSalesLead>): Promise<SalesLead | undefined>;
+  deleteSalesLead(id: number): Promise<void>;
+  listSalesLeadLocations(leadId: number): Promise<SalesLeadLocation[]>;
+  createSalesLeadLocation(input: InsertSalesLeadLocation): Promise<SalesLeadLocation>;
+  listSalesLeadContacts(leadId: number): Promise<SalesLeadContact[]>;
+  createSalesLeadContact(input: InsertSalesLeadContact): Promise<SalesLeadContact>;
+  listSalesVisits(filters?: { repId?: number; leadId?: number; activeOnly?: boolean }): Promise<SalesVisit[]>;
   getSalesVisit(id: number): Promise<SalesVisit | undefined>;
   getActiveSalesVisitForRep(repId: number): Promise<SalesVisit | undefined>;
   createSalesVisit(input: InsertSalesVisit): Promise<SalesVisit>;
   updateSalesVisit(id: number, input: Partial<InsertSalesVisit>): Promise<SalesVisit | undefined>;
   getSalesVisitNote(visitId: number): Promise<SalesVisitNote | undefined>;
   upsertSalesVisitNote(input: InsertSalesVisitNote): Promise<SalesVisitNote>;
-  listSalesOpportunities(filters?: { repId?: number; accountId?: number; status?: SalesOpportunityStatus }): Promise<SalesOpportunity[]>;
+  listSalesOpportunities(filters?: { repId?: number; leadId?: number; status?: SalesOpportunityStatus }): Promise<SalesOpportunity[]>;
   createSalesOpportunity(input: InsertSalesOpportunity): Promise<SalesOpportunity>;
   updateSalesOpportunity(id: number, input: Partial<InsertSalesOpportunity>): Promise<SalesOpportunity | undefined>;
   listSalesTasks(filters?: { repId?: number; status?: SalesTaskStatus }): Promise<SalesTask[]>;
@@ -965,68 +966,68 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async listSalesAccounts(filters: { ownerRepId?: number; search?: string } = {}): Promise<SalesAccount[]> {
+  async listSalesLeads(filters: { ownerRepId?: number; search?: string } = {}): Promise<SalesLead[]> {
     await ensureSalesSchema();
     const conditions: any[] = [];
-    if (filters.ownerRepId) conditions.push(eq(salesAccounts.ownerRepId, filters.ownerRepId));
+    if (filters.ownerRepId) conditions.push(eq(salesLeads.ownerRepId, filters.ownerRepId));
     if (filters.search) {
       const likeValue = `%${filters.search}%`;
       conditions.push(
         or(
-          ilike(salesAccounts.name, likeValue),
-          ilike(salesAccounts.legalName, likeValue),
-          ilike(salesAccounts.email, likeValue),
-          ilike(salesAccounts.phone, likeValue),
+          ilike(salesLeads.name, likeValue),
+          ilike(salesLeads.legalName, likeValue),
+          ilike(salesLeads.email, likeValue),
+          ilike(salesLeads.phone, likeValue),
         )
       );
     }
 
     if (conditions.length) {
-      return await db.select().from(salesAccounts).where(and(...conditions)).orderBy(desc(salesAccounts.updatedAt));
+      return await db.select().from(salesLeads).where(and(...conditions)).orderBy(desc(salesLeads.updatedAt));
     }
 
-    return await db.select().from(salesAccounts).orderBy(desc(salesAccounts.updatedAt));
+    return await db.select().from(salesLeads).orderBy(desc(salesLeads.updatedAt));
   }
 
-  async getSalesAccount(id: number): Promise<SalesAccount | undefined> {
+  async getSalesLead(id: number): Promise<SalesLead | undefined> {
     await ensureSalesSchema();
-    const [account] = await db.select().from(salesAccounts).where(eq(salesAccounts.id, id));
-    return account;
+    const [lead] = await db.select().from(salesLeads).where(eq(salesLeads.id, id));
+    return lead;
   }
 
-  async createSalesAccount(input: InsertSalesAccount): Promise<SalesAccount> {
+  async createSalesLead(input: InsertSalesLead): Promise<SalesLead> {
     await ensureSalesSchema();
-    const [created] = await db.insert(salesAccounts).values(input).returning();
+    const [created] = await db.insert(salesLeads).values(input).returning();
     return created;
   }
 
-  async updateSalesAccount(id: number, input: Partial<InsertSalesAccount>): Promise<SalesAccount | undefined> {
+  async updateSalesLead(id: number, input: Partial<InsertSalesLead>): Promise<SalesLead | undefined> {
     await ensureSalesSchema();
     const [updated] = await db
-      .update(salesAccounts)
+      .update(salesLeads)
       .set({ ...input, updatedAt: new Date() })
-      .where(eq(salesAccounts.id, id))
+      .where(eq(salesLeads.id, id))
       .returning();
     return updated;
   }
 
-  async deleteSalesAccount(id: number): Promise<void> {
+  async deleteSalesLead(id: number): Promise<void> {
     await ensureSalesSchema();
 
     await db.transaction(async (tx) => {
       const visitIds = (await tx
         .select({ id: salesVisits.id })
         .from(salesVisits)
-        .where(eq(salesVisits.accountId, id)))
+        .where(eq(salesVisits.leadId, id)))
         .map((visit) => visit.id);
 
       const opportunityIds = (await tx
         .select({ id: salesOpportunitiesLocal.id })
         .from(salesOpportunitiesLocal)
-        .where(eq(salesOpportunitiesLocal.accountId, id)))
+        .where(eq(salesOpportunitiesLocal.leadId, id)))
         .map((opportunity) => opportunity.id);
 
-      await tx.delete(salesTasks).where(eq(salesTasks.accountId, id));
+      await tx.delete(salesTasks).where(eq(salesTasks.leadId, id));
 
       if (visitIds.length) {
         await tx.delete(salesTasks).where(inArray(salesTasks.visitId, visitIds));
@@ -1048,53 +1049,53 @@ export class DatabaseStorage implements IStorage {
         await tx.delete(salesVisits).where(inArray(salesVisits.id, visitIds));
       }
 
-      await tx.delete(salesAccountContacts).where(eq(salesAccountContacts.accountId, id));
-      await tx.delete(salesAccountLocations).where(eq(salesAccountLocations.accountId, id));
+      await tx.delete(salesLeadContacts).where(eq(salesLeadContacts.leadId, id));
+      await tx.delete(salesLeadLocations).where(eq(salesLeadLocations.leadId, id));
       await tx.delete(salesSyncEvents).where(
         and(
-          eq(salesSyncEvents.entityType, "sales_account"),
+          eq(salesSyncEvents.entityType, "sales_lead"),
           eq(salesSyncEvents.entityId, String(id)),
         ),
       );
-      await tx.delete(salesAccounts).where(eq(salesAccounts.id, id));
+      await tx.delete(salesLeads).where(eq(salesLeads.id, id));
     });
   }
 
-  async listSalesAccountLocations(accountId: number): Promise<SalesAccountLocation[]> {
+  async listSalesLeadLocations(leadId: number): Promise<SalesLeadLocation[]> {
     await ensureSalesSchema();
     return await db
       .select()
-      .from(salesAccountLocations)
-      .where(eq(salesAccountLocations.accountId, accountId))
-      .orderBy(desc(salesAccountLocations.isPrimary), asc(salesAccountLocations.id));
+      .from(salesLeadLocations)
+      .where(eq(salesLeadLocations.leadId, leadId))
+      .orderBy(desc(salesLeadLocations.isPrimary), asc(salesLeadLocations.id));
   }
 
-  async createSalesAccountLocation(input: InsertSalesAccountLocation): Promise<SalesAccountLocation> {
+  async createSalesLeadLocation(input: InsertSalesLeadLocation): Promise<SalesLeadLocation> {
     await ensureSalesSchema();
-    const [created] = await db.insert(salesAccountLocations).values(input).returning();
+    const [created] = await db.insert(salesLeadLocations).values(input).returning();
     return created;
   }
 
-  async listSalesAccountContacts(accountId: number): Promise<SalesAccountContact[]> {
+  async listSalesLeadContacts(leadId: number): Promise<SalesLeadContact[]> {
     await ensureSalesSchema();
     return await db
       .select()
-      .from(salesAccountContacts)
-      .where(eq(salesAccountContacts.accountId, accountId))
-      .orderBy(desc(salesAccountContacts.isPrimary), asc(salesAccountContacts.id));
+      .from(salesLeadContacts)
+      .where(eq(salesLeadContacts.leadId, leadId))
+      .orderBy(desc(salesLeadContacts.isPrimary), asc(salesLeadContacts.id));
   }
 
-  async createSalesAccountContact(input: InsertSalesAccountContact): Promise<SalesAccountContact> {
+  async createSalesLeadContact(input: InsertSalesLeadContact): Promise<SalesLeadContact> {
     await ensureSalesSchema();
-    const [created] = await db.insert(salesAccountContacts).values(input).returning();
+    const [created] = await db.insert(salesLeadContacts).values(input).returning();
     return created;
   }
 
-  async listSalesVisits(filters: { repId?: number; accountId?: number; activeOnly?: boolean } = {}): Promise<SalesVisit[]> {
+  async listSalesVisits(filters: { repId?: number; leadId?: number; activeOnly?: boolean } = {}): Promise<SalesVisit[]> {
     await ensureSalesSchema();
     const conditions: any[] = [];
     if (filters.repId) conditions.push(eq(salesVisits.repId, filters.repId));
-    if (filters.accountId) conditions.push(eq(salesVisits.accountId, filters.accountId));
+    if (filters.leadId) conditions.push(eq(salesVisits.leadId, filters.leadId));
     if (filters.activeOnly) conditions.push(eq(salesVisits.status, "in_progress"));
 
     if (conditions.length) {
@@ -1159,11 +1160,11 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async listSalesOpportunities(filters: { repId?: number; accountId?: number; status?: SalesOpportunityStatus } = {}): Promise<SalesOpportunity[]> {
+  async listSalesOpportunities(filters: { repId?: number; leadId?: number; status?: SalesOpportunityStatus } = {}): Promise<SalesOpportunity[]> {
     await ensureSalesSchema();
     const conditions: any[] = [];
     if (filters.repId) conditions.push(eq(salesOpportunitiesLocal.repId, filters.repId));
-    if (filters.accountId) conditions.push(eq(salesOpportunitiesLocal.accountId, filters.accountId));
+    if (filters.leadId) conditions.push(eq(salesOpportunitiesLocal.leadId, filters.leadId));
     if (filters.status) conditions.push(eq(salesOpportunitiesLocal.status, filters.status));
 
     if (conditions.length) {

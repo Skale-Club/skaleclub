@@ -13,7 +13,7 @@ export function createAuthRouter() {
       const enrichedVisit = activeVisit
         ? {
             ...activeVisit,
-            account: await storage.getSalesAccount(activeVisit.accountId),
+            lead: await storage.getSalesLead(activeVisit.leadId),
             note: await storage.getSalesVisitNote(activeVisit.id),
           }
         : null;

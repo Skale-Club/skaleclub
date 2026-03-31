@@ -5,17 +5,17 @@ import {
   DollarSign,
   MapPinned,
 } from "lucide-react";
-import type { GooglePlaceResult, SalesAccount } from "./types";
+import type { GooglePlaceResult, FullSalesLead } from "./types";
 
 export const tabs = [
   { id: "check-in", label: "Check-In", icon: MapPinned },
   { id: "visits", label: "Visits", icon: Clock3 },
-  { id: "accounts", label: "Leads", icon: Building2 },
+  { id: "leads", label: "Leads", icon: Building2 },
   { id: "sales", label: "Sales", icon: DollarSign },
   { id: "dashboard", label: "Dashboard", icon: Activity },
 ] as const;
 
-export function formatDateTime(value?: string | null) {
+export function formatDateTime(value?: string | Date | null) {
   if (!value) return "Not set";
   return new Date(value).toLocaleString();
 }
@@ -54,18 +54,18 @@ export function parseAddress(address?: string) {
   };
 }
 
-export function findMatchingAccount(place: GooglePlaceResult, accounts: SalesAccount[]) {
+export function findMatchingLead(place: GooglePlaceResult, leads: FullSalesLead[]) {
   const placeName = normalizeSearchValue(place.name);
   const placeAddress = normalizeSearchValue(place.address);
 
-  return accounts.find((account) => {
-    const accountName = normalizeSearchValue(account.name);
+  return leads.find((lead) => {
+    const leadName = normalizeSearchValue(lead.name);
     const locationAddress = normalizeSearchValue(
-      account.locations?.map((location) => `${location.addressLine1} ${location.city || ""} ${location.state || ""}`).join(" ") || "",
+      lead.locations?.map((location) => `${location.addressLine1} ${location.city || ""} ${location.state || ""}`).join(" ") || "",
     );
 
     return (
-      accountName === placeName ||
+      leadName === placeName ||
       (placeAddress.length > 10 && locationAddress.includes(placeAddress)) ||
       (locationAddress.length > 10 && placeAddress.includes(locationAddress))
     );

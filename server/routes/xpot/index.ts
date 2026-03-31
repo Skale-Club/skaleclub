@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createAuthRouter } from "./auth.js";
 import { createDashboardRouter } from "./dashboard.js";
 import { createMetricsRouter } from "./metrics.js";
-import { createAccountsRouter } from "./accounts.js";
+import { createLeadsRouter } from "./leads.js";
 import { createVisitsRouter } from "./visits.js";
 import { createOpportunitiesRouter } from "./opportunities.js";
 import { createTasksRouter } from "./tasks.js";
@@ -14,7 +14,7 @@ export function registerXpotRoutes(app: Express) {
   app.use("/api/xpot", createAuthRouter());
   app.use("/api/xpot", createDashboardRouter());
   app.use("/api/xpot", createMetricsRouter());
-  app.use("/api/xpot", createAccountsRouter());
+  app.use("/api/xpot", createLeadsRouter());
   app.use("/api/xpot", createVisitsRouter());
   app.use("/api/xpot", createOpportunitiesRouter());
   app.use("/api/xpot", createTasksRouter());
