@@ -5,11 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { useXpotApp } from "./XpotContext";
+import { useXpotShared } from "./hooks/useXpotShared";
+import { useXpotQueries } from "./hooks/useXpotQueries";
+import { useAccounts } from "./hooks/useAccounts";
+import { useCheckIn } from "./hooks/useCheckIn";
+import { useVisits } from "./hooks/useVisits";
 import { ConfirmSlider } from "./ConfirmSlider";
 import { findMatchingAccount, formatDateTime } from "./utils";
 
 export function XpotCheckIn() {
+  const { geoState, loadCurrentLocation } = useXpotShared();
   const {
     selectedAccountId,
     setSelectedAccountId,
@@ -20,13 +25,11 @@ export function XpotCheckIn() {
     setCheckInDropdownOpen,
     filteredAccountsForCheckIn,
     checkInPlaceQuery,
-    accountsQuery,
     checkInMutation,
     createAccountMutation,
     pickLocalAccountForCheckIn,
     pickGooglePlaceForCheckIn,
     createNewCompanyFromSearch,
-    activeVisit,
     visitNoteForm,
     setVisitNoteForm,
     isRecording,
@@ -38,11 +41,9 @@ export function XpotCheckIn() {
     stopRecording,
     uploadAudioMutation,
     saveNoteMutation,
-    checkOutMutation,
-    cancelVisitMutation,
-    geoState,
-    loadCurrentLocation,
-  } = useXpotApp();
+  } = useCheckIn();
+  const { accountsQuery } = useAccounts();
+  const { activeVisit, checkOutMutation, cancelVisitMutation } = useVisits();
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 

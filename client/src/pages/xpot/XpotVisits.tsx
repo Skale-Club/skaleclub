@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useXpotApp } from "./XpotContext";
+import { useVisits } from "./hooks/useVisits";
 import { formatDateTime, formatDuration } from "./utils";
 import type { SalesVisit } from "./types";
 
@@ -158,7 +158,7 @@ function VisitAudioRecorder({ visit }: { visit: SalesVisit }) {
 }
 
 export function XpotVisits() {
-  const { visitsQuery } = useXpotApp();
+  const { visitsQuery } = useVisits();
 
   return (
     <div className="space-y-3">

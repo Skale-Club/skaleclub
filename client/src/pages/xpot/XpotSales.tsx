@@ -3,12 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { useXpotApp } from "./XpotContext";
+import { useAccounts } from "./hooks/useAccounts";
+import { useSales } from "./hooks/useSales";
 import { formatCurrency, formatDateTime } from "./utils";
 
 export function XpotSales() {
+  const { accountsQuery } = useAccounts();
   const {
-    accountsQuery,
     opportunitiesQuery,
     tasksQuery,
     opportunityForm,
@@ -18,7 +19,7 @@ export function XpotSales() {
     createOpportunityMutation,
     createTaskMutation,
     updateTaskStatus,
-  } = useXpotApp();
+  } = useSales();
 
   return (
     <>

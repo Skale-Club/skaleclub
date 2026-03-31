@@ -1,11 +1,11 @@
 import { MapPinned, DollarSign, Target, Clock3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useXpotApp } from "./XpotContext";
+import { useXpotQueries } from "./hooks/useXpotQueries";
 import { formatCurrency, formatDateTime } from "./utils";
 
 export function XpotDashboard() {
-  const { dashboardQuery } = useXpotApp();
+  const { dashboardQuery } = useXpotQueries();
 
   return (
     <>

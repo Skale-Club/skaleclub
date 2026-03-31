@@ -2,7 +2,8 @@ import { useEffect } from "react";
 import { Loader2, LogOut, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { XpotAppProvider, useXpotApp } from "./xpot/XpotContext";
+import { useXpotQueries } from "./xpot/hooks/useXpotQueries";
+import { useVisits } from "./xpot/hooks/useVisits";
 import { GeoProvider } from "./xpot/hooks/GeoProvider";
 import { tabs } from "./xpot/utils";
 import { XpotCheckIn } from "./xpot/XpotCheckIn";
@@ -17,11 +18,11 @@ function XpotAppShell() {
     repName,
     isOnline,
     activeTab,
-    activeVisit,
     signOut,
     syncMutation,
     setLocation,
-  } = useXpotApp();
+  } = useXpotQueries();
+  const { activeVisit } = useVisits();
 
   useEffect(() => {
     document.title = "Xpot";
@@ -108,9 +109,7 @@ function XpotAppShell() {
 export default function XpotApp() {
   return (
     <GeoProvider>
-      <XpotAppProvider>
-        <XpotAppShell />
-      </XpotAppProvider>
+      <XpotAppShell />
     </GeoProvider>
   );
 }

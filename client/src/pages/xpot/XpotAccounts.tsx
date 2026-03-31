@@ -3,9 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { useXpotApp } from "./XpotContext";
+import { useXpotShared } from "./hooks/useXpotShared";
+import { useXpotQueries } from "./hooks/useXpotQueries";
+import { useAccounts } from "./hooks/useAccounts";
+import { useCheckIn } from "./hooks/useCheckIn";
 
 export function XpotAccounts() {
+  const { geoState, loadCurrentLocation } = useXpotShared();
+  const { setLocation } = useXpotQueries();
   const {
     accountLookupSearch,
     setAccountLookupSearch,
@@ -15,14 +20,10 @@ export function XpotAccounts() {
     filteredAccountsForList,
     accountPlaceQuery,
     createAccountMutation,
-    geoState,
-    loadCurrentLocation,
     applyPlaceToAccountForm,
     createAccountFromForm,
-    setSelectedAccountId,
-    setCheckInSearch,
-    setLocation,
-  } = useXpotApp();
+  } = useAccounts();
+  const { setSelectedAccountId, setCheckInSearch } = useCheckIn();
 
   return (
     <>
