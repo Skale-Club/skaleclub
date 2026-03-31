@@ -12,7 +12,7 @@
 - [x] **Phase 1: Error Handling Standardization** — Fix live bugs and establish error handling patterns across all Xpot API endpoints
 - [x] **Phase 2: Route File Splitting** — Decompose 1,042-line monolith into 10 domain-focused route modules
 - [x] **Phase 3: Schema Organization** — Split 1,000+ line schema file into 6 domain-grouped files
-- [ ] **Phase 4: Context Refactoring** — Replace 729-line XpotContext with focused feature hooks
+- [x] **Phase 4: Context Refactoring** — Replace 729-line XpotContext with focused feature hooks
 
 ---
 
@@ -72,7 +72,11 @@ Plans:
   3. All 5 page consumers (Dashboard, Visits, Sales, Accounts, CheckIn) import feature hooks directly instead of the monolithic context
   4. `XpotContext.tsx` and the facade hook are deleted — no dead code remains
   5. Check-in flow works without race conditions (the `checkingInRef` pattern preserved in extracted hook)
-**Plans**: TBD
+**Plans**: 3 plans in 3 waves
+Plans:
+- [ ] 04-01-PLAN.md — Extract 5 focused hooks from XpotContext (wave 1)
+- [ ] 04-02-PLAN.md — Create facade + update XpotApp (wave 2)
+- [ ] 04-03-PLAN.md — Migrate pages + delete facade (wave 3)
 
 ---
 
@@ -83,7 +87,7 @@ Plans:
 | 1. Error Handling Standardization | 1/1 | Complete | 2026-03-30 |
 | 2. Route File Splitting | 3/3 | Complete | 2026-03-30 |
 | 3. Schema Organization | 3/3 | Complete | 2026-03-30 |
-| 4. Context Refactoring | 0/0 | Not started | - |
+| 4. Context Refactoring | 3/3 | Complete | 2026-03-30 |
 
 ---
 
