@@ -67,8 +67,10 @@ self.addEventListener("fetch", (event) => {
 async function handleNavigationRequest(request) {
   try {
     const response = await fetch(request);
-    const cache = await caches.open(RUNTIME_CACHE);
-    cache.put(request, response.clone());
+    if (response.ok) {
+      const cache = await caches.open(RUNTIME_CACHE);
+      cache.put(request, response.clone());
+    }
     return response;
   } catch {
     return (await caches.match(request)) || caches.match("/");
@@ -83,17 +85,33 @@ async function handleAssetRequest(request) {
     return cachedResponse;
   }
 
-  const response = await fetch(request);
-  const cache = await caches.open(RUNTIME_CACHE);
-  cache.put(request, response.clone());
-  return response;
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(RUNTIME_CACHE);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    const fallbackDocument = request.destination === "document" || request.headers.get("accept")?.includes("text/html");
+    if (fallbackDocument) {
+      return (await caches.match("/")) || new Response("Offline", {
+        status: 503,
+        headers: { "Content-Type": "text/plain" },
+      });
+    }
+
+    return new Response("", { status: 503, statusText: "Offline" });
+  }
 }
 
 async function refreshAsset(request) {
   try {
     const response = await fetch(request);
-    const cache = await caches.open(RUNTIME_CACHE);
-    cache.put(request, response);
+    if (response.ok) {
+      const cache = await caches.open(RUNTIME_CACHE);
+      cache.put(request, response);
+    }
   } catch {
     // Ignore refresh failures and keep serving the cached version.
   }
