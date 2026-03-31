@@ -76,6 +76,8 @@ export function XpotCheckIn() {
             value={checkInSearch}
             onChange={(event) => { setCheckInSearch(event.target.value); setCheckInDropdownOpen(true); }}
             onFocus={() => setCheckInDropdownOpen(true)}
+            onBlur={() => setTimeout(() => setCheckInDropdownOpen(false), 150)}
+            onKeyDown={(e) => { if (e.key === "Escape") { setCheckInDropdownOpen(false); (e.target as HTMLInputElement).blur(); } }}
             placeholder="Search local accounts or Google Places"
             className="border-white/10 bg-white/5 pl-10 pr-9 text-white placeholder:text-white/35"
           />
@@ -269,12 +271,11 @@ export function XpotCheckIn() {
             </div>
             <ConfirmSlider
               label={uploadAudioMutation.isPending ? "UPLOAD IN PROGRESS..." : "SLIDE TO CHECK OUT"}
-              helperText={uploadAudioMutation.isPending ? "Wait for audio upload to finish before checking out." : "Slide right to complete · Slide left to cancel visit"}
+              helperText={uploadAudioMutation.isPending ? "Wait for audio upload to finish before checking out." : "Slide all the way left to check out"}
               loading={checkOutMutation.isPending || cancelVisitMutation.isPending || uploadAudioMutation.isPending}
               disabled={uploadAudioMutation.isPending}
               onConfirm={() => checkOutMutation.mutate(undefined as any)}
               onCancel={() => cancelVisitMutation.mutate(undefined as any)}
-              cancelAccentClassName="bg-red-500/30"
             />
           </div>
         )}

@@ -1,8 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import * as SliderPrimitive from "@radix-ui/react-slider";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/**
+ * Two modes:
+ *
+ * Check-in (onCancel = undefined):
+ *   thumb starts LEFT, drag RIGHT to confirm. Fill grows blue→green.
+ *
+ * Check-out (onCancel provided):
+ *   thumb starts RIGHT (green = active), drag LEFT to confirm check-out.
+ *   Fill shrinks and turns red as thumb approaches left.
+ */
 export function ConfirmSlider({
   label,
   helperText,
@@ -10,8 +19,6 @@ export function ConfirmSlider({
   disabled,
   onConfirm,
   onCancel,
-  accentClassName,
-  cancelAccentClassName,
 }: {
   label: string;
   helperText: string;
@@ -19,81 +26,150 @@ export function ConfirmSlider({
   disabled?: boolean;
   onConfirm: () => void;
   onCancel?: () => void;
-  accentClassName?: string;
-  cancelAccentClassName?: string;
 }) {
-  const hasCancel = Boolean(onCancel);
-  const startValue = hasCancel ? 50 : 0;
-  const [value, setValue] = useState([startValue]);
+  const isCheckOut = Boolean(onCancel);
+  const startValue = isCheckOut ? 100 : 0;
+  const [value, setValue] = useState(startValue);
   const hasTriggeredRef = useRef(false);
-  const hasCancelledRef = useRef(false);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+  const dragStartX = useRef(0);
+  const dragStartValue = useRef(startValue);
 
   useEffect(() => {
     if (!loading) {
       hasTriggeredRef.current = false;
-      hasCancelledRef.current = false;
-      setValue([startValue]);
+      setValue(startValue);
     }
-  }, [loading, label, startValue]);
+  }, [loading, startValue]);
 
-  const progress = value[0] ?? 0;
+  const THUMB = 44;
+
+  function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (disabled || loading) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    isDragging.current = true;
+    dragStartX.current = e.clientX;
+    dragStartValue.current = value;
+  }
+
+  function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!isDragging.current || disabled || loading) return;
+    const trackWidth = (trackRef.current?.getBoundingClientRect().width ?? 300) - THUMB;
+    const dx = e.clientX - dragStartX.current;
+    const delta = (dx / trackWidth) * 100;
+    const next = Math.min(100, Math.max(0, dragStartValue.current + delta));
+    setValue(next);
+
+    if (!isCheckOut && next >= 96 && !hasTriggeredRef.current) {
+      hasTriggeredRef.current = true;
+      onConfirm();
+    }
+    if (isCheckOut && next <= 4 && !hasTriggeredRef.current) {
+      hasTriggeredRef.current = true;
+      onConfirm(); // check-out confirmed
+    }
+  }
+
+  function onPointerUp() {
+    if (!isDragging.current) return;
+    isDragging.current = false;
+    if (!hasTriggeredRef.current) {
+      setValue(startValue);
+    }
+  }
+
+  // Fill color
+  // Check-in: left→right, blue → green
+  // Check-out: right→left, green → red (fill shrinks)
+  function getFillColor(v: number): string {
+    if (!isCheckOut) {
+      // 0–60: blue, 60–100: blue→green
+      if (v <= 60) return "rgba(28, 83, 163, 0.4)";
+      const t = (v - 60) / 40;
+      const r = Math.round(28 + t * (22 - 28));
+      const g = Math.round(83 + t * (163 - 83));
+      const b = Math.round(163 + t * (59 - 163));
+      return `rgba(${r}, ${g}, ${b}, 0.5)`;
+    } else {
+      // v=100→green, v=0→red
+      const t = v / 100;
+      const r = Math.round(239 + t * (22 - 239));
+      const g2 = Math.round(68 + t * (163 - 68));
+      const b = Math.round(68 + t * (59 - 68));
+      return `rgba(${r}, ${g2}, ${b}, 0.4)`;
+    }
+  }
+
+  function getThumbColor(v: number): string {
+    if (!isCheckOut) {
+      if (v <= 60) return "#1C53A3";
+      const t = (v - 60) / 40;
+      const r = Math.round(28 + t * (22 - 28));
+      const g = Math.round(83 + t * (163 - 83));
+      const b = Math.round(163 + t * (59 - 163));
+      return `rgb(${r}, ${g}, ${b})`;
+    } else {
+      const t = v / 100;
+      const r = Math.round(239 + t * (22 - 239));
+      const g2 = Math.round(68 + t * (163 - 68));
+      const b = Math.round(68 + t * (59 - 68));
+      return `rgb(${r}, ${g2}, ${b})`;
+    }
+  }
+
+  const fillColor = getFillColor(value);
+  const thumbColor = getThumbColor(value);
+  const isSnapping = !isDragging.current && !hasTriggeredRef.current;
 
   return (
     <div className="space-y-2">
-      <div className="relative rounded-full border border-[#1C53A3]/30 bg-[#0c1a2e] p-[5px]">
-        {hasCancel && (
-          <div
-            className={cn("absolute inset-y-0 left-0 rounded-full bg-red-500/30 transition-[width] duration-200", cancelAccentClassName)}
-            style={{ width: `${Math.max(0, 50 - progress)}%` }}
-          />
+      <div
+        ref={trackRef}
+        className={cn(
+          "relative rounded-full border border-white/10 bg-[#0c1a2e] select-none cursor-grab active:cursor-grabbing",
+          (disabled || loading) && "opacity-50 cursor-not-allowed",
         )}
+        style={{ height: THUMB + 10, padding: 5 }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+      >
+        {/* fill bar */}
         <div
-          className={cn(
-            "absolute inset-y-0 rounded-full bg-[#1C53A3]/30 transition-[width] duration-200",
-            hasCancel ? "right-0" : "left-0",
-            accentClassName,
-          )}
+          className="absolute inset-y-0 rounded-full"
           style={{
-            width: hasCancel ? `${Math.max(0, progress - 50)}%` : `${progress}%`,
-            ...(hasCancel ? { right: 0 } : { left: 0 }),
+            left: 0,
+            width: `${value}%`,
+            background: fillColor,
+            transition: isSnapping ? "width 0.25s, background-color 0.25s" : "none",
           }}
         />
-        <div className="absolute inset-0 flex items-center justify-center px-16 text-center text-sm font-semibold tracking-[0.16em] text-white">
+
+        {/* label */}
+        <div className="absolute inset-0 flex items-center justify-center px-16 text-center text-sm font-semibold tracking-[0.16em] text-white pointer-events-none">
           {loading ? "PROCESSING..." : label}
         </div>
-        <SliderPrimitive.Root
-          value={value}
-          max={100}
-          step={1}
-          disabled={disabled || loading}
-          onValueChange={(next) => {
-            setValue(next);
-            if (next[0] >= 96 && !hasTriggeredRef.current && !disabled && !loading) {
-              hasTriggeredRef.current = true;
-              onConfirm();
-            }
-            if (hasCancel && next[0] <= 4 && !hasCancelledRef.current && !disabled && !loading) {
-              hasCancelledRef.current = true;
-              onCancel!();
-            }
+
+        {/* thumb */}
+        <div
+          className="absolute top-[5px] flex items-center justify-center rounded-full text-white shadow-lg pointer-events-none"
+          style={{
+            width: THUMB,
+            height: THUMB,
+            left: `calc(${value / 100} * (100% - ${THUMB}px))`,
+            background: thumbColor,
+            transition: isSnapping ? "left 0.25s, background-color 0.25s" : "none",
           }}
-          onValueCommit={(next) => {
-            if (!hasCancel && next[0] < 96) {
-              setValue([0]);
-            }
-            if (hasCancel && next[0] > 4 && next[0] < 96) {
-              setValue([50]);
-            }
-          }}
-          className="relative flex h-[44px] w-full touch-none select-none items-center"
         >
-          <SliderPrimitive.Track className="relative h-[44px] w-full rounded-full bg-transparent">
-            <SliderPrimitive.Range className="absolute h-full rounded-full bg-transparent" />
-          </SliderPrimitive.Track>
-          <SliderPrimitive.Thumb className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full bg-[#1C53A3] text-white shadow-[0_12px_35px_rgba(28,83,163,0.4)] outline-none ring-0 transition-transform focus-visible:scale-105 disabled:opacity-60">
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ChevronRight className="h-5 w-5" />}
-          </SliderPrimitive.Thumb>
-        </SliderPrimitive.Root>
+          {loading
+            ? <Loader2 className="h-4 w-4 animate-spin" />
+            : isCheckOut
+              ? <ChevronLeft className="h-5 w-5" />
+              : <ChevronRight className="h-5 w-5" />
+          }
+        </div>
       </div>
       <div className="text-center text-xs text-white/45">{helperText}</div>
     </div>

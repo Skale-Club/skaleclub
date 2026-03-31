@@ -9,8 +9,8 @@ import type { GooglePlaceResult, SalesAccount } from "./types";
 
 export const tabs = [
   { id: "check-in", label: "Check-In", icon: MapPinned },
-  { id: "accounts", label: "Accounts", icon: Building2 },
   { id: "visits", label: "Visits", icon: Clock3 },
+  { id: "accounts", label: "Accounts", icon: Building2 },
   { id: "sales", label: "Sales", icon: DollarSign },
   { id: "dashboard", label: "Dashboard", icon: Activity },
 ] as const;
