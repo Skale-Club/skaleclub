@@ -3,6 +3,7 @@ import { Loader2, LogOut, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { XpotAppProvider, useXpotApp } from "./xpot/XpotContext";
+import { GeoProvider } from "./xpot/hooks/GeoProvider";
 import { tabs } from "./xpot/utils";
 import { XpotCheckIn } from "./xpot/XpotCheckIn";
 import { XpotAccounts } from "./xpot/XpotAccounts";
@@ -106,8 +107,10 @@ function XpotAppShell() {
 
 export default function XpotApp() {
   return (
-    <XpotAppProvider>
-      <XpotAppShell />
-    </XpotAppProvider>
+    <GeoProvider>
+      <XpotAppProvider>
+        <XpotAppShell />
+      </XpotAppProvider>
+    </GeoProvider>
   );
 }
