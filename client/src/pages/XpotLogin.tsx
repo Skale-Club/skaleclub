@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { XpotMeResponse } from "./xpot/types";
 
 async function getCurrentUser() {
   const response = await fetch("/api/auth/user", { credentials: "include" });
@@ -16,6 +17,34 @@ async function getCurrentUser() {
     return null;
   }
   return response.json();
+}
+
+async function getXpotSession() {
+  const response = await fetch("/api/xpot/me", { credentials: "include" });
+  const payload = await response.json().catch(() => null);
+
+  return {
+    ok: response.ok,
+    status: response.status,
+    data: response.ok ? (payload as XpotMeResponse) : null,
+    message: payload?.message as string | undefined,
+  };
+}
+
+function getXpotSessionErrorMessage(status: number, message?: string) {
+  if (message) {
+    return message;
+  }
+
+  if (status === 403) {
+    return "Your Xpot access is disabled.";
+  }
+
+  if (status >= 500) {
+    return "Xpot is temporarily unavailable. Please try again in a moment.";
+  }
+
+  return "Sign-in failed. Please try again.";
 }
 
 function getCanonicalOrigin() {
@@ -40,6 +69,18 @@ export default function XpotLogin() {
   const googleLogoUrl = "https://commons.wikimedia.org/wiki/Special:FilePath/Google_Favicon_2025.svg";
   const companyLogo = companySettings?.logoIcon || "";
 
+  const openXpotWorkspace = async () => {
+    const result = await getXpotSession();
+    if (!result.ok) {
+      setError(getXpotSessionErrorMessage(result.status, result.message));
+      return false;
+    }
+
+    queryClient.setQueryData(["/api/xpot/me"], result.data);
+    setLocation("/xpot");
+    return true;
+  };
+
   useEffect(() => {
     let mounted = true;
 
@@ -54,8 +95,7 @@ export default function XpotLogin() {
       // Check existing server session first
       const user = await getCurrentUser();
       if (mounted && user) {
-        queryClient.removeQueries({ queryKey: ["/api/xpot/me"] });
-        setLocation("/xpot");
+        await openXpotWorkspace();
         return;
       }
 
@@ -76,8 +116,7 @@ export default function XpotLogin() {
             });
 
             if (mounted && loginResponse.ok) {
-              queryClient.removeQueries({ queryKey: ["/api/xpot/me"] });
-              setLocation("/xpot");
+              await openXpotWorkspace();
             } else if (mounted) {
               const result = await loginResponse.json().catch(() => ({}));
               setError(result.message || "Sign-in failed. Please try again.");
@@ -133,8 +172,10 @@ export default function XpotLogin() {
         throw new Error(result.message || "Login failed");
       }
 
-      queryClient.removeQueries({ queryKey: ["/api/xpot/me"] });
-      setLocation("/xpot");
+      const didOpenWorkspace = await openXpotWorkspace();
+      if (!didOpenWorkspace) {
+        return;
+      }
     } catch (loginError: any) {
       setError(loginError.message || "Login failed");
     } finally {

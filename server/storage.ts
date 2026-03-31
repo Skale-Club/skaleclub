@@ -96,64 +96,90 @@ const chatSettingsSchemaPatches = [
   sql`ALTER TABLE "chat_settings" ADD COLUMN IF NOT EXISTS "excluded_url_rules" jsonb DEFAULT '[]'::jsonb`,
 ];
 
-const salesSchemaBootstrapStatements = [
-  sql`
+const salesSchemaBootstrapStatements: Array<{ name: string; statement: ReturnType<typeof sql> }> = [
+  {
+    name: "sales_rep_role_enum",
+    statement: sql`
     DO $$ BEGIN
       CREATE TYPE "sales_rep_role" AS ENUM ('rep', 'manager', 'admin');
     EXCEPTION
       WHEN duplicate_object THEN NULL;
     END $$;
   `,
-  sql`
+  },
+  {
+    name: "sales_lead_status_enum",
+    statement: sql`
     DO $$ BEGIN
       CREATE TYPE "sales_lead_status" AS ENUM ('lead', 'active', 'inactive', 'customer');
     EXCEPTION
       WHEN duplicate_object THEN NULL;
     END $$;
   `,
-  sql`
+  },
+  {
+    name: "sales_visit_status_enum",
+    statement: sql`
     DO $$ BEGIN
       CREATE TYPE "sales_visit_status" AS ENUM ('planned', 'in_progress', 'completed', 'cancelled', 'invalid');
     EXCEPTION
       WHEN duplicate_object THEN NULL;
     END $$;
   `,
-  sql`
+  },
+  {
+    name: "sales_visit_validation_status_enum",
+    statement: sql`
     DO $$ BEGIN
       CREATE TYPE "sales_visit_validation_status" AS ENUM ('valid', 'outside_geofence', 'gps_unavailable', 'manual_override');
     EXCEPTION
       WHEN duplicate_object THEN NULL;
     END $$;
   `,
-  sql`
+  },
+  {
+    name: "sales_opportunity_status_enum",
+    statement: sql`
     DO $$ BEGIN
       CREATE TYPE "sales_opportunity_status" AS ENUM ('open', 'won', 'lost', 'archived');
     EXCEPTION
       WHEN duplicate_object THEN NULL;
     END $$;
   `,
-  sql`
+  },
+  {
+    name: "sales_task_status_enum",
+    statement: sql`
     DO $$ BEGIN
       CREATE TYPE "sales_task_status" AS ENUM ('pending', 'completed', 'cancelled');
     EXCEPTION
       WHEN duplicate_object THEN NULL;
     END $$;
   `,
-  sql`
+  },
+  {
+    name: "sales_sync_status_enum",
+    statement: sql`
     DO $$ BEGIN
       CREATE TYPE "sales_sync_status" AS ENUM ('pending', 'synced', 'failed', 'needs_review');
     EXCEPTION
       WHEN duplicate_object THEN NULL;
     END $$;
   `,
-  sql`
+  },
+  {
+    name: "sales_sync_direction_enum",
+    statement: sql`
     DO $$ BEGIN
       CREATE TYPE "sales_sync_direction" AS ENUM ('outbound', 'inbound');
     EXCEPTION
       WHEN duplicate_object THEN NULL;
     END $$;
   `,
-  sql`
+  },
+  {
+    name: "sales_reps_table",
+    statement: sql`
     CREATE TABLE IF NOT EXISTS "sales_reps" (
       "id" SERIAL PRIMARY KEY,
       "user_id" TEXT NOT NULL UNIQUE REFERENCES "users"("id"),
@@ -169,18 +195,21 @@ const salesSchemaBootstrapStatements = [
       "updated_at" TIMESTAMP DEFAULT NOW()
     );
   `,
-  sql`
-    CREATE TABLE IF NOT EXISTS"sales_leads"(
+  },
+  {
+    name: "sales_leads_table",
+    statement: sql`
+    CREATE TABLE IF NOT EXISTS "sales_leads" (
       "id" SERIAL PRIMARY KEY,
-      "name" TEXTNOT NULL,
+      "name" TEXT NOT NULL,
       "legal_name" TEXT,
       "website" TEXT,
       "phone" TEXT,
       "email" TEXT,
       "industry" TEXT,
-      "source" TEXTNOT NULL DEFAULT 'manual',
-      "status" "sales_lead_status"NOT NULL DEFAULT 'lead',
-      "owner_rep_id" INTEGER REFERENCES"sales_reps"("id"),
+      "source" TEXT NOT NULL DEFAULT 'manual',
+      "status" "sales_lead_status" NOT NULL DEFAULT 'lead',
+      "owner_rep_id" INTEGER REFERENCES "sales_reps"("id"),
       "territory_name" TEXT,
       "ghl_contact_id" TEXT,
       "ghl_company_id" TEXT,
@@ -191,12 +220,15 @@ const salesSchemaBootstrapStatements = [
       "updated_at" TIMESTAMP DEFAULT NOW()
     );
   `,
-  sql`
-    CREATE TABLE IF NOT EXISTS"sales_lead_locations"(
+  },
+  {
+    name: "sales_lead_locations_table",
+    statement: sql`
+    CREATE TABLE IF NOT EXISTS "sales_lead_locations" (
       "id" SERIAL PRIMARY KEY,
-      "lead_id" INTEGERNOT NULLREFERENCES"sales_leads"("id"),
-      "label" TEXTNOT NULL DEFAULT 'Main',
-      "address_line_1" TEXTNOT NULL,
+      "lead_id" INTEGER NOT NULL REFERENCES "sales_leads"("id"),
+      "label" TEXT NOT NULL DEFAULT 'Main',
+      "address_line_1" TEXT NOT NULL,
       "address_line_2" TEXT,
       "city" TEXT,
       "state" TEXT,
@@ -210,11 +242,14 @@ const salesSchemaBootstrapStatements = [
       "updated_at" TIMESTAMP DEFAULT NOW()
     );
   `,
-  sql`
-    CREATE TABLE IF NOT EXISTS"sales_lead_contacts"(
+  },
+  {
+    name: "sales_lead_contacts_table",
+    statement: sql`
+    CREATE TABLE IF NOT EXISTS "sales_lead_contacts" (
       "id" SERIAL PRIMARY KEY,
-      "lead_id" INTEGERNOT NULLREFERENCES"sales_leads"("id"),
-      "name" TEXTNOT NULL,
+      "lead_id" INTEGER NOT NULL REFERENCES "sales_leads"("id"),
+      "name" TEXT NOT NULL,
       "job_title" TEXT,
       "email" TEXT,
       "phone" TEXT,
@@ -224,32 +259,37 @@ const salesSchemaBootstrapStatements = [
       "updated_at" TIMESTAMP DEFAULT NOW()
     );
   `,
-
-  sql`
-    CREATE table IF not exists "sales_visits" (
+  },
+  {
+    name: "sales_visits_table",
+    statement: sql`
+    CREATE TABLE IF NOT EXISTS "sales_visits" (
       "id" SERIAL PRIMARY KEY,
-      "rep_id" integer not null references "sales_reps"("id"),
-      "lead_id" integer not null references "sales_leads"("id"),
-      "location_id" integer references "sales_lead_locations"("id"),
-      "status" "sales_visit_status" not null default 'planned',
-      "scheduled_at" timestamp,
-      "checked_in_at" timestamp,
-      "checked_out_at" timestamp,
-      "duration_seconds" integer,
-      "check_in_lat" text,
-      "check_in_lng" text,
-      "check_out_lng" text,
-      "distance_from_target_meters" integer,
-      "gps_accuracy_meters" integer;
-      "validation_status" "sales_visit_validation_status" not null default 'gps_unavailable';
-      "manual_override_reason" text,
-      "source" text not null default 'mobile',
-      "created_at" timestamp default now(),
-      "updated_at" timestamp default now()
+      "rep_id" INTEGER NOT NULL REFERENCES "sales_reps"("id"),
+      "lead_id" INTEGER NOT NULL REFERENCES "sales_leads"("id"),
+      "location_id" INTEGER REFERENCES "sales_lead_locations"("id"),
+      "status" "sales_visit_status" NOT NULL DEFAULT 'planned',
+      "scheduled_at" TIMESTAMP,
+      "checked_in_at" TIMESTAMP,
+      "checked_out_at" TIMESTAMP,
+      "duration_seconds" INTEGER,
+      "check_in_lat" TEXT,
+      "check_in_lng" TEXT,
+      "check_out_lat" TEXT,
+      "check_out_lng" TEXT,
+      "distance_from_target_meters" INTEGER,
+      "gps_accuracy_meters" INTEGER,
+      "validation_status" "sales_visit_validation_status" NOT NULL DEFAULT 'gps_unavailable',
+      "manual_override_reason" TEXT,
+      "source" TEXT NOT NULL DEFAULT 'mobile',
+      "created_at" TIMESTAMP DEFAULT NOW(),
+      "updated_at" TIMESTAMP DEFAULT NOW()
     );
   `,
-
-  sql`
+  },
+  {
+    name: "sales_visit_notes_table",
+    statement: sql`
     CREATE TABLE IF NOT EXISTS "sales_visit_notes" (
       "id" SERIAL PRIMARY KEY,
       "visit_id" INTEGER NOT NULL UNIQUE REFERENCES "sales_visits"("id"),
@@ -268,7 +308,10 @@ const salesSchemaBootstrapStatements = [
       "updated_at" TIMESTAMP DEFAULT NOW()
     );
   `,
-  sql`
+  },
+  {
+    name: "sales_opportunities_local_table",
+    statement: sql`
     CREATE TABLE IF NOT EXISTS "sales_opportunities_local" (
       "id" SERIAL PRIMARY KEY,
       "lead_id" INTEGER NOT NULL REFERENCES "sales_leads"("id"),
@@ -289,7 +332,10 @@ const salesSchemaBootstrapStatements = [
       "updated_at" TIMESTAMP DEFAULT NOW()
     );
   `,
-  sql`
+  },
+  {
+    name: "sales_tasks_table",
+    statement: sql`
     CREATE TABLE IF NOT EXISTS "sales_tasks" (
       "id" SERIAL PRIMARY KEY,
       "lead_id" INTEGER REFERENCES "sales_leads"("id"),
@@ -306,7 +352,10 @@ const salesSchemaBootstrapStatements = [
       "updated_at" TIMESTAMP DEFAULT NOW()
     );
   `,
-  sql`
+  },
+  {
+    name: "sales_sync_events_table",
+    statement: sql`
     CREATE TABLE IF NOT EXISTS "sales_sync_events" (
       "id" SERIAL PRIMARY KEY,
       "provider" TEXT NOT NULL DEFAULT 'gohighlevel',
@@ -321,7 +370,10 @@ const salesSchemaBootstrapStatements = [
       "created_at" TIMESTAMP DEFAULT NOW()
     );
   `,
-  sql`
+  },
+  {
+    name: "sales_app_settings_table",
+    statement: sql`
     CREATE TABLE IF NOT EXISTS "sales_app_settings" (
       "id" SERIAL PRIMARY KEY,
       "check_in_requires_gps" BOOLEAN NOT NULL DEFAULT true,
@@ -335,31 +387,113 @@ const salesSchemaBootstrapStatements = [
       "updated_at" TIMESTAMP DEFAULT NOW()
     );
   `,
-  sql`CREATE UNIQUE INDEX IF NOT EXISTS "sales_reps_user_id_idx" ON "sales_reps" ("user_id")`,
-  sql`CREATE INDEX IF NOT EXISTS "sales_reps_role_idx" ON "sales_reps" ("role")`,
-  sql`CREATE INDEX IF NOT EXISTS "sales_leads_owner_idx" ON "sales_leads" ("owner_rep_id")`,
-  sql`CREATE INDEX IF NOT EXISTS "sales_leads_status_idx" ON "sales_leads" ("status")`,
-  sql`CREATE INDEX IF NOT EXISTS "sales_leads_name_idx" ON "sales_leads" ("name")`,
-  sql`CREATE INDEX IF NOT EXISTS "sales_lead_locations_lead_idx" ON "sales_lead_locations" ("lead_id")`,
-  sql`CREATE INDEX IF NOT EXISTS "sales_lead_contacts_lead_idx" ON "sales_lead_contacts" ("lead_id")`,
-  sql`CREATE INDEX IF NOT EXISTS "sales_visits_rep_idx" ON "sales_visits" ("rep_id")`,
-  sql`CREATE INDEX IF NOT EXISTS "sales_visits_lead_idx" ON "sales_visits" ("lead_id")`,
-  sql`CREATE INDEX IF NOT EXISTS "sales_visits_status_idx" ON "sales_visits" ("status")`,
-  sql`CREATE INDEX IF NOT EXISTS "sales_opportunities_lead_idx" ON "sales_opportunities_local" ("lead_id")`,
-  sql`CREATE INDEX IF NOT EXISTS "sales_opportunities_rep_idx" ON "sales_opportunities_local" ("rep_id")`,
-  sql`CREATE INDEX IF NOT EXISTS "sales_opportunities_status_idx" ON "sales_opportunities_local" ("status")`,
-  sql`CREATE INDEX IF NOT EXISTS "sales_tasks_rep_idx" ON "sales_tasks" ("rep_id")`,
-  sql`CREATE INDEX IF NOT EXISTS "sales_tasks_status_idx" ON "sales_tasks" ("status")`,
-  sql`CREATE INDEX IF NOT EXISTS "sales_sync_events_entity_idx" ON "sales_sync_events" ("entity_type", "entity_id")`,
-  sql`CREATE INDEX IF NOT EXISTS "sales_sync_events_status_idx" ON "sales_sync_events" ("status")`,
-  sql`ALTER TABLE "sales_visit_notes" ADD COLUMN IF NOT EXISTS "audio_url" text`,
-  sql`ALTER TABLE "sales_visit_notes" ADD COLUMN IF NOT EXISTS "audio_duration_seconds" integer`,
-  sql`ALTER TABLE "sales_visit_notes" ADD COLUMN IF NOT EXISTS "audio_transcription" text`,
+  },
+  {
+    name: "sales_reps_user_id_idx",
+    statement: sql`CREATE UNIQUE INDEX IF NOT EXISTS "sales_reps_user_id_idx" ON "sales_reps" ("user_id")`,
+  },
+  {
+    name: "sales_reps_role_idx",
+    statement: sql`CREATE INDEX IF NOT EXISTS "sales_reps_role_idx" ON "sales_reps" ("role")`,
+  },
+  {
+    name: "sales_leads_owner_idx",
+    statement: sql`CREATE INDEX IF NOT EXISTS "sales_leads_owner_idx" ON "sales_leads" ("owner_rep_id")`,
+  },
+  {
+    name: "sales_leads_status_idx",
+    statement: sql`CREATE INDEX IF NOT EXISTS "sales_leads_status_idx" ON "sales_leads" ("status")`,
+  },
+  {
+    name: "sales_leads_name_idx",
+    statement: sql`CREATE INDEX IF NOT EXISTS "sales_leads_name_idx" ON "sales_leads" ("name")`,
+  },
+  {
+    name: "sales_lead_locations_lead_idx",
+    statement: sql`CREATE INDEX IF NOT EXISTS "sales_lead_locations_lead_idx" ON "sales_lead_locations" ("lead_id")`,
+  },
+  {
+    name: "sales_lead_contacts_lead_idx",
+    statement: sql`CREATE INDEX IF NOT EXISTS "sales_lead_contacts_lead_idx" ON "sales_lead_contacts" ("lead_id")`,
+  },
+  {
+    name: "sales_visits_rep_idx",
+    statement: sql`CREATE INDEX IF NOT EXISTS "sales_visits_rep_idx" ON "sales_visits" ("rep_id")`,
+  },
+  {
+    name: "sales_visits_lead_idx",
+    statement: sql`CREATE INDEX IF NOT EXISTS "sales_visits_lead_idx" ON "sales_visits" ("lead_id")`,
+  },
+  {
+    name: "sales_visits_status_idx",
+    statement: sql`CREATE INDEX IF NOT EXISTS "sales_visits_status_idx" ON "sales_visits" ("status")`,
+  },
+  {
+    name: "sales_visits_check_out_lat_column",
+    statement: sql`ALTER TABLE "sales_visits" ADD COLUMN IF NOT EXISTS "check_out_lat" text`,
+  },
+  {
+    name: "sales_visits_check_out_lng_column",
+    statement: sql`ALTER TABLE "sales_visits" ADD COLUMN IF NOT EXISTS "check_out_lng" text`,
+  },
+  {
+    name: "sales_visits_validation_status_column",
+    statement: sql`ALTER TABLE "sales_visits" ADD COLUMN IF NOT EXISTS "validation_status" "sales_visit_validation_status" DEFAULT 'gps_unavailable'`,
+  },
+  {
+    name: "sales_visits_manual_override_reason_column",
+    statement: sql`ALTER TABLE "sales_visits" ADD COLUMN IF NOT EXISTS "manual_override_reason" text`,
+  },
+  {
+    name: "sales_visits_source_column",
+    statement: sql`ALTER TABLE "sales_visits" ADD COLUMN IF NOT EXISTS "source" text DEFAULT 'mobile'`,
+  },
+  {
+    name: "sales_opportunities_lead_idx",
+    statement: sql`CREATE INDEX IF NOT EXISTS "sales_opportunities_lead_idx" ON "sales_opportunities_local" ("lead_id")`,
+  },
+  {
+    name: "sales_opportunities_rep_idx",
+    statement: sql`CREATE INDEX IF NOT EXISTS "sales_opportunities_rep_idx" ON "sales_opportunities_local" ("rep_id")`,
+  },
+  {
+    name: "sales_opportunities_status_idx",
+    statement: sql`CREATE INDEX IF NOT EXISTS "sales_opportunities_status_idx" ON "sales_opportunities_local" ("status")`,
+  },
+  {
+    name: "sales_tasks_rep_idx",
+    statement: sql`CREATE INDEX IF NOT EXISTS "sales_tasks_rep_idx" ON "sales_tasks" ("rep_id")`,
+  },
+  {
+    name: "sales_tasks_status_idx",
+    statement: sql`CREATE INDEX IF NOT EXISTS "sales_tasks_status_idx" ON "sales_tasks" ("status")`,
+  },
+  {
+    name: "sales_sync_events_entity_idx",
+    statement: sql`CREATE INDEX IF NOT EXISTS "sales_sync_events_entity_idx" ON "sales_sync_events" ("entity_type", "entity_id")`,
+  },
+  {
+    name: "sales_sync_events_status_idx",
+    statement: sql`CREATE INDEX IF NOT EXISTS "sales_sync_events_status_idx" ON "sales_sync_events" ("status")`,
+  },
+  {
+    name: "sales_visit_notes_audio_url_column",
+    statement: sql`ALTER TABLE "sales_visit_notes" ADD COLUMN IF NOT EXISTS "audio_url" text`,
+  },
+  {
+    name: "sales_visit_notes_audio_duration_seconds_column",
+    statement: sql`ALTER TABLE "sales_visit_notes" ADD COLUMN IF NOT EXISTS "audio_duration_seconds" integer`,
+  },
+  {
+    name: "sales_visit_notes_audio_transcription_column",
+    statement: sql`ALTER TABLE "sales_visit_notes" ADD COLUMN IF NOT EXISTS "audio_transcription" text`,
+  },
 ];
 
 let companySettingsSchemaReady = false;
 let chatSettingsSchemaReady = false;
 let salesSchemaReady = false;
+let salesSchemaReadyPromise: Promise<void> | null = null;
 
 async function ensureCompanySettingsSchema() {
   if (companySettingsSchemaReady) {
@@ -390,11 +524,36 @@ async function ensureSalesSchema() {
     return;
   }
 
-  for (const statement of salesSchemaBootstrapStatements) {
-    await db.execute(statement);
+  if (!salesSchemaReadyPromise) {
+    salesSchemaReadyPromise = (async () => {
+      try {
+        for (const step of salesSchemaBootstrapStatements) {
+          try {
+            await db.execute(step.statement);
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            throw new Error(`Xpot sales schema step "${step.name}" failed: ${message}`);
+          }
+        }
+
+        salesSchemaReady = true;
+      } catch (error) {
+        salesSchemaReadyPromise = null;
+        throw error;
+      }
+    })();
   }
 
-  salesSchemaReady = true;
+  await salesSchemaReadyPromise;
+}
+
+export async function initializeSalesSchema() {
+  try {
+    await ensureSalesSchema();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to initialize Xpot sales schema: ${message}`);
+  }
 }
 
 export interface IStorage {

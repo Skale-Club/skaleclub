@@ -1,6 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import type { Server } from "http";
-import { storage } from "./storage.js";
+import { initializeSalesSchema, storage } from "./storage.js";
 import { api } from "#shared/routes.js";
 import { buildPagePaths, getPageSlugsValidationError, resolvePageSlugs } from "#shared/pageSlugs.js";
 import { z } from "zod";
@@ -165,6 +165,7 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   registerXpotRoutes(app);
+  await initializeSalesSchema();
 
   app.get('/api/cron/supabase-keepalive', async (req, res) => {
     if (!isAuthorizedCronRequest(req)) {

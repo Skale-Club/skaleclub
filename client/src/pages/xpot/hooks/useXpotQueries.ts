@@ -10,6 +10,15 @@ import type { DashboardResponse, FullSalesLead, EnrichedSalesVisit, XpotMeRespon
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyMutation = ReturnType<typeof useMutation<any, any, any, any>>;
 
+function getHttpStatus(error: unknown) {
+  if (!(error instanceof Error)) {
+    return null;
+  }
+
+  const match = error.message.match(/^(\d+):/);
+  return match ? Number(match[1]) : null;
+}
+
 export function useXpotQueries() {
   const [pathname, setLocation] = useLocation();
   const { toast } = useToast();
@@ -39,11 +48,13 @@ export function useXpotQueries() {
     refetchOnMount: true,
   });
 
+  const xpotMeStatus = getHttpStatus(xpotMeQuery.error);
+
   useEffect(() => {
-    if (xpotMeQuery.error) {
+    if (xpotMeStatus === 401 || xpotMeStatus === 403) {
       setLocation("/xpot/login");
     }
-  }, [xpotMeQuery.error, setLocation]);
+  }, [xpotMeStatus, setLocation]);
 
   const dashboardQuery = useQuery<DashboardResponse>({ queryKey: ["/api/xpot/dashboard"], enabled: xpotMeQuery.isSuccess });
 
