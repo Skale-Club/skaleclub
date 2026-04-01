@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
 import { initSupabase } from "@/lib/supabase";
 import { queryClient } from "@/lib/queryClient";
-import { getMarketingAppUrl, getXpotAppUrl, getXpotHomePath } from "@/lib/xpot";
+import { clearXpotPostLoginHint, getMarketingAppUrl, getXpotAppUrl, getXpotHomePath, setXpotPostLoginHint } from "@/lib/xpot";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -70,6 +70,7 @@ export default function XpotLogin() {
       return false;
     }
 
+    clearXpotPostLoginHint();
     queryClient.setQueryData(["/api/xpot/me"], result.data);
     const targetUrl = getXpotAppUrl("/");
     if (targetUrl.startsWith(window.location.origin)) {
@@ -193,6 +194,7 @@ export default function XpotLogin() {
       }
 
       const supabase = await initSupabase();
+      setXpotPostLoginHint(getXpotAppUrl("/login"));
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {

@@ -1,5 +1,6 @@
 const DEFAULT_XPOT_CANONICAL_ORIGIN = "https://xpot.skale.club";
 const DEFAULT_MARKETING_CANONICAL_ORIGIN = "https://skale.club";
+const XPOT_POST_LOGIN_COOKIE = "xpot_post_login_target";
 
 function trimTrailingSlash(value: string) {
   return value.replace(/\/+$/, "");
@@ -8,6 +9,36 @@ function trimTrailingSlash(value: string) {
 function normalizePath(path = "/") {
   if (!path) return "/";
   return path.startsWith("/") ? path : `/${path}`;
+}
+
+function getCookieDomain(hostname: string) {
+  if (isLocalHostname(hostname)) return "";
+  if (hostname === "xpot.skale.club" || hostname === "skale.club" || hostname.endsWith(".skale.club")) {
+    return ".skale.club";
+  }
+  return "";
+}
+
+function readCookie(name: string) {
+  if (typeof document === "undefined") return "";
+  const prefix = `${name}=`;
+  const cookie = document.cookie
+    .split("; ")
+    .find((item) => item.startsWith(prefix));
+  return cookie ? decodeURIComponent(cookie.slice(prefix.length)) : "";
+}
+
+function writeCookie(name: string, value: string, maxAgeSeconds: number) {
+  if (typeof document === "undefined" || typeof window === "undefined") return;
+  const parts = [`${name}=${encodeURIComponent(value)}`, "Path=/", `Max-Age=${maxAgeSeconds}`, "SameSite=Lax"];
+  const domain = getCookieDomain(window.location.hostname);
+  if (domain) {
+    parts.push(`Domain=${domain}`);
+  }
+  if (window.location.protocol === "https:") {
+    parts.push("Secure");
+  }
+  document.cookie = parts.join("; ");
 }
 
 function getConfiguredOrigin(envKey: "VITE_XPOT_CANONICAL_ORIGIN" | "VITE_CANONICAL_ORIGIN") {
@@ -108,4 +139,16 @@ export function getMarketingAppUrl(path = "/") {
   }
 
   return `${origin}${normalizedPath}`;
+}
+
+export function setXpotPostLoginHint(targetUrl = getXpotAppUrl("/login")) {
+  writeCookie(XPOT_POST_LOGIN_COOKIE, targetUrl, 10 * 60);
+}
+
+export function getXpotPostLoginHint() {
+  return readCookie(XPOT_POST_LOGIN_COOKIE);
+}
+
+export function clearXpotPostLoginHint() {
+  writeCookie(XPOT_POST_LOGIN_COOKIE, "", 0);
 }
