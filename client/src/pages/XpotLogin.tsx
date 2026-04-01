@@ -50,6 +50,9 @@ function getXpotSessionErrorMessage(status: number, message?: string) {
 
 export default function XpotLogin() {
   const [, setLocation] = useLocation();
+
+  // Eagerly load the XpotApp chunk so there's no Suspense flash after login
+  useEffect(() => { import("./XpotApp"); }, []);
   const { data: companySettings } = useQuery<CompanySettings>({
     queryKey: ["/api/company-settings"],
   });
@@ -60,6 +63,7 @@ export default function XpotLogin() {
   const [submitting, setSubmitting] = useState(false);
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
   const [isSupabaseAuth, setIsSupabaseAuth] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
   const googleLogoUrl = "https://commons.wikimedia.org/wiki/Special:FilePath/Google_Favicon_2025.svg";
   const companyLogo = companySettings?.logoIcon || "";
 
@@ -85,46 +89,52 @@ export default function XpotLogin() {
     let mounted = true;
 
     async function initialize() {
-      const response = await fetch("/api/supabase-config");
-      const config = await response.json();
-      const hasSupabase = Boolean(config.url && config.anonKey);
-      if (mounted) {
-        setIsSupabaseAuth(hasSupabase);
-      }
+      try {
+        const response = await fetch("/api/supabase-config");
+        const config = await response.json();
+        const hasSupabase = Boolean(config.url && config.anonKey);
 
-      // Check existing server session first
-      const user = await getCurrentUser();
-      if (mounted && user) {
-        await openXpotWorkspace();
-        return;
-      }
-
-      // After Google OAuth redirect, Supabase sets a browser session from the URL hash
-      // but there's no server session yet — exchange it now.
-      if (hasSupabase) {
-        try {
-          const supabase = await initSupabase();
-          const { data } = await supabase.auth.getSession();
-          const accessToken = data.session?.access_token;
-
-          if (accessToken) {
-            const loginResponse = await fetch("/api/auth/login", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              credentials: "include",
-              body: JSON.stringify({ accessToken }),
-            });
-
-            if (mounted && loginResponse.ok) {
-              await openXpotWorkspace();
-            } else if (mounted) {
-              const result = await loginResponse.json().catch(() => ({}));
-              setError(result.message || "Sign-in failed. Please try again.");
-            }
-          }
-        } catch (err: any) {
-          if (mounted) setError(err.message || "Sign-in failed. Please try again.");
+        // Check existing server session first
+        const user = await getCurrentUser();
+        if (mounted && user) {
+          await openXpotWorkspace();
+          return;
         }
+
+        if (mounted) {
+          setIsSupabaseAuth(hasSupabase);
+          setIsInitializing(false);
+        }
+
+        // After Google OAuth redirect, Supabase sets a browser session from the URL hash
+        // but there's no server session yet — exchange it now.
+        if (hasSupabase) {
+          try {
+            const supabase = await initSupabase();
+            const { data } = await supabase.auth.getSession();
+            const accessToken = data.session?.access_token;
+
+            if (accessToken) {
+              const loginResponse = await fetch("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ accessToken }),
+              });
+
+              if (mounted && loginResponse.ok) {
+                await openXpotWorkspace();
+              } else if (mounted) {
+                const result = await loginResponse.json().catch(() => ({}));
+                setError(result.message || "Sign-in failed. Please try again.");
+              }
+            }
+          } catch (err: any) {
+            if (mounted) setError(err.message || "Sign-in failed. Please try again.");
+          }
+        }
+      } catch {
+        if (mounted) setIsInitializing(false);
       }
     }
 
@@ -210,6 +220,14 @@ export default function XpotLogin() {
       setGoogleSubmitting(false);
     }
   };
+
+  if (isInitializing) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#06090f]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-background text-foreground px-4 flex flex-col items-center justify-center">
