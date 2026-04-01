@@ -51,7 +51,7 @@ export function XpotLeads() {
 
   return (
     <>
-      <Card className="border-white/10 bg-white/5 text-white">
+      <Card className="border-border bg-white/5 text-white">
         <CardHeader><CardTitle className="text-base">Find Business With Google Places</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <div className="relative">
@@ -60,19 +60,19 @@ export function XpotLeads() {
               value={leadLookupSearch}
               onChange={(event) => setLeadLookupSearch(event.target.value)}
               placeholder="Search businesses or addresses"
-              className="border-white/10 bg-white/5 pl-10 text-white placeholder:text-white/35"
+              className="border-border bg-white/5 pl-10 text-white placeholder:text-white/35"
             />
           </div>
-          <Button variant="outline" className="w-full border-white/10 bg-transparent text-white hover:bg-white/10" onClick={loadCurrentLocation}>
+          <Button variant="outline" className="w-full border-border bg-transparent text-white hover:bg-white/10" onClick={loadCurrentLocation}>
             <MapPinned className="mr-2 h-4 w-4" />
             Use Current Location For Nearby Search
           </Button>
-          <div className="rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white/60">
+          <div className="rounded-xl border border-border bg-black/20 p-3 text-sm text-white/60">
             {geoState.error ? geoState.error : geoState.lat && geoState.lng ? `Location bias enabled at ${geoState.lat.toFixed(5)}, ${geoState.lng.toFixed(5)}` : "Search works without GPS, but current location improves nearby matches."}
           </div>
           <div className="space-y-2">
             {leadPlaceQuery.isFetching ? (
-              <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white/55">
+              <div className="flex items-center gap-2 rounded-xl border border-border bg-black/20 p-3 text-sm text-white/55">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Searching Google Places...
               </div>
@@ -87,7 +87,7 @@ export function XpotLeads() {
                 key={place.placeId}
                 type="button"
                 onClick={() => applyPlaceToLeadForm(place)}
-                className="w-full rounded-2xl border border-white/10 bg-black/20 p-3 text-left transition hover:border-primary/40 hover:bg-black/30"
+                className="w-full rounded-2xl border border-border bg-black/20 p-3 text-left transition hover:border-primary/40 hover:bg-black/30"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -111,7 +111,7 @@ export function XpotLeads() {
         </CardContent>
       </Card>
 
-      <Card className="border-white/10 bg-white/5 text-white">
+      <Card className="border-border bg-white/5 text-white">
         <CardHeader><CardTitle className="text-base">Create Lead</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           {selectedLeadPlace ? (
@@ -121,19 +121,19 @@ export function XpotLeads() {
               <div className="text-sm text-white/60">{selectedLeadPlace.address}</div>
             </div>
           ) : null}
-          <Input value={leadForm.name} onChange={(event) => setLeadForm((prev) => ({ ...prev, name: event.target.value }))} placeholder="Business name" className="border-white/10 bg-white/5 text-white placeholder:text-white/35" />
+          <Input value={leadForm.name} onChange={(event) => setLeadForm((prev) => ({ ...prev, name: event.target.value }))} placeholder="Business name" className="border-border bg-white/5 text-white placeholder:text-white/35" />
           <div className="grid grid-cols-2 gap-3">
-            <Input value={leadForm.phone} onChange={(event) => setLeadForm((prev) => ({ ...prev, phone: event.target.value }))} placeholder="Phone" className="border-white/10 bg-white/5 text-white placeholder:text-white/35" />
-            <Input value={leadForm.email} onChange={(event) => setLeadForm((prev) => ({ ...prev, email: event.target.value }))} placeholder="Email" className="border-white/10 bg-white/5 text-white placeholder:text-white/35" />
+            <Input value={leadForm.phone} onChange={(event) => setLeadForm((prev) => ({ ...prev, phone: event.target.value }))} placeholder="Phone" className="border-border bg-white/5 text-white placeholder:text-white/35" />
+            <Input value={leadForm.email} onChange={(event) => setLeadForm((prev) => ({ ...prev, email: event.target.value }))} placeholder="Email" className="border-border bg-white/5 text-white placeholder:text-white/35" />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Input value={leadForm.website} onChange={(event) => setLeadForm((prev) => ({ ...prev, website: event.target.value }))} placeholder="Website" className="border-white/10 bg-white/5 text-white placeholder:text-white/35" />
-            <Input value={leadForm.industry} onChange={(event) => setLeadForm((prev) => ({ ...prev, industry: event.target.value }))} placeholder="Industry" className="border-white/10 bg-white/5 text-white placeholder:text-white/35" />
+            <Input value={leadForm.website} onChange={(event) => setLeadForm((prev) => ({ ...prev, website: event.target.value }))} placeholder="Website" className="border-border bg-white/5 text-white placeholder:text-white/35" />
+            <Input value={leadForm.industry} onChange={(event) => setLeadForm((prev) => ({ ...prev, industry: event.target.value }))} placeholder="Industry" className="border-border bg-white/5 text-white placeholder:text-white/35" />
           </div>
-          <Input value={leadForm.addressLine1} onChange={(event) => setLeadForm((prev) => ({ ...prev, addressLine1: event.target.value }))} placeholder="Address" className="border-white/10 bg-white/5 text-white placeholder:text-white/35" />
+          <Input value={leadForm.addressLine1} onChange={(event) => setLeadForm((prev) => ({ ...prev, addressLine1: event.target.value }))} placeholder="Address" className="border-border bg-white/5 text-white placeholder:text-white/35" />
           <div className="grid grid-cols-2 gap-3">
-            <Input value={leadForm.city} onChange={(event) => setLeadForm((prev) => ({ ...prev, city: event.target.value }))} placeholder="City" className="border-white/10 bg-white/5 text-white placeholder:text-white/35" />
-            <Input value={leadForm.state} onChange={(event) => setLeadForm((prev) => ({ ...prev, state: event.target.value }))} placeholder="State" className="border-white/10 bg-white/5 text-white placeholder:text-white/35" />
+            <Input value={leadForm.city} onChange={(event) => setLeadForm((prev) => ({ ...prev, city: event.target.value }))} placeholder="City" className="border-border bg-white/5 text-white placeholder:text-white/35" />
+            <Input value={leadForm.state} onChange={(event) => setLeadForm((prev) => ({ ...prev, state: event.target.value }))} placeholder="State" className="border-border bg-white/5 text-white placeholder:text-white/35" />
           </div>
           <Button disabled={createLeadMutation.isPending || !leadForm.name.trim()} onClick={createLeadFromForm} className="w-full bg-primary text-black hover:bg-primary">
             {createLeadMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
@@ -144,7 +144,7 @@ export function XpotLeads() {
 
       <div className="space-y-3">
         {filteredLeadsForList.map((lead) => (
-          <Card key={lead.id} className="border-white/10 bg-white/5 text-white">
+          <Card key={lead.id} className="border-border bg-white/5 text-white">
             <CardContent className="space-y-3 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -172,7 +172,7 @@ export function XpotLeads() {
                 <Badge variant="secondary" className="bg-primary/10 text-primary">{lead.openOpportunities || 0} open opportunities</Badge>
                 <Badge variant="secondary" className="bg-white/10 text-white/70">{lead.source === "google_places" ? "Imported from Places" : lead.ghlContactId ? "GHL linked" : "Local only"}</Badge>
               </div>
-              <Button variant="outline" className="w-full border-white/10 bg-transparent text-white hover:bg-white/10" onClick={() => { setSelectedLeadId(lead.id); setCheckInSearch(lead.name); setLocation("/xpot/check-in"); }}>
+              <Button variant="outline" className="w-full border-border bg-transparent text-white hover:bg-white/10" onClick={() => { setSelectedLeadId(lead.id); setCheckInSearch(lead.name); setLocation("/xpot/check-in"); }}>
                 Use Lead for Check-In
               </Button>
             </CardContent>
@@ -188,7 +188,7 @@ export function XpotLeads() {
           }
         }}
       >
-        <AlertDialogContent className="border-white/10 bg-[#0d1117] text-white">
+        <AlertDialogContent className="border-border bg-[#0d1117] text-white">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this lead?</AlertDialogTitle>
             <AlertDialogDescription className="text-white/65">

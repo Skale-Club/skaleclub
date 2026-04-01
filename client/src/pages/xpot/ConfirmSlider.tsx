@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronsRight, ChevronsLeft, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -33,6 +33,7 @@ export function ConfirmSlider({
   const hasTriggeredRef = useRef(false);
   const trackRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
+  const [dragging, setDragging] = useState(false);
   const dragStartX = useRef(0);
   const dragStartValue = useRef(startValue);
 
@@ -43,19 +44,21 @@ export function ConfirmSlider({
     }
   }, [loading, startValue]);
 
-  const THUMB = 44;
+  const THUMB = 48;
+  const PADDING = 4;
 
   function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (disabled || loading) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     isDragging.current = true;
+    setDragging(true);
     dragStartX.current = e.clientX;
     dragStartValue.current = value;
   }
 
   function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
     if (!isDragging.current || disabled || loading) return;
-    const trackWidth = (trackRef.current?.getBoundingClientRect().width ?? 300) - THUMB;
+    const trackWidth = (trackRef.current?.getBoundingClientRect().width ?? 300) - THUMB - PADDING * 2;
     const dx = e.clientX - dragStartX.current;
     const delta = (dx / trackWidth) * 100;
     const next = Math.min(100, Math.max(0, dragStartValue.current + delta));
@@ -67,37 +70,16 @@ export function ConfirmSlider({
     }
     if (isCheckOut && next <= 4 && !hasTriggeredRef.current) {
       hasTriggeredRef.current = true;
-      onConfirm(); // check-out confirmed
+      onConfirm();
     }
   }
 
   function onPointerUp() {
     if (!isDragging.current) return;
     isDragging.current = false;
+    setDragging(false);
     if (!hasTriggeredRef.current) {
       setValue(startValue);
-    }
-  }
-
-  // Fill color
-  // Check-in: left→right, blue → green
-  // Check-out: right→left, green → red (fill shrinks)
-  function getFillColor(v: number): string {
-    if (!isCheckOut) {
-      // 0–60: blue, 60–100: blue→green
-      if (v <= 60) return "rgba(28, 83, 163, 0.4)";
-      const t = (v - 60) / 40;
-      const r = Math.round(28 + t * (22 - 28));
-      const g = Math.round(83 + t * (163 - 83));
-      const b = Math.round(163 + t * (59 - 163));
-      return `rgba(${r}, ${g}, ${b}, 0.5)`;
-    } else {
-      // v=100→green, v=0→red
-      const t = v / 100;
-      const r = Math.round(239 + t * (22 - 239));
-      const g2 = Math.round(68 + t * (163 - 68));
-      const b = Math.round(68 + t * (59 - 68));
-      return `rgba(${r}, ${g2}, ${b}, 0.4)`;
     }
   }
 
@@ -118,60 +100,68 @@ export function ConfirmSlider({
     }
   }
 
-  const fillColor = getFillColor(value);
   const thumbColor = getThumbColor(value);
-  const isSnapping = !isDragging.current && !hasTriggeredRef.current;
+  const isSnapping = !dragging && !hasTriggeredRef.current;
+
+  // Label fades out as the thumb progresses
+  const progress = isCheckOut ? (1 - value / 100) : (value / 100);
+  const labelOpacity = Math.max(0, 1 - progress * 2.5);
 
   return (
     <div className="space-y-2">
       <div
         ref={trackRef}
         className={cn(
-          "relative rounded-full border border-white/10 bg-[#0c1a2e] select-none cursor-grab active:cursor-grabbing",
-          (disabled || loading) && "opacity-50 cursor-not-allowed",
+          "relative select-none rounded-2xl border border-border overflow-hidden",
+          dragging ? "cursor-grabbing" : "cursor-grab",
+          (disabled || loading) && "opacity-40 cursor-not-allowed",
         )}
-        style={{ height: THUMB + 10, padding: 5 }}
+        style={{
+          height: THUMB + PADDING * 2,
+          background: `color-mix(in srgb, ${thumbColor} 18%, #0d1520)`,
+          transition: isSnapping ? "background 0.3s ease" : "none",
+        }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
       >
-        {/* fill bar */}
-        <div
-          className="absolute inset-y-0 rounded-full"
-          style={{
-            left: 0,
-            width: `${value}%`,
-            background: fillColor,
-            transition: isSnapping ? "width 0.25s, background-color 0.25s" : "none",
-          }}
-        />
 
         {/* label */}
-        <div className="absolute inset-0 flex items-center justify-center px-16 text-center text-sm font-semibold tracking-[0.16em] text-white pointer-events-none">
+        <div
+          className="absolute inset-0 flex items-center justify-center text-center text-xs font-bold tracking-[0.22em] text-white/90 pointer-events-none drop-shadow-sm"
+          style={{
+            paddingLeft: isCheckOut ? 16 : THUMB + PADDING * 2 + 8,
+            paddingRight: isCheckOut ? THUMB + PADDING * 2 + 8 : 16,
+            opacity: labelOpacity,
+            transition: "opacity 0.1s",
+          }}
+        >
           {loading ? "PROCESSING..." : label}
         </div>
 
         {/* thumb */}
         <div
-          className="absolute top-[5px] flex items-center justify-center rounded-full text-white shadow-lg pointer-events-none"
+          className="absolute flex items-center justify-center rounded-[10px] text-white pointer-events-none"
           style={{
             width: THUMB,
             height: THUMB,
-            left: `calc(${value / 100} * (100% - ${THUMB}px))`,
+            top: PADDING,
+            left: `calc(${PADDING}px + ${value / 100} * (100% - ${THUMB}px - ${PADDING * 2}px))`,
             background: thumbColor,
-            transition: isSnapping ? "left 0.25s, background-color 0.25s" : "none",
+            boxShadow: `0 4px 16px ${thumbColor}55`,
+            transition: isSnapping ? "left 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease" : "none",
           }}
         >
           {loading
-            ? <Loader2 className="h-4 w-4 animate-spin" />
+            ? <Loader2 className="h-5 w-5 animate-spin" />
             : isCheckOut
-              ? <ChevronLeft className="h-5 w-5" />
-              : <ChevronRight className="h-5 w-5" />
+              ? <ChevronsLeft className="h-5 w-5" />
+              : <ChevronsRight className="h-5 w-5" />
           }
         </div>
       </div>
-      <div className="text-center text-xs text-white/45">{helperText}</div>
+      <div className="text-center text-[11px] text-white/30 tracking-wide">{helperText}</div>
     </div>
   );
 }

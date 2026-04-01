@@ -1,8 +1,8 @@
 import { MapPinned, DollarSign, Target, Clock3 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { useXpotQueries } from "./hooks/useXpotQueries";
-import { formatCurrency, formatDateTime } from "./utils";
+import { VisitRow } from "./components/VisitRow";
+import { formatCurrency } from "./utils";
 
 export function XpotDashboard() {
   const { dashboardQuery } = useXpotQueries();
@@ -30,20 +30,12 @@ export function XpotDashboard() {
         ))}
       </div>
 
-      <Card className="border-border bg-card shadow-sm">
-        <CardHeader><CardTitle className="text-base text-card-foreground">Recent Visits</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          {dashboardQuery.data?.recentVisits?.length ? dashboardQuery.data.recentVisits.map((visit) => (
-            <div key={visit.id} className="rounded-xl border border-border bg-secondary/20 p-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="font-medium text-foreground">{visit.lead?.name || `Lead #${visit.leadId}`}</div>
-                <Badge variant="secondary">{visit.status}</Badge>
-              </div>
-              <div className="mt-1 text-sm text-muted-foreground">{formatDateTime(visit.checkedInAt)}</div>
-            </div>
-          )) : <div className="text-sm text-muted-foreground">No visits yet.</div>}
-        </CardContent>
-      </Card>
+      <div className="space-y-2">
+        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/50 px-1">Recent Visits</div>
+        {dashboardQuery.data?.recentVisits?.length
+          ? dashboardQuery.data.recentVisits.map((visit) => <VisitRow key={visit.id} visit={visit} />)
+          : <div className="text-sm text-muted-foreground px-1">No visits yet.</div>}
+      </div>
     </>
   );
 }

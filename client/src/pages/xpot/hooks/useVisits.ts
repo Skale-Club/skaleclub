@@ -37,7 +37,7 @@ export function useVisits() {
       return response.json();
     },
     onSuccess: async () => {
-      toast({ title: "Visit completed" });
+      toast({ title: "Visit completed", variant: "success" });
       await invalidateXpotData();
     },
     onError: (error: Error) => {

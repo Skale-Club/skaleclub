@@ -61,7 +61,7 @@ export function useLeads() {
       return leadId;
     },
     onSuccess: async () => {
-      toast({ title: "Lead deleted" });
+      toast({ title: "Lead deleted", variant: "success" });
       await invalidateXpotData();
     },
     onError: (error: Error) => {
@@ -102,8 +102,8 @@ export function useLeads() {
             city: leadForm.city || undefined,
             state: leadForm.state || undefined,
             country: "US",
-            lat: selectedLeadPlace?.lat,
-            lng: selectedLeadPlace?.lng,
+            lat: selectedLeadPlace?.lat != null ? String(selectedLeadPlace.lat) : undefined,
+            lng: selectedLeadPlace?.lng != null ? String(selectedLeadPlace.lng) : undefined,
             geofenceRadiusMeters: 150,
             isPrimary: true,
           }
@@ -111,7 +111,7 @@ export function useLeads() {
     };
 
     const result = await createLeadMutation.mutateAsync(payload);
-    toast({ title: selectedLeadPlace ? "Business imported" : "Lead created" });
+    toast({ title: selectedLeadPlace ? "Business imported" : "Lead created", variant: "success" });
     setLeadForm({ name: "", phone: "", email: "", website: "", industry: "", addressLine1: "", city: "", state: "" });
     setSelectedLeadPlace(null);
     await invalidateXpotData();

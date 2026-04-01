@@ -101,6 +101,9 @@
   /* Warning color */
   --warning: 38 92% 50%;
   --warning-foreground: 0 0% 11%;
+
+  /* Button outline border */
+  --button-outline: hsl(var(--border));
 }
 
 @layer base {

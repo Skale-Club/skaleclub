@@ -20,6 +20,7 @@ export const xpotCheckInSchema = z.object({
 export const xpotCheckOutSchema = z.object({
   lat: z.number().min(-90).max(90).optional(),
   lng: z.number().min(-180).max(180).optional(),
+  status: z.string().optional(),
 });
 
 export const xpotVisitNoteUpsertSchema = insertSalesVisitNoteSchema.pick({

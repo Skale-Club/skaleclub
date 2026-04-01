@@ -23,6 +23,11 @@ export const salesVisitStatusEnum = pgEnum("sales_visit_status", [
   "completed",
   "cancelled",
   "invalid",
+  "no_answer",
+  "came_back_later",
+  "not_interested",
+  "follow_up",
+  "sale_made",
 ]);
 
 export const salesVisitValidationEnum = pgEnum("sales_visit_validation_status", [

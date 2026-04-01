@@ -72,19 +72,6 @@ function XpotAppShell() {
           </div>
         )}
 
-        <div className="mb-4 rounded-2xl border border-border bg-card p-4 shadow-sm">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Live Status</div>
-              <div className="mt-2 text-lg font-semibold">
-                {activeVisit ? `Checked in at ${activeVisit.lead?.name || `Lead #${activeVisit.leadId}`}` : "Ready for next visit"}
-              </div>
-            </div>
-            <Badge variant={activeVisit ? "default" : "secondary"}>
-              {activeVisit ? "Active" : "Idle"}
-            </Badge>
-          </div>
-        </div>
 
         <main className="flex-1 space-y-4">
           {activeTab === "dashboard" ? <XpotDashboard /> : null}

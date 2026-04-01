@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
 import { Building2, Loader2, MapPinned, Plus, Search, Timer, X } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useXpotShared } from "./hooks/useXpotShared";
 import { useXpotQueries } from "./hooks/useXpotQueries";
 import { useLeads } from "./hooks/useLeads";
@@ -14,9 +12,116 @@ import { useCheckIn } from "./hooks/useCheckIn";
 import { useVisits } from "./hooks/useVisits";
 import { ConfirmSlider } from "./ConfirmSlider";
 import { findMatchingLead, formatDateTime } from "./utils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { EditLeadDialog } from "./components/EditLeadDialog";
+import { VoiceRecorder } from "./components/VoiceRecorder";
+import { VisitRow } from "./components/VisitRow";
+import { InlineField } from "./components/InlineField";
+import { StatusPicker } from "./components/VisitStatus";
+import type { VisitStatus } from "./components/VisitStatus";
+import type { FullSalesLead, SalesLead } from "./types";
+
+
+function ActiveLeadInfo({ lead, onSaved }: { lead: SalesLead; onSaved: () => void }) {
+  const { toast } = useToast();
+  const [fields, setFields] = useState({
+    name: lead.name || "",
+    phone: lead.phone || "",
+    email: lead.email || "",
+    website: lead.website || "",
+    industry: lead.industry || "",
+  });
+
+  function saveField(key: keyof typeof fields, value: string) {
+    setFields((prev) => ({ ...prev, [key]: value }));
+    apiRequest("PATCH", `/api/xpot/leads/${lead.id}`, { [key]: value || undefined })
+      .then(() => { toast({ title: "Saved", variant: "success" }); onSaved(); queryClient.invalidateQueries({ queryKey: ["/api/xpot/me"] }); })
+      .catch((err: Error) => toast({ title: "Failed to save", description: err.message, variant: "destructive" }));
+  }
+
+  return (
+    <div className="space-y-2.5">
+      <InlineField label="" large value={fields.name} onSave={(v) => saveField("name", v)} />
+      <InlineField label="Phone" value={fields.phone} onSave={(v) => saveField("phone", v)} />
+      <InlineField label="Email" value={fields.email} onSave={(v) => saveField("email", v)} />
+      <InlineField label="Website" value={fields.website} onSave={(v) => saveField("website", v)} />
+      <InlineField label="Industry" value={fields.industry} onSave={(v) => saveField("industry", v)} />
+    </div>
+  );
+}
+
+function CreateLeadDialog({ open, onOpenChange, initialName, onCreated }: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  initialName: string;
+  onCreated: (leadId: number, name: string) => void;
+}) {
+  const { toast } = useToast();
+  const [form, setForm] = useState({ name: initialName, phone: "", email: "", website: "", industry: "", address: "", city: "", state: "" });
+  const { createLeadMutation } = useCheckIn();
+
+  useEffect(() => { setForm((p) => ({ ...p, name: initialName })); }, [initialName]);
+
+  const f = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm((prev) => ({ ...prev, [key]: e.target.value }));
+
+  async function handleCreate() {
+    if (!form.name.trim()) return;
+    try {
+      const result = await createLeadMutation.mutateAsync({
+        name: form.name.trim(),
+        phone: form.phone || undefined,
+        email: form.email || undefined,
+        website: form.website || undefined,
+        industry: form.industry || undefined,
+        source: "manual",
+        status: "lead",
+        primaryLocation: form.address ? {
+          label: "Main",
+          addressLine1: form.address || undefined,
+          city: form.city || undefined,
+          state: form.state || undefined,
+          isPrimary: true,
+        } : undefined,
+      } as any);
+      toast({ title: "Company created", variant: "success" });
+      onCreated(result.lead.id, form.name.trim());
+      onOpenChange(false);
+    } catch (err: any) {
+      toast({ title: "Failed to create", description: err.message, variant: "destructive" });
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm rounded-2xl border-border bg-card">
+        <DialogHeader>
+          <DialogTitle>New Company</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <Input value={form.name} onChange={f("name")} placeholder="Business name *" />
+          <Input value={form.phone} onChange={f("phone")} placeholder="Phone" />
+          <Input value={form.email} onChange={f("email")} placeholder="Email" />
+          <Input value={form.website} onChange={f("website")} placeholder="Website" />
+          <Input value={form.industry} onChange={f("industry")} placeholder="Industry" />
+          <Input value={form.address} onChange={f("address")} placeholder="Street address" />
+          <div className="grid grid-cols-2 gap-2">
+            <Input value={form.city} onChange={f("city")} placeholder="City" />
+            <Input value={form.state} onChange={f("state")} placeholder="State" />
+          </div>
+          <Button className="w-full" disabled={createLeadMutation.isPending || !form.name.trim()} onClick={handleCreate}>
+            {createLeadMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Create Company
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export function XpotCheckIn() {
-  const { geoState, loadCurrentLocation } = useXpotShared();
+  const { geoState, loadCurrentLocation, invalidateXpotData } = useXpotShared();
   const {
     selectedLeadId,
     setSelectedLeadId,
@@ -45,9 +150,12 @@ export function XpotCheckIn() {
     saveNoteMutation,
   } = useCheckIn();
   const { leadsQuery } = useLeads();
-  const { activeVisit, checkOutMutation, cancelVisitMutation } = useVisits();
+  const { activeVisit, checkOutMutation, cancelVisitMutation, visitsQuery } = useVisits();
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [editLeadOpen, setEditLeadOpen] = useState(false);
+  const [checkoutStatus, setCheckoutStatus] = useState<VisitStatus>("completed");
+  const [createLeadDialogOpen, setCreateLeadDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!activeVisit?.checkedInAt) {
@@ -68,12 +176,60 @@ export function XpotCheckIn() {
     ? `${elapsedHours}:${String(elapsedMins).padStart(2, "0")}:${String(elapsedSecs).padStart(2, "0")}`
     : `${elapsedMins}:${String(elapsedSecs).padStart(2, "0")}`;
 
+  if (activeVisit) return (
+    <div className="space-y-4">
+      <div className="space-y-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+        {/* Timer */}
+        <div className="flex flex-col items-center gap-1 pt-2">
+          <div className="flex items-center gap-2 text-primary/70">
+            <Timer className="h-4 w-4" />
+            <span className="text-xs uppercase tracking-[0.2em]">Visit Timer</span>
+          </div>
+          <div className="text-4xl font-mono font-bold tracking-wider text-foreground tabular-nums">{elapsedDisplay}</div>
+        </div>
+
+        {/* Company info */}
+        {activeVisit.lead ? (
+          <ActiveLeadInfo lead={activeVisit.lead} onSaved={() => invalidateXpotData()} />
+        ) : (
+          <div className="text-center text-base font-semibold text-foreground">{`Lead #${activeVisit.leadId}`}</div>
+        )}
+        {/* Voice recorder */}
+        <VoiceRecorder
+          onUpload={async ({ audioBlob, durationSeconds }) => {
+            const reader = new FileReader();
+            const audioData = await new Promise<string>((resolve) => {
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(audioBlob);
+            });
+            await uploadAudioMutation.mutateAsync({ audioData, durationSeconds } as any);
+          }}
+        />
+        <StatusPicker value={checkoutStatus} onChange={setCheckoutStatus} />
+
+        <ConfirmSlider
+          label={uploadAudioMutation.isPending ? "UPLOAD IN PROGRESS..." : "SLIDE TO CHECK OUT"}
+          helperText=""
+          loading={checkOutMutation.isPending || cancelVisitMutation.isPending || uploadAudioMutation.isPending}
+          disabled={uploadAudioMutation.isPending}
+          onConfirm={() => checkOutMutation.mutate({ status: checkoutStatus } as any)}
+          onCancel={() => cancelVisitMutation.mutate(undefined as any)}
+        />
+        {activeVisit.checkedInAt && (
+          <div className="text-center text-[11px] text-muted-foreground/50">
+            Check-in · {formatDateTime(activeVisit.checkedInAt)}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   return (
+    <>
     <Card className="border-border bg-card shadow-sm">
-      <CardHeader><CardTitle className="text-base text-card-foreground">Xpot Check-In</CardTitle></CardHeader>
-      <CardContent className="space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" />
+      <CardContent className="space-y-4 pt-6">
+        {!activeVisit && <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground z-10" />
           <Input
             value={checkInSearch}
             onChange={(event) => { setCheckInSearch(event.target.value); setCheckInDropdownOpen(true); }}
@@ -81,28 +237,32 @@ export function XpotCheckIn() {
             onBlur={() => setTimeout(() => setCheckInDropdownOpen(false), 150)}
             onKeyDown={(e) => { if (e.key === "Escape") { setCheckInDropdownOpen(false); (e.target as HTMLInputElement).blur(); } }}
             placeholder="Search local leads or Google Places"
-            className="bg-background pl-10 pr-9"
+            className="bg-background pl-10 pr-16 h-12 text-base"
           />
-          {checkInSearch && (
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+            {checkInSearch ? (
+              <button type="button" onClick={() => { setCheckInSearch(""); setSelectedLeadId(""); }} className="p-1 text-muted-foreground hover:text-foreground">
+                <X className="h-4 w-4" />
+              </button>
+            ) : null}
             <button
               type="button"
-              onClick={() => { setCheckInSearch(""); setSelectedLeadId(""); }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              className="p-1 text-muted-foreground hover:text-primary transition-colors"
+              onClick={async () => { await loadCurrentLocation(); setCheckInSearch("businesses nearby"); setCheckInDropdownOpen(true); }}
             >
-              <X className="h-4 w-4" />
+              <MapPinned className="h-4 w-4" />
             </button>
-          )}
+          </div>
           {checkInDropdownOpen && !activeVisit && (
             <div
               className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-y-auto rounded-xl border border-border bg-popover text-popover-foreground shadow-2xl"
               onPointerDown={(e) => e.stopPropagation()}
             >
-              {checkInSearch.trim().length >= 3 && (
+              {checkInSearch.trim().length >= 2 && (
                 <button
                   type="button"
-                  onClick={createNewCompanyFromSearch}
-                  disabled={createLeadMutation.isPending}
-                  className="flex w-full items-center gap-3 border-b border-border px-4 py-3 text-left transition hover:bg-muted/50 disabled:opacity-50"
+                  onClick={() => { setCheckInDropdownOpen(false); setCreateLeadDialogOpen(true); }}
+                  className="flex w-full items-center gap-3 border-b border-border px-4 py-3 text-left transition hover:bg-muted/50"
                 >
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                     <Plus className="h-4 w-4" />
@@ -177,124 +337,69 @@ export function XpotCheckIn() {
               ) : null}
             </div>
           )}
-        </div>
-        <Button variant="outline" className="w-full" onClick={loadCurrentLocation}>
-          <MapPinned className="mr-2 h-4 w-4" />
-          Use Current Location
-        </Button>
-        {geoState.error ? (
-          <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">  
-            GPS unavailable: {geoState.error}. You can still check in — the visit will be flagged for review.       
-          </div>
-        ) : geoState.lat && geoState.lng ? (
-          <div className="rounded-xl border border-border bg-secondary/50 p-3 text-sm text-muted-foreground">
-            GPS locked · {geoState.accuracy ? `accuracy ${geoState.accuracy}m` : "accuracy unknown"}
+        </div>}
+        {!activeVisit && geoState.error ? (
+          <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
+            GPS unavailable: {geoState.error}. You can still check in — the visit will be flagged for review.
           </div>
         ) : null}
-        {!activeVisit ? (
+        {selectedLead ? (
           <>
-            {selectedLead ? (
-              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-primary/70">Selected Lead</div>
-                <div className="mt-1 text-xl font-semibold text-foreground">{selectedLead.name}</div>
-                <div className="mt-1 text-sm text-muted-foreground">{selectedLead.locations?.[0]?.addressLine1 || "No address saved yet"}</div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Badge variant="default">{selectedLead.status}</Badge>
-                  <Badge variant="secondary">{selectedLead.source === "google_places" ? "Imported from Places" : "Local lead"}</Badge>
-                </div>
+            <button
+              type="button"
+              onClick={() => setEditLeadOpen(true)}
+              className="w-full rounded-2xl border border-primary/20 bg-primary/5 p-4 text-left transition hover:border-primary/40 hover:bg-primary/10"
+            >
+              <div className="text-xs uppercase tracking-[0.2em] text-primary/70">Selected Lead</div>
+              <div className="mt-1 text-xl font-semibold text-foreground">{selectedLead.name}</div>
+              <div className="mt-1 text-sm text-muted-foreground">{selectedLead.locations?.[0]?.addressLine1 || "No address saved yet"}</div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Badge variant="default">{selectedLead.status}</Badge>
+                <Badge variant="secondary">{selectedLead.source === "google_places" ? "Imported from Places" : "Local lead"}</Badge>
               </div>
-            ) : null}
-
-            <div className={checkInDropdownOpen ? "pointer-events-none" : ""}>
-              <ConfirmSlider
-                label={selectedLead ? "SLIDE TO CHECK IN" : "SELECT A LEAD FIRST"}
-                helperText={selectedLead ? `Confirm visit start for ${selectedLead.name}` : "Choose a local lead or Google Place to enable check-in."}
-                loading={checkInMutation.isPending || createLeadMutation.isPending}
-                disabled={!selectedLeadId || createLeadMutation.isPending}
-                onConfirm={() => checkInMutation.mutate({ leadId: Number(selectedLeadId), lat: geoState.lat, lng: geoState.lng, gpsAccuracyMeters: geoState.accuracy })}
-              />
-            </div>
-          </>
-        ) : (
-          <div className="space-y-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
-            <div className="flex flex-col items-center gap-2 py-2">
-              <div className="flex items-center gap-2 text-primary/70">
-                <Timer className="h-4 w-4" />
-                <span className="text-xs uppercase tracking-[0.2em]">Visit Timer</span>
-              </div>
-              <div className="text-4xl font-mono font-bold tracking-wider text-foreground tabular-nums">{elapsedDisplay}</div>
-              <div className="text-base font-semibold text-foreground">{activeVisit.lead?.name || `Lead #${activeVisit.leadId}`}</div>
-              <Badge variant="default" className="text-[10px]">{activeVisit.validationStatus}</Badge>
-            </div>
-            <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground">
-              <div><div className="text-muted-foreground/70">Check-in</div><div>{formatDateTime(activeVisit.checkedInAt)}</div></div>
-              <div><div className="text-muted-foreground/70">Distance</div><div>{activeVisit.distanceFromTargetMeters ? `${activeVisit.distanceFromTargetMeters} m` : "Unknown"}</div></div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button
-                type="button"
-                variant={isRecording ? "destructive" : "outline"}
-                className={isRecording ? "h-12 w-12 rounded-full" : "h-12 w-12 rounded-full bg-secondary/50 hover:bg-secondary"}
-                onClick={isRecording ? stopRecording : startRecording}
-              >
-                {isRecording ? <div className="h-4 w-4 rounded-sm bg-destructive-foreground animate-pulse" /> : <div className="h-4 w-4 rounded-full bg-foreground/80" />}
-              </Button>
-              <div className="flex-1">
-                {isRecording ? (
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
-                    <span className="text-sm text-foreground/80">Recording... {Math.floor(recordingTime / 60)}:{String(recordingTime % 60).padStart(2, "0")}</span>
-                  </div>
-                ) : audioBlob ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-primary">Audio recorded ({recordingTime}s)</span>
-                    <Button size="sm" variant="ghost" className="h-6 text-muted-foreground hover:text-foreground" onClick={() => { setAudioBlob(null); setRecordingTime(0); }}>Clear</Button>
-                  </div>
-                ) : (
-                  <span className="text-sm text-muted-foreground/70">Tap to record voice notes</span>
-                )}
-              </div>
-              {audioBlob && !isRecording && (
-                <Button size="sm" variant="default" onClick={() => uploadAudioMutation.mutate(undefined as any)} disabled={uploadAudioMutation.isPending}>
-                  {uploadAudioMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Upload"}
-                </Button>
-              )}
-            </div>
-            <div className="rounded-xl border border-border bg-secondary/50 px-3 py-2 text-xs text-muted-foreground">
-              After upload, Xpot can transcribe the audio and generate an AI visit analysis.
-            </div>
-            <Textarea value={visitNoteForm.summary} onChange={(event) => setVisitNoteForm((prev) => ({ ...prev, summary: event.target.value }))} placeholder="Visit summary" className="min-h-[96px] bg-background" />
-            <div className="grid grid-cols-2 gap-3">
-              <Input value={visitNoteForm.outcome} onChange={(event) => setVisitNoteForm((prev) => ({ ...prev, outcome: event.target.value }))} placeholder="Outcome" className="bg-background" />
-              <Input value={visitNoteForm.nextStep} onChange={(event) => setVisitNoteForm((prev) => ({ ...prev, nextStep: event.target.value }))} placeholder="Next step" className="bg-background" />
-            </div>
-            <div className="flex items-center gap-3 rounded-xl border border-border bg-secondary/50 px-3 py-3">
-              <Checkbox
-                id="visit-follow-up-required"
-                checked={visitNoteForm.followUpRequired}
-                onCheckedChange={(checked) => setVisitNoteForm((prev) => ({ ...prev, followUpRequired: checked === true }))}
-              />
-              <Label htmlFor="visit-follow-up-required" className="text-sm text-foreground">
-                Follow-up required
-              </Label>
-            </div>
-            <div className="flex gap-3">
-              <Button variant="outline" className="flex-1" onClick={() => saveNoteMutation.mutate(undefined as any)}>
-                {saveNoteMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Save Note
-              </Button>
-            </div>
-            <ConfirmSlider
-              label={uploadAudioMutation.isPending ? "UPLOAD IN PROGRESS..." : "SLIDE TO CHECK OUT"}
-              helperText={uploadAudioMutation.isPending ? "Wait for audio upload to finish before checking out." : "Slide all the way left to check out"}
-              loading={checkOutMutation.isPending || cancelVisitMutation.isPending || uploadAudioMutation.isPending}
-              disabled={uploadAudioMutation.isPending}
-              onConfirm={() => checkOutMutation.mutate(undefined as any)}
-              onCancel={() => cancelVisitMutation.mutate(undefined as any)}
+            </button>
+            <EditLeadDialog
+              lead={selectedLead}
+              open={editLeadOpen}
+              onOpenChange={setEditLeadOpen}
+              onSaved={() => invalidateXpotData()}
             />
-          </div>
-        )}
+          </>
+        ) : null}
+
+        <div className={checkInDropdownOpen ? "pointer-events-none" : ""}>
+          <ConfirmSlider
+            label={selectedLead ? "SLIDE TO CHECK IN" : "SELECT A LEAD FIRST"}
+            helperText={selectedLead ? `Confirm visit start for ${selectedLead.name}` : "Choose a local lead or Google Place to enable check-in."}
+            loading={checkInMutation.isPending || createLeadMutation.isPending}
+            disabled={!selectedLeadId || createLeadMutation.isPending}
+            onConfirm={() => checkInMutation.mutate({ leadId: Number(selectedLeadId), lat: geoState.lat, lng: geoState.lng, gpsAccuracyMeters: geoState.accuracy })}
+          />
+        </div>
       </CardContent>
     </Card>
+
+    {(() => {
+      const recent = (visitsQuery.data || []).filter((v) => v.checkedOutAt).slice(0, 5);
+      if (!recent.length) return null;
+      return (
+        <div className="space-y-2">
+          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/50 px-1">Recent Visits</div>
+          {recent.map((visit) => <VisitRow key={visit.id} visit={visit} />)}
+        </div>
+      );
+    })()}
+
+    <CreateLeadDialog
+      open={createLeadDialogOpen}
+      onOpenChange={setCreateLeadDialogOpen}
+      initialName={checkInSearch.trim() === "businesses nearby" ? "" : checkInSearch.trim()}
+      onCreated={(leadId, name) => {
+        setSelectedLeadId(leadId);
+        setCheckInSearch(name);
+        invalidateXpotData();
+      }}
+    />
+    </>
   );
 }

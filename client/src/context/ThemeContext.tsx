@@ -33,10 +33,17 @@ function isInAdminArea(): boolean {
   return window.location.pathname.startsWith('/admin');
 }
 
+function isInXpotArea(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.location.pathname.startsWith('/xpot');
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => getStoredTheme());
   const [isAdminArea, setIsAdminArea] = useState(() => isInAdminArea());
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() => {
+    // Always dark in Xpot area
+    if (isInXpotArea()) return 'dark';
     // Only apply stored theme in admin area
     if (!isInAdminArea()) return 'light';
     const stored = getStoredTheme();
@@ -45,11 +52,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const applyTheme = useCallback((newTheme: 'light' | 'dark', forceAdmin = false) => {
     const inAdmin = forceAdmin || isInAdminArea();
+    const inXpot = isInXpotArea();
     const root = document.documentElement;
     root.classList.remove('light', 'dark');
 
-    // Only apply dark theme in admin area, always light on frontend
-    const themeToApply = inAdmin ? newTheme : 'light';
+    // Dark theme in admin area (user-controlled) or always dark in Xpot area
+    const themeToApply = inXpot ? 'dark' : inAdmin ? newTheme : 'light';
     root.classList.add(themeToApply);
     setResolvedTheme(themeToApply);
   }, []);
@@ -76,6 +84,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       if (inAdmin) {
         const resolved = theme === 'system' ? getSystemTheme() : theme;
         applyTheme(resolved, true);
+      } else if (isInXpotArea()) {
+        // Always dark mode in Xpot area
+        applyTheme('dark', false);
       } else {
         // Always light mode on frontend
         applyTheme('light', false);

@@ -72,7 +72,7 @@ export function useCheckIn() {
       return response.json();
     },
     onSuccess: async () => {
-      toast({ title: "Checked in successfully" });
+      toast({ title: "Checked in successfully", variant: "success" });
       await invalidateXpotData();
       setTimeout(() => { checkingInRef.current = false; }, 2000);
     },
@@ -89,7 +89,7 @@ export function useCheckIn() {
       return response.json();
     },
     onSuccess: async () => {
-      toast({ title: "Visit note saved" });
+      toast({ title: "Visit note saved", variant: "success" });
       await invalidateXpotData();
     },
     onError: (error: Error) => {
@@ -124,6 +124,7 @@ export function useCheckIn() {
           : result?.transcriptionAvailable
             ? "The audio was transcribed and saved."
             : "The audio was saved.",
+        variant: "success",
       });
       setAudioBlob(null);
       setRecordingTime(0);
@@ -187,7 +188,7 @@ export function useCheckIn() {
     if (existingLead) {
       setSelectedLeadId(existingLead.id);
       setCheckInSearch(existingLead.name);
-      toast({ title: "Local lead selected", description: existingLead.name });
+      toast({ title: "Local lead selected", description: existingLead.name, variant: "success" });
       return;
     }
 
@@ -206,8 +207,8 @@ export function useCheckIn() {
         city: parsedAddress.city || undefined,
         state: parsedAddress.state || undefined,
         country: "US",
-        lat: place.lat,
-        lng: place.lng,
+        lat: place.lat != null ? String(place.lat) : undefined,
+        lng: place.lng != null ? String(place.lng) : undefined,
         geofenceRadiusMeters: 150,
         isPrimary: true,
       },
@@ -215,7 +216,7 @@ export function useCheckIn() {
 
     setSelectedLeadId(createdLead.lead.id);
     setCheckInSearch(place.name);
-    toast({ title: "Business imported for check-in", description: place.name });
+    toast({ title: "Business imported for check-in", description: place.name, variant: "success" });
     await invalidateXpotData();
   };
 
@@ -232,8 +233,8 @@ export function useCheckIn() {
         label: "Main",
         addressLine1: "",
         country: "US",
-        lat: geoState.lat,
-        lng: geoState.lng,
+        lat: geoState.lat != null ? String(geoState.lat) : undefined,
+        lng: geoState.lng != null ? String(geoState.lng) : undefined,
         geofenceRadiusMeters: 150,
         isPrimary: true,
       },
@@ -242,7 +243,7 @@ export function useCheckIn() {
     setSelectedLeadId(createdLead.lead.id);
     setCheckInSearch(createdLead.lead.name);
     setCheckInDropdownOpen(false);
-    toast({ title: "Company created", description: createdLead.lead.name });
+    toast({ title: "Company created", description: createdLead.lead.name, variant: "success" });
     await invalidateXpotData();
   };
 

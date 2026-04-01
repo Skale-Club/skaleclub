@@ -113,7 +113,7 @@ export function createVisitsRouter() {
     const durationSeconds = Math.max(0, Math.round((checkedOutAt.getTime() - checkedInAt.getTime()) / 1000));
 
     const updated = await storage.updateSalesVisit(visit.id, {
-      status: "completed",
+      status: (input.status as any) || "completed",
       checkedOutAt,
       durationSeconds,
       checkOutLat: input.lat?.toString(),
@@ -150,6 +150,18 @@ export function createVisitsRouter() {
       durationSeconds,
     });
 
+    res.json(updated);
+  });
+
+  router.patch("/visits/:id", async (req, res) => {
+    const actor = (req as any).xpotActor as Awaited<ReturnType<typeof ensureXpotRep>>;
+    const visitId = Number(req.params.id);
+    const visit = await storage.getSalesVisit(visitId);
+    if (!visit || visit.repId !== actor!.rep.id) {
+      return res.status(404).json({ message: "Visit not found" });
+    }
+    const { status } = req.body as { status?: string };
+    const updated = await storage.updateSalesVisit(visitId, { ...(status ? { status } : {}) });
     res.json(updated);
   });
 
