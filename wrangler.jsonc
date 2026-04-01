@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "skaleclub-xpot",
+  "main": "cloudflare/xpot-proxy.ts",
+  "compatibility_date": "2026-04-01",
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "xpot.skale.club",
+      "custom_domain": true
+    }
+  ],
+  "vars": {
+    "XPOT_UPSTREAM_ORIGIN": "https://skale.club",
+    "XPOT_UPSTREAM_PREFIX": "/xpot"
+  }
+}

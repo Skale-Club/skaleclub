@@ -25,6 +25,19 @@
       ]
     },
     {
+      "source": "/manifest-xpot.webmanifest",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/manifest+json; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
       "source": "/(apple-touch-icon.png|pwa-192.png|pwa-512.png|favicon.png|favicon-rounded.png|favicon.svg)",
       "headers": [
         {

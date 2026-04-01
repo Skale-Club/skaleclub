@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { AlertCircle, Archive, BadgeCheck, Check, Clock, FileText, Flame, Globe, Loader2, MapPin, MessageSquare, Puzzle, Sparkles, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { getXpotAppUrl } from '@/lib/xpot';
 import { apiRequest } from '@/lib/queryClient';
 import { clsx } from 'clsx';
 import { format } from 'date-fns';
@@ -303,7 +304,7 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
               Integrations
             </Button>
             <Button variant="outline" className="border-0 bg-primary/10 text-primary" asChild>
-              <a href="/xpot" target="_blank" rel="noreferrer">
+              <a href={getXpotAppUrl("/")} target="_blank" rel="noreferrer">
                 <MapPin className="w-4 h-4 mr-2" />
                 Check In
               </a>

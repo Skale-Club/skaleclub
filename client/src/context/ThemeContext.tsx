@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
+import { isXpotContext } from '@/lib/xpot';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -35,7 +36,7 @@ function isInAdminArea(): boolean {
 
 function isInXpotArea(): boolean {
   if (typeof window === 'undefined') return false;
-  return window.location.pathname.startsWith('/xpot');
+  return isXpotContext(window.location.pathname, window.location.hostname);
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { getXpotLoginPath, getXpotSection } from "@/lib/xpot";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { tabs } from "../utils";
@@ -37,7 +38,7 @@ export function useXpotQueries() {
   }, []);
 
   const activeTab = useMemo(() => {
-    const section = pathname.split("/")[2];
+    const section = getXpotSection(pathname);
     if (!section) return "check-in";
     return tabs.some((tab) => tab.id === section) ? section : "check-in";
   }, [pathname]);
@@ -52,7 +53,7 @@ export function useXpotQueries() {
 
   useEffect(() => {
     if (xpotMeStatus === 401 || xpotMeStatus === 403) {
-      setLocation("/xpot/login");
+      setLocation(getXpotLoginPath());
     }
   }, [xpotMeStatus, setLocation]);
 
@@ -75,7 +76,7 @@ export function useXpotQueries() {
   const signOut = async () => {
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
     queryClient.clear();
-    setLocation("/xpot/login");
+    setLocation(getXpotLoginPath());
   };
 
   const me = xpotMeQuery.data ?? null;

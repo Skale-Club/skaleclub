@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { getXpotPath } from "@/lib/xpot";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -172,7 +173,7 @@ export function XpotLeads() {
                 <Badge variant="secondary" className="bg-primary/10 text-primary">{lead.openOpportunities || 0} open opportunities</Badge>
                 <Badge variant="secondary" className="bg-white/10 text-white/70">{lead.source === "google_places" ? "Imported from Places" : lead.ghlContactId ? "GHL linked" : "Local only"}</Badge>
               </div>
-              <Button variant="outline" className="w-full border-border bg-transparent text-white hover:bg-white/10" onClick={() => { setSelectedLeadId(lead.id); setCheckInSearch(lead.name); setLocation("/xpot/check-in"); }}>
+              <Button variant="outline" className="w-full border-border bg-transparent text-white hover:bg-white/10" onClick={() => { setSelectedLeadId(lead.id); setCheckInSearch(lead.name); setLocation(getXpotPath("/check-in")); }}>
                 Use Lead for Check-In
               </Button>
             </CardContent>

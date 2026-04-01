@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { isXpotContext } from '@/lib/xpot';
 
 interface SeoSettings {
   seoTitle: string | null;
@@ -79,6 +80,7 @@ function setJsonLdSchema(settings: SeoSettings) {
 }
 
 export function useSEO() {
+  const skipSeo = typeof window !== 'undefined' && isXpotContext(window.location.pathname, window.location.hostname);
   const { data: settings } = useQuery<SeoSettings>({
     queryKey: ['/api/company-settings'],
     staleTime: 1000 * 60 * 5,
@@ -88,7 +90,7 @@ export function useSEO() {
   });
 
   useEffect(() => {
-    if (!settings) return;
+    if (!settings || skipSeo) return;
 
     // Update title immediately when data arrives
     if (settings.seoTitle) {
@@ -140,7 +142,7 @@ export function useSEO() {
 
     setJsonLdSchema(settings);
 
-  }, [settings]);
+  }, [settings, skipSeo]);
 
   return settings;
 }

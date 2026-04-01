@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
 import { initSupabase } from "@/lib/supabase";
 import { queryClient } from "@/lib/queryClient";
+import { getMarketingAppUrl, getXpotAppUrl, getXpotHomePath } from "@/lib/xpot";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -47,13 +48,6 @@ function getXpotSessionErrorMessage(status: number, message?: string) {
   return "Sign-in failed. Please try again.";
 }
 
-function getCanonicalOrigin() {
-  const { hostname, origin } = window.location;
-  if (hostname === "localhost" || hostname === "127.0.0.1") return origin;
-  if (hostname.endsWith(".vercel.app")) return "https://skale.club";
-  return origin;
-}
-
 export default function XpotLogin() {
   const [, setLocation] = useLocation();
   const { data: companySettings } = useQuery<CompanySettings>({
@@ -77,7 +71,12 @@ export default function XpotLogin() {
     }
 
     queryClient.setQueryData(["/api/xpot/me"], result.data);
-    setLocation("/xpot");
+    const targetUrl = getXpotAppUrl("/");
+    if (targetUrl.startsWith(window.location.origin)) {
+      setLocation(getXpotHomePath());
+    } else {
+      window.location.href = targetUrl;
+    }
     return true;
   };
 
@@ -197,7 +196,7 @@ export default function XpotLogin() {
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${getCanonicalOrigin()}/xpot/login`,
+          redirectTo: getXpotAppUrl("/login"),
         },
       });
 
@@ -215,7 +214,7 @@ export default function XpotLogin() {
       <div className="w-full max-w-md">
         <button
           type="button"
-          onClick={() => setLocation("/")}
+          onClick={() => { window.location.href = getMarketingAppUrl("/"); }}
           className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
@@ -315,7 +314,7 @@ export default function XpotLogin() {
                   Are you an administrator?{' '}
                   <button
                     type="button"
-                    onClick={() => setLocation('/admin/login')}
+                    onClick={() => { window.location.href = getMarketingAppUrl("/admin/login"); }}
                     className="font-medium text-primary hover:underline"
                   >
                     Sign in to Admin

@@ -10,6 +10,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useSEO } from "@/hooks/use-seo";
 import { initAnalytics, trackPageView } from "@/lib/analytics";
+import { getXpotAppUrl, isLocalHostname, isXpotHost } from "@/lib/xpot";
 import { PageLoader, DotsLoader } from "@/components/ui/spinner";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useEffect, Suspense, lazy, useRef, useState, createContext, useContext } from "react";
@@ -103,6 +104,7 @@ function SEOProvider({ children }: { children: React.ReactNode }) {
 
 function Router() {
   const [location] = useLocation();
+  const xpotHost = typeof window !== "undefined" && isXpotHost(window.location.hostname);
   const { isInitialLoad } = useContext(InitialLoadContext);
   const { data: settings, isLoading } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
@@ -110,10 +112,27 @@ function Router() {
   const pagePaths = buildPagePaths(settings?.pageSlugs);
   const legacyPaths = buildPagePaths(DEFAULT_PAGE_SLUGS);
   const isAdminRoute = location.startsWith('/admin');
-  const isXpotRoute = location.startsWith('/xpot');
+  const isXpotRoute = xpotHost || location.startsWith('/xpot');
   const isLinksRoute = isRoutePrefixMatch(location, pagePaths.links) || isRoutePrefixMatch(location, legacyPaths.links);
   const isVCardRoute = isRoutePrefixMatch(location, pagePaths.vcard) || isRoutePrefixMatch(location, legacyPaths.vcard);
   const prevLocation = useRef(location);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !location.startsWith("/xpot") || xpotHost) {
+      return;
+    }
+
+    const { hostname, origin } = window.location;
+    if (isLocalHostname(hostname) || hostname.endsWith(".vercel.app")) {
+      return;
+    }
+
+    const targetPath = location.replace(/^\/xpot/, "") || "/";
+    const targetUrl = getXpotAppUrl(targetPath);
+    if (targetUrl !== `${origin}${location}`) {
+      window.location.replace(targetUrl);
+    }
+  }, [location, xpotHost]);
 
   // Scroll to top when navigating to a new page (not hash links)
   useEffect(() => {
@@ -150,9 +169,19 @@ function Router() {
     return (
       <Suspense fallback={fallback}>
         <Switch>
-          <Route path="/xpot/login" component={XpotLogin} />
-          <Route path="/xpot" component={XpotApp} />
-          <Route path="/xpot/:rest*" component={XpotApp} />
+          {xpotHost ? (
+            <>
+              <Route path="/login" component={XpotLogin} />
+              <Route path="/" component={XpotApp} />
+              <Route path="/:rest*" component={XpotApp} />
+            </>
+          ) : (
+            <>
+              <Route path="/xpot/login" component={XpotLogin} />
+              <Route path="/xpot" component={XpotApp} />
+              <Route path="/xpot/:rest*" component={XpotApp} />
+            </>
+          )}
           <Route component={NotFound} />
         </Switch>
       </Suspense>

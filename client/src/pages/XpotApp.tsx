@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Loader2, LogOut, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { getXpotLoginPath, getXpotPath } from "@/lib/xpot";
 import { useXpotQueries } from "./xpot/hooks/useXpotQueries";
 import { useVisits } from "./xpot/hooks/useVisits";
 import { GeoProvider } from "./xpot/hooks/GeoProvider";
@@ -36,7 +37,7 @@ function XpotAppShell() {
         {xpotMeQuery.isError ? (
           <>
             <p className="text-sm text-muted-foreground">Failed to load session</p>
-            <Button variant="outline" onClick={() => setLocation("/xpot/login")}>
+            <Button variant="outline" onClick={() => setLocation(getXpotLoginPath())}>
               Go to Login
             </Button>
           </>
@@ -89,7 +90,7 @@ function XpotAppShell() {
                 <button
                   key={id}
                   type="button"
-                  onClick={() => setLocation(`/xpot/${id}`)}
+                  onClick={() => setLocation(getXpotPath(`/${id}`))}
                   className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] transition-colors ${isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
                 >
                   <Icon className="h-4 w-4" />

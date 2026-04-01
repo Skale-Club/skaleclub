@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Activity, BriefcaseBusiness, CircleAlert, MapPinned, RefreshCw, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getXpotAppUrl } from "@/lib/xpot";
 import { queryClient } from "@/lib/queryClient";
 
 type XpotOverviewResponse = {
@@ -62,7 +63,7 @@ export function XpotSalesSection() {
             Refresh
           </Button>
           <Button asChild>
-            <a href="/xpot" target="_blank" rel="noreferrer">
+            <a href={getXpotAppUrl("/")} target="_blank" rel="noreferrer">
               Open Xpot
             </a>
           </Button>
