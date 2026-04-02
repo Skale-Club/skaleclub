@@ -638,6 +638,7 @@ export interface IStorage {
   getActiveSalesVisitForRep(repId: number): Promise<SalesVisit | undefined>;
   createSalesVisit(input: InsertSalesVisit): Promise<SalesVisit>;
   updateSalesVisit(id: number, input: Partial<InsertSalesVisit>): Promise<SalesVisit | undefined>;
+  deleteSalesVisit(id: number): Promise<void>;
   getSalesVisitNote(visitId: number): Promise<SalesVisitNote | undefined>;
   upsertSalesVisitNote(input: InsertSalesVisitNote): Promise<SalesVisitNote>;
   listSalesOpportunities(filters?: { repId?: number; leadId?: number; status?: SalesOpportunityStatus }): Promise<SalesOpportunity[]>;
@@ -1295,6 +1296,12 @@ export class DatabaseStorage implements IStorage {
       .where(eq(salesVisits.id, id))
       .returning();
     return updated;
+  }
+
+  async deleteSalesVisit(id: number): Promise<void> {
+    await ensureSalesSchema();
+    await db.delete(salesVisitNotes).where(eq(salesVisitNotes.visitId, id));
+    await db.delete(salesVisits).where(eq(salesVisits.id, id));
   }
 
   async getSalesVisitNote(visitId: number): Promise<SalesVisitNote | undefined> {

@@ -23,6 +23,19 @@ export function useCheckIn() {
   const [selectedLeadId, setSelectedLeadId] = useState<number | "">("");
   const [checkInSearch, setCheckInSearch] = useState("");
   const [checkInDropdownOpen, setCheckInDropdownOpen] = useState(false);
+
+  // Pre-select lead from URL query param ?leadId=
+  useEffect(() => {
+    if (activeTab !== "check-in") return;
+    const params = new URLSearchParams(window.location.search);
+    const leadId = params.get("leadId");
+    if (!leadId || !leadsQuery.data) return;
+    const lead = leadsQuery.data.find((l) => l.id === Number(leadId));
+    if (lead) {
+      setSelectedLeadId(lead.id);
+      setCheckInSearch(lead.name);
+    }
+  }, [activeTab, leadsQuery.data]);
   const [visitNoteForm, setVisitNoteForm] = useState({ summary: "", outcome: "", nextStep: "", followUpRequired: false });
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);

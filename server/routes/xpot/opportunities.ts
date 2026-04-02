@@ -4,10 +4,22 @@ import { storage } from "../../storage.js";
 import { requireXpotUser, ensureXpotRep } from "./middleware.js";
 import { syncOpportunityToGhl } from "./helpers.js";
 import { xpotOpportunityCreateSchema, xpotOpportunityUpdateSchema } from "#shared/xpot.js";
+import { getGHLPipelines } from "../../integrations/ghl.js";
 
 export function createOpportunitiesRouter() {
   const router = Router();
   router.use(requireXpotUser);
+
+  router.get("/opportunities/pipelines", async (_req, res) => {
+    const integration = await storage.getIntegrationSettings("gohighlevel");
+    console.log("[pipelines] integration:", JSON.stringify({ isEnabled: integration?.isEnabled, hasKey: !!integration?.apiKey, hasLocation: !!integration?.locationId }));
+    if (!integration?.isEnabled || !integration.apiKey || !integration.locationId) {
+      return res.json({ pipelines: [], _reason: !integration ? "not found" : !integration.isEnabled ? "disabled" : !integration.apiKey ? "no apiKey" : "no locationId" });
+    }
+    const result = await getGHLPipelines(integration.apiKey, integration.locationId);
+    console.log("[pipelines] GHL result:", JSON.stringify({ success: result.success, count: result.pipelines?.length, message: result.message }));
+    res.json({ pipelines: result.pipelines ?? [], _error: result.success ? undefined : result.message });
+  });
 
   router.get("/opportunities", async (req, res) => {
     const actor = (req as any).xpotActor as Awaited<ReturnType<typeof ensureXpotRep>>;

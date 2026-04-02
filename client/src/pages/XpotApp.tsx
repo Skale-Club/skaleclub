@@ -1,8 +1,5 @@
 import { useEffect } from "react";
 import { Loader2, LogOut, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { getXpotLoginPath, getXpotPath } from "@/lib/xpot";
 import { useXpotQueries } from "./xpot/hooks/useXpotQueries";
 import { useVisits } from "./xpot/hooks/useVisits";
 import { GeoProvider } from "./xpot/hooks/GeoProvider";
@@ -12,7 +9,6 @@ import { XpotLeads } from "./xpot/XpotLeads";
 import { XpotVisits } from "./xpot/XpotVisits";
 import { XpotSales } from "./xpot/XpotSales";
 import { XpotDashboard } from "./xpot/XpotDashboard";
-import type { EnrichedSalesVisit } from "./xpot/types";
 
 function XpotAppShell() {
   const {
@@ -33,46 +29,78 @@ function XpotAppShell() {
 
   if (!me) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background text-foreground">        
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#0a0f1e] text-white">
         {xpotMeQuery.isError ? (
           <>
-            <p className="text-sm text-muted-foreground">Failed to load session</p>
-            <Button variant="outline" onClick={() => setLocation(getXpotLoginPath())}>
+            <p className="text-sm text-white/50">Failed to load session</p>
+            <button
+              onClick={() => setLocation("/xpot/login")}
+              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80 hover:bg-white/10 transition-colors"
+            >
               Go to Login
-            </Button>
+            </button>
           </>
         ) : (
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 className="h-7 w-7 animate-spin text-blue-400" />
         )}
       </div>
     );
   }
 
+  const initials = repName.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase();
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 pb-28 pt-5">
-        <header className="mb-5 flex items-center justify-between gap-3">
-          <div>
-            <div className="text-xs uppercase tracking-[0.24em] text-primary/75">{isOnline ? "Online" : "Offline"}</div>
-            <div className="mt-1 text-lg font-semibold">{repName}</div>
-            <div className="text-sm text-muted-foreground">{me.rep.role}</div>
+    <div
+      className="min-h-screen text-white"
+      style={{ background: "linear-gradient(160deg, #060912 0%, #090f1c 50%, #060c14 100%)" }}
+    >
+      {/* subtle grid texture */}
+      <div
+        className="pointer-events-none fixed inset-0 opacity-[0.03]"
+        style={{ backgroundImage: "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.8) 1px, transparent 0)", backgroundSize: "32px 32px" }}
+      />
+
+      <div className="relative mx-auto flex min-h-screen w-full max-w-md flex-col px-4 pb-28 pt-5">
+
+        {/* Header */}
+        <header className="mb-6 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="relative shrink-0">
+              <div
+                className="flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-bold text-white"
+                style={{ background: "linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)" }}
+              >
+                {initials}
+              </div>
+              <span className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#0a0f1e] ${isOnline ? "bg-emerald-400" : "bg-slate-500"}`} />
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-white leading-tight">{repName}</div>
+              <div className="text-[11px] text-white/40">{me.rep.role}</div>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button size="icon" variant="outline" disabled={!isOnline || syncMutation.isPending} onClick={() => syncMutation.mutate(undefined as any)}>
+          <div className="flex items-center gap-1">
+            <button
+              disabled={!isOnline || syncMutation.isPending}
+              onClick={() => syncMutation.mutate(undefined as any)}
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-white/40 transition-all hover:bg-white/8 hover:text-white/80 disabled:opacity-30"
+            >
               {syncMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            </Button>
-            <Button size="icon" variant="outline" onClick={signOut}>
+            </button>
+            <button
+              onClick={signOut}
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-white/40 transition-all hover:bg-white/8 hover:text-white/80"
+            >
               <LogOut className="h-4 w-4" />
-            </Button>
+            </button>
           </div>
         </header>
 
         {!isOnline && (
-          <div className="mb-4 rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-            You are offline. Check-in, check-out, and sync are disabled until connection is restored.
+          <div className="mb-4 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            You are offline. Check-in and sync are disabled.
           </div>
         )}
-
 
         <main className="flex-1 space-y-4">
           {activeTab === "dashboard" ? <XpotDashboard /> : null}
@@ -82,19 +110,31 @@ function XpotAppShell() {
           {activeTab === "sales" ? <XpotSales /> : null}
         </main>
 
-        <nav className="fixed inset-x-0 bottom-0 border-t border-border bg-card/95 px-3 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/60"> 
-          <div className="mx-auto flex max-w-md items-center justify-between gap-2">
+        {/* Bottom nav — glass pill */}
+        <nav className="fixed inset-x-0 bottom-0 px-4 pb-4 pt-2">
+          <div
+            className="mx-auto flex max-w-md items-center gap-1 rounded-2xl border border-white/10 px-2 py-1.5"
+            style={{ background: "rgba(15, 23, 42, 0.85)", backdropFilter: "blur(20px)" }}
+          >
             {tabs.map(({ id, label, icon: Icon }) => {
               const isActive = activeTab === id;
               return (
                 <button
                   key={id}
                   type="button"
-                  onClick={() => setLocation(getXpotPath(`/${id}`))}
-                  className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] transition-colors ${isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                  onClick={() => setLocation(`/xpot/${id}`)}
+                  className={`relative flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[11px] font-medium transition-all ${
+                    isActive ? "text-white" : "text-white/35 hover:text-white/60"
+                  }`}
                 >
-                  <Icon className="h-4 w-4" />
-                  <span className="truncate">{label}</span>
+                  {isActive && (
+                    <span
+                      className="absolute inset-0 rounded-xl"
+                      style={{ background: "linear-gradient(135deg, rgba(59,130,246,0.25) 0%, rgba(99,102,241,0.25) 100%)" }}
+                    />
+                  )}
+                  <Icon className={`relative h-[18px] w-[18px] transition-all ${isActive ? "drop-shadow-[0_0_6px_rgba(99,102,241,0.8)]" : ""}`} />
+                  <span className="relative truncate">{label}</span>
                 </button>
               );
             })}
@@ -104,7 +144,15 @@ function XpotAppShell() {
     </div>
   );
 }
+
 export default function XpotApp() {
+  useEffect(() => {
+    document.documentElement.classList.add("dark");
+    return () => {
+      document.documentElement.classList.remove("dark");
+    };
+  }, []);
+
   return (
     <GeoProvider>
       <XpotAppShell />

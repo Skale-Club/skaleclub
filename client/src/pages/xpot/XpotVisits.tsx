@@ -1,6 +1,5 @@
 import { useRef, useState, useCallback } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { useVisits } from "./hooks/useVisits";
 import { VisitRow } from "./components/VisitRow";
 
@@ -45,24 +44,32 @@ export function XpotVisits() {
     return isSameDay(new Date(visit.checkedInAt), selectedDate);
   });
 
+  const isToday = dayOffset === 0;
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Day navigator */}
-      <div className="flex items-center justify-between gap-3">
+      <div
+        className="flex items-center justify-between gap-2 rounded-2xl px-3 py-2"
+        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+      >
         <button
           type="button"
           onClick={() => setDayOffset((d) => d - 1)}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+          className="flex h-8 w-8 items-center justify-center rounded-xl text-white/40 transition-colors hover:bg-white/8 hover:text-white/80"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
+
         <button
           type="button"
           onClick={() => dateInputRef.current?.showPicker()}
-          className="text-sm font-medium text-foreground hover:text-primary transition-colors relative"
+          className="relative flex flex-col items-center gap-0.5"
         >
-          {formatDayLabel(selectedDate)}
-          <span className="ml-2 text-xs text-muted-foreground">({visitsForDay.length} visit{visitsForDay.length !== 1 ? "s" : ""})</span>
+          <span className="text-sm font-semibold text-white">{formatDayLabel(selectedDate)}</span>
+          <span className="text-[11px] text-white/35">
+            {visitsForDay.length} visit{visitsForDay.length !== 1 ? "s" : ""}
+          </span>
           <input
             ref={dateInputRef}
             type="date"
@@ -72,25 +79,35 @@ export function XpotVisits() {
             className="absolute inset-0 opacity-0 pointer-events-none w-0 h-0"
           />
         </button>
+
         <button
           type="button"
           onClick={() => setDayOffset((d) => Math.min(0, d + 1))}
-          disabled={dayOffset === 0}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          disabled={isToday}
+          className="flex h-8 w-8 items-center justify-center rounded-xl text-white/40 transition-colors hover:bg-white/8 hover:text-white/80 disabled:opacity-20 disabled:cursor-not-allowed"
         >
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
 
       {/* Visit list */}
-      {visitsForDay.length ? visitsForDay.map((visit) => (
-        <VisitRow key={visit.id} visit={visit} />
-      )) : (
-        <Card className="border-border bg-card shadow-sm">
-          <CardContent className="p-6 text-sm text-muted-foreground text-center">
-            No visits on {formatDayLabel(selectedDate).toLowerCase()}.
-          </CardContent>
-        </Card>
+      {visitsForDay.length ? (
+        <div className="space-y-2">
+          {visitsForDay.map((visit) => <VisitRow key={visit.id} visit={visit} />)}
+        </div>
+      ) : (
+        <div
+          className="flex flex-col items-center gap-3 rounded-2xl py-10 text-center"
+          style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
+        >
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl" style={{ background: "rgba(99,102,241,0.12)" }}>
+            <CalendarDays className="h-5 w-5 text-indigo-400" />
+          </div>
+          <div>
+            <div className="text-sm font-medium text-white/60">No visits {isToday ? "today" : `on ${formatDayLabel(selectedDate).toLowerCase()}`}</div>
+            <div className="mt-0.5 text-xs text-white/30">{isToday ? "Go to Check-In to start a visit" : "Nothing recorded for this day"}</div>
+          </div>
+        </div>
       )}
     </div>
   );

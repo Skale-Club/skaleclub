@@ -1,7 +1,5 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -10,8 +8,36 @@ import type { SalesLead, FullSalesLead } from "../types";
 
 type LeadLike = SalesLead | FullSalesLead;
 
-function label(text: string) {
-  return <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">{text}</div>;
+const inputCls = "w-full h-10 rounded-xl px-3 text-sm text-white placeholder:text-white/25 focus:outline-none transition-colors";
+const inputStyle = { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)" };
+
+function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-2">
+      <div className="text-[10px] font-semibold uppercase tracking-widest text-white/30 px-0.5">{label}</div>
+      {children}
+    </div>
+  );
+}
+
+function Field({ value, onChange, placeholder, type, inputMode }: {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder: string;
+  type?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+}) {
+  return (
+    <input
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      type={type}
+      inputMode={inputMode}
+      className={inputCls}
+      style={inputStyle}
+    />
+  );
 }
 
 export function EditLeadDialog({ lead, open, onOpenChange, onSaved }: {
@@ -66,46 +92,47 @@ export function EditLeadDialog({ lead, open, onOpenChange, onSaved }: {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm rounded-2xl border-border bg-card">
+      <DialogContent
+        className="max-w-sm rounded-2xl border-0 p-6"
+        style={{ background: "#0e1117", boxShadow: "0 24px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.07)" }}
+      >
         <DialogHeader>
-          <DialogTitle>Edit Lead</DialogTitle>
+          <DialogTitle className="text-base font-semibold text-white">Edit Lead</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            {label("Business")}
-            <Input value={form.name} onChange={f("name")} placeholder="Business name" />
-          </div>
 
-          <div>
-            {label("Contact")}
-            <div className="space-y-2">
-              <Input value={form.phone} onChange={f("phone")} placeholder="Phone" />
-              <Input value={form.email} onChange={f("email")} placeholder="Email" />
-              <Input value={form.website} onChange={f("website")} placeholder="Website" />
+        <div className="space-y-4 mt-1">
+          <FieldGroup label="Business">
+            <Field value={form.name} onChange={f("name")} placeholder="Business name" />
+          </FieldGroup>
+
+          <FieldGroup label="Contact">
+            <Field value={form.phone} onChange={f("phone")} placeholder="Phone" inputMode="tel" />
+            <Field value={form.email} onChange={f("email")} placeholder="Email" type="email" inputMode="email" />
+            <Field value={form.website} onChange={f("website")} placeholder="Website" />
+          </FieldGroup>
+
+          <FieldGroup label="Details">
+            <Field value={form.industry} onChange={f("industry")} placeholder="Industry" />
+          </FieldGroup>
+
+          <FieldGroup label="Address">
+            <Field value={form.addressLine1} onChange={f("addressLine1")} placeholder="Street address" />
+            <div className="grid grid-cols-2 gap-2">
+              <Field value={form.city} onChange={f("city")} placeholder="City" />
+              <Field value={form.state} onChange={f("state")} placeholder="State" />
             </div>
-          </div>
+            <Field value={form.postalCode} onChange={f("postalCode")} placeholder="Postal code" />
+          </FieldGroup>
 
-          <div>
-            {label("Details")}
-            <Input value={form.industry} onChange={f("industry")} placeholder="Industry" />
-          </div>
-
-          <div>
-            {label("Address")}
-            <div className="space-y-2">
-              <Input value={form.addressLine1} onChange={f("addressLine1")} placeholder="Street address" />
-              <div className="grid grid-cols-2 gap-2">
-                <Input value={form.city} onChange={f("city")} placeholder="City" />
-                <Input value={form.state} onChange={f("state")} placeholder="State" />
-              </div>
-              <Input value={form.postalCode} onChange={f("postalCode")} placeholder="Postal code" />
-            </div>
-          </div>
-
-          <Button className="w-full" disabled={updateMutation.isPending} onClick={() => updateMutation.mutate()}>
-            {updateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          <button
+            disabled={updateMutation.isPending}
+            onClick={() => updateMutation.mutate()}
+            className="w-full rounded-xl py-2.5 text-sm font-semibold text-white transition-all disabled:opacity-40"
+            style={{ background: "linear-gradient(135deg, #3b82f6, #6366f1)" }}
+          >
+            {updateMutation.isPending ? <Loader2 className="inline mr-2 h-4 w-4 animate-spin" /> : null}
             Save Changes
-          </Button>
+          </button>
         </div>
       </DialogContent>
     </Dialog>

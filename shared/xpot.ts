@@ -67,10 +67,11 @@ export const xpotOpportunityCreateSchema = insertSalesOpportunitySchema.pick({
   title: true,
   pipelineKey: true,
   stageKey: true,
-  value: true,
   currency: true,
   closeDate: true,
   notes: true,
+}).extend({
+  value: insertSalesOpportunitySchema.shape.value.optional().default(0),
 });
 
 export const xpotOpportunityUpdateSchema = insertSalesOpportunitySchema.pick({

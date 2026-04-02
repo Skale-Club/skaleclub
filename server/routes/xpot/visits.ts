@@ -165,6 +165,17 @@ export function createVisitsRouter() {
     res.json(updated);
   });
 
+  router.delete("/visits/:id", async (req, res) => {
+    const actor = (req as any).xpotActor as Awaited<ReturnType<typeof ensureXpotRep>>;
+    const visitId = Number(req.params.id);
+    const visit = await storage.getSalesVisit(visitId);
+    if (!visit || (visit.repId !== actor!.rep.id && !actor!.user.isAdmin)) {
+      return res.status(404).json({ message: "Visit not found" });
+    }
+    await storage.deleteSalesVisit(visitId);
+    res.status(204).end();
+  });
+
   router.patch("/visits/:id/note", async (req, res) => {
     const actor = (req as any).xpotActor as Awaited<ReturnType<typeof ensureXpotRep>>;
     const visitId = Number(req.params.id);

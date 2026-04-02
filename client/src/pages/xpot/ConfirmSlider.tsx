@@ -112,7 +112,7 @@ export function ConfirmSlider({
       <div
         ref={trackRef}
         className={cn(
-          "relative select-none rounded-2xl border border-border overflow-hidden",
+          "relative select-none rounded-xl border border-border overflow-hidden",
           dragging ? "cursor-grabbing" : "cursor-grab",
           (disabled || loading) && "opacity-40 cursor-not-allowed",
         )}
@@ -129,7 +129,7 @@ export function ConfirmSlider({
 
         {/* label */}
         <div
-          className="absolute inset-0 flex items-center justify-center text-center text-xs font-bold tracking-[0.22em] text-white/90 pointer-events-none drop-shadow-sm"
+          className="absolute inset-0 flex items-center justify-center text-center text-xs font-bold tracking-[0.22em] text-white/90 pointer-events-none drop-shadow-sm leading-none"
           style={{
             paddingLeft: isCheckOut ? 16 : THUMB + PADDING * 2 + 8,
             paddingRight: isCheckOut ? THUMB + PADDING * 2 + 8 : 16,
@@ -142,11 +142,10 @@ export function ConfirmSlider({
 
         {/* thumb */}
         <div
-          className="absolute flex items-center justify-center rounded-[10px] text-white pointer-events-none"
+          className="absolute flex items-center justify-center rounded-[10px] text-white pointer-events-none top-1/2 -translate-y-1/2"
           style={{
             width: THUMB,
             height: THUMB,
-            top: PADDING,
             left: `calc(${PADDING}px + ${value / 100} * (100% - ${THUMB}px - ${PADDING * 2}px))`,
             background: thumbColor,
             boxShadow: `0 4px 16px ${thumbColor}55`,
@@ -161,7 +160,7 @@ export function ConfirmSlider({
           }
         </div>
       </div>
-      <div className="text-center text-[11px] text-white/30 tracking-wide">{helperText}</div>
+      <div className="text-center text-xs text-white/30 tracking-wide">{helperText}</div>
     </div>
   );
 }

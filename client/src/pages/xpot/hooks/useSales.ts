@@ -25,7 +25,7 @@ export function useSales() {
         leadId: Number(opportunityForm.leadId),
         visitId: activeVisit?.id,
         title: opportunityForm.title,
-        value: Number(opportunityForm.value || 0),
+        value: opportunityForm.value ? Number(opportunityForm.value) : 0,
         currency: "USD",
         pipelineKey: opportunityForm.pipelineKey || undefined,
         stageKey: opportunityForm.stageKey || undefined,

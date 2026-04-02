@@ -1,10 +1,6 @@
 import { useState } from "react";
-import { Loader2, Search, MapPinned, ExternalLink, Trash2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { getXpotPath } from "@/lib/xpot";
+import { Loader2, Plus, Search, Trash2, LogIn } from "lucide-react";
+import { EditLeadDialog } from "./components/EditLeadDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,204 +11,266 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useXpotShared } from "./hooks/useXpotShared";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useXpotQueries } from "./hooks/useXpotQueries";
 import { useLeads } from "./hooks/useLeads";
 import { useCheckIn } from "./hooks/useCheckIn";
+import { useToast } from "@/hooks/use-toast";
 import type { FullSalesLead } from "./types";
 
+const GLASS = {
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid rgba(255,255,255,0.09)",
+} as const;
+
+function leadInitials(name: string) {
+  return name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
+}
+
+// Deterministic gradient per lead name
+const GRADIENTS = [
+  "linear-gradient(135deg, #3b82f6, #6366f1)",
+  "linear-gradient(135deg, #10b981, #06b6d4)",
+  "linear-gradient(135deg, #8b5cf6, #ec4899)",
+  "linear-gradient(135deg, #f59e0b, #ef4444)",
+  "linear-gradient(135deg, #06b6d4, #3b82f6)",
+  "linear-gradient(135deg, #ec4899, #8b5cf6)",
+];
+function leadGradient(name: string) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return GRADIENTS[h % GRADIENTS.length];
+}
+
+function AddLeadDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  const { toast } = useToast();
+  const { createLeadMutation } = useCheckIn();
+  const [form, setForm] = useState({ name: "", phone: "", email: "", website: "", industry: "", address: "", city: "", state: "" });
+  const f = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm((prev) => ({ ...prev, [key]: e.target.value }));
+
+  async function handleCreate() {
+    if (!form.name.trim()) return;
+    try {
+      await createLeadMutation.mutateAsync({
+        name: form.name.trim(),
+        phone: form.phone || undefined,
+        email: form.email || undefined,
+        website: form.website || undefined,
+        industry: form.industry || undefined,
+        source: "manual",
+        status: "lead",
+        primaryLocation: form.address ? {
+          label: "Main",
+          addressLine1: form.address || undefined,
+          city: form.city || undefined,
+          state: form.state || undefined,
+          isPrimary: true,
+        } : undefined,
+      } as any);
+      toast({ title: "Lead created", variant: "success" });
+      setForm({ name: "", phone: "", email: "", website: "", industry: "", address: "", city: "", state: "" });
+      onOpenChange(false);
+    } catch (err: any) {
+      toast({ title: "Failed to create", description: err.message, variant: "destructive" });
+    }
+  }
+
+  const inputCls = "w-full h-10 rounded-xl px-3 text-sm text-white placeholder:text-white/25 focus:outline-none transition-colors";
+  const inputStyle = { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)" };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="max-w-sm rounded-2xl border-0 p-6"
+        style={{ background: "#0e1117", boxShadow: "0 24px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.07)" }}
+      >
+        <DialogHeader>
+          <DialogTitle className="text-base font-semibold text-white">New Lead</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-2.5 mt-1">
+          {[
+            { key: "name" as const, placeholder: "Business name *" },
+            { key: "phone" as const, placeholder: "Phone" },
+            { key: "email" as const, placeholder: "Email" },
+            { key: "website" as const, placeholder: "Website" },
+            { key: "industry" as const, placeholder: "Industry" },
+            { key: "address" as const, placeholder: "Street address" },
+          ].map(({ key, placeholder }) => (
+            <input
+              key={key}
+              value={form[key]}
+              onChange={f(key)}
+              placeholder={placeholder}
+              className={inputCls}
+              style={inputStyle}
+            />
+          ))}
+          <div className="grid grid-cols-2 gap-2">
+            <input value={form.city} onChange={f("city")} placeholder="City" className={inputCls} style={inputStyle} />
+            <input value={form.state} onChange={f("state")} placeholder="State" className={inputCls} style={inputStyle} />
+          </div>
+          <button
+            disabled={createLeadMutation.isPending || !form.name.trim()}
+            onClick={handleCreate}
+            className="w-full rounded-xl py-2.5 text-sm font-semibold text-white transition-all disabled:opacity-40 mt-1"
+            style={{ background: "linear-gradient(135deg, #3b82f6, #6366f1)" }}
+          >
+            {createLeadMutation.isPending ? <Loader2 className="inline mr-2 h-4 w-4 animate-spin" /> : null}
+            Create Lead
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function XpotLeads() {
-  const { geoState, loadCurrentLocation } = useXpotShared();
   const { setLocation } = useXpotQueries();
   const [leadPendingDelete, setLeadPendingDelete] = useState<FullSalesLead | null>(null);
-  const {
-    leadLookupSearch,
-    setLeadLookupSearch,
-    leadForm,
-    setLeadForm,
-    selectedLeadPlace,
-    filteredLeadsForList,
-    leadPlaceQuery,
-    createLeadMutation,
-    deleteLeadMutation,
-    applyPlaceToLeadForm,
-    createLeadFromForm,
-  } = useLeads();
-  const { setSelectedLeadId, setCheckInSearch } = useCheckIn();
+  const [editLead, setEditLead] = useState<FullSalesLead | null>(null);
+  const [addLeadOpen, setAddLeadOpen] = useState(false);
+  const { filteredLeadsForList, deleteLeadMutation, leadLookupSearch, setLeadLookupSearch } = useLeads();
 
   const handleDeleteLead = async () => {
     if (!leadPendingDelete) return;
-
     try {
       await deleteLeadMutation.mutateAsync(leadPendingDelete.id);
       setLeadPendingDelete(null);
-    } catch {
-    }
+    } catch {}
   };
 
   return (
     <>
-      <Card className="border-border bg-white/5 text-white">
-        <CardHeader><CardTitle className="text-base">Find Business With Google Places</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
-            <Input
-              value={leadLookupSearch}
-              onChange={(event) => setLeadLookupSearch(event.target.value)}
-              placeholder="Search businesses or addresses"
-              className="border-border bg-white/5 pl-10 text-white placeholder:text-white/35"
-            />
-          </div>
-          <Button variant="outline" className="w-full border-border bg-transparent text-white hover:bg-white/10" onClick={loadCurrentLocation}>
-            <MapPinned className="mr-2 h-4 w-4" />
-            Use Current Location For Nearby Search
-          </Button>
-          <div className="rounded-xl border border-border bg-black/20 p-3 text-sm text-white/60">
-            {geoState.error ? geoState.error : geoState.lat && geoState.lng ? `Location bias enabled at ${geoState.lat.toFixed(5)}, ${geoState.lng.toFixed(5)}` : "Search works without GPS, but current location improves nearby matches."}
-          </div>
-          <div className="space-y-2">
-            {leadPlaceQuery.isFetching ? (
-              <div className="flex items-center gap-2 rounded-xl border border-border bg-black/20 p-3 text-sm text-white/55">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Searching Google Places...
-              </div>
-            ) : null}
-            {leadPlaceQuery.error ? (
-              <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
-                {(leadPlaceQuery.error as Error).message}
-              </div>
-            ) : null}
-            {leadPlaceQuery.data?.results.map((place) => (
-              <button
-                key={place.placeId}
-                type="button"
-                onClick={() => applyPlaceToLeadForm(place)}
-                className="w-full rounded-2xl border border-border bg-black/20 p-3 text-left transition hover:border-primary/40 hover:bg-black/30"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="font-semibold">{place.name}</div>
-                    <div className="mt-1 text-sm text-white/55">{place.address}</div>
-                  </div>
-                  <Badge className="bg-primary/10 text-primary">{place.primaryType || "Place"}</Badge>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-2 text-xs text-white/45">
-                  {place.phone ? <span>{place.phone}</span> : null}
-                  {place.website ? (
-                    <span className="inline-flex items-center gap-1">
-                      Website
-                      <ExternalLink className="h-3 w-3" />
-                    </span>
-                  ) : null}
-                </div>
-              </button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Search + Add */}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+          <input
+            value={leadLookupSearch}
+            onChange={(e) => setLeadLookupSearch(e.target.value)}
+            placeholder="Search leads..."
+            className="w-full h-11 rounded-xl pl-10 pr-4 text-sm text-white placeholder:text-white/25 focus:outline-none"
+            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)" }}
+          />
+        </div>
+        <button
+          onClick={() => setAddLeadOpen(true)}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white transition-all hover:opacity-80"
+          style={{ background: "linear-gradient(135deg, #3b82f6, #6366f1)" }}
+        >
+          <Plus className="h-4 w-4" />
+        </button>
+      </div>
 
-      <Card className="border-border bg-white/5 text-white">
-        <CardHeader><CardTitle className="text-base">Create Lead</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          {selectedLeadPlace ? (
-            <div className="rounded-2xl border border-primary/20 bg-primary/10 p-3">
-              <div className="text-xs uppercase tracking-[0.2em] text-primary/75">Selected Place</div>
-              <div className="mt-1 font-semibold">{selectedLeadPlace.name}</div>
-              <div className="text-sm text-white/60">{selectedLeadPlace.address}</div>
+      {/* Lead list */}
+      <div className="space-y-2">
+        {filteredLeadsForList.length === 0 && (
+          <div
+            className="flex flex-col items-center gap-3 rounded-2xl py-10 text-center"
+            style={GLASS}
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl" style={{ background: "rgba(99,102,241,0.15)" }}>
+              <Search className="h-5 w-5 text-indigo-400" />
             </div>
-          ) : null}
-          <Input value={leadForm.name} onChange={(event) => setLeadForm((prev) => ({ ...prev, name: event.target.value }))} placeholder="Business name" className="border-border bg-white/5 text-white placeholder:text-white/35" />
-          <div className="grid grid-cols-2 gap-3">
-            <Input value={leadForm.phone} onChange={(event) => setLeadForm((prev) => ({ ...prev, phone: event.target.value }))} placeholder="Phone" className="border-border bg-white/5 text-white placeholder:text-white/35" />
-            <Input value={leadForm.email} onChange={(event) => setLeadForm((prev) => ({ ...prev, email: event.target.value }))} placeholder="Email" className="border-border bg-white/5 text-white placeholder:text-white/35" />
+            <div>
+              <div className="text-sm font-medium text-white/60">No leads found</div>
+              <div className="mt-0.5 text-xs text-white/30">Tap + to add your first lead</div>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Input value={leadForm.website} onChange={(event) => setLeadForm((prev) => ({ ...prev, website: event.target.value }))} placeholder="Website" className="border-border bg-white/5 text-white placeholder:text-white/35" />
-            <Input value={leadForm.industry} onChange={(event) => setLeadForm((prev) => ({ ...prev, industry: event.target.value }))} placeholder="Industry" className="border-border bg-white/5 text-white placeholder:text-white/35" />
-          </div>
-          <Input value={leadForm.addressLine1} onChange={(event) => setLeadForm((prev) => ({ ...prev, addressLine1: event.target.value }))} placeholder="Address" className="border-border bg-white/5 text-white placeholder:text-white/35" />
-          <div className="grid grid-cols-2 gap-3">
-            <Input value={leadForm.city} onChange={(event) => setLeadForm((prev) => ({ ...prev, city: event.target.value }))} placeholder="City" className="border-border bg-white/5 text-white placeholder:text-white/35" />
-            <Input value={leadForm.state} onChange={(event) => setLeadForm((prev) => ({ ...prev, state: event.target.value }))} placeholder="State" className="border-border bg-white/5 text-white placeholder:text-white/35" />
-          </div>
-          <Button disabled={createLeadMutation.isPending || !leadForm.name.trim()} onClick={createLeadFromForm} className="w-full bg-primary text-black hover:bg-primary">
-            {createLeadMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            {selectedLeadPlace ? "Import Business" : "Create Lead"}
-          </Button>
-        </CardContent>
-      </Card>
-
-      <div className="space-y-3">
+        )}
         {filteredLeadsForList.map((lead) => (
-          <Card key={lead.id} className="border-border bg-white/5 text-white">
-            <CardContent className="space-y-3 p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="font-semibold">{lead.name}</div>
-                  <div className="text-sm text-white/55">{lead.industry || "Uncategorized"}</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="bg-white/10 text-white">{lead.status}</Badge>
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 text-red-300 hover:bg-red-500/10 hover:text-red-200"
-                    aria-label={`Delete lead ${lead.name}`}
-                    data-testid={`delete-lead-${lead.id}`}
-                    disabled={deleteLeadMutation.isPending}
-                    onClick={() => setLeadPendingDelete(lead)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+          <button
+            key={lead.id}
+            type="button"
+            className="group w-full rounded-2xl p-4 text-left transition-all"
+            style={{ ...GLASS, boxShadow: "0 4px 20px rgba(0,0,0,0.25)" }}
+            onClick={() => setEditLead(lead)}
+          >
+            <div className="flex items-center gap-3">
+              {/* Avatar */}
+              <div
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white"
+                style={{ background: leadGradient(lead.name) }}
+              >
+                {leadInitials(lead.name)}
               </div>
-              {lead.locations?.[0] ? <div className="text-sm text-white/55">{lead.locations[0].addressLine1}</div> : null}
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="secondary" className="bg-primary/10 text-primary">{lead.openOpportunities || 0} open opportunities</Badge>
-                <Badge variant="secondary" className="bg-white/10 text-white/70">{lead.source === "google_places" ? "Imported from Places" : lead.ghlContactId ? "GHL linked" : "Local only"}</Badge>
+
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-semibold text-white">{lead.name}</div>
+                <div className="truncate text-xs text-white/40">{lead.industry || "Uncategorized"}</div>
+                {lead.locations?.[0]?.addressLine1 ? (
+                  <div className="mt-0.5 truncate text-[11px] text-white/25">{lead.locations[0].addressLine1}</div>
+                ) : null}
               </div>
-              <Button variant="outline" className="w-full border-border bg-transparent text-white hover:bg-white/10" onClick={() => { setSelectedLeadId(lead.id); setCheckInSearch(lead.name); setLocation(getXpotPath("/check-in")); }}>
-                Use Lead for Check-In
-              </Button>
-            </CardContent>
-          </Card>
+
+              {/* Actions */}
+              <div className="flex items-center gap-0.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
+                <button
+                  type="button"
+                  className="flex h-8 w-8 items-center justify-center rounded-xl text-white/40 transition-colors hover:bg-blue-500/20 hover:text-blue-400"
+                  onClick={(e) => { e.stopPropagation(); setLocation(`/xpot/check-in?leadId=${lead.id}`); }}
+                >
+                  <LogIn className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  className="flex h-8 w-8 items-center justify-center rounded-xl text-white/40 transition-colors hover:bg-red-500/20 hover:text-red-400"
+                  disabled={deleteLeadMutation.isPending}
+                  onClick={(e) => { e.stopPropagation(); setLeadPendingDelete(lead); }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          </button>
         ))}
       </div>
 
+      <AddLeadDialog open={addLeadOpen} onOpenChange={setAddLeadOpen} />
+
+      {editLead && (
+        <EditLeadDialog
+          lead={editLead}
+          open={Boolean(editLead)}
+          onOpenChange={(v) => { if (!v) setEditLead(null); }}
+          onSaved={() => setEditLead(null)}
+        />
+      )}
+
       <AlertDialog
         open={Boolean(leadPendingDelete)}
-        onOpenChange={(open) => {
-          if (!open && !deleteLeadMutation.isPending) {
-            setLeadPendingDelete(null);
-          }
-        }}
+        onOpenChange={(open) => { if (!open && !deleteLeadMutation.isPending) setLeadPendingDelete(null); }}
       >
-        <AlertDialogContent className="border-border bg-[#0d1117] text-white">
+        <AlertDialogContent
+          className="max-w-xs rounded-2xl border-0 p-6"
+          style={{ background: "#0e1117", boxShadow: "0 24px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.07)" }}
+        >
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this lead?</AlertDialogTitle>
-            <AlertDialogDescription className="text-white/65">
+            <AlertDialogTitle className="text-base font-semibold text-white">Delete this lead?</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-white/45">
               {leadPendingDelete
-                ? `This will permanently remove ${leadPendingDelete.name} and its related visits, notes, tasks, and opportunities from the system.`
-                : "This lead will be permanently removed from the system."}
+                ? `Permanently removes ${leadPendingDelete.name} and all related visits, notes, and opportunities.`
+                : "This lead will be permanently removed."}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteLeadMutation.isPending}>
-              Keep lead
+          <AlertDialogFooter className="mt-2 flex-row gap-2 sm:space-x-0">
+            <AlertDialogCancel
+              disabled={deleteLeadMutation.isPending}
+              className="flex-1 rounded-xl border-0 text-sm font-medium text-white/60 hover:text-white transition-colors"
+              style={{ background: "rgba(255,255,255,0.07)" }}
+            >
+              Keep
             </AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               disabled={deleteLeadMutation.isPending}
-              data-testid="confirm-delete-lead"
-              onClick={(event) => {
-                event.preventDefault();
-                void handleDeleteLead();
-              }}
+              onClick={(e) => { e.preventDefault(); void handleDeleteLead(); }}
+              className="flex-1 rounded-xl border-0 text-sm font-medium text-white"
+              style={{ background: "rgba(239,68,68,0.85)" }}
             >
               {deleteLeadMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              Delete lead
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

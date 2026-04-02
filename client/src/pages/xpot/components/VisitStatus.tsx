@@ -10,53 +10,72 @@ export type VisitStatus =
   | "follow_up"
   | "sale_made";
 
-export const VISIT_STATUSES: { value: VisitStatus; label: string; color: string; bg: string; border: string }[] = [
-  { value: "sale_made",       label: "Sale Made",        color: "text-emerald-300", bg: "bg-emerald-950/60",  border: "border-emerald-500/40" },
-  { value: "completed",       label: "Completed",        color: "text-sky-300",     bg: "bg-sky-950/60",      border: "border-sky-500/40" },
-  { value: "follow_up",       label: "Follow Up",        color: "text-violet-300",  bg: "bg-violet-950/60",   border: "border-violet-500/40" },
-  { value: "came_back_later", label: "Come Back Later",  color: "text-amber-300",   bg: "bg-amber-950/60",    border: "border-amber-500/40" },
-  { value: "no_answer",       label: "No Answer",        color: "text-orange-300",  bg: "bg-orange-950/60",   border: "border-orange-500/40" },
-  { value: "not_interested",  label: "Not Interested",   color: "text-rose-300",    bg: "bg-rose-950/60",     border: "border-rose-500/40" },
-  { value: "cancelled",       label: "Cancelled",        color: "text-slate-400",   bg: "bg-slate-800/60",    border: "border-slate-600/40" },
-  { value: "in_progress",     label: "In Progress",      color: "text-blue-300",    bg: "bg-blue-950/60",     border: "border-blue-500/40" },
-  { value: "planned",         label: "Planned",          color: "text-slate-300",   bg: "bg-slate-800/40",    border: "border-slate-600/30" },
-  { value: "invalid",         label: "Invalid",          color: "text-red-400",     bg: "bg-red-950/40",      border: "border-red-700/30" },
+export const VISIT_STATUSES: {
+  value: VisitStatus;
+  label: string;
+  dot: string;
+  bg: string;
+  border: string;
+  text: string;
+}[] = [
+  { value: "sale_made",       label: "Sale Made",        dot: "#10b981", bg: "rgba(16,185,129,0.12)",  border: "rgba(16,185,129,0.3)",  text: "#6ee7b7" },
+  { value: "completed",       label: "Completed",        dot: "#38bdf8", bg: "rgba(56,189,248,0.12)",  border: "rgba(56,189,248,0.3)",  text: "#7dd3fc" },
+  { value: "follow_up",       label: "Follow Up",        dot: "#a78bfa", bg: "rgba(167,139,250,0.12)", border: "rgba(167,139,250,0.3)", text: "#c4b5fd" },
+  { value: "came_back_later", label: "Come Back Later",  dot: "#fbbf24", bg: "rgba(251,191,36,0.12)",  border: "rgba(251,191,36,0.3)",  text: "#fde68a" },
+  { value: "no_answer",       label: "No Answer",        dot: "#fb923c", bg: "rgba(251,146,60,0.12)",  border: "rgba(251,146,60,0.3)",  text: "#fdba74" },
+  { value: "not_interested",  label: "Not Interested",   dot: "#f87171", bg: "rgba(248,113,113,0.12)", border: "rgba(248,113,113,0.3)", text: "#fca5a5" },
+  { value: "cancelled",       label: "Cancelled",        dot: "#64748b", bg: "rgba(100,116,139,0.12)", border: "rgba(100,116,139,0.3)", text: "#94a3b8" },
+  { value: "in_progress",     label: "In Progress",      dot: "#60a5fa", bg: "rgba(96,165,250,0.12)",  border: "rgba(96,165,250,0.3)",  text: "#93c5fd" },
+  { value: "planned",         label: "Planned",          dot: "#94a3b8", bg: "rgba(148,163,184,0.10)", border: "rgba(148,163,184,0.2)", text: "#cbd5e1" },
+  { value: "invalid",         label: "Invalid",          dot: "#ef4444", bg: "rgba(239,68,68,0.10)",   border: "rgba(239,68,68,0.2)",   text: "#fca5a5" },
 ];
 
 export function getStatusMeta(status: string) {
   return VISIT_STATUSES.find((s) => s.value === status) ?? {
-    value: status,
-    label: status,
-    color: "text-muted-foreground",
-    bg: "bg-secondary/40",
-    border: "border-border",
+    value: status, label: status,
+    dot: "#64748b", bg: "rgba(100,116,139,0.1)", border: "rgba(100,116,139,0.2)", text: "#94a3b8",
   };
 }
 
 export function StatusBadge({ status }: { status: string }) {
   const meta = getStatusMeta(status);
   return (
-    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${meta.color} ${meta.bg} ${meta.border}`}>
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium"
+      style={{ background: meta.bg, border: `1px solid ${meta.border}`, color: meta.text }}
+    >
+      <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ background: meta.dot }} />
       {meta.label}
     </span>
   );
 }
 
 export function StatusPicker({ value, onChange }: { value: string; onChange: (v: VisitStatus) => void }) {
+  const OUTCOMES = VISIT_STATUSES.filter((s) => !["planned", "in_progress", "invalid", "cancelled"].includes(s.value));
   return (
-    <div className="space-y-1.5">
-      <div className="text-[10px] uppercase tracking-widest text-muted-foreground/50">Visit Outcome</div>
-      <div className="flex flex-wrap gap-1.5">
-        {VISIT_STATUSES.filter((s) => !["planned", "in_progress", "invalid"].includes(s.value)).map((s) => (
-          <button
-            key={s.value}
-            type="button"
-            onClick={() => onChange(s.value)}
-            className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${s.color} ${s.bg} ${s.border} ${value === s.value ? "ring-2 ring-offset-1 ring-offset-background ring-current opacity-100" : "opacity-60 hover:opacity-90"}`}
-          >
-            {s.label}
-          </button>
-        ))}
+    <div className="space-y-2">
+      <div className="text-xs font-semibold uppercase tracking-widest text-white/30">Visit Outcome</div>
+      <div className="grid grid-cols-3 gap-2">
+        {OUTCOMES.map((s) => {
+          const isActive = value === s.value;
+          return (
+            <button
+              key={s.value}
+              type="button"
+              onClick={() => onChange(s.value)}
+              className="rounded-full px-1 py-1.5 text-[11px] font-medium transition-all active:scale-95 w-full"
+              style={{
+                background: isActive ? s.bg : "rgba(255,255,255,0.04)",
+                border: `1px solid ${isActive ? s.border : "rgba(255,255,255,0.08)"}`,
+                color: isActive ? s.text : "rgba(255,255,255,0.4)",
+                boxShadow: isActive ? `0 0 12px ${s.dot}40` : "none",
+                transform: isActive ? "scale(1.03)" : "scale(1)",
+              }}
+            >
+              {s.label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
