@@ -103,7 +103,7 @@ function SEOProvider({ children }: { children: React.ReactNode }) {
 }
 
 function Router() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const xpotHost = typeof window !== "undefined" && isXpotHost(window.location.hostname);
   const { isInitialLoad } = useContext(InitialLoadContext);
   const { data: settings, isLoading } = useQuery<CompanySettings>({
@@ -133,6 +133,14 @@ function Router() {
       window.location.replace(targetUrl);
     }
   }, [location, xpotHost]);
+
+  // On xpot host, normalize /xpot/* paths → strip /xpot prefix
+  useEffect(() => {
+    if (!xpotHost || !location.startsWith("/xpot/")) {
+      return;
+    }
+    setLocation(location.slice("/xpot".length));
+  }, [location, xpotHost, setLocation]);
 
   // Scroll to top when navigating to a new page (not hash links)
   useEffect(() => {
