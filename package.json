@@ -14,7 +14,7 @@
     "check": "tsc",
     "cf:dev": "wrangler dev",
     "cf:deploy": "wrangler deploy",
-    "db:push": "drizzle-kit push",
+    "db:push": "drizzle-kit push && tsx scripts/enforce-rls.ts",
     "print:db:dev": "cross-env NODE_ENV=development tsx temp_db_url.ts"
   },
   "dependencies": {
