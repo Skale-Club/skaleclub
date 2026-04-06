@@ -1,7 +1,9 @@
-import { MapPinned, DollarSign, Target, Clock3, Footprints } from "lucide-react";
+import { useState } from "react";
+import { MapPinned, DollarSign, Target, Clock3, Footprints, Pencil, LogOut } from "lucide-react";
 import { useXpotQueries } from "./hooks/useXpotQueries";
 import { VisitRow } from "./components/VisitRow";
 import { formatCurrency } from "./utils";
+import { XpotProfileEditor } from "./XpotProfileEditor";
 
 const METRIC_CARDS = [
   {
@@ -42,9 +44,13 @@ function getGreeting() {
 }
 
 export function XpotDashboard() {
-  const { dashboardQuery, repName } = useXpotQueries();
+  const { dashboardQuery, repName, me, signOut, isOnline } = useXpotQueries();
   const metrics = dashboardQuery.data?.metrics;
   const firstName = repName?.split(" ")[0] ?? "";
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  const initials = repName.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
+  const avatarUrl = me?.rep.avatarUrl;
 
   function metricValue(key: typeof METRIC_CARDS[number]["key"]) {
     if (!metrics) return "—";
@@ -54,13 +60,53 @@ export function XpotDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Greeting hero */}
-      <div className="space-y-0.5">
-        <div className="text-xs font-medium uppercase tracking-widest text-white/30">{getGreeting()}</div>
-        <div className="text-2xl font-bold text-white">{firstName} 👋</div>
-        <div className="text-sm text-white/40">
-          {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+      {/* Hero: avatar + greeting + logout */}
+      <div className="flex items-center justify-between pb-2">
+        <div className="flex items-center gap-4">
+          {/* Avatar Button */}
+          <button
+            type="button"
+            onClick={() => setProfileOpen(true)}
+            className="relative shrink-0 transition-transform active:scale-95 touch-manipulation"
+            style={{ WebkitTapHighlightColor: "transparent" }}
+          >
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={repName}
+                style={{ boxShadow: "0 8px 24px rgba(59,130,246,0.25)" }}
+                className="h-[62px] w-[62px] rounded-[22px] object-cover border border-white/10"
+              />
+            ) : (
+              <div
+                className="flex h-[62px] w-[62px] items-center justify-center rounded-[22px] text-[22px] font-bold tracking-wide text-white"
+                style={{ background: "linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)", boxShadow: "0 8px 24px rgba(59,130,246,0.25)" }}
+              >
+                {initials}
+              </div>
+            )}
+            <div className={`absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-[3px] border-[#080d1a] ${isOnline ? "bg-emerald-400" : "bg-slate-500"}`} />
+          </button>
+
+          {/* Greeting block */}
+          <div className="flex-1 min-w-0">
+            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-400/80 mb-1">{getGreeting()}</div>
+            <div className="text-[26px] font-extrabold text-white tracking-tight leading-none mb-1.5">{firstName} 👋</div>
+            <div className="text-xs font-medium text-white/40">
+              {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+            </div>
+          </div>
         </div>
+
+        {/* Logout */}
+        <button
+          type="button"
+          onClick={signOut}
+          className="flex h-12 w-12 mt-1 shrink-0 items-center justify-center rounded-[20px] bg-white/[0.03] text-white/30 transition-all hover:bg-red-500/10 hover:text-red-400 active:bg-white/10 active:scale-95 touch-manipulation"
+          style={{ border: "1px solid rgba(255,255,255,0.05)", WebkitTapHighlightColor: "transparent" }}
+        >
+          <LogOut className="h-5 w-5" />
+        </button>
       </div>
 
       {/* Metric cards */}
@@ -75,7 +121,6 @@ export function XpotDashboard() {
               boxShadow: `0 0 0 1px rgba(255,255,255,0.04), 0 8px 32px rgba(0,0,0,0.3)`,
             }}
           >
-            {/* glow orb in corner */}
             <div
               className="pointer-events-none absolute -right-4 -top-4 h-20 w-20 rounded-full opacity-40 blur-2xl"
               style={{ background: glow }}
@@ -119,6 +164,11 @@ export function XpotDashboard() {
             </div>
           )}
       </div>
+
+      {/* Profile editor */}
+      {profileOpen && me && (
+        <XpotProfileEditor me={me} onClose={() => setProfileOpen(false)} />
+      )}
     </div>
   );
 }

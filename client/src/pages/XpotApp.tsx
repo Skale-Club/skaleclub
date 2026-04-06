@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Loader2, LogOut, RefreshCw } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useXpotQueries } from "./xpot/hooks/useXpotQueries";
 import { useVisits } from "./xpot/hooks/useVisits";
 import { GeoProvider } from "./xpot/hooks/GeoProvider";
@@ -14,14 +14,11 @@ function XpotAppShell() {
   const {
     me,
     xpotMeQuery,
-    repName,
     isOnline,
     activeTab,
-    signOut,
-    syncMutation,
     setLocation,
   } = useXpotQueries();
-  const { activeVisit } = useVisits();
+  useVisits();
 
   useEffect(() => {
     document.title = "Xpot";
@@ -47,8 +44,6 @@ function XpotAppShell() {
     );
   }
 
-  const initials = repName.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase();
-
   return (
     <div
       className="min-h-screen text-white"
@@ -61,40 +56,6 @@ function XpotAppShell() {
       />
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-md flex-col px-4 pb-28 pt-5">
-
-        {/* Header */}
-        <header className="mb-6 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="relative shrink-0">
-              <div
-                className="flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-bold text-white"
-                style={{ background: "linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)" }}
-              >
-                {initials}
-              </div>
-              <span className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#0a0f1e] ${isOnline ? "bg-emerald-400" : "bg-slate-500"}`} />
-            </div>
-            <div>
-              <div className="text-sm font-semibold text-white leading-tight">{repName}</div>
-              <div className="text-[11px] text-white/40">{me.rep.role}</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <button
-              disabled={!isOnline || syncMutation.isPending}
-              onClick={() => syncMutation.mutate(undefined as any)}
-              className="flex h-9 w-9 items-center justify-center rounded-xl text-white/40 transition-all hover:bg-white/8 hover:text-white/80 disabled:opacity-30"
-            >
-              {syncMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            </button>
-            <button
-              onClick={signOut}
-              className="flex h-9 w-9 items-center justify-center rounded-xl text-white/40 transition-all hover:bg-white/8 hover:text-white/80"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
-          </div>
-        </header>
 
         {!isOnline && (
           <div className="mb-4 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
@@ -111,7 +72,7 @@ function XpotAppShell() {
         </main>
 
         {/* Bottom nav — glass pill */}
-        <nav className="fixed inset-x-0 bottom-0 px-4 pb-4 pt-2">
+        <nav className="fixed inset-x-0 bottom-0 z-50 px-4 pb-4 pt-2">
           <div
             className="mx-auto flex max-w-md items-center gap-1 rounded-2xl border border-white/10 px-2 py-1.5"
             style={{ background: "rgba(15, 23, 42, 0.85)", backdropFilter: "blur(20px)" }}
@@ -123,7 +84,8 @@ function XpotAppShell() {
                   key={id}
                   type="button"
                   onClick={() => setLocation(`/xpot/${id}`)}
-                  className={`relative flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[11px] font-medium transition-all ${
+                  style={{ WebkitTapHighlightColor: "transparent" }}
+                  className={`relative flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[11px] font-medium transition-all touch-manipulation ${
                     isActive ? "text-white" : "text-white/35 hover:text-white/60"
                   }`}
                 >

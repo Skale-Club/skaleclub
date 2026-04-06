@@ -624,6 +624,7 @@ export interface IStorage {
   getSalesRep(id: number): Promise<SalesRep | undefined>;
   getSalesRepByUserId(userId: string): Promise<SalesRep | undefined>;
   upsertSalesRep(input: InsertSalesRep): Promise<SalesRep>;
+  updateSalesRepProfile(id: number, data: { displayName?: string; phone?: string; avatarUrl?: string }): Promise<SalesRep>;
   listSalesLeads(filters?: { ownerRepId?: number; search?: string }): Promise<SalesLead[]>;
   getSalesLead(id: number): Promise<SalesLead | undefined>;
   createSalesLead(input: InsertSalesLead): Promise<SalesLead>;
@@ -1124,6 +1125,16 @@ export class DatabaseStorage implements IStorage {
 
     const [created] = await db.insert(salesReps).values(input).returning();
     return created;
+  }
+
+  async updateSalesRepProfile(id: number, data: { displayName?: string; phone?: string; avatarUrl?: string }): Promise<SalesRep> {
+    await ensureSalesSchema();
+    const [updated] = await db
+      .update(salesReps)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(salesReps.id, id))
+      .returning();
+    return updated;
   }
 
   async listSalesLeads(filters: { ownerRepId?: number; search?: string } = {}): Promise<SalesLead[]> {

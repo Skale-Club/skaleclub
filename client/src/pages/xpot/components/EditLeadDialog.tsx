@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -59,6 +59,9 @@ export function EditLeadDialog({ lead, open, onOpenChange, onSaved }: {
     state: loc?.state || "",
     postalCode: loc?.postalCode || "",
   });
+  const [socials, setSocials] = useState<{platform: string, url: string}[]>(
+    ((lead as any).socialUrls as {platform: string, url: string}[]) || []
+  );
 
   const updateMutation = useMutation({
     mutationFn: async () => {
@@ -74,6 +77,7 @@ export function EditLeadDialog({ lead, open, onOpenChange, onSaved }: {
           state: form.state || undefined,
           postalCode: form.postalCode || undefined,
         } : undefined,
+        socialUrls: socials.filter(s => s.url.trim().length > 0),
       });
       return response.json();
     },
@@ -113,6 +117,52 @@ export function EditLeadDialog({ lead, open, onOpenChange, onSaved }: {
 
           <FieldGroup label="Details">
             <Field value={form.industry} onChange={f("industry")} placeholder="Industry" />
+          </FieldGroup>
+
+          <FieldGroup label="Social Networks">
+            {socials.map((s, i) => (
+              <div key={i} className="flex gap-2 items-center mb-2">
+                <select 
+                  value={s.platform} 
+                  onChange={e => {
+                    const next = [...socials];
+                    next[i].platform = e.target.value;
+                    setSocials(next);
+                  }}
+                  className="h-10 w-24 shrink-0 rounded-xl px-2 text-sm text-white focus:outline-none"
+                  style={inputStyle}
+                >
+                  <option value="instagram" className="bg-[#0e1117]">Instagram</option>
+                  <option value="linkedin" className="bg-[#0e1117]">LinkedIn</option>
+                  <option value="facebook" className="bg-[#0e1117]">Facebook</option>
+                  <option value="twitter" className="bg-[#0e1117]">X</option>
+                  <option value="youtube" className="bg-[#0e1117]">YouTube</option>
+                  <option value="tiktok" className="bg-[#0e1117]">TikTok</option>
+                  <option value="other" className="bg-[#0e1117]">Other</option>
+                </select>
+                <input 
+                  value={s.url}
+                  onChange={e => {
+                    const next = [...socials];
+                    next[i].url = e.target.value;
+                    setSocials(next);
+                  }}
+                  placeholder="URL or handle"
+                  className={inputCls}
+                  style={inputStyle}
+                />
+                <button type="button" onClick={() => setSocials(socials.filter((_, idx) => idx !== i))} className="p-2 text-white/40 hover:text-red-400">
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+            <button
+               type="button"
+               onClick={() => setSocials([...socials, { platform: "instagram", url: "" }])}
+               className="text-xs flex items-center font-semibold text-indigo-400 hover:text-indigo-300"
+            >
+              <Plus className="h-3 w-3 mr-1" /> Add Social Network
+            </button>
           </FieldGroup>
 
           <FieldGroup label="Address">

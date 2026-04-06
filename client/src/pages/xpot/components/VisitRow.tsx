@@ -131,9 +131,10 @@ function VisitDetail({ visit, onDelete }: { visit: VisitLike; onDelete: () => vo
       <button
         type="button"
         onClick={onDelete}
-        className="flex items-center gap-2 text-xs text-white/25 transition-colors hover:text-red-400"
+        className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 mt-2 text-sm font-medium text-red-500/60 transition-all hover:bg-white/5 hover:text-red-400 active:scale-[0.98] active:bg-white/10 touch-manipulation"
+        style={{ border: "1px solid rgba(255,255,255,0.05)" }}
       >
-        <Trash2 size={12} />
+        <Trash2 className="h-4 w-4" />
         Delete visit
       </button>
     </div>

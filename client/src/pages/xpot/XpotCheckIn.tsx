@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Building2, Loader2, MapPinned, Plus, Search, Timer, X, ChevronDown } from "lucide-react";
+import { Building2, Loader2, MapPinned, Plus, Search, Timer, X, ChevronDown, Phone, Globe, Mail, PencilLine, Twitter, Linkedin, Facebook, Instagram, Youtube, Link2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useXpotShared } from "./hooks/useXpotShared";
 import { useXpotQueries } from "./hooks/useXpotQueries";
@@ -44,6 +44,24 @@ function ActiveLeadInfo({ lead, onSaved }: { lead: SalesLead; onSaved: () => voi
       <InlineField label="Email" value={fields.email} onSave={(v) => saveField("email", v)} />
       <InlineField label="Website" value={fields.website} onSave={(v) => saveField("website", v)} />
       <InlineField label="Industry" value={fields.industry} onSave={(v) => saveField("industry", v)} />
+      {((lead as any).socialUrls as Array<{platform: string, url: string}>)?.length > 0 && (
+        <div className="flex items-center gap-2 pt-2 mt-2 border-t border-white/5">
+          {((lead as any).socialUrls as Array<{platform: string, url: string}>).map((social, i) => {
+            const Icon = social.platform === "instagram" ? Instagram
+              : social.platform === "linkedin" ? Linkedin
+              : social.platform === "twitter" ? Twitter
+              : social.platform === "facebook" ? Facebook
+              : social.platform === "youtube" ? Youtube
+              : Link2;
+            const url = social.url.startsWith("http") ? social.url : `https://${social.url}`;
+            return (
+              <a key={i} href={url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-indigo-300 hover:bg-indigo-500/20 hover:text-indigo-200 transition-colors">
+                <Icon className="h-4 w-4" />
+              </a>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -143,7 +161,7 @@ function CreateLeadDialog({ open, onOpenChange, initialName, onCreated }: {
               onFocus={() => setPlaceDropdownOpen(true)}
               onBlur={() => setTimeout(() => setPlaceDropdownOpen(false), 150)}
               placeholder="Search Google Places to autofill"
-              className="w-full h-10 rounded-xl pl-9 pr-9 text-sm text-white placeholder:text-white/25 focus:outline-none"
+              className="w-full h-10 rounded-xl pl-9 pr-9 text-[16px] text-white placeholder:text-white/25 focus:outline-none"
               style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)" }}
             />
             {placeQuery.isFetching && <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-white/30" />}
@@ -190,7 +208,7 @@ function CreateLeadDialog({ open, onOpenChange, initialName, onCreated }: {
               value={value}
               onChange={onChange}
               placeholder={placeholder}
-              className="w-full h-10 rounded-xl px-3 text-sm text-white placeholder:text-white/25 focus:outline-none"
+              className="w-full h-10 rounded-xl px-3 text-[16px] text-white placeholder:text-white/25 focus:outline-none"
               style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)" }}
             />
           ))}
@@ -199,7 +217,7 @@ function CreateLeadDialog({ open, onOpenChange, initialName, onCreated }: {
             onChange={(e) => setForm((prev) => ({ ...prev, phone: formatPhone(e.target.value) }))}
             placeholder="Phone"
             inputMode="tel"
-            className="w-full h-10 rounded-xl px-3 text-sm text-white placeholder:text-white/25 focus:outline-none"
+            className="w-full h-10 rounded-xl px-3 text-[16px] text-white placeholder:text-white/25 focus:outline-none"
             style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)" }}
           />
           <input
@@ -208,7 +226,7 @@ function CreateLeadDialog({ open, onOpenChange, initialName, onCreated }: {
             placeholder="Email"
             type="email"
             inputMode="email"
-            className="w-full h-10 rounded-xl px-3 text-sm text-white placeholder:text-white/25 focus:outline-none"
+            className="w-full h-10 rounded-xl px-3 text-[16px] text-white placeholder:text-white/25 focus:outline-none"
             style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)" }}
           />
           <div className="grid grid-cols-2 gap-2">
@@ -216,14 +234,14 @@ function CreateLeadDialog({ open, onOpenChange, initialName, onCreated }: {
               value={form.city}
               onChange={f("city")}
               placeholder="City"
-              className="w-full h-10 rounded-xl px-3 text-sm text-white placeholder:text-white/25 focus:outline-none"
+              className="w-full h-10 rounded-xl px-3 text-[16px] text-white placeholder:text-white/25 focus:outline-none"
               style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)" }}
             />
             <div className="relative">
               <select
                 value={form.state}
                 onChange={f("state")}
-                className="w-full h-10 appearance-none rounded-xl px-3 pr-8 text-sm focus:outline-none"
+                className="w-full h-10 appearance-none rounded-xl px-3 pr-8 text-[16px] focus:outline-none"
                 style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)", color: form.state ? "white" : "rgba(255,255,255,0.25)" }}
               >
                 <option value="">State</option>
@@ -345,6 +363,16 @@ export function XpotCheckIn() {
           className="relative rounded-2xl p-4"
           style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
         >
+          {activeVisit.lead && (
+            <button
+              type="button"
+              onClick={() => setEditLeadOpen(true)}
+              className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-white/30 transition-colors hover:bg-indigo-500/20 hover:text-indigo-300"
+              style={{ WebkitTapHighlightColor: "transparent" }}
+            >
+              <PencilLine className="h-3.5 w-3.5" />
+            </button>
+          )}
           {activeVisit.lead ? (
             <ActiveLeadInfo lead={activeVisit.lead} onSaved={() => invalidateXpotData()} />
           ) : (
@@ -375,6 +403,14 @@ export function XpotCheckIn() {
           onCancel={() => cancelVisitMutation.mutate(undefined as any)}
         />
       </div>
+      {activeVisit.lead && (
+        <EditLeadDialog
+          lead={activeVisit.lead}
+          open={editLeadOpen}
+          onOpenChange={setEditLeadOpen}
+          onSaved={() => invalidateXpotData()}
+        />
+      )}
     </div>
   );
 
@@ -389,29 +425,29 @@ export function XpotCheckIn() {
     <div className="space-y-4">
       {/* Search card */}
       <div className="rounded-2xl" style={GLASS}>
-        <div className="p-4 space-y-4">
+        <div className="px-6 py-5 space-y-5">
           {/* Search input */}
           <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30 z-10" />
+            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" />
             <input
               value={checkInSearch}
               onChange={(event) => { setCheckInSearch(event.target.value); setCheckInDropdownOpen(true); }}
               onFocus={() => setCheckInDropdownOpen(true)}
               onBlur={() => setTimeout(() => setCheckInDropdownOpen(false), 150)}
               onKeyDown={(e) => { if (e.key === "Escape") { setCheckInDropdownOpen(false); (e.target as HTMLInputElement).blur(); } }}
-              placeholder="Search leads or Google Places..."
-              className={`w-full h-12 rounded-xl pl-10 pr-16 text-sm text-white placeholder:text-white/25 focus:outline-none transition-all ${checkInDropdownOpen ? "rounded-b-none" : ""}`}
-              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
+              placeholder="Search places or leads..."
+              className={`w-full h-[60px] bg-white pl-10 pr-16 text-[16px] text-slate-900 placeholder:text-slate-400 focus:outline-none transition-all shadow-sm ${checkInDropdownOpen ? "rounded-t-[30px]" : "rounded-[30px]"}`}
+              style={{ border: "1px solid #e2e8f0" }}
             />
             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
               {checkInSearch ? (
-                <button type="button" onClick={() => { setCheckInSearch(""); setSelectedLeadId(""); }} className="p-1.5 text-white/30 hover:text-white/70 transition-colors">
+                <button type="button" onClick={() => { setCheckInSearch(""); setSelectedLeadId(""); }} className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors">
                   <X className="h-4 w-4" />
                 </button>
               ) : null}
               <button
                 type="button"
-                className="p-1.5 text-white/30 hover:text-blue-400 transition-colors"
+                className="p-1.5 text-slate-400 hover:text-blue-500 transition-colors"
                 onClick={async () => { await loadCurrentLocation(); setCheckInSearch("businesses nearby"); setCheckInDropdownOpen(true); }}
               >
                 <MapPinned className="h-4 w-4" />
@@ -421,14 +457,12 @@ export function XpotCheckIn() {
             {/* Dropdown */}
             {checkInDropdownOpen && (
               <div
-                className="absolute left-0 right-0 top-full z-50 max-h-72 overflow-y-auto"
+                className="absolute left-0 right-0 top-full z-50 max-h-72 overflow-y-auto rounded-b-[30px]"
                 style={{
-                  background: "#0e1117",
-                  border: "1px solid rgba(255,255,255,0.07)",
+                  background: "#ffffff",
+                  border: "1px solid #e2e8f0",
                   borderTop: "none",
-                  borderBottomLeftRadius: "12px",
-                  borderBottomRightRadius: "12px",
-                  boxShadow: "0 16px 40px rgba(0,0,0,0.6)",
+                  boxShadow: "0 16px 40px rgba(0,0,0,0.1)",
                 }}
                 onPointerDown={(e) => e.stopPropagation()}
               >
@@ -436,16 +470,16 @@ export function XpotCheckIn() {
                 <button
                   type="button"
                   onClick={() => { setCheckInDropdownOpen(false); setCreateLeadDialogOpen(true); }}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.04]"
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50"
                 >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: "rgba(99,102,241,0.2)" }}>
-                    <Plus className="h-4 w-4 text-indigo-400" />
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: "rgba(99,102,241,0.1)" }}>
+                    <Plus className="h-4 w-4 text-indigo-500" />
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-white">
+                    <div className="text-sm font-medium text-slate-900">
                       {checkInSearch.trim().length >= 2 ? `Create "${checkInSearch.trim()}"` : "Add new lead"}
                     </div>
-                    <div className="text-xs text-white/40">Add as a new company</div>
+                    <div className="text-xs text-slate-500">Add as a new company</div>
                   </div>
                 </button>
 
@@ -455,30 +489,30 @@ export function XpotCheckIn() {
                     key={lead.id}
                     type="button"
                     onClick={() => { pickLocalLeadForCheckIn(lead); setCheckInDropdownOpen(false); }}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.04]"
-                    style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50"
+                    style={{ borderTop: "1px solid #f1f5f9" }}
                   >
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: "rgba(255,255,255,0.07)" }}>
-                      <Building2 className="h-4 w-4 text-white/50" />
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-100">
+                      <Building2 className="h-4 w-4 text-slate-500" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-medium text-white">{lead.name}</div>
-                      <div className="truncate text-xs text-white/35">{lead.locations?.[0]?.addressLine1 || lead.industry || "Local lead"}</div>
+                      <div className="truncate text-sm font-medium text-slate-900">{lead.name}</div>
+                      <div className="truncate text-xs text-slate-500">{lead.locations?.[0]?.addressLine1 || lead.industry || "Local lead"}</div>
                     </div>
-                    <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium text-blue-300" style={{ background: "rgba(59,130,246,0.12)", border: "1px solid rgba(59,130,246,0.2)" }}>Local</span>
+                    <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium text-blue-600 bg-blue-50 border border-blue-200">Local</span>
                   </button>
                 ))}
 
                 {/* Google Places loading */}
                 {checkInPlaceQuery.isFetching ? (
-                  <div className="flex items-center gap-2 px-4 py-3 text-sm text-white/35" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                  <div className="flex items-center gap-2 px-4 py-3 text-sm text-slate-500" style={{ borderTop: "1px solid #f1f5f9" }}>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Searching Google Places...
                   </div>
                 ) : null}
 
                 {checkInPlaceQuery.error ? (
-                  <div className="px-4 py-2 text-sm text-red-400" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                  <div className="px-4 py-2 text-sm text-red-500" style={{ borderTop: "1px solid #f1f5f9" }}>
                     {(checkInPlaceQuery.error as Error).message}
                   </div>
                 ) : null}
@@ -491,24 +525,23 @@ export function XpotCheckIn() {
                       key={place.placeId}
                       type="button"
                       onClick={() => { pickGooglePlaceForCheckIn(place); setCheckInDropdownOpen(false); }}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.04]"
-                      style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50"
+                      style={{ borderTop: "1px solid #f1f5f9" }}
                     >
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: "rgba(99,102,241,0.12)" }}>
-                        <Building2 className="h-4 w-4 text-indigo-400/80" />
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-50">
+                        <Building2 className="h-4 w-4 text-indigo-500" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium text-white">{place.name}</div>
-                        <div className="truncate text-xs text-white/35">{place.address}</div>
+                        <div className="truncate text-sm font-medium text-slate-900">{place.name}</div>
+                        <div className="truncate text-xs text-slate-500">{place.address}</div>
                         {(place.primaryType || place.phone) && (
-                          <div className="mt-0.5 flex flex-wrap gap-2 text-[10px] text-white/20">
+                          <div className="mt-0.5 flex flex-wrap gap-2 text-[10px] text-slate-400">
                             {place.primaryType ? <span>{place.primaryType}</span> : null}
                             {place.phone ? <span>{place.phone}</span> : null}
                           </div>
                         )}
                       </div>
-                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${existingLead ? "text-blue-300" : "text-indigo-300"}`}
-                        style={{ background: existingLead ? "rgba(59,130,246,0.12)" : "rgba(99,102,241,0.12)", border: `1px solid ${existingLead ? "rgba(59,130,246,0.2)" : "rgba(99,102,241,0.2)"}` }}>
+                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${existingLead ? "text-blue-600 bg-blue-50 border-blue-200" : "text-indigo-600 bg-indigo-50 border-indigo-200"} border`}>
                         {existingLead ? "Match" : "Google"}
                       </span>
                     </button>
@@ -516,7 +549,7 @@ export function XpotCheckIn() {
                 })}
 
                 {!filteredLeadsForCheckIn.length && !checkInPlaceQuery.isFetching && !checkInPlaceQuery.data?.results?.length && checkInSearch.trim().length < 3 ? (
-                  <div className="px-4 py-3 text-sm text-white/25">Type at least 3 characters to search</div>
+                  <div className="px-4 py-3 text-sm text-slate-400">Type at least 3 characters to search</div>
                 ) : null}
               </div>
             )}
@@ -532,20 +565,76 @@ export function XpotCheckIn() {
           {/* Selected lead preview */}
           {selectedLead ? (
             <>
-              <button
-                type="button"
-                onClick={() => setEditLeadOpen(true)}
-                className="w-full rounded-2xl p-4 text-left transition-all"
+              <div
+                className="w-full rounded-2xl p-4 text-left transition-all relative group"
                 style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.25)" }}
               >
-                <div className="text-[10px] font-semibold uppercase tracking-widest text-indigo-400/70">Selected Lead</div>
-                <div className="mt-1 text-lg font-bold text-white">{selectedLead.name}</div>
-                <div className="mt-0.5 text-sm text-white/40">{selectedLead.locations?.[0]?.addressLine1 || "No address saved yet"}</div>
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  <span className="rounded-full px-2.5 py-0.5 text-xs font-medium text-indigo-300" style={{ background: "rgba(99,102,241,0.2)" }}>{selectedLead.status}</span>
-                  <span className="rounded-full px-2.5 py-0.5 text-xs font-medium text-white/40" style={{ background: "rgba(255,255,255,0.07)" }}>{selectedLead.source === "google_places" ? "Google Places" : "Local lead"}</span>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setEditLeadOpen(true); }}
+                  className="absolute right-4 top-4 h-8 w-8 flex items-center justify-center rounded-full bg-white/5 text-white/30 hover:bg-indigo-500/20 hover:text-indigo-300 transition-colors"
+                >
+                  <PencilLine className="h-4 w-4" />
+                </button>
+                <div className="text-[10px] font-semibold uppercase tracking-widest text-indigo-400/70 mb-2">Selected Lead</div>
+                <div className="text-lg font-bold text-white pr-10">{selectedLead.name}</div>
+                {selectedLead.locations?.[0]?.addressLine1 ? (
+                  <a href={`https://maps.google.com/?q=${encodeURIComponent(selectedLead.locations[0].addressLine1)}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="mt-1 flex items-center gap-1.5 text-sm text-indigo-300/80 hover:text-indigo-200 transition-colors w-fit max-w-full">
+                    <MapPinned className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{selectedLead.locations[0].addressLine1}</span>
+                  </a>
+                ) : (
+                  <div className="mt-1 flex items-center gap-1.5 text-sm text-white/40">
+                    <MapPinned className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">No address saved yet</span>
+                  </div>
+                )}
+                
+                <div className="mt-3 flex flex-col gap-2">
+                  {selectedLead.phone && (
+                    <a href={`tel:${selectedLead.phone.replace(/[^0-9+]/g, '')}`} onClick={e => e.stopPropagation()} className="flex items-center gap-1.5 text-xs text-indigo-300/80 hover:text-indigo-200 transition-colors w-fit">
+                      <Phone className="h-3 w-3 shrink-0" />
+                      <span>{selectedLead.phone}</span>
+                    </a>
+                  )}
+                  {selectedLead.email && (
+                    <a href={`mailto:${selectedLead.email}`} onClick={e => e.stopPropagation()} className="flex items-center gap-1.5 text-xs text-indigo-300/80 hover:text-indigo-200 transition-colors w-fit">
+                      <Mail className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{selectedLead.email}</span>
+                    </a>
+                  )}
+                  {selectedLead.website && (
+                    <a href={selectedLead.website.startsWith('http') ? selectedLead.website : `https://${selectedLead.website}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-1.5 text-xs text-indigo-300/80 hover:text-indigo-200 transition-colors max-w-full">
+                      <Globe className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{selectedLead.website}</span>
+                    </a>
+                  )}
+                  {selectedLead.industry && (
+                    <div className="flex items-center gap-1.5 text-xs text-white/40">
+                      <Building2 className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{selectedLead.industry}</span>
+                    </div>
+                  )}
+                  {((selectedLead as any).socialUrls as Array<{platform: string, url: string}>)?.length > 0 && (
+                    <div className="flex items-center gap-2 mt-1">
+                      {((selectedLead as any).socialUrls as Array<{platform: string, url: string}>).map((social, i) => {
+                        const Icon = social.platform === "instagram" ? Instagram
+                          : social.platform === "linkedin" ? Linkedin
+                          : social.platform === "twitter" ? Twitter
+                          : social.platform === "facebook" ? Facebook
+                          : social.platform === "youtube" ? Youtube
+                          : Link2;
+                        const url = social.url.startsWith("http") ? social.url : `https://${social.url}`;
+                        return (
+                          <a key={i} href={url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex h-7 w-7 items-center justify-center rounded-full bg-white/5 text-indigo-300 hover:bg-indigo-500/20 hover:text-indigo-200 transition-colors">
+                            <Icon className="h-3 w-3" />
+                          </a>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              </button>
+              </div>
               <EditLeadDialog
                 lead={selectedLead}
                 open={editLeadOpen}

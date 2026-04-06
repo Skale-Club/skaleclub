@@ -40,6 +40,7 @@ export function createLeadsRouter() {
       ownerRepId: input.ownerRepId || actor!.rep.id,
       territoryName: input.territoryName,
       notes: input.notes,
+      socialUrls: input.socialUrls,
     });
 
     if (input.primaryLocation?.addressLine1) {

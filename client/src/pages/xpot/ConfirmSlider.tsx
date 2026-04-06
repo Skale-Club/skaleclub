@@ -44,8 +44,8 @@ export function ConfirmSlider({
     }
   }, [loading, startValue]);
 
-  const THUMB = 48;
-  const PADDING = 4;
+  const THUMB = 50;
+  const PADDING = 5;
 
   function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (disabled || loading) return;
@@ -64,11 +64,17 @@ export function ConfirmSlider({
     const next = Math.min(100, Math.max(0, dragStartValue.current + delta));
     setValue(next);
 
-    if (!isCheckOut && next >= 96 && !hasTriggeredRef.current) {
+    if (!isCheckOut && next >= 80 && !hasTriggeredRef.current) {
+      isDragging.current = false;
+      setDragging(false);
+      setValue(100);
       hasTriggeredRef.current = true;
       onConfirm();
     }
-    if (isCheckOut && next <= 4 && !hasTriggeredRef.current) {
+    if (isCheckOut && next <= 20 && !hasTriggeredRef.current) {
+      isDragging.current = false;
+      setDragging(false);
+      setValue(0);
       hasTriggeredRef.current = true;
       onConfirm();
     }
@@ -101,7 +107,7 @@ export function ConfirmSlider({
   }
 
   const thumbColor = getThumbColor(value);
-  const isSnapping = !dragging && !hasTriggeredRef.current;
+  const isSnapping = !dragging;
 
   // Label fades out as the thumb progresses
   const progress = isCheckOut ? (1 - value / 100) : (value / 100);
@@ -112,7 +118,7 @@ export function ConfirmSlider({
       <div
         ref={trackRef}
         className={cn(
-          "relative select-none rounded-xl border border-border overflow-hidden",
+          "relative select-none touch-none rounded-xl border border-border overflow-hidden",
           dragging ? "cursor-grabbing" : "cursor-grab",
           (disabled || loading) && "opacity-40 cursor-not-allowed",
         )}
@@ -129,7 +135,7 @@ export function ConfirmSlider({
 
         {/* label */}
         <div
-          className="absolute inset-0 flex items-center justify-center text-center text-xs font-bold tracking-[0.22em] text-white/90 pointer-events-none drop-shadow-sm leading-none"
+          className="absolute inset-0 flex items-center justify-center text-center text-sm font-bold tracking-[0.22em] text-white/90 pointer-events-none drop-shadow-sm leading-none"
           style={{
             paddingLeft: isCheckOut ? 16 : THUMB + PADDING * 2 + 8,
             paddingRight: isCheckOut ? THUMB + PADDING * 2 + 8 : 16,
@@ -142,7 +148,7 @@ export function ConfirmSlider({
 
         {/* thumb */}
         <div
-          className="absolute flex items-center justify-center rounded-[10px] text-white pointer-events-none top-1/2 -translate-y-1/2"
+          className="absolute flex items-center justify-center rounded-xl text-white pointer-events-none top-1/2 -translate-y-1/2"
           style={{
             width: THUMB,
             height: THUMB,
@@ -153,10 +159,10 @@ export function ConfirmSlider({
           }}
         >
           {loading
-            ? <Loader2 className="h-5 w-5 animate-spin" />
+            ? <Loader2 className="h-6 w-6 animate-spin" />
             : isCheckOut
-              ? <ChevronsLeft className="h-5 w-5" />
-              : <ChevronsRight className="h-5 w-5" />
+              ? <ChevronsLeft className="h-6 w-6" />
+              : <ChevronsRight className="h-6 w-6" />
           }
         </div>
       </div>
