@@ -69,6 +69,41 @@ export function useLeads() {
     },
   });
 
+  const syncToGhlMutation = useMutation({
+    mutationFn: async (leadId: number) => {
+      const res = await apiRequest("POST", `/api/xpot/leads/${leadId}/sync-ghl`);
+      return res.json() as Promise<{ lead: FullSalesLead; ghl: { synced: boolean } }>;
+    },
+    onSuccess: async (data) => {
+      if (data.ghl.synced) {
+        toast({ title: "Sent to GHL", description: "Lead promoted and synced successfully.", variant: "success" });
+      } else {
+        toast({ title: "GHL not configured", description: "Check your GoHighLevel integration settings.", variant: "destructive" });
+      }
+      await invalidateXpotData();
+    },
+    onError: (error: Error) => {
+      toast({ title: "Sync failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const importCsvMutation = useMutation({
+    mutationFn: async (rows: Array<{
+      name: string; phone?: string; email?: string; website?: string;
+      industry?: string; addressLine1?: string; city?: string; state?: string; postalCode?: string;
+    }>) => {
+      const res = await apiRequest("POST", "/api/xpot/leads/import-csv", { rows });
+      return res.json() as Promise<{ created: number; errors: { row: number; message: string }[] }>;
+    },
+    onSuccess: async (data) => {
+      toast({ title: `${data.created} prospect(s) imported`, variant: "success" });
+      await invalidateXpotData();
+    },
+    onError: (error: Error) => {
+      toast({ title: "Import failed", description: error.message, variant: "destructive" });
+    },
+  });
+
   const applyPlaceToLeadForm = (place: GooglePlaceResult) => {
     const parsedAddress = parseAddress(place.address);
     setSelectedLeadPlace(place);
@@ -102,8 +137,8 @@ export function useLeads() {
             city: leadForm.city || undefined,
             state: leadForm.state || undefined,
             country: "US",
-            lat: selectedLeadPlace?.lat != null ? String(selectedLeadPlace.lat) : undefined,
-            lng: selectedLeadPlace?.lng != null ? String(selectedLeadPlace.lng) : undefined,
+            lat: selectedLeadPlace?.lat ?? undefined,
+            lng: selectedLeadPlace?.lng ?? undefined,
             geofenceRadiusMeters: 150,
             isPrimary: true,
           }
@@ -132,5 +167,7 @@ export function useLeads() {
     createLeadFromForm,
     createLeadMutation,
     deleteLeadMutation,
+    syncToGhlMutation,
+    importCsvMutation,
   };
 }

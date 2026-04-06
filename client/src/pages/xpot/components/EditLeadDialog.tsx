@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { SalesLead, FullSalesLead } from "../types";
 
@@ -65,24 +65,27 @@ export function EditLeadDialog({ lead, open, onOpenChange, onSaved }: {
 
   const updateMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("PATCH", `/api/xpot/leads/${lead.id}`, {
+      await apiRequest("PATCH", `/api/xpot/leads/${lead.id}`, {
         name: form.name || undefined,
         phone: form.phone || undefined,
         email: form.email || undefined,
         website: form.website || undefined,
         industry: form.industry || undefined,
-        primaryLocation: (form.addressLine1 || form.city || form.state) ? {
-          addressLine1: form.addressLine1 || undefined,
+        socialUrls: socials.filter(s => s.url.trim().length > 0),
+      });
+      if (form.addressLine1 || form.city || form.state || form.postalCode) {
+        await apiRequest("PATCH", `/api/xpot/leads/${lead.id}/location`, {
+          addressLine1: form.addressLine1 || "",
           city: form.city || undefined,
           state: form.state || undefined,
           postalCode: form.postalCode || undefined,
-        } : undefined,
-        socialUrls: socials.filter(s => s.url.trim().length > 0),
-      });
-      return response.json();
+        });
+      }
     },
     onSuccess: () => {
       toast({ title: "Lead updated", variant: "success" });
+      queryClient.invalidateQueries({ queryKey: ["/api/xpot/visits"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/xpot/leads"] });
       onSaved?.();
       onOpenChange(false);
     },

@@ -1,6 +1,6 @@
 import { storage } from "../../storage.js";
 import { getActiveAIClient, getRuntimeGroqKey } from "../../lib/ai-provider.js";
-import { getOrCreateGHLContact, createGHLOpportunity, updateGHLOpportunity, createGHLTask } from "../../integrations/ghl.js";
+import { getOrCreateGHLContact, createGHLOpportunity, updateGHLOpportunity, createGHLTask, createGHLNote } from "../../integrations/ghl.js";
 import { z } from "zod";
 
 const visitAudioAnalysisSchema = z.object({
@@ -253,7 +253,83 @@ export async function syncTaskToGhl(taskId: number) {
     return { synced: false, message: createResult.message || "Failed to create task in GHL" };
   }
 
-  await storage.updateSalesTask(task.id, { status: "pending" });
+  await storage.updateSalesTask(task.id, { ghlTaskId: createResult.taskId, status: "pending" });
 
   return { synced: true, ghlTaskId: createResult.taskId };
+}
+
+export async function syncVisitToGhl(visitId: number): Promise<{ synced: boolean; message?: string }> {
+  const integration = await storage.getIntegrationSettings("gohighlevel");
+  if (!integration?.isEnabled || !integration.apiKey || !integration.locationId) {
+    console.warn("[syncVisitToGhl] GHL not configured — skipping");
+    return { synced: false, message: "GHL not configured" };
+  }
+
+  const visit = await storage.getSalesVisit(visitId);
+  if (!visit) return { synced: false, message: "Visit not found" };
+
+  const lead = await storage.getSalesLead(visit.leadId);
+  if (!lead) return { synced: false, message: "Lead not found" };
+
+  // Prospects are never auto-synced
+  if (lead.status === "prospect") {
+    return { synced: false, message: "Prospect — not synced" };
+  }
+
+  // Ensure lead is synced to GHL first
+  let ghlContactId = lead.ghlContactId;
+  if (!ghlContactId) {
+    const leadSync = await syncLeadToGhl(lead.id);
+    if (!leadSync.synced) {
+      await storage.createSalesSyncEvent({
+        entityType: "sales_visit",
+        entityId: String(visitId),
+        status: "failed",
+        lastError: `Lead sync failed: ${leadSync.message}`,
+        lastAttemptAt: new Date(),
+      });
+      return { synced: false, message: `Lead sync failed: ${leadSync.message}` };
+    }
+    ghlContactId = (leadSync as any).ghlContactId as string;
+  }
+
+  // Build note body from visit + note
+  const note = await storage.getSalesVisitNote(visitId);
+  const checkedInAt = visit.checkedInAt ? new Date(visit.checkedInAt) : null;
+  const durationMin = visit.durationSeconds ? Math.floor(visit.durationSeconds / 60) : null;
+  const durationSec = visit.durationSeconds ? visit.durationSeconds % 60 : null;
+
+  const lines: string[] = [
+    `📍 Visit — ${checkedInAt ? checkedInAt.toLocaleString() : "unknown time"}`,
+    `Status: ${visit.status}`,
+    durationMin !== null ? `Duration: ${durationMin}m ${durationSec}s` : null,
+    note?.summary ? `\nSummary: ${note.summary}` : null,
+    note?.outcome ? `Outcome: ${note.outcome}` : null,
+    note?.nextStep ? `Next Step: ${note.nextStep}` : null,
+    note?.sentiment ? `Sentiment: ${note.sentiment}` : null,
+    note?.objections ? `Objections: ${note.objections}` : null,
+  ].filter((l): l is string => l !== null);
+
+  const noteResult = await createGHLNote(integration.apiKey, ghlContactId, lines.join("\n"));
+
+  if (!noteResult.success) {
+    await storage.createSalesSyncEvent({
+      entityType: "sales_visit",
+      entityId: String(visitId),
+      status: "failed",
+      lastError: noteResult.message || "Failed to create GHL note",
+      lastAttemptAt: new Date(),
+    });
+    return { synced: false, message: noteResult.message };
+  }
+
+  await storage.createSalesSyncEvent({
+    entityType: "sales_visit",
+    entityId: String(visitId),
+    status: "synced",
+    payload: { ghlContactId, noteId: noteResult.noteId },
+    lastAttemptAt: new Date(),
+  });
+
+  return { synced: true };
 }

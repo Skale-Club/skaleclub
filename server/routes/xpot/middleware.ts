@@ -64,6 +64,10 @@ export async function requireXpotUser(req: Request, res: Response, next: NextFun
   }
 }
 
+export function isManagerOrAdmin(actor: { user: SessionUser; rep: { role: string } }): boolean {
+  return actor.user.isAdmin || actor.rep.role === "manager" || actor.rep.role === "admin";
+}
+
 export async function requireXpotManager(req: Request, res: Response, next: NextFunction) {
   try {
     const actor = await ensureXpotRep(req);

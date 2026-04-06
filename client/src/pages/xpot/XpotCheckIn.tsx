@@ -424,11 +424,14 @@ export function XpotCheckIn() {
     <>
     <div className="space-y-4">
       {/* Search card */}
+      <div className="px-1 flex items-center justify-between">
+        <div className="text-xs font-semibold uppercase tracking-widest text-white/30">Check-In</div>
+      </div>
       <div className="rounded-2xl" style={GLASS}>
         <div className="px-6 py-5 space-y-5">
           {/* Search input */}
           <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 z-10" />
+            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-indigo-400/80 z-10" />
             <input
               value={checkInSearch}
               onChange={(event) => { setCheckInSearch(event.target.value); setCheckInDropdownOpen(true); }}
@@ -436,18 +439,18 @@ export function XpotCheckIn() {
               onBlur={() => setTimeout(() => setCheckInDropdownOpen(false), 150)}
               onKeyDown={(e) => { if (e.key === "Escape") { setCheckInDropdownOpen(false); (e.target as HTMLInputElement).blur(); } }}
               placeholder="Search places or leads..."
-              className={`w-full h-[60px] bg-white pl-10 pr-16 text-[16px] text-slate-900 placeholder:text-slate-400 focus:outline-none transition-all shadow-sm ${checkInDropdownOpen ? "rounded-t-[30px]" : "rounded-[30px]"}`}
-              style={{ border: "1px solid #e2e8f0" }}
+              className={`w-full h-[64px] pl-12 pr-24 text-[17px] font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none transition-all ${checkInDropdownOpen ? "rounded-t-[24px]" : "rounded-[24px]"}`}
+              style={{ background: "rgba(255,255,255,0.95)", border: "1.5px solid rgba(255,255,255,1)", boxShadow: "0 2px 16px rgba(0,0,0,0.18)" }}
             />
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
               {checkInSearch ? (
-                <button type="button" onClick={() => { setCheckInSearch(""); setSelectedLeadId(""); }} className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors">
+                <button type="button" onClick={() => { setCheckInSearch(""); setSelectedLeadId(""); }} className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
                   <X className="h-4 w-4" />
                 </button>
               ) : null}
               <button
                 type="button"
-                className="p-1.5 text-slate-400 hover:text-blue-500 transition-colors"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-indigo-400/60 hover:bg-indigo-50 hover:text-indigo-500 transition-colors"
                 onClick={async () => { await loadCurrentLocation(); setCheckInSearch("businesses nearby"); setCheckInDropdownOpen(true); }}
               >
                 <MapPinned className="h-4 w-4" />
@@ -457,12 +460,13 @@ export function XpotCheckIn() {
             {/* Dropdown */}
             {checkInDropdownOpen && (
               <div
-                className="absolute left-0 right-0 top-full z-50 max-h-72 overflow-y-auto rounded-b-[30px]"
+                className="absolute left-0 right-0 top-full z-50 max-h-72 overflow-y-auto rounded-b-[24px]"
                 style={{
-                  background: "#ffffff",
-                  border: "1px solid #e2e8f0",
-                  borderTop: "none",
-                  boxShadow: "0 16px 40px rgba(0,0,0,0.1)",
+                  background: "rgba(255,255,255,0.98)",
+                  backdropFilter: "blur(24px)",
+                  border: "1.5px solid rgba(255,255,255,1)",
+                  borderTop: "1px solid rgba(0,0,0,0.06)",
+                  boxShadow: "0 24px 60px rgba(0,0,0,0.3)",
                 }}
                 onPointerDown={(e) => e.stopPropagation()}
               >
@@ -470,16 +474,16 @@ export function XpotCheckIn() {
                 <button
                   type="button"
                   onClick={() => { setCheckInDropdownOpen(false); setCreateLeadDialogOpen(true); }}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50"
+                  className="flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-gray-50"
                 >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: "rgba(99,102,241,0.1)" }}>
-                    <Plus className="h-4 w-4 text-indigo-500" />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100">
+                    <Plus className="h-5 w-5 text-indigo-500" />
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-slate-900">
+                    <div className="text-[15px] font-semibold text-gray-900">
                       {checkInSearch.trim().length >= 2 ? `Create "${checkInSearch.trim()}"` : "Add new lead"}
                     </div>
-                    <div className="text-xs text-slate-500">Add as a new company</div>
+                    <div className="text-xs font-medium text-gray-400">Add as a new company</div>
                   </div>
                 </button>
 
@@ -489,30 +493,30 @@ export function XpotCheckIn() {
                     key={lead.id}
                     type="button"
                     onClick={() => { pickLocalLeadForCheckIn(lead); setCheckInDropdownOpen(false); }}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50"
-                    style={{ borderTop: "1px solid #f1f5f9" }}
+                    className="flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-gray-50"
+                    style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}
                   >
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-100">
-                      <Building2 className="h-4 w-4 text-slate-500" />
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 border border-gray-200">
+                      <Building2 className="h-5 w-5 text-gray-500" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-medium text-slate-900">{lead.name}</div>
-                      <div className="truncate text-xs text-slate-500">{lead.locations?.[0]?.addressLine1 || lead.industry || "Local lead"}</div>
+                      <div className="truncate text-[15px] font-semibold text-gray-900">{lead.name}</div>
+                      <div className="truncate text-xs font-medium text-gray-400">{lead.locations?.[0]?.addressLine1 || lead.industry || "Local lead"}</div>
                     </div>
-                    <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium text-blue-600 bg-blue-50 border border-blue-200">Local</span>
+                    <span className="shrink-0 rounded-[8px] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 border border-emerald-200">Local</span>
                   </button>
                 ))}
 
                 {/* Google Places loading */}
                 {checkInPlaceQuery.isFetching ? (
-                  <div className="flex items-center gap-2 px-4 py-3 text-sm text-slate-500" style={{ borderTop: "1px solid #f1f5f9" }}>
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                  <div className="flex items-center gap-3 px-5 py-5 text-[13px] font-medium text-gray-400" style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+                    <Loader2 className="h-4 w-4 animate-spin text-indigo-400" />
                     Searching Google Places...
                   </div>
                 ) : null}
 
                 {checkInPlaceQuery.error ? (
-                  <div className="px-4 py-2 text-sm text-red-500" style={{ borderTop: "1px solid #f1f5f9" }}>
+                  <div className="px-5 py-4 text-[13px] font-medium text-red-500 bg-red-50" style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
                     {(checkInPlaceQuery.error as Error).message}
                   </div>
                 ) : null}
@@ -525,23 +529,23 @@ export function XpotCheckIn() {
                       key={place.placeId}
                       type="button"
                       onClick={() => { pickGooglePlaceForCheckIn(place); setCheckInDropdownOpen(false); }}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50"
-                      style={{ borderTop: "1px solid #f1f5f9" }}
+                      className="flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-gray-50"
+                      style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}
                     >
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-50">
-                        <Building2 className="h-4 w-4 text-indigo-500" />
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100">
+                        <Building2 className="h-5 w-5 text-indigo-400" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium text-slate-900">{place.name}</div>
-                        <div className="truncate text-xs text-slate-500">{place.address}</div>
+                        <div className="truncate text-[15px] font-semibold text-gray-900">{place.name}</div>
+                        <div className="truncate text-[11px] font-medium text-gray-400">{place.address}</div>
                         {(place.primaryType || place.phone) && (
-                          <div className="mt-0.5 flex flex-wrap gap-2 text-[10px] text-slate-400">
-                            {place.primaryType ? <span>{place.primaryType}</span> : null}
+                          <div className="mt-1 flex flex-wrap gap-2 text-[10px] font-medium uppercase tracking-wider text-gray-400">
+                            {place.primaryType ? <span>{place.primaryType.replace(/_/g, " ")}</span> : null}
                             {place.phone ? <span>{place.phone}</span> : null}
                           </div>
                         )}
                       </div>
-                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${existingLead ? "text-blue-600 bg-blue-50 border-blue-200" : "text-indigo-600 bg-indigo-50 border-indigo-200"} border`}>
+                      <span className={`shrink-0 rounded-[8px] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${existingLead ? "text-blue-600 bg-blue-50 border-blue-200" : "text-indigo-600 bg-indigo-50 border-indigo-200"} border`}>
                         {existingLead ? "Match" : "Google"}
                       </span>
                     </button>
@@ -549,7 +553,9 @@ export function XpotCheckIn() {
                 })}
 
                 {!filteredLeadsForCheckIn.length && !checkInPlaceQuery.isFetching && !checkInPlaceQuery.data?.results?.length && checkInSearch.trim().length < 3 ? (
-                  <div className="px-4 py-3 text-sm text-slate-400">Type at least 3 characters to search</div>
+                  <div className="px-5 py-6 text-center text-[13px] font-medium text-gray-400">
+                    Type at least 3 characters to search...
+                  </div>
                 ) : null}
               </div>
             )}

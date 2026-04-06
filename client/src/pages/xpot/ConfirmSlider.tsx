@@ -44,8 +44,8 @@ export function ConfirmSlider({
     }
   }, [loading, startValue]);
 
-  const THUMB = 50;
-  const PADDING = 5;
+  const THUMB = 64;
+  const PADDING = 6;
 
   function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (disabled || loading) return;
@@ -91,17 +91,19 @@ export function ConfirmSlider({
 
   function getThumbColor(v: number): string {
     if (!isCheckOut) {
-      if (v <= 60) return "#1C53A3";
+      if (v <= 60) return "#6366f1"; // Indigo-500
       const t = (v - 60) / 40;
-      const r = Math.round(28 + t * (22 - 28));
-      const g = Math.round(83 + t * (163 - 83));
-      const b = Math.round(163 + t * (59 - 163));
+      // Interpolate from Indigo (99, 102, 241) to Emerald (16, 185, 129)
+      const r = Math.round(99 + t * (16 - 99));
+      const g = Math.round(102 + t * (185 - 102));
+      const b = Math.round(241 + t * (129 - 241));
       return `rgb(${r}, ${g}, ${b})`;
     } else {
       const t = v / 100;
-      const r = Math.round(239 + t * (22 - 239));
-      const g2 = Math.round(68 + t * (163 - 68));
-      const b = Math.round(68 + t * (59 - 68));
+      // Interpolate from Emerald (16, 185, 129) to Rose (225, 29, 72)
+      const r = Math.round(225 + t * (16 - 225));
+      const g2 = Math.round(29 + t * (185 - 29));
+      const b = Math.round(72 + t * (129 - 72));
       return `rgb(${r}, ${g2}, ${b})`;
     }
   }
@@ -114,18 +116,20 @@ export function ConfirmSlider({
   const labelOpacity = Math.max(0, 1 - progress * 2.5);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <div
         ref={trackRef}
         className={cn(
-          "relative select-none touch-none rounded-xl border border-border overflow-hidden",
+          "relative select-none touch-none rounded-full overflow-hidden backdrop-blur-md",
           dragging ? "cursor-grabbing" : "cursor-grab",
           (disabled || loading) && "opacity-40 cursor-not-allowed",
         )}
         style={{
+          border: disabled ? "1px solid rgba(255,255,255,0.05)" : `1px solid ${thumbColor}40`,
           height: THUMB + PADDING * 2,
-          background: `color-mix(in srgb, ${thumbColor} 18%, #0d1520)`,
-          transition: isSnapping ? "background 0.3s ease" : "none",
+          background: disabled ? "rgba(255,255,255,0.02)" : `color-mix(in srgb, ${thumbColor} 8%, rgba(255,255,255,0.03))`,
+          boxShadow: disabled ? "none" : `inset 0 4px 20px ${thumbColor}1A`,
+          transition: isSnapping ? "background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease" : "none",
         }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -135,12 +139,13 @@ export function ConfirmSlider({
 
         {/* label */}
         <div
-          className="absolute inset-0 flex items-center justify-center text-center text-sm font-bold tracking-[0.22em] text-white/90 pointer-events-none drop-shadow-sm leading-none"
+          className="absolute inset-0 flex items-center justify-center text-center text-[13px] font-black tracking-[0.25em] pointer-events-none drop-shadow-md leading-none"
           style={{
+            color: disabled ? "rgba(255,255,255,0.2)" : thumbColor,
             paddingLeft: isCheckOut ? 16 : THUMB + PADDING * 2 + 8,
             paddingRight: isCheckOut ? THUMB + PADDING * 2 + 8 : 16,
             opacity: labelOpacity,
-            transition: "opacity 0.1s",
+            transition: "opacity 0.1s, color 0.3s",
           }}
         >
           {loading ? "PROCESSING..." : label}
@@ -148,21 +153,24 @@ export function ConfirmSlider({
 
         {/* thumb */}
         <div
-          className="absolute flex items-center justify-center rounded-xl text-white pointer-events-none top-1/2 -translate-y-1/2"
+          className="absolute flex items-center justify-center rounded-full text-white pointer-events-none top-1/2 -translate-y-1/2"
           style={{
             width: THUMB,
             height: THUMB,
             left: `calc(${PADDING}px + ${value / 100} * (100% - ${THUMB}px - ${PADDING * 2}px))`,
-            background: thumbColor,
-            boxShadow: `0 4px 16px ${thumbColor}55`,
-            transition: isSnapping ? "left 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease" : "none",
+            background: disabled ? "rgba(255,255,255,0.05)" : thumbColor,
+            boxShadow: disabled ? "none" : `0 4px 16px ${thumbColor}66, inset 0 2px 4px rgba(255,255,255,0.3)`,
+            transition: isSnapping ? "left 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.3s ease, box-shadow 0.3s ease" : "none",
+            border: disabled ? "1px solid rgba(255,255,255,0.1)" : `1px solid ${thumbColor}`,
           }}
         >
           {loading
-            ? <Loader2 className="h-6 w-6 animate-spin" />
-            : isCheckOut
-              ? <ChevronsLeft className="h-6 w-6" />
-              : <ChevronsRight className="h-6 w-6" />
+            ? <Loader2 className="h-6 w-6 animate-spin text-white/70" />
+            : disabled
+               ? <ChevronsRight className="h-6 w-6 text-white/30" />
+               : isCheckOut
+                 ? <ChevronsLeft className="h-6 w-6 text-white" />
+                 : <ChevronsRight className="h-6 w-6 text-white" />
           }
         </div>
       </div>

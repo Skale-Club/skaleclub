@@ -3,6 +3,7 @@ import { Camera, Loader2, X, Check } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import type { XpotMeResponse } from "./types";
 
 interface Props {
@@ -25,8 +26,8 @@ export function XpotProfileEditor({ me, onClose }: Props) {
 
   const [displayName, setDisplayName] = useState(me.rep.displayName);
   const [phone, setPhone] = useState(me.rep.phone ?? "");
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(me.rep.avatarUrl ?? null);
-  const [pendingImageData, setPendingImageData] = useState<string | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | undefined>(me.rep.avatarUrl ?? undefined);
+  const [pendingImageData, setPendingImageData] = useState<string | undefined>(undefined);
 
   const avatarMutation = useMutation({
     mutationFn: async (imageData: string) => {
@@ -88,64 +89,52 @@ export function XpotProfileEditor({ me, onClose }: Props) {
   const isSaving = avatarMutation.isPending || profileMutation.isPending;
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Bottom sheet */}
-      <div
-        className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-md rounded-t-3xl border border-white/10 pb-safe-area-inset-bottom"
-        style={{ background: "rgba(10, 15, 30, 0.97)", backdropFilter: "blur(24px)" }}
+    <Dialog open={true} onOpenChange={(open: boolean) => !open && onClose()}>
+      <DialogContent
+        className="max-w-sm rounded-3xl border-0 p-0 overflow-hidden [&>button]:hidden"
+        style={{ background: "rgba(10, 15, 30, 0.97)", backdropFilter: "blur(24px)", boxShadow: "0 24px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.07)" }}
       >
-        {/* Drag handle */}
-        <div className="flex justify-center pt-3 pb-1">
-          <div className="h-1 w-10 rounded-full bg-white/20" />
-        </div>
-
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3">
+        <div className="flex items-center justify-between px-5 pt-5 pb-2">
           <span className="text-base font-semibold text-white">Edit Profile</span>
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-xl text-white/40 hover:bg-white/8 hover:text-white/70 transition-colors"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/70 transition-colors touch-manipulation"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="px-5 pb-8 space-y-6">
+        <div className="px-5 pb-6 space-y-6">
           {/* Avatar picker */}
           <div className="flex flex-col items-center gap-3 pt-2">
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="group relative h-20 w-20 shrink-0"
+              className="group relative h-20 w-20 shrink-0 touch-manipulation"
             >
               {avatarPreview ? (
                 <img
                   src={avatarPreview}
                   alt="Avatar"
-                  className="h-20 w-20 rounded-2xl object-cover"
+                  className="h-20 w-20 rounded-[22px] object-cover"
                 />
               ) : (
                 <div
-                  className="flex h-20 w-20 items-center justify-center rounded-2xl text-xl font-bold text-white"
+                  className="flex h-20 w-20 items-center justify-center rounded-[22px] text-2xl font-bold tracking-wide text-white"
                   style={{ background: "linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)" }}
                 >
                   {initials}
                 </div>
               )}
-              <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/50 opacity-0 transition-opacity group-hover:opacity-100 group-active:opacity-100">
+              <div className="absolute inset-0 flex items-center justify-center rounded-[22px] bg-black/50 opacity-0 transition-opacity group-hover:opacity-100 group-active:opacity-100">
                 <Camera className="h-6 w-6 text-white" />
               </div>
             </button>
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+              className="text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors touch-manipulation"
             >
               Change photo
             </button>
@@ -161,7 +150,7 @@ export function XpotProfileEditor({ me, onClose }: Props) {
           {/* Fields */}
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <label className="text-[11px] font-medium uppercase tracking-wider text-white/40">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-white/40">
                 Display Name
               </label>
               <input
@@ -169,12 +158,12 @@ export function XpotProfileEditor({ me, onClose }: Props) {
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="Your name"
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/25 outline-none focus:border-blue-500/60 focus:bg-white/8 transition-colors"
+                className="w-full rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3.5 text-[15px] font-medium text-white placeholder-white/20 outline-none focus:border-indigo-500/50 focus:bg-white/[0.05] transition-all"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[11px] font-medium uppercase tracking-wider text-white/40">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-white/40">
                 Phone
               </label>
               <input
@@ -182,15 +171,15 @@ export function XpotProfileEditor({ me, onClose }: Props) {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+1 (555) 000-0000"
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/25 outline-none focus:border-blue-500/60 focus:bg-white/8 transition-colors"
+                className="w-full rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3.5 text-[15px] font-medium text-white placeholder-white/20 outline-none focus:border-indigo-500/50 focus:bg-white/[0.05] transition-all"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[11px] font-medium uppercase tracking-wider text-white/40">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-white/40">
                 Role
               </label>
-              <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/40">
+              <div className="rounded-2xl border border-white/5 bg-white/[0.02] px-4 py-3.5 text-[15px] font-medium text-white/30">
                 {me.rep.role}
               </div>
             </div>
@@ -201,18 +190,18 @@ export function XpotProfileEditor({ me, onClose }: Props) {
             type="button"
             onClick={handleSave}
             disabled={isSaving || !displayName.trim()}
-            className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-black transition-all disabled:opacity-40"
-            style={{ background: isSaving ? "rgba(59,130,246,0.5)" : "linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)" }}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 pt-4 text-sm font-bold text-white transition-all disabled:opacity-40 active:scale-[0.98] mt-2 touch-manipulation"
+            style={{ background: isSaving ? "rgba(99,102,241,0.5)" : "linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)", boxShadow: "0 8px 24px rgba(99,102,241,0.25)" }}
           >
             {isSaving ? (
               <Loader2 className="h-4 w-4 animate-spin text-white" />
             ) : (
               <Check className="h-4 w-4 text-white" />
             )}
-            <span className="text-white">{isSaving ? "Saving…" : "Save Changes"}</span>
+            <span>{isSaving ? "Saving…" : "Save Changes"}</span>
           </button>
         </div>
-      </div>
-    </>
+      </DialogContent>
+    </Dialog>
   );
 }

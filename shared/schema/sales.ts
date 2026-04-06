@@ -11,6 +11,7 @@ export const salesRepRoleEnum = pgEnum("sales_rep_role", [
 ]);
 
 export const salesLeadStatusEnum = pgEnum("sales_lead_status", [
+  "prospect",
   "lead",
   "active",
   "inactive",
@@ -90,6 +91,7 @@ export const salesLeads = pgTable("sales_leads", {
   email: text("email"),
   industry: text("industry"),
   socialUrls: jsonb("social_urls").$type<{ platform: string; url: string }[]>().default([]),
+  photos: jsonb("photos").$type<string[]>().default([]),
   source: text("source").notNull().default("manual"),
   status: salesLeadStatusEnum("status").notNull().default("lead"),
   ownerRepId: integer("owner_rep_id").references(() => salesReps.id),

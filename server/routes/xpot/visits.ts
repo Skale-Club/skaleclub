@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { storage } from "../../storage.js";
-import { requireXpotUser, ensureXpotRep } from "./middleware.js";
-import { analyzeVisitTranscript, getDistanceMeters } from "./helpers.js";
+import { requireXpotUser, ensureXpotRep, isManagerOrAdmin } from "./middleware.js";
+import type { SalesVisitStatus } from "#shared/schema/sales.js";
+import { analyzeVisitTranscript, getDistanceMeters, syncVisitToGhl } from "./helpers.js";
 import { xpotCheckInSchema, xpotCheckOutSchema, xpotVisitNoteUpsertSchema } from "#shared/xpot.js";
 
 export function createVisitsRouter() {
@@ -12,15 +13,18 @@ export function createVisitsRouter() {
     const actor = (req as any).xpotActor as Awaited<ReturnType<typeof ensureXpotRep>>;
     const leadId = typeof req.query.leadId === "string" ? Number(req.query.leadId) : undefined;
     const visits = await storage.listSalesVisits({
-      repId: actor!.user.isAdmin && req.query.all === "true" ? undefined : actor!.rep.id,
+      repId: isManagerOrAdmin(actor!) ? (req.query.repId ? Number(req.query.repId) : undefined) : actor!.rep.id,
       leadId,
     });
-
-    const result = await Promise.all(visits.map(async (visit) => ({
-      ...visit,
-      lead: await storage.getSalesLead(visit.leadId),
-      note: await storage.getSalesVisitNote(visit.id),
-    })));
+    const result = await Promise.all(visits.map(async (visit) => {
+      const lead = await storage.getSalesLead(visit.leadId);
+      const locations = lead ? await storage.listSalesLeadLocations(visit.leadId) : [];
+      return {
+        ...visit,
+        lead: lead ? { ...lead, locations } : undefined,
+        note: await storage.getSalesVisitNote(visit.id),
+      };
+    }));
 
     res.json(result);
   });
@@ -125,6 +129,11 @@ export function createVisitsRouter() {
     });
 
     res.json(updated);
+
+    // Fire GHL sync after response — non-blocking, failure is logged to sync_events
+    syncVisitToGhl(visit.id).catch((err) =>
+      console.error("[check-out] syncVisitToGhl error:", err)
+    );
   });
 
   router.post("/visits/:id/cancel", async (req, res) => {
@@ -160,7 +169,7 @@ export function createVisitsRouter() {
     if (!visit || visit.repId !== actor!.rep.id) {
       return res.status(404).json({ message: "Visit not found" });
     }
-    const { status } = req.body as { status?: string };
+    const { status } = req.body as { status?: SalesVisitStatus };
     const updated = await storage.updateSalesVisit(visitId, { ...(status ? { status } : {}) });
     res.json(updated);
   });

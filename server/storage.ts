@@ -409,6 +409,10 @@ const salesSchemaBootstrapStatements: Array<{ name: string; statement: ReturnTyp
     statement: sql`CREATE INDEX IF NOT EXISTS "sales_leads_name_idx" ON "sales_leads" ("name")`,
   },
   {
+    name: "sales_leads_social_urls_column",
+    statement: sql`ALTER TABLE "sales_leads" ADD COLUMN IF NOT EXISTS "social_urls" jsonb DEFAULT '[]'::jsonb`,
+  },
+  {
     name: "sales_lead_locations_lead_idx",
     statement: sql`CREATE INDEX IF NOT EXISTS "sales_lead_locations_lead_idx" ON "sales_lead_locations" ("lead_id")`,
   },
@@ -632,6 +636,7 @@ export interface IStorage {
   deleteSalesLead(id: number): Promise<void>;
   listSalesLeadLocations(leadId: number): Promise<SalesLeadLocation[]>;
   createSalesLeadLocation(input: InsertSalesLeadLocation): Promise<SalesLeadLocation>;
+  upsertPrimaryLocation(leadId: number, data: Omit<InsertSalesLeadLocation, "leadId">): Promise<SalesLeadLocation>;
   listSalesLeadContacts(leadId: number): Promise<SalesLeadContact[]>;
   createSalesLeadContact(input: InsertSalesLeadContact): Promise<SalesLeadContact>;
   listSalesVisits(filters?: { repId?: number; leadId?: number; activeOnly?: boolean }): Promise<SalesVisit[]>;
@@ -649,6 +654,7 @@ export interface IStorage {
   createSalesTask(input: InsertSalesTask): Promise<SalesTask>;
   updateSalesTask(id: number, input: Partial<InsertSalesTask>): Promise<SalesTask | undefined>;
   listSalesSyncEvents(limit?: number): Promise<SalesSyncEvent[]>;
+  listSalesSyncEventsForRep(repId: number, limit?: number): Promise<SalesSyncEvent[]>;
   createSalesSyncEvent(input: InsertSalesSyncEvent): Promise<SalesSyncEvent>;
   updateSalesSyncEvent(id: number, input: Partial<InsertSalesSyncEvent>): Promise<SalesSyncEvent | undefined>;
 }
@@ -1168,7 +1174,7 @@ export class DatabaseStorage implements IStorage {
 
   async createSalesLead(input: InsertSalesLead): Promise<SalesLead> {
     await ensureSalesSchema();
-    const [created] = await db.insert(salesLeads).values(input).returning();
+    const [created] = await db.insert(salesLeads).values(input as any).returning();
     return created;
   }
 
@@ -1176,7 +1182,7 @@ export class DatabaseStorage implements IStorage {
     await ensureSalesSchema();
     const [updated] = await db
       .update(salesLeads)
-      .set({ ...input, updatedAt: new Date() })
+      .set({ ...input, updatedAt: new Date() } as any)
       .where(eq(salesLeads.id, id))
       .returning();
     return updated;
@@ -1244,6 +1250,28 @@ export class DatabaseStorage implements IStorage {
   async createSalesLeadLocation(input: InsertSalesLeadLocation): Promise<SalesLeadLocation> {
     await ensureSalesSchema();
     const [created] = await db.insert(salesLeadLocations).values(input).returning();
+    return created;
+  }
+
+  async upsertPrimaryLocation(leadId: number, data: Omit<InsertSalesLeadLocation, "leadId">): Promise<SalesLeadLocation> {
+    await ensureSalesSchema();
+    const existing = await db
+      .select()
+      .from(salesLeadLocations)
+      .where(and(eq(salesLeadLocations.leadId, leadId), eq(salesLeadLocations.isPrimary, true)))
+      .limit(1);
+    if (existing.length > 0) {
+      const [updated] = await db
+        .update(salesLeadLocations)
+        .set({ ...data })
+        .where(eq(salesLeadLocations.id, existing[0].id))
+        .returning();
+      return updated;
+    }
+    const [created] = await db
+      .insert(salesLeadLocations)
+      .values({ ...data, leadId, isPrimary: true })
+      .returning();
     return created;
   }
 
@@ -1399,6 +1427,28 @@ export class DatabaseStorage implements IStorage {
   async listSalesSyncEvents(limit = 50): Promise<SalesSyncEvent[]> {
     await ensureSalesSchema();
     return await db.select().from(salesSyncEvents).orderBy(desc(salesSyncEvents.createdAt)).limit(limit);
+  }
+
+  async listSalesSyncEventsForRep(repId: number, limit = 20): Promise<SalesSyncEvent[]> {
+    await ensureSalesSchema();
+    const [repVisits, repLeads] = await Promise.all([
+      db.select({ id: salesVisits.id }).from(salesVisits).where(eq(salesVisits.repId, repId)),
+      db.select({ id: salesLeads.id }).from(salesLeads).where(eq(salesLeads.ownerRepId, repId)),
+    ]);
+    const visitIds = repVisits.map((v) => String(v.id));
+    const leadIds = repLeads.map((l) => String(l.id));
+    if (visitIds.length === 0 && leadIds.length === 0) return [];
+    const conditions = [];
+    if (visitIds.length > 0) {
+      conditions.push(and(eq(salesSyncEvents.entityType, "sales_visit"), inArray(salesSyncEvents.entityId, visitIds)));
+    }
+    if (leadIds.length > 0) {
+      conditions.push(and(eq(salesSyncEvents.entityType, "sales_lead"), inArray(salesSyncEvents.entityId, leadIds)));
+    }
+    return await db.select().from(salesSyncEvents)
+      .where(or(...conditions))
+      .orderBy(desc(salesSyncEvents.createdAt))
+      .limit(limit);
   }
 
   async createSalesSyncEvent(input: InsertSalesSyncEvent): Promise<SalesSyncEvent> {

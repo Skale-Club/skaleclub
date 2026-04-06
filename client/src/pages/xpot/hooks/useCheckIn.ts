@@ -201,6 +201,20 @@ export function useCheckIn() {
     if (existingLead) {
       setSelectedLeadId(existingLead.id);
       setCheckInSearch(existingLead.name);
+      // If the existing lead has no address, save the one from Google Places
+      const hasAddress = existingLead.locations && existingLead.locations.length > 0 && existingLead.locations[0]?.addressLine1;
+      if (!hasAddress && place.address) {
+        const parsedAddress = parseAddress(place.address);
+        apiRequest("PATCH", `/api/xpot/leads/${existingLead.id}/location`, {
+          addressLine1: parsedAddress.addressLine1 || place.address,
+          city: parsedAddress.city || undefined,
+          state: parsedAddress.state || undefined,
+          country: "US",
+          lat: place.lat ?? undefined,
+          lng: place.lng ?? undefined,
+          geofenceRadiusMeters: 150,
+        }).then(() => invalidateXpotData()).catch(() => {});
+      }
       toast({ title: "Local lead selected", description: existingLead.name, variant: "success" });
       return;
     }
@@ -220,8 +234,8 @@ export function useCheckIn() {
         city: parsedAddress.city || undefined,
         state: parsedAddress.state || undefined,
         country: "US",
-        lat: place.lat != null ? String(place.lat) : undefined,
-        lng: place.lng != null ? String(place.lng) : undefined,
+        lat: place.lat ?? undefined,
+        lng: place.lng ?? undefined,
         geofenceRadiusMeters: 150,
         isPrimary: true,
       },
@@ -246,8 +260,8 @@ export function useCheckIn() {
         label: "Main",
         addressLine1: "",
         country: "US",
-        lat: geoState.lat != null ? String(geoState.lat) : undefined,
-        lng: geoState.lng != null ? String(geoState.lng) : undefined,
+        lat: geoState.lat ?? undefined,
+        lng: geoState.lng ?? undefined,
         geofenceRadiusMeters: 150,
         isPrimary: true,
       },

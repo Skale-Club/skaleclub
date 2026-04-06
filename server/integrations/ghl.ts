@@ -645,3 +645,26 @@ export async function createGHLTask(
     };
   }
 }
+
+export async function createGHLNote(
+  apiKey: string,
+  contactId: string,
+  body: string
+): Promise<{ success: boolean; noteId?: string; message?: string }> {
+  try {
+    const response = await ghlFetch(`/contacts/${contactId}/notes`, apiKey, {
+      method: "POST",
+      body: JSON.stringify({ body }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      return { success: false, message: error.message || `Failed to create note: ${response.status}` };
+    }
+
+    const data = await response.json();
+    return { success: true, noteId: data.note?.id || data.id };
+  } catch (error: any) {
+    return { success: false, message: error.message || "Failed to create note" };
+  }
+}
