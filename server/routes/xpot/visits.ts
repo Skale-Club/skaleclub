@@ -94,6 +94,10 @@ export function createVisitsRouter() {
       source: "field-mobile",
     });
 
+    if (lead.status === "prospect") {
+      await storage.updateSalesLead(lead.id, { status: "lead" });
+    }
+
     await storage.updateSalesLead(lead.id, {
       lastVisitAt: visit.checkedInAt,
       nextVisitDueAt: null,

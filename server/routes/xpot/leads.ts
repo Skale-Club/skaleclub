@@ -229,13 +229,31 @@ export function createLeadsRouter() {
       return res.status(403).json({ message: "Access denied" });
     }
 
-    if (lead.status === "prospect") {
-      await storage.updateSalesLead(leadId, { status: "lead" });
-    }
-
     const syncResult = await syncLeadToGhl(leadId);
     const updated = await storage.getSalesLead(leadId);
     res.json({ lead: updated, ghl: syncResult });
+  });
+
+  // POST /leads/:id/promote — explicitly promote prospect → lead
+  router.post("/leads/:id/promote", async (req, res) => {
+    const actor = (req as any).xpotActor as Awaited<ReturnType<typeof ensureXpotRep>>;
+    const leadId = Number(req.params.id);
+    if (!Number.isFinite(leadId)) return res.status(400).json({ message: "Invalid lead id" });
+
+    const lead = await storage.getSalesLead(leadId);
+    if (!lead) return res.status(404).json({ message: "Lead not found" });
+
+    if (!isManagerOrAdmin(actor!) && lead.ownerRepId !== actor!.rep.id) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    if (lead.status !== "prospect") {
+      return res.status(400).json({ message: "Lead is already a lead or beyond prospect stage" });
+    }
+
+    await storage.updateSalesLead(leadId, { status: "lead" });
+    const updated = await storage.getSalesLead(leadId);
+    res.json({ lead: updated });
   });
 
   // DELETE /leads/:id — rep deletes own; manager deletes any

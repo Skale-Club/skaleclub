@@ -110,8 +110,39 @@ function XpotAppShell() {
 export default function XpotApp() {
   useEffect(() => {
     document.documentElement.classList.add("dark");
+    const originalBodyBg = document.body.style.backgroundColor;
+    const originalHtmlBg = document.documentElement.style.backgroundColor;
+    
+    // Set background to match the Xpot top gradient color
+    // This fixes the light blue rubber-banding issue on mobile
+    document.body.style.backgroundColor = "#060912";
+    document.documentElement.style.backgroundColor = "#060912";
+
+    // Set theme color for mobile status bar
+    let themeMeta = document.querySelector('meta[name="theme-color"]');
+    let originalThemeColor = "";
+    if (themeMeta) {
+      originalThemeColor = themeMeta.getAttribute("content") || "";
+      themeMeta.setAttribute("content", "#060912");
+    } else {
+      themeMeta = document.createElement("meta");
+      themeMeta.setAttribute("name", "theme-color");
+      themeMeta.setAttribute("content", "#060912");
+      document.head.appendChild(themeMeta);
+    }
+
     return () => {
       document.documentElement.classList.remove("dark");
+      document.body.style.backgroundColor = originalBodyBg;
+      document.documentElement.style.backgroundColor = originalHtmlBg;
+      
+      if (themeMeta) {
+        if (originalThemeColor) {
+          themeMeta.setAttribute("content", originalThemeColor);
+        } else {
+          themeMeta.remove();
+        }
+      }
     };
   }, []);
 

@@ -72,18 +72,32 @@ export function useLeads() {
   const syncToGhlMutation = useMutation({
     mutationFn: async (leadId: number) => {
       const res = await apiRequest("POST", `/api/xpot/leads/${leadId}/sync-ghl`);
-      return res.json() as Promise<{ lead: FullSalesLead; ghl: { synced: boolean } }>;
+      return res.json() as Promise<{ lead: FullSalesLead; ghl: { synced: boolean; message?: string } }>;
     },
     onSuccess: async (data) => {
       if (data.ghl.synced) {
-        toast({ title: "Sent to GHL", description: "Lead promoted and synced successfully.", variant: "success" });
+        toast({ title: "Sent to GHL", description: "Synced successfully.", variant: "success" });
       } else {
-        toast({ title: "GHL not configured", description: "Check your GoHighLevel integration settings.", variant: "destructive" });
+        toast({ title: "GHL sync failed", description: data.ghl.message || "Check your GoHighLevel integration settings.", variant: "destructive" });
       }
       await invalidateXpotData();
     },
     onError: (error: Error) => {
       toast({ title: "Sync failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const promoteToLeadMutation = useMutation({
+    mutationFn: async (leadId: number) => {
+      const res = await apiRequest("POST", `/api/xpot/leads/${leadId}/promote`);
+      return res.json() as Promise<{ lead: FullSalesLead }>;
+    },
+    onSuccess: async () => {
+      toast({ title: "Promoted to Lead", variant: "success" });
+      await invalidateXpotData();
+    },
+    onError: (error: Error) => {
+      toast({ title: "Promotion failed", description: error.message, variant: "destructive" });
     },
   });
 
@@ -168,6 +182,7 @@ export function useLeads() {
     createLeadMutation,
     deleteLeadMutation,
     syncToGhlMutation,
+    promoteToLeadMutation,
     importCsvMutation,
   };
 }

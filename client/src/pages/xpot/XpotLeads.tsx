@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Loader2, Plus, Search, Trash2, LogIn, Upload, Send, FileUp, MapPinned, Building2, X } from "lucide-react";
+import { Loader2, Plus, Search, Trash2, LogIn, Upload, Send, FileUp, MapPinned, Building2, X, UserCheck } from "lucide-react";
 import { EditLeadDialog } from "./components/EditLeadDialog";
 import {
   AlertDialog,
@@ -303,13 +303,14 @@ function AddCompanyDialog({
 // ─── Lead Card ────────────────────────────────────────────────────────────────
 
 function LeadCard({
-  lead, onEdit, onDelete, onCheckIn, onSyncGhl, isSyncing, isProspect,
+  lead, onEdit, onDelete, onCheckIn, onSyncGhl, onPromote, isSyncing, isProspect,
 }: {
   lead: FullSalesLead;
   onEdit: () => void;
   onDelete: () => void;
   onCheckIn: () => void;
   onSyncGhl?: () => void;
+  onPromote?: () => void;
   isSyncing?: boolean;
   isProspect?: boolean;
 }) {
@@ -342,6 +343,16 @@ function LeadCard({
         </div>
 
         <div className="flex items-center gap-0.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+          {isProspect && onPromote && (
+            <button
+              type="button"
+              title="Promote to Lead"
+              className="flex h-8 w-8 items-center justify-center rounded-xl text-white/40 transition-colors hover:bg-purple-500/20 hover:text-purple-400"
+              onClick={(e) => { e.stopPropagation(); onPromote(); }}
+            >
+              <UserCheck className="h-3.5 w-3.5" />
+            </button>
+          )}
           {isProspect && onSyncGhl && (
             <button
               type="button"
@@ -393,6 +404,7 @@ export function XpotLeads() {
     leadLookupSearch,
     setLeadLookupSearch,
     syncToGhlMutation,
+    promoteToLeadMutation,
     importCsvMutation,
   } = useLeads();
 
@@ -416,6 +428,10 @@ export function XpotLeads() {
     setSyncingId(lead.id);
     try { await syncToGhlMutation.mutateAsync(lead.id); }
     finally { setSyncingId(null); }
+  };
+
+  const handlePromote = async (lead: FullSalesLead) => {
+    await promoteToLeadMutation.mutateAsync(lead.id);
   };
 
   const handleCsvFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -527,7 +543,7 @@ export function XpotLeads() {
             </div>
             <div>
               <div className="text-sm font-medium text-white/60">No leads yet</div>
-              <div className="mt-0.5 text-xs text-white/30">Add a lead or promote a prospect via Send to GHL</div>
+              <div className="mt-0.5 text-xs text-white/30">Add a lead or promote a prospect using the promote button</div>
             </div>
             <button
               onClick={() => setAddOpen(true)}
@@ -557,6 +573,7 @@ export function XpotLeads() {
             onDelete={() => setLeadPendingDelete(lead)}
             onCheckIn={() => setLocation(`/xpot/check-in?leadId=${lead.id}`)}
             onSyncGhl={() => handleSyncGhl(lead)}
+            onPromote={() => handlePromote(lead)}
           />
         ))}
       </div>
