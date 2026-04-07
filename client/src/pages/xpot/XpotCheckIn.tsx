@@ -439,7 +439,7 @@ export function XpotCheckIn() {
               onBlur={() => setTimeout(() => setCheckInDropdownOpen(false), 150)}
               onKeyDown={(e) => { if (e.key === "Escape") { setCheckInDropdownOpen(false); (e.target as HTMLInputElement).blur(); } }}
               placeholder="Search places or leads..."
-              className={`w-full h-[64px] pl-12 pr-24 text-[17px] font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none transition-all ${checkInDropdownOpen ? "rounded-t-[24px]" : "rounded-[24px]"}`}
+              className={`w-full h-[64px] pl-12 pr-24 text-[17px] font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none transition-all ${checkInDropdownOpen ? "rounded-t-[32px]" : "rounded-[32px]"}`}
               style={{ background: "rgba(255,255,255,0.95)", border: "1.5px solid rgba(255,255,255,1)", boxShadow: "0 2px 16px rgba(0,0,0,0.18)" }}
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -460,7 +460,7 @@ export function XpotCheckIn() {
             {/* Dropdown */}
             {checkInDropdownOpen && (
               <div
-                className="absolute left-0 right-0 top-full z-50 max-h-72 overflow-y-auto rounded-b-[24px]"
+                className="absolute left-0 right-0 top-full z-50 max-h-72 overflow-y-auto rounded-b-[32px] overflow-hidden"
                 style={{
                   background: "rgba(255,255,255,0.98)",
                   backdropFilter: "blur(24px)",
