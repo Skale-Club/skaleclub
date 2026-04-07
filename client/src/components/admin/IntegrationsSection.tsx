@@ -1288,7 +1288,7 @@ export function IntegrationsSection() {
         </CardContent>
       </Card>
 
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card className="border-0 bg-muted">
           <CardHeader>
             <div className="flex items-center justify-between gap-4">
@@ -1386,7 +1386,6 @@ export function IntegrationsSection() {
             )}
           </CardContent>
         </Card>
-      </div>
 
       {/* Groq Integration — Xpot voice transcription */}
       <Card className="border-0 bg-muted">
@@ -1535,6 +1534,8 @@ export function IntegrationsSection() {
           )}
         </CardContent>
       </Card>
+
+      </div>{/* end 2-col grid */}
 
       <div className="space-y-6">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">

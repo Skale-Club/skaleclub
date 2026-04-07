@@ -9,7 +9,8 @@ import { VoiceRecorder } from "./VoiceRecorder";
 import { InlineField, validateEmail } from "./InlineField";
 import { formatDateTime, formatDuration } from "../utils";
 import type { SalesLead, SalesVisitNote } from "../types";
-import { Trash2, Building2, Plus, X, Camera, MapPinned } from "lucide-react";
+import { Trash2, Plus, X, Camera } from "lucide-react";
+import { LeadCardBody } from "./LeadCardBody";
 
 type VisitLike = {
   id: number;
@@ -22,27 +23,6 @@ type VisitLike = {
   note?: SalesVisitNote | null;
 };
 
-function getRouteUrl(visit: VisitLike) {
-  const location = visit.lead?.locations?.[0];
-  if (!location) return null;
-
-  if (typeof location.lat === "number" && typeof location.lng === "number") {
-    return `https://www.google.com/maps/dir/?api=1&destination=${location.lat},${location.lng}`;
-  }
-
-  const destination = [
-    location.addressLine1,
-    location.addressLine2,
-    location.city,
-    location.state,
-    location.postalCode,
-    location.country,
-  ]
-    .filter(Boolean)
-    .join(", ");
-
-  return destination ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}` : null;
-}
 
 function VisitDetail({ visit, onDelete }: { visit: VisitLike; onDelete: () => void }) {
   const { toast } = useToast();
@@ -342,7 +322,6 @@ export function VisitRow({ visit }: { visit: VisitLike }) {
   const [open, setOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const { toast } = useToast();
-  const routeUrl = getRouteUrl(visit);
 
   async function handleDelete() {
     try {
@@ -368,52 +347,23 @@ export function VisitRow({ visit }: { visit: VisitLike }) {
           boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
         }}
       >
-        <div className="flex items-start gap-4">
-          <div className="flex shrink-0 flex-col items-center gap-2">
-            {(visit.lead as any)?.photos?.[0] ? (
-              <img
-                src={(visit.lead as any).photos[0]}
-                alt=""
-                className="h-10 w-10 rounded-xl object-cover"
-              />
-            ) : (
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-indigo-500/20 bg-indigo-500/10">
-                <Building2 className="h-5 w-5 text-indigo-400" />
-              </div>
-            )}
-            {routeUrl ? (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  window.open(routeUrl, "_blank", "noopener,noreferrer");
-                }}
-                className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold text-sky-300 transition-colors hover:bg-sky-400/10 hover:text-sky-200"
-                style={{ border: "1px solid rgba(56,189,248,0.22)", background: "rgba(56,189,248,0.08)" }}
-              >
-                <MapPinned className="h-3 w-3" />
-                Route
-              </button>
-            ) : null}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-[15px] font-semibold text-white">{visit.lead?.name || `Lead #${visit.leadId}`}</div>
-            <div className="mt-0.5 space-y-0.5">
-              {visit.lead?.locations?.[0]?.addressLine1 && (
-                <div className="truncate text-[11px] font-medium text-white/40">{visit.lead.locations[0].addressLine1}{visit.lead.locations[0].city ? `, ${visit.lead.locations[0].city}` : ""}</div>
-              )}
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-0 text-[11px] font-medium text-white/35">
-                {visit.lead?.phone && <span>{visit.lead.phone}</span>}
-                {visit.lead?.phone && visit.lead?.website && <span className="text-white/15">·</span>}
-                {visit.lead?.website && <span className="truncate max-w-[140px]">{visit.lead.website.replace(/^https?:\/\//, "")}</span>}
-                {(visit.lead?.phone || visit.lead?.website) && visit.lead?.industry && <span className="text-white/15">·</span>}
-                {visit.lead?.industry && <span>{visit.lead.industry}</span>}
-              </div>
+        <LeadCardBody
+          lead={{
+            name: visit.lead?.name || `Lead #${visit.leadId}`,
+            phone: visit.lead?.phone,
+            website: visit.lead?.website,
+            industry: visit.lead?.industry,
+            ghlContactId: (visit.lead as any)?.ghlContactId,
+            photos: (visit.lead as any)?.photos,
+            locations: visit.lead?.locations,
+          }}
+          subtitle={
+            <div className="text-[10px] uppercase tracking-wider text-white/25">
+              {formatDateTime(visit.checkedInAt)}
             </div>
-            <div className="mt-1 text-[10px] uppercase tracking-wider text-white/25">{formatDateTime(visit.checkedInAt)}</div>
-          </div>
-          <StatusBadge status={visit.status} />
-        </div>
+          }
+          right={<StatusBadge status={visit.status} />}
+        />
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>

@@ -40,6 +40,8 @@ export function XpotVisits() {
     setDayOffset(Math.min(0, diff));
   }, []);
 
+  const [statusFilter, setStatusFilter] = useState<"all" | "completed" | "in_progress" | "cancelled">("all");
+
   const allVisits = visitsQuery.data || [];
 
   const visitsForDay = allVisits.filter((visit) => {
@@ -48,7 +50,12 @@ export function XpotVisits() {
   });
 
   const isToday = dayOffset === 0;
-  const visitsToRender = viewMode === "all" ? allVisits : visitsForDay;
+
+  const filteredAll = statusFilter === "all"
+    ? allVisits
+    : allVisits.filter((v) => v.status === statusFilter);
+
+  const visitsToRender = viewMode === "all" ? filteredAll : visitsForDay;
 
   return (
     <div className="space-y-4">
@@ -56,34 +63,50 @@ export function XpotVisits() {
         className="space-y-3 rounded-2xl px-3 py-3"
         style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
       >
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => setViewMode("all")}
-            className="rounded-xl px-3 py-2 text-sm font-medium transition-colors"
-            style={{
-              background: viewMode === "all" ? "rgba(99,102,241,0.18)" : "rgba(255,255,255,0.04)",
-              border: `1px solid ${viewMode === "all" ? "rgba(99,102,241,0.35)" : "rgba(255,255,255,0.08)"}`,
-              color: viewMode === "all" ? "white" : "rgba(255,255,255,0.45)",
-            }}
-          >
-            All Visits
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode("day")}
-            className="rounded-xl px-3 py-2 text-sm font-medium transition-colors"
-            style={{
-              background: viewMode === "day" ? "rgba(99,102,241,0.18)" : "rgba(255,255,255,0.04)",
-              border: `1px solid ${viewMode === "day" ? "rgba(99,102,241,0.35)" : "rgba(255,255,255,0.08)"}`,
-              color: viewMode === "day" ? "white" : "rgba(255,255,255,0.45)",
-            }}
-          >
-            By Day
-          </button>
+        <div className="flex gap-1 rounded-xl p-1" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+          {(["all", "day"] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => setViewMode(mode)}
+              className="relative flex-1 rounded-lg py-2 text-xs font-semibold transition-all"
+              style={viewMode === mode
+                ? { background: "linear-gradient(135deg, rgba(59,130,246,0.3), rgba(99,102,241,0.3))", color: "white" }
+                : { color: "rgba(255,255,255,0.35)" }
+              }
+            >
+              {mode === "all" ? (
+                <>All Visits{allVisits.length > 0 && <span className="ml-1.5 rounded-full px-1.5 py-0.5 text-[10px]" style={{ background: "rgba(255,255,255,0.1)" }}>{allVisits.length}</span>}</>
+              ) : (
+                <>By Day{visitsForDay.length > 0 && <span className="ml-1.5 rounded-full px-1.5 py-0.5 text-[10px]" style={{ background: "rgba(255,255,255,0.1)" }}>{visitsForDay.length}</span>}</>
+              )}
+            </button>
+          ))}
         </div>
 
-        {viewMode === "day" ? (
+        {viewMode === "all" ? (
+          <div className="flex justify-center gap-1.5">
+            {([
+              { id: "all",         label: "All",         active: "rgba(99,102,241,0.25)",  border: "rgba(99,102,241,0.4)",  text: "white" },
+              { id: "completed",   label: "Completed",   active: "rgba(16,185,129,0.2)",   border: "rgba(16,185,129,0.4)",  text: "#34d399" },
+              { id: "in_progress", label: "In Progress", active: "rgba(59,130,246,0.2)",   border: "rgba(59,130,246,0.4)",  text: "#60a5fa" },
+              { id: "cancelled",   label: "Cancelled",   active: "rgba(239,68,68,0.2)",    border: "rgba(239,68,68,0.4)",   text: "#f87171" },
+            ] as const).map(({ id, label, active, border, text }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setStatusFilter(id)}
+                className="shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold transition-all"
+                style={statusFilter === id
+                  ? { background: active, color: text, border: `1px solid ${border}` }
+                  : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.35)", border: "1px solid rgba(255,255,255,0.08)" }
+                }
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : viewMode === "day" ? (
           <div className="flex items-center justify-between gap-2">
             <button
               type="button"
@@ -121,11 +144,7 @@ export function XpotVisits() {
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
-        ) : (
-          <div className="flex items-center justify-center text-[11px] text-white/35">
-            Showing {allVisits.length} visit{allVisits.length !== 1 ? "s" : ""} from the system
-          </div>
-        )}
+        ) : null}
       </div>
 
       {visitsQuery.isLoading ? (

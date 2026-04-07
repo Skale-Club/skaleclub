@@ -635,9 +635,12 @@ export interface IStorage {
   updateSalesLead(id: number, input: Partial<InsertSalesLead>): Promise<SalesLead | undefined>;
   deleteSalesLead(id: number): Promise<void>;
   listSalesLeadLocations(leadId: number): Promise<SalesLeadLocation[]>;
+  listSalesLeadLocationsBatch(leadIds: number[]): Promise<SalesLeadLocation[]>;
   createSalesLeadLocation(input: InsertSalesLeadLocation): Promise<SalesLeadLocation>;
   upsertPrimaryLocation(leadId: number, data: Omit<InsertSalesLeadLocation, "leadId">): Promise<SalesLeadLocation>;
   listSalesLeadContacts(leadId: number): Promise<SalesLeadContact[]>;
+  listSalesLeadContactsBatch(leadIds: number[]): Promise<SalesLeadContact[]>;
+  countOpenOpportunitiesByLeadIds(leadIds: number[]): Promise<Record<number, number>>;
   createSalesLeadContact(input: InsertSalesLeadContact): Promise<SalesLeadContact>;
   listSalesVisits(filters?: { repId?: number; leadId?: number; activeOnly?: boolean }): Promise<SalesVisit[]>;
   getSalesVisit(id: number): Promise<SalesVisit | undefined>;
@@ -1247,6 +1250,16 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(salesLeadLocations.isPrimary), asc(salesLeadLocations.id));
   }
 
+  async listSalesLeadLocationsBatch(leadIds: number[]): Promise<SalesLeadLocation[]> {
+    if (!leadIds.length) return [];
+    await ensureSalesSchema();
+    return await db
+      .select()
+      .from(salesLeadLocations)
+      .where(inArray(salesLeadLocations.leadId, leadIds))
+      .orderBy(desc(salesLeadLocations.isPrimary), asc(salesLeadLocations.id));
+  }
+
   async createSalesLeadLocation(input: InsertSalesLeadLocation): Promise<SalesLeadLocation> {
     await ensureSalesSchema();
     const [created] = await db.insert(salesLeadLocations).values(input).returning();
@@ -1282,6 +1295,27 @@ export class DatabaseStorage implements IStorage {
       .from(salesLeadContacts)
       .where(eq(salesLeadContacts.leadId, leadId))
       .orderBy(desc(salesLeadContacts.isPrimary), asc(salesLeadContacts.id));
+  }
+
+  async listSalesLeadContactsBatch(leadIds: number[]): Promise<SalesLeadContact[]> {
+    if (!leadIds.length) return [];
+    await ensureSalesSchema();
+    return await db
+      .select()
+      .from(salesLeadContacts)
+      .where(inArray(salesLeadContacts.leadId, leadIds))
+      .orderBy(desc(salesLeadContacts.isPrimary), asc(salesLeadContacts.id));
+  }
+
+  async countOpenOpportunitiesByLeadIds(leadIds: number[]): Promise<Record<number, number>> {
+    if (!leadIds.length) return {};
+    await ensureSalesSchema();
+    const rows = await db
+      .select({ leadId: salesOpportunitiesLocal.leadId, count: sql<number>`count(*)::int` })
+      .from(salesOpportunitiesLocal)
+      .where(and(inArray(salesOpportunitiesLocal.leadId, leadIds), eq(salesOpportunitiesLocal.status, "open")))
+      .groupBy(salesOpportunitiesLocal.leadId);
+    return Object.fromEntries(rows.map((r) => [r.leadId, r.count]));
   }
 
   async createSalesLeadContact(input: InsertSalesLeadContact): Promise<SalesLeadContact> {

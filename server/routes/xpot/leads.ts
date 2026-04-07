@@ -24,12 +24,32 @@ export function createLeadsRouter() {
     const search = typeof req.query.search === "string" ? req.query.search : undefined;
     const leads = await storage.listSalesLeads({ ownerRepId, search });
 
-    const enriched = await Promise.all(leads.map(async (lead) => ({
+    if (!leads.length) return res.json([]);
+
+    const leadIds = leads.map((l) => l.id);
+    const [allLocations, allContacts, openOpportunitiesMap] = await Promise.all([
+      storage.listSalesLeadLocationsBatch(leadIds),
+      storage.listSalesLeadContactsBatch(leadIds),
+      storage.countOpenOpportunitiesByLeadIds(leadIds),
+    ]);
+
+    const locationsByLead = new Map<number, typeof allLocations>();
+    for (const loc of allLocations) {
+      if (!locationsByLead.has(loc.leadId)) locationsByLead.set(loc.leadId, []);
+      locationsByLead.get(loc.leadId)!.push(loc);
+    }
+    const contactsByLead = new Map<number, typeof allContacts>();
+    for (const contact of allContacts) {
+      if (!contactsByLead.has(contact.leadId)) contactsByLead.set(contact.leadId, []);
+      contactsByLead.get(contact.leadId)!.push(contact);
+    }
+
+    const enriched = leads.map((lead) => ({
       ...lead,
-      locations: await storage.listSalesLeadLocations(lead.id),
-      contacts: await storage.listSalesLeadContacts(lead.id),
-      openOpportunities: (await storage.listSalesOpportunities({ leadId: lead.id, status: "open" })).length,
-    })));
+      locations: locationsByLead.get(lead.id) ?? [],
+      contacts: contactsByLead.get(lead.id) ?? [],
+      openOpportunities: openOpportunitiesMap[lead.id] ?? 0,
+    }));
 
     res.json(enriched);
   });

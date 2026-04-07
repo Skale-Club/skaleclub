@@ -161,7 +161,7 @@ function AdminContent() {
         onLogout={handleLogout}
       />
 
-      <main className="flex-1 min-w-0 relative bg-background overflow-visible md:overflow-auto md:h-screen" id="admin-top">
+      <main className="flex-1 min-w-0 relative bg-background overflow-visible md:overflow-y-scroll md:h-screen" id="admin-top">
         <AdminHeader title={companySettings?.companyName || 'Admin Panel'} />
         <div className="p-6 pb-16 md:p-8 md:pb-10">
           {activeSection === 'dashboard' && <DashboardSection onNavigate={handleSectionSelect} />}

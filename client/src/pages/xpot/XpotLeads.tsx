@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
-import { Loader2, Plus, Search, Trash2, LogIn, Upload, Send, FileUp, MapPinned, Building2, X, UserCheck } from "lucide-react";
+import { Loader2, Plus, Search, Trash2, LogIn, Upload, Send, FileUp, X, UserCheck, MapPinned, Building2 } from "lucide-react";
 import { EditLeadDialog } from "./components/EditLeadDialog";
+import { LeadCardBody } from "./components/LeadCardBody";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -297,15 +298,6 @@ function LeadCard({
   isSyncing?: boolean;
   isProspect?: boolean;
 }) {
-  const loc = lead.locations?.[0];
-  const photo = (lead as any).photos?.[0] as string | undefined;
-  const routeUrl = (() => {
-    if (!loc) return null;
-    if (loc.lat && loc.lng) return `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}`;
-    const dest = [loc.addressLine1, loc.city, loc.state, loc.postalCode].filter(Boolean).join(", ");
-    return dest ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}` : null;
-  })();
-
   return (
     <button
       type="button"
@@ -313,89 +305,50 @@ function LeadCard({
       style={{ ...GLASS, boxShadow: "0 4px 20px rgba(0,0,0,0.25)" }}
       onClick={onEdit}
     >
-      <div className="flex items-start gap-3">
-        <div className="flex shrink-0 flex-col items-center gap-1.5">
-          {photo ? (
-            <img src={photo} alt="" className="h-10 w-10 rounded-xl object-cover" />
-          ) : (
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-indigo-500/20 bg-indigo-500/10">
-              <Building2 className="h-5 w-5 text-indigo-400" />
-            </div>
-          )}
-          {routeUrl && (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); window.open(routeUrl, "_blank", "noopener,noreferrer"); }}
-              className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold text-sky-300 transition-colors hover:bg-sky-400/10 hover:text-sky-200"
-              style={{ border: "1px solid rgba(56,189,248,0.22)", background: "rgba(56,189,248,0.08)" }}
-            >
-              <MapPinned className="h-3 w-3" />
-              Route
-            </button>
-          )}
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <div className="truncate text-[15px] font-semibold text-white">{lead.name}</div>
-            {lead.ghlContactId && (
-              <span className="shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-400" style={{ background: "rgba(16,185,129,0.12)" }}>GHL</span>
+      <LeadCardBody
+        lead={lead}
+        right={
+          <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+            {isProspect && onPromote && (
+              <button
+                type="button"
+                title="Promote to Lead"
+                className="flex h-8 w-8 items-center justify-center rounded-xl text-white/40 transition-colors hover:bg-purple-500/20 hover:text-purple-400"
+                onClick={(e) => { e.stopPropagation(); onPromote(); }}
+              >
+                <UserCheck className="h-3.5 w-3.5" />
+              </button>
             )}
-          </div>
-          <div className="mt-0.5 space-y-0.5">
-            {loc?.addressLine1 && (
-              <div className="truncate text-[11px] font-medium text-white/40">{loc.addressLine1}{loc.city ? `, ${loc.city}` : ""}</div>
+            {isProspect && onSyncGhl && (
+              <button
+                type="button"
+                title="Send to GHL"
+                disabled={isSyncing}
+                className="flex h-8 w-8 items-center justify-center rounded-xl text-white/40 transition-colors hover:bg-emerald-500/20 hover:text-emerald-400 disabled:opacity-40"
+                onClick={(e) => { e.stopPropagation(); onSyncGhl(); }}
+              >
+                {isSyncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+              </button>
             )}
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-0 text-[11px] font-medium text-white/35">
-              {lead.phone && <span>{lead.phone}</span>}
-              {lead.phone && lead.website && <span className="text-white/15">·</span>}
-              {lead.website && <span className="truncate max-w-[140px]">{lead.website.replace(/^https?:\/\//, "")}</span>}
-              {(lead.phone || lead.website) && lead.industry && <span className="text-white/15">·</span>}
-              {lead.industry && <span>{lead.industry}</span>}
-            </div>
+            <button
+              type="button"
+              title="Check in"
+              className="flex h-8 w-8 items-center justify-center rounded-xl text-white/40 transition-colors hover:bg-blue-500/20 hover:text-blue-400"
+              onClick={(e) => { e.stopPropagation(); onCheckIn(); }}
+            >
+              <LogIn className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              title="Delete"
+              className="flex h-8 w-8 items-center justify-center rounded-xl text-white/40 transition-colors hover:bg-red-500/20 hover:text-red-400"
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
           </div>
-        </div>
-
-        <div className="flex items-center gap-0.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-          {isProspect && onPromote && (
-            <button
-              type="button"
-              title="Promote to Lead"
-              className="flex h-8 w-8 items-center justify-center rounded-xl text-white/40 transition-colors hover:bg-purple-500/20 hover:text-purple-400"
-              onClick={(e) => { e.stopPropagation(); onPromote(); }}
-            >
-              <UserCheck className="h-3.5 w-3.5" />
-            </button>
-          )}
-          {isProspect && onSyncGhl && (
-            <button
-              type="button"
-              title="Send to GHL"
-              disabled={isSyncing}
-              className="flex h-8 w-8 items-center justify-center rounded-xl text-white/40 transition-colors hover:bg-emerald-500/20 hover:text-emerald-400 disabled:opacity-40"
-              onClick={(e) => { e.stopPropagation(); onSyncGhl(); }}
-            >
-              {isSyncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-            </button>
-          )}
-          <button
-            type="button"
-            title="Check in"
-            className="flex h-8 w-8 items-center justify-center rounded-xl text-white/40 transition-colors hover:bg-blue-500/20 hover:text-blue-400"
-            onClick={(e) => { e.stopPropagation(); onCheckIn(); }}
-          >
-            <LogIn className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            title="Delete"
-            className="flex h-8 w-8 items-center justify-center rounded-xl text-white/40 transition-colors hover:bg-red-500/20 hover:text-red-400"
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </div>
+        }
+      />
     </button>
   );
 }
