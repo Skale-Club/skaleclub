@@ -3,7 +3,7 @@ import { OpenAI } from "openai";
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
 function getOpenRouterReferer(): string {
-  return process.env.OPENROUTER_HTTP_REFERER || process.env.APP_URL || "http://localhost:5000";
+  return process.env.OPENROUTER_HTTP_REFERER || process.env.APP_URL || "http://localhost:1000";
 }
 
 function getOpenRouterTitle(): string {

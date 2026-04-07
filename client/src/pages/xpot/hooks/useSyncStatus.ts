@@ -7,6 +7,11 @@ export type SyncStatusResponse = {
   failedCount: number;
 };
 
+function getEventTimestamp(event: SalesSyncEvent) {
+  const timestamp = event.lastAttemptAt ?? event.createdAt ?? null;
+  return timestamp ? new Date(timestamp).getTime() : 0;
+}
+
 export function useSyncStatus() {
   const queryClient = useQueryClient();
 
@@ -29,12 +34,25 @@ export function useSyncStatus() {
     },
   });
 
-  const failedEvents = query.data?.events.filter((e) => e.status === "failed") ?? [];
+  const latestEventsByEntity = Array.from(
+    (query.data?.events ?? []).reduce((map, event) => {
+      const key = `${event.entityType}:${event.entityId}`;
+      const current = map.get(key);
+
+      if (!current || getEventTimestamp(event) > getEventTimestamp(current) || event.id > current.id) {
+        map.set(key, event);
+      }
+
+      return map;
+    }, new Map<string, SalesSyncEvent>()).values(),
+  ).sort((a, b) => getEventTimestamp(b) - getEventTimestamp(a));
+
+  const failedEvents = latestEventsByEntity.filter((event) => event.status === "failed");
 
   return {
     query,
     failedEvents,
-    failedCount: query.data?.failedCount ?? 0,
+    failedCount: failedEvents.length,
     retryMutation,
   };
 }

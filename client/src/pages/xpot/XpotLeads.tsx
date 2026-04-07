@@ -26,23 +26,6 @@ const GLASS = {
   border: "1px solid rgba(255,255,255,0.09)",
 } as const;
 
-function leadInitials(name: string) {
-  return name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
-}
-
-const GRADIENTS = [
-  "linear-gradient(135deg, #3b82f6, #6366f1)",
-  "linear-gradient(135deg, #10b981, #06b6d4)",
-  "linear-gradient(135deg, #8b5cf6, #ec4899)",
-  "linear-gradient(135deg, #f59e0b, #ef4444)",
-  "linear-gradient(135deg, #06b6d4, #3b82f6)",
-  "linear-gradient(135deg, #ec4899, #8b5cf6)",
-];
-function leadGradient(name: string) {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
-  return GRADIENTS[h % GRADIENTS.length];
-}
 
 function parseCsvText(text: string) {
   const lines = text.trim().split(/\r?\n/);
@@ -314,6 +297,15 @@ function LeadCard({
   isSyncing?: boolean;
   isProspect?: boolean;
 }) {
+  const loc = lead.locations?.[0];
+  const photo = (lead as any).photos?.[0] as string | undefined;
+  const routeUrl = (() => {
+    if (!loc) return null;
+    if (loc.lat && loc.lng) return `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}`;
+    const dest = [loc.addressLine1, loc.city, loc.state, loc.postalCode].filter(Boolean).join(", ");
+    return dest ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}` : null;
+  })();
+
   return (
     <button
       type="button"
@@ -321,25 +313,47 @@ function LeadCard({
       style={{ ...GLASS, boxShadow: "0 4px 20px rgba(0,0,0,0.25)" }}
       onClick={onEdit}
     >
-      <div className="flex items-center gap-3">
-        <div
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white"
-          style={{ background: leadGradient(lead.name) }}
-        >
-          {leadInitials(lead.name)}
+      <div className="flex items-start gap-3">
+        <div className="flex shrink-0 flex-col items-center gap-1.5">
+          {photo ? (
+            <img src={photo} alt="" className="h-10 w-10 rounded-xl object-cover" />
+          ) : (
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-indigo-500/20 bg-indigo-500/10">
+              <Building2 className="h-5 w-5 text-indigo-400" />
+            </div>
+          )}
+          {routeUrl && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); window.open(routeUrl, "_blank", "noopener,noreferrer"); }}
+              className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold text-sky-300 transition-colors hover:bg-sky-400/10 hover:text-sky-200"
+              style={{ border: "1px solid rgba(56,189,248,0.22)", background: "rgba(56,189,248,0.08)" }}
+            >
+              <MapPinned className="h-3 w-3" />
+              Route
+            </button>
+          )}
         </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <div className="truncate text-sm font-semibold text-white">{lead.name}</div>
+            <div className="truncate text-[15px] font-semibold text-white">{lead.name}</div>
             {lead.ghlContactId && (
               <span className="shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-400" style={{ background: "rgba(16,185,129,0.12)" }}>GHL</span>
             )}
           </div>
-          <div className="truncate text-xs text-white/40">{lead.industry || "Uncategorized"}</div>
-          {lead.locations?.[0]?.addressLine1 ? (
-            <div className="mt-0.5 truncate text-[11px] text-white/25">{lead.locations[0].addressLine1}</div>
-          ) : null}
+          <div className="mt-0.5 space-y-0.5">
+            {loc?.addressLine1 && (
+              <div className="truncate text-[11px] font-medium text-white/40">{loc.addressLine1}{loc.city ? `, ${loc.city}` : ""}</div>
+            )}
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0 text-[11px] font-medium text-white/35">
+              {lead.phone && <span>{lead.phone}</span>}
+              {lead.phone && lead.website && <span className="text-white/15">·</span>}
+              {lead.website && <span className="truncate max-w-[140px]">{lead.website.replace(/^https?:\/\//, "")}</span>}
+              {(lead.phone || lead.website) && lead.industry && <span className="text-white/15">·</span>}
+              {lead.industry && <span>{lead.industry}</span>}
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center gap-0.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">

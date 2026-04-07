@@ -123,7 +123,7 @@ cat dist/public/index.html | grep -A 5 "<title>"
 ### Test 3: Test in production
 ```bash
 npm start
-# Open http://localhost:5000
+# Open http://localhost:1000
 ```
 **Expected:**
 - Title in tab already correct from the first frame
@@ -132,7 +132,7 @@ npm start
 
 ### Test 4: SEO Crawler Simulation
 ```bash
-curl -s http://localhost:5000 | grep "<title>"
+curl -s http://localhost:1000 | grep "<title>"
 ```
 **Expected:** `<title>Skale Club</title>` (or the value in database)
 

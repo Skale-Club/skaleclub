@@ -15,7 +15,7 @@ async function testTranslation() {
     console.log("Texts:", testTexts);
     console.log("Target Language: pt\n");
 
-    const response = await fetch("http://localhost:5000/api/translate", {
+    const response = await fetch("http://localhost:1000/api/translate", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

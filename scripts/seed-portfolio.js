@@ -130,7 +130,7 @@ const services = [
 ];
 
 async function seedPortfolio() {
-    const baseUrl = process.env.API_URL || 'http://localhost:5000';
+    const baseUrl = process.env.API_URL || 'http://localhost:1000';
 
     console.log('Seeding portfolio services...');
     console.log(`API URL: ${baseUrl}`);

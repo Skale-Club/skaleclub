@@ -1,5 +1,11 @@
 const GHL_BASE_URL = "https://services.leadconnectorhq.com";
 const GHL_API_VERSION = "2021-07-28";
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function normalizeEmail(email?: string | null) {
+  const value = email?.trim().toLowerCase();
+  return value && EMAIL_RE.test(value) ? value : undefined;
+}
 
 export interface GHLSlotItem {
   startTime: string;
@@ -210,7 +216,7 @@ export async function createGHLContact(
   apiKey: string,
   locationId: string,
   contact: {
-    email: string;
+    email?: string;
     firstName: string;
     lastName: string;
     phone: string;
@@ -219,14 +225,18 @@ export async function createGHLContact(
   }
 ): Promise<{ success: boolean; contactId?: string; message?: string }> {
   try {
+    const normalizedEmail = normalizeEmail(contact.email);
     const body: any = {
       locationId,
-      email: contact.email,
       firstName: contact.firstName,
       lastName: contact.lastName,
       phone: contact.phone,
       address1: contact.address,
     };
+
+    if (normalizedEmail) {
+      body.email = normalizedEmail;
+    }
 
     // Add custom fields if provided
     if (contact.customFields && contact.customFields.length > 0) {
@@ -262,16 +272,21 @@ export async function findGHLContactByEmail(
   email: string
 ): Promise<{ success: boolean; contactId?: string; message?: string }> {
   try {
+    const normalizedEmail = normalizeEmail(email);
+    if (!normalizedEmail) {
+      return { success: true };
+    }
+
     const params = new URLSearchParams({
       locationId,
-      query: email,
+      query: normalizedEmail,
     });
 
     const response = await ghlFetch(`/contacts/?${params.toString()}`, apiKey);
 
     if (response.ok) {
       const data = await response.json();
-      const contact = data.contacts?.find((c: any) => c.email === email);
+      const contact = data.contacts?.find((c: any) => normalizeEmail(c.email) === normalizedEmail);
       return { success: true, contactId: contact?.id };
     } else {
       return { success: false };
@@ -447,7 +462,7 @@ export async function getOrCreateGHLContact(
   apiKey: string,
   locationId: string,
   contact: {
-    email: string;
+    email?: string;
     firstName: string;
     lastName: string;
     phone: string;
@@ -455,7 +470,10 @@ export async function getOrCreateGHLContact(
     customFields?: Array<{ id: string; field_value: string }>;
   }
 ): Promise<{ success: boolean; contactId?: string; message?: string }> {
-  const existingByEmail = await findGHLContactByEmail(apiKey, locationId, contact.email);
+  const normalizedEmail = normalizeEmail(contact.email);
+  const existingByEmail = normalizedEmail
+    ? await findGHLContactByEmail(apiKey, locationId, normalizedEmail)
+    : { success: true as const };
 
   if (existingByEmail.contactId) {
     console.log(`GHL contact found by email: ${existingByEmail.contactId}`);

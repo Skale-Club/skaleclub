@@ -89,7 +89,7 @@ npm install
 npm run dev
 ```
 
-The app will be available at `http://localhost:5000`.
+The app will be available at `http://localhost:1000`.
 
 ## Optional Integrations
 

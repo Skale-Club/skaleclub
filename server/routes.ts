@@ -332,7 +332,7 @@ export async function registerRoutes(
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      "HTTP-Referer": process.env.OPENROUTER_HTTP_REFERER || process.env.APP_URL || "http://localhost:5000",
+      "HTTP-Referer": process.env.OPENROUTER_HTTP_REFERER || process.env.APP_URL || "http://localhost:1000",
       "X-Title": process.env.OPENROUTER_APP_NAME || "SkaleClub",
     };
     if (keyToUse) {

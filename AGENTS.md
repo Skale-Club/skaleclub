@@ -14,7 +14,7 @@ shared/schema.ts         # Drizzle tables + Zod schemas
 ```
 
 ## Build, Test, and Development Commands
-- `npm run dev` starts the dev server (client + API) at `http://localhost:5000`.
+- `npm run dev` starts the dev server (client + API) at `http://localhost:1000`.
 - `npm run build` builds the client and server into `dist/`.
 - `npm run start` runs the production server from `dist/`.
 - `npm run check` runs TypeScript type checking.

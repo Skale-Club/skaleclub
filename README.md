@@ -60,7 +60,7 @@ npm run db:push
 npm run dev
 ```
 
-The app will be available at `http://localhost:5000`.
+The app will be available at `http://localhost:1000`.
 
 ## Scripts
 
