@@ -166,6 +166,9 @@ function AdminContent() {
         <AdminHeader title={companySettings?.companyName || 'Admin Panel'} />
         <div className="p-6 pb-16 md:p-8 md:pb-10">
           {(() => {
+            // Sections that render their own SectionHeader (with custom actions)
+            const sectionsWithOwnHeader: AdminSection[] = ['leads'];
+            if (sectionsWithOwnHeader.includes(activeSection)) return null;
             const currentItem = menuItems.find(item => item.id === activeSection);
             return currentItem ? (
               <SectionHeader

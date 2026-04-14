@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Eye, Loader2, Pencil, RotateCcw, Trash2 } from 'lucide-react';
-import { AdminCard } from './shared';
+import { Eye, Loader2, Pencil, RotateCcw, Sparkles, Trash2 } from 'lucide-react';
+import { AdminCard, SectionHeader } from './shared';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -232,30 +232,35 @@ export function LeadsSection() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/form-leads'] })}>
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Refresh
-          </Button>
-          <Sheet open={isFormEditorOpen} onOpenChange={setIsFormEditorOpen}>
-            <SheetTrigger asChild>
-              <Button variant="outline">
-                <Pencil className="w-4 h-4 mr-2" />
-                Edit Form
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
-              <SheetHeader>
-                <SheetTitle>Form Editor</SheetTitle>
-              </SheetHeader>
-              <div className="mt-6">
-                <FormEditorContent />
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
-      </div>
+      <SectionHeader
+        title="Leads"
+        description="All captured leads with ratings and follow-up status"
+        icon={<Sparkles className="w-5 h-5" />}
+        action={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/form-leads'] })}>
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Refresh
+            </Button>
+            <Sheet open={isFormEditorOpen} onOpenChange={setIsFormEditorOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Edit Form
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+                <SheetHeader>
+                  <SheetTitle>Form Editor</SheetTitle>
+                </SheetHeader>
+                <div className="mt-6">
+                  <FormEditorContent />
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+        }
+      />
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <AdminCard padding="compact" className="shadow-sm">
