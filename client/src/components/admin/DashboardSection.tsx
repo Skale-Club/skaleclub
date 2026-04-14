@@ -1,9 +1,8 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { AlertCircle, Archive, BadgeCheck, Check, Clock, FileText, Flame, Globe, Loader2, MapPin, MessageSquare, Puzzle, Sparkles, Users } from 'lucide-react';
+import { AlertCircle, Archive, BadgeCheck, Check, Clock, FileText, Flame, Globe, Loader2, MessageSquare, Sparkles, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { getXpotAppUrl } from '@/lib/xpot';
 import { apiRequest } from '@/lib/queryClient';
 import { clsx } from 'clsx';
 import { AdminCard } from './shared';
@@ -270,27 +269,6 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        <Button variant="outline" className="border-0 bg-muted/60" onClick={() => onNavigate('leads')}>
-          <Users className="w-4 h-4 mr-2" />
-          Leads
-        </Button>
-        <Button variant="outline" className="border-0 bg-muted/60" onClick={() => onNavigate('chat')}>
-          <MessageSquare className="w-4 h-4 mr-2" />
-          Chat
-        </Button>
-        <Button variant="outline" className="border-0 bg-muted/60" onClick={() => onNavigate('integrations')}>
-          <Puzzle className="w-4 h-4 mr-2" />
-          Integrations
-        </Button>
-        <Button variant="outline" className="border-0 bg-primary/10 text-primary" asChild>
-          <a href={getXpotAppUrl("/")} target="_blank" rel="noreferrer">
-            <MapPin className="w-4 h-4 mr-2" />
-            Check In
-          </a>
-        </Button>
-      </div>
-
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {topCards.map((card) => (
           <AdminCard key={card.label} padding="compact" className="transition-colors hover:bg-muted/30">
