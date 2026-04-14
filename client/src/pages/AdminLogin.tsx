@@ -86,7 +86,7 @@ export default function AdminLogin() {
           Back to Home
         </button>
 
-        <Card className="w-full rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <Card className="w-full rounded-2xl border bg-card shadow-sm">
           <CardHeader className="px-5 pb-4 pt-7 text-center md:px-6">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center overflow-hidden">
               {companySettings?.logoIcon ? (
@@ -121,7 +121,7 @@ export default function AdminLogin() {
                 <Button
                   type="button"
                   onClick={handleGoogleLogin}
-                  className="h-12 w-full border border-slate-300 bg-white text-slate-900 hover:bg-slate-50"
+                  className="h-12 w-full border bg-card text-foreground hover:bg-muted"
                   disabled={googleSubmitting}
                   data-testid="button-login-google"
                 >
@@ -150,7 +150,7 @@ export default function AdminLogin() {
                         placeholder="admin@example.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="h-12 border-slate-200 bg-slate-100/80 pl-10 text-base placeholder:text-slate-500"
+                        className="h-12 bg-muted/50 pl-10 text-base placeholder:text-muted-foreground"
                         required
                       />
                     </div>
@@ -165,7 +165,7 @@ export default function AdminLogin() {
                         placeholder="*****"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="h-12 border-slate-200 bg-slate-100/80 pl-10 text-base"
+                        className="h-12 bg-muted/50 pl-10 text-base"
                         required
                       />
                     </div>
@@ -198,7 +198,7 @@ export default function AdminLogin() {
                 </p>
                 <Button
                   onClick={() => signIn()}
-                  className="h-12 w-full border border-slate-300 bg-white text-slate-900 hover:bg-slate-50"
+                  className="h-12 w-full border bg-card text-foreground hover:bg-muted"
                   data-testid="button-login"
                 >
                   <img src={googleLogoUrl} alt="" aria-hidden="true" className="mr-2 h-4 w-4" />

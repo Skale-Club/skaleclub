@@ -12,6 +12,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { GripVertical, HelpCircle, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
+import { EmptyState } from './shared';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -191,11 +192,7 @@ export function FaqsSection() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">FAQs</h1>
-          <p className="text-muted-foreground">Manage frequently asked questions</p>
-        </div>
+      <div className="flex justify-end">
         <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingFaq(null); }}>
           <DialogTrigger asChild>
             <Button data-testid="button-add-faq">
@@ -221,11 +218,11 @@ export function FaqsSection() {
       </div>
 
       {faqs?.length === 0 ? (
-        <div className="p-12 text-center bg-card rounded-lg">
-          <HelpCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="font-semibold text-lg mb-2">No FAQs yet</h3>
-          <p className="text-muted-foreground mb-4">Create FAQs to help your customers find answers quickly</p>
-        </div>
+        <EmptyState
+          icon={<HelpCircle />}
+          title="No FAQs yet"
+          description="Create FAQs to help your customers find answers quickly"
+        />
       ) : (
         <DndContext
           sensors={sensors}

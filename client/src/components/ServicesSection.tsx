@@ -83,7 +83,7 @@ function ServiceDetailModal({
               </p>
 
               {/* Price Card */}
-              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 mb-8">
+              <div className="bg-slate-50 border rounded-2xl p-6 mb-8">
                 <div className="flex items-baseline gap-2 mb-4 text-slate-900">
                   <span className="text-4xl font-extrabold">{service.price}</span>
                   <span className="text-slate-500 font-medium">{t(service.priceLabel)}</span>
@@ -114,7 +114,7 @@ function ServiceDetailModal({
             {/* Right Column - Image */}
             {service.imageUrl && (
               <div className="flex-1 hidden md:block">
-                <div className="aspect-square relative flex items-center justify-center bg-slate-100 border border-slate-200 rounded-3xl shadow-xl overflow-hidden">
+                <div className="aspect-square relative flex items-center justify-center bg-slate-100 border rounded-3xl shadow-xl overflow-hidden">
                   <img
                     src={service.imageUrl}
                     alt={service.title}
@@ -452,7 +452,7 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
     return (
       <div
         key={`${numberLabel}-${step.title}-${index}`}
-        className="group relative overflow-visible rounded-3xl bg-white/90 border border-slate-100 shadow-[0_24px_60px_-60px_rgba(15,23,42,0.45)] hover:-translate-y-2 hover:shadow-[0_28px_70px_-55px_rgba(23,37,84,0.4)] transition-all duration-300 backdrop-blur flex-shrink-0 w-full md:w-[88%] sm:w-[70%] md:w-[52%] lg:w-[36%] xl:w-[30%]"
+        className="group relative overflow-visible rounded-3xl bg-white/90 border shadow-[0_24px_60px_-60px_rgba(15,23,42,0.45)] hover:-translate-y-2 hover:shadow-[0_28px_70px_-55px_rgba(23,37,84,0.4)] transition-all duration-300 backdrop-blur flex-shrink-0 w-full md:w-[88%] sm:w-[70%] md:w-[52%] lg:w-[36%] xl:w-[30%]"
       >
         <div className="absolute right-4 top-3 text-6xl font-black text-slate-100/80 pointer-events-none">
           {numberLabel}
@@ -506,7 +506,7 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
           <div className="relative z-10 pt-64 sm:pt-[22rem] md:pt-48 lg:pt-24 space-y-6 md:space-y-8 pb-4 md:pb-8">
             <div className="container-custom mx-auto px-4 sm:px-6 md:px-10">
               <div className="max-w-4xl space-y-3">
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/70 border border-slate-200 rounded-full shadow-sm text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/70 border rounded-full shadow-sm text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600">
                   <Sparkles className="w-3.5 h-3.5 text-primary" />
                   <span>{t(tagLabel)}</span>
                 </div>
@@ -546,7 +546,7 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
             </div>
 
             <div className="container-custom mx-auto px-4 sm:px-6 md:px-10 grid gap-6 lg:grid-cols-[2fr_1fr] items-stretch -mt-6 md:-mt-10">
-              <div className="rounded-3xl bg-white/90 border border-slate-100 shadow-[0_24px_70px_-50px_rgba(15,23,42,0.45)] px-8 py-8 space-y-4 h-full">
+              <div className="rounded-3xl bg-white/90 border shadow-[0_24px_70px_-50px_rgba(15,23,42,0.45)] px-8 py-8 space-y-4 h-full">
                 <div className="flex items-center gap-3">
                   <div className="h-11 w-11 min-w-[44px] flex-shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center">
                     <CheckCircle2 className="w-6 h-6" />
@@ -560,7 +560,7 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
                   {practicalBullets.map((bullet, idx) => (
                     <div
                       key={`${bullet}-${idx}`}
-                      className="p-4 rounded-2xl bg-slate-50/90 border border-slate-100 shadow-sm"
+                      className="p-4 rounded-2xl bg-slate-50/90 border shadow-sm"
                     >
                       <p className="text-sm text-slate-700 leading-relaxed">{t(bullet)}</p>
                     </div>
@@ -568,7 +568,7 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
                 </div>
               </div>
 
-              <div className="rounded-3xl bg-white/95 border border-slate-100 shadow-[0_24px_70px_-50px_rgba(15,23,42,0.45)] px-8 py-8 flex flex-col gap-4 justify-center h-full">
+              <div className="rounded-3xl bg-white/95 border shadow-[0_24px_70px_-50px_rgba(15,23,42,0.45)] px-8 py-8 flex flex-col gap-4 justify-center h-full">
                 <div className="space-y-2">
                   <p className="text-sm font-semibold text-slate-700 uppercase tracking-[0.12em]">{t(nextStepLabel)}</p>
                   <p className="text-xl font-bold text-slate-900 leading-tight">{t(nextStepText)}</p>
@@ -619,7 +619,7 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
       <div className="relative z-10 pt-64 sm:pt-[22rem] md:pt-48 lg:pt-24 space-y-6 md:space-y-8 pb-4 md:pb-8">
         <div className="container-custom mx-auto px-4 sm:px-6 md:px-10">
           <div className="max-w-4xl space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/70 border border-slate-200 rounded-full shadow-sm text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/70 border rounded-full shadow-sm text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600">
               <Sparkles className="w-3.5 h-3.5 text-primary" />
               <span>{t(tagLabel)}</span>
             </div>
@@ -659,7 +659,7 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
         </div>
 
         <div className="container-custom mx-auto px-4 sm:px-6 md:px-10 grid gap-6 lg:grid-cols-[2fr_1fr] items-stretch -mt-6 md:-mt-10">
-          <div className="rounded-3xl bg-white/90 border border-slate-100 shadow-[0_24px_70px_-50px_rgba(15,23,42,0.45)] px-8 py-8 space-y-4 h-full">
+          <div className="rounded-3xl bg-white/90 border shadow-[0_24px_70px_-50px_rgba(15,23,42,0.45)] px-8 py-8 space-y-4 h-full">
             <div className="flex items-center gap-3">
               <div className="h-11 w-11 min-w-[44px] flex-shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center">
                 <CheckCircle2 className="w-6 h-6" />
@@ -673,7 +673,7 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
               {practicalBullets.map((bullet, idx) => (
                 <div
                   key={`${bullet}-${idx}`}
-                  className="p-4 rounded-2xl bg-slate-50/90 border border-slate-100 shadow-sm"
+                  className="p-4 rounded-2xl bg-slate-50/90 border shadow-sm"
                 >
                   <p className="text-sm text-slate-700 leading-relaxed">{t(bullet)}</p>
                 </div>
@@ -681,7 +681,7 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
             </div>
           </div>
 
-          <div className="rounded-3xl bg-white/95 border border-slate-100 shadow-[0_24px_70px_-50px_rgba(15,23,42,0.45)] px-8 py-8 flex flex-col gap-4 justify-center h-full">
+          <div className="rounded-3xl bg-white/95 border shadow-[0_24px_70px_-50px_rgba(15,23,42,0.45)] px-8 py-8 flex flex-col gap-4 justify-center h-full">
             <div className="space-y-2">
               <p className="text-sm font-semibold text-slate-700 uppercase tracking-[0.12em]">{t(nextStepLabel)}</p>
               <p className="text-xl font-bold text-slate-900 leading-tight">{t(nextStepText)}</p>

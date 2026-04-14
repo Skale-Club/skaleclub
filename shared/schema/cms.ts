@@ -13,13 +13,15 @@ export const translations = pgTable("translations", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertTranslationSchema = createInsertSchema(translations).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertTranslationSchema = z.object({
+  sourceText: z.string().min(1),
+  sourceLanguage: z.string().default("en"),
+  targetLanguage: z.string().min(1),
+  translatedText: z.string().min(1),
 });
+
 export type Translation = typeof translations.$inferSelect;
-export type InsertTranslation = z.infer<typeof insertTranslationSchema>;
+export type InsertTranslation = typeof translations.$inferInsert;
 
 // FAQ table
 export const faqs = pgTable("faqs", {
@@ -29,9 +31,14 @@ export const faqs = pgTable("faqs", {
   order: integer("order").default(0),
 });
 
-export const insertFaqSchema = createInsertSchema(faqs).omit({ id: true });
+export const insertFaqSchema = z.object({
+  question: z.string().min(1),
+  answer: z.string().min(1),
+  order: z.number().int().default(0),
+});
+
 export type Faq = typeof faqs.$inferSelect;
-export type InsertFaq = z.infer<typeof insertFaqSchema>;
+export type InsertFaq = typeof faqs.$inferInsert;
 
 // Blog Posts table
 export const blogPosts = pgTable("blog_posts", {
@@ -51,11 +58,17 @@ export const blogPosts = pgTable("blog_posts", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
-}).extend({
+export const insertBlogPostSchema = z.object({
+  title: z.string().min(1),
+  slug: z.string().min(1),
+  content: z.string().min(1),
+  excerpt: z.string().nullable().optional(),
+  metaDescription: z.string().nullable().optional(),
+  focusKeyword: z.string().nullable().optional(),
+  tags: z.string().nullable().optional(),
+  featureImageUrl: z.string().nullable().optional(),
+  status: z.string().default("draft"),
+  authorName: z.string().default("Admin"),
   publishedAt: z.union([z.string(), z.date(), z.null()]).optional().transform(val => {
     if (!val) return null;
     if (val instanceof Date) return val;
@@ -64,7 +77,7 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({
 });
 
 export type BlogPost = typeof blogPosts.$inferSelect;
-export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
+export type InsertBlogPost = typeof blogPosts.$inferInsert;
 
 // Portfolio Services table
 export const portfolioServices = pgTable("portfolio_services", {
@@ -78,6 +91,7 @@ export const portfolioServices = pgTable("portfolio_services", {
   badgeText: text("badge_text").notNull().default("One-time Fee"),
   features: jsonb("features").$type<string[]>().default([]),
   imageUrl: text("image_url"),
+  toolUrl: text("tool_url"),
   iconName: text("icon_name").default("Rocket"),
   ctaText: text("cta_text").notNull(),
   ctaButtonColor: text("cta_button_color").default("#406EF1"),
@@ -90,16 +104,29 @@ export const portfolioServices = pgTable("portfolio_services", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertPortfolioServiceSchema = createInsertSchema(portfolioServices).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-}).extend({
-  features: z.array(z.string()).nullable().optional(),
+export const insertPortfolioServiceSchema = z.object({
+  slug: z.string().min(1),
+  title: z.string().min(1),
+  subtitle: z.string().min(1),
+  description: z.string().min(1),
+  price: z.string().min(1),
+  priceLabel: z.string().default("One-time"),
+  badgeText: z.string().default("One-time Fee"),
+  features: z.array(z.string()).nullable().optional().default([]),
+  imageUrl: z.string().nullable().optional(),
+  toolUrl: z.string().nullable().optional(),
+  iconName: z.string().default("Rocket"),
+  ctaText: z.string().min(1),
+  ctaButtonColor: z.string().default("#406EF1"),
+  backgroundColor: z.string().default("bg-white"),
+  textColor: z.string().default("text-slate-900"),
+  accentColor: z.string().default("blue"),
+  order: z.number().int().default(0),
+  isActive: z.boolean().default(true),
 });
 
 export type PortfolioService = typeof portfolioServices.$inferSelect;
-export type InsertPortfolioService = z.infer<typeof insertPortfolioServiceSchema>;
+export type InsertPortfolioService = typeof portfolioServices.$inferInsert;
 
 // VCards table (Digital Business Cards)
 export const vcards = pgTable("vcards", {
@@ -125,11 +152,19 @@ export const vcards = pgTable("vcards", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertVCardSchema = createInsertSchema(vcards).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-}).extend({
+export const insertVCardSchema = z.object({
+  username: z.string().min(1),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  title: z.string().nullable().optional(),
+  organization: z.string().nullable().optional(),
+  cellPhone: z.string().nullable().optional(),
+  email: z.string().email().nullable().optional(),
+  url: z.string().nullable().optional(),
+  bio: z.string().nullable().optional(),
+  couponCode: z.string().nullable().optional(),
+  couponAmount: z.string().nullable().optional(),
+  avatarUrl: z.string().nullable().optional(),
   socialLinks: z.array(z.object({
     platform: z.string(),
     url: z.string()
@@ -138,4 +173,4 @@ export const insertVCardSchema = createInsertSchema(vcards).omit({
 });
 
 export type VCard = typeof vcards.$inferSelect;
-export type InsertVCard = z.infer<typeof insertVCardSchema>;
+export type InsertVCard = typeof vcards.$inferInsert;

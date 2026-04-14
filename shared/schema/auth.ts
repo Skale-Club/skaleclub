@@ -37,9 +37,10 @@ export const systemHeartbeats = pgTable("system_heartbeats", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const insertSystemHeartbeatSchema = createInsertSchema(systemHeartbeats).omit({
-  id: true,
-  createdAt: true,
+export const insertSystemHeartbeatSchema = z.object({
+  source: z.string().default("vercel-cron"),
+  note: z.string().optional().default(""),
 });
+
 export type SystemHeartbeat = typeof systemHeartbeats.$inferSelect;
-export type InsertSystemHeartbeat = z.infer<typeof insertSystemHeartbeatSchema>;
+export type InsertSystemHeartbeat = typeof systemHeartbeats.$inferInsert;

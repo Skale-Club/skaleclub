@@ -5,6 +5,16 @@ export async function registerStorageRoutes(app: Express, requireAdmin: any) {
   const { SupabaseStorageService } = await import("./supabaseStorage.js");
   const storageService = new SupabaseStorageService();
 
+  const mimeFromExt: Record<string, string> = {
+    png: "image/png",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    gif: "image/gif",
+    webp: "image/webp",
+    svg: "image/svg+xml",
+    avif: "image/avif",
+  };
+
   const handleUpload = async (req: Request, res: Response) => {
     try {
       const { filename, data } = req.body;
@@ -12,7 +22,9 @@ export async function registerStorageRoutes(app: Express, requireAdmin: any) {
         return res.status(400).json({ error: "Missing filename or data" });
       }
       const buffer = Buffer.from(data, 'base64');
-      const publicUrl = await storageService.uploadBuffer(buffer, filename);
+      const ext = (filename.split('.').pop() || '').toLowerCase();
+      const contentType = mimeFromExt[ext] || "application/octet-stream";
+      const publicUrl = await storageService.uploadBuffer(buffer, filename, contentType);
       res.json({ path: publicUrl });
     } catch (error) {
       console.error("Upload error:", error);

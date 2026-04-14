@@ -65,22 +65,50 @@ export const conversationMessages = pgTable("conversation_messages", {
 }));
 
 // Insert schemas
-export const insertChatSettingsSchema = createInsertSchema(chatSettings).omit({
-  id: true,
-  updatedAt: true,
+export const insertChatSettingsSchema = z.object({
+  enabled: z.boolean().default(false),
+  agentName: z.string().default("Company Assistant"),
+  agentAvatarUrl: z.string().default(""),
+  systemPrompt: z.string().default(
+    "You are our helpful chat assistant. Provide concise, friendly answers. Use the provided tools to fetch services and details. Do not guess prices; always use tool data when relevant."
+  ),
+  welcomeMessage: z.string().default("Hi! How can I help you today?"),
+  avgResponseTime: z.string().default(""),
+  calendarProvider: z.string().default("gohighlevel"),
+  calendarId: z.string().default(""),
+  calendarStaff: z.any().default([]),
+  languageSelectorEnabled: z.boolean().default(false),
+  defaultLanguage: z.string().default("en"),
+  lowPerformanceSmsEnabled: z.boolean().default(false),
+  lowPerformanceThresholdSeconds: z.number().int().default(300),
+  intakeObjectives: z.any().default([]),
+  excludedUrlRules: z.any().default([]),
+  useFaqs: z.boolean().default(true),
+  activeAiProvider: z.string().default("openai"),
 });
-export const insertChatIntegrationsSchema = createInsertSchema(chatIntegrations).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+
+export const insertChatIntegrationsSchema = z.object({
+  provider: z.string().default("openai"),
+  enabled: z.boolean().default(false),
+  model: z.string().default("gpt-4o-mini"),
+  apiKey: z.string().nullable().optional(),
 });
-export const insertConversationSchema = createInsertSchema(conversations).omit({
-  createdAt: true,
-  updatedAt: true,
-  lastMessageAt: true,
+
+export const insertConversationSchema = z.object({
+  id: z.string().uuid(),
+  status: z.string().default("open"),
+  firstPageUrl: z.string().nullable().optional(),
+  visitorName: z.string().nullable().optional(),
+  visitorPhone: z.string().nullable().optional(),
+  visitorEmail: z.string().nullable().optional(),
 });
-export const insertConversationMessageSchema = createInsertSchema(conversationMessages).omit({
-  createdAt: true,
+
+export const insertConversationMessageSchema = z.object({
+  id: z.string().uuid(),
+  conversationId: z.string().uuid(),
+  role: z.string(),
+  content: z.string(),
+  metadata: z.any().nullable().optional(),
 });
 
 // Types
@@ -88,7 +116,7 @@ export type ChatSettings = typeof chatSettings.$inferSelect;
 export type ChatIntegrations = typeof chatIntegrations.$inferSelect;
 export type Conversation = typeof conversations.$inferSelect;
 export type ConversationMessage = typeof conversationMessages.$inferSelect;
-export type InsertChatSettings = z.infer<typeof insertChatSettingsSchema>;
-export type InsertChatIntegrations = z.infer<typeof insertChatIntegrationsSchema>;
-export type InsertConversation = z.infer<typeof insertConversationSchema>;
-export type InsertConversationMessage = z.infer<typeof insertConversationMessageSchema>;
+export type InsertChatSettings = typeof chatSettings.$inferInsert;
+export type InsertChatIntegrations = typeof chatIntegrations.$inferInsert;
+export type InsertConversation = typeof conversations.$inferInsert;
+export type InsertConversationMessage = typeof conversationMessages.$inferInsert;

@@ -45,7 +45,7 @@ export function FaqSection() {
               <AccordionItem
                 key={faq.id}
                 value={`faq-${faq.id}`}
-                className="border-b border-slate-200"
+                className="border-b"
                 data-testid={`faq-accordion-${faq.id}`}
               >
                 <AccordionTrigger

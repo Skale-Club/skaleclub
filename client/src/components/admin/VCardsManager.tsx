@@ -342,7 +342,7 @@ export function VCardsManager() {
                     type="button"
                     disabled={isUploading}
                     onClick={() => avatarFileInputRef.current?.click()}
-                    className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-dashed border-gray-300 bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-colors group cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-dashed bg-muted flex items-center justify-center hover:bg-muted/70 transition-colors group cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   >
                     {isUploading && (
                       <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">

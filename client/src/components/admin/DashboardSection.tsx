@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { getXpotAppUrl } from '@/lib/xpot';
 import { apiRequest } from '@/lib/queryClient';
 import { clsx } from 'clsx';
+import { AdminCard } from './shared';
 import { format } from 'date-fns';
 import type { BlogPost, Faq, FormLead, LeadStatus } from '@shared/schema';
 import { SIDEBAR_MENU_ITEMS } from './shared/constants';
@@ -269,53 +270,30 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border bg-card p-5 sm:p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4 min-w-0">
-            {companySettings?.logoIcon ? (
-              <img
-                src={companySettings.logoIcon}
-                alt={companySettings.companyName || 'Logo'}
-                className="h-14 w-14 rounded-xl border object-contain bg-muted/40 p-1.5"
-              />
-            ) : (
-              <div className="h-14 w-14 rounded-xl border bg-muted/40 flex items-center justify-center text-lg font-semibold">
-                {companySettings?.companyName?.[0] || 'A'}
-              </div>
-            )}
-            <div className="min-w-0">
-              <h1 className="text-2xl font-bold truncate">{dashboardMenuTitle}</h1>
-              <p className="text-sm text-muted-foreground truncate">
-                {companySettings?.companyName || 'Your business'} performance snapshot for leads, chat and growth
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" className="border-0 bg-muted/60" onClick={() => onNavigate('leads')}>
-              <Users className="w-4 h-4 mr-2" />
-              Leads
-            </Button>
-            <Button variant="outline" className="border-0 bg-muted/60" onClick={() => onNavigate('chat')}>
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Chat
-            </Button>
-            <Button variant="outline" className="border-0 bg-muted/60" onClick={() => onNavigate('integrations')}>
-              <Puzzle className="w-4 h-4 mr-2" />
-              Integrations
-            </Button>
-            <Button variant="outline" className="border-0 bg-primary/10 text-primary" asChild>
-              <a href={getXpotAppUrl("/")} target="_blank" rel="noreferrer">
-                <MapPin className="w-4 h-4 mr-2" />
-                Check In
-              </a>
-            </Button>
-          </div>
-        </div>
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <Button variant="outline" className="border-0 bg-muted/60" onClick={() => onNavigate('leads')}>
+          <Users className="w-4 h-4 mr-2" />
+          Leads
+        </Button>
+        <Button variant="outline" className="border-0 bg-muted/60" onClick={() => onNavigate('chat')}>
+          <MessageSquare className="w-4 h-4 mr-2" />
+          Chat
+        </Button>
+        <Button variant="outline" className="border-0 bg-muted/60" onClick={() => onNavigate('integrations')}>
+          <Puzzle className="w-4 h-4 mr-2" />
+          Integrations
+        </Button>
+        <Button variant="outline" className="border-0 bg-primary/10 text-primary" asChild>
+          <a href={getXpotAppUrl("/")} target="_blank" rel="noreferrer">
+            <MapPin className="w-4 h-4 mr-2" />
+            Check In
+          </a>
+        </Button>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {topCards.map((card) => (
-          <div key={card.label} className="rounded-2xl border bg-card p-5 transition-colors hover:bg-muted/30">
+          <AdminCard key={card.label} padding="compact" className="transition-colors hover:bg-muted/30">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">{card.label}</p>
@@ -326,12 +304,12 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
                 <card.icon className={clsx('w-5 h-5', card.iconColor)} />
               </div>
             </div>
-          </div>
+          </AdminCard>
         ))}
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
-        <div className="rounded-2xl border bg-card p-5">
+        <AdminCard padding="compact">
           <div className="flex items-center justify-between gap-3 mb-4">
             <h3 className="text-xl font-semibold">Lead Funnel</h3>
             <Badge variant="secondary" className="border-0 bg-muted">
@@ -367,9 +345,9 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
               <p className="text-sm font-medium">Complete: {dashboardData.qualification.complete}</p>
             </div>
           </div>
-        </div>
+        </AdminCard>
 
-        <div className="rounded-2xl border bg-card p-5">
+        <AdminCard padding="compact">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="text-xl font-semibold">Recent Leads</h3>
             <Button variant="ghost" className="h-auto p-0 hover:bg-transparent hover:underline" onClick={() => onNavigate('leads')}>
@@ -402,11 +380,11 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
               No leads yet.
             </div>
           )}
-        </div>
+        </AdminCard>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="rounded-2xl border bg-card p-5">
+        <AdminCard padding="compact">
           <div className="mb-4 flex items-center justify-between gap-2">
             <h3 className="text-xl font-semibold">Brand Profile</h3>
             <Badge variant="secondary" className="border-0 bg-muted">{brandProfilePercent}%</Badge>
@@ -429,9 +407,9 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
           <Button className="mt-5 w-full" onClick={() => onNavigate('company')}>
             Complete Company Profile
           </Button>
-        </div>
+        </AdminCard>
 
-        <div className="rounded-2xl border bg-card p-5">
+        <AdminCard padding="compact">
           <div className="mb-4 flex items-center justify-between gap-2">
             <h3 className="text-xl font-semibold">Integrations</h3>
             <Button variant="ghost" className="h-auto p-0 hover:bg-transparent hover:underline" onClick={() => onNavigate('integrations')}>
@@ -452,9 +430,9 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
               </div>
             ))}
           </div>
-        </div>
+        </AdminCard>
 
-        <div className="rounded-2xl border bg-card p-5">
+        <AdminCard padding="compact">
           <h3 className="text-xl font-semibold mb-4">Quick Actions</h3>
           <div className="space-y-2.5">
             <Button variant="outline" className="w-full justify-start border-0 bg-muted/60" onClick={() => onNavigate('website' as any)}>
@@ -474,7 +452,7 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
               Qualify Leads
             </Button>
           </div>
-        </div>
+        </AdminCard>
       </div>
     </div>
   );

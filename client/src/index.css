@@ -26,8 +26,9 @@
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 210 40% 98%;
 
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
+  /* Soft hairline border — subtle, never harsh black/white solid */
+  --border: 222 20% 8% / 0.08;
+  --input: 222 20% 8% / 0.1;
   --ring: 215 71% 37%;
   --radius: 0.75rem;
 
@@ -42,7 +43,7 @@
   /* Sidebar */
   --sidebar: 0 0% 100%;
   --sidebar-foreground: 0 0% 11%;
-  --sidebar-border: 214.3 31.8% 91.4%;
+  --sidebar-border: 222 20% 8% / 0.08;
   --sidebar-accent: 210 40% 96.1%;
   --sidebar-accent-foreground: 0 0% 11%;
 
@@ -53,46 +54,57 @@
   /* Warning color */
   --warning: 38 92% 50%;
   --warning-foreground: 0 0% 11%;
+
+  /* Button outline border */
+  --button-outline: hsl(var(--border));
+
+  /* Variant borders — subtle by default */
+  --primary-border: hsl(var(--primary) / 0.8);
+  --secondary-border: hsl(var(--border));
+  --destructive-border: hsl(var(--destructive) / 0.8);
+  --sidebar-primary-border: hsl(var(--primary) / 0.8);
+  --badge-outline: hsl(var(--border));
 }
 
-/* Dark Mode Colors */
+/* Dark Mode Colors — neutral/desaturated charcoal */
 .dark {
-  --background: 222 47% 11%; /* slate-900 */
-  --foreground: 210 40% 98%; /* slate-50 */
+  --background: 0 0% 7%; /* #121212 — neutral charcoal */
+  --foreground: 0 0% 95%; /* near-white, no tint */
 
-  --primary: 217 91% 60%; /* blue-500, mais claro para contraste */
-  --primary-foreground: 222 47% 11%;
+  --primary: 217 91% 60%; /* keep brand blue for CTAs */
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 217 33% 20%; /* slate-700 */
-  --secondary-foreground: 210 40% 98%;
+  --secondary: 0 0% 14%; /* #242424 */
+  --secondary-foreground: 0 0% 95%;
 
-  --muted: 217 33% 17%; /* slate-800 */
-  --muted-foreground: 215 20% 65%; /* slate-400 */
+  --muted: 0 0% 11%; /* #1c1c1c */
+  --muted-foreground: 0 0% 60%; /* neutral gray */
 
-  --accent: 217 33% 25%; /* slate-700 */
-  --accent-foreground: 210 40% 98%;
+  --accent: 0 0% 16%; /* #292929 */
+  --accent-foreground: 0 0% 95%;
 
   --destructive: 0 62% 50%;
-  --destructive-foreground: 210 40% 98%;
+  --destructive-foreground: 0 0% 100%;
 
-  --border: 217 33% 25%; /* slate-700 */
-  --input: 217 33% 17%; /* slate-800 */
+  /* Soft hairline border — subtle, never harsh white solid */
+  --border: 0 0% 100% / 0.06;
+  --input: 0 0% 100% / 0.08;
   --ring: 217 91% 60%;
 
-  --popover: 222 47% 11%;
-  --popover-foreground: 210 40% 98%;
+  --popover: 0 0% 9%;
+  --popover-foreground: 0 0% 95%;
 
-  /* Card and Section backgrounds */
-  --card: 217 33% 17%; /* slate-800 */
-  --card-foreground: 210 40% 98%;
-  --section: 222 47% 11%; /* slate-900 */
+  /* Card and Section backgrounds — neutral charcoal */
+  --card: 0 0% 10%; /* #1a1a1a */
+  --card-foreground: 0 0% 95%;
+  --section: 0 0% 7%;
 
   /* Sidebar */
-  --sidebar: 217 33% 17%; /* slate-800 */
-  --sidebar-foreground: 210 40% 98%;
-  --sidebar-border: 217 33% 25%;
-  --sidebar-accent: 217 33% 25%;
-  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar: 0 0% 9%;
+  --sidebar-foreground: 0 0% 95%;
+  --sidebar-border: 0 0% 100% / 0.06;
+  --sidebar-accent: 0 0% 14%;
+  --sidebar-accent-foreground: 0 0% 95%;
 
   /* Success color */
   --success: 142 71% 45%;
@@ -104,6 +116,13 @@
 
   /* Button outline border */
   --button-outline: hsl(var(--border));
+
+  /* Variant borders — subtle by default */
+  --primary-border: hsl(var(--primary) / 0.8);
+  --secondary-border: hsl(var(--border));
+  --destructive-border: hsl(var(--destructive) / 0.8);
+  --sidebar-primary-border: hsl(var(--primary) / 0.8);
+  --badge-outline: hsl(var(--border));
 }
 
 @layer base {

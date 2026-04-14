@@ -103,7 +103,7 @@ export default function AdminSignup() {
           Back to Home
         </button>
 
-        <Card className="w-full rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <Card className="w-full rounded-2xl border bg-card shadow-sm">
           <CardHeader className="px-5 pb-4 pt-7 text-center md:px-6">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center overflow-hidden">
               {companySettings?.logoIcon ? (
@@ -143,7 +143,7 @@ export default function AdminSignup() {
                 <Button
                   type="button"
                   onClick={handleGoogleSignup}
-                  className="h-12 w-full border border-slate-300 bg-white text-slate-900 hover:bg-slate-50"
+                  className="h-12 w-full border bg-card text-foreground hover:bg-muted"
                   disabled={googleSubmitting}
                 >
                   {googleSubmitting ? (
@@ -171,7 +171,7 @@ export default function AdminSignup() {
                         placeholder="admin@example.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="h-12 border-slate-200 bg-slate-100/80 pl-10 text-base placeholder:text-slate-500"
+                        className="h-12 bg-muted/50 pl-10 text-base placeholder:text-muted-foreground"
                         required
                       />
                     </div>
@@ -186,7 +186,7 @@ export default function AdminSignup() {
                         placeholder="*****"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="h-12 border-slate-200 bg-slate-100/80 pl-10 text-base"
+                        className="h-12 bg-muted/50 pl-10 text-base"
                         required
                       />
                     </div>
@@ -201,7 +201,7 @@ export default function AdminSignup() {
                         placeholder="*****"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="h-12 border-slate-200 bg-slate-100/80 pl-10 text-base"
+                        className="h-12 bg-muted/50 pl-10 text-base"
                         required
                       />
                     </div>
@@ -233,7 +233,7 @@ export default function AdminSignup() {
                 </p>
                 <Button
                   onClick={() => signIn()}
-                  className="h-12 w-full border border-slate-300 bg-white text-slate-900 hover:bg-slate-50"
+                  className="h-12 w-full border bg-card text-foreground hover:bg-muted"
                 >
                   <img src={googleLogoUrl} alt="" aria-hidden="true" className="mr-2 h-4 w-4" />
                   Continue with Google

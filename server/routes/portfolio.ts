@@ -1,0 +1,255 @@
+import type { Express } from "express";
+import { z } from "zod";
+import { storage } from "../storage.js";
+import { insertPortfolioServiceSchema } from "#shared/schema.js";
+import { requireAdmin, setPublicCache } from "./_shared.js";
+
+const DEFAULT_PORTFOLIO_SERVICES = [
+  {
+    slug: "astropilot",
+    title: "Astropilot",
+    subtitle: "Social Media AI Creator",
+    description: "Automate your social media presence with AI-powered content creation. Generate engaging posts, captions, and visuals that resonate with your audience.",
+    price: "$497",
+    priceLabel: "/month",
+    badgeText: "AI Powered",
+    features: ["AI Content Generation", "Multi-Platform Posting", "Hashtag Optimization", "Engagement Analytics", "Content Calendar"],
+    iconName: "sparkles",
+    ctaText: "Get Started",
+    ctaButtonColor: "#8B5CF6",
+    backgroundColor: "bg-gradient-to-br from-[#1a1a2e] to-[#2d1b4e]",
+    accentColor: "purple",
+    layout: "right",
+    order: 1,
+    isActive: true,
+  },
+  {
+    slug: "websites",
+    title: "Websites",
+    subtitle: "Basic & Custom Solutions",
+    description: "Professional websites tailored to your business needs. From simple landing pages to complex web applications, we build solutions that convert visitors into customers.",
+    price: "$1,997",
+    priceLabel: "starting",
+    badgeText: "Popular",
+    features: ["Responsive Design", "SEO Optimized", "Fast Loading", "Contact Forms", "Analytics Integration"],
+    iconName: "globe",
+    ctaText: "Start Project",
+    ctaButtonColor: "#406EF1",
+    backgroundColor: "bg-gradient-to-br from-[#0f2027] to-[#203a43]",
+    accentColor: "blue",
+    layout: "left",
+    order: 2,
+    isActive: true,
+  },
+  {
+    slug: "chatbot",
+    title: "Chatbot",
+    subtitle: "SMS / WhatsApp / Telegram / Web",
+    description: "Intelligent chatbots that engage customers across all major messaging platforms. Automate support, qualify leads, and book appointments 24/7.",
+    price: "$797",
+    priceLabel: "/month",
+    badgeText: "Multi-Channel",
+    features: ["SMS Integration", "WhatsApp Business", "Telegram Bot", "Website Widget", "Lead Qualification"],
+    iconName: "message-circle",
+    ctaText: "Learn More",
+    ctaButtonColor: "#10B981",
+    backgroundColor: "bg-gradient-to-br from-[#0d3b2e] to-[#0f2027]",
+    accentColor: "green",
+    layout: "right",
+    order: 3,
+    isActive: true,
+  },
+  {
+    slug: "payment-system",
+    title: "Payment System",
+    subtitle: "Stripe Integration",
+    description: "Seamless payment processing with Stripe integration. Accept payments online, set up subscriptions, and manage invoices with ease.",
+    price: "$397",
+    priceLabel: "one-time",
+    badgeText: "Essential",
+    features: ["Stripe Setup", "Payment Forms", "Subscription Management", "Invoice Generation", "Secure Transactions"],
+    iconName: "credit-card",
+    ctaText: "Get Started",
+    ctaButtonColor: "#6366F1",
+    backgroundColor: "bg-gradient-to-br from-[#1e1b4b] to-[#312e81]",
+    accentColor: "blue",
+    layout: "left",
+    order: 4,
+    isActive: true,
+  },
+  {
+    slug: "voice-assistant",
+    title: "Voice Assistant",
+    subtitle: "AI Helping With Your Needs",
+    description: "Deploy intelligent voice assistants that handle calls, answer questions, and provide customer support around the clock with natural conversation.",
+    price: "$1,297",
+    priceLabel: "/month",
+    badgeText: "AI Powered",
+    features: ["24/7 Availability", "Natural Voice", "Call Routing", "Appointment Booking", "Multi-Language"],
+    iconName: "phone",
+    ctaText: "Book Demo",
+    ctaButtonColor: "#F59E0B",
+    backgroundColor: "bg-gradient-to-br from-[#1a1a2e] to-[#16213e]",
+    accentColor: "orange",
+    layout: "right",
+    order: 5,
+    isActive: true,
+  },
+  {
+    slug: "scheduling-system",
+    title: "Scheduling System",
+    subtitle: "Never Miss a Booking",
+    description: "Automated scheduling that syncs with your calendar, sends reminders, and reduces no-shows. Perfect for service-based businesses.",
+    price: "$297",
+    priceLabel: "/month",
+    badgeText: "Essential",
+    features: ["Calendar Sync", "Automated Reminders", "Online Booking", "Timezone Support", "Team Scheduling"],
+    iconName: "calendar",
+    ctaText: "Get Started",
+    ctaButtonColor: "#EC4899",
+    backgroundColor: "bg-gradient-to-br from-[#831843] to-[#1a1a2e]",
+    accentColor: "red",
+    layout: "left",
+    order: 6,
+    isActive: true,
+  },
+  {
+    slug: "crm-setup",
+    title: "CRM Setup",
+    subtitle: "Go High Level Integration",
+    description: "Complete CRM setup with Go High Level. Manage leads, automate follow-ups, and track your sales pipeline in one powerful platform.",
+    price: "$597",
+    priceLabel: "one-time",
+    badgeText: "Recommended",
+    features: ["GHL Setup", "Pipeline Configuration", "Email Automation", "SMS Campaigns", "Reporting Dashboard"],
+    iconName: "users",
+    ctaText: "Get Started",
+    ctaButtonColor: "#14B8A6",
+    backgroundColor: "bg-gradient-to-br from-[#134e4a] to-[#0f2027]",
+    accentColor: "green",
+    layout: "right",
+    order: 7,
+    isActive: true,
+  },
+  {
+    slug: "openclaw-deployment",
+    title: "OpenClaw Deployment",
+    subtitle: "Custom AI Deployment",
+    description: "Deploy custom AI solutions tailored to your business needs. Automate complex workflows and integrate AI into your existing systems.",
+    price: "$2,497",
+    priceLabel: "starting",
+    badgeText: "Premium",
+    features: ["Custom AI Models", "Workflow Automation", "API Integration", "Training & Support", "Scalable Infrastructure"],
+    iconName: "cpu",
+    ctaText: "Contact Us",
+    ctaButtonColor: "#EF4444",
+    backgroundColor: "bg-gradient-to-br from-[#1a1a1a] to-[#2d2d2d]",
+    accentColor: "red",
+    layout: "left",
+    order: 8,
+    isActive: true,
+  },
+];
+
+export function registerPortfolioRoutes(app: Express) {
+  app.get("/api/portfolio-services", async (req, res) => {
+    try {
+      const services = await storage.getPortfolioServices();
+      setPublicCache(res, 300);
+      res.json(services);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.get("/api/portfolio-services/:idOrSlug", async (req, res) => {
+    try {
+      const { idOrSlug } = req.params;
+      let service;
+      if (/^\d+$/.test(idOrSlug)) {
+        service = await storage.getPortfolioService(Number(idOrSlug));
+      } else {
+        service = await storage.getPortfolioServiceBySlug(idOrSlug);
+      }
+      if (!service) {
+        return res.status(404).json({ message: "Service not found" });
+      }
+      setPublicCache(res, 300);
+      res.json(service);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.post("/api/portfolio-services", requireAdmin, async (req, res) => {
+    try {
+      const validatedData = insertPortfolioServiceSchema.parse(req.body);
+      const service = await storage.createPortfolioService(validatedData);
+      res.status(201).json(service);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: err.errors });
+      }
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  // Reorder must come before /:id so Express doesn't match "reorder" as an id
+  app.put("/api/portfolio-services/reorder", requireAdmin, async (req, res) => {
+    try {
+      const { orders } = req.body as { orders: { id: number; order: number }[] };
+      if (!Array.isArray(orders)) {
+        return res.status(400).json({ message: "Orders must be an array" });
+      }
+
+      for (const item of orders) {
+        await storage.updatePortfolioService(item.id, { order: item.order });
+      }
+
+      res.json({ success: true, count: orders.length });
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.put("/api/portfolio-services/:id", requireAdmin, async (req, res) => {
+    try {
+      const validatedData = insertPortfolioServiceSchema.partial().parse(req.body);
+      const service = await storage.updatePortfolioService(Number(req.params.id), validatedData);
+      res.json(service);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: err.errors });
+      }
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.delete("/api/portfolio-services/:id", requireAdmin, async (req, res) => {
+    try {
+      await storage.deletePortfolioService(Number(req.params.id));
+      res.json({ success: true });
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.post("/api/portfolio-services/seed", requireAdmin, async (req, res) => {
+    try {
+      const existing = await storage.getPortfolioServices();
+      if (existing.length > 0) {
+        return res.json({ message: "Services already exist", count: existing.length });
+      }
+
+      const created = [];
+      for (const service of DEFAULT_PORTFOLIO_SERVICES) {
+        const result = await storage.createPortfolioService(service);
+        created.push(result);
+      }
+
+      res.json({ message: "Services seeded successfully", count: created.length, services: created });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+}

@@ -44,7 +44,7 @@ export function AboutSection({ content, aboutImageUrl }: AboutSectionProps) {
           )}
         </div>
 
-        <div className="order-1 lg:order-2 aspect-square max-h-[500px] rounded-2xl overflow-hidden shadow-2xl border border-slate-100 relative">
+        <div className="order-1 lg:order-2 aspect-square max-h-[500px] rounded-2xl overflow-hidden shadow-2xl border relative">
           {aboutImageUrl || sectionContent?.defaultImageUrl ? (
             <img
               src={aboutImageUrl || sectionContent?.defaultImageUrl}

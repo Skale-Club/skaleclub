@@ -140,11 +140,7 @@ export function CompanySettingsSection() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold">Company Settings</h1>
-          <p className="text-muted-foreground">Manage your business information and assets</p>
-        </div>
+      <div className="flex justify-end">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           {isSaving ? (
             <>

@@ -345,13 +345,13 @@ export function ChatWidget() {
         >
           <div className="relative bg-white shadow-lg border rounded-2xl px-4 py-3 text-sm max-w-[240px] text-left">
             <p className="leading-snug">{config.welcomeMessage}</p>
-            <div className="absolute -right-2 top-4 h-3 w-3 rotate-45 bg-white border-b border-r border-slate-200" />
+            <div className="absolute -right-2 top-4 h-3 w-3 rotate-45 bg-card border-b border-r" />
           </div>
           <div className="relative">
             <img
               src={avatarUrl}
               alt={displayName}
-              className="h-14 w-14 rounded-full border border-slate-200 object-cover"
+              className="h-14 w-14 rounded-full border object-cover"
               onError={handleAvatarError}
             />
             {showOnlineDot && (
@@ -420,7 +420,7 @@ export function ChatWidget() {
               </label>
               <select
                 id="chat-language"
-                className="mt-1 w-full rounded-md border border-slate-200 bg-white px-2 py-1 text-sm"
+                className="mt-1 w-full rounded-md border bg-white px-2 py-1 text-sm"
                 value={language || config?.defaultLanguage || "en"}
                 onChange={(event) => handleLanguageChange(event.target.value)}
               >
@@ -451,7 +451,7 @@ export function ChatWidget() {
                       src={avatarUrl}
                       alt={displayName}
                       onError={handleAvatarError}
-                      className="h-7 w-7 rounded-full border border-slate-200 object-cover mt-0.5"
+                      className="h-7 w-7 rounded-full border object-cover mt-0.5"
                     />
                   )}
                   <div
@@ -475,7 +475,7 @@ export function ChatWidget() {
                   src={avatarUrl}
                   alt={displayName}
                   onError={handleAvatarError}
-                  className="h-7 w-7 rounded-full border border-slate-200 object-cover mt-0.5"
+                  className="h-7 w-7 rounded-full border object-cover mt-0.5"
                 />
                 <div className="rounded-lg px-3 py-2.5 text-sm bg-white border text-slate-800">
                   <div className="flex items-center justify-center gap-1 h-4">

@@ -212,6 +212,21 @@ export const translations = {
     'Last updated: January 10, 2026': 'Última atualização: 10 de Janeiro de 2026',
     'We will respond to your inquiry within 30 days.': 'Responderemos à sua solicitação dentro de 30 dias.',
     'We aim to respond to inquiries within 30 days.': 'Pretendemos responder às solicitações dentro de 30 dias.',
+
+    // Portfolio Page
+    'Portfolio': 'Portfólio',
+    'Our Services': 'Nossos Serviços',
+    'Scale Your Business': 'Escale Seu Negócio',
+    'Stop Doing Repetitive Work. Automate It.': 'Pare de Fazer Trabalho Repetitivo. Automatize.',
+    'From AI chatbots to custom dashboards, we build the tech your business actually needs': 'De chatbots com IA a dashboards sob medida, construímos a tecnologia que seu negócio realmente precisa',
+    "What's included": 'O que está incluído',
+    'Ready to Redefine Your Potential?': 'Pronto para Redefinir Seu Potencial?',
+    'Join the forward-thinking companies already scaling with Skale Club.': 'Junte-se às empresas inovadoras que já estão escalando com a Skale Club.',
+    'Book a Strategy Session': 'Agendar Sessão Estratégica',
+    'Back to Home': 'Voltar ao Início',
+    'Open tool': 'Abrir ferramenta',
+    'Open tool in new tab': 'Abrir ferramenta em nova aba',
+    'We help companies achieve unprecedented growth through modern marketing systems.': 'Ajudamos empresas a alcançar crescimento sem precedentes através de sistemas modernos de marketing.',
   }
 } as const;
 

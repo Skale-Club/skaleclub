@@ -262,97 +262,186 @@ export const salesAppSettings = pgTable("sales_app_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertSalesRepSchema = createInsertSchema(salesReps).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertSalesRepSchema = z.object({
+  userId: z.string().min(1),
+  displayName: z.string().min(1),
+  email: z.string().email().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  team: z.string().nullable().optional(),
+  role: z.enum(salesRepRoleEnum.enumValues as [string, ...string[]]).default("rep"),
+  vcardId: z.number().int().nullable().optional(),
+  avatarUrl: z.string().nullable().optional(),
+  ghlUserId: z.string().nullable().optional(),
+  isActive: z.boolean().default(true),
 });
 
-export const insertSalesLeadSchema = createInsertSchema(salesLeads).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertSalesLeadSchema = z.object({
+  name: z.string().min(1),
+  legalName: z.string().nullable().optional(),
+  website: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  email: z.string().email().nullable().optional(),
+  industry: z.string().nullable().optional(),
+  socialUrls: z.array(z.object({
+    platform: z.string(),
+    url: z.string()
+  })).default([]),
+  photos: z.array(z.string()).default([]),
+  source: z.string().default("manual"),
+  status: z.enum(salesLeadStatusEnum.enumValues as [string, ...string[]]).default("lead"),
+  ownerRepId: z.number().int().nullable().optional(),
+  territoryName: z.string().nullable().optional(),
+  ghlContactId: z.string().nullable().optional(),
+  ghlCompanyId: z.string().nullable().optional(),
+  lastVisitAt: z.union([z.string(), z.date(), z.null()]).optional(),
+  nextVisitDueAt: z.union([z.string(), z.date(), z.null()]).optional(),
+  notes: z.string().nullable().optional(),
 });
 
-export const insertSalesLeadLocationSchema = createInsertSchema(salesLeadLocations).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertSalesLeadLocationSchema = z.object({
+  leadId: z.number().int(),
+  label: z.string().default("Main"),
+  addressLine1: z.string().min(1),
+  addressLine2: z.string().nullable().optional(),
+  city: z.string().nullable().optional(),
+  state: z.string().nullable().optional(),
+  postalCode: z.string().nullable().optional(),
+  country: z.string().default("US"),
+  lat: z.string().nullable().optional(),
+  lng: z.string().nullable().optional(),
+  geofenceRadiusMeters: z.number().int().default(150),
+  isPrimary: z.boolean().default(true),
 });
 
-export const insertSalesLeadContactSchema = createInsertSchema(salesLeadContacts).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertSalesLeadContactSchema = z.object({
+  leadId: z.number().int(),
+  name: z.string().min(1),
+  jobTitle: z.string().nullable().optional(),
+  email: z.string().email().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  isPrimary: z.boolean().default(false),
+  ghlContactId: z.string().nullable().optional(),
 });
 
-export const insertSalesVisitSchema = createInsertSchema(salesVisits).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertSalesVisitSchema = z.object({
+  repId: z.number().int(),
+  leadId: z.number().int(),
+  locationId: z.number().int().nullable().optional(),
+  status: z.enum(salesVisitStatusEnum.enumValues as [string, ...string[]]).default("planned"),
+  scheduledAt: z.union([z.string(), z.date(), z.null()]).optional(),
+  checkedInAt: z.union([z.string(), z.date(), z.null()]).optional(),
+  checkedOutAt: z.union([z.string(), z.date(), z.null()]).optional(),
+  durationSeconds: z.number().int().nullable().optional(),
+  checkInLat: z.string().nullable().optional(),
+  checkInLng: z.string().nullable().optional(),
+  checkOutLat: z.string().nullable().optional(),
+  checkOutLng: z.string().nullable().optional(),
+  distanceFromTargetMeters: z.number().int().nullable().optional(),
+  gpsAccuracyMeters: z.number().int().nullable().optional(),
+  validationStatus: z.enum(salesVisitValidationEnum.enumValues as [string, ...string[]]).default("gps_unavailable"),
+  manualOverrideReason: z.string().nullable().optional(),
+  source: z.string().default("mobile"),
 });
 
-export const insertSalesVisitNoteSchema = createInsertSchema(salesVisitNotes).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertSalesVisitNoteSchema = z.object({
+  visitId: z.number().int(),
+  summary: z.string().nullable().optional(),
+  outcome: z.string().nullable().optional(),
+  sentiment: z.string().nullable().optional(),
+  objections: z.string().nullable().optional(),
+  competitorMentioned: z.string().nullable().optional(),
+  nextStep: z.string().nullable().optional(),
+  followUpRequired: z.boolean().default(false),
+  audioUrl: z.string().nullable().optional(),
+  audioDurationSeconds: z.number().int().nullable().optional(),
+  audioTranscription: z.string().nullable().optional(),
+  createdByRepId: z.number().int().nullable().optional(),
 });
 
-export const insertSalesOpportunitySchema = createInsertSchema(salesOpportunitiesLocal).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertSalesOpportunitySchema = z.object({
+  leadId: z.number().int(),
+  repId: z.number().int(),
+  visitId: z.number().int().nullable().optional(),
+  title: z.string().min(1),
+  pipelineKey: z.string().nullable().optional(),
+  stageKey: z.string().nullable().optional(),
+  value: z.number().int().default(0),
+  currency: z.string().default("USD"),
+  status: z.enum(salesOpportunityStatusEnum.enumValues as [string, ...string[]]).default("open"),
+  closeDate: z.union([z.string(), z.date(), z.null()]).optional(),
+  lossReason: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  ghlOpportunityId: z.string().nullable().optional(),
+  syncStatus: z.enum(salesSyncStatusEnum.enumValues as [string, ...string[]]).default("pending"),
 });
 
-export const insertSalesTaskSchema = createInsertSchema(salesTasks).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertSalesTaskSchema = z.object({
+  leadId: z.number().int().nullable().optional(),
+  visitId: z.number().int().nullable().optional(),
+  opportunityId: z.number().int().nullable().optional(),
+  repId: z.number().int(),
+  type: z.string().default("follow_up"),
+  title: z.string().min(1),
+  description: z.string().nullable().optional(),
+  dueAt: z.union([z.string(), z.date(), z.null()]).optional(),
+  status: z.enum(salesTaskStatusEnum.enumValues as [string, ...string[]]).default("pending"),
+  ghlTaskId: z.string().nullable().optional(),
 });
 
-export const insertSalesSyncEventSchema = createInsertSchema(salesSyncEvents).omit({
-  id: true,
-  createdAt: true,
+export const insertSalesSyncEventSchema = z.object({
+  provider: z.string().default("gohighlevel"),
+  entityType: z.string().min(1),
+  entityId: z.string().min(1),
+  direction: z.enum(salesSyncDirectionEnum.enumValues as [string, ...string[]]).default("outbound"),
+  status: z.enum(salesSyncStatusEnum.enumValues as [string, ...string[]]).default("pending"),
+  payload: z.any().default({}),
+  attemptCount: z.number().int().default(0),
+  lastError: z.string().nullable().optional(),
+  lastAttemptAt: z.union([z.string(), z.date(), z.null()]).optional(),
 });
 
-export const insertSalesAppSettingsSchema = createInsertSchema(salesAppSettings).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertSalesAppSettingsSchema = z.object({
+  checkInRequiresGps: z.boolean().default(true),
+  defaultGeofenceRadiusMeters: z.number().int().default(150),
+  allowManualOverride: z.boolean().default(true),
+  offlineQueueEnabled: z.boolean().default(true),
+  defaultPipelineKey: z.string().nullable().optional(),
+  defaultStageKey: z.string().nullable().optional(),
+  defaultTaskTemplate: z.string().nullable().optional(),
 });
 
 export type SalesRep = typeof salesReps.$inferSelect;
-export type InsertSalesRep = z.infer<typeof insertSalesRepSchema>;
+export type InsertSalesRep = typeof salesReps.$inferInsert;
 export type SalesRepRole = typeof salesRepRoleEnum.enumValues[number];
 
 export type SalesLead = typeof salesLeads.$inferSelect;
-export type InsertSalesLead = z.infer<typeof insertSalesLeadSchema>;
+export type InsertSalesLead = typeof salesLeads.$inferInsert;
 
 export type SalesLeadLocation = typeof salesLeadLocations.$inferSelect;
-export type InsertSalesLeadLocation = z.infer<typeof insertSalesLeadLocationSchema>;
+export type InsertSalesLeadLocation = typeof salesLeadLocations.$inferInsert;
 
 export type SalesLeadContact = typeof salesLeadContacts.$inferSelect;
-export type InsertSalesLeadContact = z.infer<typeof insertSalesLeadContactSchema>;
+export type InsertSalesLeadContact = typeof salesLeadContacts.$inferInsert;
 
 export type SalesVisit = typeof salesVisits.$inferSelect;
-export type InsertSalesVisit = z.infer<typeof insertSalesVisitSchema>;
+export type InsertSalesVisit = typeof salesVisits.$inferInsert;
 export type SalesVisitStatus = typeof salesVisitStatusEnum.enumValues[number];
 export type SalesVisitValidationStatus = typeof salesVisitValidationEnum.enumValues[number];
 
 export type SalesVisitNote = typeof salesVisitNotes.$inferSelect;
-export type InsertSalesVisitNote = z.infer<typeof insertSalesVisitNoteSchema>;
+export type InsertSalesVisitNote = typeof salesVisitNotes.$inferInsert;
 
 export type SalesOpportunity = typeof salesOpportunitiesLocal.$inferSelect;
-export type InsertSalesOpportunity = z.infer<typeof insertSalesOpportunitySchema>;
+export type InsertSalesOpportunity = typeof salesOpportunitiesLocal.$inferInsert;
 export type SalesOpportunityStatus = typeof salesOpportunityStatusEnum.enumValues[number];
 
 export type SalesTask = typeof salesTasks.$inferSelect;
-export type InsertSalesTask = z.infer<typeof insertSalesTaskSchema>;
+export type InsertSalesTask = typeof salesTasks.$inferInsert;
 export type SalesTaskStatus = typeof salesTaskStatusEnum.enumValues[number];
 
 export type SalesSyncEvent = typeof salesSyncEvents.$inferSelect;
-export type InsertSalesSyncEvent = z.infer<typeof insertSalesSyncEventSchema>;
+export type InsertSalesSyncEvent = typeof salesSyncEvents.$inferInsert;
 export type SalesSyncStatus = typeof salesSyncStatusEnum.enumValues[number];
 
 export type SalesAppSettings = typeof salesAppSettings.$inferSelect;
-export type InsertSalesAppSettings = z.infer<typeof insertSalesAppSettingsSchema>;
+export type InsertSalesAppSettings = typeof salesAppSettings.$inferInsert;

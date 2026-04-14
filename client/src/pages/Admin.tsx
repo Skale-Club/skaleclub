@@ -23,6 +23,7 @@ import { LinksSection } from '@/components/admin/LinksSection';
 import { VCardsManager } from '@/components/admin/VCardsManager';
 import { XpotSalesSection } from '@/components/admin/XpotSalesSection';
 import { SIDEBAR_MENU_ITEMS } from '@/components/admin/shared/constants';
+import { SectionHeader } from '@/components/admin/shared';
 import type { AdminSection, CompanySettingsData } from '@/components/admin/shared/types';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { Loader2 } from 'lucide-react';
@@ -164,6 +165,16 @@ function AdminContent() {
       <main className="flex-1 min-w-0 relative bg-background overflow-visible md:overflow-y-scroll md:h-screen" id="admin-top">
         <AdminHeader title={companySettings?.companyName || 'Admin Panel'} />
         <div className="p-6 pb-16 md:p-8 md:pb-10">
+          {(() => {
+            const currentItem = menuItems.find(item => item.id === activeSection);
+            return currentItem ? (
+              <SectionHeader
+                title={currentItem.title}
+                description={currentItem.description}
+                icon={<currentItem.icon className="w-5 h-5" />}
+              />
+            ) : null;
+          })()}
           {activeSection === 'dashboard' && <DashboardSection onNavigate={handleSectionSelect} />}
           {activeSection === 'leads' && <LeadsSection />}
           {activeSection === 'website' && <WebsiteSettingsSection />}

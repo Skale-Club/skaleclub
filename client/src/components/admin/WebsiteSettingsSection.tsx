@@ -168,12 +168,8 @@ export function WebsiteSettingsSection() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold">Website</h1>
-          <p className="text-muted-foreground">Customize homepage content and sections</p>
-        </div>
+      {/* Saving indicator */}
+      <div className="flex items-center justify-end gap-4 flex-wrap">
         {isSaving && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />

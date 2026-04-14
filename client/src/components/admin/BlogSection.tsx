@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Calendar, Check, ExternalLink, FileText, Image, Loader2, Pencil, Plus, Tag, Trash2 } from 'lucide-react';
+import { EmptyState } from './shared';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -874,11 +875,7 @@ export function BlogSection({ resetSignal }: { resetSignal: number }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground" data-testid="text-blog-title">{blogMenuTitle}</h1>
-          <p className="text-sm text-muted-foreground">Manage your blog content and SEO</p>
-        </div>
+      <div className="flex justify-end">
         <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
           <Dialog open={isTagManagerOpen} onOpenChange={setIsTagManagerOpen}>
             <DialogTrigger asChild>
@@ -1053,17 +1050,17 @@ export function BlogSection({ resetSignal }: { resetSignal: number }) {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <FileText className="w-12 h-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium">No blog posts yet</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Create your first blog post to engage your audience
-            </p>
-            <Button onClick={() => setIsCreateOpen(true)} data-testid="button-blog-first-post">
-              <Plus className="w-4 h-4 mr-2" />
-              Create First Post
-            </Button>
-          </div>
+          <EmptyState
+            icon={<FileText />}
+            title="No blog posts yet"
+            description="Create your first blog post to engage your audience"
+            action={
+              <Button onClick={() => setIsCreateOpen(true)} data-testid="button-blog-first-post">
+                <Plus className="w-4 h-4 mr-2" />
+                Create First Post
+              </Button>
+            }
+          />
         )}
       </div>
       <AlertDialog open={!!tagToDelete} onOpenChange={(open) => !open && setTagToDelete(null)}>

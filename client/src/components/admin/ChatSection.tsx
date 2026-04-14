@@ -12,6 +12,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Archive, GripVertical, LayoutGrid, Loader2, MessageSquare, RotateCcw, Search, Send, Settings, Trash2, User } from 'lucide-react';
+import { EmptyState } from './shared';
 import { SiGoogle, SiOpenai } from 'react-icons/si';
 import { Link } from 'wouter';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -40,7 +41,7 @@ function ChatBubble({ message, assistantAvatar }: { message: ConversationMessage
         
         {/* Avatar Pequeno (Apenas para o assistente) */}
         {isAssistant && (
-          <div className="h-8 w-8 rounded-full bg-slate-200 shrink-0 overflow-hidden mt-1 border border-slate-200 flex items-center justify-center">
+          <div className="h-8 w-8 rounded-full bg-muted shrink-0 overflow-hidden mt-1 border flex items-center justify-center">
             {assistantAvatar ? (
               <img src={assistantAvatar} alt="Assistant" className="h-full w-full object-cover" />
             ) : (
@@ -53,7 +54,7 @@ function ChatBubble({ message, assistantAvatar }: { message: ConversationMessage
         <div
           className={`p-3 text-sm shadow-sm relative ${
             isAssistant
-              ? "bg-white text-slate-800 rounded-tr-xl rounded-br-xl rounded-bl-xl border border-slate-100" // Formato bolha esquerda
+              ? "bg-card text-card-foreground rounded-tr-xl rounded-br-xl rounded-bl-xl border" // Formato bolha esquerda
               : "bg-blue-600 text-white rounded-tl-xl rounded-bl-xl rounded-br-xl" // Formato bolha direita
           }`}
         >
@@ -466,7 +467,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas!"`;
     const label = status === 'closed' ? 'Archived' : status === 'open' ? 'Open' : status;
     const badgeClass = status === 'open'
       ? 'bg-blue-500/10 text-blue-200 border border-blue-400/50 rounded-full px-3 py-1 text-xs font-semibold'
-      : 'bg-slate-700/40 text-slate-300 border border-slate-500/50 rounded-full px-3 py-1 text-xs font-semibold';
+      : 'bg-muted text-muted-foreground border rounded-full px-3 py-1 text-xs font-semibold';
     return <span className={badgeClass}>{label}</span>;
   };
 
@@ -531,11 +532,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas!"`;
 
   return (
     <div className="flex flex-col h-[calc(100vh-140px)] gap-4">
-      <div className="flex items-center justify-between shrink-0">
-        <div>
-          <h1 className="text-2xl font-bold">Inbox</h1>
-          <p className="text-muted-foreground">Manage your conversations.</p>
-        </div>
+      <div className="flex items-center justify-end shrink-0">
         <div className="flex items-center gap-2">
            <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
              <SheetTrigger asChild>
@@ -789,9 +786,12 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas!"`;
                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                 </div>
              ) : visibleConversations.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground text-sm">
-                   No conversations found.
-                </div>
+                <EmptyState
+                  icon={<MessageSquare />}
+                  title="No conversations"
+                  description="Conversations started from the chat widget will appear here"
+                  className="p-8"
+                />
              ) : (
                 visibleConversations.map(conv => (
                    <div 
@@ -944,11 +944,11 @@ function ObjectiveRow({ objective, onToggle }: { objective: IntakeObjective; onT
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-3 rounded-lg border bg-white px-3 py-2 shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:bg-slate-800 dark:border-slate-700"
+      className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
     >
       <button
         type="button"
-        className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-slate-200 hover:bg-slate-50 text-slate-500 dark:border-slate-600 dark:hover:bg-slate-700 dark:text-slate-400"
+        className="h-8 w-8 inline-flex items-center justify-center rounded-md border hover:bg-muted text-muted-foreground"
         {...attributes}
         {...listeners}
         aria-label="Drag to reorder"

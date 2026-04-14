@@ -62,7 +62,7 @@ export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
           ) : null}
         </div>
         
-        <div className="h-[450px] rounded-2xl overflow-hidden shadow-2xl border border-slate-100 lg:col-span-1 relative">
+        <div className="h-[450px] rounded-2xl overflow-hidden shadow-2xl border lg:col-span-1 relative">
           {embedUrl ? (
             <iframe
               src={embedUrl}

@@ -181,7 +181,7 @@ export default function Home() {
     <div className="pb-0">
       {/* Hero Section */}
       {/* Added responsive bottom padding (pb-36 sm:pb-48 lg:pb-0) to create a void for the absolute badges to occupy without covering the image */}
-      <section className="relative flex items-end pt-16 sm:pt-20 lg:pt-16 pb-36 sm:pb-48 lg:pb-0 overflow-hidden bg-[#1C53A3] min-h-[65vh] sm:min-h-[50vh] lg:min-h-[500px]">
+      <section className="relative flex items-end pt-28 sm:pt-24 lg:pt-16 pb-36 sm:pb-48 lg:pb-4 overflow-hidden bg-[#1C53A3] min-h-[70vh] sm:min-h-[55vh] lg:min-h-[550px]">
         <div className="container-custom mx-auto relative z-10 w-full">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-1 sm:gap-6 lg:gap-8 items-end">
             <div className="order-1 lg:order-2 text-white pt-6 sm:pt-8 lg:pt-16 pb-16 sm:pb-24 lg:pb-32 lg:translate-y-0 relative z-20">
@@ -194,7 +194,7 @@ export default function Home() {
                   />
                 </div>
               ) : null}
-              <h1 className="text-[11vw] sm:text-5xl md:text-6xl lg:text-4xl xl:text-5xl font-bold mb-3 lg:mb-6 font-display leading-[1.05] sm:leading-[1.1]">
+              <h1 className="text-[9vw] sm:text-5xl md:text-6xl lg:text-4xl xl:text-5xl font-bold mb-3 lg:mb-6 font-display leading-[1.05] sm:leading-[1.1]">
                 {companySettings?.heroTitle ? (
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">{t(companySettings.heroTitle)}</span>
                 ) : null}
@@ -232,11 +232,13 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Hero Background Gradient */}
+        {/* Hero Background Gradient with Light Flare and Darker Vignette/Sides */}
         <div
           className="absolute inset-0"
           style={{
             background: `
+              radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.35) 80%, rgba(0, 0, 0, 0.85) 100%),
+              radial-gradient(circle at 65% 10%, rgba(100, 135, 215, 0.30) 0%, transparent 60%),
               linear-gradient(
                 to right bottom,
                 #09152d,

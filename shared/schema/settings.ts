@@ -84,30 +84,76 @@ export const companySettings = pgTable("company_settings", {
 });
 
 // Insert schemas
-export const insertIntegrationSettingsSchema = createInsertSchema(integrationSettings).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
+export const insertIntegrationSettingsSchema = z.object({
+  provider: z.string().default("gohighlevel"),
+  apiKey: z.string().nullable().optional(),
+  locationId: z.string().nullable().optional(),
+  calendarId: z.string().default("2irhr47AR6K0AQkFqEQl"),
+  isEnabled: z.boolean().default(false),
 });
-export const insertTwilioSettingsSchema = createInsertSchema(twilioSettings).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+
+export const insertTwilioSettingsSchema = z.object({
+  enabled: z.boolean().default(false),
+  accountSid: z.string().nullable().optional(),
+  authToken: z.string().nullable().optional(),
+  fromPhoneNumber: z.string().nullable().optional(),
+  toPhoneNumber: z.string().nullable().optional(),
+  toPhoneNumbers: z.array(z.string()).default([]),
+  notifyOnNewChat: z.boolean().default(true),
 });
-export const insertCompanySettingsSchema = createInsertSchema(companySettings, {
+
+export const insertCompanySettingsSchema = z.object({
+  companyName: z.string().default('Company Name'),
+  companyEmail: z.string().email().default('contact@company.com'),
+  companyPhone: z.string().default(''),
+  companyAddress: z.string().default(''),
+  workingHoursStart: z.string().default('08:00'),
+  workingHoursEnd: z.string().default('18:00'),
+  logoMain: z.string().default(''),
+  logoDark: z.string().default(''),
+  logoIcon: z.string().default(''),
+  sectionsOrder: z.array(z.string()).nullable().optional(),
+  socialLinks: z.any().default([]),
+  mapEmbedUrl: z.string().default('https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d259505.12434421625!2d-71.37915684523166!3d42.296281796774615!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sus!4v1767905922570!5m2!1sen!2sus'),
+  heroTitle: z.string().default('Your 5-Star Marketing Company'),
+  heroSubtitle: z.string().default('Book your marketing service today and watch your business grow'),
+  heroImageUrl: z.string().default(''),
+  aboutImageUrl: z.string().default(''),
+  ctaText: z.string().default('Book Now'),
+  timeFormat: z.string().default('12h'),
+  businessHours: z.any().nullable().optional(),
+  seoTitle: z.string().default('Company Name - Professional Services'),
+  seoDescription: z.string().default('Professional marketing services for homes and businesses.'),
+  ogImage: z.string().default(''),
+  seoKeywords: z.string().default(''),
+  seoAuthor: z.string().default(''),
+  seoCanonicalUrl: z.string().default(''),
+  seoRobotsTag: z.string().default('index, follow'),
+  ogType: z.string().default('website'),
+  ogSiteName: z.string().default(''),
+  twitterCard: z.string().default('summary_large_image'),
+  twitterSite: z.string().default(''),
+  twitterCreator: z.string().default(''),
+  schemaLocalBusiness: z.any().default({}),
+  gtmContainerId: z.string().default(''),
+  ga4MeasurementId: z.string().default(''),
+  facebookPixelId: z.string().default(''),
+  gtmEnabled: z.boolean().default(false),
+  ga4Enabled: z.boolean().default(false),
+  facebookPixelEnabled: z.boolean().default(false),
   homepageContent: z.custom<HomepageContent>().optional().nullable(),
   formConfig: z.custom<FormConfig>().optional().nullable(),
   pageSlugs: z.custom<PageSlugs>().optional().nullable(),
   linksPageConfig: z.custom<LinksPageConfig>().optional().nullable(),
-}).omit({ id: true });
+});
 
 // Types
 export type IntegrationSettings = typeof integrationSettings.$inferSelect;
-export type InsertIntegrationSettings = z.infer<typeof insertIntegrationSettingsSchema>;
+export type InsertIntegrationSettings = typeof integrationSettings.$inferInsert;
 export type TwilioSettings = typeof twilioSettings.$inferSelect;
-export type InsertTwilioSettings = z.infer<typeof insertTwilioSettingsSchema>;
+export type InsertTwilioSettings = typeof twilioSettings.$inferInsert;
 export type CompanySettings = typeof companySettings.$inferSelect;
-export type InsertCompanySettings = z.infer<typeof insertCompanySettingsSchema>;
+export type InsertCompanySettings = typeof companySettings.$inferInsert;
 
 // Interfaces
 export interface ConsultingStep {

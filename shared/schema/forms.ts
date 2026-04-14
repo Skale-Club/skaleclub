@@ -73,17 +73,46 @@ export const formLeads = pgTable("form_leads", {
 }));
 
 // Insert schema
-export const insertFormLeadSchema = createInsertSchema(formLeads).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  status: true,
-  formCompleto: true,
-  ultimaPerguntaRespondida: true,
-  notificacaoEnviada: true,
-  dataContato: true,
-  ghlContactId: true,
-  ghlSyncStatus: true,
+export const insertFormLeadSchema = z.object({
+  sessionId: z.string().uuid(),
+  nome: z.string().min(1),
+  email: z.string().email().nullable().optional(),
+  telefone: z.string().nullable().optional(),
+  cidadeEstado: z.string().nullable().optional(),
+  tipoNegocio: z.string().nullable().optional(),
+  tipoNegocioOutro: z.string().nullable().optional(),
+  tempoNegocio: z.string().nullable().optional(),
+  experienciaMarketing: z.string().nullable().optional(),
+  orcamentoAnuncios: z.string().nullable().optional(),
+  principalDesafio: z.string().nullable().optional(),
+  disponibilidade: z.string().nullable().optional(),
+  expectativaResultado: z.string().nullable().optional(),
+  scoreTotal: z.number().int().default(0),
+  classificacao: z.enum(leadClassificationEnum.enumValues as [string, ...string[]]).nullable().optional(),
+  scoreTipoNegocio: z.number().int().default(0),
+  scoreTempoNegocio: z.number().int().default(0),
+  scoreExperiencia: z.number().int().default(0),
+  scoreOrcamento: z.number().int().default(0),
+  scoreDesafio: z.number().int().default(0),
+  scoreDisponibilidade: z.number().int().default(0),
+  scoreExpectativa: z.number().int().default(0),
+  tempoTotalSegundos: z.number().int().nullable().optional(),
+  userAgent: z.string().nullable().optional(),
+  urlOrigem: z.string().nullable().optional(),
+  utmSource: z.string().nullable().optional(),
+  utmMedium: z.string().nullable().optional(),
+  utmCampaign: z.string().nullable().optional(),
+  status: z.enum(leadStatusEnum.enumValues as [string, ...string[]]).default("novo"),
+  formCompleto: z.boolean().default(false),
+  ultimaPerguntaRespondida: z.number().int().default(0),
+  notificacaoEnviada: z.boolean().default(false),
+  dataContato: z.union([z.string(), z.date(), z.null()]).optional(),
+  observacoes: z.string().nullable().optional(),
+  customAnswers: z.record(z.string()).default({}),
+  ghlContactId: z.string().nullable().optional(),
+  ghlSyncStatus: z.string().default("pending"),
+  source: z.string().default("form"),
+  conversationId: z.string().nullable().optional(),
 });
 
 // Lead enum values for Zod schema
@@ -130,7 +159,7 @@ export const formLeadProgressSchema = z.object({
 
 // Types
 export type FormLead = typeof formLeads.$inferSelect;
-export type InsertFormLead = z.infer<typeof insertFormLeadSchema>;
+export type InsertFormLead = typeof formLeads.$inferInsert;
 export type LeadClassification = typeof leadClassificationEnum.enumValues[number];
 export type LeadStatus = typeof leadStatusEnum.enumValues[number];
 export type FormLeadProgressInput = z.infer<typeof formLeadProgressSchema>;

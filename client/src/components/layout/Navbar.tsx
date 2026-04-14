@@ -37,10 +37,10 @@ export function Navbar() {
   }, [location]);
 
   return (
-    <nav className="bg-[#1c1e24]/85 backdrop-blur-md fixed top-0 left-0 right-0 z-50">
-      <div className="container-custom mx-auto">
+    <nav className="fixed top-4 left-0 right-0 z-50 px-4">
+      <div className="max-w-7xl mx-auto bg-[#1c1e24]/60 backdrop-blur-md border border-white/5 rounded-full shadow-md shadow-black/10 px-4">
         <div className="flex justify-between items-center h-16">
-          <Link href="/" className="flex items-center gap-2 min-h-[40px] min-w-[54px]">
+          <Link href="/" className="flex items-center gap-2 min-h-[40px] min-w-[54px] pl-3 pr-4">
             {companySettings?.logoMain ? (
               <img
                 src={companySettings.logoMain}
@@ -91,6 +91,14 @@ export function Navbar() {
 
             <LanguageToggle />
 
+            <Link
+              href="/admin/login"
+              className="text-sm font-semibold text-white bg-transparent border border-white/40 px-4 py-2 rounded-full hover:bg-white/10 transition-colors"
+              data-testid="button-login"
+            >
+              {t("Login")}
+            </Link>
+
             {displayPhone && (
               <a
                 href={`tel:${telPhone}`}
@@ -101,14 +109,6 @@ export function Navbar() {
                 {displayPhone}
               </a>
             )}
-
-            <Link
-              href="/admin/login"
-              className="text-sm font-semibold text-white bg-transparent border border-white/40 px-4 py-2 rounded-full hover:bg-white/10 transition-colors"
-              data-testid="button-login"
-            >
-              {t("Login")}
-            </Link>
           </div>
 
           <div className="flex md:hidden items-center gap-3">
@@ -126,7 +126,7 @@ export function Navbar() {
       </div>
 
       {isMenuOpen && (
-        <div className="md:hidden bg-white border-b border-gray-100 py-6 px-6 flex flex-col gap-6 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="md:hidden bg-card border-b py-6 px-6 flex flex-col gap-6 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="flex flex-col gap-5">
             {navLinks.map((link) => {
               const isHashLink = link.href.startsWith("/#");
@@ -165,7 +165,7 @@ export function Navbar() {
             })}
           </div>
 
-          <div className="pt-6 border-t border-gray-100 flex flex-col gap-6">
+          <div className="pt-6 border-t flex flex-col gap-6">
             <Link
               href="/admin/login"
               className="flex items-center gap-3 text-lg font-bold text-primary hover:opacity-80 transition-opacity"

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Check, Loader2, Plus, Trash2, GripVertical, ExternalLink } from 'lucide-react';
+import { Check, Loader2, Plus, Trash2, GripVertical, ExternalLink, Link as LinkIcon, AtSign } from 'lucide-react';
+import { EmptyState } from './shared';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { usePagePaths } from '@/lib/pagePaths';
@@ -127,25 +128,19 @@ export function LinksSection() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold">Links Page</h1>
-          <p className="text-muted-foreground">Manage your bio links and social media profiles</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {isSaving && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Saving...</span>
-            </div>
-          )}
-          <Button variant="outline" size="sm" asChild>
-            <a href={pagePaths.links} target="_blank" className="flex items-center gap-2">
-              <ExternalLink className="h-4 w-4" />
-              View Page
-            </a>
-          </Button>
-        </div>
+      <div className="flex items-center justify-end gap-3">
+        {isSaving && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Saving...</span>
+          </div>
+        )}
+        <Button variant="outline" size="sm" asChild>
+          <a href={pagePaths.links} target="_blank" className="flex items-center gap-2">
+            <ExternalLink className="h-4 w-4" />
+            View Page
+          </a>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -233,9 +228,13 @@ export function LinksSection() {
                 </div>
               ))}
               {config.socialLinks.length === 0 && (
-                <p className="text-center py-4 text-sm text-muted-foreground italic">
-                  No social links added yet.
-                </p>
+                <EmptyState
+                  icon={<AtSign />}
+                  title="No social links"
+                  description="Add platforms like Instagram, LinkedIn, Twitter"
+                  action={<Button size="sm" variant="outline" onClick={addSocial}><Plus className="h-4 w-4 mr-2" /> Add social</Button>}
+                  className="p-6"
+                />
               )}
             </CardContent>
           </Card>
@@ -258,7 +257,7 @@ export function LinksSection() {
             </CardHeader>
             <CardContent className="space-y-4">
               {config.links.map((link, index) => (
-                <div key={index} className="p-4 border rounded-lg bg-slate-50/50 dark:bg-slate-900/20 group relative">
+                <div key={index} className="p-4 border rounded-lg bg-muted/30 group relative">
                   <div className="flex gap-4">
                     <div className="mt-2 text-muted-foreground group-hover:text-foreground cursor-grab">
                       <GripVertical className="h-5 w-5" />
@@ -293,10 +292,12 @@ export function LinksSection() {
                 </div>
               ))}
               {config.links.length === 0 && (
-                <div className="text-center py-12 border-2 border-dashed rounded-lg">
-                  <p className="text-muted-foreground">You haven't added any links yet.</p>
-                  <Button variant="ghost" onClick={addLink}>Add your first link</Button>
-                </div>
+                <EmptyState
+                  icon={<LinkIcon />}
+                  title="No links yet"
+                  description="Add your first link to show on the bio page"
+                  action={<Button onClick={addLink}><Plus className="h-4 w-4 mr-2" /> Add first link</Button>}
+                />
               )}
             </CardContent>
           </Card>

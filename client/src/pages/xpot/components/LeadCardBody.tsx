@@ -17,7 +17,7 @@ type LeadLike = {
   }[];
 };
 
-export function buildRouteUrl(loc?: LeadLike["locations"][0]): string | null {
+export function buildRouteUrl(loc?: NonNullable<LeadLike["locations"]>[number]): string | null {
   if (!loc) return null;
   if (loc.lat && loc.lng)
     return `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}`;
