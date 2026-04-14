@@ -32,6 +32,7 @@ import { format } from 'date-fns';
 import { DEFAULT_CHAT_OBJECTIVES, SIDEBAR_MENU_ITEMS } from './shared/constants';
 import type { ChatSettingsData, CompanySettingsData, ConversationMessage, ConversationSummary, IntakeObjective, UrlRule } from './shared/types';
 import { ensureArray, uploadFileToServer } from './shared/utils';
+import { SectionHeader } from './shared';
 function ChatBubble({ message, assistantAvatar }: { message: ConversationMessage; assistantAvatar?: string }) {
   const isAssistant = message.role === "assistant";
 
@@ -532,15 +533,18 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas!"`;
 
   return (
     <div className="flex flex-col h-[calc(100vh-140px)] gap-4">
-      <div className="flex items-center justify-end shrink-0">
-        <div className="flex items-center gap-2">
-           <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
-             <SheetTrigger asChild>
-               <Button variant="outline" size="sm" className="gap-2">
-                 <Settings className="w-4 h-4" />
-                 Settings
-               </Button>
-             </SheetTrigger>
+      <SectionHeader
+        title="Chat"
+        description="AI assistant conversations and response settings"
+        icon={<MessageSquare className="w-5 h-5" />}
+        action={
+          <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Settings className="w-4 h-4" />
+                Settings
+              </Button>
+            </SheetTrigger>
              <SheetContent className="w-[400px] sm:w-[540px] overflow-y-auto">
                <SheetHeader>
                  <SheetTitle>Chat Settings</SheetTitle>
@@ -740,10 +744,10 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas!"`;
                     </div>
                   </div>
                </div>
-             </SheetContent>
-           </Sheet>
-        </div>
-      </div>
+            </SheetContent>
+          </Sheet>
+        }
+      />
 
       <div className="flex flex-1 gap-4 overflow-hidden">
         {/* Left Sidebar - Conversation List */}

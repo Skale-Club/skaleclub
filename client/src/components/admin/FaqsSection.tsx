@@ -12,7 +12,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { GripVertical, HelpCircle, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
-import { EmptyState } from './shared';
+import { EmptyState, SectionHeader } from './shared';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -192,30 +192,35 @@ export function FaqsSection() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
-        <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingFaq(null); }}>
-          <DialogTrigger asChild>
-            <Button data-testid="button-add-faq">
-              <Plus className="w-4 h-4 mr-2" />
-              Add FAQ
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <FaqForm 
-              faq={editingFaq}
-              onSubmit={(data) => {
-                if (editingFaq) {
-                  updateFaq.mutate({ ...data, id: editingFaq.id });
-                } else {
-                  createFaq.mutate(data);
-                }
-              }}
-              isLoading={createFaq.isPending || updateFaq.isPending}
-              nextOrder={faqs?.length || 0}
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
+      <SectionHeader
+        title="FAQs"
+        description="Questions and answers shown on the FAQ page"
+        icon={<HelpCircle className="w-5 h-5" />}
+        action={
+          <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingFaq(null); }}>
+            <DialogTrigger asChild>
+              <Button size="sm" data-testid="button-add-faq">
+                <Plus className="w-4 h-4 mr-2" />
+                Add FAQ
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <FaqForm
+                faq={editingFaq}
+                onSubmit={(data) => {
+                  if (editingFaq) {
+                    updateFaq.mutate({ ...data, id: editingFaq.id });
+                  } else {
+                    createFaq.mutate(data);
+                  }
+                }}
+                isLoading={createFaq.isPending || updateFaq.isPending}
+                nextOrder={faqs?.length || 0}
+              />
+            </DialogContent>
+          </Dialog>
+        }
+      />
 
       {faqs?.length === 0 ? (
         <EmptyState

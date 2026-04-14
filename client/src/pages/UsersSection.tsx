@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Plus, Pencil, Trash2, Check, Users, Upload } from 'lucide-react';
+import { SectionHeader } from '@/components/admin/shared';
 
 async function uploadFileToServer(file: File): Promise<string> {
   const base64Data = await new Promise<string>((resolve, reject) => {
@@ -168,19 +169,18 @@ export function UsersSection() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Users</h2>
-          <p className="text-muted-foreground">Manage user accounts and permissions</p>
-        </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Add User
-            </Button>
-          </DialogTrigger>
+      <SectionHeader
+        title="Users"
+        description="Manage admin and team member accounts"
+        icon={<Users className="w-5 h-5" />}
+        action={
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus className="w-4 h-4 mr-2" />
+                Add User
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add New User</DialogTitle>
@@ -243,8 +243,9 @@ export function UsersSection() {
               </Button>
             </DialogFooter>
           </DialogContent>
-        </Dialog>
-      </div>
+          </Dialog>
+        }
+      />
 
       {/* Users Table */}
       <Card className="border-0 shadow-none">

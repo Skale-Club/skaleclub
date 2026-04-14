@@ -167,7 +167,7 @@ function AdminContent() {
         <div className="p-6 pb-16 md:p-8 md:pb-10">
           {(() => {
             // Sections that render their own SectionHeader (with custom actions)
-            const sectionsWithOwnHeader: AdminSection[] = ['leads'];
+            const sectionsWithOwnHeader: AdminSection[] = ['leads', 'chat', 'faqs', 'users', 'blog'];
             if (sectionsWithOwnHeader.includes(activeSection)) return null;
             const currentItem = menuItems.find(item => item.id === activeSection);
             return currentItem ? (

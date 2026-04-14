@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Calendar, Check, ExternalLink, FileText, Image, Loader2, Pencil, Plus, Tag, Trash2 } from 'lucide-react';
-import { EmptyState } from './shared';
+import { EmptyState, SectionHeader } from './shared';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -875,11 +875,15 @@ export function BlogSection({ resetSignal }: { resetSignal: number }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
-        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
+      <SectionHeader
+        title="Blog"
+        description="Articles, drafts and SEO-optimized content"
+        icon={<FileText className="w-5 h-5" />}
+        action={
+          <div className="flex items-center gap-2">
           <Dialog open={isTagManagerOpen} onOpenChange={setIsTagManagerOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="w-full sm:w-auto border-0">
+              <Button variant="outline" size="sm">
                 <Tag className="w-4 h-4 mr-2" />
                 Manage Tags
               </Button>
@@ -954,7 +958,7 @@ export function BlogSection({ resetSignal }: { resetSignal: number }) {
             </DialogContent>
           </Dialog>
           <Select value={sortBy} onValueChange={(value: typeof sortBy) => setSortBy(value)}>
-            <SelectTrigger className="w-full sm:w-[180px]" data-testid="select-blog-sort">
+            <SelectTrigger className="w-[160px] h-9" data-testid="select-blog-sort">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -965,12 +969,13 @@ export function BlogSection({ resetSignal }: { resetSignal: number }) {
               <SelectItem value="status">Status</SelectItem>
             </SelectContent>
           </Select>
-          <Button className="w-full sm:w-auto" onClick={() => setIsCreateOpen(true)} data-testid="button-blog-create">
+          <Button size="sm" onClick={() => setIsCreateOpen(true)} data-testid="button-blog-create">
             <Plus className="w-4 h-4 mr-2" />
             New Post
           </Button>
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       <div className="bg-muted p-4 sm:p-6 rounded-lg space-y-6 transition-all">
         <h2 className="text-lg font-semibold flex items-center gap-2">
