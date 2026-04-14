@@ -13,7 +13,7 @@ export const SectionHeader = React.forwardRef<HTMLDivElement, SectionHeaderProps
     <div
       ref={ref}
       className={cn(
-        "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6",
+        "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 mb-6 border-b",
         className,
       )}
       {...props}
