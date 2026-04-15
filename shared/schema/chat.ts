@@ -24,6 +24,8 @@ export const chatSettings = pgTable("chat_settings", {
   excludedUrlRules: jsonb("excluded_url_rules").default([]),
   useFaqs: boolean("use_faqs").default(true),
   activeAiProvider: text("active_ai_provider").default("openai"),
+  // Slug of the form used by the AI to qualify leads. Null ⇒ use the default form.
+  formSlug: text("form_slug"),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
@@ -85,6 +87,7 @@ export const insertChatSettingsSchema = z.object({
   excludedUrlRules: z.any().default([]),
   useFaqs: z.boolean().default(true),
   activeAiProvider: z.string().default("openai"),
+  formSlug: z.string().nullable().optional(),
 });
 
 export const insertChatIntegrationsSchema = z.object({

@@ -126,6 +126,15 @@ export const translations = {
     'Back to forms': 'Voltar aos formulários',
     'Cannot delete the default form. Set another form as default first.': 'Não é possível excluir o formulário padrão. Defina outro como padrão primeiro.',
     'A form with that slug already exists': 'Já existe um formulário com esse slug',
+
+    // Admin — Chat settings form selector (M3-03)
+    'Qualification Form': 'Formulário de Qualificação',
+    'Use default form': 'Usar formulário padrão',
+    'The AI assistant will qualify leads with this form. Changes take effect on new conversations.': 'O assistente de IA qualificará leads com este formulário. As alterações passam a valer em novas conversas.',
+
+    // Public — /f/:slug not found state (M3-03)
+    "The form you're looking for is unavailable. Please double-check the link or go back to the homepage.": 'O formulário que você procura não está disponível. Verifique o link ou volte à página inicial.',
+    'Back to homepage': 'Voltar à página inicial',
     
     // Messages
     'Are you sure?': 'Tem certeza?',

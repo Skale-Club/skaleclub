@@ -126,6 +126,7 @@ export function ChatSection() {
     intakeObjectives: [],
     excludedUrlRules: [],
     useFaqs: true,
+    formSlug: null,
   });
   const [selectedConversation, setSelectedConversation] = useState<ConversationSummary | null>(null);
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
@@ -223,6 +224,13 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas!"`;
   const { data: geminiSettings } = useQuery<{ enabled: boolean; hasKey: boolean }>({
     queryKey: ['/api/integrations/gemini'],
   });
+  const { data: formsList } = useQuery<Array<{ id: number; slug: string; name: string; isDefault: boolean; isActive: boolean }>>({
+    queryKey: ['/api/forms'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/forms');
+      return res.json();
+    },
+  });
   const { data: openRouterSettings } = useQuery<{ enabled: boolean; hasKey: boolean }>({
     queryKey: ['/api/integrations/openrouter'],
   });
@@ -267,6 +275,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas!"`;
           : DEFAULT_CHAT_OBJECTIVES,
         excludedUrlRules: ensureArray(settings.excludedUrlRules),
         useFaqs: settings.useFaqs ?? true,
+        formSlug: settings.formSlug ?? null,
       });
       return;
     }
@@ -662,6 +671,31 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas!"`;
                       </Select>
                       <p className="text-[10px] text-muted-foreground">
                         Select which AI will respond to chat messages. Make sure the selected provider is enabled in Integrations.
+                      </p>
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label>Qualification Form</Label>
+                      <Select
+                        value={settingsDraft.formSlug ?? '__default__'}
+                        onValueChange={(val) => updateField('formSlug', val === '__default__' ? null : val)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Use default form" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__default__">Use default form</SelectItem>
+                          {(formsList || [])
+                            .filter((f) => f.isActive)
+                            .map((f) => (
+                              <SelectItem key={f.id} value={f.slug}>
+                                {f.name}{f.isDefault ? ' (default)' : ''}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[10px] text-muted-foreground">
+                        The AI assistant will qualify leads with this form. Changes take effect on new conversations.
                       </p>
                     </div>
 

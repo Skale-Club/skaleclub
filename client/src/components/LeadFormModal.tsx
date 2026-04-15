@@ -201,16 +201,29 @@ function getFieldError(question: FormQuestion | undefined, answers: Answers, sel
 type LeadFormModalProps = {
   open: boolean;
   onClose: () => void;
+  /**
+   * When set, the modal loads the config for the form with that slug and
+   * submits progress to `/api/forms/slug/:slug/leads/progress`. When omitted,
+   * it falls back to the legacy default-form endpoints.
+   */
+  formSlug?: string;
 };
 
-export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
+export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
   const pagePaths = usePagePaths();
   const { t } = useTranslation();
+
+  // Endpoint selection: slug-specific (M3-03) or legacy default-form fallback.
+  const configUrl = formSlug ? `/api/forms/slug/${encodeURIComponent(formSlug)}/config` : '/api/form-config';
+  const progressUrl = formSlug
+    ? `/api/forms/slug/${encodeURIComponent(formSlug)}/leads/progress`
+    : '/api/form-leads/progress';
+
   // Fetch form config
   const { data: formConfig, isLoading: isConfigLoading } = useQuery<FormConfig>({
-    queryKey: ['/api/form-config'],
+    queryKey: [configUrl],
     queryFn: async () => {
-      const res = await fetch('/api/form-config');
+      const res = await fetch(configUrl);
       if (!res.ok) throw new Error('Failed to load form config');
       return res.json();
     },
@@ -463,7 +476,7 @@ export function LeadFormModal({ open, onClose }: LeadFormModalProps) {
 
       updateStoredState(opts?.stepToResume ?? currentStep, questionNumber, pendingSync);
       try {
-        const res = await fetch("/api/form-leads/progress", {
+        const res = await fetch(progressUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),

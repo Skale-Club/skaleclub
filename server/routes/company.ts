@@ -10,8 +10,7 @@ import { storage } from "../storage.js";
 import { api } from "#shared/routes.js";
 import { buildPagePaths, getPageSlugsValidationError, resolvePageSlugs } from "#shared/pageSlugs.js";
 import { DEFAULT_FORM_CONFIG, calculateMaxScore, getSortedQuestions } from "#shared/form.js";
-import { getOrCreateGHLContact } from "../integrations/ghl.js";
-import { sendHotLeadNotification } from "../integrations/twilio.js";
+import { runLeadPostProcessing } from "../lib/lead-processing.js";
 import { requireAdmin, setPublicCache, isAuthorizedCronRequest } from "./_shared.js";
 
 export function registerCompanyRoutes(app: Express) {
@@ -263,91 +262,13 @@ export function registerCompanyRoutes(app: Express) {
         questionNumber,
         formCompleto: parsed.formCompleto || questionNumber >= totalQuestions,
       };
-      let lead = await storage.upsertFormLeadProgress(
+      const initialLead = await storage.upsertFormLeadProgress(
         payload,
         { userAgent: req.get('user-agent') || undefined, formId: defaultForm.id },
         formConfig,
       );
 
-      const hasPhone = !!lead.telefone?.trim();
-      if (hasPhone && !lead.notificacaoEnviada) {
-        try {
-          const twilioSettings = await storage.getTwilioSettings();
-          if (twilioSettings) {
-            const notifyResult = await sendHotLeadNotification(twilioSettings, lead, companyName);
-            if (notifyResult.success) {
-              const updated = await storage.updateFormLead(lead.id, { notificacaoEnviada: true });
-              lead = updated || { ...lead, notificacaoEnviada: true };
-            }
-          }
-        } catch (notificationError) {
-          console.error('Lead notification error:', notificationError);
-        }
-      }
-
-      if (lead.formCompleto) {
-        try {
-          const ghlSettings = await storage.getIntegrationSettings('gohighlevel');
-          if (ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.locationId && lead.telefone) {
-            const nameParts = (lead.nome || '').trim().split(' ').filter(Boolean);
-            const firstName = nameParts.shift() || lead.nome || 'Lead';
-            const lastName = nameParts.join(' ');
-
-            const customFields: Array<{ id: string; field_value: string }> = [];
-            const allAnswers: Record<string, string | undefined> = {
-              nome: lead.nome || undefined,
-              email: lead.email || undefined,
-              telefone: lead.telefone || undefined,
-              cidadeEstado: lead.cidadeEstado || undefined,
-              tipoNegocio: lead.tipoNegocio || undefined,
-              tipoNegocioOutro: lead.tipoNegocioOutro || undefined,
-              tempoNegocio: lead.tempoNegocio || undefined,
-              experienciaMarketing: lead.experienciaMarketing || undefined,
-              orcamentoAnuncios: lead.orcamentoAnuncios || undefined,
-              principalDesafio: lead.principalDesafio || undefined,
-              disponibilidade: lead.disponibilidade || undefined,
-              expectativaResultado: lead.expectativaResultado || undefined,
-              ...(lead.customAnswers || {}),
-            };
-
-            for (const question of formConfig.questions) {
-              if (question.ghlFieldId && allAnswers[question.id]) {
-                customFields.push({
-                  id: question.ghlFieldId,
-                  field_value: allAnswers[question.id]!,
-                });
-              }
-            }
-
-            const contactResult = await getOrCreateGHLContact(
-              ghlSettings.apiKey,
-              ghlSettings.locationId,
-              {
-                email: lead.email || '',
-                firstName,
-                lastName,
-                phone: lead.telefone || '',
-                address: lead.cidadeEstado || undefined,
-                customFields: customFields.length > 0 ? customFields : undefined,
-              }
-            );
-
-            if (contactResult.success && contactResult.contactId) {
-              const synced = await storage.updateFormLead(lead.id, { ghlContactId: contactResult.contactId, ghlSyncStatus: 'synced' });
-              if (synced) lead = synced;
-            } else if (lead.ghlSyncStatus !== 'synced') {
-              await storage.updateFormLead(lead.id, { ghlSyncStatus: 'failed' });
-            }
-          }
-        } catch (ghlError) {
-          console.log('GHL lead sync error (non-blocking):', ghlError);
-          try {
-            await storage.updateFormLead(lead.id, { ghlSyncStatus: 'failed' });
-          } catch {
-            // ignore best-effort update
-          }
-        }
-      }
+      const { lead } = await runLeadPostProcessing(initialLead, formConfig, companyName);
       res.json(lead);
     } catch (err: any) {
       if (err instanceof z.ZodError) {

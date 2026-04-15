@@ -211,12 +211,26 @@ export async function registerRoutes(
   ];
 
 
+  // M3-03: Resolve which form the chat widget should qualify leads with.
+  // Precedence: chat_settings.form_slug (if active) → default form.
+  // Returns a full Form row (caller uses .id and .config).
+  async function resolveChatForm() {
+    try {
+      const chat = await storage.getChatSettings();
+      if (chat?.formSlug) {
+        const byslug = await storage.getFormBySlug(chat.formSlug);
+        if (byslug && byslug.isActive) return byslug;
+      }
+    } catch {
+      // Fall through to default
+    }
+    return storage.ensureDefaultForm();
+  }
+
   // Helper to get or create a lead for a conversation
   async function getOrCreateLeadForConversation(conversationId: string): Promise<{ lead: any; formConfig: FormConfig }> {
-    // M3-01 compat: chat qualification uses the default form.
-    // Phase 3 will let admins pick a form per Chat settings.
-    const defaultForm = await storage.ensureDefaultForm();
-    const formConfig = (defaultForm.config as FormConfig | null) || DEFAULT_FORM_CONFIG;
+    const chatForm = await resolveChatForm();
+    const formConfig = (chatForm.config as FormConfig | null) || DEFAULT_FORM_CONFIG;
 
     // Try to find existing lead by conversation ID
     let lead = await storage.getFormLeadByConversationId(conversationId);
@@ -229,7 +243,7 @@ export async function registerRoutes(
         nome: '', // Will be filled when we get the name
         questionNumber: 0,
         formCompleto: false,
-      }, { conversationId, source: 'chat', formId: defaultForm.id }, formConfig);
+      }, { conversationId, source: 'chat', formId: chatForm.id }, formConfig);
     }
 
     return { lead, formConfig };
@@ -283,8 +297,8 @@ export async function registerRoutes(
   ) {
     switch (toolName) {
       case 'get_form_config': {
-        const defaultForm = await storage.ensureDefaultForm();
-        const formConfig = (defaultForm.config as FormConfig | null) || DEFAULT_FORM_CONFIG;
+        const chatForm = await resolveChatForm();
+        const formConfig = (chatForm.config as FormConfig | null) || DEFAULT_FORM_CONFIG;
         const sortedQuestions = getSortedQuestions(formConfig);
 
         return {
@@ -319,8 +333,8 @@ export async function registerRoutes(
           return { error: 'question_id and answer are required' };
         }
 
-        const defaultForm = await storage.ensureDefaultForm();
-        const formConfig = (defaultForm.config as FormConfig | null) || DEFAULT_FORM_CONFIG;
+        const chatForm = await resolveChatForm();
+        const formConfig = (chatForm.config as FormConfig | null) || DEFAULT_FORM_CONFIG;
 
         // Get or create lead for this conversation
         let lead = await storage.getFormLeadByConversationId(conversationId);
@@ -417,8 +431,8 @@ export async function registerRoutes(
       case 'get_lead_state': {
         if (!conversationId) return { error: 'Conversation ID missing' };
 
-        const defaultForm = await storage.ensureDefaultForm();
-        const formConfig = (defaultForm.config as FormConfig | null) || DEFAULT_FORM_CONFIG;
+        const chatForm = await resolveChatForm();
+        const formConfig = (chatForm.config as FormConfig | null) || DEFAULT_FORM_CONFIG;
         const lead = await storage.getFormLeadByConversationId(conversationId);
 
         if (!lead) {
@@ -488,8 +502,8 @@ export async function registerRoutes(
         let ghlContactId: string | undefined;
         try {
           const ghlSettings = await storage.getIntegrationSettings('gohighlevel');
-          const defaultForm = await storage.ensureDefaultForm();
-          const formConfig = (defaultForm.config as FormConfig | null) || DEFAULT_FORM_CONFIG;
+          const chatForm = await resolveChatForm();
+          const formConfig = (chatForm.config as FormConfig | null) || DEFAULT_FORM_CONFIG;
 
           if (ghlSettings?.isEnabled && ghlSettings.apiKey && ghlSettings.locationId && lead.telefone) {
             const nameParts = (lead.nome || '').trim().split(' ').filter(Boolean);

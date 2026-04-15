@@ -107,6 +107,8 @@ export interface ChatSettingsData {
   excludedUrlRules: UrlRule[];
   useFaqs?: boolean;
   activeAiProvider?: string;
+  /** Slug of the form used for lead qualification. Null/undefined ⇒ default form. */
+  formSlug?: string | null;
 }
 
 export interface ConversationSummary {

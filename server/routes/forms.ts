@@ -1,10 +1,11 @@
 import type { Express } from "express";
 import { z } from "zod";
 import { storage } from "../storage.js";
-import { insertFormSchema, updateFormSchema } from "#shared/schema.js";
+import { insertFormSchema, updateFormSchema, formLeadProgressSchema } from "#shared/schema.js";
 import { calculateMaxScore, DEFAULT_FORM_CONFIG } from "#shared/form.js";
 import type { FormConfig } from "#shared/schema.js";
 import { requireAdmin, setPublicCache } from "./_shared.js";
+import { runLeadPostProcessing } from "../lib/lead-processing.js";
 
 export function registerFormRoutes(app: Express) {
   // ──────────────────────────────────────────────────────────
@@ -202,6 +203,52 @@ export function registerFormRoutes(app: Express) {
       res.json(config);
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  // Public: progressive lead submission for a specific form (by slug). Mirrors
+  // `POST /api/form-leads/progress` but stamps the lead with the form resolved
+  // from the URL slug instead of the default form.
+  app.post("/api/forms/slug/:slug/leads/progress", async (req, res) => {
+    try {
+      const form = await storage.getFormBySlug(req.params.slug);
+      if (!form || !form.isActive) {
+        return res.status(404).json({ message: "Form not found" });
+      }
+
+      const parsed = formLeadProgressSchema.parse(req.body);
+      const formConfig = (form.config as FormConfig | null) ?? DEFAULT_FORM_CONFIG;
+      const settings = await storage.getCompanySettings();
+      const companyName = settings?.companyName || "Company Name";
+      const totalQuestions = formConfig.questions.length || DEFAULT_FORM_CONFIG.questions.length;
+      const questionNumber = Math.min(parsed.questionNumber, totalQuestions);
+
+      const payload = {
+        ...parsed,
+        questionNumber,
+        formCompleto: parsed.formCompleto || questionNumber >= totalQuestions,
+      };
+
+      const initialLead = await storage.upsertFormLeadProgress(
+        payload,
+        { userAgent: req.get("user-agent") || undefined, formId: form.id },
+        formConfig,
+      );
+
+      const { lead } = await runLeadPostProcessing(initialLead, formConfig, companyName);
+      res.json(lead);
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors?.[0]?.message || "Validation error" });
+      }
+      if (err?.code === "23505") {
+        const sessionId = typeof req.body?.sessionId === "string" ? req.body.sessionId : null;
+        if (sessionId) {
+          const existing = await storage.getFormLeadBySession(sessionId);
+          if (existing) return res.json(existing);
+        }
+      }
+      res.status(400).json({ message: (err as Error).message });
     }
   });
 }
