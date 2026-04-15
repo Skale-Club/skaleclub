@@ -126,7 +126,7 @@ export default function Portfolio() {
                 />
             )}
 
-            <LeadFormModal open={isFormOpen} onClose={() => setIsFormOpen(false)} />
+            <LeadFormModal open={isFormOpen} onClose={() => setIsFormOpen(false)} formSlug="default" />
         </>
     );
 }

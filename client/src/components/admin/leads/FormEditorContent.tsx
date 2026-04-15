@@ -23,29 +23,23 @@ import { SortableQuestionItem } from './SortableQuestionItem';
 import { ThresholdsForm } from './ThresholdsForm';
 
 export interface FormEditorContentProps {
-  /**
-   * Form to edit. When provided, the editor reads/writes /api/forms/:formId.
-   * When omitted, falls back to the legacy global /api/form-config endpoint
-   * so existing call sites (Leads section Edit Form sheet) keep working.
-   */
-  formId?: number;
+  formId: number;
 }
 
-export function FormEditorContent({ formId }: FormEditorContentProps = {}) {
+export function FormEditorContent({ formId }: FormEditorContentProps) {
   const { toast } = useToast();
   const [editingQuestion, setEditingQuestion] = useState<FormQuestion | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isThresholdsOpen, setIsThresholdsOpen] = useState(false);
 
-  const configEndpoint = formId ? `/api/forms/${formId}` : '/api/form-config';
+  const configEndpoint = `/api/forms/${formId}`;
 
   const { data: formConfig, isLoading } = useQuery<FormConfig>({
     queryKey: [configEndpoint],
     queryFn: async () => {
       const res = await apiRequest('GET', configEndpoint);
       const json = await res.json();
-      // When fetching a form row, extract its `config` payload.
-      return formId ? json.config : json;
+      return json.config as FormConfig;
     },
   });
 
@@ -64,13 +58,9 @@ export function FormEditorContent({ formId }: FormEditorContentProps = {}) {
 
   const saveConfig = useMutation({
     mutationFn: async (newConfig: FormConfig) => {
-      if (formId) {
-        const res = await apiRequest('PUT', `/api/forms/${formId}`, { config: newConfig });
-        const json = await res.json();
-        return json.config as FormConfig;
-      }
-      const res = await apiRequest('PUT', '/api/form-config', newConfig);
-      return res.json() as Promise<FormConfig>;
+      const res = await apiRequest('PUT', `/api/forms/${formId}`, { config: newConfig });
+      const json = await res.json();
+      return json.config as FormConfig;
     },
     onSuccess: (data: FormConfig) => {
       setConfig(data);

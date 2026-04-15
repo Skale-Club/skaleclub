@@ -201,23 +201,15 @@ function getFieldError(question: FormQuestion | undefined, answers: Answers, sel
 type LeadFormModalProps = {
   open: boolean;
   onClose: () => void;
-  /**
-   * When set, the modal loads the config for the form with that slug and
-   * submits progress to `/api/forms/slug/:slug/leads/progress`. When omitted,
-   * it falls back to the legacy default-form endpoints.
-   */
-  formSlug?: string;
+  formSlug: string;
 };
 
 export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
   const pagePaths = usePagePaths();
   const { t } = useTranslation();
 
-  // Endpoint selection: slug-specific (M3-03) or legacy default-form fallback.
-  const configUrl = formSlug ? `/api/forms/slug/${encodeURIComponent(formSlug)}/config` : '/api/form-config';
-  const progressUrl = formSlug
-    ? `/api/forms/slug/${encodeURIComponent(formSlug)}/leads/progress`
-    : '/api/form-leads/progress';
+  const configUrl = `/api/forms/slug/${encodeURIComponent(formSlug)}/config`;
+  const progressUrl = `/api/forms/slug/${encodeURIComponent(formSlug)}/leads/progress`;
 
   // Fetch form config
   const { data: formConfig, isLoading: isConfigLoading } = useQuery<FormConfig>({

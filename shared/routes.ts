@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { formLeadProgressSchema, formLeads, leadStatusEnum, leadClassificationEnum } from './schema.js';
+import { formLeads, leadStatusEnum, leadClassificationEnum } from './schema.js';
 
 const urlRuleSchema = z.object({
   pattern: z.string(),
@@ -78,16 +78,6 @@ export const api = {
     },
   },
   formLeads: {
-    progress: {
-      method: 'POST' as const,
-      path: '/api/form-leads/progress',
-      input: formLeadProgressSchema,
-      responses: {
-        200: z.custom<typeof formLeads.$inferSelect>(),
-        400: errorSchemas.validation,
-        409: errorSchemas.conflict,
-      },
-    },
     get: {
       method: 'GET' as const,
       path: '/api/form-leads/:sessionId',

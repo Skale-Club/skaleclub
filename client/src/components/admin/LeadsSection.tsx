@@ -1,23 +1,21 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Eye, Loader2, Pencil, RotateCcw, Sparkles, Trash2 } from 'lucide-react';
+import { Eye, Loader2, RotateCcw, Sparkles, Trash2 } from 'lucide-react';
 import { AdminCard, SectionHeader } from './shared';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { clsx } from 'clsx';
 import { format } from 'date-fns';
 import { DEFAULT_FORM_CONFIG, getSortedQuestions } from '@shared/form';
 import type { Form, FormConfig, FormLead, FormQuestion, LeadClassification, LeadStatus } from '@shared/schema';
-import { FormEditorContent } from './leads/FormEditorContent';
+
 export function LeadsSection() {
   const { toast } = useToast();
-  const [isFormEditorOpen, setIsFormEditorOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<FormLead | null>(null);
   const [isLeadDialogOpen, setIsLeadDialogOpen] = useState(false);
   const [filters, setFilters] = useState<{
@@ -32,15 +30,6 @@ export function LeadsSection() {
     status: 'all',
     completion: 'all',
     formId: 'all',
-  });
-
-  // TODO(M3-05): rewire this to pull from the selected form's config instead of the legacy /api/form-config default-form endpoint.
-  const { data: formConfig } = useQuery<FormConfig>({
-    queryKey: ['/api/form-config'],
-    queryFn: async () => {
-      const res = await apiRequest('GET', '/api/form-config');
-      return res.json();
-    }
   });
 
   const { data: formsList } = useQuery<Form[]>({
@@ -73,8 +62,21 @@ export function LeadsSection() {
     }
   });
 
-  const questionsForDisplay = useMemo(() => getSortedQuestions(formConfig || DEFAULT_FORM_CONFIG), [formConfig]);
-  const totalQuestions = questionsForDisplay.length || DEFAULT_FORM_CONFIG.questions.length;
+  const getConfigForLead = (lead: FormLead): FormConfig => {
+    if (lead.formId != null) {
+      const config = formsById.get(lead.formId)?.config as FormConfig | null | undefined;
+      if (config) return config;
+    }
+    return DEFAULT_FORM_CONFIG;
+  };
+
+  const getQuestionsForLead = (lead: FormLead) => getSortedQuestions(getConfigForLead(lead));
+
+  const selectedLeadQuestions = useMemo(
+    () => (selectedLead ? getQuestionsForLead(selectedLead) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectedLead, formsById]
+  );
 
   const deleteLead = useMutation({
     mutationFn: async (id: number) => {
@@ -179,7 +181,8 @@ export function LeadsSection() {
   const questionLabel = (lead: FormLead) => {
     if (lead.formCompleto) return 'Form complete';
     const step = lead.ultimaPerguntaRespondida || 1;
-    return `Question ${step} of ${totalQuestions}`;
+    const total = getQuestionsForLead(lead).length || DEFAULT_FORM_CONFIG.questions.length;
+    return `Question ${step} of ${total}`;
   };
 
   const getCompletionStatus = (lead: FormLead): 'completo' | 'em_progresso' | 'abandonado' => {
@@ -239,9 +242,9 @@ export function LeadsSection() {
 
   const extraCustomAnswers = useMemo(() => {
     if (!selectedLead) return [];
-    const knownIds = new Set(questionsForDisplay.map(q => q.id));
+    const knownIds = new Set(selectedLeadQuestions.map(q => q.id));
     return Object.entries(selectedLead.customAnswers || {}).filter(([id]) => !knownIds.has(id));
-  }, [questionsForDisplay, selectedLead]);
+  }, [selectedLeadQuestions, selectedLead]);
 
   const DetailItem = ({ label, value }: { label: string; value: ReactNode }) => (
     <div className="p-3 rounded-lg border bg-muted/40">
@@ -262,22 +265,6 @@ export function LeadsSection() {
               <RotateCcw className="w-4 h-4 mr-2" />
               Refresh
             </Button>
-            <Sheet open={isFormEditorOpen} onOpenChange={setIsFormEditorOpen}>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Pencil className="w-4 h-4 mr-2" />
-                  Edit Form
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
-                <SheetHeader>
-                  <SheetTitle>Form Editor</SheetTitle>
-                </SheetHeader>
-                <div className="mt-6">
-                  <FormEditorContent />
-                </div>
-              </SheetContent>
-            </Sheet>
           </div>
         }
       />
@@ -539,13 +526,13 @@ export function LeadsSection() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-base">Form Responses</h3>
-                  <span className="text-xs text-muted-foreground">{questionsForDisplay.length} questions</span>
+                  <span className="text-xs text-muted-foreground">{selectedLeadQuestions.length} questions</span>
                 </div>
-                {questionsForDisplay.length === 0 ? (
+                {selectedLeadQuestions.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No questions configured.</p>
                 ) : (
                   <div className="divide-y divide-border rounded-lg border bg-card">
-                    {questionsForDisplay.map((question) => {
+                    {selectedLeadQuestions.map((question) => {
                       const answer = getAnswerForQuestion(selectedLead, question);
                       const conditionalAnswer = getConditionalAnswer(selectedLead, question);
                       return (

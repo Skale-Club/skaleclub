@@ -3,14 +3,11 @@ import { z } from "zod";
 import { sql } from "drizzle-orm";
 import { db } from "../db.js";
 import { systemHeartbeats } from "#shared/schema.js";
-import { insertCompanySettingsSchema, formLeadProgressSchema } from "#shared/schema.js";
-import type { FormConfig } from "#shared/schema.js";
+import { insertCompanySettingsSchema } from "#shared/schema.js";
 import type { LeadClassification, LeadStatus } from "#shared/schema.js";
 import { storage } from "../storage.js";
 import { api } from "#shared/routes.js";
 import { buildPagePaths, getPageSlugsValidationError, resolvePageSlugs } from "#shared/pageSlugs.js";
-import { DEFAULT_FORM_CONFIG, calculateMaxScore, getSortedQuestions } from "#shared/form.js";
-import { runLeadPostProcessing } from "../lib/lead-processing.js";
 import { requireAdmin, setPublicCache, isAuthorizedCronRequest } from "./_shared.js";
 
 export function registerCompanyRoutes(app: Express) {
@@ -99,143 +96,6 @@ export function registerCompanyRoutes(app: Express) {
   });
 
   // ===============================
-  // Form Config
-  // ===============================
-
-  app.get('/api/form-config', async (req, res) => {
-    try {
-      // Compat shim (Milestone 3 Phase 1): read from the default form instead
-      // of the legacy company_settings.formConfig column.
-      const defaultForm = await storage.ensureDefaultForm();
-      const existing = (defaultForm.config as FormConfig | null) || DEFAULT_FORM_CONFIG;
-      const spec = DEFAULT_FORM_CONFIG;
-      const specById = new Map(spec.questions.map(q => [q.id, q]));
-
-      let normalizedQuestions = existing.questions.map(q => {
-        const specQ = specById.get(q.id);
-        if (!specQ) return q;
-        return {
-          ...q,
-          title: specQ.title,
-          type: specQ.type,
-          required: specQ.required,
-          placeholder: specQ.placeholder,
-          options: specQ.options,
-          conditionalField: specQ.conditionalField,
-        };
-      });
-
-      for (const specQ of spec.questions) {
-        if (!normalizedQuestions.some(q => q.id === specQ.id)) {
-          normalizedQuestions.push({ ...specQ });
-        }
-      }
-
-      const idxLocalizacao = normalizedQuestions.findIndex(q => q.id === 'localizacao');
-      if (idxLocalizacao >= 0) {
-        const hasStandaloneCidadeEstado = normalizedQuestions.some(q => q.id === 'cidadeEstado');
-        if (hasStandaloneCidadeEstado) {
-          normalizedQuestions = normalizedQuestions.filter(q => q.id !== 'cidadeEstado');
-          const specLocalizacao = specById.get('localizacao');
-          if (specLocalizacao?.conditionalField) {
-            normalizedQuestions[idxLocalizacao] = {
-              ...normalizedQuestions[idxLocalizacao],
-              conditionalField: {
-                showWhen: specLocalizacao.conditionalField.showWhen,
-                id: specLocalizacao.conditionalField.id,
-                title: specLocalizacao.conditionalField.title,
-                placeholder: specLocalizacao.conditionalField.placeholder,
-              },
-            };
-          }
-        } else {
-          const specLocalizacao = specById.get('localizacao');
-          if (specLocalizacao?.conditionalField) {
-            normalizedQuestions[idxLocalizacao] = {
-              ...normalizedQuestions[idxLocalizacao],
-              conditionalField: specLocalizacao.conditionalField,
-            };
-          }
-        }
-      }
-
-      const idxTipoNegocio = normalizedQuestions.findIndex(q => q.id === 'tipoNegocio');
-      if (idxTipoNegocio >= 0) {
-        const hasStandaloneOutro = normalizedQuestions.some(q => q.id === 'tipoNegocioOutro');
-        if (hasStandaloneOutro) {
-          normalizedQuestions = normalizedQuestions.filter(q => q.id !== 'tipoNegocioOutro');
-          const specTipo = specById.get('tipoNegocio');
-          if (specTipo?.conditionalField) {
-            normalizedQuestions[idxTipoNegocio] = {
-              ...normalizedQuestions[idxTipoNegocio],
-              conditionalField: {
-                showWhen: specTipo.conditionalField.showWhen,
-                id: specTipo.conditionalField.id,
-                title: specTipo.conditionalField.title,
-                placeholder: specTipo.conditionalField.placeholder,
-              },
-            };
-          }
-        } else {
-          const specTipo = specById.get('tipoNegocio');
-          if (specTipo?.conditionalField) {
-            normalizedQuestions[idxTipoNegocio] = {
-              ...normalizedQuestions[idxTipoNegocio],
-              conditionalField: specTipo.conditionalField,
-            };
-          }
-        }
-      }
-
-      const isKnown = (qId: string) => specById.has(qId);
-      normalizedQuestions = normalizedQuestions
-        .sort((a, b) => {
-          const aKnown = isKnown(a.id);
-          const bKnown = isKnown(b.id);
-          if (aKnown && bKnown) {
-            const aSpec = specById.get(a.id)!.order;
-            const bSpec = specById.get(b.id)!.order;
-            return aSpec - bSpec;
-          }
-          if (aKnown && !bKnown) return -1;
-          if (!aKnown && bKnown) return 1;
-          return (a.order ?? 999) - (b.order ?? 999);
-        })
-        .map((q, i) => ({ ...q, order: i + 1 }));
-
-      const normalizedConfig = {
-        questions: normalizedQuestions,
-        maxScore: calculateMaxScore({ ...existing, questions: normalizedQuestions }),
-        thresholds: existing.thresholds || spec.thresholds,
-      };
-      setPublicCache(res, 300);
-      res.json(normalizedConfig);
-    } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
-    }
-  });
-
-  app.put('/api/form-config', requireAdmin, async (req, res) => {
-    try {
-      const config = req.body as FormConfig;
-
-      if (!config.questions || !Array.isArray(config.questions)) {
-        return res.status(400).json({ message: 'Invalid config: questions array required' });
-      }
-
-      const maxScore = calculateMaxScore(config);
-      const updatedConfig: FormConfig = { ...config, maxScore };
-
-      // Compat shim: write to the default form row.
-      const defaultForm = await storage.ensureDefaultForm();
-      await storage.updateForm(defaultForm.id, { config: updatedConfig });
-      res.json(updatedConfig);
-    } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
-    }
-  });
-
-  // ===============================
   // Form Leads
   // ===============================
 
@@ -245,44 +105,6 @@ export function registerCompanyRoutes(app: Express) {
       return res.status(404).json({ message: 'Lead não encontrado' });
     }
     res.json(lead);
-  });
-
-  app.post('/api/form-leads/progress', async (req, res) => {
-    try {
-      const parsed = formLeadProgressSchema.parse(req.body);
-      // Compat shim (M3-01): legacy endpoint routes to the default form.
-      const defaultForm = await storage.ensureDefaultForm();
-      const formConfig = (defaultForm.config as FormConfig | null) || DEFAULT_FORM_CONFIG;
-      const settings = await storage.getCompanySettings();
-      const companyName = settings?.companyName || 'Company Name';
-      const totalQuestions = formConfig.questions.length || DEFAULT_FORM_CONFIG.questions.length;
-      const questionNumber = Math.min(parsed.questionNumber, totalQuestions);
-      const payload = {
-        ...parsed,
-        questionNumber,
-        formCompleto: parsed.formCompleto || questionNumber >= totalQuestions,
-      };
-      const initialLead = await storage.upsertFormLeadProgress(
-        payload,
-        { userAgent: req.get('user-agent') || undefined, formId: defaultForm.id },
-        formConfig,
-      );
-
-      const { lead } = await runLeadPostProcessing(initialLead, formConfig, companyName);
-      res.json(lead);
-    } catch (err: any) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({ message: err.errors?.[0]?.message || 'Erro de validação' });
-      }
-      if (err?.code === '23505') {
-        const sessionId = typeof req.body?.sessionId === 'string' ? req.body.sessionId : null;
-        if (sessionId) {
-          const existing = await storage.getFormLeadBySession(sessionId);
-          if (existing) return res.json(existing);
-        }
-      }
-      res.status(400).json({ message: (err as Error).message });
-    }
   });
 
   app.get('/api/form-leads', requireAdmin, async (req, res) => {

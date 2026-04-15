@@ -206,9 +206,8 @@ export function registerFormRoutes(app: Express) {
     }
   });
 
-  // Public: progressive lead submission for a specific form (by slug). Mirrors
-  // `POST /api/form-leads/progress` but stamps the lead with the form resolved
-  // from the URL slug instead of the default form.
+  // Public: progressive lead submission for a specific form (by slug). Stamps
+  // the lead with the form resolved from the URL slug.
   app.post("/api/forms/slug/:slug/leads/progress", async (req, res) => {
     try {
       const form = await storage.getFormBySlug(req.params.slug);

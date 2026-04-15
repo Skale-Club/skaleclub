@@ -1,10 +1,10 @@
 # State — Milestone 3: Multi-Forms Support
 
-**Current phase:** M3-04 — Leads section scoping by form + dashboard segmentation ✅ Complete
-**Current plan:** —
-**Next action:** `/paul:plan` for M3-05 (Cleanup: drop legacy `/api/form-config` + `/api/form-leads/progress` + `company_settings.formConfig` column)
-**Last activity:** 2026-04-15 — M3-04 UNIFY complete. SUMMARY written. Loop closed.
-**Resume file:** `.paul/phases/m3-04-leads-scoping/04-01-SUMMARY.md`
+**Current phase:** M3-05 — Cleanup (legacy endpoints + column drop)
+**Current plan:** 05-01 ✅ Complete (code-only rewire + endpoint deletes)
+**Next action:** `/paul:plan` for M3-05 plan 05-02 (DB column drop: `company_settings.formConfig` + migration pair + remove storage fallback branches + apply to remote Supabase)
+**Last activity:** 2026-04-15 — M3-05 plan 05-01 UNIFY complete. SUMMARY written. Loop closed.
+**Resume file:** `.paul/phases/m3-05-cleanup/05-01-SUMMARY.md`
 
 ---
 
@@ -13,7 +13,7 @@
 ```
 ┌─────────────────────────────────────┐
 │  PLAN ──▶ APPLY ──▶ UNIFY          │
-│   ✓        ✓        ✓               │  [Loop complete — ready for next PLAN]
+│   ✓        ✓        ✓               │  [05-01 loop complete — 05-02 is next plan in phase]
 └─────────────────────────────────────┘
 ```
 
@@ -29,7 +29,7 @@
 | 3 — Multi-Forms Support | 2 — Admin Forms list + editor rewire | ✅ Complete (sidebar section + list + editor + 7 REST endpoints) |
 | 3 — Multi-Forms Support | 3 — Public form + Chat widget slug awareness | ✅ Complete (/f/:slug route + chat_settings.form_slug + shared lead-processing helper) |
 | 3 — Multi-Forms Support | 4 — Leads section scoping | ✅ Complete (formId filter + per-section form selector + row/detail badges + single-form suppression) |
-| 3 — Multi-Forms Support | 5 — Cleanup (drop legacy column + endpoints) | ⏳ Planned |
+| 3 — Multi-Forms Support | 5 — Cleanup (drop legacy column + endpoints) | 🔄 In progress — 05-01 ✅ code rewire + endpoint deletes complete, 05-02 pending (DB column drop) |
 
 ---
 

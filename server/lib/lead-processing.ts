@@ -1,9 +1,7 @@
-// Shared helpers for the public lead-progress endpoints.
-//
-// Both `POST /api/form-leads/progress` (legacy/compat shim, default form) and
-// `POST /api/forms/:slug/leads/progress` (M3-03, specific form) call
-// `runLeadPostProcessing()` after upserting the lead so notifications and
-// GHL sync stay identical across entry points.
+// Shared helpers for the public lead-progress endpoint
+// (`POST /api/forms/slug/:slug/leads/progress`) and the chat tool-use sites.
+// Centralizes post-upsert work (notifications, GHL sync) so behavior stays
+// consistent across entry points.
 
 import { storage } from "../storage.js";
 import type { FormConfig, FormLead } from "#shared/schema.js";
