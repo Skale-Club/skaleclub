@@ -18,10 +18,28 @@ export const leadStatusEnum = pgEnum("lead_status", [
   "descartado",
 ]);
 
+// Forms table — supports multiple independent lead capture forms
+export const forms = pgTable("forms", {
+  id: serial("id").primaryKey(),
+  slug: text("slug").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  isDefault: boolean("is_default").notNull().default(false),
+  isActive: boolean("is_active").notNull().default(true),
+  config: jsonb("config").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
+}, (table) => ({
+  slugIdx: uniqueIndex("forms_slug_idx").on(table.slug),
+  isDefaultIdx: index("forms_is_default_idx").on(table.isDefault),
+  isActiveIdx: index("forms_is_active_idx").on(table.isActive),
+}));
+
 // Form Leads table
 export const formLeads = pgTable("form_leads", {
   id: serial("id").primaryKey(),
   sessionId: uuid("session_id").notNull(),
+  formId: integer("form_id").references(() => forms.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
   nome: text("nome").notNull(),
@@ -70,11 +88,13 @@ export const formLeads = pgTable("form_leads", {
   sessionIdx: uniqueIndex("form_leads_session_idx").on(table.sessionId),
   sourceIdx: index("form_leads_source_idx").on(table.source),
   conversationIdx: index("form_leads_conversation_idx").on(table.conversationId),
+  formIdIdx: index("form_leads_form_id_idx").on(table.formId),
 }));
 
 // Insert schema
 export const insertFormLeadSchema = z.object({
   sessionId: z.string().uuid(),
+  formId: z.number().int().positive().optional(),
   nome: z.string().min(1),
   email: z.string().email().nullable().optional(),
   telefone: z.string().nullable().optional(),
@@ -201,3 +221,29 @@ export interface FormConfig {
     cold: number;
   };
 }
+
+// Forms row types (from the forms table defined above)
+export type Form = typeof forms.$inferSelect;
+export type InsertForm = typeof forms.$inferInsert;
+
+// Zod schema for creating/updating a form from the admin UI
+const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+export const insertFormSchema = z.object({
+  slug: z.string().min(1).max(80).regex(slugPattern, {
+    message: "Slug must be lowercase kebab-case (letters, digits, hyphens)",
+  }),
+  name: z.string().min(1).max(120),
+  description: z.string().max(500).nullable().optional(),
+  isDefault: z.boolean().optional(),
+  isActive: z.boolean().optional(),
+  config: z.custom<FormConfig>(),
+});
+
+export const updateFormSchema = insertFormSchema.partial().extend({
+  // Allow all fields to be omitted in PATCH, but keep slug valid when present
+  slug: z.string().min(1).max(80).regex(slugPattern).optional(),
+});
+
+export type InsertFormInput = z.infer<typeof insertFormSchema>;
+export type UpdateFormInput = z.infer<typeof updateFormSchema>;

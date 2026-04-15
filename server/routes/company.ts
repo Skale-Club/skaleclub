@@ -105,8 +105,10 @@ export function registerCompanyRoutes(app: Express) {
 
   app.get('/api/form-config', async (req, res) => {
     try {
-      const settings = await storage.getCompanySettings();
-      const existing = settings?.formConfig || DEFAULT_FORM_CONFIG;
+      // Compat shim (Milestone 3 Phase 1): read from the default form instead
+      // of the legacy company_settings.formConfig column.
+      const defaultForm = await storage.ensureDefaultForm();
+      const existing = (defaultForm.config as FormConfig | null) || DEFAULT_FORM_CONFIG;
       const spec = DEFAULT_FORM_CONFIG;
       const specById = new Map(spec.questions.map(q => [q.id, q]));
 
@@ -225,7 +227,9 @@ export function registerCompanyRoutes(app: Express) {
       const maxScore = calculateMaxScore(config);
       const updatedConfig: FormConfig = { ...config, maxScore };
 
-      await storage.updateCompanySettings({ formConfig: updatedConfig });
+      // Compat shim: write to the default form row.
+      const defaultForm = await storage.ensureDefaultForm();
+      await storage.updateForm(defaultForm.id, { config: updatedConfig });
       res.json(updatedConfig);
     } catch (err) {
       res.status(400).json({ message: (err as Error).message });
@@ -247,8 +251,10 @@ export function registerCompanyRoutes(app: Express) {
   app.post('/api/form-leads/progress', async (req, res) => {
     try {
       const parsed = formLeadProgressSchema.parse(req.body);
+      // Compat shim (M3-01): legacy endpoint routes to the default form.
+      const defaultForm = await storage.ensureDefaultForm();
+      const formConfig = (defaultForm.config as FormConfig | null) || DEFAULT_FORM_CONFIG;
       const settings = await storage.getCompanySettings();
-      const formConfig = settings?.formConfig || DEFAULT_FORM_CONFIG;
       const companyName = settings?.companyName || 'Company Name';
       const totalQuestions = formConfig.questions.length || DEFAULT_FORM_CONFIG.questions.length;
       const questionNumber = Math.min(parsed.questionNumber, totalQuestions);
@@ -257,7 +263,11 @@ export function registerCompanyRoutes(app: Express) {
         questionNumber,
         formCompleto: parsed.formCompleto || questionNumber >= totalQuestions,
       };
-      let lead = await storage.upsertFormLeadProgress(payload, { userAgent: req.get('user-agent') || undefined }, formConfig);
+      let lead = await storage.upsertFormLeadProgress(
+        payload,
+        { userAgent: req.get('user-agent') || undefined, formId: defaultForm.id },
+        formConfig,
+      );
 
       const hasPhone = !!lead.telefone?.trim();
       if (hasPhone && !lead.notificacaoEnviada) {

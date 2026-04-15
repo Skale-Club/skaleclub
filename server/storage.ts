@@ -2,6 +2,7 @@ import { db } from "./db.js";
 import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead } from "#shared/form.js";
 import {
   formLeads,
+  forms,
   chatSettings,
   chatIntegrations,
   twilioSettings,
@@ -30,6 +31,9 @@ import {
   type ConversationMessage,
   type FormLead,
   type FormConfig,
+  type Form,
+  type InsertFormInput,
+  type UpdateFormInput,
   type LeadStatus,
   type LeadClassification,
   type Faq,
@@ -593,8 +597,21 @@ export interface IStorage {
   addConversationMessage(message: InsertConversationMessage): Promise<ConversationMessage>;
   getConversationMessages(conversationId: string): Promise<ConversationMessage[]>;
 
+  // Forms (multi-form support — see Milestone 3)
+  listForms(includeInactive?: boolean): Promise<Form[]>;
+  getForm(id: number): Promise<Form | undefined>;
+  getFormBySlug(slug: string): Promise<Form | undefined>;
+  getDefaultForm(): Promise<Form | undefined>;
+  ensureDefaultForm(): Promise<Form>;
+  createForm(input: InsertFormInput): Promise<Form>;
+  updateForm(id: number, updates: UpdateFormInput): Promise<Form>;
+  softDeleteForm(id: number): Promise<void>;
+  duplicateForm(id: number, overrides?: { slug?: string; name?: string }): Promise<Form>;
+  setDefaultForm(id: number): Promise<Form>;
+  countLeadsForForm(formId: number): Promise<number>;
+
   // Leads
-  upsertFormLeadProgress(progress: FormLeadProgressInput, metadata?: { userAgent?: string; conversationId?: string; source?: string }, formConfig?: FormConfig): Promise<FormLead>;
+  upsertFormLeadProgress(progress: FormLeadProgressInput, metadata?: { userAgent?: string; conversationId?: string; source?: string; formId?: number }, formConfig?: FormConfig): Promise<FormLead>;
   getFormLeadBySession(sessionId: string): Promise<FormLead | undefined>;
   getFormLeadByConversationId(conversationId: string): Promise<FormLead | undefined>;
   listFormLeads(filters?: { status?: LeadStatus; classificacao?: LeadClassification; formCompleto?: boolean; completionStatus?: 'completo' | 'em_progresso' | 'abandonado'; search?: string }): Promise<FormLead[]>;
@@ -847,6 +864,149 @@ export class DatabaseStorage implements IStorage {
       .orderBy(asc(conversationMessages.createdAt));
   }
 
+  // ──────────────────────────────────────────────────────────
+  // Forms (multi-form support — Milestone 3)
+  // ──────────────────────────────────────────────────────────
+
+  async listForms(includeInactive = false): Promise<Form[]> {
+    const rows = includeInactive
+      ? await db.select().from(forms).orderBy(desc(forms.isDefault), asc(forms.name))
+      : await db.select().from(forms).where(eq(forms.isActive, true)).orderBy(desc(forms.isDefault), asc(forms.name));
+    return rows;
+  }
+
+  async getForm(id: number): Promise<Form | undefined> {
+    const [row] = await db.select().from(forms).where(eq(forms.id, id));
+    return row;
+  }
+
+  async getFormBySlug(slug: string): Promise<Form | undefined> {
+    const [row] = await db.select().from(forms).where(eq(forms.slug, slug));
+    return row;
+  }
+
+  async getDefaultForm(): Promise<Form | undefined> {
+    const [row] = await db.select().from(forms).where(eq(forms.isDefault, true));
+    return row;
+  }
+
+  // Provisions a default form from DEFAULT_FORM_CONFIG if none exists yet.
+  // Used by the compat shim so legacy endpoints keep working even on a fresh
+  // install where company_settings.form_config was never populated.
+  async ensureDefaultForm(): Promise<Form> {
+    const existing = await this.getDefaultForm();
+    if (existing) return existing;
+
+    // Fall back to company_settings.formConfig if present, otherwise use the built-in default.
+    const settings = await this.getCompanySettings();
+    const seedConfig = (settings?.formConfig as FormConfig | null) ?? DEFAULT_FORM_CONFIG;
+
+    const [created] = await db.insert(forms).values({
+      slug: "default",
+      name: "Default Form",
+      description: "Auto-provisioned default form",
+      isDefault: true,
+      isActive: true,
+      config: seedConfig,
+    }).returning();
+
+    // Backfill any orphan leads (form_id IS NULL) to the newly created default form.
+    await db.update(formLeads)
+      .set({ formId: created.id })
+      .where(sql`${formLeads.formId} IS NULL`);
+
+    return created;
+  }
+
+  async createForm(input: InsertFormInput): Promise<Form> {
+    // If this new form is marked default, unmark the current default first.
+    if (input.isDefault) {
+      await db.update(forms).set({ isDefault: false }).where(eq(forms.isDefault, true));
+    }
+    const [created] = await db.insert(forms).values({
+      slug: input.slug,
+      name: input.name,
+      description: input.description ?? null,
+      isDefault: input.isDefault ?? false,
+      isActive: input.isActive ?? true,
+      config: input.config,
+    }).returning();
+    return created;
+  }
+
+  async updateForm(id: number, updates: UpdateFormInput): Promise<Form> {
+    // If promoting to default, demote any current default first.
+    if (updates.isDefault === true) {
+      await db.update(forms).set({ isDefault: false }).where(and(eq(forms.isDefault, true), ne(forms.id, id)));
+    }
+    const [updated] = await db.update(forms).set({
+      ...(updates.slug !== undefined && { slug: updates.slug }),
+      ...(updates.name !== undefined && { name: updates.name }),
+      ...(updates.description !== undefined && { description: updates.description ?? null }),
+      ...(updates.isDefault !== undefined && { isDefault: updates.isDefault }),
+      ...(updates.isActive !== undefined && { isActive: updates.isActive }),
+      ...(updates.config !== undefined && { config: updates.config }),
+      updatedAt: new Date(),
+    }).where(eq(forms.id, id)).returning();
+    if (!updated) throw new Error(`Form ${id} not found`);
+    return updated;
+  }
+
+  async softDeleteForm(id: number): Promise<void> {
+    const target = await this.getForm(id);
+    if (!target) return;
+    if (target.isDefault) {
+      throw new Error("Cannot delete the default form. Set another form as default first.");
+    }
+    await db.update(forms).set({ isActive: false, updatedAt: new Date() }).where(eq(forms.id, id));
+  }
+
+  async duplicateForm(id: number, overrides?: { slug?: string; name?: string }): Promise<Form> {
+    const source = await this.getForm(id);
+    if (!source) throw new Error(`Form ${id} not found`);
+
+    // Derive a unique slug if none provided.
+    let candidateSlug = overrides?.slug ?? `${source.slug}-copy`;
+    let counter = 2;
+    while (await this.getFormBySlug(candidateSlug)) {
+      candidateSlug = `${overrides?.slug ?? source.slug}-copy-${counter}`;
+      counter++;
+    }
+
+    const [created] = await db.insert(forms).values({
+      slug: candidateSlug,
+      name: overrides?.name ?? `${source.name} (copy)`,
+      description: source.description,
+      isDefault: false,
+      isActive: true,
+      config: source.config,
+    }).returning();
+    return created;
+  }
+
+  async setDefaultForm(id: number): Promise<Form> {
+    // Transactional swap: demote current default, promote target.
+    await db.update(forms).set({ isDefault: false }).where(eq(forms.isDefault, true));
+    const [updated] = await db.update(forms)
+      .set({ isDefault: true, isActive: true, updatedAt: new Date() })
+      .where(eq(forms.id, id))
+      .returning();
+    if (!updated) throw new Error(`Form ${id} not found`);
+    return updated;
+  }
+
+  async countLeadsForForm(formId: number): Promise<number> {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(formLeads)
+      .where(eq(formLeads.formId, formId));
+    return row?.count ?? 0;
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // Form Leads
+  // ──────────────────────────────────────────────────────────
+
   async getFormLeadBySession(sessionId: string): Promise<FormLead | undefined> {
     const [lead] = await db.select().from(formLeads).where(eq(formLeads.sessionId, sessionId));
     return lead;
@@ -862,7 +1022,7 @@ export class DatabaseStorage implements IStorage {
     return lead;
   }
 
-  async upsertFormLeadProgress(progress: FormLeadProgressInput, metadata: { userAgent?: string; conversationId?: string; source?: string } = {}, formConfig?: FormConfig): Promise<FormLead> {
+  async upsertFormLeadProgress(progress: FormLeadProgressInput, metadata: { userAgent?: string; conversationId?: string; source?: string; formId?: number } = {}, formConfig?: FormConfig): Promise<FormLead> {
     // For chat source, try to find by conversationId first
     let existing = metadata.conversationId
       ? await this.getFormLeadByConversationId(metadata.conversationId)
@@ -875,7 +1035,27 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Nome é obrigatório para iniciar o formulário");
     }
 
-    const config = formConfig || (await this.getCompanySettings()).formConfig || DEFAULT_FORM_CONFIG;
+    // Resolve which form this lead belongs to.
+    // Priority: explicit metadata.formId → existing lead's formId → default form (provisioned if missing).
+    let resolvedFormId: number | null = metadata.formId ?? existing?.formId ?? null;
+    let resolvedConfig: FormConfig;
+    if (formConfig) {
+      resolvedConfig = formConfig;
+      if (!resolvedFormId) {
+        const def = await this.ensureDefaultForm();
+        resolvedFormId = def.id;
+      }
+    } else if (resolvedFormId) {
+      const form = await this.getForm(resolvedFormId);
+      resolvedConfig = (form?.config as FormConfig | undefined)
+        ?? (await this.getCompanySettings()).formConfig
+        ?? DEFAULT_FORM_CONFIG;
+    } else {
+      const def = await this.ensureDefaultForm();
+      resolvedFormId = def.id;
+      resolvedConfig = def.config as FormConfig;
+    }
+    const config = resolvedConfig;
     const totalQuestions = config.questions.length || DEFAULT_FORM_CONFIG.questions.length;
     const safeQuestionNumber = Math.max(1, Math.min(progress.questionNumber, totalQuestions));
 
@@ -912,6 +1092,7 @@ export class DatabaseStorage implements IStorage {
 
     const payload: Partial<typeof formLeads.$inferInsert> = {
       sessionId: progress.sessionId,
+      formId: resolvedFormId,
       nome: progress.nome ?? existing?.nome ?? "",
       email: progress.email ?? existing?.email,
       telefone: progress.telefone ?? existing?.telefone,
@@ -956,6 +1137,7 @@ export class DatabaseStorage implements IStorage {
       const safeStartedAt = isNaN(startedAt.getTime()) ? now : startedAt;
       const insertPayload: typeof formLeads.$inferInsert = {
         sessionId: progress.sessionId,
+        formId: resolvedFormId,
         nome: progress.nome || "",
         email: payload.email,
         telefone: payload.telefone,

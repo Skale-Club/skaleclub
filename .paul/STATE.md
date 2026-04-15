@@ -1,9 +1,21 @@
-# State — Milestone 2: Design + Structural Refactor
+# State — Milestone 3: Multi-Forms Support
 
-**Current phase:** — (Milestone 2 visual work complete, structural split deferred)
+**Current phase:** M3-01 — Schema + Migration + Compat Shim ✅ Complete
 **Current plan:** —
-**Next action:** Optional — file splits (backend routes.ts, LeadsSection, etc.) or move on to Milestone 3.
-**Last activity:** 2026-04-14 — Phase 9 complete. Memory rules saved. Design system production-ready.
+**Next action:** Commit M3-01 work (git) → `/paul:plan` for M3-02 (Admin Forms list + editor wiring)
+**Last activity:** 2026-04-14 — M3-01 UNIFY complete. SUMMARY written. Loop closed.
+**Resume file:** `.paul/phases/m3-01-multi-forms-schema/01-01-SUMMARY.md`
+
+---
+
+## Loop Position
+
+```
+┌─────────────────────────────────────┐
+│  PLAN ──▶ APPLY ──▶ UNIFY          │
+│   ✓        ✓        ✓               │  [Loop complete — ready for next PLAN]
+└─────────────────────────────────────┘
+```
 
 ---
 
@@ -12,54 +24,64 @@
 | Milestone | Phase | Status |
 |-----------|-------|--------|
 | 1 — Xpot Hardening | 1–6 | ✅ Complete |
-| 2 — Design + Structural Refactor | 1 — Token Refactor | ✅ Dark neutral + alpha borders |
-| 2 — Design + Structural Refactor | 2 — Shadcn UI Audit | ✅ 10 base components normalized |
-| 2 — Design + Structural Refactor | 3 — Border Sweep | ✅ 51 of 57 occurrences (content pages skipped) |
-| 2 — Design + Structural Refactor | 4 — Shared Admin Patterns | ✅ AdminCard, SectionHeader, EmptyState, FormGrid |
-| 2 — Design + Structural Refactor | 6 — Section Refactors | ✅ Visual polish (headers unified, EmptyState rolled out, AdminCard applied) |
-| 2 — Design + Structural Refactor | 5 — Backend Split | ⏸️ Deferred (routes.ts 3490, storage.ts 1599) |
-| 2 — Design + Structural Refactor | 7–8 — File splits | ⏸️ Deferred (Integrations 1688, Leads 1270, Blog 1087, Chat 966) |
-| 2 — Design + Structural Refactor | 9 — Final Audit | ✅ Memory rules saved |
+| 2 — Design + Structural Refactor | 1–9 | ✅ Complete (file splits deferred) |
+| 3 — Multi-Forms Support | 1 — Schema + Migration + Compat Shim | ✅ Complete (migration live on remote Supabase) |
+| 3 — Multi-Forms Support | 2 — Admin Forms list + editor rewire | ⏳ Planned |
+| 3 — Multi-Forms Support | 3 — Public form + Chat widget slug awareness | ⏳ Planned |
+| 3 — Multi-Forms Support | 4 — Leads section scoping | ⏳ Planned |
+| 3 — Multi-Forms Support | 5 — Cleanup (drop legacy column + endpoints) | ⏳ Planned |
 
 ---
 
-## Milestone 2 Delivered
+## Phase M3-01 Progress
 
-### Design system
+- ✅ Drizzle schema: `forms` table + `formId` FK on `form_leads`
+- ✅ Migration `migrations/0028_multi_forms.sql` (Drizzle Kit)
+- ✅ Migration `supabase/migrations/20260414140000_multi_forms.sql` (Supabase CLI mirror)
+- ✅ Zod schemas + types (`Form`, `InsertForm`, `insertFormSchema`, `updateFormSchema`)
+- ✅ Storage methods (11): `listForms`, `getForm`, `getFormBySlug`, `getDefaultForm`, `ensureDefaultForm`, `createForm`, `updateForm`, `softDeleteForm`, `duplicateForm`, `setDefaultForm`, `countLeadsForForm`
+- ✅ `upsertFormLeadProgress` accepts `formId` with fallback to default form
+- ✅ Compat shim: `/api/form-config` (GET/PUT), `/api/form-leads/progress`, and all 4 chat tool sites (`get_form_config`, `save_lead_answer`, `get_lead_state`, GHL sync) route to default form
+- ✅ Verification: `npm run check` (clean), `npm run build` (green), migration pushed to remote via `supabase db push` (session pooler port 5432). DB state: `forms` has 1 row (slug="default", 13 questions seeded), `form_leads` has 14 rows all with `form_id` = 1, 0 orphans
+
+---
+
+## Decisions Locked (for Milestone 3)
+
+| Decision | Phase impacted |
+|----------|----------------|
+| Forms = top-level admin sidebar section | M3-02 |
+| Public URL: `/f/:slug` dedicated route | M3-03 |
+| Chat picks form globally in Chat settings | M3-03 |
+| Delete form with leads → soft-delete (archive) | M3-02 |
+| GHL field collisions across forms → allowed with UI hint | M3-02 |
+
+---
+
+## Previous Milestones (summary)
+
+### Milestone 2 — Design + Structural Refactor ✅
+
 - Neutral charcoal dark theme (was bluish slate)
 - Alpha hairline border token (was slate-200/slate-700 solid)
 - 10 shadcn base components audited and token-clean
 - 51 harsh border occurrences across 13 files converted to soft token
-- Global `<SectionHeader>` in Admin.tsx renders title + description + icon per section automatically
-- `<AdminCard>`, `<EmptyState>`, `<FormGrid>` shared primitives
+- Global `<SectionHeader>` + `<AdminCard>` + `<EmptyState>` + `<FormGrid>` primitives
 - Duplicate section-level headers removed from 11 admin sections
-- `<EmptyState>` applied to 6 sections (Links, Portfolio, FAQs, Leads form editor, Chat inbox, Blog)
-- `<AdminCard>` applied to Dashboard (9 cards) and Leads (5 stats)
+- Memory rules saved (translations, borders, design system)
 
-### Tokens defined centrally in index.css
-- `--primary-border`, `--secondary-border`, `--destructive-border`, `--sidebar-primary-border`
-- `--button-outline`, `--badge-outline`
-- Light + dark have equivalents
-
-### Memory rules saved
-- `feedback_translations.md` — PT static translations on every new page
-- `feedback_borders.md` — never solid black/white borders
-- `feedback_design_system.md` — admin patterns, file size rule, refactor checklist
-
----
-
-## Deferred (for future milestone or explicit request)
+### Deferred from Milestone 2
 
 | Item | Reason |
 |------|--------|
-| Content pages border sweep (Home, AboutUs, Contact, Faq, VCard, XpotCheckIn) | User instructed to skip |
-| Split `server/routes.ts` (3490 lines) | Heavy backend refactor, no visual impact |
-| Split `server/storage.ts` (1599 lines) | Same reason |
-| Split `IntegrationsSection.tsx` (1688) | Deep structural refactor |
-| Split `LeadsSection.tsx` (1270) | Same |
-| Split `BlogSection.tsx` (1087) | Same |
-| Split `ChatSection.tsx` (966) | Same |
-| Unify primary color hex values | Multiple brand blues scattered (#406EF1, #1C53A3) |
+| Content pages border sweep | User instructed to skip |
+| Split `server/routes.ts` (3490 lines) | Deferred |
+| Split `server/storage.ts` (1599 lines) | Deferred |
+| Split `IntegrationsSection.tsx` (1688) | Deferred |
+| Split `LeadsSection.tsx` (1270) | Deferred |
+| Split `BlogSection.tsx` (1087) | Deferred |
+| Split `ChatSection.tsx` (966) | Deferred |
+| Unify primary color hex values | Deferred |
 
 ---
 
@@ -73,11 +95,13 @@ None.
 
 | Decision | Made in | Rationale |
 |----------|---------|-----------|
-| Borders always hairline alpha, never solid black/white | 2026-04-14 | User feedback: solid borders ugly ("brega") |
-| Dark theme switches from slate (bluish) to neutral charcoal | 2026-04-14 | User requested darker + more desaturated |
-| Structural refactor included in this milestone | 2026-04-14 | User: "do everything in this milestone" |
-| Max file size: 600 lines for `.tsx` | 2026-04-14 | File size audit revealed 1000+ line files |
-| Border Sweep decision tree (keep/remove/convert) | 2026-04-14 | Not blind replace — evaluate each case |
-| Undefined tokens defined centrally | 2026-04-14 | Phase 2 audit revealed broken refs |
-| Global SectionHeader in Admin shell, not per section | 2026-04-14 | User: "one header that all pages use" |
-| Content pages skipped in Border Sweep | 2026-04-14 | User explicit instruction |
+| Start Milestone 3 (Multi-Forms) after M2 close | 2026-04-14 | User requested the ability to have multiple forms |
+| Forms = new top-level admin section | 2026-04-14 | Decision locked from draft plan recommendations |
+| Public form URL = `/f/:slug` | 2026-04-14 | Cleaner shareable URL than query param |
+| Chat form selection = global in Chat settings | 2026-04-14 | Simpler v1; per-URL rules can come later |
+| Delete form with leads = soft-delete | 2026-04-14 | Preserves lead history; hard delete only if empty |
+| GHL field collisions allowed across forms | 2026-04-14 | Latest write wins on contact; rare in practice |
+| Mirror migrations to both `migrations/` and `supabase/migrations/` | 2026-04-14 | Project tracks both Drizzle Kit and Supabase CLI histories |
+| Use session pooler (port 5432) for `supabase db push`, not transaction pooler (port 6543) | 2026-04-14 | Transaction pooler rejects prepared statements (SQLSTATE 42P05). POSTGRES_URL uses 6543 for runtime; swap to 5432 for migrations |
+| Borders always hairline alpha, never solid black/white | 2026-04-14 | Past M2 decision, still in force |
+| Max file size: 600 lines for `.tsx` | 2026-04-14 | Past M2 decision, still in force |
