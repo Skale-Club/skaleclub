@@ -123,7 +123,7 @@ export function AdminSidebar({
     <Sidebar className="border-r border-sidebar-border bg-sidebar">
       <SidebarHeader className="p-4 border-b border-sidebar-border bg-sidebar">
         <div className="flex flex-col gap-4">
-          <Link href="/" className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-primary transition-colors group">
+          <Link href="/" className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-primary dark:hover:text-white transition-colors group">
             <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" />
             Back to website
           </Link>
@@ -140,7 +140,7 @@ export function AdminSidebar({
                 {companySettings?.companyName?.[0] || 'A'}
               </div>
             )}
-            <span className="font-semibold text-lg text-primary truncate">
+            <span className="font-semibold text-lg text-primary dark:text-white truncate">
               {companySettings?.companyName || 'Admin Panel'}
             </span>
           </div>
