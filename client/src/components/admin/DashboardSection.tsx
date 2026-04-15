@@ -1,22 +1,34 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AlertCircle, Archive, BadgeCheck, Check, Clock, FileText, Flame, Globe, Loader2, MessageSquare, Sparkles, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { apiRequest } from '@/lib/queryClient';
 import { clsx } from 'clsx';
 import { AdminCard } from './shared';
 import { format } from 'date-fns';
-import type { BlogPost, Faq, FormLead, LeadStatus } from '@shared/schema';
+import type { BlogPost, Faq, Form, FormLead, LeadStatus } from '@shared/schema';
 import { SIDEBAR_MENU_ITEMS } from './shared/constants';
 import type { AdminSection, ChatSettingsData, CompanySettingsData, ConversationSummary, GHLSettings, TwilioSettings } from './shared/types';
 export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSection) => void }) {
   const dashboardMenuTitle = SIDEBAR_MENU_ITEMS.find((item) => item.id === 'dashboard')?.title ?? 'Dashboard';
+  const [selectedFormId, setSelectedFormId] = useState<number | 'all'>('all');
   const { data: companySettings } = useQuery<CompanySettingsData>({ queryKey: ['/api/company-settings'] });
-  const { data: leads } = useQuery<FormLead[]>({
-    queryKey: ['/api/form-leads'],
+  const { data: formsList } = useQuery<Form[]>({
+    queryKey: ['/api/forms'],
     queryFn: async () => {
-      const res = await apiRequest('GET', '/api/form-leads');
+      const res = await apiRequest('GET', '/api/forms');
+      return res.json();
+    }
+  });
+  const activeForms = useMemo(() => (formsList || []).filter(f => f.isActive), [formsList]);
+  const hasMultipleForms = activeForms.length > 1;
+  const { data: leads } = useQuery<FormLead[]>({
+    queryKey: ['/api/form-leads', { formId: selectedFormId }],
+    queryFn: async () => {
+      const qs = selectedFormId !== 'all' ? `?formId=${selectedFormId}` : '';
+      const res = await apiRequest('GET', `/api/form-leads${qs}`);
       return res.json();
     }
   });
@@ -271,6 +283,24 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
 
   return (
     <div className="space-y-6">
+      {hasMultipleForms && (
+        <div className="flex items-center justify-end">
+          <Select
+            value={selectedFormId === 'all' ? 'all' : String(selectedFormId)}
+            onValueChange={(value) => setSelectedFormId(value === 'all' ? 'all' : Number(value))}
+          >
+            <SelectTrigger className="w-full sm:w-[220px] h-9 rounded-md bg-background">
+              <SelectValue placeholder="Form" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All forms</SelectItem>
+              {activeForms.map(form => (
+                <SelectItem key={form.id} value={String(form.id)}>{form.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {topCards.map((card) => (
           <AdminCard key={card.label} padding="compact" className="transition-colors hover:bg-muted/30">

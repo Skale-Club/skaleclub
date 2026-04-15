@@ -1,10 +1,10 @@
 # State — Milestone 3: Multi-Forms Support
 
-**Current phase:** M3-03 — Public Form + Chat Widget Slug Awareness ✅ Complete
+**Current phase:** M3-04 — Leads section scoping by form + dashboard segmentation ✅ Complete
 **Current plan:** —
-**Next action:** `/paul:plan` for M3-04 (Leads section scoping by form + dashboard segmentation)
-**Last activity:** 2026-04-14 — M3-03 UNIFY complete. Migration applied to remote. SUMMARY written. Loop closed.
-**Resume file:** `.paul/phases/m3-03-public-and-chat-slug-awareness/03-01-SUMMARY.md`
+**Next action:** `/paul:plan` for M3-05 (Cleanup: drop legacy `/api/form-config` + `/api/form-leads/progress` + `company_settings.formConfig` column)
+**Last activity:** 2026-04-15 — M3-04 UNIFY complete. SUMMARY written. Loop closed.
+**Resume file:** `.paul/phases/m3-04-leads-scoping/04-01-SUMMARY.md`
 
 ---
 
@@ -28,7 +28,7 @@
 | 3 — Multi-Forms Support | 1 — Schema + Migration + Compat Shim | ✅ Complete (migration live on remote Supabase) |
 | 3 — Multi-Forms Support | 2 — Admin Forms list + editor rewire | ✅ Complete (sidebar section + list + editor + 7 REST endpoints) |
 | 3 — Multi-Forms Support | 3 — Public form + Chat widget slug awareness | ✅ Complete (/f/:slug route + chat_settings.form_slug + shared lead-processing helper) |
-| 3 — Multi-Forms Support | 4 — Leads section scoping | ⏳ Planned |
+| 3 — Multi-Forms Support | 4 — Leads section scoping | ✅ Complete (formId filter + per-section form selector + row/detail badges + single-form suppression) |
 | 3 — Multi-Forms Support | 5 — Cleanup (drop legacy column + endpoints) | ⏳ Planned |
 
 ---

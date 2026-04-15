@@ -132,6 +132,10 @@ export const translations = {
     'Use default form': 'Usar formulário padrão',
     'The AI assistant will qualify leads with this form. Changes take effect on new conversations.': 'O assistente de IA qualificará leads com este formulário. As alterações passam a valer em novas conversas.',
 
+    // Admin — Leads & Dashboard form scoping (M3-04)
+    'Form': 'Formulário',
+    'Form:': 'Formulário:',
+
     // Public — /f/:slug not found state (M3-03)
     "The form you're looking for is unavailable. Please double-check the link or go back to the homepage.": 'O formulário que você procura não está disponível. Verifique o link ou volte à página inicial.',
     'Back to homepage': 'Voltar à página inicial',

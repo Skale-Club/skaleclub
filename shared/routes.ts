@@ -105,6 +105,7 @@ export const api = {
         formCompleto: z.enum(['true', 'false']).transform(v => v === 'true').optional(),
         completionStatus: z.enum(['completo', 'em_progresso', 'abandonado']).optional(),
         search: z.string().optional(),
+        formId: z.coerce.number().int().positive().optional(),
       }).optional(),
       responses: {
         200: z.array(z.custom<typeof formLeads.$inferSelect>()),

@@ -288,7 +288,7 @@ export function registerCompanyRoutes(app: Express) {
   app.get('/api/form-leads', requireAdmin, async (req, res) => {
     try {
       const parsed = api.formLeads.list.input ? api.formLeads.list.input.parse(req.query) : {};
-      const filters = (parsed || {}) as { status?: LeadStatus; classificacao?: LeadClassification; formCompleto?: boolean; completionStatus?: 'completo' | 'em_progresso' | 'abandonado'; search?: string };
+      const filters = (parsed || {}) as { status?: LeadStatus; classificacao?: LeadClassification; formCompleto?: boolean; completionStatus?: 'completo' | 'em_progresso' | 'abandonado'; search?: string; formId?: number };
       console.log('[form-leads] query:', req.query, 'parsed filters:', filters);
       const leads = await storage.listFormLeads(filters);
       res.json(leads);

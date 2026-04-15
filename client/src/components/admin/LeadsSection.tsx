@@ -13,7 +13,7 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { clsx } from 'clsx';
 import { format } from 'date-fns';
 import { DEFAULT_FORM_CONFIG, getSortedQuestions } from '@shared/form';
-import type { FormConfig, FormLead, FormQuestion, LeadClassification, LeadStatus } from '@shared/schema';
+import type { Form, FormConfig, FormLead, FormQuestion, LeadClassification, LeadStatus } from '@shared/schema';
 import { FormEditorContent } from './leads/FormEditorContent';
 export function LeadsSection() {
   const { toast } = useToast();
@@ -25,13 +25,16 @@ export function LeadsSection() {
     classification: LeadClassification | 'all';
     status: LeadStatus | 'all';
     completion: 'all' | 'completo' | 'em_progresso' | 'abandonado';
+    formId: number | 'all';
   }>({
     search: '',
     classification: 'all',
     status: 'all',
     completion: 'all',
+    formId: 'all',
   });
 
+  // TODO(M3-05): rewire this to pull from the selected form's config instead of the legacy /api/form-config default-form endpoint.
   const { data: formConfig } = useQuery<FormConfig>({
     queryKey: ['/api/form-config'],
     queryFn: async () => {
@@ -39,6 +42,22 @@ export function LeadsSection() {
       return res.json();
     }
   });
+
+  const { data: formsList } = useQuery<Form[]>({
+    queryKey: ['/api/forms'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/forms');
+      return res.json();
+    }
+  });
+
+  const activeForms = useMemo(() => (formsList || []).filter(f => f.isActive), [formsList]);
+  const formsById = useMemo(() => {
+    const map = new Map<number, Form>();
+    for (const f of (formsList || [])) map.set(f.id, f);
+    return map;
+  }, [formsList]);
+  const hasMultipleForms = activeForms.length > 1;
 
   const { data: leads, isLoading } = useQuery<FormLead[]>({
     queryKey: ['/api/form-leads', filters],
@@ -48,6 +67,7 @@ export function LeadsSection() {
       if (filters.classification !== 'all') params.set('classificacao', filters.classification);
       if (filters.status !== 'all') params.set('status', filters.status);
       if (filters.completion !== 'all') params.set('completionStatus', filters.completion);
+      if (filters.formId !== 'all') params.set('formId', String(filters.formId));
       const res = await apiRequest('GET', `/api/form-leads${params.toString() ? `?${params.toString()}` : ''}`);
       return res.json();
     }
@@ -294,6 +314,22 @@ export function LeadsSection() {
               onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
               className="col-span-2 sm:w-64"
             />
+            {hasMultipleForms && (
+              <Select
+                value={filters.formId === 'all' ? 'all' : String(filters.formId)}
+                onValueChange={(value) => setFilters(prev => ({ ...prev, formId: value === 'all' ? 'all' : Number(value) }))}
+              >
+                <SelectTrigger className="w-full sm:w-[220px] h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
+                  <SelectValue placeholder="Form" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All forms</SelectItem>
+                  {activeForms.map(form => (
+                    <SelectItem key={form.id} value={String(form.id)}>{form.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <Select
               value={filters.classification}
               onValueChange={(value) => setFilters(prev => ({ ...prev, classification: value as LeadClassification | 'all' }))}
@@ -378,9 +414,16 @@ export function LeadsSection() {
                     <div className="text-xs text-muted-foreground">{lead.telefone || 'No phone'}</div>
                   </td>
                   <td className="px-4 py-3">
-                    <Badge className={clsx("border", classificationBadge(lead.classificacao))}>
-                      {lead.classificacao || '?'}
-                    </Badge>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Badge className={clsx("border", classificationBadge(lead.classificacao))}>
+                        {lead.classificacao || '?'}
+                      </Badge>
+                      {hasMultipleForms && lead.formId != null && (
+                        <Badge variant="outline" className="text-xs">
+                          {formsById.get(lead.formId)?.name ?? '—'}
+                        </Badge>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="text-sm font-medium text-foreground">{questionLabel(lead)}</div>
@@ -458,6 +501,11 @@ export function LeadsSection() {
                   </Badge>
                   <Badge variant="outline">{selectedLead.status || 'novo'}</Badge>
                   <Badge variant="secondary">{questionLabel(selectedLead)}</Badge>
+                  {hasMultipleForms && selectedLead.formId != null && (
+                    <Badge variant="outline">
+                      Form: {formsById.get(selectedLead.formId)?.name ?? '—'}
+                    </Badge>
+                  )}
                   {selectedLead.ghlSyncStatus && (
                     <Badge className={clsx("border", ghlBadgeClass(selectedLead.ghlSyncStatus))}>
                       GHL: {selectedLead.ghlSyncStatus}

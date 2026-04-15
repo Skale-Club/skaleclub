@@ -614,7 +614,7 @@ export interface IStorage {
   upsertFormLeadProgress(progress: FormLeadProgressInput, metadata?: { userAgent?: string; conversationId?: string; source?: string; formId?: number }, formConfig?: FormConfig): Promise<FormLead>;
   getFormLeadBySession(sessionId: string): Promise<FormLead | undefined>;
   getFormLeadByConversationId(conversationId: string): Promise<FormLead | undefined>;
-  listFormLeads(filters?: { status?: LeadStatus; classificacao?: LeadClassification; formCompleto?: boolean; completionStatus?: 'completo' | 'em_progresso' | 'abandonado'; search?: string }): Promise<FormLead[]>;
+  listFormLeads(filters?: { status?: LeadStatus; classificacao?: LeadClassification; formCompleto?: boolean; completionStatus?: 'completo' | 'em_progresso' | 'abandonado'; search?: string; formId?: number }): Promise<FormLead[]>;
   updateFormLead(id: number, updates: Partial<Pick<FormLead, "status" | "observacoes" | "notificacaoEnviada" | "ghlContactId" | "ghlSyncStatus">>): Promise<FormLead | undefined>;
   getFormLeadByEmail(email: string): Promise<FormLead | undefined>;
   deleteFormLead(id: number): Promise<boolean>;
@@ -1206,10 +1206,11 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
-  async listFormLeads(filters: { status?: LeadStatus; classificacao?: LeadClassification; formCompleto?: boolean; completionStatus?: 'completo' | 'em_progresso' | 'abandonado'; search?: string } = {}): Promise<FormLead[]> {
+  async listFormLeads(filters: { status?: LeadStatus; classificacao?: LeadClassification; formCompleto?: boolean; completionStatus?: 'completo' | 'em_progresso' | 'abandonado'; search?: string; formId?: number } = {}): Promise<FormLead[]> {
     const conditions: any[] = [];
     if (filters.status) conditions.push(eq(formLeads.status, filters.status));
     if (filters.classificacao) conditions.push(eq(formLeads.classificacao, filters.classificacao));
+    if (typeof filters.formId === 'number') conditions.push(eq(formLeads.formId, filters.formId));
 
     // New 3-stage completion filter
     if (filters.completionStatus) {
