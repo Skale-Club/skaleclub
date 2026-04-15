@@ -18,6 +18,7 @@ import { PortfolioSection } from '@/components/admin/PortfolioSection';
 import { WebsiteSettingsSection } from '@/components/admin/WebsiteSettingsSection';
 import { IntegrationsSection } from '@/components/admin/IntegrationsSection';
 import { LeadsSection } from '@/components/admin/LeadsSection';
+import { FormsSection } from '@/components/admin/forms/FormsSection';
 import { SEOSection } from '@/components/admin/SEOSection';
 import { LinksSection } from '@/components/admin/LinksSection';
 import { VCardsManager } from '@/components/admin/VCardsManager';
@@ -42,6 +43,7 @@ function AdminContent() {
       website: 'website',
       portfolio: 'portfolio',
       leads: 'leads',
+      forms: 'forms',
       chat: 'chat',
       faqs: 'faqs',
       users: 'users',
@@ -94,6 +96,7 @@ function AdminContent() {
       website: 'website',
       portfolio: 'portfolio',
       leads: 'leads',
+      forms: 'forms',
       chat: 'chat',
       faqs: 'faqs',
       users: 'users',
@@ -177,7 +180,7 @@ function AdminContent() {
         {activeSection !== 'chat' && (
           <div className="flex-1 overflow-y-auto min-h-0 p-6 pb-16 md:p-8 md:pb-10">
             {(() => {
-              const sectionsWithOwnHeader: AdminSection[] = ['leads', 'faqs', 'users', 'blog', 'portfolio', 'links', 'vcards', 'fieldSales', 'company', 'website', 'seo', 'integrations'];
+              const sectionsWithOwnHeader: AdminSection[] = ['leads', 'forms', 'faqs', 'users', 'blog', 'portfolio', 'links', 'vcards', 'fieldSales', 'company', 'website', 'seo', 'integrations'];
               if (sectionsWithOwnHeader.includes(activeSection)) return null;
               const currentItem = menuItems.find(item => item.id === activeSection);
               return currentItem ? (
@@ -190,6 +193,7 @@ function AdminContent() {
             })()}
             {activeSection === 'dashboard' && <DashboardSection onNavigate={handleSectionSelect} />}
             {activeSection === 'leads' && <LeadsSection />}
+            {activeSection === 'forms' && <FormsSection />}
             {activeSection === 'website' && <WebsiteSettingsSection />}
             {activeSection === 'portfolio' && <PortfolioSection />}
             {activeSection === 'company' && <CompanySettingsSection />}

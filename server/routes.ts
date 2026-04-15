@@ -20,6 +20,7 @@ import { registerBlogRoutes } from "./routes/blog.js";
 import { registerTranslateRoutes } from "./routes/translate.js";
 import { registerUserRoutes } from "./routes/users.js";
 import { registerCompanyRoutes } from "./routes/company.js";
+import { registerFormRoutes } from "./routes/forms.js";
 import { registerIntegrationRoutes } from "./routes/integrations.js";
 import { db, pool } from "./db.js";
 import { users } from "#shared/schema.js";
@@ -121,6 +122,7 @@ export async function registerRoutes(
   registerTranslateRoutes(app);
   registerUserRoutes(app);
   registerCompanyRoutes(app);
+  registerFormRoutes(app);
   registerIntegrationRoutes(app);
   await initializeSalesSchema();
 

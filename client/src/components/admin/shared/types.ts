@@ -4,6 +4,7 @@ import type { PageSlugs } from '@shared/pageSlugs';
 export type AdminSection =
   | 'dashboard'
   | 'leads'
+  | 'forms'
   | 'website'
   | 'company'
   | 'seo'

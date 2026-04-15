@@ -1,10 +1,10 @@
 # State — Milestone 3: Multi-Forms Support
 
-**Current phase:** M3-01 — Schema + Migration + Compat Shim ✅ Complete
+**Current phase:** M3-02 — Admin Forms List + Editor ✅ Complete
 **Current plan:** —
-**Next action:** Commit M3-01 work (git) → `/paul:plan` for M3-02 (Admin Forms list + editor wiring)
-**Last activity:** 2026-04-14 — M3-01 UNIFY complete. SUMMARY written. Loop closed.
-**Resume file:** `.paul/phases/m3-01-multi-forms-schema/01-01-SUMMARY.md`
+**Next action:** `/paul:plan` for M3-03 (public form + chat widget slug awareness)
+**Last activity:** 2026-04-14 — M3-02 UNIFY complete. SUMMARY written. Loop closed.
+**Resume file:** `.paul/phases/m3-02-admin-forms-ui/02-01-SUMMARY.md`
 
 ---
 
@@ -26,7 +26,7 @@
 | 1 — Xpot Hardening | 1–6 | ✅ Complete |
 | 2 — Design + Structural Refactor | 1–9 | ✅ Complete (file splits deferred) |
 | 3 — Multi-Forms Support | 1 — Schema + Migration + Compat Shim | ✅ Complete (migration live on remote Supabase) |
-| 3 — Multi-Forms Support | 2 — Admin Forms list + editor rewire | ⏳ Planned |
+| 3 — Multi-Forms Support | 2 — Admin Forms list + editor rewire | ✅ Complete (sidebar section + list + editor + 7 REST endpoints) |
 | 3 — Multi-Forms Support | 3 — Public form + Chat widget slug awareness | ⏳ Planned |
 | 3 — Multi-Forms Support | 4 — Leads section scoping | ⏳ Planned |
 | 3 — Multi-Forms Support | 5 — Cleanup (drop legacy column + endpoints) | ⏳ Planned |

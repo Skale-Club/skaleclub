@@ -1,4 +1,4 @@
-import { Building2, Briefcase, FileText, HelpCircle, Image, LayoutDashboard, Link, MessageSquare, Puzzle, Search, Sparkles, Users, Smartphone, MapPinned } from 'lucide-react';
+import { Building2, Briefcase, ClipboardList, FileText, HelpCircle, Image, LayoutDashboard, Link, MessageSquare, Puzzle, Search, Sparkles, Users, Smartphone, MapPinned } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { AdminSection, BusinessHours, IntakeObjective } from './types';
 
@@ -35,6 +35,7 @@ export const SIDEBAR_MENU_ITEMS: SidebarMenuItem[] = [
   { id: 'website', title: 'Website', description: 'Customize homepage content and sections', icon: Image },
   { id: 'portfolio', title: 'Portfolio', description: 'Services shown on the portfolio page — drag to reorder, click to edit', icon: Briefcase },
   { id: 'leads', title: 'Leads', description: 'All captured leads with ratings and follow-up status', icon: Sparkles },
+  { id: 'forms', title: 'Forms', description: 'Manage lead capture forms — questions, scoring, and thresholds', icon: ClipboardList },
   { id: 'chat', title: 'Chat', description: 'AI assistant conversations and response settings', icon: MessageSquare },
   { id: 'faqs', title: 'FAQs', description: 'Questions and answers shown on the FAQ page', icon: HelpCircle },
   { id: 'users', title: 'Users', description: 'Manage admin and team member accounts', icon: Users },
