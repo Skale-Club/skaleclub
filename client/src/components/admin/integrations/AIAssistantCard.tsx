@@ -407,7 +407,7 @@ export function AIAssistantCard() {
   }, [openRouterModels, openRouterModelSearch]);
 
   return (
-    <Card className="border-0 bg-muted">
+    <Card className="rounded-2xl shadow-none">
       <CardHeader>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">

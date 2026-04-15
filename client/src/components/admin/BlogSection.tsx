@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Calendar, Check, ExternalLink, FileText, Image, Loader2, Pencil, Plus, Tag, Trash2 } from 'lucide-react';
-import { EmptyState, SectionHeader } from './shared';
+import { AdminCard, EmptyState, SectionHeader } from './shared';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -866,9 +866,9 @@ export function BlogSection({ resetSignal }: { resetSignal: number }) {
             </Button>
           )}
         </div>
-        <div className="bg-muted p-4 sm:p-6 rounded-lg space-y-6 transition-all">
+        <AdminCard className="space-y-6">
           {renderForm()}
-        </div>
+        </AdminCard>
       </div>
     );
   }
@@ -977,7 +977,7 @@ export function BlogSection({ resetSignal }: { resetSignal: number }) {
         }
       />
 
-      <div className="bg-muted p-4 sm:p-6 rounded-lg space-y-6 transition-all">
+      <AdminCard className="space-y-6">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <FileText className="w-5 h-5 text-primary" />
           Posts
@@ -1067,7 +1067,7 @@ export function BlogSection({ resetSignal }: { resetSignal: number }) {
             }
           />
         )}
-      </div>
+      </AdminCard>
       <AlertDialog open={!!tagToDelete} onOpenChange={(open) => !open && setTagToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

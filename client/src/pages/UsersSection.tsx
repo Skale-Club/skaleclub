@@ -5,7 +5,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
@@ -232,7 +231,6 @@ export function UsersSection() {
               <Button
                 onClick={() => createUser.mutate(newUser)}
                 disabled={!newUser.email || createUser.isPending}
-                className="bg-blue-600 hover:bg-blue-700"
               >
                 {createUser.isPending ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -248,8 +246,7 @@ export function UsersSection() {
       />
 
       {/* Users Table */}
-      <Card className="border-0 shadow-none">
-        <CardContent className="p-0">
+      <div className="rounded-2xl border overflow-hidden">
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
@@ -263,39 +260,39 @@ export function UsersSection() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-muted/50">
-                    <th className="text-left px-6 py-4 font-medium text-muted-foreground">User</th>
-                    <th className="text-left px-6 py-4 font-medium text-muted-foreground">Email</th>
-                    <th className="text-left px-6 py-4 font-medium text-muted-foreground">Role</th>
-                    <th className="text-right px-6 py-4 font-medium text-muted-foreground">Actions</th>
+                  <tr className="border-b bg-muted/40">
+                    <th className="text-left px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">User</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Email</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Role</th>
+                    <th className="text-right px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y">
                   {users.map((user) => (
-                    <tr key={user.id} className="hover:bg-muted/50 transition-colors">
+                    <tr key={user.id} className="hover:bg-muted/30 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           {user.profileImageUrl ? (
                             <img
                               src={user.profileImageUrl}
                               alt={getDisplayName(user)}
-                              className="w-10 h-10 rounded-full object-cover"
+                              className="w-9 h-9 rounded-full object-cover"
                               crossOrigin="anonymous"
                             />
                           ) : (
-                            <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-medium">
+                            <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-medium text-sm">
                               {getInitials(user)}
                             </div>
                           )}
-                          <span className="font-medium">{getDisplayName(user)}</span>
+                          <span className="font-medium text-sm">{getDisplayName(user)}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-muted-foreground">{user.email}</td>
+                      <td className="px-6 py-4 text-sm text-muted-foreground">{user.email}</td>
                       <td className="px-6 py-4">
                         {user.isAdmin ? (
-                          <Badge className="bg-blue-600 hover:bg-blue-700 text-white">Admin</Badge>
+                          <Badge className="bg-primary hover:bg-primary/90 text-primary-foreground">Admin</Badge>
                         ) : (
-                          <Badge variant="secondary" className="bg-yellow-400 hover:bg-yellow-500 text-black">User</Badge>
+                          <Badge variant="secondary">User</Badge>
                         )}
                       </td>
                       <td className="px-6 py-4 text-right">
@@ -402,8 +399,7 @@ export function UsersSection() {
                                   type="button"
                                   onClick={handleSaveUser}
                                   disabled={updateUser.isPending}
-                                  className="bg-blue-600 hover:bg-blue-700"
-                                >
+                                                  >
                                   {updateUser.isPending ? (
                                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                                   ) : (
@@ -461,8 +457,7 @@ export function UsersSection() {
               </table>
             </div>
           )}
-        </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }

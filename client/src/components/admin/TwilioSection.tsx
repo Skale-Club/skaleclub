@@ -275,7 +275,7 @@ export function TwilioSection() {
 
   return (
     <div className="space-y-4">
-      <Card className="border-0 bg-muted">
+      <Card className="rounded-2xl shadow-none">
         <CardHeader>
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">

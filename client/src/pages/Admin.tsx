@@ -63,12 +63,14 @@ function AdminContent() {
     }
   }, [loading, isAdmin, setLocation]);
 
-  const updateSectionOrder = useCallback(async (newOrder: AdminSection[]) => {
-    setSectionsOrder(newOrder);
+  const updateSectionOrder = useCallback(async (newOrder: AdminSection[], previousOrder?: AdminSection[]) => {
     try {
       await apiRequest('PUT', '/api/company-settings', { sectionsOrder: newOrder });
       queryClient.invalidateQueries({ queryKey: ['/api/company-settings'] });
     } catch (error: any) {
+      if (previousOrder) {
+        setSectionsOrder(previousOrder);
+      }
       toast({
         title: 'Error saving section order',
         description: error.message,
@@ -105,19 +107,18 @@ function AdminContent() {
     setLocation(`/admin/${slugMap[section]}`);
   }, [activeSection, setLocation]);
 
-  const handleSidebarDragEnd = (event: DragEndEvent) => {
+  const handleSidebarDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    setSectionsOrder(prev => {
-      const oldIndex = prev.indexOf(active.id as AdminSection);
-      const newIndex = prev.indexOf(over.id as AdminSection);
-      if (oldIndex === -1 || newIndex === -1) return prev;
-      const reordered = arrayMove(prev, oldIndex, newIndex);
-      updateSectionOrder(reordered);
-      return reordered;
-    });
-  };
+    const oldIndex = sectionsOrder.indexOf(active.id as AdminSection);
+    const newIndex = sectionsOrder.indexOf(over.id as AdminSection);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(sectionsOrder, oldIndex, newIndex);
+    setSectionsOrder(reordered);
+    void updateSectionOrder(reordered, sectionsOrder);
+  }, [sectionsOrder, updateSectionOrder]);
 
   const { data: companySettings } = useQuery<CompanySettingsData>({
     queryKey: ['/api/company-settings']
@@ -162,37 +163,46 @@ function AdminContent() {
         onLogout={handleLogout}
       />
 
-      <main className="flex-1 min-w-0 relative bg-background overflow-visible md:overflow-y-scroll md:h-screen" id="admin-top">
+      <main className="flex-1 min-w-0 flex flex-col bg-background md:h-screen md:overflow-hidden" id="admin-top">
         <AdminHeader title={companySettings?.companyName || 'Admin Panel'} />
-        <div className="p-6 pb-16 md:p-8 md:pb-10">
-          {(() => {
-            // Sections that render their own SectionHeader (with custom actions)
-            const sectionsWithOwnHeader: AdminSection[] = ['leads', 'chat', 'faqs', 'users', 'blog'];
-            if (sectionsWithOwnHeader.includes(activeSection)) return null;
-            const currentItem = menuItems.find(item => item.id === activeSection);
-            return currentItem ? (
-              <SectionHeader
-                title={currentItem.title}
-                description={currentItem.description}
-                icon={<currentItem.icon className="w-5 h-5" />}
-              />
-            ) : null;
-          })()}
-          {activeSection === 'dashboard' && <DashboardSection onNavigate={handleSectionSelect} />}
-          {activeSection === 'leads' && <LeadsSection />}
-          {activeSection === 'website' && <WebsiteSettingsSection />}
-          {activeSection === 'portfolio' && <PortfolioSection />}
-          {activeSection === 'company' && <CompanySettingsSection />}
-          {activeSection === 'seo' && <SEOSection />}
-          {activeSection === 'faqs' && <FaqsSection />}
-          {activeSection === 'users' && <UsersSection />}
-          {activeSection === 'chat' && <ChatSection />}
-          {activeSection === 'integrations' && <IntegrationsSection />}
-          {activeSection === 'blog' && <BlogSection resetSignal={blogResetSignal} />}
-          {activeSection === 'links' && <LinksSection />}
-          {activeSection === 'vcards' && <VCardsManager />}
-          {activeSection === 'fieldSales' && <XpotSalesSection />}
-        </div>
+
+        {/* Chat gets its own flex wrapper so it can fill the remaining height */}
+        {activeSection === 'chat' && (
+          <div className="flex-1 min-h-0 flex flex-col p-6 pb-6 md:p-8 md:pb-8">
+            <ChatSection />
+          </div>
+        )}
+
+        {/* All other sections scroll normally */}
+        {activeSection !== 'chat' && (
+          <div className="flex-1 overflow-y-auto min-h-0 p-6 pb-16 md:p-8 md:pb-10">
+            {(() => {
+              const sectionsWithOwnHeader: AdminSection[] = ['leads', 'faqs', 'users', 'blog', 'portfolio', 'links', 'vcards', 'fieldSales', 'company', 'website', 'seo', 'integrations'];
+              if (sectionsWithOwnHeader.includes(activeSection)) return null;
+              const currentItem = menuItems.find(item => item.id === activeSection);
+              return currentItem ? (
+                <SectionHeader
+                  title={currentItem.title}
+                  description={currentItem.description}
+                  icon={<currentItem.icon className="w-5 h-5" />}
+                />
+              ) : null;
+            })()}
+            {activeSection === 'dashboard' && <DashboardSection onNavigate={handleSectionSelect} />}
+            {activeSection === 'leads' && <LeadsSection />}
+            {activeSection === 'website' && <WebsiteSettingsSection />}
+            {activeSection === 'portfolio' && <PortfolioSection />}
+            {activeSection === 'company' && <CompanySettingsSection />}
+            {activeSection === 'seo' && <SEOSection />}
+            {activeSection === 'faqs' && <FaqsSection />}
+            {activeSection === 'users' && <UsersSection />}
+            {activeSection === 'integrations' && <IntegrationsSection />}
+            {activeSection === 'blog' && <BlogSection resetSignal={blogResetSignal} />}
+            {activeSection === 'links' && <LinksSection />}
+            {activeSection === 'vcards' && <VCardsManager />}
+            {activeSection === 'fieldSales' && <XpotSalesSection />}
+          </div>
+        )}
       </main>
     </div>
   );

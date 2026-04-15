@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Check, LayoutGrid } from 'lucide-react';
 import { SiFacebook, SiGoogleanalytics, SiGoogletagmanager } from 'react-icons/si';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AdminCard } from '../shared';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -73,7 +74,7 @@ export function AnalyticsSection() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        <Card className="border-0 bg-muted min-w-0">
+        <Card className="rounded-2xl shadow-none min-w-0">
           <CardHeader className="pb-2">
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-center gap-2.5">
@@ -100,7 +101,7 @@ export function AnalyticsSection() {
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-muted min-w-0">
+        <Card className="rounded-2xl shadow-none min-w-0">
           <CardHeader className="pb-2">
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-center gap-2.5">
@@ -127,7 +128,7 @@ export function AnalyticsSection() {
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-muted min-w-0">
+        <Card className="rounded-2xl shadow-none min-w-0">
           <CardHeader className="pb-2">
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-center gap-2.5">
@@ -155,12 +156,12 @@ export function AnalyticsSection() {
         </Card>
       </div>
 
-      <div className="bg-muted p-6 rounded-lg space-y-4 transition-all">
+      <AdminCard className="space-y-4">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <LayoutGrid className="w-5 h-5 text-primary" />
           Tracked Events
         </h2>
-        <div className="p-4 bg-card/60 rounded-lg">
+        <div className="p-4 bg-muted/40 rounded-lg">
           <p className="text-xs text-muted-foreground mb-3">When enabled, the following events are automatically tracked:</p>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {[
@@ -175,7 +176,7 @@ export function AnalyticsSection() {
             ))}
           </div>
         </div>
-      </div>
+      </AdminCard>
     </div>
   );
 }

@@ -56,17 +56,17 @@ function ChatBubble({ message, assistantAvatar }: { message: ConversationMessage
           className={`p-3 text-sm shadow-sm relative ${
             isAssistant
               ? "bg-card text-card-foreground rounded-tr-xl rounded-br-xl rounded-bl-xl border" // Formato bolha esquerda
-              : "bg-blue-600 text-white rounded-tl-xl rounded-bl-xl rounded-br-xl" // Formato bolha direita
+              : "bg-primary text-primary-foreground rounded-tl-xl rounded-bl-xl rounded-br-xl" // Formato bolha direita
           }`}
         >
           {/* Conteúdo da Mensagem */}
           <div className="leading-relaxed whitespace-pre-wrap">
             {renderMarkdown(message.content)}
           </div>
-          
+
           {/* Hora da mensagem */}
           <span className={`text-[10px] block mt-1 ${
-            isAssistant ? "text-slate-400" : "text-blue-100"
+            isAssistant ? "text-muted-foreground" : "text-primary-foreground/60"
           }`}>
             {format(new Date(message.createdAt), 'HH:mm')}
           </span>
@@ -467,7 +467,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas!"`;
   const statusBadge = (status: string) => {
     const label = status === 'closed' ? 'Archived' : status === 'open' ? 'Open' : status;
     const badgeClass = status === 'open'
-      ? 'bg-blue-500/10 text-blue-200 border border-blue-400/50 rounded-full px-3 py-1 text-xs font-semibold'
+      ? 'bg-primary/10 text-primary border border-primary/20 rounded-full px-3 py-1 text-xs font-semibold'
       : 'bg-muted text-muted-foreground border rounded-full px-3 py-1 text-xs font-semibold';
     return <span className={badgeClass}>{label}</span>;
   };
@@ -532,7 +532,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas!"`;
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)] gap-4">
+    <div className="flex flex-col flex-1 min-h-0">
       <SectionHeader
         title="Chat"
         description="AI assistant conversations and response settings"
@@ -749,9 +749,9 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas!"`;
         }
       />
 
-      <div className="flex flex-1 gap-4 overflow-hidden">
+      <div className="flex flex-1 min-h-0 gap-4 overflow-hidden">
         {/* Left Sidebar - Conversation List */}
-        <Card className="w-80 md:w-96 flex flex-col border-0 shadow-sm bg-muted/50 dark:bg-slate-900/50 shrink-0">
+        <Card className="w-80 md:w-96 flex flex-col rounded-2xl shadow-none shrink-0 overflow-hidden">
           <div className="p-3 border-b border-border/50 space-y-3">
              <div className="flex items-center gap-2">
                 <div className="relative flex-1">
@@ -826,13 +826,13 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas!"`;
         </Card>
 
         {/* Right Area - Chat Interface */}
-        <Card className="flex-1 flex flex-col border-0 shadow-sm overflow-hidden bg-background">
+        <Card className="flex-1 flex flex-col rounded-2xl shadow-none overflow-hidden">
           {selectedConversation ? (
              <>
                {/* Chat Header */}
                <div className="h-16 border-b border-border/50 flex items-center justify-between px-6 bg-muted/30 shrink-0">
                   <div className="flex items-center gap-3">
-                     <div className="h-9 w-9 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
+                     <div className="h-9 w-9 rounded-full bg-muted text-foreground flex items-center justify-center font-bold text-sm">
                         {(selectedConversation.visitorName?.[0] || 'G').toUpperCase()}
                      </div>
                      <div>
@@ -871,7 +871,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas!"`;
                </div>
 
                {/* Messages Area */}
-               <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50 dark:bg-slate-950/50">
+               <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-muted/20">
                   {isMessagesLoading ? (
                      <div className="flex justify-center py-10">
                         <Loader2 className="w-6 h-6 animate-spin text-primary" />

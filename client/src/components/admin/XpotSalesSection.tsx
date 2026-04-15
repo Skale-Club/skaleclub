@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getXpotAppUrl } from "@/lib/xpot";
 import { queryClient } from "@/lib/queryClient";
+import { SectionHeader } from "./shared";
 
 type XpotOverviewResponse = {
   reps: {
@@ -47,32 +48,32 @@ export function XpotSalesSection() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Xpot</h2>
-          <p className="text-sm text-muted-foreground">
-            Monitor rep activity, sync health, and live pipeline creation from the Xpot app.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/xpot/admin/overview"] })}
-          >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh
-          </Button>
-          <Button asChild>
-            <a href={getXpotAppUrl("/")} target="_blank" rel="noreferrer">
-              Open Xpot
-            </a>
-          </Button>
-        </div>
-      </div>
+      <SectionHeader
+        title="Xpot"
+        description="Monitor rep activity, sync health, and live pipeline creation from the Xpot app."
+        icon={<MapPinned className="w-5 h-5" />}
+        action={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/xpot/admin/overview"] })}
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Refresh
+            </Button>
+            <Button size="sm" asChild>
+              <a href={getXpotAppUrl("/")} target="_blank" rel="noreferrer">
+                Open Xpot
+              </a>
+            </Button>
+          </div>
+        }
+      />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {metricCards.map(({ key, label, icon: Icon }) => (
-          <Card key={key} className="border-0 bg-muted">
+          <Card key={key} className="rounded-2xl shadow-none">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between gap-3">
                 <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
@@ -89,7 +90,7 @@ export function XpotSalesSection() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.1fr,0.9fr]">
-        <Card className="border-0 bg-muted">
+        <Card className="rounded-2xl shadow-none">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" />
@@ -121,7 +122,7 @@ export function XpotSalesSection() {
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-muted">
+        <Card className="rounded-2xl shadow-none">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Activity className="h-5 w-5 text-primary" />

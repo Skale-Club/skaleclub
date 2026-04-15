@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Briefcase, Loader2, Pencil, Plus, Trash2, Eye, EyeOff, GripVertical, Image } from 'lucide-react';
 import { uploadFileToServer, getOriginalImageUrl } from './shared/utils';
-import { EmptyState } from './shared';
+import { EmptyState, SectionHeader } from './shared';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -151,10 +151,14 @@ export function PortfolioSection() {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-end">
+            <SectionHeader
+            title="Portfolio"
+            description="Services shown on the portfolio page"
+            icon={<Image className="w-5 h-5" />}
+            action={
                 <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingService(null); }}>
                     <DialogTrigger asChild>
-                        <Button onClick={handleCreate} data-testid="button-add-service">
+                        <Button size="sm" onClick={handleCreate} data-testid="button-add-service">
                             <Plus className="w-4 h-4 mr-2" />
                             Add Service
                         </Button>
@@ -178,7 +182,8 @@ export function PortfolioSection() {
                         />
                     </DialogContent>
                 </Dialog>
-            </div>
+            }
+        />
 
             {services?.length === 0 ? (
                 <EmptyState

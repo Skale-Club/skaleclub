@@ -90,7 +90,7 @@ export function GroqCard() {
   };
 
   return (
-    <Card className="border-0 bg-muted">
+    <Card className="rounded-2xl shadow-none">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5">

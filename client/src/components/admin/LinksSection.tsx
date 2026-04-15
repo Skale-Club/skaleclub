@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Check, Loader2, Plus, Trash2, GripVertical, ExternalLink, Link as LinkIcon, AtSign } from 'lucide-react';
-import { EmptyState } from './shared';
+import { EmptyState, SectionHeader } from './shared';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { usePagePaths } from '@/lib/pagePaths';
@@ -128,20 +128,19 @@ export function LinksSection() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-end gap-3">
-        {isSaving && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Saving...</span>
-          </div>
-        )}
-        <Button variant="outline" size="sm" asChild>
-          <a href={pagePaths.links} target="_blank" className="flex items-center gap-2">
-            <ExternalLink className="h-4 w-4" />
-            View Page
-          </a>
-        </Button>
-      </div>
+      <SectionHeader
+        title="Links Page"
+        description="Manage your public links page profile and links"
+        icon={<LinkIcon className="w-5 h-5" />}
+        action={
+          <Button variant="outline" size="sm" asChild>
+            <a href={pagePaths.links} target="_blank" className="flex items-center gap-2">
+              <ExternalLink className="h-4 w-4" />
+              View Page
+            </a>
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Profile Settings */}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Building2, Check, Image, Loader2, Plus, Trash2 } from 'lucide-react';
+import { AdminCard, SectionHeader } from './shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -140,25 +141,30 @@ export function CompanySettingsSection() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          {isSaving ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Saving...</span>
-            </>
-          ) : lastSaved ? (
-            <>
-              <Check className="h-4 w-4 text-green-500" />
-              <span>Auto-saved</span>
-            </>
-          ) : null}
-        </div>
-      </div>
+      <SectionHeader
+        title="Company Infos"
+        description="Business details, contact info and operating hours"
+        icon={<Building2 className="w-5 h-5" />}
+        action={
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            {isSaving ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Saving...</span>
+              </>
+            ) : lastSaved ? (
+              <>
+                <Check className="h-4 w-4 text-green-500" />
+                <span>Auto-saved</span>
+              </>
+            ) : null}
+          </div>
+        }
+      />
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-muted p-6 rounded-lg space-y-6 transition-all">
+          <AdminCard className="space-y-6">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Building2 className="w-5 h-5 text-primary" />
               Business Information
@@ -221,12 +227,12 @@ export function CompanySettingsSection() {
                 </p>
               </div>
             </div>
-          </div>
+          </AdminCard>
 
         </div>
 
         <div className="space-y-6">
-          <div className="bg-muted p-6 rounded-lg space-y-6 transition-all">
+          <AdminCard className="space-y-6">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Image className="w-5 h-5 text-primary" />
               Branding Assets
@@ -362,7 +368,7 @@ export function CompanySettingsSection() {
                 </div>
               </div>
             </div>
-          </div>
+          </AdminCard>
         </div>
       </div>
     </div>

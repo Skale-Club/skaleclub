@@ -1,7 +1,8 @@
 import {
   DndContext,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   closestCenter,
   useSensor,
   useSensors,
@@ -18,6 +19,7 @@ import { ArrowLeft, GripVertical, LogOut } from 'lucide-react';
 import { Link } from 'wouter';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import {
   Sidebar,
   SidebarContent,
@@ -52,12 +54,21 @@ function SidebarSortableItem({
   isActive: boolean;
   onSelect: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
   const { isMobile, setOpenMobile } = useSidebar();
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    opacity: isDragging ? 0.7 : 1,
+    zIndex: isDragging ? 10 : undefined,
   };
 
   return (
@@ -71,8 +82,20 @@ function SidebarSortableItem({
         className="w-full text-sidebar-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group/item transition-all duration-200"
         data-testid={`menu-${item.id}`}
       >
-        <span {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
-          <GripVertical className="w-4 h-4 opacity-0 group-hover/item:opacity-100 text-muted-foreground/60 group-hover/item:text-sidebar-accent-foreground transition-all" />
+        <span
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing touch-none inline-flex items-center"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <GripVertical
+            className={cn(
+              "w-4 h-4 opacity-0 group-hover/item:opacity-100 transition-all",
+              isActive
+                ? "text-primary-foreground/70 group-hover/item:text-primary-foreground"
+                : "text-muted-foreground/60 group-hover/item:text-sidebar-accent-foreground"
+            )}
+          />
         </span>
         <item.icon className="w-4 h-4" />
         <span className="font-medium">{item.title}</span>
@@ -91,7 +114,12 @@ export function AdminSidebar({
   onLogout,
 }: AdminSidebarProps) {
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(MouseSensor, {
+      activationConstraint: { distance: 6 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 150, tolerance: 8 },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })

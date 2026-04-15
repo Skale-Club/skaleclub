@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
+import { SectionHeader } from "./shared";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -201,15 +202,16 @@ export function VCardsManager() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-xl font-semibold">Digital Business Cards (VCards)</h2>
-          <p className="text-sm text-gray-500">Create and manage digital business cards.</p>
-        </div>
-        <Button onClick={() => openEditDialog(null)} className="h-9">
-          <Plus className="w-4 h-4 mr-2" /> New VCard
-        </Button>
-      </div>
+      <SectionHeader
+        title="VCards"
+        description="Create and manage digital business cards."
+        icon={<QrCode className="w-5 h-5" />}
+        action={
+          <Button size="sm" onClick={() => openEditDialog(null)}>
+            <Plus className="w-4 h-4 mr-2" /> New VCard
+          </Button>
+        }
+      />
 
       <div className="border rounded-md">
         <Table>

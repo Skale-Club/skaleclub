@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BadgeCheck, Check, Image, LayoutGrid, List, Loader2 } from 'lucide-react';
+import { SectionHeader } from './shared';
 import { useToast } from '@/hooks/use-toast';
 import { DEFAULT_HOMEPAGE_CONTENT } from '@/lib/homepageDefaults';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -168,15 +169,19 @@ export function WebsiteSettingsSection() {
 
   return (
     <div className="space-y-6">
-      {/* Saving indicator */}
-      <div className="flex items-center justify-end gap-4 flex-wrap">
-        {isSaving && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Saving...</span>
-          </div>
-        )}
-      </div>
+      <SectionHeader
+        title="Website"
+        description="Customize homepage content and sections"
+        icon={<Image className="w-5 h-5" />}
+        action={
+          isSaving ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Saving...</span>
+            </div>
+          ) : null
+        }
+      />
 
       {/* Tab Navigation */}
       <div className="flex gap-1.5 bg-muted p-1.5 rounded-lg overflow-x-auto">
@@ -208,8 +213,6 @@ export function WebsiteSettingsSection() {
           setCtaText={setCtaText}
           heroImageUrl={heroImageUrl}
           setHeroImageUrl={setHeroImageUrl}
-          homepageContent={homepageContent}
-          updateHomepageContent={updateHomepageContent}
           triggerAutoSave={triggerAutoSave}
           saveHeroSettings={saveHeroSettings}
           SavedIndicator={SavedIndicator}
@@ -220,6 +223,7 @@ export function WebsiteSettingsSection() {
         <TrustBadgesTab
           homepageContent={homepageContent}
           updateHomepageContent={updateHomepageContent}
+          triggerAutoSave={triggerAutoSave}
           SavedIndicator={SavedIndicator}
         />
       )}
