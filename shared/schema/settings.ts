@@ -2,7 +2,6 @@ import { pgTable, text, serial, integer, timestamp, boolean, jsonb } from "drizz
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { DEFAULT_PAGE_SLUGS, type PageSlugs } from "../pageSlugs.js";
-import type { FormConfig } from "./forms.js";
 
 // GoHighLevel Integration Settings
 export const integrationSettings = pgTable("integration_settings", {
@@ -72,7 +71,6 @@ export const companySettings = pgTable("company_settings", {
   ga4Enabled: boolean("ga4_enabled").default(false),
   facebookPixelEnabled: boolean("facebook_pixel_enabled").default(false),
   homepageContent: jsonb("homepage_content").$type<HomepageContent>().default({}),
-  formConfig: jsonb("form_config").$type<FormConfig>(),
   pageSlugs: jsonb("page_slugs").$type<PageSlugs>().default(DEFAULT_PAGE_SLUGS),
   linksPageConfig: jsonb("links_page_config").$type<LinksPageConfig>().default({
     avatarUrl: '/attached_assets/ghl-logo.webp',
@@ -142,7 +140,6 @@ export const insertCompanySettingsSchema = z.object({
   ga4Enabled: z.boolean().default(false),
   facebookPixelEnabled: z.boolean().default(false),
   homepageContent: z.custom<HomepageContent>().optional().nullable(),
-  formConfig: z.custom<FormConfig>().optional().nullable(),
   pageSlugs: z.custom<PageSlugs>().optional().nullable(),
   linksPageConfig: z.custom<LinksPageConfig>().optional().nullable(),
 });

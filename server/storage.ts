@@ -891,15 +891,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Provisions a default form from DEFAULT_FORM_CONFIG if none exists yet.
-  // Used by the compat shim so legacy endpoints keep working even on a fresh
-  // install where company_settings.form_config was never populated.
   async ensureDefaultForm(): Promise<Form> {
     const existing = await this.getDefaultForm();
     if (existing) return existing;
-
-    // Fall back to company_settings.formConfig if present, otherwise use the built-in default.
-    const settings = await this.getCompanySettings();
-    const seedConfig = (settings?.formConfig as FormConfig | null) ?? DEFAULT_FORM_CONFIG;
 
     const [created] = await db.insert(forms).values({
       slug: "default",
@@ -907,7 +901,7 @@ export class DatabaseStorage implements IStorage {
       description: "Auto-provisioned default form",
       isDefault: true,
       isActive: true,
-      config: seedConfig,
+      config: DEFAULT_FORM_CONFIG,
     }).returning();
 
     // Backfill any orphan leads (form_id IS NULL) to the newly created default form.
@@ -1047,9 +1041,7 @@ export class DatabaseStorage implements IStorage {
       }
     } else if (resolvedFormId) {
       const form = await this.getForm(resolvedFormId);
-      resolvedConfig = (form?.config as FormConfig | undefined)
-        ?? (await this.getCompanySettings()).formConfig
-        ?? DEFAULT_FORM_CONFIG;
+      resolvedConfig = (form?.config as FormConfig | undefined) ?? DEFAULT_FORM_CONFIG;
     } else {
       const def = await this.ensureDefaultForm();
       resolvedFormId = def.id;
