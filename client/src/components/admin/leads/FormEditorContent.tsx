@@ -131,7 +131,7 @@ export function FormEditorContent() {
   };
 
   const getQuestionTypeBadge = (type: FormQuestion['type']) => {
-    const labels = { text: 'Texto', email: 'Email', tel: 'Telefone', select: 'Múltipla escolha' };
+    const labels = { text: 'Text', email: 'Email', tel: 'Phone', select: 'Multiple choice' };
     return labels[type] || type;
   };
 
@@ -151,7 +151,7 @@ export function FormEditorContent() {
           <DialogTrigger asChild>
             <Button size="sm">
               <Plus className="w-4 h-4 mr-2" />
-              Nova Pergunta
+              New Question
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -168,7 +168,7 @@ export function FormEditorContent() {
           <DialogTrigger asChild>
             <Button variant="outline" size="sm">
               <Star className="w-4 h-4 mr-2" />
-              Limites
+              Thresholds
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -180,32 +180,32 @@ export function FormEditorContent() {
           </DialogContent>
         </Dialog>
         <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded ml-auto">
-          Score máx: {config.maxScore}
+          Max score: {config.maxScore}
         </span>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div className="p-3 rounded-xl border bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800">
-          <p className="text-xs text-green-600 dark:text-green-400 font-semibold">QUENTE</p>
-          <p className="text-lg font-bold text-green-700 dark:text-green-300">? {config.thresholds.hot} pts</p>
+          <p className="text-xs text-green-600 dark:text-green-400 font-semibold">HOT</p>
+          <p className="text-lg font-bold text-green-700 dark:text-green-300">&ge; {config.thresholds.hot} pts</p>
         </div>
         <div className="p-3 rounded-xl border bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800">
-          <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold">MORNO</p>
-          <p className="text-lg font-bold text-amber-700 dark:text-amber-300">? {config.thresholds.warm} pts</p>
+          <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold">WARM</p>
+          <p className="text-lg font-bold text-amber-700 dark:text-amber-300">&ge; {config.thresholds.warm} pts</p>
         </div>
         <div className="p-3 rounded-xl border bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
-          <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">FRIO</p>
-          <p className="text-lg font-bold text-blue-700 dark:text-blue-300">? {config.thresholds.cold} pts</p>
+          <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">COLD</p>
+          <p className="text-lg font-bold text-blue-700 dark:text-blue-300">&ge; {config.thresholds.cold} pts</p>
         </div>
         <div className="p-3 rounded-xl border bg-muted">
-          <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">DESQUALIFICADO</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">DISQUALIFIED</p>
           <p className="text-lg font-bold text-slate-600 dark:text-slate-300">&lt; {config.thresholds.cold} pts</p>
         </div>
       </div>
 
       <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
         <div className="p-4 border-b border-border bg-muted/50">
-          <p className="text-sm font-semibold text-muted-foreground">{sortedQuestions.length} perguntas</p>
+          <p className="text-sm font-semibold text-muted-foreground">{sortedQuestions.length} questions</p>
         </div>
 
         {sortedQuestions.length === 0 ? (

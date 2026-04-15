@@ -1,8 +1,7 @@
 import {
   DndContext,
   KeyboardSensor,
-  MouseSensor,
-  TouchSensor,
+  PointerSensor,
   closestCenter,
   useSensor,
   useSensors,
@@ -29,7 +28,6 @@ import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
-  SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
 import { SIDEBAR_MENU_ITEMS, type SidebarMenuItem as SidebarEntry } from './shared/constants';
@@ -72,35 +70,34 @@ function SidebarSortableItem({
   };
 
   return (
-    <SidebarMenuItem ref={setNodeRef} style={style}>
+    <li
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      data-slot="sidebar-menu-item"
+      data-sidebar="menu-item"
+      className="group/item group/menu-item relative touch-none"
+    >
       <SidebarMenuButton
         isActive={isActive}
         onClick={() => {
           onSelect();
           if (isMobile) setOpenMobile(false);
         }}
-        className="w-full text-sidebar-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group/item transition-all duration-200"
+        className="w-full text-sidebar-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200"
         data-testid={`menu-${item.id}`}
       >
-        <span
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing touch-none inline-flex items-center"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <GripVertical
-            className={cn(
-              "w-4 h-4 opacity-0 group-hover/item:opacity-100 transition-all",
-              isActive
-                ? "text-primary-foreground/70 group-hover/item:text-primary-foreground"
-                : "text-muted-foreground/60 group-hover/item:text-sidebar-accent-foreground"
-            )}
-          />
-        </span>
+        <GripVertical
+          className={cn(
+            "w-4 h-4 shrink-0 cursor-grab opacity-0 group-hover/item:opacity-100 transition-opacity",
+            isActive ? "text-primary-foreground/70" : "text-muted-foreground/60"
+          )}
+        />
         <item.icon className="w-4 h-4" />
         <span className="font-medium">{item.title}</span>
       </SidebarMenuButton>
-    </SidebarMenuItem>
+    </li>
   );
 }
 
@@ -114,11 +111,8 @@ export function AdminSidebar({
   onLogout,
 }: AdminSidebarProps) {
   const sensors = useSensors(
-    useSensor(MouseSensor, {
-      activationConstraint: { distance: 6 },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: { delay: 150, tolerance: 8 },
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,

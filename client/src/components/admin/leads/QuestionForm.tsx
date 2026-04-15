@@ -141,47 +141,47 @@ export function QuestionForm({
       </DialogHeader>
       <div className="space-y-4 py-4">
         <div className="space-y-2">
-          <Label htmlFor="question-title">Texto da Pergunta</Label>
+          <Label htmlFor="question-title">Question Text</Label>
           <Textarea
             id="question-title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Ex: Qual é o seu nome completo?"
+            placeholder="e.g. What is your full name?"
             required
             rows={2}
           />
           {!isEditing && title && (
             <p className="text-xs text-muted-foreground">
-              ID será: <code className="bg-muted px-1.5 py-0.5 rounded font-mono">
+              ID will be: <code className="bg-muted px-1.5 py-0.5 rounded font-mono">
                 {title
                   .toLowerCase()
                   .replace(/[^a-z0-9\s]/g, '')
                   .trim()
                   .split(/\s+/)
                   .slice(0, 3)
-                  .join('_') || 'seu_id_aqui'}
+                  .join('_') || 'your_id_here'}
               </code>
             </p>
           )}
           {isEditing && (
             <p className="text-xs text-muted-foreground">
-              ID: <code className="bg-muted px-1.5 py-0.5 rounded font-mono">{id}</code> ? Ordem: <strong>{order}</strong>
+              ID: <code className="bg-muted px-1.5 py-0.5 rounded font-mono">{id}</code> · Order: <strong>{order}</strong>
             </p>
           )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>Tipo de Resposta</Label>
+            <Label>Answer Type</Label>
             <Select value={type} onValueChange={(v) => setType(v as FormQuestion['type'])}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="text">Texto livre</SelectItem>
+                <SelectItem value="text">Free text</SelectItem>
                 <SelectItem value="email">Email</SelectItem>
-                <SelectItem value="tel">Telefone</SelectItem>
-                <SelectItem value="select">Múltipla escolha</SelectItem>
+                <SelectItem value="tel">Phone</SelectItem>
+                <SelectItem value="select">Multiple choice</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -191,21 +191,21 @@ export function QuestionForm({
               id="question-placeholder"
               value={placeholder}
               onChange={(e) => setPlaceholder(e.target.value)}
-              placeholder="Texto de ajuda"
+              placeholder="Helper text"
             />
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <Checkbox id="question-required" checked={required} onCheckedChange={(c) => setRequired(!!c)} />
-          <Label htmlFor="question-required" className="text-sm">Pergunta obrigatória</Label>
+          <Label htmlFor="question-required" className="text-sm">Required question</Label>
         </div>
 
         {ghlStatus?.enabled && (
           <div className="space-y-2 p-3 bg-purple-50/50 dark:bg-purple-950/30 rounded-lg border border-purple-200/50 dark:border-purple-900/50">
             <Label className="text-sm font-semibold flex items-center gap-2">
               <ExternalLink className="w-4 h-4" />
-              Vincular ao GoHighLevel
+              Link to GoHighLevel
             </Label>
             <Select value={ghlFieldId || "none"} onValueChange={(val) => setGhlFieldId(val === "none" ? "" : val)}>
               <SelectTrigger>
@@ -221,7 +221,7 @@ export function QuestionForm({
                 {ghlFieldsData?.standardFields && ghlFieldsData.standardFields.length > 0 && (
                   <>
                     <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1">
-                      Campos Padrão
+                      Standard Fields
                     </div>
                     {ghlFieldsData.standardFields.map((field) => (
                       <SelectItem key={field.id} value={field.id}>{field.name}</SelectItem>
@@ -231,7 +231,7 @@ export function QuestionForm({
                 {ghlFieldsData?.customFields && ghlFieldsData.customFields.length > 0 && (
                   <>
                     <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1">
-                      Campos Personalizados
+                      Custom Fields
                     </div>
                     {ghlFieldsData.customFields.map((field) => (
                       <SelectItem key={field.id} value={field.id}>{field.name}</SelectItem>
@@ -240,13 +240,13 @@ export function QuestionForm({
                 )}
                 {ghlFieldsData?.success && (!ghlFieldsData.customFields || ghlFieldsData.customFields.length === 0) && (!ghlFieldsData.standardFields || ghlFieldsData.standardFields.length === 0) && (
                   <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                    Nenhum campo encontrado no GHL
+                    No fields found in GHL
                   </div>
                 )}
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              O valor desta pergunta será enviado para o campo selecionado no GHL
+              The value of this question will be sent to the selected GHL field
             </p>
           </div>
         )}
@@ -254,13 +254,13 @@ export function QuestionForm({
         {type === 'select' && (
           <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
             <div className="flex items-center justify-between">
-              <Label className="text-base font-semibold">Opções de Resposta</Label>
+              <Label className="text-base font-semibold">Answer Options</Label>
               <Button type="button" variant="outline" size="sm" onClick={handleAddOption}>
-                <Plus className="w-3 h-3 mr-1" /> Adicionar
+                <Plus className="w-3 h-3 mr-1" /> Add
               </Button>
             </div>
             {options.length === 0 && (
-              <p className="text-sm text-muted-foreground">Nenhuma opção. Clique em "Adicionar" para criar.</p>
+              <p className="text-sm text-muted-foreground">No options. Click "Add" to create one.</p>
             )}
             <div className="space-y-2">
               {options.map((option, index) => (
@@ -268,7 +268,7 @@ export function QuestionForm({
                   <Input
                     value={option.label}
                     onChange={(e) => handleOptionChange(index, 'label', e.target.value)}
-                    placeholder="Label (texto visível)"
+                    placeholder="Label (visible text)"
                     className="flex-1"
                   />
                   <Input
@@ -289,20 +289,20 @@ export function QuestionForm({
             <div className="pt-3 border-t space-y-3">
               <div className="flex items-center gap-2">
                 <Checkbox id="has-conditional" checked={hasConditional} onCheckedChange={(c) => setHasConditional(!!c)} />
-                <Label htmlFor="has-conditional" className="text-sm font-semibold">Adicionar campo condicional</Label>
-                <span className="text-xs text-muted-foreground">(aparece somente quando uma opção é selecionada)</span>
+                <Label htmlFor="has-conditional" className="text-sm font-semibold">Add conditional field</Label>
+                <span className="text-xs text-muted-foreground">(appears only when a specific option is selected)</span>
               </div>
               {hasConditional && (
                 <div className="space-y-3 p-3 bg-blue-50/50 dark:bg-blue-950/30 rounded-lg border border-blue-200/50 dark:border-blue-900/50">
                   <div className="space-y-2">
-                    <Label className="text-sm font-semibold">Ativar este campo quando:</Label>
-                    <p className="text-xs text-muted-foreground mb-2">Selecione qual opção acima irá ativar o campo adicional</p>
+                    <Label className="text-sm font-semibold">Show this field when:</Label>
+                    <p className="text-xs text-muted-foreground mb-2">Select which option above triggers the additional field</p>
                     <Select value={conditionalShowWhen} onValueChange={setConditionalShowWhen}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma opção..." />
+                        <SelectValue placeholder="Select an option..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {options.length === 0 && <div className="px-2 py-1.5 text-xs text-muted-foreground">Adicione opções acima primeiro</div>}
+                        {options.length === 0 && <div className="px-2 py-1.5 text-xs text-muted-foreground">Add options above first</div>}
                         {options.filter(o => o.value).map((opt) => (
                           <SelectItem key={opt.value} value={opt.value}>{opt.label || opt.value}</SelectItem>
                         ))}
@@ -310,7 +310,7 @@ export function QuestionForm({
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="conditional-title" className="text-sm font-semibold">Pergunta do campo adicional</Label>
+                    <Label htmlFor="conditional-title" className="text-sm font-semibold">Additional field question</Label>
                     <Input
                       id="conditional-title"
                       value={conditionalTitle}
@@ -319,12 +319,12 @@ export function QuestionForm({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="conditional-placeholder" className="text-sm font-semibold">Texto de ajuda (Placeholder)</Label>
+                    <Label htmlFor="conditional-placeholder" className="text-sm font-semibold">Helper text (Placeholder)</Label>
                     <Input
                       id="conditional-placeholder"
                       value={conditionalPlaceholder}
                       onChange={(e) => setConditionalPlaceholder(e.target.value)}
-                      placeholder="Ex: Digite seu tipo de negócio..."
+                      placeholder="e.g. Enter your business type..."
                     />
                   </div>
                 </div>

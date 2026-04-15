@@ -41,13 +41,13 @@ export function SortableQuestionItem({
               <Badge variant="secondary" className="text-xs">{maxPoints} pts max</Badge>
             )}
             {question.required && (
-              <Badge variant="default" className="text-xs bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">Obrigatória</Badge>
+              <Badge variant="default" className="text-xs bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">Required</Badge>
             )}
           </div>
           <h3 className="font-semibold text-foreground truncate">{question.title}</h3>
           {question.type === 'select' && question.options && (
             <p className="text-xs text-muted-foreground mt-1">
-              {question.options.length} opções: {question.options.slice(0, 3).map(o => o.label).join(', ')}{question.options.length > 3 ? '...' : ''}
+              {question.options.length} options: {question.options.slice(0, 3).map(o => o.label).join(', ')}{question.options.length > 3 ? '...' : ''}
             </p>
           )}
           {question.placeholder && question.type !== 'select' && (

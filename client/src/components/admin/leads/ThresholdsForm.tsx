@@ -35,23 +35,23 @@ export function ThresholdsForm({
         </p>
         <div className="space-y-3">
           <div className="flex items-center gap-4">
-            <Label className="w-32 text-green-600">QUENTE (?)</Label>
+            <Label className="w-32 text-green-600">HOT (&ge;)</Label>
             <Input type="number" value={hot} onChange={(e) => setHot(Number(e.target.value))} min={0} className="w-24" />
-            <span className="text-sm text-muted-foreground">pontos</span>
+            <span className="text-sm text-muted-foreground">points</span>
           </div>
           <div className="flex items-center gap-4">
-            <Label className="w-32 text-amber-600">MORNO (?)</Label>
+            <Label className="w-32 text-amber-600">WARM (&ge;)</Label>
             <Input type="number" value={warm} onChange={(e) => setWarm(Number(e.target.value))} min={0} className="w-24" />
-            <span className="text-sm text-muted-foreground">pontos</span>
+            <span className="text-sm text-muted-foreground">points</span>
           </div>
           <div className="flex items-center gap-4">
-            <Label className="w-32 text-blue-600">FRIO (?)</Label>
+            <Label className="w-32 text-blue-600">COLD (&ge;)</Label>
             <Input type="number" value={cold} onChange={(e) => setCold(Number(e.target.value))} min={0} className="w-24" />
-            <span className="text-sm text-muted-foreground">pontos</span>
+            <span className="text-sm text-muted-foreground">points</span>
           </div>
         </div>
         <p className="text-xs text-muted-foreground">
-          Leads com score abaixo de {cold} são classificados como DESQUALIFICADO.
+          Leads scoring below {cold} are classified as DISQUALIFIED.
         </p>
       </div>
       <DialogFooter>

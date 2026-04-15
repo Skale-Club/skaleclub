@@ -249,10 +249,12 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
     },
     {
       label: 'Chat Response',
-      value: responseTimeData?.formatted || '--',
+      value: responseTimeData?.formatted && responseTimeData.formatted !== 'No responses yet'
+        ? responseTimeData.formatted
+        : '-',
       helper: responseTimeData?.samples
         ? `${responseTimeData.samples} samples`
-        : 'No responses yet',
+        : '-',
       icon: Clock,
       iconColor: 'text-sky-600'
     },
