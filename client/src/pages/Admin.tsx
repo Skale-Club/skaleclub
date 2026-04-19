@@ -23,6 +23,7 @@ import { SEOSection } from '@/components/admin/SEOSection';
 import { LinksSection } from '@/components/admin/LinksSection';
 import { VCardsManager } from '@/components/admin/VCardsManager';
 import { XpotSalesSection } from '@/components/admin/XpotSalesSection';
+import { EstimatesSection } from '@/components/admin/EstimatesSection';
 import { SIDEBAR_MENU_ITEMS } from '@/components/admin/shared/constants';
 import { SectionHeader } from '@/components/admin/shared';
 import type { AdminSection, CompanySettingsData } from '@/components/admin/shared/types';
@@ -53,6 +54,7 @@ function AdminContent() {
       links: 'links',
       vcards: 'vcards',
       'field-sales': 'fieldSales',
+      estimates: 'estimates',
     };
     return slugMap[segment] || 'dashboard';
   }, [location]);
@@ -106,6 +108,7 @@ function AdminContent() {
       links: 'links',
       vcards: 'vcards',
       fieldSales: 'field-sales',
+      estimates: 'estimates',
     };
     setLocation(`/admin/${slugMap[section]}`);
   }, [activeSection, setLocation]);
@@ -180,7 +183,7 @@ function AdminContent() {
         {activeSection !== 'chat' && (
           <div className="flex-1 overflow-y-auto min-h-0 p-6 pb-16 md:p-8 md:pb-10">
             {(() => {
-              const sectionsWithOwnHeader: AdminSection[] = ['leads', 'forms', 'faqs', 'users', 'blog', 'portfolio', 'links', 'vcards', 'fieldSales', 'company', 'website', 'seo', 'integrations'];
+              const sectionsWithOwnHeader: AdminSection[] = ['leads', 'forms', 'faqs', 'users', 'blog', 'portfolio', 'links', 'vcards', 'fieldSales', 'estimates', 'company', 'website', 'seo', 'integrations'];
               if (sectionsWithOwnHeader.includes(activeSection)) return null;
               const currentItem = menuItems.find(item => item.id === activeSection);
               return currentItem ? (
@@ -205,6 +208,7 @@ function AdminContent() {
             {activeSection === 'links' && <LinksSection />}
             {activeSection === 'vcards' && <VCardsManager />}
             {activeSection === 'fieldSales' && <XpotSalesSection />}
+            {activeSection === 'estimates' && <EstimatesSection />}
           </div>
         )}
       </main>
