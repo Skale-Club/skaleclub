@@ -85,7 +85,7 @@ Plans:
 
 Plans:
 - [x] 08-01-PLAN.md — EstimatesSection.tsx full component (list view, dialog, dnd-kit, mutations)
-- [ ] 08-02-PLAN.md — Sidebar wiring (types.ts, constants.ts, Admin.tsx)
+- [x] 08-02-PLAN.md — Sidebar wiring (types.ts, constants.ts, Admin.tsx)
 
 ### Phase 9: Public Viewer
 **Goal**: A client who receives an estimate link can open /e/:slug and see a polished fullscreen proposal with their name, a Skale Club introduction, and one immersive section per service — without any site navigation or footer interfering
