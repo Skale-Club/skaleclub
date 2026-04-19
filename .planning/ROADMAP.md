@@ -81,8 +81,11 @@ Plans:
   3. Admin can add a freeform custom service row (title, description, price entered manually — not linked to catalog) alongside catalog items
   4. Admin can drag service rows to reorder them and the order is preserved on save and re-edit
   5. Admin can delete any estimate from the list
-**Plans**: TBD
-**UI hint**: yes
+**Plans**: 2 plans
+
+Plans:
+- [ ] 08-01-PLAN.md — EstimatesSection.tsx full component (list view, dialog, dnd-kit, mutations)
+- [ ] 08-02-PLAN.md — Sidebar wiring (types.ts, constants.ts, Admin.tsx)
 
 ### Phase 9: Public Viewer
 **Goal**: A client who receives an estimate link can open /e/:slug and see a polished fullscreen proposal with their name, a Skale Club introduction, and one immersive section per service — without any site navigation or footer interfering
@@ -105,10 +108,10 @@ Plans:
 |-------|----------------|--------|-----------|
 | 6. DB Schema + Storage Layer | 2/2 | Complete    | 2026-04-19 |
 | 7. Admin API Routes | 1/1 | Complete    | 2026-04-19 |
-| 8. Admin UI (EstimatesSection) | 0/? | Not started | - |
+| 8. Admin UI (EstimatesSection) | 0/2 | Not started | - |
 | 9. Public Viewer | 0/? | Not started | - |
 
 ---
 
 _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
-_Last updated: 2026-04-19 — Phase 7 complete (07-01 estimates API routes)_
+_Last updated: 2026-04-19 — Phase 8 planned (2 plans)_
