@@ -94,6 +94,12 @@ Plan: Not started
 - [Phase 08-admin-ui-estimatessection]: EstimatesSection.tsx co-locates all three components (SortableServiceRow, EstimateDialogForm, EstimatesSection) in one file — consistent with PortfolioSection pattern
 - [Phase 08-admin-ui-estimatessection]: Both slug maps in Admin.tsx must be updated simultaneously — partial update causes TypeScript errors from Record<AdminSection,string> exhaustiveness check
 
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260419-rfo | Add EST-11 view tracking and EST-12 password protection requirements | 2026-04-19 | c6fa749 | [260419-rfo](./quick/260419-rfo-add-est-11-view-tracking-and-est-12-pass/) |
+
 ### Blockers
 
 None.
