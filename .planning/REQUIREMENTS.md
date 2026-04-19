@@ -26,12 +26,14 @@
 
 ### Public Viewer — Phase 9
 
-- [ ] **EST-11**: Navigating to `/e/:slug` renders fullscreen scroll-snap sections with no Navbar, Footer, or ChatWidget present
-- [ ] **EST-12**: First section shows a cover with the client name and Skale Club branding
-- [ ] **EST-13**: Second section shows a fixed Skale Club introduction
-- [ ] **EST-14**: Each service in the estimate renders as its own fullscreen section showing title, description, price, and features list
-- [ ] **EST-15**: A final visual closing section appears after all service sections with no acceptance CTA button
-- [ ] **EST-16**: Navigating to `/e/unknown-slug` renders a graceful 404 page rather than crashing or showing a blank screen
+- [ ] **EST-11**: View tracking — every time the public estimate viewer (/e/:slug) is loaded, record a view event. The admin list view must display view_count and last_viewed_at per estimate. Implementation: new `estimate_views` table (id, estimate_id, viewed_at, ip_address optional) — event log approach, not a counter column.
+- [ ] **EST-12**: Password protection — an estimate can optionally have a password (stored as bcrypt hash in a new `password_hash text` column on estimates). If set, the public viewer shows a password gate before rendering. The admin create/edit dialog must allow setting/clearing the password.
+- [ ] **EST-13**: Navigating to `/e/:slug` renders fullscreen scroll-snap sections with no Navbar, Footer, or ChatWidget present
+- [ ] **EST-14**: First section shows a cover with the client name and Skale Club branding
+- [ ] **EST-15**: Second section shows a fixed Skale Club introduction
+- [ ] **EST-16**: Each service in the estimate renders as its own fullscreen section showing title, description, price, and features list
+- [ ] **EST-17**: A final visual closing section appears after all service sections with no acceptance CTA button
+- [ ] **EST-18**: Navigating to `/e/unknown-slug` renders a graceful 404 page rather than crashing or showing a blank screen
 
 ## Out of Scope
 
@@ -39,7 +41,7 @@
 |---------|--------|
 | Estimate acceptance / e-signature | Scope for future milestone |
 | PDF export of proposals | Scope for future milestone |
-| Client login / access control per estimate | Public link is sufficient for v1.2 |
+| Client login / per-user access control per estimate | Password protection (EST-12) is sufficient for v1.2; per-user auth is future scope |
 | Estimate templates | Manual composition is sufficient for v1.2 |
 | Estimate expiry / status tracking | Future milestone |
 
@@ -63,12 +65,14 @@
 | EST-14 | Phase 9 | Pending |
 | EST-15 | Phase 9 | Pending |
 | EST-16 | Phase 9 | Pending |
+| EST-17 | Phase 9 | Pending |
+| EST-18 | Phase 9 | Pending |
 
 **Coverage:**
-- v1.2 requirements: 16 total
-- Mapped to phases: 16
+- v1.2 requirements: 18 total
+- Mapped to phases: 18
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-04-19*
-*Last updated: 2026-04-19 after v1.2 milestone kickoff*
+*Last updated: 2026-04-19 after EST-11 and EST-12 added*

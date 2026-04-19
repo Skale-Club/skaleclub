@@ -35,7 +35,7 @@
 - [x] **Phase 6: DB Schema + Storage Layer** — Estimates table, JSONB snapshot schema, Zod types, storage methods, Drizzle migration (completed 2026-04-19)
 - [x] **Phase 7: Admin API Routes** — CRUD endpoints for estimates (list, create, read, update, delete) + public slug lookup (completed 2026-04-19)
 - [x] **Phase 8: Admin UI (EstimatesSection)** — Estimates list, create/edit dialog, service picker, drag-reorder, price override, custom line items (completed 2026-04-19)
-- [ ] **Phase 9: Public Viewer** — /e/:slug fullscreen scroll-snap proposal page, isEstimateRoute guard, 404 handling
+- [ ] **Phase 9: Public Viewer** — /e/:slug fullscreen scroll-snap proposal page, view tracking (estimate_views table), password gate, isEstimateRoute guard, 404 handling
 
 ---
 
@@ -87,16 +87,20 @@ Plans:
 - [x] 08-01-PLAN.md — EstimatesSection.tsx full component (list view, dialog, dnd-kit, mutations)
 - [x] 08-02-PLAN.md — Sidebar wiring (types.ts, constants.ts, Admin.tsx)
 
+> **Note:** Admin UI additions for Phase 9 scope — `EstimatesSection.tsx` will need to be updated in Phase 9 to display `view_count` and `last_viewed_at` in the estimates list, and to expose a password field in the create/edit dialog (EST-11, EST-12).
+
 ### Phase 9: Public Viewer
 **Goal**: A client who receives an estimate link can open /e/:slug and see a polished fullscreen proposal with their name, a Skale Club introduction, and one immersive section per service — without any site navigation or footer interfering
 **Depends on**: Phase 7
-**Requirements**: EST-11, EST-12, EST-13, EST-14, EST-15, EST-16
+**Requirements**: EST-11, EST-12, EST-13, EST-14, EST-15, EST-16, EST-17, EST-18
 **Success Criteria** (what must be TRUE):
   1. Navigating to `/e/:slug` renders fullscreen scroll-snap sections with no Navbar, Footer, or ChatWidget present
   2. The first section shows a cover with the client name and Skale Club branding; the second section shows a fixed Skale Club introduction
   3. Each service in the estimate renders as its own fullscreen section showing title, description, price, and features list
   4. A final visual closing section appears after all service sections with no acceptance CTA button
   5. Navigating to `/e/unknown-slug` renders a graceful 404 page rather than crashing or showing a blank screen
+  6. Every public page load at /e/:slug records a view event in the `estimate_views` table; admin list shows view count and last viewed date per estimate
+  7. Admin can optionally set a password on an estimate; public viewer shows a password gate if set; correct password grants access, wrong password is rejected
 **Plans**: TBD
 **UI hint**: yes
 
@@ -114,4 +118,4 @@ Plans:
 ---
 
 _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
-_Last updated: 2026-04-19 — Phase 8 planned (2 plans)_
+_Last updated: 2026-04-19 — EST-11 and EST-12 added to Phase 9 scope_
