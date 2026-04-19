@@ -55,14 +55,14 @@ Exceptions:
 
 All sizes reference existing Tailwind prose classes already used in admin components. Font is Inter for all roles.
 
+Weights in use: **Regular (400)** for body content and labels — **Bold (700)** for all headings. Exactly 2 weights throughout.
+
 | Role | Size | Tailwind Class | Weight | Tailwind Weight | Line Height | Usage |
 |------|------|----------------|--------|-----------------|-------------|-------|
 | Body | 14px | `text-sm` | Regular | `font-normal` (400) | 1.5 | Table cell text, dialog field values, muted descriptions |
-| Label | 14px | `text-sm` | Semibold | `font-medium` (500) | 1.4 | Form labels (Label component), row field names, column headers |
+| Label | 14px | `text-sm` | Regular | `font-normal` (400) | 1.4 | Form labels (Label component), row field names, column headers |
 | Heading | 24px | `text-2xl` | Bold | `font-bold` (700) | 1.2 | SectionHeader title (matches `h1 text-2xl font-bold tracking-tight` in SectionHeader.tsx) |
-| Sub-heading | 18px | `text-lg` | Semibold | `font-semibold` (600) | 1.3 | Dialog title, section sub-labels (e.g., "Services" within dialog) |
-
-Weights in use: Regular (400) for body content + Bold (700) for headings. Medium (500) used exclusively for labels — stays within the 2-weight principle (label weight is intermediate, not a third decorative weight).
+| Sub-heading | 18px | `text-lg` | Bold | `font-bold` (700) | 1.3 | Dialog title, section sub-labels (e.g., "Services" within dialog) |
 
 ---
 
@@ -131,9 +131,9 @@ All components are from the existing shadcn installation. No new components need
 |------|-------|
 | `Receipt` | Sidebar menu item icon for "Estimates" (D-11 — Claude's discretion resolved: `Receipt` over `FileText` — more semantically precise for proposals/estimates) |
 | `Plus` | "New Estimate" button label prefix |
-| `Pencil` | Edit action on list row |
-| `Trash2` | Delete action on list row + AlertDialog icon |
-| `Copy` | Copy-link button on list row |
+| `Pencil` | Edit action on list row — `aria-label="Edit estimate"` |
+| `Trash2` | Delete action on list row + AlertDialog icon — `aria-label="Delete estimate"` |
+| `Copy` | Copy-link button on list row — `tooltip "Copy estimate link"` |
 | `GripVertical` | Drag handle on each service row inside dialog |
 | `Loader2` | Loading spinner on list fetch + mutation pending states (`animate-spin`) |
 
@@ -143,24 +143,26 @@ All components are from the existing shadcn installation. No new components need
 
 ### List View (EstimatesSection root render)
 
+Primary focal point: SectionHeader "New Estimate" button — the primary call-to-action that drives the create flow. All other elements (list rows, row actions) are secondary.
+
 ```
 SectionHeader
   title: "Estimates"
   description: "Create and manage client proposals — each generates a shareable link"
-  action: <Button variant="default" size="sm"><Plus /> New Estimate</Button>
+  action: <Button variant="default" size="sm"><Plus /> New Estimate</Button>  ← PRIMARY FOCAL POINT
 
 [Loading state]  → Loader2 spinner centered, text-muted-foreground "Loading estimates..."
 [Empty state]    → EmptyState component (see Copywriting)
 [List]           → vertical stack gap-3, each row is an AdminCard or div with border rounded-lg p-4
 
 List row layout (horizontal flex, items-center):
-  [client name — font-semibold text-sm flex-1]
+  [client name — font-bold text-sm flex-1]
   [slug — text-xs text-muted-foreground font-mono, truncate max-w-[160px]]
   [creation date — text-xs text-muted-foreground, format: "Apr 19, 2026"]
   [actions — flex gap-2 shrink-0]
-    Copy-link Button (variant="ghost" size="icon") → Copy icon, tooltip "Copy estimate link"
-    Edit Button (variant="ghost" size="icon") → Pencil icon
-    Delete Button (variant="ghost" size="icon", text-destructive) → Trash2 icon
+    Copy-link Button (variant="ghost" size="icon", aria-label="Copy estimate link", tooltip "Copy estimate link") → Copy icon
+    Edit Button     (variant="ghost" size="icon", aria-label="Edit estimate")   → Pencil icon
+    Delete Button   (variant="ghost" size="icon", aria-label="Delete estimate", text-destructive) → Trash2 icon
 ```
 
 ### Create/Edit Dialog
@@ -180,7 +182,7 @@ Dialog (controlled: isDialogOpen / setIsDialogOpen)
   Divider: <hr className="border-t" />
 
   Section: Services
-    Row header: "Services" (text-sm font-semibold) + "Add from catalog" Button (variant="outline" size="sm") + "Add custom row" Button (variant="outline" size="sm")
+    Row header: "Services" (text-sm font-bold) + "Add from catalog" Button (variant="outline" size="sm") + "Add custom row" Button (variant="outline" size="sm")
 
     [CREATE mode only — catalog checklist picker]
       Scrollable checklist div (max-h-48 overflow-y-auto border rounded-md p-3 gap-2)
@@ -260,7 +262,7 @@ Dialog (controlled: isDialogOpen / setIsDialogOpen)
 | Dialog title (edit) | "Edit Estimate" | Standard admin pattern |
 | Save button (create) | "Create Estimate" | Verb + noun, specific |
 | Save button (edit) | "Save Changes" | Matches existing PortfolioSection pattern |
-| Empty state heading | "No estimates yet" | Follows EmptyState `text-lg font-semibold` pattern |
+| Empty state heading | "No estimates yet" | Follows EmptyState `text-lg font-bold` pattern |
 | Empty state body | "Create your first estimate to send a polished proposal link to a client." | Problem + next step |
 | Empty state action | "New Estimate" button (same as SectionHeader CTA) | Inline recovery |
 | Copy-link toast success | Title: "Link copied" / Description: "Share this link with your client." | Informative, no jargon |
@@ -347,4 +349,5 @@ No third-party shadcn registries are used in this phase. All components are from
 
 *Phase: 08-admin-ui-estimatessection*
 *UI-SPEC generated: 2026-04-19*
+*Revised: 2026-04-19 — collapsed typography to 2 weights (Regular 400 / Bold 700); added list-view focal point declaration; added aria-label declarations for Edit and Delete icon buttons*
 *All decisions sourced from: CONTEXT.md (14 decisions), codebase inspection (tailwind.config.ts, index.css, components.json, PortfolioSection.tsx, FormsSection.tsx, shared/)*
