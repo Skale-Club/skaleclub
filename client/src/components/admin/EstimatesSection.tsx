@@ -1,0 +1,503 @@
+import { useState } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import {
+  Copy, GripVertical, Loader2, Pencil, Plus, Receipt, Trash2
+} from 'lucide-react';
+import { format } from 'date-fns';
+import {
+  DndContext, closestCenter, type DragEndEvent,
+  MouseSensor, TouchSensor, useSensor, useSensors
+} from '@dnd-kit/core';
+import {
+  arrayMove, SortableContext, useSortable, verticalListSortingStrategy
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog, DialogClose, DialogContent,
+  DialogFooter, DialogHeader, DialogTitle
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest, queryClient } from '@/lib/queryClient';
+import { EmptyState, SectionHeader } from './shared';
+import type { Estimate, EstimateServiceItem, CatalogServiceItem } from '@shared/schema';
+import type { PortfolioService } from '@shared/schema';
+
+// ──────────────────────────────────────────────────────────
+// SortableServiceRow sub-component
+// ──────────────────────────────────────────────────────────
+
+function SortableServiceRow({
+  id,
+  item,
+  onChange,
+  onRemove,
+}: {
+  id: number;
+  item: EstimateServiceItem;
+  onChange: (updated: EstimateServiceItem) => void;
+  onRemove: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({
+      id,
+      transition: { duration: 200, easing: 'cubic-bezier(0.25, 1, 0.5, 1)' },
+    });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-start gap-2 p-3 border rounded-lg bg-card">
+      <button
+        {...attributes}
+        {...listeners}
+        className="p-1 cursor-grab hover:bg-muted rounded touch-none mt-1 min-h-[44px] flex items-center"
+        type="button"
+        aria-label="Drag to reorder"
+      >
+        <GripVertical className="w-4 h-4 text-muted-foreground" />
+      </button>
+      <Badge
+        variant={item.type === 'catalog' ? 'secondary' : 'outline'}
+        className="mt-2 shrink-0 capitalize"
+      >
+        {item.type}
+      </Badge>
+      <div className="flex-1 flex flex-col gap-2">
+        <Input
+          placeholder="Service title"
+          value={item.title}
+          onChange={(e) => onChange({ ...item, title: e.target.value })}
+        />
+        <Textarea
+          placeholder="Brief description"
+          rows={2}
+          value={item.description}
+          onChange={(e) => onChange({ ...item, description: e.target.value })}
+        />
+        <Input
+          placeholder="0.00"
+          value={item.price}
+          onChange={(e) => onChange({ ...item, price: e.target.value })}
+          className="text-right"
+        />
+      </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        type="button"
+        className="text-destructive mt-1"
+        aria-label="Remove service row"
+        onClick={onRemove}
+      >
+        <Trash2 className="w-4 h-4" />
+      </Button>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────
+// EstimateDialogForm sub-component
+// ──────────────────────────────────────────────────────────
+
+function EstimateDialogForm({
+  editingEstimate,
+  onSave,
+  isPending,
+}: {
+  editingEstimate: Estimate | null;
+  onSave: (clientName: string, note: string | null, services: EstimateServiceItem[]) => void;
+  isPending: boolean;
+}) {
+  const [clientName, setClientName] = useState(editingEstimate?.clientName ?? '');
+  const [note, setNote] = useState(editingEstimate?.note ?? '');
+  const [services, setServices] = useState<EstimateServiceItem[]>(
+    editingEstimate?.services ?? []
+  );
+  // showCatalogPicker: create mode = true (show checklist by default); edit mode = false (hide until "Add from catalog")
+  const [showCatalogPicker, setShowCatalogPicker] = useState(!editingEstimate);
+
+  const { data: catalogServices = [] } = useQuery<PortfolioService[]>({
+    queryKey: ['/api/portfolio-services'],
+  });
+
+  // Derived from current services list — which catalog source IDs are already added
+  const checkedSourceIds = new Set(
+    services
+      .filter((s): s is CatalogServiceItem => s.type === 'catalog')
+      .map((s) => s.sourceId)
+  );
+
+  const handleCatalogToggle = (catalogService: PortfolioService, checked: boolean) => {
+    if (checked) {
+      setServices((prev) => [
+        ...prev,
+        {
+          type: 'catalog' as const,
+          sourceId: catalogService.id,
+          title: catalogService.title,
+          description: catalogService.description ?? '',
+          price: catalogService.price ?? '',
+          features: catalogService.features ?? [],
+          order: prev.length,
+        },
+      ]);
+    } else {
+      setServices((prev) =>
+        prev.filter((s) => !(s.type === 'catalog' && s.sourceId === catalogService.id))
+      );
+    }
+  };
+
+  const handleAddCustomRow = () => {
+    setServices((prev) => [
+      ...prev,
+      {
+        type: 'custom' as const,
+        title: '',
+        description: '',
+        price: '',
+        features: [],
+        order: prev.length,
+      },
+    ]);
+  };
+
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = Number(active.id);
+    const newIndex = Number(over.id);
+    setServices((prev) => arrayMove(prev, oldIndex, newIndex));
+  };
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>{editingEstimate ? 'Edit Estimate' : 'New Estimate'}</DialogTitle>
+      </DialogHeader>
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSave(clientName, note || null, services);
+        }}
+        className="flex flex-col gap-5 mt-2"
+      >
+        {/* Client info section */}
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="clientName">Client name</Label>
+            <Input
+              id="clientName"
+              placeholder="Acme Corp"
+              value={clientName}
+              onChange={(e) => setClientName(e.target.value)}
+              required
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="note">Note (optional)</Label>
+            <Textarea
+              id="note"
+              placeholder="Any context about this proposal..."
+              rows={3}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <hr className="border-t" />
+
+        {/* Services section */}
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-bold">Services</span>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCatalogPicker((v) => !v)}
+              >
+                Add from catalog
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddCustomRow}
+              >
+                Add custom row
+              </Button>
+            </div>
+          </div>
+
+          {showCatalogPicker && (
+            <div className="max-h-48 overflow-y-auto border rounded-md p-3 flex flex-col gap-2">
+              {catalogServices.map((svc) => (
+                <label key={svc.id} className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox
+                    checked={checkedSourceIds.has(svc.id)}
+                    onCheckedChange={(checked) => handleCatalogToggle(svc, !!checked)}
+                  />
+                  <span className="text-sm flex-1">{svc.title}</span>
+                  {svc.price && (
+                    <Badge variant="outline" className="text-xs">{svc.price}</Badge>
+                  )}
+                </label>
+              ))}
+            </div>
+          )}
+
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext
+              items={services.map((_, i) => i)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="flex flex-col gap-2">
+                {services.map((item, i) => (
+                  <SortableServiceRow
+                    key={i}
+                    id={i}
+                    item={item}
+                    onChange={(updated) =>
+                      setServices((prev) => prev.map((s, idx) => (idx === i ? updated : s)))
+                    }
+                    onRemove={() =>
+                      setServices((prev) => prev.filter((_, idx) => idx !== i))
+                    }
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </div>
+
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type="button" variant="outline">Cancel</Button>
+          </DialogClose>
+          <Button type="submit" disabled={isPending}>
+            {isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+            {editingEstimate ? 'Save Changes' : 'Create Estimate'}
+          </Button>
+        </DialogFooter>
+      </form>
+    </>
+  );
+}
+
+// ──────────────────────────────────────────────────────────
+// EstimatesSection — main export
+// ──────────────────────────────────────────────────────────
+
+export function EstimatesSection() {
+  const { toast } = useToast();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingEstimate, setEditingEstimate] = useState<Estimate | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Estimate | null>(null);
+
+  const { data: estimates = [], isLoading } = useQuery<Estimate[]>({
+    queryKey: ['/api/estimates'],
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (data: { clientName: string; note: string | null; services: EstimateServiceItem[] }) => {
+      const res = await apiRequest('POST', '/api/estimates', data);
+      return res.json() as Promise<Estimate>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/estimates'] });
+      setIsDialogOpen(false);
+      toast({ title: 'Estimate created' });
+    },
+    onError: (err: Error) => {
+      toast({ title: 'Failed to create estimate', description: err.message, variant: 'destructive' });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: { id: number; clientName: string; note: string | null; services: EstimateServiceItem[] }) => {
+      const res = await apiRequest('PUT', `/api/estimates/${data.id}`, {
+        clientName: data.clientName,
+        note: data.note,
+        services: data.services,
+      });
+      return res.json() as Promise<Estimate>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/estimates'] });
+      setIsDialogOpen(false);
+      toast({ title: 'Estimate updated' });
+    },
+    onError: (err: Error) => {
+      toast({ title: 'Failed to update estimate', description: err.message, variant: 'destructive' });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest('DELETE', `/api/estimates/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/estimates'] });
+      toast({ title: 'Estimate deleted' });
+      setDeleteTarget(null);
+    },
+    onError: (err: Error) => {
+      toast({ title: 'Failed to delete estimate', description: err.message, variant: 'destructive' });
+    },
+  });
+
+  const handleCopyLink = async (slug: string) => {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/e/${slug}`);
+      toast({ title: 'Link copied', description: 'Share this link with your client.' });
+    } catch {
+      toast({ title: 'Copy failed', description: 'Please copy the URL manually.', variant: 'destructive' });
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <SectionHeader
+        title="Estimates"
+        description="Create and manage client proposals — each generates a shareable link"
+        icon={<Receipt className="w-5 h-5" />}
+        action={
+          <Button
+            onClick={() => {
+              setEditingEstimate(null);
+              setIsDialogOpen(true);
+            }}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            New Estimate
+          </Button>
+        }
+      />
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-sm text-muted-foreground">Loading estimates...</span>
+        </div>
+      ) : estimates.length === 0 ? (
+        <EmptyState
+          icon={<Receipt />}
+          title="No estimates yet"
+          description="Create your first estimate to generate a shareable proposal link."
+        />
+      ) : (
+        <div className="space-y-3">
+          {estimates.map((est) => (
+            <div
+              key={est.id}
+              className="flex items-center gap-3 border rounded-lg p-4 bg-card"
+            >
+              <span className="font-bold text-sm flex-1">{est.clientName}</span>
+              <span className="text-xs text-muted-foreground font-mono truncate max-w-[160px]">
+                {est.slug}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {est.createdAt ? format(new Date(est.createdAt), 'MMM d, yyyy') : '—'}
+              </span>
+              <div className="flex gap-2 shrink-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Copy estimate link"
+                  onClick={() => handleCopyLink(est.slug)}
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Edit estimate"
+                  onClick={() => {
+                    setEditingEstimate(est);
+                    setIsDialogOpen(true);
+                  }}
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Delete estimate"
+                  className="text-destructive"
+                  onClick={() => setDeleteTarget(est)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Delete confirmation AlertDialog */}
+      {deleteTarget && (
+        <AlertDialog open={true} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete estimate?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently remove the estimate for {deleteTarget.clientName}. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteMutation.mutate(deleteTarget.id)}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
+      {/* Create / Edit dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <EstimateDialogForm
+            key={editingEstimate?.id ?? 'new'}
+            editingEstimate={editingEstimate}
+            onSave={(clientName, note, services) => {
+              const servicesWithOrder = services.map((s, i) => ({ ...s, order: i }));
+              if (editingEstimate) {
+                updateMutation.mutate({ id: editingEstimate.id, clientName, note, services: servicesWithOrder });
+              } else {
+                createMutation.mutate({ clientName, note, services: servicesWithOrder });
+              }
+            }}
+            isPending={createMutation.isPending || updateMutation.isPending}
+          />
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
