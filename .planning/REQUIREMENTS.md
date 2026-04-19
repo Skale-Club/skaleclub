@@ -8,7 +8,7 @@
 ### Schema & Storage — Phase 6
 
 - [x] **EST-01**: `estimates` table exists in the database with clientName, UUID slug, optional note, and a JSONB `services` array; `npm run db:push` completes without error
-- [ ] **EST-02**: Storage layer exposes six typed CRUD methods (create, getById, getBySlug, list, update, delete) callable from route handlers without TypeScript errors; a catalog service snapshot is immutable even after editing the source `portfolio_services` row
+- [x] **EST-02**: Storage layer exposes six typed CRUD methods (create, getById, getBySlug, list, update, delete) callable from route handlers without TypeScript errors; a catalog service snapshot is immutable even after editing the source `portfolio_services` row
 
 ### Admin API — Phase 7
 
@@ -48,7 +48,7 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | EST-01 | Phase 6 | Complete |
-| EST-02 | Phase 6 | Pending |
+| EST-02 | Phase 6 | Complete |
 | EST-03 | Phase 7 | Pending |
 | EST-04 | Phase 7 | Pending |
 | EST-05 | Phase 7 | Pending |
