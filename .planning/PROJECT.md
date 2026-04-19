@@ -20,8 +20,8 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 
 ### Active (v1.2)
 
-- [ ] **EST-01**: estimates table with JSONB snapshot schema, UUID slug, Drizzle migration
-- [ ] **EST-02**: Storage layer — 6 typed CRUD methods, immutable snapshots
+- [x] **EST-01**: estimates table with JSONB snapshot schema, UUID slug, SQL migration — Phase 6 ✓
+- [x] **EST-02**: Storage layer — 6 typed CRUD methods, immutable snapshots — Phase 6 ✓
 - [ ] **EST-03**: GET /api/estimates (admin list, auth required)
 - [ ] **EST-04**: POST/PUT/DELETE /api/estimates (admin CRUD, auth required)
 - [ ] **EST-05**: GET /api/estimates/slug/:slug (public lookup, no auth)
@@ -75,4 +75,4 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 | UUID slug for estimate public links (v1.2) | Unguessable public URL without auth | — Pending |
 
 ---
-*Last updated: 2026-04-19 after v1.2 milestone kickoff*
+*Last updated: 2026-04-19 after Phase 6 complete (DB Schema + Storage Layer)*
