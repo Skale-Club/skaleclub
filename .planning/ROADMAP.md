@@ -53,7 +53,7 @@
 **Plans**: 2 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — Drizzle table definition, Zod schemas, TypeScript types, barrel export
+- [x] 06-01-PLAN.md — Drizzle table definition, Zod schemas, TypeScript types, barrel export
 - [ ] 06-02-PLAN.md — Storage CRUD methods + Drizzle migration (db:push)
 
 ### Phase 7: Admin API Routes
@@ -100,7 +100,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 6. DB Schema + Storage Layer | 0/2 | Not started | - |
+| 6. DB Schema + Storage Layer | 1/2 | In Progress|  |
 | 7. Admin API Routes | 0/? | Not started | - |
 | 8. Admin UI (EstimatesSection) | 0/? | Not started | - |
 | 9. Public Viewer | 0/? | Not started | - |
