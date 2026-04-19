@@ -1,0 +1,67 @@
+import type { Express } from "express";
+import crypto from "crypto";
+import { storage } from "../storage.js";
+import { insertEstimateSchema } from "#shared/schema.js";
+import { requireAdmin } from "./_shared.js";
+
+export function registerEstimatesRoutes(app: Express) {
+  // Public slug endpoint registered first to avoid Express matching "slug" as an :id value
+  app.get("/api/estimates/slug/:slug", async (req, res) => {
+    try {
+      const estimate = await storage.getEstimateBySlug(req.params.slug);
+      if (!estimate) return res.status(404).json({ message: "Estimate not found" });
+      res.json(estimate);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.get("/api/estimates", requireAdmin, async (req, res) => {
+    try {
+      const estimates = await storage.listEstimates();
+      res.json(estimates);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.post("/api/estimates", requireAdmin, async (req, res) => {
+    try {
+      const bodySchema = insertEstimateSchema.omit({ slug: true });
+      const parsed = bodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Validation error", errors: parsed.error.errors });
+      }
+      const slug = crypto.randomUUID();
+      const estimate = await storage.createEstimate({ ...parsed.data, slug });
+      res.status(201).json(estimate);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.put("/api/estimates/:id", requireAdmin, async (req, res) => {
+    try {
+      const updateSchema = insertEstimateSchema.partial().omit({ slug: true });
+      const parsed = updateSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Validation error", errors: parsed.error.errors });
+      }
+      const existing = await storage.getEstimate(Number(req.params.id));
+      if (!existing) return res.status(404).json({ message: "Estimate not found" });
+      const estimate = await storage.updateEstimate(Number(req.params.id), parsed.data);
+      res.json(estimate);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.delete("/api/estimates/:id", requireAdmin, async (req, res) => {
+    try {
+      await storage.deleteEstimate(Number(req.params.id));
+      res.json({ success: true });
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+}

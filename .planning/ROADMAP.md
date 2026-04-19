@@ -33,7 +33,7 @@
 ### v1.2 Estimates System
 
 - [x] **Phase 6: DB Schema + Storage Layer** — Estimates table, JSONB snapshot schema, Zod types, storage methods, Drizzle migration (completed 2026-04-19)
-- [ ] **Phase 7: Admin API Routes** — CRUD endpoints for estimates (list, create, read, update, delete) + public slug lookup
+- [x] **Phase 7: Admin API Routes** — CRUD endpoints for estimates (list, create, read, update, delete) + public slug lookup (completed 2026-04-19)
 - [ ] **Phase 8: Admin UI (EstimatesSection)** — Estimates list, create/edit dialog, service picker, drag-reorder, price override, custom line items
 - [ ] **Phase 9: Public Viewer** — /e/:slug fullscreen scroll-snap proposal page, isEstimateRoute guard, 404 handling
 
@@ -69,7 +69,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 07-01-PLAN.md — All five estimate route handlers + registration in server/routes.ts
+- [x] 07-01-PLAN.md — All five estimate route handlers + registration in server/routes.ts (completed 2026-04-19)
 
 ### Phase 8: Admin UI (EstimatesSection)
 **Goal**: The admin can create, edit, and delete estimates from within the admin dashboard, composing service line items from the portfolio catalog or as custom rows, with full drag-reorder and price override support
@@ -103,12 +103,12 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 6. DB Schema + Storage Layer | 1/2 | Complete    | 2026-04-19 |
-| 7. Admin API Routes | 0/1 | Not started | - |
+| 6. DB Schema + Storage Layer | 2/2 | Complete    | 2026-04-19 |
+| 7. Admin API Routes | 1/1 | Complete    | 2026-04-19 |
 | 8. Admin UI (EstimatesSection) | 0/? | Not started | - |
 | 9. Public Viewer | 0/? | Not started | - |
 
 ---
 
 _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
-_Last updated: 2026-04-19 — Phase 7 plan created (07-01)_
+_Last updated: 2026-04-19 — Phase 7 complete (07-01 estimates API routes)_
