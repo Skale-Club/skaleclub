@@ -12,9 +12,9 @@
 
 ### Admin API — Phase 7
 
-- [ ] **EST-03**: `GET /api/estimates` returns all estimates (clientName, slug, createdAt) — requires admin auth
-- [ ] **EST-04**: `POST /api/estimates` creates an estimate with UUID slug; `PUT /api/estimates/:id` updates it; `DELETE /api/estimates/:id` removes it permanently — all require admin auth
-- [ ] **EST-05**: `GET /api/estimates/slug/:slug` returns estimate data without authentication (for the public viewer)
+- [x] **EST-03**: `GET /api/estimates` returns all estimates (clientName, slug, createdAt) — requires admin auth
+- [x] **EST-04**: `POST /api/estimates` creates an estimate with UUID slug; `PUT /api/estimates/:id` updates it; `DELETE /api/estimates/:id` removes it permanently — all require admin auth
+- [x] **EST-05**: `GET /api/estimates/slug/:slug` returns estimate data without authentication (for the public viewer)
 
 ### Admin UI — Phase 8
 
@@ -49,9 +49,9 @@
 |-------------|-------|--------|
 | EST-01 | Phase 6 | Complete |
 | EST-02 | Phase 6 | Complete |
-| EST-03 | Phase 7 | Pending |
-| EST-04 | Phase 7 | Pending |
-| EST-05 | Phase 7 | Pending |
+| EST-03 | Phase 7 | Complete |
+| EST-04 | Phase 7 | Complete |
+| EST-05 | Phase 7 | Complete |
 | EST-06 | Phase 8 | Pending |
 | EST-07 | Phase 8 | Pending |
 | EST-08 | Phase 8 | Pending |

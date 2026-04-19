@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Estimates System
-status: planning
-last_updated: "2026-04-19T21:35:23.486Z"
+status: in_progress
+last_updated: "2026-04-19T22:11:00Z"
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
-  percent: 50
+  total_plans: 5
+  completed_plans: 3
+  percent: 60
 ---
 
 # STATE: Skale Club Web Platform
@@ -24,25 +24,25 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-04-19)
 
 **Core value:** Clients receive a proposal link and experience Skale Club services as an immersive, professional presentation — not a PDF.
-**Current focus:** Phase 06 — db-schema-storage-layer
+**Current focus:** Phase 07 — admin-api-routes (plan 01 complete)
 
 ---
 
 ## Current Position
 
-Phase: 7
-Plan: Not started
 | Field | Value |
 |-------|-------|
-| Milestone | v1.2 — Estimates System 🔄 |
-| Phase | 6 — DB Schema + Storage Layer |
-| Status | Planning |
+| Milestone | v1.2 — Estimates System |
+| Phase | 7 — Admin API Routes |
+| Plan | 01 (complete) |
+| Status | In Progress |
 
 **Progress:**
 
-[█████░░░░░] 50%
-[ ] Phase 6: DB Schema + Storage Layer
-[ ] Phase 7: Admin API Routes
+[██████░░░░] 60%
+[x] Phase 6: DB Schema + Storage Layer (2/2 plans)
+[x] Phase 7: Admin API Routes — Plan 01 done
+[ ] Phase 7: Admin API Routes remaining
 [ ] Phase 8: Admin UI (EstimatesSection)
 [ ] Phase 9: Public Viewer
 
@@ -87,8 +87,11 @@ Plan: Not started
 - ✅ Soft-delete (archive) for forms with leads — default form always protected (v1.1)
 - ✅ `form_slug` on `chat_settings` — chat AI resolves form via `resolveChatForm()` (v1.1)
 - ✅ Supabase session pooler (port 5432) for migrations — avoids SQLSTATE 42P05 (v1.1)
-- [Phase 06-db-schema-storage-layer]: JSONB snapshot for estimates services — NOT FK to portfolio_services; editing catalog never mutates sent proposals (v1.2)
-- [Phase 06-db-schema-storage-layer]: Manual Zod insert schema for estimates (not drizzle-zod) — follows portfolioServices convention in cms.ts (v1.2)
+- ✅ JSONB snapshot for estimates services — NOT FK to portfolio_services; editing catalog never mutates sent proposals (v1.2, Phase 6)
+- ✅ Manual Zod insert schema for estimates (not drizzle-zod) — follows portfolioServices convention in cms.ts (v1.2, Phase 6)
+- ✅ registerEstimatesRoutes(app: Express) only — requireAdmin imported directly, not injected as parameter (v1.2, Phase 7)
+- ✅ Public slug endpoint has no setPublicCache — estimate data contains client names + pricing (v1.2, Phase 7)
+- ✅ Pre-flight getEstimate() check before updateEstimate() — Drizzle .returning() returns undefined for missing rows (v1.2, Phase 7)
 
 ### Blockers
 
@@ -104,7 +107,8 @@ None.
 | 2026-04-14/15 | v1.1 M3 complete (tracked in PAUL) | GSD synced 2026-04-19 |
 | 2026-04-19 | GSD retroactive sync | ready for `/gsd:new-milestone` |
 | 2026-04-19 | v1.2 milestone initialized | REQUIREMENTS.md + PROJECT.md created, Phase 6 ready to plan |
+| 2026-04-19 | Phase 7 Plan 01 complete | server/routes/estimates.ts created; 5 estimate endpoints registered |
 
 ---
 
-*Last updated: 2026-04-19 — v1.2 Estimates System milestone kickoff*
+*Last updated: 2026-04-19 — Phase 7 Plan 01 (Admin API Routes) complete*
