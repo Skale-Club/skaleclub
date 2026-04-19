@@ -1,11 +1,9 @@
-import type { MouseEvent } from 'react';
 import { useMemo, useState } from 'react';
 import type { HomepageContent, PortfolioService } from '@shared/schema';
 import { useQuery } from '@tanstack/react-query';
 import { PortfolioCard } from '@/components/PortfolioCard';
 import { ServicesHeader } from '@/components/home/ServicesHeader';
 import { ServicesCarousel } from '@/components/home/ServicesCarousel';
-import { PracticalBlock } from '@/components/home/PracticalBlock';
 import { StepCard } from '@/components/home/StepCard';
 import type { StepItem } from '@/components/home/StepCard';
 import { ServiceDetailModal } from '@/components/home/ServiceDetailModal';
@@ -41,26 +39,11 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
 
   if (!section || section.enabled === false) return null;
 
-  const practicalBullets = section?.practicalBullets?.length ? section.practicalBullets : [];
-  const ctaLabel = section?.ctaButtonLabel || '';
-  const ctaHref = section?.ctaButtonLink || '#lead-form';
-  const helperText = section?.helperText;
   const tagLabel = section?.tagLabel || 'Consulting';
   const sectionId = section?.sectionId || 'how-it-works';
-  const practicalTitle = section?.practicalBlockTitle || '';
   const stepLabel = section?.stepLabel || '';
   const whatWeDoLabel = section?.whatWeDoLabel || '';
   const outcomeLabel = section?.outcomeLabel || '';
-  const practicalBlockSubtitle = section?.practicalBlockSubtitle || '';
-  const nextStepLabel = section?.nextStepLabel || '';
-  const nextStepText = section?.nextStepText || '';
-
-  const handleCta = (event: MouseEvent<HTMLAnchorElement>) => {
-    if (onCtaClick) {
-      event.preventDefault();
-      onCtaClick();
-    }
-  };
 
   const openServiceModal = (service: PortfolioService) => {
     setSelectedService(service);
@@ -94,17 +77,6 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
                 />
               </div>
             )}
-          />
-          <PracticalBlock
-            title={practicalTitle}
-            subtitle={practicalBlockSubtitle}
-            bullets={practicalBullets}
-            nextStepLabel={nextStepLabel}
-            nextStepText={nextStepText}
-            ctaHref={ctaHref}
-            ctaLabel={ctaLabel}
-            helperText={helperText}
-            onCtaClick={handleCta}
           />
         </SectionShell>
 
@@ -143,17 +115,6 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
             />
           </div>
         )}
-      />
-      <PracticalBlock
-        title={practicalTitle}
-        subtitle={practicalBlockSubtitle}
-        bullets={practicalBullets}
-        nextStepLabel={nextStepLabel}
-        nextStepText={nextStepText}
-        ctaHref={ctaHref}
-        ctaLabel={ctaLabel}
-        helperText={helperText}
-        onCtaClick={handleCta}
       />
     </SectionShell>
   );
