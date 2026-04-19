@@ -1,16 +1,16 @@
-# STATE: Xpot Technical Debt Remediation
+# STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** v1.1 Complete ✅
+**Status:** v1.2 In Progress
 
 ---
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-03-30)
+See: `.planning/PROJECT.md` (updated 2026-04-19)
 
-**Core value:** Make Xpot code maintainable — reduce cognitive load for developers.
-**Current focus:** Planning next milestone (run `/gsd:new-milestone`).
+**Core value:** Convert leads into clients — from first contact to receiving a personalized proposal with pricing, all within the Skale Club platform.
+**Current focus:** v1.2 Estimates System — Phase 6: DB Schema + Storage Layer
 
 ---
 
@@ -19,12 +19,12 @@ See: `.planning/PROJECT.md` (updated 2026-03-30)
 | Field | Value |
 |-------|-------|
 | Milestone | v1.2 — Estimates System |
-| Phase | — (defining requirements) |
-| Status | Roadmap in progress |
+| Phase | 6 — DB Schema + Storage Layer |
+| Status | Not started |
 
 **Progress:**
 ```
-[░░░░░░░░░░░░░░░░░░░░] v1.2 started — 2026-04-19
+[░░░░░░░░░░░░░░░░░░░░] v1.2: 0/4 phases complete
 ```
 
 ---
@@ -48,6 +48,13 @@ See: `.planning/PROJECT.md` (updated 2026-03-30)
 | Lines added/removed | ~+3,400 / -700 |
 | Prod DB verified | forms=1, form_leads=14 (all form_id=1) |
 
+### v1.2 — Estimates System (in progress)
+| Metric | Value |
+|--------|-------|
+| Requirements | 0/16 complete |
+| Phases completed | 0/4 |
+| Plans executed | 0 |
+
 ---
 
 ## Accumulated Context
@@ -62,6 +69,15 @@ See: `.planning/PROJECT.md` (updated 2026-03-30)
 - ✅ Soft-delete (archive) for forms with leads — default form always protected (v1.1)
 - ✅ `form_slug` on `chat_settings` — chat AI resolves form via `resolveChatForm()` (v1.1)
 - ✅ Supabase session pooler (port 5432) for migrations — avoids SQLSTATE 42P05 (v1.1)
+- ✅ JSONB snapshot for estimate services — NOT FK to portfolio_services; editing catalog does not mutate sent proposals (v1.2)
+- ✅ UUID slugs via crypto.randomUUID() — client-specific pricing must not be enumerable (v1.2)
+- ✅ Item type discriminator field (catalog | custom) — required so editor restores correct input mode on re-open (v1.2)
+- ✅ min-h-[100dvh] not min-h-screen — iOS Safari URL bar breaks 100vh on scroll-snap viewer (v1.2)
+- ✅ isEstimateRoute guard in App.tsx — /e/:slug must escape Navbar/Footer/ChatWidget (v1.2)
+- ✅ Reserve "e" in pageSlugs validation — prevents /e/* being overridden by a page slug (v1.2)
+- ✅ Automation (auto-create from form) is OUT OF SCOPE for v1.2 — GHL handles dispatch (v1.2)
+- ✅ No acceptance CTA button in v1.2 viewer — viewer-only, closing section is purely visual (v1.2)
+- ✅ No new npm dependencies for core manual flow (v1.2)
 
 ### Blockers
 None.
@@ -75,7 +91,8 @@ None.
 | 2026-03-30 | v1.0 complete | started v1.1 planning |
 | 2026-04-14/15 | v1.1 M3 complete (tracked in PAUL) | GSD synced 2026-04-19 |
 | 2026-04-19 | GSD retroactive sync | ready for `/gsd:new-milestone` |
+| 2026-04-19 | v1.2 roadmap created | Phase 6 ready to plan |
 
 ---
 
-*Last updated: 2026-04-19 — retroactive sync of M3 multi-forms work into GSD tracking*
+*Last updated: 2026-04-19 — v1.2 Estimates System roadmap created, Phase 6 is next*

@@ -63,9 +63,9 @@
 |-------------|-------|--------|
 | EST-01 | Phase 6 | Pending |
 | EST-02 | Phase 6 | Pending |
-| EST-03 | Phase 8 | Pending |
-| EST-04 | Phase 8 | Pending |
-| EST-05 | Phase 8 | Pending |
+| EST-03 | Phase 7 | Pending |
+| EST-04 | Phase 7 | Pending |
+| EST-05 | Phase 7 | Pending |
 | EST-06 | Phase 8 | Pending |
 | EST-07 | Phase 8 | Pending |
 | EST-08 | Phase 8 | Pending |
@@ -85,4 +85,4 @@
 
 ---
 *Requirements defined: 2026-04-19*
-*Last updated: 2026-04-19 after initial definition*
+*Last updated: 2026-04-19 — traceability updated after roadmap creation (EST-03/04/05 assigned to Phase 7)*
