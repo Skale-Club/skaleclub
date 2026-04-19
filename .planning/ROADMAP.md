@@ -34,7 +34,7 @@
 
 - [x] **Phase 6: DB Schema + Storage Layer** — Estimates table, JSONB snapshot schema, Zod types, storage methods, Drizzle migration (completed 2026-04-19)
 - [x] **Phase 7: Admin API Routes** — CRUD endpoints for estimates (list, create, read, update, delete) + public slug lookup (completed 2026-04-19)
-- [ ] **Phase 8: Admin UI (EstimatesSection)** — Estimates list, create/edit dialog, service picker, drag-reorder, price override, custom line items
+- [x] **Phase 8: Admin UI (EstimatesSection)** — Estimates list, create/edit dialog, service picker, drag-reorder, price override, custom line items (completed 2026-04-19)
 - [ ] **Phase 9: Public Viewer** — /e/:slug fullscreen scroll-snap proposal page, isEstimateRoute guard, 404 handling
 
 ---
@@ -108,7 +108,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 6. DB Schema + Storage Layer | 2/2 | Complete    | 2026-04-19 |
 | 7. Admin API Routes | 1/1 | Complete    | 2026-04-19 |
-| 8. Admin UI (EstimatesSection) | 1/2 | In Progress|  |
+| 8. Admin UI (EstimatesSection) | 1/2 | Complete    | 2026-04-19 |
 | 9. Public Viewer | 0/? | Not started | - |
 
 ---
