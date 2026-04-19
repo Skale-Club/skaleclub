@@ -1,16 +1,16 @@
-# STATE: Xpot Technical Debt Remediation
+# STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** v1.1 Complete ✅
+**Status:** v1.2 In Progress 🔄
 
 ---
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-03-30)
+See: `.planning/PROJECT.md` (updated 2026-04-19)
 
-**Core value:** Make Xpot code maintainable — reduce cognitive load for developers.
-**Current focus:** Planning next milestone (run `/gsd:new-milestone`).
+**Core value:** Clients receive a proposal link and experience Skale Club services as an immersive, professional presentation — not a PDF.
+**Current focus:** Phase 6 — DB Schema + Storage Layer
 
 ---
 
@@ -18,13 +18,16 @@ See: `.planning/PROJECT.md` (updated 2026-03-30)
 
 | Field | Value |
 |-------|-------|
-| Milestone | v1.1 — Complete ✅ |
-| Phase | — (milestone complete) |
-| Status | Awaiting `/gsd:new-milestone` |
+| Milestone | v1.2 — Estimates System 🔄 |
+| Phase | 6 — DB Schema + Storage Layer |
+| Status | Planning |
 
 **Progress:**
 ```
-[████████████████████] v1.1 Complete — 5/5 phases, all shipped to production
+[ ] Phase 6: DB Schema + Storage Layer
+[ ] Phase 7: Admin API Routes
+[ ] Phase 8: Admin UI (EstimatesSection)
+[ ] Phase 9: Public Viewer
 ```
 
 ---
@@ -75,7 +78,8 @@ None.
 | 2026-03-30 | v1.0 complete | started v1.1 planning |
 | 2026-04-14/15 | v1.1 M3 complete (tracked in PAUL) | GSD synced 2026-04-19 |
 | 2026-04-19 | GSD retroactive sync | ready for `/gsd:new-milestone` |
+| 2026-04-19 | v1.2 milestone initialized | REQUIREMENTS.md + PROJECT.md created, Phase 6 ready to plan |
 
 ---
 
-*Last updated: 2026-04-19 — retroactive sync of M3 multi-forms work into GSD tracking*
+*Last updated: 2026-04-19 — v1.2 Estimates System milestone kickoff*
