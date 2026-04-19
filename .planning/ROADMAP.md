@@ -50,7 +50,11 @@
   2. An estimate record can be created with clientName, UUID slug, optional note, and a services JSONB array containing at minimum title, description, price, features, and item type discriminator
   3. A catalog service saved to an estimate retains its snapshot data even after the portfolio_services row is edited — the estimate is immutable
   4. All six storage methods (create, get by id, get by slug, list, update, delete) are callable from route handlers without TypeScript errors
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — Drizzle table definition, Zod schemas, TypeScript types, barrel export
+- [ ] 06-02-PLAN.md — Storage CRUD methods + Drizzle migration (db:push)
 
 ### Phase 7: Admin API Routes
 **Goal**: The admin can perform full CRUD on estimates via authenticated HTTP endpoints, and the public can fetch a single estimate by slug without authentication
@@ -96,7 +100,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 6. DB Schema + Storage Layer | 0/? | Not started | - |
+| 6. DB Schema + Storage Layer | 0/2 | Not started | - |
 | 7. Admin API Routes | 0/? | Not started | - |
 | 8. Admin UI (EstimatesSection) | 0/? | Not started | - |
 | 9. Public Viewer | 0/? | Not started | - |
@@ -104,4 +108,4 @@
 ---
 
 _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
-_Last updated: 2026-04-19 — v1.2 Estimates System roadmap created_
+_Last updated: 2026-04-19 — Phase 6 plans created (06-01, 06-02)_
