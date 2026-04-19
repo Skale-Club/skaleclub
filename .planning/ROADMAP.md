@@ -84,7 +84,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 08-01-PLAN.md — EstimatesSection.tsx full component (list view, dialog, dnd-kit, mutations)
+- [x] 08-01-PLAN.md — EstimatesSection.tsx full component (list view, dialog, dnd-kit, mutations)
 - [ ] 08-02-PLAN.md — Sidebar wiring (types.ts, constants.ts, Admin.tsx)
 
 ### Phase 9: Public Viewer
@@ -108,7 +108,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 6. DB Schema + Storage Layer | 2/2 | Complete    | 2026-04-19 |
 | 7. Admin API Routes | 1/1 | Complete    | 2026-04-19 |
-| 8. Admin UI (EstimatesSection) | 0/2 | Not started | - |
+| 8. Admin UI (EstimatesSection) | 1/2 | In Progress|  |
 | 9. Public Viewer | 0/? | Not started | - |
 
 ---

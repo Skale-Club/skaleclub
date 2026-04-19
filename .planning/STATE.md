@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Estimates System
-status: planning
-last_updated: "2026-04-19T22:19:56.051Z"
+status: executing
+last_updated: "2026-04-19T23:28:33.493Z"
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 3
-  completed_plans: 3
-  percent: 50
+  total_plans: 5
+  completed_plans: 4
+  percent: 80
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** Ready to plan
+**Status:** Ready to execute
 
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-04-19)
 
 **Core value:** Clients receive a proposal link and experience Skale Club services as an immersive, professional presentation — not a PDF.
-**Current focus:** Phase 07 — admin-api-routes
+**Current focus:** Phase 08 — admin-ui-estimatessection
 
 ---
 
 ## Current Position
 
-Phase: 8
-Plan: Not started
+Phase: 08 (admin-ui-estimatessection) — EXECUTING
+Plan: 2 of 2
 | Field | Value |
 |-------|-------|
 | Milestone | v1.2 — Estimates System 🔄 |
@@ -40,7 +40,7 @@ Plan: Not started
 
 **Progress:**
 
-[█████░░░░░] 50%
+[████████░░] 80%
 [ ] Phase 6: DB Schema + Storage Layer
 [ ] Phase 7: Admin API Routes
 [ ] Phase 8: Admin UI (EstimatesSection)
@@ -62,6 +62,7 @@ Plan: Not started
 | Files changed | 64 |
 | Lines added/removed | +9,106 / -1,763 |
 | Phase 06-db-schema-storage-layer P01 | 3 | 2 tasks | 2 files |
+| Phase 08-admin-ui-estimatessection P01 | 114s | 2 tasks | 1 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -89,6 +90,7 @@ Plan: Not started
 - ✅ Supabase session pooler (port 5432) for migrations — avoids SQLSTATE 42P05 (v1.1)
 - [Phase 06-db-schema-storage-layer]: JSONB snapshot for estimates services — NOT FK to portfolio_services; editing catalog never mutates sent proposals (v1.2)
 - [Phase 06-db-schema-storage-layer]: Manual Zod insert schema for estimates (not drizzle-zod) — follows portfolioServices convention in cms.ts (v1.2)
+- [Phase 08-admin-ui-estimatessection]: EstimatesSection.tsx co-locates all three components (SortableServiceRow, EstimateDialogForm, EstimatesSection) in one file — consistent with PortfolioSection pattern
 
 ### Blockers
 

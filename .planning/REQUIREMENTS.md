@@ -18,11 +18,11 @@
 
 ### Admin UI — Phase 8
 
-- [ ] **EST-06**: Admin sees an "Estimates" tab in the sidebar with a list showing client name, slug, creation date, and a copy-link button
-- [ ] **EST-07**: Admin can open a create/edit dialog, pick services from the portfolio catalog with title/description/price pre-filled and editable before saving
-- [ ] **EST-08**: Admin can add freeform custom service rows (title, description, price entered manually — not linked to catalog) alongside catalog items
-- [ ] **EST-09**: Admin can drag service rows to reorder them; order is preserved on save and re-edit
-- [ ] **EST-10**: Admin can delete any estimate from the list
+- [x] **EST-06**: Admin sees an "Estimates" tab in the sidebar with a list showing client name, slug, creation date, and a copy-link button
+- [x] **EST-07**: Admin can open a create/edit dialog, pick services from the portfolio catalog with title/description/price pre-filled and editable before saving
+- [x] **EST-08**: Admin can add freeform custom service rows (title, description, price entered manually — not linked to catalog) alongside catalog items
+- [x] **EST-09**: Admin can drag service rows to reorder them; order is preserved on save and re-edit
+- [x] **EST-10**: Admin can delete any estimate from the list
 
 ### Public Viewer — Phase 9
 
@@ -52,11 +52,11 @@
 | EST-03 | Phase 7 | Complete |
 | EST-04 | Phase 7 | Complete |
 | EST-05 | Phase 7 | Complete |
-| EST-06 | Phase 8 | Pending |
-| EST-07 | Phase 8 | Pending |
-| EST-08 | Phase 8 | Pending |
-| EST-09 | Phase 8 | Pending |
-| EST-10 | Phase 8 | Pending |
+| EST-06 | Phase 8 | Complete |
+| EST-07 | Phase 8 | Complete |
+| EST-08 | Phase 8 | Complete |
+| EST-09 | Phase 8 | Complete |
+| EST-10 | Phase 8 | Complete |
 | EST-11 | Phase 9 | Pending |
 | EST-12 | Phase 9 | Pending |
 | EST-13 | Phase 9 | Pending |
