@@ -18,13 +18,13 @@ See: `.planning/PROJECT.md` (updated 2026-03-30)
 
 | Field | Value |
 |-------|-------|
-| Milestone | v1.1 — Complete ✅ |
-| Phase | — (milestone complete) |
-| Status | Awaiting `/gsd:new-milestone` |
+| Milestone | v1.2 — Estimates System |
+| Phase | — (defining requirements) |
+| Status | Roadmap in progress |
 
 **Progress:**
 ```
-[████████████████████] v1.1 Complete — 5/5 phases, all shipped to production
+[░░░░░░░░░░░░░░░░░░░░] v1.2 started — 2026-04-19
 ```
 
 ---
