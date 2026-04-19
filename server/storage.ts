@@ -13,6 +13,7 @@ import {
   integrationSettings,
   blogPosts,
   portfolioServices,
+  estimates,
   salesReps,
   salesLeads,
   salesLeadLocations,
@@ -50,6 +51,8 @@ import {
   type SalesTask,
   type SalesSyncEvent,
   type SalesAppSettings,
+  type Estimate,
+  type InsertEstimate,
   type InsertPortfolioService,
   type InsertChatSettings,
   type InsertChatIntegrations,
@@ -1767,6 +1770,38 @@ export class DatabaseStorage implements IStorage {
 
   async deletePortfolioService(id: number): Promise<void> {
     await db.delete(portfolioServices).where(eq(portfolioServices.id, id));
+  }
+
+  // Estimates
+  async listEstimates(): Promise<Estimate[]> {
+    return await db.select().from(estimates).orderBy(desc(estimates.createdAt));
+  }
+
+  async getEstimate(id: number): Promise<Estimate | undefined> {
+    const [estimate] = await db.select().from(estimates).where(eq(estimates.id, id));
+    return estimate;
+  }
+
+  async getEstimateBySlug(slug: string): Promise<Estimate | undefined> {
+    const [estimate] = await db.select().from(estimates).where(eq(estimates.slug, slug));
+    return estimate;
+  }
+
+  async createEstimate(data: InsertEstimate): Promise<Estimate> {
+    const [estimate] = await db.insert(estimates).values(data).returning();
+    return estimate;
+  }
+
+  async updateEstimate(id: number, data: Partial<InsertEstimate>): Promise<Estimate> {
+    const [updated] = await db.update(estimates)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(estimates.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteEstimate(id: number): Promise<void> {
+    await db.delete(estimates).where(eq(estimates.id, id));
   }
 }
 
