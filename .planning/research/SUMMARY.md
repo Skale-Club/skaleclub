@@ -1,139 +1,150 @@
-# Xpot Technical Debt Remediation — Research Summary
+# Project Research Summary
 
-**Synthesized:** 2026-03-30
-**Source files:** ROUTE-SPLITTING.md, SCHEMA-ORGANIZATION.md, CONTEXT-REFACTORING.md, ERROR-HANDLING.md
-**Overall confidence:** HIGH
+**Project:** Skale Club v1.2 Estimates/Proposals System
+**Domain:** Client-facing personalized proposal viewer + admin CRUD + optional automation
+**Researched:** 2026-04-19
+**Confidence:** HIGH (stack/architecture verified against codebase; features/pitfalls from established domain patterns)
 
 ---
 
 ## Executive Summary
 
-The Xpot field sales CRM module has accumulated ~3,800 lines of technical debt across four monolithic files: `server/routes/xpot.ts` (1,042 lines), `shared/schema.ts` (1,004 lines), `XpotContext.tsx` (729 lines), and inconsistent error handling scattered across all routes. All four areas share the same trait — they grew organically without domain boundaries, making the code hard to navigate, risky to modify, and prone to merge conflicts.
+The v1.2 Estimates System is a personalized service presentation layer, not a full proposal platform. The admin creates an estimate for a specific prospect, selects services from the existing portfolio_services catalog with optional price overrides, and the prospect receives a public link (/e/:slug) that renders as a polished fullscreen scroll-snap viewer. The architecture maps cleanly onto existing codebase patterns: a new Drizzle schema file, a new Express route file, a new admin section component, and a new public page following the conventions established in v1.1 (Forms system).
 
-Research confirms all four areas can be refactored surgically (no API contract changes, no DB migrations, no behavior changes) using well-established patterns: `express.Router()` for routes, Drizzle's folder-path schema scanning, domain-scoped custom hooks for React context, and `express-async-errors` for error handling. Critically, the error handling research uncovered **live bugs** — a `throw err` in the global error middleware that crashes the process, and 12+ uncaught `ZodError` throws from async handlers (Express 4 doesn't auto-catch promise rejections). These bugs must be fixed first, before any route refactoring begins.
+The recommended implementation requires zero new npm dependencies for the core manual flow. The existing stack (Drizzle ORM, Tailwind CSS scroll-snap utilities, shadcn/ui, React Hook Form, TanStack Query, Wouter) covers every capability needed. The sole dependency decision pending is email dispatch: if automated email of the estimate link is required, add resend; if only SMS plus WhatsApp link dispatch is needed, zero new packages are required. The dependency graph is clear and the build order is defined: schema first, then API routes, then admin UI, then public viewer, then automation.
 
-The recommended sequencing is: **Error Handling (bugs first) → Route Splitting → Schema Organization → Context Refactoring**. This ordering respects dependency chains — error patterns should be established before routes are split, schemas are independent of routes, and frontend context refactoring is decoupled from backend work entirely.
+The two highest-risk decisions must be made during the DB schema phase and cannot be changed cheaply afterward: (1) service data must be denormalized into a JSONB snapshot column and never referenced via FK, so that editing a portfolio service does not silently change a sent proposal; and (2) estimate slugs must be UUID-based, not name-based, because estimate content (client-specific pricing) is commercially sensitive and a predictable slug makes it enumerable. Both are correctness and security decisions, not performance optimizations. Get them right in Phase 1 or pay a high recovery cost later.
 
 ---
 
 ## Key Findings
 
-### 1. Error Handling Has Live Bugs That Crash the Process (CRITICAL)
+### Recommended Stack
 
-The global error middleware in `server/app.ts:62-67` calls `throw err` after `res.status().json()`, which re-throws the error as an unhandled exception — crashing the Node process. Additionally, 12+ `schema.parse(req.body)` calls in async route handlers throw `ZodError` that Express 4 silently swallows (Express 4 does NOT auto-catch async rejections). The fix: add `import 'express-async-errors'` (one line), remove the `throw err`, and add ZodError handling to the error middleware.
+The entire feature can be built without adding any new npm packages to the core flow. Tailwind CSS 3.4.17 ships snap-y, snap-mandatory, and snap-start utilities natively. Drizzle ORM 0.39.3 with jsonb columns handles the denormalized service snapshot pattern. The admin UI follows the FormsSection.tsx and PortfolioSection.tsx patterns using existing shadcn/ui, React Hook Form, and TanStack Query.
 
-**Confidence:** HIGH — verified against Express official docs and direct code analysis.
+The only open dependency decision is transactional email. No email-sending capability currently exists in the codebase (Twilio SMS and GHL contact sync are present, but no SMTP/Resend/SendGrid). If automated email dispatch of the estimate link is confirmed in scope for v1.2, add resend (official Node.js SDK, 3,000 emails/month free tier). If only SMS and WhatsApp link sharing are needed, no new package is required.
 
-### 2. Route Splitting Is Straightforward with `express.Router()`
+**Core technologies:**
+- Drizzle ORM 0.39.3: New estimates table plus db:push migration, follows shared/schema/forms.ts pattern exactly
+- Tailwind CSS 3.4.17: Native snap-* utilities for scroll-snap viewer, no fullpage.js or library needed
+- shadcn/ui plus React Hook Form plus Zod: Admin CRUD UI, mirrors existing FormsSection.tsx pattern
+- TanStack Query: Data fetching and mutation, same patterns as all other admin sections
+- Wouter: /e/:slug route added to App.tsx with isEstimateRoute prefix guard
+- crypto.randomUUID(): UUID slug generation, already available in Node 14.17+, no nanoid needed
+- Twilio (existing): SMS dispatch of estimate link in automation phase
+- resend (if scoped): Email dispatch, only add if email automation is confirmed in v1.2 requirements
 
-The 1,042-line `xpot.ts` contains 33 handlers across 10 logical domains. Express 4.21.2's `express.Router()` is the idiomatic solution. The recommended pattern: one router per domain, each exporting a factory function, mounted via `app.use("/api/xpot", domainRouter)`. The `routes.ts` import changes by one line. No URL paths change. No `mergeParams` needed (flat route structure).
+**Do not add:** fullpage.js (GPL license, overkill), react-scroll-snap (abandoned 2020), nanoid (redundant), puppeteer or @react-pdf/renderer (PDF explicitly out of scope)
 
-**Confidence:** HIGH — standard Express pattern, no exotic requirements.
+### Expected Features
 
-### 3. Schema Splitting Works via Drizzle Folder Scanning — But Avoid Barrel Traps
+**Must have (table stakes, v1.2 launch):**
+- estimates DB table with slug, clientName, clientCompany, status (draft/sent), timestamps
+- estimate services as JSONB array on estimates row, denormalized snapshot of service data at creation time, with optional price override per item
+- Admin list view, all estimates with slug, client name, status, created date, copy-link button
+- Admin create/edit form, client fields, auto-suggested slug, service picker from portfolio_services, custom line items, per-service price override, total preview
+- Public viewer /e/:slug, fullscreen scroll-snap: Cover -> Skale Club intro -> one section per service -> Acceptance CTA
+- Graceful 404 for unknown slugs (mirrors PublicForm.tsx pattern)
+- Manual flow only: admin creates, copies link, sends via WhatsApp
 
-`drizzle.config.ts` can point at `schema: "./shared/schema"` (folder path) and drizzle-kit recursively scans all `.ts` files. The critical gotcha: **do NOT put a barrel `index.ts` inside the `schema/` folder** — drizzle-kit sees tables twice (GitHub issue #5353). Keep the barrel re-export file at `shared/schema.ts` (outside the folder). All 64 existing import sites continue working unchanged.
+**Should have (after v1.2 is validated):**
+- Auto-creation from form submission, estimate draft triggered on formCompleto = true, link dispatched via Twilio SMS
+- viewedAt passive tracking, set on first /e/:slug load
+- Cover image upload per estimate, visual differentiation per client
 
-**Confidence:** HIGH — verified with official Drizzle docs and confirmed GitHub issues.
+**Defer (v2+):**
+- PDF export, explicitly out of scope; browser Print-to-PDF covers any client need
+- Digital signature / e-sign, legal compliance complexity (ICP-Brasil), separate milestone
+- Estimate templates, premature before 10+ estimates exist
+- Automated follow-up sequences, requires scheduler/queue not in current stack
+- Estimate expiry with enforcement, requires cron or per-load check, marginal v1 value
 
-### 4. Context Refactoring Does NOT Need Zustand — Custom Hooks Are Sufficient
+### Architecture Approach
 
-`XpotContext.tsx` (729 lines) mixes 6 concerns but consumers use clean, non-overlapping subsets. TanStack Query already handles server state. The recommended approach: domain-scoped custom hooks + a backward-compatible `useXpotApp()` facade hook. No external state library needed. Migration is incremental — each consumer migrates independently, facade removed last.
+The system follows the layered architecture already established in the codebase: a shared/schema/estimates.ts file defines the Drizzle table and Zod schemas, a server/routes/estimates.ts file registers 6 Express endpoints (5 admin-protected plus 1 public slug lookup), server/storage.ts gains estimate CRUD methods, a new EstimatesSection.tsx component handles the admin UI, and a new PublicEstimate.tsx page renders the public viewer. Service data is denormalized into a jsonb column on the estimates row at creation time, no join table, no FK to portfolio_services, making each estimate an immutable point-in-time document. The public page must be isolated from the site shell (Navbar, Footer, ChatWidget) using the isEstimateRoute prefix guard pattern already used for /links/ and /vcard/ routes in App.tsx.
 
-**Confidence:** HIGH — consumer usage analysis shows clean partition boundaries.
+**Major components:**
+1. shared/schema/estimates.ts: Drizzle table definition, Zod schemas, TypeScript types; re-exported from shared/schema.ts barrel
+2. server/routes/estimates.ts: 6 Express endpoints, admin CRUD (5, requireAdmin) plus public slug lookup (1, no auth, setPublicCache(0))
+3. server/storage.ts: 6 new methods on DatabaseStorage (createEstimate, getEstimate, getEstimateBySlug, listEstimates, updateEstimate, deleteEstimate)
+4. client/src/components/admin/EstimatesSection.tsx: list view plus create/edit modal with service picker, drag-reorder via @dnd-kit (existing), price override, custom line items
+5. client/src/pages/PublicEstimate.tsx: public scroll-snap page; fetches by slug; renders Cover -> Intro -> N service sections -> CTA; no shell components
+6. server/lib/estimate-builder.ts (recommended): buildEstimateDraft() utility shared between route handler and auto-creation hook, preventing business logic duplication
 
-### 5. New Dependency Required: `express-async-errors`
+### Critical Pitfalls
 
-One new npm package needed. Zero API changes — it patches Express's Router prototype to auto-catch async rejections. Must be imported before `express` in `server/app.ts`. This is the only new dependency across all four refactoring areas.
+1. **JSONB snapshot vs FK, commercial correctness:** Never store a FK reference to portfolio_services as the source of truth for rendered pricing. Denormalize all service data (title, description, price, features) into the services jsonb array at creation time. Store serviceId only as a nullable reference for pre-filling the edit form. This cannot be retrofitted cheaply; design the schema correctly in Phase 1.
 
----
+2. **UUID slug is mandatory, not client name:** Estimate content contains client-specific pricing. A slug like acme-corp-2026 is guessable and enumerable. Use crypto.randomUUID() for slug generation. Also add e and f to the reserved prefix list in getPageSlugsValidationError() to prevent page slug conflicts.
 
-## Recommended Approach: Phase Ordering
+3. **Mobile viewport height, use dvh not vh:** scroll-snap-type: y mandatory with height: 100vh breaks on iOS Safari because the URL bar dynamically changes the visual viewport. Use min-h-[100dvh] for all snap sections. Fix during initial implementation; most recipients open WhatsApp links on mobile.
 
-### Phase 1: Error Handling Standardization (DEBT-04)
-**Why first:** Fixes live bugs (process crashes, silent validation failures). Establishes error patterns that route splitting will inherit.
+4. **Auto-creation idempotency:** The form lead endpoint uses upsert; re-submitting the same session re-runs runLeadPostProcessing. Add an estimateCreated boolean flag to form_leads (mirroring the existing notificacaoEnviada Twilio guard) and check it before auto-creating an estimate.
 
-| Step | Action | Effort |
-|------|--------|--------|
-| 1a | `npm install express-async-errors` + add `import 'express-async-errors'` to `server/app.ts` | Trivial |
-| 1b | Remove `throw err` from global error middleware | Trivial |
-| 1c | Add ZodError detection with `err.flatten()` formatting to error middleware | Low |
-| 1d | (Optional) Define `AppError` class + typed constructors for consistent throws | Medium |
-
-**Deliverable:** Async errors caught, validation errors return structured 400s, no process crashes.
-
-### Phase 2: Route File Splitting (DEBT-01)
-**Why second:** Error patterns from Phase 1 are now established — new route modules inherit them. This is the largest file and highest-pain area.
-
-| Step | Action | Effort |
-|------|--------|--------|
-| 2a | Create `server/routes/xpot/` directory with `middleware.ts` and `helpers.ts` | Low |
-| 2b | Create first domain router (`place-search.ts` — 1 route, smoke test) | Low |
-| 2c | Create remaining 9 domain routers one at a time | Medium |
-| 2d | Update `routes.ts` import, delete old `xpot.ts` | Trivial |
-
-**Deliverable:** 10 focused route files (~50-150 lines each) replacing one 1,042-line monolith.
-
-### Phase 3: Schema Organization (DEBT-02)
-**Why third:** Independent of routes — no dependency on Phase 2. Can technically run in parallel, but sequencing after routes reduces cognitive load (developer isn't context-switching between backend files).
-
-| Step | Action | Effort |
-|------|--------|--------|
-| 3a | Create `shared/schema/` directory with 6 domain files | Medium |
-| 3b | Update `drizzle.config.ts` to `schema: "./shared/schema"` | Trivial |
-| 3c | Convert `shared/schema.ts` to barrel re-export (outside `schema/` folder) | Low |
-| 3d | Run `npm run db:push` to verify drizzle-kit reads all tables | Trivial |
-
-**Deliverable:** 6 domain-focused schema files (~30-280 lines each) replacing one 1,004-line monolith. Zero import changes at consumer sites.
-
-### Phase 4: Context Refactoring (DEBT-03)
-**Why last:** Frontend-only, fully decoupled from backend work. Benefits from stable backend (no more route/schema changes interfering with testing).
-
-| Step | Action | Effort |
-|------|--------|--------|
-| 4a | Extract query hooks into `hooks/useXpotQueries.ts` | Low |
-| 4b | Extract feature hooks (check-in, accounts, sales, visits) | Medium |
-| 4c | Create `useXpotApp()` facade for backward compatibility | Low |
-| 4d | Migrate consumers one at a time (Dashboard → Visits → Sales → Accounts → CheckIn) | Medium |
-| 4e | Delete `XpotContext.tsx` and facade | Trivial |
-
-**Deliverable:** ~15 focused hooks replacing one 729-line context. Each consumer imports only what it needs.
+5. **Item type discriminator for edit round-trip:** Each estimate item must carry a type field (catalog or custom) so the admin editor restores the correct input mode when reopening a saved estimate. Without it, all items render as custom text inputs on re-edit.
 
 ---
 
-## Stack/Tools
+## Implications for Roadmap
 
-| Dependency | Version | Purpose | Phase |
-|-----------|---------|---------|-------|
-| `express-async-errors` | latest | Polyfill Express 5 async error catching on Express 4 | Phase 1 |
-| `express.Router()` | 4.21.2 (existing) | Route module splitting | Phase 2 |
-| Drizzle Kit folder scan | existing | Multi-file schema support | Phase 3 |
-| TanStack Query | existing | Server state (no changes needed) | Phase 4 |
-| React Context + hooks | existing (React 18) | Context decomposition | Phase 4 |
+The dependency graph is unambiguous. The estimates schema is the root dependency for all other work. Research explicitly defines a 5-phase build order with zero broken builds at each phase boundary.
 
-**No other new dependencies required.** Specifically: no Zustand, no asyncHandler wrapper, no new validation library.
+### Phase 1: DB Schema + Storage Layer
 
----
+**Rationale:** Everything else depends on the Drizzle table existing. Schema decisions here are expensive to reverse. Slug generation strategy, JSONB snapshot vs FK, and item type discriminator must all be locked in before any data is inserted.
+**Delivers:** shared/schema/estimates.ts, barrel export update, 6 storage methods on DatabaseStorage, db:push migration applied.
+**Addresses:** Table stakes, estimate record foundation, price override and custom line items schema.
+**Avoids:** JSONB snapshot pitfall, UUID slug pitfall, price text pitfall, item type discriminator pitfall, pageSlugs collision.
+**Research flag:** Standard patterns, follows shared/schema/forms.ts directly. No research phase needed.
 
-## Pitfalls to Avoid
+### Phase 2: Admin API Routes
 
-### Top Risks
+**Rationale:** Unblocks both the admin UI (Phase 3) and the public viewer (Phase 4). Can be smoke-tested with curl before any UI exists. Pure server work, zero client-side risk.
+**Delivers:** server/routes/estimates.ts with 6 endpoints, registered in server/routes.ts. Admin CRUD protected by requireAdmin. Public slug lookup at GET /api/estimates/slug/:slug.
+**Uses:** requireAdmin, setPublicCache from server/routes/_shared.ts (existing).
+**Avoids:** PII exposure, public response strips email/phone from the payload.
+**Research flag:** Standard patterns, follows server/routes/forms.ts directly. No research phase needed.
 
-| # | Pitfall | Phase | Severity | Prevention |
-|---|---------|-------|----------|------------|
-| 1 | **Forgetting `express-async-errors` import order** — must be imported BEFORE `express` | 1 | CRITICAL | Add import as first line in `server/app.ts` |
-| 2 | **Middleware ordering in split routers** — routes defined before `router.use(requireXpotUser)` skip auth | 2 | HIGH | Always declare `router.use(middleware)` before route definitions |
-| 3 | **Barrel file in schema/ folder** — drizzle-kit sees duplicate tables | 3 | MEDIUM | Keep barrel at `shared/schema.ts`, outside `shared/schema/` |
-| 4 | **Circular hook dependencies** — extracted hooks importing each other | 4 | MEDIUM | Pass query data as parameters, not from context |
-| 5 | **Changing URL paths during route splitting** — `router.get("/accounts")` must resolve to `/api/xpot/accounts` | 2 | HIGH | Verify `app.use("/api/xpot", router)` mount prefix |
-| 6 | **`checkingInRef` race condition** — ref prevents activeVisit flicker during check-in | 4 | MEDIUM | Keep ref in `useXpotActiveVisit` hook |
+### Phase 3: Admin UI (EstimatesSection)
 
-### Phase-Specific Warnings
+**Rationale:** Delivers the primary admin workflow, manual estimate creation and WhatsApp link dispatch. First phase where a real end-to-end flow (create, copy link) is possible.
+**Delivers:** EstimatesSection.tsx with list view and create/edit modal. Service picker reads GET /api/portfolio (existing). Drag-reorder via @dnd-kit (existing). Price override. Custom line items. Copy-link button. Preview link.
+**Avoids:** Item type discriminator pitfall, price formatting pitfall (add formatEstimatePrice() helper before rendering).
+**Research flag:** Standard patterns, mirrors FormsSection.tsx and PortfolioSection.tsx. No research phase needed.
 
-- **Phase 1:** Don't change response format `{ message }` — frontend depends on it. Only ADD `{ errors }` for Zod validation failures (additive change).
-- **Phase 2:** GHL sync helpers (`syncAccountToGhl`, etc.) are called inline — verify imports after extraction or GHL sync silently fails.
-- **Phase 3:** Run `npm run db:push` immediately after config change. If folder scan fails, fallback to explicit array config.
-- **Phase 4:** The `invalidateXpotData` helper invalidates ALL xpot queries. Optimize to granular invalidation AFTER migration, not during.
+### Phase 4: Public Viewer (/e/:slug)
+
+**Rationale:** The client-facing deliverable. Depends on Phase 2 and is fully testable using real estimates created in Phase 3. Scroll-snap implementation is the highest UX complexity of the project.
+**Delivers:** PublicEstimate.tsx, fullscreen scroll-snap page, isEstimateRoute guard in App.tsx, Cover -> Skale Club intro -> service sections -> Acceptance CTA, graceful 404.
+**Uses:** Native CSS scroll-snap via Tailwind snap-y snap-mandatory snap-start. framer-motion (existing) for section entrance animations.
+**Avoids:** Mobile viewport pitfall (use dvh), Safari programmatic scroll pitfall (use scrollTo on container), site-shell contamination (render outside Navbar/Footer via isEstimateRoute guard).
+**Research flag:** CSS scroll-snap is well-documented. Pitfalls are known and documented in PITFALLS.md. No research phase needed. QA checkpoint on a real iPhone during this phase.
+
+### Phase 5: Automation (Auto-estimate from Form Submission)
+
+**Rationale:** Automation enhancement that adds value only after the manual flow is proven. Isolated to server/lib/lead-processing.ts, no UI changes. Can be deferred to v1.x if the manual flow delivers sufficient value.
+**Delivers:** createAutoEstimate() hook in runLeadPostProcessing(), estimateCreated flag on form_leads, optional Twilio SMS with estimate link. Introduces server/lib/estimate-builder.ts as a shared utility.
+**Avoids:** Duplicate auto-estimate pitfall (estimateCreated flag), blocking lead upsert on estimate failure (best-effort pattern, errors swallowed).
+**Research flag:** Email dispatch decision (Resend vs SMS-only) must be resolved before this phase begins. If email is required, add resend package here and verify Vercel serverless compatibility.
+
+### Phase Ordering Rationale
+
+- Schema-first order is mandatory: the public viewer, admin UI, and automation hook all depend on the DB table and storage methods existing. Any other order creates broken builds.
+- Phase 2 (API) before Phase 3 (Admin UI) and Phase 4 (Public Viewer) decouples server from client development and enables smoke-testing before any UI exists.
+- Phase 4 (Public Viewer) can technically be built in parallel with Phase 3 (Admin UI) once Phase 2 is done; sequential order is lower risk for a solo/small team.
+- Phase 5 (Automation) is explicitly additive and does not touch any UI. It is safely deferrable to v1.x without affecting the v1.2 manual workflow.
+
+### Research Flags
+
+Phases needing deeper research during planning:
+- **Phase 5 (Automation):** The email dispatch decision (Resend vs SMS-only) is unresolved and affects the dependency list. Clarify in requirements before planning this phase. If resend is added, verify compatibility with the Vercel serverless environment.
+
+Phases with standard patterns (skip research phase):
+- **Phase 1 (Schema):** Follows shared/schema/forms.ts directly, copy and adapt.
+- **Phase 2 (API Routes):** Follows server/routes/forms.ts directly, copy and adapt.
+- **Phase 3 (Admin UI):** Follows FormsSection.tsx and PortfolioSection.tsx, copy and adapt.
+- **Phase 4 (Public Viewer):** CSS scroll-snap is well-documented. Pitfalls are known and documented in PITFALLS.md. No research phase needed; QA checkpoint on a real iPhone during this phase.
 
 ---
 
@@ -141,30 +152,46 @@ One new npm package needed. Zero API changes — it patches Express's Router pro
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Error Handling | HIGH | Live bugs confirmed, `express-async-errors` well-established, Zod `flatten()` API verified |
-| Route Splitting | HIGH | Standard Express pattern, codebase already has Router precedent, dependency graph is simple |
-| Schema Organization | HIGH | Official Drizzle multi-file support documented, barrel trap confirmed via GitHub issues |
-| Context Refactoring | HIGH | Consumer usage map shows clean non-overlapping subsets, facade pattern proven for brownfield |
-| Phase Ordering | HIGH | Error bugs must come first; routes/schemas are independent; context is fully decoupled |
+| Stack | HIGH | All findings verified against package.json and installed versions. Zero ambiguity except email dispatch library choice. |
+| Features | MEDIUM | Based on Proposify/PandaDoc/Qwilr/HoneyBook patterns (training knowledge, Aug 2025). WebSearch unavailable. Patterns are stable and well-established. |
+| Architecture | HIGH | All findings drawn from direct codebase inspection at commit f772f5d. Every integration point verified against actual source files. |
+| Pitfalls | HIGH | Derived from direct codebase inspection plus known CSS scroll-snap behavior plus existing idempotency patterns in lead-processing.ts. High specificity. |
 
-### Gaps to Address During Planning
+**Overall confidence:** HIGH
 
-1. **Manual QA checklist** — No automated tests exist. Need a per-phase verification checklist of critical flows (check-in, account CRUD, visit notes, GHL sync).
-2. **GHL integration testing** — The sync helpers are called from multiple route handlers. After route splitting, need to verify sync events still appear in `sales_sync_events` table.
-3. **`AppError` class design** — Phase 1d is optional. Decision needed: implement now or defer to a later cleanup pass?
-4. **Granular query invalidation** — Current `invalidateXpotData` invalidates everything. Optimization opportunity after Phase 4, but not blocking.
+### Gaps to Address
+
+- **Email dispatch scope:** Whether automated email of the estimate link is in scope for v1.2 is unresolved. Requirements must answer this before Phase 5 planning. If yes, add resend; if no, zero new dependencies.
+- **WhatsApp auto-dispatch mechanism:** The automation phase references sending link via WhatsApp but the current Twilio integration handles SMS only. Clarify whether WhatsApp dispatch means a frontend wa.me URL (zero backend work) or sending via Twilio WhatsApp API (requires template registration and approval, significant setup).
+- **Auto-estimate de-duplication:** sessionId uniqueness is per-browser-tab, so two devices create two leads for the same person. Auto-estimate de-duplication must be by phone or email, not by session. Decide the de-duplication strategy before Phase 5 implementation.
+- **Acceptance CTA behavior:** Whether tapping Accept on the proposal CTA creates a DB record (status change to accepted) or simply opens a WhatsApp/phone link is not specified. The simpler approach (WhatsApp link, no DB write) is recommended for v1.2. Confirm in requirements.
 
 ---
 
 ## Sources
 
-| Source | Type | Confidence |
-|--------|------|------------|
-| Express 4.x Router API & Error Handling Guide | Official docs | HIGH |
-| Drizzle ORM Schema Declaration & Config File docs | Official docs | HIGH |
-| Drizzle GitHub Issue #5353 (barrel file duplication) | Official issue tracker | HIGH |
-| Zod v3 Error Formatting (`flatten()`) | Official docs | HIGH |
-| `express-async-errors` package | Established npm package | HIGH |
-| Codebase: `server/routes/xpot.ts`, `server/app.ts`, `shared/schema.ts`, `XpotContext.tsx` | Direct analysis | HIGH |
-| Consumer usage patterns: `useXpotApp()` grep across 5 components | Direct analysis | HIGH |
-| Community patterns (OneUptime, Boundev, Feature-Sliced Design) | Blog/guides | MEDIUM |
+### Primary (HIGH confidence, direct codebase inspection at commit f772f5d)
+- shared/schema/forms.ts: slug uniqueness pattern, Drizzle schema conventions
+- shared/schema/cms.ts: portfolio_services table structure, price as text type confirmed
+- server/routes/forms.ts: route file pattern, requireAdmin, setPublicCache
+- server/lib/lead-processing.ts: best-effort side-effect pattern, notificacaoEnviada idempotency guard
+- client/src/App.tsx: isLinksRoute, isVCardRoute prefix guard pattern
+- client/src/pages/PublicForm.tsx: public slug-routed page pattern (404 handling)
+- client/src/pages/Admin.tsx: section slug maps, render switch pattern
+- client/src/components/admin/shared/types.ts and constants.ts: AdminSection union, sidebar entries
+- package.json: confirmed absence of scroll libraries, email libraries, nanoid
+
+### Secondary (MEDIUM confidence, training knowledge, stable specifications)
+- Tailwind CSS 3: snap-* scroll utilities ship in Tailwind 3.x core (verified against installed version 3.4.17)
+- MDN Web Docs: CSS scroll-snap-type browser support (Chrome 69+, Firefox 68+, Safari 11+)
+- MDN Web Docs: dvh unit browser support (Chrome 108+, Safari 15.4+, Firefox 101+)
+- Proposify, PandaDoc, Qwilr, HoneyBook feature sets: training knowledge as of Aug 2025
+- Resend Node.js SDK: https://resend.com/docs/send-with-nodejs
+
+### Tertiary (context, project definition)
+- .planning/PROJECT.md: confirmed out-of-scope items (PDF, e-sign, status tracking)
+
+---
+
+*Research completed: 2026-04-19*
+*Ready for roadmap: yes*
