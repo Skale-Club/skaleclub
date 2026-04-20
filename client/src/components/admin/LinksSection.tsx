@@ -28,6 +28,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { AdminCard, DragDropUploader, EmptyState, FormGrid, SectionHeader } from './shared';
+import { IconPicker } from './links/IconPicker';
+import { ThemeEditor } from './links/ThemeEditor';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -91,6 +93,11 @@ function SortableLinkRow({
         </button>
         <div className="flex-1 space-y-2">
           <div className="flex items-center gap-2 flex-wrap">
+            <IconPicker
+              iconType={link.iconType}
+              iconValue={link.iconValue}
+              onChange={(updates) => onUpdate(index, updates)}
+            />
             <Badge variant="secondary" className="text-xs">{link.clickCount ?? 0} clicks</Badge>
             <div className="flex items-center gap-2 ml-auto">
               <Label htmlFor={`visible-${index}`} className="text-xs text-muted-foreground cursor-pointer">Visible</Label>
@@ -341,6 +348,13 @@ export function LinksSection() {
               </div>
             </FormGrid>
           </AdminCard>
+
+          <ThemeEditor
+            theme={config.theme ?? {}}
+            onChange={(patch) =>
+              updateConfig({ theme: { ...(config.theme ?? {}), ...patch } }, 'theme')
+            }
+          />
 
           <AdminCard>
             <div className="flex justify-between items-center mb-4">
