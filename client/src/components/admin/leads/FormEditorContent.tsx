@@ -43,10 +43,20 @@ export function FormEditorContent({ formId }: FormEditorContentProps) {
     },
   });
 
-  const [config, setConfig] = useState<FormConfig>(formConfig || DEFAULT_FORM_CONFIG);
+  const hydrateConfig = (incoming: FormConfig | undefined): FormConfig => {
+    const base = incoming ?? DEFAULT_FORM_CONFIG;
+    return {
+      ...base,
+      questions: Array.isArray(base.questions) ? base.questions : [],
+      thresholds: base.thresholds ?? DEFAULT_FORM_CONFIG.thresholds,
+      maxScore: typeof base.maxScore === 'number' ? base.maxScore : 0,
+    };
+  };
+
+  const [config, setConfig] = useState<FormConfig>(hydrateConfig(formConfig));
 
   useEffect(() => {
-    setConfig(formConfig || DEFAULT_FORM_CONFIG);
+    setConfig(hydrateConfig(formConfig));
   }, [formConfig]);
 
   const sortedQuestions = getSortedQuestions(config);
