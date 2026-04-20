@@ -3,19 +3,19 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Estimates System
 status: executing
-last_updated: "2026-04-20T00:39:02.353Z"
+last_updated: "2026-04-20T00:52:36.462Z"
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 8
-  completed_plans: 6
-  percent: 75
+  completed_plans: 7
+  percent: 88
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** Executing Phase 09
+**Status:** Ready to execute
 
 ---
 
@@ -31,7 +31,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-19)
 ## Current Position
 
 Phase: 09 (public-viewer) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 | Field | Value |
 |-------|-------|
 | Milestone | v1.2 — Estimates System |
@@ -40,7 +40,7 @@ Plan: 2 of 3
 
 **Progress:**
 
-[███████░░░] 75%
+[█████████░] 88%
 [x] Phase 6: DB Schema + Storage Layer
 [x] Phase 7: Admin API Routes
 [x] Phase 8: Admin UI (EstimatesSection)
@@ -62,6 +62,7 @@ Plan: 2 of 3
 | Phase 06-db-schema-storage-layer P01 | 3 | 2 tasks | 2 files |
 | Phase 08-admin-ui-estimatessection P01 | 114s | 2 tasks | 1 files |
 | Phase 08-admin-ui-estimatessection P02 | 8 | 3 tasks | 3 files |
+| Phase 09-public-viewer P03 | 12 | 1 tasks | 1 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -93,6 +94,8 @@ Plan: 2 of 3
 - [Phase 08-admin-ui-estimatessection]: Both slug maps in Admin.tsx must be updated simultaneously — partial update causes TypeScript errors from Record<AdminSection,string> exhaustiveness check
 - [Phase 09-01]: Plain text access code (D-07) — codes not bcrypt-hashed; GHL automation must read and inject them into links
 - [Phase 09-01]: Raw SQL migration pattern (tsx script) — drizzle-kit push cannot resolve .js ESM imports in CJS bundle; follows Phase 6.2 convention
+- [Phase 09-public-viewer]: No new npm dependencies for view badges — formatDistanceToNow and Eye already in date-fns and lucide-react
+- [Phase 09-public-viewer]: viewCount ?? 0 fallback ensures badge always visible for new estimates (not hidden when 0)
 
 ### Quick Tasks Completed
 

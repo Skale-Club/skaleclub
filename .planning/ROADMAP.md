@@ -107,7 +107,7 @@ Plans:
 Plans:
 - [x] 09-01-PLAN.md — DB schema additions (access_code column, estimate_views table), storage methods (recordEstimateView, updated listEstimates), server routes (POST /view, POST /verify-code, updated GET /slug/:slug)
 - [ ] 09-02-PLAN.md — EstimateViewer.tsx page (scroll-snap sections, nav dots, access gate, view tracking, 404) + App.tsx isEstimateRoute isolation
-- [ ] 09-03-PLAN.md — EstimatesSection.tsx admin updates (view badges, last-seen text, access code dialog field)
+- [x] 09-03-PLAN.md — EstimatesSection.tsx admin updates (view badges, last-seen text, access code dialog field)
 
 ---
 
@@ -118,7 +118,7 @@ Plans:
 | 6. DB Schema + Storage Layer | 2/2 | Complete    | 2026-04-19 |
 | 7. Admin API Routes | 1/1 | Complete    | 2026-04-19 |
 | 8. Admin UI (EstimatesSection) | 1/2 | Complete    | 2026-04-19 |
-| 9. Public Viewer | 1/3 | In Progress|  |
+| 9. Public Viewer | 2/3 | In Progress|  |
 
 ---
 
