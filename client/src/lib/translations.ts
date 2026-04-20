@@ -339,6 +339,11 @@ export const translations = {
     'Upload icon': 'Enviar ícone',
     'Automatically picks an icon based on the destination URL.': 'Escolhe automaticamente um ícone com base na URL de destino.',
     'Use automatic icon': 'Usar ícone automático',
+
+    // Admin — Links Page Live Preview (Phase 13-03)
+    'Refresh': 'Atualizar',
+    'Refresh preview': 'Atualizar pré-visualização',
+    'Updates automatically after each save. Click Refresh to force reload.': 'Atualiza automaticamente após cada salvamento. Clique em Atualizar para recarregar.',
   }
 } as const;
 

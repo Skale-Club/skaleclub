@@ -6,7 +6,6 @@ import {
   Trash2,
   GripVertical,
   ExternalLink,
-  Eye,
   Link as LinkIcon,
   AtSign,
 } from 'lucide-react';
@@ -30,6 +29,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { AdminCard, DragDropUploader, EmptyState, FormGrid, SectionHeader } from './shared';
 import { IconPicker } from './links/IconPicker';
 import { ThemeEditor } from './links/ThemeEditor';
+import { LivePreview } from './links/LivePreview';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -404,17 +404,9 @@ export function LinksSection() {
           </AdminCard>
         </div>
 
-        {/* Zone 2: Live Preview placeholder */}
+        {/* Zone 2: Live Preview */}
         <div className="md:col-span-2 lg:col-span-4">
-          <AdminCard
-            tone="muted"
-            padding="hero"
-            className="h-full flex flex-col items-center justify-center text-center gap-3 min-h-[400px]"
-          >
-            <Eye className="w-10 h-10 text-muted-foreground" />
-            <h3 className="text-lg font-semibold">Live Preview</h3>
-            <p className="text-sm text-muted-foreground max-w-xs">Live preview coming in Phase 13</p>
-          </AdminCard>
+          <LivePreview />
         </div>
 
         {/* Zone 3: Main Links */}
