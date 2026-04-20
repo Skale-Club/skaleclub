@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import * as LucideIcons from 'lucide-react';
 import type { LinksPageLink } from '@shared/schema';
+import { DEFAULT_LINKS_PAGE_THEME } from '@shared/links';
+import type { CSSProperties } from 'react';
 import { useTranslation } from "@/hooks/useTranslation";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettingsData } from "@/components/admin/shared/types";
@@ -71,7 +73,10 @@ export default function Links() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#0f1014] flex items-center justify-center">
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: DEFAULT_LINKS_PAGE_THEME.backgroundColor }}
+      >
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -96,11 +101,29 @@ export default function Links() {
     ]
   };
 
+  const theme = { ...DEFAULT_LINKS_PAGE_THEME, ...(config.theme ?? {}) };
+  const rootStyle: CSSProperties = {
+    background: theme.backgroundGradient || theme.backgroundColor,
+    // primaryColor as CSS var — consumed by ambient glow via bg-[var(--links-primary)]/20
+    ['--links-primary' as any]: theme.primaryColor,
+  };
+
   return (
-    <div className="min-h-screen bg-[#0f1014] text-white flex flex-col items-center py-16 px-4 sm:px-6 relative overflow-hidden">
+    <div
+      className="min-h-screen text-white flex flex-col items-center py-16 px-4 sm:px-6 relative overflow-hidden"
+      style={rootStyle}
+    >
+      {/* Optional background image layer — sits behind ambient glow */}
+      {theme.backgroundImageUrl && (
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 z-0 pointer-events-none bg-cover bg-center"
+          style={{ backgroundImage: `url(${theme.backgroundImageUrl})` }}
+        />
+      )}
       {/* Background ambient glow */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[var(--links-primary)]/20 rounded-full blur-[120px] pointer-events-none z-[1]" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none z-[1]" />
 
       <motion.div 
         className="w-full max-w-md z-10 flex flex-col items-center"
