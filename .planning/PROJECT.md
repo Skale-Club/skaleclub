@@ -2,7 +2,7 @@
 
 ## What This Is
 
-Skale Club is an agency web platform combining a public marketing site, an admin dashboard, and a field sales CRM (Xpot). v1.2 adds an Estimates System: admins compose branded service proposals from the portfolio catalog, and clients view them as polished fullscreen scroll-snap experiences at a private `/e/:slug` link.
+Skale Club is an agency web platform combining a public marketing site, an admin dashboard, and a field sales CRM (Xpot). The Estimates System (v1.2) lets admins compose branded service proposals from the portfolio catalog and share them as immersive fullscreen scroll-snap experiences at a private `/e/:slug` link — with optional access code protection and view tracking.
 
 ## Core Value
 
@@ -17,46 +17,48 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 - ✓ **DEBT-03**: Context refactoring — v1.0 (729 lines → 8 focused hooks + GeoContext)
 - ✓ **DEBT-04**: Error handling standardization — v1.0 (crash bug fixed, ZodError handling added)
 - ✓ **FORMS-01 → FORMS-05**: Multi-forms support (forms table, admin editor, public `/f/:slug`, leads scoped by form, cleanup) — v1.1 (2026-04-15)
+- ✓ **EST-01**: estimates table with JSONB snapshot schema, UUID slug, SQL migration — v1.2
+- ✓ **EST-02**: Storage layer — 6 typed CRUD methods, immutable snapshots — v1.2
+- ✓ **EST-03**: GET /api/estimates (admin list, auth required) — v1.2
+- ✓ **EST-04**: POST/PUT/DELETE /api/estimates (admin CRUD, auth required) — v1.2
+- ✓ **EST-05**: GET /api/estimates/slug/:slug (public lookup, no auth) — v1.2
+- ✓ **EST-06**: Admin Estimates tab — list with copy-link button — v1.2
+- ✓ **EST-07**: Create/edit dialog with portfolio catalog picker — v1.2
+- ✓ **EST-08**: Custom freeform service rows — v1.2
+- ✓ **EST-09**: Drag-reorder service rows, order persisted on save — v1.2
+- ✓ **EST-10**: Delete estimate from list — v1.2
+- ✓ **EST-11**: View tracking — estimate_views event-log table, admin view count badges + last-seen — v1.2
+- ✓ **EST-12**: Access code gate — optional plain-text code, public viewer gate UI, admin dialog field — v1.2
+- ✓ **EST-13**: /e/:slug isolated from Navbar/Footer/ChatWidget via isEstimateRoute guard — v1.2
+- ✓ **EST-14**: Cover section with client name + Skale Club branding — v1.2
+- ✓ **EST-15**: Fixed Skale Club introduction section — v1.2
+- ✓ **EST-16**: Per-service fullscreen sections (title, description, price, features) — v1.2
+- ✓ **EST-17**: Closing section (no acceptance CTA) — v1.2
+- ✓ **EST-18**: Graceful 404 for unknown slug — v1.2
 
-### Active (v1.2)
+### Active
 
-- [x] **EST-01**: estimates table with JSONB snapshot schema, UUID slug, SQL migration — Phase 6 ✓
-- [x] **EST-02**: Storage layer — 6 typed CRUD methods, immutable snapshots — Phase 6 ✓
-- [ ] **EST-03**: GET /api/estimates (admin list, auth required)
-- [ ] **EST-04**: POST/PUT/DELETE /api/estimates (admin CRUD, auth required)
-- [ ] **EST-05**: GET /api/estimates/slug/:slug (public lookup, no auth)
-- [ ] **EST-06**: Admin Estimates tab — list with copy-link button
-- [ ] **EST-07**: Create/edit dialog with portfolio catalog picker
-- [ ] **EST-08**: Custom freeform service rows
-- [ ] **EST-09**: Drag-reorder service rows, order persisted on save
-- [ ] **EST-10**: Delete estimate from list
-- [ ] **EST-11**: /e/:slug fullscreen scroll-snap (no Navbar/Footer/ChatWidget)
-- [ ] **EST-12**: Cover section with client name + Skale Club branding
-- [ ] **EST-13**: Fixed Skale Club introduction section
-- [ ] **EST-14**: Per-service fullscreen sections (title, description, price, features)
-- [ ] **EST-15**: Closing section (no acceptance CTA)
-- [ ] **EST-16**: Graceful 404 for unknown slug
+(None — planning next milestone)
 
 ### Out of Scope
 
 - Estimate acceptance / e-signature — future milestone
 - PDF export — future milestone
-- Client login / per-estimate access control — public link sufficient for v1.2
+- Client login / per-estimate access control — public link + optional access code sufficient
 - Automated testing — no test framework in project
 
 ## Context
 
 - v1.0 shipped 2026-03-30: Xpot tech debt remediation (64 files, 4 phases)
 - v1.1 shipped 2026-04-15: Multi-forms support (5 sub-phases, tracked in PAUL then synced to GSD)
-- v1.2 in progress: Estimates System (Phases 6–9)
+- v1.2 shipped 2026-04-20: Estimates System (4 phases, 8 plans, 62 files, +10,263 LOC)
 - Stack: TypeScript/React + Express + Drizzle ORM + PostgreSQL + Supabase Auth + Vercel
-- Existing portfolio services at `portfolio_services` table — estimates snapshot from this catalog
-- Admin dashboard at `/admin` — Estimates tab will be added to AdminSidebar
-- Public site routing via Wouter — `/e/:slug` requires isEstimateRoute guard to suppress layout chrome
+- DB migration pattern: raw SQL via tsx script (drizzle-kit CJS can't resolve .js ESM imports)
+- Public viewer uses IntersectionObserver for scroll-spy nav dots + framer-motion for section animations
 
 ## Constraints
 
-- **No DB breaking changes**: New `estimates` table only — no modifications to existing tables
+- **No DB breaking changes**: Additive tables/columns only — no modifications to existing tables
 - **API stability**: All existing `/api/*` signatures unchanged
 - **No test framework**: Manual QA only
 - **Snapshot immutability**: Estimate services must be a deep copy at save time, not a FK reference
@@ -71,8 +73,12 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 | `/f/:slug` route not `?form=` param (v1.1) | Cleaner shareable public form URL | ✅ |
 | `hasMultipleForms` gate (v1.1) | Single-form workspaces see no UI change | ✅ |
 | Soft-delete for forms with leads (v1.1) | Default form always protected | ✅ |
-| JSONB snapshot for estimate services (v1.2) | Immutability — edits to catalog don't corrupt sent proposals | — Pending |
-| UUID slug for estimate public links (v1.2) | Unguessable public URL without auth | — Pending |
+| JSONB snapshot for estimate services (v1.2) | Immutability — edits to catalog don't corrupt sent proposals | ✅ Validated |
+| UUID slug for estimate public links (v1.2) | Unguessable public URL without auth | ✅ Validated |
+| Plain-text access_code, not bcrypt (v1.2) | GHL automation must read and inject codes into links | ✅ Validated |
+| Raw SQL tsx migration pattern (v1.2) | drizzle-kit CJS can't resolve .js ESM imports | ✅ Reusable pattern established |
+| estimate_views event-log table, not counter column (v1.2) | Queryable history, cascade delete, no UPDATE contention | ✅ Validated |
+| isEstimateRoute guard before Navbar in App.tsx (v1.2) | Structural isolation — no conditional rendering inside layout | ✅ Validated |
 
 ---
-*Last updated: 2026-04-19 after Phase 6 complete (DB Schema + Storage Layer)*
+*Last updated: 2026-04-20 after v1.2 Estimates System milestone*
