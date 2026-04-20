@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Estimates System
 status: executing
-last_updated: "2026-04-20T00:52:23.948Z"
+last_updated: "2026-04-20T00:52:36.462Z"
 progress:
   total_phases: 4
   completed_phases: 3
@@ -63,6 +63,7 @@ Plan: 3 of 3
 | Phase 08-admin-ui-estimatessection P01 | 114s | 2 tasks | 1 files |
 | Phase 08-admin-ui-estimatessection P02 | 8 | 3 tasks | 3 files |
 | Phase 09-public-viewer P02 | 130 | 2 tasks | 2 files |
+| Phase 09-public-viewer P03 | 12 | 1 tasks | 1 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -96,6 +97,8 @@ Plan: 3 of 3
 - [Phase 09-01]: Raw SQL migration pattern (tsx script) — drizzle-kit push cannot resolve .js ESM imports in CJS bundle; follows Phase 6.2 convention
 - [Phase 09-02]: isEstimateRoute isolated branch in App.tsx: structural isolation (no Navbar/Footer/ChatWidget) for /e/* routes
 - [Phase 09-02]: isUnlocked=false default works for non-gated estimates: gate condition (data.hasAccessCode && !isUnlocked) is false when hasAccessCode=false
+- [Phase 09-03]: No new npm dependencies for view badges — formatDistanceToNow and Eye already in date-fns and lucide-react
+- [Phase 09-03]: viewCount ?? 0 fallback ensures badge always visible for new estimates (not hidden when 0)
 
 ### Quick Tasks Completed
 
