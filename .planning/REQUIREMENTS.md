@@ -53,27 +53,34 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| LINKS-01 | TBD | Pending |
-| LINKS-02 | TBD | Pending |
-| LINKS-03 | TBD | Pending |
-| LINKS-04 | TBD | Pending |
-| LINKS-05 | TBD | Pending |
-| LINKS-06 | TBD | Pending |
-| LINKS-07 | TBD | Pending |
-| LINKS-08 | TBD | Pending |
-| LINKS-09 | TBD | Pending |
-| LINKS-10 | TBD | Pending |
-| LINKS-11 | TBD | Pending |
-| LINKS-12 | TBD | Pending |
-| LINKS-13 | TBD | Pending |
-| LINKS-14 | TBD | Pending |
-| LINKS-15 | TBD | Pending |
-| LINKS-16 | TBD | Pending |
-| LINKS-17 | TBD | Pending |
+| LINKS-01 | Phase 10 | Pending |
+| LINKS-02 | Phase 10 | Pending |
+| LINKS-03 | Phase 10 | Pending |
+| LINKS-04 | Phase 11 | Pending |
+| LINKS-05 | Phase 11 | Pending |
+| LINKS-06 | Phase 10 | Pending |
+| LINKS-07 | Phase 12 | Pending |
+| LINKS-08 | Phase 12 | Pending |
+| LINKS-09 | Phase 13 | Pending |
+| LINKS-10 | Phase 12 | Pending |
+| LINKS-11 | Phase 12 | Pending |
+| LINKS-12 | Phase 13 | Pending |
+| LINKS-13 | Phase 13 | Pending |
+| LINKS-14 | Phase 14 | Pending |
+| LINKS-15 | Phase 14 | Pending |
+| LINKS-16 | Phase 14 | Pending |
+| LINKS-17 | Phase 14 | Pending |
 
 **Coverage:**
 - v1.3 requirements: 17 total
-- Mapped to phases: 0 (roadmapper fills this)
+- Mapped to phases: 17/17 ✓ (100%)
+
+**Phase distribution:**
+- Phase 10 (Schema & Upload Foundation): 4 reqs — LINKS-01, -02, -03, -06
+- Phase 11 (Click Analytics API): 2 reqs — LINKS-04, -05
+- Phase 12 (Admin Redesign + Core Editing): 4 reqs — LINKS-07, -08, -10, -11
+- Phase 13 (Icon Picker, Theme & Live Preview): 3 reqs — LINKS-09, -12, -13
+- Phase 14 (Public Page Rendering + Click Tracking): 4 reqs — LINKS-14, -15, -16, -17
 
 ---
-*Requirements defined: 2026-04-20*
+*Requirements defined: 2026-04-20 — traceability mapped 2026-04-20*

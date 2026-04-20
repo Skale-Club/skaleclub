@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Links Page Upgrade
-status: defining-requirements
+status: ready-to-plan
 last_updated: "2026-04-20T00:00:00.000Z"
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -15,25 +15,25 @@ progress:
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** v1.2 milestone complete
+**Status:** v1.3 roadmap created — Phase 10 ready to plan
 
 ---
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-04-19)
+See: `.planning/PROJECT.md` (updated 2026-04-20)
 
-**Core value:** Clients receive a proposal link and experience Skale Club services as an immersive, professional presentation — not a PDF.
-**Current focus:** Phase 09 — public-viewer
+**Core value:** Admin manages a rich Linktree-style page with real file uploads, per-link icons, click analytics, and a live-preview editor.
+**Current focus:** Phase 10 — Schema & Upload Foundation (next to start)
 
 ---
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 10 — Schema & Upload Foundation (not started)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-04-20 — Milestone v1.3 Links Page Upgrade started
+Status: Ready to plan (`/gsd:plan-phase 10`)
+Last activity: 2026-04-20 — v1.3 roadmap created (Phases 10-14), 17/17 requirements mapped
 
 ---
 
@@ -62,6 +62,15 @@ Last activity: 2026-04-20 — Milestone v1.3 Links Page Upgrade started
 | Plans executed | 6 (tracked in `.paul/phases/m3-*`) |
 | Lines added/removed | ~+3,400 / -700 |
 | Prod DB verified | forms=1, form_leads=14 (all form_id=1) |
+
+### v1.3 — Links Page Upgrade (in progress)
+
+| Metric | Value |
+|--------|-------|
+| Requirements | 17 total, 17/17 mapped |
+| Phases planned | 5 (Phases 10-14) |
+| Phases completed | 0/5 |
+| Plans executed | 0 |
 
 ---
 
@@ -110,7 +119,8 @@ None.
 | 2026-04-19 | GSD retroactive sync | ready for `/gsd:new-milestone` |
 | 2026-04-19 | v1.2 milestone initialized | REQUIREMENTS.md + PROJECT.md created, Phase 6 ready to plan |
 | 2026-04-20 | v1.3 milestone initialized | Defining requirements for Links Page Upgrade |
+| 2026-04-20 | v1.3 roadmap created | 5 phases (10-14), 17/17 reqs mapped, Phase 10 ready to plan |
 
 ---
 
-*Last updated: 2026-04-19 — Phase 09 Plan 01 complete (view tracking + access code backend)*
+*Last updated: 2026-04-20 — v1.3 roadmap complete, Phase 10 next to start*
