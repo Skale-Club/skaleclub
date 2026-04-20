@@ -8,7 +8,7 @@
 ### Schema & Storage — Links Page Config + Uploads
 
 - [ ] **LINKS-01**: `linksPageConfig` JSONB on `company_settings` extended to support per-link `iconType` ('lucide' | 'upload' | 'auto'), `iconValue` (lucide name OR uploaded file URL), `visible` boolean, `clickCount` integer, and a `theme` sub-object (primaryColor, backgroundColor, backgroundGradient, backgroundImageUrl). Existing `links` and `socialLinks` arrays remain backward-compatible.
-- [ ] **LINKS-02**: File uploads for avatar, background image, and per-link icons route to Supabase Storage bucket `uploads` under path prefix `links-page/{type}/{timestamp}-{hash}.{ext}`. Uploaded URLs returned to admin and persisted in linksPageConfig.
+- [x] **LINKS-02**: File uploads for avatar, background image, and per-link icons route to Supabase Storage bucket `uploads` under path prefix `links-page/{type}/{timestamp}-{hash}.{ext}`. Uploaded URLs returned to admin and persisted in linksPageConfig.
 - [ ] **LINKS-03**: Each link has a stable `id` (UUID) assigned at create time so click analytics and reordering survive edits.
 
 ### Click Analytics API
@@ -18,7 +18,7 @@
 
 ### File Upload Endpoint
 
-- [ ] **LINKS-06**: `POST /api/uploads/links-page` accepts multipart file upload (image types only, max 2 MB), uploads to Supabase Storage `uploads` bucket under `links-page/`, returns `{ url }`. Admin-auth required.
+- [x] **LINKS-06**: `POST /api/uploads/links-page` accepts multipart file upload (image types only, max 2 MB), uploads to Supabase Storage `uploads` bucket under `links-page/`, returns `{ url }`. Admin-auth required.
 
 ### Admin UI — Redesign + Uploads + Icon Picker
 
@@ -54,11 +54,11 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | LINKS-01 | Phase 10 | Pending |
-| LINKS-02 | Phase 10 | Pending |
+| LINKS-02 | Phase 10 | Complete |
 | LINKS-03 | Phase 10 | Pending |
 | LINKS-04 | Phase 11 | Pending |
 | LINKS-05 | Phase 11 | Pending |
-| LINKS-06 | Phase 10 | Pending |
+| LINKS-06 | Phase 10 | Complete |
 | LINKS-07 | Phase 12 | Pending |
 | LINKS-08 | Phase 12 | Pending |
 | LINKS-09 | Phase 13 | Pending |

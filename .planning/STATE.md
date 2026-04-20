@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Links Page Upgrade
-status: in-progress
-last_updated: "2026-04-19T00:00:00.000Z"
+status: planning
+last_updated: "2026-04-20T12:57:40.254Z"
+last_activity: "2026-04-19 — Plan 10-01 shipped: linksPageConfig Zod schemas + UUID transform + normalizeLinksPageConfig helper wired into storage"
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
-  percent: 10
+  completed_plans: 2
 ---
 
 # STATE: Skale Club Web Platform
@@ -30,10 +30,10 @@ See: `.planning/PROJECT.md` (updated 2026-04-20)
 
 ## Current Position
 
-Phase: 10 — Schema & Upload Foundation (in progress)
-Plan: 10-02 (upload endpoint) next
-Status: Plan 10-01 complete (schema + normalizer), ready to execute 10-02
-Last activity: 2026-04-19 — Plan 10-01 shipped: linksPageConfig Zod schemas + UUID transform + normalizeLinksPageConfig helper wired into storage
+Phase: 10 — Schema & Upload Foundation (plans 2/2 complete — ready for /gsd:verify-work)
+Plan: Phase 10 done; next is Phase 11 (click endpoint) once Phase 10 verifier passes
+Status: Plans 10-01 + 10-02 both shipped; awaiting phase-level verification (live curl smokes deferred to verify gate)
+Last activity: 2026-04-20 — Plan 10-02 shipped: POST /api/uploads/links-page (admin-auth, base64 JSON, MIME allowlist, 2 MB cap, 503 env guard) + uploadLinksPageAsset method on SupabaseStorageService
 
 ---
 
@@ -53,6 +53,7 @@ Last activity: 2026-04-19 — Plan 10-01 shipped: linksPageConfig Zod schemas + 
 | Phase 08-admin-ui-estimatessection P02 | 8 | 3 tasks | 3 files |
 | Phase 09-public-viewer P02 | 130 | 2 tasks | 2 files |
 | Phase 09-public-viewer P03 | 12 | 1 tasks | 1 files |
+| Phase 10-schema-upload-foundation P02 | 3m | 3 tasks | 3 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -70,8 +71,9 @@ Last activity: 2026-04-19 — Plan 10-01 shipped: linksPageConfig Zod schemas + 
 | Requirements | 17 total, 17/17 mapped |
 | Phases planned | 5 (Phases 10-14) |
 | Phases completed | 0/5 |
-| Plans executed | 1 |
+| Plans executed | 2 |
 | Phase 10-schema-upload-foundation P01 | ~25m | 3 tasks | 3 files |
+| Phase 10-schema-upload-foundation P02 | ~3m | 3 tasks | 3 files |
 
 ---
 
@@ -102,6 +104,10 @@ Last activity: 2026-04-19 — Plan 10-01 shipped: linksPageConfig Zod schemas + 
 - [Phase 10-01]: Per-link new fields are Zod .optional() rather than .default() — runtime defaults guaranteed by normalizeLinksPageConfig on every read, keeping the TS output type lenient for the v1.3 migration window
 - [Phase 10-01]: Lazy UUID backfill on read + transform-on-write = zero-migration rollout for additive JSONB shape change (no SQL, no data script)
 - [Phase 10-01]: Theme defaults hard-coded to current visual state (#1C53A3 / #0f1014) so legacy rows look identical after normalization
+- [Phase 10-02]: Base64-JSON upload (not multipart) for /api/uploads/links-page — keeps single admin upload code path; 2 MB cap fits trivially under 50 MB Express body limit
+- [Phase 10-02]: Path uses {timestamp}-{randomUUID} (not content hash) for v1.3 — matches existing uploadBuffer convention; idempotency-by-content-hash deferred
+- [Phase 10-02]: Pre-flight 503 env guard (Xpot leads precedent) before deep getSupabaseAdmin throw — clearer error in misconfigured envs
+- [Phase 10-02]: Defensive data-URL prefix strip (data:image/png;base64,...) — accepts both raw base64 and full data URLs from clients
 
 ### Quick Tasks Completed
 
@@ -126,7 +132,8 @@ None.
 | 2026-04-20 | v1.3 milestone initialized | Defining requirements for Links Page Upgrade |
 | 2026-04-20 | v1.3 roadmap created | 5 phases (10-14), 17/17 reqs mapped, Phase 10 ready to plan |
 | 2026-04-19 | Plan 10-01 executed | Schema + normalizer shipped (3 tasks, 3 commits); 10-02 next |
+| 2026-04-20 | Plan 10-02 executed | Upload endpoint live (3 tasks, 3 commits: 7ebdaf4, 86ae880, 0e744f9); Phase 10 plans 2/2 — ready for /gsd:verify-work |
 
 ---
 
-*Last updated: 2026-04-19 — Plan 10-01 complete (schema + UUID normalizer); Plan 10-02 (upload endpoint) next*
+*Last updated: 2026-04-20 — Plan 10-02 complete (upload endpoint live); Phase 10 plans 2/2 — ready for /gsd:verify-work*
