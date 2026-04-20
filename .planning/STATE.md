@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Links Page Upgrade
 status: executing
-last_updated: "2026-04-19T00:00:00.000Z"
+last_updated: "2026-04-20T19:17:51.953Z"
 last_activity: "2026-04-19 — Plan 12-02 shipped: DragDropUploader + Profile zone wiring (LINKS-08 complete); Phase 12 plans 3/3"
 progress:
   total_phases: 5
-  completed_phases: 2
-  total_plans: 8
-  completed_plans: 7
+  completed_phases: 3
+  total_plans: 9
+  completed_plans: 8
 ---
 
 # STATE: Skale Club Web Platform
@@ -55,6 +55,7 @@ Last activity: 2026-04-19 — Plan 12-02 shipped: DragDropUploader + Profile zon
 | Phase 09-public-viewer P03 | 12 | 1 tasks | 1 files |
 | Phase 10-schema-upload-foundation P02 | 3m | 3 tasks | 3 files |
 | Phase 12 P03 | 8min | 3 tasks | 3 files |
+| Phase 13-icon-picker-theme-live-preview P02 | 15min | 2 tasks | 4 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -131,6 +132,9 @@ Last activity: 2026-04-19 — Plan 12-02 shipped: DragDropUploader + Profile zon
 - [Phase 12-02]: success state auto-reverts to idle after 2s via setTimeout — standard upload UX (Google Drive/Dropbox); thumbnail persists because value flows from parent state that got the new URL
 - [Phase 12-02]: onChange in LinksSection uses explicit setConfig + saveSettings (not updateConfig helper) — helper's Partial<LinksPageConfig> type doesn't compose cleanly with nested theme.backgroundImageUrl update
 - [Phase 12-02]: Parallel-plan coordination worked cleanly — 12-02 owned Profile zone Input swaps while 12-03 owned Main Links SortableContext; no merge conflicts, zero cross-plan edits
+- [Phase 13-icon-picker-theme-live-preview]: Native <input type=color> + paired hex Input over react-color (zero dep, accessible)
+- [Phase 13-icon-picker-theme-live-preview]: 400ms debounce per theme field; hex inputs regex-gate upstream fire
+- [Phase 13-icon-picker-theme-live-preview]: shared/links.ts uses globalThis.crypto.randomUUID to stay browser-bundlable
 
 ### Quick Tasks Completed
 
