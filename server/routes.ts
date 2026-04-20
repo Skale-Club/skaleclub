@@ -24,6 +24,7 @@ import { registerFormRoutes } from "./routes/forms.js";
 import { registerIntegrationRoutes } from "./routes/integrations.js";
 import { registerEstimatesRoutes } from "./routes/estimates.js";
 import { registerUploadRoutes } from "./routes/uploads.js";
+import { registerLinksPageRoutes } from "./routes/linksPage.js";
 import { db, pool } from "./db.js";
 import { users } from "#shared/schema.js";
 import { eq } from "drizzle-orm";
@@ -125,6 +126,7 @@ export async function registerRoutes(
   registerUserRoutes(app);
   registerCompanyRoutes(app);
   registerUploadRoutes(app);
+  registerLinksPageRoutes(app);
   registerFormRoutes(app);
   registerIntegrationRoutes(app);
   registerEstimatesRoutes(app);
