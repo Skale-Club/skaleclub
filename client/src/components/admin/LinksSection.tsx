@@ -1,18 +1,27 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Check, Loader2, Plus, Trash2, GripVertical, ExternalLink, Link as LinkIcon, AtSign } from 'lucide-react';
-import { EmptyState, SectionHeader } from './shared';
+import {
+  Check,
+  Plus,
+  Trash2,
+  GripVertical,
+  ExternalLink,
+  Eye,
+  Link as LinkIcon,
+  AtSign,
+} from 'lucide-react';
+import { AdminCard, EmptyState, FormGrid, SectionHeader } from './shared';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { usePagePaths } from '@/lib/pagePaths';
 import type { CompanySettingsData } from './shared/types';
 import type { LinksPageConfig, LinksPageLink, LinksPageSocial } from '@shared/schema';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Separator } from '@/components/ui/separator';
+import { Loader2 } from '@/components/ui/loader';
 
 const LINKS_PAGE_DEFAULTS: LinksPageConfig = {
   avatarUrl: '/ghl-logo.webp',
@@ -44,7 +53,7 @@ export function LinksSection() {
     try {
       await apiRequest('PUT', '/api/company-settings', { linksPageConfig: newConfig });
       queryClient.invalidateQueries({ queryKey: ['/api/company-settings'] });
-      
+
       setSavedFields(prev => ({ ...prev, [fieldKey]: true }));
       setTimeout(() => {
         setSavedFields(prev => {
@@ -54,10 +63,10 @@ export function LinksSection() {
         });
       }, 3000);
     } catch (error: any) {
-      toast({ 
-        title: 'Error saving links configuration', 
-        description: error.message, 
-        variant: 'destructive' 
+      toast({
+        title: 'Error saving links configuration',
+        description: error.message,
+        variant: 'destructive'
       });
     } finally {
       setIsSaving(false);
@@ -67,7 +76,6 @@ export function LinksSection() {
   const updateConfig = (updates: Partial<LinksPageConfig>, fieldKey: string) => {
     const newConfig = { ...config, ...updates };
     setConfig(newConfig);
-    // Use a small timeout for text fields to avoid too many requests
     saveSettings(newConfig, fieldKey);
   };
 
@@ -111,7 +119,7 @@ export function LinksSection() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="flex w-full items-center justify-center py-12">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -142,21 +150,22 @@ export function LinksSection() {
         }
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Profile Settings */}
-        <div className="lg:col-span-1 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Profile Information</CardTitle>
-              <CardDescription>How you appear on the links page</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">
+        {/* Zone 1: Profile — Avatar + Title + Bio + Background Image + Social */}
+        <div className="md:col-span-2 lg:col-span-4 space-y-6">
+          <AdminCard>
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold">Profile Information</h3>
+              <p className="text-sm text-muted-foreground">How you appear on the links page</p>
+            </div>
+            <FormGrid cols={1}>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="avatarUrl">Avatar URL</Label>
                   <SavedIndicator field="avatarUrl" />
                 </div>
-                <Input 
+                {/* TODO(12-02): replace with DragDropUploader */}
+                <Input
                   id="avatarUrl"
                   value={config.avatarUrl}
                   onChange={(e) => setConfig({ ...config, avatarUrl: e.target.value })}
@@ -169,7 +178,7 @@ export function LinksSection() {
                   <Label htmlFor="title">Page Title</Label>
                   <SavedIndicator field="title" />
                 </div>
-                <Input 
+                <Input
                   id="title"
                   value={config.title}
                   onChange={(e) => setConfig({ ...config, title: e.target.value })}
@@ -182,7 +191,7 @@ export function LinksSection() {
                   <Label htmlFor="description">Short Bio</Label>
                   <SavedIndicator field="description" />
                 </div>
-                <Textarea 
+                <Textarea
                   id="description"
                   value={config.description}
                   onChange={(e) => setConfig({ ...config, description: e.target.value })}
@@ -191,37 +200,58 @@ export function LinksSection() {
                   className="min-h-[100px]"
                 />
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle className="text-lg">Social Links</CardTitle>
-                  <CardDescription>Icons at the bottom</CardDescription>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="backgroundImageUrl">Background Image URL</Label>
+                  <SavedIndicator field="theme" />
                 </div>
-                <Button size="icon" variant="outline" onClick={addSocial} className="h-8 w-8">
-                  <Plus className="h-4 w-4" />
-                </Button>
+                {/* TODO(12-02): replace with DragDropUploader */}
+                <Input
+                  id="backgroundImageUrl"
+                  value={config.theme?.backgroundImageUrl ?? ''}
+                  onChange={(e) =>
+                    updateConfig(
+                      { theme: { ...config.theme, backgroundImageUrl: e.target.value } },
+                      'theme',
+                    )
+                  }
+                  placeholder="https://..."
+                />
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            </FormGrid>
+          </AdminCard>
+
+          <AdminCard>
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h3 className="text-lg font-semibold">Social Links</h3>
+                <p className="text-sm text-muted-foreground">Icons at the bottom</p>
+              </div>
+              <Button size="icon" variant="outline" onClick={addSocial} className="h-8 w-8">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="space-y-4">
               {config.socialLinks.map((social, index) => (
                 <div key={index} className="flex gap-2 items-start">
                   <div className="grid grid-cols-2 gap-2 flex-1">
-                    <Input 
+                    <Input
                       value={social.platform}
                       onChange={(e) => updateSocial(index, { platform: e.target.value })}
                       placeholder="instagram, linkedin..."
                     />
-                    <Input 
+                    <Input
                       value={social.url}
                       onChange={(e) => updateSocial(index, { url: e.target.value })}
                       placeholder="URL"
                     />
                   </div>
-                  <Button size="icon" variant="ghost" onClick={() => removeSocial(index)} className="h-10 w-10 text-destructive hover:text-destructive hover:bg-destructive/10">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => removeSocial(index)}
+                    className="h-10 w-10 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -235,36 +265,54 @@ export function LinksSection() {
                   className="p-6"
                 />
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </AdminCard>
         </div>
 
-        {/* Main Links */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle className="text-lg">Main Links</CardTitle>
-                  <CardDescription>The primary action buttons on your page</CardDescription>
-                </div>
-                <Button onClick={addLink} className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add New Link
-                </Button>
+        {/* Zone 2: Live Preview placeholder */}
+        <div className="md:col-span-2 lg:col-span-4">
+          <AdminCard
+            tone="muted"
+            padding="hero"
+            className="h-full flex flex-col items-center justify-center text-center gap-3 min-h-[400px]"
+          >
+            <Eye className="w-10 h-10 text-muted-foreground" />
+            <h3 className="text-lg font-semibold">Live Preview</h3>
+            <p className="text-sm text-muted-foreground max-w-xs">Live preview coming in Phase 13</p>
+          </AdminCard>
+        </div>
+
+        {/* Zone 3: Main Links */}
+        <div className="md:col-span-2 lg:col-span-4">
+          <AdminCard>
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h3 className="text-lg font-semibold">Main Links</h3>
+                <p className="text-sm text-muted-foreground">The primary action buttons on your page</p>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              <Button onClick={addLink} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Add New Link
+              </Button>
+            </div>
+            <div className="space-y-4">
               {config.links.map((link, index) => (
-                <div key={index} className="p-4 border rounded-lg bg-muted/30 group relative">
-                  <div className="flex gap-4">
+                <div
+                  key={link.id ?? index}
+                  className="p-4 border rounded-lg bg-muted/30 group relative"
+                  data-testid={`link-row-${index}`}
+                >
+                  <div className="flex gap-4 items-start">
                     <div className="mt-2 text-muted-foreground group-hover:text-foreground cursor-grab">
                       <GripVertical className="h-5 w-5" />
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="secondary" className="text-xs">{link.clickCount ?? 0} clicks</Badge>
+                      </div>
                       <div className="space-y-2">
                         <Label>Link Title</Label>
-                        <Input 
+                        <Input
                           value={link.title}
                           onChange={(e) => updateLink(index, { title: e.target.value })}
                           placeholder="My Portfolio"
@@ -272,17 +320,17 @@ export function LinksSection() {
                       </div>
                       <div className="space-y-2">
                         <Label>Destination URL</Label>
-                        <Input 
+                        <Input
                           value={link.url}
                           onChange={(e) => updateLink(index, { url: e.target.value })}
                           placeholder="https://..."
                         />
                       </div>
                     </div>
-                    <Button 
-                      size="icon" 
-                      variant="ghost" 
-                      onClick={() => removeLink(index)} 
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => removeLink(index)}
                       className="h-10 w-10 text-destructive hover:text-destructive hover:bg-destructive/10"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -298,8 +346,8 @@ export function LinksSection() {
                   action={<Button onClick={addLink}><Plus className="h-4 w-4 mr-2" /> Add first link</Button>}
                 />
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </AdminCard>
         </div>
       </div>
     </div>
