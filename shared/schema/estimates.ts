@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, jsonb, integer } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
 // Service item Zod schemas (defined before the table for reference)
@@ -40,7 +40,17 @@ export const estimates = pgTable("estimates", {
   services: jsonb("services").$type<EstimateServiceItem[]>().notNull().default([]),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
+  accessCode: text("access_code"),
 });
+
+export const estimateViews = pgTable("estimate_views", {
+  id: serial("id").primaryKey(),
+  estimateId: integer("estimate_id").references(() => estimates.id, { onDelete: "cascade" }).notNull(),
+  viewedAt: timestamp("viewed_at").defaultNow().notNull(),
+  ipAddress: text("ip_address"),
+});
+
+export type EstimateView = typeof estimateViews.$inferSelect;
 
 // Insert schema (manual Zod, following cms.ts pattern)
 export const insertEstimateSchema = z.object({
@@ -48,8 +58,13 @@ export const insertEstimateSchema = z.object({
   slug: z.string().min(1),
   note: z.string().nullable().optional(),
   services: z.array(estimateServiceItemSchema).default([]),
+  accessCode: z.string().nullable().optional(),
 });
 
 // TypeScript types
 export type Estimate = typeof estimates.$inferSelect;
 export type InsertEstimate = typeof estimates.$inferInsert;
+export type EstimateWithStats = Estimate & {
+  viewCount: number;
+  lastViewedAt: Date | null;
+};
