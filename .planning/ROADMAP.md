@@ -23,7 +23,7 @@
 <summary>🚧 v1.3 Links Page Upgrade (Phases 10-14) — IN PROGRESS</summary>
 
 - [ ] Phase 10: Schema & Upload Foundation (0/2 plans)
-- [ ] Phase 11: Click Analytics API (0/1 plans)
+- [ ] Phase 11: Click Analytics API (1/1 plans)
 - [ ] Phase 12: Admin Redesign + Core Editing (0/? plans)
 - [ ] Phase 13: Icon Picker, Theme Editor & Live Preview (0/? plans)
 - [ ] Phase 14: Public Page Rendering + Click Tracking (0/? plans)
@@ -86,14 +86,14 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 **Goal**: Public clicks on `/links` links produce reliable, abuse-resistant per-link counts that admins can see at a glance.
 **Depends on**: Phase 10 (needs stable `linkId` + `clickCount` field)
 **Requirements**: LINKS-04, LINKS-05
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 **Success Criteria** (what must be TRUE):
   1. Anyone (unauthenticated) calling `POST /api/links-page/click/:linkId` increments `clickCount` for that specific link in `linksPageConfig`.
   2. The same IP calling the same `linkId` more than once within 60 seconds is rate-limited (count does not double-increment).
   3. Admin Links section shows a click-count badge next to each link, reflecting the current stored value after reload.
   4. A click to an unknown `linkId` returns a 404 without crashing or creating stray records.
 **Plans:**
-- [ ] 11-01-PLAN.md — Public IP-rate-limited POST /api/links-page/click/:linkId + admin click-count data surface (LINKS-04, LINKS-05)
+- [x] 11-01-PLAN.md — Public IP-rate-limited POST /api/links-page/click/:linkId + admin click-count data surface (LINKS-04, LINKS-05)
 
 ### Phase 12: Admin Redesign + Core Editing
 **Goal**: Admin opens the Links section and immediately sees a polished three-zone editor where they can upload profile/background assets, toggle link visibility, and reorder links by drag.
@@ -133,4 +133,4 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 
 ---
 
-_Last updated: 2026-04-19 — Phase 11 plan created (Click Analytics API)_
+_Last updated: 2026-04-19 — Phase 11 plan-01 executed (Click Analytics API endpoint shipped)_

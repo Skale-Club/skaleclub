@@ -13,8 +13,8 @@
 
 ### Click Analytics API
 
-- [ ] **LINKS-04**: `POST /api/links-page/click/:linkId` increments `clickCount` for that link id in `company_settings.linksPageConfig.links` — unauthenticated (public page calls it), rate-limited by IP (max 1 click per link per IP per minute).
-- [ ] **LINKS-05**: Admin list displays `clickCount` next to each link (read from the same config, no extra endpoint).
+- [x] **LINKS-04**: `POST /api/links-page/click/:linkId` increments `clickCount` for that link id in `company_settings.linksPageConfig.links` — unauthenticated (public page calls it), rate-limited by IP (max 1 click per link per IP per minute).
+- [x] **LINKS-05**: Admin list displays `clickCount` next to each link (read from the same config, no extra endpoint). — data surface delivered by Phase 10-01 normalizer; UI badge render is Phase 12 (LINKS-07/-10).
 
 ### File Upload Endpoint
 
@@ -56,8 +56,8 @@
 | LINKS-01 | Phase 10 | Pending |
 | LINKS-02 | Phase 10 | Complete |
 | LINKS-03 | Phase 10 | Pending |
-| LINKS-04 | Phase 11 | Pending |
-| LINKS-05 | Phase 11 | Pending |
+| LINKS-04 | Phase 11 | Complete |
+| LINKS-05 | Phase 11 | Complete |
 | LINKS-06 | Phase 10 | Complete |
 | LINKS-07 | Phase 12 | Pending |
 | LINKS-08 | Phase 12 | Pending |
