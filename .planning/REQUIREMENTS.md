@@ -32,10 +32,10 @@
 
 ### Public Page — Rendering + Click Tracking
 
-- [ ] **LINKS-14**: Public `/links` page renders per-link icons from Lucide (by name) or from uploaded URL (as `<img>`), falling back to a generic link icon when neither is set.
-- [ ] **LINKS-15**: Public `/links` respects `visible=false` — hidden links are not rendered.
-- [ ] **LINKS-16**: Public `/links` applies `linksPageConfig.theme` — primaryColor used for hover/focus accents, backgroundColor/backgroundGradient applied to page root, backgroundImageUrl rendered as a fixed-position background layer behind the ambient glow.
-- [ ] **LINKS-17**: Clicking a link triggers `POST /api/links-page/click/:linkId` as a fire-and-forget `navigator.sendBeacon` call before the navigation proceeds, so the click count increments reliably even on external navigation.
+- [x] **LINKS-14**: Public `/links` page renders per-link icons from Lucide (by name) or from uploaded URL (as `<img>`), falling back to a generic link icon when neither is set.
+- [x] **LINKS-15**: Public `/links` respects `visible=false` — hidden links are not rendered.
+- [x] **LINKS-16**: Public `/links` applies `linksPageConfig.theme` — primaryColor used for hover/focus accents, backgroundColor/backgroundGradient applied to page root, backgroundImageUrl rendered as a fixed-position background layer behind the ambient glow.
+- [x] **LINKS-17**: Clicking a link triggers `POST /api/links-page/click/:linkId` as a fire-and-forget `navigator.sendBeacon` call before the navigation proceeds, so the click count increments reliably even on external navigation.
 
 ## Out of Scope
 
@@ -66,10 +66,10 @@
 | LINKS-11 | Phase 12 | Complete |
 | LINKS-12 | Phase 13 | Complete |
 | LINKS-13 | Phase 13 | Complete |
-| LINKS-14 | Phase 14 | Pending |
-| LINKS-15 | Phase 14 | Pending |
-| LINKS-16 | Phase 14 | Pending |
-| LINKS-17 | Phase 14 | Pending |
+| LINKS-14 | Phase 14 | Complete |
+| LINKS-15 | Phase 14 | Complete |
+| LINKS-16 | Phase 14 | Complete |
+| LINKS-17 | Phase 14 | Complete |
 
 **Coverage:**
 - v1.3 requirements: 17 total

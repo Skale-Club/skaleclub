@@ -3,19 +3,19 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Links Page Upgrade
 status: executing
-last_updated: "2026-04-20T19:24:42.952Z"
-last_activity: "2026-04-19 — Plan 12-02 shipped: DragDropUploader + Profile zone wiring (LINKS-08 complete); Phase 12 plans 3/3"
+last_updated: "2026-04-20T19:40:12.747Z"
+last_activity: "2026-04-20 — Plan 14-01 shipped: public /links rendering + sendBeacon click tracking (LINKS-14/15/16/17 complete); v1.3 feature-complete 17/17 reqs"
 progress:
   total_phases: 5
-  completed_phases: 4
-  total_plans: 9
-  completed_plans: 9
+  completed_phases: 5
+  total_plans: 10
+  completed_plans: 10
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** v1.3 in progress — Phase 11 shipped, Phase 12 next
+**Status:** v1.3 feature-complete — all 5 phases + 10 plans + 17/17 requirements shipped; ready for `/gsd:verify-work` → `/gsd:retrospective` → `/gsd:new-milestone`
 
 ---
 
@@ -24,16 +24,16 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-04-20)
 
 **Core value:** Admin manages a rich Linktree-style page with real file uploads, per-link icons, click analytics, and a live-preview editor.
-**Current focus:** Phase 12 — Admin Redesign + Core Editing (all 3 plans shipped; ready for /gsd:verify-work → Phase 13 next)
+**Current focus:** v1.3 complete — all 17 LINKS-xx requirements delivered across Phases 10–14. Next gate: `/gsd:verify-work`.
 
 ---
 
 ## Current Position
 
-Phase: 12 — Admin Redesign + Core Editing (plans 3/3 complete)
-Plan: Phase 12 complete; Phase 13 (icon picker + theme editor + live preview) next
-Status: Plan 12-02 shipped — DragDropUploader (`admin/shared/DragDropUploader.tsx`, 207 lines) + Profile zone avatar/background wiring + 13 PT translation keys; LINKS-08 complete. All Phase 12 requirements (LINKS-07, -08, -10, -11) delivered; tsc + build green.
-Last activity: 2026-04-19 — Plan 12-02 shipped: DragDropUploader + Profile zone wiring (LINKS-08 complete); Phase 12 plans 3/3
+Phase: 14 — Public Rendering + Click Tracking (plans 1/1 complete) — FINAL phase of v1.3
+Plan: v1.3 feature-complete; ready for `/gsd:verify-work` → `/gsd:retrospective` → `/gsd:new-milestone`
+Status: Plan 14-01 shipped — `client/src/pages/Links.tsx` (207 lines) consumes `visible`, per-link `iconType/iconValue`, `theme` (primary via CSS var + bg gradient/color/image), and fires `navigator.sendBeacon` to `/api/links-page/click/:linkId` on every click. LINKS-14/-15/-16/-17 all Complete. tsc + build green.
+Last activity: 2026-04-20 — Plan 14-01 shipped: public /links rendering + sendBeacon click tracking; v1.3 milestone feature-complete 17/17 reqs
 
 ---
 
@@ -57,6 +57,7 @@ Last activity: 2026-04-19 — Plan 12-02 shipped: DragDropUploader + Profile zon
 | Phase 12 P03 | 8min | 3 tasks | 3 files |
 | Phase 13-icon-picker-theme-live-preview P02 | 15min | 2 tasks | 4 files |
 | Phase 13 P03 | ~5min | 2 tasks | 4 files |
+| Phase 14-public-rendering-click-tracking P01 | ~4m | 3 tasks | 1 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -67,20 +68,24 @@ Last activity: 2026-04-19 — Plan 12-02 shipped: DragDropUploader + Profile zon
 | Lines added/removed | ~+3,400 / -700 |
 | Prod DB verified | forms=1, form_leads=14 (all form_id=1) |
 
-### v1.3 — Links Page Upgrade (in progress)
+### v1.3 — Links Page Upgrade (feature-complete 2026-04-20)
 
 | Metric | Value |
 |--------|-------|
-| Requirements | 17 total, 17/17 mapped |
+| Requirements | 17 total, 17/17 complete ✓ |
 | Phases planned | 5 (Phases 10-14) |
-| Phases completed | 2/5 (Phases 10 + 11) |
-| Plans executed | 4 |
+| Phases completed | 5/5 ✓ |
+| Plans executed | 10/10 ✓ |
 | Phase 10-schema-upload-foundation P01 | ~25m | 3 tasks | 3 files |
 | Phase 10-schema-upload-foundation P02 | ~3m | 3 tasks | 3 files |
 | Phase 11-click-analytics-api P01 | ~10m | 3 tasks | 4 files |
 | Phase 12-admin-redesign-core-editing P01 | ~12m | 2 tasks | 2 files |
 | Phase 12-admin-redesign-core-editing P02 | ~15m | 2 tasks | 4 files |
 | Phase 12-admin-redesign-core-editing P03 | ~8m | 3 tasks | 3 files |
+| Phase 13-icon-picker-theme-live-preview P01 | ~10m | 3 tasks | 4 files |
+| Phase 13-icon-picker-theme-live-preview P02 | ~15m | 2 tasks | 4 files |
+| Phase 13-icon-picker-theme-live-preview P03 | ~5m | 2 tasks | 4 files |
+| Phase 14-public-rendering-click-tracking P01 | ~4m | 3 tasks | 1 files |
 
 ---
 
@@ -139,6 +144,9 @@ Last activity: 2026-04-19 — Plan 12-02 shipped: DragDropUploader + Profile zon
 - [Phase 13]: LivePreview: iframe over inline React render — visual parity with production + no theme bleed from admin context
 - [Phase 13]: LivePreview: React Query v5 dataUpdatedAt as cache-bust driver — zero new plumbing, piggybacks on existing invalidateQueries calls
 - [Phase 13]: LivePreview: phone-only viewport (max-w-[375px] aspect-[9/16]) matching mobile-first /links rendering target
+- [Phase 14-public-rendering-click-tracking]: CSS custom property via inline style + Tailwind arbitrary value bg-[var(--links-primary)]/20 drives theme-colored ambient glow — zero tailwind.config edit needed
+- [Phase 14-public-rendering-click-tracking]: Track all link clicks including cmd/ctrl/shift/middle-click — no modifier inspection; sendBeacon + no preventDefault counts open-in-new-tab too
+- [Phase 14-public-rendering-click-tracking]: Spread React Query cache array before sort — [...config.links].sort(...).filter(...) never mutates cache (v1.3 pattern for public pages consuming cached admin data)
 
 ### Quick Tasks Completed
 
@@ -168,7 +176,8 @@ None.
 | 2026-04-19 | Plan 12-01 executed | Admin three-zone layout + Visible Switch + click-count Badge (2 tasks, 2 commits: 6091c1d, f5cc862); Phase 12 plans 1/3 — 12-02 next |
 | 2026-04-19 | Plan 12-03 executed | Drag-and-drop reorder on Main Links via @dnd-kit (1 combined commit: ece85d1, LINKS-11 complete); Phase 12 plans 2/3 (12-02 uploaders in parallel) |
 | 2026-04-19 | Plan 12-02 executed | DragDropUploader component + Profile zone avatar/background wiring (2 tasks, 2 commits: f231b57, 02ed2e9); LINKS-08 complete; Phase 12 plans 3/3 — ready for /gsd:verify-work |
+| 2026-04-20 | Plan 14-01 executed | Public /links rendering + sendBeacon click tracking (3 tasks, 3 commits: 5c7c9db, 53aa325, 02f410b); LINKS-14/-15/-16/-17 complete; Phase 14 plans 1/1 — v1.3 feature-complete 17/17 reqs |
 
 ---
 
-*Last updated: 2026-04-19 — Plan 12-02 complete (DragDropUploader + Profile zone wiring, LINKS-08); Phase 12 plans 3/3 — all Phase 12 requirements delivered, ready for /gsd:verify-work*
+*Last updated: 2026-04-20 — Plan 14-01 complete; v1.3 Links Page Upgrade feature-complete (Phases 10–14 all shipped; 10/10 plans; 17/17 requirements); ready for /gsd:verify-work → /gsd:retrospective → /gsd:new-milestone*
