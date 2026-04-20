@@ -277,16 +277,20 @@ export function LinksSection() {
             <FormGrid cols={1}>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <Label htmlFor="avatarUrl">Avatar URL</Label>
+                  <div className="text-sm font-medium">Avatar</div>
                   <SavedIndicator field="avatarUrl" />
                 </div>
-                {/* TODO(12-02): replace with DragDropUploader */}
-                <Input
-                  id="avatarUrl"
-                  value={config.avatarUrl}
-                  onChange={(e) => setConfig({ ...config, avatarUrl: e.target.value })}
-                  onBlur={() => saveSettings(config, 'avatarUrl')}
-                  placeholder="/logo.png"
+                <DragDropUploader
+                  label="Avatar"
+                  assetType="avatar"
+                  value={config.avatarUrl || undefined}
+                  helperText="PNG, JPG, WebP, SVG, or AVIF up to 2 MB"
+                  thumbnailShape="square"
+                  onChange={(url) => {
+                    const newConfig = { ...config, avatarUrl: url };
+                    setConfig(newConfig);
+                    saveSettings(newConfig, 'avatarUrl');
+                  }}
                 />
               </div>
               <div className="space-y-2">
@@ -318,20 +322,21 @@ export function LinksSection() {
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <Label htmlFor="backgroundImageUrl">Background Image URL</Label>
+                  <div className="text-sm font-medium">Background Image</div>
                   <SavedIndicator field="theme" />
                 </div>
-                {/* TODO(12-02): replace with DragDropUploader */}
-                <Input
-                  id="backgroundImageUrl"
-                  value={config.theme?.backgroundImageUrl ?? ''}
-                  onChange={(e) =>
-                    updateConfig(
-                      { theme: { ...config.theme, backgroundImageUrl: e.target.value } },
-                      'theme',
-                    )
-                  }
-                  placeholder="https://..."
+                <DragDropUploader
+                  label="Background Image"
+                  assetType="background"
+                  value={config.theme?.backgroundImageUrl || undefined}
+                  helperText="Optional. Appears behind the /links page."
+                  thumbnailShape="wide"
+                  onChange={(url) => {
+                    const newTheme = { ...(config.theme ?? {}), backgroundImageUrl: url };
+                    const newConfig = { ...config, theme: newTheme };
+                    setConfig(newConfig);
+                    saveSettings(newConfig, 'backgroundImageUrl');
+                  }}
                 />
               </div>
             </FormGrid>

@@ -302,6 +302,22 @@ export const translations = {
     'clicks': 'cliques',
     'Live Preview': 'Pré-visualização ao Vivo',
     'Live preview coming in Phase 13': 'Pré-visualização ao vivo em breve',
+    'Drag to reorder': 'Arraste para reordenar',
+
+    // Admin — Links Page Uploaders (Phase 12-02)
+    'Drop image here or click to browse': 'Solte a imagem aqui ou clique para procurar',
+    'Replace image': 'Substituir imagem',
+    'Uploading...': 'Enviando...',
+    'Uploaded ✓': 'Enviado ✓',
+    'Upload failed': 'Falha no envio',
+    'Unsupported file type': 'Tipo de arquivo não suportado',
+    'File too large (max 2 MB)': 'Arquivo muito grande (máx 2 MB)',
+    'Please choose a PNG, JPEG, WebP, GIF, SVG, or AVIF image.': 'Escolha uma imagem PNG, JPEG, WebP, GIF, SVG ou AVIF.',
+    'Max file size is 2 MB.': 'Tamanho máximo do arquivo é 2 MB.',
+    'Avatar': 'Avatar',
+    'Background Image': 'Imagem de Fundo',
+    'PNG, JPG, WebP, SVG, or AVIF up to 2 MB': 'PNG, JPG, WebP, SVG ou AVIF até 2 MB',
+    'Optional. Appears behind the /links page.': 'Opcional. Aparece atrás da página /links.',
   }
 } as const;
 
