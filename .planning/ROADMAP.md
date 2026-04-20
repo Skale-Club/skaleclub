@@ -25,7 +25,7 @@
 - [ ] Phase 10: Schema & Upload Foundation (0/2 plans)
 - [ ] Phase 11: Click Analytics API (1/1 plans)
 - [ ] Phase 12: Admin Redesign + Core Editing (3/3 plans)
-- [ ] Phase 13: Icon Picker, Theme Editor & Live Preview (0/? plans)
+- [ ] Phase 13: Icon Picker, Theme Editor & Live Preview (0/3 plans)
 - [ ] Phase 14: Public Page Rendering + Click Tracking (0/? plans)
 
 </details>
@@ -119,7 +119,10 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
   2. Admin can pick a primary color, a background color or gradient, and optionally upload a background image; all values persist into `linksPageConfig.theme`.
   3. The Live Preview pane renders `/links` inline (iframe or direct embed) and re-fetches company settings after each save so admin-side edits appear in the preview within ~1 second.
   4. Switching between Lucide, custom upload, and auto icon modes on a link updates the preview without requiring a page reload.
-**Plans**: TBD
+**Plans:** 3 plans
+- [ ] 13-01-PLAN.md — IconPicker component (Popover+Tabs, Lucide search, Upload, Auto) wired per link row (LINKS-09)
+- [ ] 13-02-PLAN.md — ThemeEditor for primary/background/gradient + Reset to defaults in Profile zone (LINKS-12)
+- [ ] 13-03-PLAN.md — LivePreview iframe in Zone 2 with auto-refresh on save + manual refresh (LINKS-13)
 **UI hint**: yes
 
 ### Phase 14: Public Page Rendering + Click Tracking
@@ -136,4 +139,4 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 
 ---
 
-_Last updated: 2026-04-19 — Phase 11 plan-01 executed (Click Analytics API endpoint shipped)_
+_Last updated: 2026-04-19 — Phase 13 planned (3 plans: IconPicker, ThemeEditor, LivePreview)_
