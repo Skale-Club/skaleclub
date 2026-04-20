@@ -35,7 +35,8 @@
 - [x] **Phase 6: DB Schema + Storage Layer** — Estimates table, JSONB snapshot schema, Zod types, storage methods, Drizzle migration (completed 2026-04-19)
 - [x] **Phase 7: Admin API Routes** — CRUD endpoints for estimates (list, create, read, update, delete) + public slug lookup (completed 2026-04-19)
 - [x] **Phase 8: Admin UI (EstimatesSection)** — Estimates list, create/edit dialog, service picker, drag-reorder, price override, custom line items (completed 2026-04-19)
-- [ ] **Phase 9: Public Viewer** — /e/:slug fullscreen scroll-snap proposal page, view tracking (estimate_views table), password gate, isEstimateRoute guard, 404 handling
+- [ ] **Phase 9: Public Viewer** — /e/:slug fullscreen scroll-snap proposal page, view tracking (estimate_views table), access code gate, isEstimateRoute guard, 404 handling
+  - 3 plans planned
 
 ---
 
@@ -100,9 +101,13 @@ Plans:
   4. A final visual closing section appears after all service sections with no acceptance CTA button
   5. Navigating to `/e/unknown-slug` renders a graceful 404 page rather than crashing or showing a blank screen
   6. Every public page load at /e/:slug records a view event in the `estimate_views` table; admin list shows view count and last viewed date per estimate
-  7. Admin can optionally set a password on an estimate; public viewer shows a password gate if set; correct password grants access, wrong password is rejected
-**Plans**: TBD
-**UI hint**: yes
+  7. Admin can optionally set an access code on an estimate; public viewer shows a code gate if set; correct code grants access, wrong code is rejected
+**Plans**: 3 plans
+
+Plans:
+- [ ] 09-01-PLAN.md — DB schema additions (access_code column, estimate_views table), storage methods (recordEstimateView, updated listEstimates), server routes (POST /view, POST /verify-code, updated GET /slug/:slug)
+- [ ] 09-02-PLAN.md — EstimateViewer.tsx page (scroll-snap sections, nav dots, access gate, view tracking, 404) + App.tsx isEstimateRoute isolation
+- [ ] 09-03-PLAN.md — EstimatesSection.tsx admin updates (view badges, last-seen text, access code dialog field)
 
 ---
 
@@ -113,9 +118,9 @@ Plans:
 | 6. DB Schema + Storage Layer | 2/2 | Complete    | 2026-04-19 |
 | 7. Admin API Routes | 1/1 | Complete    | 2026-04-19 |
 | 8. Admin UI (EstimatesSection) | 1/2 | Complete    | 2026-04-19 |
-| 9. Public Viewer | 0/? | Not started | - |
+| 9. Public Viewer | 0/3 | Not started | - |
 
 ---
 
 _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
-_Last updated: 2026-04-19 — EST-11 and EST-12 added to Phase 9 scope_
+_Last updated: 2026-04-19 — Phase 9 planned (3 plans, 2 waves)_
