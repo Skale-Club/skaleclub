@@ -26,7 +26,7 @@
 - [ ] Phase 11: Click Analytics API (1/1 plans)
 - [ ] Phase 12: Admin Redesign + Core Editing (3/3 plans)
 - [ ] Phase 13: Icon Picker, Theme Editor & Live Preview (0/3 plans)
-- [ ] Phase 14: Public Page Rendering + Click Tracking (0/? plans)
+- [ ] Phase 14: Public Page Rendering + Click Tracking (0/1 plans)
 
 </details>
 
@@ -129,14 +129,16 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 **Goal**: Visitors to `/links` see a themed, icon-rich page that only shows visible links, and every outbound click increments the admin-visible counter reliably — even when the browser immediately navigates away.
 **Depends on**: Phase 10 (schema), Phase 11 (click endpoint), Phase 13 (theme values to render)
 **Requirements**: LINKS-14, LINKS-15, LINKS-16, LINKS-17
+**Plans:** 1 plan
 **Success Criteria** (what must be TRUE):
   1. `/links` renders each link's icon from Lucide (by name) or from an uploaded URL (as `<img>`), and falls back to a generic link icon when neither is set.
   2. Links with `visible=false` do not appear on `/links`; hiding a link in admin and reloading the public page removes it from the list.
   3. `/links` reflects the saved theme — primary color on hover/focus accents, background color or gradient on the page root, and optional background image rendered behind the ambient glow layer.
   4. Clicking any link fires `POST /api/links-page/click/:linkId` via `navigator.sendBeacon` before navigation, and the admin click-count badge reflects the new count after reload.
-**Plans**: TBD
+**Plans:**
+- [ ] 14-01-PLAN.md — Visible filter + per-link icons + theme application + sendBeacon click tracking in client/src/pages/Links.tsx (LINKS-14, LINKS-15, LINKS-16, LINKS-17)
 **UI hint**: yes
 
 ---
 
-_Last updated: 2026-04-19 — Phase 13 planned (3 plans: IconPicker, ThemeEditor, LivePreview)_
+_Last updated: 2026-04-19 — Phase 14 planned (1 plan: public /links rewrite — visible filter, icon render, theme, sendBeacon)_
