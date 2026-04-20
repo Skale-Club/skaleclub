@@ -64,6 +64,17 @@ const renderLinkIcon = (link: LinksPageLink) => {
   return getLinkIcon(link.url);
 };
 
+const trackLinkClick = (linkId: string | undefined) => {
+  if (!linkId) return;
+  try {
+    if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+      navigator.sendBeacon(`/api/links-page/click/${encodeURIComponent(linkId)}`);
+    }
+  } catch {
+    // Swallow — analytics is non-critical, must never block navigation.
+  }
+};
+
 export default function Links() {
   const { t } = useTranslation();
   const { data: settings, isLoading } = useQuery<CompanySettingsData>({
@@ -153,6 +164,7 @@ export default function Links() {
                 href={link.url}
                 target={link.url.startsWith('http') ? "_blank" : "_self"}
                 rel="noopener noreferrer"
+                onClick={() => trackLinkClick(link.id)}
                 className="block w-full"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
