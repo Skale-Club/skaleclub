@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Links Page Upgrade
-status: ready-to-plan
-last_updated: "2026-04-20T00:00:00.000Z"
+status: in-progress
+last_updated: "2026-04-19T00:00:00.000Z"
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_plans: 2
+  completed_plans: 1
+  percent: 10
 ---
 
 # STATE: Skale Club Web Platform
@@ -30,10 +30,10 @@ See: `.planning/PROJECT.md` (updated 2026-04-20)
 
 ## Current Position
 
-Phase: 10 — Schema & Upload Foundation (not started)
-Plan: —
-Status: Ready to plan (`/gsd:plan-phase 10`)
-Last activity: 2026-04-20 — v1.3 roadmap created (Phases 10-14), 17/17 requirements mapped
+Phase: 10 — Schema & Upload Foundation (in progress)
+Plan: 10-02 (upload endpoint) next
+Status: Plan 10-01 complete (schema + normalizer), ready to execute 10-02
+Last activity: 2026-04-19 — Plan 10-01 shipped: linksPageConfig Zod schemas + UUID transform + normalizeLinksPageConfig helper wired into storage
 
 ---
 
@@ -70,7 +70,8 @@ Last activity: 2026-04-20 — v1.3 roadmap created (Phases 10-14), 17/17 require
 | Requirements | 17 total, 17/17 mapped |
 | Phases planned | 5 (Phases 10-14) |
 | Phases completed | 0/5 |
-| Plans executed | 0 |
+| Plans executed | 1 |
+| Phase 10-schema-upload-foundation P01 | ~25m | 3 tasks | 3 files |
 
 ---
 
@@ -97,6 +98,10 @@ Last activity: 2026-04-20 — v1.3 roadmap created (Phases 10-14), 17/17 require
 - [Phase 09-02]: isUnlocked=false default works for non-gated estimates: gate condition (data.hasAccessCode && !isUnlocked) is false when hasAccessCode=false
 - [Phase 09-03]: No new npm dependencies for view badges — formatDistanceToNow and Eye already in date-fns and lucide-react
 - [Phase 09-03]: viewCount ?? 0 fallback ensures badge always visible for new estimates (not hidden when 0)
+- [Phase 10-01]: Use z.input<> (not z.infer<>) for exported LinksPageLink/LinksPageConfig TS types so pre-Phase-12 client code still compiles after schema gains .transform()-powered id field
+- [Phase 10-01]: Per-link new fields are Zod .optional() rather than .default() — runtime defaults guaranteed by normalizeLinksPageConfig on every read, keeping the TS output type lenient for the v1.3 migration window
+- [Phase 10-01]: Lazy UUID backfill on read + transform-on-write = zero-migration rollout for additive JSONB shape change (no SQL, no data script)
+- [Phase 10-01]: Theme defaults hard-coded to current visual state (#1C53A3 / #0f1014) so legacy rows look identical after normalization
 
 ### Quick Tasks Completed
 
@@ -120,7 +125,8 @@ None.
 | 2026-04-19 | v1.2 milestone initialized | REQUIREMENTS.md + PROJECT.md created, Phase 6 ready to plan |
 | 2026-04-20 | v1.3 milestone initialized | Defining requirements for Links Page Upgrade |
 | 2026-04-20 | v1.3 roadmap created | 5 phases (10-14), 17/17 reqs mapped, Phase 10 ready to plan |
+| 2026-04-19 | Plan 10-01 executed | Schema + normalizer shipped (3 tasks, 3 commits); 10-02 next |
 
 ---
 
-*Last updated: 2026-04-20 — v1.3 roadmap complete, Phase 10 next to start*
+*Last updated: 2026-04-19 — Plan 10-01 complete (schema + UUID normalizer); Plan 10-02 (upload endpoint) next*
