@@ -26,7 +26,7 @@
 - [ ] **LINKS-08**: Profile zone replaces URL text inputs for Avatar and Background Image with drag-and-drop file uploaders that call `/api/uploads/links-page`, show a spinner during upload, a "Uploaded ✓" confirmation, and render a thumbnail preview of the uploaded asset.
 - [ ] **LINKS-09**: Each link row exposes an **Icon Picker** that lets admin either (a) search and select from a searchable Lucide icon library (~1000 icons, debounced text search) OR (b) upload a custom SVG/PNG that becomes the link's icon. Selected icon is previewed at its final rendering size.
 - [x] **LINKS-10**: Each link row has a visible/hidden toggle (Switch component) that controls whether the link renders on the public page; hidden links stay in the admin list with reduced opacity.
-- [ ] **LINKS-11**: Admin can drag-and-drop reorder links; order persists to `linksPageConfig.links[].order` and is reflected on the next public-page load.
+- [x] **LINKS-11**: Admin can drag-and-drop reorder links; order persists to `linksPageConfig.links[].order` and is reflected on the next public-page load.
 - [ ] **LINKS-12**: Theme editor (part of Profile zone or separate accordion) lets admin pick primary color (color picker), background color or gradient, and optionally upload a background image. Changes persist to `linksPageConfig.theme`.
 - [ ] **LINKS-13**: Live Preview pane renders `/links` in an `<iframe>` or direct component embed that re-queries company settings after each save so admin sees changes within ~1s without leaving the page.
 
@@ -63,7 +63,7 @@
 | LINKS-08 | Phase 12 | Pending |
 | LINKS-09 | Phase 13 | Pending |
 | LINKS-10 | Phase 12 | Complete |
-| LINKS-11 | Phase 12 | Pending |
+| LINKS-11 | Phase 12 | Complete |
 | LINKS-12 | Phase 13 | Pending |
 | LINKS-13 | Phase 13 | Pending |
 | LINKS-14 | Phase 14 | Pending |

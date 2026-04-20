@@ -4,7 +4,7 @@ milestone: v1.3
 milestone_name: Links Page Upgrade
 status: executing
 last_updated: "2026-04-19T00:00:00.000Z"
-last_activity: "2026-04-19 — Plan 12-01 shipped: admin Links Page three-zone layout + visibility Switch + click-count badge (LINKS-07 layout, LINKS-10 complete)"
+last_activity: "2026-04-19 — Plan 12-03 shipped: drag-reorder on admin Main Links via @dnd-kit (LINKS-11 complete)"
 progress:
   total_phases: 5
   completed_phases: 2
@@ -30,10 +30,10 @@ See: `.planning/PROJECT.md` (updated 2026-04-20)
 
 ## Current Position
 
-Phase: 12 — Admin Redesign + Core Editing (plans 1/3 complete)
-Plan: 12-02 (uploaders) next
-Status: Plan 12-01 shipped — three-zone admin layout (Profile | Live Preview placeholder | Main Links) + per-link Visible Switch + click-count Badge + Background Image URL input + 24 PT translation keys; tsc + build green
-Last activity: 2026-04-19 — Plan 12-01 shipped: admin Links Page three-zone layout + visibility Switch + click-count badge (LINKS-07 layout, LINKS-10 complete)
+Phase: 12 — Admin Redesign + Core Editing (plans 2/3 committed; 12-02 in parallel flight)
+Plan: 12-03 shipped — drag-reorder on Main Links via @dnd-kit (LINKS-11 complete); 12-02 (uploaders) running in parallel
+Status: Plan 12-03 shipped — SortableLinkRow + DndContext/SortableContext, PointerSensor(distance:6) + KeyboardSensor, handleDragEnd with arrayMove + order reindex 0..N-1, PT 'Drag to reorder' translation; tsc + build green
+Last activity: 2026-04-19 — Plan 12-03 shipped: drag-and-drop reorder on admin Main Links (LINKS-11 complete)
 
 ---
 
@@ -54,6 +54,7 @@ Last activity: 2026-04-19 — Plan 12-01 shipped: admin Links Page three-zone la
 | Phase 09-public-viewer P02 | 130 | 2 tasks | 2 files |
 | Phase 09-public-viewer P03 | 12 | 1 tasks | 1 files |
 | Phase 10-schema-upload-foundation P02 | 3m | 3 tasks | 3 files |
+| Phase 12 P03 | 8min | 3 tasks | 3 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -119,6 +120,10 @@ Last activity: 2026-04-19 — Plan 12-01 shipped: admin Links Page three-zone la
 - [Phase 12-01]: Avatar URL + Background Image URL kept as plain Inputs with `TODO(12-02)` markers — Plan 12-02 swaps to DragDropUploader; layout ships functional in the meantime
 - [Phase 12-01]: PT translations added proactively (24 new keys) even though JSX strings still hardcoded English — satisfies CLAUDE.md translation rule now so future t() wrap is zero-touch on the translation side
 - [Phase 12-01]: addLink does NOT set visible:true explicitly — lets server normalizer (Phase 10) stamp the default; UI reads `link.visible !== false` so new rows render as visible without a client-side write
+- [Phase 12-03]: SortableLinkRow co-located in LinksSection.tsx (same file as parent) — matches EstimatesSection's SortableServiceRow pattern; file still well under CLAUDE.md 600-line limit
+- [Phase 12-03]: PointerSensor activationConstraint distance:6 reused from EstimatesSection — prevents accidental drags on micro-movement; mobile keyboard sensor via sortableKeyboardCoordinates for Space/Arrow reorder
+- [Phase 12-03]: Order reindex `0..N-1` after every arrayMove — canonical contiguous sequence persisted regardless of prior gaps; handleDragEnd calls existing updateConfig so SavedIndicator fires through the shared auto-save path
+- [Phase 12-03]: Drag handle is a semantic `<button type=button>` with touch-none class — built-in keyboard focus for KeyboardSensor; prevents mobile touch gestures from hijacking the drag
 
 ### Quick Tasks Completed
 
@@ -146,7 +151,8 @@ None.
 | 2026-04-20 | Plan 10-02 executed | Upload endpoint live (3 tasks, 3 commits: 7ebdaf4, 86ae880, 0e744f9); Phase 10 plans 2/2 — ready for /gsd:verify-work |
 | 2026-04-19 | Plan 11-01 executed | Click endpoint live (3 tasks, 3 commits: f7e3fb9, 72ede6e, 2900a80); Phase 11 plans 1/1 — ready for /gsd:verify-work |
 | 2026-04-19 | Plan 12-01 executed | Admin three-zone layout + Visible Switch + click-count Badge (2 tasks, 2 commits: 6091c1d, f5cc862); Phase 12 plans 1/3 — 12-02 next |
+| 2026-04-19 | Plan 12-03 executed | Drag-and-drop reorder on Main Links via @dnd-kit (1 combined commit: ece85d1, LINKS-11 complete); Phase 12 plans 2/3 (12-02 uploaders in parallel) |
 
 ---
 
-*Last updated: 2026-04-19 — Plan 12-01 complete (admin redesign layout + visibility toggle); Phase 12 plans 1/3 — 12-02 (uploaders) next*
+*Last updated: 2026-04-19 — Plan 12-03 complete (drag-and-drop reorder, LINKS-11); Phase 12 plans 2/3 — 12-02 (uploaders) running in parallel*
