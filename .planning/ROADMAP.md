@@ -22,7 +22,7 @@
 <details open>
 <summary>🚧 v1.3 Links Page Upgrade (Phases 10-14) — IN PROGRESS</summary>
 
-- [ ] Phase 10: Schema & Upload Foundation (0/? plans)
+- [ ] Phase 10: Schema & Upload Foundation (0/2 plans)
 - [ ] Phase 11: Click Analytics API (0/? plans)
 - [ ] Phase 12: Admin Redesign + Core Editing (0/? plans)
 - [ ] Phase 13: Icon Picker, Theme Editor & Live Preview (0/? plans)
@@ -72,12 +72,15 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 **Goal**: The backend can persist a richer links-page config and accept real file uploads to Supabase Storage, with every link carrying a stable identity that survives edits.
 **Depends on**: Nothing (first phase of v1.3)
 **Requirements**: LINKS-01, LINKS-02, LINKS-03, LINKS-06
+**Plans:** 2 plans
 **Success Criteria** (what must be TRUE):
   1. Admin can `POST /api/uploads/links-page` with an image (≤2 MB) and receives a Supabase `uploads/links-page/...` URL that is publicly retrievable.
   2. `linksPageConfig` persists per-link `iconType`, `iconValue`, `visible`, `clickCount`, stable `id`, and a `theme` sub-object — existing `links` and `socialLinks` read/write paths still work unchanged.
   3. Each existing link is backfilled with a UUID `id` on first save, and every newly-created link receives a UUID `id` automatically.
   4. Non-image and oversized uploads are rejected with a 4xx error and a human-readable message.
-**Plans**: TBD
+**Plans:**
+- [ ] 10-01-PLAN.md — Extend linksPageConfig schema with real Zod + lazy UUID/theme normalization in storage read path (LINKS-01, LINKS-03)
+- [ ] 10-02-PLAN.md — POST /api/uploads/links-page admin endpoint with MIME allowlist, 2 MB cap, Supabase scoped path (LINKS-02, LINKS-06)
 
 ### Phase 11: Click Analytics API
 **Goal**: Public clicks on `/links` links produce reliable, abuse-resistant per-link counts that admins can see at a glance.
