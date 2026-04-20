@@ -10,8 +10,26 @@ import {
   Link as LinkIcon,
   AtSign,
 } from 'lucide-react';
-import { AdminCard, EmptyState, FormGrid, SectionHeader } from './shared';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { AdminCard, DragDropUploader, EmptyState, FormGrid, SectionHeader } from './shared';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from '@/hooks/useTranslation';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { usePagePaths } from '@/lib/pagePaths';
 import type { CompanySettingsData } from './shared/types';
@@ -32,8 +50,90 @@ const LINKS_PAGE_DEFAULTS: LinksPageConfig = {
   socialLinks: []
 };
 
+function SortableLinkRow({
+  link,
+  index,
+  onUpdate,
+  onRemove,
+  t,
+}: {
+  link: LinksPageLink;
+  index: number;
+  onUpdate: (i: number, updates: Partial<LinksPageLink>) => void;
+  onRemove: (i: number) => void;
+  t: (s: string) => string;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: link.id!,
+  });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : (link.visible === false ? 0.5 : 1),
+    zIndex: isDragging ? 50 : undefined,
+  };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="p-4 border rounded-lg bg-muted/30 group relative transition-opacity"
+      data-testid={`link-row-${index}`}
+    >
+      <div className="flex gap-4 items-start">
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          className="mt-2 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing touch-none"
+          aria-label={t('Drag to reorder')}
+        >
+          <GripVertical className="h-5 w-5" />
+        </button>
+        <div className="flex-1 space-y-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="secondary" className="text-xs">{link.clickCount ?? 0} clicks</Badge>
+            <div className="flex items-center gap-2 ml-auto">
+              <Label htmlFor={`visible-${index}`} className="text-xs text-muted-foreground cursor-pointer">Visible</Label>
+              <Switch
+                id={`visible-${index}`}
+                checked={link.visible !== false}
+                onCheckedChange={(checked) => onUpdate(index, { visible: checked })}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Link Title</Label>
+            <Input
+              value={link.title}
+              onChange={(e) => onUpdate(index, { title: e.target.value })}
+              placeholder="My Portfolio"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Destination URL</Label>
+            <Input
+              value={link.url}
+              onChange={(e) => onUpdate(index, { url: e.target.value })}
+              placeholder="https://..."
+            />
+          </div>
+        </div>
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => onRemove(index)}
+          className="h-10 w-10 text-destructive hover:text-destructive hover:bg-destructive/10"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function LinksSection() {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const pagePaths = usePagePaths();
   const { data: settings, isLoading } = useQuery<CompanySettingsData>({
     queryKey: ['/api/company-settings'],
@@ -42,6 +142,21 @@ export function LinksSection() {
   const [config, setConfig] = useState<LinksPageConfig>(LINKS_PAGE_DEFAULTS);
   const [isSaving, setIsSaving] = useState(false);
   const [savedFields, setSavedFields] = useState<Record<string, boolean>>({});
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = config.links.findIndex((l) => l.id === active.id);
+    const newIndex = config.links.findIndex((l) => l.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    const reordered = arrayMove(config.links, oldIndex, newIndex).map((l, i) => ({ ...l, order: i }));
+    updateConfig({ links: reordered }, 'links');
+  };
 
   useEffect(() => {
     if (settings?.linksPageConfig) {
@@ -296,66 +411,38 @@ export function LinksSection() {
                 Add New Link
               </Button>
             </div>
-            <div className="space-y-4">
-              {config.links.map((link, index) => (
-                <div
-                  key={link.id ?? index}
-                  className={`p-4 border rounded-lg bg-muted/30 group relative transition-opacity ${link.visible === false ? 'opacity-50' : ''}`}
-                  data-testid={`link-row-${index}`}
+            {config.links.length === 0 ? (
+              <EmptyState
+                icon={<LinkIcon />}
+                title="No links yet"
+                description="Add your first link to show on the bio page"
+                action={<Button onClick={addLink}><Plus className="h-4 w-4 mr-2" /> Add first link</Button>}
+              />
+            ) : (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={config.links.map((l) => l.id!)}
+                  strategy={verticalListSortingStrategy}
                 >
-                  <div className="flex gap-4 items-start">
-                    <div className="mt-2 text-muted-foreground group-hover:text-foreground cursor-grab">
-                      <GripVertical className="h-5 w-5" />
-                    </div>
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant="secondary" className="text-xs">{link.clickCount ?? 0} clicks</Badge>
-                        <div className="flex items-center gap-2 ml-auto">
-                          <Label htmlFor={`visible-${index}`} className="text-xs text-muted-foreground cursor-pointer">Visible</Label>
-                          <Switch
-                            id={`visible-${index}`}
-                            checked={link.visible !== false}
-                            onCheckedChange={(checked) => updateLink(index, { visible: checked })}
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Link Title</Label>
-                        <Input
-                          value={link.title}
-                          onChange={(e) => updateLink(index, { title: e.target.value })}
-                          placeholder="My Portfolio"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Destination URL</Label>
-                        <Input
-                          value={link.url}
-                          onChange={(e) => updateLink(index, { url: e.target.value })}
-                          placeholder="https://..."
-                        />
-                      </div>
-                    </div>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => removeLink(index)}
-                      className="h-10 w-10 text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  <div className="space-y-3">
+                    {config.links.map((link, index) => (
+                      <SortableLinkRow
+                        key={link.id}
+                        link={link}
+                        index={index}
+                        onUpdate={updateLink}
+                        onRemove={removeLink}
+                        t={t}
+                      />
+                    ))}
                   </div>
-                </div>
-              ))}
-              {config.links.length === 0 && (
-                <EmptyState
-                  icon={<LinkIcon />}
-                  title="No links yet"
-                  description="Add your first link to show on the bio page"
-                  action={<Button onClick={addLink}><Plus className="h-4 w-4 mr-2" /> Add first link</Button>}
-                />
-              )}
-            </div>
+                </SortableContext>
+              </DndContext>
+            )}
           </AdminCard>
         </div>
       </div>
