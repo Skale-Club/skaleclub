@@ -1,5 +1,8 @@
-import { randomUUID } from "crypto";
 import type { LinksPageConfig, LinksPageLink, LinksPageSocial, LinksPageTheme } from "./schema.js";
+
+// Isomorphic UUID generator — works in Node 19+ and all modern browsers via globalThis.crypto.
+// Avoids `import { randomUUID } from "crypto"` which Vite cannot bundle for the client.
+const randomUUID = (): string => globalThis.crypto.randomUUID();
 
 /**
  * Default theme values for the /links page. Matches the current visual state
