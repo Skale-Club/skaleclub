@@ -1,5 +1,6 @@
 import { db } from "./db.js";
 import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead } from "#shared/form.js";
+import { normalizeLinksPageConfig } from "#shared/links.js";
 import {
   formLeads,
   forms,
@@ -689,11 +690,19 @@ export class DatabaseStorage implements IStorage {
     await ensureCompanySettingsSchema();
 
     const [settings] = await db.select().from(companySettings);
-    if (settings) return settings;
+    if (settings) {
+      return {
+        ...settings,
+        linksPageConfig: normalizeLinksPageConfig(settings.linksPageConfig as any),
+      } as CompanySettings;
+    }
 
     // Create default settings if none exist
     const [newSettings] = await db.insert(companySettings).values({}).returning();
-    return newSettings;
+    return {
+      ...newSettings,
+      linksPageConfig: normalizeLinksPageConfig(newSettings.linksPageConfig as any),
+    } as CompanySettings;
   }
 
   async updateCompanySettings(settings: Partial<CompanySettings>): Promise<CompanySettings> {
@@ -1031,7 +1040,7 @@ export class DatabaseStorage implements IStorage {
       existing = await this.getFormLeadBySession(progress.sessionId);
     }
     if (!existing && !progress.nome) {
-      throw new Error("Nome é obrigatório para iniciar o formulário");
+      throw new Error("Name is required to start the form");
     }
 
     // Resolve which form this lead belongs to.
