@@ -53,9 +53,9 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| LINKS-01 | Phase 10 | Pending |
+| LINKS-01 | Phase 10 | Complete |
 | LINKS-02 | Phase 10 | Complete |
-| LINKS-03 | Phase 10 | Pending |
+| LINKS-03 | Phase 10 | Complete |
 | LINKS-04 | Phase 11 | Complete |
 | LINKS-05 | Phase 11 | Complete |
 | LINKS-06 | Phase 10 | Complete |
