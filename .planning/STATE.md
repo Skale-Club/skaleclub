@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Estimates System
-status: planning
-last_updated: "2026-04-19T23:38:21.074Z"
+status: executing
+last_updated: "2026-04-19T00:00:00.000Z"
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 5
-  completed_plans: 5
-  percent: 100
+  total_plans: 8
+  completed_plans: 6
+  percent: 75
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** Ready to plan
+**Status:** Executing Phase 09
 
 ---
 
@@ -30,23 +30,21 @@ See: `.planning/PROJECT.md` (updated 2026-04-19)
 
 ## Current Position
 
-Phase: 9
-Plan: Not started
+Phase: 09 (public-viewer) — EXECUTING
+Plan: 2 of 3
 | Field | Value |
 |-------|-------|
-| Milestone | v1.2 — Estimates System 🔄 |
-| Phase | 6 — DB Schema + Storage Layer |
-| Status | Planning |
+| Milestone | v1.2 — Estimates System |
+| Phase | 9 — Public Viewer |
+| Status | Executing |
 
 **Progress:**
 
-[██████████] 100%
-[ ] Phase 6: DB Schema + Storage Layer
-[ ] Phase 7: Admin API Routes
-[ ] Phase 8: Admin UI (EstimatesSection)
-[ ] Phase 9: Public Viewer
-
-```
+[███████░░░] 75%
+[x] Phase 6: DB Schema + Storage Layer
+[x] Phase 7: Admin API Routes
+[x] Phase 8: Admin UI (EstimatesSection)
+[ ] Phase 9: Public Viewer (Plan 1/3 complete)
 
 ---
 
@@ -93,6 +91,8 @@ Plan: Not started
 - [Phase 06-db-schema-storage-layer]: Manual Zod insert schema for estimates (not drizzle-zod) — follows portfolioServices convention in cms.ts (v1.2)
 - [Phase 08-admin-ui-estimatessection]: EstimatesSection.tsx co-locates all three components (SortableServiceRow, EstimateDialogForm, EstimatesSection) in one file — consistent with PortfolioSection pattern
 - [Phase 08-admin-ui-estimatessection]: Both slug maps in Admin.tsx must be updated simultaneously — partial update causes TypeScript errors from Record<AdminSection,string> exhaustiveness check
+- [Phase 09-01]: Plain text access code (D-07) — codes not bcrypt-hashed; GHL automation must read and inject them into links
+- [Phase 09-01]: Raw SQL migration pattern (tsx script) — drizzle-kit push cannot resolve .js ESM imports in CJS bundle; follows Phase 6.2 convention
 
 ### Quick Tasks Completed
 
@@ -117,4 +117,4 @@ None.
 
 ---
 
-*Last updated: 2026-04-19 — v1.2 Estimates System milestone kickoff*
+*Last updated: 2026-04-19 — Phase 09 Plan 01 complete (view tracking + access code backend)*

@@ -26,8 +26,8 @@
 
 ### Public Viewer — Phase 9
 
-- [ ] **EST-11**: View tracking — every time the public estimate viewer (/e/:slug) is loaded, record a view event. The admin list view must display view_count and last_viewed_at per estimate. Implementation: new `estimate_views` table (id, estimate_id, viewed_at, ip_address optional) — event log approach, not a counter column.
-- [ ] **EST-12**: Password protection — an estimate can optionally have a password (stored as bcrypt hash in a new `password_hash text` column on estimates). If set, the public viewer shows a password gate before rendering. The admin create/edit dialog must allow setting/clearing the password.
+- [x] **EST-11**: View tracking — every time the public estimate viewer (/e/:slug) is loaded, record a view event. The admin list view must display view_count and last_viewed_at per estimate. Implementation: new `estimate_views` table (id, estimate_id, viewed_at, ip_address optional) — event log approach, not a counter column.
+- [x] **EST-12**: Password protection — an estimate can optionally have a password (stored as bcrypt hash in a new `password_hash text` column on estimates). If set, the public viewer shows a password gate before rendering. The admin create/edit dialog must allow setting/clearing the password.
 - [ ] **EST-13**: Navigating to `/e/:slug` renders fullscreen scroll-snap sections with no Navbar, Footer, or ChatWidget present
 - [ ] **EST-14**: First section shows a cover with the client name and Skale Club branding
 - [ ] **EST-15**: Second section shows a fixed Skale Club introduction
@@ -59,8 +59,8 @@
 | EST-08 | Phase 8 | Complete |
 | EST-09 | Phase 8 | Complete |
 | EST-10 | Phase 8 | Complete |
-| EST-11 | Phase 9 | Pending |
-| EST-12 | Phase 9 | Pending |
+| EST-11 | Phase 9 | Complete |
+| EST-12 | Phase 9 | Complete |
 | EST-13 | Phase 9 | Pending |
 | EST-14 | Phase 9 | Pending |
 | EST-15 | Phase 9 | Pending |
