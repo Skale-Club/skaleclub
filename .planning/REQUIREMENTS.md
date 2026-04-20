@@ -23,7 +23,7 @@
 ### Admin UI — Redesign + Uploads + Icon Picker
 
 - [x] **LINKS-07**: Admin Links section is redesigned with three clear zones — Profile (left), Live Preview (center), Links + Social (right) — responsive to smaller screens by stacking. Visual polish matches the design tokens used by other admin sections (AdminCard/SectionHeader/FormGrid).
-- [ ] **LINKS-08**: Profile zone replaces URL text inputs for Avatar and Background Image with drag-and-drop file uploaders that call `/api/uploads/links-page`, show a spinner during upload, a "Uploaded ✓" confirmation, and render a thumbnail preview of the uploaded asset.
+- [x] **LINKS-08**: Profile zone replaces URL text inputs for Avatar and Background Image with drag-and-drop file uploaders that call `/api/uploads/links-page`, show a spinner during upload, a "Uploaded ✓" confirmation, and render a thumbnail preview of the uploaded asset.
 - [ ] **LINKS-09**: Each link row exposes an **Icon Picker** that lets admin either (a) search and select from a searchable Lucide icon library (~1000 icons, debounced text search) OR (b) upload a custom SVG/PNG that becomes the link's icon. Selected icon is previewed at its final rendering size.
 - [x] **LINKS-10**: Each link row has a visible/hidden toggle (Switch component) that controls whether the link renders on the public page; hidden links stay in the admin list with reduced opacity.
 - [x] **LINKS-11**: Admin can drag-and-drop reorder links; order persists to `linksPageConfig.links[].order` and is reflected on the next public-page load.
@@ -60,7 +60,7 @@
 | LINKS-05 | Phase 11 | Complete |
 | LINKS-06 | Phase 10 | Complete |
 | LINKS-07 | Phase 12 | Complete |
-| LINKS-08 | Phase 12 | Pending |
+| LINKS-08 | Phase 12 | Complete |
 | LINKS-09 | Phase 13 | Pending |
 | LINKS-10 | Phase 12 | Complete |
 | LINKS-11 | Phase 12 | Complete |

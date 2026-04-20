@@ -4,12 +4,12 @@ milestone: v1.3
 milestone_name: Links Page Upgrade
 status: executing
 last_updated: "2026-04-19T00:00:00.000Z"
-last_activity: "2026-04-19 — Plan 12-03 shipped: drag-reorder on admin Main Links via @dnd-kit (LINKS-11 complete)"
+last_activity: "2026-04-19 — Plan 12-02 shipped: DragDropUploader + Profile zone wiring (LINKS-08 complete); Phase 12 plans 3/3"
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 6
-  completed_plans: 5
+  total_plans: 8
+  completed_plans: 7
 ---
 
 # STATE: Skale Club Web Platform
@@ -24,16 +24,16 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-04-20)
 
 **Core value:** Admin manages a rich Linktree-style page with real file uploads, per-link icons, click analytics, and a live-preview editor.
-**Current focus:** Phase 12 — Admin Redesign + Core Editing (Plan 12-01 shipped; 12-02 next)
+**Current focus:** Phase 12 — Admin Redesign + Core Editing (all 3 plans shipped; ready for /gsd:verify-work → Phase 13 next)
 
 ---
 
 ## Current Position
 
-Phase: 12 — Admin Redesign + Core Editing (plans 2/3 committed; 12-02 in parallel flight)
-Plan: 12-03 shipped — drag-reorder on Main Links via @dnd-kit (LINKS-11 complete); 12-02 (uploaders) running in parallel
-Status: Plan 12-03 shipped — SortableLinkRow + DndContext/SortableContext, PointerSensor(distance:6) + KeyboardSensor, handleDragEnd with arrayMove + order reindex 0..N-1, PT 'Drag to reorder' translation; tsc + build green
-Last activity: 2026-04-19 — Plan 12-03 shipped: drag-and-drop reorder on admin Main Links (LINKS-11 complete)
+Phase: 12 — Admin Redesign + Core Editing (plans 3/3 complete)
+Plan: Phase 12 complete; Phase 13 (icon picker + theme editor + live preview) next
+Status: Plan 12-02 shipped — DragDropUploader (`admin/shared/DragDropUploader.tsx`, 207 lines) + Profile zone avatar/background wiring + 13 PT translation keys; LINKS-08 complete. All Phase 12 requirements (LINKS-07, -08, -10, -11) delivered; tsc + build green.
+Last activity: 2026-04-19 — Plan 12-02 shipped: DragDropUploader + Profile zone wiring (LINKS-08 complete); Phase 12 plans 3/3
 
 ---
 
@@ -77,6 +77,8 @@ Last activity: 2026-04-19 — Plan 12-03 shipped: drag-and-drop reorder on admin
 | Phase 10-schema-upload-foundation P02 | ~3m | 3 tasks | 3 files |
 | Phase 11-click-analytics-api P01 | ~10m | 3 tasks | 4 files |
 | Phase 12-admin-redesign-core-editing P01 | ~12m | 2 tasks | 2 files |
+| Phase 12-admin-redesign-core-editing P02 | ~15m | 2 tasks | 4 files |
+| Phase 12-admin-redesign-core-editing P03 | ~8m | 3 tasks | 3 files |
 
 ---
 
@@ -124,6 +126,11 @@ Last activity: 2026-04-19 — Plan 12-03 shipped: drag-and-drop reorder on admin
 - [Phase 12-03]: PointerSensor activationConstraint distance:6 reused from EstimatesSection — prevents accidental drags on micro-movement; mobile keyboard sensor via sortableKeyboardCoordinates for Space/Arrow reorder
 - [Phase 12-03]: Order reindex `0..N-1` after every arrayMove — canonical contiguous sequence persisted regardless of prior gaps; handleDragEnd calls existing updateConfig so SavedIndicator fires through the shared auto-save path
 - [Phase 12-03]: Drag handle is a semantic `<button type=button>` with touch-none class — built-in keyboard focus for KeyboardSensor; prevents mobile touch gestures from hijacking the drag
+- [Phase 12-02]: DragDropUploader lives in `admin/shared/` (not co-located) — Plan 13 reuses it for per-link icon uploads via assetType='linkIcon' (server path already provisioned by Phase 10-02)
+- [Phase 12-02]: Client-side MIME + 2 MB validation mirrors server contract as defense-in-depth — file.type + file.size check before FileReader runs; saves a wire round-trip on rejections
+- [Phase 12-02]: success state auto-reverts to idle after 2s via setTimeout — standard upload UX (Google Drive/Dropbox); thumbnail persists because value flows from parent state that got the new URL
+- [Phase 12-02]: onChange in LinksSection uses explicit setConfig + saveSettings (not updateConfig helper) — helper's Partial<LinksPageConfig> type doesn't compose cleanly with nested theme.backgroundImageUrl update
+- [Phase 12-02]: Parallel-plan coordination worked cleanly — 12-02 owned Profile zone Input swaps while 12-03 owned Main Links SortableContext; no merge conflicts, zero cross-plan edits
 
 ### Quick Tasks Completed
 
@@ -152,7 +159,8 @@ None.
 | 2026-04-19 | Plan 11-01 executed | Click endpoint live (3 tasks, 3 commits: f7e3fb9, 72ede6e, 2900a80); Phase 11 plans 1/1 — ready for /gsd:verify-work |
 | 2026-04-19 | Plan 12-01 executed | Admin three-zone layout + Visible Switch + click-count Badge (2 tasks, 2 commits: 6091c1d, f5cc862); Phase 12 plans 1/3 — 12-02 next |
 | 2026-04-19 | Plan 12-03 executed | Drag-and-drop reorder on Main Links via @dnd-kit (1 combined commit: ece85d1, LINKS-11 complete); Phase 12 plans 2/3 (12-02 uploaders in parallel) |
+| 2026-04-19 | Plan 12-02 executed | DragDropUploader component + Profile zone avatar/background wiring (2 tasks, 2 commits: f231b57, 02ed2e9); LINKS-08 complete; Phase 12 plans 3/3 — ready for /gsd:verify-work |
 
 ---
 
-*Last updated: 2026-04-19 — Plan 12-03 complete (drag-and-drop reorder, LINKS-11); Phase 12 plans 2/3 — 12-02 (uploaders) running in parallel*
+*Last updated: 2026-04-19 — Plan 12-02 complete (DragDropUploader + Profile zone wiring, LINKS-08); Phase 12 plans 3/3 — all Phase 12 requirements delivered, ready for /gsd:verify-work*

@@ -24,7 +24,7 @@
 
 - [ ] Phase 10: Schema & Upload Foundation (0/2 plans)
 - [ ] Phase 11: Click Analytics API (1/1 plans)
-- [ ] Phase 12: Admin Redesign + Core Editing (0/3 plans)
+- [ ] Phase 12: Admin Redesign + Core Editing (3/3 plans)
 - [ ] Phase 13: Icon Picker, Theme Editor & Live Preview (0/? plans)
 - [ ] Phase 14: Public Page Rendering + Click Tracking (0/? plans)
 
@@ -105,8 +105,8 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
   3. Admin can toggle a link's visibility switch; hidden links render at reduced opacity in the admin list and are not displayed on the public page.
   4. Admin can drag links to reorder them; the new order persists on save and is reflected on the next public-page load.
 **Plans:**
-2/3 plans executed
-- [ ] 12-02-PLAN.md — DragDropUploader for avatar/background (LINKS-08)
+3/3 plans executed
+- [x] 12-02-PLAN.md — DragDropUploader for avatar/background (LINKS-08)
 - [x] 12-03-PLAN.md — Drag-reorder links (LINKS-11)
 **UI hint**: yes
 
