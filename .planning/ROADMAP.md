@@ -119,10 +119,10 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
   2. Admin can pick a primary color, a background color or gradient, and optionally upload a background image; all values persist into `linksPageConfig.theme`.
   3. The Live Preview pane renders `/links` inline (iframe or direct embed) and re-fetches company settings after each save so admin-side edits appear in the preview within ~1 second.
   4. Switching between Lucide, custom upload, and auto icon modes on a link updates the preview without requiring a page reload.
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 - [x] 13-01-PLAN.md — IconPicker component (Popover+Tabs, Lucide search, Upload, Auto) wired per link row (LINKS-09)
 - [x] 13-02-PLAN.md — ThemeEditor for primary/background/gradient + Reset to defaults in Profile zone (LINKS-12)
-- [ ] 13-03-PLAN.md — LivePreview iframe in Zone 2 with auto-refresh on save + manual refresh (LINKS-13)
+- [x] 13-03-PLAN.md — LivePreview iframe in Zone 2 with auto-refresh on save + manual refresh (LINKS-13)
 **UI hint**: yes
 
 ### Phase 14: Public Page Rendering + Click Tracking
