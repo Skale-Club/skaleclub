@@ -105,7 +105,7 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
   3. Admin can toggle a link's visibility switch; hidden links render at reduced opacity in the admin list and are not displayed on the public page.
   4. Admin can drag links to reorder them; the new order persists on save and is reflected on the next public-page load.
 **Plans:**
-- [ ] 12-01-PLAN.md — Three-zone skeleton + visibility toggle (LINKS-07, LINKS-10)
+1/3 plans executed
 - [ ] 12-02-PLAN.md — DragDropUploader for avatar/background (LINKS-08)
 - [ ] 12-03-PLAN.md — Drag-reorder links (LINKS-11)
 **UI hint**: yes

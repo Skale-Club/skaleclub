@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Links Page Upgrade
-status: planning
+status: executing
 last_updated: "2026-04-19T00:00:00.000Z"
-last_activity: "2026-04-19 — Plan 11-01 shipped: public POST /api/links-page/click/:linkId with IP rate limiter (LINKS-04, LINKS-05 complete)"
+last_activity: "2026-04-19 — Plan 12-01 shipped: admin Links Page three-zone layout + visibility Switch + click-count badge (LINKS-07 layout, LINKS-10 complete)"
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 6
+  completed_plans: 5
 ---
 
 # STATE: Skale Club Web Platform
@@ -24,16 +24,16 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-04-20)
 
 **Core value:** Admin manages a rich Linktree-style page with real file uploads, per-link icons, click analytics, and a live-preview editor.
-**Current focus:** Phase 12 — Admin Redesign + Core Editing (next to plan)
+**Current focus:** Phase 12 — Admin Redesign + Core Editing (Plan 12-01 shipped; 12-02 next)
 
 ---
 
 ## Current Position
 
-Phase: 11 — Click Analytics API (plans 1/1 complete — ready for /gsd:verify-work)
-Plan: Phase 11 done; next is Phase 12 (admin redesign + core editing) once Phase 11 verifier passes
-Status: Plan 11-01 shipped — public endpoint registered + documented; live curl smoke matrix deferred to verify gate
-Last activity: 2026-04-19 — Plan 11-01 shipped: POST /api/links-page/click/:linkId public endpoint with 60s IP+linkId in-memory rate limiter (LINKS-04, LINKS-05 complete)
+Phase: 12 — Admin Redesign + Core Editing (plans 1/3 complete)
+Plan: 12-02 (uploaders) next
+Status: Plan 12-01 shipped — three-zone admin layout (Profile | Live Preview placeholder | Main Links) + per-link Visible Switch + click-count Badge + Background Image URL input + 24 PT translation keys; tsc + build green
+Last activity: 2026-04-19 — Plan 12-01 shipped: admin Links Page three-zone layout + visibility Switch + click-count badge (LINKS-07 layout, LINKS-10 complete)
 
 ---
 
@@ -71,10 +71,11 @@ Last activity: 2026-04-19 — Plan 11-01 shipped: POST /api/links-page/click/:li
 | Requirements | 17 total, 17/17 mapped |
 | Phases planned | 5 (Phases 10-14) |
 | Phases completed | 2/5 (Phases 10 + 11) |
-| Plans executed | 3 |
+| Plans executed | 4 |
 | Phase 10-schema-upload-foundation P01 | ~25m | 3 tasks | 3 files |
 | Phase 10-schema-upload-foundation P02 | ~3m | 3 tasks | 3 files |
 | Phase 11-click-analytics-api P01 | ~10m | 3 tasks | 4 files |
+| Phase 12-admin-redesign-core-editing P01 | ~12m | 2 tasks | 2 files |
 
 ---
 
@@ -113,6 +114,11 @@ Last activity: 2026-04-19 — Plan 11-01 shipped: POST /api/links-page/click/:li
 - [Phase 11-01]: In-memory Map rate limit accepted for v1.3 — per-process (Vercel); duplicate counts across function containers tolerable for analytics
 - [Phase 11-01]: Admin click-count badge UI deferred to Phase 12; LINKS-05 shipped as data-surface contract (normalizer guarantee) not as rendered UI
 - [Phase 11-01]: Array.from(map.entries()) instead of for..of over Map — tsconfig has no target/downlevelIteration flags, so direct Map iteration hits TS2802 (scoped fix preferred over global tsconfig change)
+- [Phase 12-01]: AdminCard + FormGrid primitives swapped in for Card/CardHeader/CardContent — establishes three-zone admin layout pattern (Profile | Preview | Links) via grid-cols-1 md:grid-cols-2 lg:grid-cols-12 with md:col-span-2 lg:col-span-4 cells
+- [Phase 12-01]: Radix Switch bound to link.visible with `!== false` guard — reuses existing updateLink → saveSettings → PUT /api/company-settings path; no new save endpoint, no new state machine
+- [Phase 12-01]: Avatar URL + Background Image URL kept as plain Inputs with `TODO(12-02)` markers — Plan 12-02 swaps to DragDropUploader; layout ships functional in the meantime
+- [Phase 12-01]: PT translations added proactively (24 new keys) even though JSX strings still hardcoded English — satisfies CLAUDE.md translation rule now so future t() wrap is zero-touch on the translation side
+- [Phase 12-01]: addLink does NOT set visible:true explicitly — lets server normalizer (Phase 10) stamp the default; UI reads `link.visible !== false` so new rows render as visible without a client-side write
 
 ### Quick Tasks Completed
 
@@ -139,7 +145,8 @@ None.
 | 2026-04-19 | Plan 10-01 executed | Schema + normalizer shipped (3 tasks, 3 commits); 10-02 next |
 | 2026-04-20 | Plan 10-02 executed | Upload endpoint live (3 tasks, 3 commits: 7ebdaf4, 86ae880, 0e744f9); Phase 10 plans 2/2 — ready for /gsd:verify-work |
 | 2026-04-19 | Plan 11-01 executed | Click endpoint live (3 tasks, 3 commits: f7e3fb9, 72ede6e, 2900a80); Phase 11 plans 1/1 — ready for /gsd:verify-work |
+| 2026-04-19 | Plan 12-01 executed | Admin three-zone layout + Visible Switch + click-count Badge (2 tasks, 2 commits: 6091c1d, f5cc862); Phase 12 plans 1/3 — 12-02 next |
 
 ---
 
-*Last updated: 2026-04-19 — Plan 11-01 complete (click endpoint + rate limiter); Phase 11 plans 1/1 — ready for /gsd:verify-work*
+*Last updated: 2026-04-19 — Plan 12-01 complete (admin redesign layout + visibility toggle); Phase 12 plans 1/3 — 12-02 (uploaders) next*
