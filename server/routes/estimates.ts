@@ -10,7 +10,38 @@ export function registerEstimatesRoutes(app: Express) {
     try {
       const estimate = await storage.getEstimateBySlug(req.params.slug);
       if (!estimate) return res.status(404).json({ message: "Estimate not found" });
-      res.json(estimate);
+      // Never expose access_code to the public client (D-07, RESEARCH pitfall 1)
+      const { accessCode, ...publicEstimate } = estimate as any;
+      res.json({ ...publicEstimate, hasAccessCode: Boolean(accessCode) });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.post("/api/estimates/:id/view", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const ipAddress = (
+        (req.headers['x-forwarded-for'] as string) || req.ip || ''
+      ).toString() || undefined;
+      await storage.recordEstimateView(id, ipAddress);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.post("/api/estimates/:id/verify-code", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const { code } = req.body as { code: string };
+      const estimate = await storage.getEstimate(id);
+      if (!estimate) return res.status(404).json({ message: "Estimate not found" });
+      // No gate set — treat as unlocked
+      if (!estimate.accessCode) return res.json({ success: true });
+      // Plain text comparison — D-07 (NOT bcrypt — codes must be readable for GHL automation)
+      if (estimate.accessCode !== code) return res.status(401).json({ message: "Incorrect code" });
+      res.json({ success: true });
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
     }
