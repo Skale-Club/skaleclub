@@ -74,6 +74,37 @@ export class SupabaseStorageService {
     return urlData.publicUrl;
   }
 
+  // Upload an asset for the /links page (avatar, background, or per-link icon)
+  // under a scoped path prefix. Returns the public URL.
+  async uploadLinksPageAsset(
+    buffer: Buffer,
+    assetType: "avatar" | "background" | "linkIcon",
+    filename: string,
+    contentType: string,
+  ): Promise<string> {
+    await ensureBucket();
+    const supabase = getSupabaseAdmin();
+    const ext = (filename.split(".").pop() || "png").toLowerCase();
+    const objectId = `links-page/${assetType}/${Date.now()}-${randomUUID()}.${ext}`;
+
+    const { error } = await supabase.storage
+      .from(BUCKET_NAME)
+      .upload(objectId, buffer, {
+        contentType,
+        upsert: false,
+      });
+
+    if (error) {
+      throw new Error(`Failed to upload links-page asset: ${error.message}`);
+    }
+
+    const { data: urlData } = supabase.storage
+      .from(BUCKET_NAME)
+      .getPublicUrl(objectId);
+
+    return urlData.publicUrl;
+  }
+
   // Serve a file from Supabase Storage by redirecting to the public URL
   async serveFile(objectPath: string, res: Response): Promise<void> {
     const supabase = getSupabaseAdmin();
