@@ -7,9 +7,9 @@
 
 ### Schema & Storage — Links Page Config + Uploads
 
-- [ ] **LINKS-01**: `linksPageConfig` JSONB on `company_settings` extended to support per-link `iconType` ('lucide' | 'upload' | 'auto'), `iconValue` (lucide name OR uploaded file URL), `visible` boolean, `clickCount` integer, and a `theme` sub-object (primaryColor, backgroundColor, backgroundGradient, backgroundImageUrl). Existing `links` and `socialLinks` arrays remain backward-compatible.
+- [x] **LINKS-01**: `linksPageConfig` JSONB on `company_settings` extended to support per-link `iconType` ('lucide' | 'upload' | 'auto'), `iconValue` (lucide name OR uploaded file URL), `visible` boolean, `clickCount` integer, and a `theme` sub-object (primaryColor, backgroundColor, backgroundGradient, backgroundImageUrl). Existing `links` and `socialLinks` arrays remain backward-compatible.
 - [x] **LINKS-02**: File uploads for avatar, background image, and per-link icons route to Supabase Storage bucket `uploads` under path prefix `links-page/{type}/{timestamp}-{hash}.{ext}`. Uploaded URLs returned to admin and persisted in linksPageConfig.
-- [ ] **LINKS-03**: Each link has a stable `id` (UUID) assigned at create time so click analytics and reordering survive edits.
+- [x] **LINKS-03**: Each link has a stable `id` (UUID) assigned at create time so click analytics and reordering survive edits.
 
 ### Click Analytics API
 
