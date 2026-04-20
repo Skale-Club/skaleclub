@@ -48,7 +48,7 @@ Standard 8-point scale. The viewer uses full-viewport sections — intra-section
 | 3xl | 64px | `px-16` | Section content horizontal padding on wide viewports |
 
 Exceptions:
-- Navigation dots: 8px gap between dots (`gap-2`), active dot `w-2.5 h-2.5` (10px), inactive dot `w-2 h-2` (8px) — sub-4px precision is acceptable for decorative indicator sizing
+- Navigation dots: 8px gap between dots (`gap-2`), active dot `w-3 h-3` (12px), inactive dot `w-2 h-2` (8px) — both are multiples of 4
 - Touch target minimum: each navigation dot button has `min-w-[44px] min-h-[44px]` container even though the visual dot is smaller — ensures WCAG 2.5.5 touch target compliance
 - Section content card: `max-w-xl` (576px) centered with `px-6` horizontal padding on mobile, `px-16` on large screens
 
@@ -61,15 +61,15 @@ The viewer uses the same Inter font as the rest of the project. Two weights only
 | Role | Size | Tailwind Class | Weight | Tailwind Weight | Line Height | Usage |
 |------|------|----------------|--------|-----------------|-------------|-------|
 | Display | 48px | `text-5xl` | Semibold | `font-semibold` (600) | 1.1 | Cover section — client name (`clientName`) |
-| Heading | 28px | `text-3xl` | Semibold | `font-semibold` (600) | 1.2 | Service section title, closing section headline |
+| Heading | 28px | `text-3xl` | Semibold | `font-semibold` (600) | 1.2 | Service section title, service price, closing section headline, access code gate heading, 404 error heading |
 | Body | 16px | `text-base` | Regular | `font-normal` (400) | 1.5 | Service description, intro body text, features list items |
-| Label | 14px | `text-sm` | Regular | `font-normal` (400) | 1.4 | Price display, "Proposal for" eyebrow label, section metadata, gate heading, inline error |
+| Label | 14px | `text-sm` | Regular | `font-normal` (400) | 1.4 | "Proposal for" eyebrow label, section metadata, inline error |
 
 Weights in use: **Regular (400)** and **Semibold (600)**. Exactly 2 weights.
 
 **Special treatment:**
 - "Proposal for" eyebrow on cover: `text-sm font-normal tracking-widest uppercase text-zinc-400`
-- Price value on service sections: `text-2xl font-semibold text-white` — uses heading size to give price visual emphasis
+- Price value on service sections: `text-3xl font-semibold text-white` — same as heading size; price is structurally a heading-level element
 - Feature list items: `text-sm font-normal text-zinc-300` — slightly dimmer than body to reduce visual noise
 
 ---
@@ -90,7 +90,7 @@ The viewer is always rendered in a hardcoded dark palette using Tailwind zinc ut
 2. Client name on cover section — `text-white text-5xl font-semibold`
 3. Service section title — `text-white text-3xl font-semibold`
 4. Closing section headline — `text-white`
-5. Access code gate "Submit" button — uses `Button` default variant (primary blue, existing shadcn token) — NOT pure white. See note below.
+5. Access code gate "Unlock Proposal" button — uses `Button` default variant (primary blue, existing shadcn token) — NOT pure white. See note below.
 
 **Supporting colors:**
 - `text-zinc-400` — dimmed supporting text (eyebrow labels, intro body, section subtitles)
@@ -100,7 +100,7 @@ The viewer is always rendered in a hardcoded dark palette using Tailwind zinc ut
 - `border-zinc-700` — access code input border (visible but subtle against zinc-950)
 - Section gradient: `bg-gradient-to-b from-zinc-800/20 to-transparent` — from zinc-800 at 20% opacity fading to transparent (D-02)
 
-**Access code button note:** The "Submit" button in the gate uses the standard shadcn `Button` component at `variant="default"` — which resolves to `--primary` (brand blue `hsl(217 91% 60%)` in dark context). This maintains brand consistency even inside the dark viewer. Do NOT override to white or zinc.
+**Access code button note:** The "Unlock Proposal" button in the gate uses the standard shadcn `Button` component at `variant="default"` — which resolves to `--primary` (brand blue `hsl(217 91% 60%)` in dark context). This maintains brand consistency even inside the dark viewer. Do NOT override to white or zinc.
 
 **Admin list badges (additive changes to EstimatesSection.tsx):**
 - View count badge: `Badge variant="secondary"` with `Eye` icon + count integer — inherits admin theme colors
@@ -116,7 +116,7 @@ All components are from the existing shadcn installation or existing codebase. N
 
 | Component | Import Path | Usage |
 |-----------|-------------|-------|
-| `Button` | `@/components/ui/button` | Access code gate "Submit" button; loading state with Loader2 inside |
+| `Button` | `@/components/ui/button` | Access code gate "Unlock Proposal" button; loading state with Loader2 inside |
 | `Input` | `@/components/ui/input` | Access code text input (styled override: `bg-zinc-900 border-zinc-700 text-white text-center`) |
 | `Badge` | `@/components/ui/badge` | View count badge in EstimatesSection list rows (additive Phase 8 change) |
 
@@ -168,7 +168,7 @@ Full viewport: h-screen bg-zinc-950 flex items-center justify-center
 Full viewport: h-screen bg-zinc-950 flex items-center justify-center
   Centered column (flex flex-col items-center gap-4 text-center):
     text-zinc-400 text-sm uppercase tracking-widest  →  "Proposal not found"
-    text-white text-2xl font-semibold                →  "This link may have expired or been removed."
+    text-white text-3xl font-semibold                →  "This link may have expired or been removed."
     text-zinc-400 text-sm                            →  "Contact Skale Club for a new proposal link."
 ```
 
@@ -178,7 +178,7 @@ Full viewport: h-screen bg-zinc-950 flex items-center justify-center
 Full viewport: h-screen bg-zinc-950 flex items-center justify-center
   Centered column max-w-sm w-full px-6 (flex flex-col items-center gap-4):
     [Logo: Skale Club wordmark or SVG — top of gate, mb-2]
-    h1 text-white text-xl font-semibold text-center  →  "Enter access code"
+    h1 text-white text-3xl font-semibold text-center  →  "Enter access code"
     Input
       type="text"
       className="bg-zinc-900 border-zinc-700 text-white text-center w-full"
@@ -188,7 +188,7 @@ Full viewport: h-screen bg-zinc-950 flex items-center justify-center
       p className="text-destructive text-sm"  →  "Incorrect code"  (D-09)
     Button variant="default" disabled={isPending || !code}
       {isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-      "Submit"
+      "Unlock Proposal"
 ```
 
 ### Viewer Layout (EST-13 through EST-17)
@@ -206,7 +206,7 @@ Navigation Dots (fixed):
           "rounded-full transition-all duration-200",
           "min-w-[44px] min-h-[44px] flex items-center justify-center",
           activeIndex === i
-            ? "w-2.5 h-2.5 bg-white scale-125"
+            ? "w-3 h-3 bg-white scale-125"
             : "w-2 h-2 bg-white/30 hover:bg-white/60"
         )}
         onClick: sectionRefs.current[i]?.scrollIntoView({ behavior: 'smooth' })
@@ -235,7 +235,7 @@ Service Sections (EST-16) — one per estimate.services[i]:
       p className="text-zinc-400 text-sm uppercase tracking-widest mb-2"  →  "Service {i + 1} of {total}"
       h2 className="text-3xl font-semibold text-white mb-2"               →  {service.title}
       p className="text-base text-zinc-400 leading-relaxed mb-6"          →  {service.description}
-      p className="text-2xl font-semibold text-white mb-6"                →  {formatPrice(service.price)}
+      p className="text-3xl font-semibold text-white mb-6"                →  {formatPrice(service.price)}
       [Features list — if service.features.length > 0]
         ul className="space-y-2":
           li className="flex items-start gap-2 text-sm text-zinc-300":
@@ -281,7 +281,7 @@ Closing Section (EST-17):
 - Submit: `POST /api/estimates/:id/verify-code` with `{ code }`
 - On 200: set `isUnlocked = true` (React state) — viewer renders, view tracking fires
 - On 401: set inline `error = "Incorrect code"` — error shown under input, input retains focus
-- On Enter key: same behavior as clicking Submit button
+- On Enter key: same behavior as clicking "Unlock Proposal" button
 - Code field: clears error state on any `onChange` event
 - Submit button: disabled when `!code` or `isPending`
 
@@ -316,7 +316,7 @@ Closing Section (EST-17):
 | 404 section body | "Contact Skale Club for a new proposal link." | Solution path |
 | Gate heading | "Enter access code" | D-08 verbatim |
 | Gate inline error | "Incorrect code" | D-09 verbatim — short, no period |
-| Gate submit button | "Submit" | Neutral — no verb ambiguity |
+| Gate submit button | "Unlock Proposal" | Specific verb + noun — action is unlocking access to the proposal |
 | Cover eyebrow | "Proposal for" | Clear, professional |
 | Intro section eyebrow | "About Skale Club" | Descriptive |
 | Intro section heading | "We help businesses grow smarter." | Short, benefit-oriented brand statement |
