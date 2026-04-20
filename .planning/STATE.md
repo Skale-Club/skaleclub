@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Estimates System
 status: executing
-last_updated: "2026-04-19T00:00:00.000Z"
+last_updated: "2026-04-20T00:39:02.353Z"
 progress:
   total_phases: 4
   completed_phases: 3
@@ -24,7 +24,7 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-04-19)
 
 **Core value:** Clients receive a proposal link and experience Skale Club services as an immersive, professional presentation — not a PDF.
-**Current focus:** Phase 08 — admin-ui-estimatessection
+**Current focus:** Phase 09 — public-viewer
 
 ---
 
