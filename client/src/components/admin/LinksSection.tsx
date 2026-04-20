@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from '@/components/ui/loader';
 
@@ -299,7 +300,7 @@ export function LinksSection() {
               {config.links.map((link, index) => (
                 <div
                   key={link.id ?? index}
-                  className="p-4 border rounded-lg bg-muted/30 group relative"
+                  className={`p-4 border rounded-lg bg-muted/30 group relative transition-opacity ${link.visible === false ? 'opacity-50' : ''}`}
                   data-testid={`link-row-${index}`}
                 >
                   <div className="flex gap-4 items-start">
@@ -309,6 +310,14 @@ export function LinksSection() {
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant="secondary" className="text-xs">{link.clickCount ?? 0} clicks</Badge>
+                        <div className="flex items-center gap-2 ml-auto">
+                          <Label htmlFor={`visible-${index}`} className="text-xs text-muted-foreground cursor-pointer">Visible</Label>
+                          <Switch
+                            id={`visible-${index}`}
+                            checked={link.visible !== false}
+                            onCheckedChange={(checked) => updateLink(index, { visible: checked })}
+                          />
+                        </div>
                       </div>
                       <div className="space-y-2">
                         <Label>Link Title</Label>
