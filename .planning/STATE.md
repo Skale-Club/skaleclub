@@ -3,19 +3,19 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Links Page Upgrade
 status: planning
-last_updated: "2026-04-20T12:57:40.254Z"
-last_activity: "2026-04-19 — Plan 10-01 shipped: linksPageConfig Zod schemas + UUID transform + normalizeLinksPageConfig helper wired into storage"
+last_updated: "2026-04-19T00:00:00.000Z"
+last_activity: "2026-04-19 — Plan 11-01 shipped: public POST /api/links-page/click/:linkId with IP rate limiter (LINKS-04, LINKS-05 complete)"
 progress:
   total_phases: 5
-  completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  completed_phases: 2
+  total_plans: 3
+  completed_plans: 3
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** v1.3 roadmap created — Phase 10 ready to plan
+**Status:** v1.3 in progress — Phase 11 shipped, Phase 12 next
 
 ---
 
@@ -24,16 +24,16 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-04-20)
 
 **Core value:** Admin manages a rich Linktree-style page with real file uploads, per-link icons, click analytics, and a live-preview editor.
-**Current focus:** Phase 10 — Schema & Upload Foundation (next to start)
+**Current focus:** Phase 12 — Admin Redesign + Core Editing (next to plan)
 
 ---
 
 ## Current Position
 
-Phase: 10 — Schema & Upload Foundation (plans 2/2 complete — ready for /gsd:verify-work)
-Plan: Phase 10 done; next is Phase 11 (click endpoint) once Phase 10 verifier passes
-Status: Plans 10-01 + 10-02 both shipped; awaiting phase-level verification (live curl smokes deferred to verify gate)
-Last activity: 2026-04-20 — Plan 10-02 shipped: POST /api/uploads/links-page (admin-auth, base64 JSON, MIME allowlist, 2 MB cap, 503 env guard) + uploadLinksPageAsset method on SupabaseStorageService
+Phase: 11 — Click Analytics API (plans 1/1 complete — ready for /gsd:verify-work)
+Plan: Phase 11 done; next is Phase 12 (admin redesign + core editing) once Phase 11 verifier passes
+Status: Plan 11-01 shipped — public endpoint registered + documented; live curl smoke matrix deferred to verify gate
+Last activity: 2026-04-19 — Plan 11-01 shipped: POST /api/links-page/click/:linkId public endpoint with 60s IP+linkId in-memory rate limiter (LINKS-04, LINKS-05 complete)
 
 ---
 
@@ -70,10 +70,11 @@ Last activity: 2026-04-20 — Plan 10-02 shipped: POST /api/uploads/links-page (
 |--------|-------|
 | Requirements | 17 total, 17/17 mapped |
 | Phases planned | 5 (Phases 10-14) |
-| Phases completed | 0/5 |
-| Plans executed | 2 |
+| Phases completed | 2/5 (Phases 10 + 11) |
+| Plans executed | 3 |
 | Phase 10-schema-upload-foundation P01 | ~25m | 3 tasks | 3 files |
 | Phase 10-schema-upload-foundation P02 | ~3m | 3 tasks | 3 files |
+| Phase 11-click-analytics-api P01 | ~10m | 3 tasks | 4 files |
 
 ---
 
@@ -108,6 +109,10 @@ Last activity: 2026-04-20 — Plan 10-02 shipped: POST /api/uploads/links-page (
 - [Phase 10-02]: Path uses {timestamp}-{randomUUID} (not content hash) for v1.3 — matches existing uploadBuffer convention; idempotency-by-content-hash deferred
 - [Phase 10-02]: Pre-flight 503 env guard (Xpot leads precedent) before deep getSupabaseAdmin throw — clearer error in misconfigured envs
 - [Phase 10-02]: Defensive data-URL prefix strip (data:image/png;base64,...) — accepts both raw base64 and full data URLs from clients
+- [Phase 11-01]: Return 204 (not 429) on rate-limit so navigator.sendBeacon does not surface a console error on the public /links page
+- [Phase 11-01]: In-memory Map rate limit accepted for v1.3 — per-process (Vercel); duplicate counts across function containers tolerable for analytics
+- [Phase 11-01]: Admin click-count badge UI deferred to Phase 12; LINKS-05 shipped as data-surface contract (normalizer guarantee) not as rendered UI
+- [Phase 11-01]: Array.from(map.entries()) instead of for..of over Map — tsconfig has no target/downlevelIteration flags, so direct Map iteration hits TS2802 (scoped fix preferred over global tsconfig change)
 
 ### Quick Tasks Completed
 
@@ -133,7 +138,8 @@ None.
 | 2026-04-20 | v1.3 roadmap created | 5 phases (10-14), 17/17 reqs mapped, Phase 10 ready to plan |
 | 2026-04-19 | Plan 10-01 executed | Schema + normalizer shipped (3 tasks, 3 commits); 10-02 next |
 | 2026-04-20 | Plan 10-02 executed | Upload endpoint live (3 tasks, 3 commits: 7ebdaf4, 86ae880, 0e744f9); Phase 10 plans 2/2 — ready for /gsd:verify-work |
+| 2026-04-19 | Plan 11-01 executed | Click endpoint live (3 tasks, 3 commits: f7e3fb9, 72ede6e, 2900a80); Phase 11 plans 1/1 — ready for /gsd:verify-work |
 
 ---
 
-*Last updated: 2026-04-20 — Plan 10-02 complete (upload endpoint live); Phase 10 plans 2/2 — ready for /gsd:verify-work*
+*Last updated: 2026-04-19 — Plan 11-01 complete (click endpoint + rate limiter); Phase 11 plans 1/1 — ready for /gsd:verify-work*
