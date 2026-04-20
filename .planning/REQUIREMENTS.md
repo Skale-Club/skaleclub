@@ -28,12 +28,12 @@
 
 - [x] **EST-11**: View tracking — every time the public estimate viewer (/e/:slug) is loaded, record a view event. The admin list view must display view_count and last_viewed_at per estimate. Implementation: new `estimate_views` table (id, estimate_id, viewed_at, ip_address optional) — event log approach, not a counter column.
 - [x] **EST-12**: Password protection — an estimate can optionally have a password (stored as bcrypt hash in a new `password_hash text` column on estimates). If set, the public viewer shows a password gate before rendering. The admin create/edit dialog must allow setting/clearing the password.
-- [ ] **EST-13**: Navigating to `/e/:slug` renders fullscreen scroll-snap sections with no Navbar, Footer, or ChatWidget present
-- [ ] **EST-14**: First section shows a cover with the client name and Skale Club branding
-- [ ] **EST-15**: Second section shows a fixed Skale Club introduction
-- [ ] **EST-16**: Each service in the estimate renders as its own fullscreen section showing title, description, price, and features list
-- [ ] **EST-17**: A final visual closing section appears after all service sections with no acceptance CTA button
-- [ ] **EST-18**: Navigating to `/e/unknown-slug` renders a graceful 404 page rather than crashing or showing a blank screen
+- [x] **EST-13**: Navigating to `/e/:slug` renders fullscreen scroll-snap sections with no Navbar, Footer, or ChatWidget present
+- [x] **EST-14**: First section shows a cover with the client name and Skale Club branding
+- [x] **EST-15**: Second section shows a fixed Skale Club introduction
+- [x] **EST-16**: Each service in the estimate renders as its own fullscreen section showing title, description, price, and features list
+- [x] **EST-17**: A final visual closing section appears after all service sections with no acceptance CTA button
+- [x] **EST-18**: Navigating to `/e/unknown-slug` renders a graceful 404 page rather than crashing or showing a blank screen
 
 ## Out of Scope
 
@@ -61,12 +61,12 @@
 | EST-10 | Phase 8 | Complete |
 | EST-11 | Phase 9 | Complete |
 | EST-12 | Phase 9 | Complete |
-| EST-13 | Phase 9 | Pending |
-| EST-14 | Phase 9 | Pending |
-| EST-15 | Phase 9 | Pending |
-| EST-16 | Phase 9 | Pending |
-| EST-17 | Phase 9 | Pending |
-| EST-18 | Phase 9 | Pending |
+| EST-13 | Phase 9 | Complete |
+| EST-14 | Phase 9 | Complete |
+| EST-15 | Phase 9 | Complete |
+| EST-16 | Phase 9 | Complete |
+| EST-17 | Phase 9 | Complete |
+| EST-18 | Phase 9 | Complete |
 
 **Coverage:**
 - v1.2 requirements: 18 total
