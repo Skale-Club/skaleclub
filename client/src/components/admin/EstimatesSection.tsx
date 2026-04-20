@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
-  Copy, GripVertical, Loader2, Pencil, Plus, Receipt, Trash2
+  Copy, Eye, GripVertical, Loader2, Pencil, Plus, Receipt, Trash2
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import {
   DndContext, closestCenter, type DragEndEvent,
   MouseSensor, TouchSensor, useSensor, useSensors
@@ -30,7 +30,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { EmptyState, SectionHeader } from './shared';
-import type { Estimate, EstimateServiceItem, CatalogServiceItem } from '@shared/schema';
+import type { Estimate, EstimateWithStats, EstimateServiceItem, CatalogServiceItem } from '@shared/schema';
 import type { PortfolioService } from '@shared/schema';
 
 // ──────────────────────────────────────────────────────────
@@ -119,11 +119,12 @@ function EstimateDialogForm({
   isPending,
 }: {
   editingEstimate: Estimate | null;
-  onSave: (clientName: string, note: string | null, services: EstimateServiceItem[]) => void;
+  onSave: (clientName: string, note: string | null, services: EstimateServiceItem[], accessCode: string | null) => void;
   isPending: boolean;
 }) {
   const [clientName, setClientName] = useState(editingEstimate?.clientName ?? '');
   const [note, setNote] = useState(editingEstimate?.note ?? '');
+  const [accessCode, setAccessCode] = useState(editingEstimate?.accessCode ?? '');
   const [services, setServices] = useState<EstimateServiceItem[]>(
     editingEstimate?.services ?? []
   );
@@ -198,7 +199,7 @@ function EstimateDialogForm({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          onSave(clientName, note || null, services);
+          onSave(clientName, note || null, services, accessCode || null);
         }}
         className="flex flex-col gap-5 mt-2"
       >
@@ -223,6 +224,17 @@ function EstimateDialogForm({
               value={note}
               onChange={(e) => setNote(e.target.value)}
             />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="accessCode">Access code (optional)</Label>
+            <Input
+              id="accessCode"
+              type="text"
+              placeholder="e.g. 20260419"
+              value={accessCode}
+              onChange={(e) => setAccessCode(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">Leave blank to disable gate</p>
           </div>
         </div>
 
@@ -317,12 +329,12 @@ export function EstimatesSection() {
   const [editingEstimate, setEditingEstimate] = useState<Estimate | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Estimate | null>(null);
 
-  const { data: estimates = [], isLoading } = useQuery<Estimate[]>({
+  const { data: estimates = [], isLoading } = useQuery<EstimateWithStats[]>({
     queryKey: ['/api/estimates'],
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: { clientName: string; note: string | null; services: EstimateServiceItem[] }) => {
+    mutationFn: async (data: { clientName: string; note: string | null; services: EstimateServiceItem[]; accessCode: string | null }) => {
       const res = await apiRequest('POST', '/api/estimates', data);
       return res.json() as Promise<Estimate>;
     },
@@ -337,11 +349,12 @@ export function EstimatesSection() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (data: { id: number; clientName: string; note: string | null; services: EstimateServiceItem[] }) => {
+    mutationFn: async (data: { id: number; clientName: string; note: string | null; services: EstimateServiceItem[]; accessCode: string | null }) => {
       const res = await apiRequest('PUT', `/api/estimates/${data.id}`, {
         clientName: data.clientName,
         note: data.note,
         services: data.services,
+        accessCode: data.accessCode,
       });
       return res.json() as Promise<Estimate>;
     },
@@ -422,6 +435,15 @@ export function EstimatesSection() {
               <span className="text-xs text-muted-foreground">
                 {est.createdAt ? format(new Date(est.createdAt), 'MMM d, yyyy') : '—'}
               </span>
+              <Badge variant="secondary" className="text-xs gap-1 shrink-0">
+                <Eye className="w-3 h-3" />
+                {est.viewCount ?? 0}
+              </Badge>
+              {est.lastViewedAt && (
+                <span className="text-xs text-muted-foreground shrink-0">
+                  last seen {formatDistanceToNow(new Date(est.lastViewedAt), { addSuffix: true })}
+                </span>
+              )}
               <div className="flex gap-2 shrink-0">
                 <Button
                   variant="ghost"
@@ -486,12 +508,12 @@ export function EstimatesSection() {
           <EstimateDialogForm
             key={editingEstimate?.id ?? 'new'}
             editingEstimate={editingEstimate}
-            onSave={(clientName, note, services) => {
+            onSave={(clientName, note, services, accessCode) => {
               const servicesWithOrder = services.map((s, i) => ({ ...s, order: i }));
               if (editingEstimate) {
-                updateMutation.mutate({ id: editingEstimate.id, clientName, note, services: servicesWithOrder });
+                updateMutation.mutate({ id: editingEstimate.id, clientName, note, services: servicesWithOrder, accessCode });
               } else {
-                createMutation.mutate({ clientName, note, services: servicesWithOrder });
+                createMutation.mutate({ clientName, note, services: servicesWithOrder, accessCode });
               }
             }}
             isPending={createMutation.isPending || updateMutation.isPending}
