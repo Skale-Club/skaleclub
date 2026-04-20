@@ -4,6 +4,20 @@
 
 Skale Club is an agency web platform combining a public marketing site, an admin dashboard, and a field sales CRM (Xpot). The Estimates System (v1.2) lets admins compose branded service proposals from the portfolio catalog and share them as immersive fullscreen scroll-snap experiences at a private `/e/:slug` link — with optional access code protection and view tracking.
 
+## Current Milestone: v1.3 Links Page Upgrade
+
+**Goal:** Transform the public Links page and its admin surface into a Linktree-class experience — real file uploads to Supabase Storage, per-link icons, click analytics, theming, and a redesigned admin with live preview.
+
+**Target features:**
+- Per-link icon (pick from Lucide library or upload custom SVG/PNG)
+- File upload for avatar / background / link icons to Supabase Storage (replacing URL text fields), with visible upload feedback
+- Toggle visible/hidden per link (soft-show, no delete)
+- Drag-and-drop reordering of links in admin
+- Click analytics per link (increment on public click, displayed in admin)
+- Theme customization: primary color, background color/gradient, optional background image
+- Admin redesign with live preview pane — admin edits reflect in a `/links` preview embed
+- Redesigned admin layout (Profile / Preview / Links+Social zones)
+
 ## Core Value
 
 Clients receive a proposal link and experience Skale Club services as an immersive, professional presentation — not a PDF.
@@ -38,7 +52,7 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 
 ### Active
 
-(None — planning next milestone)
+- **LINKS-01 → LINKS-XX**: v1.3 Links Page Upgrade (see REQUIREMENTS.md)
 
 ### Out of Scope
 
@@ -80,5 +94,22 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 | estimate_views event-log table, not counter column (v1.2) | Queryable history, cascade delete, no UPDATE contention | ✅ Validated |
 | isEstimateRoute guard before Navbar in App.tsx (v1.2) | Structural isolation — no conditional rendering inside layout | ✅ Validated |
 
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd:transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd:complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
+
 ---
-*Last updated: 2026-04-20 after v1.2 Estimates System milestone*
+*Last updated: 2026-04-20 — milestone v1.3 Links Page Upgrade started*

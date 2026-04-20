@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: Estimates System
-status: completed
-last_updated: "2026-04-20T01:01:26.394Z"
+milestone: v1.3
+milestone_name: Links Page Upgrade
+status: defining-requirements
+last_updated: "2026-04-20T00:00:00.000Z"
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 8
-  completed_plans: 8
-  percent: 88
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # STATE: Skale Club Web Platform
@@ -30,21 +30,10 @@ See: `.planning/PROJECT.md` (updated 2026-04-19)
 
 ## Current Position
 
-Phase: 09
-Plan: Not started
-| Field | Value |
-|-------|-------|
-| Milestone | v1.2 — Estimates System |
-| Phase | 9 — Public Viewer |
-| Status | Executing |
-
-**Progress:**
-
-[█████████░] 88%
-[x] Phase 6: DB Schema + Storage Layer
-[x] Phase 7: Admin API Routes
-[x] Phase 8: Admin UI (EstimatesSection)
-[ ] Phase 9: Public Viewer (Plan 1/3 complete)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-04-20 — Milestone v1.3 Links Page Upgrade started
 
 ---
 
@@ -120,6 +109,7 @@ None.
 | 2026-04-14/15 | v1.1 M3 complete (tracked in PAUL) | GSD synced 2026-04-19 |
 | 2026-04-19 | GSD retroactive sync | ready for `/gsd:new-milestone` |
 | 2026-04-19 | v1.2 milestone initialized | REQUIREMENTS.md + PROJECT.md created, Phase 6 ready to plan |
+| 2026-04-20 | v1.3 milestone initialized | Defining requirements for Links Page Upgrade |
 
 ---
 
