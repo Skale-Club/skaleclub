@@ -318,6 +318,27 @@ export const translations = {
     'Background Image': 'Imagem de Fundo',
     'PNG, JPG, WebP, SVG, or AVIF up to 2 MB': 'PNG, JPG, WebP, SVG ou AVIF até 2 MB',
     'Optional. Appears behind the /links page.': 'Opcional. Aparece atrás da página /links.',
+
+    // Admin — Links Page Theme Editor (Phase 13-02)
+    'Theme': 'Tema',
+    'Colors and background for your links page': 'Cores e plano de fundo da sua página de links',
+    'Primary Color': 'Cor Primária',
+    'Background Color': 'Cor de Fundo',
+    'Background Gradient (CSS)': 'Gradiente de Fundo (CSS)',
+    'Optional. If set, overrides background color on the public page.': 'Opcional. Se definido, substitui a cor de fundo na página pública.',
+    'Reset to defaults': 'Restaurar padrões',
+
+    // Admin — Links Page Icon Picker (Phase 13-01)
+    'Change icon': 'Alterar ícone',
+    'Preview': 'Pré-visualização',
+    'Lucide': 'Lucide',
+    'Upload': 'Enviar',
+    'Auto': 'Automático',
+    'Search icons...': 'Pesquisar ícones...',
+    'No icons match your search': 'Nenhum ícone corresponde à sua pesquisa',
+    'Upload icon': 'Enviar ícone',
+    'Automatically picks an icon based on the destination URL.': 'Escolhe automaticamente um ícone com base na URL de destino.',
+    'Use automatic icon': 'Usar ícone automático',
   }
 } as const;
 
