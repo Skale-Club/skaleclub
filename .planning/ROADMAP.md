@@ -24,7 +24,7 @@
 
 - [ ] Phase 10: Schema & Upload Foundation (0/2 plans)
 - [ ] Phase 11: Click Analytics API (1/1 plans)
-- [ ] Phase 12: Admin Redesign + Core Editing (0/? plans)
+- [ ] Phase 12: Admin Redesign + Core Editing (0/3 plans)
 - [ ] Phase 13: Icon Picker, Theme Editor & Live Preview (0/? plans)
 - [ ] Phase 14: Public Page Rendering + Click Tracking (0/? plans)
 
@@ -104,7 +104,10 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
   2. Admin can drag-and-drop an image onto the Avatar or Background uploader, sees a spinner, then a thumbnail + "Uploaded ✓" confirmation, and the URL is persisted to `linksPageConfig`.
   3. Admin can toggle a link's visibility switch; hidden links render at reduced opacity in the admin list and are not displayed on the public page.
   4. Admin can drag links to reorder them; the new order persists on save and is reflected on the next public-page load.
-**Plans**: TBD
+**Plans:**
+- [ ] 12-01-PLAN.md — Three-zone skeleton + visibility toggle (LINKS-07, LINKS-10)
+- [ ] 12-02-PLAN.md — DragDropUploader for avatar/background (LINKS-08)
+- [ ] 12-03-PLAN.md — Drag-reorder links (LINKS-11)
 **UI hint**: yes
 
 ### Phase 13: Icon Picker, Theme Editor & Live Preview
