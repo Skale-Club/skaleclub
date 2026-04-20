@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
-  Copy, Eye, GripVertical, Loader2, Pencil, Plus, Receipt, Trash2
+  Copy, ExternalLink, Eye, GripVertical, Loader2, Pencil, Plus, Receipt, Trash2
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import {
@@ -445,6 +445,14 @@ export function EstimatesSection() {
                 </span>
               )}
               <div className="flex gap-2 shrink-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Open estimate"
+                  onClick={() => window.open(`/e/${est.slug}`, '_blank', 'noopener,noreferrer')}
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"

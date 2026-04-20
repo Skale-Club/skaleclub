@@ -167,8 +167,7 @@ function Router() {
           <Switch>
             <Route path="/admin/login" component={AdminLogin} />
             <Route path="/admin/signup" component={AdminSignup} />
-            <Route path="/admin" component={Admin} />
-            <Route path="/admin/:rest*" component={Admin} />
+            <Route path="/admin/*?" component={Admin} />
             <Route component={NotFound} />
           </Switch>
         </Suspense>
@@ -183,14 +182,12 @@ function Router() {
           {xpotHost ? (
             <>
               <Route path="/login" component={XpotLogin} />
-              <Route path="/" component={XpotApp} />
-              <Route path="/:rest*" component={XpotApp} />
+              <Route path="/*?" component={XpotApp} />
             </>
           ) : (
             <>
               <Route path="/xpot/login" component={XpotLogin} />
-              <Route path="/xpot" component={XpotApp} />
-              <Route path="/xpot/:rest*" component={XpotApp} />
+              <Route path="/xpot/*?" component={XpotApp} />
             </>
           )}
           <Route component={NotFound} />
