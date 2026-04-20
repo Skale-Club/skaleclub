@@ -14,6 +14,7 @@ import {
   blogPosts,
   portfolioServices,
   estimates,
+  estimateViews,
   salesReps,
   salesLeads,
   salesLeadLocations,
@@ -53,6 +54,7 @@ import {
   type SalesAppSettings,
   type Estimate,
   type InsertEstimate,
+  type EstimateWithStats,
   type InsertPortfolioService,
   type InsertChatSettings,
   type InsertChatIntegrations,
@@ -77,7 +79,7 @@ import {
   type SalesOpportunityStatus,
   type SalesTaskStatus,
 } from "#shared/schema.js";
-import { eq, and, or, ilike, gte, lt, desc, asc, sql, ne, inArray } from "drizzle-orm";
+import { eq, and, or, ilike, gte, lt, desc, asc, sql, ne, inArray, count } from "drizzle-orm";
 
 const companySettingsSchemaPatches = [
   sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "seo_keywords" text DEFAULT ''`,
@@ -1773,8 +1775,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Estimates
-  async listEstimates(): Promise<Estimate[]> {
-    return await db.select().from(estimates).orderBy(desc(estimates.createdAt));
+  async listEstimates(): Promise<EstimateWithStats[]> {
+    const rows = await db
+      .select({
+        id: estimates.id,
+        clientName: estimates.clientName,
+        slug: estimates.slug,
+        note: estimates.note,
+        services: estimates.services,
+        accessCode: estimates.accessCode,
+        createdAt: estimates.createdAt,
+        updatedAt: estimates.updatedAt,
+        viewCount: sql<number>`count(${estimateViews.id})::int`,
+        lastViewedAt: sql<Date | null>`max(${estimateViews.viewedAt})`,
+      })
+      .from(estimates)
+      .leftJoin(estimateViews, eq(estimateViews.estimateId, estimates.id))
+      .groupBy(estimates.id)
+      .orderBy(desc(estimates.createdAt));
+    return rows as EstimateWithStats[];
   }
 
   async getEstimate(id: number): Promise<Estimate | undefined> {
@@ -1802,6 +1821,13 @@ export class DatabaseStorage implements IStorage {
 
   async deleteEstimate(id: number): Promise<void> {
     await db.delete(estimates).where(eq(estimates.id, id));
+  }
+
+  async recordEstimateView(estimateId: number, ipAddress?: string): Promise<void> {
+    await db.insert(estimateViews).values({
+      estimateId,
+      ipAddress: ipAddress ?? null,
+    });
   }
 }
 
