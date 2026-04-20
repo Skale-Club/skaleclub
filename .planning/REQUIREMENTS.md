@@ -1,78 +1,79 @@
-# Requirements: Skale Club Web Platform — v1.2 Estimates System
+# Requirements: Skale Club Web Platform — v1.3 Links Page Upgrade
 
-**Defined:** 2026-04-19
-**Core Value:** Admin creates branded proposal estimates; clients view them as polished fullscreen proposals at a private link
+**Defined:** 2026-04-20
+**Core Value:** Admin manages a rich Linktree-style page with real file uploads, per-link icons, click analytics, and a live-preview editor.
 
-## v1.2 Requirements
+## v1.3 Requirements
 
-### Schema & Storage — Phase 6
+### Schema & Storage — Links Page Config + Uploads
 
-- [x] **EST-01**: `estimates` table exists in the database with clientName, UUID slug, optional note, and a JSONB `services` array; `npm run db:push` completes without error
-- [x] **EST-02**: Storage layer exposes six typed CRUD methods (create, getById, getBySlug, list, update, delete) callable from route handlers without TypeScript errors; a catalog service snapshot is immutable even after editing the source `portfolio_services` row
+- [ ] **LINKS-01**: `linksPageConfig` JSONB on `company_settings` extended to support per-link `iconType` ('lucide' | 'upload' | 'auto'), `iconValue` (lucide name OR uploaded file URL), `visible` boolean, `clickCount` integer, and a `theme` sub-object (primaryColor, backgroundColor, backgroundGradient, backgroundImageUrl). Existing `links` and `socialLinks` arrays remain backward-compatible.
+- [ ] **LINKS-02**: File uploads for avatar, background image, and per-link icons route to Supabase Storage bucket `uploads` under path prefix `links-page/{type}/{timestamp}-{hash}.{ext}`. Uploaded URLs returned to admin and persisted in linksPageConfig.
+- [ ] **LINKS-03**: Each link has a stable `id` (UUID) assigned at create time so click analytics and reordering survive edits.
 
-### Admin API — Phase 7
+### Click Analytics API
 
-- [x] **EST-03**: `GET /api/estimates` returns all estimates (clientName, slug, createdAt) — requires admin auth
-- [x] **EST-04**: `POST /api/estimates` creates an estimate with UUID slug; `PUT /api/estimates/:id` updates it; `DELETE /api/estimates/:id` removes it permanently — all require admin auth
-- [x] **EST-05**: `GET /api/estimates/slug/:slug` returns estimate data without authentication (for the public viewer)
+- [ ] **LINKS-04**: `POST /api/links-page/click/:linkId` increments `clickCount` for that link id in `company_settings.linksPageConfig.links` — unauthenticated (public page calls it), rate-limited by IP (max 1 click per link per IP per minute).
+- [ ] **LINKS-05**: Admin list displays `clickCount` next to each link (read from the same config, no extra endpoint).
 
-### Admin UI — Phase 8
+### File Upload Endpoint
 
-- [x] **EST-06**: Admin sees an "Estimates" tab in the sidebar with a list showing client name, slug, creation date, and a copy-link button
-- [x] **EST-07**: Admin can open a create/edit dialog, pick services from the portfolio catalog with title/description/price pre-filled and editable before saving
-- [x] **EST-08**: Admin can add freeform custom service rows (title, description, price entered manually — not linked to catalog) alongside catalog items
-- [x] **EST-09**: Admin can drag service rows to reorder them; order is preserved on save and re-edit
-- [x] **EST-10**: Admin can delete any estimate from the list
+- [ ] **LINKS-06**: `POST /api/uploads/links-page` accepts multipart file upload (image types only, max 2 MB), uploads to Supabase Storage `uploads` bucket under `links-page/`, returns `{ url }`. Admin-auth required.
 
-### Public Viewer — Phase 9
+### Admin UI — Redesign + Uploads + Icon Picker
 
-- [x] **EST-11**: View tracking — every time the public estimate viewer (/e/:slug) is loaded, record a view event. The admin list view must display view_count and last_viewed_at per estimate. Implementation: new `estimate_views` table (id, estimate_id, viewed_at, ip_address optional) — event log approach, not a counter column.
-- [x] **EST-12**: Password protection — an estimate can optionally have a password (stored as bcrypt hash in a new `password_hash text` column on estimates). If set, the public viewer shows a password gate before rendering. The admin create/edit dialog must allow setting/clearing the password.
-- [x] **EST-13**: Navigating to `/e/:slug` renders fullscreen scroll-snap sections with no Navbar, Footer, or ChatWidget present
-- [x] **EST-14**: First section shows a cover with the client name and Skale Club branding
-- [x] **EST-15**: Second section shows a fixed Skale Club introduction
-- [x] **EST-16**: Each service in the estimate renders as its own fullscreen section showing title, description, price, and features list
-- [x] **EST-17**: A final visual closing section appears after all service sections with no acceptance CTA button
-- [x] **EST-18**: Navigating to `/e/unknown-slug` renders a graceful 404 page rather than crashing or showing a blank screen
+- [ ] **LINKS-07**: Admin Links section is redesigned with three clear zones — Profile (left), Live Preview (center), Links + Social (right) — responsive to smaller screens by stacking. Visual polish matches the design tokens used by other admin sections (AdminCard/SectionHeader/FormGrid).
+- [ ] **LINKS-08**: Profile zone replaces URL text inputs for Avatar and Background Image with drag-and-drop file uploaders that call `/api/uploads/links-page`, show a spinner during upload, a "Uploaded ✓" confirmation, and render a thumbnail preview of the uploaded asset.
+- [ ] **LINKS-09**: Each link row exposes an **Icon Picker** that lets admin either (a) search and select from a searchable Lucide icon library (~1000 icons, debounced text search) OR (b) upload a custom SVG/PNG that becomes the link's icon. Selected icon is previewed at its final rendering size.
+- [ ] **LINKS-10**: Each link row has a visible/hidden toggle (Switch component) that controls whether the link renders on the public page; hidden links stay in the admin list with reduced opacity.
+- [ ] **LINKS-11**: Admin can drag-and-drop reorder links; order persists to `linksPageConfig.links[].order` and is reflected on the next public-page load.
+- [ ] **LINKS-12**: Theme editor (part of Profile zone or separate accordion) lets admin pick primary color (color picker), background color or gradient, and optionally upload a background image. Changes persist to `linksPageConfig.theme`.
+- [ ] **LINKS-13**: Live Preview pane renders `/links` in an `<iframe>` or direct component embed that re-queries company settings after each save so admin sees changes within ~1s without leaving the page.
+
+### Public Page — Rendering + Click Tracking
+
+- [ ] **LINKS-14**: Public `/links` page renders per-link icons from Lucide (by name) or from uploaded URL (as `<img>`), falling back to a generic link icon when neither is set.
+- [ ] **LINKS-15**: Public `/links` respects `visible=false` — hidden links are not rendered.
+- [ ] **LINKS-16**: Public `/links` applies `linksPageConfig.theme` — primaryColor used for hover/focus accents, backgroundColor/backgroundGradient applied to page root, backgroundImageUrl rendered as a fixed-position background layer behind the ambient glow.
+- [ ] **LINKS-17**: Clicking a link triggers `POST /api/links-page/click/:linkId` as a fire-and-forget `navigator.sendBeacon` call before the navigation proceeds, so the click count increments reliably even on external navigation.
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Estimate acceptance / e-signature | Scope for future milestone |
-| PDF export of proposals | Scope for future milestone |
-| Client login / per-user access control per estimate | Password protection (EST-12) is sufficient for v1.2; per-user auth is future scope |
-| Estimate templates | Manual composition is sufficient for v1.2 |
-| Estimate expiry / status tracking | Future milestone |
+| Multiple `/l/:slug` pages (multi-page) | Single `/links` page is sufficient for v1.3; per-campaign pages are future scope (can reuse vcards pattern if needed) |
+| Pinned / featured link styling | Deferred — visible/hidden + ordering covers primary curation needs |
+| Inline email capture form | Deferred — can be added as a link type in a future milestone |
+| A/B testing / scheduled links | Future — not a current business need |
+| QR code for the page | Already available via VCards feature; can be reused |
+| Per-link analytics beyond click count (geo, device, referrer) | Click count alone is enough for v1.3 signal |
+| Simple Icons (brand logo library) | Lucide + custom upload is enough; avoids external runtime dep |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| EST-01 | Phase 6 | Complete |
-| EST-02 | Phase 6 | Complete |
-| EST-03 | Phase 7 | Complete |
-| EST-04 | Phase 7 | Complete |
-| EST-05 | Phase 7 | Complete |
-| EST-06 | Phase 8 | Complete |
-| EST-07 | Phase 8 | Complete |
-| EST-08 | Phase 8 | Complete |
-| EST-09 | Phase 8 | Complete |
-| EST-10 | Phase 8 | Complete |
-| EST-11 | Phase 9 | Complete |
-| EST-12 | Phase 9 | Complete |
-| EST-13 | Phase 9 | Complete |
-| EST-14 | Phase 9 | Complete |
-| EST-15 | Phase 9 | Complete |
-| EST-16 | Phase 9 | Complete |
-| EST-17 | Phase 9 | Complete |
-| EST-18 | Phase 9 | Complete |
+| LINKS-01 | TBD | Pending |
+| LINKS-02 | TBD | Pending |
+| LINKS-03 | TBD | Pending |
+| LINKS-04 | TBD | Pending |
+| LINKS-05 | TBD | Pending |
+| LINKS-06 | TBD | Pending |
+| LINKS-07 | TBD | Pending |
+| LINKS-08 | TBD | Pending |
+| LINKS-09 | TBD | Pending |
+| LINKS-10 | TBD | Pending |
+| LINKS-11 | TBD | Pending |
+| LINKS-12 | TBD | Pending |
+| LINKS-13 | TBD | Pending |
+| LINKS-14 | TBD | Pending |
+| LINKS-15 | TBD | Pending |
+| LINKS-16 | TBD | Pending |
+| LINKS-17 | TBD | Pending |
 
 **Coverage:**
-- v1.2 requirements: 18 total
-- Mapped to phases: 18
-- Unmapped: 0 ✓
+- v1.3 requirements: 17 total
+- Mapped to phases: 0 (roadmapper fills this)
 
 ---
-*Requirements defined: 2026-04-19*
-*Last updated: 2026-04-19 after EST-11 and EST-12 added*
+*Requirements defined: 2026-04-20*
