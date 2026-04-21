@@ -50,7 +50,14 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 
 ### Active
 
-- **PRES-05 → PRES-22**: v1.4 Admin Presentations Page — phases 16–20 remaining (see REQUIREMENTS.md)
+- **PRES-09 → PRES-22**: v1.4 Admin Presentations Page — phases 17–20 remaining (see REQUIREMENTS.md)
+
+### Validated (v1.4 Phase 16)
+
+- ✓ **PRES-05**: `GET /api/presentations` admin list with slideCount/viewCount derived — Validated in Phase 16: Admin CRUD API
+- ✓ **PRES-06**: `POST /api/presentations` creates with empty slides, returns {id, slug} — Validated in Phase 16: Admin CRUD API
+- ✓ **PRES-07**: `PUT /api/presentations/:id` updates fields + auto-increments version — Validated in Phase 16: Admin CRUD API
+- ✓ **PRES-08**: `DELETE /api/presentations/:id` cascades presentation_views — Validated in Phase 16: Admin CRUD API
 
 ### Validated (v1.4 Phase 15)
 
@@ -119,4 +126,4 @@ This document evolves at phase transitions and milestone boundaries.
 ---
 - v1.3 shipped 2026-04-20: Links Page Upgrade (5 phases, 10 plans, 17/17 requirements — Supabase uploads, icon picker, click analytics, drag-reorder, theme editor, live preview, public rendering)
 
-*Last updated: 2026-04-21 — Phase 15 complete; DB schema, Drizzle types, Zod validators, storage stubs, and Anthropic SDK singleton all shipped*
+*Last updated: 2026-04-21 — Phase 16 complete; all 4 admin CRUD endpoints live, IStorage gap closed*
