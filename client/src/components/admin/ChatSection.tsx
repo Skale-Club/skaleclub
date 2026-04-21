@@ -11,7 +11,18 @@ import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from '@dnd-kit/utilities';
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Archive, GripVertical, LayoutGrid, Loader2, MessageSquare, RotateCcw, Search, Send, Settings, Trash2, User } from 'lucide-react';
+import {
+  Archive,
+  GripVertical,
+  LayoutGrid,
+  MessageSquare,
+  RotateCcw,
+  Search,
+  Send,
+  Settings,
+  Trash2,
+  User,
+} from 'lucide-react';
 import { EmptyState } from './shared';
 import { SiGoogle, SiOpenai } from 'react-icons/si';
 import { Link } from 'wouter';
@@ -27,12 +38,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { renderMarkdown } from '@/lib/markdown';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { Loader2 } from '@/components/ui/loader';
 import { clsx } from 'clsx';
 import { format } from 'date-fns';
 import { DEFAULT_CHAT_OBJECTIVES, SIDEBAR_MENU_ITEMS } from './shared/constants';
 import type { ChatSettingsData, CompanySettingsData, ConversationMessage, ConversationSummary, IntakeObjective, UrlRule } from './shared/types';
 import { ensureArray, uploadFileToServer } from './shared/utils';
 import { SectionHeader } from './shared';
+
 function ChatBubble({ message, assistantAvatar }: { message: ConversationMessage; assistantAvatar?: string }) {
   const isAssistant = message.role === "assistant";
 
@@ -181,9 +194,9 @@ CONVERSATION FLOW:
 
 FINALIZATION (after complete_lead):
 Based on the classification returned:
-- QUENTE (Hot): "Excelente! Um especialista entrará em contato em até 24 horas para discutir como podemos ajudar seu negócio a crescer!"
-- MORNO (Warm): "Obrigado pelas informações! Vamos analisar seu perfil e entrar em contato em breve."
-- FRIO (Cold): "Obrigado pelo interesse! Vamos enviar alguns conteúdos úteis para você."
+- QUENTE (Hot): "Excellent! A specialist will contact you within 24 hours to discuss how we can help your business grow."
+- MORNO (Warm): "Thanks for sharing those details! We'll review your profile and reach out soon."
+- FRIO (Cold): "Thanks for your interest! We'll send over a few helpful resources for you."
 
 TOOLS:
 - get_form_config: Get the qualification questions (call at start)
@@ -202,15 +215,15 @@ RULES:
 
 EXAMPLE CONVERSATION:
 
-You: "Olá! Sou o assistente da ${companyName}. Estamos aqui para ajudar seu negócio a crescer! Para começar, qual é o seu nome completo?"
-User: "João Silva"
-[Call save_lead_answer with question_id="nome", answer="João Silva"]
-You: "Prazer, João! Qual é o seu email?"
-User: "joao@email.com"
-[Call save_lead_answer with question_id="email", answer="joao@email.com"]
+You: "Hi! I'm the assistant for ${companyName}. We're here to help your business grow. To get started, what's your full name?"
+User: "John Smith"
+[Call save_lead_answer with question_id="nome", answer="John Smith"]
+You: "Nice to meet you, John! What's your email?"
+User: "john@email.com"
+[Call save_lead_answer with question_id="email", answer="john@email.com"]
 [Continue through all questions...]
 [When complete, call complete_lead]
-You: "Excelente, João! Um especialista entrará em contato em até 24 horas!"`;
+You: "Excellent, John! A specialist will contact you within 24 hours!"`;
   }, [companySettings?.companyName]);
 
   const { data: conversations, isLoading: loadingConversations, refetch: refetchConversations } = useQuery<ConversationSummary[]>({
@@ -820,7 +833,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas!"`;
           
           <div className="flex-1 overflow-y-auto p-2 space-y-1">
              {loadingConversations ? (
-                <div className="flex justify-center py-8">
+                <div className="flex w-full justify-center py-8">
                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                 </div>
              ) : visibleConversations.length === 0 ? (
@@ -907,7 +920,7 @@ You: "Excelente, João! Um especialista entrará em contato em até 24 horas!"`;
                {/* Messages Area */}
                <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-muted/20">
                   {isMessagesLoading ? (
-                     <div className="flex justify-center py-10">
+                     <div className="flex w-full justify-center py-10">
                         <Loader2 className="w-6 h-6 animate-spin text-primary" />
                      </div>
                   ) : messages.length === 0 ? (
@@ -1001,4 +1014,5 @@ function ObjectiveRow({ objective, onToggle }: { objective: IntakeObjective; onT
     </div>
   );
 }
+
 

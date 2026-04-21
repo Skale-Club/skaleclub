@@ -2,11 +2,14 @@ import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings, PortfolioService } from "@shared/schema";
-import { ArrowRight, Loader2 } from "lucide-react";
+import {
+  ArrowRight,
+} from "lucide-react";
 import { trackCTAClick } from "@/lib/analytics";
 import { LeadFormModal } from "@/components/LeadFormModal";
 import { PortfolioCard } from "@/components/PortfolioCard";
 import { ServiceDetailModal } from "@/components/portfolio/ServiceDetailModal";
+import { Loader2 } from '@/components/ui/loader';
 
 export default function Portfolio() {
     const { t } = useTranslation();

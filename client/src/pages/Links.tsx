@@ -79,7 +79,19 @@ export default function Links() {
   // Force dark mode — this page always uses its own dark palette regardless
   // of the user's system preference or admin session state.
   useEffect(() => {
-    document.documentElement.classList.add('dark');
+    const root = document.documentElement;
+    const previousRootBackground = root.style.backgroundColor;
+    const previousBodyBackground = document.body.style.backgroundColor;
+
+    root.classList.remove('light');
+    root.classList.add('dark');
+    root.style.backgroundColor = DEFAULT_LINKS_PAGE_THEME.backgroundColor;
+    document.body.style.backgroundColor = DEFAULT_LINKS_PAGE_THEME.backgroundColor;
+
+    return () => {
+      root.style.backgroundColor = previousRootBackground;
+      document.body.style.backgroundColor = previousBodyBackground;
+    };
   }, []);
 
   const { t } = useTranslation();
@@ -92,7 +104,10 @@ export default function Links() {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
-        style={{ background: DEFAULT_LINKS_PAGE_THEME.backgroundColor }}
+        style={{
+          background: DEFAULT_LINKS_PAGE_THEME.backgroundColor,
+          colorScheme: 'dark',
+        }}
       >
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
@@ -121,6 +136,8 @@ export default function Links() {
   const theme = { ...DEFAULT_LINKS_PAGE_THEME, ...(config.theme ?? {}) };
   const rootStyle: CSSProperties = {
     background: theme.backgroundGradient || theme.backgroundColor,
+    backgroundColor: theme.backgroundColor,
+    colorScheme: 'dark',
     // primaryColor as CSS var — consumed by ambient glow via bg-[var(--links-primary)]/20
     ['--links-primary' as any]: theme.primaryColor,
   };

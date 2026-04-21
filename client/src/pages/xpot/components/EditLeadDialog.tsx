@@ -1,9 +1,13 @@
 import { useState } from "react";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from '@/components/ui/loader';
 import type { SalesLead, FullSalesLead } from "../types";
 
 type LeadLike = SalesLead | FullSalesLead;

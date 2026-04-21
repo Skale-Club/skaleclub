@@ -5,7 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Loader2, Lock, Mail } from 'lucide-react';
+import { Loader2 } from '@/components/ui/loader';
+import {
+  ArrowLeft,
+  Lock,
+  Mail,
+} from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import type { CompanySettings } from '@shared/schema';
 
@@ -75,7 +80,7 @@ export default function AdminLogin() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 flex flex-col items-center justify-center">
+    <main className="min-h-screen bg-[#f4f7fb] px-4 flex flex-col items-center justify-center text-slate-950">
       <div className="w-full max-w-md">
         <button
           type="button"
@@ -86,7 +91,7 @@ export default function AdminLogin() {
           Back to Home
         </button>
 
-        <Card className="w-full rounded-2xl border bg-card shadow-sm">
+        <Card className="w-full rounded-2xl border border-slate-200 bg-white text-slate-950 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
           <CardHeader className="px-5 pb-4 pt-7 text-center md:px-6">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center overflow-hidden">
               {companySettings?.logoIcon ? (
@@ -121,7 +126,7 @@ export default function AdminLogin() {
                 <Button
                   type="button"
                   onClick={handleGoogleLogin}
-                  className="h-12 w-full border bg-card text-foreground hover:bg-muted"
+                  className="h-12 w-full border border-slate-300 bg-white text-slate-900 hover:bg-slate-50"
                   disabled={googleSubmitting}
                   data-testid="button-login-google"
                 >
@@ -150,7 +155,7 @@ export default function AdminLogin() {
                         placeholder="admin@example.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="h-12 bg-muted/50 pl-10 text-base placeholder:text-muted-foreground"
+                        className="h-12 border-slate-300 bg-white pl-10 text-base text-slate-950 placeholder:text-slate-400"
                         required
                       />
                     </div>
@@ -165,7 +170,7 @@ export default function AdminLogin() {
                         placeholder="*****"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="h-12 bg-muted/50 pl-10 text-base"
+                        className="h-12 border-slate-300 bg-white pl-10 text-base text-slate-950 placeholder:text-slate-400"
                         required
                       />
                     </div>
@@ -193,12 +198,12 @@ export default function AdminLogin() {
               </>
             ) : (
               <>
-                <p className="text-center text-sm text-muted-foreground">
+                <p className="text-center text-sm text-slate-600">
                   Use your Google account to sign in. Only authorized administrators can access this panel.
                 </p>
                 <Button
                   onClick={() => signIn()}
-                  className="h-12 w-full border bg-card text-foreground hover:bg-muted"
+                  className="h-12 w-full border border-slate-300 bg-white text-slate-900 hover:bg-slate-50"
                   data-testid="button-login"
                 >
                   <img src={googleLogoUrl} alt="" aria-hidden="true" className="mr-2 h-4 w-4" />
@@ -212,3 +217,4 @@ export default function AdminLogin() {
     </main>
   );
 }
+

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams, useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
 import { LeadFormModal } from '@/components/LeadFormModal';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/useTranslation';
+import { Loader2 } from '@/components/ui/loader';
 
 type SlugParams = { slug: string };
 

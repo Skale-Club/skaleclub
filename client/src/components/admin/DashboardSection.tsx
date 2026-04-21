@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { AlertCircle, Archive, BadgeCheck, Check, Clock, FileText, Flame, Globe, Loader2, MessageSquare, Sparkles, Users } from 'lucide-react';
+import { AlertCircle, Archive, BadgeCheck, Check, Clock, FileText, Flame, Globe, MessageSquare, Sparkles, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getLeadClassificationLabel, getLeadStatusLabel } from '@/lib/leadDisplay';
 import { apiRequest } from '@/lib/queryClient';
 import { clsx } from 'clsx';
 import { AdminCard } from './shared';
@@ -158,23 +159,6 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
     return format(date, 'MMM d, yyyy');
   };
 
-  const statusLabel = (status?: LeadStatus | null) => {
-    switch (status) {
-      case 'novo':
-        return 'New';
-      case 'contatado':
-        return 'Contacted';
-      case 'qualificado':
-        return 'Qualified';
-      case 'convertido':
-        return 'Converted';
-      case 'descartado':
-        return 'Discarded';
-      default:
-        return 'Unknown';
-    }
-  };
-
   const profileChecks = [
     { label: 'Company name', done: !!companySettings?.companyName?.trim() },
     { label: 'Primary email', done: !!companySettings?.companyEmail?.trim() },
@@ -249,7 +233,7 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
       label: 'In Progress',
       value: dashboardData.completion.inProgress,
       helper: 'Last 24h activity',
-      icon: Loader2,
+      icon: Check,
       iconColor: 'text-green-600'
     },
     {
@@ -376,11 +360,11 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
                   <div className="flex items-center justify-between gap-2">
                     <p className="font-medium truncate">{lead.nome || lead.email || `Lead #${lead.id}`}</p>
                     <Badge variant="secondary" className="border-0 bg-card/80">
-                      {statusLabel(lead.status)}
+                      {getLeadStatusLabel(lead.status)}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {lead.classificacao || 'No classification'} . {formatDateLabel(lead.createdAt)}
+                    {getLeadClassificationLabel(lead.classificacao)} . {formatDateLabel(lead.createdAt)}
                   </p>
                 </button>
               ))}
@@ -467,4 +451,5 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
     </div>
   );
 }
+
 

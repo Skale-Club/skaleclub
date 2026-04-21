@@ -1,7 +1,14 @@
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
-  Copy, ExternalLink, Eye, GripVertical, Loader2, Pencil, Plus, Receipt, Trash2
+  Copy,
+  ExternalLink,
+  Eye,
+  GripVertical,
+  Pencil,
+  Plus,
+  Receipt,
+  Trash2,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import {
@@ -29,6 +36,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { Loader2 } from '@/components/ui/loader';
 import { EmptyState, SectionHeader } from './shared';
 import type { Estimate, EstimateWithStats, EstimateServiceItem, CatalogServiceItem } from '@shared/schema';
 import type { PortfolioService } from '@shared/schema';
@@ -411,7 +419,7 @@ export function EstimatesSection() {
       />
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
+        <div className="flex w-full items-center justify-center py-12">
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           <span className="ml-2 text-sm text-muted-foreground">Loading estimates...</span>
         </div>
@@ -531,3 +539,4 @@ export function EstimatesSection() {
     </div>
   );
 }
+

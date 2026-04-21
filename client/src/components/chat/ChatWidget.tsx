@@ -3,7 +3,11 @@ import type React from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { MessageSquare, Send, X, Loader2 } from "lucide-react";
+import {
+  MessageSquare,
+  Send,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -15,6 +19,7 @@ import {
   trackChatLeadCaptured,
 } from "@/lib/analytics";
 import { renderMarkdown } from "@/lib/markdown";
+import { Loader2 } from '@/components/ui/loader';
 
 type UrlRule = {
   pattern: string;

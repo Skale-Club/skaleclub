@@ -6,8 +6,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Loader2 } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
+import { Loader2 } from '@/components/ui/loader';
 
 export function FaqSection() {
   const { t } = useTranslation();

@@ -1,7 +1,16 @@
 import { useState, useRef, useEffect } from "react";
-import { Check, Loader2, TrendingUp, ListTodo, ChevronDown, Plus, Search, Building2 } from "lucide-react";
+import {
+  Check,
+  TrendingUp,
+  ListTodo,
+  ChevronDown,
+  Plus,
+  Search,
+  Building2,
+} from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { Loader2 } from '@/components/ui/loader';
 import { useLeads } from "./hooks/useLeads";
 import { useSales } from "./hooks/useSales";
 import { useXpotQueries } from "./hooks/useXpotQueries";

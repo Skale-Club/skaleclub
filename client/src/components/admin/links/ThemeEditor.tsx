@@ -14,6 +14,10 @@ export interface ThemeEditorProps {
 }
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;
+const COLOR_INPUT_CLASS =
+  "w-10 h-10 rounded-lg border border-border/60 bg-transparent p-0.5 cursor-pointer overflow-hidden " +
+  "[&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-md [&::-webkit-color-swatch]:border-0 " +
+  "[&::-moz-color-swatch]:rounded-md [&::-moz-color-swatch]:border-0";
 
 export function ThemeEditor({ theme, onChange }: ThemeEditorProps) {
   const { t } = useTranslation();
@@ -82,7 +86,7 @@ export function ThemeEditor({ theme, onChange }: ThemeEditorProps) {
                 setPrimary(e.target.value);
                 schedule({ primaryColor: e.target.value });
               }}
-              className="w-10 h-10 rounded-md border cursor-pointer"
+              className={COLOR_INPUT_CLASS}
               aria-label={t('Primary Color')}
             />
             <Input
@@ -110,7 +114,7 @@ export function ThemeEditor({ theme, onChange }: ThemeEditorProps) {
                 setBg(e.target.value);
                 schedule({ backgroundColor: e.target.value });
               }}
-              className="w-10 h-10 rounded-md border cursor-pointer"
+              className={COLOR_INPUT_CLASS}
               aria-label={t('Background Color')}
             />
             <Input

@@ -9,11 +9,28 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Edit, Trash2, ExternalLink, Upload, Copy, Link as LinkIcon, Instagram, Linkedin, Twitter, Youtube, Facebook, Send, X, QrCode } from "lucide-react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  ExternalLink,
+  Upload,
+  Copy,
+  Link as LinkIcon,
+  Instagram,
+  Linkedin,
+  Twitter,
+  Youtube,
+  Facebook,
+  Send,
+  X,
+  QrCode,
+} from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import QRCode from "react-qr-code";
 import type { VCard } from "@shared/schema";
 import { usePagePaths } from "@/lib/pagePaths";
+import { Loader2 } from '@/components/ui/loader';
 import { uploadFileToServer } from "./shared/utils";
 
 const formatPhoneNumber = (value: string) => {
@@ -502,7 +519,7 @@ export function VCardsManager() {
             </div>
 
             {/* Coupon Section */}
-            <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 border rounded-md">
+            <div className="grid grid-cols-2 gap-4 bg-muted/50 p-4 border rounded-md">
               <h3 className="col-span-2 text-sm font-semibold mb-2">Discount Coupon (Optional)</h3>
               <div className="space-y-2">
                 <Label htmlFor="couponCode">Code</Label>
@@ -516,7 +533,7 @@ export function VCardsManager() {
 
             {/* QR Code Preview */}
             {usernameValue && !usernameError && (
-              <div className="bg-gray-50 p-4 border rounded-md">
+              <div className="bg-muted/50 p-4 border rounded-md">
                 <div className="flex items-center gap-2 mb-3">
                   <QrCode className="w-4 h-4" />
                   <Label className="text-sm font-semibold">QR Code Preview</Label>
@@ -529,7 +546,7 @@ export function VCardsManager() {
                       style={{ height: "auto", maxWidth: "100%", width: "100%" }}
                     />
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-muted-foreground">
                     <p>Scan this QR code to view the VCard.</p>
                     <p className="font-mono text-xs mt-1">{getVCardUrl(usernameValue)}</p>
                   </div>
@@ -550,3 +567,4 @@ export function VCardsManager() {
     </div>
   );
 }
+

@@ -1,9 +1,14 @@
 import { useRef, useState } from "react";
-import { Camera, Loader2, X, Check } from "lucide-react";
+import {
+  Camera,
+  X,
+  Check,
+} from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Loader2 } from '@/components/ui/loader';
 import type { XpotMeResponse } from "./types";
 
 interface Props {

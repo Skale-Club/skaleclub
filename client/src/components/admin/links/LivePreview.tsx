@@ -50,12 +50,12 @@ export function LivePreview() {
       <p className="text-xs text-muted-foreground mb-3">
         {t('Updates automatically after each save. Click Refresh to force reload.')}
       </p>
-      <div className="flex-1 overflow-hidden rounded-2xl bg-black shadow-lg min-h-[400px]">
+      <div className="flex-1 overflow-hidden rounded-2xl bg-[#0f1014] shadow-lg min-h-[400px]">
         <iframe
           ref={iframeRef}
           src={src}
           title={t('Live Preview')}
-          className="w-full h-full border-0"
+          className="w-full h-full border-0 bg-[#0f1014]"
           loading="lazy"
         />
       </div>

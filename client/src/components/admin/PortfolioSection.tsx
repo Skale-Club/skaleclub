@@ -1,6 +1,15 @@
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Briefcase, Loader2, Pencil, Plus, Trash2, Eye, EyeOff, GripVertical, Image } from 'lucide-react';
+import {
+  Briefcase,
+  Pencil,
+  Plus,
+  Trash2,
+  Eye,
+  EyeOff,
+  GripVertical,
+  Image,
+} from 'lucide-react';
 import { uploadFileToServer, getOriginalImageUrl } from './shared/utils';
 import { EmptyState, SectionHeader } from './shared';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -13,6 +22,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { Loader2 } from '@/components/ui/loader';
 import type { PortfolioService, InsertPortfolioService } from '@shared/schema';
 import { arrayMove, SortableContext, useSortable, rectSortingStrategy } from '@dnd-kit/sortable';
 import { DndContext, closestCenter, DragEndEvent, PointerSensor, MouseSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
@@ -144,7 +154,7 @@ export function PortfolioSection() {
     };
 
     if (isLoading && !services) {
-        return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+        return <div className="flex w-full justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
     }
 
     const sortedServices = [...(services || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
@@ -739,3 +749,4 @@ function ServiceForm({ service, onSubmit, isLoading, nextOrder }: {
         </form>
     );
 }
+

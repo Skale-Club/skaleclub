@@ -102,7 +102,7 @@ export function registerCompanyRoutes(app: Express) {
   app.get('/api/form-leads/:sessionId', async (req, res) => {
     const lead = await storage.getFormLeadBySession(req.params.sessionId);
     if (!lead) {
-      return res.status(404).json({ message: 'Lead não encontrado' });
+      return res.status(404).json({ message: 'Lead not found' });
     }
     res.json(lead);
   });

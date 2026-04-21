@@ -10,12 +10,18 @@ import {
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { HelpCircle, Loader2, Plus, Star } from 'lucide-react';
+import {
+  Gauge,
+  HelpCircle,
+  Plus,
+  Star,
+} from 'lucide-react';
 import { EmptyState } from '../shared';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { Loader2 } from '@/components/ui/loader';
 import { DEFAULT_FORM_CONFIG, calculateMaxScore, getSortedQuestions } from '@shared/form';
 import type { FormConfig, FormQuestion } from '@shared/schema';
 import { QuestionForm } from './QuestionForm';
@@ -34,14 +40,14 @@ export function FormEditorContent({ formId }: FormEditorContentProps) {
 
   const configEndpoint = `/api/forms/${formId}`;
 
-  const { data: formConfig, isLoading } = useQuery<FormConfig>({
+  const { data: form, isLoading } = useQuery<{ config: FormConfig }>({
     queryKey: [configEndpoint],
     queryFn: async () => {
       const res = await apiRequest('GET', configEndpoint);
-      const json = await res.json();
-      return json.config as FormConfig;
+      return res.json();
     },
   });
+  const formConfig = form?.config;
 
   const hydrateConfig = (incoming: FormConfig | undefined): FormConfig => {
     const base = incoming ?? DEFAULT_FORM_CONFIG;
@@ -160,7 +166,7 @@ export function FormEditorContent({ formId }: FormEditorContentProps) {
   };
 
   if (isLoading && !formConfig) {
-    return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    return <div className="flex w-full justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
 
   return (
@@ -168,7 +174,7 @@ export function FormEditorContent({ formId }: FormEditorContentProps) {
       <div className="flex flex-wrap items-center gap-2">
         <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingQuestion(null); }}>
           <DialogTrigger asChild>
-            <Button size="sm">
+            <Button>
               <Plus className="w-4 h-4 mr-2" />
               New Question
             </Button>
@@ -185,8 +191,8 @@ export function FormEditorContent({ formId }: FormEditorContentProps) {
         </Dialog>
         <Dialog open={isThresholdsOpen} onOpenChange={setIsThresholdsOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline" size="sm">
-              <Star className="w-4 h-4 mr-2" />
+            <Button variant="outline">
+              <Gauge className="w-4 h-4 mr-2" />
               Thresholds
             </Button>
           </DialogTrigger>
@@ -198,28 +204,9 @@ export function FormEditorContent({ formId }: FormEditorContentProps) {
             />
           </DialogContent>
         </Dialog>
-        <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded ml-auto">
+        <span className="inline-flex h-9 items-center rounded-md border bg-muted px-3 text-xs text-muted-foreground ml-auto">
           Max score: {config.maxScore}
         </span>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2">
-        <div className="p-3 rounded-xl border bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800">
-          <p className="text-xs text-green-600 dark:text-green-400 font-semibold">HOT</p>
-          <p className="text-lg font-bold text-green-700 dark:text-green-300">&ge; {config.thresholds.hot} pts</p>
-        </div>
-        <div className="p-3 rounded-xl border bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800">
-          <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold">WARM</p>
-          <p className="text-lg font-bold text-amber-700 dark:text-amber-300">&ge; {config.thresholds.warm} pts</p>
-        </div>
-        <div className="p-3 rounded-xl border bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
-          <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">COLD</p>
-          <p className="text-lg font-bold text-blue-700 dark:text-blue-300">&ge; {config.thresholds.cold} pts</p>
-        </div>
-        <div className="p-3 rounded-xl border bg-muted">
-          <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">DISQUALIFIED</p>
-          <p className="text-lg font-bold text-slate-600 dark:text-slate-300">&lt; {config.thresholds.cold} pts</p>
-        </div>
       </div>
 
       <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
@@ -247,6 +234,7 @@ export function FormEditorContent({ formId }: FormEditorContentProps) {
                         handleDeleteQuestion(id);
                       }
                     }}
+                    onInlineSave={handleSaveQuestion}
                     typeBadge={getQuestionTypeBadge(question.type)}
                     maxPoints={getQuestionMaxPoints(question)}
                   />
@@ -259,3 +247,4 @@ export function FormEditorContent({ formId }: FormEditorContentProps) {
     </div>
   );
 }
+

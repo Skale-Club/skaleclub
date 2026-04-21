@@ -11,7 +11,13 @@ import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from '@dnd-kit/utilities';
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { GripVertical, HelpCircle, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
+import {
+  GripVertical,
+  HelpCircle,
+  Pencil,
+  Plus,
+  Trash2,
+} from 'lucide-react';
 import { EmptyState, SectionHeader } from './shared';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
@@ -21,7 +27,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { Loader2 } from '@/components/ui/loader';
 import type { Faq } from '@shared/schema';
+
 function SortableFaqItem({ faq, onEdit, onDelete }: { faq: Faq; onEdit: (faq: Faq) => void; onDelete: (id: number) => void }) {
   const {
     attributes,
@@ -187,7 +195,7 @@ export function FaqsSection() {
   };
 
   if (isLoading && !faqs) {
-    return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    return <div className="flex w-full justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
 
   return (
@@ -324,4 +332,5 @@ function FaqForm({ faq, onSubmit, isLoading, nextOrder }: {
     </form>
   );
 }
+
 

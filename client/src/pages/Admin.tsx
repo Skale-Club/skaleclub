@@ -28,7 +28,7 @@ import { SIDEBAR_MENU_ITEMS } from '@/components/admin/shared/constants';
 import { SectionHeader } from '@/components/admin/shared';
 import type { AdminSection, CompanySettingsData } from '@/components/admin/shared/types';
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { Loader2 } from 'lucide-react';
+import { Loader2 } from '@/components/ui/loader';
 
 const menuItems = SIDEBAR_MENU_ITEMS;
 
@@ -228,6 +228,7 @@ export default function Admin() {
     </SidebarProvider>
   );
 }
+
 
 
 

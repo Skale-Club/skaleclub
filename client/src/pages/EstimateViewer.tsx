@@ -2,10 +2,10 @@ import { useParams } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { Loader2 } from '@/components/ui/loader';
 import type { EstimateServiceItem } from '@shared/schema';
 
 // Shape returned by GET /api/estimates/slug/:slug (accessCode redacted, hasAccessCode added)

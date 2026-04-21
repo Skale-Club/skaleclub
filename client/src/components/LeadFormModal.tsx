@@ -1,12 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { AlertCircle, ArrowLeft, ArrowRight, Check, ChevronDown, Loader2, X } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  ChevronDown,
+  X,
+} from "lucide-react";
 import clsx from "clsx";
 import { useQuery } from "@tanstack/react-query";
 import { trackEvent } from "@/lib/analytics";
 import { usePagePaths } from "@/lib/pagePaths";
 import { useTranslation } from "@/hooks/useTranslation";
+import { Loader2 } from '@/components/ui/loader';
 import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead, getSortedQuestions, KNOWN_FIELD_IDS } from "@shared/form";
 import type { LeadClassification, FormLead, FormConfig, FormQuestion } from "@shared/schema";
 

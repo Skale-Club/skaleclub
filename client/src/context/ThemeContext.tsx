@@ -34,6 +34,15 @@ function isInAdminArea(): boolean {
   return window.location.pathname.startsWith('/admin');
 }
 
+function isInAdminThemeArea(): boolean {
+  if (typeof window === 'undefined') return false;
+
+  const { pathname } = window.location;
+  if (!pathname.startsWith('/admin')) return false;
+
+  return pathname !== '/admin/login' && pathname !== '/admin/signup';
+}
+
 function isInXpotArea(): boolean {
   if (typeof window === 'undefined') return false;
   return isXpotContext(window.location.pathname, window.location.hostname);
@@ -41,23 +50,23 @@ function isInXpotArea(): boolean {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => getStoredTheme());
-  const [isAdminArea, setIsAdminArea] = useState(() => isInAdminArea());
+  const [isAdminArea, setIsAdminArea] = useState(() => isInAdminThemeArea());
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() => {
     // Always dark in Xpot area
     if (isInXpotArea()) return 'dark';
-    // Only apply stored theme in admin area
-    if (!isInAdminArea()) return 'light';
+    // Only apply stored theme in themeable admin routes
+    if (!isInAdminThemeArea()) return 'light';
     const stored = getStoredTheme();
     return stored === 'system' ? getSystemTheme() : stored;
   });
 
   const applyTheme = useCallback((newTheme: 'light' | 'dark', forceAdmin = false) => {
-    const inAdmin = forceAdmin || isInAdminArea();
+    const inAdmin = forceAdmin || isInAdminThemeArea();
     const inXpot = isInXpotArea();
     const root = document.documentElement;
     root.classList.remove('light', 'dark');
 
-    // Dark theme in admin area (user-controlled) or always dark in Xpot area
+    // Dark theme only on themeable admin routes, or always dark in Xpot area.
     const themeToApply = inXpot ? 'dark' : inAdmin ? newTheme : 'light';
     root.classList.add(themeToApply);
     setResolvedTheme(themeToApply);
@@ -79,7 +88,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // Check for admin area on route changes
   useEffect(() => {
     const checkAdminArea = () => {
-      const inAdmin = isInAdminArea();
+      const inAdmin = isInAdminThemeArea();
       setIsAdminArea(inAdmin);
 
       if (inAdmin) {
