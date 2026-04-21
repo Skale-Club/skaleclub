@@ -10,7 +10,7 @@
 - [ ] **PRES-01**: `presentations` table — `id` (UUID PK), `slug` (UUID, unique, public URL), `title` (text), `slides` (JSONB array of SlideBlock), `guidelinesSnapshot` (JSONB copy of guidelines at generation time), `accessCode` (optional plain text), `version` (int, auto-increments on each PUT save), `createdAt`, `updatedAt`.
 - [ ] **PRES-02**: `presentation_views` event-log table — `id`, `presentationId` (FK → presentations, cascade delete), `viewedAt`, `ipHash` (SHA-256 of client IP). Mirrors `estimate_views` pattern.
 - [ ] **PRES-03**: `brand_guidelines` singleton table — `id`, `content` (text, markdown), `updatedAt`. One row per tenant; upsert on save.
-- [ ] **PRES-04**: `@anthropic-ai/sdk` installed; `server/lib/anthropic.ts` singleton created with `getAnthropicClient()` (separate from existing `getActiveAIClient()` OpenAI/Groq shim).
+- [x] **PRES-04**: `@anthropic-ai/sdk` installed; `server/lib/anthropic.ts` singleton created with `getAnthropicClient()` (separate from existing `getActiveAIClient()` OpenAI/Groq shim).
 
 ### Admin CRUD API
 
@@ -65,7 +65,7 @@
 | PRES-01 | Phase 15 | Pending |
 | PRES-02 | Phase 15 | Pending |
 | PRES-03 | Phase 15 | Pending |
-| PRES-04 | Phase 15 | Pending |
+| PRES-04 | Phase 15 | Complete |
 | PRES-05 | Phase 16 | Pending |
 | PRES-06 | Phase 16 | Pending |
 | PRES-07 | Phase 16 | Pending |

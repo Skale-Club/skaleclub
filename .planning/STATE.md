@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.4
-milestone_name: Admin Presentations Page
-status: defining-requirements
-last_updated: "2026-04-20"
-last_activity: "2026-04-20 — Milestone v1.4 started"
+milestone: v1.0
+milestone_name: milestone
+status: Defining requirements for v1.4 Admin Presentations Page
+last_updated: "2026-04-21T17:32:50.840Z"
+last_activity: 2026-04-20 — Milestone v1.4 started
 progress:
-  total_phases: 0
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_phases: 5
+  completed_phases: 5
+  total_plans: 10
+  completed_plans: 10
 ---
 
 # STATE: Skale Club Web Platform
@@ -58,6 +58,7 @@ Last activity: 2026-04-20 — Milestone v1.4 started
 | Phase 13-icon-picker-theme-live-preview P02 | 15min | 2 tasks | 4 files |
 | Phase 13 P03 | ~5min | 2 tasks | 4 files |
 | Phase 14-public-rendering-click-tracking P01 | ~4m | 3 tasks | 1 files |
+| Phase 15-schema-foundation P02 | 3min | 2 tasks | 3 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -147,6 +148,7 @@ Last activity: 2026-04-20 — Milestone v1.4 started
 - [Phase 14-public-rendering-click-tracking]: CSS custom property via inline style + Tailwind arbitrary value bg-[var(--links-primary)]/20 drives theme-colored ambient glow — zero tailwind.config edit needed
 - [Phase 14-public-rendering-click-tracking]: Track all link clicks including cmd/ctrl/shift/middle-click — no modifier inspection; sendBeacon + no preventDefault counts open-in-new-tab too
 - [Phase 14-public-rendering-click-tracking]: Spread React Query cache array before sort — [...config.links].sort(...).filter(...) never mutates cache (v1.3 pattern for public pages consuming cached admin data)
+- [Phase 15-schema-foundation]: Default import from @anthropic-ai/sdk (not named) — SDK ships only default export; separate singleton from getActiveAIClient() for Anthropic integration
 
 ### Quick Tasks Completed
 
