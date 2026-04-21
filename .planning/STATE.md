@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.4
-milestone_name: Admin Presentations Page
-status: defining-requirements
-last_updated: "2026-04-20"
-last_activity: "2026-04-20 — Milestone v1.4 started"
+milestone: v1.0
+milestone_name: milestone
+status: Defining requirements for v1.4 Admin Presentations Page
+last_updated: "2026-04-21T21:40:01.149Z"
+last_activity: 2026-04-20 — Milestone v1.4 started
 progress:
-  total_phases: 0
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_phases: 5
+  completed_phases: 5
+  total_plans: 10
+  completed_plans: 10
 ---
 
 # STATE: Skale Club Web Platform
@@ -58,6 +58,7 @@ Last activity: 2026-04-20 — Milestone v1.4 started
 | Phase 13-icon-picker-theme-live-preview P02 | 15min | 2 tasks | 4 files |
 | Phase 13 P03 | ~5min | 2 tasks | 4 files |
 | Phase 14-public-rendering-click-tracking P01 | ~4m | 3 tasks | 1 files |
+| Phase 17 P01 | 6min | 3 tasks | 12 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -147,6 +148,8 @@ Last activity: 2026-04-20 — Milestone v1.4 started
 - [Phase 14-public-rendering-click-tracking]: CSS custom property via inline style + Tailwind arbitrary value bg-[var(--links-primary)]/20 drives theme-colored ambient glow — zero tailwind.config edit needed
 - [Phase 14-public-rendering-click-tracking]: Track all link clicks including cmd/ctrl/shift/middle-click — no modifier inspection; sendBeacon + no preventDefault counts open-in-new-tab too
 - [Phase 14-public-rendering-click-tracking]: Spread React Query cache array before sort — [...config.links].sort(...).filter(...) never mutates cache (v1.3 pattern for public pages consuming cached admin data)
+- [Phase 17]: GET /api/brand-guidelines is public (no auth) — Phase 18 AI endpoint reads it server-side without user session
+- [Phase 17]: BrandGuidelinesSection at /admin/presentations — Phase 19 expands this same route with presentations list + chat panel
 
 ### Quick Tasks Completed
 
@@ -177,7 +180,8 @@ None.
 | 2026-04-19 | Plan 12-03 executed | Drag-and-drop reorder on Main Links via @dnd-kit (1 combined commit: ece85d1, LINKS-11 complete); Phase 12 plans 2/3 (12-02 uploaders in parallel) |
 | 2026-04-19 | Plan 12-02 executed | DragDropUploader component + Profile zone avatar/background wiring (2 tasks, 2 commits: f231b57, 02ed2e9); LINKS-08 complete; Phase 12 plans 3/3 — ready for /gsd:verify-work |
 | 2026-04-20 | Plan 14-01 executed | Public /links rendering + sendBeacon click tracking (3 tasks, 3 commits: 5c7c9db, 53aa325, 02f410b); LINKS-14/-15/-16/-17 complete; Phase 14 plans 1/1 — v1.3 feature-complete 17/17 reqs |
+| 2026-04-21 | Plan 17-01 executed | Brand Guidelines API + admin editor (3 tasks, 3 commits: 3ded3fe, bc72b94, 1d5d8e9); PRES-09 + PRES-10 complete |
 
 ---
 
-*Last updated: 2026-04-20 — Plan 14-01 complete; v1.3 Links Page Upgrade feature-complete (Phases 10–14 all shipped; 10/10 plans; 17/17 requirements); ready for /gsd:verify-work → /gsd:retrospective → /gsd:new-milestone*
+*Last updated: 2026-04-21 — Plan 17-01 complete; Brand Guidelines feature shipped (GET/PUT /api/brand-guidelines, BrandGuidelinesSection admin UI, /admin/presentations route)*
