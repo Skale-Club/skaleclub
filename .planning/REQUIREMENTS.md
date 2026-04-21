@@ -21,8 +21,8 @@
 
 ### Brand Guidelines
 
-- [ ] **PRES-09**: `GET /api/brand-guidelines` returns current guidelines content (no auth — needed by AI endpoint server-side). `PUT /api/brand-guidelines` saves content (admin-auth required).
-- [ ] **PRES-10**: Admin **Brand Guidelines** sub-section (within Presentations tab or separate accordion) — plain textarea/markdown editor that saves to `brand_guidelines` table via `PUT /api/brand-guidelines`.
+- [x] **PRES-09**: `GET /api/brand-guidelines` returns current guidelines content (no auth — needed by AI endpoint server-side). `PUT /api/brand-guidelines` saves content (admin-auth required).
+- [x] **PRES-10**: Admin **Brand Guidelines** sub-section (within Presentations tab or separate accordion) — plain textarea/markdown editor that saves to `brand_guidelines` table via `PUT /api/brand-guidelines`.
 
 ### AI Authoring
 
@@ -70,8 +70,8 @@
 | PRES-06 | Phase 16 | Complete |
 | PRES-07 | Phase 16 | Complete |
 | PRES-08 | Phase 16 | Complete |
-| PRES-09 | Phase 17 | Pending |
-| PRES-10 | Phase 17 | Pending |
+| PRES-09 | Phase 17 | Complete |
+| PRES-10 | Phase 17 | Complete |
 | PRES-11 | Phase 18 | Pending |
 | PRES-12 | Phase 18 | Pending |
 | PRES-13 | Phase 18 | Pending |

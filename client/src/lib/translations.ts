@@ -344,6 +344,17 @@ export const translations = {
     'Refresh': 'Atualizar',
     'Refresh preview': 'Atualizar pré-visualização',
     'Updates automatically after each save. Click Refresh to force reload.': 'Atualiza automaticamente após cada salvamento. Clique em Atualizar para recarregar.',
+
+    // Admin — Brand Guidelines (Phase 17)
+    'Brand Guidelines': 'Diretrizes de Marca',
+    'Define your brand voice, colors, fonts, and rules for Claude to follow when building slides.': 'Defina a voz da marca, cores, fontes e regras para o Claude seguir ao criar slides.',
+    'Guidelines document': 'Documento de diretrizes',
+    'Write in Markdown. Describe logo usage, primary colors, fonts, tone of voice, and any "always include / never include" rules. Claude reads this before generating each presentation.': 'Escreva em Markdown. Descreva o uso do logotipo, cores primárias, fontes, tom de voz e quaisquer regras de "sempre incluir / nunca incluir". O Claude lê isso antes de gerar cada apresentação.',
+    'Brand guidelines saved': 'Diretrizes de marca salvas',
+    'Claude will use these guidelines when generating slides.': 'O Claude usará essas diretrizes ao gerar slides.',
+    'Save guidelines': 'Salvar diretrizes',
+    'Presentations': 'Apresentações',
+    'Build AI-powered slide decks and share them as immersive fullscreen experiences.': 'Crie apresentações com IA e compartilhe-as como experiências imersivas em tela cheia.',
   }
 } as const;
 

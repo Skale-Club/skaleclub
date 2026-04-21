@@ -26,6 +26,7 @@ import { registerEstimatesRoutes } from "./routes/estimates.js";
 import { registerPresentationsRoutes } from "./routes/presentations.js";
 import { registerUploadRoutes } from "./routes/uploads.js";
 import { registerLinksPageRoutes } from "./routes/linksPage.js";
+import { registerBrandGuidelinesRoutes } from "./routes/brandGuidelines.js";
 import { db, pool } from "./db.js";
 import { users } from "#shared/schema.js";
 import { eq } from "drizzle-orm";
@@ -132,6 +133,7 @@ export async function registerRoutes(
   registerIntegrationRoutes(app);
   registerEstimatesRoutes(app);
   registerPresentationsRoutes(app);
+  registerBrandGuidelinesRoutes(app);
   await initializeSalesSchema();
 
 
