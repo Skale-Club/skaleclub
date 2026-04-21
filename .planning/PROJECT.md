@@ -4,19 +4,17 @@
 
 Skale Club is an agency web platform combining a public marketing site, an admin dashboard, and a field sales CRM (Xpot). The Estimates System (v1.2) lets admins compose branded service proposals from the portfolio catalog and share them as immersive fullscreen scroll-snap experiences at a private `/e/:slug` link — with optional access code protection and view tracking.
 
-## Current Milestone: v1.3 Links Page Upgrade
+## Current Milestone: v1.4 Admin Presentations Page
 
-**Goal:** Transform the public Links page and its admin surface into a Linktree-class experience — real file uploads to Supabase Storage, per-link icons, click analytics, theming, and a redesigned admin with live preview.
+**Goal:** Admin builds branded slide decks by conversing with Claude — no WYSIWYG — and shares them as fullscreen bilingual experiences at `/p/:slug`.
 
 **Target features:**
-- Per-link icon (pick from Lucide library or upload custom SVG/PNG)
-- File upload for avatar / background / link icons to Supabase Storage (replacing URL text fields), with visible upload feedback
-- Toggle visible/hidden per link (soft-show, no delete)
-- Drag-and-drop reordering of links in admin
-- Click analytics per link (increment on public click, displayed in admin)
-- Theme customization: primary color, background color/gradient, optional background image
-- Admin redesign with live preview pane — admin edits reflect in a `/links` preview embed
-- Redesigned admin layout (Profile / Preview / Links+Social zones)
+- Presentations DB schema (slides JSONB, language, version, access code)
+- Brand guidelines document — admin-authored, consumed as Claude's system prompt (logo, colors, fonts, tone, "always include / never include")
+- Conversational admin editor: chat with Claude to create/edit slides; Claude outputs structured JSON blocks (title, body, bullets, image)
+- Public fullscreen viewer `/p/:slug` — scroll-snap, isolated from Navbar/Footer, language via `?lang=en|pt-BR`
+- Bilingual authoring: admin generates EN + PT-BR versions
+- View tracking (mirrors estimate_views pattern)
 
 ## Core Value
 
@@ -52,7 +50,7 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 
 ### Active
 
-- **LINKS-01 → LINKS-XX**: v1.3 Links Page Upgrade (see REQUIREMENTS.md)
+- **PRES-01 → PRES-XX**: v1.4 Admin Presentations Page (see REQUIREMENTS.md)
 
 ### Out of Scope
 
@@ -112,4 +110,6 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-20 — milestone v1.3 Links Page Upgrade started*
+- v1.3 shipped 2026-04-20: Links Page Upgrade (5 phases, 10 plans, 17/17 requirements — Supabase uploads, icon picker, click analytics, drag-reorder, theme editor, live preview, public rendering)
+
+*Last updated: 2026-04-20 — milestone v1.4 Admin Presentations Page started*

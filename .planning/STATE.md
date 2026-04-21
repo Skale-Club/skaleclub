@@ -1,21 +1,21 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.3
-milestone_name: Links Page Upgrade
-status: executing
-last_updated: "2026-04-20T19:40:12.747Z"
-last_activity: "2026-04-20 — Plan 14-01 shipped: public /links rendering + sendBeacon click tracking (LINKS-14/15/16/17 complete); v1.3 feature-complete 17/17 reqs"
+milestone: v1.4
+milestone_name: Admin Presentations Page
+status: defining-requirements
+last_updated: "2026-04-20"
+last_activity: "2026-04-20 — Milestone v1.4 started"
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 10
-  completed_plans: 10
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** v1.3 feature-complete — all 5 phases + 10 plans + 17/17 requirements shipped; ready for `/gsd:verify-work` → `/gsd:retrospective` → `/gsd:new-milestone`
+**Status:** Defining requirements for v1.4 Admin Presentations Page
 
 ---
 
@@ -30,10 +30,10 @@ See: `.planning/PROJECT.md` (updated 2026-04-20)
 
 ## Current Position
 
-Phase: 14 — Public Rendering + Click Tracking (plans 1/1 complete) — FINAL phase of v1.3
-Plan: v1.3 feature-complete; ready for `/gsd:verify-work` → `/gsd:retrospective` → `/gsd:new-milestone`
-Status: Plan 14-01 shipped — `client/src/pages/Links.tsx` (207 lines) consumes `visible`, per-link `iconType/iconValue`, `theme` (primary via CSS var + bg gradient/color/image), and fires `navigator.sendBeacon` to `/api/links-page/click/:linkId` on every click. LINKS-14/-15/-16/-17 all Complete. tsc + build green.
-Last activity: 2026-04-20 — Plan 14-01 shipped: public /links rendering + sendBeacon click tracking; v1.3 milestone feature-complete 17/17 reqs
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements for v1.4 Admin Presentations Page
+Last activity: 2026-04-20 — Milestone v1.4 started
 
 ---
 
