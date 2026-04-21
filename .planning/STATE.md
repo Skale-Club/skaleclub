@@ -59,6 +59,7 @@ Last activity: 2026-04-21 — Plan 15-01 executed (3 tasks, 3 commits: 232d2a4, 
 | Phase 13 P03 | ~5min | 2 tasks | 4 files |
 | Phase 14-public-rendering-click-tracking P01 | ~4m | 3 tasks | 1 files |
 | Phase 15-schema-foundation P01 | 3min | 3 tasks | 5 files |
+| Phase 15-schema-foundation P02 | 3min | 2 tasks | 3 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -152,6 +153,7 @@ Last activity: 2026-04-21 — Plan 15-01 executed (3 tasks, 3 commits: 232d2a4, 
 - [Phase 15-schema-foundation]: guidelinesSnapshot is TEXT not JSONB — markdown content, not structured JSON; avoids JSONB complexity for plain text
 - [Phase 15-schema-foundation]: ip_hash column named ip_hash from creation — SHA-256 hashing is Phase 20 concern; column name matches final intent per PRES-02
 - [Phase 15-schema-foundation]: Storage stubs added in Phase 15 — ensures typed compilation for downstream phases 16-20 before routes exist
+- [Phase 15-schema-foundation]: Default import from @anthropic-ai/sdk (not named) — SDK ships only default export; separate singleton from getActiveAIClient() for Anthropic integration
 
 ### Quick Tasks Completed
 
