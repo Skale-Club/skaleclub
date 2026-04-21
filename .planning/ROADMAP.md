@@ -6,10 +6,18 @@
 - ✅ **v1.1 Multi-Forms Support** — Phase 5 / M3 (shipped 2026-04-15)
 - ✅ **v1.2 Estimates System** — Phases 6-9 (shipped 2026-04-20)
 - ✅ **v1.3 Links Page Upgrade** — Phases 10-14 (shipped 2026-04-20)
+- 🔄 **v1.4 Admin Presentations Page** — Phases 15-20 (active)
 
 ## Active
 
-_No active milestone. Run `/gsd:new-milestone` to start the next one._
+**v1.4 Admin Presentations Page** — Phases 15-20
+
+- [ ] **Phase 15: Schema & Foundation** — DB tables, raw SQL migration, Anthropic SDK singleton
+- [ ] **Phase 16: Admin CRUD API** — Storage layer + all non-AI presentations endpoints
+- [ ] **Phase 17: Brand Guidelines** — Guidelines singleton endpoints + admin editor UI
+- [ ] **Phase 18: AI Authoring Endpoint** — SSE streaming endpoint with Claude tool_use + SlideBlock Zod schema
+- [ ] **Phase 19: Admin Chat Editor** — Split-view chat panel + slide preview panel in admin
+- [ ] **Phase 20: Public Viewer** — `/p/:slug` fullscreen viewer, access code gate, language switcher, view tracking
 
 ## Phases
 
@@ -137,4 +145,98 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 
 ---
 
-_Last updated: 2026-04-20 — Phase 14 executed (1/1 plans shipped: public /links visible filter + icon render + theme + sendBeacon); v1.3 feature-complete 17/17 reqs; ready for /gsd:verify-work_
+## v1.4 Admin Presentations Page
+
+### Phase 15: Schema & Foundation
+**Goal**: The database schema for presentations exists, `@anthropic-ai/sdk` is installed and reachable from the server, and every downstream phase has a typed foundation to build on.
+**Depends on**: Nothing (first phase of v1.4)
+**Requirements**: PRES-01, PRES-02, PRES-03, PRES-04
+**Plans:** 2 plans
+**Success Criteria** (what must be TRUE):
+  1. A raw SQL migration script runs without error and creates `presentations`, `presentation_views`, and `brand_guidelines` tables with the correct columns, constraints, and cascade-delete rules — `SELECT * FROM presentations LIMIT 1` returns an empty result set, not an error.
+  2. `shared/schema/presentations.ts` exports Drizzle table definitions and Zod validators (`insertPresentationSchema`, `selectPresentationSchema`, `slideBlockSchema`) that TypeScript compiles against without errors.
+  3. `server/lib/anthropic.ts` exports `getAnthropicClient()` and calling it with `ANTHROPIC_API_KEY` set returns a live client that can reach the Anthropic API — it is not wired through the existing `getActiveAIClient()` OpenAI/Groq shim.
+  4. `package.json` lists `@anthropic-ai/sdk` as a production dependency and `npm run check` passes cleanly.
+**Plans:**
+- [ ] 15-01-PLAN.md — SQL migration (3 tables) + Drizzle/Zod schema + barrel re-export + storage stubs (PRES-01, PRES-02, PRES-03)
+- [ ] 15-02-PLAN.md — @anthropic-ai/sdk install + getAnthropicClient() singleton in server/lib/anthropic.ts (PRES-04)
+
+### Phase 16: Admin CRUD API
+**Goal**: Admins can create, list, update, and delete presentations through a typed REST API with no AI involvement — the data layer is fully operational before any UI or AI work begins.
+**Depends on**: Phase 15 (tables and storage interface must exist)
+**Requirements**: PRES-05, PRES-06, PRES-07, PRES-08
+**Plans**: TBD
+**Success Criteria** (what must be TRUE):
+  1. `GET /api/presentations` (admin-auth required) returns a JSON array sorted by `createdAt` desc; each item includes `id`, `slug`, `title`, derived `slideCount`, derived `viewCount`, and `createdAt` — an unauthenticated request returns 401.
+  2. `POST /api/presentations` (admin-auth required) accepts `{ title }` and returns `{ id, slug }` with an empty `slides: []`; a second `POST` with the same title creates a distinct record with a different `id` and `slug`.
+  3. `PUT /api/presentations/:id` (admin-auth required) updates `title`, `slides`, and/or `accessCode`, and the `version` field increments by 1 on each successful call.
+  4. `DELETE /api/presentations/:id` (admin-auth required) removes the presentation row and all associated `presentation_views` rows; a subsequent `GET /api/presentations` no longer includes that `id`.
+
+### Phase 17: Brand Guidelines
+**Goal**: Admin can author and persist a tenant-wide brand guidelines document that subsequent AI calls will consume as their system prompt.
+**Depends on**: Phase 15 (brand_guidelines table must exist)
+**Requirements**: PRES-09, PRES-10
+**Plans**: TBD
+**Success Criteria** (what must be TRUE):
+  1. `PUT /api/brand-guidelines` (admin-auth required) upserts a single row; a subsequent `GET /api/brand-guidelines` (no auth required) returns the saved `content` string — calling `GET` before any `PUT` returns a 200 with empty or null content rather than a 404.
+  2. Admin sees a Brand Guidelines editor (textarea or markdown editor) within the Presentations tab; typing and saving updates the stored content and a "Saved" confirmation appears.
+  3. The editor displays a live character count; the server rejects content exceeding 2,000 characters with a 400 and a human-readable message.
+**UI hint**: yes
+
+### Phase 18: AI Authoring Endpoint
+**Goal**: A single POST endpoint accepts a chat message and the current slide state, calls Claude via `tool_use` with brand guidelines as the system prompt, and streams structured `SlideBlock[]` JSON back to the client — the entire AI pipeline is exercisable before any admin UI is built.
+**Depends on**: Phase 15 (Anthropic SDK singleton), Phase 16 (presentation storage, auth), Phase 17 (brand guidelines must exist as system prompt source)
+**Requirements**: PRES-11, PRES-12, PRES-13
+**Plans**: TBD
+**Success Criteria** (what must be TRUE):
+  1. `POST /api/presentations/:id/chat` (admin-auth required) accepts `{ message: string }`, loads the current `brand_guidelines.content` as Claude's system prompt, and returns a streaming `text/event-stream` response — calling it with `curl --no-buffer` shows `data:` events arriving progressively before the stream closes.
+  2. When the stream completes successfully, the `presentations` row has updated `slides` (a valid `SlideBlock[]` matching the Zod schema) and `guidelinesSnapshot` set to the brand guidelines content that was active at generation time; `version` is incremented by 1.
+  3. A `SlideBlock` covers all 8 layout variants (`cover`, `section-break`, `title-body`, `bullets`, `stats`, `two-column`, `image-focus`, `closing`) and contains bilingual fields (`heading`/`headingPt`, `body`/`bodyPt`, `bullets`/`bulletsPt`); a document containing one block of each variant passes Zod validation without errors.
+  4. Sending "edit slide 3 — shorten the body" when there are 5 slides returns an updated array where only slide index 2 is modified and slides 0, 1, 3, 4 are byte-for-byte identical to the input; the DB write reflects this partial update.
+
+### Phase 19: Admin Chat Editor
+**Goal**: Admin can open a presentation's editor, converse with Claude to build or refine slides, and see a live mini-preview of the current deck — all within the admin dashboard.
+**Depends on**: Phase 16 (CRUD API for list/create/delete), Phase 18 (SSE streaming endpoint must exist)
+**Requirements**: PRES-14, PRES-15, PRES-16
+**Plans**: TBD
+**Success Criteria** (what must be TRUE):
+  1. Admin Presentations tab shows a list of all presentations with `title`, slide-count, view-count badge, a copy-link button, a delete button, and an "Open Editor" button per row; clicking delete shows a confirmation and removes the row without a page reload.
+  2. Clicking "Open Editor" opens a split-view panel: chat panel on the left with a scrollable message history and a text input, slide preview panel on the right showing current slides as mini cards — both panels are visible simultaneously on desktop without horizontal scrolling.
+  3. Submitting a chat message streams the AI response into the chat panel in real time (tokens appear as they arrive); when the stream ends, the slide preview panel automatically refreshes to show the updated `SlideBlock[]`.
+  4. Clicking any slide mini card in the preview panel inserts a reference to that slide number (e.g. "Slide 3:") into the chat input field, allowing targeted follow-up edits without manual typing of the slide number.
+**UI hint**: yes
+
+### Phase 20: Public Viewer
+**Goal**: Anyone with a presentation link can experience the deck as a fullscreen bilingual scroll-snap presentation — isolated from the site's Navbar and Footer — with an access code gate if one is set, and every successful view is recorded for admin analytics.
+**Depends on**: Phase 15 (schema for view tracking), Phase 16 (public slug lookup API)
+**Requirements**: PRES-17, PRES-18, PRES-19, PRES-20, PRES-21, PRES-22
+**Plans**: TBD
+**Success Criteria** (what must be TRUE):
+  1. `GET /api/presentations/slug/:slug` (no auth) returns the full presentation including slides; each successful response creates a new row in `presentation_views` — the admin view-count badge for that presentation increments by 1 after reload.
+  2. `/p/:slug` renders with no Navbar, Footer, or ChatWidget visible; opening Dev Tools confirms `isPresentationRoute` is true for the route and the standard site layout branch is skipped.
+  3. `PresentationViewer` renders each slide as a fullscreen scroll-snap section (one slide fills the viewport); scrolling to a new slide triggers a framer-motion enter animation; all 8 `SlideBlock.layout` variants render without a blank or broken section.
+  4. Appending `?lang=pt-BR` to the URL switches all slide text to the `headingPt`, `bodyPt`, and `bulletsPt` fields; appending `?lang=en` (or no param) shows the English fields — switching does not reload the page or restart the scroll position.
+  5. If `accessCode` is set on a presentation, `/p/:slug` shows a code-entry form before any slides are visible; entering the correct code reveals the deck and entering a wrong code shows an inline error without navigating away.
+**UI hint**: yes
+
+---
+
+## Progress
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 10. Schema & Upload Foundation | 2/2 | Done | 2026-04-20 |
+| 11. Click Analytics API | 1/1 | Done | 2026-04-20 |
+| 12. Admin Redesign + Core Editing | 3/3 | Done | 2026-04-20 |
+| 13. Icon Picker, Theme Editor & Live Preview | 3/3 | Done | 2026-04-20 |
+| 14. Public Page Rendering + Click Tracking | 1/1 | Done | 2026-04-20 |
+| 15. Schema & Foundation | 0/2 | Not started | - |
+| 16. Admin CRUD API | 0/? | Not started | - |
+| 17. Brand Guidelines | 0/? | Not started | - |
+| 18. AI Authoring Endpoint | 0/? | Not started | - |
+| 19. Admin Chat Editor | 0/? | Not started | - |
+| 20. Public Viewer | 0/? | Not started | - |
+
+---
+
+_Last updated: 2026-04-21 — Phase 15 planned; 2 plans (15-01, 15-02); PRES-01–04 mapped_
