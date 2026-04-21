@@ -1,203 +1,238 @@
-# Stack Research — Estimates/Proposals System
+# Stack Research — Admin Presentations Page (v1.4)
 
-**Domain:** Personalized proposal pages with fullscreen scroll UX + admin CRUD + automated dispatch
-**Researched:** 2026-04-19
-**Confidence:** HIGH (all findings verified against existing codebase and native platform capabilities)
-
----
-
-## Verdict: Zero new npm dependencies required
-
-Every capability needed for v1.2 already exists in the installed stack. The research question was whether additions were needed — they are not.
+**Domain:** AI-authored bilingual slide decks with fullscreen public viewer
+**Researched:** 2026-04-20
+**Confidence:** HIGH — verified against npm registry, existing codebase, Anthropic SDK docs
 
 ---
 
-## Decision by Feature Area
+## Context: What Already Exists
 
-### 1. Public proposal page — CSS scroll-snap vs library
+This milestone builds on a fully wired stack. Before listing additions, here is what the
+codebase already provides:
 
-**Decision: Native CSS scroll-snap. No library.**
-
-The codebase already uses pure Tailwind/CSS for all scroll and layout work. No scroll-snapping library is installed (no fullPage.js, no react-fullpage, no react-scroll-snap). Adding one would add ~30-80 KB to the bundle for a feature CSS handles natively since Chrome 69/Firefox 68/Safari 11 (2018).
-
-**Implementation:**
-```css
-/* container */
-overflow-y: scroll;
-scroll-snap-type: y mandatory;
-height: 100vh;
-
-/* each section */
-scroll-snap-align: start;
-height: 100vh;
-```
-
-Tailwind equivalents: `overflow-y-scroll scroll-snap-y-mandatory h-screen` for the container, `scroll-snap-align-start h-screen` for each section. Tailwind 3.x ships scroll-snap utilities out of the box — no plugin needed.
-
-**Confidence:** HIGH — verified that Tailwind 3.4.17 (installed) includes `snap-y`, `snap-mandatory`, `snap-start`, `snap-always` utilities natively.
-
-**Do not use:**
-- `fullpage.js` — GPL licensed (commercial use requires paid license), 60 KB, overkill
-- `react-scroll-snap` — abandoned (last release 2020), not maintained
-- `embla-carousel-react` — already installed but carousel-oriented (horizontal bias), wrong mental model for vertical proposal sections; adds unnecessary event complexity
+| Capability | How it exists |
+|---|---|
+| AI calls (OpenAI/Groq/OpenRouter) | `server/lib/ai-provider.ts`, `openai` ^4.104.0 |
+| Fullscreen scroll-snap viewer | `EstimateViewer.tsx` — `snap-y snap-mandatory`, framer-motion |
+| JSONB snapshot storage | `estimates` table pattern, Drizzle `jsonb().$type<T>()` |
+| Supabase asset uploads | `uploadLinksPageAsset` in `server/routes/uploads.ts` |
+| Admin chat UI shell | `ChatSection.tsx` — message list, input, streaming-ready layout |
+| i18n layer | `useTranslation` + `client/src/lib/translations.ts` |
+| Markdown rendering | `client/src/lib/markdown.tsx` — inline bold/italic/code/links |
+| Tailwind typography plugin | `@tailwindcss/typography` 0.5.15 already in `tailwind.config.ts` |
+| Drag-reorder | `@dnd-kit/sortable` ^10.0.0 already installed |
+| shadcn/ui primitives | All Radix-backed components already installed |
 
 ---
 
-### 2. Database schema — `estimates` table
+## New Dependencies Required
 
-**Decision: Drizzle ORM (already installed, 0.39.3). Add `estimates` and `estimate_items` tables in a new `shared/schema/estimates.ts` file following the existing barrel pattern.**
+### 1. Claude API — Streaming Text Generation (server-side)
 
-The forms schema (`shared/schema/forms.ts`) is the direct model:
-- `forms_slug_idx: uniqueIndex(...)` — same pattern for `estimates` slug uniqueness
-- `jsonb` columns for flexible data (already used in `forms.config`, `portfolio_services.features`)
-- `serial` primary key + timestamps pattern already established
+**Package:** `@anthropic-ai/sdk`
+**Version:** `^0.90.0` (latest as of 2026-04-20, verified via npm registry)
+**Install:** `npm install @anthropic-ai/sdk`
 
-No ORM change, no migration tool change.
+**Why this instead of routing through the existing `openai` client pointing at OpenRouter:**
+The presentations feature uses Claude as a *dedicated, opinionated authoring tool* — brand
+guidelines injected as a system prompt, structured JSON output enforced via tool calls or
+guided generation, and a specific model selection (claude-sonnet-4-5 or claude-opus-4 for
+quality). Routing through OpenRouter would work for basic inference but loses
+`client.messages.stream()` helper ergonomics that give `.on('text', cb)` event emitters and
+`.finalMessage()` — the cleanest path to SSE relay in Express without managing raw chunk
+parsing. The native SDK also makes tool-call / structured output patterns significantly
+easier to implement reliably.
 
-**Slug uniqueness enforcement:** Use `uniqueIndex` at the Drizzle schema level (same as `forms_slug_idx`). At the application layer, generate a slug via `crypto.randomUUID()` (already used in `ChatWidget.tsx` and `LeadFormModal.tsx` — available in Node 14.17+ and all modern browsers) or a simple `Math.random().toString(36).slice(2, 8)` for short human-readable slugs. Catch `unique_violation` (PostgreSQL error code `23505`) and retry with a new slug if collision.
+**Streaming API surface used:**
 
-**Do not add `nanoid` or `uuid` as a direct dependency** — `crypto.randomUUID()` is available globally in Node 14.17+ and all modern browsers. The existing codebase already uses it without installing nanoid.
+```typescript
+// server side — relay to client via SSE
+const stream = anthropic.messages.stream({
+  model: "claude-sonnet-4-5",
+  max_tokens: 4096,
+  system: brandGuidelinesPrompt,
+  messages: conversationHistory,
+});
 
----
+res.setHeader("Content-Type", "text/event-stream");
+res.setHeader("Cache-Control", "no-cache");
 
-### 3. Admin UI — estimates list, create, edit
-
-**Decision: Existing shadcn/ui + React Hook Form + Zod + TanStack Query. No additions.**
-
-The `FormsSection.tsx` and `PortfolioSection.tsx` components are the direct model:
-- List table with create/edit/delete actions — shadcn `Table`, `Dialog`, `Button`
-- Form with Zod validation — `react-hook-form` + `@hookform/resolvers/zod`
-- Server state — TanStack Query mutations and query invalidation
-
-The admin tab pattern (adding "Estimates" tab to the admin sidebar) follows the existing `Admin.tsx` pattern exactly. No new library needed.
-
----
-
-### 4. Service selector UI — pick from `portfolio_services`
-
-**Decision: Existing shadcn/ui `Checkbox`, `Command` (cmdk — already installed), or a simple multi-select built from `Checkbox` + `Label`. No new library.**
-
-`cmdk` (1.1.1) is already installed and used for the command palette. It supports combobox/multi-select patterns. Alternatively, a simple checkbox list from `portfolio_services` data (already fetched by the portfolio admin section) is sufficient.
-
----
-
-### 5. Email dispatch of estimate link
-
-**Decision: This is a gap. No email sending capability exists in the current codebase.**
-
-Current notification infrastructure:
-- Twilio SMS — fully wired (`server/integrations/twilio.ts`)
-- GoHighLevel — contact sync only, no outbound messaging via the current integration
-- No SMTP, no Resend, no SendGrid, no Nodemailer in `package.json` or `.env.example`
-
-**Recommendation: Use Resend for email dispatch.**
-
-Resend is the current standard for transactional email in TypeScript/Node projects (2024-2026). It offers:
-- Official Node.js SDK (`resend` package, ~50 KB)
-- Simple API — `resend.emails.send({ from, to, subject, html })`
-- React email templates via `@react-email/components` (optional — plain HTML strings work fine for v1.2)
-- Free tier: 3,000 emails/month, 100/day — sufficient for this use case
-- No SMTP server configuration required (API key only)
-
-```bash
-npm install resend
-```
-
-Current version: `resend@4.x` (verify at install time — latest stable as of research date).
-
-**Alternative — WhatsApp link dispatch (no email dep):** The PROJECT.md mentions "cria + envia link via WhatsApp" as the primary admin flow for manual estimates. If auto-dispatch of the estimate link on form completion is out of scope for v1.2 (which the PROJECT.md implies — it says "Criação automática via form → estimate gerado + disparo email/SMS"), then only Twilio SMS is needed for automated dispatch, and WhatsApp is handled by opening a pre-filled `wa.me` URL — zero new deps.
-
-**Decision for v1.2:** If email dispatch is required, add `resend`. If only SMS + WhatsApp link, zero new deps. The requirements doc should clarify this before implementation begins.
-
----
-
-### 6. PDF generation
-
-**Decision: Out of scope for v1.2. Do not add.**
-
-PROJECT.md explicitly lists "PDF export — not in v1.2" under Out of Scope. Do not add `puppeteer`, `@react-pdf/renderer`, or `pdfkit`. The proposal page (`/e/:slug`) is the deliverable — the browser's native Print to PDF covers any client-side need if ever requested.
-
----
-
-### 7. Slug generation for estimates
-
-**Decision: Short random alphanumeric slug, generated server-side with `crypto.randomUUID()` or a custom function, stored with `uniqueIndex` constraint.**
-
-Pattern from `BlogSection.tsx` `generateSlug()`:
-```ts
-function generateSlug(title: string): string {
-  return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+for await (const event of stream) {
+  if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+    res.write(`data: ${JSON.stringify({ text: event.delta.text })}\n\n`);
+  }
 }
+res.write("data: [DONE]\n\n");
+res.end();
 ```
 
-For estimates, use a client name + random suffix: `cliente-abc-x7k2` — human-readable, collision-resistant. No external library required.
+**Client side — consume SSE with native `EventSource` (no extra library):**
 
----
-
-## What NOT to Add
-
-| Avoid | Why | Use Instead |
-|-------|-----|-------------|
-| `fullpage.js` | GPL license, 60 KB, overkill for vertical snap | Native CSS `scroll-snap-type: y mandatory` |
-| `react-scroll-snap` | Abandoned since 2020, unmaintained | Native CSS scroll-snap |
-| `nanoid` | Redundant — `crypto.randomUUID()` already available in Node 14.17+ | `crypto.randomUUID()` or short custom function |
-| `@react-pdf/renderer` | PDF is explicitly out of scope for v1.2 | Browser Print to PDF if ever needed |
-| `puppeteer` | Server-side PDF, out of scope, heavy dependency | N/A for v1.2 |
-| `react-scroll-parallax` | No parallax in design requirements | Plain CSS transitions if needed |
-
----
-
-## Installation (only if email dispatch is confirmed in scope)
-
-```bash
-# Only needed if email dispatch via Resend is confirmed in requirements
-npm install resend
+```typescript
+const es = new EventSource("/api/presentations/chat");
+es.onmessage = (e) => {
+  if (e.data === "[DONE]") { es.close(); return; }
+  const { text } = JSON.parse(e.data);
+  setStreamingBuffer(prev => prev + text);
+};
 ```
 
-No other new packages.
+The `EventSource` API is native to browsers. No client-side SSE library needed.
 
 ---
 
-## Integration Points with Existing Stack
+### 2. Markdown Rendering in Slide Body (client-side)
 
-| New Component | Integrates With | Notes |
-|---------------|----------------|-------|
-| `estimates` DB table | Drizzle ORM, `db.ts`, `shared/schema/` barrel | Add `shared/schema/estimates.ts`, re-export from `shared/schema.ts` |
-| `estimate_items` DB table | `estimates`, `portfolio_services` (via service id FK) | Allow custom service rows with no FK (for ad-hoc items) |
-| `/api/estimates/*` routes | Express router, `server/routes/` pattern | New file `server/routes/estimates.ts`, registered in `server/routes.ts` |
-| Public `/e/:slug` page | Wouter routing, existing `client/src/pages/` | New page component, register in `App.tsx` route list |
-| Admin "Estimates" tab | `Admin.tsx` tab pattern, `AdminSidebar.tsx` | Follow exact pattern of "Forms" tab added in v1.1 |
-| SMS dispatch on auto-create | `server/integrations/twilio.ts` existing functions | Extend `sendHotLeadNotification` or add new `sendEstimateLink` helper |
-| Email dispatch (if scoped) | New `server/integrations/resend.ts` | Mirror `twilio.ts` structure |
+**Package:** `react-markdown`
+**Version:** `^10.1.0` (latest as of 2026-04-20, verified via npm registry)
+**Install:** `npm install react-markdown`
+
+**Why:** Claude's slide body text will include markdown formatting — headings, bold, bullet
+lists, emphasis. The existing `client/src/lib/markdown.tsx` is a hand-rolled inline-only
+parser that handles `**bold**`, `*italic*`, `` `code` ``, and links. It explicitly does NOT
+handle headings (`# H1`) or nested block-level elements. Slide body content will require
+full block markdown. `react-markdown` is the standard React ecosystem choice, processes a
+superset of what the hand-rolled parser does, and integrates with Tailwind's existing
+`prose` class (the `@tailwindcss/typography` plugin is already installed).
+
+**Key integration point:** wrap slide body rendering in `<ReactMarkdown className="prose prose-invert prose-sm max-w-none">`. No additional class configuration needed since the typography plugin is already present in `tailwind.config.ts`.
+
+**Companion package:** `remark-gfm`
+**Version:** `^4.0.1` (latest, verified npm registry)
+**Install:** `npm install remark-gfm`
+
+**Why:** Adds GitHub-Flavored Markdown support — tables, strikethrough, task lists. Claude
+will naturally emit GFM syntax in structured content. Without this plugin, table syntax
+in slide bodies renders as broken text.
 
 ---
 
-## Version Compatibility
+### 3. No Syntax Highlighting Library Needed
 
-All existing packages are compatible. No version conflicts to resolve.
+Slide content is narrative text (agency pitch, service descriptions, case studies). Code
+blocks are not expected in presentation slides. If a code block appears, the existing
+inline `` `code` `` rendering in `markdown.tsx` is sufficient for the rare case.
 
-| Package | Version (installed) | Compatibility Note |
-|---------|--------------------|--------------------|
-| `drizzle-orm` | 0.39.3 | Supports all schema features needed (jsonb, uniqueIndex, references) |
-| `drizzle-kit` | 0.31.8 | Compatible with 0.39.3 ORM for `db:push` migrations |
-| `tailwindcss` | 3.4.17 | Includes `snap-*` scroll utilities natively — no plugin needed |
-| `react-hook-form` | 7.55.0 | Compatible with current Zod 3.24.2 via `@hookform/resolvers` |
-| `resend` (if added) | 4.x | No known conflicts with Express 4 or Node ESM setup |
+**Do NOT install:** `rehype-highlight`, `highlight.js`, `prism-react-renderer`. These add
+200+ KB to the bundle for a feature that is not part of the slide content model.
+
+---
+
+### 4. Bilingual Content Storage — No Library Needed
+
+Store EN and PT-BR content as sibling fields within each slide JSONB block:
+
+```typescript
+// Slide block shape (stored in presentations.slides JSONB)
+type SlideBlock = {
+  id: string;           // uuid
+  layout: "title" | "body" | "bullets" | "image" | "split";
+  order: number;
+  content: {
+    en: {
+      title?: string;
+      body?: string;
+      bullets?: string[];
+    };
+    "pt-BR": {
+      title?: string;
+      body?: string;
+      bullets?: string[];
+    };
+  };
+  imageUrl?: string;    // language-agnostic — same image for both locales
+};
+```
+
+**Why this approach:** Keeps both locales in a single DB row (one `presentations` record per
+deck, not one per language). Language switching in the public viewer becomes a pure React
+state change — no re-fetch, no route change needed beyond the `?lang=` query param. Matches
+the JSONB snapshot pattern already validated in v1.2. The existing `useTranslation` hook
+does not need to change — its static UI strings stay there; slide *content* lives in the DB.
+
+**Do NOT install:** `i18next`, `react-i18next`, `next-intl`, `lingui`, or any i18n library.
+The project already has `useTranslation` backed by a static `translations.ts` map. A full
+i18n framework for what is effectively a two-locale content switcher inside a single
+JSONB document is over-engineering.
+
+---
+
+## Summary Table: New Additions Only
+
+| Library | Version | Environment | Purpose |
+|---|---|---|---|
+| `@anthropic-ai/sdk` | `^0.90.0` | server | Claude API — streaming chat + structured slide generation |
+| `react-markdown` | `^10.1.0` | client | Full block-markdown rendering for slide body content |
+| `remark-gfm` | `^4.0.1` | client | GFM support (tables, task lists) for react-markdown |
+
+Total: **3 new packages**, all production dependencies.
+
+---
+
+## Do NOT Add
+
+| Package | Reason |
+|---|---|
+| `@ai-sdk/anthropic` (Vercel AI SDK) | Adds abstractions over an already clean SDK; unnecessary indirection; the native `@anthropic-ai/sdk` streaming API is simple enough to use directly with Express SSE |
+| `playwright` | PPTX/PDF export is explicitly out of scope for this milestone; Playwright on Vercel serverless is a blocker anyway |
+| `slides-grab` / `reveal.js` / `impress.js` | External slide runtimes conflict with the architectural decision to render slides in the app's own scroll-snap viewer; these add 100–400 KB of render engine for zero gain |
+| `i18next` / `react-i18next` | Project has its own `useTranslation` with static map; bilingual slides use per-locale JSONB fields, not a runtime i18n framework |
+| `rehype-highlight` / `highlight.js` | No code blocks expected in slide content; adds significant bundle weight for an unused feature |
+| `react-quill` / `tiptap` / any WYSIWYG | The seed document explicitly rules out WYSIWYG editing; the milestone constraint is "no visual editor in the browser" |
+| `pptxgenjs` / `docx` | Export features deferred to a future milestone; not in scope |
+| `@uppy/*` (additional uppy plugins) | Supabase asset upload pattern already works via existing `uploadLinksPageAsset`; no new uppy capability needed |
+
+---
+
+## Integration Notes
+
+### Server: Anthropic Key Management
+
+Follow the existing pattern in `server/lib/ai-provider.ts`. Add a `runtimeAnthropicKey`
+cache alongside the existing `runtimeOpenAiKey`. The presentations authoring endpoint
+should check: runtime cache → `process.env.ANTHROPIC_API_KEY` → `chatIntegrations` table
+(add a `"anthropic"` provider row).
+
+### Server: SSE Route
+
+Express supports SSE natively. Set `Content-Type: text/event-stream`, `Cache-Control: no-cache`,
+`Connection: keep-alive`, then `res.write()` per chunk. No WebSocket, no `ws` package
+changes. The `ws` package (`^8.18.0`) is already installed for other purposes and should
+not be repurposed for slide streaming — SSE is simpler and sufficient for one-directional
+server-to-client text chunks.
+
+### Client: Streaming Buffer Pattern
+
+The admin chat editor should accumulate streaming text in a `useState` buffer during
+generation, then replace it with the finalized parsed JSON when the `[DONE]` sentinel
+arrives. This avoids rendering partially valid JSON mid-stream.
+
+### Client: Scroll-Snap Viewer
+
+No new package needed. The public `/p/:slug` viewer is a direct extension of
+`EstimateViewer.tsx`: `h-screen overflow-y-scroll snap-y snap-mandatory` container with
+`snap-start snap-always` sections. framer-motion (`^11.18.2`, already installed) handles
+per-section enter animations. IntersectionObserver (native browser API) handles nav dot
+highlighting.
+
+---
+
+## Environment Variables to Add
+
+| Variable | Purpose |
+|---|---|
+| `ANTHROPIC_API_KEY` | Direct key for slide authoring (or stored in `chatIntegrations` DB row) |
 
 ---
 
 ## Sources
 
-- Existing codebase — `shared/schema/forms.ts`, `shared/schema/cms.ts` (slug uniqueness pattern)
-- Existing codebase — `server/integrations/twilio.ts` (notification infrastructure)
-- Existing codebase — `client/src/pages/PublicForm.tsx` (public slug-routed page pattern)
-- Existing codebase — `package.json` (confirmed absence of scroll libraries, email libraries, nanoid)
-- Tailwind CSS 3 docs — scroll-snap utilities (`snap-y`, `snap-mandatory`, `snap-start`) ship in Tailwind 3.x core, no plugin — HIGH confidence
-- MDN Web Docs — CSS `scroll-snap-type` browser support: Chrome 69+, Firefox 68+, Safari 11+ — HIGH confidence, universal support
-- Resend Node SDK — https://resend.com/docs/send-with-nodejs — MEDIUM confidence (verified SDK exists, version pinned at install time)
-- PROJECT.md — PDF out of scope confirmed — HIGH confidence
-
----
-
-*Stack research for: Estimates/Proposals system (v1.2)*
-*Researched: 2026-04-19*
+- npm registry: `@anthropic-ai/sdk` 0.90.0 — `npm info @anthropic-ai/sdk version`
+- npm registry: `react-markdown` 10.1.0 — `npm info react-markdown version`
+- npm registry: `remark-gfm` 4.0.1 — `npm info remark-gfm version`
+- Anthropic streaming docs: https://docs.anthropic.com/en/api/messages-streaming
+- Anthropic TypeScript SDK: https://github.com/anthropics/anthropic-sdk-typescript
+- Existing `tailwind.config.ts` — `@tailwindcss/typography` already present
+- Existing `EstimateViewer.tsx` — scroll-snap pattern confirmed, no external library used
+- Existing `server/lib/ai-provider.ts` — key cache pattern to follow for Anthropic key

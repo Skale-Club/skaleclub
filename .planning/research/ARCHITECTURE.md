@@ -1,236 +1,305 @@
-# Architecture Research — Estimates/Proposals System
+# Architecture: Admin Presentations Page (v1.4)
 
-**Domain:** Estimates/Proposals system added to existing TypeScript/React + Express + Drizzle ORM app
-**Researched:** 2026-04-19
-**Confidence:** HIGH (all conclusions drawn from direct codebase inspection)
-
----
-
-## Standard Architecture
-
-### System Overview
-
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│  CLIENT (React SPA, Wouter routing, TanStack Query)                   │
-│                                                                        │
-│  Admin (/admin/estimates)         Public (/e/:slug)                   │
-│  ┌────────────────────────┐       ┌────────────────────────────────┐  │
-│  │ EstimatesSection.tsx   │       │ PublicEstimate.tsx              │  │
-│  │  - List estimates      │       │  - Cover section               │  │
-│  │  - Create/Edit modal   │       │  - Skale Club intro section     │  │
-│  │  - Service selector    │       │  - 1 fullscreen section/service │  │
-│  │  - Copy link button    │       │  - Acceptance section           │  │
-│  └────────────────────────┘       │  (CSS scroll-snap, no Navbar)   │  │
-│                                   └────────────────────────────────┘  │
-├──────────────────────────────────────────────────────────────────────┤
-│  SERVER (Express routes)                                              │
-│                                                                        │
-│  server/routes/estimates.ts  ←→  server/storage.ts                   │
-│  - GET    /api/estimates            (admin list)                      │
-│  - POST   /api/estimates            (admin create)                    │
-│  - GET    /api/estimates/:id        (admin fetch one)                 │
-│  - PUT    /api/estimates/:id        (admin update)                    │
-│  - DELETE /api/estimates/:id        (admin delete)                    │
-│  - GET    /api/estimates/slug/:slug (public fetch — no auth)          │
-├──────────────────────────────────────────────────────────────────────┤
-│  SHARED (types + validation)                                          │
-│                                                                        │
-│  shared/schema/estimates.ts  →  re-exported via shared/schema.ts     │
-├──────────────────────────────────────────────────────────────────────┤
-│  DATABASE (PostgreSQL via Drizzle ORM)                                │
-│                                                                        │
-│  estimates table                                                       │
-│  ┌─────────────────────────────────────────────────────────────────┐ │
-│  │ id  slug  client_name  client_email  client_phone                │ │
-│  │ services (jsonb)  note  status  created_at  updated_at           │ │
-│  └─────────────────────────────────────────────────────────────────┘ │
-└──────────────────────────────────────────────────────────────────────┘
-```
-
-### Component Responsibilities
-
-| Component | Responsibility | Location |
-|-----------|----------------|----------|
-| `shared/schema/estimates.ts` | Drizzle table definition + Zod schemas + TypeScript types | New file |
-| `server/routes/estimates.ts` | Admin-protected CRUD + public slug lookup | New file |
-| `server/storage.ts` | Storage methods: list, get, getBySlug, create, update, delete | Extend existing class |
-| `client/src/pages/Admin.tsx` | Register `estimates` section in slug map + render switch | Modify |
-| `client/src/components/admin/shared/types.ts` | Add `'estimates'` to `AdminSection` union | Modify |
-| `client/src/components/admin/shared/constants.ts` | Add estimates entry to `SIDEBAR_MENU_ITEMS` | Modify |
-| `client/src/components/admin/EstimatesSection.tsx` | Admin UI: list, create, edit estimates | New file |
-| `client/src/pages/PublicEstimate.tsx` | Public `/e/:slug` page with scroll-snap sections | New file |
-| `client/src/App.tsx` | Register lazy-loaded `PublicEstimate` + `/e/:slug` route | Modify |
-| `server/routes.ts` | Import + call `registerEstimateRoutes(app)` | Modify |
-| `server/lib/lead-processing.ts` | Optionally trigger auto-estimate creation on form completion | Modify |
+**Researched:** 2026-04-20
+**Milestone:** v1.4 — AI-authored slide decks with bilingual public viewer
 
 ---
 
-## Recommended Project Structure
+## Executive Summary
 
-New files only — all additions follow existing conventions:
-
-```
-shared/schema/
-└── estimates.ts          # New — Drizzle table + Zod schemas + types
-
-server/routes/
-└── estimates.ts          # New — Express route handlers
-
-client/src/pages/
-└── PublicEstimate.tsx    # New — public /e/:slug scroll-snap page
-
-client/src/components/admin/
-└── EstimatesSection.tsx  # New — admin estimates management UI
-    estimates/            # Optional subfolder if component grows large
-    ├── EstimateForm.tsx
-    ├── EstimateCard.tsx
-    └── ServiceSelector.tsx
-```
-
-Modified files:
-```
-shared/schema.ts                                 # Add: export * from "./schema/estimates.js"
-server/routes.ts                                 # Add: registerEstimateRoutes import + call
-server/storage.ts                                # Add: estimate CRUD methods to DatabaseStorage class
-client/src/App.tsx                               # Add: lazy import + /e/:slug Route
-client/src/components/admin/shared/types.ts      # Add: 'estimates' to AdminSection union
-client/src/components/admin/shared/constants.ts  # Add: estimates entry to SIDEBAR_MENU_ITEMS
-client/src/pages/Admin.tsx                       # Add: estimates to slugMap + render switch
-```
+The presentations feature is a clean extension of the estimates pattern (v1.2). Every architectural decision made in v1.2 (JSONB snapshot, UUID slug, event-log view table, isEstimateRoute guard) applies directly here. The one meaningful new surface is the AI authoring loop — a server-sent streaming endpoint that calls the Anthropic SDK and pushes structured JSON slide blocks back to the admin chat UI. Brand guidelines live in a dedicated `presentation_brand_guidelines` singleton table (not bolted onto `company_settings`, which is already overloaded), so the AI system prompt is a first-class DB row the admin can edit independently. The `@anthropic-ai/sdk` package is not yet in `package.json`; it must be added in Phase 1.
 
 ---
 
-## Architectural Patterns
+## 1. Database Schema
 
-### Pattern 1: Follow the forms.ts route file pattern exactly
+### 1.1 Tables Required
 
-**What:** Each domain gets its own `server/routes/{domain}.ts` with a single exported `register{Domain}Routes(app: Express)` function. Route file imports from `#shared/schema.js` and `../storage.js`. Auth handled via `requireAdmin` from `./_shared.ts`.
+Three new tables mirror the estimates family exactly.
 
-**When to use:** Always — this is the established convention after v1.0 route splitting.
+#### `presentations`
 
-**Trade-offs:** Slight boilerplate per domain, but keeps `server/routes.ts` as a thin orchestrator and each file focused and testable.
+```ts
+// shared/schema/presentations.ts
 
-**Example:**
-```typescript
-// server/routes/estimates.ts
-import type { Express } from "express";
-import { storage } from "../storage.js";
-import { insertEstimateSchema, updateEstimateSchema } from "#shared/schema.js";
-import { requireAdmin, setPublicCache } from "./_shared.js";
-
-export function registerEstimateRoutes(app: Express) {
-  // Admin: list
-  app.get("/api/estimates", requireAdmin, async (req, res) => { ... });
-  // Admin: create
-  app.post("/api/estimates", requireAdmin, async (req, res) => { ... });
-  // Admin: get one
-  app.get("/api/estimates/:id", requireAdmin, async (req, res) => { ... });
-  // Admin: update
-  app.put("/api/estimates/:id", requireAdmin, async (req, res) => { ... });
-  // Admin: delete
-  app.delete("/api/estimates/:id", requireAdmin, async (req, res) => { ... });
-  // Public: fetch by slug (no auth — used by /e/:slug page)
-  app.get("/api/estimates/slug/:slug", setPublicCache(0), async (req, res) => { ... });
-}
-```
-
-### Pattern 2: Follow the schema/forms.ts domain file pattern
-
-**What:** One file per domain in `shared/schema/`. Defines Drizzle pgTable, createInsertSchema (or manual Zod), types via `$inferSelect` / `$inferInsert`, then re-exported from barrel `shared/schema.ts`.
-
-**When to use:** Always for new DB tables.
-
-**Trade-offs:** Requires updating the barrel export. Zero impact on existing consumers.
-
-**Example:**
-```typescript
-// shared/schema/estimates.ts
-import { pgTable, text, serial, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, jsonb, integer } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
-export const estimates = pgTable("estimates", {
+// ── Slide block types ────────────────────────────────────────────────────────
+
+export const slideBlockSchema = z.object({
+  type: z.enum(["title", "content", "bullets", "image", "split"]),
+  // EN content
+  heading: z.string().optional(),
+  body: z.string().optional(),
+  bullets: z.array(z.string()).optional(),
+  imageUrl: z.string().optional(),
+  imageAlt: z.string().optional(),
+  // PT-BR content (inline bilingual — no separate rows)
+  headingPt: z.string().optional(),
+  bodyPt: z.string().optional(),
+  bulletsPt: z.array(z.string()).optional(),
+  imageAltPt: z.string().optional(),
+  // Layout hints
+  layout: z.enum(["center", "left", "right"]).optional(),
+  backgroundImageUrl: z.string().optional(),
+  order: z.number().int().min(0),
+});
+
+export type SlideBlock = z.infer<typeof slideBlockSchema>;
+
+// ── Table ────────────────────────────────────────────────────────────────────
+
+export const presentations = pgTable("presentations", {
   id: serial("id").primaryKey(),
+  title: text("title").notNull(),
   slug: text("slug").notNull().unique(),
-  clientName: text("client_name").notNull(),
-  clientEmail: text("client_email"),
-  clientPhone: text("client_phone"),
-  // jsonb array — one item per service line
-  services: jsonb("services").$type<EstimateService[]>().notNull().default([]),
-  note: text("note"),
-  status: text("status").notNull().default("draft"),  // draft | sent | accepted
+  slides: jsonb("slides").$type<SlideBlock[]>().notNull().default([]),
+  accessCode: text("access_code"),
+  version: integer("version").notNull().default(1),
+  // Snapshot of brand guidelines active at last save — keeps old presentations
+  // rendering correctly after brand refreshes (same immutability as estimate services)
+  guidelinesSnapshot: jsonb("guidelines_snapshot").$type<BrandGuidelines>(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
 });
 
-export const estimateServiceSchema = z.object({
-  serviceId: z.number().int().nullable().optional(),  // null = custom service
+export type Presentation = typeof presentations.$inferSelect;
+export type InsertPresentation = typeof presentations.$inferInsert;
+
+export const insertPresentationSchema = z.object({
   title: z.string().min(1),
-  description: z.string().optional(),
-  price: z.string().min(1),                           // text, e.g. "R$ 1.997"
-  originalPrice: z.string().optional(),               // before override
-  features: z.array(z.string()).default([]),
-  isCustom: z.boolean().default(false),
+  slug: z.string().min(1),
+  slides: z.array(slideBlockSchema).default([]),
+  accessCode: z.string().nullable().optional(),
+  guidelinesSnapshot: z.custom<BrandGuidelines>().nullable().optional(),
 });
-export type EstimateService = z.infer<typeof estimateServiceSchema>;
 
-export const insertEstimateSchema = z.object({
-  slug: z.string().min(1).max(80).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
-  clientName: z.string().min(1),
-  clientEmail: z.string().email().nullable().optional(),
-  clientPhone: z.string().nullable().optional(),
-  services: z.array(estimateServiceSchema).min(1),
-  note: z.string().nullable().optional(),
-  status: z.enum(["draft", "sent", "accepted"]).default("draft"),
-});
-export const updateEstimateSchema = insertEstimateSchema.partial();
-
-export type Estimate = typeof estimates.$inferSelect;
-export type InsertEstimate = typeof estimates.$inferInsert;
-export type InsertEstimateInput = z.infer<typeof insertEstimateSchema>;
-export type UpdateEstimateInput = z.infer<typeof updateEstimateSchema>;
+export type PresentationWithStats = Presentation & {
+  viewCount: number;
+  lastViewedAt: Date | null;
+};
 ```
 
-### Pattern 3: AdminSection union + slug map + sidebar entry
+#### `presentation_views`
 
-**What:** Adding a new admin section requires four coordinated changes: (1) add the literal to `AdminSection` in `types.ts`, (2) add an entry to `SIDEBAR_MENU_ITEMS` in `constants.ts`, (3) update both slug maps in `Admin.tsx`, (4) render the section component in the switch block.
+```ts
+export const presentationViews = pgTable("presentation_views", {
+  id: serial("id").primaryKey(),
+  presentationId: integer("presentation_id")
+    .references(() => presentations.id, { onDelete: "cascade" })
+    .notNull(),
+  viewedAt: timestamp("viewed_at").defaultNow().notNull(),
+  ipAddress: text("ip_address"),
+});
 
-**When to use:** Every new admin section. This pattern is well established.
-
-**Trade-offs:** Four-file touch for each new section, but each change is a one-liner. Low risk.
-
-```typescript
-// types.ts — add to union
-export type AdminSection = ... | 'estimates';
-
-// constants.ts — add menu entry
-{ id: 'estimates', title: 'Estimates', description: 'Proposals sent to clients', icon: FileSignature },
-
-// Admin.tsx — add to both slug maps
-// incoming: { estimates: 'estimates' }
-// outgoing: { estimates: 'estimates' }
-// render switch:
-{activeSection === 'estimates' && <EstimatesSection />}
+export type PresentationView = typeof presentationViews.$inferSelect;
 ```
 
-### Pattern 4: Public page with scroll-snap, no Navbar/Footer
+#### `presentation_brand_guidelines`
 
-**What:** `/e/:slug` renders a fullscreen scroll-snap page — similar to how `/f/:slug` (PublicForm.tsx) is a self-contained page. It must be registered in the router block that renders WITHOUT Navbar/Footer. Currently the only way to achieve this cleanly is to detect the `/e/` prefix and return an isolated `<Suspense>` branch — the same technique as `isLinksRoute` and `isVCardRoute` guards in App.tsx.
+```ts
+// Singleton table — one row. Admin edits it via a dedicated sub-section.
+// Claude consumes the latest row as its system prompt prefix on every authoring call.
 
-**When to use:** Any public page that must suppress the site shell (Navbar, Footer, ChatWidget).
+export const brandGuidelinesSchema = z.object({
+  logoUrl: z.string().optional(),
+  primaryColor: z.string().optional(),       // e.g. "#1C53A3"
+  accentColor: z.string().optional(),        // e.g. "#FFFF01"
+  fontHeading: z.string().optional(),        // e.g. "Outfit"
+  fontBody: z.string().optional(),           // e.g. "Inter"
+  tone: z.string().optional(),               // free text: "professional but approachable"
+  alwaysInclude: z.array(z.string()).default([]),
+  neverInclude: z.array(z.string()).default([]),
+  extraContext: z.string().optional(),       // Any other system-prompt text admin wants Claude to know
+});
 
-**Trade-offs:** Adds another prefix guard in `Router()`. The alternative — using a `data-no-shell` prop — would require refactoring the render flow. The prefix guard is the established pattern.
+export type BrandGuidelines = z.infer<typeof brandGuidelinesSchema>;
 
-**Example:**
-```typescript
-// App.tsx — add before the main return block
+export const presentationBrandGuidelines = pgTable("presentation_brand_guidelines", {
+  id: serial("id").primaryKey(),
+  guidelines: jsonb("guidelines").$type<BrandGuidelines>().notNull().default({}),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
+});
+```
+
+### 1.2 Design Decisions
+
+**Inline bilingual JSONB (not separate EN/PT rows).** Each `SlideBlock` carries both language payloads in the same JSON object (`heading` + `headingPt`, `body` + `bodyPt`, etc.). Rationale: atomic saves, no join cost, and Claude can output both languages in a single response. The alternative — two separate presentations rows keyed by locale — would complicate the authoring loop and duplicate access-code/slug management.
+
+**Separate `presentation_brand_guidelines` table (not a column on `company_settings`).** `company_settings` already has 40+ columns and serves multiple unrelated concerns. Brand guidelines for presentations are authored and versioned independently. A dedicated singleton table keeps the concern isolated and avoids inflating the already large `insertCompanySettingsSchema`.
+
+**`guidelinesSnapshot` JSONB on `presentations` (snapshot immutability).** When admin saves a presentation, the current `presentation_brand_guidelines.guidelines` row is deep-copied into `presentations.guidelinesSnapshot`. The public viewer reads the snapshot, not the live guidelines. This mirrors the `services` JSONB snapshot pattern from v1.2 — past presentations render consistently after brand changes.
+
+**JSONB slides, not a separate `slides` table.** A normalized `slides` table adds a join on every read, complicates ordering, and provides no query benefit — no use case ever queries individual slides independently. Inline JSONB keeps the fetch to one row and matches how estimates stores services.
+
+---
+
+## 2. API Routes
+
+### 2.1 New file: `server/routes/presentations.ts`
+
+Follows the same structure as `server/routes/estimates.ts`. Exports `registerPresentationsRoutes(app)`.
+
+```
+// Public (no auth)
+GET  /api/presentations/slug/:slug       -> lookup by slug, strip accessCode, add hasAccessCode
+POST /api/presentations/:id/view         -> record view, IP from x-forwarded-for
+POST /api/presentations/:id/verify-code  -> plain-text code comparison
+
+// Admin (requireAdmin)
+GET    /api/presentations                -> list with viewCount + lastViewedAt
+POST   /api/presentations                -> create (auto-generate UUID slug)
+PUT    /api/presentations/:id            -> update (title, accessCode, slides)
+DELETE /api/presentations/:id            -> delete (cascades presentation_views)
+
+// Brand guidelines (admin)
+GET  /api/presentations/guidelines       -> fetch singleton row
+PUT  /api/presentations/guidelines       -> upsert singleton row
+
+// AI authoring (admin, streaming)
+POST /api/presentations/ai/generate      -> SSE stream: Claude generates slide JSON
+POST /api/presentations/ai/edit          -> SSE stream: Claude edits existing slides
+```
+
+### 2.2 AI authoring endpoint design
+
+The authoring endpoint uses Server-Sent Events (SSE). The existing codebase does not yet have direct Anthropic streaming; the Anthropic SDK's `messages.stream()` method is the correct integration point.
+
+**Request body:**
+```ts
+{
+  conversationHistory: { role: "user" | "assistant"; content: string }[];
+  currentSlides?: SlideBlock[];   // present on edit calls, absent on generate
+  presentationId?: number;        // absent when generating a new presentation
+}
+```
+
+**Server response — SSE stream:**
+```
+event: slide_delta
+data: { type: "slide_delta", slideIndex: number, partial: string }
+
+event: slides_complete
+data: { type: "slides_complete", slides: SlideBlock[] }
+
+event: error
+data: { type: "error", message: string }
+```
+
+**Implementation pattern:**
+```ts
+app.post("/api/presentations/ai/generate", requireAdmin, async (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  const guidelines = await storage.getBrandGuidelines();
+  const systemPrompt = buildSystemPrompt(guidelines);
+
+  const stream = await anthropic.messages.stream({
+    model: "claude-opus-4-5",
+    max_tokens: 4096,
+    system: systemPrompt,
+    messages: req.body.conversationHistory,
+  });
+
+  for await (const chunk of stream) {
+    res.write(`event: slide_delta\ndata: ${JSON.stringify(chunk)}\n\n`);
+  }
+
+  const finalMessage = await stream.finalMessage();
+  const slides = parseSlideBlocks(finalMessage.content);
+  res.write(`event: slides_complete\ndata: ${JSON.stringify({ slides })}\n\n`);
+  res.end();
+});
+```
+
+**Claude model choice:** Use `claude-opus-4-5` (or the latest Opus available at implementation time). This is a flagship admin authoring surface — quality over cost, and admin is the only caller. Confirm exact model ID at Phase 4 via the Anthropic models list endpoint.
+
+**Note on Anthropic SDK:** `@anthropic-ai/sdk` is not yet in `package.json`. It must be installed before Phase 4. The existing OpenRouter config already references `anthropic/claude-3.5-sonnet` as a fallback, but for direct Anthropic streaming the native SDK is required.
+
+### 2.3 System prompt construction
+
+`buildSystemPrompt(guidelines: BrandGuidelines): string` lives in `server/lib/presentation-prompt.ts`. It converts the brand guidelines row into the Claude system prompt prefix. Example structure:
+
+```
+You are a professional presentation designer for Skale Club, a marketing agency.
+Your job is to write bilingual slide content (English + Portuguese/Brazil) in valid JSON.
+
+Brand guidelines:
+- Primary color: {guidelines.primaryColor}
+- Accent color: {guidelines.accentColor}
+- Fonts: {guidelines.fontHeading} (headings), {guidelines.fontBody} (body)
+- Tone: {guidelines.tone}
+- Always include: {guidelines.alwaysInclude.join(", ")}
+- Never include: {guidelines.neverInclude.join(", ")}
+
+Output ONLY a JSON array of slide objects conforming to the SlideBlock schema.
+Each slide must have both English (heading, body, bullets) and Portuguese
+equivalents (headingPt, bodyPt, bulletsPt).
+{guidelines.extraContext}
+```
+
+### 2.4 Registration in `server/routes.ts`
+
+Add one import and one call alongside `registerEstimatesRoutes`:
+
+```ts
+import { registerPresentationsRoutes } from "./routes/presentations.js";
+// inside registerRoutes():
+registerPresentationsRoutes(app);
+```
+
+---
+
+## 3. Storage Layer
+
+### 3.1 New methods on `IStorage` / `DatabaseStorage`
+
+Add to `server/storage.ts` following the existing estimate methods pattern:
+
+```ts
+// Presentations CRUD
+listPresentations(): Promise<PresentationWithStats[]>
+getPresentation(id: number): Promise<Presentation | null>
+getPresentationBySlug(slug: string): Promise<Presentation | null>
+createPresentation(data: InsertPresentation): Promise<Presentation>
+updatePresentation(id: number, data: Partial<InsertPresentation>): Promise<Presentation>
+deletePresentation(id: number): Promise<void>
+
+// Views (mirrors estimate_views pattern exactly)
+recordPresentationView(presentationId: number, ipAddress?: string): Promise<void>
+
+// Brand guidelines (singleton — upsert on id=1)
+getBrandGuidelines(): Promise<BrandGuidelines | null>
+upsertBrandGuidelines(data: BrandGuidelines): Promise<void>
+```
+
+`listPresentations` uses a LEFT JOIN on `presentation_views` aggregated by `presentation_id`, identical to the `listEstimates` implementation.
+
+---
+
+## 4. Public Viewer Routing (`/p/:slug`)
+
+### 4.1 App.tsx changes
+
+Add a `isPresentationRoute` guard alongside the existing `isEstimateRoute` guard. The pattern is character-for-character identical — copy, rename, swap the component.
+
+```ts
+// Inside Router(), near line 120
 const isEstimateRoute = location.startsWith('/e/');
+const isPresentationRoute = location.startsWith('/p/');   // ADD
+```
 
-if (isEstimateRoute) {
+Add isolated branch before the main layout return (after the isEstimateRoute block):
+
+```ts
+if (isPresentationRoute) {
   return (
     <Suspense fallback={fallback}>
       <Switch>
-        <Route path="/e/:slug" component={PublicEstimate} />
+        <Route path="/p/:slug" component={PresentationViewer} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
@@ -238,260 +307,146 @@ if (isEstimateRoute) {
 }
 ```
 
-### Pattern 5: Auto-estimate creation hook in lead-processing.ts
+Add lazy import at the top of the file:
 
-**What:** When `lead.formCompleto === true`, `runLeadPostProcessing()` in `server/lib/lead-processing.ts` already fires Twilio SMS and GHL sync. Auto-estimate creation should be a third best-effort step in the same function — create a draft estimate from the lead's data if the form config specifies `autoEstimate: true` (or always create one based on product decision).
-
-**When to use:** Phase 4 only — after the estimates CRUD and public page exist. Don't add this in Phase 1–3.
-
-**Trade-offs:** Coupling lead processing to estimates creation. Acceptable because it mirrors the existing GHL + Twilio coupling. Errors must be swallowed (best-effort), same pattern as the other side-effects.
-
----
-
-## Data Flow
-
-### Admin Creates Estimate Manually
-
-```
-Admin fills EstimatesSection form
-    ↓
-POST /api/estimates  (requireAdmin)
-    ↓
-insertEstimateSchema.parse(req.body)  →  400 if invalid
-    ↓
-storage.createEstimate(input)
-    ↓
-INSERT INTO estimates (slug, client_name, ...)
-    ↓
-201 { id, slug, ... }
-    ↓
-Admin copies /e/{slug} link  →  sends to client via WhatsApp
-```
-
-### Client Views Public Estimate
-
-```
-Client opens /e/{slug} in browser
-    ↓
-PublicEstimate.tsx mounts
-    ↓
-GET /api/estimates/slug/{slug}  (no auth, setPublicCache(0))
-    ↓
-storage.getEstimateBySlug(slug)  →  404 if not found
-    ↓
-{ id, slug, clientName, services[], note, ... }
-    ↓
-Render fullscreen scroll-snap sections:
-  Section 0: Cover (client name, Skale Club logo, date)
-  Section 1: Skale Club intro / pitch
-  Section N: One section per service in services[]
-  Section N+1: Acceptance / CTA / contact
-```
-
-### Auto-Estimate on Form Submission
-
-```
-POST /api/forms/slug/:slug/leads/progress  (last question, formCompleto=true)
-    ↓
-storage.upsertFormLeadProgress(...)
-    ↓
-runLeadPostProcessing(lead, formConfig, companyName)
-    ↓ (parallel, best-effort)
-  ├── Twilio SMS notification  (existing)
-  ├── GHL contact sync  (existing)
-  └── createEstimateDraft(lead)  (NEW — Phase 4)
-        ↓
-        storage.createEstimate({ slug: generateSlug(lead.nome), clientName: lead.nome, ... })
-        errors swallowed, estimate creation failure does NOT fail the lead upsert
-```
-
----
-
-## DB Schema — Exact Recommendation
-
-```sql
-CREATE TABLE estimates (
-  id          SERIAL PRIMARY KEY,
-  slug        TEXT NOT NULL UNIQUE,
-  client_name TEXT NOT NULL,
-  client_email TEXT,
-  client_phone TEXT,
-  services    JSONB NOT NULL DEFAULT '[]'::jsonb,
-  -- each item: { serviceId?: number|null, title, description?, price, originalPrice?, features[], isCustom }
-  note        TEXT,
-  status      TEXT NOT NULL DEFAULT 'draft',  -- draft | sent | accepted
-  created_at  TIMESTAMP DEFAULT NOW(),
-  updated_at  TIMESTAMP DEFAULT NOW()
+```ts
+const PresentationViewer = lazy(() =>
+  import("@/pages/PresentationViewer").then(m => ({
+    default: () => <PageWrapper><m.default /></PageWrapper>
+  }))
 );
-CREATE UNIQUE INDEX estimates_slug_idx ON estimates (slug);
-CREATE INDEX estimates_status_idx ON estimates (status);
-CREATE INDEX estimates_created_at_idx ON estimates (created_at);
 ```
 
-No foreign key to `portfolio_services`. Services are denormalized into the JSONB array at creation time. This means editing a service in the portfolio does not retroactively change sent estimates — intentional, estimates represent what was offered at a point in time. `serviceId` is stored for reference only (to pre-fill forms when editing).
+No AuthProvider wrapper — public viewer is unauthenticated, same as EstimateViewer.
+
+### 4.2 Language switching via query param
+
+`/p/:slug?lang=pt-BR` (default: `en`). The viewer reads `new URLSearchParams(window.location.search).get("lang")` and renders `slide.headingPt` / `slide.bodyPt` when `lang === "pt-BR"`. A language toggle button in the viewer updates the URL param — no page reload since slide data is already loaded. This avoids subpath duplication and keeps all server-side logic language-agnostic.
 
 ---
 
-## Integration Points
+## 5. Admin UI
 
-### Existing Infrastructure — What Gets Reused
+### 5.1 New files
 
-| Infrastructure | How Estimates Uses It |
-|----------------|-----------------------|
-| `requireAdmin` from `./_shared.ts` | All admin CRUD routes protected identically to forms/blog |
-| `setPublicCache` from `./_shared.ts` | Public slug endpoint: `setPublicCache(0)` (no cache — estimate content is confidential) |
-| `storage` class in `server/storage.ts` | Adds estimate methods to existing DatabaseStorage class |
-| `shared/schema.ts` barrel | Adds `export * from "./schema/estimates.js"` |
-| `server/routes.ts` orchestrator | Adds one import + one `registerEstimateRoutes(app)` call |
-| `AdminSection` type system | Adds `'estimates'` literal, one sidebar entry, two slug map entries, one render line |
-| `portfolioServices` table | Admin UI reads `GET /api/portfolio` (already exists) to populate service selector |
-| `lead-processing.ts` | Phase 4: adds estimate draft creation as third best-effort side-effect |
-| Twilio (existing) | Phase 4: optionally send SMS with estimate link after auto-creation |
-
-### New vs Modified — Explicit List
-
-**New files (pure additions, zero existing file impact):**
-- `shared/schema/estimates.ts`
-- `server/routes/estimates.ts`
-- `client/src/pages/PublicEstimate.tsx`
-- `client/src/components/admin/EstimatesSection.tsx`
-- (optional) `client/src/components/admin/estimates/EstimateForm.tsx`
-- (optional) `client/src/components/admin/estimates/ServiceSelector.tsx`
-- (optional) `client/src/components/admin/estimates/EstimateCard.tsx`
-
-**Modified files (surgical additions):**
-- `shared/schema.ts` — add one barrel export line
-- `server/routes.ts` — add one import + one call
-- `server/storage.ts` — add estimate CRUD methods to DatabaseStorage class
-- `client/src/App.tsx` — add `isEstimateRoute` guard + lazy import + route
-- `client/src/components/admin/shared/types.ts` — add `'estimates'` to AdminSection union
-- `client/src/components/admin/shared/constants.ts` — add sidebar menu item
-- `client/src/pages/Admin.tsx` — add to both slug maps + render switch
-- `server/lib/lead-processing.ts` — Phase 4 only: add auto-estimate creation
-
----
-
-## Recommended Build Order (Phase Sequencing)
-
-The dependency graph drives the order. Each phase has zero broken builds at its end.
-
-**Phase 1 — DB Schema + Storage Layer (foundation)**
-- Create `shared/schema/estimates.ts` (Drizzle table + Zod schemas + types)
-- Extend `shared/schema.ts` barrel
-- Add estimate CRUD methods to `server/storage.ts` (`createEstimate`, `getEstimate`, `getEstimateBySlug`, `listEstimates`, `updateEstimate`, `deleteEstimate`)
-- Run `npm run db:push` to create the table
-- Rationale: everything else depends on this. No UI touches in this phase.
-
-**Phase 2 — Admin API Routes**
-- Create `server/routes/estimates.ts` with all 6 endpoints
-- Register in `server/routes.ts`
-- Rationale: unblocks both the admin UI (Phase 3) and auto-creation hook (Phase 4). Can be smoke-tested with `curl` before any UI exists.
-
-**Phase 3 — Admin UI (EstimatesSection)**
-- Add `'estimates'` to `AdminSection` type, sidebar constants, slug maps, Admin.tsx render switch
-- Create `client/src/components/admin/EstimatesSection.tsx`
-  - List view: table of estimates with slug, client name, status, created date, copy-link button
-  - Create/Edit modal: client fields + service selector (fetches `GET /api/portfolio`) + note field
-  - Service selector: pick from `portfolioServices`, override price, add custom service rows
-- Rationale: manual creation path (the primary workflow) is complete after this phase.
-
-**Phase 4 — Public `/e/:slug` Page**
-- Add `isEstimateRoute` guard to App.tsx router
-- Create `client/src/pages/PublicEstimate.tsx` with CSS scroll-snap sections
-- Rationale: the client-facing deliverable. Depends on Phase 2 (public API endpoint). Can be built and tested by hitting real estimate slugs created in Phase 3.
-
-**Phase 5 — Auto-Creation on Form Completion**
-- Modify `server/lib/lead-processing.ts`: add estimate draft creation as third best-effort step
-- Optionally: SMS link dispatch via Twilio after draft creation
-- Rationale: automation enhancement. Phases 1–4 deliver full manual workflow. This phase adds the auto trigger without touching any of the UI.
-
----
-
-## Anti-Patterns to Avoid
-
-### Anti-Pattern 1: Adding a foreign key from estimates to portfolio_services
-
-**What people do:** Add `service_id INTEGER REFERENCES portfolio_services(id)` in the estimates table to normalize service data.
-
-**Why it's wrong:** Estimates are point-in-time documents. If a portfolio service is deleted or its price changed, all existing estimates referencing it break. This is a proposal sent to a client — it must be immutable after creation.
-
-**Do this instead:** Denormalize service data into the `services` jsonb array at creation time. Store `serviceId` as a nullable reference only, used to pre-populate the edit form. Never join through it at read time.
-
-### Anti-Pattern 2: Rendering /e/:slug inside the site shell (with Navbar/Footer)
-
-**What people do:** Add `/e/:slug` to the main Switch block that already has Navbar and Footer wrapping it.
-
-**Why it's wrong:** The scroll-snap fullscreen sections require `height: 100vh` per section and the browser viewport. The Navbar (~56px) and Footer offset the sections and break the snap behavior. ChatWidget appearing over a proposal page is also inappropriate.
-
-**Do this instead:** Add an `isEstimateRoute` guard before the main return block in `Router()` — identical to `isLinksRoute` and `isVCardRoute` guards already in the codebase. Return a bare `<Suspense>` with only the `PublicEstimate` route, no shell components.
-
-### Anti-Pattern 3: Blocking the lead upsert on estimate creation failure
-
-**What people do:** `await createEstimate(lead)` inside the lead progress handler without a try/catch, so a storage error rolls back the lead save.
-
-**Why it's wrong:** The lead capture is the primary business event. Estimate creation is a secondary side-effect. If the estimates table is down or the slug generation fails, the lead must still be saved.
-
-**Do this instead:** Wrap estimate creation in try/catch inside `runLeadPostProcessing`, identical to how Twilio and GHL errors are swallowed. Log the error, continue.
-
-### Anti-Pattern 4: Putting estimate business logic in the route handler
-
-**What people do:** Inline slug generation, default service selection, and GHL sync directly inside `POST /api/estimates`.
-
-**Why it's wrong:** The auto-creation path in `lead-processing.ts` would need to duplicate the same logic.
-
-**Do this instead:** Extract a `buildEstimateDraft(lead: FormLead): InsertEstimateInput` utility function in `server/lib/estimate-builder.ts`. Both the route handler and the lead-processing hook call it.
-
----
-
-## Scroll-Snap Public Page — Implementation Notes
-
-The scroll-snap layout requires specific CSS. The pattern is well-supported in all modern browsers (HIGH confidence — no polyfills needed).
-
-```css
-/* Container */
-.estimate-scroll-container {
-  height: 100vh;
-  overflow-y: scroll;
-  scroll-snap-type: y mandatory;
-}
-
-/* Each section */
-.estimate-section {
-  height: 100vh;
-  scroll-snap-align: start;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
+```
+client/src/components/admin/PresentationsSection.tsx
+client/src/components/admin/presentations/PresentationChatEditor.tsx
+client/src/components/admin/presentations/PresentationListItem.tsx
+client/src/components/admin/presentations/BrandGuidelinesEditor.tsx
+client/src/components/admin/presentations/SlidePreview.tsx
+client/src/pages/PresentationViewer.tsx
 ```
 
-Apply via Tailwind: `h-screen overflow-y-scroll [scroll-snap-type:y_mandatory]` on the container, `h-screen [scroll-snap-align:start]` on each section. Tailwind v3 supports arbitrary values for both properties.
+### 5.2 Admin.tsx wiring — four touch points
 
-The `PublicEstimate.tsx` component should:
-1. Fetch `GET /api/estimates/slug/:slug` on mount
-2. Show a full-screen loader while fetching
-3. Show a minimal "Estimate not found" screen on 404 (no redirect — clients must not be bounced to the home page)
-4. Render sections in order: Cover → Company Intro → service sections (one per `services[]` item) → Acceptance CTA
-5. No Navbar, Footer, or ChatWidget (handled by the `isEstimateRoute` guard in App.tsx)
+All four follow the same pattern as the `estimates` addition:
+
+1. `shared/types.ts` — add `'presentations'` to `AdminSection` union
+2. `shared/constants.ts` — add menu item to `SIDEBAR_MENU_ITEMS` (use `Presentation` or `Layout` icon from lucide-react)
+3. `Admin.tsx` — import `PresentationsSection`, render `{activeSection === 'presentations' && <PresentationsSection />}`, add to `slugMap`
+4. `Admin.tsx` — add `'presentations'` to `sectionsWithOwnHeader` array
+
+**Layout note:** The presentations editor needs the same flex-fill treatment as `chat` (the chat list must fill remaining viewport height). In `Admin.tsx`, add a dedicated branch for `activeSection === 'presentations'` that wraps PresentationsSection in `flex-1 min-h-0 flex flex-col p-6 pb-6`, parallel to the existing `chat` branch.
+
+### 5.3 Chat editor data flow
+
+```
+Admin types message
+  -> append to local conversationHistory state
+  -> POST /api/presentations/ai/generate  { conversationHistory, currentSlides }
+  -> server opens Anthropic SSE stream
+  -> SSE events arrive at client
+      slide_delta events   -> accumulate partial JSON in buffer string
+      slides_complete      -> parse SlideBlock[], update previewSlides state
+  -> SlidePreview re-renders with new slides (scroll-snap, read-only)
+  -> Admin reviews, iterates ("change slide 3", "add a closing slide")
+  -> Admin clicks "Save" -> PUT /api/presentations/:id  { slides: previewSlides }
+```
+
+Conversation history is client-side only (not persisted to DB between sessions). Past presentations are re-opened for editing by loading their stored slides into the editor, not by replaying a chat history. If chat history persistence is needed later, a `presentation_messages` table can be added without affecting the existing schema.
 
 ---
 
-## Sources
+## 6. Phase Build Order
 
-All findings from direct inspection of the codebase at commit `f772f5d` (2026-04-19):
+| Phase | Name | What gets built | Key dependency |
+|-------|------|----------------|----------------|
+| 1 | Schema + Migration | `shared/schema/presentations.ts`, barrel re-export, SQL migration file, `scripts/create-presentations-tables.ts`, `@anthropic-ai/sdk` added to `package.json` | None — foundation |
+| 2 | Storage + CRUD API | All storage methods in `storage.ts`, `server/routes/presentations.ts` (all non-AI endpoints), registration in `routes.ts` | Phase 1 (tables must exist) |
+| 3 | Brand Guidelines | Guidelines endpoints in `presentations.ts`, `getBrandGuidelines` / `upsertBrandGuidelines` storage methods, `BrandGuidelinesEditor.tsx`, Admin wiring for guidelines sub-section | Phase 2 (storage layer exists) |
+| 4 | AI Authoring Endpoint | `server/lib/presentation-prompt.ts`, SSE streaming endpoint (`/ai/generate`, `/ai/edit`), Anthropic SDK integration | Phase 3 (guidelines needed for system prompt) |
+| 5 | Admin Chat UI | `PresentationsSection.tsx`, `PresentationChatEditor.tsx`, `PresentationListItem.tsx`, `SlidePreview.tsx`, all Admin.tsx wiring | Phase 4 (streaming endpoint must exist) |
+| 6 | Public Viewer | `PresentationViewer.tsx`, App.tsx `isPresentationRoute` guard + lazy import, access-code gate, language switcher, view tracking | Phase 2 (public API routes exist); independent of Phase 5 |
 
-- `client/src/App.tsx` — routing patterns, lazy loading, shell guards
-- `client/src/pages/Admin.tsx` — section slug maps, render switch, DnD sidebar
-- `client/src/components/admin/shared/types.ts` — AdminSection union
-- `client/src/components/admin/shared/constants.ts` — SIDEBAR_MENU_ITEMS
-- `server/routes/forms.ts` — route file pattern (requireAdmin, error handling, Zod)
-- `server/routes.ts` — route registration orchestrator
-- `server/storage.ts` — DatabaseStorage class, existing method signatures
-- `server/lib/lead-processing.ts` — best-effort side-effect pattern
-- `shared/schema/forms.ts` — Drizzle table + Zod schema pattern
-- `shared/schema/cms.ts` — portfolioServices table structure
-- `shared/schema.ts` — barrel export pattern
+Phases 5 and 6 can be built in parallel once Phase 4 is done. The admin UI and public viewer share no client-side code.
 
 ---
-*Architecture research for: Estimates/Proposals system (v1.2)*
-*Researched: 2026-04-19*
+
+## 7. New Files vs Modified Files
+
+### New files
+
+```
+shared/schema/presentations.ts
+server/routes/presentations.ts
+server/lib/presentation-prompt.ts
+scripts/create-presentations-tables.ts
+migrations/XXXX_create_presentations.sql
+client/src/pages/PresentationViewer.tsx
+client/src/components/admin/PresentationsSection.tsx
+client/src/components/admin/presentations/PresentationChatEditor.tsx
+client/src/components/admin/presentations/PresentationListItem.tsx
+client/src/components/admin/presentations/BrandGuidelinesEditor.tsx
+client/src/components/admin/presentations/SlidePreview.tsx
+```
+
+### Modified files
+
+```
+shared/schema.ts                                    — add export * from "./schema/presentations.js"
+server/storage.ts                                   — import new types, add 8 new methods
+server/routes.ts                                    — add registerPresentationsRoutes(app)
+client/src/App.tsx                                  — isPresentationRoute guard + PresentationViewer lazy import
+client/src/pages/Admin.tsx                          — PresentationsSection import + render + slugMap + sectionsWithOwnHeader + layout branch
+client/src/components/admin/shared/types.ts         — AdminSection union gets 'presentations'
+client/src/components/admin/shared/constants.ts     — SIDEBAR_MENU_ITEMS gets presentations entry
+client/src/lib/translations.ts                      — PT strings for any new t() calls
+package.json                                        — @anthropic-ai/sdk dependency
+```
+
+---
+
+## 8. Migration Strategy
+
+Follow the established v1.2 raw-SQL tsx pattern exactly:
+
+1. Write `migrations/XXXX_create_presentations.sql` with `CREATE TABLE IF NOT EXISTS` for all three tables.
+2. Write `scripts/create-presentations-tables.ts` that reads the SQL file and runs it via `pool.connect()` — same shape as `scripts/create-estimates-table.ts`.
+3. Run `tsx scripts/create-presentations-tables.ts` at the end of Phase 1.
+
+Do not use `drizzle-kit push` for this migration. The project has a documented constraint (PROJECT.md Key Decisions): drizzle-kit CJS cannot resolve .js ESM imports. The raw SQL tsx script is the validated pattern.
+
+---
+
+## 9. Confidence Assessment
+
+| Area | Confidence | Basis |
+|------|------------|-------|
+| Schema design | HIGH | Directly mirrors estimates.ts — verified line-by-line |
+| Route / storage pattern | HIGH | Exact structural copy of estimates.ts, verified in source |
+| App.tsx routing | HIGH | isEstimateRoute guard read line-by-line; isPresentationRoute is symmetric |
+| Admin wiring | HIGH | All four touch points verified by reading types.ts, constants.ts, Admin.tsx |
+| Anthropic SDK streaming | MEDIUM | SDK not yet installed; streaming API shape is documented but exact model ID string requires verification at install time |
+| Inline bilingual JSONB | MEDIUM | Design decision based on analysis; no prior art in this codebase, technically straightforward |
+| Brand guidelines singleton | HIGH | Pattern matches existing singleton tables (company_settings, twilio_settings) |
+
+---
+
+## 10. Open Questions / Phase Research Flags
+
+- **Anthropic SDK version**: Install `@anthropic-ai/sdk` and verify `messages.stream()` API shape before Phase 4. The SDK had breaking changes between 0.x and 1.x.
+- **Model ID confirmation**: Confirm the exact Claude Opus model ID at Phase 4 time via the Anthropic models list — IDs change between versions.
+- **SSE client library**: The existing admin chat uses React Query mutations, not SSE. For streaming, PresentationChatEditor needs either `EventSource` or `fetch` with `ReadableStream`. Decide and implement in Phase 5.
+- **Slide image source**: `SlideBlock.imageUrl` — does admin upload images via the existing Supabase upload endpoint, or does Claude suggest URLs? Clarify before Phase 5 to determine whether `DragDropUploader` reuse is needed.
+- **Guidelines snapshot visibility**: The `guidelinesSnapshot` field on `presentations` is server-side only and must not be sent to the public viewer client. Strip it in the public slug endpoint, same as `accessCode` is stripped in estimates.

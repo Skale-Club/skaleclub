@@ -1,259 +1,341 @@
-# Feature Research
+# Feature Landscape: AI-Authored Presentations (v1.4)
 
-**Domain:** Client-facing proposal/estimate viewer system (B2B services)
-**Researched:** 2026-04-19
-**Confidence:** MEDIUM — Based on training knowledge of Proposify, PandaDoc, HoneyBook, Qwilr, Better Proposals (cutoff Aug 2025). WebSearch unavailable. Patterns are well-established and stable.
-
----
-
-## Context: What This System Is
-
-This is not a full proposal platform (no e-sign, no contract management, no negotiation). It is a **personalized service presentation layer** — admin creates an estimate for a specific prospect, picks services from the `portfolio_services` catalog with optional price overrides, and the prospect receives a public link (`/e/:slug`) with a polished immersive viewer.
-
-The viewer uses a fullscreen scroll-snap layout: cover section → Skale Club brand presentation → one section per service → final acceptance CTA.
+**Domain:** Conversational AI deck builder — admin chats with Claude to produce bilingual fullscreen presentations.
+**Researched:** 2026-04-20
+**Milestone:** v1.4 Admin Presentations Page
 
 ---
 
-## Feature Landscape
+## Master Table
 
-### Table Stakes (Users Expect These)
-
-Features a prospect or admin would expect to be present. Missing any of these makes the product feel broken or amateur.
-
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| Personalized recipient name/company on cover | Every decent proposal is addressed to someone — "Proposta para Acme Corp" | LOW | Store `clientName` + `clientCompany` on estimate record |
-| Service line items with title, description, price | Core content — what am I buying and what does it cost? | LOW | Pull from `portfolio_services`, allow price override per estimate |
-| Custom slug (`/e/acme-corp-2026`) | Clean shareable URL the admin can send via WhatsApp | LOW | Already in scope — `slug` column on estimates table |
-| Total price summary | Prospect must see what they're agreeing to spend | LOW | Computed from line items; visible on acceptance section |
-| Mobile-responsive viewer | Prospects open links on phone — if it breaks on mobile, the proposal fails | MEDIUM | Scroll-snap fullscreen works well on mobile if implemented carefully |
-| Cover section with Skale Club branding | Sets professional tone before content begins | LOW | Static brand assets, already owned |
-| Acceptance CTA section | Clear next step — "I'm interested, contact me" button | LOW | No signature needed in v1; just a prominent CTA |
-| Admin list view of estimates | Admin needs to see all estimates, statuses, links | LOW | Standard CRUD list with slug + client name + date |
-| Create/edit estimate in admin | Admin must be able to build and update proposals | MEDIUM | Form picking services from `portfolio_services` + custom line items |
-| Estimate not found / expired state | Bad or unknown slug must show a graceful page, not a blank error | LOW | Match pattern from `/f/:slug` in `PublicForm.tsx` |
-
-### Differentiators (Competitive Advantage)
-
-Features that elevate this above a PDF or a simple pricing table sent via email.
-
-| Feature | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| Immersive scroll-snap viewer (`/e/:slug`) | Feels like a premium web experience — each service gets its own fullscreen moment | MEDIUM | Core differentiator. Use CSS `scroll-snap-type: y mandatory` with `scroll-snap-align: start` on each section. framer-motion already in stack for entrance animations |
-| Skale Club brand presentation section | Builds credibility before pricing — "who we are" before "what it costs" | LOW | Static section between cover and services; reuses brand copy already written |
-| Per-service visuals (icon, image, feature list) | Rich service cards in viewer, not plain text | LOW | All fields exist on `portfolio_services` (iconName, imageUrl, features[]) |
-| Custom price override per client | Negotiated pricing without editing the catalog | LOW | `estimateServices` join table with `overridePrice` nullable column |
-| Custom service line item (not from catalog) | One-off items for bespoke client needs | MEDIUM | `estimateServices` row with `isCustom: true`, no FK to `portfolio_services` |
-| Auto-creation from form submission | Lead fills form → estimate auto-generated → link sent via WhatsApp/SMS | HIGH | Requires form webhook, estimate creation logic, Twilio dispatch. High complexity but high value for automation |
-| Branded cover image or video background | Visual impact on first impression | MEDIUM | Optional — can add `coverImageUrl` to estimate; reuse existing Uppy upload stack |
-
-### Anti-Features (Commonly Requested, Often Problematic)
-
-Features that seem logical but are overkill for v1 and should be explicitly out of scope.
-
-| Feature | Why Requested | Why Problematic | Alternative |
-|---------|---------------|-----------------|-------------|
-| Digital signature / e-sign | "I want the client to sign in the platform" — sounds complete | Requires identity verification, audit trail, legal compliance in Brazil (ICP-Brasil, DocuSign-style). Massive scope. PandaDoc charges enterprise pricing for this. | Acceptance CTA redirects to WhatsApp/phone call. Signature happens in a separate contract tool if ever needed |
-| Estimate viewed/opened tracking (read receipts) | "I want to know if the client opened the link" | Requires email pixel tracking or unique token per viewer — adds session/analytics complexity for marginal gain in v1 | Admin can ask the prospect directly; add view tracking in v2 if needed |
-| PDF export | "I want to download a proposal PDF to send via email" | Headless browser (Puppeteer) or PDF lib required. Serverless Vercel constraints make this fragile. Heavy dependency for rarely-used feature. | The `/e/:slug` URL is the shareable artifact. Client can print-to-PDF from browser if desperate |
-| Estimate expiry / expiration date | "Pricing valid until X" | Requires cron job or expiry check on every viewer load; complicates state machine | Put expiry language in the cover text (`validUntil` text field at most) |
-| Client commenting / negotiation thread | "Client can request changes inline" | Full collaboration UI — diffing, threading, notifications. That's Proposify-tier complexity | WhatsApp link on the CTA is the negotiation channel |
-| Multi-currency / tax calculation | "Show taxes automatically" | Tax rules vary per client/region. Requires tax config, currency formatting complexity | Display prices as text fields (already how `portfolio_services.price` works — text type). Admin enters `R$ 3.500` manually |
-| Version history / estimate revisions | "Show v1, v2, v3 of the proposal" | Requires audit table, version diffing, UI to compare. Premature complexity. | Admin duplicates estimate and adjusts; sends new link |
-| Estimate templates | "Save a proposal layout to reuse" | Template engine adds a layer of indirection before the core flow is validated | Admin duplicates an existing estimate (simpler) |
-| Real-time collaboration on estimate (two admins editing) | "Two people editing at once" | WebSocket conflict resolution — not needed for a team of one or two | Sequential editing with last-write-wins is fine |
-| Automated follow-up sequences | "Remind client after 3 days" | Requires scheduler/queue, not available in current stack | Admin sends manual follow-up via WhatsApp |
+| Feature | Table Stakes | Differentiator | Anti-feature | Notes |
+|---------|:---:|:---:|:---:|-------|
+| Create presentation (name, slug, access code) | X | | | Same as estimates pattern |
+| Chat prompt → Claude → structured slide JSON | X | | | Core authoring loop |
+| Structured slide schema with typed layout variants | X | | | See §2 — blocks, not MDX |
+| Per-slide re-generation (single slide edits) | | X | | See §3 — preferred over full regen |
+| Full deck regeneration on major request | X | | | Fall-back when admin says "redo everything" |
+| Brand guidelines document (system prompt) | | X | | First-class artifact, not inline prompt |
+| Bilingual output EN + PT-BR per deck | | X | | See §4 — locale JSONB on slide row |
+| Public viewer `/p/:slug` — fullscreen scroll-snap | X | | | Mirror of `/e/:slug` EstimateViewer |
+| Language switcher on public viewer (`?lang=`) | | X | | URL param; no server round-trip |
+| Access code gate on public viewer | X | | | Reuse estimates pattern verbatim |
+| View tracking (`presentation_views` event-log) | X | | | Mirror `estimate_views` table |
+| Slide reorder by admin (drag) | | X | | Low effort — dnd-kit already in app |
+| Slide delete | X | | | |
+| Admin slide preview (rendered slide list) | X | | | Before sharing publicly |
+| WYSIWYG / direct text editing in browser | | | X | Out of scope per seed constraints |
+| PPTX / PDF export | | | X | Deferred — avoid Playwright on Vercel |
+| Image generation / AI picks stock photos | | | X | Admin supplies image URLs only |
+| Per-user / per-client auth on public viewer | | | X | Access code sufficient |
+| Slide comments / collaboration | | | X | Not an agency priority |
+| Animation / transition editor | | | X | framer-motion handles basic transitions |
 
 ---
 
-## Feature Dependencies
+## §1 — Table Stakes vs Differentiators
+
+### Table Stakes (product feels incomplete without these)
+
+| Feature | Why Expected | Complexity |
+|---------|--------------|------------|
+| Chat → slides creation | The entire value prop | High — AI pipeline + structured output |
+| Structured slide JSON stored in DB | Required for viewer rendering | Medium |
+| Public fullscreen viewer `/p/:slug` | Delivery mechanism | Low — EstimateViewer is a direct template |
+| Access code gate | Privacy for client-specific decks | Low — copy estimates pattern |
+| View tracking | Admin needs to know if client watched | Low — copy estimate_views pattern |
+| Slide delete + basic CRUD | Can't have unusable stale decks | Low |
+| Admin slide list / preview | Admin needs to see what will render | Medium |
+| EN + PT-BR bilingual output | Explicit product requirement | Medium |
+
+### Differentiators (valued, not expected)
+
+| Feature | Value Proposition | Complexity |
+|---------|-------------------|------------|
+| Brand guidelines document as system prompt | AI output stays on-brand without per-prompt reminders | Medium |
+| Per-slide iterative editing | Preserves the rest of the deck — surgical chat edits | Medium |
+| Drag reorder | Admin can restructure narrative after generation | Low |
+| Language switcher on public viewer | Client flips to their language without a new link | Low |
+| Slide variant system (layout types) | Claude picks appropriate layout per content type | Medium |
+
+### Anti-features (explicitly excluded)
+
+| Anti-Feature | Why Avoid | Alternative |
+|--------------|-----------|-------------|
+| WYSIWYG / in-browser slide editor | Contradicts the seed constraint; adds massive scope | Admin edits via chat |
+| PPTX/PDF export | Requires Playwright — serverless-hostile on Vercel | Shareable URL is the deliverable |
+| AI image generation | Unpredictable brand compliance, cost | Admin provides image URLs; Supabase storage for uploads |
+| Full re-render on every chat turn | Destroys admin's approved slides | Per-slide scope with opt-in full regen |
+
+---
+
+## §2 — Structured Slide JSON Schema
+
+**Recommendation: Typed blocks on a slide row. Not MDX, not raw HTML.**
+
+### Why Not MDX or HTML
+
+MDX and raw HTML string storage are common in CMS tools but are bad fits here:
+- MDX requires a runtime parser (`@next/mdx` or `next-mdx-remote`) — this app is Vite + React, not Next.js.
+- HTML blobs cannot be layout-variant-aware — the viewer component can't inspect the semantics of a blob to apply a two-column layout vs. a stat-callout layout.
+- Both make per-slide AI edits fragile: the AI must parse its own previous output to edit it, which fails reliably.
+- Both block server-side safety checks (e.g., stripping `<script>` tags).
+
+### Recommended Slide Block Schema (Zod)
+
+Each presentation stores a `slides` JSONB column of type `Slide[]`. Each slide has:
+
+```typescript
+type SlideLayout =
+  | "cover"         // title + subtitle + background image, hero full-bleed
+  | "section-break" // chapter divider — large centered heading, minimal content
+  | "title-body"    // heading + paragraphs (1-2 column variants)
+  | "bullets"       // heading + ordered/unordered bullet list
+  | "stats"         // 2-4 prominent metric callouts
+  | "two-column"    // left text block + right text/image block
+  | "image-focus"   // image dominant, caption below
+  | "quote"         // pull quote + attribution
+  | "team"          // grid of person cards (name, role, optional photo URL)
+  | "case-study"    // problem / approach / result three-panel
+  | "closing"       // CTA variant — headline, sub, contact detail
+
+interface Slide {
+  id: string;           // uuid — stable across edits
+  order: number;
+  layout: SlideLayout;
+  content: {
+    title?: { en: string; "pt-BR": string };
+    subtitle?: { en: string; "pt-BR": string };
+    body?: { en: string; "pt-BR": string };     // markdown allowed; viewer renders
+    bullets?: { en: string[]; "pt-BR": string[] };
+    stats?: Array<{ value: string; label: { en: string; "pt-BR": string } }>;
+    image?: { url: string; alt: { en: string; "pt-BR": string } };
+    quote?: { text: { en: string; "pt-BR": string }; attribution: string };
+    team?: Array<{ name: string; role: { en: string; "pt-BR": string }; photoUrl?: string }>;
+    cta?: { label: { en: string; "pt-BR": string }; detail: string };
+    columns?: Array<{
+      heading?: { en: string; "pt-BR": string };
+      body?: { en: string; "pt-BR": string };
+      image?: { url: string; alt: { en: string; "pt-BR": string } };
+    }>;
+  };
+  speakerNotes?: string; // not shown in viewer; used in chat to give Claude context
+}
+```
+
+Note: locale-neutral fields (image URLs, stat numeric values, person names, attributions) are stored flat. Only human-readable strings get locale keys.
+
+This schema is narrow enough that:
+- Claude can fill it reliably with structured outputs.
+- The viewer component switches on `layout` with a clear type contract.
+- Per-slide edits are surgical: Claude receives the existing `Slide` object, modifies only the fields it needs, returns the updated object.
+- Zod validation at the API boundary catches malformed output before it reaches the DB.
+
+**Confidence:** MEDIUM — schema is synthesized from open-source tools (slide-deck-ai, presenton, Relevance AI) and Anthropic structured outputs docs. The exact field list should be validated in the discuss phase.
+
+---
+
+## §3 — Iterative Editing: Per-Slide vs Full Regeneration
+
+**Recommendation: Per-slide edit as the default. Full regen as an explicit opt-in.**
+
+### Industry Pattern (2025/2026)
+
+The ecosystem has converged on per-slide editing as the superior UX:
+- Beautiful.ai: "improve one slide, test different layouts, regenerate visuals, or preserve exact text without wiping the rest of the deck."
+- Emergent: "changing a metric or value proposition without manually editing multiple slides."
+- SlidesPilot: applies changes to each slide individually.
+- Full-regen (Decktopus pattern) is the fallback for "explore new styles."
+
+### How to Implement It
+
+The chat endpoint receives: `{ scope: "slide" | "deck", slideId?: string, message: string }`.
+
+- `scope: "slide"` — backend fetches only that slide's current JSON, sends it plus brand guidelines as context to Claude, Claude returns a modified `Slide` object, backend merges it back into the `slides` array.
+- `scope: "deck"` — backend sends the full `slides` array plus guidelines, Claude returns a new `Slide[]`, backend replaces the array.
+- The admin UI infers scope from context: typing in a slide-specific input sends `scope: "slide"`; a top-level "Redo the whole deck" message sends `scope: "deck"`.
+
+### Claude Structured Output vs Tool Use
+
+Anthropic released Structured Outputs (public beta, Nov 2025) for Claude Sonnet 4.5 and Opus 4.1. This guarantees schema-compliant JSON via constrained decoding — more reliable than JSON mode. The presentations endpoint should use the direct Anthropic SDK (not OpenRouter) so structured outputs can be used.
+
+The existing chat integration uses OpenRouter (OpenAI-compatible) which supports `response_format: { type: "json_object" }` but not constrained decoding. For presentations, direct Anthropic SDK is recommended — quality matters more than cost here, and it is the flagship authoring surface.
+
+**Confidence:** HIGH for the per-slide pattern; MEDIUM for structured outputs (public beta as of research date).
+
+---
+
+## §4 — Bilingual Storage: Locale JSONB Key per Field vs Separate Rows
+
+**Recommendation: Locale JSONB key per translatable field on the slide. Single `presentations` row per deck.**
+
+### Options Compared
+
+**Option A — Two separate presentation rows (one per locale)**
+```
+presentations: id, slug, locale ('en' | 'pt-BR'), slides JSONB, ...
+```
+- Pro: Simple queries — `WHERE slug = ? AND locale = ?`
+- Con: Slug must be shared across rows (FK or compound unique index)
+- Con: Duplicates all metadata (title, access_code, view tracking FK) per locale
+- Con: `presentation_views` needs a locale column to be meaningful
+- Con: Creating a new locale version is a full-table write
+
+**Option B — Locale JSONB key per content field on each slide (recommended)**
+```typescript
+title?: { en: string; "pt-BR": string }
+```
+- Pro: Single row per deck — all metadata unified
+- Pro: View tracking table needs no locale column
+- Pro: Admin can trigger "translate all slides to PT-BR" as one Claude call
+- Pro: Locale-neutral fields (image URLs, stat values) stored once
+- Pro: Adding a third language later is additive (add a key to the JSONB)
+- Con: Viewer needs a locale fallback: `slide.content.title?.[lang] ?? slide.content.title?.en`
+
+**Option C — Full slides array per locale as separate JSONB columns**
+```
+presentations: id, slug, slides_en JSONB, slides_pt_br JSONB, ...
+```
+- Pro: Easy to regenerate one locale independently
+- Con: Doubles the JSONB payload; partial updates (edit slide 3) must read/write the full locale array
+
+**Decision: Option B** — locale JSONB key per translatable field.
+
+Rationale: matches the project's existing `useTranslation` / `translations.ts` pattern; keeps the `presentations` table simple and additive; the public viewer already handles `?lang=en|pt-BR` as a URL param; the admin flow becomes: generate EN → then one chat turn "translate all slides to PT-BR" → Claude returns same structure with `pt-BR` keys populated.
+
+**Confidence:** HIGH (pattern grounded in PostgreSQL multilingual JSONB documentation and project architecture review).
+
+---
+
+## §5 — Admin Chat-to-Slides UX
+
+**What makes a great conversational deck builder UX** (grounded in Beautiful.ai, Emergent, DeckSpeed patterns):
+
+### Must-Have UX Elements
+
+| Element | Description | Complexity |
+|---------|-------------|------------|
+| Outline-first | First Claude turn proposes a slide outline (titles + layouts only). Admin approves before content is generated. Avoids regenerating a full deck after the admin rejects the structure. | Medium |
+| Live slide list panel | Slides render in a scrollable preview panel as they're generated. Admin sees the deck take shape — not a spinner followed by a dump. | Medium |
+| Scope indicator | Chat input shows which slide is "active" (e.g., "Editing Slide 3: Case Study"). Unscoped messages go to deck level. | Low |
+| Streaming assistant response | Claude streams text; the final JSON is committed to DB on stream end. Exact same SSE pattern as existing ChatSection. | Low |
+| "Undo last AI change" | Reverts slides array to previous version. Requires a `slides_history` JSONB column or version counter. | Medium |
+| Brand guidelines indicator | Badge showing "Guidelines: Active" so admin knows Claude is constrained. Click opens the guidelines editor. | Low |
+| PT-BR generation action | Explicit button/command: "Translate to PT-BR" triggers a bulk translate turn scoped to all slides. Separates translation from authoring. | Low |
+| Copy public link | Same as estimates list — one-click copy of `/p/:slug` or `/p/:slug?lang=pt-BR`. | Low |
+
+### Anti-UX Patterns to Avoid
+
+| Anti-Pattern | Why Bad | Fix |
+|--------------|---------|-----|
+| Chat overwrites all slides on every message | Admin loses approved slides | Per-slide scope by default |
+| No visual feedback during generation | Admin doesn't know if Claude is working | Stream tokens; show spinner per-slide |
+| Monolithic "Save" button | Confusion about what is persisted | Auto-save after each AI commit (same as estimates dialog) |
+| Inline JSON visible in chat | Breaks reading flow | Render structured output as a slide card in the message list, not raw JSON |
+| Language toggle produces a full page reload | Ruins the viewer experience | `?lang=` param read client-side; React state swap only |
+
+### System Prompt Architecture
+
+The brand guidelines document is stored as a `guidelines` text column on the `presentations` table (or a separate `brand_guidelines` singleton table). On every AI authoring request, the server:
+1. Fetches the current guidelines text.
+2. Prepends it as the `system` message.
+3. Appends the current slide JSON (scoped to the target slide or full array).
+4. Sends the user's chat message as the `user` turn.
+
+This ensures Claude is never called without brand constraints. It also means the admin can update guidelines mid-session without restarting the conversation.
+
+**Confidence:** MEDIUM (synthesized from Beautiful.ai UX descriptions, DeckSpeed review, Emergent documentation, and existing ChatSection implementation analysis).
+
+---
+
+## §6 — Must-Have Slide Layout Variants for Agency Decks
+
+Grounded in analysis of agency pitch deck best practices (Storydoc, Visme, Medium agency pitch series) and the existing EstimateViewer section types.
+
+### Core Variants (must ship in v1.4)
+
+| Layout | Purpose | Agency Use Case |
+|--------|---------|-----------------|
+| `cover` | Full-bleed hero, title + subtitle + background image | First impression; includes logo and tagline |
+| `section-break` | Chapter divider, large centered heading | Separates major deck sections (About / Services / Results) |
+| `title-body` | Heading + 1-2 paragraphs | Agency intro, "What We Do" slide |
+| `bullets` | Heading + bullet list (ordered or unordered) | Services list, process steps, capabilities |
+| `stats` | 2-4 metric callouts with value + label | "Results" — 200% ROI, 50 clients, 5-star rating |
+| `two-column` | Left text + right image or text | Problem / Solution; Service with screenshot |
+| `image-focus` | Image dominant with caption | Portfolio/case study visual proof point |
+| `closing` | CTA — headline + sub-headline + contact detail | "Let's talk" with email / WhatsApp |
+
+### Extended Variants (nice to have, can be added iteratively)
+
+| Layout | Purpose | Deferrable? |
+|--------|---------|-------------|
+| `quote` | Large pull quote + attribution | Yes — add in v1.5 if needed |
+| `team` | Grid of person cards | Yes — most agency decks include this |
+| `case-study` | Problem / Approach / Result three-panel | Yes — high value for social proof |
+
+### Naming Convention Rationale
+
+Layouts are named by semantic content type, not visual style. This is critical because:
+- Claude picks the layout based on what the slide is *about*, not how it should look.
+- The viewer component maps layout to React component. Renaming layouts later breaks every stored slide.
+- Keeping names stable and semantic means the JSON schema is durable across design refresh iterations.
+
+---
+
+## §7 — Feature Dependencies
 
 ```
-[Estimate record (DB + CRUD API)]
-    └──required by──> [Admin list view]
-    └──required by──> [Admin create/edit form]
-    └──required by──> [Public viewer /e/:slug]
-                          └──required by──> [Acceptance CTA section]
-
-[portfolio_services catalog (existing)]
-    └──feeds──> [Admin service picker]
-                    └──produces──> [estimateServices join table]
-                                       └──required by──> [Viewer service sections]
-
-[Custom line item support]
-    └──extends──> [estimateServices join table]
-
-[Price override per service]
-    └──extends──> [estimateServices join table]
-
-[Total price summary]
-    └──depends on──> [estimateServices join table with prices]
-
-[Auto-creation from form]
-    └──requires──> [Estimate record + API]
-    └──requires──> [Twilio SMS dispatch (existing)]
-    └──requires──> [Form submission webhook / post-submit hook (existing)]
+Brand guidelines doc → Chat authoring endpoint (guidelines = system prompt input)
+Chat authoring endpoint → Structured slide JSON → Public viewer
+Structured slide JSON → Bilingual content (locale keys inside content fields)
+Bilingual content → Language switcher on public viewer
+Access code gate → View tracking (only count views after gate is passed)
+Slide list panel → Per-slide edit scope (need to know which slide is "active")
+Outline-first UX → Full-deck generate (outline = first-pass deck with layout only)
 ```
 
-### Dependency Notes
-
-- **Estimate record is the root dependency:** Everything — admin UI, public viewer, auto-creation — depends on the DB schema and CRUD API existing first. Build this before anything else.
-- **estimateServices join table is the pivot:** It holds the selected services + overrides. Get this schema right before building the picker UI or the viewer, because both read from it.
-- **portfolio_services feeds but does not block:** The catalog already exists. The estimate system reads from it. No changes to `portfolio_services` are needed.
-- **Auto-creation from form is isolated:** Can be added after the manual flow works. It only requires the estimate creation API to exist (which is built in manual flow).
-- **Total price summary depends on resolved prices:** Viewer must compute total from `overridePrice ?? catalog.price`. Since `portfolio_services.price` is a text field, a numeric `priceValue` (integer cents or decimal) on the `estimateServices` row is the cleanest approach — parse at creation time, display formatted.
-
 ---
 
-## MVP Definition
+## §8 — MVP Phase Recommendation
 
-### Launch With (v1.2 — this milestone)
+### Phase 1 — Schema + AI Pipeline
+- `presentations` table: slug, title, access_code, guidelines text, slides JSONB (locale-keyed content), created_at, updated_at
+- `presentation_views` event-log table (mirror estimate_views)
+- POST `/api/presentations/generate` — takes guidelines + user message + current slides → returns updated slides array
+- Direct Anthropic SDK (not OpenRouter) for structured outputs guarantee
 
-- [ ] `estimates` DB table — `id`, `slug`, `clientName`, `clientCompany`, `status` (draft/sent), `createdAt`, `updatedAt`
-- [ ] `estimate_services` join table — `estimateId`, `portfolioServiceId` (nullable for custom), `customTitle`, `customDescription`, `overridePrice` (numeric), `order`, `isCustom`
-- [ ] Admin "Estimates" list — shows all estimates with slug, client name, status, created date, copy-link button
-- [ ] Admin create/edit estimate — client name/company, slug (auto-suggested), service picker from `portfolio_services`, drag-reorder, custom line item, per-service price override, total preview
-- [ ] Public viewer `/e/:slug` — fullscreen scroll-snap: cover → Skale Club intro → N service sections → acceptance CTA
-- [ ] Viewer cover section — client name, personalized headline, Skale Club logo
-- [ ] Viewer service section — title, description, features list, price (from override or catalog), icon/image
-- [ ] Viewer acceptance section — total price, CTA button (WhatsApp link or mailto), "Interested? Let's talk" framing
-- [ ] Graceful 404 state for unknown slugs (mirrors PublicForm.tsx pattern)
-- [ ] Manual flow only: admin creates → copies `/e/:slug` link → sends via WhatsApp
+### Phase 2 — Admin Editor Surface
+- Presentations list tab in Admin (mirrors Estimates tab)
+- New/Edit dialog with title + access code fields
+- Chat panel (borrow ChatSection shell) with slide preview panel
+- Per-slide scope selector
+- "Translate to PT-BR" action button
 
-### Add After Validation (v1.x)
+### Phase 3 — Public Viewer
+- `/p/:slug` route, isolated from Navbar/Footer via `isPresentationRoute` guard
+- Language via `?lang=en|pt-BR` — client-side only
+- Scroll-snap viewer (fork EstimateViewer, replace sections with `SlideRenderer` that switches on `layout`)
+- View tracking (POST `/api/presentations/slug/:slug/view` on first load, after access code verify)
 
-- [ ] Auto-creation from form submission — trigger estimate creation post-form-submit, dispatch link via Twilio SMS/WhatsApp. Add when manual flow is proven and form-to-estimate pipeline is needed.
-- [ ] `viewedAt` timestamp on estimate — passive tracking (set on first `/e/:slug` load). Low cost once estimates exist, useful for admin context. Add when admins start asking "has the client seen this?"
-- [ ] Cover image upload per estimate — visual differentiation per client. Add when branding/personalization becomes a priority.
-
-### Future Consideration (v2+)
-
-- [ ] PDF export — only if prospects specifically request it (not assumed)
-- [ ] Estimate expiry — only if sales cycle data shows proposals going stale
-- [ ] Digital signature — only if legal/contract workflow is needed (separate milestone, major scope)
-- [ ] Estimate templates — only after 10+ estimates are created and patterns emerge
-- [ ] Automated follow-up sequences — only if a scheduler/queue is added to the stack
-
----
-
-## Feature Prioritization Matrix
-
-| Feature | User Value | Implementation Cost | Priority |
-|---------|------------|---------------------|----------|
-| Estimate DB schema + CRUD API | HIGH | LOW | P1 |
-| Admin create/edit form (service picker + overrides) | HIGH | MEDIUM | P1 |
-| Admin estimates list | HIGH | LOW | P1 |
-| Public viewer `/e/:slug` scroll-snap | HIGH | MEDIUM | P1 |
-| Viewer: cover + brand + service + CTA sections | HIGH | MEDIUM | P1 |
-| Custom line item (non-catalog service) | MEDIUM | LOW | P1 |
-| Price override per service | HIGH | LOW | P1 |
-| Total price summary on acceptance section | HIGH | LOW | P1 |
-| Graceful 404 for unknown slug | MEDIUM | LOW | P1 |
-| Auto-creation from form submission | HIGH | HIGH | P2 |
-| Cover image upload | MEDIUM | MEDIUM | P2 |
-| viewedAt passive tracking | LOW | LOW | P2 |
-| PDF export | LOW | HIGH | P3 |
-| Digital signature | MEDIUM | HIGH | P3 |
-| Estimate templates | LOW | MEDIUM | P3 |
-
-**Priority key:**
-- P1: Must have for v1.2 launch
-- P2: Add after v1.2 is validated
-- P3: Future consideration, not before v2
-
----
-
-## Competitor Feature Analysis
-
-*Confidence: MEDIUM — based on training knowledge of tools as of Aug 2025. No live verification possible.*
-
-| Feature | Proposify | PandaDoc | Qwilr | HoneyBook | Our Approach |
-|---------|-----------|----------|-------|-----------|--------------|
-| Rich web viewer (not PDF) | Yes (their differentiator) | Yes | Yes (strongest) | Yes | Yes — scroll-snap fullscreen is our variant |
-| Scroll/section-based layout | Section blocks | Section blocks | Page-scroll with sections | Linear scroll | Full scroll-snap (each service = one viewport) |
-| Service catalog / fee library | Yes — fee library | Yes — product catalog | No (free-form) | Yes — service packages | Yes — `portfolio_services` |
-| Per-client price override | Yes | Yes | Yes | Yes | Yes — `overridePrice` on join table |
-| Custom line items | Yes | Yes | Yes | Yes | Yes — `isCustom` on join table |
-| Digital signature | Yes (core feature) | Yes (core feature) | Yes | Yes | Explicitly OUT of v1 |
-| View tracking / analytics | Yes | Yes | Yes | Yes | Deferred to v1.x (passive `viewedAt`) |
-| Mobile-responsive viewer | Yes | Yes | Yes (best-in-class) | Yes | Yes — scroll-snap with mobile-first CSS |
-| PDF export | Yes | Yes | Yes (from web view) | Yes | Explicitly deferred |
-| Automated proposal sending | Yes (workflows) | Yes (workflows) | Partial | Yes | v1.x — auto-create from form |
-| Acceptance CTA (no signature) | No (always forces signature) | No | Partial | No | YES — our explicit v1 design choice |
-| Embedded in own platform | No (standalone) | No (standalone) | No (standalone) | Semi (HoneyBook is all-in-one) | YES — embedded in Skale Club admin |
-
-**Key insight from competitor analysis:** Proposify, PandaDoc, and HoneyBook all treat digital signature as inseparable from proposal acceptance. Qwilr is the closest reference for "immersive web viewer without mandatory e-sign" — their "page" format uses full-viewport sections with smooth scroll. Our scroll-snap approach is architecturally similar to Qwilr but constrained to Skale Club's brand and service catalog.
-
----
-
-## UX Patterns: Scroll-Snap Proposal Viewer
-
-*Confidence: MEDIUM — based on Qwilr, web proposal UX writing, and CSS scroll-snap behavior knowledge.*
-
-### Section Order (Best Practice)
-
-Best-in-class tools use an emotional arc, not just a feature list:
-
-1. **Cover** — Who this is for, who it's from. Builds trust before any pricing.
-2. **Brand/Company intro** — "Why us" before "what we charge." Justifies the investment.
-3. **Problem statement / context** *(optional — skip in v1 for simplicity)* — Acknowledges the prospect's pain.
-4. **Service sections (one per service)** — Each gets its own moment. Scroll-snap makes each feel complete.
-5. **Investment summary / Acceptance CTA** — Total cost + clear next step. Last section = action.
-
-### What Each Service Section Must Contain
-
-- Service title (large, above the fold)
-- Short description (1-3 sentences — not the catalog's full description)
-- Feature list (bullets — `portfolio_services.features[]`)
-- Price (formatted, with label — "R$ 3.500 — investimento único")
-- Visual element (icon or image — `iconName` / `imageUrl`)
-
-### What to Avoid in the Viewer
-
-- **Navigation UI** (back/forward buttons, progress indicator) — Scroll-snap implies full-screen; adding nav overlays clutters the experience. Let the scroll be the navigation.
-- **Floating header/footer per section** — Each section should fill the viewport cleanly. Persistent chrome fights the immersive layout.
-- **Auto-scroll / auto-advance** — Prospect must control pace. Auto-scroll is patronizing and breaks on slow connections.
-- **Animated counters / parallax heavy effects** — Adds load time, can break on mobile, distracts from content. framer-motion entrance animations on scroll-into-view are fine; parallax is not.
-
-### Mobile Considerations
-
-- `scroll-snap-type: y mandatory` on container with `height: 100dvh` (not `100vh` — avoids iOS address bar issue)
-- Each section: `scroll-snap-align: start`, `height: 100dvh`, `overflow: hidden`
-- Service sections with long feature lists: use `overflow-y: auto` inside the section container, not on the snap container — otherwise snapping breaks
-- CTA button must be reachable without scrolling inside a section on smallest phones (375px) — design service sections with content density in mind
-
----
-
-## Existing System Dependencies
-
-Features that depend on what is already built in Skale Club (not new work):
-
-| Existing Capability | How Estimate System Uses It |
-|---------------------|----------------------------|
-| `portfolio_services` table (CMS) | Source catalog for service picker in admin create/edit |
-| Admin sidebar + section pattern | `EstimatesSection.tsx` follows same pattern as `LeadsSection.tsx`, `BlogSection.tsx` |
-| Supabase auth / admin guard | Estimate create/edit/list routes protected same as other admin APIs |
-| Twilio SMS dispatch | Auto-creation flow sends link via SMS (v1.x) |
-| Drizzle ORM + migrations | New `estimates` + `estimate_services` tables added via `db:push` |
-| Uppy file upload | Cover image upload (v1.x, not v1.2) |
-| `/f/:slug` pattern (`PublicForm.tsx`) | `/e/:slug` mirrors the same slug-resolution + 404 pattern |
-| `wouter` routing | Add `/e/:slug` route to `App.tsx` without a new router |
+### Defer to v1.5
+- PPTX export
+- AI image selection
+- `quote`, `case-study`, `team` layout variants (additive — no schema change)
+- Asset library
 
 ---
 
 ## Sources
 
-- Training knowledge: Proposify feature set (as of Aug 2025)
-- Training knowledge: PandaDoc product (as of Aug 2025)
-- Training knowledge: Qwilr web proposal viewer UX (as of Aug 2025)
-- Training knowledge: HoneyBook service package proposals (as of Aug 2025)
-- Training knowledge: CSS scroll-snap specification behavior (MDN-level, stable)
-- Training knowledge: Better Proposals platform patterns (as of Aug 2025)
-- Codebase analysis: `shared/schema/cms.ts` — `portfolio_services` schema confirmed
-- Codebase analysis: `client/src/pages/PublicForm.tsx` — slug resolution pattern confirmed
-- Codebase analysis: `client/src/components/admin/` — admin section pattern confirmed
-- Project context: `.planning/PROJECT.md` — confirmed out-of-scope items (e-sign, PDF, status tracking)
-
----
-*Feature research for: Client-facing proposal/estimate viewer — Skale Club v1.2*
-*Researched: 2026-04-19*
+- [Beautiful.ai iterative editing description](https://www.beautiful.ai/)
+- [Emergent AI deck builder — context-aware propagation](https://emergent.sh/learn/best-ai-deck-builders)
+- [DeckSpeed conversational model review](https://skywork.ai/skypage/en/deckspeed-review-conversational-ai/1976851622979629056)
+- [Claude structured outputs (public beta Nov 2025)](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)
+- [Presenton JSON slide schema docs](https://docs.presenton.ai/guide/create-presentation-from-json)
+- [slide-deck-ai: LLM to JSON to PPTX pipeline](https://github.com/barun-saha/slide-deck-ai)
+- [Agency pitch deck anatomy — Storydoc](https://www.storydoc.com/blog/agency-pitch-deck-examples)
+- [Visme agency deck sections](https://visme.co/blog/agency-pitch-deck/)
+- [PostgreSQL multilingual JSONB — Phrase blog](https://phrase.com/blog/posts/best-database-structure-for-keeping-multilingual-data/)
+- [Multilingual DB design patterns — DEV Community](https://dev.to/adnanbabakan/how-to-design-a-multilingual-database-structure-a-practical-guide-35nf)
+- [arxiv: Talk to Your Slides — LLM slide editing agent (2505.11604)](https://arxiv.org/html/2505.11604v1)
+- [Vellum: structured outputs vs JSON mode vs function calling](https://www.vellum.ai/blog/when-should-i-use-function-calling-structured-outputs-or-json-mode)
