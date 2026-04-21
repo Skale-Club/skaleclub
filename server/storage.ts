@@ -1865,7 +1865,6 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-<<<<<<< HEAD
   // Presentations (Phase 16 implements full CRUD; Phase 15 adds typed stubs)
   async listPresentations(): Promise<PresentationWithStats[]> {
     const rows = await db
@@ -1925,9 +1924,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Brand Guidelines (Phase 17 implements full upsert; Phase 15 adds typed stubs)
-=======
-  // Brand Guidelines (PRES-03 / Phase 17)
->>>>>>> worktree-agent-a34aa052
   async getBrandGuidelines(): Promise<BrandGuidelines | undefined> {
     const [row] = await db.select().from(brandGuidelines);
     return row;
