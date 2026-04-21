@@ -165,14 +165,14 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 **Goal**: Admins can create, list, update, and delete presentations through a typed REST API with no AI involvement — the data layer is fully operational before any UI or AI work begins.
 **Depends on**: Phase 15 (tables and storage interface must exist)
 **Requirements**: PRES-05, PRES-06, PRES-07, PRES-08
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 **Success Criteria** (what must be TRUE):
   1. `GET /api/presentations` (admin-auth required) returns a JSON array sorted by `createdAt` desc; each item includes `id`, `slug`, `title`, derived `slideCount`, derived `viewCount`, and `createdAt` — an unauthenticated request returns 401.
   2. `POST /api/presentations` (admin-auth required) accepts `{ title }` and returns `{ id, slug }` with an empty `slides: []`; a second `POST` with the same title creates a distinct record with a different `id` and `slug`.
   3. `PUT /api/presentations/:id` (admin-auth required) updates `title`, `slides`, and/or `accessCode`, and the `version` field increments by 1 on each successful call.
   4. `DELETE /api/presentations/:id` (admin-auth required) removes the presentation row and all associated `presentation_views` rows; a subsequent `GET /api/presentations` no longer includes that `id`.
 **Plans:**
-- [ ] 16-01-PLAN.md — registerPresentationsRoutes (GET list, POST create, PUT update, DELETE delete) + IStorage interface declarations (PRES-05, PRES-06, PRES-07, PRES-08)
+- [x] 16-01-PLAN.md — registerPresentationsRoutes (GET list, POST create, PUT update, DELETE delete) + IStorage interface declarations (PRES-05, PRES-06, PRES-07, PRES-08)
 
 ### Phase 17: Brand Guidelines
 **Goal**: Admin can author and persist a tenant-wide brand guidelines document that subsequent AI calls will consume as their system prompt.
@@ -233,7 +233,7 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 | 13. Icon Picker, Theme Editor & Live Preview | 3/3 | Done | 2026-04-20 |
 | 14. Public Page Rendering + Click Tracking | 1/1 | Done | 2026-04-20 |
 | 15. Schema & Foundation | 0/2 | Complete    | 2026-04-21 |
-| 16. Admin CRUD API | 0/1 | Not started | - |
+| 16. Admin CRUD API | 1/1 | Complete   | 2026-04-21 |
 | 17. Brand Guidelines | 0/? | Not started | - |
 | 18. AI Authoring Endpoint | 0/? | Not started | - |
 | 19. Admin Chat Editor | 0/? | Not started | - |

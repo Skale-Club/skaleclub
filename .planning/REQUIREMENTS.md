@@ -14,10 +14,10 @@
 
 ### Admin CRUD API
 
-- [ ] **PRES-05**: `GET /api/presentations` returns admin list — id, slug, title, slideCount (derived), viewCount (derived), createdAt — sorted by createdAt desc. Admin-auth required.
-- [ ] **PRES-06**: `POST /api/presentations` creates a new presentation with title and empty `slides: []`; returns `{ id, slug }`. Admin-auth required.
-- [ ] **PRES-07**: `PUT /api/presentations/:id` updates title, slides, and/or accessCode; auto-increments `version`. Admin-auth required.
-- [ ] **PRES-08**: `DELETE /api/presentations/:id` deletes the presentation and cascades `presentation_views`. Admin-auth required.
+- [x] **PRES-05**: `GET /api/presentations` returns admin list — id, slug, title, slideCount (derived), viewCount (derived), createdAt — sorted by createdAt desc. Admin-auth required.
+- [x] **PRES-06**: `POST /api/presentations` creates a new presentation with title and empty `slides: []`; returns `{ id, slug }`. Admin-auth required.
+- [x] **PRES-07**: `PUT /api/presentations/:id` updates title, slides, and/or accessCode; auto-increments `version`. Admin-auth required.
+- [x] **PRES-08**: `DELETE /api/presentations/:id` deletes the presentation and cascades `presentation_views`. Admin-auth required.
 
 ### Brand Guidelines
 
@@ -66,10 +66,10 @@
 | PRES-02 | Phase 15 | Complete |
 | PRES-03 | Phase 15 | Complete |
 | PRES-04 | Phase 15 | Complete |
-| PRES-05 | Phase 16 | Pending |
-| PRES-06 | Phase 16 | Pending |
-| PRES-07 | Phase 16 | Pending |
-| PRES-08 | Phase 16 | Pending |
+| PRES-05 | Phase 16 | Complete |
+| PRES-06 | Phase 16 | Complete |
+| PRES-07 | Phase 16 | Complete |
+| PRES-08 | Phase 16 | Complete |
 | PRES-09 | Phase 17 | Pending |
 | PRES-10 | Phase 17 | Pending |
 | PRES-11 | Phase 18 | Pending |
