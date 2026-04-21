@@ -23,6 +23,7 @@ import { registerCompanyRoutes } from "./routes/company.js";
 import { registerFormRoutes } from "./routes/forms.js";
 import { registerIntegrationRoutes } from "./routes/integrations.js";
 import { registerEstimatesRoutes } from "./routes/estimates.js";
+import { registerPresentationsRoutes } from "./routes/presentations.js";
 import { registerUploadRoutes } from "./routes/uploads.js";
 import { registerLinksPageRoutes } from "./routes/linksPage.js";
 import { db, pool } from "./db.js";
@@ -130,6 +131,7 @@ export async function registerRoutes(
   registerFormRoutes(app);
   registerIntegrationRoutes(app);
   registerEstimatesRoutes(app);
+  registerPresentationsRoutes(app);
   await initializeSalesSchema();
 
 

@@ -692,6 +692,19 @@ export interface IStorage {
   listSalesSyncEventsForRep(repId: number, limit?: number): Promise<SalesSyncEvent[]>;
   createSalesSyncEvent(input: InsertSalesSyncEvent): Promise<SalesSyncEvent>;
   updateSalesSyncEvent(id: number, input: Partial<InsertSalesSyncEvent>): Promise<SalesSyncEvent | undefined>;
+
+  // Presentations (PRES-05 – PRES-08)
+  listPresentations(): Promise<PresentationWithStats[]>;
+  getPresentation(id: string): Promise<Presentation | undefined>;
+  getPresentationBySlug(slug: string): Promise<Presentation | undefined>;
+  createPresentation(data: InsertPresentation): Promise<Presentation>;
+  updatePresentation(id: string, data: Partial<InsertPresentation>): Promise<Presentation>;
+  deletePresentation(id: string): Promise<void>;
+  recordPresentationView(presentationId: string, ipHash?: string): Promise<void>;
+
+  // Brand Guidelines (PRES-09)
+  getBrandGuidelines(): Promise<BrandGuidelines | undefined>;
+  upsertBrandGuidelines(content: string): Promise<BrandGuidelines>;
 }
 
 export class DatabaseStorage implements IStorage {
