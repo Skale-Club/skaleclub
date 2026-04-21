@@ -16,6 +16,9 @@ import {
   portfolioServices,
   estimates,
   estimateViews,
+  presentations,
+  presentationViews,
+  brandGuidelines,
   salesReps,
   salesLeads,
   salesLeadLocations,
@@ -56,6 +59,12 @@ import {
   type Estimate,
   type InsertEstimate,
   type EstimateWithStats,
+  type Presentation,
+  type InsertPresentation,
+  type PresentationView,
+  type PresentationWithStats,
+  type BrandGuidelines,
+  type SlideBlock,
   type InsertPortfolioService,
   type InsertChatSettings,
   type InsertChatIntegrations,
@@ -1837,6 +1846,84 @@ export class DatabaseStorage implements IStorage {
       estimateId,
       ipAddress: ipAddress ?? null,
     });
+  }
+
+  // Presentations (Phase 16 implements full CRUD; Phase 15 adds typed stubs)
+  async listPresentations(): Promise<PresentationWithStats[]> {
+    const rows = await db
+      .select({
+        id:                presentations.id,
+        slug:              presentations.slug,
+        title:             presentations.title,
+        slides:            presentations.slides,
+        guidelinesSnapshot: presentations.guidelinesSnapshot,
+        accessCode:        presentations.accessCode,
+        version:           presentations.version,
+        createdAt:         presentations.createdAt,
+        updatedAt:         presentations.updatedAt,
+        slideCount:        sql<number>`jsonb_array_length(${presentations.slides})::int`,
+        viewCount:         sql<number>`count(${presentationViews.id})::int`,
+      })
+      .from(presentations)
+      .leftJoin(presentationViews, eq(presentationViews.presentationId, presentations.id))
+      .groupBy(presentations.id)
+      .orderBy(desc(presentations.createdAt));
+    return rows as PresentationWithStats[];
+  }
+
+  async getPresentation(id: string): Promise<Presentation | undefined> {
+    const [row] = await db.select().from(presentations).where(eq(presentations.id, id));
+    return row;
+  }
+
+  async getPresentationBySlug(slug: string): Promise<Presentation | undefined> {
+    const [row] = await db.select().from(presentations).where(eq(presentations.slug, slug));
+    return row;
+  }
+
+  async createPresentation(data: InsertPresentation): Promise<Presentation> {
+    const [row] = await db.insert(presentations).values(data).returning();
+    return row;
+  }
+
+  async updatePresentation(id: string, data: Partial<InsertPresentation>): Promise<Presentation> {
+    const [row] = await db
+      .update(presentations)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(presentations.id, id))
+      .returning();
+    return row;
+  }
+
+  async deletePresentation(id: string): Promise<void> {
+    await db.delete(presentations).where(eq(presentations.id, id));
+  }
+
+  async recordPresentationView(presentationId: string, ipHash?: string): Promise<void> {
+    await db.insert(presentationViews).values({
+      presentationId,
+      ipHash: ipHash ?? null,
+    });
+  }
+
+  // Brand Guidelines (Phase 17 implements full upsert; Phase 15 adds typed stubs)
+  async getBrandGuidelines(): Promise<BrandGuidelines | undefined> {
+    const [row] = await db.select().from(brandGuidelines);
+    return row;
+  }
+
+  async upsertBrandGuidelines(content: string): Promise<BrandGuidelines> {
+    const existing = await this.getBrandGuidelines();
+    if (existing) {
+      const [row] = await db
+        .update(brandGuidelines)
+        .set({ content, updatedAt: new Date() })
+        .where(eq(brandGuidelines.id, existing.id))
+        .returning();
+      return row;
+    }
+    const [row] = await db.insert(brandGuidelines).values({ content }).returning();
+    return row;
   }
 }
 
