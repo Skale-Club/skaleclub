@@ -17,7 +17,8 @@ export type AdminSection =
   | 'links'
   | 'vcards'
   | 'fieldSales'
-  | 'estimates';
+  | 'estimates'
+  | 'presentations';
 
 export interface DayHours {
   isOpen: boolean;
