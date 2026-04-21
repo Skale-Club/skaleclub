@@ -352,6 +352,7 @@ export const translations = {
     'Write in Markdown. Describe logo usage, primary colors, fonts, tone of voice, and any "always include / never include" rules. Claude reads this before generating each presentation.': 'Escreva em Markdown. Descreva o uso do logotipo, cores primárias, fontes, tom de voz e quaisquer regras de "sempre incluir / nunca incluir". O Claude lê isso antes de gerar cada apresentação.',
     'Brand guidelines saved': 'Diretrizes de marca salvas',
     'Claude will use these guidelines when generating slides.': 'O Claude usará essas diretrizes ao gerar slides.',
+    'Save failed': 'Falha ao salvar',
     'Save guidelines': 'Salvar diretrizes',
     'Presentations': 'Apresentações',
     'Build AI-powered slide decks and share them as immersive fullscreen experiences.': 'Crie apresentações com IA e compartilhe-as como experiências imersivas em tela cheia.',

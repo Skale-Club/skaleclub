@@ -70,14 +70,19 @@ export function BrandGuidelinesSection() {
                 <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
               </div>
             ) : (
-              <Textarea
-                id="brand-guidelines-content"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={20}
-                placeholder={t('## Brand Identity\n\n**Primary Color:** #1C53A3\n**Accent Color:** #FFFF01\n**Fonts:** Outfit (headings), Inter (body)\n\n## Tone of Voice\n\n- Professional yet approachable\n- Action-oriented language\n\n## Always Include\n- Company name: Skale Club\n\n## Never Include\n- Competitor mentions')}
-                className="font-mono text-sm resize-y min-h-[300px]"
-              />
+              <>
+                <Textarea
+                  id="brand-guidelines-content"
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  rows={20}
+                  placeholder={t('## Brand Identity\n\n**Primary Color:** #1C53A3\n**Accent Color:** #FFFF01\n**Fonts:** Outfit (headings), Inter (body)\n\n## Tone of Voice\n\n- Professional yet approachable\n- Action-oriented language\n\n## Always Include\n- Company name: Skale Club\n\n## Never Include\n- Competitor mentions')}
+                  className="font-mono text-sm resize-y min-h-[300px]"
+                />
+                <p className={`text-xs text-right ${content.length > 2000 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                  {content.length} / 2000
+                </p>
+              </>
             )}
           </div>
 
