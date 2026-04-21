@@ -1,21 +1,21 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: Defining requirements for v1.4 Admin Presentations Page
+milestone: v1.4
+milestone_name: Admin Presentations Page
+status: executing
 last_updated: "2026-04-21T17:32:54.517Z"
-last_activity: 2026-04-20 — Milestone v1.4 started
+last_activity: 2026-04-21 — Phase 15 Wave 1 complete (plans 15-01, 15-02)
 progress:
-  total_phases: 5
+  total_phases: 11
   completed_phases: 5
-  total_plans: 10
+  total_plans: 12
   completed_plans: 10
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** Defining requirements for v1.4 Admin Presentations Page
+**Status:** Executing Phase 15
 
 ---
 
@@ -23,17 +23,17 @@ progress:
 
 See: `.planning/PROJECT.md` (updated 2026-04-20)
 
-**Core value:** Admin manages a rich Linktree-style page with real file uploads, per-link icons, click analytics, and a live-preview editor.
-**Current focus:** v1.3 complete — all 17 LINKS-xx requirements delivered across Phases 10–14. Next gate: `/gsd:verify-work`.
+**Core value:** Admin builds branded slide decks by conversing with Claude — no WYSIWYG — and shares them as fullscreen bilingual experiences at `/p/:slug`.
+**Current focus:** Phase 15 — Schema & Foundation
 
 ---
 
 ## Current Position
 
-Phase: 15-schema-foundation
-Plan: 15-01 complete
-Status: Phase 15 Plan 01 complete; Phase 16 (Admin CRUD API) is next
-Last activity: 2026-04-21 — Plan 15-01 executed (3 tasks, 3 commits: 232d2a4, dc75abf, e13b800)
+Phase: 15 (Schema & Foundation) — Wave 1 complete
+Plan: 15-01 and 15-02 complete (2/2)
+Status: Wave 1 complete — verifying phase goal
+Last activity: 2026-04-21 — Plan 15-01 (232d2a4, dc75abf, e13b800) + Plan 15-02 (793b326, 4d83eac) executed
 
 ---
 
@@ -184,7 +184,9 @@ None.
 | 2026-04-19 | Plan 12-03 executed | Drag-and-drop reorder on Main Links via @dnd-kit (1 combined commit: ece85d1, LINKS-11 complete); Phase 12 plans 2/3 (12-02 uploaders in parallel) |
 | 2026-04-19 | Plan 12-02 executed | DragDropUploader component + Profile zone avatar/background wiring (2 tasks, 2 commits: f231b57, 02ed2e9); LINKS-08 complete; Phase 12 plans 3/3 — ready for /gsd:verify-work |
 | 2026-04-20 | Plan 14-01 executed | Public /links rendering + sendBeacon click tracking (3 tasks, 3 commits: 5c7c9db, 53aa325, 02f410b); LINKS-14/-15/-16/-17 complete; Phase 14 plans 1/1 — v1.3 feature-complete 17/17 reqs |
+| 2026-04-20 | v1.4 milestone initialized | Requirements defined (22 reqs, PRES-01–22) |
+| 2026-04-20 | v1.4 roadmap created | 6 phases (15–20), 22/22 reqs mapped; Phase 15 ready to plan |
 
 ---
 
-*Last updated: 2026-04-20 — Plan 14-01 complete; v1.3 Links Page Upgrade feature-complete (Phases 10–14 all shipped; 10/10 plans; 17/17 requirements); ready for /gsd:verify-work → /gsd:retrospective → /gsd:new-milestone*
+*Last updated: 2026-04-20 — v1.4 roadmap created; 6 phases (15–20); 22/22 requirements mapped; Phase 15 ready to plan*
