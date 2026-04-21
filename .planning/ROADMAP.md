@@ -233,7 +233,7 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 | 13. Icon Picker, Theme Editor & Live Preview | 3/3 | Done | 2026-04-20 |
 | 14. Public Page Rendering + Click Tracking | 1/1 | Done | 2026-04-20 |
 | 15. Schema & Foundation | 0/2 | Complete    | 2026-04-21 |
-| 16. Admin CRUD API | 1/1 | Complete   | 2026-04-21 |
+| 16. Admin CRUD API | 1/1 | Complete    | 2026-04-21 |
 | 17. Brand Guidelines | 0/? | Not started | - |
 | 18. AI Authoring Endpoint | 0/? | Not started | - |
 | 19. Admin Chat Editor | 0/? | Not started | - |
