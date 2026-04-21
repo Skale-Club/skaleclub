@@ -1,86 +1,101 @@
-# Requirements: Skale Club Web Platform — v1.3 Links Page Upgrade
+# Requirements: Skale Club Web Platform — v1.4 Admin Presentations Page
 
 **Defined:** 2026-04-20
-**Core Value:** Admin manages a rich Linktree-style page with real file uploads, per-link icons, click analytics, and a live-preview editor.
+**Core Value:** Admin builds branded slide decks by conversing with Claude — no WYSIWYG — and shares them as fullscreen bilingual experiences at `/p/:slug`.
 
-## v1.3 Requirements
+## v1.4 Requirements
 
-### Schema & Storage — Links Page Config + Uploads
+### Schema & Storage
 
-- [x] **LINKS-01**: `linksPageConfig` JSONB on `company_settings` extended to support per-link `iconType` ('lucide' | 'upload' | 'auto'), `iconValue` (lucide name OR uploaded file URL), `visible` boolean, `clickCount` integer, and a `theme` sub-object (primaryColor, backgroundColor, backgroundGradient, backgroundImageUrl). Existing `links` and `socialLinks` arrays remain backward-compatible.
-- [x] **LINKS-02**: File uploads for avatar, background image, and per-link icons route to Supabase Storage bucket `uploads` under path prefix `links-page/{type}/{timestamp}-{hash}.{ext}`. Uploaded URLs returned to admin and persisted in linksPageConfig.
-- [x] **LINKS-03**: Each link has a stable `id` (UUID) assigned at create time so click analytics and reordering survive edits.
+- [ ] **PRES-01**: `presentations` table — `id` (UUID PK), `slug` (UUID, unique, public URL), `title` (text), `slides` (JSONB array of SlideBlock), `guidelinesSnapshot` (JSONB copy of guidelines at generation time), `accessCode` (optional plain text), `version` (int, auto-increments on each PUT save), `createdAt`, `updatedAt`.
+- [ ] **PRES-02**: `presentation_views` event-log table — `id`, `presentationId` (FK → presentations, cascade delete), `viewedAt`, `ipHash` (SHA-256 of client IP). Mirrors `estimate_views` pattern.
+- [ ] **PRES-03**: `brand_guidelines` singleton table — `id`, `content` (text, markdown), `updatedAt`. One row per tenant; upsert on save.
+- [ ] **PRES-04**: `@anthropic-ai/sdk` installed; `server/lib/anthropic.ts` singleton created with `getAnthropicClient()` (separate from existing `getActiveAIClient()` OpenAI/Groq shim).
 
-### Click Analytics API
+### Admin CRUD API
 
-- [x] **LINKS-04**: `POST /api/links-page/click/:linkId` increments `clickCount` for that link id in `company_settings.linksPageConfig.links` — unauthenticated (public page calls it), rate-limited by IP (max 1 click per link per IP per minute).
-- [x] **LINKS-05**: Admin list displays `clickCount` next to each link (read from the same config, no extra endpoint). — data surface delivered by Phase 10-01 normalizer; UI badge render is Phase 12 (LINKS-07/-10).
+- [ ] **PRES-05**: `GET /api/presentations` returns admin list — id, slug, title, slideCount (derived), viewCount (derived), createdAt — sorted by createdAt desc. Admin-auth required.
+- [ ] **PRES-06**: `POST /api/presentations` creates a new presentation with title and empty `slides: []`; returns `{ id, slug }`. Admin-auth required.
+- [ ] **PRES-07**: `PUT /api/presentations/:id` updates title, slides, and/or accessCode; auto-increments `version`. Admin-auth required.
+- [ ] **PRES-08**: `DELETE /api/presentations/:id` deletes the presentation and cascades `presentation_views`. Admin-auth required.
 
-### File Upload Endpoint
+### Brand Guidelines
 
-- [x] **LINKS-06**: `POST /api/uploads/links-page` accepts multipart file upload (image types only, max 2 MB), uploads to Supabase Storage `uploads` bucket under `links-page/`, returns `{ url }`. Admin-auth required.
+- [ ] **PRES-09**: `GET /api/brand-guidelines` returns current guidelines content (no auth — needed by AI endpoint server-side). `PUT /api/brand-guidelines` saves content (admin-auth required).
+- [ ] **PRES-10**: Admin **Brand Guidelines** sub-section (within Presentations tab or separate accordion) — plain textarea/markdown editor that saves to `brand_guidelines` table via `PUT /api/brand-guidelines`.
 
-### Admin UI — Redesign + Uploads + Icon Picker
+### AI Authoring
 
-- [x] **LINKS-07**: Admin Links section is redesigned with three clear zones — Profile (left), Live Preview (center), Links + Social (right) — responsive to smaller screens by stacking. Visual polish matches the design tokens used by other admin sections (AdminCard/SectionHeader/FormGrid).
-- [x] **LINKS-08**: Profile zone replaces URL text inputs for Avatar and Background Image with drag-and-drop file uploaders that call `/api/uploads/links-page`, show a spinner during upload, a "Uploaded ✓" confirmation, and render a thumbnail preview of the uploaded asset.
-- [x] **LINKS-09**: Each link row exposes an **Icon Picker** that lets admin either (a) search and select from a searchable Lucide icon library (~1000 icons, debounced text search) OR (b) upload a custom SVG/PNG that becomes the link's icon. Selected icon is previewed at its final rendering size.
-- [x] **LINKS-10**: Each link row has a visible/hidden toggle (Switch component) that controls whether the link renders on the public page; hidden links stay in the admin list with reduced opacity.
-- [x] **LINKS-11**: Admin can drag-and-drop reorder links; order persists to `linksPageConfig.links[].order` and is reflected on the next public-page load.
-- [x] **LINKS-12**: Theme editor (part of Profile zone or separate accordion) lets admin pick primary color (color picker), background color or gradient, and optionally upload a background image. Changes persist to `linksPageConfig.theme`.
-- [x] **LINKS-13**: Live Preview pane renders `/links` in an `<iframe>` or direct component embed that re-queries company settings after each save so admin sees changes within ~1s without leaving the page.
+- [ ] **PRES-11**: `POST /api/presentations/:id/chat` — SSE streaming endpoint; accepts `{ message: string }`; loads current `brand_guidelines.content` as Claude system prompt; sends current `slides` as context; calls Claude via `tool_use` for structured `SlideBlock[]` output; streams `data:` progress events to client; saves final slides + `guidelinesSnapshot` to DB after stream ends. Admin-auth required.
+- [ ] **PRES-12**: SlideBlock JSON schema supports 8 layout variants (`cover`, `section-break`, `title-body`, `bullets`, `stats`, `two-column`, `image-focus`, `closing`) with bilingual fields: `heading`/`headingPt`, `body`/`bodyPt`, `bullets: string[]`/`bulletsPt: string[]`. Schema validated via Zod on every DB write.
+- [ ] **PRES-13**: Admin can request per-slide edits in chat (e.g. "edit slide 3 — shorten the body") — the AI receives the full current `SlideBlock[]` context and returns an updated array with only the targeted slide(s) changed; other slides are preserved verbatim.
 
-### Public Page — Rendering + Click Tracking
+### Admin Chat Editor
 
-- [x] **LINKS-14**: Public `/links` page renders per-link icons from Lucide (by name) or from uploaded URL (as `<img>`), falling back to a generic link icon when neither is set.
-- [x] **LINKS-15**: Public `/links` respects `visible=false` — hidden links are not rendered.
-- [x] **LINKS-16**: Public `/links` applies `linksPageConfig.theme` — primaryColor used for hover/focus accents, backgroundColor/backgroundGradient applied to page root, backgroundImageUrl rendered as a fixed-position background layer behind the ambient glow.
-- [x] **LINKS-17**: Clicking a link triggers `POST /api/links-page/click/:linkId` as a fire-and-forget `navigator.sendBeacon` call before the navigation proceeds, so the click count increments reliably even on external navigation.
+- [ ] **PRES-14**: Admin **Presentations** tab shows list of all presentations with title, slide count, view count badge, copy-link button, delete button, and an "Open Editor" button per row.
+- [ ] **PRES-15**: Presentation editor opens in a split-view panel: **chat panel** (left) with message history + input that sends to `/api/presentations/:id/chat` and streams the response; **slide preview panel** (right) showing current SlideBlock[] as mini cards.
+- [ ] **PRES-16**: Slide preview panel updates automatically after each AI response completes; admin can click any mini card to quote that slide number into the chat input for targeted edits.
+
+### Public Viewer
+
+- [ ] **PRES-17**: `GET /api/presentations/slug/:slug` — public endpoint (no auth); returns full presentation including slides; validates access code if `accessCode` is set (400 if wrong/missing); records a row in `presentation_views` on every successful load.
+- [ ] **PRES-18**: `/p/:slug` route in App.tsx is isolated from Navbar/Footer/ChatWidget via `isPresentationRoute` guard (symmetric to `isEstimateRoute` pattern).
+- [ ] **PRES-19**: `PresentationViewer` renders slides as fullscreen scroll-snap sections (one slide per viewport height), framer-motion enter animations per section, layout-specific rendering for each `SlideBlock.layout` variant.
+- [ ] **PRES-20**: Language switcher in the viewer — `?lang=en` (default) or `?lang=pt-BR`; each slide renders the appropriate bilingual fields (`heading` vs `headingPt`, etc.).
+- [ ] **PRES-21**: Access code gate — if `accessCode` is set on the presentation, viewer shows a code-entry form before revealing slides (same UX pattern as `EstimateViewer`).
+- [ ] **PRES-22**: Admin Presentations list shows view count badge per presentation, sourced from `presentation_views` count query.
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Multiple `/l/:slug` pages (multi-page) | Single `/links` page is sufficient for v1.3; per-campaign pages are future scope (can reuse vcards pattern if needed) |
-| Pinned / featured link styling | Deferred — visible/hidden + ordering covers primary curation needs |
-| Inline email capture form | Deferred — can be added as a link type in a future milestone |
-| A/B testing / scheduled links | Future — not a current business need |
-| QR code for the page | Already available via VCards feature; can be reused |
-| Per-link analytics beyond click count (geo, device, referrer) | Click count alone is enough for v1.3 signal |
-| Simple Icons (brand logo library) | Lucide + custom upload is enough; avoids external runtime dep |
+| WYSIWYG / drag-drop slide editor | Constraint from seed — editing is 100% conversational with Claude |
+| PPTX / PDF export | Future milestone (v1.5 candidate); requires Playwright on serverless — Vercel blocker |
+| Per-slide image generation (DALL-E / Stable Diffusion) | Deferred — admin can paste image URLs; AI-generated imagery is v1.5 scope |
+| Slide templates library | Deferred — 8 layout variants cover agency needs; template picker is additive |
+| Multi-tenant brand guidelines (per-presentation override) | One tenant-wide document is sufficient for v1.4; per-deck branching is v1.5 |
+| slides-grab / Playwright integration | Blocked on Vercel serverless; native scroll-snap viewer is superior for v1.4 |
+| Undo / slide version history | Deferred — `version` field tracks generation count; full undo is a distinct milestone |
+| Team collaboration / comments on slides | Future scope |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| LINKS-01 | Phase 10 | Complete |
-| LINKS-02 | Phase 10 | Complete |
-| LINKS-03 | Phase 10 | Complete |
-| LINKS-04 | Phase 11 | Complete |
-| LINKS-05 | Phase 11 | Complete |
-| LINKS-06 | Phase 10 | Complete |
-| LINKS-07 | Phase 12 | Complete |
-| LINKS-08 | Phase 12 | Complete |
-| LINKS-09 | Phase 13 | Complete |
-| LINKS-10 | Phase 12 | Complete |
-| LINKS-11 | Phase 12 | Complete |
-| LINKS-12 | Phase 13 | Complete |
-| LINKS-13 | Phase 13 | Complete |
-| LINKS-14 | Phase 14 | Complete |
-| LINKS-15 | Phase 14 | Complete |
-| LINKS-16 | Phase 14 | Complete |
-| LINKS-17 | Phase 14 | Complete |
+| PRES-01 | Phase 15 | Pending |
+| PRES-02 | Phase 15 | Pending |
+| PRES-03 | Phase 15 | Pending |
+| PRES-04 | Phase 15 | Pending |
+| PRES-05 | Phase 16 | Pending |
+| PRES-06 | Phase 16 | Pending |
+| PRES-07 | Phase 16 | Pending |
+| PRES-08 | Phase 16 | Pending |
+| PRES-09 | Phase 17 | Pending |
+| PRES-10 | Phase 17 | Pending |
+| PRES-11 | Phase 18 | Pending |
+| PRES-12 | Phase 18 | Pending |
+| PRES-13 | Phase 18 | Pending |
+| PRES-14 | Phase 19 | Pending |
+| PRES-15 | Phase 19 | Pending |
+| PRES-16 | Phase 19 | Pending |
+| PRES-17 | Phase 20 | Pending |
+| PRES-18 | Phase 20 | Pending |
+| PRES-19 | Phase 20 | Pending |
+| PRES-20 | Phase 20 | Pending |
+| PRES-21 | Phase 20 | Pending |
+| PRES-22 | Phase 20 | Pending |
 
 **Coverage:**
-- v1.3 requirements: 17 total
-- Mapped to phases: 17/17 ✓ (100%)
+- v1.4 requirements: 22 total
+- Mapped to phases: 22/22 ✓ (100%)
 
 **Phase distribution:**
-- Phase 10 (Schema & Upload Foundation): 4 reqs — LINKS-01, -02, -03, -06
-- Phase 11 (Click Analytics API): 2 reqs — LINKS-04, -05
-- Phase 12 (Admin Redesign + Core Editing): 4 reqs — LINKS-07, -08, -10, -11
-- Phase 13 (Icon Picker, Theme & Live Preview): 3 reqs — LINKS-09, -12, -13
-- Phase 14 (Public Page Rendering + Click Tracking): 4 reqs — LINKS-14, -15, -16, -17
+- Phase 15 (Schema & Foundation): 4 reqs — PRES-01, -02, -03, -04
+- Phase 16 (Admin CRUD API): 4 reqs — PRES-05, -06, -07, -08
+- Phase 17 (Brand Guidelines): 2 reqs — PRES-09, -10
+- Phase 18 (AI Authoring Endpoint): 3 reqs — PRES-11, -12, -13
+- Phase 19 (Admin Chat Editor): 3 reqs — PRES-14, -15, -16
+- Phase 20 (Public Viewer): 6 reqs — PRES-17, -18, -19, -20, -21, -22
 
 ---
-*Requirements defined: 2026-04-20 — traceability mapped 2026-04-20*
+*Requirements defined: 2026-04-20*
