@@ -178,11 +178,13 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 **Goal**: Admin can author and persist a tenant-wide brand guidelines document that subsequent AI calls will consume as their system prompt.
 **Depends on**: Phase 15 (brand_guidelines table must exist)
 **Requirements**: PRES-09, PRES-10
-**Plans**: TBD
+**Plans:** 1 plan
 **Success Criteria** (what must be TRUE):
   1. `PUT /api/brand-guidelines` (admin-auth required) upserts a single row; a subsequent `GET /api/brand-guidelines` (no auth required) returns the saved `content` string — calling `GET` before any `PUT` returns a 200 with empty or null content rather than a 404.
   2. Admin sees a Brand Guidelines editor (textarea or markdown editor) within the Presentations tab; typing and saving updates the stored content and a "Saved" confirmation appears.
   3. The editor displays a live character count; the server rejects content exceeding 2,000 characters with a 400 and a human-readable message.
+**Plans:**
+- [ ] 17-01-PLAN.md — GET + PUT /api/brand-guidelines routes + PresentationsSection editor + AdminSection wiring (PRES-09, PRES-10)
 **UI hint**: yes
 
 ### Phase 18: AI Authoring Endpoint
@@ -234,11 +236,11 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 | 14. Public Page Rendering + Click Tracking | 1/1 | Done | 2026-04-20 |
 | 15. Schema & Foundation | 0/2 | Complete    | 2026-04-21 |
 | 16. Admin CRUD API | 1/1 | Complete    | 2026-04-21 |
-| 17. Brand Guidelines | 0/? | Not started | - |
+| 17. Brand Guidelines | 0/1 | Not started | - |
 | 18. AI Authoring Endpoint | 0/? | Not started | - |
 | 19. Admin Chat Editor | 0/? | Not started | - |
 | 20. Public Viewer | 0/? | Not started | - |
 
 ---
 
-_Last updated: 2026-04-21 — Phase 16 planned; 1 plan (16-01); PRES-05–08 mapped_
+_Last updated: 2026-04-21 — Phase 17 planned; 1 plan (17-01); PRES-09–10 mapped_
