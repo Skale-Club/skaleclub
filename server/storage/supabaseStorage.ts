@@ -105,6 +105,22 @@ export class SupabaseStorageService {
     return urlData.publicUrl;
   }
 
+  // Delete a links-page asset by its public URL.
+  // Extracts the storage path from the URL, then removes the object from the bucket.
+  async deleteLinksPageAsset(publicUrl: string): Promise<void> {
+    const supabase = getSupabaseAdmin();
+    const marker = `/object/public/${BUCKET_NAME}/`;
+    const idx = publicUrl.indexOf(marker);
+    if (idx === -1) {
+      throw new Error("URL does not belong to this bucket");
+    }
+    const storagePath = decodeURIComponent(publicUrl.slice(idx + marker.length));
+    const { error } = await supabase.storage.from(BUCKET_NAME).remove([storagePath]);
+    if (error) {
+      throw new Error(`Failed to delete asset: ${error.message}`);
+    }
+  }
+
   // Serve a file from Supabase Storage by redirecting to the public URL
   async serveFile(objectPath: string, res: Response): Promise<void> {
     const supabase = getSupabaseAdmin();

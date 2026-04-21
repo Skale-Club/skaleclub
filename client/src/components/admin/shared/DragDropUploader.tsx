@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Check, AlertCircle, Image as ImageIcon } from 'lucide-react';
+import { Check, AlertCircle, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { Loader2 } from '@/components/ui/loader';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
@@ -20,6 +20,8 @@ export interface DragDropUploaderProps {
   thumbnailShape?: 'square' | 'wide';
   /** Optional className on the outer wrapper. */
   className?: string;
+  /** Called when the user wants to delete the current image. */
+  onDelete?: () => void;
 }
 
 type UploaderState = 'idle' | 'uploading' | 'success' | 'error';
@@ -42,6 +44,7 @@ export function DragDropUploader({
   helperText,
   thumbnailShape = 'square',
   className,
+  onDelete,
 }: DragDropUploaderProps) {
   const { toast } = useToast();
   const [state, setState] = useState<UploaderState>('idle');
@@ -147,7 +150,7 @@ export function DragDropUploader({
         {/* Thumbnail */}
         <div
           className={cn(
-            'shrink-0 flex items-center justify-center rounded-md bg-muted overflow-hidden',
+            'relative shrink-0 flex items-center justify-center rounded-md bg-muted overflow-hidden',
             thumbnailShape === 'wide' ? 'w-[120px] h-16' : 'w-16 h-16',
           )}
         >
@@ -155,6 +158,16 @@ export function DragDropUploader({
             <img src={value} alt={label} className="w-full h-full object-cover" />
           ) : (
             <ImageIcon className="w-6 h-6 text-muted-foreground" />
+          )}
+          {value && onDelete && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 hover:opacity-100 transition-opacity rounded-md"
+              aria-label={`Remove ${label}`}
+            >
+              <Trash2 className="w-4 h-4 text-white" />
+            </button>
           )}
         </div>
 

@@ -5,28 +5,24 @@
 - ✅ **v1.0 Xpot Tech Debt** — Phases 1-4 (shipped 2026-03-30)
 - ✅ **v1.1 Multi-Forms Support** — Phase 5 / M3 (shipped 2026-04-15)
 - ✅ **v1.2 Estimates System** — Phases 6-9 (shipped 2026-04-20)
-- 🚧 **v1.3 Links Page Upgrade** — Phases 10-14 (in progress)
+- ✅ **v1.3 Links Page Upgrade** — Phases 10-14 (shipped 2026-04-20)
 
 ## Active
 
-### v1.3 Links Page Upgrade
-
-- [ ] **Phase 10: Schema & Upload Foundation** — Extend `linksPageConfig`, wire Supabase Storage uploads, assign stable per-link IDs
-- [ ] **Phase 11: Click Analytics API** — Public click-increment endpoint with IP rate limiting + admin display
-- [ ] **Phase 12: Admin Redesign + Core Editing** — Three-zone admin layout, profile/background uploaders, visibility toggle, drag-reorder
-- [ ] **Phase 13: Icon Picker, Theme Editor & Live Preview** — Lucide + custom icon picker, theme controls, `/links` live preview pane
-- [x] **Phase 14: Public Page Rendering + Click Tracking** — Icons, visibility, theming, and `sendBeacon` click tracking on `/links`
+_No active milestone. Run `/gsd:new-milestone` to start the next one._
 
 ## Phases
 
-<details open>
-<summary>🚧 v1.3 Links Page Upgrade (Phases 10-14) — IN PROGRESS</summary>
+<details>
+<summary>✅ v1.3 Links Page Upgrade (Phases 10-14) — SHIPPED 2026-04-20</summary>
 
-- [ ] Phase 10: Schema & Upload Foundation (0/2 plans)
-- [ ] Phase 11: Click Analytics API (1/1 plans)
-- [ ] Phase 12: Admin Redesign + Core Editing (3/3 plans)
-- [ ] Phase 13: Icon Picker, Theme Editor & Live Preview (0/3 plans)
-- [x] Phase 14: Public Page Rendering + Click Tracking (1/1 plans)
+- [x] Phase 10: Schema & Upload Foundation — completed 2026-04-20
+- [x] Phase 11: Click Analytics API — completed 2026-04-20
+- [x] Phase 12: Admin Redesign + Core Editing — completed 2026-04-20
+- [x] Phase 13: Icon Picker, Theme Editor & Live Preview — completed 2026-04-20
+- [x] Phase 14: Public Page Rendering + Click Tracking — completed 2026-04-20
+
+_Archive: `.planning/milestones/v1.3-ROADMAP.md`_
 
 </details>
 

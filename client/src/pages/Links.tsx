@@ -1,6 +1,6 @@
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card } from "@/components/ui/card";
 import {
   ExternalLink,
   Instagram,
@@ -76,6 +76,12 @@ const trackLinkClick = (linkId: string | undefined) => {
 };
 
 export default function Links() {
+  // Force dark mode — this page always uses its own dark palette regardless
+  // of the user's system preference or admin session state.
+  useEffect(() => {
+    document.documentElement.classList.add('dark');
+  }, []);
+
   const { t } = useTranslation();
   const { data: settings, isLoading } = useQuery<CompanySettingsData>({
     queryKey: ['/api/company-settings'],
@@ -132,8 +138,12 @@ export default function Links() {
           style={{ backgroundImage: `url(${theme.backgroundImageUrl})` }}
         />
       )}
-      {/* Background ambient glow */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[var(--links-primary)]/20 rounded-full blur-[120px] pointer-events-none z-[1]" />
+      {/* Background ambient glow — inline style avoids Tailwind's opacity-modifier/CSS-var incompatibility */}
+      <div
+        aria-hidden="true"
+        className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full blur-[120px] pointer-events-none z-[1]"
+        style={{ backgroundColor: theme.primaryColor, opacity: 0.2 }}
+      />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none z-[1]" />
 
       <motion.div 
@@ -149,7 +159,7 @@ export default function Links() {
           </AvatarFallback>
         </Avatar>
 
-        <h1 className="text-2xl font-bold mb-2 tracking-tight text-center">{config.title}</h1>
+        <h1 className="text-2xl font-bold mb-2 tracking-tight text-center text-white">{config.title}</h1>
         <p className="text-gray-400 text-center mb-10 px-4 whitespace-pre-wrap">
           {config.description}
         </p>
@@ -172,12 +182,22 @@ export default function Links() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <Card className="p-4 bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer flex items-center justify-between group rounded-xl">
+                <div
+                  className="p-4 bg-white/5 border border-white/10 transition-all cursor-pointer flex items-center justify-between group rounded-xl"
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.borderColor = theme.primaryColor;
+                    (e.currentTarget as HTMLElement).style.backgroundColor = `${theme.primaryColor}18`;
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.borderColor = '';
+                    (e.currentTarget as HTMLElement).style.backgroundColor = '';
+                  }}
+                >
                   <div className="flex items-center text-gray-100 group-hover:text-white transition-colors">
                     {renderLinkIcon(link)}
                     <span className="font-medium text-lg">{link.title}</span>
                   </div>
-                </Card>
+                </div>
               </motion.a>
             ))}
         </div>
@@ -195,7 +215,9 @@ export default function Links() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={social.platform}
-              className="text-gray-400 hover:text-white transition-colors hover:scale-110 transform duration-200"
+              className="text-gray-400 transition-colors hover:scale-110 transform duration-200"
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = theme.primaryColor; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = ''; }}
             >
               {getSocialIcon(social.platform)}
             </a>

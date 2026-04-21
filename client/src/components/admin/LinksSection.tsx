@@ -43,6 +43,44 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from '@/components/ui/loader';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+const SOCIAL_PLATFORMS = [
+  { value: 'instagram',  label: 'Instagram',   prefix: 'https://instagram.com/' },
+  { value: 'linkedin',   label: 'LinkedIn',     prefix: 'https://linkedin.com/in/' },
+  { value: 'twitter',    label: 'Twitter / X',  prefix: 'https://x.com/' },
+  { value: 'youtube',    label: 'YouTube',      prefix: 'https://youtube.com/@' },
+  { value: 'facebook',   label: 'Facebook',     prefix: 'https://facebook.com/' },
+  { value: 'tiktok',     label: 'TikTok',       prefix: 'https://tiktok.com/@' },
+  { value: 'github',     label: 'GitHub',       prefix: 'https://github.com/' },
+  { value: 'telegram',   label: 'Telegram',     prefix: 'https://t.me/' },
+  { value: 'whatsapp',   label: 'WhatsApp',     prefix: 'https://wa.me/' },
+  { value: 'pinterest',  label: 'Pinterest',    prefix: 'https://pinterest.com/' },
+  { value: 'email',      label: 'E-mail',       prefix: 'mailto:' },
+  { value: 'website',    label: 'Website',      prefix: 'https://' },
+] as const;
+
+const PLATFORM_PREFIX: Record<string, string> = Object.fromEntries(
+  SOCIAL_PLATFORMS.map((p) => [p.value, p.prefix])
+);
+
+function urlToUsername(platform: string, url: string): string {
+  const prefix = PLATFORM_PREFIX[platform];
+  if (!prefix || !url) return url || '';
+  if (url.startsWith(prefix)) return url.slice(prefix.length);
+  return url;
+}
+
+function usernameToUrl(platform: string, username: string): string {
+  const prefix = PLATFORM_PREFIX[platform] ?? 'https://';
+  return `${prefix}${username}`;
+}
 
 const LINKS_PAGE_DEFAULTS: LinksPageConfig = {
   avatarUrl: '/ghl-logo.webp',
@@ -210,6 +248,29 @@ export function LinksSection() {
     updateConfig({ links: newLinks }, 'links');
   };
 
+  const deleteAsset = async (url: string, field: 'avatarUrl' | 'backgroundImageUrl') => {
+    try {
+      await fetch('/api/uploads/links-page', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ url }),
+      });
+    } catch {
+      // best-effort — still clear the config even if server delete fails
+    }
+    if (field === 'avatarUrl') {
+      const newConfig = { ...config, avatarUrl: '' };
+      setConfig(newConfig);
+      saveSettings(newConfig, 'avatarUrl');
+    } else {
+      const newTheme = { ...(config.theme ?? {}), backgroundImageUrl: '' };
+      const newConfig = { ...config, theme: newTheme };
+      setConfig(newConfig);
+      saveSettings(newConfig, 'backgroundImageUrl');
+    }
+  };
+
   const removeLink = (index: number) => {
     const newLinks = config.links.filter((_, i) => i !== index);
     updateConfig({ links: newLinks }, 'links');
@@ -283,8 +344,7 @@ export function LinksSection() {
             </div>
             <FormGrid cols={1}>
               <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <div className="text-sm font-medium">Avatar</div>
+                <div className="flex justify-end">
                   <SavedIndicator field="avatarUrl" />
                 </div>
                 <DragDropUploader
@@ -298,6 +358,7 @@ export function LinksSection() {
                     setConfig(newConfig);
                     saveSettings(newConfig, 'avatarUrl');
                   }}
+                  onDelete={config.avatarUrl ? () => deleteAsset(config.avatarUrl!, 'avatarUrl') : undefined}
                 />
               </div>
               <div className="space-y-2">
@@ -328,8 +389,7 @@ export function LinksSection() {
                 />
               </div>
               <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <div className="text-sm font-medium">Background Image</div>
+                <div className="flex justify-end">
                   <SavedIndicator field="theme" />
                 </div>
                 <DragDropUploader
@@ -344,6 +404,7 @@ export function LinksSection() {
                     setConfig(newConfig);
                     saveSettings(newConfig, 'backgroundImageUrl');
                   }}
+                  onDelete={config.theme?.backgroundImageUrl ? () => deleteAsset(config.theme!.backgroundImageUrl!, 'backgroundImageUrl') : undefined}
                 />
               </div>
             </FormGrid>
@@ -356,52 +417,6 @@ export function LinksSection() {
             }
           />
 
-          <AdminCard>
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h3 className="text-lg font-semibold">Social Links</h3>
-                <p className="text-sm text-muted-foreground">Icons at the bottom</p>
-              </div>
-              <Button size="icon" variant="outline" onClick={addSocial} className="h-8 w-8">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="space-y-4">
-              {config.socialLinks.map((social, index) => (
-                <div key={index} className="flex gap-2 items-start">
-                  <div className="grid grid-cols-2 gap-2 flex-1">
-                    <Input
-                      value={social.platform}
-                      onChange={(e) => updateSocial(index, { platform: e.target.value })}
-                      placeholder="instagram, linkedin..."
-                    />
-                    <Input
-                      value={social.url}
-                      onChange={(e) => updateSocial(index, { url: e.target.value })}
-                      placeholder="URL"
-                    />
-                  </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => removeSocial(index)}
-                    className="h-10 w-10 text-destructive hover:text-destructive hover:bg-destructive/10"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-              {config.socialLinks.length === 0 && (
-                <EmptyState
-                  icon={<AtSign />}
-                  title="No social links"
-                  description="Add platforms like Instagram, LinkedIn, Twitter"
-                  action={<Button size="sm" variant="outline" onClick={addSocial}><Plus className="h-4 w-4 mr-2" /> Add social</Button>}
-                  className="p-6"
-                />
-              )}
-            </div>
-          </AdminCard>
         </div>
 
         {/* Zone 2: Live Preview */}
@@ -409,8 +424,8 @@ export function LinksSection() {
           <LivePreview />
         </div>
 
-        {/* Zone 3: Main Links */}
-        <div className="md:col-span-2 lg:col-span-4">
+        {/* Zone 3: Main Links + Social Links */}
+        <div className="md:col-span-2 lg:col-span-4 space-y-6">
           <AdminCard>
             <div className="flex justify-between items-center mb-4">
               <div>
@@ -454,6 +469,63 @@ export function LinksSection() {
                 </SortableContext>
               </DndContext>
             )}
+          </AdminCard>
+
+          <AdminCard>
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h3 className="text-lg font-semibold">Social Links</h3>
+                <p className="text-sm text-muted-foreground">Icons at the bottom</p>
+              </div>
+              <Button size="icon" variant="outline" onClick={addSocial} className="h-8 w-8">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="space-y-3">
+              {config.socialLinks.map((social, index) => (
+                <div key={index} className="flex gap-2 items-center">
+                  <Select
+                    value={social.platform}
+                    onValueChange={(val) => {
+                      const username = urlToUsername(social.platform, social.url);
+                      updateSocial(index, { platform: val, url: usernameToUrl(val, username) });
+                    }}
+                  >
+                    <SelectTrigger className="w-[140px] shrink-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SOCIAL_PLATFORMS.map((p) => (
+                        <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    value={urlToUsername(social.platform, social.url)}
+                    onChange={(e) => updateSocial(index, { url: usernameToUrl(social.platform, e.target.value) })}
+                    placeholder={social.platform === 'email' ? 'you@example.com' : social.platform === 'website' ? 'example.com' : '@username'}
+                    className="flex-1"
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => removeSocial(index)}
+                    className="h-10 w-10 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              {config.socialLinks.length === 0 && (
+                <EmptyState
+                  icon={<AtSign />}
+                  title="No social links"
+                  description="Add platforms like Instagram, LinkedIn, Twitter"
+                  action={<Button size="sm" variant="outline" onClick={addSocial}><Plus className="h-4 w-4 mr-2" /> Add social</Button>}
+                  className="p-6"
+                />
+              )}
+            </div>
           </AdminCard>
         </div>
       </div>

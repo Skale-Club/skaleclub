@@ -60,7 +60,33 @@ export function IconPicker({ iconType, iconValue, onChange, className }: IconPic
   const filtered = useMemo<LucideEntry[]>(() => {
     const q = debouncedQuery.trim().toLowerCase();
     if (!q) return lucideEntries.slice(0, 200);
-    return lucideEntries.filter(([name]) => name.toLowerCase().includes(q)).slice(0, 200);
+
+    // Split PascalCase into words: "ExternalLink" → "external link"
+    const toWords = (name: string) =>
+      name.replace(/([A-Z])/g, ' $1').trim().toLowerCase();
+
+    const qWords = q.split(/\s+/).filter(Boolean);
+
+    const scored = lucideEntries.flatMap(([name, Cmp]) => {
+      const lower = name.toLowerCase();
+      const words = toWords(name);
+
+      let score = 0;
+      if (lower === q) score = 100;
+      else if (lower.startsWith(q)) score = 80;
+      else if (words === q) score = 75;
+      else if (qWords.every((w) => words.split(' ').includes(w))) score = 60;
+      else if (lower.includes(q)) score = 40;
+      else if (qWords.every((w) => words.includes(w))) score = 30;
+      else return [];
+
+      return [{ name, Cmp, score }];
+    });
+
+    return scored
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 200)
+      .map(({ name, Cmp }) => [name, Cmp] as LucideEntry);
   }, [debouncedQuery, lucideEntries]);
 
   const defaultTab = iconType ?? 'auto';

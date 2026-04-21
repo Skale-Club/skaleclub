@@ -39,8 +39,38 @@ const uploadBodySchema = z.object({
   assetType: z.enum(ALLOWED_ASSET_TYPES),
 });
 
+const deleteBodySchema = z.object({
+  url: z.string().url(),
+});
+
 export function registerUploadRoutes(app: Express) {
   const storageService = new SupabaseStorageService();
+
+  app.delete("/api/uploads/links-page", requireAdmin, async (req: Request, res: Response) => {
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return res.status(503).json({ message: "Storage not configured" });
+    }
+    let parsed: z.infer<typeof deleteBodySchema>;
+    try {
+      parsed = deleteBodySchema.parse(req.body);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid payload", errors: err.errors });
+      }
+      throw err;
+    }
+    // Guard: only delete URLs that belong to this project's Supabase storage.
+    if (!parsed.url.startsWith(process.env.SUPABASE_URL)) {
+      return res.status(400).json({ message: "URL does not belong to this project's storage" });
+    }
+    try {
+      await storageService.deleteLinksPageAsset(parsed.url);
+      return res.json({ ok: true });
+    } catch (err: any) {
+      console.error("Links-page delete error:", err);
+      return res.status(500).json({ message: err?.message ?? "Delete failed" });
+    }
+  });
 
   app.post("/api/uploads/links-page", requireAdmin, async (req: Request, res: Response) => {
     // Pre-flight: Supabase env must be configured. Clearer error than a deep 500.
