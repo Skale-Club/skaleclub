@@ -16,6 +16,7 @@ import {
   portfolioServices,
   estimates,
   estimateViews,
+  brandGuidelines,
   salesReps,
   salesLeads,
   salesLeadLocations,
@@ -56,6 +57,7 @@ import {
   type Estimate,
   type InsertEstimate,
   type EstimateWithStats,
+  type BrandGuidelines,
   type InsertPortfolioService,
   type InsertChatSettings,
   type InsertChatIntegrations,
@@ -643,6 +645,10 @@ export interface IStorage {
   createPortfolioService(service: InsertPortfolioService): Promise<PortfolioService>;
   updatePortfolioService(id: number, service: Partial<InsertPortfolioService>): Promise<PortfolioService>;
   deletePortfolioService(id: number): Promise<void>;
+
+  // Brand Guidelines (PRES-03 / Phase 17)
+  getBrandGuidelines(): Promise<BrandGuidelines | undefined>;
+  upsertBrandGuidelines(content: string): Promise<BrandGuidelines>;
 
   // Xpot (Field Sales)
   getSalesAppSettings(): Promise<SalesAppSettings>;
@@ -1837,6 +1843,26 @@ export class DatabaseStorage implements IStorage {
       estimateId,
       ipAddress: ipAddress ?? null,
     });
+  }
+
+  // Brand Guidelines (PRES-03 / Phase 17)
+  async getBrandGuidelines(): Promise<BrandGuidelines | undefined> {
+    const [row] = await db.select().from(brandGuidelines);
+    return row;
+  }
+
+  async upsertBrandGuidelines(content: string): Promise<BrandGuidelines> {
+    const existing = await this.getBrandGuidelines();
+    if (existing) {
+      const [row] = await db
+        .update(brandGuidelines)
+        .set({ content, updatedAt: new Date() })
+        .where(eq(brandGuidelines.id, existing.id))
+        .returning();
+      return row;
+    }
+    const [row] = await db.insert(brandGuidelines).values({ content }).returning();
+    return row;
   }
 }
 
