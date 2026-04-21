@@ -151,7 +151,7 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 **Goal**: The database schema for presentations exists, `@anthropic-ai/sdk` is installed and reachable from the server, and every downstream phase has a typed foundation to build on.
 **Depends on**: Nothing (first phase of v1.4)
 **Requirements**: PRES-01, PRES-02, PRES-03, PRES-04
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 **Success Criteria** (what must be TRUE):
   1. A raw SQL migration script runs without error and creates `presentations`, `presentation_views`, and `brand_guidelines` tables with the correct columns, constraints, and cascade-delete rules — `SELECT * FROM presentations LIMIT 1` returns an empty result set, not an error.
   2. `shared/schema/presentations.ts` exports Drizzle table definitions and Zod validators (`insertPresentationSchema`, `selectPresentationSchema`, `slideBlockSchema`) that TypeScript compiles against without errors.
@@ -230,7 +230,7 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 | 12. Admin Redesign + Core Editing | 3/3 | Done | 2026-04-20 |
 | 13. Icon Picker, Theme Editor & Live Preview | 3/3 | Done | 2026-04-20 |
 | 14. Public Page Rendering + Click Tracking | 1/1 | Done | 2026-04-20 |
-| 15. Schema & Foundation | 0/2 | Not started | - |
+| 15. Schema & Foundation | 0/2 | Complete    | 2026-04-21 |
 | 16. Admin CRUD API | 0/? | Not started | - |
 | 17. Brand Guidelines | 0/? | Not started | - |
 | 18. AI Authoring Endpoint | 0/? | Not started | - |
