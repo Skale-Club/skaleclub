@@ -50,7 +50,14 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 
 ### Active
 
-- **PRES-01 → PRES-XX**: v1.4 Admin Presentations Page (see REQUIREMENTS.md)
+- **PRES-05 → PRES-22**: v1.4 Admin Presentations Page — phases 16–20 remaining (see REQUIREMENTS.md)
+
+### Validated (v1.4 Phase 15)
+
+- ✓ **PRES-01**: `presentations` table — UUID PK/slug, JSONB slides, TEXT guidelines_snapshot, version, accessCode — Validated in Phase 15: Schema & Foundation
+- ✓ **PRES-02**: `presentation_views` event-log — UUID FK → presentations cascade delete, ip_hash TEXT — Validated in Phase 15: Schema & Foundation
+- ✓ **PRES-03**: `brand_guidelines` singleton table — id, content (text), updatedAt — Validated in Phase 15: Schema & Foundation
+- ✓ **PRES-04**: `@anthropic-ai/sdk` installed + `getAnthropicClient()` lazy-init singleton separate from OpenAI/Groq shim — Validated in Phase 15: Schema & Foundation
 
 ### Out of Scope
 
@@ -112,4 +119,4 @@ This document evolves at phase transitions and milestone boundaries.
 ---
 - v1.3 shipped 2026-04-20: Links Page Upgrade (5 phases, 10 plans, 17/17 requirements — Supabase uploads, icon picker, click analytics, drag-reorder, theme editor, live preview, public rendering)
 
-*Last updated: 2026-04-20 — milestone v1.4 Admin Presentations Page started*
+*Last updated: 2026-04-21 — Phase 15 complete; DB schema, Drizzle types, Zod validators, storage stubs, and Anthropic SDK singleton all shipped*
