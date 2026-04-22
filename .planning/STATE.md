@@ -3,19 +3,19 @@ gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Admin Presentations Page
 status: executing
-last_updated: "2026-04-21T22:30:00.000Z"
-last_activity: 2026-04-21 — Phase 17 verified + gap fixes committed; Phase 18 next
+last_updated: "2026-04-22T00:39:19.632Z"
+last_activity: 2026-04-22
 progress:
   total_phases: 11
   completed_phases: 8
-  total_plans: 14
-  completed_plans: 14
+  total_plans: 16
+  completed_plans: 15
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** Executing Phase 17
+**Status:** Ready to execute
 
 ---
 
@@ -24,16 +24,16 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-04-20)
 
 **Core value:** Admin builds branded slide decks by conversing with Claude — no WYSIWYG — and shares them as fullscreen bilingual experiences at `/p/:slug`.
-**Current focus:** Phase 18 — AI Authoring Endpoint
+**Current focus:** Phase 18 — ai-authoring-endpoint
 
 ---
 
 ## Current Position
 
-Phase: 18 (AI Authoring Endpoint) — PLANNING
-Plan: 0 of 1
-Status: Ready to plan Phase 18
-Last activity: 2026-04-21 — Phase 17 verified and complete; Phase 18 next
+Phase: 18 (ai-authoring-endpoint) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
+Last activity: 2026-04-22
 
 ---
 
@@ -62,6 +62,7 @@ Last activity: 2026-04-21 — Phase 17 verified and complete; Phase 18 next
 | Phase 15-schema-foundation P02 | 3min | 2 tasks | 3 files |
 | Phase 16-admin-crud-api P01 | 2min | 2 tasks | 3 files |
 | Phase 17-brand-guidelines P01 | 6min | 3 tasks | 12 files |
+| Phase 18-ai-authoring-endpoint P01 | 5min | 2 tasks | 2 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -161,6 +162,8 @@ Last activity: 2026-04-21 — Phase 17 verified and complete; Phase 18 next
 - [Phase 16-admin-crud-api]: IStorage interface declarations added before UI work — closes interface gap so DatabaseStorage satisfies full contract
 - [Phase 17-brand-guidelines]: GET /api/brand-guidelines is public (no auth) — Phase 18 AI endpoint reads it server-side without user session
 - [Phase 17-brand-guidelines]: BrandGuidelinesSection at /admin/presentations — Phase 19 expands this same route with presentations list + chat panel
+- [Phase 18-ai-authoring-endpoint]: Use relative path ../../../shared/schema.js in npx tsx scripts — #shared/ alias requires bundler not available in standalone tsx
+- [Phase 18-ai-authoring-endpoint]: Force-add .env.example with git add -f — gitignored by .env.* but previously tracked; developer documentation belongs in repo
 
 ### Quick Tasks Completed
 

@@ -27,7 +27,7 @@
 ### AI Authoring
 
 - [ ] **PRES-11**: `POST /api/presentations/:id/chat` — SSE streaming endpoint; accepts `{ message: string }`; loads current `brand_guidelines.content` as Claude system prompt; sends current `slides` as context; calls Claude via `tool_use` for structured `SlideBlock[]` output; streams `data:` progress events to client; saves final slides + `guidelinesSnapshot` to DB after stream ends. Admin-auth required.
-- [ ] **PRES-12**: SlideBlock JSON schema supports 8 layout variants (`cover`, `section-break`, `title-body`, `bullets`, `stats`, `two-column`, `image-focus`, `closing`) with bilingual fields: `heading`/`headingPt`, `body`/`bodyPt`, `bullets: string[]`/`bulletsPt: string[]`. Schema validated via Zod on every DB write.
+- [x] **PRES-12**: SlideBlock JSON schema supports 8 layout variants (`cover`, `section-break`, `title-body`, `bullets`, `stats`, `two-column`, `image-focus`, `closing`) with bilingual fields: `heading`/`headingPt`, `body`/`bodyPt`, `bullets: string[]`/`bulletsPt: string[]`. Schema validated via Zod on every DB write.
 - [ ] **PRES-13**: Admin can request per-slide edits in chat (e.g. "edit slide 3 — shorten the body") — the AI receives the full current `SlideBlock[]` context and returns an updated array with only the targeted slide(s) changed; other slides are preserved verbatim.
 
 ### Admin Chat Editor
@@ -73,7 +73,7 @@
 | PRES-09 | Phase 17 | Complete |
 | PRES-10 | Phase 17 | Complete |
 | PRES-11 | Phase 18 | Pending |
-| PRES-12 | Phase 18 | Pending |
+| PRES-12 | Phase 18 | Complete |
 | PRES-13 | Phase 18 | Pending |
 | PRES-14 | Phase 19 | Pending |
 | PRES-15 | Phase 19 | Pending |
