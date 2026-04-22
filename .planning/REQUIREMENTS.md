@@ -25,13 +25,13 @@
 
 ### API Endpoints
 
-- [ ] **BLOG-13**: `GET /api/blog/settings` (no auth required) — returns current `blog_settings` row or safe defaults `{ enabled: false, postsPerDay: 0, seoKeywords: "", enableTrendAnalysis: false, promptStyle: "" }` if no row exists. `PUT /api/blog/settings` (admin-auth required) — upserts settings, returns saved row.
-- [ ] **BLOG-14**: `POST /api/blog/generate` (admin-auth required) — triggers manual generation (`manual: true`). Returns `{ jobId, postId, post }` on success, `{ skipped, reason }` if skipped, `{ error }` on failure. Does NOT require `enabled: true` (manual bypasses the enabled check but still requires settings to exist in DB).
-- [ ] **BLOG-15**: `POST /api/blog/cron/generate` (no session auth) — validates `Authorization: Bearer {CRON_SECRET}` header against `process.env.CRON_SECRET`. Returns 401 if missing/wrong. Calls `BlogGenerator.generate({ manual: false })`. Returns `{ skipped, reason }` or `{ jobId, postId }`.
+- [x] **BLOG-13**: `GET /api/blog/settings` (no auth required) — returns current `blog_settings` row or safe defaults `{ enabled: false, postsPerDay: 0, seoKeywords: "", enableTrendAnalysis: false, promptStyle: "" }` if no row exists. `PUT /api/blog/settings` (admin-auth required) — upserts settings, returns saved row.
+- [x] **BLOG-14**: `POST /api/blog/generate` (admin-auth required) — triggers manual generation (`manual: true`). Returns `{ jobId, postId, post }` on success, `{ skipped, reason }` if skipped, `{ error }` on failure. Does NOT require `enabled: true` (manual bypasses the enabled check but still requires settings to exist in DB).
+- [x] **BLOG-15**: `POST /api/blog/cron/generate` (no session auth) — validates `Authorization: Bearer {CRON_SECRET}` header against `process.env.CRON_SECRET`. Returns 401 if missing/wrong. Calls `BlogGenerator.generate({ manual: false })`. Returns `{ skipped, reason }` or `{ jobId, postId }`.
 
 ### Cron (Persistent Environments)
 
-- [ ] **BLOG-16**: `server/cron.ts` — starts a `setInterval` (every 60 minutes) that calls `BlogGenerator.generate({ manual: false })` only when `process.env.VERCEL` is falsy. Exported as `startCron()`, called from `server/index.ts` startup.
+- [x] **BLOG-16**: `server/cron.ts` — starts a `setInterval` (every 60 minutes) that calls `BlogGenerator.generate({ manual: false })` only when `process.env.VERCEL` is falsy. Exported as `startCron()`, called from `server/index.ts` startup.
 
 ### Admin UI
 
@@ -65,10 +65,10 @@
 | BLOG-10 | Phase 22 | Complete |
 | BLOG-11 | Phase 22 | Complete |
 | BLOG-12 | Phase 22 | Complete |
-| BLOG-13 | Phase 23 | Pending |
-| BLOG-14 | Phase 23 | Pending |
-| BLOG-15 | Phase 23 | Pending |
-| BLOG-16 | Phase 23 | Pending |
+| BLOG-13 | Phase 23 | Complete |
+| BLOG-14 | Phase 23 | Complete |
+| BLOG-15 | Phase 23 | Complete |
+| BLOG-16 | Phase 23 | Complete |
 | BLOG-17 | Phase 24 | Pending |
 | BLOG-18 | Phase 24 | Pending |
 | BLOG-19 | Phase 24 | Pending |

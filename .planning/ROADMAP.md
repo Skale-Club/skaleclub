@@ -119,7 +119,7 @@ Plans:
 **Goal**: Admin can read/save blog automation settings and trigger manual generation via REST; Vercel cron (GitHub Actions) can trigger scheduled generation; persistent environments start an hourly cron automatically.
 **Depends on**: Phase 22 (BlogGenerator must exist)
 **Requirements**: BLOG-13, BLOG-14, BLOG-15, BLOG-16
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 **Success Criteria** (what must be TRUE):
   1. `GET /api/blog/settings` returns a 200 with safe defaults even when no DB row exists — never a 404 or 500.
   2. `PUT /api/blog/settings` (admin-auth) upserts the row; a subsequent `GET` returns the saved values.
@@ -148,7 +148,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 21. Schema & Storage Foundation | 1/1 | Complete   | 2026-04-22 |
 | 22. Blog Generator Engine | 2/2 | Complete   | 2026-04-22 |
-| 23. API Endpoints + Cron | 0/1 | Not started | - |
+| 23. API Endpoints + Cron | 1/1 | Complete   | 2026-04-22 |
 | 24. Admin UI — Automation Settings | 0/1 | Not started | - |
 
 ---
