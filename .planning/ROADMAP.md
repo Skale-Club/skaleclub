@@ -152,7 +152,7 @@ Plans:
 | 21. Schema & Storage Foundation | 1/1 | Complete   | 2026-04-22 |
 | 22. Blog Generator Engine | 2/2 | Complete   | 2026-04-22 |
 | 23. API Endpoints + Cron | 1/1 | Complete    | 2026-04-22 |
-| 24. Admin UI — Automation Settings | 2/2 | Complete   | 2026-04-22 |
+| 24. Admin UI — Automation Settings | 2/2 | Complete    | 2026-04-22 |
 
 ---
 
