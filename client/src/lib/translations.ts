@@ -344,6 +344,39 @@ export const translations = {
     'Refresh': 'Atualizar',
     'Refresh preview': 'Atualizar pré-visualização',
     'Updates automatically after each save. Click Refresh to force reload.': 'Atualiza automaticamente após cada salvamento. Clique em Atualizar para recarregar.',
+
+    // Admin — Brand Guidelines (Phase 17)
+    'Brand Guidelines': 'Diretrizes de Marca',
+    'Define your brand voice, colors, fonts, and rules for Claude to follow when building slides.': 'Defina a voz da marca, cores, fontes e regras para o Claude seguir ao criar slides.',
+    'Guidelines document': 'Documento de diretrizes',
+    'Write in Markdown. Describe logo usage, primary colors, fonts, tone of voice, and any "always include / never include" rules. Claude reads this before generating each presentation.': 'Escreva em Markdown. Descreva o uso do logotipo, cores primárias, fontes, tom de voz e quaisquer regras de "sempre incluir / nunca incluir". O Claude lê isso antes de gerar cada apresentação.',
+    'Brand guidelines saved': 'Diretrizes de marca salvas',
+    'Claude will use these guidelines when generating slides.': 'O Claude usará essas diretrizes ao gerar slides.',
+    'Save failed': 'Falha ao salvar',
+    'Save guidelines': 'Salvar diretrizes',
+    'Presentations': 'Apresentações',
+    'Build AI-powered slide decks and share them as immersive fullscreen experiences.': 'Crie apresentações com IA e compartilhe-as como experiências imersivas em tela cheia.',
+
+    // Admin — Presentations Section (Phase 19)
+    'New Presentation': 'Nova Apresentação',
+    'Open Editor': 'Abrir Editor',
+    'Back to presentations': 'Voltar às apresentações',
+    'Delete presentation?': 'Excluir apresentação?',
+    'This will permanently remove this presentation. This action cannot be undone.': 'Isso removerá permanentemente esta apresentação. Esta ação não pode ser desfeita.',
+    'Presentation deleted': 'Apresentação excluída',
+    'Failed to delete presentation': 'Falha ao excluir apresentação',
+    'Presentation created': 'Apresentação criada',
+    'Slides saved': 'Slides salvos',
+    'Failed to save slides': 'Falha ao salvar slides',
+    'No presentations yet': 'Nenhuma apresentação ainda',
+    'Create your first presentation to get started.': 'Crie sua primeira apresentação para começar.',
+    'slides': 'slides',
+    'Slide preview': 'Pré-visualização dos slides',
+    'JSON — paste Claude Code output here': 'JSON — cole a saída do Claude Code aqui',
+    'Invalid JSON': 'JSON inválido',
+    'Link copied': 'Link copiado',
+    'Copy failed': 'Falha ao copiar',
+    'No slides yet': 'Nenhum slide ainda',
   }
 } as const;
 
