@@ -248,9 +248,15 @@ function BlogAutomationPanel() {
   );
 }
 
+const BLOG_TABS = [
+  { id: 'posts' as const, label: 'Posts', icon: FileText },
+  { id: 'automation' as const, label: 'Automation', icon: Zap },
+] as const;
+
 export function BlogSection({ resetSignal }: { resetSignal: number }) {
   const { toast } = useToast();
   const pagePaths = usePagePaths();
+  const [activeTab, setActiveTab] = useState<'posts' | 'automation'>('posts');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'title-asc' | 'title-desc' | 'status'>('newest');
@@ -1102,6 +1108,28 @@ export function BlogSection({ resetSignal }: { resetSignal: number }) {
 
   return (
     <div className="space-y-6">
+      {/* Tab strip */}
+      <div className="flex gap-1.5 bg-muted p-1.5 rounded-lg overflow-x-auto">
+        {BLOG_TABS.map(tab => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-all flex-1 min-w-0 justify-center ${
+              activeTab === tab.id
+                ? 'bg-white dark:bg-card border-border shadow-sm'
+                : 'bg-transparent border-transparent hover:bg-white/50 dark:hover:bg-card/50'
+            }`}
+          >
+            <tab.icon className="w-4 h-4 shrink-0" />
+            <span className="truncate">{tab.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Tab content */}
+      {activeTab === 'posts' && (
+      <div className="space-y-6">
       <SectionHeader
         title="Blog"
         description="Articles, drafts and SEO-optimized content"
@@ -1313,6 +1341,9 @@ export function BlogSection({ resetSignal }: { resetSignal: number }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </div>
+      )}
+      {activeTab === 'automation' && <BlogAutomationPanel />}
     </div>
   );
 }
