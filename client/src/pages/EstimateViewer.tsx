@@ -121,28 +121,22 @@ function SectionContent({ index, data, lang }: { index: number; data: PublicEsti
 
   // Cover
   if (index === 0) {
-    const hasCompany = !!data.companyName?.trim();
-    const hasContact = !!data.contactName?.trim();
+    const company = data.companyName?.trim();
+    const contact = data.contactName?.trim();
+    const headline = company || contact || data.clientName;
+    const subtitle = company && contact ? contact : null;
     return (
       <>
         {gradientOverlay}
         <div className="text-center px-8 max-w-xl mx-auto w-full">
-          <p className="text-zinc-400 text-sm uppercase tracking-widest mb-4">{t.proposalFor}</p>
-          {hasCompany ? (
-            <>
-              <h1 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-5xl font-semibold text-white leading-tight">
-                {data.companyName}
-              </h1>
-              {hasContact && (
-                <p className="text-zinc-300 text-xl mt-3">{data.contactName}</p>
-              )}
-            </>
-          ) : (
-            <h1 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-5xl font-semibold text-white leading-tight">
-              {data.contactName}
-            </h1>
+          <p className="text-zinc-400 text-sm uppercase tracking-widest mb-6">{t.proposalFor}</p>
+          <h1 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-5xl font-semibold text-white leading-tight">
+            {headline}
+          </h1>
+          {subtitle && (
+            <p className="text-zinc-300 text-xl mt-4">{subtitle}</p>
           )}
-          <p className="text-zinc-400 text-sm mt-6">Skale Club</p>
+          <p className="text-zinc-500 text-xs uppercase tracking-widest mt-8">Skale Club</p>
         </div>
       </>
     );
