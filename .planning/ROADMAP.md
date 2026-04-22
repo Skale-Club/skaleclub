@@ -16,7 +16,7 @@
 - [ ] **Phase 16: Admin CRUD API** — Storage layer + all non-AI presentations endpoints
 - [ ] **Phase 17: Brand Guidelines** — Guidelines singleton endpoints + admin editor UI
 - [ ] **Phase 18: AI Authoring Endpoint** — SSE streaming endpoint with Claude tool_use + SlideBlock Zod schema
-- [ ] **Phase 19: Admin Chat Editor** — Split-view chat panel + slide preview panel in admin
+- [ ] **Phase 19: Admin Presentations Editor** — Presentations list + JSON editor + slide mini-preview in admin
 - [ ] **Phase 20: Public Viewer** — `/p/:slug` fullscreen viewer, access code gate, language switcher, view tracking
 
 ## Phases
@@ -201,16 +201,16 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 - [x] 18-01-PLAN.md — Wave 0: ANTHROPIC_API_KEY in .env.example + slideBlockSchema Zod unit test (PRES-12)
 - [x] 18-02-PLAN.md — Wave 1: server/routes/presentationsChat.ts SSE endpoint + route registration (PRES-11, PRES-12, PRES-13)
 
-### Phase 19: Admin Chat Editor
-**Goal**: Admin can open a presentation's editor, converse with Claude to build or refine slides, and see a live mini-preview of the current deck — all within the admin dashboard.
-**Depends on**: Phase 16 (CRUD API for list/create/delete), Phase 18 (SSE streaming endpoint must exist)
+### Phase 19: Admin Presentations Editor
+**Goal**: Admin can manage presentations and edit their slides via a JSON editor with a live mini-preview — slides are authored by conversing with Claude Code (IDE) and pasting the resulting JSON.
+**Depends on**: Phase 16 (CRUD API for list/create/delete)
 **Requirements**: PRES-14, PRES-15, PRES-16
 **Plans**: TBD
 **Success Criteria** (what must be TRUE):
   1. Admin Presentations tab shows a list of all presentations with `title`, slide-count, view-count badge, a copy-link button, a delete button, and an "Open Editor" button per row; clicking delete shows a confirmation and removes the row without a page reload.
-  2. Clicking "Open Editor" opens a split-view panel: chat panel on the left with a scrollable message history and a text input, slide preview panel on the right showing current slides as mini cards — both panels are visible simultaneously on desktop without horizontal scrolling.
-  3. Submitting a chat message streams the AI response into the chat panel in real time (tokens appear as they arrive); when the stream ends, the slide preview panel automatically refreshes to show the updated `SlideBlock[]`.
-  4. Clicking any slide mini card in the preview panel inserts a reference to that slide number (e.g. "Slide 3:") into the chat input field, allowing targeted follow-up edits without manual typing of the slide number.
+  2. Clicking "Open Editor" opens an editor view: a monospace JSON textarea showing the current `SlideBlock[]` (editable), a Save button that calls `PUT /api/presentations/:id`, and a slide preview panel showing current slides as mini cards.
+  3. Admin edits the JSON (e.g. pastes Claude Code output), clicks Save, and the slide mini-cards update to reflect the new `SlideBlock[]`; invalid JSON shows an inline parse error without saving.
+  4. Each slide mini-card shows the layout type and the `heading` field (or layout name as fallback); cards are visible at a glance without horizontal scrolling on desktop.
 **UI hint**: yes
 
 ### Phase 20: Public Viewer
