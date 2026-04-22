@@ -13,6 +13,8 @@ import {
   faqs,
   integrationSettings,
   blogPosts,
+  blogSettings,
+  blogGenerationJobs,
   portfolioServices,
   estimates,
   estimateViews,
@@ -45,6 +47,8 @@ import {
   type Faq,
   type IntegrationSettings,
   type BlogPost,
+  type BlogSettings,
+  type BlogGenerationJob,
   type PortfolioService,
   type SalesRep,
   type SalesLead,
@@ -75,6 +79,8 @@ import {
   type InsertFaq,
   type InsertIntegrationSettings,
   type InsertBlogPost,
+  type InsertBlogSettings,
+  type InsertBlogGenerationJob,
   type InsertSalesRep,
   type InsertSalesLead,
   type InsertSalesLeadLocation,
@@ -644,6 +650,10 @@ export interface IStorage {
   updateBlogPost(id: number, post: Partial<InsertBlogPost>): Promise<BlogPost>;
   deleteBlogPost(id: number): Promise<void>;
   countPublishedBlogPosts(): Promise<number>;
+  getBlogSettings(): Promise<BlogSettings | undefined>;
+  upsertBlogSettings(data: InsertBlogSettings): Promise<BlogSettings>;
+  createBlogGenerationJob(data: InsertBlogGenerationJob): Promise<BlogGenerationJob>;
+  updateBlogGenerationJob(id: number, data: Partial<InsertBlogGenerationJob>): Promise<BlogGenerationJob>;
 
   // Portfolio Services
   getPortfolioServices(): Promise<PortfolioService[]>;
@@ -1775,6 +1785,41 @@ export class DatabaseStorage implements IStorage {
       .from(blogPosts)
       .where(eq(blogPosts.status, 'published'));
     return Number(result[0]?.count || 0);
+  }
+
+  async getBlogSettings(): Promise<BlogSettings | undefined> {
+    const [settings] = await db.select().from(blogSettings).orderBy(asc(blogSettings.id)).limit(1);
+    return settings;
+  }
+
+  async upsertBlogSettings(data: InsertBlogSettings): Promise<BlogSettings> {
+    const existing = await this.getBlogSettings();
+
+    if (existing) {
+      const [updated] = await db
+        .update(blogSettings)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(blogSettings.id, existing.id))
+        .returning();
+      return updated;
+    }
+
+    const [created] = await db.insert(blogSettings).values(data).returning();
+    return created;
+  }
+
+  async createBlogGenerationJob(data: InsertBlogGenerationJob): Promise<BlogGenerationJob> {
+    const [created] = await db.insert(blogGenerationJobs).values(data).returning();
+    return created;
+  }
+
+  async updateBlogGenerationJob(id: number, data: Partial<InsertBlogGenerationJob>): Promise<BlogGenerationJob> {
+    const [updated] = await db
+      .update(blogGenerationJobs)
+      .set(data)
+      .where(eq(blogGenerationJobs.id, id))
+      .returning();
+    return updated;
   }
 
   // Portfolio Services
