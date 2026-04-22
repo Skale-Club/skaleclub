@@ -99,6 +99,13 @@ None — this plan only creates documentation and a test file. No UI or data-flo
 - Ready for Plan 18-02: implement `POST /api/presentations/:id/chat` SSE endpoint
 - `slideBlockSchema` confirmed valid for all 8 variants — safe to use in Zod parse gate inside the chat route
 
+## Self-Check: PASSED
+
+- `server/lib/__tests__/slideBlockSchema.test.ts` — FOUND
+- `.env.example` — FOUND (contains ANTHROPIC_API_KEY)
+- `.planning/phases/18-ai-authoring-endpoint/18-01-SUMMARY.md` — FOUND
+- Commits `da219ce`, `6cfe98d` — FOUND in git log
+
 ---
 *Phase: 18-ai-authoring-endpoint*
 *Completed: 2026-04-22*
