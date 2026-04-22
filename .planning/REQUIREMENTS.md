@@ -32,9 +32,9 @@
 
 ### Admin Presentations Editor
 
-- [ ] **PRES-14**: Admin **Presentations** tab shows list of all presentations with title, slide count, view count badge, copy-link button, delete button, and an "Open Editor" button per row.
-- [ ] **PRES-15**: Presentation editor opens showing: a monospace JSON textarea with the current `SlideBlock[]` (editable); a Save button that calls `PUT /api/presentations/:id`; and a slide preview panel showing current slides as mini cards.
-- [ ] **PRES-16**: Slide preview panel shows each `SlideBlock` as a mini card with its layout type and heading visible; the JSON textarea reflects the saved state; admin edits JSON and saves to update slides.
+- [x] **PRES-14**: Admin **Presentations** tab shows list of all presentations with title, slide count, view count badge, copy-link button, delete button, and an "Open Editor" button per row.
+- [x] **PRES-15**: Presentation editor opens showing: a monospace JSON textarea with the current `SlideBlock[]` (editable); a Save button that calls `PUT /api/presentations/:id`; and a slide preview panel showing current slides as mini cards.
+- [x] **PRES-16**: Slide preview panel shows each `SlideBlock` as a mini card with its layout type and heading visible; the JSON textarea reflects the saved state; admin edits JSON and saves to update slides.
 
 ### Public Viewer
 
@@ -76,9 +76,9 @@
 | PRES-11 | Phase 18 | Complete |
 | PRES-12 | Phase 18 | Complete |
 | PRES-13 | Phase 18 | Complete |
-| PRES-14 | Phase 19 | Pending |
-| PRES-15 | Phase 19 | Pending |
-| PRES-16 | Phase 19 | Pending |
+| PRES-14 | Phase 19 | Complete |
+| PRES-15 | Phase 19 | Complete |
+| PRES-16 | Phase 19 | Complete |
 | PRES-17 | Phase 20 | Pending |
 | PRES-18 | Phase 20 | Pending |
 | PRES-19 | Phase 20 | Pending |

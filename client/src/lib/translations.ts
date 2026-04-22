@@ -356,6 +356,27 @@ export const translations = {
     'Save guidelines': 'Salvar diretrizes',
     'Presentations': 'Apresentações',
     'Build AI-powered slide decks and share them as immersive fullscreen experiences.': 'Crie apresentações com IA e compartilhe-as como experiências imersivas em tela cheia.',
+
+    // Admin — Presentations Section (Phase 19)
+    'New Presentation': 'Nova Apresentação',
+    'Open Editor': 'Abrir Editor',
+    'Back to presentations': 'Voltar às apresentações',
+    'Delete presentation?': 'Excluir apresentação?',
+    'This will permanently remove this presentation. This action cannot be undone.': 'Isso removerá permanentemente esta apresentação. Esta ação não pode ser desfeita.',
+    'Presentation deleted': 'Apresentação excluída',
+    'Failed to delete presentation': 'Falha ao excluir apresentação',
+    'Presentation created': 'Apresentação criada',
+    'Slides saved': 'Slides salvos',
+    'Failed to save slides': 'Falha ao salvar slides',
+    'No presentations yet': 'Nenhuma apresentação ainda',
+    'Create your first presentation to get started.': 'Crie sua primeira apresentação para começar.',
+    'slides': 'slides',
+    'Slide preview': 'Pré-visualização dos slides',
+    'JSON — paste Claude Code output here': 'JSON — cole a saída do Claude Code aqui',
+    'Invalid JSON': 'JSON inválido',
+    'Link copied': 'Link copiado',
+    'Copy failed': 'Falha ao copiar',
+    'No slides yet': 'Nenhum slide ainda',
   }
 } as const;
 

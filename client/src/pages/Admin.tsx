@@ -24,7 +24,7 @@ import { LinksSection } from '@/components/admin/LinksSection';
 import { VCardsManager } from '@/components/admin/VCardsManager';
 import { XpotSalesSection } from '@/components/admin/XpotSalesSection';
 import { EstimatesSection } from '@/components/admin/EstimatesSection';
-import { BrandGuidelinesSection } from '@/components/admin/BrandGuidelinesSection';
+import { PresentationsSection } from '@/components/admin/PresentationsSection';
 import { SIDEBAR_MENU_ITEMS } from '@/components/admin/shared/constants';
 import { SectionHeader } from '@/components/admin/shared';
 import type { AdminSection, CompanySettingsData } from '@/components/admin/shared/types';
@@ -212,7 +212,7 @@ function AdminContent() {
             {activeSection === 'vcards' && <VCardsManager />}
             {activeSection === 'fieldSales' && <XpotSalesSection />}
             {activeSection === 'estimates' && <EstimatesSection />}
-            {activeSection === 'presentations' && <BrandGuidelinesSection />}
+            {activeSection === 'presentations' && <PresentationsSection />}
           </div>
         )}
       </main>
