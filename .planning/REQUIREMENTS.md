@@ -32,9 +32,9 @@
 
 ### Admin Chat Editor
 
-- [ ] **PRES-14**: Admin **Presentations** tab shows list of all presentations with title, slide count, view count badge, copy-link button, delete button, and an "Open Editor" button per row.
-- [ ] **PRES-15**: Presentation editor opens in a split-view panel: **chat panel** (left) with message history + input that sends to `/api/presentations/:id/chat` and streams the response; **slide preview panel** (right) showing current SlideBlock[] as mini cards.
-- [ ] **PRES-16**: Slide preview panel updates automatically after each AI response completes; admin can click any mini card to quote that slide number into the chat input for targeted edits.
+- [x] **PRES-14**: Admin **Presentations** tab shows list of all presentations with title, slide count, view count badge, copy-link button, delete button, and an "Open Editor" button per row.
+- [x] **PRES-15**: Presentation editor opens in a split-view panel: **chat panel** (left) with message history + input that sends to `/api/presentations/:id/chat` and streams the response; **slide preview panel** (right) showing current SlideBlock[] as mini cards.
+- [x] **PRES-16**: Slide preview panel updates automatically after each AI response completes; admin can click any mini card to quote that slide number into the chat input for targeted edits.
 
 ### Public Viewer
 
@@ -75,9 +75,9 @@
 | PRES-11 | Phase 18 | Pending |
 | PRES-12 | Phase 18 | Pending |
 | PRES-13 | Phase 18 | Pending |
-| PRES-14 | Phase 19 | Pending |
-| PRES-15 | Phase 19 | Pending |
-| PRES-16 | Phase 19 | Pending |
+| PRES-14 | Phase 19 | Complete |
+| PRES-15 | Phase 19 | Complete |
+| PRES-16 | Phase 19 | Complete |
 | PRES-17 | Phase 20 | Pending |
 | PRES-18 | Phase 20 | Pending |
 | PRES-19 | Phase 20 | Pending |

@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.4
-milestone_name: Admin Presentations Page
-status: defining-requirements
-last_updated: "2026-04-20"
-last_activity: "2026-04-20 — Milestone v1.4 started"
+milestone: v1.0
+milestone_name: milestone
+status: Defining requirements for v1.4 Admin Presentations Page
+last_updated: "2026-04-22T02:03:41.693Z"
+last_activity: 2026-04-20 — Milestone v1.4 started
 progress:
-  total_phases: 0
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_phases: 5
+  completed_phases: 5
+  total_plans: 10
+  completed_plans: 10
 ---
 
 # STATE: Skale Club Web Platform
@@ -58,6 +58,7 @@ Last activity: 2026-04-20 — Milestone v1.4 started
 | Phase 13-icon-picker-theme-live-preview P02 | 15min | 2 tasks | 4 files |
 | Phase 13 P03 | ~5min | 2 tasks | 4 files |
 | Phase 14-public-rendering-click-tracking P01 | ~4m | 3 tasks | 1 files |
+| Phase 19 P01 | ~4min | 2 tasks | 8 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -147,6 +148,8 @@ Last activity: 2026-04-20 — Milestone v1.4 started
 - [Phase 14-public-rendering-click-tracking]: CSS custom property via inline style + Tailwind arbitrary value bg-[var(--links-primary)]/20 drives theme-colored ambient glow — zero tailwind.config edit needed
 - [Phase 14-public-rendering-click-tracking]: Track all link clicks including cmd/ctrl/shift/middle-click — no modifier inspection; sendBeacon + no preventDefault counts open-in-new-tab too
 - [Phase 14-public-rendering-click-tracking]: Spread React Query cache array before sort — [...config.links].sort(...).filter(...) never mutates cache (v1.3 pattern for public pages consuming cached admin data)
+- [Phase 19-admin-chat-editor]: key={selectedId} re-mount strategy for editor state reset — zero extra code
+- [Phase 19-admin-chat-editor]: PresentationsSection co-locates SlideCard + PresentationEditor in one file (matches EstimatesSection pattern, 355 lines)
 
 ### Quick Tasks Completed
 
