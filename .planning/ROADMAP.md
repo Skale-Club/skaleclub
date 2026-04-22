@@ -205,7 +205,7 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 **Goal**: Admin can manage presentations and edit their slides via a JSON editor with a live mini-preview — slides are authored by conversing with Claude Code (IDE) and pasting the resulting JSON.
 **Depends on**: Phase 16 (CRUD API for list/create/delete)
 **Requirements**: PRES-14, PRES-15, PRES-16
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
 - [ ] 19-01-PLAN.md — PresentationsSection list + JSON editor + slide mini-cards + Admin.tsx wire-up (PRES-14, PRES-15, PRES-16)
 **Success Criteria** (what must be TRUE):
@@ -243,7 +243,7 @@ Plans:
 | 16. Admin CRUD API | 1/1 | Complete    | 2026-04-21 |
 | 17. Brand Guidelines | 0/1 | Not started | - |
 | 18. AI Authoring Endpoint | 2/2 | Complete    | 2026-04-22 |
-| 19. Admin Chat Editor | 0/1 | Planned     | - |
+| 19. Admin Chat Editor | 0/1 | Complete    | 2026-04-22 |
 | 20. Public Viewer | 0/? | Not started | - |
 
 ---
