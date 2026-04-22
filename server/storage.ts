@@ -654,6 +654,7 @@ export interface IStorage {
   upsertBlogSettings(data: InsertBlogSettings): Promise<BlogSettings>;
   createBlogGenerationJob(data: InsertBlogGenerationJob): Promise<BlogGenerationJob>;
   updateBlogGenerationJob(id: number, data: Partial<InsertBlogGenerationJob>): Promise<BlogGenerationJob>;
+  getLatestBlogGenerationJob(): Promise<BlogGenerationJob | undefined>;
 
   // Portfolio Services
   getPortfolioServices(): Promise<PortfolioService[]>;
@@ -1820,6 +1821,15 @@ export class DatabaseStorage implements IStorage {
       .where(eq(blogGenerationJobs.id, id))
       .returning();
     return updated;
+  }
+
+  async getLatestBlogGenerationJob(): Promise<BlogGenerationJob | undefined> {
+    const [job] = await db
+      .select()
+      .from(blogGenerationJobs)
+      .orderBy(desc(blogGenerationJobs.id))
+      .limit(1);
+    return job;
   }
 
   // Portfolio Services
