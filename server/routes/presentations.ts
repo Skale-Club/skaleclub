@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import crypto from "crypto";
 import { storage } from "../storage.js";
 import { insertPresentationSchema } from "#shared/schema.js";
 import { requireAdmin } from "./_shared.js";
@@ -10,7 +11,48 @@ export function registerPresentationsRoutes(app: Express) {
     try {
       const presentation = await storage.getPresentationBySlug(req.params.slug);
       if (!presentation) return res.status(404).json({ message: "Presentation not found" });
-      res.json(presentation);
+
+      // If presentation is gated and no code supplied — return metadata + empty slides
+      if (presentation.accessCode) {
+        const { accessCode, ...safe } = presentation as any;
+        return res.json({ ...safe, slides: [], hasAccessCode: true });
+      }
+
+      // No gate — return full presentation (strip accessCode field, add hasAccessCode:false)
+      const { accessCode, ...publicPresentation } = presentation as any;
+      res.json({ ...publicPresentation, hasAccessCode: false });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  // PRES-17 / PRES-21: Verify access code for a gated presentation
+  // IDs are UUID strings — do NOT call Number(req.params.id)
+  app.post("/api/presentations/:id/verify-code", async (req, res) => {
+    try {
+      const presentation = await storage.getPresentation(req.params.id);
+      if (!presentation) return res.status(404).json({ message: "Presentation not found" });
+      if (!presentation.accessCode) return res.json({ success: true });
+      const { code } = req.body as { code: string };
+      if (presentation.accessCode !== code) {
+        return res.status(401).json({ message: "Incorrect code" });
+      }
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  // PRES-17: Record view — called from client after gate is passed
+  // SHA-256 hash IP per ip_hash column intent (STATE.md Phase 15 decision)
+  app.post("/api/presentations/:id/view", async (req, res) => {
+    try {
+      const rawIp = ((req.headers["x-forwarded-for"] as string) || req.ip || "").toString();
+      const ipHash = rawIp
+        ? crypto.createHash("sha256").update(rawIp).digest("hex")
+        : undefined;
+      await storage.recordPresentationView(req.params.id, ipHash);
+      res.json({ success: true });
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
     }
