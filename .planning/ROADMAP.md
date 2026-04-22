@@ -240,7 +240,7 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 | 15. Schema & Foundation | 0/2 | Complete    | 2026-04-21 |
 | 16. Admin CRUD API | 1/1 | Complete    | 2026-04-21 |
 | 17. Brand Guidelines | 0/1 | Not started | - |
-| 18. AI Authoring Endpoint | 2/2 | Complete   | 2026-04-22 |
+| 18. AI Authoring Endpoint | 2/2 | Complete    | 2026-04-22 |
 | 19. Admin Chat Editor | 0/? | Not started | - |
 | 20. Public Viewer | 0/? | Not started | - |
 
