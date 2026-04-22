@@ -377,6 +377,18 @@ export const translations = {
     'Link copied': 'Link copiado',
     'Copy failed': 'Falha ao copiar',
     'No slides yet': 'Nenhum slide ainda',
+
+    // Presentation Viewer (Phase 20)
+    'Enter access code': 'Digite o código de acesso',
+    'Unlock Presentation': 'Desbloquear Apresentação',
+    'Incorrect code': 'Código incorreto',
+    'Verification failed. Try again.': 'Falha na verificação. Tente novamente.',
+    'Presentation not found': 'Apresentação não encontrada',
+    'This link may have expired or been removed.': 'Este link pode ter expirado ou sido removido.',
+    'Contact Skale Club for a new link.': 'Entre em contato com a Skale Club para obter um novo link.',
+    'Go to slide {n}': 'Ir para o slide {n}',
+    'Switch to Portuguese': 'Mudar para Português',
+    'Switch to English': 'Mudar para Inglês',
   }
 } as const;
 
