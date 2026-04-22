@@ -19,6 +19,11 @@ type StorageStub = {
   updateBlogGenerationJob(id: number, data: Partial<InsertBlogGenerationJob>): Promise<BlogGenerationJob>;
 };
 
+type StorageSpies = {
+  onCreateJob?: (data: InsertBlogGenerationJob) => void;
+  onUpdateJob?: (id: number, data: Partial<InsertBlogGenerationJob>) => void;
+};
+
 function createSettings(overrides: Partial<BlogSettings> = {}): BlogSettings {
   return {
     id: 1,
@@ -47,15 +52,17 @@ function createJob(overrides: Partial<BlogGenerationJob> = {}): BlogGenerationJo
   };
 }
 
-function createStorageStub(settings?: BlogSettings): StorageStub {
+function createStorageStub(settings?: BlogSettings, spies: StorageSpies = {}): StorageStub {
   return {
     async getBlogSettings() {
       return settings;
     },
     async createBlogGenerationJob(data) {
+      spies.onCreateJob?.(data);
       return createJob(data);
     },
     async updateBlogGenerationJob(id, data) {
+      spies.onUpdateJob?.(id, data);
       return createJob({ id, ...data });
     },
   };
@@ -124,6 +131,45 @@ async function expectManualBypass() {
   __resetBlogGeneratorTestDeps();
 }
 
+async function expectFailureCleanup() {
+  let createdJobCount = 0;
+  let failedUpdate: Partial<InsertBlogGenerationJob> | null = null;
+  let releasedLockCount = 0;
+
+  __setBlogGeneratorTestDeps({
+    storage: createStorageStub(createSettings(), {
+      onCreateJob: () => {
+        createdJobCount += 1;
+      },
+      onUpdateJob: (_id, data) => {
+        failedUpdate = data;
+      },
+    }),
+    acquireLock: async () => true,
+    releaseLock: async () => {
+      releasedLockCount += 1;
+    },
+    runPipeline: async () => {
+      throw new Error("pipeline exploded");
+    },
+    now: () => new Date("2026-04-22T12:00:00Z"),
+  });
+
+  await assert.rejects(
+    () => BlogGenerator.generate({ manual: false }),
+    /pipeline exploded/,
+  );
+
+  assert.ok(failedUpdate, "failed runs update the job record");
+  const failedUpdateData = failedUpdate as Partial<InsertBlogGenerationJob>;
+  assert.equal(createdJobCount, 1, "running job is created after the lock holder proceeds");
+  assert.equal(releasedLockCount, 1, "failed runs clear the global lock");
+  assert.equal(failedUpdateData.status, "failed", "failed runs mark the job as failed");
+  assert.ok(failedUpdateData.completedAt instanceof Date, "failed runs stamp completedAt");
+  assert.equal(failedUpdateData.error, "pipeline exploded", "failed runs persist the error message");
+  __resetBlogGeneratorTestDeps();
+}
+
 async function main() {
   await expectSkip("automatic run skips with no settings", { manual: false }, "no_settings");
   await expectSkip(
@@ -158,6 +204,7 @@ async function main() {
   );
   await expectSkip("manual run still requires a settings row", { manual: true }, "no_settings");
   await expectManualBypass();
+  await expectFailureCleanup();
 
   console.log("PASS: BlogGenerator skip and lock behavior matches the phase contract");
 }
