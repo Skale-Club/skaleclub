@@ -2,19 +2,20 @@
 
 ## What This Is
 
-Skale Club is an agency web platform combining a public marketing site, an admin dashboard, and a field sales CRM (Xpot). The Estimates System (v1.2) lets admins compose branded service proposals from the portfolio catalog and share them as immersive fullscreen scroll-snap experiences at a private `/e/:slug` link — with optional access code protection and view tracking.
+Skale Club is an agency web platform combining a public marketing site, an admin dashboard, and a field sales CRM (Xpot). The Estimates System (v1.2) lets admins compose branded service proposals from the portfolio catalog and share them as immersive fullscreen scroll-snap experiences at a private `/e/:slug` link. The Presentations System (v1.4) lets admins build AI-authored bilingual slide decks shared at `/p/:slug`.
 
-## Current Milestone: v1.4 Admin Presentations Page
+## Current Milestone: v1.5 Blog Post Automation
 
-**Goal:** Admin builds branded slide decks by conversing with Claude — no WYSIWYG — and shares them as fullscreen bilingual experiences at `/p/:slug`.
+**Goal:** Admin configures a Gemini-powered blog post generator that runs on schedule (cron or GitHub Actions) and creates SEO-optimized draft posts — with cover image generation and upload — ready for human review and publish.
 
 **Target features:**
-- Presentations DB schema (slides JSONB, language, version, access code)
-- Brand guidelines document — admin-authored, consumed as Claude's system prompt (logo, colors, fonts, tone, "always include / never include")
-- Conversational admin editor: chat with Claude to create/edit slides; Claude outputs structured JSON blocks (title, body, bullets, image)
-- Public fullscreen viewer `/p/:slug` — scroll-snap, isolated from Navbar/Footer, language via `?lang=en|pt-BR`
-- Bilingual authoring: admin generates EN + PT-BR versions
-- View tracking (mirrors estimate_views pattern)
+- `blog_settings` singleton table — enabled toggle, postsPerDay (0-4), SEO keywords, promptStyle, trend analysis flag, lastRunAt
+- `blog_generation_jobs` event-log table — tracks each generation run with status, error, and postId
+- `BlogGenerator` engine — Gemini pipeline: topic → structured JSON (title, HTML content, excerpt, metaDescription, focusKeyword, tags) → image generation → Supabase Storage upload → draft blog post
+- Global DB lock — prevents duplicate runs across Vercel workers
+- API endpoints: GET/POST `/api/blog/settings`, POST `/api/blog/generate` (admin), POST `/api/blog/cron/generate` (CRON_SECRET)
+- Cron job in `server/cron.ts` for persistent environments (disabled on Vercel)
+- Admin Blog > Automation Settings UI with config fields + "Generate Now" button
 
 ## Core Value
 
@@ -50,7 +51,7 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 
 ### Active
 
-- **PRES-14 → PRES-22**: v1.4 Admin Presentations Page — phases 19–20 remaining (see REQUIREMENTS.md)
+- **BLOG-01 → BLOG-19**: v1.5 Blog Post Automation — phases 21–24 (see REQUIREMENTS.md)
 
 ### Validated (v1.4 Phase 18)
 
@@ -89,7 +90,8 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 - v1.0 shipped 2026-03-30: Xpot tech debt remediation (64 files, 4 phases)
 - v1.1 shipped 2026-04-15: Multi-forms support (5 sub-phases, tracked in PAUL then synced to GSD)
 - v1.2 shipped 2026-04-20: Estimates System (4 phases, 8 plans, 62 files, +10,263 LOC)
-- v1.4 in progress 2026-04-21: Admin Presentations Page — Phases 15–18 complete (schema, CRUD API, brand guidelines, AI authoring endpoint); Phases 19–20 pending (admin chat editor, public viewer)
+- v1.4 shipped 2026-04-22: Admin Presentations Page (6 phases 15–20, 22/22 requirements — schema, CRUD API, brand guidelines, AI authoring SSE, admin chat editor, public viewer)
+- v1.5 in progress 2026-04-22: Blog Post Automation — Phases 21–24 (schema, generator, endpoints, admin UI)
 - Stack: TypeScript/React + Express + Drizzle ORM + PostgreSQL + Supabase Auth + Vercel
 - DB migration pattern: raw SQL via tsx script (drizzle-kit CJS can't resolve .js ESM imports)
 - Public viewer uses IntersectionObserver for scroll-spy nav dots + framer-motion for section animations
@@ -141,4 +143,4 @@ This document evolves at phase transitions and milestone boundaries.
 ---
 - v1.3 shipped 2026-04-20: Links Page Upgrade (5 phases, 10 plans, 17/17 requirements — Supabase uploads, icon picker, click analytics, drag-reorder, theme editor, live preview, public rendering)
 
-*Last updated: 2026-04-21 — Phase 16 complete; all 4 admin CRUD endpoints live, IStorage gap closed*
+*Last updated: 2026-04-22 — v1.4 shipped; v1.5 Blog Post Automation milestone initialized*

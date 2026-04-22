@@ -1,38 +1,39 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.4
-milestone_name: Admin Presentations Page
-status: executing
-last_updated: "2026-04-22T04:02:57.908Z"
+milestone: v1.5
+milestone_name: Blog Post Automation
+status: planning
+last_updated: "2026-04-22T00:00:00.000Z"
 last_activity: 2026-04-22
 progress:
-  total_phases: 11
-  completed_phases: 10
-  total_plans: 19
-  completed_plans: 18
+  total_phases: 4
+  completed_phases: 0
+  total_plans: 5
+  completed_plans: 0
+  percent: 0
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** Ready to execute
+**Status:** Ready to plan Phase 21
 
 ---
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-04-20)
+See: `.planning/PROJECT.md` (updated 2026-04-22)
 
-**Core value:** Admin builds branded slide decks by conversing with Claude — no WYSIWYG — and shares them as fullscreen bilingual experiences at `/p/:slug`.
-**Current focus:** Phase 20 — public-viewer
+**Core value:** Admin configures a Gemini-powered blog post generator that runs on schedule and creates SEO-optimized draft posts ready for human review and publish.
+**Current focus:** Phase 21 — Schema & Storage Foundation
 
 ---
 
 ## Current Position
 
-Phase: 20 (public-viewer) — EXECUTING
-Plan: 2 of 2
-Status: Ready to execute
+Phase: 21 (schema-storage-foundation) — NOT STARTED
+Plan: 0 of 1
+Status: Ready to plan
 Last activity: 2026-04-22
 
 ---
@@ -187,6 +188,17 @@ None.
 
 ---
 
+## v1.5 Phase Plan
+
+| Phase | Plans | Status |
+|-------|-------|--------|
+| 21. Schema & Storage Foundation | 0/1 | Not started |
+| 22. Blog Generator Engine | 0/2 | Not started |
+| 23. API Endpoints + Cron | 0/1 | Not started |
+| 24. Admin UI — Automation Settings | 0/1 | Not started |
+
+---
+
 ## Session Continuity
 
 | Session | Action | Result |
@@ -210,4 +222,7 @@ None.
 
 ---
 
-*Last updated: 2026-04-21 — Phase 17 complete; Brand Guidelines shipped (GET/PUT /api/brand-guidelines, BrandGuidelinesSection admin UI, /admin/presentations route)*
+| 2026-04-22 | v1.4 shipped | All 6 phases (15–20) complete; 22/22 requirements delivered |
+| 2026-04-22 | v1.5 milestone initialized | Blog Post Automation — 4 phases (21–24), 19 requirements defined; Phase 21 ready to plan |
+
+*Last updated: 2026-04-22 — v1.5 Blog Post Automation milestone initialized; Phase 21 ready for /gsd:plan-phase 21*

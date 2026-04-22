@@ -6,18 +6,17 @@
 - ✅ **v1.1 Multi-Forms Support** — Phase 5 / M3 (shipped 2026-04-15)
 - ✅ **v1.2 Estimates System** — Phases 6-9 (shipped 2026-04-20)
 - ✅ **v1.3 Links Page Upgrade** — Phases 10-14 (shipped 2026-04-20)
-- 🔄 **v1.4 Admin Presentations Page** — Phases 15-20 (active)
+- ✅ **v1.4 Admin Presentations Page** — Phases 15-20 (shipped 2026-04-22)
+- 🔄 **v1.5 Blog Post Automation** — Phases 21-24 (active)
 
 ## Active
 
-**v1.4 Admin Presentations Page** — Phases 15-20
+**v1.5 Blog Post Automation** — Phases 21-24
 
-- [ ] **Phase 15: Schema & Foundation** — DB tables, raw SQL migration, Anthropic SDK singleton
-- [ ] **Phase 16: Admin CRUD API** — Storage layer + all non-AI presentations endpoints
-- [ ] **Phase 17: Brand Guidelines** — Guidelines singleton endpoints + admin editor UI
-- [ ] **Phase 18: AI Authoring Endpoint** — SSE streaming endpoint with Claude tool_use + SlideBlock Zod schema
-- [ ] **Phase 19: Admin Presentations Editor** — Presentations list + JSON editor + slide mini-preview in admin
-- [x] **Phase 20: Public Viewer** — `/p/:slug` fullscreen viewer, access code gate, language switcher, view tracking
+- [ ] **Phase 21: Schema & Storage Foundation** — blog_settings + blog_generation_jobs tables, Drizzle/Zod schemas, storage stubs
+- [ ] **Phase 22: Blog Generator Engine** — BlogGenerator class, Gemini pipeline (topic → content → image), global DB lock, draft post creation
+- [ ] **Phase 23: API Endpoints + Cron** — GET/PUT /api/blog/settings, POST /api/blog/generate, POST /api/blog/cron/generate, server/cron.ts
+- [ ] **Phase 24: Admin UI** — Automation settings tab in BlogSection with Generate Now button + status display
 
 ## Phases
 
@@ -70,7 +69,87 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 
 </details>
 
-## Phase Details
+<details>
+<summary>✅ v1.4 Admin Presentations Page (Phases 15-20) — SHIPPED 2026-04-22</summary>
+
+- [x] Phase 15: Schema & Foundation (2/2 plans) — completed 2026-04-21
+- [x] Phase 16: Admin CRUD API (1/1 plans) — completed 2026-04-21
+- [x] Phase 17: Brand Guidelines (1/1 plans) — completed 2026-04-21
+- [x] Phase 18: AI Authoring Endpoint (2/2 plans) — completed 2026-04-22
+- [x] Phase 19: Admin Presentations Editor (1/1 plans) — completed 2026-04-22
+- [x] Phase 20: Public Viewer (2/2 plans) — completed 2026-04-22
+
+</details>
+
+---
+
+## v1.5 Blog Post Automation
+
+### Phase 21: Schema & Storage Foundation
+**Goal**: Database tables for blog automation exist, Drizzle/Zod schemas are typed, and the storage layer has stubs that downstream phases can build on.
+**Depends on**: Nothing (first phase of v1.5)
+**Requirements**: BLOG-01, BLOG-02, BLOG-03, BLOG-04
+**Plans:** 0/1 plans complete
+**Success Criteria** (what must be TRUE):
+  1. Raw SQL migration creates `blog_settings` and `blog_generation_jobs` tables without error — `SELECT * FROM blog_settings LIMIT 1` returns empty, not an error.
+  2. `shared/schema/blog.ts` exports Drizzle table defs + Zod validators; `npm run check` passes cleanly.
+  3. `IStorage` declares `getBlogSettings()`, `upsertBlogSettings()`, `createBlogGenerationJob()`, `updateBlogGenerationJob()` — `DatabaseStorage` implements all four.
+  4. `blog_generation_jobs.postId` has no FK constraint — column is nullable int, not a foreign key reference.
+
+### Phase 22: Blog Generator Engine
+**Goal**: `BlogGenerator.generate()` runs the full Gemini pipeline — validates settings, acquires a global DB lock, generates content + image, uploads to Supabase, creates a draft blog post, and clears the lock.
+**Depends on**: Phase 21 (tables + storage stubs)
+**Requirements**: BLOG-05, BLOG-06, BLOG-07, BLOG-08, BLOG-09, BLOG-10, BLOG-11, BLOG-12
+**Plans:** 0/2 plans complete
+**Success Criteria** (what must be TRUE):
+  1. Calling `BlogGenerator.generate({ manual: false })` with no `blog_settings` row returns `{ skipped: true, reason: "no_settings" }` without throwing.
+  2. Calling it with `enabled: false` returns `{ skipped: true, reason: "disabled" }`.
+  3. Two concurrent calls race for the DB lock — exactly one proceeds, the other returns `{ skipped: true, reason: "locked" }`.
+  4. A successful run creates a `blog_posts` row with `status: "draft"`, `authorName: "AI Assistant"`, non-null `title`, `content`, `slug` — and updates `blog_generation_jobs` with the real `postId` and `status: "completed"`.
+  5. If Gemini image generation fails, the post is still created with `featureImageUrl: null` and the job completes (not failed).
+  6. `blog_settings.lastRunAt` is updated after success; `lockAcquiredAt` is cleared whether or not generation succeeded.
+
+### Phase 23: API Endpoints + Cron
+**Goal**: Admin can read/save blog automation settings and trigger manual generation via REST; Vercel cron (GitHub Actions) can trigger scheduled generation; persistent environments start an hourly cron automatically.
+**Depends on**: Phase 22 (BlogGenerator must exist)
+**Requirements**: BLOG-13, BLOG-14, BLOG-15, BLOG-16
+**Plans:** 0/1 plans complete
+**Success Criteria** (what must be TRUE):
+  1. `GET /api/blog/settings` returns a 200 with safe defaults even when no DB row exists — never a 404 or 500.
+  2. `PUT /api/blog/settings` (admin-auth) upserts the row; a subsequent `GET` returns the saved values.
+  3. `POST /api/blog/generate` (admin-auth) returns `{ jobId, postId, post }` on a fresh run; returns `{ skipped, reason }` when the generator skips (not a 4xx).
+  4. `POST /api/blog/cron/generate` with wrong/missing `CRON_SECRET` returns 401; with correct secret, calls the generator and returns its result.
+  5. On a non-Vercel server startup, `startCron()` logs that it is running; on Vercel (`process.env.VERCEL` truthy), cron is not started.
+
+### Phase 24: Admin UI — Automation Settings
+**Goal**: Admin can configure and trigger blog automation from the Blog section without leaving the admin dashboard.
+**Depends on**: Phase 23 (settings API + generate endpoint)
+**Requirements**: BLOG-17, BLOG-18, BLOG-19
+**Plans:** 0/1 plans complete
+**Success Criteria** (what must be TRUE):
+  1. Blog section has an "Automation" tab/accordion with: enabled toggle, postsPerDay select (0–4), seoKeywords textarea, enableTrendAnalysis toggle, promptStyle textarea, Save button.
+  2. Saving settings calls `PUT /api/blog/settings` and shows a "Saved" confirmation.
+  3. "Generate Now" button shows a spinner while pending, then a success toast with a link to the new draft post — or an error/skip toast explaining why generation was skipped or failed.
+  4. UI shows "Last generated: X ago" from `blog_settings.lastRunAt` and the status of the most recent job.
+
+---
+
+## Progress
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 21. Schema & Storage Foundation | 0/1 | Not started | - |
+| 22. Blog Generator Engine | 0/2 | Not started | - |
+| 23. API Endpoints + Cron | 0/1 | Not started | - |
+| 24. Admin UI — Automation Settings | 0/1 | Not started | - |
+
+---
+
+_Last updated: 2026-04-22 — v1.5 Blog Post Automation milestone initialized_
+
+---
+
+## Phase Details (v1.3 and earlier)
 
 ### Phase 10: Schema & Upload Foundation
 **Goal**: The backend can persist a richer links-page config and accept real file uploads to Supabase Storage, with every link carrying a stable identity that survives edits.
