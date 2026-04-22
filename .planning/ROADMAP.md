@@ -191,7 +191,7 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 **Goal**: A single POST endpoint accepts a chat message and the current slide state, calls Claude via `tool_use` with brand guidelines as the system prompt, and streams structured `SlideBlock[]` JSON back to the client — the entire AI pipeline is exercisable before any admin UI is built.
 **Depends on**: Phase 15 (Anthropic SDK singleton), Phase 16 (presentation storage, auth), Phase 17 (brand guidelines must exist as system prompt source)
 **Requirements**: PRES-11, PRES-12, PRES-13
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 **Success Criteria** (what must be TRUE):
   1. `POST /api/presentations/:id/chat` (admin-auth required) accepts `{ message: string }`, loads the current `brand_guidelines.content` as Claude's system prompt, and returns a streaming `text/event-stream` response — calling it with `curl --no-buffer` shows `data:` events arriving progressively before the stream closes.
   2. When the stream completes successfully, the `presentations` row has updated `slides` (a valid `SlideBlock[]` matching the Zod schema) and `guidelinesSnapshot` set to the brand guidelines content that was active at generation time; `version` is incremented by 1.
@@ -199,7 +199,7 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
   4. Sending "edit slide 3 — shorten the body" when there are 5 slides returns an updated array where only slide index 2 is modified and slides 0, 1, 3, 4 are byte-for-byte identical to the input; the DB write reflects this partial update.
 **Plans:**
 - [x] 18-01-PLAN.md — Wave 0: ANTHROPIC_API_KEY in .env.example + slideBlockSchema Zod unit test (PRES-12)
-- [ ] 18-02-PLAN.md — Wave 1: server/routes/presentationsChat.ts SSE endpoint + route registration (PRES-11, PRES-12, PRES-13)
+- [x] 18-02-PLAN.md — Wave 1: server/routes/presentationsChat.ts SSE endpoint + route registration (PRES-11, PRES-12, PRES-13)
 
 ### Phase 19: Admin Chat Editor
 **Goal**: Admin can open a presentation's editor, converse with Claude to build or refine slides, and see a live mini-preview of the current deck — all within the admin dashboard.
@@ -240,7 +240,7 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 | 15. Schema & Foundation | 0/2 | Complete    | 2026-04-21 |
 | 16. Admin CRUD API | 1/1 | Complete    | 2026-04-21 |
 | 17. Brand Guidelines | 0/1 | Not started | - |
-| 18. AI Authoring Endpoint | 1/2 | In Progress|  |
+| 18. AI Authoring Endpoint | 2/2 | Complete   | 2026-04-22 |
 | 19. Admin Chat Editor | 0/? | Not started | - |
 | 20. Public Viewer | 0/? | Not started | - |
 

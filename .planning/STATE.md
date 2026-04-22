@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Admin Presentations Page
-status: executing
-last_updated: "2026-04-22T00:39:19.632Z"
+status: verifying
+last_updated: "2026-04-22T00:45:53.139Z"
 last_activity: 2026-04-22
 progress:
   total_phases: 11
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 16
-  completed_plans: 15
+  completed_plans: 16
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** Ready to execute
+**Status:** Phase complete — ready for verification
 
 ---
 
@@ -32,7 +32,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-20)
 
 Phase: 18 (ai-authoring-endpoint) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-22
 
 ---
@@ -63,6 +63,7 @@ Last activity: 2026-04-22
 | Phase 16-admin-crud-api P01 | 2min | 2 tasks | 3 files |
 | Phase 17-brand-guidelines P01 | 6min | 3 tasks | 12 files |
 | Phase 18-ai-authoring-endpoint P01 | 5min | 2 tasks | 2 files |
+| Phase 18-ai-authoring-endpoint P02 | 3min | 2 tasks | 2 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -164,6 +165,9 @@ Last activity: 2026-04-22
 - [Phase 17-brand-guidelines]: BrandGuidelinesSection at /admin/presentations — Phase 19 expands this same route with presentations list + chat panel
 - [Phase 18-ai-authoring-endpoint]: Use relative path ../../../shared/schema.js in npx tsx scripts — #shared/ alias requires bundler not available in standalone tsx
 - [Phase 18-ai-authoring-endpoint]: Force-add .env.example with git add -f — gitignored by .env.* but previously tracked; developer documentation belongs in repo
+- [Phase 18-ai-authoring-endpoint]: Anthropic.Tool type via default import — Tool not in top-level @anthropic-ai/sdk index; use Anthropic.Tool from default namespace
+- [Phase 18-ai-authoring-endpoint]: SSE pre-flight ordering: validate body → check API key → DB loads → flushHeaders(); ensures 400/404/503 return clean JSON before stream begins
+- [Phase 18-ai-authoring-endpoint]: Force tool_choice: { type: tool, name: update_slides } — prevents Claude prose responses; deterministic structured output required
 
 ### Quick Tasks Completed
 
