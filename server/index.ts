@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { createApp, log } from "./app.js";
 import { serveStatic } from "./static.js";
+import { startCron } from "./cron.js";
 
 (async () => {
   const { app, httpServer } = await createApp();
@@ -29,4 +30,5 @@ import { serveStatic } from "./static.js";
       log(`serving on port ${port}`);
     },
   );
+  startCron();
 })();
