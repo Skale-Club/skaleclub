@@ -1,6 +1,9 @@
 import { useRef, useState, useEffect, useCallback } from "react";
-import { Loader2, Headphones } from "lucide-react";
+import {
+  Headphones,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from '@/components/ui/loader';
 
 const MAX_SECONDS = 300;
 const BAR_COUNT = 24;

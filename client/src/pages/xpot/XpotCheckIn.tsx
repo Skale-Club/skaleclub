@@ -1,5 +1,23 @@
 import { useEffect, useState } from "react";
-import { Building2, Loader2, MapPinned, Plus, Search, Timer, X, ChevronDown, Phone, Globe, Mail, PencilLine, Twitter, Linkedin, Facebook, Instagram, Youtube, Link2 } from "lucide-react";
+import {
+  Building2,
+  MapPinned,
+  Plus,
+  Search,
+  Timer,
+  X,
+  ChevronDown,
+  Phone,
+  Globe,
+  Mail,
+  PencilLine,
+  Twitter,
+  Linkedin,
+  Facebook,
+  Instagram,
+  Youtube,
+  Link2,
+} from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useXpotShared } from "./hooks/useXpotShared";
 import { useXpotQueries } from "./hooks/useXpotQueries";
@@ -11,6 +29,7 @@ import { usePlaceSearch } from "./usePlaceSearch";
 import { findMatchingLead, formatDateTime } from "./utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from '@/components/ui/loader';
 import { EditLeadDialog } from "./components/EditLeadDialog";
 import { VoiceRecorder } from "./components/VoiceRecorder";
 import { VisitRow } from "./components/VisitRow";
@@ -18,7 +37,6 @@ import { InlineField } from "./components/InlineField";
 import { StatusPicker } from "./components/VisitStatus";
 import type { VisitStatus } from "./components/VisitStatus";
 import type { FullSalesLead, SalesLead } from "./types";
-
 
 function ActiveLeadInfo({ lead, onSaved }: { lead: SalesLead; onSaved: () => void }) {
   const { toast } = useToast();

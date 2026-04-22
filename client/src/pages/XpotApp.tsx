@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { Loader2 } from "lucide-react";
 import { useXpotQueries } from "./xpot/hooks/useXpotQueries";
 import { useVisits } from "./xpot/hooks/useVisits";
 import { GeoProvider } from "./xpot/hooks/GeoProvider";
@@ -9,6 +8,7 @@ import { XpotLeads } from "./xpot/XpotLeads";
 import { XpotVisits } from "./xpot/XpotVisits";
 import { XpotSales } from "./xpot/XpotSales";
 import { XpotDashboard } from "./xpot/XpotDashboard";
+import { Loader2 } from '@/components/ui/loader';
 
 function XpotAppShell() {
   const {

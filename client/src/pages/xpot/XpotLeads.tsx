@@ -1,5 +1,17 @@
 import { useRef, useState } from "react";
-import { Loader2, Plus, Search, Trash2, LogIn, Upload, Send, FileUp, X, UserCheck, MapPinned, Building2 } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Trash2,
+  LogIn,
+  Upload,
+  Send,
+  FileUp,
+  X,
+  UserCheck,
+  MapPinned,
+  Building2,
+} from "lucide-react";
 import { EditLeadDialog } from "./components/EditLeadDialog";
 import { LeadCardBody } from "./components/LeadCardBody";
 import {
@@ -19,6 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePlaceSearch } from "./usePlaceSearch";
 import { useXpotShared } from "./hooks/useXpotShared";
 import { apiRequest } from "@/lib/queryClient";
+import { Loader2 } from '@/components/ui/loader';
 import { parseAddress, findMatchingLead } from "./utils";
 import type { FullSalesLead, GooglePlaceResult } from "./types";
 

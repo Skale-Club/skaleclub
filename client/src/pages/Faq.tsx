@@ -6,8 +6,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Loader2 } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
+import { Loader2 } from '@/components/ui/loader';
 
 export default function FaqPage() {
   const { t } = useTranslation();
@@ -26,7 +26,7 @@ export default function FaqPage() {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-12">
+          <div className="flex w-full justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : !faqs || faqs.length === 0 ? (

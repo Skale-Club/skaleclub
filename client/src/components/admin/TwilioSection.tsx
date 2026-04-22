@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Check, Loader2 } from 'lucide-react';
+import {
+  Check,
+} from 'lucide-react';
 import { SiTwilio } from 'react-icons/si';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +12,9 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { Loader2 } from '@/components/ui/loader';
 import type { TwilioSettings } from './shared/types';
+
 export function TwilioSection() {
   const { toast } = useToast();
   const [settings, setSettings] = useState<TwilioSettings>({
@@ -270,7 +274,7 @@ export function TwilioSection() {
       : '';
 
   if (isLoading) {
-    return <div className="flex justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    return <div className="flex w-full justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
 
   return (
@@ -480,4 +484,5 @@ export function TwilioSection() {
     </div>
   );
 }
+
 

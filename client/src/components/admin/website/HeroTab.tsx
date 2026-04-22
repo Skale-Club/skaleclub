@@ -1,9 +1,13 @@
 import { useState, type ChangeEvent } from 'react';
-import { Image, Loader2, Plus } from 'lucide-react';
+import {
+  Image,
+  Plus,
+} from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from '@/components/ui/loader';
 import { uploadFileToServer } from '../shared/utils';
 
 interface HeroTabProps {
@@ -135,3 +139,4 @@ export function HeroTab({
     </div>
   );
 }
+

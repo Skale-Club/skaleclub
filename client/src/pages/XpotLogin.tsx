@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, Loader2, Mail, MapPinned, Lock } from "lucide-react";
+import {
+  ArrowLeft,
+  Mail,
+  MapPinned,
+  Lock,
+} from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
 import { initSupabase } from "@/lib/supabase";
@@ -10,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Loader2 } from '@/components/ui/loader';
 import type { XpotMeResponse } from "./xpot/types";
 
 async function getCurrentUser() {

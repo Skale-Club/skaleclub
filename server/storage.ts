@@ -1,5 +1,6 @@
 import { db } from "./db.js";
 import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead } from "#shared/form.js";
+import { normalizeLinksPageConfig } from "#shared/links.js";
 import {
   formLeads,
   forms,
@@ -15,6 +16,9 @@ import {
   portfolioServices,
   estimates,
   estimateViews,
+  presentations,
+  presentationViews,
+  brandGuidelines,
   salesReps,
   salesLeads,
   salesLeadLocations,
@@ -55,6 +59,12 @@ import {
   type Estimate,
   type InsertEstimate,
   type EstimateWithStats,
+  type Presentation,
+  type InsertPresentation,
+  type PresentationView,
+  type PresentationWithStats,
+  type BrandGuidelines,
+  type SlideBlock,
   type InsertPortfolioService,
   type InsertChatSettings,
   type InsertChatIntegrations,
@@ -643,6 +653,10 @@ export interface IStorage {
   updatePortfolioService(id: number, service: Partial<InsertPortfolioService>): Promise<PortfolioService>;
   deletePortfolioService(id: number): Promise<void>;
 
+  // Brand Guidelines (PRES-03 / Phase 17)
+  getBrandGuidelines(): Promise<BrandGuidelines | undefined>;
+  upsertBrandGuidelines(content: string): Promise<BrandGuidelines>;
+
   // Xpot (Field Sales)
   getSalesAppSettings(): Promise<SalesAppSettings>;
   updateSalesAppSettings(settings: Partial<InsertSalesAppSettings>): Promise<SalesAppSettings>;
@@ -682,6 +696,19 @@ export interface IStorage {
   listSalesSyncEventsForRep(repId: number, limit?: number): Promise<SalesSyncEvent[]>;
   createSalesSyncEvent(input: InsertSalesSyncEvent): Promise<SalesSyncEvent>;
   updateSalesSyncEvent(id: number, input: Partial<InsertSalesSyncEvent>): Promise<SalesSyncEvent | undefined>;
+
+  // Presentations (PRES-05 – PRES-08)
+  listPresentations(): Promise<PresentationWithStats[]>;
+  getPresentation(id: string): Promise<Presentation | undefined>;
+  getPresentationBySlug(slug: string): Promise<Presentation | undefined>;
+  createPresentation(data: InsertPresentation): Promise<Presentation>;
+  updatePresentation(id: string, data: Partial<InsertPresentation>): Promise<Presentation>;
+  deletePresentation(id: string): Promise<void>;
+  recordPresentationView(presentationId: string, ipHash?: string): Promise<void>;
+
+  // Brand Guidelines (PRES-09)
+  getBrandGuidelines(): Promise<BrandGuidelines | undefined>;
+  upsertBrandGuidelines(content: string): Promise<BrandGuidelines>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -689,11 +716,19 @@ export class DatabaseStorage implements IStorage {
     await ensureCompanySettingsSchema();
 
     const [settings] = await db.select().from(companySettings);
-    if (settings) return settings;
+    if (settings) {
+      return {
+        ...settings,
+        linksPageConfig: normalizeLinksPageConfig(settings.linksPageConfig as any),
+      } as CompanySettings;
+    }
 
     // Create default settings if none exist
     const [newSettings] = await db.insert(companySettings).values({}).returning();
-    return newSettings;
+    return {
+      ...newSettings,
+      linksPageConfig: normalizeLinksPageConfig(newSettings.linksPageConfig as any),
+    } as CompanySettings;
   }
 
   async updateCompanySettings(settings: Partial<CompanySettings>): Promise<CompanySettings> {
@@ -1031,7 +1066,7 @@ export class DatabaseStorage implements IStorage {
       existing = await this.getFormLeadBySession(progress.sessionId);
     }
     if (!existing && !progress.nome) {
-      throw new Error("Nome é obrigatório para iniciar o formulário");
+      throw new Error("Name is required to start the form");
     }
 
     // Resolve which form this lead belongs to.
@@ -1828,6 +1863,84 @@ export class DatabaseStorage implements IStorage {
       estimateId,
       ipAddress: ipAddress ?? null,
     });
+  }
+
+  // Presentations (Phase 16 implements full CRUD; Phase 15 adds typed stubs)
+  async listPresentations(): Promise<PresentationWithStats[]> {
+    const rows = await db
+      .select({
+        id:                presentations.id,
+        slug:              presentations.slug,
+        title:             presentations.title,
+        slides:            presentations.slides,
+        guidelinesSnapshot: presentations.guidelinesSnapshot,
+        accessCode:        presentations.accessCode,
+        version:           presentations.version,
+        createdAt:         presentations.createdAt,
+        updatedAt:         presentations.updatedAt,
+        slideCount:        sql<number>`jsonb_array_length(${presentations.slides})::int`,
+        viewCount:         sql<number>`count(${presentationViews.id})::int`,
+      })
+      .from(presentations)
+      .leftJoin(presentationViews, eq(presentationViews.presentationId, presentations.id))
+      .groupBy(presentations.id)
+      .orderBy(desc(presentations.createdAt));
+    return rows as PresentationWithStats[];
+  }
+
+  async getPresentation(id: string): Promise<Presentation | undefined> {
+    const [row] = await db.select().from(presentations).where(eq(presentations.id, id));
+    return row;
+  }
+
+  async getPresentationBySlug(slug: string): Promise<Presentation | undefined> {
+    const [row] = await db.select().from(presentations).where(eq(presentations.slug, slug));
+    return row;
+  }
+
+  async createPresentation(data: InsertPresentation): Promise<Presentation> {
+    const [row] = await db.insert(presentations).values(data).returning();
+    return row;
+  }
+
+  async updatePresentation(id: string, data: Partial<InsertPresentation>): Promise<Presentation> {
+    const [row] = await db
+      .update(presentations)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(presentations.id, id))
+      .returning();
+    return row;
+  }
+
+  async deletePresentation(id: string): Promise<void> {
+    await db.delete(presentations).where(eq(presentations.id, id));
+  }
+
+  async recordPresentationView(presentationId: string, ipHash?: string): Promise<void> {
+    await db.insert(presentationViews).values({
+      presentationId,
+      ipHash: ipHash ?? null,
+    });
+  }
+
+  // Brand Guidelines (Phase 17 implements full upsert; Phase 15 adds typed stubs)
+  async getBrandGuidelines(): Promise<BrandGuidelines | undefined> {
+    const [row] = await db.select().from(brandGuidelines);
+    return row;
+  }
+
+  async upsertBrandGuidelines(content: string): Promise<BrandGuidelines> {
+    const existing = await this.getBrandGuidelines();
+    if (existing) {
+      const [row] = await db
+        .update(brandGuidelines)
+        .set({ content, updatedAt: new Date() })
+        .where(eq(brandGuidelines.id, existing.id))
+        .returning();
+      return row;
+    }
+    const [row] = await db.insert(brandGuidelines).values({ content }).returning();
+    return row;
   }
 }
 

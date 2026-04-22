@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DialogClose, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Loader2 } from '@/components/ui/loader';
 import type { FormConfig } from '@shared/schema';
 
 export function ThresholdsForm({
@@ -53,6 +53,24 @@ export function ThresholdsForm({
         <p className="text-xs text-muted-foreground">
           Leads scoring below {cold} are classified as DISQUALIFIED.
         </p>
+        <div className="grid grid-cols-2 gap-2 pt-2">
+          <div className="p-3 rounded-xl border bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800">
+            <p className="text-xs text-green-600 dark:text-green-400 font-semibold">HOT</p>
+            <p className="text-lg font-bold text-green-700 dark:text-green-300">&ge; {hot} pts</p>
+          </div>
+          <div className="p-3 rounded-xl border bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800">
+            <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold">WARM</p>
+            <p className="text-lg font-bold text-amber-700 dark:text-amber-300">&ge; {warm} pts</p>
+          </div>
+          <div className="p-3 rounded-xl border bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
+            <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">COLD</p>
+            <p className="text-lg font-bold text-blue-700 dark:text-blue-300">&ge; {cold} pts</p>
+          </div>
+          <div className="p-3 rounded-xl border bg-muted">
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">DISQUALIFIED</p>
+            <p className="text-lg font-bold text-slate-600 dark:text-slate-300">&lt; {cold} pts</p>
+          </div>
+        </div>
       </div>
       <DialogFooter>
         <DialogClose asChild>
@@ -66,3 +84,4 @@ export function ThresholdsForm({
     </form>
   );
 }
+

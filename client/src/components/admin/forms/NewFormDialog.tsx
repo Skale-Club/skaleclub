@@ -1,6 +1,8 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { Loader2, Plus } from 'lucide-react';
+import {
+  Plus,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -17,6 +19,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { Loader2 } from '@/components/ui/loader';
 import type { Form } from '@shared/schema';
 
 interface NewFormDialogProps {
@@ -170,3 +173,4 @@ export function NewFormDialog({ onCreated }: NewFormDialogProps) {
     </Dialog>
   );
 }
+

@@ -1,50 +1,39 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: Estimates System
-status: completed
-last_updated: "2026-04-20T01:01:26.394Z"
+milestone: v1.4
+milestone_name: Admin Presentations Page
+status: executing
+last_updated: "2026-04-22T04:02:57.908Z"
+last_activity: 2026-04-22
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 8
-  completed_plans: 8
-  percent: 88
+  total_phases: 11
+  completed_phases: 10
+  total_plans: 19
+  completed_plans: 18
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** v1.2 milestone complete
+**Status:** Ready to execute
 
 ---
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-04-19)
+See: `.planning/PROJECT.md` (updated 2026-04-20)
 
-**Core value:** Clients receive a proposal link and experience Skale Club services as an immersive, professional presentation — not a PDF.
-**Current focus:** Phase 09 — public-viewer
+**Core value:** Admin builds branded slide decks by conversing with Claude — no WYSIWYG — and shares them as fullscreen bilingual experiences at `/p/:slug`.
+**Current focus:** Phase 20 — public-viewer
 
 ---
 
 ## Current Position
 
-Phase: 09
-Plan: Not started
-| Field | Value |
-|-------|-------|
-| Milestone | v1.2 — Estimates System |
-| Phase | 9 — Public Viewer |
-| Status | Executing |
-
-**Progress:**
-
-[█████████░] 88%
-[x] Phase 6: DB Schema + Storage Layer
-[x] Phase 7: Admin API Routes
-[x] Phase 8: Admin UI (EstimatesSection)
-[ ] Phase 9: Public Viewer (Plan 1/3 complete)
+Phase: 20 (public-viewer) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
+Last activity: 2026-04-22
 
 ---
 
@@ -64,6 +53,19 @@ Plan: Not started
 | Phase 08-admin-ui-estimatessection P02 | 8 | 3 tasks | 3 files |
 | Phase 09-public-viewer P02 | 130 | 2 tasks | 2 files |
 | Phase 09-public-viewer P03 | 12 | 1 tasks | 1 files |
+| Phase 10-schema-upload-foundation P02 | 3m | 3 tasks | 3 files |
+| Phase 12 P03 | 8min | 3 tasks | 3 files |
+| Phase 13-icon-picker-theme-live-preview P02 | 15min | 2 tasks | 4 files |
+| Phase 13 P03 | ~5min | 2 tasks | 4 files |
+| Phase 14-public-rendering-click-tracking P01 | ~4m | 3 tasks | 1 files |
+| Phase 15-schema-foundation P01 | 3min | 3 tasks | 5 files |
+| Phase 15-schema-foundation P02 | 3min | 2 tasks | 3 files |
+| Phase 16-admin-crud-api P01 | 2min | 2 tasks | 3 files |
+| Phase 17-brand-guidelines P01 | 6min | 3 tasks | 12 files |
+| Phase 18-ai-authoring-endpoint P01 | 5min | 2 tasks | 2 files |
+| Phase 18-ai-authoring-endpoint P02 | 3min | 2 tasks | 2 files |
+| Phase 19-admin-chat-editor P01 | ~4min | 2 tasks | 3 files |
+| Phase 20-public-viewer P01 | 12min | 3 tasks | 4 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -73,6 +75,25 @@ Plan: Not started
 | Plans executed | 6 (tracked in `.paul/phases/m3-*`) |
 | Lines added/removed | ~+3,400 / -700 |
 | Prod DB verified | forms=1, form_leads=14 (all form_id=1) |
+
+### v1.3 — Links Page Upgrade (feature-complete 2026-04-20)
+
+| Metric | Value |
+|--------|-------|
+| Requirements | 17 total, 17/17 complete ✓ |
+| Phases planned | 5 (Phases 10-14) |
+| Phases completed | 5/5 ✓ |
+| Plans executed | 10/10 ✓ |
+| Phase 10-schema-upload-foundation P01 | ~25m | 3 tasks | 3 files |
+| Phase 10-schema-upload-foundation P02 | ~3m | 3 tasks | 3 files |
+| Phase 11-click-analytics-api P01 | ~10m | 3 tasks | 4 files |
+| Phase 12-admin-redesign-core-editing P01 | ~12m | 2 tasks | 2 files |
+| Phase 12-admin-redesign-core-editing P02 | ~15m | 2 tasks | 4 files |
+| Phase 12-admin-redesign-core-editing P03 | ~8m | 3 tasks | 3 files |
+| Phase 13-icon-picker-theme-live-preview P01 | ~10m | 3 tasks | 4 files |
+| Phase 13-icon-picker-theme-live-preview P02 | ~15m | 2 tasks | 4 files |
+| Phase 13-icon-picker-theme-live-preview P03 | ~5m | 2 tasks | 4 files |
+| Phase 14-public-rendering-click-tracking P01 | ~4m | 3 tasks | 1 files |
 
 ---
 
@@ -99,6 +120,60 @@ Plan: Not started
 - [Phase 09-02]: isUnlocked=false default works for non-gated estimates: gate condition (data.hasAccessCode && !isUnlocked) is false when hasAccessCode=false
 - [Phase 09-03]: No new npm dependencies for view badges — formatDistanceToNow and Eye already in date-fns and lucide-react
 - [Phase 09-03]: viewCount ?? 0 fallback ensures badge always visible for new estimates (not hidden when 0)
+- [Phase 10-01]: Use z.input<> (not z.infer<>) for exported LinksPageLink/LinksPageConfig TS types so pre-Phase-12 client code still compiles after schema gains .transform()-powered id field
+- [Phase 10-01]: Per-link new fields are Zod .optional() rather than .default() — runtime defaults guaranteed by normalizeLinksPageConfig on every read, keeping the TS output type lenient for the v1.3 migration window
+- [Phase 10-01]: Lazy UUID backfill on read + transform-on-write = zero-migration rollout for additive JSONB shape change (no SQL, no data script)
+- [Phase 10-01]: Theme defaults hard-coded to current visual state (#1C53A3 / #0f1014) so legacy rows look identical after normalization
+- [Phase 10-02]: Base64-JSON upload (not multipart) for /api/uploads/links-page — keeps single admin upload code path; 2 MB cap fits trivially under 50 MB Express body limit
+- [Phase 10-02]: Path uses {timestamp}-{randomUUID} (not content hash) for v1.3 — matches existing uploadBuffer convention; idempotency-by-content-hash deferred
+- [Phase 10-02]: Pre-flight 503 env guard (Xpot leads precedent) before deep getSupabaseAdmin throw — clearer error in misconfigured envs
+- [Phase 10-02]: Defensive data-URL prefix strip (data:image/png;base64,...) — accepts both raw base64 and full data URLs from clients
+- [Phase 11-01]: Return 204 (not 429) on rate-limit so navigator.sendBeacon does not surface a console error on the public /links page
+- [Phase 11-01]: In-memory Map rate limit accepted for v1.3 — per-process (Vercel); duplicate counts across function containers tolerable for analytics
+- [Phase 11-01]: Admin click-count badge UI deferred to Phase 12; LINKS-05 shipped as data-surface contract (normalizer guarantee) not as rendered UI
+- [Phase 11-01]: Array.from(map.entries()) instead of for..of over Map — tsconfig has no target/downlevelIteration flags, so direct Map iteration hits TS2802 (scoped fix preferred over global tsconfig change)
+- [Phase 12-01]: AdminCard + FormGrid primitives swapped in for Card/CardHeader/CardContent — establishes three-zone admin layout pattern (Profile | Preview | Links) via grid-cols-1 md:grid-cols-2 lg:grid-cols-12 with md:col-span-2 lg:col-span-4 cells
+- [Phase 12-01]: Radix Switch bound to link.visible with `!== false` guard — reuses existing updateLink → saveSettings → PUT /api/company-settings path; no new save endpoint, no new state machine
+- [Phase 12-01]: Avatar URL + Background Image URL kept as plain Inputs with `TODO(12-02)` markers — Plan 12-02 swaps to DragDropUploader; layout ships functional in the meantime
+- [Phase 12-01]: PT translations added proactively (24 new keys) even though JSX strings still hardcoded English — satisfies CLAUDE.md translation rule now so future t() wrap is zero-touch on the translation side
+- [Phase 12-01]: addLink does NOT set visible:true explicitly — lets server normalizer (Phase 10) stamp the default; UI reads `link.visible !== false` so new rows render as visible without a client-side write
+- [Phase 12-03]: SortableLinkRow co-located in LinksSection.tsx (same file as parent) — matches EstimatesSection's SortableServiceRow pattern; file still well under CLAUDE.md 600-line limit
+- [Phase 12-03]: PointerSensor activationConstraint distance:6 reused from EstimatesSection — prevents accidental drags on micro-movement; mobile keyboard sensor via sortableKeyboardCoordinates for Space/Arrow reorder
+- [Phase 12-03]: Order reindex `0..N-1` after every arrayMove — canonical contiguous sequence persisted regardless of prior gaps; handleDragEnd calls existing updateConfig so SavedIndicator fires through the shared auto-save path
+- [Phase 12-03]: Drag handle is a semantic `<button type=button>` with touch-none class — built-in keyboard focus for KeyboardSensor; prevents mobile touch gestures from hijacking the drag
+- [Phase 12-02]: DragDropUploader lives in `admin/shared/` (not co-located) — Plan 13 reuses it for per-link icon uploads via assetType='linkIcon' (server path already provisioned by Phase 10-02)
+- [Phase 12-02]: Client-side MIME + 2 MB validation mirrors server contract as defense-in-depth — file.type + file.size check before FileReader runs; saves a wire round-trip on rejections
+- [Phase 12-02]: success state auto-reverts to idle after 2s via setTimeout — standard upload UX (Google Drive/Dropbox); thumbnail persists because value flows from parent state that got the new URL
+- [Phase 12-02]: onChange in LinksSection uses explicit setConfig + saveSettings (not updateConfig helper) — helper's Partial<LinksPageConfig> type doesn't compose cleanly with nested theme.backgroundImageUrl update
+- [Phase 12-02]: Parallel-plan coordination worked cleanly — 12-02 owned Profile zone Input swaps while 12-03 owned Main Links SortableContext; no merge conflicts, zero cross-plan edits
+- [Phase 13-icon-picker-theme-live-preview]: Native <input type=color> + paired hex Input over react-color (zero dep, accessible)
+- [Phase 13-icon-picker-theme-live-preview]: 400ms debounce per theme field; hex inputs regex-gate upstream fire
+- [Phase 13-icon-picker-theme-live-preview]: shared/links.ts uses globalThis.crypto.randomUUID to stay browser-bundlable
+- [Phase 13]: LivePreview: iframe over inline React render — visual parity with production + no theme bleed from admin context
+- [Phase 13]: LivePreview: React Query v5 dataUpdatedAt as cache-bust driver — zero new plumbing, piggybacks on existing invalidateQueries calls
+- [Phase 13]: LivePreview: phone-only viewport (max-w-[375px] aspect-[9/16]) matching mobile-first /links rendering target
+- [Phase 14-public-rendering-click-tracking]: CSS custom property via inline style + Tailwind arbitrary value bg-[var(--links-primary)]/20 drives theme-colored ambient glow — zero tailwind.config edit needed
+- [Phase 14-public-rendering-click-tracking]: Track all link clicks including cmd/ctrl/shift/middle-click — no modifier inspection; sendBeacon + no preventDefault counts open-in-new-tab too
+- [Phase 14-public-rendering-click-tracking]: Spread React Query cache array before sort — [...config.links].sort(...).filter(...) never mutates cache (v1.3 pattern for public pages consuming cached admin data)
+- [Phase 15-schema-foundation]: UUID slug (not text) for presentations — unguessable public URL consistent with PRES-01 spec
+- [Phase 15-schema-foundation]: guidelinesSnapshot is TEXT not JSONB — markdown content, not structured JSON; avoids JSONB complexity for plain text
+- [Phase 15-schema-foundation]: ip_hash column named ip_hash from creation — SHA-256 hashing is Phase 20 concern; column name matches final intent per PRES-02
+- [Phase 15-schema-foundation]: Storage stubs added in Phase 15 — ensures typed compilation for downstream phases 16-20 before routes exist
+- [Phase 15-schema-foundation]: Default import from @anthropic-ai/sdk (not named) — SDK ships only default export; separate singleton from getActiveAIClient() for Anthropic integration
+- [Phase 16-admin-crud-api]: Version increment (existing.version + 1) injected at route layer in PUT handler — insertPresentationSchema intentionally omits version field
+- [Phase 16-admin-crud-api]: Slug generated by DB defaultRandom() column — route does not call crypto.randomUUID()
+- [Phase 16-admin-crud-api]: IStorage interface declarations added before UI work — closes interface gap so DatabaseStorage satisfies full contract
+- [Phase 17-brand-guidelines]: GET /api/brand-guidelines is public (no auth) — Phase 18 AI endpoint reads it server-side without user session
+- [Phase 17-brand-guidelines]: BrandGuidelinesSection at /admin/presentations — remains visible below presentations list
+- [Phase 18-ai-authoring-endpoint]: Use relative path ../../../shared/schema.js in npx tsx scripts — #shared/ alias requires bundler not available in standalone tsx
+- [Phase 18-ai-authoring-endpoint]: Anthropic.Tool type via default import — Tool not in top-level @anthropic-ai/sdk index; use Anthropic.Tool from default namespace
+- [Phase 18-ai-authoring-endpoint]: SSE pre-flight ordering: validate body → check API key → DB loads → flushHeaders(); ensures 400/404/503 return clean JSON before stream begins
+- [Phase 18-ai-authoring-endpoint]: Force tool_choice: { type: tool, name: update_slides } — prevents Claude prose responses; deterministic structured output required
+- [Phase 19-admin-chat-editor]: key={selectedId} re-mount strategy for editor state reset — zero extra code
+- [Phase 19-admin-chat-editor]: PresentationsSection co-locates SlideCard + PresentationEditor in one file (matches EstimatesSection pattern, 355 lines)
+- [Phase 19-admin-chat-editor]: In-app chat panel replaced with JSON textarea — slides authored in Claude Code IDE, pasted into admin panel
+- [Phase 20-public-viewer]: PresentationViewer.tsx stub required for TS module resolution — lazy() does not defer tsc path checking; stub satisfies compiler without full implementation
+- [Phase 20-public-viewer]: SHA-256 IP hash on POST /api/presentations/:id/view — mirrors ip_hash column naming, aligns with Phase 15 schema intent
 
 ### Quick Tasks Completed
 
@@ -120,7 +195,19 @@ None.
 | 2026-04-14/15 | v1.1 M3 complete (tracked in PAUL) | GSD synced 2026-04-19 |
 | 2026-04-19 | GSD retroactive sync | ready for `/gsd:new-milestone` |
 | 2026-04-19 | v1.2 milestone initialized | REQUIREMENTS.md + PROJECT.md created, Phase 6 ready to plan |
+| 2026-04-20 | v1.3 milestone initialized | Defining requirements for Links Page Upgrade |
+| 2026-04-20 | v1.3 roadmap created | 5 phases (10-14), 17/17 reqs mapped, Phase 10 ready to plan |
+| 2026-04-19 | Plan 10-01 executed | Schema + normalizer shipped (3 tasks, 3 commits); 10-02 next |
+| 2026-04-20 | Plan 10-02 executed | Upload endpoint live (3 tasks, 3 commits: 7ebdaf4, 86ae880, 0e744f9); Phase 10 plans 2/2 — ready for /gsd:verify-work |
+| 2026-04-19 | Plan 11-01 executed | Click endpoint live (3 tasks, 3 commits: f7e3fb9, 72ede6e, 2900a80); Phase 11 plans 1/1 — ready for /gsd:verify-work |
+| 2026-04-19 | Plan 12-01 executed | Admin three-zone layout + Visible Switch + click-count Badge (2 tasks, 2 commits: 6091c1d, f5cc862); Phase 12 plans 1/3 — 12-02 next |
+| 2026-04-19 | Plan 12-03 executed | Drag-and-drop reorder on Main Links via @dnd-kit (1 combined commit: ece85d1, LINKS-11 complete); Phase 12 plans 2/3 (12-02 uploaders in parallel) |
+| 2026-04-19 | Plan 12-02 executed | DragDropUploader component + Profile zone avatar/background wiring (2 tasks, 2 commits: f231b57, 02ed2e9); LINKS-08 complete; Phase 12 plans 3/3 — ready for /gsd:verify-work |
+| 2026-04-20 | Plan 14-01 executed | Public /links rendering + sendBeacon click tracking (3 tasks, 3 commits: 5c7c9db, 53aa325, 02f410b); LINKS-14/-15/-16/-17 complete; Phase 14 plans 1/1 — v1.3 feature-complete 17/17 reqs |
+| 2026-04-20 | v1.4 milestone initialized | Requirements defined (22 reqs, PRES-01–22) |
+| 2026-04-20 | v1.4 roadmap created | 6 phases (15–20), 22/22 reqs mapped; Phase 15 ready to plan |
+| 2026-04-21 | Plan 17-01 executed | Brand Guidelines API + admin editor (3 tasks, 3 commits: 3ded3fe, bc72b94, 1d5d8e9); PRES-09 + PRES-10 complete |
 
 ---
 
-*Last updated: 2026-04-19 — Phase 09 Plan 01 complete (view tracking + access code backend)*
+*Last updated: 2026-04-21 — Phase 17 complete; Brand Guidelines shipped (GET/PUT /api/brand-guidelines, BrandGuidelinesSection admin UI, /admin/presentations route)*

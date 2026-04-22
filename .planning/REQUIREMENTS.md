@@ -1,78 +1,102 @@
-# Requirements: Skale Club Web Platform — v1.2 Estimates System
+# Requirements: Skale Club Web Platform — v1.4 Admin Presentations Page
 
-**Defined:** 2026-04-19
-**Core Value:** Admin creates branded proposal estimates; clients view them as polished fullscreen proposals at a private link
+**Defined:** 2026-04-20
+**Core Value:** Admin builds branded slide decks by conversing with Claude — no WYSIWYG — and shares them as fullscreen bilingual experiences at `/p/:slug`.
 
-## v1.2 Requirements
+## v1.4 Requirements
 
-### Schema & Storage — Phase 6
+### Schema & Storage
 
-- [x] **EST-01**: `estimates` table exists in the database with clientName, UUID slug, optional note, and a JSONB `services` array; `npm run db:push` completes without error
-- [x] **EST-02**: Storage layer exposes six typed CRUD methods (create, getById, getBySlug, list, update, delete) callable from route handlers without TypeScript errors; a catalog service snapshot is immutable even after editing the source `portfolio_services` row
+- [x] **PRES-01**: `presentations` table — `id` (UUID PK), `slug` (UUID, unique, public URL), `title` (text), `slides` (JSONB array of SlideBlock), `guidelinesSnapshot` (JSONB copy of guidelines at generation time), `accessCode` (optional plain text), `version` (int, auto-increments on each PUT save), `createdAt`, `updatedAt`.
+- [x] **PRES-02**: `presentation_views` event-log table — `id`, `presentationId` (FK → presentations, cascade delete), `viewedAt`, `ipHash` (SHA-256 of client IP). Mirrors `estimate_views` pattern.
+- [x] **PRES-03**: `brand_guidelines` singleton table — `id`, `content` (text, markdown), `updatedAt`. One row per tenant; upsert on save.
+- [x] **PRES-04**: `@anthropic-ai/sdk` installed; `server/lib/anthropic.ts` singleton created with `getAnthropicClient()` (separate from existing `getActiveAIClient()` OpenAI/Groq shim).
 
-### Admin API — Phase 7
+### Admin CRUD API
 
-- [x] **EST-03**: `GET /api/estimates` returns all estimates (clientName, slug, createdAt) — requires admin auth
-- [x] **EST-04**: `POST /api/estimates` creates an estimate with UUID slug; `PUT /api/estimates/:id` updates it; `DELETE /api/estimates/:id` removes it permanently — all require admin auth
-- [x] **EST-05**: `GET /api/estimates/slug/:slug` returns estimate data without authentication (for the public viewer)
+- [x] **PRES-05**: `GET /api/presentations` returns admin list — id, slug, title, slideCount (derived), viewCount (derived), createdAt — sorted by createdAt desc. Admin-auth required.
+- [x] **PRES-06**: `POST /api/presentations` creates a new presentation with title and empty `slides: []`; returns `{ id, slug }`. Admin-auth required.
+- [x] **PRES-07**: `PUT /api/presentations/:id` updates title, slides, and/or accessCode; auto-increments `version`. Admin-auth required.
+- [x] **PRES-08**: `DELETE /api/presentations/:id` deletes the presentation and cascades `presentation_views`. Admin-auth required.
 
-### Admin UI — Phase 8
+### Brand Guidelines
 
-- [x] **EST-06**: Admin sees an "Estimates" tab in the sidebar with a list showing client name, slug, creation date, and a copy-link button
-- [x] **EST-07**: Admin can open a create/edit dialog, pick services from the portfolio catalog with title/description/price pre-filled and editable before saving
-- [x] **EST-08**: Admin can add freeform custom service rows (title, description, price entered manually — not linked to catalog) alongside catalog items
-- [x] **EST-09**: Admin can drag service rows to reorder them; order is preserved on save and re-edit
-- [x] **EST-10**: Admin can delete any estimate from the list
+- [x] **PRES-09**: `GET /api/brand-guidelines` returns current guidelines content (no auth — needed by AI endpoint server-side). `PUT /api/brand-guidelines` saves content (admin-auth required).
+- [x] **PRES-10**: Admin **Brand Guidelines** sub-section (within Presentations tab or separate accordion) — plain textarea/markdown editor that saves to `brand_guidelines` table via `PUT /api/brand-guidelines`.
 
-### Public Viewer — Phase 9
+### AI Authoring
 
-- [x] **EST-11**: View tracking — every time the public estimate viewer (/e/:slug) is loaded, record a view event. The admin list view must display view_count and last_viewed_at per estimate. Implementation: new `estimate_views` table (id, estimate_id, viewed_at, ip_address optional) — event log approach, not a counter column.
-- [x] **EST-12**: Password protection — an estimate can optionally have a password (stored as bcrypt hash in a new `password_hash text` column on estimates). If set, the public viewer shows a password gate before rendering. The admin create/edit dialog must allow setting/clearing the password.
-- [x] **EST-13**: Navigating to `/e/:slug` renders fullscreen scroll-snap sections with no Navbar, Footer, or ChatWidget present
-- [x] **EST-14**: First section shows a cover with the client name and Skale Club branding
-- [x] **EST-15**: Second section shows a fixed Skale Club introduction
-- [x] **EST-16**: Each service in the estimate renders as its own fullscreen section showing title, description, price, and features list
-- [x] **EST-17**: A final visual closing section appears after all service sections with no acceptance CTA button
-- [x] **EST-18**: Navigating to `/e/unknown-slug` renders a graceful 404 page rather than crashing or showing a blank screen
+- [x] **PRES-11**: `POST /api/presentations/:id/chat` — SSE streaming endpoint; accepts `{ message: string }`; loads current `brand_guidelines.content` as Claude system prompt; sends current `slides` as context; calls Claude via `tool_use` for structured `SlideBlock[]` output; streams `data:` progress events to client; saves final slides + `guidelinesSnapshot` to DB after stream ends. Admin-auth required.
+- [x] **PRES-12**: SlideBlock JSON schema supports 8 layout variants (`cover`, `section-break`, `title-body`, `bullets`, `stats`, `two-column`, `image-focus`, `closing`) with bilingual fields: `heading`/`headingPt`, `body`/`bodyPt`, `bullets: string[]`/`bulletsPt: string[]`. Schema validated via Zod on every DB write.
+- [x] **PRES-13**: Admin can request per-slide edits in chat (e.g. "edit slide 3 — shorten the body") — the AI receives the full current `SlideBlock[]` context and returns an updated array with only the targeted slide(s) changed; other slides are preserved verbatim.
+
+### Admin Presentations Editor
+
+- [x] **PRES-14**: Admin **Presentations** tab shows list of all presentations with title, slide count, view count badge, copy-link button, delete button, and an "Open Editor" button per row.
+- [x] **PRES-15**: Presentation editor opens showing: a monospace JSON textarea with the current `SlideBlock[]` (editable); a Save button that calls `PUT /api/presentations/:id`; and a slide preview panel showing current slides as mini cards.
+- [x] **PRES-16**: Slide preview panel shows each `SlideBlock` as a mini card with its layout type and heading visible; the JSON textarea reflects the saved state; admin edits JSON and saves to update slides.
+
+### Public Viewer
+
+- [x] **PRES-17**: `GET /api/presentations/slug/:slug` — public endpoint (no auth); returns full presentation including slides; validates access code if `accessCode` is set (400 if wrong/missing); records a row in `presentation_views` on every successful load.
+- [x] **PRES-18**: `/p/:slug` route in App.tsx is isolated from Navbar/Footer/ChatWidget via `isPresentationRoute` guard (symmetric to `isEstimateRoute` pattern).
+- [ ] **PRES-19**: `PresentationViewer` renders slides as fullscreen scroll-snap sections (one slide per viewport height), framer-motion enter animations per section, layout-specific rendering for each `SlideBlock.layout` variant.
+- [ ] **PRES-20**: Language switcher in the viewer — `?lang=en` (default) or `?lang=pt-BR`; each slide renders the appropriate bilingual fields (`heading` vs `headingPt`, etc.).
+- [ ] **PRES-21**: Access code gate — if `accessCode` is set on the presentation, viewer shows a code-entry form before revealing slides (same UX pattern as `EstimateViewer`).
+- [x] **PRES-22**: Admin Presentations list shows view count badge per presentation, sourced from `presentation_views` count query.
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Estimate acceptance / e-signature | Scope for future milestone |
-| PDF export of proposals | Scope for future milestone |
-| Client login / per-user access control per estimate | Password protection (EST-12) is sufficient for v1.2; per-user auth is future scope |
-| Estimate templates | Manual composition is sufficient for v1.2 |
-| Estimate expiry / status tracking | Future milestone |
+| In-app chat panel calling Anthropic API | Slides authored via Claude Code IDE; admin panel only needs JSON editor + preview |
+| WYSIWYG / drag-drop slide editor | Editing via JSON paste from Claude Code session |
+| PPTX / PDF export | Future milestone (v1.5 candidate); requires Playwright on serverless — Vercel blocker |
+| Per-slide image generation (DALL-E / Stable Diffusion) | Deferred — admin can paste image URLs; AI-generated imagery is v1.5 scope |
+| Slide templates library | Deferred — 8 layout variants cover agency needs; template picker is additive |
+| Multi-tenant brand guidelines (per-presentation override) | One tenant-wide document is sufficient for v1.4; per-deck branching is v1.5 |
+| slides-grab / Playwright integration | Blocked on Vercel serverless; native scroll-snap viewer is superior for v1.4 |
+| Undo / slide version history | Deferred — `version` field tracks generation count; full undo is a distinct milestone |
+| Team collaboration / comments on slides | Future scope |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| EST-01 | Phase 6 | Complete |
-| EST-02 | Phase 6 | Complete |
-| EST-03 | Phase 7 | Complete |
-| EST-04 | Phase 7 | Complete |
-| EST-05 | Phase 7 | Complete |
-| EST-06 | Phase 8 | Complete |
-| EST-07 | Phase 8 | Complete |
-| EST-08 | Phase 8 | Complete |
-| EST-09 | Phase 8 | Complete |
-| EST-10 | Phase 8 | Complete |
-| EST-11 | Phase 9 | Complete |
-| EST-12 | Phase 9 | Complete |
-| EST-13 | Phase 9 | Complete |
-| EST-14 | Phase 9 | Complete |
-| EST-15 | Phase 9 | Complete |
-| EST-16 | Phase 9 | Complete |
-| EST-17 | Phase 9 | Complete |
-| EST-18 | Phase 9 | Complete |
+| PRES-01 | Phase 15 | Complete |
+| PRES-02 | Phase 15 | Complete |
+| PRES-03 | Phase 15 | Complete |
+| PRES-04 | Phase 15 | Complete |
+| PRES-05 | Phase 16 | Complete |
+| PRES-06 | Phase 16 | Complete |
+| PRES-07 | Phase 16 | Complete |
+| PRES-08 | Phase 16 | Complete |
+| PRES-09 | Phase 17 | Complete |
+| PRES-10 | Phase 17 | Complete |
+| PRES-11 | Phase 18 | Complete |
+| PRES-12 | Phase 18 | Complete |
+| PRES-13 | Phase 18 | Complete |
+| PRES-14 | Phase 19 | Complete |
+| PRES-15 | Phase 19 | Complete |
+| PRES-16 | Phase 19 | Complete |
+| PRES-17 | Phase 20 | Complete |
+| PRES-18 | Phase 20 | Complete |
+| PRES-19 | Phase 20 | Pending |
+| PRES-20 | Phase 20 | Pending |
+| PRES-21 | Phase 20 | Pending |
+| PRES-22 | Phase 20 | Complete |
 
 **Coverage:**
-- v1.2 requirements: 18 total
-- Mapped to phases: 18
-- Unmapped: 0 ✓
+- v1.4 requirements: 22 total
+- Mapped to phases: 22/22 ✓ (100%)
+
+**Phase distribution:**
+- Phase 15 (Schema & Foundation): 4 reqs — PRES-01, -02, -03, -04
+- Phase 16 (Admin CRUD API): 4 reqs — PRES-05, -06, -07, -08
+- Phase 17 (Brand Guidelines): 2 reqs — PRES-09, -10
+- Phase 18 (AI Authoring Endpoint): 3 reqs — PRES-11, -12, -13
+- Phase 19 (Admin Chat Editor): 3 reqs — PRES-14, -15, -16
+- Phase 20 (Public Viewer): 6 reqs — PRES-17, -18, -19, -20, -21, -22
 
 ---
-*Requirements defined: 2026-04-19*
-*Last updated: 2026-04-19 after EST-11 and EST-12 added*
+*Requirements defined: 2026-04-20*

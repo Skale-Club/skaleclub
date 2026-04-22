@@ -11,3 +11,6 @@ export { FormGrid } from "./FormGrid";
 export type { FormGridProps } from "./FormGrid";
 
 export { uploadFileToServer, getImageUrl, getOriginalImageUrl, ensureArray } from "./utils";
+
+export { DragDropUploader } from "./DragDropUploader";
+export type { DragDropUploaderProps } from "./DragDropUploader";

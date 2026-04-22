@@ -265,7 +265,8 @@ export function classifyLead(score: number, thresholds?: FormConfig["thresholds"
 
 // Helper to calculate max possible score from config
 export function calculateMaxScore(config: FormConfig): number {
-  return config.questions
+  const questions = Array.isArray(config?.questions) ? config.questions : [];
+  return questions
     .filter((q) => q.type === "select" && q.options)
     .reduce((sum, q) => {
       const maxPoints = Math.max(...(q.options || []).map((o) => o.points));
@@ -275,5 +276,6 @@ export function calculateMaxScore(config: FormConfig): number {
 
 // Helper to get questions sorted by order
 export function getSortedQuestions(config: FormConfig): FormQuestion[] {
-  return [...config.questions].sort((a, b) => a.order - b.order);
+  const questions = Array.isArray(config?.questions) ? config.questions : [];
+  return [...questions].sort((a, b) => a.order - b.order);
 }

@@ -1,6 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Calendar, Check, ExternalLink, FileText, Image, Loader2, Pencil, Plus, Tag, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  Calendar,
+  Check,
+  ExternalLink,
+  FileText,
+  Image,
+  Pencil,
+  Plus,
+  Tag,
+  Trash2,
+} from 'lucide-react';
 import { AdminCard, EmptyState, SectionHeader } from './shared';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
@@ -16,11 +27,13 @@ import { useToast } from '@/hooks/use-toast';
 import { renderMarkdown } from '@/lib/markdown';
 import { usePagePaths } from '@/lib/pagePaths';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { Loader2 } from '@/components/ui/loader';
 import { clsx } from 'clsx';
 import { format } from 'date-fns';
 import type { BlogPost } from '@shared/schema';
 import { SIDEBAR_MENU_ITEMS } from './shared/constants';
 import { uploadFileToServer } from './shared/utils';
+
 export function BlogSection({ resetSignal }: { resetSignal: number }) {
   const { toast } = useToast();
   const pagePaths = usePagePaths();
@@ -827,7 +840,7 @@ export function BlogSection({ resetSignal }: { resetSignal: number }) {
 
   if (isLoading && !posts) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex w-full items-center justify-center h-64">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -1089,4 +1102,5 @@ export function BlogSection({ resetSignal }: { resetSignal: number }) {
     </div>
   );
 }
+
 

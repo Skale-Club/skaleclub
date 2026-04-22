@@ -23,6 +23,11 @@ import { registerCompanyRoutes } from "./routes/company.js";
 import { registerFormRoutes } from "./routes/forms.js";
 import { registerIntegrationRoutes } from "./routes/integrations.js";
 import { registerEstimatesRoutes } from "./routes/estimates.js";
+import { registerPresentationsRoutes } from "./routes/presentations.js";
+import { registerUploadRoutes } from "./routes/uploads.js";
+import { registerLinksPageRoutes } from "./routes/linksPage.js";
+import { registerBrandGuidelinesRoutes } from "./routes/brandGuidelines.js";
+import { registerPresentationsChatRoutes } from "./routes/presentationsChat.js";
 import { db, pool } from "./db.js";
 import { users } from "#shared/schema.js";
 import { eq } from "drizzle-orm";
@@ -123,9 +128,14 @@ export async function registerRoutes(
   registerTranslateRoutes(app);
   registerUserRoutes(app);
   registerCompanyRoutes(app);
+  registerUploadRoutes(app);
+  registerLinksPageRoutes(app);
   registerFormRoutes(app);
   registerIntegrationRoutes(app);
   registerEstimatesRoutes(app);
+  registerPresentationsRoutes(app);
+  registerBrandGuidelinesRoutes(app);
+  registerPresentationsChatRoutes(app);
   await initializeSalesSchema();
 
 
@@ -985,9 +995,9 @@ CONVERSATION FLOW:
 
 FINALIZATION (after complete_lead):
 Based on the classification returned:
-- QUENTE (Hot): "Excelente! Um especialista entrará em contato em até 24 horas para discutir como podemos ajudar seu negócio a crescer!"
-- MORNO (Warm): "Obrigado pelas informações! Vamos analisar seu perfil e entrar em contato em breve."
-- FRIO (Cold): "Obrigado pelo interesse! Vamos enviar alguns conteúdos úteis para você."
+- QUENTE (Hot): "Excellent! A specialist will contact you within 24 hours to discuss how we can help your business grow."
+- MORNO (Warm): "Thanks for sharing those details! We'll review your profile and reach out soon."
+- FRIO (Cold): "Thanks for your interest! We'll send over a few helpful resources for you."
 
 SOURCES:
 ${allowFaqs ? '- FAQs are enabled. Use search_faqs for common questions about our services.' : ''}
@@ -1009,16 +1019,16 @@ RULES:
 
 EXAMPLE CONVERSATION:
 
-You: "Olá! Sou o assistente virtual. Estamos aqui para ajudar seu negócio a crescer! Para começar, qual é o seu nome completo?"
-User: "João Silva"
-[Call save_lead_answer with question_id="nome", answer="João Silva"]
-You: "Prazer, João! Qual é o seu email?"
-User: "joao@email.com"
-[Call save_lead_answer with question_id="email", answer="joao@email.com"]
-You: "Ótimo! E qual é o seu número de WhatsApp?"
+You: "Hi! I'm the virtual assistant. We're here to help your business grow. To get started, what's your full name?"
+User: "John Smith"
+[Call save_lead_answer with question_id="nome", answer="John Smith"]
+You: "Nice to meet you, John! What's your email?"
+User: "john@email.com"
+[Call save_lead_answer with question_id="email", answer="john@email.com"]
+You: "Great! And what's your WhatsApp or mobile number?"
 [Continue through all questions...]
 [When complete, call complete_lead]
-You: "Excelente, João! Um especialista entrará em contato em até 24 horas para discutir como podemos ajudar seu negócio a crescer!"`;
+You: "Excellent, John! A specialist will contact you within 24 hours to discuss how we can help your business grow."`;
       const systemPrompt = settings.systemPrompt || defaultSystemPrompt;
 
       const chatMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [

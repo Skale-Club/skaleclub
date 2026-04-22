@@ -1,10 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { BadgeCheck, Check, Image, LayoutGrid, List, Loader2 } from 'lucide-react';
+import {
+  BadgeCheck,
+  Check,
+  Image,
+  LayoutGrid,
+  List,
+} from 'lucide-react';
 import { SectionHeader } from './shared';
 import { useToast } from '@/hooks/use-toast';
 import { DEFAULT_HOMEPAGE_CONTENT } from '@/lib/homepageDefaults';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { Loader2 } from '@/components/ui/loader';
 import type { HomepageContent } from '@shared/schema';
 import type { CompanySettingsData } from './shared/types';
 import { HeroTab } from './website/HeroTab';
@@ -161,7 +168,7 @@ export function WebsiteSettingsSection() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="flex w-full items-center justify-center py-12">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -249,3 +256,4 @@ export function WebsiteSettingsSection() {
     </div>
   );
 }
+

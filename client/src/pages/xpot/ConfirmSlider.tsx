@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronsRight, ChevronsLeft, Loader2 } from "lucide-react";
+import {
+  ChevronsRight,
+  ChevronsLeft,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Loader2 } from '@/components/ui/loader';
 
 /**
  * Two modes:

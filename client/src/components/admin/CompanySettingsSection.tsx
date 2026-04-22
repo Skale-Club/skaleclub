@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Building2, Check, Image, Loader2, Plus, Trash2 } from 'lucide-react';
+import {
+  Building2,
+  Check,
+  Image,
+  Plus,
+  Trash2,
+} from 'lucide-react';
 import { AdminCard, SectionHeader } from './shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,10 +15,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { DEFAULT_HOMEPAGE_CONTENT } from '@/lib/homepageDefaults';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { Loader2 } from '@/components/ui/loader';
 import { DEFAULT_PAGE_SLUGS } from '@shared/pageSlugs';
 import { DEFAULT_BUSINESS_HOURS } from './shared/constants';
 import type { CompanySettingsData } from './shared/types';
 import { ensureArray, uploadFileToServer } from './shared/utils';
+
 export function CompanySettingsSection() {
   const { toast } = useToast();
   const [settings, setSettings] = useState<CompanySettingsData>({
@@ -133,7 +141,7 @@ export function CompanySettingsSection() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="flex w-full items-center justify-center py-12">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -374,4 +382,5 @@ export function CompanySettingsSection() {
     </div>
   );
 }
+
 

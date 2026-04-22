@@ -1,14 +1,22 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Eye, Loader2, RotateCcw, Sparkles, Trash2 } from 'lucide-react';
+import {
+  Eye,
+  RotateCcw,
+  Sparkles,
+  Trash2,
+} from 'lucide-react';
 import { AdminCard, SectionHeader } from './shared';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { getLeadClassificationLabel, getLeadStatusLabel } from '@/lib/leadDisplay';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { Loader2 } from '@/components/ui/loader';
 import { clsx } from 'clsx';
 import { format } from 'date-fns';
 import { DEFAULT_FORM_CONFIG, getSortedQuestions } from '@shared/form';
@@ -17,6 +25,7 @@ import type { Form, FormConfig, FormLead, FormQuestion, LeadClassification, Lead
 export function LeadsSection() {
   const { toast } = useToast();
   const [selectedLead, setSelectedLead] = useState<FormLead | null>(null);
+  const [leadPendingDelete, setLeadPendingDelete] = useState<FormLead | null>(null);
   const [isLeadDialogOpen, setIsLeadDialogOpen] = useState(false);
   const [filters, setFilters] = useState<{
     search: string;
@@ -83,11 +92,17 @@ export function LeadsSection() {
       const res = await apiRequest('DELETE', `/api/form-leads/${id}`);
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (_, deletedLeadId) => {
       queryClient.invalidateQueries({ queryKey: ['/api/form-leads'] });
+      if (selectedLead?.id === deletedLeadId) {
+        setSelectedLead(null);
+        setIsLeadDialogOpen(false);
+      }
+      setLeadPendingDelete(null);
       toast({ title: 'Lead deleted' });
     },
     onError: (error: any) => {
+      setLeadPendingDelete(null);
       toast({
         title: 'Failed to delete lead',
         description: error?.message || 'Please try again',
@@ -145,10 +160,10 @@ export function LeadsSection() {
 
   const classificationOptions: { value: LeadClassification | 'all'; label: string }[] = [
     { value: 'all', label: 'All ratings' },
-    { value: 'QUENTE', label: 'Lead Quente' },
-    { value: 'MORNO', label: 'Lead Morno' },
-    { value: 'FRIO', label: 'Lead Frio' },
-    { value: 'DESQUALIFICADO', label: 'Desqualificado' },
+    { value: 'QUENTE', label: 'Hot' },
+    { value: 'MORNO', label: 'Warm' },
+    { value: 'FRIO', label: 'Cold' },
+    { value: 'DESQUALIFICADO', label: 'Disqualified' },
   ];
 
   const completionOptions: { value: 'all' | 'completo' | 'em_progresso' | 'abandonado'; label: string }[] = [
@@ -163,7 +178,7 @@ export function LeadsSection() {
     return format(new Date(value), 'MMM d, yyyy');
   };
 
-  const classificationBadge = (classificacao?: LeadClassification | null) => {
+  const classificationBadgeClass = (classificacao?: LeadClassification | null) => {
     switch (classificacao) {
       case 'QUENTE':
         return 'bg-green-50 text-green-700 border-green-200';
@@ -322,7 +337,7 @@ export function LeadsSection() {
               onValueChange={(value) => setFilters(prev => ({ ...prev, classification: value as LeadClassification | 'all' }))}
             >
             <SelectTrigger className="w-full sm:w-[220px] h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
-                <SelectValue placeholder="Classificação" />
+                <SelectValue placeholder="Rating" />
               </SelectTrigger>
               <SelectContent>
                 {classificationOptions.map(option => (
@@ -348,7 +363,7 @@ export function LeadsSection() {
               onValueChange={(value) => setFilters(prev => ({ ...prev, completion: value as 'all' | 'completo' | 'em_progresso' | 'abandonado' }))}
             >
             <SelectTrigger className="w-full sm:w-[220px] h-9 rounded-md bg-background px-3 py-2 text-base md:text-sm font-normal focus:outline-none focus:ring-0 focus:ring-offset-0">
-                <SelectValue placeholder="Conclusão" />
+                <SelectValue placeholder="Completion" />
               </SelectTrigger>
               <SelectContent>
                 {completionOptions.map(option => (
@@ -402,8 +417,8 @@ export function LeadsSection() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <Badge className={clsx("border", classificationBadge(lead.classificacao))}>
-                        {lead.classificacao || '?'}
+                      <Badge className={clsx("border", classificationBadgeClass(lead.classificacao))}>
+                        {getLeadClassificationLabel(lead.classificacao, '?')}
                       </Badge>
                       {hasMultipleForms && lead.formId != null && (
                         <Badge variant="outline" className="text-xs">
@@ -450,11 +465,7 @@ export function LeadsSection() {
                         variant="destructive"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => {
-                          if (window.confirm('Delete this lead?')) {
-                            deleteLead.mutate(lead.id);
-                          }
-                        }}
+                        onClick={() => setLeadPendingDelete(lead)}
                         disabled={deleteLead.isPending}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -468,12 +479,45 @@ export function LeadsSection() {
         </div>
       </div>
 
+      <AlertDialog open={!!leadPendingDelete} onOpenChange={(open) => !open && setLeadPendingDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete lead?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {leadPendingDelete
+                ? `This will permanently remove ${leadPendingDelete.nome || 'this lead'} from the system. This action cannot be undone.`
+                : 'This action cannot be undone.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteLead.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={!leadPendingDelete || deleteLead.isPending}
+              onClick={() => {
+                if (!leadPendingDelete) return;
+                deleteLead.mutate(leadPendingDelete.id);
+              }}
+            >
+              {deleteLead.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Dialog open={isLeadDialogOpen} onOpenChange={setIsLeadDialogOpen}>
         <DialogContent className="max-w-4xl w-[95vw] sm:w-full max-h-[90vh] overflow-hidden">
           {selectedLead ? (
             <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-1">
               <DialogHeader>
-                <DialogTitle>Detalhes do lead</DialogTitle>
+                <DialogTitle>Lead Details</DialogTitle>
               </DialogHeader>
 
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -483,10 +527,10 @@ export function LeadsSection() {
                   <p className="text-sm text-muted-foreground">{selectedLead.cidadeEstado || 'City not provided'}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Badge className={clsx("border", classificationBadge(selectedLead.classificacao))}>
-                    {selectedLead.classificacao || '?'}
+                  <Badge className={clsx("border", classificationBadgeClass(selectedLead.classificacao))}>
+                    {getLeadClassificationLabel(selectedLead.classificacao, '?')}
                   </Badge>
-                  <Badge variant="outline">{selectedLead.status || 'novo'}</Badge>
+                  <Badge variant="outline">{getLeadStatusLabel(selectedLead.status)}</Badge>
                   <Badge variant="secondary">{questionLabel(selectedLead)}</Badge>
                   {hasMultipleForms && selectedLead.formId != null && (
                     <Badge variant="outline">
@@ -512,7 +556,7 @@ export function LeadsSection() {
                 <DetailItem label="Availability" value={selectedLead.disponibilidade || '?'} />
                 <DetailItem label="Results Expectation" value={selectedLead.expectativaResultado || '?'} />
                 <DetailItem label="Total Score" value={selectedLead.scoreTotal ?? '—'} />
-                <DetailItem label="Rating" value={selectedLead.classificacao || '?'} />
+                <DetailItem label="Rating" value={getLeadClassificationLabel(selectedLead.classificacao, '?')} />
                 <DetailItem label="Last Update" value={formatDate((selectedLead.updatedAt as any) || (selectedLead.createdAt as any))} />
               </div>
 
@@ -566,4 +610,5 @@ export function LeadsSection() {
     </div>
   );
 }
-
+
+

@@ -1,6 +1,7 @@
 import { pgTable, text, serial, integer, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { randomUUID } from "crypto";
 import { DEFAULT_PAGE_SLUGS, type PageSlugs } from "../pageSlugs.js";
 
 // GoHighLevel Integration Settings
@@ -77,8 +78,48 @@ export const companySettings = pgTable("company_settings", {
     title: 'Skale Club',
     description: 'Data-Driven Marketing & Scalable Growth Solutions',
     links: [],
-    socialLinks: []
+    socialLinks: [],
+    theme: {},
   }),
+});
+
+// Links Page — per-link, per-social, theme, and full config schemas.
+// Upgrades the previous z.custom<T>() escape hatch to real runtime validation.
+export const linksPageThemeSchema = z.object({
+  primaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  backgroundColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  backgroundGradient: z.string().optional(),
+  backgroundImageUrl: z.string().url().or(z.literal('')).optional(),
+});
+
+export const linksPageLinkSchema = z.object({
+  // id is server-stamped when absent; linksPageLinkSchema.parse(...) returns a guaranteed UUID.
+  id: z.string().uuid().optional().transform((v) => v ?? randomUUID()),
+  title: z.string().min(1).max(200),
+  url: z.string().min(1).max(2000),
+  order: z.number().int().min(0),
+  // New fields are optional at the TS surface so pre-Phase-12 client code (which builds
+  // plain {title,url,order} objects) still type-checks. Runtime defaults are guaranteed by
+  // normalizeLinksPageConfig() on every read; Zod parse stamps them on write when omitted.
+  iconType: z.enum(['lucide', 'upload', 'auto']).optional(),
+  iconValue: z.string().optional(),
+  visible: z.boolean().optional(),
+  clickCount: z.number().int().min(0).optional(),
+});
+
+export const linksPageSocialSchema = z.object({
+  platform: z.string().min(1).max(50),
+  url: z.string().min(1).max(2000),
+  order: z.number().int().min(0),
+});
+
+export const linksPageConfigSchema = z.object({
+  avatarUrl: z.string(),
+  title: z.string(),
+  description: z.string(),
+  links: z.array(linksPageLinkSchema),
+  socialLinks: z.array(linksPageSocialSchema),
+  theme: linksPageThemeSchema.optional(),
 });
 
 // Insert schemas
@@ -141,7 +182,7 @@ export const insertCompanySettingsSchema = z.object({
   facebookPixelEnabled: z.boolean().default(false),
   homepageContent: z.custom<HomepageContent>().optional().nullable(),
   pageSlugs: z.custom<PageSlugs>().optional().nullable(),
-  linksPageConfig: z.custom<LinksPageConfig>().optional().nullable(),
+  linksPageConfig: linksPageConfigSchema.optional().nullable(),
 });
 
 // Types
@@ -233,23 +274,20 @@ export interface HomepageContent {
   consultingStepsSection?: ConsultingStepsSection;
 }
 
-export interface LinksPageLink {
-  title: string;
-  url: string;
-  icon?: string;
-  order: number;
-}
+// Derive TS types from the Zod schemas using `z.input` so pre-Phase-12 client code
+// (which builds plain {title,url,order} objects in LinksSection.addLink()) still
+// type-checks — the id-transform on linksPageLinkSchema makes Zod's OUTPUT type have
+// a required `id: string`, but INPUT allows it to be omitted. Runtime UUID stamping
+// still happens via the transform inside linksPageLinkSchema.parse(), and
+// normalizeLinksPageConfig() fills defaults on every read — so runtime data is
+// always fully normalized even though compile-time types are looser.
+export type LinksPageTheme = z.input<typeof linksPageThemeSchema>;
+export type LinksPageLink = z.input<typeof linksPageLinkSchema>;
+export type LinksPageSocial = z.input<typeof linksPageSocialSchema>;
+export type LinksPageConfig = z.input<typeof linksPageConfigSchema>;
 
-export interface LinksPageSocial {
-  platform: string;
-  url: string;
-  order: number;
-}
-
-export interface LinksPageConfig {
-  avatarUrl: string;
-  title: string;
-  description: string;
-  links: LinksPageLink[];
-  socialLinks: LinksPageSocial[];
-}
+// Strict post-parse / post-normalize types — every field guaranteed present, `id`
+// guaranteed to be a UUID string. Use these in server code paths that have run
+// linksPageLinkSchema.parse() or normalizeLinksPageConfig().
+export type LinksPageLinkNormalized = z.output<typeof linksPageLinkSchema>;
+export type LinksPageConfigNormalized = z.output<typeof linksPageConfigSchema>;

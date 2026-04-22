@@ -35,6 +35,8 @@ export type CustomServiceItem = z.infer<typeof customServiceItemSchema>;
 export const estimates = pgTable("estimates", {
   id: serial("id").primaryKey(),
   clientName: text("client_name").notNull(),
+  companyName: text("company_name"),
+  contactName: text("contact_name"),
   slug: text("slug").notNull().unique(),
   note: text("note"),
   services: jsonb("services").$type<EstimateServiceItem[]>().notNull().default([]),
@@ -55,6 +57,8 @@ export type EstimateView = typeof estimateViews.$inferSelect;
 // Insert schema (manual Zod, following cms.ts pattern)
 export const insertEstimateSchema = z.object({
   clientName: z.string().min(1),
+  companyName: z.string().nullable().optional(),
+  contactName: z.string().nullable().optional(),
   slug: z.string().min(1),
   note: z.string().nullable().optional(),
   services: z.array(estimateServiceItemSchema).default([]),

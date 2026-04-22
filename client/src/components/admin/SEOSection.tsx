@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Check, Globe, Image, Link2, Loader2, Plus, Search, Trash2 } from 'lucide-react';
+import {
+  Check,
+  Globe,
+  Image,
+  Link2,
+  Plus,
+  Search,
+  Trash2,
+} from 'lucide-react';
 import { AdminCard, SectionHeader } from './shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { Loader2 } from '@/components/ui/loader';
 import type { SEOSettingsData } from './shared/types';
 import { DEFAULT_PAGE_SLUGS, resolvePageSlugs, type PageSlugs } from '@shared/pageSlugs';
 import { uploadFileToServer } from './shared/utils';
@@ -131,7 +140,7 @@ export function SEOSection() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="flex w-full items-center justify-center py-12">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -451,3 +460,4 @@ export function SEOSection() {
     </div>
   );
 }
+

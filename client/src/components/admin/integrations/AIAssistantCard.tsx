@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Bot, Check, ChevronDown, LayoutGrid, Loader2 } from 'lucide-react';
+import {
+  Bot,
+  Check,
+  ChevronDown,
+  LayoutGrid,
+} from 'lucide-react';
 import { SiGoogle, SiOpenai } from 'react-icons/si';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { Loader2 } from '@/components/ui/loader';
 import type { ChatSettingsData, OpenAISettings } from '../shared/types';
 
 type AIProviderTab = 'openai' | 'gemini' | 'openrouter';
@@ -634,3 +640,4 @@ export function AIAssistantCard() {
     </Card>
   );
 }
+

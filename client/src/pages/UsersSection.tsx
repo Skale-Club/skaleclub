@@ -9,8 +9,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Plus, Pencil, Trash2, Check, Users, Upload } from 'lucide-react';
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Check,
+  Users,
+  Upload,
+} from 'lucide-react';
 import { SectionHeader } from '@/components/admin/shared';
+import { Loader2 } from '@/components/ui/loader';
 
 async function uploadFileToServer(file: File): Promise<string> {
   const base64Data = await new Promise<string>((resolve, reject) => {
@@ -248,7 +256,7 @@ export function UsersSection() {
       {/* Users Table */}
       <div className="rounded-2xl border overflow-hidden">
           {isLoading ? (
-            <div className="flex items-center justify-center h-64">
+            <div className="flex w-full items-center justify-center h-64">
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
             </div>
           ) : !users || users.length === 0 ? (
@@ -461,3 +469,4 @@ export function UsersSection() {
     </div>
   );
 }
+

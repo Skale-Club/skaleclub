@@ -1,9 +1,23 @@
 import { motion } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
-import { Download, Share2, Phone, Mail, Instagram, Linkedin, Twitter, Youtube, Facebook, Send, ExternalLink, QrCode, Loader2 } from "lucide-react";
+import {
+  Download,
+  Share2,
+  Phone,
+  Mail,
+  Instagram,
+  Linkedin,
+  Twitter,
+  Youtube,
+  Facebook,
+  Send,
+  ExternalLink,
+  QrCode,
+} from "lucide-react";
 import QRCode from "react-qr-code";
 import { downloadVCard } from "@/lib/vcard";
+import { Loader2 } from '@/components/ui/loader';
 import { useParams } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";

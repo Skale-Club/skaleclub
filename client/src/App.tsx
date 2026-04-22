@@ -70,6 +70,7 @@ const Portfolio = lazy(() => import("@/pages/Portfolio").then(m => ({ default: (
 const Links = lazy(() => import("@/pages/Links").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const VCard = lazy(() => import("@/pages/VCard").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const EstimateViewer = lazy(() => import("@/pages/EstimateViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const PresentationViewer = lazy(() => import("@/pages/PresentationViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const XpotApp = lazy(() => import("@/pages/XpotApp").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const XpotLogin = lazy(() => import("@/pages/XpotLogin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 
@@ -118,6 +119,7 @@ function Router() {
   const isLinksRoute = isRoutePrefixMatch(location, pagePaths.links) || isRoutePrefixMatch(location, legacyPaths.links);
   const isVCardRoute = isRoutePrefixMatch(location, pagePaths.vcard) || isRoutePrefixMatch(location, legacyPaths.vcard);
   const isEstimateRoute = location.startsWith('/e/');
+  const isPresentationRoute = location.startsWith('/p/');
   const prevLocation = useRef(location);
 
   useEffect(() => {
@@ -167,8 +169,7 @@ function Router() {
           <Switch>
             <Route path="/admin/login" component={AdminLogin} />
             <Route path="/admin/signup" component={AdminSignup} />
-            <Route path="/admin" component={Admin} />
-            <Route path="/admin/:rest*" component={Admin} />
+            <Route path="/admin/*?" component={Admin} />
             <Route component={NotFound} />
           </Switch>
         </Suspense>
@@ -183,14 +184,12 @@ function Router() {
           {xpotHost ? (
             <>
               <Route path="/login" component={XpotLogin} />
-              <Route path="/" component={XpotApp} />
-              <Route path="/:rest*" component={XpotApp} />
+              <Route path="/*?" component={XpotApp} />
             </>
           ) : (
             <>
               <Route path="/xpot/login" component={XpotLogin} />
-              <Route path="/xpot" component={XpotApp} />
-              <Route path="/xpot/:rest*" component={XpotApp} />
+              <Route path="/xpot/*?" component={XpotApp} />
             </>
           )}
           <Route component={NotFound} />
@@ -234,6 +233,17 @@ function Router() {
       <Suspense fallback={fallback}>
         <Switch>
           <Route path="/e/:slug" component={EstimateViewer} />
+          <Route component={NotFound} />
+        </Switch>
+      </Suspense>
+    );
+  }
+
+  if (isPresentationRoute) {
+    return (
+      <Suspense fallback={fallback}>
+        <Switch>
+          <Route path="/p/:slug" component={PresentationViewer} />
           <Route component={NotFound} />
         </Switch>
       </Suspense>

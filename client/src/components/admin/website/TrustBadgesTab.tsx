@@ -1,11 +1,24 @@
 import { useState } from 'react';
-import { BadgeCheck, Clock, Heart, Image, Loader2, Plus, Shield, Sparkles, Star, ThumbsUp, Trash2, Trophy } from 'lucide-react';
+import {
+  BadgeCheck,
+  Clock,
+  Heart,
+  Image,
+  Plus,
+  Shield,
+  Sparkles,
+  Star,
+  ThumbsUp,
+  Trash2,
+  Trophy,
+} from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from '@/components/ui/loader';
 import type { HomepageContent } from '@shared/schema';
 import { uploadFileToServer } from '../shared/utils';
 
@@ -263,3 +276,4 @@ export function TrustBadgesTab({ homepageContent, updateHomepageContent, trigger
     </div>
   );
 }
+
