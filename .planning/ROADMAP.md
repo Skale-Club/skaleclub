@@ -89,12 +89,14 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 **Goal**: Database tables for blog automation exist, Drizzle/Zod schemas are typed, and the storage layer has stubs that downstream phases can build on.
 **Depends on**: Nothing (first phase of v1.5)
 **Requirements**: BLOG-01, BLOG-02, BLOG-03, BLOG-04
-**Plans:** 0/1 plans complete
+**Plans:** 1 plan
 **Success Criteria** (what must be TRUE):
   1. Raw SQL migration creates `blog_settings` and `blog_generation_jobs` tables without error — `SELECT * FROM blog_settings LIMIT 1` returns empty, not an error.
   2. `shared/schema/blog.ts` exports Drizzle table defs + Zod validators; `npm run check` passes cleanly.
   3. `IStorage` declares `getBlogSettings()`, `upsertBlogSettings()`, `createBlogGenerationJob()`, `updateBlogGenerationJob()` — `DatabaseStorage` implements all four.
   4. `blog_generation_jobs.postId` has no FK constraint — column is nullable int, not a foreign key reference.
+**Plans:**
+- [ ] `21-01-PLAN.md` — Create additive migration + dedicated blog schema module + typed storage stubs (BLOG-01, BLOG-02, BLOG-03, BLOG-04)
 
 ### Phase 22: Blog Generator Engine
 **Goal**: `BlogGenerator.generate()` runs the full Gemini pipeline — validates settings, acquires a global DB lock, generates content + image, uploads to Supabase, creates a draft blog post, and clears the lock.
