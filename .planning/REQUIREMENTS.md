@@ -30,11 +30,11 @@
 - [x] **PRES-12**: SlideBlock JSON schema supports 8 layout variants (`cover`, `section-break`, `title-body`, `bullets`, `stats`, `two-column`, `image-focus`, `closing`) with bilingual fields: `heading`/`headingPt`, `body`/`bodyPt`, `bullets: string[]`/`bulletsPt: string[]`. Schema validated via Zod on every DB write.
 - [x] **PRES-13**: Admin can request per-slide edits in chat (e.g. "edit slide 3 — shorten the body") — the AI receives the full current `SlideBlock[]` context and returns an updated array with only the targeted slide(s) changed; other slides are preserved verbatim.
 
-### Admin Chat Editor
+### Admin Presentations Editor
 
 - [ ] **PRES-14**: Admin **Presentations** tab shows list of all presentations with title, slide count, view count badge, copy-link button, delete button, and an "Open Editor" button per row.
-- [ ] **PRES-15**: Presentation editor opens in a split-view panel: **chat panel** (left) with message history + input that sends to `/api/presentations/:id/chat` and streams the response; **slide preview panel** (right) showing current SlideBlock[] as mini cards.
-- [ ] **PRES-16**: Slide preview panel updates automatically after each AI response completes; admin can click any mini card to quote that slide number into the chat input for targeted edits.
+- [ ] **PRES-15**: Presentation editor opens showing: a monospace JSON textarea with the current `SlideBlock[]` (editable); a Save button that calls `PUT /api/presentations/:id`; and a slide preview panel showing current slides as mini cards.
+- [ ] **PRES-16**: Slide preview panel shows each `SlideBlock` as a mini card with its layout type and heading visible; the JSON textarea reflects the saved state; admin edits JSON and saves to update slides.
 
 ### Public Viewer
 
@@ -49,7 +49,8 @@
 
 | Feature | Reason |
 |---------|--------|
-| WYSIWYG / drag-drop slide editor | Constraint from seed — editing is 100% conversational with Claude |
+| In-app chat panel calling Anthropic API | Slides authored via Claude Code IDE; admin panel only needs JSON editor + preview |
+| WYSIWYG / drag-drop slide editor | Editing via JSON paste from Claude Code session |
 | PPTX / PDF export | Future milestone (v1.5 candidate); requires Playwright on serverless — Vercel blocker |
 | Per-slide image generation (DALL-E / Stable Diffusion) | Deferred — admin can paste image URLs; AI-generated imagery is v1.5 scope |
 | Slide templates library | Deferred — 8 layout variants cover agency needs; template picker is additive |
