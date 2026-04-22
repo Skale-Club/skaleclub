@@ -38,12 +38,12 @@
 
 ### Public Viewer
 
-- [ ] **PRES-17**: `GET /api/presentations/slug/:slug` — public endpoint (no auth); returns full presentation including slides; validates access code if `accessCode` is set (400 if wrong/missing); records a row in `presentation_views` on every successful load.
-- [ ] **PRES-18**: `/p/:slug` route in App.tsx is isolated from Navbar/Footer/ChatWidget via `isPresentationRoute` guard (symmetric to `isEstimateRoute` pattern).
+- [x] **PRES-17**: `GET /api/presentations/slug/:slug` — public endpoint (no auth); returns full presentation including slides; validates access code if `accessCode` is set (400 if wrong/missing); records a row in `presentation_views` on every successful load.
+- [x] **PRES-18**: `/p/:slug` route in App.tsx is isolated from Navbar/Footer/ChatWidget via `isPresentationRoute` guard (symmetric to `isEstimateRoute` pattern).
 - [ ] **PRES-19**: `PresentationViewer` renders slides as fullscreen scroll-snap sections (one slide per viewport height), framer-motion enter animations per section, layout-specific rendering for each `SlideBlock.layout` variant.
 - [ ] **PRES-20**: Language switcher in the viewer — `?lang=en` (default) or `?lang=pt-BR`; each slide renders the appropriate bilingual fields (`heading` vs `headingPt`, etc.).
 - [ ] **PRES-21**: Access code gate — if `accessCode` is set on the presentation, viewer shows a code-entry form before revealing slides (same UX pattern as `EstimateViewer`).
-- [ ] **PRES-22**: Admin Presentations list shows view count badge per presentation, sourced from `presentation_views` count query.
+- [x] **PRES-22**: Admin Presentations list shows view count badge per presentation, sourced from `presentation_views` count query.
 
 ## Out of Scope
 
@@ -79,12 +79,12 @@
 | PRES-14 | Phase 19 | Complete |
 | PRES-15 | Phase 19 | Complete |
 | PRES-16 | Phase 19 | Complete |
-| PRES-17 | Phase 20 | Pending |
-| PRES-18 | Phase 20 | Pending |
+| PRES-17 | Phase 20 | Complete |
+| PRES-18 | Phase 20 | Complete |
 | PRES-19 | Phase 20 | Pending |
 | PRES-20 | Phase 20 | Pending |
 | PRES-21 | Phase 20 | Pending |
-| PRES-22 | Phase 20 | Pending |
+| PRES-22 | Phase 20 | Complete |
 
 **Coverage:**
 - v1.4 requirements: 22 total

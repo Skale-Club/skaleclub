@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Admin Presentations Page
-status: planning
-last_updated: "2026-04-22T02:25:16.487Z"
+status: executing
+last_updated: "2026-04-22T04:02:57.908Z"
 last_activity: 2026-04-22
 progress:
   total_phases: 11
   completed_phases: 10
-  total_plans: 17
-  completed_plans: 17
+  total_plans: 19
+  completed_plans: 18
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** Ready to plan
+**Status:** Ready to execute
 
 ---
 
@@ -24,15 +24,15 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-04-20)
 
 **Core value:** Admin builds branded slide decks by conversing with Claude — no WYSIWYG — and shares them as fullscreen bilingual experiences at `/p/:slug`.
-**Current focus:** Phase 19 — admin-chat-editor
+**Current focus:** Phase 20 — public-viewer
 
 ---
 
 ## Current Position
 
-Phase: 20
-Plan: Not started
-Status: Executing Phase 19
+Phase: 20 (public-viewer) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
 Last activity: 2026-04-22
 
 ---
@@ -65,6 +65,7 @@ Last activity: 2026-04-22
 | Phase 18-ai-authoring-endpoint P01 | 5min | 2 tasks | 2 files |
 | Phase 18-ai-authoring-endpoint P02 | 3min | 2 tasks | 2 files |
 | Phase 19-admin-chat-editor P01 | ~4min | 2 tasks | 3 files |
+| Phase 20-public-viewer P01 | 12min | 3 tasks | 4 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -171,6 +172,8 @@ Last activity: 2026-04-22
 - [Phase 19-admin-chat-editor]: key={selectedId} re-mount strategy for editor state reset — zero extra code
 - [Phase 19-admin-chat-editor]: PresentationsSection co-locates SlideCard + PresentationEditor in one file (matches EstimatesSection pattern, 355 lines)
 - [Phase 19-admin-chat-editor]: In-app chat panel replaced with JSON textarea — slides authored in Claude Code IDE, pasted into admin panel
+- [Phase 20-public-viewer]: PresentationViewer.tsx stub required for TS module resolution — lazy() does not defer tsc path checking; stub satisfies compiler without full implementation
+- [Phase 20-public-viewer]: SHA-256 IP hash on POST /api/presentations/:id/view — mirrors ip_hash column naming, aligns with Phase 15 schema intent
 
 ### Quick Tasks Completed
 
