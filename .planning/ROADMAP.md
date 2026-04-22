@@ -133,12 +133,15 @@ Plans:
 **Goal**: Admin can configure and trigger blog automation from the Blog section without leaving the admin dashboard.
 **Depends on**: Phase 23 (settings API + generate endpoint)
 **Requirements**: BLOG-17, BLOG-18, BLOG-19
-**Plans:** 0/1 plans complete
+**Plans:** 2 plans
 **Success Criteria** (what must be TRUE):
   1. Blog section has an "Automation" tab/accordion with: enabled toggle, postsPerDay select (0–4), seoKeywords textarea, enableTrendAnalysis toggle, promptStyle textarea, Save button.
   2. Saving settings calls `PUT /api/blog/settings` and shows a "Saved" confirmation.
   3. "Generate Now" button shows a spinner while pending, then a success toast with a link to the new draft post — or an error/skip toast explaining why generation was skipped or failed.
   4. UI shows "Last generated: X ago" from `blog_settings.lastRunAt` and the status of the most recent job.
+Plans:
+- [ ] `24-01-PLAN.md` — getLatestBlogGenerationJob storage method + GET /api/blog/jobs/latest route (BLOG-19)
+- [ ] `24-02-PLAN.md` — BlogAutomationPanel co-located in BlogSection.tsx + Posts/Automation tab strip (BLOG-17, BLOG-18, BLOG-19)
 
 ---
 
@@ -149,11 +152,11 @@ Plans:
 | 21. Schema & Storage Foundation | 1/1 | Complete   | 2026-04-22 |
 | 22. Blog Generator Engine | 2/2 | Complete   | 2026-04-22 |
 | 23. API Endpoints + Cron | 1/1 | Complete    | 2026-04-22 |
-| 24. Admin UI — Automation Settings | 0/1 | Not started | - |
+| 24. Admin UI — Automation Settings | 0/2 | Not started | - |
 
 ---
 
-_Last updated: 2026-04-22 — Phase 23 planned (1 plan); Phase 22 complete; BLOG-05-12 delivered_
+_Last updated: 2026-04-22 — Phase 24 planned (2 plans, 2 waves); Phase 23 complete; BLOG-13-16 delivered_
 
 ---
 
