@@ -205,7 +205,9 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 **Goal**: Admin can manage presentations and edit their slides via a JSON editor with a live mini-preview — slides are authored by conversing with Claude Code (IDE) and pasting the resulting JSON.
 **Depends on**: Phase 16 (CRUD API for list/create/delete)
 **Requirements**: PRES-14, PRES-15, PRES-16
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 19-01-PLAN.md — PresentationsSection list + JSON editor + slide mini-cards + Admin.tsx wire-up (PRES-14, PRES-15, PRES-16)
 **Success Criteria** (what must be TRUE):
   1. Admin Presentations tab shows a list of all presentations with `title`, slide-count, view-count badge, a copy-link button, a delete button, and an "Open Editor" button per row; clicking delete shows a confirmation and removes the row without a page reload.
   2. Clicking "Open Editor" opens an editor view: a monospace JSON textarea showing the current `SlideBlock[]` (editable), a Save button that calls `PUT /api/presentations/:id`, and a slide preview panel showing current slides as mini cards.
@@ -241,9 +243,9 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 | 16. Admin CRUD API | 1/1 | Complete    | 2026-04-21 |
 | 17. Brand Guidelines | 0/1 | Not started | - |
 | 18. AI Authoring Endpoint | 2/2 | Complete    | 2026-04-22 |
-| 19. Admin Chat Editor | 0/? | Not started | - |
+| 19. Admin Chat Editor | 0/1 | Planned     | - |
 | 20. Public Viewer | 0/? | Not started | - |
 
 ---
 
-_Last updated: 2026-04-21 — Phase 18 planned; 2 plans (18-01, 18-02); PRES-11–13 mapped_
+_Last updated: 2026-04-22 — Phase 19 planned; 1 plan (19-01); PRES-14–16 mapped_
