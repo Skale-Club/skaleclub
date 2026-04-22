@@ -17,7 +17,7 @@
 - [ ] **Phase 17: Brand Guidelines** — Guidelines singleton endpoints + admin editor UI
 - [ ] **Phase 18: AI Authoring Endpoint** — SSE streaming endpoint with Claude tool_use + SlideBlock Zod schema
 - [ ] **Phase 19: Admin Presentations Editor** — Presentations list + JSON editor + slide mini-preview in admin
-- [ ] **Phase 20: Public Viewer** — `/p/:slug` fullscreen viewer, access code gate, language switcher, view tracking
+- [x] **Phase 20: Public Viewer** — `/p/:slug` fullscreen viewer, access code gate, language switcher, view tracking
 
 ## Phases
 
@@ -219,10 +219,10 @@ Plans:
 **Goal**: Anyone with a presentation link can experience the deck as a fullscreen bilingual scroll-snap presentation — isolated from the site's Navbar and Footer — with an access code gate if one is set, and every successful view is recorded for admin analytics.
 **Depends on**: Phase 15 (schema for view tracking), Phase 16 (public slug lookup API)
 **Requirements**: PRES-17, PRES-18, PRES-19, PRES-20, PRES-21, PRES-22
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans executed
 Plans:
 - [x] 20-01-PLAN.md — Server endpoints (slug augment + verify-code + view POST) + App.tsx isPresentationRoute guard + translations (PRES-17, PRES-18, PRES-22)
-- [ ] 20-02-PLAN.md — PresentationViewer.tsx — scroll-snap, 8 layout renderers, language switcher, access gate, view tracking (PRES-19, PRES-20, PRES-21)
+- [x] 20-02-PLAN.md — PresentationViewer.tsx — scroll-snap, 8 layout renderers, language switcher, access gate, view tracking (PRES-19, PRES-20, PRES-21)
 **Success Criteria** (what must be TRUE):
   1. `GET /api/presentations/slug/:slug` (no auth) returns the full presentation including slides; each successful response creates a new row in `presentation_views` — the admin view-count badge for that presentation increments by 1 after reload.
   2. `/p/:slug` renders with no Navbar, Footer, or ChatWidget visible; opening Dev Tools confirms `isPresentationRoute` is true for the route and the standard site layout branch is skipped.
@@ -247,8 +247,8 @@ Plans:
 | 17. Brand Guidelines | 0/1 | Not started | - |
 | 18. AI Authoring Endpoint | 2/2 | Complete    | 2026-04-22 |
 | 19. Admin Chat Editor | 0/1 | Complete    | 2026-04-22 |
-| 20. Public Viewer | 1/2 | In Progress|  |
+| 20. Public Viewer | 2/2 | Complete | 2026-04-22 |
 
 ---
 
-_Last updated: 2026-04-22 — Phase 20 planned; 2 plans (20-01, 20-02); PRES-17–22 mapped_
+_Last updated: 2026-04-22 — Phase 20 complete (2/2 plans); PRES-17–22 all delivered; v1.4 feature-complete_
