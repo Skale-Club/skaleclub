@@ -4,6 +4,26 @@ import { storage } from "../storage.js";
 import { insertPresentationSchema } from "#shared/schema.js";
 import { requireAdmin } from "./_shared.js";
 
+function slugifyTitle(title: string): string {
+  return title
+    .toLowerCase()
+    .trim()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "presentation";
+}
+
+async function buildUniquePresentationSlug(title: string): Promise<string> {
+  const base = slugifyTitle(title);
+  if (!await storage.getPresentationBySlug(base)) return base;
+  for (let i = 0; i < 5; i++) {
+    const candidate = `${base}-${crypto.randomBytes(2).toString("hex")}`;
+    if (!await storage.getPresentationBySlug(candidate)) return candidate;
+  }
+  return `${base}-${Date.now()}`;
+}
+
 export function registerPresentationsRoutes(app: Express) {
   // Literal-segment route registered FIRST — prevents Express matching "slug" as a :id UUID
   // (RESEARCH.md Pitfall 3 guard)
@@ -37,7 +57,8 @@ export function registerPresentationsRoutes(app: Express) {
       if (presentation.accessCode !== code) {
         return res.status(401).json({ message: "Incorrect code" });
       }
-      res.json({ success: true });
+      const { accessCode, ...publicPresentation } = presentation as any;
+      res.json({ ...publicPresentation, hasAccessCode: true });
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
     }
@@ -60,10 +81,12 @@ export function registerPresentationsRoutes(app: Express) {
 
   // PRES-05: Admin list — returns PresentationWithStats[] sorted by createdAt desc
   // listPresentations() already performs the LEFT JOIN + JSONB count query
-  app.get("/api/presentations", requireAdmin, async (_req, res) => {
+  app.get("/api/presentations", requireAdmin, async (req, res) => {
     try {
-      const list = await storage.listPresentations();
-      res.json(list);
+      const limit = req.query.limit ? Number(req.query.limit) : undefined;
+      const offset = req.query.offset ? Number(req.query.offset) : undefined;
+      const result = await storage.listPresentations(limit, offset);
+      res.json(result);
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
     }
@@ -78,7 +101,8 @@ export function registerPresentationsRoutes(app: Express) {
       if (!parsed.success) {
         return res.status(400).json({ message: "Validation error", errors: parsed.error.errors });
       }
-      const presentation = await storage.createPresentation({ title: parsed.data.title, slides: [] });
+      const slug = await buildUniquePresentationSlug(parsed.data.title);
+      const presentation = await storage.createPresentation({ title: parsed.data.title, slides: [], slug });
       res.status(201).json({ id: presentation.id, slug: presentation.slug, slides: presentation.slides });
     } catch (err) {
       res.status(400).json({ message: (err as Error).message });

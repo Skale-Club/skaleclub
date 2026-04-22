@@ -709,7 +709,7 @@ export interface IStorage {
   updateSalesSyncEvent(id: number, input: Partial<InsertSalesSyncEvent>): Promise<SalesSyncEvent | undefined>;
 
   // Presentations (PRES-05 – PRES-08)
-  listPresentations(): Promise<PresentationWithStats[]>;
+  listPresentations(limit?: number, offset?: number): Promise<{ data: PresentationWithStats[], total: number }>;
   getPresentation(id: string): Promise<Presentation | undefined>;
   getPresentationBySlug(slug: string): Promise<Presentation | undefined>;
   createPresentation(data: InsertPresentation): Promise<Presentation>;
@@ -1865,8 +1865,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Estimates
-  async listEstimates(): Promise<EstimateWithStats[]> {
-    const rows = await db
+  async listEstimates(limit?: number, offset?: number): Promise<{ data: EstimateWithStats[]; total: number }> {
+    let query = db
       .select({
         id: estimates.id,
         clientName: estimates.clientName,
@@ -1882,8 +1882,16 @@ export class DatabaseStorage implements IStorage {
       .from(estimates)
       .leftJoin(estimateViews, eq(estimateViews.estimateId, estimates.id))
       .groupBy(estimates.id)
-      .orderBy(desc(estimates.createdAt));
-    return rows as EstimateWithStats[];
+      .orderBy(desc(estimates.createdAt))
+      .$dynamic();
+
+    if (limit !== undefined) query = query.limit(limit);
+    if (offset !== undefined) query = query.offset(offset);
+
+    const rows = await query;
+    const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(estimates);
+
+    return { data: rows as EstimateWithStats[], total: count };
   }
 
   async getEstimate(id: number): Promise<Estimate | undefined> {
@@ -1921,8 +1929,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Presentations (Phase 16 implements full CRUD; Phase 15 adds typed stubs)
-  async listPresentations(): Promise<PresentationWithStats[]> {
-    const rows = await db
+  async listPresentations(limit?: number, offset?: number): Promise<{ data: PresentationWithStats[]; total: number }> {
+    let query = db
       .select({
         id:                presentations.id,
         slug:              presentations.slug,
@@ -1939,8 +1947,16 @@ export class DatabaseStorage implements IStorage {
       .from(presentations)
       .leftJoin(presentationViews, eq(presentationViews.presentationId, presentations.id))
       .groupBy(presentations.id)
-      .orderBy(desc(presentations.createdAt));
-    return rows as PresentationWithStats[];
+      .orderBy(desc(presentations.createdAt))
+      .$dynamic();
+
+    if (limit !== undefined) query = query.limit(limit);
+    if (offset !== undefined) query = query.offset(offset);
+
+    const rows = await query;
+    const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(presentations);
+
+    return { data: rows as PresentationWithStats[], total: count };
   }
 
   async getPresentation(id: string): Promise<Presentation | undefined> {

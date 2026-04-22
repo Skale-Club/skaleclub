@@ -5,12 +5,12 @@ import {
   ExternalLink,
   Eye,
   GripVertical,
+  Layers,
   Pencil,
   Plus,
   Receipt,
   Trash2,
 } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
 import {
   DndContext, closestCenter, type DragEndEvent,
   MouseSensor, TouchSensor, useSensor, useSensors
@@ -25,6 +25,15 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -37,7 +46,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Loader2 } from '@/components/ui/loader';
-import { EmptyState, SectionHeader } from './shared';
+import { AdminCard, EmptyState, SectionHeader } from './shared';
 import { PageThumbnail } from '@/components/ui/PageThumbnail';
 import type { Estimate, EstimateWithStats, EstimateServiceItem, CatalogServiceItem } from '@shared/schema';
 import type { PortfolioService } from '@shared/schema';
@@ -354,9 +363,18 @@ export function EstimatesSection() {
   const [editingEstimate, setEditingEstimate] = useState<Estimate | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Estimate | null>(null);
 
-  const { data: estimates = [], isLoading } = useQuery<EstimateWithStats[]>({
-    queryKey: ['/api/estimates'],
+  const ITEMS_PER_PAGE = 10;
+  const [page, setPage] = useState(1);
+  const offset = (page - 1) * ITEMS_PER_PAGE;
+
+  const { data: queryData, isLoading } = useQuery<{ data: EstimateWithStats[], total: number }>({
+    queryKey: ['/api/estimates', page],
+    queryFn: () => fetch(`/api/estimates?limit=${ITEMS_PER_PAGE}&offset=${offset}`).then(r => r.json()),
   });
+
+  const estimates = queryData?.data ?? [];
+  const totalItems = queryData?.total ?? 0;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
   const createMutation = useMutation({
     mutationFn: async (data: { clientName: string; companyName: string; contactName: string; note: string | null; services: EstimateServiceItem[]; accessCode: string | null }) => {
@@ -426,94 +444,128 @@ export function EstimatesSection() {
         icon={<Receipt className="w-5 h-5" />}
         action={
           <Button
+            size="sm"
             onClick={() => {
               setEditingEstimate(null);
               setIsDialogOpen(true);
             }}
+            className="gap-2"
           >
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="w-4 h-4" />
             New Estimate
           </Button>
         }
       />
 
-      {isLoading ? (
-        <div className="flex w-full items-center justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-          <span className="ml-2 text-sm text-muted-foreground">Loading estimates...</span>
-        </div>
-      ) : estimates.length === 0 ? (
-        <EmptyState
-          icon={<Receipt />}
-          title="No estimates yet"
-          description="Create your first estimate to generate a shareable proposal link."
-        />
-      ) : (
-        <div className="space-y-3">
-          {estimates.map((est) => (
-            <div
-              key={est.id}
-              className="flex items-center gap-3 border rounded-lg p-4 bg-card"
-            >
-              <PageThumbnail url={`/e/${est.slug}?preview=1`} />
-              <span className="font-bold text-sm flex-1">{est.clientName}</span>
-              <span className="text-xs text-muted-foreground font-mono truncate max-w-[160px]">
-                {est.slug}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {est.createdAt ? format(new Date(est.createdAt), 'MMM d, yyyy') : '—'}
-              </span>
-              <Badge variant="secondary" className="text-xs gap-1 shrink-0">
-                <Eye className="w-3 h-3" />
-                {est.viewCount ?? 0}
-              </Badge>
-              {est.lastViewedAt && (
-                <span className="text-xs text-muted-foreground shrink-0">
-                  last seen {formatDistanceToNow(new Date(est.lastViewedAt), { addSuffix: true })}
+      <AdminCard>
+        {isLoading ? (
+          <div className="flex items-center justify-center h-24">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : estimates.length === 0 ? (
+          <EmptyState
+            icon={<Receipt />}
+            title="No estimates yet"
+            description="Create your first estimate to generate a shareable proposal link."
+          />
+        ) : (
+          <div className="space-y-3">
+            {estimates.map((est) => (
+              <div
+                key={est.id}
+                className="flex items-center gap-3 border rounded-lg p-4 bg-card"
+              >
+                <PageThumbnail url={`/e/${est.slug}?preview=1`} />
+                <span className="font-semibold text-sm flex-1 truncate min-w-0">
+                  {est.companyName?.trim() || est.contactName?.trim() || est.clientName}
                 </span>
-              )}
-              <div className="flex gap-2 shrink-0">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Open estimate"
-                  onClick={() => window.open(`/e/${est.slug}`, '_blank', 'noopener,noreferrer')}
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Copy estimate link"
-                  onClick={() => handleCopyLink(est.slug)}
-                >
-                  <Copy className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Edit estimate"
-                  onClick={() => {
-                    setEditingEstimate(est);
-                    setIsDialogOpen(true);
-                  }}
-                >
-                  <Pencil className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Delete estimate"
-                  className="text-destructive"
-                  onClick={() => setDeleteTarget(est)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                <Badge variant="secondary" className="text-xs gap-1 shrink-0">
+                  <Layers className="w-3 h-3" />
+                  {est.services.length}
+                </Badge>
+                <Badge variant="secondary" className="text-xs gap-1 shrink-0">
+                  <Eye className="w-3 h-3" />
+                  {est.viewCount ?? 0}
+                </Badge>
+                <div className="flex gap-1 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Open estimate"
+                    title="Open estimate"
+                    onClick={() => window.open(`/e/${est.slug}`, '_blank', 'noopener,noreferrer')}
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Copy estimate link"
+                    title="Copy estimate link"
+                    onClick={() => handleCopyLink(est.slug)}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Edit estimate"
+                    title="Edit estimate"
+                    onClick={() => {
+                      setEditingEstimate(est);
+                      setIsDialogOpen(true);
+                    }}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Delete estimate"
+                    title="Delete estimate"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setDeleteTarget(est)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+            
+            {totalPages > 1 && (
+              <div className="pt-4">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                      <PaginationItem key={p}>
+                        <PaginationLink
+                          isActive={page === p}
+                          onClick={() => setPage(p)}
+                          className="cursor-pointer"
+                        >
+                          {p}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                        className={page === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </div>
+        )}
+      </AdminCard>
 
       {/* Delete confirmation AlertDialog */}
       {deleteTarget && (

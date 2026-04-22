@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Loader2 } from '@/components/ui/loader';
-import type { EstimateServiceItem } from '@shared/schema';
+import type { CompanySettings, EstimateServiceItem } from '@shared/schema';
 
 interface PublicEstimate {
   id: number;
@@ -206,6 +206,10 @@ export default function EstimateViewer() {
     retry: false,
   });
 
+  const { data: siteSettings } = useQuery<CompanySettings>({
+    queryKey: ['/api/company-settings'],
+  });
+
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [direction, setDirection] = useState(1);
@@ -240,6 +244,14 @@ export default function EstimateViewer() {
   }, [data, isUnlocked]);
 
   const total = data ? 2 + data.services.length + 1 : 0;
+
+  useEffect(() => {
+    if (!data) return;
+    const estimateName = data.companyName?.trim() || data.contactName?.trim() || data.clientName?.trim();
+    if (!estimateName) return;
+    const companyName = siteSettings?.companyName?.trim() || 'Skale Club';
+    document.title = `${estimateName} | ${companyName}`;
+  }, [data, siteSettings?.companyName]);
 
   const goTo = useCallback((idx: number) => {
     if (!data) return;

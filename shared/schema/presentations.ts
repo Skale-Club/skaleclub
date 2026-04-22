@@ -1,4 +1,5 @@
 import { pgTable, uuid, text, serial, integer, jsonb, timestamp } from "drizzle-orm/pg-core";
+// slug column changed from uuid → text so human-readable slugs (e.g. "acme-corp") can be stored
 import { z } from "zod";
 
 // SlideBlock: flat schema with .optional() fields — all 8 layout variants share the same bilingual field names.
@@ -33,11 +34,11 @@ export type SlideBlock = z.infer<typeof slideBlockSchema>;
 export type SlideLayout = SlideBlock["layout"];
 
 // presentations table (PRES-01)
-// UUID PK + UUID slug (both defaultRandom) — matches migrations/0033_create_presentations.sql
+// UUID PK, text slug (generated from title in route layer)
 // guidelinesSnapshot is TEXT not JSONB — content is markdown, not structured JSON
 export const presentations = pgTable("presentations", {
   id:                  uuid("id").primaryKey().defaultRandom(),
-  slug:                uuid("slug").notNull().unique().defaultRandom(),
+  slug:                text("slug").notNull().unique(),
   title:               text("title").notNull(),
   slides:              jsonb("slides").$type<SlideBlock[]>().notNull().default([]),
   guidelinesSnapshot:  text("guidelines_snapshot"),
@@ -88,7 +89,7 @@ export const insertPresentationSchema = z.object({
 // Select schema — used for API response validation and Phase 18 DB write gate
 export const selectPresentationSchema = z.object({
   id:                 z.string().uuid(),
-  slug:               z.string().uuid(),
+  slug:               z.string(),
   title:              z.string(),
   slides:             z.array(slideBlockSchema),
   guidelinesSnapshot: z.string().nullable(),

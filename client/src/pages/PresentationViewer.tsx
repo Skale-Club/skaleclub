@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Loader2 } from '@/components/ui/loader';
-import type { SlideBlock } from '@shared/schema';
+import type { CompanySettings, SlideBlock } from '@shared/schema';
 
 interface PublicPresentation {
   id: string;
@@ -41,12 +41,30 @@ function NotFoundScreen() {
   );
 }
 
-function AccessCodeGate({ presentationId, onUnlock }: { presentationId: string; onUnlock: () => void }) {
+function EmptySlidesScreen() {
+  return (
+    <div className="h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4 text-center px-6">
+        <p className="text-zinc-400 text-sm uppercase tracking-widest">Skale Club</p>
+        <h1 className="text-white text-3xl font-semibold">No slides available yet.</h1>
+        <p className="text-zinc-400 text-sm">This presentation is still being prepared.</p>
+      </div>
+    </div>
+  );
+}
+
+function AccessCodeGate({
+  presentationId,
+  onUnlock,
+}: {
+  presentationId: string;
+  onUnlock: (presentation: PublicPresentation) => void;
+}) {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
 
   const { mutate: verify, isPending } = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (): Promise<PublicPresentation> => {
       const res = await fetch(`/api/presentations/${presentationId}/verify-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -54,8 +72,9 @@ function AccessCodeGate({ presentationId, onUnlock }: { presentationId: string; 
       });
       if (res.status === 401) throw new Error('Incorrect code');
       if (!res.ok) throw new Error('Verification failed. Try again.');
+      return res.json();
     },
-    onSuccess: () => onUnlock(),
+    onSuccess: (presentation) => onUnlock(presentation),
     onError: (err: Error) => setError(err.message),
   });
 
@@ -225,6 +244,7 @@ export default function PresentationViewer() {
 
   const hasTrackedView = useRef(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [unlockedPresentation, setUnlockedPresentation] = useState<PublicPresentation | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [direction, setDirection] = useState(1);
 
@@ -234,30 +254,49 @@ export default function PresentationViewer() {
     retry: false,
   });
 
+  const { data: companySettings } = useQuery<CompanySettings>({
+    queryKey: ['/api/company-settings'],
+  });
+
+  const presentation = unlockedPresentation ?? data;
+
   const { mutate: trackView } = useMutation({
     mutationFn: async () => {
-      await fetch(`/api/presentations/${data!.id}/view`, { method: 'POST' });
+      await fetch(`/api/presentations/${presentation!.id}/view`, { method: 'POST' });
     },
   });
 
   const isPreview = new URLSearchParams(window.location.search).has('preview');
+  const isThumbnail = new URLSearchParams(window.location.search).has('thumbnail');
 
   useEffect(() => {
     if (isPreview) return;
-    if (data && (!data.hasAccessCode || isUnlocked) && !hasTrackedView.current) {
+    if (presentation && (!presentation.hasAccessCode || isUnlocked) && !hasTrackedView.current) {
       hasTrackedView.current = true;
       trackView();
     }
-  }, [data, isUnlocked]);
+  }, [presentation, isUnlocked, isPreview, trackView]);
 
-  const total = data?.slides.length ?? 0;
+  const total = presentation?.slides.length ?? 0;
+
+  useEffect(() => {
+    if (activeIndex >= total && total > 0) {
+      setActiveIndex(total - 1);
+    }
+  }, [activeIndex, total]);
+
+  useEffect(() => {
+    if (!presentation?.title) return;
+    const companyName = companySettings?.companyName?.trim() || 'Skale Club';
+    document.title = `${presentation.title} | ${companyName}`;
+  }, [presentation?.title, companySettings?.companyName]);
 
   const goTo = useCallback((idx: number) => {
-    if (!data) return;
+    if (!presentation || total === 0) return;
     const clamped = Math.max(0, Math.min(idx, total - 1));
     setDirection(clamped > activeIndex ? 1 : -1);
     setActiveIndex(clamped);
-  }, [activeIndex, total, data]);
+  }, [activeIndex, total, presentation]);
 
   const prev = useCallback(() => goTo(activeIndex - 1), [activeIndex, goTo]);
   const next = useCallback(() => goTo(activeIndex + 1), [activeIndex, goTo]);
@@ -288,10 +327,32 @@ export default function PresentationViewer() {
   if (isLoading) return <LoadingScreen />;
   if (!data) return <NotFoundScreen />;
   if (data.hasAccessCode && !isUnlocked) {
-    return <AccessCodeGate presentationId={data.id} onUnlock={() => setIsUnlocked(true)} />;
+    return (
+      <AccessCodeGate
+        presentationId={data.id}
+        onUnlock={(unlocked) => {
+          setUnlockedPresentation(unlocked);
+          setIsUnlocked(true);
+          setActiveIndex(0);
+        }}
+      />
+    );
   }
 
-  const currentSlide = data.slides[activeIndex];
+  if (!presentation || total === 0) return <EmptySlidesScreen />;
+
+  if (isThumbnail) {
+    return (
+      <div className="h-screen bg-zinc-950 text-white flex items-center justify-center overflow-hidden">
+        <div className="px-8 max-w-xl mx-auto w-full">
+          <SlideContent slide={presentation.slides[0]} lang="en" />
+        </div>
+      </div>
+    );
+  }
+
+  const currentIndex = Math.min(activeIndex, total - 1);
+  const currentSlide = presentation.slides[currentIndex];
 
   return (
     <div className="h-screen bg-zinc-950 text-white overflow-hidden relative flex items-center justify-center">
@@ -311,7 +372,7 @@ export default function PresentationViewer() {
 
       {/* Navigation dots */}
       <div className="fixed right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-50">
-        {data.slides.map((_, i) => (
+        {presentation.slides.map((_, i) => (
           <button
             key={i}
             onClick={() => goTo(i)}
@@ -320,7 +381,7 @@ export default function PresentationViewer() {
           >
             <span className={cn(
               'rounded-full transition-all duration-200',
-              activeIndex === i ? 'w-3 h-3 bg-white scale-125' : 'w-2 h-2 bg-white/30 hover:bg-white/60'
+              currentIndex === i ? 'w-3 h-3 bg-white scale-125' : 'w-2 h-2 bg-white/30 hover:bg-white/60'
             )} />
           </button>
         ))}
@@ -328,11 +389,11 @@ export default function PresentationViewer() {
 
       {/* Slide counter */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 text-zinc-500 text-xs tabular-nums">
-        {activeIndex + 1} / {total}
+        {currentIndex + 1} / {total}
       </div>
 
       {/* Arrow buttons */}
-      {activeIndex > 0 && (
+      {currentIndex > 0 && (
         <button
           onClick={prev}
           aria-label="Previous slide"
@@ -342,7 +403,7 @@ export default function PresentationViewer() {
         </button>
       )}
 
-      {activeIndex < total - 1 && (
+      {currentIndex < total - 1 && (
         <button
           onClick={next}
           aria-label="Next slide"
@@ -357,7 +418,7 @@ export default function PresentationViewer() {
         <div className="absolute inset-0 bg-gradient-to-b from-zinc-800/20 to-transparent pointer-events-none" />
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
-            key={activeIndex}
+            key={currentIndex}
             custom={direction}
             variants={slideVariants}
             initial="enter"

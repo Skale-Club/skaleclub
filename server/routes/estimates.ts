@@ -4,6 +4,34 @@ import { storage } from "../storage.js";
 import { insertEstimateSchema } from "#shared/schema.js";
 import { requireAdmin } from "./_shared.js";
 
+function slugifyName(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "estimate";
+}
+
+async function buildUniqueEstimateSlug(data: {
+  companyName?: string | null;
+  contactName?: string | null;
+  clientName: string;
+}): Promise<string> {
+  const source = data.companyName?.trim() || data.contactName?.trim() || data.clientName.trim();
+  const base = slugifyName(source);
+
+  if (!await storage.getEstimateBySlug(base)) return base;
+
+  for (let i = 0; i < 5; i++) {
+    const candidate = `${base}-${crypto.randomBytes(2).toString("hex")}`;
+    if (!await storage.getEstimateBySlug(candidate)) return candidate;
+  }
+
+  return `${base}-${Date.now()}`;
+}
+
 export function registerEstimatesRoutes(app: Express) {
   // Public slug endpoint registered first to avoid Express matching "slug" as an :id value
   app.get("/api/estimates/slug/:slug", async (req, res) => {
@@ -49,8 +77,10 @@ export function registerEstimatesRoutes(app: Express) {
 
   app.get("/api/estimates", requireAdmin, async (req, res) => {
     try {
-      const estimates = await storage.listEstimates();
-      res.json(estimates);
+      const limit = req.query.limit ? Number(req.query.limit) : undefined;
+      const offset = req.query.offset ? Number(req.query.offset) : undefined;
+      const result = await storage.listEstimates(limit, offset);
+      res.json(result);
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
     }
@@ -63,7 +93,7 @@ export function registerEstimatesRoutes(app: Express) {
       if (!parsed.success) {
         return res.status(400).json({ message: "Validation error", errors: parsed.error.errors });
       }
-      const slug = crypto.randomUUID();
+      const slug = await buildUniqueEstimateSlug(parsed.data);
       const estimate = await storage.createEstimate({ ...parsed.data, slug });
       res.status(201).json(estimate);
     } catch (err) {

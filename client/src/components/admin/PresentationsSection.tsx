@@ -12,6 +12,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -164,26 +173,35 @@ export function PresentationsSection() {
   const [deleteTarget, setDeleteTarget] = useState<PresentationWithStats | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renamingTitle, setRenamingTitle] = useState('');
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  
+  const ITEMS_PER_PAGE = 10;
+  const [page, setPage] = useState(1);
+  const offset = (page - 1) * ITEMS_PER_PAGE;
 
-  const { data, isLoading } = useQuery<PresentationWithStats[]>({
-    queryKey: ['/api/presentations'],
+  const { data: queryData, isLoading } = useQuery<{ data: PresentationWithStats[], total: number }>({
+    queryKey: ['/api/presentations', page],
+    queryFn: () => fetch(`/api/presentations?limit=${ITEMS_PER_PAGE}&offset=${offset}`).then(r => r.json()),
   });
 
-  const presentations = data ?? [];
+  const presentations = queryData?.data ?? [];
+  const totalItems = queryData?.total ?? 0;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
   const createMutation = useMutation({
-    mutationFn: () =>
-      apiRequest('POST', '/api/presentations', {
-        title: 'Untitled Presentation',
-      }).then((r) => r.json()),
+    mutationFn: (title: string) =>
+      apiRequest('POST', '/api/presentations', { title }).then((r) => r.json()),
     onSuccess: (newPres: { id: string; slug: string; slides: SlideBlock[] }) => {
       queryClient.invalidateQueries({ queryKey: ['/api/presentations'] });
       toast({ title: t('Presentation created') });
+      setIsCreateOpen(false);
+      setNewTitle('');
       setSelectedId(newPres.id);
     },
     onError: (err: any) => {
       toast({
-        title: t('Failed to save slides'),
+        title: t('Failed to create presentation'),
         description: err.message,
         variant: 'destructive',
       });
@@ -268,15 +286,10 @@ export function PresentationsSection() {
         action={
           <Button
             size="sm"
-            onClick={() => createMutation.mutate()}
-            disabled={createMutation.isPending}
+            onClick={() => setIsCreateOpen(true)}
             className="gap-2"
           >
-            {createMutation.isPending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Plus className="w-4 h-4" />
-            )}
+            <Plus className="w-4 h-4" />
             {t('New Presentation')}
           </Button>
         }
@@ -299,7 +312,7 @@ export function PresentationsSection() {
                 key={p.id}
                 className="flex items-center gap-3 border rounded-lg p-4 bg-card"
               >
-                <PageThumbnail url={`/p/${p.slug}?preview=1`} />
+                <PageThumbnail url={`/p/${p.slug}?preview=1`} version={p.version} />
                 {renamingId === p.id ? (
                   <Input
                     autoFocus
@@ -366,6 +379,38 @@ export function PresentationsSection() {
                 </div>
               </div>
             ))}
+            
+            {totalPages > 1 && (
+              <div className="pt-4">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                      <PaginationItem key={p}>
+                        <PaginationLink
+                          isActive={page === p}
+                          onClick={() => setPage(p)}
+                          className="cursor-pointer"
+                        >
+                          {p}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                        className={page === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
           </div>
         )}
       </AdminCard>
@@ -402,6 +447,37 @@ export function PresentationsSection() {
           </AlertDialogContent>
         </AlertDialog>
       )}
+
+      {/* Create presentation dialog */}
+      <Dialog open={isCreateOpen} onOpenChange={(o) => { setIsCreateOpen(o); if (!o) setNewTitle(''); }}>
+        <DialogContent className="sm:max-w-sm border-0">
+          <DialogHeader>
+            <DialogTitle>{t('New Presentation')}</DialogTitle>
+          </DialogHeader>
+          <Input
+            autoFocus
+            placeholder="e.g. Acme Corp Q2 2025"
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && newTitle.trim() && !createMutation.isPending) {
+                createMutation.mutate(newTitle.trim());
+              }
+            }}
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsCreateOpen(false)}>{t('Cancel')}</Button>
+            <Button
+              onClick={() => createMutation.mutate(newTitle.trim())}
+              disabled={!newTitle.trim() || createMutation.isPending}
+              className="gap-2"
+            >
+              {createMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+              {t('Create')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Brand Guidelines always visible below presentations list */}
       <BrandGuidelinesSection />
