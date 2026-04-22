@@ -133,7 +133,7 @@ Plans:
 **Goal**: Admin can configure and trigger blog automation from the Blog section without leaving the admin dashboard.
 **Depends on**: Phase 23 (settings API + generate endpoint)
 **Requirements**: BLOG-17, BLOG-18, BLOG-19
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 **Success Criteria** (what must be TRUE):
   1. Blog section has an "Automation" tab/accordion with: enabled toggle, postsPerDay select (0–4), seoKeywords textarea, enableTrendAnalysis toggle, promptStyle textarea, Save button.
   2. Saving settings calls `PUT /api/blog/settings` and shows a "Saved" confirmation.
@@ -152,7 +152,7 @@ Plans:
 | 21. Schema & Storage Foundation | 1/1 | Complete   | 2026-04-22 |
 | 22. Blog Generator Engine | 2/2 | Complete   | 2026-04-22 |
 | 23. API Endpoints + Cron | 1/1 | Complete    | 2026-04-22 |
-| 24. Admin UI — Automation Settings | 0/2 | Not started | - |
+| 24. Admin UI — Automation Settings | 1/2 | In Progress|  |
 
 ---
 

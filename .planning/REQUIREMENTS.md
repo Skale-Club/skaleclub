@@ -37,7 +37,7 @@
 
 - [ ] **BLOG-17**: Admin Blog section (`client/src/components/admin/BlogSection.tsx`) gains an "Automation" tab or accordion — fields: enabled toggle, postsPerDay select (0/1/2/3/4), seoKeywords textarea, enableTrendAnalysis toggle, promptStyle textarea. Save button calls `PUT /api/blog/settings`.
 - [ ] **BLOG-18**: "Generate Now" button in Automation UI — calls `POST /api/blog/generate`, shows loading spinner during request, shows success toast with link to the draft post on success, shows error toast on failure or skip reason.
-- [ ] **BLOG-19**: Automation UI shows "Last generated: {relative time}" sourced from `blog_settings.lastRunAt`, and status of last job (completed/failed/skipped) from `blog_generation_jobs` latest row.
+- [x] **BLOG-19**: Automation UI shows "Last generated: {relative time}" sourced from `blog_settings.lastRunAt`, and status of last job (completed/failed/skipped) from `blog_generation_jobs` latest row.
 
 ## Out of Scope
 
@@ -71,7 +71,7 @@
 | BLOG-16 | Phase 23 | Complete |
 | BLOG-17 | Phase 24 | Pending |
 | BLOG-18 | Phase 24 | Pending |
-| BLOG-19 | Phase 24 | Pending |
+| BLOG-19 | Phase 24 | Complete |
 
 **Coverage:**
 - v1.5 requirements: 19 total
