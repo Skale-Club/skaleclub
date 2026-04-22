@@ -61,4 +61,10 @@ export function registerBlogAutomationRoutes(app: Express) {
     }
     res.json({ jobId: result.jobId, postId: result.postId });
   });
+
+  // BLOG-19: GET /api/blog/jobs/latest — admin-auth, returns most recent job or null
+  app.get("/api/blog/jobs/latest", requireAdmin, async (_req, res) => {
+    const job = await storage.getLatestBlogGenerationJob();
+    res.json(job ?? null);
+  });
 }
