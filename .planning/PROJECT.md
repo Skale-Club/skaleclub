@@ -49,17 +49,16 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 - ✓ **EST-17**: Closing section (no acceptance CTA) — v1.2
 - ✓ **EST-18**: Graceful 404 for unknown slug — v1.2
 
-### Active
-
-- **BLOG-17 → BLOG-19**: v1.5 Blog Post Automation — phase 24 admin UI (see REQUIREMENTS.md)
-
-### Validated (v1.5 Phases 21–23)
+### Validated (v1.5 Phases 21–24)
 
 - ✓ **BLOG-01 → BLOG-12**: Schema + storage foundation (blog_settings, blog_generation_jobs, IStorage methods) — Validated in Phase 21: Schema & Storage Foundation
 - ✓ **BLOG-13**: GET/PUT `/api/blog/settings` — safe defaults, no lock field corruption — Validated in Phase 23: API Endpoints + Cron
 - ✓ **BLOG-14**: POST `/api/blog/generate` (admin-auth) — skip returns 200, errors return structured 500 — Validated in Phase 23: API Endpoints + Cron
 - ✓ **BLOG-15**: POST `/api/blog/cron/generate` — Bearer token auth, 401 on mismatch — Validated in Phase 23: API Endpoints + Cron
 - ✓ **BLOG-16**: `startCron()` — hourly setInterval with Vercel guard — Validated in Phase 23: API Endpoints + Cron
+- ✓ **BLOG-17**: Automation tab with all 5 settings fields + Save button — Validated in Phase 24: Admin UI
+- ✓ **BLOG-18**: Generate Now button with spinner + success/skip/error toasts — Validated in Phase 24: Admin UI
+- ✓ **BLOG-19**: Status bar with `lastRunAt` distance + latest job badge; `getLatestBlogGenerationJob()` storage method + `GET /api/blog/jobs/latest` — Validated in Phase 24: Admin UI
 
 ### Validated (v1.4 Phase 18)
 
@@ -151,4 +150,4 @@ This document evolves at phase transitions and milestone boundaries.
 ---
 - v1.3 shipped 2026-04-20: Links Page Upgrade (5 phases, 10 plans, 17/17 requirements — Supabase uploads, icon picker, click analytics, drag-reorder, theme editor, live preview, public rendering)
 
-*Last updated: 2026-04-22 — Phase 23 complete; BLOG-13/14/15/16 validated; Phase 24 (admin UI) remaining*
+*Last updated: 2026-04-22 — v1.5 Blog Post Automation complete; all 19 BLOG requirements validated across phases 21–24*
