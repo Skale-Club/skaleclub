@@ -86,11 +86,120 @@ function AccessCodeGate({ presentationId, onUnlock }: { presentationId: string; 
   );
 }
 
-// Placeholder replaced in Task 2 with full 8-layout implementation
+function resolveField(en: string | undefined, pt: string | undefined, activeLang: string): string {
+  if (activeLang === 'pt-BR') return pt || en || '';
+  return en || '';
+}
+
 function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string }) {
-  return (
-    <p className="text-zinc-400 text-sm uppercase tracking-widest">{slide.layout}</p>
-  );
+  const heading = resolveField(slide.heading, slide.headingPt, lang);
+  const body = resolveField(slide.body, slide.bodyPt, lang);
+  const bullets =
+    lang === 'pt-BR'
+      ? (slide.bulletsPt?.length ? slide.bulletsPt : slide.bullets) ?? []
+      : slide.bullets ?? [];
+
+  switch (slide.layout) {
+    case 'cover':
+      return (
+        <div className="text-center">
+          <p className="text-zinc-400 text-sm uppercase tracking-widest mb-2">Skale Club</p>
+          <h1 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-5xl font-semibold text-white leading-tight">{heading}</h1>
+          {body && <p className="text-zinc-400 text-sm mt-6">{body}</p>}
+        </div>
+      );
+
+    case 'section-break':
+      return (
+        <div className="text-center">
+          <p className="text-zinc-400 text-sm uppercase tracking-widest mb-2">{heading}</p>
+          {body && <p className="text-base text-zinc-400 leading-relaxed mt-4">{body}</p>}
+        </div>
+      );
+
+    case 'title-body':
+      return (
+        <div>
+          <h2 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-3xl font-semibold text-white mb-4">{heading}</h2>
+          {body && <p className="text-base text-zinc-400 leading-relaxed">{body}</p>}
+        </div>
+      );
+
+    case 'bullets':
+      return (
+        <div>
+          <h2 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-3xl font-semibold text-white mb-6">{heading}</h2>
+          {bullets.length > 0 && (
+            <ul className="space-y-3">
+              {bullets.map((bullet, i) => (
+                <li key={i} className="flex gap-2 text-sm text-zinc-300">
+                  <span className="text-zinc-500 shrink-0">–</span>
+                  <span>{bullet}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      );
+
+    case 'stats':
+      return (
+        <div>
+          {heading && <h2 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-3xl font-semibold text-white mb-8">{heading}</h2>}
+          {slide.stats && slide.stats.length > 0 && (
+            <dl className="grid grid-cols-2 gap-8">
+              {slide.stats.map((stat, i) => (
+                <div key={i}>
+                  <dt className="text-5xl font-semibold text-white">{stat.value}</dt>
+                  <dd className="text-sm text-zinc-400 mt-1">
+                    {lang === 'pt-BR' ? (stat.labelPt || stat.label) : stat.label}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </div>
+      );
+
+    case 'two-column':
+      return (
+        <div className="grid grid-cols-2 gap-16 w-full">
+          <div>
+            <h2 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-3xl font-semibold text-white">{heading}</h2>
+          </div>
+          <div>
+            {body && <p className="text-base text-zinc-400 leading-relaxed">{body}</p>}
+          </div>
+        </div>
+      );
+
+    case 'image-focus':
+      // imageUrl not in current SlideBlock schema — render zinc-800 solid background as graceful fallback
+      // per RESEARCH.md Pitfall 6 decision: defer imageUrl schema extension, never crash
+      return (
+        <div className="w-full h-full absolute inset-0 flex flex-col">
+          <div className="flex-1 bg-zinc-800" />
+          <div className="flex-1 flex items-center justify-start px-8">
+            <div className="max-w-xl">
+              {heading && <h2 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-3xl font-semibold text-white mb-4">{heading}</h2>}
+              {body && <p className="text-base text-zinc-400 leading-relaxed">{body}</p>}
+            </div>
+          </div>
+        </div>
+      );
+
+    case 'closing':
+      return (
+        <div className="text-center">
+          <p className="text-zinc-400 text-sm uppercase tracking-widest mb-4">Skale Club</p>
+          <h2 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-3xl font-semibold text-white mb-4">{heading}</h2>
+          {body && <p className="text-sm text-zinc-400 mt-2">{body}</p>}
+        </div>
+      );
+
+    default:
+      return <p className="text-zinc-400 text-sm">{heading}</p>;
+  }
 }
 
 export default function PresentationViewer() {
