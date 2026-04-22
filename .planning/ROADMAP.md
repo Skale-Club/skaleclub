@@ -89,7 +89,7 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 **Goal**: Database tables for blog automation exist, Drizzle/Zod schemas are typed, and the storage layer has stubs that downstream phases can build on.
 **Depends on**: Nothing (first phase of v1.5)
 **Requirements**: BLOG-01, BLOG-02, BLOG-03, BLOG-04
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 **Success Criteria** (what must be TRUE):
   1. Raw SQL migration creates `blog_settings` and `blog_generation_jobs` tables without error — `SELECT * FROM blog_settings LIMIT 1` returns empty, not an error.
   2. `shared/schema/blog.ts` exports Drizzle table defs + Zod validators; `npm run check` passes cleanly.
@@ -140,7 +140,7 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 21. Schema & Storage Foundation | 0/1 | Not started | - |
+| 21. Schema & Storage Foundation | 1/1 | Complete   | 2026-04-22 |
 | 22. Blog Generator Engine | 0/2 | Not started | - |
 | 23. API Endpoints + Cron | 0/1 | Not started | - |
 | 24. Admin UI — Automation Settings | 0/1 | Not started | - |

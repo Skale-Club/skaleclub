@@ -7,10 +7,10 @@
 
 ### Schema & Storage
 
-- [ ] **BLOG-01**: `blog_settings` singleton table — `id`, `enabled` (boolean, default false), `postsPerDay` (int 0–4, default 0), `seoKeywords` (text), `enableTrendAnalysis` (boolean, default false), `promptStyle` (text), `lastRunAt` (timestamp nullable), `lockAcquiredAt` (timestamp nullable, global lock field), `updatedAt`. Upsert on save.
-- [ ] **BLOG-02**: `blog_generation_jobs` event-log table — `id` (serial PK), `status` (text: pending/running/completed/failed/skipped), `reason` (text nullable, skip reason), `postId` (int nullable, NO FK constraint — set after post is created), `startedAt` (timestamp), `completedAt` (timestamp nullable), `error` (text nullable).
-- [ ] **BLOG-03**: Drizzle table definitions + Zod schemas (`insertBlogSettingsSchema`, `selectBlogSettingsSchema`) in `shared/schema/blog.ts`, barrel re-export via `shared/schema.ts`.
-- [ ] **BLOG-04**: Storage stubs in `IStorage` + `DatabaseStorage` — `getBlogSettings()`, `upsertBlogSettings(data)`, `createBlogGenerationJob(data)`, `updateBlogGenerationJob(id, data)`.
+- [x] **BLOG-01**: `blog_settings` singleton table — `id`, `enabled` (boolean, default false), `postsPerDay` (int 0–4, default 0), `seoKeywords` (text), `enableTrendAnalysis` (boolean, default false), `promptStyle` (text), `lastRunAt` (timestamp nullable), `lockAcquiredAt` (timestamp nullable, global lock field), `updatedAt`. Upsert on save.
+- [x] **BLOG-02**: `blog_generation_jobs` event-log table — `id` (serial PK), `status` (text: pending/running/completed/failed/skipped), `reason` (text nullable, skip reason), `postId` (int nullable, NO FK constraint — set after post is created), `startedAt` (timestamp), `completedAt` (timestamp nullable), `error` (text nullable).
+- [x] **BLOG-03**: Drizzle table definitions + Zod schemas (`insertBlogSettingsSchema`, `selectBlogSettingsSchema`) in `shared/schema/blog.ts`, barrel re-export via `shared/schema.ts`.
+- [x] **BLOG-04**: Storage stubs in `IStorage` + `DatabaseStorage` — `getBlogSettings()`, `upsertBlogSettings(data)`, `createBlogGenerationJob(data)`, `updateBlogGenerationJob(id, data)`.
 
 ### Blog Generator Engine
 
@@ -53,10 +53,10 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BLOG-01 | Phase 21 | Pending |
-| BLOG-02 | Phase 21 | Pending |
-| BLOG-03 | Phase 21 | Pending |
-| BLOG-04 | Phase 21 | Pending |
+| BLOG-01 | Phase 21 | Complete |
+| BLOG-02 | Phase 21 | Complete |
+| BLOG-03 | Phase 21 | Complete |
+| BLOG-04 | Phase 21 | Complete |
 | BLOG-05 | Phase 22 | Pending |
 | BLOG-06 | Phase 22 | Pending |
 | BLOG-07 | Phase 22 | Pending |

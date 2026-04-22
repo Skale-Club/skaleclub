@@ -2,21 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Blog Post Automation
-status: planning
-last_updated: "2026-04-22T00:00:00.000Z"
+status: executing
+last_updated: "2026-04-22T15:01:46.965Z"
 last_activity: 2026-04-22
 progress:
   total_phases: 4
-  completed_phases: 0
-  total_plans: 5
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** Ready to plan Phase 21
+**Status:** Ready to execute
 
 ---
 
@@ -32,8 +31,8 @@ See: `.planning/PROJECT.md` (updated 2026-04-22)
 ## Current Position
 
 Phase: 21 (schema-storage-foundation) — NOT STARTED
-Plan: 0 of 1
-Status: Ready to plan
+Plan: 1 of 1
+Status: Ready to execute
 Last activity: 2026-04-22
 
 ---
@@ -67,6 +66,7 @@ Last activity: 2026-04-22
 | Phase 18-ai-authoring-endpoint P02 | 3min | 2 tasks | 2 files |
 | Phase 19-admin-chat-editor P01 | ~4min | 2 tasks | 3 files |
 | Phase 20-public-viewer P01 | 12min | 3 tasks | 4 files |
+| Phase 21 P01 | 9min | 3 tasks | 6 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -175,6 +175,9 @@ Last activity: 2026-04-22
 - [Phase 19-admin-chat-editor]: In-app chat panel replaced with JSON textarea — slides authored in Claude Code IDE, pasted into admin panel
 - [Phase 20-public-viewer]: PresentationViewer.tsx stub required for TS module resolution — lazy() does not defer tsc path checking; stub satisfies compiler without full implementation
 - [Phase 20-public-viewer]: SHA-256 IP hash on POST /api/presentations/:id/view — mirrors ip_hash column naming, aligns with Phase 15 schema intent
+- [Phase 21]: Keep blog_generation_jobs.postId as a nullable integer without a foreign key so jobs can exist before draft posts are created.
+- [Phase 21]: Use manual Zod schemas in shared/schema/blog.ts for defaulted fields and nullable timestamp normalization instead of drizzle-zod generation.
+- [Phase 21]: Storage getBlogSettings() returns undefined when empty; default fallbacks stay deferred to later API phases.
 
 ### Quick Tasks Completed
 
