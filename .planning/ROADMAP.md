@@ -219,7 +219,10 @@ Plans:
 **Goal**: Anyone with a presentation link can experience the deck as a fullscreen bilingual scroll-snap presentation — isolated from the site's Navbar and Footer — with an access code gate if one is set, and every successful view is recorded for admin analytics.
 **Depends on**: Phase 15 (schema for view tracking), Phase 16 (public slug lookup API)
 **Requirements**: PRES-17, PRES-18, PRES-19, PRES-20, PRES-21, PRES-22
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 20-01-PLAN.md — Server endpoints (slug augment + verify-code + view POST) + App.tsx isPresentationRoute guard + translations (PRES-17, PRES-18, PRES-22)
+- [ ] 20-02-PLAN.md — PresentationViewer.tsx — scroll-snap, 8 layout renderers, language switcher, access gate, view tracking (PRES-19, PRES-20, PRES-21)
 **Success Criteria** (what must be TRUE):
   1. `GET /api/presentations/slug/:slug` (no auth) returns the full presentation including slides; each successful response creates a new row in `presentation_views` — the admin view-count badge for that presentation increments by 1 after reload.
   2. `/p/:slug` renders with no Navbar, Footer, or ChatWidget visible; opening Dev Tools confirms `isPresentationRoute` is true for the route and the standard site layout branch is skipped.
@@ -244,8 +247,8 @@ Plans:
 | 17. Brand Guidelines | 0/1 | Not started | - |
 | 18. AI Authoring Endpoint | 2/2 | Complete    | 2026-04-22 |
 | 19. Admin Chat Editor | 0/1 | Complete    | 2026-04-22 |
-| 20. Public Viewer | 0/? | Not started | - |
+| 20. Public Viewer | 0/2 | Planned | - |
 
 ---
 
-_Last updated: 2026-04-22 — Phase 19 planned; 1 plan (19-01); PRES-14–16 mapped_
+_Last updated: 2026-04-22 — Phase 20 planned; 2 plans (20-01, 20-02); PRES-17–22 mapped_
