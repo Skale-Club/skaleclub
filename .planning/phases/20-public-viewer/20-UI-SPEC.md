@@ -75,9 +75,9 @@ The viewer surface is full dark (`bg-zinc-950`). All sizes below refer to render
 | Body | 16px | 400 (regular) | 1.625 (leading-relaxed) | Inter | Slide body text, bullet text, gate form labels |
 | Label | 12px | 400 (regular) | 1.6 (leading-normal) | Inter | Uppercase eyebrow labels (`tracking-widest uppercase text-zinc-400`) |
 | Heading | 30px (text-3xl) | 600 (semibold) | 1.2 | Outfit | Slide heading for `title-body`, `bullets`, `two-column`, `stats`, `image-focus`, `section-break`, `closing` |
-| Display | 48px (text-5xl) | 600 (semibold) | 1.1 (leading-tight) | Outfit | Cover slide primary heading only (`cover` layout) |
+| Display | 48px (text-5xl) | 600 (semibold) | 1.1 (leading-tight) | Outfit | Cover slide primary heading and stats numbers |
 
-**Stats layout exception:** stat numbers render at 48px / weight 700 (bold) to communicate numerical impact — this is a deliberate visual hierarchy departure from the standard heading scale.
+**Stats layout note:** stat numbers render at 48px / weight 600 (semibold) — the large 48px size communicates numerical impact without requiring a third font weight.
 
 ---
 
@@ -145,7 +145,7 @@ All variants share the section wrapper above. Inner layout differs:
 | `section-break` | Centered: eyebrow label → Heading (text-3xl Outfit semibold) → optional body (text-zinc-400 text-base leading-relaxed) |
 | `title-body` | Left-aligned: eyebrow label → Heading (text-3xl) → body (text-base text-zinc-400 leading-relaxed mt-4) |
 | `bullets` | Left-aligned: eyebrow label → Heading (text-3xl) → `<ul>` with `space-y-3`; each bullet: `flex gap-2` with `–` separator in zinc-500 + `text-sm text-zinc-300` |
-| `stats` | Left-aligned or centered: eyebrow label → `<dl>` grid (grid-cols-2 gap-8); stat number `text-5xl font-bold text-white`; stat label `text-sm text-zinc-400 mt-1` |
+| `stats` | Left-aligned or centered: eyebrow label → `<dl>` grid (grid-cols-2 gap-8); stat number `text-5xl font-semibold text-white`; stat label `text-sm text-zinc-400 mt-1` |
 | `two-column` | Two equal columns (grid-cols-2 gap-16): left col has heading, right col has body text |
 | `image-focus` | Image fills upper 50% of section (object-cover) with gradient overlay; heading + body in lower 50% |
 | `closing` | Centered: eyebrow label → Heading (text-3xl) → body (text-zinc-400 text-sm mt-2) |
