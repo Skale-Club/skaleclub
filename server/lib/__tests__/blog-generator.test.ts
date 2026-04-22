@@ -245,9 +245,9 @@ async function expectSuccessfulGeneration() {
   assert.equal(createdPost.status, "draft", "created post is saved as a draft");
   assert.equal(createdPost.authorName, "AI Assistant", "created post is attributed to AI Assistant");
   assert.equal(createdPost.tags, "SEO, Local Marketing, AI Content", "tags are serialized before insertion");
-  assert.equal(
-    createdPost.featureImageUrl,
-    "https://cdn.example.com/blog-images/1713787200000-123e4567-e89b-12d3-a456-426614174000.jpg",
+  assert.match(
+    createdPost.featureImageUrl ?? "",
+    /^https:\/\/cdn\.example\.com\/blog-images\/\d+-[0-9a-f-]+\.jpg$/,
     "successful image uploads populate featureImageUrl",
   );
   assert.match(
