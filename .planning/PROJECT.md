@@ -50,7 +50,18 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 
 ### Active
 
-- **PRES-09 → PRES-22**: v1.4 Admin Presentations Page — phases 17–20 remaining (see REQUIREMENTS.md)
+- **PRES-14 → PRES-22**: v1.4 Admin Presentations Page — phases 19–20 remaining (see REQUIREMENTS.md)
+
+### Validated (v1.4 Phase 18)
+
+- ✓ **PRES-11**: `POST /api/presentations/:id/chat` SSE streaming endpoint — loads brand guidelines as system prompt, streams data: events, saves slides+guidelinesSnapshot+version+1 — Validated in Phase 18: AI Authoring Endpoint
+- ✓ **PRES-12**: SlideBlock JSON schema — 8 layout variants with bilingual fields, Zod-validated on every DB write — Validated in Phase 18: AI Authoring Endpoint
+- ✓ **PRES-13**: Per-slide edits via chat — full slides array injected as Claude context, only targeted slides change — Validated in Phase 18: AI Authoring Endpoint
+
+### Validated (v1.4 Phase 17)
+
+- ✓ **PRES-09**: `GET /api/brand-guidelines` (public) and `PUT /api/brand-guidelines` (admin-auth, Zod max 2000) — Validated in Phase 17: Brand Guidelines
+- ✓ **PRES-10**: Admin Brand Guidelines UI — textarea editor with char counter, loads/saves via API — Validated in Phase 17: Brand Guidelines
 
 ### Validated (v1.4 Phase 16)
 
@@ -78,6 +89,7 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 - v1.0 shipped 2026-03-30: Xpot tech debt remediation (64 files, 4 phases)
 - v1.1 shipped 2026-04-15: Multi-forms support (5 sub-phases, tracked in PAUL then synced to GSD)
 - v1.2 shipped 2026-04-20: Estimates System (4 phases, 8 plans, 62 files, +10,263 LOC)
+- v1.4 in progress 2026-04-21: Admin Presentations Page — Phases 15–18 complete (schema, CRUD API, brand guidelines, AI authoring endpoint); Phases 19–20 pending (admin chat editor, public viewer)
 - Stack: TypeScript/React + Express + Drizzle ORM + PostgreSQL + Supabase Auth + Vercel
 - DB migration pattern: raw SQL via tsx script (drizzle-kit CJS can't resolve .js ESM imports)
 - Public viewer uses IntersectionObserver for scroll-spy nav dots + framer-motion for section animations
@@ -105,6 +117,9 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 | Raw SQL tsx migration pattern (v1.2) | drizzle-kit CJS can't resolve .js ESM imports | ✅ Reusable pattern established |
 | estimate_views event-log table, not counter column (v1.2) | Queryable history, cascade delete, no UPDATE contention | ✅ Validated |
 | isEstimateRoute guard before Navbar in App.tsx (v1.2) | Structural isolation — no conditional rendering inside layout | ✅ Validated |
+| `client.messages.stream()` not `.create({stream:true})` for Anthropic SSE (v1.4) | MessageStream helper accumulates inputJson deltas and fires named events; raw iterator would require reimplementation | ✅ Phase 18 |
+| `tool_choice: {type:"tool",name:"update_slides"}` forced (v1.4) | Prevents Claude returning plain text for casual messages | ✅ Phase 18 |
+| `Anthropic.Tool` namespace access not named import (v1.4) | SDK doesn't export `Tool` at top-level index; must use default import namespace | ✅ Phase 18 |
 
 ## Evolution
 
