@@ -1,0 +1,355 @@
+import { useState } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { ChevronLeft, Copy, Eye, Layers, Plus, Presentation, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from '@/hooks/useTranslation';
+import { apiRequest, queryClient } from '@/lib/queryClient';
+import { Loader2 } from '@/components/ui/loader';
+import { AdminCard, EmptyState, SectionHeader } from './shared';
+import { BrandGuidelinesSection } from './BrandGuidelinesSection';
+import type { PresentationWithStats, SlideBlock } from '@shared/schema';
+
+// ─── SlideCard ────────────────────────────────────────────────────────────────
+
+function SlideCard({ slide }: { slide: SlideBlock; index: number }) {
+  return (
+    <div className="rounded-lg border p-3 space-y-1 bg-muted/30">
+      <Badge variant="outline" className="text-xs font-mono capitalize">
+        {slide.layout}
+      </Badge>
+      <p className="text-xs text-muted-foreground truncate">
+        {slide.heading ?? slide.headingPt ?? slide.layout}
+      </p>
+    </div>
+  );
+}
+
+// ─── PresentationEditor ───────────────────────────────────────────────────────
+
+function PresentationEditor({
+  presentation,
+  onBack,
+}: {
+  presentation: PresentationWithStats;
+  onBack: () => void;
+}) {
+  const { t } = useTranslation();
+  const { toast } = useToast();
+
+  const [jsonText, setJsonText] = useState(() =>
+    JSON.stringify(presentation.slides ?? [], null, 2),
+  );
+  const [jsonError, setJsonError] = useState<string | null>(null);
+  const [parsedSlides, setParsedSlides] = useState<SlideBlock[]>(
+    presentation.slides ?? [],
+  );
+
+  function handleJsonChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    const text = e.target.value;
+    setJsonText(text);
+    try {
+      const parsed = JSON.parse(text);
+      setJsonError(null);
+      setParsedSlides(parsed);
+    } catch (err: any) {
+      setJsonError(err.message);
+    }
+  }
+
+  const saveMutation = useMutation({
+    mutationFn: () =>
+      apiRequest('PUT', `/api/presentations/${presentation.id}`, {
+        slides: parsedSlides,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/presentations'] });
+      toast({ title: t('Slides saved') });
+    },
+    onError: (err: any) => {
+      toast({
+        title: t('Failed to save slides'),
+        description: err.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  return (
+    <div className="space-y-6">
+      <SectionHeader
+        title={presentation.title}
+        description={`${parsedSlides.length} ${t('slides')}`}
+        icon={<Presentation className="w-5 h-5" />}
+        action={
+          <Button variant="outline" size="sm" onClick={onBack}>
+            <ChevronLeft className="w-4 h-4 mr-1" />
+            {t('Back to presentations')}
+          </Button>
+        }
+      />
+
+      <AdminCard>
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Left: JSON editor */}
+          <div className="flex-1 min-w-0 space-y-3">
+            <p className="text-sm font-medium text-muted-foreground">
+              {t('JSON — paste Claude Code output here')}
+            </p>
+            <Textarea
+              value={jsonText}
+              onChange={handleJsonChange}
+              rows={20}
+              className="font-mono text-sm resize-y min-h-[300px]"
+            />
+            {jsonError && (
+              <p className="text-xs text-destructive">
+                {t('Invalid JSON')}: {jsonError}
+              </p>
+            )}
+            <div className="flex justify-end">
+              <Button
+                onClick={() => saveMutation.mutate()}
+                disabled={!!jsonError || saveMutation.isPending}
+                className="gap-2"
+              >
+                {saveMutation.isPending && (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                )}
+                {t('Save')}
+              </Button>
+            </div>
+          </div>
+
+          {/* Right: Slide mini-cards */}
+          <div className="w-full lg:w-72 space-y-3">
+            <p className="text-sm font-medium">{t('Slide preview')}</p>
+            {parsedSlides.length === 0 ? (
+              <p className="text-xs text-muted-foreground">{t('No slides yet')}</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {parsedSlides.map((slide, i) => (
+                  <SlideCard key={i} slide={slide} index={i} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </AdminCard>
+    </div>
+  );
+}
+
+// ─── PresentationsSection (main export) ──────────────────────────────────────
+
+export function PresentationsSection() {
+  const { t } = useTranslation();
+  const { toast } = useToast();
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<PresentationWithStats | null>(null);
+
+  const { data, isLoading } = useQuery<PresentationWithStats[]>({
+    queryKey: ['/api/presentations'],
+  });
+
+  const presentations = data ?? [];
+
+  const createMutation = useMutation({
+    mutationFn: () =>
+      apiRequest('POST', '/api/presentations', {
+        title: 'Untitled Presentation',
+      }).then((r) => r.json()),
+    onSuccess: (newPres: { id: string; slug: string; slides: SlideBlock[] }) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/presentations'] });
+      toast({ title: t('Presentation created') });
+      setSelectedId(newPres.id);
+    },
+    onError: (err: any) => {
+      toast({
+        title: t('Failed to save slides'),
+        description: err.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiRequest('DELETE', `/api/presentations/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/presentations'] });
+      setDeleteTarget(null);
+      toast({ title: t('Presentation deleted') });
+    },
+    onError: (err: any) => {
+      toast({
+        title: t('Failed to delete presentation'),
+        description: err.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  function handleCopyLink(slug: string) {
+    navigator.clipboard
+      .writeText(`${window.location.origin}/p/${slug}`)
+      .then(() => toast({ title: t('Link copied') }))
+      .catch(() =>
+        toast({ title: t('Copy failed'), variant: 'destructive' }),
+      );
+  }
+
+  // Editor sub-view
+  if (selectedId !== null) {
+    const selected = presentations.find((p) => p.id === selectedId);
+    if (!selected) {
+      // Was deleted while editor was open — fall back to list
+      setSelectedId(null);
+    } else {
+      return (
+        <PresentationEditor
+          key={selectedId}
+          presentation={selected}
+          onBack={() => setSelectedId(null)}
+        />
+      );
+    }
+  }
+
+  // List view
+  return (
+    <div className="space-y-6">
+      <SectionHeader
+        title={t('Presentations')}
+        description={t(
+          'Build AI-powered slide decks and share them as immersive fullscreen experiences.',
+        )}
+        icon={<Presentation className="w-5 h-5" />}
+        action={
+          <Button
+            size="sm"
+            onClick={() => createMutation.mutate()}
+            disabled={createMutation.isPending}
+            className="gap-2"
+          >
+            {createMutation.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Plus className="w-4 h-4" />
+            )}
+            {t('New Presentation')}
+          </Button>
+        }
+      />
+
+      <AdminCard>
+        {isLoading ? (
+          <div className="flex items-center justify-center h-24">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : presentations.length === 0 ? (
+          <EmptyState
+            title={t('No presentations yet')}
+            description={t('Create your first presentation to get started.')}
+          />
+        ) : (
+          <div className="space-y-3">
+            {presentations.map((p) => (
+              <div
+                key={p.id}
+                className="flex items-center gap-3 border rounded-lg p-4 bg-card"
+              >
+                <span className="font-semibold text-sm flex-1 truncate min-w-0">
+                  {p.title}
+                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Badge variant="secondary" className="text-xs gap-1">
+                    <Layers className="w-3 h-3" />
+                    {p.slideCount}
+                  </Badge>
+                  <Badge variant="secondary" className="text-xs gap-1">
+                    <Eye className="w-3 h-3" />
+                    {p.viewCount ?? 0}
+                  </Badge>
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title={t('Link copied')}
+                    onClick={() => handleCopyLink(p.slug)}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setDeleteTarget(p)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedId(p.id)}
+                  >
+                    {t('Open Editor')}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </AdminCard>
+
+      {/* Delete confirmation */}
+      {deleteTarget && (
+        <AlertDialog
+          open={true}
+          onOpenChange={(o) => !o && setDeleteTarget(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('Delete presentation?')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                &quot;{deleteTarget.title}&quot; —{' '}
+                {t(
+                  'This will permanently remove this presentation. This action cannot be undone.',
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('Cancel')}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteMutation.mutate(deleteTarget.id)}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deleteMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  t('Delete')
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
+      {/* Brand Guidelines always visible below presentations list */}
+      <BrandGuidelinesSection />
+    </div>
+  );
+}
