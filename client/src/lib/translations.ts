@@ -376,6 +376,8 @@ export const translations = {
     'Invalid JSON': 'JSON inválido',
     'Link copied': 'Link copiado',
     'Copy failed': 'Falha ao copiar',
+    'Open presentation': 'Abrir apresentação',
+    'Click to rename': 'Clique para renomear',
     'No slides yet': 'Nenhum slide ainda',
 
     // Presentation Viewer (Phase 20)

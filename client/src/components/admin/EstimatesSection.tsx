@@ -38,6 +38,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Loader2 } from '@/components/ui/loader';
 import { EmptyState, SectionHeader } from './shared';
+import { PageThumbnail } from '@/components/ui/PageThumbnail';
 import type { Estimate, EstimateWithStats, EstimateServiceItem, CatalogServiceItem } from '@shared/schema';
 import type { PortfolioService } from '@shared/schema';
 
@@ -127,12 +128,14 @@ function EstimateDialogForm({
   isPending,
 }: {
   editingEstimate: Estimate | null;
-  onSave: (clientName: string, note: string | null, services: EstimateServiceItem[], accessCode: string | null) => void;
+  onSave: (companyName: string, contactName: string, note: string | null, services: EstimateServiceItem[], accessCode: string | null) => void;
   isPending: boolean;
 }) {
-  const [clientName, setClientName] = useState(editingEstimate?.clientName ?? '');
+  const [companyName, setCompanyName] = useState(editingEstimate?.companyName ?? '');
+  const [contactName, setContactName] = useState(editingEstimate?.contactName ?? '');
   const [note, setNote] = useState(editingEstimate?.note ?? '');
   const [accessCode, setAccessCode] = useState(editingEstimate?.accessCode ?? '');
+  const atLeastOne = !!(companyName.trim() || contactName.trim());
   const [services, setServices] = useState<EstimateServiceItem[]>(
     editingEstimate?.services ?? []
   );
@@ -207,23 +210,37 @@ function EstimateDialogForm({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          onSave(clientName, note || null, services, accessCode || null);
+          if (!atLeastOne) return;
+          onSave(companyName.trim(), contactName.trim(), note || null, services, accessCode || null);
         }}
         className="flex flex-col gap-5 mt-2"
       >
         {/* Client info section */}
         <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="clientName">Client name</Label>
-            <Input
-              id="clientName"
-              placeholder="Acme Corp"
-              value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
-              required
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="companyName">Company name</Label>
+              <Input
+                id="companyName"
+                placeholder="Acme Corp"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="contactName">Contact name</Label>
+              <Input
+                id="contactName"
+                placeholder="John Smith"
+                value={contactName}
+                onChange={(e) => setContactName(e.target.value)}
+              />
+            </div>
           </div>
-          <div className="flex flex-col gap-1.5">
+          {!atLeastOne && (
+            <p className="text-xs text-destructive">At least one of company or contact name is required.</p>
+          )}
+        <div className="flex flex-col gap-1.5">
             <Label htmlFor="note">Note (optional)</Label>
             <Textarea
               id="note"
@@ -342,7 +359,7 @@ export function EstimatesSection() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: { clientName: string; note: string | null; services: EstimateServiceItem[]; accessCode: string | null }) => {
+    mutationFn: async (data: { clientName: string; companyName: string; contactName: string; note: string | null; services: EstimateServiceItem[]; accessCode: string | null }) => {
       const res = await apiRequest('POST', '/api/estimates', data);
       return res.json() as Promise<Estimate>;
     },
@@ -357,9 +374,11 @@ export function EstimatesSection() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (data: { id: number; clientName: string; note: string | null; services: EstimateServiceItem[]; accessCode: string | null }) => {
+    mutationFn: async (data: { id: number; clientName: string; companyName: string; contactName: string; note: string | null; services: EstimateServiceItem[]; accessCode: string | null }) => {
       const res = await apiRequest('PUT', `/api/estimates/${data.id}`, {
         clientName: data.clientName,
+        companyName: data.companyName,
+        contactName: data.contactName,
         note: data.note,
         services: data.services,
         accessCode: data.accessCode,
@@ -436,6 +455,7 @@ export function EstimatesSection() {
               key={est.id}
               className="flex items-center gap-3 border rounded-lg p-4 bg-card"
             >
+              <PageThumbnail url={`/e/${est.slug}?preview=1`} />
               <span className="font-bold text-sm flex-1">{est.clientName}</span>
               <span className="text-xs text-muted-foreground font-mono truncate max-w-[160px]">
                 {est.slug}
@@ -524,12 +544,13 @@ export function EstimatesSection() {
           <EstimateDialogForm
             key={editingEstimate?.id ?? 'new'}
             editingEstimate={editingEstimate}
-            onSave={(clientName, note, services, accessCode) => {
+            onSave={(companyName, contactName, note, services, accessCode) => {
+              const clientName = companyName || contactName;
               const servicesWithOrder = services.map((s, i) => ({ ...s, order: i }));
               if (editingEstimate) {
-                updateMutation.mutate({ id: editingEstimate.id, clientName, note, services: servicesWithOrder, accessCode });
+                updateMutation.mutate({ id: editingEstimate.id, clientName, companyName, contactName, note, services: servicesWithOrder, accessCode });
               } else {
-                createMutation.mutate({ clientName, note, services: servicesWithOrder, accessCode });
+                createMutation.mutate({ clientName, companyName, contactName, note, services: servicesWithOrder, accessCode });
               }
             }}
             isPending={createMutation.isPending || updateMutation.isPending}

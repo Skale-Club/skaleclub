@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { ChevronLeft, Copy, Eye, Layers, Plus, Presentation, Trash2 } from 'lucide-react';
+import { ChevronLeft, Copy, ExternalLink, Eye, Layers, Plus, Presentation, Trash2 } from 'lucide-react';
+import { PageThumbnail } from '@/components/ui/PageThumbnail';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,6 +14,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -160,6 +162,8 @@ export function PresentationsSection() {
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PresentationWithStats | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renamingTitle, setRenamingTitle] = useState('');
 
   const { data, isLoading } = useQuery<PresentationWithStats[]>({
     queryKey: ['/api/presentations'],
@@ -185,6 +189,30 @@ export function PresentationsSection() {
       });
     },
   });
+
+  const renameMutation = useMutation({
+    mutationFn: ({ id, title }: { id: string; title: string }) =>
+      apiRequest('PUT', `/api/presentations/${id}`, { title }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/presentations'] });
+      setRenamingId(null);
+    },
+    onError: (err: any) => {
+      toast({ title: t('Failed to save slides'), description: err.message, variant: 'destructive' });
+      setRenamingId(null);
+    },
+  });
+
+  function commitRename(id: string) {
+    const trimmed = renamingTitle.trim();
+    if (!trimmed) return setRenamingId(null);
+    const current = presentations.find((p) => p.id === id);
+    if (current && trimmed !== current.title) {
+      renameMutation.mutate({ id, title: trimmed });
+    } else {
+      setRenamingId(null);
+    }
+  }
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest('DELETE', `/api/presentations/${id}`),
@@ -271,9 +299,28 @@ export function PresentationsSection() {
                 key={p.id}
                 className="flex items-center gap-3 border rounded-lg p-4 bg-card"
               >
-                <span className="font-semibold text-sm flex-1 truncate min-w-0">
-                  {p.title}
-                </span>
+                <PageThumbnail url={`/p/${p.slug}?preview=1`} />
+                {renamingId === p.id ? (
+                  <Input
+                    autoFocus
+                    value={renamingTitle}
+                    onChange={(e) => setRenamingTitle(e.target.value)}
+                    onBlur={() => commitRename(p.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') commitRename(p.id);
+                      if (e.key === 'Escape') setRenamingId(null);
+                    }}
+                    className="flex-1 h-8 text-sm font-semibold min-w-0"
+                  />
+                ) : (
+                  <span
+                    className="font-semibold text-sm flex-1 truncate min-w-0 cursor-pointer hover:underline"
+                    title={t('Click to rename')}
+                    onClick={() => { setRenamingId(p.id); setRenamingTitle(p.title); }}
+                  >
+                    {p.title}
+                  </span>
+                )}
                 <div className="flex items-center gap-2 shrink-0">
                   <Badge variant="secondary" className="text-xs gap-1">
                     <Layers className="w-3 h-3" />
@@ -285,6 +332,14 @@ export function PresentationsSection() {
                   </Badge>
                 </div>
                 <div className="flex gap-1 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title={t('Open presentation')}
+                    onClick={() => window.open(`/p/${p.slug}`, '_blank')}
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"

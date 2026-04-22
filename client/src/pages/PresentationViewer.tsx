@@ -1,14 +1,14 @@
-import { useParams, useLocation } from 'wouter';
+import { useParams } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Loader2 } from '@/components/ui/loader';
 import type { SlideBlock } from '@shared/schema';
 
-// Shape returned by GET /api/presentations/slug/:slug (accessCode stripped, hasAccessCode added)
 interface PublicPresentation {
   id: string;
   slug: string;
@@ -105,7 +105,7 @@ function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string }) {
         <div className="text-center">
           <p className="text-zinc-400 text-sm uppercase tracking-widest mb-2">Skale Club</p>
           <h1 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-5xl font-semibold text-white leading-tight">{heading}</h1>
-          {body && <p className="text-zinc-400 text-sm mt-6">{body}</p>}
+          {body && <p className="text-zinc-400 text-sm mt-6 max-w-md mx-auto">{body}</p>}
         </div>
       );
 
@@ -174,8 +174,6 @@ function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string }) {
       );
 
     case 'image-focus':
-      // imageUrl not in current SlideBlock schema — render zinc-800 solid background as graceful fallback
-      // per RESEARCH.md Pitfall 6 decision: defer imageUrl schema extension, never crash
       return (
         <div className="w-full h-full absolute inset-0 flex flex-col">
           <div className="flex-1 bg-zinc-800" />
@@ -193,7 +191,7 @@ function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string }) {
         <div className="text-center">
           <p className="text-zinc-400 text-sm uppercase tracking-widest mb-4">Skale Club</p>
           <h2 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-3xl font-semibold text-white mb-4">{heading}</h2>
-          {body && <p className="text-sm text-zinc-400 mt-2">{body}</p>}
+          {body && <p className="text-sm text-zinc-400 mt-2 max-w-md mx-auto">{body}</p>}
         </div>
       );
 
@@ -202,26 +200,33 @@ function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string }) {
   }
 }
 
+const slideVariants = {
+  enter: (dir: number) => ({ y: dir > 0 ? '100%' : '-100%', opacity: 0 }),
+  center: { y: 0, opacity: 1 },
+  exit: (dir: number) => ({ y: dir > 0 ? '-100%' : '100%', opacity: 0 }),
+};
+
 export default function PresentationViewer() {
   const { slug } = useParams<{ slug: string }>();
-  const [location, navigate] = useLocation();
 
-  // Language derived from URL search param — never from global context
-  const searchParams = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
-  const lang = searchParams.get('lang') === 'pt-BR' ? 'pt-BR' : 'en';
+  const [lang, setLang] = useState<'en' | 'pt-BR'>(() => {
+    const p = new URLSearchParams(window.location.search);
+    return p.get('lang') === 'pt-BR' ? 'pt-BR' : 'en';
+  });
 
   function switchLang(newLang: 'en' | 'pt-BR') {
-    const params = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
+    setLang(newLang);
+    const params = new URLSearchParams(window.location.search);
     if (newLang === 'en') params.delete('lang');
     else params.set('lang', 'pt-BR');
     const newSearch = params.toString();
-    navigate(location.split('?')[0] + (newSearch ? `?${newSearch}` : ''), { replace: true });
+    window.history.replaceState(null, '', window.location.pathname + (newSearch ? `?${newSearch}` : ''));
   }
 
   const hasTrackedView = useRef(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
-  const sectionRefs = useRef<(HTMLElement | null)[]>([]);
+  const [direction, setDirection] = useState(1);
 
   const { data, isLoading } = useQuery<PublicPresentation>({
     queryKey: [`/api/presentations/slug/${slug}`],
@@ -235,32 +240,50 @@ export default function PresentationViewer() {
     },
   });
 
+  const isPreview = new URLSearchParams(window.location.search).has('preview');
+
   useEffect(() => {
+    if (isPreview) return;
     if (data && (!data.hasAccessCode || isUnlocked) && !hasTrackedView.current) {
       hasTrackedView.current = true;
       trackView();
     }
   }, [data, isUnlocked]);
 
-  useEffect(() => {
+  const total = data?.slides.length ?? 0;
+
+  const goTo = useCallback((idx: number) => {
     if (!data) return;
-    const refs = sectionRefs.current.slice(0, data.slides.length);
+    const clamped = Math.max(0, Math.min(idx, total - 1));
+    setDirection(clamped > activeIndex ? 1 : -1);
+    setActiveIndex(clamped);
+  }, [activeIndex, total, data]);
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const idx = refs.indexOf(entry.target as HTMLElement);
-            if (idx !== -1) setActiveIndex(idx);
-          }
-        });
-      },
-      { threshold: 0.5 }
-    );
+  const prev = useCallback(() => goTo(activeIndex - 1), [activeIndex, goTo]);
+  const next = useCallback(() => goTo(activeIndex + 1), [activeIndex, goTo]);
 
-    refs.forEach((ref) => { if (ref) observer.observe(ref); });
-    return () => observer.disconnect();
-  }, [data, isUnlocked]);
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next();
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prev();
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [next, prev]);
+
+  const wheelLocked = useRef(false);
+  useEffect(() => {
+    function onWheel(e: WheelEvent) {
+      e.preventDefault();
+      if (wheelLocked.current) return;
+      wheelLocked.current = true;
+      if (e.deltaY > 0) next();
+      else prev();
+      setTimeout(() => { wheelLocked.current = false; }, 750);
+    }
+    window.addEventListener('wheel', onWheel, { passive: false });
+    return () => window.removeEventListener('wheel', onWheel);
+  }, [next, prev]);
 
   if (isLoading) return <LoadingScreen />;
   if (!data) return <NotFoundScreen />;
@@ -268,20 +291,11 @@ export default function PresentationViewer() {
     return <AccessCodeGate presentationId={data.id} onUnlock={() => setIsUnlocked(true)} />;
   }
 
-  const contentAnimation = {
-    initial: { opacity: 0, y: 20 },
-    whileInView: { opacity: 1, y: 0 },
-    transition: { duration: 0.5, ease: 'easeOut' },
-    viewport: { once: true },
-  };
-
-  const gradientOverlay = (
-    <div className="absolute inset-0 bg-gradient-to-b from-zinc-800/20 to-transparent pointer-events-none" />
-  );
+  const currentSlide = data.slides[activeIndex];
 
   return (
-    <div className="h-screen overflow-y-scroll snap-y snap-mandatory bg-zinc-950 text-white">
-      {/* Language switcher — fixed top-right, left of nav dots */}
+    <div className="h-screen bg-zinc-950 text-white overflow-hidden relative flex items-center justify-center">
+      {/* Language switcher */}
       <div className="fixed top-4 right-16 z-50 flex gap-3">
         <button
           onClick={() => switchLang('en')}
@@ -295,12 +309,12 @@ export default function PresentationViewer() {
         >PT</button>
       </div>
 
-      {/* Navigation dots — fixed right sidebar */}
+      {/* Navigation dots */}
       <div className="fixed right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-50">
         {data.slides.map((_, i) => (
           <button
             key={i}
-            onClick={() => sectionRefs.current[i]?.scrollIntoView({ behavior: 'smooth' })}
+            onClick={() => goTo(i)}
             aria-label={`Go to slide ${i + 1}`}
             className="min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
@@ -312,19 +326,50 @@ export default function PresentationViewer() {
         ))}
       </div>
 
-      {/* Slide sections */}
-      {data.slides.map((slide, i) => (
-        <section
-          key={i}
-          ref={(el) => { sectionRefs.current[i] = el; }}
-          className="h-screen w-full snap-start relative flex items-center justify-center"
+      {/* Slide counter */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 text-zinc-500 text-xs tabular-nums">
+        {activeIndex + 1} / {total}
+      </div>
+
+      {/* Arrow buttons */}
+      {activeIndex > 0 && (
+        <button
+          onClick={prev}
+          aria-label="Previous slide"
+          className="fixed left-4 top-1/2 -translate-y-1/2 z-50 w-10 h-10 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-all duration-200"
         >
-          {gradientOverlay}
-          <motion.div {...contentAnimation} className="relative z-10 px-8 max-w-xl mx-auto w-full">
-            <SlideContent slide={slide} lang={lang} />
+          <ChevronLeft className="w-6 h-6" />
+        </button>
+      )}
+
+      {activeIndex < total - 1 && (
+        <button
+          onClick={next}
+          aria-label="Next slide"
+          className="fixed right-16 top-1/2 -translate-y-1/2 z-50 w-10 h-10 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-all duration-200"
+        >
+          <ChevronRight className="w-6 h-6" />
+        </button>
+      )}
+
+      {/* Slide area */}
+      <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-zinc-800/20 to-transparent pointer-events-none" />
+        <AnimatePresence mode="wait" custom={direction}>
+          <motion.div
+            key={activeIndex}
+            custom={direction}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
+            className="relative z-10 px-8 max-w-xl mx-auto w-full"
+          >
+            <SlideContent slide={currentSlide} lang={lang} />
           </motion.div>
-        </section>
-      ))}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

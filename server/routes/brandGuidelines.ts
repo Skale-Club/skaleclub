@@ -11,7 +11,7 @@ export function registerBrandGuidelinesRoutes(app: Express) {
   // GET /api/brand-guidelines — public (no auth required; AI endpoint reads this server-side)
   app.get("/api/brand-guidelines", async (_req, res) => {
     const row = await storage.getBrandGuidelines();
-    res.json({ content: row?.content ?? null });
+    res.json({ content: row?.content ?? '' });
   });
 
   // PUT /api/brand-guidelines — admin-auth required

@@ -20,7 +20,7 @@ export function BrandGuidelinesSection() {
   });
 
   useEffect(() => {
-    if (data?.content !== undefined) {
+    if (data?.content != null) {
       setContent(data.content);
     }
   }, [data?.content]);
