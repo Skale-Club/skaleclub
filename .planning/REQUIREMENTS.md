@@ -14,9 +14,9 @@
 
 ### Blog Generator Engine
 
-- [ ] **BLOG-05**: `BlogGenerator` class in `server/lib/blog-generator.ts` — static method `generate({ manual: boolean })` that encapsulates the full pipeline. Returns `{ skipped, reason, jobId?, postId?, post? }`.
-- [ ] **BLOG-06**: Pre-generation validation — if `manual: false`, checks: settings row exists in DB, `enabled === true`, `postsPerDay > 0`, elapsed time since `lastRunAt` ≥ `24h / postsPerDay`. Returns `{ skipped: true, reason }` without throwing.
-- [ ] **BLOG-07**: Global DB lock — before running, sets `blog_settings.lockAcquiredAt = NOW()` where `lockAcquiredAt IS NULL OR lockAcquiredAt < NOW() - interval '10 minutes'`. If update affects 0 rows, returns `{ skipped: true, reason: "locked" }`. Clears lock on completion or error.
+- [x] **BLOG-05**: `BlogGenerator` class in `server/lib/blog-generator.ts` — static method `generate({ manual: boolean })` that encapsulates the full pipeline. Returns `{ skipped, reason, jobId?, postId?, post? }`.
+- [x] **BLOG-06**: Pre-generation validation — if `manual: false`, checks: settings row exists in DB, `enabled === true`, `postsPerDay > 0`, elapsed time since `lastRunAt` ≥ `24h / postsPerDay`. Returns `{ skipped: true, reason }` without throwing.
+- [x] **BLOG-07**: Global DB lock — before running, sets `blog_settings.lockAcquiredAt = NOW()` where `lockAcquiredAt IS NULL OR lockAcquiredAt < NOW() - interval '10 minutes'`. If update affects 0 rows, returns `{ skipped: true, reason: "locked" }`. Clears lock on completion or error.
 - [ ] **BLOG-08**: Content generation via Gemini — generates a topic then structured JSON: `{ title, content (HTML), excerpt, metaDescription, focusKeyword, tags: string[] }`. Model: `gemini-1.5-flash`. API key resolved in order: `BLOG_GEMINI_API_KEY` → `GEMINI_API_KEY` → `GOOGLE_API_KEY`.
 - [ ] **BLOG-09**: Image generation via Gemini image model (`gemini-2.0-flash-exp` or available image model). If image generation fails for any reason (API error, model unavailable, quota), pipeline continues without image — post is created with `featureImageUrl: null`.
 - [ ] **BLOG-10**: Generated image uploaded to Supabase Storage — bucket `images`, path `blog-images/{timestamp}-{uuid}.jpg`. Uses existing `getSupabaseAdmin()`. Returns public URL stored in post.
@@ -57,9 +57,9 @@
 | BLOG-02 | Phase 21 | Complete |
 | BLOG-03 | Phase 21 | Complete |
 | BLOG-04 | Phase 21 | Complete |
-| BLOG-05 | Phase 22 | Pending |
-| BLOG-06 | Phase 22 | Pending |
-| BLOG-07 | Phase 22 | Pending |
+| BLOG-05 | Phase 22 | Complete |
+| BLOG-06 | Phase 22 | Complete |
+| BLOG-07 | Phase 22 | Complete |
 | BLOG-08 | Phase 22 | Pending |
 | BLOG-09 | Phase 22 | Pending |
 | BLOG-10 | Phase 22 | Pending |

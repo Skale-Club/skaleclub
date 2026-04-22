@@ -13,7 +13,7 @@
 
 **v1.5 Blog Post Automation** — Phases 21-24
 
-- [ ] **Phase 21: Schema & Storage Foundation** — blog_settings + blog_generation_jobs tables, Drizzle/Zod schemas, storage stubs
+- [x] **Phase 21: Schema & Storage Foundation** — blog_settings + blog_generation_jobs tables, Drizzle/Zod schemas, storage stubs
 - [ ] **Phase 22: Blog Generator Engine** — BlogGenerator class, Gemini pipeline (topic → content → image), global DB lock, draft post creation
 - [ ] **Phase 23: API Endpoints + Cron** — GET/PUT /api/blog/settings, POST /api/blog/generate, POST /api/blog/cron/generate, server/cron.ts
 - [ ] **Phase 24: Admin UI** — Automation settings tab in BlogSection with Generate Now button + status display
@@ -90,19 +90,20 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 **Depends on**: Nothing (first phase of v1.5)
 **Requirements**: BLOG-01, BLOG-02, BLOG-03, BLOG-04
 **Plans:** 1/1 plans complete
+**Completed:** 2026-04-22
 **Success Criteria** (what must be TRUE):
   1. Raw SQL migration creates `blog_settings` and `blog_generation_jobs` tables without error — `SELECT * FROM blog_settings LIMIT 1` returns empty, not an error.
   2. `shared/schema/blog.ts` exports Drizzle table defs + Zod validators; `npm run check` passes cleanly.
   3. `IStorage` declares `getBlogSettings()`, `upsertBlogSettings()`, `createBlogGenerationJob()`, `updateBlogGenerationJob()` — `DatabaseStorage` implements all four.
   4. `blog_generation_jobs.postId` has no FK constraint — column is nullable int, not a foreign key reference.
-**Plans:**
-- [ ] `21-01-PLAN.md` — Create additive migration + dedicated blog schema module + typed storage stubs (BLOG-01, BLOG-02, BLOG-03, BLOG-04)
+Plans:
+- [x] `21-01-PLAN.md` — Create additive migration + dedicated blog schema module + typed storage stubs (BLOG-01, BLOG-02, BLOG-03, BLOG-04)
 
 ### Phase 22: Blog Generator Engine
 **Goal**: `BlogGenerator.generate()` runs the full Gemini pipeline — validates settings, acquires a global DB lock, generates content + image, uploads to Supabase, creates a draft blog post, and clears the lock.
 **Depends on**: Phase 21 (tables + storage stubs)
 **Requirements**: BLOG-05, BLOG-06, BLOG-07, BLOG-08, BLOG-09, BLOG-10, BLOG-11, BLOG-12
-**Plans:** 0/2 plans complete
+**Plans:** 1/2 plans executed
 **Success Criteria** (what must be TRUE):
   1. Calling `BlogGenerator.generate({ manual: false })` with no `blog_settings` row returns `{ skipped: true, reason: "no_settings" }` without throwing.
   2. Calling it with `enabled: false` returns `{ skipped: true, reason: "disabled" }`.
@@ -110,6 +111,9 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
   4. A successful run creates a `blog_posts` row with `status: "draft"`, `authorName: "AI Assistant"`, non-null `title`, `content`, `slug` — and updates `blog_generation_jobs` with the real `postId` and `status: "completed"`.
   5. If Gemini image generation fails, the post is still created with `featureImageUrl: null` and the job completes (not failed).
   6. `blog_settings.lastRunAt` is updated after success; `lockAcquiredAt` is cleared whether or not generation succeeded.
+Plans:
+- [x] `22-01-PLAN.md` - Add the generator foundation: official Gemini helper, skip validation, DB lock, and running-job lifecycle (BLOG-05, BLOG-06, BLOG-07)
+- [ ] `22-02-PLAN.md` - Complete the topic/content/image pipeline, Supabase upload, draft post creation, and finalization flow (BLOG-05, BLOG-08, BLOG-09, BLOG-10, BLOG-11, BLOG-12)
 
 ### Phase 23: API Endpoints + Cron
 **Goal**: Admin can read/save blog automation settings and trigger manual generation via REST; Vercel cron (GitHub Actions) can trigger scheduled generation; persistent environments start an hourly cron automatically.
@@ -141,13 +145,13 @@ _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 21. Schema & Storage Foundation | 1/1 | Complete   | 2026-04-22 |
-| 22. Blog Generator Engine | 0/2 | Not started | - |
+| 22. Blog Generator Engine | 1/2 | In Progress|  |
 | 23. API Endpoints + Cron | 0/1 | Not started | - |
 | 24. Admin UI — Automation Settings | 0/1 | Not started | - |
 
 ---
 
-_Last updated: 2026-04-22 — v1.5 Blog Post Automation milestone initialized_
+_Last updated: 2026-04-22 — Phase 22 in progress (1/2 plans); BLOG-05-07 delivered; Plan 22-02 next_
 
 ---
 

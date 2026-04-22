@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Blog Post Automation
 status: executing
-last_updated: "2026-04-22T15:01:46.965Z"
+last_updated: "2026-04-22T15:41:48.556Z"
 last_activity: 2026-04-22
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
+  total_plans: 3
+  completed_plans: 2
 ---
 
 # STATE: Skale Club Web Platform
@@ -24,14 +24,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-04-22)
 
 **Core value:** Admin configures a Gemini-powered blog post generator that runs on schedule and creates SEO-optimized draft posts ready for human review and publish.
-**Current focus:** Phase 21 — Schema & Storage Foundation
+**Current focus:** Phase 22 — Blog Generator Engine
 
 ---
 
 ## Current Position
 
-Phase: 21 (schema-storage-foundation) — NOT STARTED
-Plan: 1 of 1
+Phase: 22 (blog-generator-engine) — IN PROGRESS
+Plan: 2 of 2
 Status: Ready to execute
 Last activity: 2026-04-22
 
@@ -67,6 +67,7 @@ Last activity: 2026-04-22
 | Phase 19-admin-chat-editor P01 | ~4min | 2 tasks | 3 files |
 | Phase 20-public-viewer P01 | 12min | 3 tasks | 4 files |
 | Phase 21 P01 | 9min | 3 tasks | 6 files |
+| Phase 22 P01 | 8m | 2 tasks | 6 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -178,6 +179,8 @@ Last activity: 2026-04-22
 - [Phase 21]: Keep blog_generation_jobs.postId as a nullable integer without a foreign key so jobs can exist before draft posts are created.
 - [Phase 21]: Use manual Zod schemas in shared/schema/blog.ts for defaulted fields and nullable timestamp normalization instead of drizzle-zod generation.
 - [Phase 21]: Storage getBlogSettings() returns undefined when empty; default fallbacks stay deferred to later API phases.
+- [Phase 22]: Dedicated @google/genai singleton for blog automation without touching the existing chat Gemini helper.
+- [Phase 22]: BlogGenerator keeps one public generate({ manual }) entry point while exposing narrow test hooks for executable skip and lock assertions.
 
 ### Quick Tasks Completed
 
@@ -195,8 +198,8 @@ None.
 
 | Phase | Plans | Status |
 |-------|-------|--------|
-| 21. Schema & Storage Foundation | 0/1 | Not started |
-| 22. Blog Generator Engine | 0/2 | Not started |
+| 21. Schema & Storage Foundation | 1/1 | Complete |
+| 22. Blog Generator Engine | 1/2 | In progress |
 | 23. API Endpoints + Cron | 0/1 | Not started |
 | 24. Admin UI — Automation Settings | 0/1 | Not started |
 
@@ -227,5 +230,7 @@ None.
 
 | 2026-04-22 | v1.4 shipped | All 6 phases (15–20) complete; 22/22 requirements delivered |
 | 2026-04-22 | v1.5 milestone initialized | Blog Post Automation — 4 phases (21–24), 19 requirements defined; Phase 21 ready to plan |
+| 2026-04-22 | Phase 21 complete | BLOG-01-04 verified; Phase 22 is now the active focus |
+| 2026-04-22 | Plan 22-01 executed | Blog Gemini helper + skip/lock generator foundation shipped (3 commits: 106922f, 207493f, dd15614); Plan 22-02 next |
 
-*Last updated: 2026-04-22 — v1.5 Blog Post Automation milestone initialized; Phase 21 ready for /gsd:plan-phase 21*
+*Last updated: 2026-04-22 — Plan 22-01 complete; BLOG-05-07 delivered; Plan 22-02 ready to execute*
