@@ -103,7 +103,7 @@ Plans:
 **Goal**: `BlogGenerator.generate()` runs the full Gemini pipeline — validates settings, acquires a global DB lock, generates content + image, uploads to Supabase, creates a draft blog post, and clears the lock.
 **Depends on**: Phase 21 (tables + storage stubs)
 **Requirements**: BLOG-05, BLOG-06, BLOG-07, BLOG-08, BLOG-09, BLOG-10, BLOG-11, BLOG-12
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 **Success Criteria** (what must be TRUE):
   1. Calling `BlogGenerator.generate({ manual: false })` with no `blog_settings` row returns `{ skipped: true, reason: "no_settings" }` without throwing.
   2. Calling it with `enabled: false` returns `{ skipped: true, reason: "disabled" }`.
@@ -145,7 +145,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 21. Schema & Storage Foundation | 1/1 | Complete   | 2026-04-22 |
-| 22. Blog Generator Engine | 1/2 | In Progress|  |
+| 22. Blog Generator Engine | 2/2 | Complete   | 2026-04-22 |
 | 23. API Endpoints + Cron | 0/1 | Not started | - |
 | 24. Admin UI — Automation Settings | 0/1 | Not started | - |
 

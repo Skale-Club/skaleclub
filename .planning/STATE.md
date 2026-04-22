@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Blog Post Automation
-status: executing
-last_updated: "2026-04-22T15:41:48.556Z"
+status: verifying
+last_updated: "2026-04-22T15:53:38.675Z"
 last_activity: 2026-04-22
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** Ready to execute
+**Status:** Phase complete — ready for verification
 
 ---
 
@@ -32,7 +32,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-22)
 
 Phase: 22 (blog-generator-engine) — IN PROGRESS
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-22
 
 ---
@@ -68,6 +68,7 @@ Last activity: 2026-04-22
 | Phase 20-public-viewer P01 | 12min | 3 tasks | 4 files |
 | Phase 21 P01 | 9min | 3 tasks | 6 files |
 | Phase 22 P01 | 8m | 2 tasks | 6 files |
+| Phase 22 P02 | 11m | 2 tasks | 2 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -181,6 +182,8 @@ Last activity: 2026-04-22
 - [Phase 21]: Storage getBlogSettings() returns undefined when empty; default fallbacks stay deferred to later API phases.
 - [Phase 22]: Dedicated @google/genai singleton for blog automation without touching the existing chat Gemini helper.
 - [Phase 22]: BlogGenerator keeps one public generate({ manual }) entry point while exposing narrow test hooks for executable skip and lock assertions.
+- [Phase 22]: BlogGenerator now lazy-loads DB-backed defaults so the executable contract can run without a provisioned DATABASE_URL.
+- [Phase 22]: Feature-image failures degrade to console.warn plus featureImageUrl null so draft creation still succeeds.
 
 ### Quick Tasks Completed
 

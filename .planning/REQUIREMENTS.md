@@ -17,11 +17,11 @@
 - [x] **BLOG-05**: `BlogGenerator` class in `server/lib/blog-generator.ts` — static method `generate({ manual: boolean })` that encapsulates the full pipeline. Returns `{ skipped, reason, jobId?, postId?, post? }`.
 - [x] **BLOG-06**: Pre-generation validation — if `manual: false`, checks: settings row exists in DB, `enabled === true`, `postsPerDay > 0`, elapsed time since `lastRunAt` ≥ `24h / postsPerDay`. Returns `{ skipped: true, reason }` without throwing.
 - [x] **BLOG-07**: Global DB lock — before running, sets `blog_settings.lockAcquiredAt = NOW()` where `lockAcquiredAt IS NULL OR lockAcquiredAt < NOW() - interval '10 minutes'`. If update affects 0 rows, returns `{ skipped: true, reason: "locked" }`. Clears lock on completion or error.
-- [ ] **BLOG-08**: Content generation via Gemini — generates a topic then structured JSON: `{ title, content (HTML), excerpt, metaDescription, focusKeyword, tags: string[] }`. Model: `gemini-1.5-flash`. API key resolved in order: `BLOG_GEMINI_API_KEY` → `GEMINI_API_KEY` → `GOOGLE_API_KEY`.
-- [ ] **BLOG-09**: Image generation via Gemini image model (`gemini-2.0-flash-exp` or available image model). If image generation fails for any reason (API error, model unavailable, quota), pipeline continues without image — post is created with `featureImageUrl: null`.
-- [ ] **BLOG-10**: Generated image uploaded to Supabase Storage — bucket `images`, path `blog-images/{timestamp}-{uuid}.jpg`. Uses existing `getSupabaseAdmin()`. Returns public URL stored in post.
-- [ ] **BLOG-11**: Post created BEFORE job is updated with `postId` — `blog_posts` row inserted with `status: "draft"`, `authorName: "AI Assistant"`, unique slug (title-based + timestamp suffix). Job record updated with `postId` only after successful insert.
-- [ ] **BLOG-12**: `blog_settings.lastRunAt` updated and lock cleared atomically on successful job completion. On failure, lock is cleared but `lastRunAt` is NOT updated (allows retry).
+- [x] **BLOG-08**: Content generation via Gemini — generates a topic then structured JSON: `{ title, content (HTML), excerpt, metaDescription, focusKeyword, tags: string[] }`. Model: `gemini-1.5-flash`. API key resolved in order: `BLOG_GEMINI_API_KEY` → `GEMINI_API_KEY` → `GOOGLE_API_KEY`.
+- [x] **BLOG-09**: Image generation via Gemini image model (`gemini-2.0-flash-exp` or available image model). If image generation fails for any reason (API error, model unavailable, quota), pipeline continues without image — post is created with `featureImageUrl: null`.
+- [x] **BLOG-10**: Generated image uploaded to Supabase Storage — bucket `images`, path `blog-images/{timestamp}-{uuid}.jpg`. Uses existing `getSupabaseAdmin()`. Returns public URL stored in post.
+- [x] **BLOG-11**: Post created BEFORE job is updated with `postId` — `blog_posts` row inserted with `status: "draft"`, `authorName: "AI Assistant"`, unique slug (title-based + timestamp suffix). Job record updated with `postId` only after successful insert.
+- [x] **BLOG-12**: `blog_settings.lastRunAt` updated and lock cleared atomically on successful job completion. On failure, lock is cleared but `lastRunAt` is NOT updated (allows retry).
 
 ### API Endpoints
 
@@ -60,11 +60,11 @@
 | BLOG-05 | Phase 22 | Complete |
 | BLOG-06 | Phase 22 | Complete |
 | BLOG-07 | Phase 22 | Complete |
-| BLOG-08 | Phase 22 | Pending |
-| BLOG-09 | Phase 22 | Pending |
-| BLOG-10 | Phase 22 | Pending |
-| BLOG-11 | Phase 22 | Pending |
-| BLOG-12 | Phase 22 | Pending |
+| BLOG-08 | Phase 22 | Complete |
+| BLOG-09 | Phase 22 | Complete |
+| BLOG-10 | Phase 22 | Complete |
+| BLOG-11 | Phase 22 | Complete |
+| BLOG-12 | Phase 22 | Complete |
 | BLOG-13 | Phase 23 | Pending |
 | BLOG-14 | Phase 23 | Pending |
 | BLOG-15 | Phase 23 | Pending |
