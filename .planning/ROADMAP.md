@@ -14,7 +14,7 @@
 **v1.5 Blog Post Automation** — Phases 21-24
 
 - [x] **Phase 21: Schema & Storage Foundation** — blog_settings + blog_generation_jobs tables, Drizzle/Zod schemas, storage stubs
-- [ ] **Phase 22: Blog Generator Engine** — BlogGenerator class, Gemini pipeline (topic → content → image), global DB lock, draft post creation
+- [x] **Phase 22: Blog Generator Engine** — BlogGenerator class, Gemini pipeline (topic → content → image), global DB lock, draft post creation
 - [ ] **Phase 23: API Endpoints + Cron** — GET/PUT /api/blog/settings, POST /api/blog/generate, POST /api/blog/cron/generate, server/cron.ts
 - [ ] **Phase 24: Admin UI** — Automation settings tab in BlogSection with Generate Now button + status display
 
@@ -113,19 +113,21 @@ Plans:
   6. `blog_settings.lastRunAt` is updated after success; `lockAcquiredAt` is cleared whether or not generation succeeded.
 Plans:
 - [x] `22-01-PLAN.md` - Add the generator foundation: official Gemini helper, skip validation, DB lock, and running-job lifecycle (BLOG-05, BLOG-06, BLOG-07)
-- [ ] `22-02-PLAN.md` - Complete the topic/content/image pipeline, Supabase upload, draft post creation, and finalization flow (BLOG-05, BLOG-08, BLOG-09, BLOG-10, BLOG-11, BLOG-12)
+- [x] `22-02-PLAN.md` - Complete the topic/content/image pipeline, Supabase upload, draft post creation, and finalization flow (BLOG-05, BLOG-08, BLOG-09, BLOG-10, BLOG-11, BLOG-12)
 
 ### Phase 23: API Endpoints + Cron
 **Goal**: Admin can read/save blog automation settings and trigger manual generation via REST; Vercel cron (GitHub Actions) can trigger scheduled generation; persistent environments start an hourly cron automatically.
 **Depends on**: Phase 22 (BlogGenerator must exist)
 **Requirements**: BLOG-13, BLOG-14, BLOG-15, BLOG-16
-**Plans:** 0/1 plans complete
+**Plans:** 1 plan
 **Success Criteria** (what must be TRUE):
   1. `GET /api/blog/settings` returns a 200 with safe defaults even when no DB row exists — never a 404 or 500.
   2. `PUT /api/blog/settings` (admin-auth) upserts the row; a subsequent `GET` returns the saved values.
   3. `POST /api/blog/generate` (admin-auth) returns `{ jobId, postId, post }` on a fresh run; returns `{ skipped, reason }` when the generator skips (not a 4xx).
   4. `POST /api/blog/cron/generate` with wrong/missing `CRON_SECRET` returns 401; with correct secret, calls the generator and returns its result.
   5. On a non-Vercel server startup, `startCron()` logs that it is running; on Vercel (`process.env.VERCEL` truthy), cron is not started.
+Plans:
+- [ ] `23-01-PLAN.md` — registerBlogAutomationRoutes (GET/PUT /api/blog/settings, POST /api/blog/generate, POST /api/blog/cron/generate) + server/cron.ts startCron() + index.ts wiring (BLOG-13, BLOG-14, BLOG-15, BLOG-16)
 
 ### Phase 24: Admin UI — Automation Settings
 **Goal**: Admin can configure and trigger blog automation from the Blog section without leaving the admin dashboard.
@@ -151,7 +153,7 @@ Plans:
 
 ---
 
-_Last updated: 2026-04-22 — Phase 22 in progress (1/2 plans); BLOG-05-07 delivered; Plan 22-02 next_
+_Last updated: 2026-04-22 — Phase 23 planned (1 plan); Phase 22 complete; BLOG-05-12 delivered_
 
 ---
 
