@@ -434,8 +434,9 @@ export function PresentationsSection() {
             <AlertDialogFooter>
               <AlertDialogCancel>{t('Cancel')}</AlertDialogCancel>
               <AlertDialogAction
+                variant="destructive"
                 onClick={() => deleteMutation.mutate(deleteTarget.id)}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                className="border-none hover:bg-destructive/90"
               >
                 {deleteMutation.isPending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
