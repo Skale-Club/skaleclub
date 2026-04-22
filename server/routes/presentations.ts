@@ -3,6 +3,12 @@ import crypto from "crypto";
 import { storage } from "../storage.js";
 import { insertPresentationSchema } from "#shared/schema.js";
 import { requireAdmin } from "./_shared.js";
+import { z } from "zod";
+
+const thumbnailSchema = z.object({
+  thumbnailUrl: z.string().startsWith("data:image/webp;base64,").max(1_000_000),
+  thumbnailSignature: z.string().min(1).max(200),
+});
 
 function slugifyTitle(title: string): string {
   return title
@@ -24,6 +30,16 @@ async function buildUniquePresentationSlug(title: string): Promise<string> {
   return `${base}-${Date.now()}`;
 }
 
+function normalizeCustomSlug(slug: string): string {
+  return slug
+    .toLowerCase()
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "presentation";
+}
+
 export function registerPresentationsRoutes(app: Express) {
   // Literal-segment route registered FIRST — prevents Express matching "slug" as a :id UUID
   // (RESEARCH.md Pitfall 3 guard)
@@ -31,40 +47,14 @@ export function registerPresentationsRoutes(app: Express) {
     try {
       const presentation = await storage.getPresentationBySlug(req.params.slug);
       if (!presentation) return res.status(404).json({ message: "Presentation not found" });
-
-      // If presentation is gated and no code supplied — return metadata + empty slides
-      if (presentation.accessCode) {
-        const { accessCode, ...safe } = presentation as any;
-        return res.json({ ...safe, slides: [], hasAccessCode: true });
-      }
-
-      // No gate — return full presentation (strip accessCode field, add hasAccessCode:false)
-      const { accessCode, ...publicPresentation } = presentation as any;
-      res.json({ ...publicPresentation, hasAccessCode: false });
+      const { thumbnailUrl, thumbnailSignature, ...publicPresentation } = presentation as any;
+      res.json(publicPresentation);
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
     }
   });
 
-  // PRES-17 / PRES-21: Verify access code for a gated presentation
-  // IDs are UUID strings — do NOT call Number(req.params.id)
-  app.post("/api/presentations/:id/verify-code", async (req, res) => {
-    try {
-      const presentation = await storage.getPresentation(req.params.id);
-      if (!presentation) return res.status(404).json({ message: "Presentation not found" });
-      if (!presentation.accessCode) return res.json({ success: true });
-      const { code } = req.body as { code: string };
-      if (presentation.accessCode !== code) {
-        return res.status(401).json({ message: "Incorrect code" });
-      }
-      const { accessCode, ...publicPresentation } = presentation as any;
-      res.json({ ...publicPresentation, hasAccessCode: true });
-    } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
-    }
-  });
-
-  // PRES-17: Record view — called from client after gate is passed
+  // PRES-17: Record view — called from client when viewing presentation
   // SHA-256 hash IP per ip_hash column intent (STATE.md Phase 15 decision)
   app.post("/api/presentations/:id/view", async (req, res) => {
     try {
@@ -85,7 +75,8 @@ export function registerPresentationsRoutes(app: Express) {
     try {
       const limit = req.query.limit ? Number(req.query.limit) : undefined;
       const offset = req.query.offset ? Number(req.query.offset) : undefined;
-      const result = await storage.listPresentations(limit, offset);
+      const search = req.query.search as string | undefined;
+      const result = await storage.listPresentations(limit, offset, search);
       res.json(result);
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
@@ -109,7 +100,7 @@ export function registerPresentationsRoutes(app: Express) {
     }
   });
 
-  // PRES-07: Update — accepts title/slides/accessCode; version NOT in insertPresentationSchema
+  // PRES-07: Update — accepts title/slides; version NOT in insertPresentationSchema
   // so it must be injected manually as existing.version + 1 (RESEARCH.md Pitfall 2 guard)
   // IDs are UUID strings — do NOT call Number(req.params.id)
   app.put("/api/presentations/:id", requireAdmin, async (req, res) => {
@@ -121,10 +112,34 @@ export function registerPresentationsRoutes(app: Express) {
       }
       const existing = await storage.getPresentation(req.params.id);
       if (!existing) return res.status(404).json({ message: "Presentation not found" });
+      const updateData = { ...parsed.data };
+      if (typeof updateData.slug === "string") {
+        const slug = normalizeCustomSlug(updateData.slug);
+        const slugOwner = await storage.getPresentationBySlug(slug);
+        if (slugOwner && slugOwner.id !== existing.id) {
+          return res.status(409).json({ message: "Slug already in use" });
+        }
+        updateData.slug = slug;
+      }
       const updated = await storage.updatePresentation(req.params.id, {
-        ...parsed.data,
+        ...updateData,
         version: existing.version + 1,
       });
+      res.json(updated);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.put("/api/presentations/:id/thumbnail", requireAdmin, async (req, res) => {
+    try {
+      const parsed = thumbnailSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Validation error", errors: parsed.error.errors });
+      }
+      const existing = await storage.getPresentation(req.params.id);
+      if (!existing) return res.status(404).json({ message: "Presentation not found" });
+      const updated = await storage.updatePresentation(req.params.id, parsed.data);
       res.json(updated);
     } catch (err) {
       res.status(400).json({ message: (err as Error).message });

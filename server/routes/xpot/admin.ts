@@ -17,6 +17,13 @@ export function createAdminRouter() {
       storage.listSalesTasks(),
       storage.listSalesSyncEvents(),
     ]);
+    const latestSyncByEntity = new Map<string, (typeof syncEvents)[number]>();
+    for (const event of syncEvents) {
+      const key = `${event.entityType}:${event.entityId}`;
+      if (!latestSyncByEntity.has(key)) {
+        latestSyncByEntity.set(key, event);
+      }
+    }
 
     res.json({
       reps,
@@ -28,7 +35,7 @@ export function createAdminRouter() {
         openOpportunities: opportunities.filter((item) => item.status === "open").length,
         pipelineValue: opportunities.filter((item) => item.status === "open").reduce((sum, item) => sum + (item.value || 0), 0),
         pendingTasks: tasks.filter((item) => item.status === "pending").length,
-        syncIssues: syncEvents.filter((item) => item.status !== "synced").length,
+        syncIssues: Array.from(latestSyncByEntity.values()).filter((item) => item.status !== "synced").length,
       },
       latestSyncEvents: syncEvents.slice(0, 10),
     });
@@ -57,6 +64,18 @@ export function createAdminRouter() {
 
   router.get("/admin/sync-events", async (_req, res) => {
     res.json(await storage.listSalesSyncEvents());
+  });
+
+  router.get("/admin/recent-visits", async (req, res) => {
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const pageSize = Math.min(25, Math.max(1, Number(req.query.pageSize) || 5));
+    const repId = req.query.repId ? Number(req.query.repId) : undefined;
+    if (repId !== undefined && (!Number.isInteger(repId) || repId <= 0)) {
+      return res.status(400).json({ message: "repId must be a positive integer" });
+    }
+    const offset = (page - 1) * pageSize;
+    const result = await storage.listRecentSalesVisits(pageSize, offset, { repId });
+    res.json({ ...result, page, pageSize });
   });
 
   router.get("/admin/ghl/pipelines", async (_req, res) => {

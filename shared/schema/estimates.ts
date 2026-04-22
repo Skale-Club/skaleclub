@@ -40,6 +40,8 @@ export const estimates = pgTable("estimates", {
   slug: text("slug").notNull().unique(),
   note: text("note"),
   services: jsonb("services").$type<EstimateServiceItem[]>().notNull().default([]),
+  thumbnailUrl: text("thumbnail_url"),
+  thumbnailSignature: text("thumbnail_signature"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
   accessCode: text("access_code"),
@@ -63,6 +65,8 @@ export const insertEstimateSchema = z.object({
   note: z.string().nullable().optional(),
   services: z.array(estimateServiceItemSchema).default([]),
   accessCode: z.string().nullable().optional(),
+  thumbnailUrl: z.string().nullable().optional(),
+  thumbnailSignature: z.string().nullable().optional(),
 });
 
 // TypeScript types

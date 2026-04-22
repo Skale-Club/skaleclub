@@ -660,17 +660,9 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
 
   const handleClose = () => {
     if (view === "form") {
-      trackEvent("form_abandoned", { step: currentStep });
+      trackEvent("form_closed_draft", { step: currentStep });
     }
-    clearStoredState();
-    setAnswers(buildInitialAnswers(config));
-    setCurrentStep(1);
-    setLastAnsweredStep(0);
-    setSessionId(generateSessionId());
-    setStartedAt(new Date());
-    setView("form");
-    setErrorMessage(null);
-    setDirection(1);
+    // Draft preservation: we no longer clear state on close
     onClose();
   };
 
@@ -699,6 +691,9 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) handleClose();
+        }}
       >
         <div className="w-full max-w-[640px]">
           <div className="relative bg-white text-slate-900 h-full sm:h-auto rounded-none sm:rounded-3xl shadow-2xl overflow-hidden" ref={containerRef}>

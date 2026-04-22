@@ -3,6 +3,12 @@ import crypto from "crypto";
 import { storage } from "../storage.js";
 import { insertEstimateSchema } from "#shared/schema.js";
 import { requireAdmin } from "./_shared.js";
+import { z } from "zod";
+
+const thumbnailSchema = z.object({
+  thumbnailUrl: z.string().startsWith("data:image/webp;base64,").max(1_000_000),
+  thumbnailSignature: z.string().min(1).max(200),
+});
 
 function slugifyName(name: string): string {
   return name
@@ -32,6 +38,16 @@ async function buildUniqueEstimateSlug(data: {
   return `${base}-${Date.now()}`;
 }
 
+function normalizeCustomSlug(slug: string): string {
+  return slug
+    .toLowerCase()
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "estimate";
+}
+
 export function registerEstimatesRoutes(app: Express) {
   // Public slug endpoint registered first to avoid Express matching "slug" as an :id value
   app.get("/api/estimates/slug/:slug", async (req, res) => {
@@ -39,7 +55,7 @@ export function registerEstimatesRoutes(app: Express) {
       const estimate = await storage.getEstimateBySlug(req.params.slug);
       if (!estimate) return res.status(404).json({ message: "Estimate not found" });
       // Never expose access_code to the public client (D-07, RESEARCH pitfall 1)
-      const { accessCode, ...publicEstimate } = estimate as any;
+      const { accessCode, thumbnailUrl, thumbnailSignature, ...publicEstimate } = estimate as any;
       res.json({ ...publicEstimate, hasAccessCode: Boolean(accessCode) });
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
@@ -79,7 +95,8 @@ export function registerEstimatesRoutes(app: Express) {
     try {
       const limit = req.query.limit ? Number(req.query.limit) : undefined;
       const offset = req.query.offset ? Number(req.query.offset) : undefined;
-      const result = await storage.listEstimates(limit, offset);
+      const search = req.query.search as string | undefined;
+      const result = await storage.listEstimates(limit, offset, search);
       res.json(result);
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
@@ -103,8 +120,32 @@ export function registerEstimatesRoutes(app: Express) {
 
   app.put("/api/estimates/:id", requireAdmin, async (req, res) => {
     try {
-      const updateSchema = insertEstimateSchema.partial().omit({ slug: true });
+      const updateSchema = insertEstimateSchema.partial();
       const parsed = updateSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Validation error", errors: parsed.error.errors });
+      }
+      const existing = await storage.getEstimate(Number(req.params.id));
+      if (!existing) return res.status(404).json({ message: "Estimate not found" });
+      const updateData = { ...parsed.data };
+      if (typeof updateData.slug === "string") {
+        const slug = normalizeCustomSlug(updateData.slug);
+        const slugOwner = await storage.getEstimateBySlug(slug);
+        if (slugOwner && slugOwner.id !== existing.id) {
+          return res.status(409).json({ message: "Slug already in use" });
+        }
+        updateData.slug = slug;
+      }
+      const estimate = await storage.updateEstimate(Number(req.params.id), updateData);
+      res.json(estimate);
+    } catch (err) {
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.put("/api/estimates/:id/thumbnail", requireAdmin, async (req, res) => {
+    try {
+      const parsed = thumbnailSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ message: "Validation error", errors: parsed.error.errors });
       }

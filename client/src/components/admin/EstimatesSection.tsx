@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   Copy,
@@ -6,10 +6,13 @@ import {
   Eye,
   GripVertical,
   Layers,
+  Lock,
+  LockOpen,
   Pencil,
   Plus,
   Receipt,
   Trash2,
+  Search,
 } from 'lucide-react';
 import {
   DndContext, closestCenter, type DragEndEvent,
@@ -44,12 +47,27 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { useDebounce } from '@/hooks/useDebounce';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Loader2 } from '@/components/ui/loader';
 import { AdminCard, EmptyState, SectionHeader } from './shared';
 import { PageThumbnail } from '@/components/ui/PageThumbnail';
+import {
+  createEstimateThumbnailDataUrl,
+  getEstimateThumbnailSignature,
+} from '@/lib/thumbnails';
 import type { Estimate, EstimateWithStats, EstimateServiceItem, CatalogServiceItem } from '@shared/schema';
 import type { PortfolioService } from '@shared/schema';
+
+function normalizeEstimateSlug(value: string): string {
+  return value
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
 
 // ──────────────────────────────────────────────────────────
 // SortableServiceRow sub-component
@@ -362,19 +380,78 @@ export function EstimatesSection() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEstimate, setEditingEstimate] = useState<Estimate | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Estimate | null>(null);
+  const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
+  const [editingAccessCodeEstimate, setEditingAccessCodeEstimate] = useState<Estimate | null>(null);
+  const [accessCodeValue, setAccessCodeValue] = useState('');
+  const [editingSlugId, setEditingSlugId] = useState<number | null>(null);
+  const [slugValue, setSlugValue] = useState('');
+  const skipSlugBlurRef = useRef(false);
+  const thumbnailJobsRef = useRef(new Set<string>());
 
   const ITEMS_PER_PAGE = 10;
   const [page, setPage] = useState(1);
   const offset = (page - 1) * ITEMS_PER_PAGE;
 
   const { data: queryData, isLoading } = useQuery<{ data: EstimateWithStats[], total: number }>({
-    queryKey: ['/api/estimates', page],
-    queryFn: () => fetch(`/api/estimates?limit=${ITEMS_PER_PAGE}&offset=${offset}`).then(r => r.json()),
+    queryKey: ['/api/estimates', page, debouncedSearch],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      params.append('limit', ITEMS_PER_PAGE.toString());
+      params.append('offset', offset.toString());
+      if (debouncedSearch) params.append('search', debouncedSearch);
+      return fetch(`/api/estimates?${params.toString()}`).then(r => r.json());
+    },
   });
 
   const estimates = queryData?.data ?? [];
   const totalItems = queryData?.total ?? 0;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
+  useEffect(() => {
+    estimates.forEach((estimate) => {
+      const thumbnailSignature = getEstimateThumbnailSignature(estimate);
+      if (estimate.thumbnailUrl && estimate.thumbnailSignature === thumbnailSignature) return;
+
+      const jobKey = `${estimate.id}:${thumbnailSignature}`;
+      if (thumbnailJobsRef.current.has(jobKey)) return;
+      thumbnailJobsRef.current.add(jobKey);
+
+      void (async () => {
+        try {
+          const thumbnailUrl = await createEstimateThumbnailDataUrl(estimate);
+          await apiRequest('PUT', `/api/estimates/${estimate.id}/thumbnail`, {
+            thumbnailUrl,
+            thumbnailSignature,
+          });
+          const applyThumbnail = (current: { data: EstimateWithStats[]; total: number } | undefined) =>
+            current
+              ? {
+                  ...current,
+                  data: current.data.map((row) =>
+                    row.id === estimate.id
+                      ? { ...row, thumbnailUrl, thumbnailSignature }
+                      : row,
+                  ),
+                }
+              : current;
+
+          queryClient.setQueryData<{ data: EstimateWithStats[]; total: number }>(
+            ['/api/estimates', page, debouncedSearch],
+            applyThumbnail,
+          );
+          queryClient.setQueriesData<{ data: EstimateWithStats[]; total: number }>(
+            { queryKey: ['/api/estimates'] },
+            applyThumbnail,
+          );
+        } catch (err) {
+          console.warn('Failed to cache estimate thumbnail', err);
+        } finally {
+          thumbnailJobsRef.current.delete(jobKey);
+        }
+      })();
+    });
+  }, [debouncedSearch, estimates, page]);
 
   const createMutation = useMutation({
     mutationFn: async (data: { clientName: string; companyName: string; contactName: string; note: string | null; services: EstimateServiceItem[]; accessCode: string | null }) => {
@@ -427,6 +504,91 @@ export function EstimatesSection() {
     },
   });
 
+  const updateAccessCodeMutation = useMutation({
+    mutationFn: async (data: { id: number; accessCode: string | null }) => {
+      const res = await apiRequest('PUT', `/api/estimates/${data.id}`, { accessCode: data.accessCode });
+      return res.json() as Promise<Estimate>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/estimates'] });
+      setEditingAccessCodeEstimate(null);
+      setAccessCodeValue('');
+      toast({ title: 'Access code updated' });
+    },
+    onError: (err: Error) => {
+      toast({ title: 'Failed to update access code', description: err.message, variant: 'destructive' });
+    },
+  });
+
+  const updateSlugMutation = useMutation({
+    mutationFn: async (data: { id: number; slug: string }) => {
+      const res = await apiRequest('PUT', `/api/estimates/${data.id}`, { slug: data.slug });
+      const updated = (await res.json()) as Estimate;
+      if (updated.slug !== data.slug) {
+        throw new Error(`Server did not save the slug. Returned: ${updated.slug}`);
+      }
+      return updated;
+    },
+    onSuccess: (updatedEstimate, variables) => {
+      const savedSlug = updatedEstimate.slug || variables.slug;
+      const updateEstimateSlug = (current: { data: EstimateWithStats[]; total: number } | undefined) =>
+        current
+          ? {
+              ...current,
+              data: current.data.map((estimate) =>
+                estimate.id === variables.id
+                  ? { ...estimate, slug: savedSlug }
+                  : estimate,
+              ),
+            }
+          : current;
+
+      queryClient.setQueryData<{ data: EstimateWithStats[]; total: number }>(
+        ['/api/estimates', page, debouncedSearch],
+        updateEstimateSlug,
+      );
+      queryClient.setQueriesData<{ data: EstimateWithStats[]; total: number }>(
+        { queryKey: ['/api/estimates'] },
+        updateEstimateSlug,
+      );
+      setEditingSlugId(null);
+      setSlugValue('');
+      toast({ title: 'Slug updated' });
+    },
+    onError: (err: Error) => {
+      toast({ title: 'Failed to update slug', description: err.message, variant: 'destructive' });
+    },
+  });
+
+  const startSlugEdit = (estimate: Estimate) => {
+    skipSlugBlurRef.current = false;
+    setEditingSlugId(estimate.id);
+    setSlugValue(estimate.slug);
+  };
+
+  const commitSlug = (estimate: Estimate, value = slugValue) => {
+    if (skipSlugBlurRef.current) {
+      skipSlugBlurRef.current = false;
+      return;
+    }
+
+    const slug = normalizeEstimateSlug(value);
+
+    if (!slug) {
+      setSlugValue(estimate.slug);
+      return;
+    }
+
+    if (slug !== estimate.slug) {
+      setSlugValue(slug);
+      updateSlugMutation.mutate({ id: estimate.id, slug });
+      return;
+    }
+
+    setEditingSlugId(null);
+    setSlugValue('');
+  };
+
   const handleCopyLink = async (slug: string) => {
     try {
       await navigator.clipboard.writeText(`${window.location.origin}/e/${slug}`);
@@ -443,17 +605,39 @@ export function EstimatesSection() {
         description="Create and manage client proposals — each generates a shareable link"
         icon={<Receipt className="w-5 h-5" />}
         action={
-          <Button
-            size="sm"
-            onClick={() => {
-              setEditingEstimate(null);
-              setIsDialogOpen(true);
-            }}
-            className="gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            New Estimate
-          </Button>
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <div className="relative w-full sm:w-64 group">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
+              <Input
+                placeholder="Search estimates..."
+                className="pl-9 pr-8"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            <Button
+              size="sm"
+              onClick={() => {
+                setEditingEstimate(null);
+                setIsDialogOpen(true);
+              }}
+              className="gap-2 w-full sm:w-auto"
+            >
+              <Plus className="w-4 h-4" />
+              New Estimate
+            </Button>
+          </div>
         }
       />
 
@@ -475,10 +659,48 @@ export function EstimatesSection() {
                 key={est.id}
                 className="flex items-center gap-3 border rounded-lg p-4 bg-card"
               >
-                <PageThumbnail url={`/e/${est.slug}?preview=1`} />
-                <span className="font-semibold text-sm flex-1 truncate min-w-0">
-                  {est.companyName?.trim() || est.contactName?.trim() || est.clientName}
-                </span>
+                <PageThumbnail
+                  thumbnailUrl={est.thumbnailUrl}
+                  title={`${est.companyName?.trim() || est.contactName?.trim() || est.clientName} thumbnail`}
+                />
+                <div className="min-w-0 flex-1 space-y-1">
+                  <span className="block font-semibold text-sm truncate">
+                    {est.companyName?.trim() || est.contactName?.trim() || est.clientName}
+                  </span>
+                  {editingSlugId === est.id ? (
+                    <div className="flex h-6 max-w-xs items-center overflow-hidden rounded border bg-background focus-within:ring-1 focus-within:ring-ring">
+                      <span className="shrink-0 border-r bg-muted/50 px-2 text-[10px] font-mono leading-5 text-muted-foreground">
+                        /e/
+                      </span>
+                      <Input
+                        autoFocus
+                        value={slugValue}
+                        onChange={(e) => setSlugValue(e.target.value)}
+                        onBlur={(e) => commitSlug(est, e.currentTarget.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') e.currentTarget.blur();
+                          if (e.key === 'Escape') {
+                            skipSlugBlurRef.current = true;
+                            setEditingSlugId(null);
+                            setSlugValue('');
+                          }
+                        }}
+                        disabled={updateSlugMutation.isPending}
+                        aria-label="Estimate slug"
+                        className="h-5 min-w-0 border-0 bg-transparent px-2 text-[9px] font-mono leading-5 shadow-none focus-visible:ring-0"
+                      />
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => startSlugEdit(est)}
+                      className="inline-flex max-w-full items-center rounded border px-2 py-0.5 text-[10px] font-mono leading-4 text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+                      title="Edit slug"
+                    >
+                      <span className="truncate">/e/{est.slug}</span>
+                    </button>
+                  )}
+                </div>
                 <Badge variant="secondary" className="text-xs gap-1 shrink-0">
                   <Layers className="w-3 h-3" />
                   {est.services.length}
@@ -487,6 +709,19 @@ export function EstimatesSection() {
                   <Eye className="w-3 h-3" />
                   {est.viewCount ?? 0}
                 </Badge>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={est.accessCode ? 'Edit access code' : 'Add access code'}
+                  title={est.accessCode ? 'Protected with password — click to edit' : 'Click to add password protection'}
+                  onClick={() => {
+                    setEditingAccessCodeEstimate(est);
+                    setAccessCodeValue(est.accessCode ?? '');
+                  }}
+                  className={est.accessCode ? 'text-yellow-600 hover:text-yellow-700' : 'text-muted-foreground hover:text-foreground'}
+                >
+                  {est.accessCode ? <Lock className="w-4 h-4" /> : <LockOpen className="w-4 h-4" />}
+                </Button>
                 <div className="flex gap-1 shrink-0">
                   <Button
                     variant="ghost"
@@ -609,6 +844,49 @@ export function EstimatesSection() {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Access Code dialog */}
+      {editingAccessCodeEstimate && (
+        <Dialog open={!!editingAccessCodeEstimate} onOpenChange={(o) => !o && setEditingAccessCodeEstimate(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Password Protection</DialogTitle>
+            </DialogHeader>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                updateAccessCodeMutation.mutate({
+                  id: editingAccessCodeEstimate.id,
+                  accessCode: accessCodeValue || null,
+                });
+              }}
+              className="flex flex-col gap-4"
+            >
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="accessCode">Access code (optional)</Label>
+                <Input
+                  id="accessCode"
+                  type="text"
+                  placeholder="e.g. 20260419"
+                  value={accessCodeValue}
+                  onChange={(e) => setAccessCodeValue(e.target.value)}
+                  autoFocus
+                />
+                <p className="text-xs text-muted-foreground">Leave blank to remove password protection</p>
+              </div>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" variant="outline">Cancel</Button>
+                </DialogClose>
+                <Button type="submit" disabled={updateAccessCodeMutation.isPending}>
+                  {updateAccessCodeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Save
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
