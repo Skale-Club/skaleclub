@@ -105,6 +105,10 @@ Last activity: 2026-04-22
 
 ## Accumulated Context
 
+### Roadmap Evolution
+
+- Phase 25 added: Services Carousel Polish — fix soft-edge fade masks, restore portfolio service modal open-on-click, lock body + carousel auto-scroll while modal is open
+
 ### Decisions Made
 
 - ✅ Surgical refactoring — all API contracts preserved (v1.0)
@@ -245,4 +249,7 @@ None.
 | 2026-04-22 | Phase 21 complete | BLOG-01-04 verified; Phase 22 is now the active focus |
 | 2026-04-22 | Plan 22-01 executed | Blog Gemini helper + skip/lock generator foundation shipped (3 commits: 106922f, 207493f, dd15614); Plan 22-02 next |
 
-*Last updated: 2026-04-22 — Plan 22-01 complete; BLOG-05-07 delivered; Plan 22-02 ready to execute*
+| 2026-04-28 | Phase 25 added | Services Carousel Polish — fade masks, modal click, scroll lock |
+| 2026-04-28 | Phase 25 context gathered | 4 areas decided: shadcn Dialog migration, CSS mask-image, pause-on-modal-open, 5px drag threshold; ready for /gsd:plan-phase 25 |
+
+*Last updated: 2026-04-28 — Phase 25 context captured; ready for planning*
