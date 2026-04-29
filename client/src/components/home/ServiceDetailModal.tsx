@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { ArrowRight, CheckCircle2, X } from 'lucide-react';
 import type { PortfolioService } from '@shared/schema';
 import { useTranslation } from '@/hooks/useTranslation';
 import { badgeColorMap } from '@/components/PortfolioCard';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 const checkColorMap: Record<string, string> = {
   blue: "text-blue-500",
@@ -21,22 +23,42 @@ interface ServiceDetailModalProps {
 export function ServiceDetailModal({ service, isOpen, onClose, onCta }: ServiceDetailModalProps) {
   const { t } = useTranslation();
 
-  if (!isOpen || !service) return null;
+  useEffect(() => {
+    if (!isOpen) return;
+    history.pushState({ __serviceModal: true }, '');
+    let triggeredByPopstate = false;
+    const onPopState = () => {
+      triggeredByPopstate = true;
+      onClose();
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => {
+      window.removeEventListener('popstate', onPopState);
+      if (
+        !triggeredByPopstate &&
+        (window.history.state as { __serviceModal?: boolean } | null)?.__serviceModal
+      ) {
+        history.back();
+      }
+    };
+  }, [isOpen, onClose]);
+
+  if (!service) return null;
 
   const badgeColors = badgeColorMap[service.accentColor || 'blue'] || badgeColorMap.blue;
   const checkColor = checkColorMap[service.accentColor || 'blue'] || checkColorMap.blue;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
     >
-      <div
-        className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <DialogContent className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-0 border-0 [&>button]:hidden">
         <button
           onClick={onClose}
+          aria-label="Close"
           className="absolute top-4 right-4 z-10 p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600"
         >
           <X className="w-5 h-5" />
@@ -101,7 +123,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta }: ServiceD
             )}
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

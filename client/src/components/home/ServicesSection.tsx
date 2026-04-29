@@ -64,6 +64,7 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
           />
           <ServicesCarousel
             items={services}
+            paused={isModalOpen}
             ariaLabel="Services carousel"
             renderItem={(service, idx) => (
               <div
