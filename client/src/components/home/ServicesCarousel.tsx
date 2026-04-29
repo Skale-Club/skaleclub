@@ -2,13 +2,17 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 
+const DRAG_THRESHOLD = 5;
+const FADE_MASK = 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)';
+
 interface ServicesCarouselProps<T> {
   items: T[];
   renderItem: (item: T, index: number) => ReactNode;
   ariaLabel: string;
+  paused?: boolean;
 }
 
-export function ServicesCarousel<T>({ items, renderItem, ariaLabel }: ServicesCarouselProps<T>) {
+export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused }: ServicesCarouselProps<T>) {
   const isMobile = useMediaQuery('(max-width: 767px)');
 
   const desktopLoop = useMemo(() => [...items, ...items], [items]);
@@ -27,11 +31,16 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel }: ServicesCa
   const lastMoveTimeRef = useRef<number>(0);
   const lastMoveXRef = useRef<number>(0);
   const momentumFrameRef = useRef<number | null>(null);
+  const pendingDownRef = useRef<{ x: number; pointerId: number | null } | null>(null);
 
   useEffect(() => {
     if (isMobile) return;
-    isPausedRef.current = isPaused;
-  }, [isPaused, isMobile]);
+    isPausedRef.current = isPaused || (paused ?? false);
+    if (paused && momentumFrameRef.current !== null) {
+      cancelAnimationFrame(momentumFrameRef.current);
+      momentumFrameRef.current = null;
+    }
+  }, [isPaused, paused, isMobile]);
 
   const wrapScrollPosition = (track: HTMLDivElement) => {
     const maxScroll = track.scrollWidth / 2;
@@ -125,8 +134,6 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel }: ServicesCa
     };
 
     const handleStart = (e: PointerEvent | TouchEvent) => {
-      pauseAutoScroll();
-
       if (momentumFrameRef.current) {
         cancelAnimationFrame(momentumFrameRef.current);
         momentumFrameRef.current = null;
@@ -134,28 +141,42 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel }: ServicesCa
 
       const clientX = getClientX(e);
       velocityRef.current = 0;
-      setIsDragging(true);
+
       dragStateRef.current = {
-        isDown: true,
+        isDown: false,
         startX: clientX,
         startScroll: track.scrollLeft,
       };
+      pendingDownRef.current = {
+        x: clientX,
+        pointerId: 'pointerId' in e ? e.pointerId : null,
+      };
       lastMoveXRef.current = clientX;
       lastMoveTimeRef.current = Date.now();
-
-      if ('pointerId' in e) {
-        track.setPointerCapture?.(e.pointerId);
-      }
     };
 
     const handleMove = (e: PointerEvent | TouchEvent) => {
-      if (!dragStateRef.current.isDown) return;
+      const clientX = getClientX(e);
+
+      if (!dragStateRef.current.isDown) {
+        if (!pendingDownRef.current) return;
+        const dx = clientX - pendingDownRef.current.x;
+        if (Math.abs(dx) < DRAG_THRESHOLD) {
+          return;
+        }
+        // Crossed threshold: NOW activate drag.
+        pauseAutoScroll();
+        setIsDragging(true);
+        dragStateRef.current.isDown = true;
+        if (pendingDownRef.current.pointerId !== null) {
+          track.setPointerCapture?.(pendingDownRef.current.pointerId);
+        }
+      }
 
       if (('touches' in e && e.cancelable) || ('pointerType' in e && e.pointerType === 'touch')) {
         e.preventDefault();
       }
 
-      const clientX = getClientX(e);
       const now = Date.now();
       const timeDelta = now - lastMoveTimeRef.current;
       const diff = clientX - dragStateRef.current.startX;
@@ -172,20 +193,25 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel }: ServicesCa
     };
 
     const handleEnd = (e: PointerEvent | TouchEvent) => {
-      if (dragStateRef.current.isDown) {
-        dragStateRef.current.isDown = false;
+      const wasActiveDrag = dragStateRef.current.isDown;
+      pendingDownRef.current = null;
 
-        if ('pointerId' in e) {
-          track.releasePointerCapture?.(e.pointerId);
-        }
+      if (!wasActiveDrag) {
+        return;
+      }
 
-        setIsDragging(false);
+      dragStateRef.current.isDown = false;
 
-        if (Math.abs(velocityRef.current) > 1) {
-          applyMomentum();
-        } else {
-          resumeAutoScroll(800);
-        }
+      if ('pointerId' in e) {
+        track.releasePointerCapture?.(e.pointerId);
+      }
+
+      setIsDragging(false);
+
+      if (Math.abs(velocityRef.current) > 1) {
+        applyMomentum();
+      } else {
+        resumeAutoScroll(800);
       }
     };
 
@@ -234,16 +260,13 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel }: ServicesCa
           {items.map((item, idx) => renderItem(item, idx))}
         </div>
       ) : (
-        <>
-          <div className="pointer-events-none absolute left-0 top-0 h-full w-12 sm:w-16 bg-gradient-to-r from-[#f7f9fc] via-[#f7f9fc] to-transparent z-10" />
-          <div className="pointer-events-none absolute right-0 top-0 h-full w-12 sm:w-16 bg-gradient-to-l from-[#f7f9fc] via-[#f7f9fc] to-transparent z-10" />
-          <div
-            ref={trackRef}
-            className={`flex gap-6 md:gap-7 xl:gap-8 overflow-x-scroll overflow-y-visible no-scrollbar pt-2 pb-10 select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-          >
-            {desktopLoop.map((item, idx) => renderItem(item, idx))}
-          </div>
-        </>
+        <div
+          ref={trackRef}
+          style={{ maskImage: FADE_MASK, WebkitMaskImage: FADE_MASK }}
+          className={`flex gap-6 md:gap-7 xl:gap-8 overflow-x-scroll overflow-y-visible no-scrollbar pt-2 pb-10 select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+        >
+          {desktopLoop.map((item, idx) => renderItem(item, idx))}
+        </div>
       )}
     </div>
   );
