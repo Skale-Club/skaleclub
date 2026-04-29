@@ -339,6 +339,17 @@ Plans:
 | 19. Admin Chat Editor | 0/1 | Complete    | 2026-04-22 |
 | 20. Public Viewer | 2/2 | Complete | 2026-04-22 |
 
+### Phase 25: Services Carousel Polish ✅ COMPLETE (2026-04-29)
+
+**Goal:** Soft-edge fade masks (replace hard white side blocks), restore portfolio service modal open-on-click (drag-vs-click threshold so pointer capture doesn't swallow clicks), and lock body + carousel auto-scroll while modal is open.
+**Requirements:** No formal REQ-IDs — polish phase added post-milestone
+**Depends on:** Phase 24
+**Plans:** 2 plans
+
+Plans:
+- [x] 25-01: ServicesCarousel — fade mask + click threshold + paused prop (commit `1c723f6`)
+- [x] 25-02: ServiceDetailModal → shadcn Dialog + carousel pause on open (commit `1423e5e`)
+
 ---
 
 _Last updated: 2026-04-22 — Phase 20 complete (2/2 plans); PRES-17–22 all delivered; v1.4 feature-complete_

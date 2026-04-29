@@ -251,5 +251,8 @@ None.
 
 | 2026-04-28 | Phase 25 added | Services Carousel Polish — fade masks, modal click, scroll lock |
 | 2026-04-28 | Phase 25 context gathered | 4 areas decided: shadcn Dialog migration, CSS mask-image, pause-on-modal-open, 5px drag threshold; ready for /gsd:plan-phase 25 |
+| 2026-04-29 | Phase 25 plans created | 25-01 (carousel) + 25-02 (modal); planner agent skipped due to org usage cap, plans authored inline by orchestrator (commit 3f25854) |
+| 2026-04-29 | Plan 25-01 executed | ServicesCarousel.tsx — mask-image edges, 5px drag threshold, paused prop; npm run check clean (commit 1c723f6) |
+| 2026-04-29 | Plan 25-02 executed | ServiceDetailModal migrated to shadcn Dialog + browser back-button close + ServicesSection wires paused={isModalOpen}; npm run check clean (commit 1423e5e) |
 
-*Last updated: 2026-04-28 — Phase 25 context captured; ready for planning*
+*Last updated: 2026-04-29 — Phase 25 plans 2/2 complete; manual browser UAT pending*
