@@ -48,12 +48,23 @@ const EMPTY_FORM: LiveFormState = {
   title: '',
   description: '',
   startsAt: '',
-  timezone: 'America/Sao_Paulo',
+  timezone: 'America/New_York',
   streamUrl: '',
   replayUrl: '',
   status: 'scheduled',
   capacity: '',
 };
+
+const COMMON_TIMEZONES: ReadonlyArray<{ value: string; label: string }> = [
+  { value: 'America/New_York', label: 'New York (ET)' },
+  { value: 'America/Chicago', label: 'Chicago (CT)' },
+  { value: 'America/Denver', label: 'Denver (MT)' },
+  { value: 'America/Los_Angeles', label: 'Los Angeles (PT)' },
+  { value: 'America/Sao_Paulo', label: 'São Paulo (BRT)' },
+  { value: 'America/Mexico_City', label: 'Mexico City (CST)' },
+  { value: 'Europe/London', label: 'London (UK)' },
+  { value: 'UTC', label: 'UTC' },
+];
 
 function toDateTimeLocal(value?: string | Date | null) {
   if (!value) return '';
@@ -590,7 +601,19 @@ export function SkaleHubSection() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="hub-timezone">Timezone</Label>
-                <Input id="hub-timezone" value={form.timezone} onChange={(event) => setForm((current) => ({ ...current, timezone: event.target.value }))} />
+                <select
+                  id="hub-timezone"
+                  value={form.timezone}
+                  onChange={(event) => setForm((current) => ({ ...current, timezone: event.target.value }))}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  {COMMON_TIMEZONES.some((tz) => tz.value === form.timezone) ? null : (
+                    <option value={form.timezone}>{form.timezone}</option>
+                  )}
+                  {COMMON_TIMEZONES.map((tz) => (
+                    <option key={tz.value} value={tz.value}>{tz.label}</option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="hub-description">Description</Label>
