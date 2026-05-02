@@ -1,4 +1,4 @@
-import { Building2, Briefcase, ClipboardList, FileText, HelpCircle, Image, LayoutDashboard, Link, MessageSquare, Puzzle, Receipt, Search, Sparkles, Users, Smartphone, MapPinned, Presentation } from 'lucide-react';
+import { Building2, Briefcase, ClipboardList, FileText, HelpCircle, Image, LayoutDashboard, Link, MessageSquare, Puzzle, Receipt, Search, Sparkles, Users, Smartphone, MapPinned, Presentation, RadioTower } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { AdminSection, BusinessHours, IntakeObjective } from './types';
 
@@ -47,4 +47,5 @@ export const SIDEBAR_MENU_ITEMS: SidebarMenuItem[] = [
   { id: 'fieldSales', title: 'Xpot', description: 'Field sales check-ins, visits and rep tracking', icon: MapPinned },
   { id: 'estimates', title: 'Estimates', description: 'Client proposals with shareable links', icon: Receipt },
   { id: 'presentations', title: 'Presentations', description: 'Build AI-powered slide decks and share them as immersive fullscreen experiences.', icon: Presentation },
+  { id: 'skaleHub', title: 'Skale Hub', description: 'Manage weekly lives, registration gates, and active session access.', icon: RadioTower },
 ];

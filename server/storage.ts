@@ -15,6 +15,10 @@ import {
   blogPosts,
   blogSettings,
   blogGenerationJobs,
+  hubLives,
+  hubParticipants,
+  hubRegistrations,
+  hubAccessEvents,
   portfolioServices,
   estimates,
   estimateViews,
@@ -49,6 +53,20 @@ import {
   type BlogPost,
   type BlogSettings,
   type BlogGenerationJob,
+  type HubLive,
+  type InsertHubLive,
+  type HubLiveStatus,
+  type HubParticipant,
+  type HubRegistration,
+  type HubAccessEvent,
+  type InsertHubAccessEvent,
+  type HubLiveSummary,
+  type HubRegistrationSummary,
+  type HubDashboardSummary,
+  type HubParticipantHistory,
+  type UpsertHubParticipantInput,
+  type HubParticipantIdentityLookup,
+  type UpsertHubRegistrationInput,
   type PortfolioService,
   type SalesRep,
   type SalesLead,
@@ -81,6 +99,8 @@ import {
   type InsertBlogPost,
   type InsertBlogSettings,
   type InsertBlogGenerationJob,
+  normalizeHubPhone,
+  normalizeHubEmail,
   type InsertSalesRep,
   type InsertSalesLead,
   type InsertSalesLeadLocation,
@@ -124,7 +144,7 @@ const companySettingsSchemaPatches = [
   sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "gtm_enabled" boolean DEFAULT false`,
   sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "ga4_enabled" boolean DEFAULT false`,
   sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "facebook_pixel_enabled" boolean DEFAULT false`,
-  sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "page_slugs" jsonb DEFAULT '{"thankYou":"thankyou","privacyPolicy":"privacy-policy","termsOfService":"terms-of-service","contact":"contact","faq":"faq","blog":"blog","portfolio":"portfolio","links":"links","vcard":"vcard"}'::jsonb`,
+  sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "page_slugs" jsonb DEFAULT '{"thankYou":"thankyou","privacyPolicy":"privacy-policy","termsOfService":"terms-of-service","contact":"contact","faq":"faq","blog":"blog","portfolio":"portfolio","hub":"skale-hub","links":"links","vcard":"vcard"}'::jsonb`,
 ];
 
 const chatSettingsSchemaPatches = [
@@ -665,6 +685,29 @@ export interface IStorage {
   createBlogGenerationJob(data: InsertBlogGenerationJob): Promise<BlogGenerationJob>;
   updateBlogGenerationJob(id: number, data: Partial<InsertBlogGenerationJob>): Promise<BlogGenerationJob>;
   getLatestBlogGenerationJob(): Promise<BlogGenerationJob | undefined>;
+
+  getHubLives(status?: HubLiveStatus): Promise<HubLive[]>;
+  getCurrentHubLive(): Promise<HubLive | undefined>;
+  getHubLive(id: number): Promise<HubLive | undefined>;
+  getHubLiveBySlug(slug: string): Promise<HubLive | undefined>;
+  createHubLive(data: InsertHubLive): Promise<HubLive>;
+  updateHubLive(id: number, data: Partial<InsertHubLive>): Promise<HubLive>;
+  activateHubLive(id: number): Promise<HubLive>;
+
+  getHubParticipant(id: number): Promise<HubParticipant | undefined>;
+  findHubParticipantByIdentity(identity: HubParticipantIdentityLookup): Promise<HubParticipant | undefined>;
+  upsertHubParticipant(data: UpsertHubParticipantInput): Promise<HubParticipant>;
+
+  getHubRegistration(liveId: number, participantId: number): Promise<HubRegistration | undefined>;
+  upsertHubRegistration(data: UpsertHubRegistrationInput): Promise<HubRegistration>;
+
+  logHubAccessEvent(data: InsertHubAccessEvent): Promise<HubAccessEvent>;
+  listHubAccessEvents(liveId: number, limit?: number): Promise<HubAccessEvent[]>;
+  getHubLiveSummary(liveId: number): Promise<HubLiveSummary>;
+  listHubLiveSummaries(status?: HubLiveStatus): Promise<HubLiveSummary[]>;
+  getHubDashboardSummary(): Promise<HubDashboardSummary>;
+  listHubParticipantHistory(search?: string): Promise<HubParticipantHistory[]>;
+  listHubRegistrationSummaries(liveId: number): Promise<HubRegistrationSummary[]>;
 
   // Portfolio Services
   getPortfolioServices(): Promise<PortfolioService[]>;
@@ -1924,6 +1967,526 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(blogGenerationJobs.id))
       .limit(1);
     return job;
+  }
+
+  async getHubLives(status?: HubLiveStatus): Promise<HubLive[]> {
+    let query = db.select().from(hubLives).orderBy(desc(hubLives.startsAt)).$dynamic();
+
+    if (status) {
+      query = query.where(eq(hubLives.status, status));
+    }
+
+    return await query;
+  }
+
+  async getCurrentHubLive(): Promise<HubLive | undefined> {
+    const [live] = await db
+      .select()
+      .from(hubLives)
+      .where(eq(hubLives.status, "live"))
+      .orderBy(desc(hubLives.startsAt))
+      .limit(1);
+
+    return live;
+  }
+
+  async getHubLive(id: number): Promise<HubLive | undefined> {
+    const [live] = await db.select().from(hubLives).where(eq(hubLives.id, id));
+    return live;
+  }
+
+  async getHubLiveBySlug(slug: string): Promise<HubLive | undefined> {
+    const [live] = await db.select().from(hubLives).where(eq(hubLives.slug, slug));
+    return live;
+  }
+
+  async createHubLive(data: InsertHubLive): Promise<HubLive> {
+    const [live] = await db.insert(hubLives).values(data).returning();
+    return live;
+  }
+
+  async updateHubLive(id: number, data: Partial<InsertHubLive>): Promise<HubLive> {
+    const [live] = await db
+      .update(hubLives)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(hubLives.id, id))
+      .returning();
+
+    if (!live) {
+      throw new Error(`Hub live ${id} not found`);
+    }
+
+    return live;
+  }
+
+  async activateHubLive(id: number): Promise<HubLive> {
+    return await db.transaction(async (tx) => {
+      await tx
+        .update(hubLives)
+        .set({ status: "scheduled", updatedAt: new Date() })
+        .where(and(eq(hubLives.status, "live"), ne(hubLives.id, id)));
+
+      const [live] = await tx
+        .update(hubLives)
+        .set({ status: "live", updatedAt: new Date() })
+        .where(eq(hubLives.id, id))
+        .returning();
+
+      if (!live) {
+        throw new Error(`Hub live ${id} not found`);
+      }
+
+      return live;
+    });
+  }
+
+  async getHubParticipant(id: number): Promise<HubParticipant | undefined> {
+    const [participant] = await db.select().from(hubParticipants).where(eq(hubParticipants.id, id));
+    return participant;
+  }
+
+  async findHubParticipantByIdentity(identity: HubParticipantIdentityLookup): Promise<HubParticipant | undefined> {
+    const phoneNormalized = normalizeHubPhone(identity.phoneNormalized ?? identity.phone);
+    const emailNormalized = normalizeHubEmail(identity.emailNormalized ?? identity.email);
+
+    if (phoneNormalized) {
+      const [participant] = await db
+        .select()
+        .from(hubParticipants)
+        .where(eq(hubParticipants.phoneNormalized, phoneNormalized))
+        .limit(1);
+
+      if (participant) {
+        return participant;
+      }
+    }
+
+    if (emailNormalized) {
+      const [participant] = await db
+        .select()
+        .from(hubParticipants)
+        .where(eq(hubParticipants.emailNormalized, emailNormalized))
+        .limit(1);
+
+      if (participant) {
+        return participant;
+      }
+    }
+
+    return undefined;
+  }
+
+  async upsertHubParticipant(data: UpsertHubParticipantInput): Promise<HubParticipant> {
+    const existing = await this.findHubParticipantByIdentity({
+      phone: data.phoneRaw ?? null,
+      email: data.emailRaw ?? null,
+      phoneNormalized: data.phoneNormalized,
+      emailNormalized: data.emailNormalized,
+    });
+    const phoneNormalized = normalizeHubPhone(data.phoneNormalized ?? data.phoneRaw);
+    const emailNormalized = normalizeHubEmail(data.emailNormalized ?? data.emailRaw);
+
+    if (existing) {
+      const [participant] = await db
+        .update(hubParticipants)
+        .set({
+          fullName: data.fullName,
+          phoneRaw: data.phoneRaw ?? null,
+          phoneNormalized,
+          emailRaw: data.emailRaw ?? null,
+          emailNormalized,
+          source: data.source,
+          notes: data.notes ?? null,
+          updatedAt: new Date(),
+        })
+        .where(eq(hubParticipants.id, existing.id))
+        .returning();
+
+      return participant;
+    }
+
+    const [participant] = await db.insert(hubParticipants).values({
+      fullName: data.fullName,
+      phoneRaw: data.phoneRaw ?? null,
+      phoneNormalized,
+      emailRaw: data.emailRaw ?? null,
+      emailNormalized,
+      source: data.source,
+      notes: data.notes ?? null,
+    }).returning();
+
+    return participant;
+  }
+
+  async getHubRegistration(liveId: number, participantId: number): Promise<HubRegistration | undefined> {
+    const [registration] = await db
+      .select()
+      .from(hubRegistrations)
+      .where(and(eq(hubRegistrations.liveId, liveId), eq(hubRegistrations.participantId, participantId)));
+    return registration;
+  }
+
+  async upsertHubRegistration(data: UpsertHubRegistrationInput): Promise<HubRegistration> {
+    const existing = await this.getHubRegistration(data.liveId, data.participantId);
+
+    if (existing) {
+      const [registration] = await db
+        .update(hubRegistrations)
+        .set({
+          status: data.status,
+          source: data.source,
+          notes: data.notes ?? null,
+          registeredAt: data.registeredAt,
+          cancelledAt: data.cancelledAt,
+          attendedAt: data.attendedAt,
+          lastAccessAt: data.lastAccessAt,
+          updatedAt: new Date(),
+        })
+        .where(eq(hubRegistrations.id, existing.id))
+        .returning();
+
+      return registration;
+    }
+
+    const [registration] = await db.insert(hubRegistrations).values({
+      liveId: data.liveId,
+      participantId: data.participantId,
+      status: data.status,
+      source: data.source,
+      notes: data.notes ?? null,
+      registeredAt: data.registeredAt,
+      cancelledAt: data.cancelledAt,
+      attendedAt: data.attendedAt,
+      lastAccessAt: data.lastAccessAt,
+    }).returning();
+
+    return registration;
+  }
+
+  async logHubAccessEvent(data: InsertHubAccessEvent): Promise<HubAccessEvent> {
+    const phoneNormalized = normalizeHubPhone(data.phoneNormalized ?? data.phoneRaw);
+    const emailNormalized = normalizeHubEmail(data.emailNormalized ?? data.emailRaw);
+
+    let registrationId = data.registrationId ?? null;
+    if (!registrationId && data.participantId != null) {
+      const registration = await this.getHubRegistration(data.liveId, data.participantId);
+      registrationId = registration?.id ?? null;
+    }
+
+    const [event] = await db.insert(hubAccessEvents).values({
+      liveId: data.liveId,
+      participantId: data.participantId ?? null,
+      registrationId,
+      eventType: data.eventType,
+      outcome: data.outcome,
+      matchedBy: data.matchedBy ?? "none",
+      phoneRaw: data.phoneRaw ?? null,
+      phoneNormalized,
+      emailRaw: data.emailRaw ?? null,
+      emailNormalized,
+      ipHash: data.ipHash ?? null,
+      userAgent: data.userAgent ?? null,
+      metadata: data.metadata ?? {},
+      createdAt: data.createdAt,
+    }).returning();
+
+    if (event.outcome === "granted" && registrationId) {
+      await db
+        .update(hubRegistrations)
+        .set({ lastAccessAt: event.createdAt ?? new Date(), updatedAt: new Date() })
+        .where(eq(hubRegistrations.id, registrationId));
+    }
+
+    return event;
+  }
+
+  async listHubAccessEvents(liveId: number, limit = 50): Promise<HubAccessEvent[]> {
+    return await db
+      .select()
+      .from(hubAccessEvents)
+      .where(eq(hubAccessEvents.liveId, liveId))
+      .orderBy(desc(hubAccessEvents.createdAt))
+      .limit(limit);
+  }
+
+  async getHubLiveSummary(liveId: number): Promise<HubLiveSummary> {
+    const [summary] = await db
+      .select({
+        id: hubLives.id,
+        slug: hubLives.slug,
+        title: hubLives.title,
+        description: hubLives.description,
+        hostName: hubLives.hostName,
+        timezone: hubLives.timezone,
+        startsAt: hubLives.startsAt,
+        endsAt: hubLives.endsAt,
+        registrationOpensAt: hubLives.registrationOpensAt,
+        registrationClosesAt: hubLives.registrationClosesAt,
+        streamUrl: hubLives.streamUrl,
+        replayUrl: hubLives.replayUrl,
+        status: hubLives.status,
+        capacity: hubLives.capacity,
+        createdAt: hubLives.createdAt,
+        updatedAt: hubLives.updatedAt,
+        registrationCount: sql<number>`count(distinct ${hubRegistrations.id})::int`,
+        grantedAccessCount: sql<number>`count(distinct case when ${hubAccessEvents.outcome} = 'granted' then ${hubAccessEvents.id} end)::int`,
+        deniedAccessCount: sql<number>`count(distinct case when ${hubAccessEvents.outcome} = 'denied' then ${hubAccessEvents.id} end)::int`,
+        uniqueParticipantCount: sql<number>`count(distinct ${hubRegistrations.participantId})::int`,
+        lastAccessAt: sql<Date | null>`max(${hubAccessEvents.createdAt})`,
+      })
+      .from(hubLives)
+      .leftJoin(hubRegistrations, eq(hubRegistrations.liveId, hubLives.id))
+      .leftJoin(hubAccessEvents, eq(hubAccessEvents.liveId, hubLives.id))
+      .where(eq(hubLives.id, liveId))
+      .groupBy(hubLives.id);
+
+    if (!summary) {
+      throw new Error(`Hub live ${liveId} not found`);
+    }
+
+    return summary;
+  }
+
+  async listHubLiveSummaries(status?: HubLiveStatus): Promise<HubLiveSummary[]> {
+    let query = db
+      .select({
+        id: hubLives.id,
+        slug: hubLives.slug,
+        title: hubLives.title,
+        description: hubLives.description,
+        hostName: hubLives.hostName,
+        timezone: hubLives.timezone,
+        startsAt: hubLives.startsAt,
+        endsAt: hubLives.endsAt,
+        registrationOpensAt: hubLives.registrationOpensAt,
+        registrationClosesAt: hubLives.registrationClosesAt,
+        streamUrl: hubLives.streamUrl,
+        replayUrl: hubLives.replayUrl,
+        status: hubLives.status,
+        capacity: hubLives.capacity,
+        createdAt: hubLives.createdAt,
+        updatedAt: hubLives.updatedAt,
+        registrationCount: sql<number>`count(distinct ${hubRegistrations.id})::int`,
+        grantedAccessCount: sql<number>`count(distinct case when ${hubAccessEvents.outcome} = 'granted' then ${hubAccessEvents.id} end)::int`,
+        deniedAccessCount: sql<number>`count(distinct case when ${hubAccessEvents.outcome} = 'denied' then ${hubAccessEvents.id} end)::int`,
+        uniqueParticipantCount: sql<number>`count(distinct ${hubRegistrations.participantId})::int`,
+        lastAccessAt: sql<Date | null>`max(${hubAccessEvents.createdAt})`,
+      })
+      .from(hubLives)
+      .leftJoin(hubRegistrations, eq(hubRegistrations.liveId, hubLives.id))
+      .leftJoin(hubAccessEvents, eq(hubAccessEvents.liveId, hubLives.id))
+      .groupBy(hubLives.id)
+      .orderBy(desc(hubLives.startsAt))
+      .$dynamic();
+
+    if (status) {
+      query = query.where(eq(hubLives.status, status));
+    }
+
+    return await query;
+  }
+
+  async getHubDashboardSummary(): Promise<HubDashboardSummary> {
+    const [totals] = await db
+      .select({
+        totalLives: sql<number>`(select count(*)::int from ${hubLives})`,
+        totalParticipants: sql<number>`(select count(*)::int from ${hubParticipants})`,
+        totalRegistrations: sql<number>`(select count(*)::int from ${hubRegistrations})`,
+        grantedAccessCount: sql<number>`coalesce((select count(*)::int from ${hubAccessEvents} where ${hubAccessEvents.outcome} = 'granted'), 0)`,
+        deniedAccessCount: sql<number>`coalesce((select count(*)::int from ${hubAccessEvents} where ${hubAccessEvents.outcome} = 'denied'), 0)`,
+        lastAccessAt: sql<Date | null>`(select max(${hubAccessEvents.createdAt}) from ${hubAccessEvents})`,
+      })
+      .from(hubLives)
+      .limit(1);
+
+    const activeLive = await this.getCurrentHubLive();
+    const liveSummaries = await this.listHubLiveSummaries();
+
+    return {
+      totalLives: totals?.totalLives ?? 0,
+      totalParticipants: totals?.totalParticipants ?? 0,
+      totalRegistrations: totals?.totalRegistrations ?? 0,
+      grantedAccessCount: totals?.grantedAccessCount ?? 0,
+      deniedAccessCount: totals?.deniedAccessCount ?? 0,
+      lastAccessAt: totals?.lastAccessAt ?? null,
+      activeLiveId: activeLive?.id ?? null,
+      liveSummaries,
+    };
+  }
+
+  async listHubParticipantHistory(search?: string): Promise<HubParticipantHistory[]> {
+    let query = db
+      .select({
+        id: hubParticipants.id,
+        fullName: hubParticipants.fullName,
+        phoneRaw: hubParticipants.phoneRaw,
+        phoneNormalized: hubParticipants.phoneNormalized,
+        emailRaw: hubParticipants.emailRaw,
+        emailNormalized: hubParticipants.emailNormalized,
+        source: hubParticipants.source,
+        createdAt: hubParticipants.createdAt,
+        updatedAt: hubParticipants.updatedAt,
+        registrationCount: sql<number>`count(distinct ${hubRegistrations.id})::int`,
+        livesAccessedCount: sql<number>`count(distinct case when ${hubAccessEvents.outcome} = 'granted' then ${hubAccessEvents.liveId} end)::int`,
+        grantedAccessCount: sql<number>`count(case when ${hubAccessEvents.outcome} = 'granted' then 1 end)::int`,
+        deniedAccessCount: sql<number>`count(case when ${hubAccessEvents.outcome} = 'denied' then 1 end)::int`,
+        lastRegisteredAt: sql<Date | null>`max(${hubRegistrations.registeredAt})`,
+        lastAccessAt: sql<Date | null>`max(${hubAccessEvents.createdAt})`,
+      })
+      .from(hubParticipants)
+      .leftJoin(hubRegistrations, eq(hubRegistrations.participantId, hubParticipants.id))
+      .leftJoin(hubAccessEvents, eq(hubAccessEvents.participantId, hubParticipants.id))
+      .groupBy(hubParticipants.id)
+      .$dynamic();
+
+    if (search?.trim()) {
+      const likeValue = `%${search.trim()}%`;
+      query = query.where(
+        or(
+          ilike(hubParticipants.fullName, likeValue),
+          ilike(hubParticipants.phoneRaw, likeValue),
+          ilike(hubParticipants.emailRaw, likeValue)
+        )
+      );
+    }
+
+    const rows = await query;
+
+    rows.sort((a, b) => {
+      const aAccess = a.lastAccessAt ? new Date(a.lastAccessAt).getTime() : -Infinity;
+      const bAccess = b.lastAccessAt ? new Date(b.lastAccessAt).getTime() : -Infinity;
+      if (aAccess !== bAccess) return bAccess - aAccess;
+
+      const aRegistered = a.lastRegisteredAt ? new Date(a.lastRegisteredAt).getTime() : -Infinity;
+      const bRegistered = b.lastRegisteredAt ? new Date(b.lastRegisteredAt).getTime() : -Infinity;
+      if (aRegistered !== bRegistered) return bRegistered - aRegistered;
+
+      return a.fullName.localeCompare(b.fullName);
+    });
+
+    const participantIds = rows.map((row) => row.id);
+    const lastLiveMap = new Map<number, HubParticipantHistory["lastLive"]>();
+
+    if (participantIds.length > 0) {
+      const lastLiveRows = await db
+        .select({
+          participantId: hubAccessEvents.participantId,
+          liveId: hubLives.id,
+          slug: hubLives.slug,
+          title: hubLives.title,
+          startsAt: hubLives.startsAt,
+          status: hubLives.status,
+          createdAt: hubAccessEvents.createdAt,
+        })
+        .from(hubAccessEvents)
+        .innerJoin(hubLives, eq(hubLives.id, hubAccessEvents.liveId))
+        .where(
+          and(
+            inArray(hubAccessEvents.participantId, participantIds),
+            eq(hubAccessEvents.outcome, "granted")
+          )
+        )
+        .orderBy(desc(hubAccessEvents.createdAt));
+
+      for (const row of lastLiveRows) {
+        if (row.participantId == null || lastLiveMap.has(row.participantId)) {
+          continue;
+        }
+
+        lastLiveMap.set(row.participantId, {
+          id: row.liveId,
+          slug: row.slug,
+          title: row.title,
+          startsAt: row.startsAt,
+          status: row.status,
+        });
+      }
+    }
+
+    return rows.map((row) => ({
+      id: row.id,
+      fullName: row.fullName,
+      phoneRaw: row.phoneRaw,
+      phoneNormalized: row.phoneNormalized,
+      emailRaw: row.emailRaw,
+      emailNormalized: row.emailNormalized,
+      source: row.source,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      registrationCount: row.registrationCount,
+      livesAccessedCount: row.livesAccessedCount,
+      grantedAccessCount: row.grantedAccessCount,
+      deniedAccessCount: row.deniedAccessCount,
+      lastRegisteredAt: row.lastRegisteredAt,
+      lastAccessAt: row.lastAccessAt,
+      lastLive: lastLiveMap.get(row.id) ?? null,
+    }));
+  }
+
+  async listHubRegistrationSummaries(liveId: number): Promise<HubRegistrationSummary[]> {
+    const rows = await db
+      .select({
+        id: hubRegistrations.id,
+        liveId: hubRegistrations.liveId,
+        participantId: hubRegistrations.participantId,
+        status: hubRegistrations.status,
+        source: hubRegistrations.source,
+        notes: hubRegistrations.notes,
+        registeredAt: hubRegistrations.registeredAt,
+        cancelledAt: hubRegistrations.cancelledAt,
+        attendedAt: hubRegistrations.attendedAt,
+        lastAccessAtRegistration: hubRegistrations.lastAccessAt,
+        createdAt: hubRegistrations.createdAt,
+        updatedAt: hubRegistrations.updatedAt,
+        participantIdValue: hubParticipants.id,
+        participantFullName: hubParticipants.fullName,
+        participantPhoneRaw: hubParticipants.phoneRaw,
+        participantPhoneNormalized: hubParticipants.phoneNormalized,
+        participantEmailRaw: hubParticipants.emailRaw,
+        participantEmailNormalized: hubParticipants.emailNormalized,
+        grantedAccessCount: sql<number>`count(case when ${hubAccessEvents.outcome} = 'granted' then 1 end)::int`,
+        deniedAccessCount: sql<number>`count(case when ${hubAccessEvents.outcome} = 'denied' then 1 end)::int`,
+        lastAccessAtEvent: sql<Date | null>`max(${hubAccessEvents.createdAt})`,
+      })
+      .from(hubRegistrations)
+      .innerJoin(hubParticipants, eq(hubParticipants.id, hubRegistrations.participantId))
+      .leftJoin(hubAccessEvents, eq(hubAccessEvents.registrationId, hubRegistrations.id))
+      .where(eq(hubRegistrations.liveId, liveId))
+      .groupBy(
+        hubRegistrations.id,
+        hubParticipants.id,
+        hubParticipants.fullName,
+        hubParticipants.phoneRaw,
+        hubParticipants.phoneNormalized,
+        hubParticipants.emailRaw,
+        hubParticipants.emailNormalized
+      )
+      .orderBy(desc(hubRegistrations.registeredAt));
+
+    return rows.map((row) => ({
+      id: row.id,
+      liveId: row.liveId,
+      participantId: row.participantId,
+      status: row.status,
+      source: row.source,
+      notes: row.notes,
+      registeredAt: row.registeredAt,
+      cancelledAt: row.cancelledAt,
+      attendedAt: row.attendedAt,
+      lastAccessAt: row.lastAccessAtEvent ?? row.lastAccessAtRegistration,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      participant: {
+        id: row.participantIdValue,
+        fullName: row.participantFullName,
+        phoneRaw: row.participantPhoneRaw,
+        phoneNormalized: row.participantPhoneNormalized,
+        emailRaw: row.participantEmailRaw,
+        emailNormalized: row.participantEmailNormalized,
+      },
+      grantedAccessCount: row.grantedAccessCount,
+      deniedAccessCount: row.deniedAccessCount,
+    }));
   }
 
   // Portfolio Services

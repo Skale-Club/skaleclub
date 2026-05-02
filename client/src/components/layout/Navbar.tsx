@@ -22,6 +22,7 @@ export function Navbar() {
   const telPhone = displayPhone.replace(/\D/g, "");
 
   const navLinks = [
+    { href: pagePaths.hub, label: 'Skale Hub' },
     { href: pagePaths.portfolio, label: t("Portfolio") },
   ];
 

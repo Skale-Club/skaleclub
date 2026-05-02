@@ -24,7 +24,7 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 
 ### Active
 
-_(No active requirements — next milestone not yet defined. Run `/gsd:new-milestone` to define v1.6.)_
+- **HUB-01 → HUB-18**: Skale Hub Weekly Live Gate (v1.6, planned 2026-05-02) - weekly live page, registration gate, live unlock/access tracking, admin live management, participant analytics
 
 ### Out of Scope
 
@@ -36,6 +36,8 @@ _(No active requirements — next milestone not yet defined. Run `/gsd:new-miles
 - Real trend analysis (internet scraping) — prompt instruction for Gemini considers seasonality; not real-time data
 - Blog post review UI — existing BlogSection editor handles draft review/publish
 - Per-post AI regeneration — manual edit via existing admin editor sufficient
+- Visitor login/password accounts for Skale Hub — lightweight gate preferred over full membership
+- Course portal or member library for Skale Hub — not part of the weekly live scope
 
 ## Context
 
@@ -45,6 +47,8 @@ _(No active requirements — next milestone not yet defined. Run `/gsd:new-miles
 - v1.3 shipped 2026-04-20: Links Page Upgrade (5 phases, 10 plans, 17/17 requirements)
 - v1.4 shipped 2026-04-22: Admin Presentations Page (6 phases, 22/22 requirements — schema, CRUD API, brand guidelines, AI authoring SSE, admin chat editor, public bilingual viewer)
 - v1.5 shipped 2026-04-24: Blog Post Automation (4 phases, 6 plans, 45 files, +6,343 LOC, 19/19 requirements)
+- v1.6 planned 2026-05-02: Skale Hub Weekly Live Gate (5 phases, 18 requirements - schema, tracking APIs, public page, admin management, analytics)
+- v1.6 shipped 2026-05-02: Skale Hub Weekly Live Gate (5 phases, 18/18 requirements complete)
 - Stack: TypeScript/React + Express + Drizzle ORM + PostgreSQL + Supabase Auth + Vercel
 - DB migration pattern: raw SQL via tsx script (drizzle-kit CJS can't resolve .js ESM imports)
 - AI providers: Gemini (blog automation via `@google/genai`), Anthropic Claude (presentations via `@anthropic-ai/sdk`), OpenAI/Groq/OpenRouter (chat via `getActiveAIClient()` shim)
@@ -82,6 +86,9 @@ _(No active requirements — next milestone not yet defined. Run `/gsd:new-miles
 | `registerBlogAutomationRoutes` before `registerBlogRoutes` (v1.5) | Prevents `GET /api/blog/:idOrSlug` wildcard from intercepting `/api/blog/settings` | ✅ Phase 23 |
 | `startCron()` with `process.env.VERCEL` guard (v1.5) | Vercel serverless uses cron endpoint instead; avoid double-firing | ✅ Phase 23 |
 | BlogAutomationPanel co-located in BlogSection.tsx (v1.5) | Matches EstimatesSection + IntegrationsSection co-location patterns | ✅ Phase 24 |
+| Phone-first participant identity for Skale Hub (v1.6) | Phone is the primary business identifier; email strengthens matching and CRM value | ✅ Phase 25 |
+| Track unlock and access as separate events for Skale Hub (v1.6) | Admin needs to distinguish gate completion from actual click-through | ✅ Phase 25 foundation via event-log table |
+| No visitor auth for Skale Hub (v1.6) | Weekly live access must stay simple and fast | ✅ Phase 26 API contract |
 
 ## Evolution
 
@@ -102,4 +109,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-*Last updated: 2026-04-24 — v1.5 Blog Post Automation shipped; all milestones (v1.0–v1.5) complete; no active milestone*
+*Last updated: 2026-05-02 - v1.6 Skale Hub Weekly Live Gate planned; active milestone initialized*

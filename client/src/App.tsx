@@ -67,6 +67,7 @@ const Faq = lazy(() => import("@/pages/Faq").then(m => ({ default: () => <PageWr
 const Blog = lazy(() => import("@/pages/Blog").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const BlogPost = lazy(() => import("@/pages/BlogPost").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Portfolio = lazy(() => import("@/pages/Portfolio").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const SkaleHub = lazy(() => import("@/pages/SkaleHub").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Links = lazy(() => import("@/pages/Links").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const VCard = lazy(() => import("@/pages/VCard").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const EstimateViewer = lazy(() => import("@/pages/EstimateViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
@@ -276,6 +277,8 @@ function Router() {
             {pagePaths.blogPostPattern !== legacyPaths.blogPostPattern && <Route path={legacyPaths.blogPostPattern} component={BlogPost} />}
             <Route path={pagePaths.portfolio} component={Portfolio} />
             {pagePaths.portfolio !== legacyPaths.portfolio && <Route path={legacyPaths.portfolio} component={Portfolio} />}
+            <Route path={pagePaths.hub} component={SkaleHub} />
+            {pagePaths.hub !== legacyPaths.hub && <Route path={legacyPaths.hub} component={SkaleHub} />}
             <Route component={NotFound} />
           </Switch>
         </Suspense>

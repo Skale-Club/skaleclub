@@ -8,8 +8,32 @@
 - ✅ **v1.3 Links Page Upgrade** — Phases 10-14 (shipped 2026-04-20)
 - ✅ **v1.4 Admin Presentations Page** — Phases 15-20 (shipped 2026-04-22)
 - ✅ **v1.5 Blog Post Automation** — Phases 21-24 (shipped 2026-04-24)
+- 🔄 **v1.6 Skale Hub Weekly Live Gate** — Phases 25-29 (active)
+
+## Active
+
+**v1.6 Skale Hub Weekly Live Gate** — Phases 25-29
+
+- [x] **Phase 25: Foundation** — additive tables, shared schema, participant identity model, storage foundation
+- [x] **Phase 26: API & Tracking** — public gate endpoints, admin live APIs, active-live enforcement, tracking
+- [x] **Phase 27: Public Experience** — integrated Skale Hub page, registration flow, unlock state, empty state
+- [x] **Phase 28: Admin Management** — admin section, live CRUD, active/inactive/ended controls
+- [x] **Phase 29: Analytics & Reporting** — summary cards, participant history, per-live analytics, QA polish
 
 ## Shipped Milestones
+
+<details>
+<summary>✅ v1.6 Skale Hub Weekly Live Gate (Phases 25-29) — SHIPPED 2026-05-02</summary>
+
+- [x] Phase 25: Foundation (1/1 plans) — completed 2026-05-02
+- [x] Phase 26: API & Tracking (1/1 plans) — completed 2026-05-02
+- [x] Phase 27: Public Experience (1/1 plans) — completed 2026-05-02
+- [x] Phase 28: Admin Management (1/1 plans) — completed 2026-05-02
+- [x] Phase 29: Analytics & Reporting (1/1 plans) — completed 2026-05-02
+
+_Archive: `.planning/milestones/v1.6-ROADMAP.md`_
+
+</details>
 
 <details>
 <summary>✅ v1.5 Blog Post Automation (Phases 21-24) — SHIPPED 2026-04-24</summary>
@@ -112,7 +136,12 @@ _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
 | 22. Blog Generator Engine | v1.5 | 2/2 | Complete | 2026-04-22 |
 | 23. API Endpoints + Cron | v1.5 | 1/1 | Complete | 2026-04-22 |
 | 24. Admin UI — Automation Settings | v1.5 | 2/2 | Complete | 2026-04-22 |
+| 25. Foundation | v1.6 | 1/1 | Complete | 2026-05-02 |
+| 26. API & Tracking | v1.6 | 1/1 | Complete | 2026-05-02 |
+| 27. Public Experience | v1.6 | 1/1 | Complete | 2026-05-02 |
+| 28. Admin Management | v1.6 | 1/1 | Complete | 2026-05-02 |
+| 29. Analytics & Reporting | v1.6 | 1/1 | Complete | 2026-05-02 |
 
 ---
 
-_Last updated: 2026-04-24 — v1.5 Blog Post Automation shipped (Phases 21–24); all milestones complete_
+_Last updated: 2026-05-02 - v1.6 Skale Hub Weekly Live Gate shipped (Phases 25-29)_

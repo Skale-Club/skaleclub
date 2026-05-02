@@ -1,38 +1,38 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.5
-milestone_name: Blog Post Automation
+milestone: v1.6
+milestone_name: Skale Hub Weekly Live Gate
 status: archived
-last_updated: "2026-04-24"
-last_activity: 2026-04-24
+last_updated: "2026-05-02"
+last_activity: 2026-05-02
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 6
-  completed_plans: 6
+  total_phases: 5
+  completed_phases: 5
+  total_plans: 5
+  completed_plans: 5
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** v1.5 archived — ready for next milestone
+**Status:** v1.6 shipped - all Skale Hub phases complete
 
 ---
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-04-24)
+See: `.planning/PROJECT.md` (updated 2026-05-02)
 
 **Core value:** Clients receive a proposal link and experience Skale Club services as an immersive, professional presentation — not a PDF.
-**Current focus:** Planning next milestone (run `/gsd:new-milestone`)
+**Current focus:** Milestone complete - ready for next milestone
 
 ---
 
 ## Current Position
 
-Milestone: v1.5 archived
-Status: All phases and plans complete
-Last activity: 2026-04-24
+Milestone: v1.6 shipped
+Status: All phases complete
+Last activity: 2026-05-02
 
 ---
 
@@ -205,6 +205,18 @@ None.
 
 ---
 
+## v1.6 Phase Plan
+
+| Phase | Plans | Status |
+|-------|-------|--------|
+| 25. Foundation | 1/1 | Complete |
+| 26. API & Tracking | 1/1 | Complete |
+| 27. Public Experience | 1/1 | Complete |
+| 28. Admin Management | 1/1 | Complete |
+| 29. Analytics & Reporting | 1/1 | Complete |
+
+---
+
 ## v1.5 Phase Plan
 
 | Phase | Plans | Status |
@@ -243,5 +255,11 @@ None.
 | 2026-04-22 | v1.5 milestone initialized | Blog Post Automation — 4 phases (21–24), 19 requirements defined; Phase 21 ready to plan |
 | 2026-04-22 | Phase 21 complete | BLOG-01-04 verified; Phase 22 is now the active focus |
 | 2026-04-22 | Plan 22-01 executed | Blog Gemini helper + skip/lock generator foundation shipped (3 commits: 106922f, 207493f, dd15614); Plan 22-02 next |
+| 2026-05-02 | v1.6 milestone initialized | Skale Hub Weekly Live Gate defined (18 requirements, 5 phases); Phase 25 ready to execute |
+| 2026-05-02 | Phase 25 complete | Skale Hub foundation shipped: migration, shared schema, and storage methods verified; Phase 26 next |
+| 2026-05-02 | Phase 26 complete | Skale Hub API contract shipped: public active/register/access routes plus admin live and analytics APIs; Phase 27 next |
+| 2026-05-02 | Phase 27 complete | Public Skale Hub page shipped with slug routing, gate UI, unlock state, and empty state; Phase 28 next |
+| 2026-05-02 | Phase 28 complete | Admin Skale Hub management shipped with live CRUD, activation, and quick participation review; Phase 29 next |
+| 2026-05-02 | Phase 29 complete | Analytics cards and participant history shipped; v1.6 Skale Hub milestone complete |
 
-*Last updated: 2026-04-22 — Plan 22-01 complete; BLOG-05-07 delivered; Plan 22-02 ready to execute*
+*Last updated: 2026-05-02 - v1.6 shipped; all Skale Hub phases complete*
