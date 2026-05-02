@@ -134,6 +134,17 @@ function AdminContent() {
   });
 
   useEffect(() => {
+    if (companySettings?.companyName && isAdmin) {
+      const currentItem = menuItems.find(item => item.id === activeSection);
+      if (currentItem) {
+        document.title = `${companySettings.companyName} | ${currentItem.title}`;
+      } else {
+        document.title = `${companySettings.companyName} | Admin`;
+      }
+    }
+  }, [companySettings?.companyName, activeSection, isAdmin]);
+
+  useEffect(() => {
     if (companySettings?.sectionsOrder && companySettings.sectionsOrder.length > 0) {
       const savedOrder = companySettings.sectionsOrder as AdminSection[];
       const allSectionIds = menuItems.map(item => item.id);

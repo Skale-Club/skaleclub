@@ -1,38 +1,30 @@
-import { useState } from 'react';
+import { ImageIcon } from 'lucide-react';
 
-const THUMB_W = 88;
-const THUMB_H = 54;
-const FRAME_W = 1280;
-const FRAME_H = 800;
-const SCALE = THUMB_W / FRAME_W;
-
-export function PageThumbnail({ url }: { url: string }) {
-  const [loaded, setLoaded] = useState(false);
-
+export function PageThumbnail({
+  thumbnailUrl,
+  title = 'Preview',
+}: {
+  thumbnailUrl?: string | null;
+  title?: string;
+}) {
   return (
     <div
       className="shrink-0 rounded-md border border-zinc-800 overflow-hidden bg-zinc-950 relative"
-      style={{ width: THUMB_W, height: THUMB_H }}
+      style={{ width: 88, height: 54 }}
     >
-      {!loaded && (
-        <div className="absolute inset-0 animate-pulse bg-zinc-800/50" />
+      {thumbnailUrl ? (
+        <img
+          src={thumbnailUrl}
+          alt={title}
+          className="h-full w-full object-cover"
+          loading="lazy"
+          decoding="async"
+        />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
+          <ImageIcon className="h-4 w-4 text-zinc-600" aria-hidden="true" />
+        </div>
       )}
-      <iframe
-        src={url}
-        title="preview"
-        loading="lazy"
-        tabIndex={-1}
-        onLoad={() => setLoaded(true)}
-        style={{
-          width: FRAME_W,
-          height: FRAME_H,
-          transform: `scale(${SCALE})`,
-          transformOrigin: 'top left',
-          pointerEvents: 'none',
-          border: 'none',
-          opacity: loaded ? 1 : 0,
-        }}
-      />
     </div>
   );
 }

@@ -1,0 +1,13 @@
+-- Cache generated WebP thumbnails for estimates and presentations.
+
+BEGIN;
+
+ALTER TABLE estimates
+  ADD COLUMN IF NOT EXISTS thumbnail_url TEXT,
+  ADD COLUMN IF NOT EXISTS thumbnail_signature TEXT;
+
+ALTER TABLE presentations
+  ADD COLUMN IF NOT EXISTS thumbnail_url TEXT,
+  ADD COLUMN IF NOT EXISTS thumbnail_signature TEXT;
+
+COMMIT;

@@ -133,7 +133,8 @@ export type AnalyticsEventName =
   | 'click_whatsapp'
   | 'click_social'
   | 'form_abandoned'
-  | 'form_result_action';
+  | 'form_result_action'
+  | 'form_closed_draft';
 
 export interface AnalyticsEventPayload {
   location?: string;

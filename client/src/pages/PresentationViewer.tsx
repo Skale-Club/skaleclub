@@ -1,5 +1,5 @@
 import { useParams } from 'wouter';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -7,14 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Loader2 } from '@/components/ui/loader';
-import type { SlideBlock } from '@shared/schema';
+import type { CompanySettings, SlideBlock } from '@shared/schema';
 
 interface PublicPresentation {
   id: string;
   slug: string;
   title: string;
   slides: SlideBlock[];
-  hasAccessCode: boolean;
   version: number;
   createdAt: string | null;
   updatedAt: string | null;
@@ -41,46 +40,13 @@ function NotFoundScreen() {
   );
 }
 
-function AccessCodeGate({ presentationId, onUnlock }: { presentationId: string; onUnlock: () => void }) {
-  const [code, setCode] = useState('');
-  const [error, setError] = useState('');
-
-  const { mutate: verify, isPending } = useMutation({
-    mutationFn: async () => {
-      const res = await fetch(`/api/presentations/${presentationId}/verify-code`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }),
-      });
-      if (res.status === 401) throw new Error('Incorrect code');
-      if (!res.ok) throw new Error('Verification failed. Try again.');
-    },
-    onSuccess: () => onUnlock(),
-    onError: (err: Error) => setError(err.message),
-  });
-
+function EmptySlidesScreen() {
   return (
     <div className="h-screen bg-zinc-950 flex items-center justify-center">
-      <div className="flex flex-col items-center gap-4 w-full max-w-sm px-6">
+      <div className="flex flex-col items-center gap-4 text-center px-6">
         <p className="text-zinc-400 text-sm uppercase tracking-widest">Skale Club</p>
-        <h1 className="text-white text-3xl font-semibold text-center">Enter access code</h1>
-        <Input
-          type="text"
-          value={code}
-          onChange={(e) => { setCode(e.target.value); setError(''); }}
-          className="bg-zinc-900 border-zinc-700 text-white text-center w-full"
-          onKeyDown={(e) => e.key === 'Enter' && code && !isPending && verify()}
-          aria-label="Access code"
-        />
-        {error && <p className="text-destructive text-sm">{error}</p>}
-        <Button
-          onClick={() => verify()}
-          disabled={isPending || !code}
-          className="bg-[#FFFF01] text-black font-bold rounded-full w-full hover:bg-[#e6e600]"
-        >
-          {isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-          Unlock Presentation
-        </Button>
+        <h1 className="text-white text-3xl font-semibold">No slides available yet.</h1>
+        <p className="text-zinc-400 text-sm">This presentation is still being prepared.</p>
       </div>
     </div>
   );
@@ -224,40 +190,97 @@ export default function PresentationViewer() {
   }
 
   const hasTrackedView = useRef(false);
-  const [isUnlocked, setIsUnlocked] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [direction, setDirection] = useState(1);
 
+  const isEditMode = new URLSearchParams(window.location.search).has('edit');
+  const queryClient = useQueryClient();
+  const queryKey = [`/api/presentations/slug/${slug}`, isEditMode];
+
   const { data, isLoading } = useQuery<PublicPresentation>({
-    queryKey: [`/api/presentations/slug/${slug}`],
+    queryKey,
     enabled: !!slug,
     retry: false,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    queryFn: async () => {
+      const response = await fetch(`/api/presentations/slug/${slug}`);
+      if (!response.ok) throw new Error('Not found');
+      const presentation = await response.json();
+
+      // In edit mode, override slides with draft from localStorage (works across tabs)
+      if (isEditMode) {
+        const draftSlides = localStorage.getItem(`presentation_draft_${slug}`);
+        if (draftSlides) {
+          try {
+            const slides = JSON.parse(draftSlides);
+            return { ...presentation, slides };
+          } catch (e) {
+            console.error('Failed to parse draft slides:', e);
+          }
+        }
+      }
+
+      return presentation;
+    },
   });
+
+  // Live-reload preview tab when the editor updates the draft in localStorage
+  useEffect(() => {
+    if (!isEditMode || !slug) return;
+    function handleStorage(e: StorageEvent) {
+      if (e.key === `presentation_draft_${slug}`) {
+        queryClient.invalidateQueries({ queryKey });
+      }
+    }
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [isEditMode, slug, queryClient]);
+
+  const { data: companySettings } = useQuery<CompanySettings>({
+    queryKey: ['/api/company-settings'],
+  });
+
+  const presentation = data;
 
   const { mutate: trackView } = useMutation({
     mutationFn: async () => {
-      await fetch(`/api/presentations/${data!.id}/view`, { method: 'POST' });
+      await fetch(`/api/presentations/${presentation!.id}/view`, { method: 'POST' });
     },
   });
 
   const isPreview = new URLSearchParams(window.location.search).has('preview');
+  const isThumbnail = new URLSearchParams(window.location.search).has('thumbnail');
 
   useEffect(() => {
     if (isPreview) return;
-    if (data && (!data.hasAccessCode || isUnlocked) && !hasTrackedView.current) {
+    if (presentation && !hasTrackedView.current) {
       hasTrackedView.current = true;
       trackView();
     }
-  }, [data, isUnlocked]);
+  }, [presentation, isPreview, trackView]);
 
-  const total = data?.slides.length ?? 0;
+  const total = presentation?.slides.length ?? 0;
+
+  useEffect(() => {
+    if (activeIndex >= total && total > 0) {
+      setActiveIndex(total - 1);
+    }
+  }, [activeIndex, total]);
+
+  useEffect(() => {
+    if (!presentation?.title) return;
+    const companyName = companySettings?.companyName?.trim() || 'Skale Club';
+    document.title = `${presentation.title} | ${companyName}`;
+  }, [presentation?.title, companySettings?.companyName]);
 
   const goTo = useCallback((idx: number) => {
-    if (!data) return;
+    if (!presentation || total === 0) return;
     const clamped = Math.max(0, Math.min(idx, total - 1));
     setDirection(clamped > activeIndex ? 1 : -1);
     setActiveIndex(clamped);
-  }, [activeIndex, total, data]);
+  }, [activeIndex, total, presentation]);
 
   const prev = useCallback(() => goTo(activeIndex - 1), [activeIndex, goTo]);
   const next = useCallback(() => goTo(activeIndex + 1), [activeIndex, goTo]);
@@ -286,12 +309,21 @@ export default function PresentationViewer() {
   }, [next, prev]);
 
   if (isLoading) return <LoadingScreen />;
-  if (!data) return <NotFoundScreen />;
-  if (data.hasAccessCode && !isUnlocked) {
-    return <AccessCodeGate presentationId={data.id} onUnlock={() => setIsUnlocked(true)} />;
+  if (!presentation) return <NotFoundScreen />;
+  if (total === 0) return <EmptySlidesScreen />;
+
+  if (isThumbnail) {
+    return (
+      <div className="h-screen bg-zinc-950 text-white flex items-center justify-center overflow-hidden">
+        <div className="px-8 max-w-xl mx-auto w-full">
+          <SlideContent slide={presentation.slides[0]} lang="en" />
+        </div>
+      </div>
+    );
   }
 
-  const currentSlide = data.slides[activeIndex];
+  const currentIndex = Math.min(activeIndex, total - 1);
+  const currentSlide = presentation.slides[currentIndex];
 
   return (
     <div className="h-screen bg-zinc-950 text-white overflow-hidden relative flex items-center justify-center">
@@ -311,7 +343,7 @@ export default function PresentationViewer() {
 
       {/* Navigation dots */}
       <div className="fixed right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-50">
-        {data.slides.map((_, i) => (
+        {presentation.slides.map((_, i) => (
           <button
             key={i}
             onClick={() => goTo(i)}
@@ -320,7 +352,7 @@ export default function PresentationViewer() {
           >
             <span className={cn(
               'rounded-full transition-all duration-200',
-              activeIndex === i ? 'w-3 h-3 bg-white scale-125' : 'w-2 h-2 bg-white/30 hover:bg-white/60'
+              currentIndex === i ? 'w-3 h-3 bg-white scale-125' : 'w-2 h-2 bg-white/30 hover:bg-white/60'
             )} />
           </button>
         ))}
@@ -328,11 +360,11 @@ export default function PresentationViewer() {
 
       {/* Slide counter */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 text-zinc-500 text-xs tabular-nums">
-        {activeIndex + 1} / {total}
+        {currentIndex + 1} / {total}
       </div>
 
       {/* Arrow buttons */}
-      {activeIndex > 0 && (
+      {currentIndex > 0 && (
         <button
           onClick={prev}
           aria-label="Previous slide"
@@ -342,7 +374,7 @@ export default function PresentationViewer() {
         </button>
       )}
 
-      {activeIndex < total - 1 && (
+      {currentIndex < total - 1 && (
         <button
           onClick={next}
           aria-label="Next slide"
@@ -357,7 +389,7 @@ export default function PresentationViewer() {
         <div className="absolute inset-0 bg-gradient-to-b from-zinc-800/20 to-transparent pointer-events-none" />
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
-            key={activeIndex}
+            key={currentIndex}
             custom={direction}
             variants={slideVariants}
             initial="enter"

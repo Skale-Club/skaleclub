@@ -97,6 +97,16 @@ import {
 } from "#shared/schema.js";
 import { eq, and, or, ilike, gte, lt, desc, asc, sql, ne, inArray, count } from "drizzle-orm";
 
+export type RecentSalesVisit = {
+  visit: SalesVisit;
+  rep: Pick<SalesRep, "id" | "displayName" | "team"> | null;
+  lead: Pick<SalesLead, "id" | "name" | "industry"> | null;
+  location: Pick<SalesLeadLocation, "id" | "label" | "addressLine1" | "city" | "state"> | null;
+  note: Pick<SalesVisitNote, "summary" | "outcome" | "nextStep" | "sentiment"> | null;
+  syncStatus: string | null;
+  syncLastError: string | null;
+};
+
 const companySettingsSchemaPatches = [
   sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "seo_keywords" text DEFAULT ''`,
   sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "seo_author" text DEFAULT ''`,
@@ -690,6 +700,7 @@ export interface IStorage {
   countOpenOpportunitiesByLeadIds(leadIds: number[]): Promise<Record<number, number>>;
   createSalesLeadContact(input: InsertSalesLeadContact): Promise<SalesLeadContact>;
   listSalesVisits(filters?: { repId?: number; leadId?: number; activeOnly?: boolean }): Promise<SalesVisit[]>;
+  listRecentSalesVisits(limit?: number, offset?: number, filters?: { repId?: number }): Promise<{ data: RecentSalesVisit[]; total: number }>;
   getSalesVisit(id: number): Promise<SalesVisit | undefined>;
   getActiveSalesVisitForRep(repId: number): Promise<SalesVisit | undefined>;
   createSalesVisit(input: InsertSalesVisit): Promise<SalesVisit>;
@@ -709,7 +720,7 @@ export interface IStorage {
   updateSalesSyncEvent(id: number, input: Partial<InsertSalesSyncEvent>): Promise<SalesSyncEvent | undefined>;
 
   // Presentations (PRES-05 – PRES-08)
-  listPresentations(): Promise<PresentationWithStats[]>;
+  listPresentations(limit?: number, offset?: number, search?: string): Promise<{ data: PresentationWithStats[], total: number }>;
   getPresentation(id: string): Promise<Presentation | undefined>;
   getPresentationBySlug(slug: string): Promise<Presentation | undefined>;
   createPresentation(data: InsertPresentation): Promise<Presentation>;
@@ -1564,6 +1575,89 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(salesVisits).orderBy(desc(salesVisits.createdAt));
   }
 
+  async listRecentSalesVisits(limit = 5, offset = 0, filters: { repId?: number } = {}): Promise<{ data: RecentSalesVisit[]; total: number }> {
+    await ensureSalesSchema();
+
+    const conditions: any[] = [];
+    if (filters.repId) conditions.push(eq(salesVisits.repId, filters.repId));
+
+    let countQuery = db.select({ count: sql<number>`count(*)::int` }).from(salesVisits).$dynamic();
+    let visitsQuery = db
+      .select({
+        visit: salesVisits,
+        rep: {
+          id: salesReps.id,
+          displayName: salesReps.displayName,
+          team: salesReps.team,
+        },
+        lead: {
+          id: salesLeads.id,
+          name: salesLeads.name,
+          industry: salesLeads.industry,
+        },
+        location: {
+          id: salesLeadLocations.id,
+          label: salesLeadLocations.label,
+          addressLine1: salesLeadLocations.addressLine1,
+          city: salesLeadLocations.city,
+          state: salesLeadLocations.state,
+        },
+        note: {
+          summary: salesVisitNotes.summary,
+          outcome: salesVisitNotes.outcome,
+          nextStep: salesVisitNotes.nextStep,
+          sentiment: salesVisitNotes.sentiment,
+        },
+      })
+      .from(salesVisits)
+      .leftJoin(salesReps, eq(salesVisits.repId, salesReps.id))
+      .leftJoin(salesLeads, eq(salesVisits.leadId, salesLeads.id))
+      .leftJoin(salesLeadLocations, eq(salesVisits.locationId, salesLeadLocations.id))
+      .leftJoin(salesVisitNotes, eq(salesVisits.id, salesVisitNotes.visitId))
+      .orderBy(desc(sql`coalesce(${salesVisits.checkedOutAt}, ${salesVisits.checkedInAt}, ${salesVisits.createdAt})`), desc(salesVisits.id))
+      .$dynamic();
+
+    if (conditions.length) {
+      const whereClause = and(...conditions);
+      countQuery = countQuery.where(whereClause);
+      visitsQuery = visitsQuery.where(whereClause);
+    }
+
+    const [totalRow] = await countQuery;
+    const rows = await visitsQuery.limit(limit).offset(offset);
+
+    const visitIds = rows.map((row) => String(row.visit.id));
+    const syncRows = visitIds.length
+      ? await db
+        .select()
+        .from(salesSyncEvents)
+        .where(and(eq(salesSyncEvents.entityType, "sales_visit"), inArray(salesSyncEvents.entityId, visitIds)))
+        .orderBy(desc(salesSyncEvents.createdAt), desc(salesSyncEvents.id))
+      : [];
+    const latestSyncByVisit = new Map<string, SalesSyncEvent>();
+    for (const event of syncRows) {
+      if (!latestSyncByVisit.has(event.entityId)) {
+        latestSyncByVisit.set(event.entityId, event);
+      }
+    }
+
+    return {
+      data: rows.map((row) => {
+        const syncEvent = latestSyncByVisit.get(String(row.visit.id));
+        return {
+          visit: row.visit,
+          rep: row.rep?.id ? row.rep : null,
+          lead: row.lead?.id ? row.lead : null,
+          location: row.location?.id ? row.location : null,
+          note: row.note?.summary || row.note?.outcome || row.note?.nextStep || row.note?.sentiment ? row.note : null,
+          syncStatus: syncEvent?.status ?? null,
+          syncLastError: syncEvent?.lastError ?? null,
+        };
+      }),
+      total: totalRow?.count ?? 0,
+    };
+  }
+
   async getSalesVisit(id: number): Promise<SalesVisit | undefined> {
     await ensureSalesSchema();
     const [visit] = await db.select().from(salesVisits).where(eq(salesVisits.id, id));
@@ -1865,15 +1959,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Estimates
-  async listEstimates(): Promise<EstimateWithStats[]> {
-    const rows = await db
+  async listEstimates(limit?: number, offset?: number, search?: string): Promise<{ data: EstimateWithStats[]; total: number }> {
+    let query = db
       .select({
         id: estimates.id,
         clientName: estimates.clientName,
+        companyName: estimates.companyName,
+        contactName: estimates.contactName,
         slug: estimates.slug,
         note: estimates.note,
         services: estimates.services,
         accessCode: estimates.accessCode,
+        thumbnailUrl: estimates.thumbnailUrl,
+        thumbnailSignature: estimates.thumbnailSignature,
         createdAt: estimates.createdAt,
         updatedAt: estimates.updatedAt,
         viewCount: sql<number>`count(${estimateViews.id})::int`,
@@ -1882,8 +1980,51 @@ export class DatabaseStorage implements IStorage {
       .from(estimates)
       .leftJoin(estimateViews, eq(estimateViews.estimateId, estimates.id))
       .groupBy(estimates.id)
-      .orderBy(desc(estimates.createdAt));
-    return rows as EstimateWithStats[];
+      .orderBy(desc(estimates.createdAt))
+      .$dynamic();
+
+    if (search) {
+      const terms = search.trim().split(/\s+/).filter(Boolean);
+      if (terms.length > 0) {
+        const conditions = terms.map(term => {
+          const likeValue = `%${term.toLowerCase()}%`;
+          return or(
+            ilike(estimates.clientName, likeValue),
+            ilike(estimates.companyName, likeValue),
+            ilike(estimates.contactName, likeValue),
+            ilike(estimates.note, likeValue),
+            ilike(sql`${estimates.services}::text`, likeValue)
+          );
+        });
+        query = query.where(and(...conditions));
+      }
+    }
+
+    if (limit !== undefined) query = query.limit(limit);
+    if (offset !== undefined) query = query.offset(offset);
+
+    const rows = await query;
+    
+    let countQuery = db.select({ count: sql<number>`count(*)::int` }).from(estimates).$dynamic();
+    if (search) {
+      const terms = search.trim().split(/\s+/).filter(Boolean);
+      if (terms.length > 0) {
+        const conditions = terms.map(term => {
+          const likeValue = `%${term.toLowerCase()}%`;
+          return or(
+            ilike(estimates.clientName, likeValue),
+            ilike(estimates.companyName, likeValue),
+            ilike(estimates.contactName, likeValue),
+            ilike(estimates.note, likeValue),
+            ilike(sql`${estimates.services}::text`, likeValue)
+          );
+        });
+        countQuery = countQuery.where(and(...conditions));
+      }
+    }
+    const [{ count }] = await countQuery;
+
+    return { data: rows as EstimateWithStats[], total: count };
   }
 
   async getEstimate(id: number): Promise<Estimate | undefined> {
@@ -1921,15 +2062,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Presentations (Phase 16 implements full CRUD; Phase 15 adds typed stubs)
-  async listPresentations(): Promise<PresentationWithStats[]> {
-    const rows = await db
+  async listPresentations(limit?: number, offset?: number, search?: string): Promise<{ data: PresentationWithStats[]; total: number }> {
+    let query = db
       .select({
         id:                presentations.id,
         slug:              presentations.slug,
         title:             presentations.title,
         slides:            presentations.slides,
         guidelinesSnapshot: presentations.guidelinesSnapshot,
-        accessCode:        presentations.accessCode,
+        thumbnailUrl:      presentations.thumbnailUrl,
+        thumbnailSignature: presentations.thumbnailSignature,
         version:           presentations.version,
         createdAt:         presentations.createdAt,
         updatedAt:         presentations.updatedAt,
@@ -1939,8 +2081,47 @@ export class DatabaseStorage implements IStorage {
       .from(presentations)
       .leftJoin(presentationViews, eq(presentationViews.presentationId, presentations.id))
       .groupBy(presentations.id)
-      .orderBy(desc(presentations.createdAt));
-    return rows as PresentationWithStats[];
+      .orderBy(desc(presentations.createdAt))
+      .$dynamic();
+
+    if (search) {
+      const terms = search.trim().split(/\s+/).filter(Boolean);
+      if (terms.length > 0) {
+        const conditions = terms.map(term => {
+          const likeValue = `%${term.toLowerCase()}%`;
+          return or(
+            ilike(presentations.title, likeValue),
+            ilike(presentations.slug, likeValue),
+            ilike(sql`${presentations.slides}::text`, likeValue)
+          );
+        });
+        query = query.where(and(...conditions));
+      }
+    }
+
+    if (limit !== undefined) query = query.limit(limit);
+    if (offset !== undefined) query = query.offset(offset);
+
+    const rows = await query;
+    
+    let countQuery = db.select({ count: sql<number>`count(*)::int` }).from(presentations).$dynamic();
+    if (search) {
+      const terms = search.trim().split(/\s+/).filter(Boolean);
+      if (terms.length > 0) {
+        const conditions = terms.map(term => {
+          const likeValue = `%${term.toLowerCase()}%`;
+          return or(
+            ilike(presentations.title, likeValue),
+            ilike(presentations.slug, likeValue),
+            ilike(sql`${presentations.slides}::text`, likeValue)
+          );
+        });
+        countQuery = countQuery.where(and(...conditions));
+      }
+    }
+    const [{ count }] = await countQuery;
+
+    return { data: rows as PresentationWithStats[], total: count };
   }
 
   async getPresentation(id: string): Promise<Presentation | undefined> {
