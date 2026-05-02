@@ -76,11 +76,16 @@ export const hubParticipants = pgTable("hub_participants", {
   emailNormalized: text("email_normalized"),
   source: text("source").notNull().default("hub"),
   notes: text("notes"),
+  ghlContactId: text("ghl_contact_id"),
+  ghlSyncStatus: text("ghl_sync_status").notNull().default("pending"),
+  ghlLastSyncedAt: timestamp("ghl_last_synced_at"),
+  ghlSyncError: text("ghl_sync_error"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
 }, (table) => ({
   phoneNormalizedIdx: index("hub_participants_phone_normalized_idx").on(table.phoneNormalized),
   emailNormalizedIdx: index("hub_participants_email_normalized_idx").on(table.emailNormalized),
+  ghlContactIdIdx: index("hub_participants_ghl_contact_id_idx").on(table.ghlContactId),
 }));
 
 export const hubRegistrations = pgTable("hub_registrations", {
@@ -116,6 +121,10 @@ export const hubAccessEvents = pgTable("hub_access_events", {
   ipHash: text("ip_hash"),
   userAgent: text("user_agent"),
   metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+  ghlNoteId: text("ghl_note_id"),
+  ghlSyncStatus: text("ghl_sync_status").notNull().default("pending"),
+  ghlSyncedAt: timestamp("ghl_synced_at"),
+  ghlSyncError: text("ghl_sync_error"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
   liveCreatedAtIdx: index("hub_access_events_live_id_created_at_idx").on(table.liveId, table.createdAt),
@@ -209,6 +218,10 @@ export const selectHubParticipantSchema = z.object({
   emailNormalized: z.string().nullable(),
   source: z.string(),
   notes: z.string().nullable(),
+  ghlContactId: z.string().nullable(),
+  ghlSyncStatus: z.string(),
+  ghlLastSyncedAt: z.date().nullable(),
+  ghlSyncError: z.string().nullable(),
   createdAt: z.date().nullable(),
   updatedAt: z.date().nullable(),
 });
@@ -297,6 +310,10 @@ export const selectHubAccessEventSchema = z.object({
   ipHash: z.string().nullable(),
   userAgent: z.string().nullable(),
   metadata: z.record(z.unknown()),
+  ghlNoteId: z.string().nullable(),
+  ghlSyncStatus: z.string(),
+  ghlSyncedAt: z.date().nullable(),
+  ghlSyncError: z.string().nullable(),
   createdAt: z.date(),
 });
 
@@ -356,7 +373,19 @@ export type HubDashboardSummary = {
 
 export type HubParticipantHistory = Pick<
   HubParticipant,
-  "id" | "fullName" | "phoneRaw" | "phoneNormalized" | "emailRaw" | "emailNormalized" | "source" | "createdAt" | "updatedAt"
+  | "id"
+  | "fullName"
+  | "phoneRaw"
+  | "phoneNormalized"
+  | "emailRaw"
+  | "emailNormalized"
+  | "source"
+  | "ghlContactId"
+  | "ghlSyncStatus"
+  | "ghlLastSyncedAt"
+  | "ghlSyncError"
+  | "createdAt"
+  | "updatedAt"
 > & {
   registrationCount: number;
   livesAccessedCount: number;

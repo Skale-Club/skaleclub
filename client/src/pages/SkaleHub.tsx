@@ -8,6 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Loader2 } from "@/components/ui/loader";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import {
+  PHONE_COUNTRIES,
+  detectDefaultPhoneCountry,
+  formatPhoneForCountry,
+  getInternationalPhone,
+  isValidPhoneForCountry,
+  type PhoneCountry,
+} from "@/lib/phoneCountries";
 
 type HubActiveLive = {
   id: number;
@@ -71,6 +79,7 @@ function formatLiveTime(value: string | Date, timeZone: string) {
 export default function SkaleHub() {
   const { toast } = useToast();
   const [form, setForm] = useState({ name: "", phone: "", email: "" });
+  const [selectedCountry, setSelectedCountry] = useState<PhoneCountry>(() => detectDefaultPhoneCountry());
   const [unlockData, setUnlockData] = useState<HubRegisterResponse | null>(null);
 
   const activeQuery = useQuery<HubActiveResponse>({
@@ -89,7 +98,10 @@ export default function SkaleHub() {
 
   const registerMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/skale-hub/register", form);
+      const response = await apiRequest("POST", "/api/skale-hub/register", {
+        ...form,
+        phone: getInternationalPhone(form.phone, selectedCountry),
+      });
       return response.json() as Promise<HubRegisterResponse>;
     },
     onSuccess: (data) => {
@@ -146,7 +158,12 @@ export default function SkaleHub() {
     };
   }, [live]);
 
-  const canSubmit = form.name.trim().length > 0 && (form.phone.trim().length > 0 || form.email.trim().length > 0);
+  const phoneHasValue = form.phone.trim().length > 0;
+  const phoneIsValid = !phoneHasValue || isValidPhoneForCountry(form.phone, selectedCountry);
+  const phoneError = phoneHasValue && !phoneIsValid
+    ? `Enter a valid ${selectedCountry.name} phone number (${selectedCountry.maxDigits} digits).`
+    : null;
+  const canSubmit = form.name.trim().length > 0 && phoneIsValid && (phoneHasValue || form.email.trim().length > 0);
   const accessLabel = unlockData?.access.streamUrl ? "Access weekly live" : "Watch replay";
 
   return (
@@ -256,11 +273,44 @@ export default function SkaleHub() {
                             value={form.name}
                             onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
                           />
-                          <Input
-                            placeholder="Phone"
-                            value={form.phone}
-                            onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
-                          />
+                          <div>
+                            <div className={`flex overflow-hidden rounded-md border bg-white ${phoneError ? "border-red-300" : "border-input"}`}>
+                              <select
+                                aria-label="Phone country"
+                                value={selectedCountry.code}
+                                onChange={(event) => {
+                                  const nextCountry = PHONE_COUNTRIES.find((country) => country.code === event.target.value) || PHONE_COUNTRIES[0];
+                                  setSelectedCountry(nextCountry);
+                                  setForm((current) => ({
+                                    ...current,
+                                    phone: formatPhoneForCountry(current.phone, nextCountry),
+                                  }));
+                                }}
+                                className="min-h-10 max-w-[132px] border-0 bg-slate-50 px-3 text-sm font-medium text-slate-700 outline-none"
+                              >
+                                {PHONE_COUNTRIES.map((country) => (
+                                  <option key={country.code} value={country.code}>
+                                    {country.flag} {country.dialCode}
+                                  </option>
+                                ))}
+                              </select>
+                              <Input
+                                type="tel"
+                                inputMode="tel"
+                                autoComplete="tel"
+                                placeholder={selectedCountry.format}
+                                value={form.phone}
+                                onChange={(event) => setForm((current) => ({
+                                  ...current,
+                                  phone: formatPhoneForCountry(event.target.value, selectedCountry),
+                                }))}
+                                className="border-0 bg-white focus-visible:ring-0"
+                              />
+                            </div>
+                            {phoneError ? (
+                              <p className="mt-1 text-xs font-medium text-red-600">{phoneError}</p>
+                            ) : null}
+                          </div>
                           <Input
                             type="email"
                             placeholder="Email"

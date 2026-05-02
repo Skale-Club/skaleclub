@@ -1,11 +1,65 @@
 import type { Express } from "express";
 import { z } from "zod";
+import crypto from "crypto";
 import { storage } from "../storage.js";
 import { insertFormSchema, updateFormSchema, formLeadProgressSchema } from "#shared/schema.js";
 import { calculateMaxScore, DEFAULT_FORM_CONFIG } from "#shared/form.js";
 import type { FormConfig } from "#shared/schema.js";
 import { requireAdmin, setPublicCache } from "./_shared.js";
 import { runLeadPostProcessing } from "../lib/lead-processing.js";
+
+const SKALE_HUB_GROUP_FORM_SLUG = "skale-hub";
+
+const skaleHubGroupLeadSchema = z.object({
+  phone: z.string().trim().min(7).max(20),
+  name: z.string().trim().min(3).max(100).optional(),
+  urlOrigem: z.string().max(500).optional(),
+  utmSource: z.string().max(200).optional(),
+  utmMedium: z.string().max(200).optional(),
+  utmCampaign: z.string().max(200).optional(),
+});
+
+const SKALE_HUB_GROUP_FORM_CONFIG: FormConfig = {
+  questions: [
+    {
+      id: "telefone",
+      order: 1,
+      title: "WhatsApp phone",
+      type: "tel",
+      required: true,
+      placeholder: "(555) 123-4567",
+    },
+  ],
+  maxScore: 0,
+  thresholds: DEFAULT_FORM_CONFIG.thresholds,
+};
+
+async function ensureSkaleHubGroupForm() {
+  const existing = await storage.getFormBySlug(SKALE_HUB_GROUP_FORM_SLUG);
+  if (existing) {
+    if (!existing.isActive) {
+      return await storage.updateForm(existing.id, { isActive: true });
+    }
+    return existing;
+  }
+
+  try {
+    return await storage.createForm({
+      slug: SKALE_HUB_GROUP_FORM_SLUG,
+      name: "Skale Hub Group",
+      description: "Phone capture landing page for Skale Hub ads.",
+      isActive: true,
+      isDefault: false,
+      config: SKALE_HUB_GROUP_FORM_CONFIG,
+    });
+  } catch (err: any) {
+    if (err?.code === "23505") {
+      const form = await storage.getFormBySlug(SKALE_HUB_GROUP_FORM_SLUG);
+      if (form) return form;
+    }
+    throw err;
+  }
+}
 
 export function registerFormRoutes(app: Express) {
   // ──────────────────────────────────────────────────────────
@@ -203,6 +257,53 @@ export function registerFormRoutes(app: Express) {
       res.json(config);
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.post("/api/forms/skale-hub-group/leads", async (req, res) => {
+    try {
+      const parsed = skaleHubGroupLeadSchema.parse(req.body);
+      const form = await ensureSkaleHubGroupForm();
+      const settings = await storage.getCompanySettings();
+      const companyName = settings?.companyName || "Skale Club";
+
+      const initialLead = await storage.upsertFormLeadProgress(
+        {
+          sessionId: crypto.randomUUID(),
+          questionNumber: 1,
+          nome: parsed.name || "Skale Hub Visitor",
+          telefone: parsed.phone,
+          formCompleto: true,
+          urlOrigem: parsed.urlOrigem,
+          utmSource: parsed.utmSource,
+          utmMedium: parsed.utmMedium,
+          utmCampaign: parsed.utmCampaign,
+          startedAt: new Date().toISOString(),
+          customAnswers: {
+            skaleHubIntent: "join-group",
+            sourcePage: "skale-hub-group",
+          },
+        },
+        {
+          userAgent: req.get("user-agent") || undefined,
+          formId: form.id,
+          source: "skale-hub-group",
+        },
+        (form.config as FormConfig | null) ?? SKALE_HUB_GROUP_FORM_CONFIG,
+      );
+
+      const { lead } = await runLeadPostProcessing(
+        initialLead,
+        (form.config as FormConfig | null) ?? SKALE_HUB_GROUP_FORM_CONFIG,
+        companyName,
+      );
+
+      res.status(201).json({ success: true, leadId: lead.id });
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors?.[0]?.message || "Validation error" });
+      }
+      res.status(400).json({ message: (err as Error).message });
     }
   });
 

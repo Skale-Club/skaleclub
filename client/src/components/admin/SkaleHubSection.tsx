@@ -5,6 +5,14 @@ import { CalendarDays, CheckCircle2, ExternalLink, Plus, RadioTower, RefreshCcw,
 import { AdminCard, EmptyState, SectionHeader } from './shared';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -78,10 +86,18 @@ function statusBadge(status: string) {
   return 'outline';
 }
 
+function ghlStatusBadge(status?: string | null) {
+  if (status === 'synced') return 'success';
+  if (status === 'failed') return 'destructive';
+  if (status === 'skipped') return 'secondary';
+  return 'outline';
+}
+
 export function SkaleHubSection() {
   const { toast } = useToast();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [form, setForm] = useState<LiveFormState>(EMPTY_FORM);
+  const [isLiveFormOpen, setIsLiveFormOpen] = useState(false);
   const [participantSearch, setParticipantSearch] = useState('');
 
   const dashboardQuery = useQuery<HubDashboardSummary>({
@@ -130,22 +146,19 @@ export function SkaleHubSection() {
   useEffect(() => {
     if (!livesQuery.data?.length) {
       setSelectedId(null);
-      if (form.id !== null) {
-        setForm(EMPTY_FORM);
-      }
       return;
     }
 
     if (selectedId == null || !livesQuery.data.some((live) => live.id === selectedId)) {
       setSelectedId(livesQuery.data[0].id);
     }
-  }, [livesQuery.data, selectedId, form.id]);
+  }, [livesQuery.data, selectedId]);
 
   useEffect(() => {
-    if (selectedLive && form.id === selectedLive.id) {
+    if (isLiveFormOpen && selectedLive && form.id === selectedLive.id) {
       setForm(fromSummaryToForm(selectedLive));
     }
-  }, [selectedLive]);
+  }, [isLiveFormOpen, selectedLive, form.id]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -174,6 +187,7 @@ export function SkaleHubSection() {
       ]);
       setSelectedId(live.id);
       setForm(fromSummaryToForm(live));
+      setIsLiveFormOpen(false);
       toast({ title: form.id == null ? 'Live created' : 'Live updated' });
     },
     onError: (error: Error) => {
@@ -209,6 +223,17 @@ export function SkaleHubSection() {
 
   const canSave = form.slug.trim() && form.title.trim() && form.startsAt;
 
+  const openCreateLiveDialog = () => {
+    setForm(EMPTY_FORM);
+    setIsLiveFormOpen(true);
+  };
+
+  const openEditLiveDialog = (live: HubLiveSummary) => {
+    setSelectedId(live.id);
+    setForm(fromSummaryToForm(live));
+    setIsLiveFormOpen(true);
+  };
+
   const dashboardCards = [
     {
       label: 'Total participants',
@@ -235,9 +260,8 @@ export function SkaleHubSection() {
         icon={<RadioTower className="w-5 h-5" />}
         action={
           <Button
-            variant="outline"
-            className="gap-2"
-            onClick={() => setForm(EMPTY_FORM)}
+            className="gap-2 border-blue-600 bg-blue-600 text-white hover:bg-blue-700"
+            onClick={openCreateLiveDialog}
           >
             <Plus className="w-4 h-4" />
             New live
@@ -288,12 +312,20 @@ export function SkaleHubSection() {
               {livesQuery.data.map((live) => {
                 const isSelected = selectedId === live.id;
                 return (
-                  <button
+                  <div
                     key={live.id}
-                    type="button"
+                    role="button"
+                    tabIndex={0}
                     onClick={() => {
                       setSelectedId(live.id);
                       setForm(fromSummaryToForm(live));
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        setSelectedId(live.id);
+                        setForm(fromSummaryToForm(live));
+                      }
                     }}
                     className={`w-full rounded-2xl border p-4 text-left transition-colors ${isSelected ? 'border-primary bg-primary/5' : 'border-border bg-background hover:bg-muted/40'}`}
                   >
@@ -305,21 +337,34 @@ export function SkaleHubSection() {
                         </div>
                         <p className="text-xs text-muted-foreground">/{live.slug}</p>
                       </div>
-                      {live.status !== 'live' ? (
+                      <div className="flex flex-wrap justify-end gap-2">
                         <Button
                           type="button"
                           size="sm"
                           variant="outline"
-                          className="gap-2"
                           onClick={(event) => {
                             event.stopPropagation();
-                            activateMutation.mutate(live.id);
+                            openEditLiveDialog(live);
                           }}
                         >
-                          <CheckCircle2 className="w-4 h-4" />
-                          Activate
+                          Edit
                         </Button>
-                      ) : null}
+                        {live.status !== 'live' ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="gap-2"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              activateMutation.mutate(live.id);
+                            }}
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                            Activate
+                          </Button>
+                        ) : null}
+                      </div>
                     </div>
 
                     <div className="mt-4 grid grid-cols-3 gap-2 text-xs text-muted-foreground">
@@ -336,7 +381,7 @@ export function SkaleHubSection() {
                         <p>Participants</p>
                       </div>
                     </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -344,78 +389,6 @@ export function SkaleHubSection() {
         </AdminCard>
 
         <div className="space-y-6">
-          <AdminCard className="space-y-5">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-semibold">{form.id == null ? 'Create live' : 'Edit live'}</h3>
-                <p className="text-sm text-muted-foreground">Manage the title, schedule, destination link, and status from one place.</p>
-              </div>
-              {selectedLive?.status === 'live' ? <Badge variant="success">Currently active</Badge> : null}
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="hub-title">Live title</Label>
-                <Input id="hub-title" value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="hub-slug">Slug</Label>
-                <Input id="hub-slug" value={form.slug} onChange={(event) => setForm((current) => ({ ...current, slug: event.target.value }))} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="hub-status">Status</Label>
-                <select
-                  id="hub-status"
-                  value={form.status}
-                  onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as HubStatus }))}
-                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  <option value="draft">Draft</option>
-                  <option value="scheduled">Inactive</option>
-                  <option value="live">Active</option>
-                  <option value="ended">Ended</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="hub-starts-at">Date and time</Label>
-                <Input id="hub-starts-at" type="datetime-local" value={form.startsAt} onChange={(event) => setForm((current) => ({ ...current, startsAt: event.target.value }))} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="hub-timezone">Timezone</Label>
-                <Input id="hub-timezone" value={form.timezone} onChange={(event) => setForm((current) => ({ ...current, timezone: event.target.value }))} />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="hub-description">Description</Label>
-                <Textarea id="hub-description" rows={4} value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="hub-stream-url">Live link</Label>
-                <Input id="hub-stream-url" value={form.streamUrl} onChange={(event) => setForm((current) => ({ ...current, streamUrl: event.target.value }))} placeholder="https://zoom.us/..." />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="hub-replay-url">Replay link</Label>
-                <Input id="hub-replay-url" value={form.replayUrl} onChange={(event) => setForm((current) => ({ ...current, replayUrl: event.target.value }))} placeholder="https://example.com/replay" />
-              </div>
-              <div className="space-y-2 md:max-w-[180px]">
-                <Label htmlFor="hub-capacity">Capacity</Label>
-                <Input id="hub-capacity" type="number" min="0" value={form.capacity} onChange={(event) => setForm((current) => ({ ...current, capacity: event.target.value }))} />
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <Button className="gap-2" disabled={!canSave || saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-                {saveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                {form.id == null ? 'Create live' : 'Save changes'}
-              </Button>
-              {form.id != null ? (
-                <Button variant="outline" onClick={() => setForm(selectedLive ? fromSummaryToForm(selectedLive) : EMPTY_FORM)}>
-                  Reset
-                </Button>
-              ) : null}
-            </div>
-          </AdminCard>
-
           <AdminCard className="space-y-4">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -530,6 +503,13 @@ export function SkaleHubSection() {
                         <Badge variant="outline">{participant.registrationCount} registrations</Badge>
                         <Badge variant="outline">{participant.livesAccessedCount} lives accessed</Badge>
                         <Badge variant="outline">{participant.grantedAccessCount} granted</Badge>
+                        <Badge
+                          variant={ghlStatusBadge(participant.ghlSyncStatus) as any}
+                          title={participant.ghlSyncError || undefined}
+                        >
+                          GHL: {participant.ghlSyncStatus || 'pending'}
+                        </Badge>
+                        {participant.ghlContactId ? <Badge variant="outline">GHL contact linked</Badge> : null}
                       </div>
                     </div>
 
@@ -558,6 +538,95 @@ export function SkaleHubSection() {
           </AdminCard>
         </div>
       </div>
+
+      <Dialog open={isLiveFormOpen} onOpenChange={setIsLiveFormOpen}>
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+          <DialogHeader>
+            <div className="flex flex-wrap items-center gap-2 pr-8">
+              <DialogTitle>{form.id == null ? 'Create live' : 'Edit live'}</DialogTitle>
+              {form.status === 'live' ? <Badge variant="success">Currently active</Badge> : null}
+            </div>
+            <DialogDescription>
+              Manage the title, schedule, destination link, and status from one place.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form
+            className="space-y-5"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (canSave && !saveMutation.isPending) {
+                saveMutation.mutate();
+              }
+            }}
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="hub-title">Live title</Label>
+                <Input id="hub-title" value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="hub-slug">Slug</Label>
+                <Input id="hub-slug" value={form.slug} onChange={(event) => setForm((current) => ({ ...current, slug: event.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="hub-status">Status</Label>
+                <select
+                  id="hub-status"
+                  value={form.status}
+                  onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as HubStatus }))}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="draft">Draft</option>
+                  <option value="scheduled">Inactive</option>
+                  <option value="live">Active</option>
+                  <option value="ended">Ended</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="hub-starts-at">Date and time</Label>
+                <Input id="hub-starts-at" type="datetime-local" value={form.startsAt} onChange={(event) => setForm((current) => ({ ...current, startsAt: event.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="hub-timezone">Timezone</Label>
+                <Input id="hub-timezone" value={form.timezone} onChange={(event) => setForm((current) => ({ ...current, timezone: event.target.value }))} />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="hub-description">Description</Label>
+                <Textarea id="hub-description" rows={4} value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="hub-stream-url">Live link</Label>
+                <Input id="hub-stream-url" value={form.streamUrl} onChange={(event) => setForm((current) => ({ ...current, streamUrl: event.target.value }))} placeholder="https://zoom.us/..." />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="hub-replay-url">Replay link</Label>
+                <Input id="hub-replay-url" value={form.replayUrl} onChange={(event) => setForm((current) => ({ ...current, replayUrl: event.target.value }))} placeholder="https://example.com/replay" />
+              </div>
+              <div className="space-y-2 md:max-w-[180px]">
+                <Label htmlFor="hub-capacity">Capacity</Label>
+                <Input id="hub-capacity" type="number" min="0" value={form.capacity} onChange={(event) => setForm((current) => ({ ...current, capacity: event.target.value }))} />
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2 sm:space-x-0">
+              <Button type="button" variant="outline" onClick={() => setIsLiveFormOpen(false)}>
+                Cancel
+              </Button>
+              {form.id != null ? (
+                <Button type="button" variant="outline" onClick={() => setForm(selectedLive ? fromSummaryToForm(selectedLive) : EMPTY_FORM)}>
+                  Reset
+                </Button>
+              ) : null}
+              <Button type="submit" className="gap-2" disabled={!canSave || saveMutation.isPending}>
+                {saveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                {form.id == null ? 'Create live' : 'Save changes'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import type { Express, Request } from "express";
 import crypto from "crypto";
 
 import { storage } from "../storage.js";
+import { syncHubAccessEventToGhl } from "../lib/skale-hub-ghl-sync.js";
 import {
   hubAccessRequestSchema,
   hubRegisterRequestSchema,
@@ -103,7 +104,7 @@ export function registerSkaleHubRoutes(app: Express) {
           ? "email"
           : "none";
 
-      await storage.logHubAccessEvent({
+      const event = await storage.logHubAccessEvent({
         liveId: live.id,
         participantId: participant.id,
         registrationId: registration.id,
@@ -117,6 +118,8 @@ export function registerSkaleHubRoutes(app: Express) {
         metadata: { source: "register" },
         createdAt: new Date(),
       });
+
+      await syncHubAccessEventToGhl({ live, participant, event });
 
       return res.json({
         unlocked: true,
@@ -189,7 +192,7 @@ export function registerSkaleHubRoutes(app: Express) {
       } as const;
 
       if (!participant || !registration) {
-        await storage.logHubAccessEvent({
+        const event = await storage.logHubAccessEvent({
           ...baseEvent,
           outcome: "denied",
           metadata: {
@@ -198,30 +201,33 @@ export function registerSkaleHubRoutes(app: Express) {
           },
           createdAt: new Date(),
         });
+        await syncHubAccessEventToGhl({ live, participant, event });
         return res.status(403).json({ granted: false, message: "Registration required" });
       }
 
       if (registration.status === "cancelled" || registration.status === "waitlisted") {
-        await storage.logHubAccessEvent({
+        const event = await storage.logHubAccessEvent({
           ...baseEvent,
           outcome: "denied",
           metadata: { ...parsed.data.metadata, reason: "registration_not_allowed" },
           createdAt: new Date(),
         });
+        await syncHubAccessEventToGhl({ live, participant, event });
         return res.status(403).json({ granted: false, message: "Registration is not approved for this live" });
       }
 
       if (!destinationUrl) {
-        await storage.logHubAccessEvent({
+        const event = await storage.logHubAccessEvent({
           ...baseEvent,
           outcome: "denied",
           metadata: { ...parsed.data.metadata, reason: "destination_missing" },
           createdAt: new Date(),
         });
+        await syncHubAccessEventToGhl({ live, participant, event });
         return res.status(409).json({ granted: false, message: "Live link unavailable" });
       }
 
-      await storage.logHubAccessEvent({
+      const event = await storage.logHubAccessEvent({
         ...baseEvent,
         participantId: participant.id,
         registrationId: registration.id,
@@ -229,6 +235,8 @@ export function registerSkaleHubRoutes(app: Express) {
         metadata: parsed.data.metadata,
         createdAt: new Date(),
       });
+
+      await syncHubAccessEventToGhl({ live, participant, event });
 
       return res.json({
         granted: true,

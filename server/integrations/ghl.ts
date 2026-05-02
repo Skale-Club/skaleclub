@@ -219,7 +219,7 @@ export async function createGHLContact(
     email?: string;
     firstName: string;
     lastName: string;
-    phone: string;
+    phone?: string;
     address?: string;
     customFields?: Array<{ id: string; field_value: string }>;
   }
@@ -230,12 +230,15 @@ export async function createGHLContact(
       locationId,
       firstName: contact.firstName,
       lastName: contact.lastName,
-      phone: contact.phone,
       address1: contact.address,
     };
 
     if (normalizedEmail) {
       body.email = normalizedEmail;
+    }
+
+    if (contact.phone?.trim()) {
+      body.phone = contact.phone;
     }
 
     // Add custom fields if provided
@@ -303,6 +306,9 @@ export async function findGHLContactByPhone(
 ): Promise<{ success: boolean; contactId?: string; message?: string }> {
   try {
     const normalizedPhone = phone.replace(/\D/g, '');
+    if (!normalizedPhone) {
+      return { success: true };
+    }
     
     const params = new URLSearchParams({
       locationId,
@@ -465,7 +471,7 @@ export async function getOrCreateGHLContact(
     email?: string;
     firstName: string;
     lastName: string;
-    phone: string;
+    phone?: string;
     address?: string;
     customFields?: Array<{ id: string; field_value: string }>;
   }
@@ -487,7 +493,7 @@ export async function getOrCreateGHLContact(
     return { success: true, contactId: existingByEmail.contactId };
   }
 
-  const existingByPhone = await findGHLContactByPhone(apiKey, locationId, contact.phone);
+  const existingByPhone = await findGHLContactByPhone(apiKey, locationId, contact.phone || "");
 
   if (existingByPhone.contactId) {
     console.log(`GHL contact found by phone: ${existingByPhone.contactId}`);

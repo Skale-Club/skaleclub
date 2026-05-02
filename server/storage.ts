@@ -697,11 +697,23 @@ export interface IStorage {
   getHubParticipant(id: number): Promise<HubParticipant | undefined>;
   findHubParticipantByIdentity(identity: HubParticipantIdentityLookup): Promise<HubParticipant | undefined>;
   upsertHubParticipant(data: UpsertHubParticipantInput): Promise<HubParticipant>;
+  updateHubParticipantGhlSync(id: number, updates: {
+    ghlContactId?: string | null;
+    ghlSyncStatus?: string;
+    ghlLastSyncedAt?: Date | null;
+    ghlSyncError?: string | null;
+  }): Promise<HubParticipant | undefined>;
 
   getHubRegistration(liveId: number, participantId: number): Promise<HubRegistration | undefined>;
   upsertHubRegistration(data: UpsertHubRegistrationInput): Promise<HubRegistration>;
 
   logHubAccessEvent(data: InsertHubAccessEvent): Promise<HubAccessEvent>;
+  updateHubAccessEventGhlSync(id: number, updates: {
+    ghlNoteId?: string | null;
+    ghlSyncStatus?: string;
+    ghlSyncedAt?: Date | null;
+    ghlSyncError?: string | null;
+  }): Promise<HubAccessEvent | undefined>;
   listHubAccessEvents(liveId: number, limit?: number): Promise<HubAccessEvent[]>;
   getHubLiveSummary(liveId: number): Promise<HubLiveSummary>;
   listHubLiveSummaries(status?: HubLiveStatus): Promise<HubLiveSummary[]>;
@@ -2118,6 +2130,21 @@ export class DatabaseStorage implements IStorage {
     return participant;
   }
 
+  async updateHubParticipantGhlSync(id: number, updates: {
+    ghlContactId?: string | null;
+    ghlSyncStatus?: string;
+    ghlLastSyncedAt?: Date | null;
+    ghlSyncError?: string | null;
+  }): Promise<HubParticipant | undefined> {
+    const [participant] = await db
+      .update(hubParticipants)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(hubParticipants.id, id))
+      .returning();
+
+    return participant;
+  }
+
   async getHubRegistration(liveId: number, participantId: number): Promise<HubRegistration | undefined> {
     const [registration] = await db
       .select()
@@ -2196,6 +2223,21 @@ export class DatabaseStorage implements IStorage {
         .set({ lastAccessAt: event.createdAt ?? new Date(), updatedAt: new Date() })
         .where(eq(hubRegistrations.id, registrationId));
     }
+
+    return event;
+  }
+
+  async updateHubAccessEventGhlSync(id: number, updates: {
+    ghlNoteId?: string | null;
+    ghlSyncStatus?: string;
+    ghlSyncedAt?: Date | null;
+    ghlSyncError?: string | null;
+  }): Promise<HubAccessEvent | undefined> {
+    const [event] = await db
+      .update(hubAccessEvents)
+      .set(updates)
+      .where(eq(hubAccessEvents.id, id))
+      .returning();
 
     return event;
   }
@@ -2324,6 +2366,10 @@ export class DatabaseStorage implements IStorage {
         emailRaw: hubParticipants.emailRaw,
         emailNormalized: hubParticipants.emailNormalized,
         source: hubParticipants.source,
+        ghlContactId: hubParticipants.ghlContactId,
+        ghlSyncStatus: hubParticipants.ghlSyncStatus,
+        ghlLastSyncedAt: hubParticipants.ghlLastSyncedAt,
+        ghlSyncError: hubParticipants.ghlSyncError,
         createdAt: hubParticipants.createdAt,
         updatedAt: hubParticipants.updatedAt,
         registrationCount: sql<number>`count(distinct ${hubRegistrations.id})::int`,
@@ -2411,6 +2457,10 @@ export class DatabaseStorage implements IStorage {
       emailRaw: row.emailRaw,
       emailNormalized: row.emailNormalized,
       source: row.source,
+      ghlContactId: row.ghlContactId,
+      ghlSyncStatus: row.ghlSyncStatus,
+      ghlLastSyncedAt: row.ghlLastSyncedAt,
+      ghlSyncError: row.ghlSyncError,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       registrationCount: row.registrationCount,
