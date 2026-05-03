@@ -78,7 +78,6 @@ export const translations = {
     'Integration Settings': 'Configurações de Integração',
     'Business Hours': 'Horário de Funcionamento',
     'SEO Settings': 'Configurações de SEO',
-
     // Admin — Forms section (M3-02)
     'Forms': 'Formulários',
     'Manage lead capture forms — questions, scoring, and thresholds.': 'Gerencie formulários de captação de leads — perguntas, pontuação e limites.',
@@ -112,16 +111,13 @@ export const translations = {
     'Back to forms': 'Voltar aos formulários',
     'Cannot delete the default form. Set another form as default first.': 'Não é possível excluir o formulário padrão. Defina outro como padrão primeiro.',
     'A form with that slug already exists': 'Já existe um formulário com esse slug',
-
     // Admin — Chat settings form selector (M3-03)
     'Qualification Form': 'Formulário de Qualificação',
     'Use default form': 'Usar formulário padrão',
     'The AI assistant will qualify leads with this form. Changes take effect on new conversations.': 'O assistente de IA qualificará leads com este formulário. As alterações passam a valer em novas conversas.',
-
     // Admin — Leads & Dashboard form scoping (M3-04)
     'Form': 'Formulário',
     'Form:': 'Formulário:',
-
     // Public — /f/:slug not found state (M3-03)
     "The form you're looking for is unavailable. Please double-check the link or go back to the homepage.": 'O formulário que você procura não está disponível. Verifique o link ou volte à página inicial.',
     'Back to homepage': 'Voltar à página inicial',
@@ -171,7 +167,6 @@ export const translations = {
     'All rights reserved.': 'Todos os direitos reservados.',
     'Privacy Policy': 'Política de Privacidade',
     'Terms of Service': 'Termos de Serviço',
-
     // Contact Page
     'Contact Us': 'Fale Conosco',
     "Have questions about our services or need a custom quote? We're here to help. Reach out to us today.": 'Tem dúvidas sobre nossos serviços ou precisa de um orçamento personalizado? Estamos aqui para ajudar. Entre em contato hoje.',
@@ -190,7 +185,6 @@ export const translations = {
     'Contact us for address': 'Entre em contato para endereço',
     'Message Sent': 'Mensagem Enviada',
     "We'll get back to you as soon as possible.": 'Retornaremos o mais breve possível.',
-
     // About Us Page
     'About Us': 'Sobre Nós',
     'Local Expertise': 'Expertise Local',
@@ -203,12 +197,10 @@ export const translations = {
     'Transparent pricing and clear project scope.': 'Preços transparentes e escopo claro do projeto.',
     'Our Mission': 'Nossa Missão',
     'To provide top-tier marketing services that help you grow your business, allowing you to focus on what matters most. We use data-driven strategies and proven techniques to ensure real results for your company.': 'Oferecer serviços de marketing de alto nível que ajudam você a crescer seu negócio, permitindo que você foque no que mais importa. Usamos estratégias baseadas em dados e técnicas comprovadas para garantir resultados reais para sua empresa.',
-
     // FAQ
     'Frequently Asked Questions': 'Perguntas Frequentes',
     'Find answers to common questions about our services.': 'Encontre respostas para perguntas comuns sobre nossos serviços.',
     'No FAQs available yet. Check back soon!': 'Nenhuma pergunta frequente disponível ainda. Volte em breve!',
-
     // Lead Thank You Page
     'We received your information': 'Recebemos suas informações',
     'Your form was submitted successfully. A specialist from our team will review the information and contact you shortly for the next step.': 'Seu formulário foi enviado com sucesso. Um especialista da nossa equipe revisará as informações e entrará em contato em breve para o próximo passo.',
@@ -218,7 +210,6 @@ export const translations = {
     'Our team reviews your answers and identifies the best plan.': 'Nossa equipe analisa suas respostas e identifica o melhor plano.',
     'We will contact you to align objectives and next steps.': 'Entraremos em contato para alinhar objetivos e próximos passos.',
     'You receive a summary of the initial plan and practical instructions.': 'Você recebe um resumo do plano inicial e instruções práticas.',
-
     // Lead Form Modal
     "Let's begin!": 'Vamos começar!',
     'Loading form...': 'Carregando formulário...',
@@ -233,11 +224,9 @@ export const translations = {
     'Please enter at least 3 characters': 'Por favor, insira pelo menos 3 caracteres',
     'Please enter a valid email': 'Por favor, insira um e-mail válido',
     'Please fill in the additional field': 'Por favor, preencha o campo adicional',
-
     // 404 Page
     'Page Not Found': 'Página Não Encontrada',
     'The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.': 'A página que você procura pode ter sido removida, teve seu nome alterado ou está temporariamente indisponível.',
-
     // Privacy Policy & Terms common
     'Email:': 'E-mail:',
     'Phone:': 'Telefone:',
@@ -245,7 +234,6 @@ export const translations = {
     'Last updated: January 10, 2026': 'Última atualização: 10 de Janeiro de 2026',
     'We will respond to your inquiry within 30 days.': 'Responderemos à sua solicitação dentro de 30 dias.',
     'We aim to respond to inquiries within 30 days.': 'Pretendemos responder às solicitações dentro de 30 dias.',
-
     // Portfolio Page
     'Portfolio': 'Portfólio',
     'Our Services': 'Nossos Serviços',
@@ -257,7 +245,6 @@ export const translations = {
     'Join the forward-thinking companies already scaling with Skale Club.': 'Junte-se às empresas inovadoras que já estão escalando com a Skale Club.',
     'Book a Strategy Session': 'Agendar Sessão Estratégica',
     'Back to Home': 'Voltar ao Início',
-
     // Admin — Links Page (Phase 12)
     'Links Page': 'Página de Links',
     'Manage your public links page profile and links': 'Gerencie o perfil e os links da sua página pública',
@@ -286,7 +273,6 @@ export const translations = {
     'Live Preview': 'Pré-visualização ao Vivo',
     'Drag to reorder': 'Arraste para reordenar',
     'My Portfolio': 'Meu Portfólio',
-
     // Admin — Links Page Uploaders (Phase 12-02)
     'Drop image here or click to browse': 'Solte a imagem aqui ou clique para procurar',
     'Replace image': 'Substituir imagem',
@@ -301,7 +287,6 @@ export const translations = {
     'Background Image': 'Imagem de Fundo',
     'PNG, JPG, WebP, SVG, or AVIF up to 2 MB': 'PNG, JPG, WebP, SVG ou AVIF até 2 MB',
     'Optional. Appears behind the /links page.': 'Opcional. Aparece atrás da página /links.',
-
     // Admin — Links Page Theme Editor (Phase 13-02)
     'Theme': 'Tema',
     'Colors and background for your links page': 'Cores e plano de fundo da sua página de links',
@@ -310,7 +295,6 @@ export const translations = {
     'Background Gradient (CSS)': 'Gradiente de Fundo (CSS)',
     'Optional. If set, overrides background color on the public page.': 'Opcional. Se definido, substitui a cor de fundo na página pública.',
     'Reset to defaults': 'Restaurar padrões',
-
     // Admin — Links Page Icon Picker (Phase 13-01)
     'Change icon': 'Alterar ícone',
     'Preview': 'Pré-visualização',
@@ -370,14 +354,11 @@ export const translations = {
     'Open presentation': 'Abrir apresentação',
     'Click to rename': 'Clique para renomear',
     'No slides yet': 'Nenhum slide ainda',
-
     // Admin — Leads Section (Phase 30)
     'Leads': 'Leads',
     'All captured leads with ratings and follow-up status': 'Todos os leads capturados com classificações e status de acompanhamento',
-
     // Admin — Forms / SEO (Phase 30)
     'e.g. Contact Us': 'ex. Fale Conosco',
-
     // Presentation Viewer (Phase 20)
     'Enter access code': 'Digite o código de acesso',
     'Unlock Presentation': 'Desbloquear Apresentação',
@@ -389,7 +370,6 @@ export const translations = {
     'Go to slide {n}': 'Ir para o slide {n}',
     'Switch to Portuguese': 'Mudar para Português',
     'Switch to English': 'Mudar para Inglês',
-
     // Admin — Dashboard Section (Phase 30)
     'Total Leads': 'Total de Leads',
     'Leads (7 Days)': 'Leads (7 Dias)',
@@ -433,7 +413,6 @@ export const translations = {
     'Configured': 'Configurado',
     'Disconnected': 'Desconectado',
     'Company name': 'Nome da empresa',
-
     // Admin — Estimates Section (Phase 30)
     'Estimates': 'Orçamentos',
     'Create and manage client proposals — each generates a shareable link': 'Crie e gerencie propostas para clientes — cada uma gera um link compartilhável',
@@ -463,7 +442,6 @@ export const translations = {
     'Delete estimate?': 'Excluir orçamento?',
     'Password Protection': 'Proteção por Senha',
     'Leave blank to remove password protection': 'Deixe em branco para remover a proteção por senha',
-
     // Privacy Policy Page (Phase 30) — Section titles
     '1. Introduction': '1. Introdução',
     '2. Information We Collect': '2. Informações que Coletamos',
@@ -565,6 +543,56 @@ export const translations = {
     'Sending an email notification for significant changes (if you have an account)': 'Enviar uma notificação por e-mail para alterações significativas (se você tiver uma conta)',
     'We encourage you to review this Privacy Policy periodically to stay informed about how we protect your information.': 'Incentivamos você a revisar esta Política de Privacidade periodicamente para se manter informado sobre como protegemos suas informações.',
     'If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us:': 'Se você tiver alguma dúvida, preocupação ou solicitação referente a esta Política de Privacidade ou nossas práticas de dados, entre em contato conosco:',
+    // Terms of Service Page (Phase 30) — Section titles
+    '1. Acceptance of Terms': '1. Aceitação dos Termos',
+    '2. Services and Scope': '2. Serviços e Escopo',
+    '3. Eligibility and Accounts': '3. Elegibilidade e Contas',
+    '4. Quotes, Pricing, and Payments': '4. Orçamentos, Preços e Pagamentos',
+    '5. Scheduling, Rescheduling, and Cancellations': '5. Agendamento, Reagendamento e Cancelamentos',
+    '6. Access, Safety, and Preparation': '6. Acesso, Segurança e Preparação',
+    '7. Service Quality and Re-Cleans': '7. Qualidade do Serviço e Revisitas',
+    '8. Customer Responsibilities and Conduct': '8. Responsabilidades e Conduta do Cliente',
+    '9. Marketing Materials and Assets': '9. Materiais de Marketing e Ativos',
+    '10. Recurring Services and Subscriptions': '10. Serviços Recorrentes e Assinaturas',
+    '11. Limitations of Liability': '11. Limitações de Responsabilidade',
+    '12. Intellectual Property and Acceptable Use': '12. Propriedade Intelectual e Uso Aceitável',
+    '13. Third-Party Services and Links': '13. Serviços e Links de Terceiros',
+    '14. Changes and Termination': '14. Alterações e Rescisão',
+    '15. Governing Law and Dispute Resolution': '15. Lei Aplicável e Resolução de Disputas',
+    '16. Contact': '16. Contato',
+    // Terms of Service — Section bodies
+    'We provide digital marketing services including lead generation, advertising management, and growth consulting for service businesses. Service details, deliverables, and exclusions may vary by package and engagement type.': 'Fornecemos serviços de marketing digital incluindo geração de leads, gerenciamento de publicidade e consultoria de crescimento para empresas de serviços. Detalhes dos serviços, entregáveis e exclusões podem variar por pacote e tipo de contrato.',
+    'You must be at least 18 years old and legally able to enter binding contracts.': 'Você deve ter pelo menos 18 anos e capacidade legal para celebrar contratos vinculantes.',
+    'You agree to provide accurate contact, access, and billing information and to keep it updated.': 'Você concorda em fornecer informações precisas de contato, acesso e faturamento e mantê-las atualizadas.',
+    'You are responsible for safeguarding account credentials and all activity under your account.': 'Você é responsável por proteger as credenciais da conta e por toda atividade realizada nela.',
+    'Prices, estimates, and promotions are shown in your proposal and may adjust based on scope, add-ons, or special requests.': 'Preços, orçamentos e promoções são apresentados na sua proposta e podem ser ajustados com base no escopo, complementos ou solicitações especiais.',
+    'Taxes and fees may apply. We may place an authorization hold or charge your payment method per your signed service terms.': 'Impostos e taxas podem ser aplicados. Podemos realizar uma reserva de autorização ou cobrar seu método de pagamento conforme os termos de serviço assinados.',
+    'If project conditions differ materially from the approved scope, we may adjust deliverables or pricing with your consent before proceeding.': 'Se as condições do projeto diferirem materialmente do escopo aprovado, podemos ajustar entregáveis ou preços com seu consentimento antes de prosseguir.',
+    'Appointments are subject to availability. Arrival times may include a service window to account for traffic and prior jobs.': 'Agendamentos estão sujeitos à disponibilidade. Os horários de chegada podem incluir uma janela de serviço para considerar o trânsito e trabalhos anteriores.',
+    'Reschedules or cancellations should be requested as early as possible. Late changes may incur a fee if notice is shorter than the policy in your service agreement.': 'Reagendamentos ou cancelamentos devem ser solicitados o mais cedo possível. Alterações tardias podem gerar taxas se o aviso for menor do que a política no seu contrato de serviço.',
+    'We may reschedule or cancel due to unsafe conditions, severe weather, or events outside our control; in such cases we will work with you to find a new time.': 'Podemos reagendar ou cancelar devido a condições inseguras, mau tempo severo ou eventos fora do nosso controle; nesses casos, trabalharemos com você para encontrar um novo horário.',
+    'You agree to provide safe, timely access (keys, codes, parking, gate instructions) for the scheduled appointment.': 'Você concorda em fornecer acesso seguro e pontual (chaves, códigos, estacionamento, instruções de portão) para o agendamento.',
+    'Please secure valuables, inform us of pets, and disclose hazards (fragile items, infestations, biohazards, sharp objects).': 'Por favor, guarde objetos de valor, informe-nos sobre animais de estimação e divulgue riscos (itens frágeis, infestações, materiais biológicos, objetos cortantes).',
+    'We may decline or pause service if conditions are unsafe for our team or could damage your property.': 'Podemos recusar ou pausar o serviço se as condições forem inseguras para nossa equipe ou puderem danificar sua propriedade.',
+    'Services follow the checklist for your selected package. Certain items (e.g., mold remediation, extreme clutter) may be excluded unless agreed in writing.': 'Os serviços seguem a lista de verificação do pacote selecionado. Certos itens (ex.: remoção de mofo, desordem extrema) podem ser excluídos, salvo acordado por escrito.',
+    'If something was missed, contact us within 24 hours with details and photos. We may offer a re-clean of the affected areas at our discretion.': 'Se algo for esquecido, entre em contato em 24 horas com detalhes e fotos. Podemos oferecer uma revisita às áreas afetadas a nosso critério.',
+    'Re-cleans do not cover new messes, wear and tear, or issues unrelated to the original visit.': 'Revisitas não cobrem novas sujeiras, desgaste natural ou problemas não relacionados à visita original.',
+    'Treat staff respectfully and provide a safe working environment free from harassment, discrimination, or threats.': 'Trate nossa equipe com respeito e forneça um ambiente de trabalho seguro, livre de assédio, discriminação ou ameaças.',
+    'Advise us of any special surface requirements (e.g., marble, specialty finishes) before service begins.': 'Informe-nos sobre quaisquer requisitos especiais de superfície (ex.: mármore, acabamentos especiais) antes do início do serviço.',
+    'We are not responsible for pre-existing damage or instability (loose fixtures, broken blinds, unsecured shelves).': 'Não nos responsabilizamos por danos pré-existentes ou instabilidade (acessórios soltos, persianas quebradas, prateleiras não fixadas).',
+    'We may create marketing materials, ads, and content as part of our services. You grant us permission to use your business information and approved assets for marketing purposes.': 'Podemos criar materiais de marketing, anúncios e conteúdo como parte de nossos serviços. Você nos concede permissão para usar as informações do seu negócio e ativos aprovados para fins de marketing.',
+    'You are responsible for providing accurate business information and approving any public-facing materials before launch.': 'Você é responsável por fornecer informações precisas sobre o negócio e aprovar quaisquer materiais públicos antes do lançamento.',
+    'Recurring schedules (weekly, biweekly, monthly) are subject to calendar availability and may shift around holidays.': 'Agendamentos recorrentes (semanais, quinzenais, mensais) estão sujeitos à disponibilidade do calendário e podem mudar em torno de feriados.',
+    'Pricing may change if the scope, frequency, or property condition changes. We will notify you of adjustments before charging.': 'Os preços podem mudar se o escopo, frequência ou condição da propriedade mudarem. Notificaremos sobre ajustes antes de cobrar.',
+    'You may pause or cancel recurring services with notice as described in your service agreement.': 'Você pode pausar ou cancelar serviços recorrentes com aviso conforme descrito no seu contrato de serviço.',
+    'To the fullest extent permitted by law, we are not liable for indirect, incidental, or consequential damages.': 'Na extensão máxima permitida por lei, não somos responsáveis por danos indiretos, incidentais ou consequentes.',
+    'Our aggregate liability for any claim is limited to the amount you paid for the service giving rise to the claim.': 'Nossa responsabilidade total para qualquer reclamação é limitada ao valor pago pelo serviço que originou a reclamação.',
+    'We are not responsible for losses arising from undisclosed hazards, improper installations, or normal wear and tear.': 'Não somos responsáveis por perdas decorrentes de riscos não divulgados, instalações inadequadas ou desgaste natural.',
+    'You agree not to misuse the site (including scraping, reverse engineering, or interfering with security features) or use our brand without consent.': 'Você concorda em não usar indevidamente o site (incluindo raspagem, engenharia reversa ou interferência em recursos de segurança) ou usar nossa marca sem consentimento.',
+    "We may reference or integrate third-party services (e.g., payments, scheduling). Those providers' terms and privacy policies apply to their services; we are not responsible for their content or practices.": 'Podemos referenciar ou integrar serviços de terceiros (ex.: pagamentos, agendamento). Os termos e políticas de privacidade desses provedores se aplicam aos seus serviços; não somos responsáveis por seu conteúdo ou práticas.',
+    'We may update these terms periodically. The "Last updated" date reflects the latest version. Continued use after changes means you accept the revised terms.': 'Podemos atualizar estes termos periodicamente. A data "Última atualização" reflete a versão mais recente. O uso contínuo após as alterações significa que você aceita os termos revisados.',
+    'We may suspend or terminate access if you violate these terms, create unsafe conditions, or engage in fraud or abuse.': 'Podemos suspender ou encerrar o acesso se você violar estes termos, criar condições inseguras ou envolver-se em fraude ou abuso.',
+    'If you have questions or concerns about these Terms of Service, contact us:': 'Se você tiver dúvidas ou preocupações sobre estes Termos de Serviço, entre em contato conosco:',
   }
 } as const;
 
