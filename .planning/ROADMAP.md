@@ -8,17 +8,14 @@
 - ✅ **v1.3 Links Page Upgrade** — Phases 10-14 (shipped 2026-04-20)
 - ✅ **v1.4 Admin Presentations Page** — Phases 15-20 (shipped 2026-04-22)
 - ✅ **v1.5 Blog Post Automation** — Phases 21-24 (shipped 2026-04-24)
-- 🔄 **v1.6 Skale Hub Weekly Live Gate** — Phases 25-29 (active)
+- ✅ **v1.6 Skale Hub Weekly Live Gate** — Phases 25-29 (shipped 2026-05-02)
+- 🔄 **v1.7 Translation System Completeness** — Phase 30 (active)
 
 ## Active
 
-**v1.6 Skale Hub Weekly Live Gate** — Phases 25-29
+**v1.7 Translation System Completeness** — Phase 30
 
-- [x] **Phase 25: Foundation** — additive tables, shared schema, participant identity model, storage foundation
-- [x] **Phase 26: API & Tracking** — public gate endpoints, admin live APIs, active-live enforcement, tracking
-- [x] **Phase 27: Public Experience** — integrated Skale Hub page, registration flow, unlock state, empty state
-- [x] **Phase 28: Admin Management** — admin section, live CRUD, active/inactive/ended controls
-- [x] **Phase 29: Analytics & Reporting** — summary cards, participant history, per-live analytics, QA polish
+- [ ] **Phase 30: Translation System Overhaul** — eliminate all hardcoded strings, fix missing/broken/unused keys, achieve 100% PT coverage with zero API fallbacks, add build-time validation
 
 ## Shipped Milestones
 
@@ -141,6 +138,7 @@ _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
 | 27. Public Experience | v1.6 | 1/1 | Complete | 2026-05-02 |
 | 28. Admin Management | v1.6 | 1/1 | Complete | 2026-05-02 |
 | 29. Analytics & Reporting | v1.6 | 1/1 | Complete | 2026-05-02 |
+| 30. Translation System Overhaul | v1.7 | 0/4 | In progress | - |
 
 ---
 
@@ -342,3 +340,16 @@ Plans:
 
 _Last updated: 2026-04-22 — Phase 20 complete (2/2 plans); PRES-17–22 all delivered; v1.4 feature-complete_
 _Last updated: 2026-05-02 - v1.6 Skale Hub Weekly Live Gate shipped (Phases 25-29)_
+
+### Phase 30: Translation System Overhaul
+
+**Goal:** Every visible string in the site (public pages and admin panel) is covered by a static key in `translations.ts` — zero hardcoded strings, zero missing keys, zero dead keys, and TypeScript-enforced key safety. PT coverage is 100% with no API fallbacks.
+**Requirements:** TRX-01, TRX-02, TRX-03, TRX-04, TRX-05, TRX-06, TRX-07, TRX-08, TRX-09, TRX-10, TRX-11
+**Depends on:** None (standalone polish phase)
+**Plans:** 4 plans
+
+Plans:
+- [ ] 30-01-PLAN.md — TypeScript enforcement + dead key removal + 404 page fix (TRX-07, TRX-08, TRX-09, TRX-10)
+- [ ] 30-02-PLAN.md — PresentationsSection missing keys + LeadsSection/SEOSection/NewFormDialog/LinksSection t() wiring (TRX-01, TRX-02, TRX-03, TRX-04, TRX-05)
+- [ ] 30-03-PLAN.md — DashboardSection + EstimatesSection — add useTranslation from scratch (TRX-01, TRX-04, TRX-05)
+- [ ] 30-04-PLAN.md — PrivacyPolicy + TermsOfService static key coverage + final audit (TRX-01, TRX-06, TRX-09, TRX-11)
