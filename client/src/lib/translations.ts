@@ -306,7 +306,6 @@ export const translations = {
     'Upload icon': 'Enviar ícone',
     'Automatically picks an icon based on the destination URL.': 'Escolhe automaticamente um ícone com base na URL de destino.',
     'Use automatic icon': 'Usar ícone automático',
-
     // Admin — Links Page Live Preview (Phase 13-03)
     'Refresh': 'Atualizar',
     'Refresh preview': 'Atualizar pré-visualização',
@@ -413,6 +412,7 @@ export const translations = {
     'Configured': 'Configurado',
     'Disconnected': 'Desconectado',
     'Company name': 'Nome da empresa',
+    'Address': 'Endereço',
     // Admin — Estimates Section (Phase 30)
     'Estimates': 'Orçamentos',
     'Create and manage client proposals — each generates a shareable link': 'Crie e gerencie propostas para clientes — cada uma gera um link compartilhável',
