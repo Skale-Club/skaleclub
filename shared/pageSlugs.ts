@@ -6,6 +6,7 @@ export interface PageSlugs {
   faq: string;
   blog: string;
   portfolio: string;
+  hub: string;
   links: string;
   vcard: string;
 }
@@ -18,6 +19,7 @@ export const DEFAULT_PAGE_SLUGS: PageSlugs = {
   faq: "faq",
   blog: "blog",
   portfolio: "portfolio",
+  hub: "skale-hub",
   links: "links",
   vcard: "vcard",
 };
@@ -51,6 +53,7 @@ export function resolvePageSlugs(pageSlugs?: Partial<PageSlugs> | null): PageSlu
     faq: sanitizeSingleSlug(pageSlugs?.faq, DEFAULT_PAGE_SLUGS.faq),
     blog: sanitizeSingleSlug(pageSlugs?.blog, DEFAULT_PAGE_SLUGS.blog),
     portfolio: sanitizeSingleSlug(pageSlugs?.portfolio, DEFAULT_PAGE_SLUGS.portfolio),
+    hub: sanitizeSingleSlug(pageSlugs?.hub, DEFAULT_PAGE_SLUGS.hub),
     links: sanitizeSingleSlug(pageSlugs?.links, DEFAULT_PAGE_SLUGS.links),
     vcard: sanitizeSingleSlug(pageSlugs?.vcard, DEFAULT_PAGE_SLUGS.vcard),
   };
@@ -76,6 +79,7 @@ export function buildPagePaths(pageSlugs?: Partial<PageSlugs> | null) {
     blogPostPattern: `${blog}/:slug`,
     blogPost: (slug: string) => `${blog}/${slug}`,
     portfolio: toPath(slugs.portfolio),
+    hub: toPath(slugs.hub),
     links: toPath(slugs.links),
     vcard,
     vcardPattern: `${vcard}/:username`,

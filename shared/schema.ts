@@ -7,3 +7,4 @@ export * from "./schema/sales.js";
 export * from "./schema/estimates.js";
 export * from "./schema/presentations.js";
 export * from "./schema/blog.js";
+export * from "./schema/hub.js";

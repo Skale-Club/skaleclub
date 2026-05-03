@@ -1,5 +1,22 @@
 # Milestones
 
+## v1.5 Blog Post Automation (Shipped: 2026-04-24)
+
+**Phases completed:** 4 phases, 6 plans, 13 tasks
+**Files modified:** 45 | **Lines:** +6,343 / -84
+**Git range:** 3877653 → HEAD | **Timeline:** 2026-04-22 (single-day sprint)
+
+**Key accomplishments:**
+
+- `blog_settings` + `blog_generation_jobs` SQL tables with typed Drizzle/Zod schemas and 4 IStorage stubs — full foundation for the automation pipeline
+- `BlogGenerator.generate()` with deterministic skip validation (no-settings, disabled, cadence, locked) and guarded global DB lock preventing duplicate runs across Vercel workers
+- Full Gemini pipeline: topic → structured JSON draft (title, HTML, excerpt, meta, tags) → optional feature image → Supabase Storage upload → draft blog post creation
+- Feature-image best-effort fallback — draft created with `featureImageUrl: null` when Gemini image fails; pipeline never blocked
+- REST API: `GET/PUT /api/blog/settings`, `POST /api/blog/generate` (admin-auth), `POST /api/blog/cron/generate` (CRON_SECRET) — registered before blog wildcard to prevent route interception
+- `server/cron.ts` hourly runner with Vercel guard + `BlogAutomationPanel` with 5 settings fields, Generate Now button (spinner + toasts), `lastRunAt` status bar, and Posts/Automation tab strip
+
+---
+
 ## v1.2 Estimates System (Shipped: 2026-04-20)
 
 **Phases completed:** 4 phases, 8 plans, 9 tasks

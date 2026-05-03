@@ -1,39 +1,38 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.5
-milestone_name: Blog Post Automation
-status: completed
-last_updated: "2026-04-22T18:36:58.966Z"
-last_activity: 2026-04-22
+milestone: v1.6
+milestone_name: Skale Hub Weekly Live Gate
+status: archived
+last_updated: "2026-05-02"
+last_activity: 2026-05-02
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 6
-  completed_plans: 6
+  total_phases: 5
+  completed_phases: 5
+  total_plans: 5
+  completed_plans: 5
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** Milestone complete
+**Status:** v1.6 shipped - all Skale Hub phases complete
 
 ---
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-04-22)
+See: `.planning/PROJECT.md` (updated 2026-05-02)
 
-**Core value:** Admin configures a Gemini-powered blog post generator that runs on schedule and creates SEO-optimized draft posts ready for human review and publish.
-**Current focus:** Phase 24 — admin-ui-automation-settings
+**Core value:** Clients receive a proposal link and experience Skale Club services as an immersive, professional presentation — not a PDF.
+**Current focus:** Milestone complete - ready for next milestone
 
 ---
 
 ## Current Position
 
-Phase: 24
-Plan: Not started
-Status: Phase complete — ready for verification
-Last activity: 2026-04-22
+Milestone: v1.6 shipped
+Status: All phases complete
+Last activity: 2026-05-02
 
 ---
 
@@ -210,6 +209,18 @@ None.
 
 ---
 
+## v1.6 Phase Plan
+
+| Phase | Plans | Status |
+|-------|-------|--------|
+| 25. Foundation | 1/1 | Complete |
+| 26. API & Tracking | 1/1 | Complete |
+| 27. Public Experience | 1/1 | Complete |
+| 28. Admin Management | 1/1 | Complete |
+| 29. Analytics & Reporting | 1/1 | Complete |
+
+---
+
 ## v1.5 Phase Plan
 
 | Phase | Plans | Status |
@@ -248,6 +259,12 @@ None.
 | 2026-04-22 | v1.5 milestone initialized | Blog Post Automation — 4 phases (21–24), 19 requirements defined; Phase 21 ready to plan |
 | 2026-04-22 | Phase 21 complete | BLOG-01-04 verified; Phase 22 is now the active focus |
 | 2026-04-22 | Plan 22-01 executed | Blog Gemini helper + skip/lock generator foundation shipped (3 commits: 106922f, 207493f, dd15614); Plan 22-02 next |
+| 2026-05-02 | v1.6 milestone initialized | Skale Hub Weekly Live Gate defined (18 requirements, 5 phases); Phase 25 ready to execute |
+| 2026-05-02 | Phase 25 complete | Skale Hub foundation shipped: migration, shared schema, and storage methods verified; Phase 26 next |
+| 2026-05-02 | Phase 26 complete | Skale Hub API contract shipped: public active/register/access routes plus admin live and analytics APIs; Phase 27 next |
+| 2026-05-02 | Phase 27 complete | Public Skale Hub page shipped with slug routing, gate UI, unlock state, and empty state; Phase 28 next |
+| 2026-05-02 | Phase 28 complete | Admin Skale Hub management shipped with live CRUD, activation, and quick participation review; Phase 29 next |
+| 2026-05-02 | Phase 29 complete | Analytics cards and participant history shipped; v1.6 Skale Hub milestone complete |
 
 | 2026-04-28 | Phase 25 added | Services Carousel Polish — fade masks, modal click, scroll lock |
 | 2026-04-28 | Phase 25 context gathered | 4 areas decided: shadcn Dialog migration, CSS mask-image, pause-on-modal-open, 5px drag threshold; ready for /gsd:plan-phase 25 |
@@ -256,4 +273,4 @@ None.
 | 2026-04-29 | Plan 25-02 executed | ServiceDetailModal migrated to shadcn Dialog + browser back-button close + ServicesSection wires paused={isModalOpen}; npm run check clean (commit 1423e5e) |
 | 2026-04-29 | Phase 25 UAT passed | User confirmed fade mask, click-to-open modal, scroll lock, and carousel pause all working in browser |
 
-*Last updated: 2026-04-29 — Phase 25 shipped (UAT passed)*
+*Last updated: 2026-05-02 - v1.6 shipped; all Skale Hub phases complete*

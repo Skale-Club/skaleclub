@@ -35,6 +35,7 @@ const PAGE_SLUG_FIELDS: { key: keyof PageSlugs; label: string; placeholder: stri
   { key: 'faq', label: 'FAQ', placeholder: 'faq', helpText: 'Frequently asked questions page.' },
   { key: 'portfolio', label: 'Portfolio', placeholder: 'portfolio', helpText: 'Portfolio/services listing page.' },
   { key: 'blog', label: 'Blog', placeholder: 'blog', helpText: 'Blog index. Posts become /blog-slug/post-slug.' },
+  { key: 'hub', label: 'Skale Hub', placeholder: 'skale-hub', helpText: 'Weekly live registration page.' },
   { key: 'links', label: 'Links', placeholder: 'links', helpText: 'Bio links landing page.' },
   { key: 'vcard', label: 'VCard', placeholder: 'vcard', helpText: 'Digital card prefix. Profiles become /vcard-slug/username.' },
   { key: 'thankYou', label: 'Thank You', placeholder: 'thankyou', helpText: 'Post-form confirmation page.' },

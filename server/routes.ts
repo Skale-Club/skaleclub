@@ -29,6 +29,7 @@ import { registerLinksPageRoutes } from "./routes/linksPage.js";
 import { registerBrandGuidelinesRoutes } from "./routes/brandGuidelines.js";
 import { registerPresentationsChatRoutes } from "./routes/presentationsChat.js";
 import { registerBlogAutomationRoutes } from "./routes/blogAutomation.js";
+import { registerSkaleHubRoutes } from "./routes/skaleHub.js";
 import { db, pool } from "./db.js";
 import { users } from "#shared/schema.js";
 import { eq } from "drizzle-orm";
@@ -135,6 +136,7 @@ export async function registerRoutes(
   registerFormRoutes(app);
   registerIntegrationRoutes(app);
   registerEstimatesRoutes(app);
+  registerSkaleHubRoutes(app);
   registerPresentationsRoutes(app);
   registerBrandGuidelinesRoutes(app);
   registerPresentationsChatRoutes(app);
