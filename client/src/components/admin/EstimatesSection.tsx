@@ -58,6 +58,7 @@ import {
 } from '@/lib/thumbnails';
 import type { Estimate, EstimateWithStats, EstimateServiceItem, CatalogServiceItem } from '@shared/schema';
 import type { PortfolioService } from '@shared/schema';
+import { useTranslation } from '@/hooks/useTranslation';
 
 function normalizeEstimateSlug(value: string): string {
   return value
@@ -158,6 +159,7 @@ function EstimateDialogForm({
   onSave: (companyName: string, contactName: string, note: string | null, services: EstimateServiceItem[], accessCode: string | null) => void;
   isPending: boolean;
 }) {
+  const { t } = useTranslation();
   const [companyName, setCompanyName] = useState(editingEstimate?.companyName ?? '');
   const [contactName, setContactName] = useState(editingEstimate?.contactName ?? '');
   const [note, setNote] = useState(editingEstimate?.note ?? '');
@@ -231,7 +233,7 @@ function EstimateDialogForm({
   return (
     <>
       <DialogHeader>
-        <DialogTitle>{editingEstimate ? 'Edit Estimate' : 'New Estimate'}</DialogTitle>
+        <DialogTitle>{editingEstimate ? t('Edit Estimate') : t('New Estimate')}</DialogTitle>
       </DialogHeader>
 
       <form
@@ -246,7 +248,7 @@ function EstimateDialogForm({
         <div className="flex flex-col gap-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="companyName">Company name</Label>
+              <Label htmlFor="companyName">{t('Company name')}</Label>
               <Input
                 id="companyName"
                 placeholder="Acme Corp"
@@ -255,7 +257,7 @@ function EstimateDialogForm({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="contactName">Contact name</Label>
+              <Label htmlFor="contactName">{t('Contact name')}</Label>
               <Input
                 id="contactName"
                 placeholder="John Smith"
@@ -265,10 +267,10 @@ function EstimateDialogForm({
             </div>
           </div>
           {!atLeastOne && (
-            <p className="text-xs text-destructive">At least one of company or contact name is required.</p>
+            <p className="text-xs text-destructive">{t('At least one of company or contact name is required.')}</p>
           )}
         <div className="flex flex-col gap-1.5">
-            <Label htmlFor="note">Note (optional)</Label>
+            <Label htmlFor="note">{t('Note (optional)')}</Label>
             <Textarea
               id="note"
               placeholder="Any context about this proposal..."
@@ -278,7 +280,7 @@ function EstimateDialogForm({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="accessCode">Access code (optional)</Label>
+            <Label htmlFor="accessCode">{t('Access code (optional)')}</Label>
             <Input
               id="accessCode"
               type="text"
@@ -286,7 +288,7 @@ function EstimateDialogForm({
               value={accessCode}
               onChange={(e) => setAccessCode(e.target.value)}
             />
-            <p className="text-xs text-muted-foreground">Leave blank to disable gate</p>
+            <p className="text-xs text-muted-foreground">{t('Leave blank to disable gate')}</p>
           </div>
         </div>
 
@@ -295,7 +297,7 @@ function EstimateDialogForm({
         {/* Services section */}
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-bold">Services</span>
+            <span className="text-sm font-bold">{t('Services')}</span>
             <div className="flex gap-2">
               <Button
                 type="button"
@@ -303,7 +305,7 @@ function EstimateDialogForm({
                 size="sm"
                 onClick={() => setShowCatalogPicker((v) => !v)}
               >
-                Add from catalog
+                {t('Add from catalog')}
               </Button>
               <Button
                 type="button"
@@ -311,7 +313,7 @@ function EstimateDialogForm({
                 size="sm"
                 onClick={handleAddCustomRow}
               >
-                Add custom row
+                {t('Add custom row')}
               </Button>
             </div>
           </div>
@@ -359,11 +361,11 @@ function EstimateDialogForm({
 
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" variant="outline">Cancel</Button>
+            <Button type="button" variant="outline">{t('Cancel')}</Button>
           </DialogClose>
           <Button type="submit" disabled={isPending}>
             {isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-            {editingEstimate ? 'Save Changes' : 'Create Estimate'}
+            {editingEstimate ? t('Save Changes') : t('Create Estimate')}
           </Button>
         </DialogFooter>
       </form>
@@ -376,6 +378,7 @@ function EstimateDialogForm({
 // ──────────────────────────────────────────────────────────
 
 export function EstimatesSection() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEstimate, setEditingEstimate] = useState<Estimate | null>(null);
@@ -461,10 +464,10 @@ export function EstimatesSection() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/estimates'] });
       setIsDialogOpen(false);
-      toast({ title: 'Estimate created' });
+      toast({ title: t('Estimate created') });
     },
     onError: (err: Error) => {
-      toast({ title: 'Failed to create estimate', description: err.message, variant: 'destructive' });
+      toast({ title: t('Failed to create estimate'), description: err.message, variant: 'destructive' });
     },
   });
 
@@ -483,10 +486,10 @@ export function EstimatesSection() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/estimates'] });
       setIsDialogOpen(false);
-      toast({ title: 'Estimate updated' });
+      toast({ title: t('Estimate updated') });
     },
     onError: (err: Error) => {
-      toast({ title: 'Failed to update estimate', description: err.message, variant: 'destructive' });
+      toast({ title: t('Failed to update estimate'), description: err.message, variant: 'destructive' });
     },
   });
 
@@ -496,11 +499,11 @@ export function EstimatesSection() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/estimates'] });
-      toast({ title: 'Estimate deleted' });
+      toast({ title: t('Estimate deleted') });
       setDeleteTarget(null);
     },
     onError: (err: Error) => {
-      toast({ title: 'Failed to delete estimate', description: err.message, variant: 'destructive' });
+      toast({ title: t('Failed to delete estimate'), description: err.message, variant: 'destructive' });
     },
   });
 
@@ -513,10 +516,10 @@ export function EstimatesSection() {
       queryClient.invalidateQueries({ queryKey: ['/api/estimates'] });
       setEditingAccessCodeEstimate(null);
       setAccessCodeValue('');
-      toast({ title: 'Access code updated' });
+      toast({ title: t('Access code updated') });
     },
     onError: (err: Error) => {
-      toast({ title: 'Failed to update access code', description: err.message, variant: 'destructive' });
+      toast({ title: t('Failed to update access code'), description: err.message, variant: 'destructive' });
     },
   });
 
@@ -553,10 +556,10 @@ export function EstimatesSection() {
       );
       setEditingSlugId(null);
       setSlugValue('');
-      toast({ title: 'Slug updated' });
+      toast({ title: t('Slug updated') });
     },
     onError: (err: Error) => {
-      toast({ title: 'Failed to update slug', description: err.message, variant: 'destructive' });
+      toast({ title: t('Failed to update slug'), description: err.message, variant: 'destructive' });
     },
   });
 
@@ -601,8 +604,8 @@ export function EstimatesSection() {
   return (
     <div className="space-y-6">
       <SectionHeader
-        title="Estimates"
-        description="Create and manage client proposals — each generates a shareable link"
+        title={t('Estimates')}
+        description={t('Create and manage client proposals — each generates a shareable link')}
         icon={<Receipt className="w-5 h-5" />}
         action={
           <div className="flex flex-col sm:flex-row items-center gap-3">
@@ -635,7 +638,7 @@ export function EstimatesSection() {
               className="gap-2 w-full sm:w-auto"
             >
               <Plus className="w-4 h-4" />
-              New Estimate
+              {t('New Estimate')}
             </Button>
           </div>
         }
@@ -649,8 +652,8 @@ export function EstimatesSection() {
         ) : estimates.length === 0 ? (
           <EmptyState
             icon={<Receipt />}
-            title="No estimates yet"
-            description="Create your first estimate to generate a shareable proposal link."
+            title={t('No estimates yet')}
+            description={t('Create your first estimate to generate a shareable proposal link.')}
           />
         ) : (
           <div className="space-y-3">
@@ -807,18 +810,18 @@ export function EstimatesSection() {
         <AlertDialog open={true} onOpenChange={(o) => !o && setDeleteTarget(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete estimate?</AlertDialogTitle>
+              <AlertDialogTitle>{t('Delete estimate?')}</AlertDialogTitle>
               <AlertDialogDescription>
                 This will permanently remove the estimate for {deleteTarget.clientName}. This action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel>{t('Cancel')}</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => deleteMutation.mutate(deleteTarget.id)}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                Delete
+                {t('Delete')}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -850,7 +853,7 @@ export function EstimatesSection() {
         <Dialog open={!!editingAccessCodeEstimate} onOpenChange={(o) => !o && setEditingAccessCodeEstimate(null)}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Password Protection</DialogTitle>
+              <DialogTitle>{t('Password Protection')}</DialogTitle>
             </DialogHeader>
             <form
               onSubmit={(e) => {
@@ -863,7 +866,7 @@ export function EstimatesSection() {
               className="flex flex-col gap-4"
             >
               <div className="flex flex-col gap-2">
-                <Label htmlFor="accessCode">Access code (optional)</Label>
+                <Label htmlFor="accessCode">{t('Access code (optional)')}</Label>
                 <Input
                   id="accessCode"
                   type="text"
@@ -872,15 +875,15 @@ export function EstimatesSection() {
                   onChange={(e) => setAccessCodeValue(e.target.value)}
                   autoFocus
                 />
-                <p className="text-xs text-muted-foreground">Leave blank to remove password protection</p>
+                <p className="text-xs text-muted-foreground">{t('Leave blank to remove password protection')}</p>
               </div>
               <DialogFooter>
                 <DialogClose asChild>
-                  <Button type="button" variant="outline">Cancel</Button>
+                  <Button type="button" variant="outline">{t('Cancel')}</Button>
                 </DialogClose>
                 <Button type="submit" disabled={updateAccessCodeMutation.isPending}>
                   {updateAccessCodeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                  Save
+                  {t('Save')}
                 </Button>
               </DialogFooter>
             </form>
