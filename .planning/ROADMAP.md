@@ -138,7 +138,7 @@ _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
 | 27. Public Experience | v1.6 | 1/1 | Complete | 2026-05-02 |
 | 28. Admin Management | v1.6 | 1/1 | Complete | 2026-05-02 |
 | 29. Analytics & Reporting | v1.6 | 1/1 | Complete | 2026-05-02 |
-| 30. Translation System Overhaul | v1.7 | 2/4 | In Progress|  |
+| 30. Translation System Overhaul | v1.7 | 4/4 | Complete   | 2026-05-03 |
 
 ---
 
@@ -346,10 +346,10 @@ _Last updated: 2026-05-02 - v1.6 Skale Hub Weekly Live Gate shipped (Phases 25-2
 **Goal:** Every visible string in the site (public pages and admin panel) is covered by a static key in `translations.ts` — zero hardcoded strings, zero missing keys, zero dead keys, and TypeScript-enforced key safety. PT coverage is 100% with no API fallbacks.
 **Requirements:** TRX-01, TRX-02, TRX-03, TRX-04, TRX-05, TRX-06, TRX-07, TRX-08, TRX-09, TRX-10, TRX-11
 **Depends on:** None (standalone polish phase)
-**Plans:** 2/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 - [x] 30-01-PLAN.md — TypeScript enforcement + dead key removal + 404 page fix (TRX-07, TRX-08, TRX-09, TRX-10)
 - [x] 30-02-PLAN.md — PresentationsSection missing keys + LeadsSection/SEOSection/NewFormDialog/LinksSection t() wiring (TRX-01, TRX-02, TRX-03, TRX-04, TRX-05)
-- [ ] 30-03-PLAN.md — DashboardSection + EstimatesSection — add useTranslation from scratch (TRX-01, TRX-04, TRX-05)
-- [ ] 30-04-PLAN.md — PrivacyPolicy + TermsOfService static key coverage + final audit (TRX-01, TRX-06, TRX-09, TRX-11)
+- [x] 30-03-PLAN.md — DashboardSection + EstimatesSection — add useTranslation from scratch (TRX-01, TRX-04, TRX-05)
+- [x] 30-04-PLAN.md — PrivacyPolicy + TermsOfService static key coverage + final audit (TRX-01, TRX-06, TRX-09, TRX-11)
