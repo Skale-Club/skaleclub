@@ -13,7 +13,6 @@ export const translations = {
     // Hero Section
     'Learn How to Generate Your Own Clients in the USA': 'Aprenda a Gerar Seus Próprios Clientes nos EUA',
     '1-on-1 Mentorship in Digital Marketing for Brazilian Entrepreneurs': 'Mentoria 1-a-1 em Marketing Digital para Empresários Brasileiros',
-    'Schedule Free Consultation': 'Agendar Conversa Gratuita',
     'Schedule a Free Call': 'Agendar Conversa Gratuita',
     
     // Trust Badges / Benefits
@@ -67,19 +66,6 @@ export const translations = {
     'Duration': 'Duração',
     'Date': 'Data',
     'Time': 'Hora',
-    
-    // Booking
-    'Select Service': 'Selecionar Serviço',
-    'Select Date': 'Selecionar Data',
-    'Select Time': 'Selecionar Horário',
-    'Your Information': 'Suas Informações',
-    'Booking Summary': 'Resumo da Reserva',
-    'Total': 'Total',
-    'Subtotal': 'Subtotal',
-    'Tax': 'Imposto',
-    'Confirm Booking': 'Confirmar Reserva',
-    'Booking Confirmed': 'Reserva Confirmada',
-    'Thank you for your booking!': 'Obrigado pela sua reserva!',
     
     // Admin
     'Dashboard': 'Painel',
@@ -249,8 +235,8 @@ export const translations = {
     'Please fill in the additional field': 'Por favor, preencha o campo adicional',
 
     // 404 Page
-    '404 Page Not Found': '404 Página Não Encontrada',
-    'The page you are looking for does not exist.': 'A página que você procura não existe.',
+    'Page Not Found': 'Página Não Encontrada',
+    'The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.': 'A página que você procura pode ter sido removida, teve seu nome alterado ou está temporariamente indisponível.',
 
     // Privacy Policy & Terms common
     'Email:': 'E-mail:',
@@ -271,9 +257,6 @@ export const translations = {
     'Join the forward-thinking companies already scaling with Skale Club.': 'Junte-se às empresas inovadoras que já estão escalando com a Skale Club.',
     'Book a Strategy Session': 'Agendar Sessão Estratégica',
     'Back to Home': 'Voltar ao Início',
-    'Open tool': 'Abrir ferramenta',
-    'Open tool in new tab': 'Abrir ferramenta em nova aba',
-    'We help companies achieve unprecedented growth through modern marketing systems.': 'Ajudamos empresas a alcançar crescimento sem precedentes através de sistemas modernos de marketing.',
 
     // Admin — Links Page (Phase 12)
     'Links Page': 'Página de Links',
@@ -301,7 +284,6 @@ export const translations = {
     'Visible': 'Visível',
     'clicks': 'cliques',
     'Live Preview': 'Pré-visualização ao Vivo',
-    'Live preview coming in Phase 13': 'Pré-visualização ao vivo em breve',
     'Drag to reorder': 'Arraste para reordenar',
 
     // Admin — Links Page Uploaders (Phase 12-02)
