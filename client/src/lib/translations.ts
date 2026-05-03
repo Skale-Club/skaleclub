@@ -285,6 +285,7 @@ export const translations = {
     'clicks': 'cliques',
     'Live Preview': 'Pré-visualização ao Vivo',
     'Drag to reorder': 'Arraste para reordenar',
+    'My Portfolio': 'Meu Portfólio',
 
     // Admin — Links Page Uploaders (Phase 12-02)
     'Drop image here or click to browse': 'Solte a imagem aqui ou clique para procurar',
@@ -369,6 +370,13 @@ export const translations = {
     'Open presentation': 'Abrir apresentação',
     'Click to rename': 'Clique para renomear',
     'No slides yet': 'Nenhum slide ainda',
+
+    // Admin — Leads Section (Phase 30)
+    'Leads': 'Leads',
+    'All captured leads with ratings and follow-up status': 'Todos os leads capturados com classificações e status de acompanhamento',
+
+    // Admin — Forms / SEO (Phase 30)
+    'e.g. Contact Us': 'ex. Fale Conosco',
 
     // Presentation Viewer (Phase 20)
     'Enter access code': 'Digite o código de acesso',
