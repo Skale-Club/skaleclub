@@ -108,16 +108,16 @@
 ### Key Hygiene
 
 - [ ] **TRX-06**: All keys defined in `translations.ts` that are not referenced by any `t()` call in the codebase are removed — zero dead keys.
-- [ ] **TRX-07**: `translations.ts` contains no duplicate keys.
+- [x] **TRX-07**: `translations.ts` contains no duplicate keys.
 
 ### Build-Time Validation
 
-- [ ] **TRX-08**: TypeScript enforces that `t()` only accepts keys of type `TranslationKey` — passing an undefined key causes a compile-time error.
-- [ ] **TRX-09**: `npm run check` passes with zero TypeScript errors after all translation changes.
+- [x] **TRX-08**: TypeScript enforces that `t()` only accepts keys of type `TranslationKey` — passing an undefined key causes a compile-time error.
+- [x] **TRX-09**: `npm run check` passes with zero TypeScript errors after all translation changes.
 
 ### Correctness
 
-- [ ] **TRX-10**: The wrong 404 page message key is fixed — `not-found.tsx` uses the correct key that maps to the actual displayed copy.
+- [x] **TRX-10**: The wrong 404 page message key is fixed — `not-found.tsx` uses the correct key that maps to the actual displayed copy.
 - [ ] **TRX-11**: All PT translations are correct Brazilian Portuguese — no placeholder, English, or machine-translated strings left in `translations.ts`.
 
 ## Phase Mapping

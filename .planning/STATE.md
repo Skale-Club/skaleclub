@@ -1,21 +1,21 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.6
-milestone_name: Skale Hub Weekly Live Gate
-status: archived
-last_updated: "2026-05-02"
-last_activity: 2026-05-02
+milestone: v1.3
+milestone_name: and earlier)
+status: executing
+last_updated: "2026-05-03T20:22:18.724Z"
+last_activity: 2026-05-03
 progress:
   total_phases: 5
   completed_phases: 5
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 10
+  completed_plans: 10
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** v1.6 shipped - all Skale Hub phases complete
+**Status:** Ready to execute
 
 ---
 
@@ -24,15 +24,17 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-05-02)
 
 **Core value:** Clients receive a proposal link and experience Skale Club services as an immersive, professional presentation — not a PDF.
-**Current focus:** Milestone complete - ready for next milestone
+**Current focus:** Phase 30 — Translation System Overhaul
 
 ---
 
 ## Current Position
 
+Phase: 30 (Translation System Overhaul) — EXECUTING
+Plan: 2 of 4
 Milestone: v1.6 shipped
-Status: All phases complete
-Last activity: 2026-05-02
+Status: Ready to execute
+Last activity: 2026-05-03
 
 ---
 
@@ -71,6 +73,7 @@ Last activity: 2026-05-02
 | Phase 23 P01 | 2min | 2 tasks | 4 files |
 | Phase 24-admin-ui-automation-settings P01 | 3min | 2 tasks | 2 files |
 | Phase 24-admin-ui-automation-settings P02 | ~3min | 2 tasks | 1 files |
+| Phase 30-translation-system-overhaul P01 | 8min | 3 tasks | 5 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -196,6 +199,7 @@ Last activity: 2026-05-02
 - [Phase 24-admin-ui-automation-settings]: getLatestBlogGenerationJob returns undefined (storage) converted to null at route layer via job ?? null — correct semantics at each layer
 - [Phase 24-admin-ui-automation-settings]: BlogAutomationPanel co-located in BlogSection.tsx before the exported component — matches EstimatesSection and IntegrationsSection patterns
 - [Phase 24-admin-ui-automation-settings]: activeTab defaults to 'posts' — preserves existing post list as primary view, automation is additive
+- [Phase 30-translation-system-overhaul]: useCallback overload cast pattern — primary overload (text: TranslationKey) enforces static strings; fallback (text: string) allows dynamic DB content to compile without cast
 
 ### Quick Tasks Completed
 
