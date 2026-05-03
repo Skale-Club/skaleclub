@@ -12,7 +12,9 @@ import { format } from 'date-fns';
 import type { BlogPost, Faq, Form, FormLead, LeadStatus } from '@shared/schema';
 import { SIDEBAR_MENU_ITEMS } from './shared/constants';
 import type { AdminSection, ChatSettingsData, CompanySettingsData, ConversationSummary, GHLSettings, TwilioSettings } from './shared/types';
+import { useTranslation } from '@/hooks/useTranslation';
 export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSection) => void }) {
+  const { t } = useTranslation();
   const dashboardMenuTitle = SIDEBAR_MENU_ITEMS.find((item) => item.id === 'dashboard')?.title ?? 'Dashboard';
   const [selectedFormId, setSelectedFormId] = useState<number | 'all'>('all');
   const { data: companySettings } = useQuery<CompanySettingsData>({ queryKey: ['/api/company-settings'] });
@@ -73,11 +75,11 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
   const faqList = faqs || [];
 
   const funnelStages: { label: string; value: LeadStatus }[] = [
-    { label: 'New', value: 'novo' },
-    { label: 'Contacted', value: 'contatado' },
-    { label: 'Qualified', value: 'qualificado' },
-    { label: 'Converted', value: 'convertido' },
-    { label: 'Discarded', value: 'descartado' },
+    { label: t('New'), value: 'novo' },
+    { label: t('Contacted'), value: 'contatado' },
+    { label: t('Qualified'), value: 'qualificado' },
+    { label: t('Converted'), value: 'convertido' },
+    { label: t('Discarded'), value: 'descartado' },
   ];
 
   const dashboardData = useMemo(() => {
@@ -160,12 +162,12 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
   };
 
   const profileChecks = [
-    { label: 'Company name', done: !!companySettings?.companyName?.trim() },
-    { label: 'Primary email', done: !!companySettings?.companyEmail?.trim() },
-    { label: 'Phone', done: !!companySettings?.companyPhone?.trim() },
-    { label: 'Address', done: !!companySettings?.companyAddress?.trim() },
-    { label: 'Main logo', done: !!(companySettings?.logoMain || companySettings?.logoIcon) },
-    { label: 'Hero content', done: !!(companySettings?.heroTitle || companySettings?.heroSubtitle) },
+    { label: t('Company name'), done: !!companySettings?.companyName?.trim() },
+    { label: t('Primary email'), done: !!companySettings?.companyEmail?.trim() },
+    { label: t('Phone'), done: !!companySettings?.companyPhone?.trim() },
+    { label: t('Address'), done: !!companySettings?.companyAddress?.trim() },
+    { label: t('Main logo'), done: !!(companySettings?.logoMain || companySettings?.logoIcon) },
+    { label: t('Hero content'), done: !!(companySettings?.heroTitle || companySettings?.heroSubtitle) },
   ];
   const completedProfileChecks = profileChecks.filter((item) => item.done).length;
   const brandProfilePercent = profileChecks.length ? Math.round((completedProfileChecks / profileChecks.length) * 100) : 0;
@@ -173,78 +175,78 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
   const integrationCards = [
     {
       label: 'Chat Widget',
-      status: chatSettings?.enabled ? 'Enabled' : 'Disabled',
+      status: chatSettings?.enabled ? t('Enabled') : t('Disabled'),
       active: !!chatSettings?.enabled,
     },
     {
       label: 'OpenAI',
-      status: openaiSettings?.enabled ? 'Enabled' : (openaiSettings?.hasKey ? 'Configured' : 'Disabled'),
+      status: openaiSettings?.enabled ? t('Enabled') : (openaiSettings?.hasKey ? t('Configured') : t('Disabled')),
       active: !!openaiSettings?.enabled,
     },
     {
       label: 'GoHighLevel',
-      status: ghlSettings?.isEnabled ? 'Enabled' : (ghlSettings?.locationId ? 'Configured' : 'Disconnected'),
+      status: ghlSettings?.isEnabled ? t('Enabled') : (ghlSettings?.locationId ? t('Configured') : t('Disconnected')),
       active: !!ghlSettings?.isEnabled,
     },
     {
       label: 'Twilio',
-      status: twilioSettings?.enabled ? 'Enabled' : (twilioSettings?.accountSid ? 'Configured' : 'Disabled'),
+      status: twilioSettings?.enabled ? t('Enabled') : (twilioSettings?.accountSid ? t('Configured') : t('Disabled')),
       active: !!twilioSettings?.enabled,
     },
   ];
 
   const topCards = [
     {
-      label: 'Total Leads',
+      label: t('Total Leads'),
       value: dashboardData.totalLeads,
       helper: `${dashboardData.qualification.hot} hot leads`,
       icon: Users,
       iconColor: 'text-blue-600'
     },
     {
-      label: 'Leads (7 Days)',
+      label: t('Leads (7 Days)'),
       value: dashboardData.leadsLast7Days,
       helper: `${dashboardData.leadsToday} today`,
       icon: Sparkles,
       iconColor: 'text-violet-600'
     },
     {
-      label: 'Hot Leads',
+      label: t('Hot Leads'),
       value: dashboardData.qualification.hot,
-      helper: 'High priority contacts',
+      helper: t('High priority contacts'),
       icon: Flame,
       iconColor: 'text-emerald-600'
     },
     {
-      label: 'Open Chats',
+      label: t('Open Chats'),
       value: dashboardData.openChats,
       helper: `${conversationsList.length} total threads`,
       icon: MessageSquare,
       iconColor: 'text-amber-600'
     },
     {
-      label: 'Complete Forms',
+      label: t('Complete Forms'),
       value: dashboardData.qualification.complete,
       helper: `${dashboardData.qualification.hot} hot leads`,
       icon: BadgeCheck,
       iconColor: 'text-cyan-600'
     },
     {
-      label: 'In Progress',
+      label: t('In Progress'),
       value: dashboardData.completion.inProgress,
-      helper: 'Last 24h activity',
+      helper: t('Last 24h activity'),
       icon: Check,
       iconColor: 'text-green-600'
     },
     {
-      label: 'Abandoned',
+      label: t('Abandoned'),
       value: dashboardData.completion.abandoned,
-      helper: 'Needs follow-up',
+      helper: t('Needs follow-up'),
       icon: Archive,
       iconColor: 'text-red-600'
     },
     {
-      label: 'Chat Response',
+      label: t('Chat Response'),
       value: responseTimeData?.formatted && responseTimeData.formatted !== 'No responses yet'
         ? responseTimeData.formatted
         : '-',
