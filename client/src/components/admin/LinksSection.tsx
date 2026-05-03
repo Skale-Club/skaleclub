@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import type { TranslationKey } from '@/lib/translations';
 import { useQuery } from '@tanstack/react-query';
 import {
   Check,
@@ -101,7 +102,7 @@ function SortableLinkRow({
   index: number;
   onUpdate: (i: number, updates: Partial<LinksPageLink>) => void;
   onRemove: (i: number) => void;
-  t: (s: string) => string;
+  t: (s: TranslationKey) => string;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: link.id!,

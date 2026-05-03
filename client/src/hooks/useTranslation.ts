@@ -1,6 +1,6 @@
 import { useContext, useCallback, useEffect, useState } from 'react';
 import { LanguageContext } from '@/context/LanguageContext';
-import { translations as staticTranslations } from '@/lib/translations';
+import { translations as staticTranslations, type TranslationKey } from '@/lib/translations';
 
 // In-memory translation cache
 const translationCache = new Map<string, string>();
@@ -128,7 +128,7 @@ export function useTranslation() {
 
     // 2. Check static dictionary (instant, no API call)
     if (language === 'pt') {
-      const staticValue = staticTranslations.pt[text as keyof typeof staticTranslations.pt];
+      const staticValue = staticTranslations.pt[text as TranslationKey];
       if (staticValue) {
         translationCache.set(cacheKey, staticValue);
         return staticValue;
@@ -140,7 +140,13 @@ export function useTranslation() {
 
     // Return original text as fallback while loading
     return text;
-  }, [language, updateCounter]);
+  }, [language, updateCounter]) as {
+    // Overload 1: Static keys — TypeScript enforces at compile time that string literals
+    // are present in TranslationKey (i.e., defined in translations.ts).
+    (text: TranslationKey): string;
+    // Overload 2: Dynamic strings from DB content fall through to the API batch translator.
+    (text: string): string;
+  };
 
   return {
     language,

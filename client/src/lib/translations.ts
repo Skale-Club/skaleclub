@@ -328,6 +328,7 @@ export const translations = {
     'Updates automatically after each save. Click Refresh to force reload.': 'Atualiza automaticamente após cada salvamento. Clique em Atualizar para recarregar.',
 
     // Admin — Brand Guidelines (Phase 17)
+    '## Brand Identity\n\n**Primary Color:** #1C53A3\n**Accent Color:** #FFFF01\n**Fonts:** Outfit (headings), Inter (body)\n\n## Tone of Voice\n\n- Professional yet approachable\n- Action-oriented language\n\n## Always Include\n- Company name: Skale Club\n\n## Never Include\n- Competitor mentions': '## Identidade da Marca\n\n**Cor Primária:** #1C53A3\n**Cor de Destaque:** #FFFF01\n**Fontes:** Outfit (títulos), Inter (corpo)\n\n## Tom de Voz\n\n- Profissional e acessível\n- Linguagem orientada à ação\n\n## Sempre Incluir\n- Nome da empresa: Skale Club\n\n## Nunca Incluir\n- Menções a concorrentes',
     'Brand Guidelines': 'Diretrizes de Marca',
     'Define your brand voice, colors, fonts, and rules for Claude to follow when building slides.': 'Defina a voz da marca, cores, fontes e regras para o Claude seguir ao criar slides.',
     'Guidelines document': 'Documento de diretrizes',
@@ -340,6 +341,9 @@ export const translations = {
     'Build AI-powered slide decks and share them as immersive fullscreen experiences.': 'Crie apresentações com IA e compartilhe-as como experiências imersivas em tela cheia.',
 
     // Admin — Presentations Section (Phase 19)
+    'Create': 'Criar',
+    'Search presentations...': 'Pesquisar apresentações...',
+    'Failed to create presentation': 'Falha ao criar apresentação',
     'New Presentation': 'Nova Apresentação',
     'Open Editor': 'Abrir Editor',
     'Back to presentations': 'Voltar às apresentações',
