@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from '@/hooks/useTranslation';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Loader2 } from '@/components/ui/loader';
 import type { Form } from '@shared/schema';
@@ -40,6 +41,7 @@ function slugify(input: string): string {
 
 export function NewFormDialog({ onCreated }: NewFormDialogProps) {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
@@ -110,8 +112,8 @@ export function NewFormDialog({ onCreated }: NewFormDialogProps) {
       <DialogContent className="sm:max-w-md">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>New Form</DialogTitle>
-            <DialogDescription>Name the form and pick a URL slug. You&apos;ll add questions in the next step.</DialogDescription>
+            <DialogTitle>{t('New Form')}</DialogTitle>
+            <DialogDescription>{t('Name the form and pick a URL slug. You\'ll add questions in the next step.')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -121,7 +123,7 @@ export function NewFormDialog({ onCreated }: NewFormDialogProps) {
                 autoFocus
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Contact Us"
+                placeholder={t('e.g. Contact Us')}
                 maxLength={120}
                 required
               />

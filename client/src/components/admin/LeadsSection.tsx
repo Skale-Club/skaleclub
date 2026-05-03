@@ -7,6 +7,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { AdminCard, SectionHeader } from './shared';
+import { useTranslation } from '@/hooks/useTranslation';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ import type { Form, FormConfig, FormLead, FormQuestion, LeadClassification, Lead
 
 export function LeadsSection() {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [selectedLead, setSelectedLead] = useState<FormLead | null>(null);
   const [leadPendingDelete, setLeadPendingDelete] = useState<FormLead | null>(null);
   const [isLeadDialogOpen, setIsLeadDialogOpen] = useState(false);
@@ -271,8 +273,8 @@ export function LeadsSection() {
   return (
     <div className="space-y-6">
       <SectionHeader
-        title="Leads"
-        description="All captured leads with ratings and follow-up status"
+        title={t('Leads')}
+        description={t('All captured leads with ratings and follow-up status')}
         icon={<Sparkles className="w-5 h-5" />}
         action={
           <div className="flex items-center gap-2">

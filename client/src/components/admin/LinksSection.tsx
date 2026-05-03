@@ -139,7 +139,7 @@ function SortableLinkRow({
             />
             <Badge variant="secondary" className="text-xs">{link.clickCount ?? 0} clicks</Badge>
             <div className="flex items-center gap-2 ml-auto">
-              <Label htmlFor={`visible-${index}`} className="text-xs text-muted-foreground cursor-pointer">Visible</Label>
+              <Label htmlFor={`visible-${index}`} className="text-xs text-muted-foreground cursor-pointer">{t('Visible')}</Label>
               <Switch
                 id={`visible-${index}`}
                 checked={link.visible !== false}
@@ -148,15 +148,15 @@ function SortableLinkRow({
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Link Title</Label>
+            <Label>{t('Link Title')}</Label>
             <Input
               value={link.title}
               onChange={(e) => onUpdate(index, { title: e.target.value })}
-              placeholder="My Portfolio"
+              placeholder={t('My Portfolio')}
             />
           </div>
           <div className="space-y-2">
-            <Label>Destination URL</Label>
+            <Label>{t('Destination URL')}</Label>
             <Input
               value={link.url}
               onChange={(e) => onUpdate(index, { url: e.target.value })}

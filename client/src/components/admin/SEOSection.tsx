@@ -10,6 +10,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { AdminCard, SectionHeader } from './shared';
+import { useTranslation } from '@/hooks/useTranslation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,21 +31,22 @@ const SEO_TABS: { id: SEOTab; label: string; icon: typeof Search }[] = [
   { id: 'slugs', label: 'URL Slugs', icon: Link2 },
 ];
 
-const PAGE_SLUG_FIELDS: { key: keyof PageSlugs; label: string; placeholder: string; helpText: string }[] = [
-  { key: 'contact', label: 'Contact', placeholder: 'contact', helpText: 'Public contact page.' },
-  { key: 'faq', label: 'FAQ', placeholder: 'faq', helpText: 'Frequently asked questions page.' },
-  { key: 'portfolio', label: 'Portfolio', placeholder: 'portfolio', helpText: 'Portfolio/services listing page.' },
-  { key: 'blog', label: 'Blog', placeholder: 'blog', helpText: 'Blog index. Posts become /blog-slug/post-slug.' },
-  { key: 'hub', label: 'Skale Hub', placeholder: 'skale-hub', helpText: 'Weekly live registration page.' },
-  { key: 'links', label: 'Links', placeholder: 'links', helpText: 'Bio links landing page.' },
-  { key: 'vcard', label: 'VCard', placeholder: 'vcard', helpText: 'Digital card prefix. Profiles become /vcard-slug/username.' },
-  { key: 'thankYou', label: 'Thank You', placeholder: 'thankyou', helpText: 'Post-form confirmation page.' },
-  { key: 'privacyPolicy', label: 'Privacy Policy', placeholder: 'privacy-policy', helpText: 'Privacy policy page.' },
-  { key: 'termsOfService', label: 'Terms of Service', placeholder: 'terms-of-service', helpText: 'Terms page.' },
-];
-
 export function SEOSection() {
   const { toast } = useToast();
+  const { t } = useTranslation();
+
+  const PAGE_SLUG_FIELDS: { key: keyof PageSlugs; label: string; placeholder: string; helpText: string }[] = [
+    { key: 'contact', label: t('Contact'), placeholder: 'contact', helpText: 'Public contact page.' },
+    { key: 'faq', label: t('FAQ'), placeholder: 'faq', helpText: 'Frequently asked questions page.' },
+    { key: 'portfolio', label: t('Portfolio'), placeholder: 'portfolio', helpText: 'Portfolio/services listing page.' },
+    { key: 'blog', label: 'Blog', placeholder: 'blog', helpText: 'Blog index. Posts become /blog-slug/post-slug.' },
+    { key: 'hub', label: 'Skale Hub', placeholder: 'skale-hub', helpText: 'Weekly live registration page.' },
+    { key: 'links', label: 'Links', placeholder: 'links', helpText: 'Bio links landing page.' },
+    { key: 'vcard', label: 'VCard', placeholder: 'vcard', helpText: 'Digital card prefix. Profiles become /vcard-slug/username.' },
+    { key: 'thankYou', label: 'Thank You', placeholder: 'thankyou', helpText: 'Post-form confirmation page.' },
+    { key: 'privacyPolicy', label: t('Privacy Policy'), placeholder: 'privacy-policy', helpText: 'Privacy policy page.' },
+    { key: 'termsOfService', label: t('Terms of Service'), placeholder: 'terms-of-service', helpText: 'Terms page.' },
+  ];
   const [activeTab, setActiveTab] = useState<SEOTab>('meta');
   const [settings, setSettings] = useState<SEOSettingsData>({
     seoTitle: '',
