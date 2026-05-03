@@ -279,7 +279,7 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
               <SelectValue placeholder="Form" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All forms</SelectItem>
+              <SelectItem value="all">{t('All forms')}</SelectItem>
               {activeForms.map(form => (
                 <SelectItem key={form.id} value={String(form.id)}>{form.name}</SelectItem>
               ))}
@@ -307,7 +307,7 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
       <div className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
         <AdminCard padding="compact">
           <div className="flex items-center justify-between gap-3 mb-4">
-            <h3 className="text-xl font-semibold">Lead Funnel</h3>
+            <h3 className="text-xl font-semibold">{t('Lead Funnel')}</h3>
             <Badge variant="secondary" className="border-0 bg-muted">
               Completion {dashboardData.completionRate.toFixed(1)}%
             </Badge>
@@ -331,23 +331,23 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
           </div>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <div className="rounded-xl bg-muted/60 p-3">
-              <p className="text-xs text-muted-foreground">Lead Sources</p>
-              <p className="text-sm font-medium mt-1">Form: {dashboardData.leadSources.form}</p>
-              <p className="text-sm font-medium">Chat: {dashboardData.leadSources.chat}</p>
+              <p className="text-xs text-muted-foreground">{t('Lead Sources')}</p>
+              <p className="text-sm font-medium mt-1">{t('Form:')} {dashboardData.leadSources.form}</p>
+              <p className="text-sm font-medium">{t('Chat:')} {dashboardData.leadSources.chat}</p>
             </div>
             <div className="rounded-xl bg-muted/60 p-3">
-              <p className="text-xs text-muted-foreground">Qualification</p>
-              <p className="text-sm font-medium mt-1">Hot: {dashboardData.qualification.hot}</p>
-              <p className="text-sm font-medium">Complete: {dashboardData.qualification.complete}</p>
+              <p className="text-xs text-muted-foreground">{t('Qualification')}</p>
+              <p className="text-sm font-medium mt-1">{t('Hot:')} {dashboardData.qualification.hot}</p>
+              <p className="text-sm font-medium">{t('Complete:')} {dashboardData.qualification.complete}</p>
             </div>
           </div>
         </AdminCard>
 
         <AdminCard padding="compact">
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-xl font-semibold">Recent Leads</h3>
+            <h3 className="text-xl font-semibold">{t('Recent Leads')}</h3>
             <Button variant="ghost" className="h-auto p-0 hover:bg-transparent hover:underline" onClick={() => onNavigate('leads')}>
-              View all
+              {t('View all')}
             </Button>
           </div>
           {dashboardData.recentLeads.length ? (
@@ -373,7 +373,7 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
             </div>
           ) : (
             <div className="rounded-xl border border-dashed p-8 text-center text-muted-foreground">
-              No leads yet.
+              {t('No leads yet.')}
             </div>
           )}
         </AdminCard>
@@ -382,7 +382,7 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
       <div className="grid gap-4 lg:grid-cols-3">
         <AdminCard padding="compact">
           <div className="mb-4 flex items-center justify-between gap-2">
-            <h3 className="text-xl font-semibold">Brand Profile</h3>
+            <h3 className="text-xl font-semibold">{t('Brand Profile')}</h3>
             <Badge variant="secondary" className="border-0 bg-muted">{brandProfilePercent}%</Badge>
           </div>
           <div className="h-2 rounded-full bg-muted overflow-hidden">
@@ -401,15 +401,15 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
             ))}
           </div>
           <Button className="mt-5 w-full" onClick={() => onNavigate('company')}>
-            Complete Company Profile
+            {t('Complete Company Profile')}
           </Button>
         </AdminCard>
 
         <AdminCard padding="compact">
           <div className="mb-4 flex items-center justify-between gap-2">
-            <h3 className="text-xl font-semibold">Integrations</h3>
+            <h3 className="text-xl font-semibold">{t('Integrations')}</h3>
             <Button variant="ghost" className="h-auto p-0 hover:bg-transparent hover:underline" onClick={() => onNavigate('integrations')}>
-              Manage
+              {t('Manage')}
             </Button>
           </div>
           <div className="space-y-2.5">
@@ -429,23 +429,23 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
         </AdminCard>
 
         <AdminCard padding="compact">
-          <h3 className="text-xl font-semibold mb-4">Quick Actions</h3>
+          <h3 className="text-xl font-semibold mb-4">{t('Quick Actions')}</h3>
           <div className="space-y-2.5">
             <Button variant="outline" className="w-full justify-start border-0 bg-muted/60" onClick={() => onNavigate('website' as any)}>
               <Globe className="w-4 h-4 mr-2" />
-              Edit Website
+              {t('Edit Website')}
             </Button>
             <Button variant="outline" className="w-full justify-start border-0 bg-muted/60" onClick={() => onNavigate('blog')}>
               <FileText className="w-4 h-4 mr-2" />
-              Publish Content
+              {t('Publish Content')}
             </Button>
             <Button variant="outline" className="w-full justify-start border-0 bg-muted/60" onClick={() => onNavigate('chat')}>
               <MessageSquare className="w-4 h-4 mr-2" />
-              Review Conversations
+              {t('Review Conversations')}
             </Button>
             <Button variant="outline" className="w-full justify-start border-0 bg-muted/60" onClick={() => onNavigate('leads')}>
               <Sparkles className="w-4 h-4 mr-2" />
-              Qualify Leads
+              {t('Qualify Leads')}
             </Button>
           </div>
         </AdminCard>

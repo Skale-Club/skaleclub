@@ -114,6 +114,8 @@ export function useTranslation() {
    * 2. Static dictionary (instant, no API)
    * 3. API batch (50ms debounce)
    */
+  // Implementation signature accepts string to satisfy both overloads below.
+  // Call sites see the overload cast — string literals must be TranslationKey (TRX-08).
   const t = useCallback((text: string): string => {
     if (language === 'en' || !text) {
       return text;
