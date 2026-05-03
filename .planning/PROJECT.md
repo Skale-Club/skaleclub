@@ -24,7 +24,8 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 
 ### Active
 
-- **HUB-01 → HUB-18**: Skale Hub Weekly Live Gate (v1.6, planned 2026-05-02) - weekly live page, registration gate, live unlock/access tracking, admin live management, participant analytics
+- ✓ **HUB-01 → HUB-18**: Skale Hub Weekly Live Gate — v1.6 (2026-05-02)
+- ✓ **TRX-01 → TRX-11**: Translation System Overhaul — v1.7 (2026-05-03) — 100% PT static coverage, zero API fallbacks, TypeScript-enforced TranslationKey type, 599-line translations.ts
 
 ### Out of Scope
 
@@ -49,6 +50,7 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 - v1.5 shipped 2026-04-24: Blog Post Automation (4 phases, 6 plans, 45 files, +6,343 LOC, 19/19 requirements)
 - v1.6 planned 2026-05-02: Skale Hub Weekly Live Gate (5 phases, 18 requirements - schema, tracking APIs, public page, admin management, analytics)
 - v1.6 shipped 2026-05-02: Skale Hub Weekly Live Gate (5 phases, 18/18 requirements complete)
+- v1.7 shipped 2026-05-03: Translation System Overhaul (1 phase, 11/11 TRX requirements — 4 plans, ~170 keys added/cleaned, 8 admin components wired, PrivacyPolicy + TermsOfService covered)
 - Stack: TypeScript/React + Express + Drizzle ORM + PostgreSQL + Supabase Auth + Vercel
 - DB migration pattern: raw SQL via tsx script (drizzle-kit CJS can't resolve .js ESM imports)
 - AI providers: Gemini (blog automation via `@google/genai`), Anthropic Claude (presentations via `@anthropic-ai/sdk`), OpenAI/Groq/OpenRouter (chat via `getActiveAIClient()` shim)
