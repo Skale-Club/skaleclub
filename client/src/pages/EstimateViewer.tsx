@@ -128,15 +128,15 @@ function SectionContent({ index, data, lang }: { index: number; data: PublicEsti
     return (
       <>
         {gradientOverlay}
-        <div className="text-center px-8 max-w-xl mx-auto w-full">
-          <p className="text-zinc-400 text-sm uppercase tracking-widest mb-6">{t.proposalFor}</p>
-          <h1 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-5xl font-semibold text-white leading-tight">
+        <div className="text-center px-8 max-w-3xl md:max-w-4xl lg:max-w-5xl mx-auto w-full">
+          <p className="text-zinc-400 text-sm md:text-base lg:text-lg uppercase tracking-widest mb-6 lg:mb-8">{t.proposalFor}</p>
+          <h1 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-5xl md:text-6xl lg:text-7xl font-semibold text-white leading-tight">
             {headline}
           </h1>
           {subtitle && (
-            <p className="text-zinc-300 text-xl mt-4">{subtitle}</p>
+            <p className="text-zinc-300 text-xl md:text-2xl lg:text-3xl mt-6">{subtitle}</p>
           )}
-          <p className="text-zinc-500 text-xs uppercase tracking-widest mt-8">Skale Club</p>
+          <p className="text-zinc-500 text-xs md:text-sm lg:text-base uppercase tracking-widest mt-12">Skale Club</p>
         </div>
       </>
     );
@@ -146,10 +146,10 @@ function SectionContent({ index, data, lang }: { index: number; data: PublicEsti
   if (index === 1) return (
     <>
       {gradientOverlay}
-      <div className="px-8 max-w-xl mx-auto w-full">
-        <p className="text-zinc-400 text-sm uppercase tracking-widest mb-4">{t.about}</p>
-        <h2 className="text-3xl font-semibold text-white mb-6">{t.tagline}</h2>
-        <p className="text-base text-zinc-400 leading-relaxed">{t.aboutBody}</p>
+      <div className="px-8 max-w-3xl md:max-w-4xl lg:max-w-5xl mx-auto w-full">
+        <p className="text-zinc-400 text-sm md:text-base lg:text-lg uppercase tracking-widest mb-4 lg:mb-6">{t.about}</p>
+        <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 lg:mb-8 leading-tight">{t.tagline}</h2>
+        <p className="text-lg md:text-xl lg:text-2xl text-zinc-400 leading-relaxed">{t.aboutBody}</p>
       </div>
     </>
   );
@@ -161,18 +161,18 @@ function SectionContent({ index, data, lang }: { index: number; data: PublicEsti
     return (
       <>
         {gradientOverlay}
-        <div className="px-8 max-w-xl mx-auto w-full">
-          <p className="text-zinc-400 text-sm uppercase tracking-widest mb-2">
+        <div className="px-8 max-w-3xl md:max-w-4xl lg:max-w-5xl mx-auto w-full">
+          <p className="text-zinc-400 text-sm md:text-base lg:text-lg uppercase tracking-widest mb-4">
             {t.serviceOf(serviceIndex + 1, data.services.length)}
           </p>
-          <h2 className="text-3xl font-semibold text-white mb-2">{service.title}</h2>
-          <p className="text-base text-zinc-400 leading-relaxed mb-4">{service.description}</p>
-          <p className="text-3xl font-semibold text-white mb-6">{service.price}</p>
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-4 leading-tight">{service.title}</h2>
+          <p className="text-lg md:text-xl lg:text-2xl text-zinc-400 leading-relaxed mb-6 lg:mb-8">{service.description}</p>
+          <p className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-8 lg:mb-10">{service.price}</p>
           {service.features.length > 0 && (
-            <ul className="space-y-2">
+            <ul className="space-y-3 lg:space-y-4">
               {service.features.map((feature, fi) => (
-                <li key={fi} className="flex items-start gap-2 text-sm text-zinc-300">
-                  <span className="text-zinc-500 shrink-0">–</span>
+                <li key={fi} className="flex items-start gap-3 md:gap-4 text-base md:text-lg lg:text-xl text-zinc-300">
+                  <span className="text-zinc-500 shrink-0 mt-1 md:mt-0 lg:mt-0">–</span>
                   <span>{feature}</span>
                 </li>
               ))}
@@ -187,10 +187,10 @@ function SectionContent({ index, data, lang }: { index: number; data: PublicEsti
   return (
     <>
       {gradientOverlay}
-      <div className="text-center px-8 max-w-xl mx-auto w-full">
-        <p className="text-zinc-400 text-sm uppercase tracking-widest mb-4">Skale Club</p>
-        <h2 className="text-3xl font-semibold text-white mb-4">{t.closing}</h2>
-        <p className="text-sm text-zinc-400">{t.closingBody}</p>
+      <div className="text-center px-8 max-w-3xl md:max-w-4xl lg:max-w-5xl mx-auto w-full">
+        <p className="text-zinc-400 text-sm md:text-base lg:text-lg uppercase tracking-widest mb-6 lg:mb-8">Skale Club</p>
+        <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight">{t.closing}</h2>
+        <p className="text-base md:text-lg lg:text-xl text-zinc-400">{t.closingBody}</p>
       </div>
     </>
   );
