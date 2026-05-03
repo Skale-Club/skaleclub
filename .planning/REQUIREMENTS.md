@@ -84,3 +84,45 @@
 
 ---
 *Requirements defined: 2026-05-02*
+
+---
+
+# Requirements: Skale Club Web Platform - v1.7 Translation System Completeness
+
+**Defined:** 2026-05-03
+**Core Value:** The entire site (public pages and admin panel) renders correctly in Portuguese with zero strings falling back to the API fallback — every visible string is covered by a static translation key in `translations.ts`.
+
+## v1.7 Requirements
+
+### Static Key Coverage
+
+- [ ] **TRX-01**: Every `t()` call in all client-side files maps to an existing key in `translations.pt` — no call references a key that is absent from `translations.ts`.
+- [ ] **TRX-02**: All `t()` keys in PresentationsSection, DashboardSection, EstimatesSection, LeadsSection, SEOSection, NewFormDialog, LinksSection, and `not-found.tsx` are defined and return correct PT strings.
+- [ ] **TRX-03**: All "Back to X" variant strings (`'Back to Home'`, `'Back to homepage'`, `'Back to presentations'`, `'Back to website'`) are consistently defined in `translations.ts` — no variant triggers an API fallback.
+
+### Hardcoded String Elimination
+
+- [ ] **TRX-04**: No visible user-facing string in any admin component (`DashboardSection`, `EstimatesSection`, `LeadsSection`, `SEOSection`, `NewFormDialog`, `LinksSection`, `PresentationsSection`) is hardcoded without going through `t()`.
+- [ ] **TRX-05**: All placeholder and label strings in admin forms use `t()` — including `"Contact name"`, `"Services"`, `"Contacted"`, `"e.g. Contact Us"`, `"My Portfolio"`, and equivalents.
+
+### Key Hygiene
+
+- [ ] **TRX-06**: All keys defined in `translations.ts` that are not referenced by any `t()` call in the codebase are removed — zero dead keys.
+- [ ] **TRX-07**: `translations.ts` contains no duplicate keys.
+
+### Build-Time Validation
+
+- [ ] **TRX-08**: TypeScript enforces that `t()` only accepts keys of type `TranslationKey` — passing an undefined key causes a compile-time error.
+- [ ] **TRX-09**: `npm run check` passes with zero TypeScript errors after all translation changes.
+
+### Correctness
+
+- [ ] **TRX-10**: The wrong 404 page message key is fixed — `not-found.tsx` uses the correct key that maps to the actual displayed copy.
+- [ ] **TRX-11**: All PT translations are correct Brazilian Portuguese — no placeholder, English, or machine-translated strings left in `translations.ts`.
+
+## Phase Mapping
+
+- Phase 30 (Translation System Overhaul): All reqs — TRX-01 through TRX-11
+
+---
+*Requirements defined: 2026-05-03*
