@@ -246,6 +246,8 @@ export function PresentationsSection() {
   const thumbnailJobsRef = useRef(new Set<string>());
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
+  const [newSlug, setNewSlug] = useState('');
+  const [newSlugEdited, setNewSlugEdited] = useState(false);
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
   
@@ -267,6 +269,12 @@ export function PresentationsSection() {
   const presentations = queryData?.data ?? [];
   const totalItems = queryData?.total ?? 0;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
+  useEffect(() => {
+    if (!newSlugEdited) {
+      setNewSlug(normalizePresentationSlug(newTitle));
+    }
+  }, [newTitle, newSlugEdited]);
 
   useEffect(() => {
     presentations.forEach((presentation) => {
@@ -314,13 +322,15 @@ export function PresentationsSection() {
   }, [debouncedSearch, page, presentations]);
 
   const createMutation = useMutation({
-    mutationFn: (data: { title: string }) =>
+    mutationFn: (data: { title: string; slug: string }) =>
       apiRequest('POST', '/api/presentations', data).then((r) => r.json()),
     onSuccess: (newPres: { id: string; slug: string; slides: SlideBlock[] }) => {
       queryClient.invalidateQueries({ queryKey: ['/api/presentations'] });
       toast({ title: t('Presentation created') });
       setIsCreateOpen(false);
       setNewTitle('');
+      setNewSlug('');
+      setNewSlugEdited(false);
       setSelectedId(newPres.id);
     },
     onError: (err: any) => {
@@ -696,7 +706,14 @@ export function PresentationsSection() {
       )}
 
       {/* Create presentation dialog */}
-      <Dialog open={isCreateOpen} onOpenChange={(o) => { setIsCreateOpen(o); if (!o) setNewTitle(''); }}>
+      <Dialog open={isCreateOpen} onOpenChange={(o) => {
+        setIsCreateOpen(o);
+        if (!o) {
+          setNewTitle('');
+          setNewSlug('');
+          setNewSlugEdited(false);
+        }
+      }}>
         <DialogContent className="sm:max-w-sm border-0">
           <DialogHeader>
             <DialogTitle>{t('New Presentation')}</DialogTitle>
@@ -711,18 +728,39 @@ export function PresentationsSection() {
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && newTitle.trim() && !createMutation.isPending) {
-                    createMutation.mutate({ title: newTitle.trim() });
+                  if (e.key === 'Enter' && newTitle.trim() && newSlug.trim() && !createMutation.isPending) {
+                    createMutation.mutate({ title: newTitle.trim(), slug: newSlug.trim() });
                   }
                 }}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-slug" className="text-xs">{t('Slug')}</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">/p/</span>
+                <Input
+                  id="new-slug"
+                  placeholder="acme-corp-q2-2025"
+                  value={newSlug}
+                  onChange={(e) => {
+                    setNewSlug(normalizePresentationSlug(e.target.value));
+                    setNewSlugEdited(true);
+                  }}
+                  className="pl-9"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newTitle.trim() && newSlug.trim() && !createMutation.isPending) {
+                      createMutation.mutate({ title: newTitle.trim(), slug: newSlug.trim() });
+                    }
+                  }}
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setIsCreateOpen(false)}>{t('Cancel')}</Button>
             <Button
-              onClick={() => createMutation.mutate({ title: newTitle.trim() })}
-              disabled={!newTitle.trim() || createMutation.isPending}
+              onClick={() => createMutation.mutate({ title: newTitle.trim(), slug: newSlug.trim() })}
+              disabled={!newTitle.trim() || !newSlug.trim() || createMutation.isPending}
               className="gap-2"
             >
               {createMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
