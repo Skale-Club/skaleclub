@@ -96,14 +96,14 @@
 
 ### Static Key Coverage
 
-- [ ] **TRX-01**: Every `t()` call in all client-side files maps to an existing key in `translations.pt` — no call references a key that is absent from `translations.ts`.
-- [ ] **TRX-02**: All `t()` keys in PresentationsSection, DashboardSection, EstimatesSection, LeadsSection, SEOSection, NewFormDialog, LinksSection, and `not-found.tsx` are defined and return correct PT strings.
-- [ ] **TRX-03**: All "Back to X" variant strings (`'Back to Home'`, `'Back to homepage'`, `'Back to presentations'`, `'Back to website'`) are consistently defined in `translations.ts` — no variant triggers an API fallback.
+- [x] **TRX-01**: Every `t()` call in all client-side files maps to an existing key in `translations.pt` — no call references a key that is absent from `translations.ts`.
+- [x] **TRX-02**: All `t()` keys in PresentationsSection, DashboardSection, EstimatesSection, LeadsSection, SEOSection, NewFormDialog, LinksSection, and `not-found.tsx` are defined and return correct PT strings.
+- [x] **TRX-03**: All "Back to X" variant strings (`'Back to Home'`, `'Back to homepage'`, `'Back to presentations'`, `'Back to website'`) are consistently defined in `translations.ts` — no variant triggers an API fallback.
 
 ### Hardcoded String Elimination
 
-- [ ] **TRX-04**: No visible user-facing string in any admin component (`DashboardSection`, `EstimatesSection`, `LeadsSection`, `SEOSection`, `NewFormDialog`, `LinksSection`, `PresentationsSection`) is hardcoded without going through `t()`.
-- [ ] **TRX-05**: All placeholder and label strings in admin forms use `t()` — including `"Contact name"`, `"Services"`, `"Contacted"`, `"e.g. Contact Us"`, `"My Portfolio"`, and equivalents.
+- [x] **TRX-04**: No visible user-facing string in any admin component (`DashboardSection`, `EstimatesSection`, `LeadsSection`, `SEOSection`, `NewFormDialog`, `LinksSection`, `PresentationsSection`) is hardcoded without going through `t()`.
+- [x] **TRX-05**: All placeholder and label strings in admin forms use `t()` — including `"Contact name"`, `"Services"`, `"Contacted"`, `"e.g. Contact Us"`, `"My Portfolio"`, and equivalents.
 
 ### Key Hygiene
 
