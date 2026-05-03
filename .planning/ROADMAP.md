@@ -138,7 +138,7 @@ _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
 | 27. Public Experience | v1.6 | 1/1 | Complete | 2026-05-02 |
 | 28. Admin Management | v1.6 | 1/1 | Complete | 2026-05-02 |
 | 29. Analytics & Reporting | v1.6 | 1/1 | Complete | 2026-05-02 |
-| 30. Translation System Overhaul | v1.7 | 4/4 | Complete   | 2026-05-03 |
+| 30. Translation System Overhaul | v1.7 | 4/4 | Complete    | 2026-05-03 |
 
 ---
 
