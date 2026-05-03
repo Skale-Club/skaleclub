@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Loader2 } from '@/components/ui/loader';
+import { LanguageSwitch, type LanguageSwitchValue } from '@/components/ui/LanguageSwitch';
 import type { CompanySettings, EstimateServiceItem } from '@shared/schema';
 
 interface PublicEstimate {
@@ -41,9 +42,35 @@ function NotFoundScreen() {
   );
 }
 
-function AccessCodeGate({ estimateId, onUnlock }: { estimateId: number; onUnlock: () => void }) {
+const accessGateCopy = {
+  en: {
+    title: 'Enter access code',
+    unlock: 'Unlock Proposal',
+    incorrectCode: 'Incorrect code',
+    verificationFailed: 'Verification failed',
+  },
+  pt: {
+    title: 'Digite o código de acesso',
+    unlock: 'Desbloquear proposta',
+    incorrectCode: 'Código incorreto',
+    verificationFailed: 'Falha na verificação',
+  },
+};
+
+function AccessCodeGate({
+  estimateId,
+  lang,
+  onLanguageChange,
+  onUnlock,
+}: {
+  estimateId: number;
+  lang: 'en' | 'pt-BR';
+  onLanguageChange: (value: LanguageSwitchValue) => void;
+  onUnlock: () => void;
+}) {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
+  const t = lang === 'pt-BR' ? accessGateCopy.pt : accessGateCopy.en;
 
   const { mutate: verify, isPending } = useMutation({
     mutationFn: async () => {
@@ -56,14 +83,22 @@ function AccessCodeGate({ estimateId, onUnlock }: { estimateId: number; onUnlock
       if (!res.ok) throw new Error('Verification failed');
     },
     onSuccess: () => onUnlock(),
-    onError: (err: Error) => setError(err.message),
+    onError: (err: Error) => {
+      setError(err.message === 'Incorrect code' ? t.incorrectCode : t.verificationFailed);
+    },
   });
 
   return (
-    <div className="h-screen bg-zinc-950 flex items-center justify-center">
+    <div className="h-screen bg-zinc-950 flex items-center justify-center relative">
+      <div className="fixed top-4 right-16 z-50">
+        <LanguageSwitch
+          value={lang === 'pt-BR' ? 'pt' : 'en'}
+          onValueChange={onLanguageChange}
+        />
+      </div>
       <div className="flex flex-col items-center gap-4 w-full max-w-sm px-6">
         <p className="text-zinc-400 text-sm uppercase tracking-widest">Skale Club</p>
-        <h1 className="text-white text-3xl font-semibold text-center">Enter access code</h1>
+        <h1 className="text-white text-3xl font-semibold text-center">{t.title}</h1>
         <Input
           type="text"
           value={code}
@@ -78,7 +113,7 @@ function AccessCodeGate({ estimateId, onUnlock }: { estimateId: number; onUnlock
           className="w-full"
         >
           {isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-          Unlock Proposal
+          {t.unlock}
         </Button>
       </div>
     </div>
@@ -227,6 +262,10 @@ export default function EstimateViewer() {
     window.history.replaceState(null, '', window.location.pathname + (newSearch ? `?${newSearch}` : ''));
   }
 
+  function switchViewerLang(newLang: LanguageSwitchValue) {
+    switchLang(newLang === 'pt' ? 'pt-BR' : 'en');
+  }
+
   const { mutate: trackView } = useMutation({
     mutationFn: async () => {
       await fetch(`/api/estimates/${data!.id}/view`, { method: 'POST' });
@@ -289,23 +328,24 @@ export default function EstimateViewer() {
   if (isLoading) return <LoadingScreen />;
   if (!data) return <NotFoundScreen />;
   if (data.hasAccessCode && !isUnlocked) {
-    return <AccessCodeGate estimateId={data.id} onUnlock={() => setIsUnlocked(true)} />;
+    return (
+      <AccessCodeGate
+        estimateId={data.id}
+        lang={lang}
+        onLanguageChange={switchViewerLang}
+        onUnlock={() => setIsUnlocked(true)}
+      />
+    );
   }
 
   return (
     <div className="h-screen bg-zinc-950 text-white overflow-hidden relative flex items-center justify-center">
       {/* Language switcher */}
-      <div className="fixed top-4 right-16 z-50 flex gap-3">
-        <button
-          onClick={() => switchLang('en')}
-          aria-label="Switch to English"
-          className={lang === 'en' ? 'text-white font-semibold text-sm' : 'text-zinc-500 hover:text-zinc-300 text-sm cursor-pointer'}
-        >EN</button>
-        <button
-          onClick={() => switchLang('pt-BR')}
-          aria-label="Switch to Portuguese"
-          className={lang === 'pt-BR' ? 'text-white font-semibold text-sm' : 'text-zinc-500 hover:text-zinc-300 text-sm cursor-pointer'}
-        >PT</button>
+      <div className="fixed top-4 right-16 z-50">
+        <LanguageSwitch
+          value={lang === 'pt-BR' ? 'pt' : 'en'}
+          onValueChange={switchViewerLang}
+        />
       </div>
 
       {/* Navigation dots */}

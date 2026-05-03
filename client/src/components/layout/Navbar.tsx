@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "@/hooks/useTranslation";
-import { Menu, X, Phone, User } from "lucide-react";
+import { Menu, X, Phone } from "lucide-react";
 import { useState, useCallback } from "react";
 import { clsx } from "clsx";
 import { LanguageToggle } from "@/components/ui/LanguageToggle";
@@ -22,7 +22,6 @@ export function Navbar() {
   const telPhone = displayPhone.replace(/\D/g, "");
 
   const navLinks = [
-    { href: pagePaths.hub, label: 'Skale Hub' },
     { href: pagePaths.portfolio, label: t("Portfolio") },
   ];
 
@@ -92,14 +91,6 @@ export function Navbar() {
 
             <LanguageToggle />
 
-            <Link
-              href="/admin/login"
-              className="text-sm font-semibold text-white bg-transparent border border-white/40 px-4 py-2 rounded-full hover:bg-white/10 transition-colors"
-              data-testid="button-login"
-            >
-              {t("Login")}
-            </Link>
-
             {displayPhone && (
               <a
                 href={`tel:${telPhone}`}
@@ -166,17 +157,7 @@ export function Navbar() {
             })}
           </div>
 
-          <div className="pt-6 border-t flex flex-col gap-6">
-            <Link
-              href="/admin/login"
-              className="flex items-center gap-3 text-lg font-bold text-primary hover:opacity-80 transition-opacity"
-              data-testid="button-mobile-login"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              <User className="w-6 h-6" />
-              {t("Login")}
-            </Link>
-          </div>
+          <div className="pt-6 border-t" />
         </div>
       )}
     </nav>

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Loader2 } from '@/components/ui/loader';
+import { LanguageSwitch, type LanguageSwitchValue } from '@/components/ui/LanguageSwitch';
 import type { CompanySettings, SlideBlock } from '@shared/schema';
 
 interface PublicPresentation {
@@ -189,6 +190,10 @@ export default function PresentationViewer() {
     window.history.replaceState(null, '', window.location.pathname + (newSearch ? `?${newSearch}` : ''));
   }
 
+  function switchViewerLang(newLang: LanguageSwitchValue) {
+    switchLang(newLang === 'pt' ? 'pt-BR' : 'en');
+  }
+
   const hasTrackedView = useRef(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [direction, setDirection] = useState(1);
@@ -328,17 +333,11 @@ export default function PresentationViewer() {
   return (
     <div className="h-screen bg-zinc-950 text-white overflow-hidden relative flex items-center justify-center">
       {/* Language switcher */}
-      <div className="fixed top-4 right-16 z-50 flex gap-3">
-        <button
-          onClick={() => switchLang('en')}
-          aria-label="Switch to English"
-          className={lang === 'en' ? 'text-white font-semibold text-sm' : 'text-zinc-500 hover:text-zinc-300 text-sm cursor-pointer'}
-        >EN</button>
-        <button
-          onClick={() => switchLang('pt-BR')}
-          aria-label="Switch to Portuguese"
-          className={lang === 'pt-BR' ? 'text-white font-semibold text-sm' : 'text-zinc-500 hover:text-zinc-300 text-sm cursor-pointer'}
-        >PT</button>
+      <div className="fixed top-4 right-16 z-50">
+        <LanguageSwitch
+          value={lang === 'pt-BR' ? 'pt' : 'en'}
+          onValueChange={switchViewerLang}
+        />
       </div>
 
       {/* Navigation dots */}
