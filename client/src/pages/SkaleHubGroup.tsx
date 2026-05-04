@@ -75,7 +75,7 @@ export default function SkaleHubGroup() {
       {/* Top gradient blob */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[500px] bg-[radial-gradient(ellipse_70%_60%_at_60%_-5%,rgba(37,211,102,0.12),transparent)]" />
 
-      <section className="relative mx-auto flex w-full max-w-7xl flex-col items-center px-4 pt-[calc(5rem+36px)] pb-9 sm:px-6 lg:flex-row lg:items-center lg:gap-9 lg:px-8">
+      <section className="relative mx-auto flex w-full max-w-7xl flex-col items-center px-4 pt-[calc(5rem+36px)] pb-9 sm:px-6 lg:flex-row lg:items-center gap-9 lg:px-8">
 
         {/* ── Left column ── */}
         <div className="flex-1 text-center lg:text-left">
@@ -113,7 +113,7 @@ export default function SkaleHubGroup() {
         </div>
 
         {/* ── Right column: form card + social proof ── */}
-        <div className="mt-12 w-full max-w-sm shrink-0 space-y-5 lg:mt-0">
+        <div className="w-full max-w-sm shrink-0 space-y-5">
           <div className="overflow-hidden rounded-2xl bg-[#111a14] shadow-2xl shadow-black/40 ring-1 ring-white/10">
 
             {/* Card header */}
