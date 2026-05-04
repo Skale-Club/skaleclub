@@ -19,7 +19,8 @@ export type AdminSection =
   | 'fieldSales'
   | 'estimates'
   | 'presentations'
-  | 'skaleHub';
+  | 'skaleHub'
+  | 'notifications';
 
 export interface DayHours {
   isOpen: boolean;

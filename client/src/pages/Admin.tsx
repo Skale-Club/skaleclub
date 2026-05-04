@@ -26,6 +26,7 @@ import { XpotSalesSection } from '@/components/admin/XpotSalesSection';
 import { EstimatesSection } from '@/components/admin/EstimatesSection';
 import { PresentationsSection } from '@/components/admin/PresentationsSection';
 import { SkaleHubSection } from '@/components/admin/SkaleHubSection';
+import { NotificationsSection } from '@/components/admin/NotificationsSection';
 import { SIDEBAR_MENU_ITEMS } from '@/components/admin/shared/constants';
 import { SectionHeader } from '@/components/admin/shared';
 import type { AdminSection, CompanySettingsData } from '@/components/admin/shared/types';
@@ -59,6 +60,7 @@ function AdminContent() {
       estimates: 'estimates',
       presentations: 'presentations',
       'skale-hub': 'skaleHub',
+      notifications: 'notifications',
     };
     return slugMap[segment] || 'dashboard';
   }, [location]);
@@ -115,6 +117,7 @@ function AdminContent() {
       estimates: 'estimates',
       presentations: 'presentations',
       skaleHub: 'skale-hub',
+      notifications: 'notifications',
     };
     setLocation(`/admin/${slugMap[section]}`);
   }, [activeSection, setLocation]);
@@ -200,7 +203,7 @@ function AdminContent() {
         {activeSection !== 'chat' && (
           <div className="flex-1 overflow-y-auto min-h-0 p-6 pb-16 md:p-8 md:pb-10">
             {(() => {
-              const sectionsWithOwnHeader: AdminSection[] = ['leads', 'forms', 'faqs', 'users', 'blog', 'portfolio', 'links', 'vcards', 'fieldSales', 'estimates', 'company', 'website', 'seo', 'integrations', 'presentations', 'skaleHub'];
+              const sectionsWithOwnHeader: AdminSection[] = ['leads', 'forms', 'faqs', 'users', 'blog', 'portfolio', 'links', 'vcards', 'fieldSales', 'estimates', 'company', 'website', 'seo', 'integrations', 'presentations', 'skaleHub', 'notifications'];
               if (sectionsWithOwnHeader.includes(activeSection)) return null;
               const currentItem = menuItems.find(item => item.id === activeSection);
               return currentItem ? (
@@ -228,6 +231,7 @@ function AdminContent() {
             {activeSection === 'estimates' && <EstimatesSection />}
             {activeSection === 'presentations' && <PresentationsSection />}
             {activeSection === 'skaleHub' && <SkaleHubSection />}
+            {activeSection === 'notifications' && <NotificationsSection />}
           </div>
         )}
       </main>
