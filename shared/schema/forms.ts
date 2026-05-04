@@ -38,6 +38,7 @@ export const forms = pgTable("forms", {
 // Form Leads table
 export const formLeads = pgTable("form_leads", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1),
   sessionId: uuid("session_id").notNull(),
   formId: integer("form_id").references(() => forms.id),
   createdAt: timestamp("created_at").defaultNow(),
