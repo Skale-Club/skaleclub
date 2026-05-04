@@ -9,15 +9,18 @@
 - ✅ **v1.4 Admin Presentations Page** — Phases 15-20 (shipped 2026-04-22)
 - ✅ **v1.5 Blog Post Automation** — Phases 21-24 (shipped 2026-04-24)
 - ✅ **v1.6 Skale Hub Weekly Live Gate** — Phases 25-29 (shipped 2026-05-02)
-- 🔄 **v1.7 Translation System Completeness** — Phase 30 (active)
-
-## Active
-
-**v1.7 Translation System Completeness** — Phase 30
-
-- [ ] **Phase 30: Translation System Overhaul** — eliminate all hardcoded strings, fix missing/broken/unused keys, achieve 100% PT coverage with zero API fallbacks, add build-time validation
+- ✅ **v1.7 Translation System Completeness** — Phase 30 (shipped 2026-05-04)
 
 ## Shipped Milestones
+
+<details>
+<summary>✅ v1.7 Translation System Completeness (Phase 30) — SHIPPED 2026-05-04</summary>
+
+- [x] Phase 30: Translation System Overhaul (4/4 plans) — completed 2026-05-03
+
+_Archive: `.planning/milestones/v1.7-ROADMAP.md`_
+
+</details>
 
 <details>
 <summary>✅ v1.6 Skale Hub Weekly Live Gate (Phases 25-29) — SHIPPED 2026-05-02</summary>

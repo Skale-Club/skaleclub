@@ -21,11 +21,12 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 - ✓ **LINKS-01 → LINKS-17**: Full Links Page Upgrade (upload foundation, click analytics, admin redesign, icon picker, theme editor, live preview, public rendering) — v1.3 (2026-04-20)
 - ✓ **PRES-01 → PRES-22**: Full Admin Presentations Page (schema, CRUD API, brand guidelines, AI SSE authoring, admin editor, public bilingual viewer) — v1.4 (2026-04-22)
 - ✓ **BLOG-01 → BLOG-19**: Full Blog Post Automation (blog tables, Gemini generator engine, REST API + cron, admin automation UI) — v1.5 (2026-04-24)
+- ✓ **HUB-01 → HUB-18**: Skale Hub Weekly Live Gate (schema, tracking APIs, public registration gate, admin management, analytics) — v1.6 (2026-05-02)
+- ✓ **TRX-01 → TRX-11**: Translation System Completeness (TranslationKey type enforcement, dead key removal, 8 admin components wired, PrivacyPolicy + TermsOfService covered, 599-line translations.ts) — v1.7 (2026-05-04)
 
 ### Active
 
-- ✓ **HUB-01 → HUB-18**: Skale Hub Weekly Live Gate — v1.6 (2026-05-02)
-- ✓ **TRX-01 → TRX-11**: Translation System Overhaul — v1.7 (2026-05-03) — 100% PT static coverage, zero API fallbacks, TypeScript-enforced TranslationKey type, 599-line translations.ts
+(none — planning next milestone)
 
 ### Out of Scope
 
@@ -50,7 +51,7 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 - v1.5 shipped 2026-04-24: Blog Post Automation (4 phases, 6 plans, 45 files, +6,343 LOC, 19/19 requirements)
 - v1.6 planned 2026-05-02: Skale Hub Weekly Live Gate (5 phases, 18 requirements - schema, tracking APIs, public page, admin management, analytics)
 - v1.6 shipped 2026-05-02: Skale Hub Weekly Live Gate (5 phases, 18/18 requirements complete)
-- v1.7 shipped 2026-05-03: Translation System Overhaul (1 phase, 11/11 TRX requirements — 4 plans, ~170 keys added/cleaned, 8 admin components wired, PrivacyPolicy + TermsOfService covered)
+- v1.7 shipped 2026-05-04: Translation System Completeness (1 phase, 4 plans, 11/11 TRX requirements — TypeScript-enforced TranslationKey, 18 dead keys removed, 8 admin components wired, PrivacyPolicy + TermsOfService covered, translations.ts at 599 lines)
 - Stack: TypeScript/React + Express + Drizzle ORM + PostgreSQL + Supabase Auth + Vercel
 - DB migration pattern: raw SQL via tsx script (drizzle-kit CJS can't resolve .js ESM imports)
 - AI providers: Gemini (blog automation via `@google/genai`), Anthropic Claude (presentations via `@anthropic-ai/sdk`), OpenAI/Groq/OpenRouter (chat via `getActiveAIClient()` shim)
@@ -111,4 +112,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-*Last updated: 2026-05-02 - v1.6 Skale Hub Weekly Live Gate planned; active milestone initialized*
+*Last updated: 2026-05-04 after v1.7 milestone — Translation System Completeness shipped*

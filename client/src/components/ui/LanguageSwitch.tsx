@@ -61,10 +61,7 @@ export function LanguageSwitch({
             <img
               src={isPortuguese ? '/flags/nucleo/br.svg' : '/flags/nucleo/us.svg'}
               alt={isPortuguese ? 'Brazil' : 'USA'}
-              className={clsx(
-                'w-full h-full rounded-full object-cover',
-                !isPortuguese && 'object-[20%_center] scale-[1.15]',
-              )}
+              className="w-full h-full rounded-full object-cover scale-[1.4]"
             />
           </span>
         </span>
