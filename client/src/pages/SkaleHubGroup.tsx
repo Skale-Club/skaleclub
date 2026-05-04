@@ -145,38 +145,38 @@ export default function SkaleHubGroup() {
           <div className="overflow-hidden rounded-2xl bg-[#111a14] shadow-2xl shadow-black/40 ring-1 ring-white/10">
 
             {/* Card header */}
-            <div className="flex items-center gap-3 bg-[#25D366] px-6 py-4">
-              <WhatsAppIcon className="h-6 w-6 text-white" />
+            <div className="flex items-center gap-4 bg-[#25D366] px-7 py-5">
+              <WhatsAppIcon className="h-8 w-8 shrink-0 text-white" />
               <div>
-                <p className="text-sm font-bold text-white">Entrar no grupo</p>
-                <p className="text-xs text-white/70">Skale Hub — Lives Semanais</p>
+                <p className="text-base font-bold text-white">Entrar no grupo</p>
+                <p className="text-sm text-white/70">Skale Hub — Lives Semanais</p>
               </div>
-              <Radio className="ml-auto h-4 w-4 text-white/60 animate-pulse" />
+              <Radio className="ml-auto h-5 w-5 text-white/60 animate-pulse" />
             </div>
 
             {/* Card body */}
-            <div className="p-6">
+            <div className="p-7">
               {submitted ? (
-                <div className="flex flex-col items-center py-6 text-center">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#25D366]/10">
-                    <WhatsAppIcon className="h-8 w-8 text-[#25D366]" />
+                <div className="flex flex-col items-center py-8 text-center">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#25D366]/10">
+                    <WhatsAppIcon className="h-10 w-10 text-[#25D366]" />
                   </div>
-                  <h2 className="mt-4 text-xl font-bold text-white">Você está dentro! 🎉</h2>
-                  <p className="mt-2 text-sm leading-6 text-white/50">
+                  <h2 className="mt-5 text-2xl font-bold text-white">Você está dentro! 🎉</h2>
+                  <p className="mt-3 text-base leading-7 text-white/50">
                     Número confirmado. Você receberá os próximos avisos do Skale Hub direto no seu WhatsApp.
                   </p>
                 </div>
               ) : (
                 <form
-                  className="space-y-4"
+                  className="space-y-5"
                   onSubmit={(e) => {
                     e.preventDefault();
                     if (phoneIsValid && !submitMutation.isPending) submitMutation.mutate();
                   }}
                 >
                   <div>
-                    <p className="text-sm font-semibold text-white">Seu número do WhatsApp</p>
-                    <p className="mt-0.5 text-xs text-white/40">
+                    <p className="text-base font-semibold text-white">Seu número do WhatsApp</p>
+                    <p className="mt-1 text-sm text-white/40">
                       Use o número que você acessa o WhatsApp.
                     </p>
                   </div>
@@ -189,7 +189,7 @@ export default function SkaleHubGroup() {
                         setSelectedCountry(c);
                         setPhone((cur) => formatPhoneForCountry(cur, c));
                       }}
-                      buttonClassName="min-h-12 rounded-none border-0 bg-transparent text-white"
+                      buttonClassName="min-h-14 rounded-none border-0 bg-transparent text-white text-base"
                     />
                     <Input
                       type="tel"
@@ -198,7 +198,7 @@ export default function SkaleHubGroup() {
                       placeholder={selectedCountry.format}
                       value={phone}
                       onChange={(e) => setPhone(formatPhoneForCountry(e.target.value, selectedCountry))}
-                      className="min-h-12 border-0 bg-transparent text-white placeholder:text-white/50 focus-visible:ring-0"
+                      className="min-h-14 border-0 bg-transparent text-base text-white placeholder:text-white/50 focus-visible:ring-0"
                       data-testid="input-skale-hub-group-phone"
                     />
                   </div>
@@ -211,17 +211,17 @@ export default function SkaleHubGroup() {
                     type="submit"
                     disabled={!phoneIsValid || submitMutation.isPending}
                     data-testid="button-skale-hub-group-submit"
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] py-3.5 text-sm font-bold text-white shadow-md shadow-[#25D366]/30 transition-all hover:bg-[#22c55e] hover:shadow-[#25D366]/40 disabled:opacity-50"
+                    className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-[#25D366] py-4 text-base font-bold text-white shadow-md shadow-[#25D366]/30 transition-all hover:bg-[#22c55e] hover:shadow-[#25D366]/40 disabled:opacity-50"
                   >
                     {submitMutation.isPending
-                      ? <Loader2 className="h-4 w-4 animate-spin" />
-                      : <WhatsAppIcon className="h-4 w-4" />
+                      ? <Loader2 className="h-5 w-5 animate-spin" />
+                      : <WhatsAppIcon className="h-5 w-5" />
                     }
                     Entrar no grupo do WhatsApp
-                    {!submitMutation.isPending && <ArrowRight className="h-4 w-4" />}
+                    {!submitMutation.isPending && <ArrowRight className="h-5 w-5" />}
                   </button>
 
-                  <p className="text-center text-xs text-white/30">
+                  <p className="text-center text-sm text-white/30">
                     🔒 Sem spam. Só avisos de lives. Saia quando quiser.
                   </p>
                 </form>
