@@ -30,6 +30,7 @@ import { registerBrandGuidelinesRoutes } from "./routes/brandGuidelines.js";
 import { registerPresentationsChatRoutes } from "./routes/presentationsChat.js";
 import { registerBlogAutomationRoutes } from "./routes/blogAutomation.js";
 import { registerSkaleHubRoutes } from "./routes/skaleHub.js";
+import { registerNotificationRoutes } from "./routes/notifications.js";
 import { db, pool } from "./db.js";
 import { users } from "#shared/schema.js";
 import { eq } from "drizzle-orm";
@@ -135,6 +136,7 @@ export async function registerRoutes(
   registerLinksPageRoutes(app);
   registerFormRoutes(app);
   registerIntegrationRoutes(app);
+  registerNotificationRoutes(app);
   registerEstimatesRoutes(app);
   registerSkaleHubRoutes(app);
   registerPresentationsRoutes(app);
