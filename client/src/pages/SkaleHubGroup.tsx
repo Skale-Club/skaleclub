@@ -101,13 +101,11 @@ export default function SkaleHubGroup() {
             </div>
           </div>
 
-          <h1 className="mt-8 text-[clamp(2.5rem,9vw,3.25rem)] font-bold leading-[1.1] tracking-tight text-white lg:text-5xl">
-            Receba os avisos<br />
-            das lives semanais<br />
-            <span className="text-[#25D366]">no seu WhatsApp</span>
+          <h1 className="mt-8 text-[clamp(2.5rem,5vw,3.5rem)] font-bold leading-[1.1] tracking-tight text-white">
+            Receba os avisos das lives semanais <span className="text-[#25D366]">no seu WhatsApp</span>
           </h1>
 
-          <p className="mt-4 max-w-md text-base leading-relaxed text-white/50 lg:max-w-sm">
+          <p className="mt-4 text-base leading-relaxed text-white/50">
             Aquisição de clientes nos EUA, Google Ads, Meta Ads, CRM, automação e IA — toda semana, ao vivo.
           </p>
         </div>
