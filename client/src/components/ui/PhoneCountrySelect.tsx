@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Check, ChevronDown } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -24,11 +25,25 @@ export function PhoneCountrySelect({
   buttonClassName,
 }: PhoneCountrySelectProps) {
   const [open, setOpen] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 224 });
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+
+  const updateDropdownPosition = () => {
+    if (!rootRef.current) return;
+
+    const rect = rootRef.current.getBoundingClientRect();
+    setDropdownPosition({
+      top: rect.bottom + 4,
+      left: rect.left,
+      width: Math.max(224, rect.width),
+    });
+  };
 
   useEffect(() => {
     function handlePointerDown(event: PointerEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (!rootRef.current?.contains(target) && !dropdownRef.current?.contains(target)) {
         setOpen(false);
       }
     }
@@ -47,6 +62,18 @@ export function PhoneCountrySelect({
     };
   }, []);
 
+  useEffect(() => {
+    if (!open) return;
+
+    updateDropdownPosition();
+    window.addEventListener("resize", updateDropdownPosition);
+    window.addEventListener("scroll", updateDropdownPosition, true);
+    return () => {
+      window.removeEventListener("resize", updateDropdownPosition);
+      window.removeEventListener("scroll", updateDropdownPosition, true);
+    };
+  }, [open]);
+
   return (
     <div ref={rootRef} className={cn("relative shrink-0", className)}>
       <button
@@ -54,7 +81,12 @@ export function PhoneCountrySelect({
         aria-label={ariaLabel}
         aria-haspopup="listbox"
         aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
+        onClick={() => {
+          if (!open) {
+            updateDropdownPosition();
+          }
+          setOpen((current) => !current);
+        }}
         className={cn(
           "flex min-h-10 w-[132px] items-center gap-2 bg-slate-50 px-3 text-sm font-medium text-slate-700 outline-none transition-colors hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-[#406EF1]/30",
           buttonClassName,
@@ -75,11 +107,17 @@ export function PhoneCountrySelect({
         />
       </button>
 
-      {open ? (
+      {open && typeof document !== "undefined" ? createPortal(
         <div
+          ref={dropdownRef}
           role="listbox"
           aria-label={ariaLabel}
-          className="absolute left-0 top-full z-50 mt-1 max-h-64 w-56 overflow-auto rounded-md border border-slate-200 bg-white py-1 shadow-xl"
+          className="fixed z-[200] max-h-64 overflow-auto rounded-md border border-slate-200 bg-white py-1 shadow-xl"
+          style={{
+            top: dropdownPosition.top,
+            left: dropdownPosition.left,
+            width: dropdownPosition.width,
+          }}
         >
           {PHONE_COUNTRIES.map((country) => {
             const selected = country.code === value.code;
@@ -109,7 +147,8 @@ export function PhoneCountrySelect({
               </button>
             );
           })}
-        </div>
+        </div>,
+        document.body,
       ) : null}
     </div>
   );

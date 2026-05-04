@@ -1210,6 +1210,7 @@ export class DatabaseStorage implements IStorage {
 
     const payload: Partial<typeof formLeads.$inferInsert> = {
       sessionId: progress.sessionId,
+      tenantId: existing?.tenantId ?? 1,
       formId: resolvedFormId,
       nome: progress.nome ?? existing?.nome ?? "",
       email: progress.email ?? existing?.email,
@@ -1255,6 +1256,7 @@ export class DatabaseStorage implements IStorage {
       const safeStartedAt = isNaN(startedAt.getTime()) ? now : startedAt;
       const insertPayload: typeof formLeads.$inferInsert = {
         sessionId: progress.sessionId,
+        tenantId: 1,
         formId: resolvedFormId,
         nome: progress.nome || "",
         email: payload.email,

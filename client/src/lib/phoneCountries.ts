@@ -2,30 +2,34 @@ export type PhoneCountry = {
   code: string;
   name: string;
   dialCode: string;
-  flag: string;
+  flagCode: string;
   format: string;
   maxDigits: number;
 };
 
 export const PHONE_COUNTRIES: PhoneCountry[] = [
-  { code: "US", name: "United States", dialCode: "+1", flag: "\u{1F1FA}\u{1F1F8}", format: "(###) ###-####", maxDigits: 10 },
-  { code: "BR", name: "Brazil", dialCode: "+55", flag: "\u{1F1E7}\u{1F1F7}", format: "(##) #####-####", maxDigits: 11 },
-  { code: "PT", name: "Portugal", dialCode: "+351", flag: "\u{1F1F5}\u{1F1F9}", format: "### ### ###", maxDigits: 9 },
-  { code: "CA", name: "Canada", dialCode: "+1", flag: "\u{1F1E8}\u{1F1E6}", format: "(###) ###-####", maxDigits: 10 },
-  { code: "UK", name: "United Kingdom", dialCode: "+44", flag: "\u{1F1EC}\u{1F1E7}", format: "#### ######", maxDigits: 10 },
-  { code: "ES", name: "Spain", dialCode: "+34", flag: "\u{1F1EA}\u{1F1F8}", format: "### ### ###", maxDigits: 9 },
-  { code: "IT", name: "Italy", dialCode: "+39", flag: "\u{1F1EE}\u{1F1F9}", format: "### ### ####", maxDigits: 10 },
-  { code: "DE", name: "Germany", dialCode: "+49", flag: "\u{1F1E9}\u{1F1EA}", format: "### #######", maxDigits: 10 },
-  { code: "FR", name: "France", dialCode: "+33", flag: "\u{1F1EB}\u{1F1F7}", format: "# ## ## ## ##", maxDigits: 9 },
-  { code: "IE", name: "Ireland", dialCode: "+353", flag: "\u{1F1EE}\u{1F1EA}", format: "## ### ####", maxDigits: 9 },
-  { code: "AU", name: "Australia", dialCode: "+61", flag: "\u{1F1E6}\u{1F1FA}", format: "### ### ###", maxDigits: 9 },
-  { code: "JP", name: "Japan", dialCode: "+81", flag: "\u{1F1EF}\u{1F1F5}", format: "## #### ####", maxDigits: 10 },
-  { code: "MX", name: "Mexico", dialCode: "+52", flag: "\u{1F1F2}\u{1F1FD}", format: "## #### ####", maxDigits: 10 },
-  { code: "AR", name: "Argentina", dialCode: "+54", flag: "\u{1F1E6}\u{1F1F7}", format: "## ####-####", maxDigits: 10 },
-  { code: "PY", name: "Paraguay", dialCode: "+595", flag: "\u{1F1F5}\u{1F1FE}", format: "### ### ###", maxDigits: 9 },
-  { code: "UY", name: "Uruguay", dialCode: "+598", flag: "\u{1F1FA}\u{1F1FE}", format: "## ### ###", maxDigits: 8 },
-  { code: "CL", name: "Chile", dialCode: "+56", flag: "\u{1F1E8}\u{1F1F1}", format: "# #### ####", maxDigits: 9 },
+  { code: "US", name: "United States", dialCode: "+1", flagCode: "us", format: "(###) ###-####", maxDigits: 10 },
+  { code: "BR", name: "Brazil", dialCode: "+55", flagCode: "br", format: "(##) #####-####", maxDigits: 11 },
+  { code: "PT", name: "Portugal", dialCode: "+351", flagCode: "pt", format: "### ### ###", maxDigits: 9 },
+  { code: "CA", name: "Canada", dialCode: "+1", flagCode: "ca", format: "(###) ###-####", maxDigits: 10 },
+  { code: "UK", name: "United Kingdom", dialCode: "+44", flagCode: "gb", format: "#### ######", maxDigits: 10 },
+  { code: "ES", name: "Spain", dialCode: "+34", flagCode: "es", format: "### ### ###", maxDigits: 9 },
+  { code: "IT", name: "Italy", dialCode: "+39", flagCode: "it", format: "### ### ####", maxDigits: 10 },
+  { code: "DE", name: "Germany", dialCode: "+49", flagCode: "de", format: "### #######", maxDigits: 10 },
+  { code: "FR", name: "France", dialCode: "+33", flagCode: "fr", format: "# ## ## ## ##", maxDigits: 9 },
+  { code: "IE", name: "Ireland", dialCode: "+353", flagCode: "ie", format: "## ### ####", maxDigits: 9 },
+  { code: "AU", name: "Australia", dialCode: "+61", flagCode: "au", format: "### ### ###", maxDigits: 9 },
+  { code: "JP", name: "Japan", dialCode: "+81", flagCode: "jp", format: "## #### ####", maxDigits: 10 },
+  { code: "MX", name: "Mexico", dialCode: "+52", flagCode: "mx", format: "## #### ####", maxDigits: 10 },
+  { code: "AR", name: "Argentina", dialCode: "+54", flagCode: "ar", format: "## ####-####", maxDigits: 10 },
+  { code: "PY", name: "Paraguay", dialCode: "+595", flagCode: "py", format: "### ### ###", maxDigits: 9 },
+  { code: "UY", name: "Uruguay", dialCode: "+598", flagCode: "uy", format: "## ### ###", maxDigits: 8 },
+  { code: "CL", name: "Chile", dialCode: "+56", flagCode: "cl", format: "# #### ####", maxDigits: 9 },
 ];
+
+export function getPhoneCountryFlagUrl(country: PhoneCountry) {
+  return `/flags/nucleo/${country.flagCode}.svg`;
+}
 
 export function detectDefaultPhoneCountry(): PhoneCountry {
   if (typeof window === "undefined") {

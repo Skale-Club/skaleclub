@@ -63,7 +63,10 @@ export default function SkaleHubGroup() {
     },
     onSuccess: () => {
       setSubmitted(true);
-      toast({ title: "Cadastro recebido!", description: "Você receberá os avisos pelo WhatsApp." });
+      toast({
+        title: "Informações recebidas!",
+        description: "Em breve alguém da nossa equipe entrará em contato com você.",
+      });
     },
     onError: (err: Error) => {
       toast({ title: "Não foi possível registrar", description: err.message, variant: "destructive" });
@@ -118,7 +121,7 @@ export default function SkaleHubGroup() {
               </div>
               <div className="flex items-center gap-1.5 text-xs text-white/50">
                 <Users className="h-3.5 w-3.5 text-white/50" />
-                Centenas de membros ativos
+                Avisos e conteúdos das lives
               </div>
             </div>
           </div>
@@ -128,7 +131,7 @@ export default function SkaleHubGroup() {
           </h1>
 
           <p className="mt-4 text-base leading-relaxed text-white/50">
-            Aquisição de clientes nos EUA, Google Ads, Meta Ads, CRM, automação e IA — toda semana, ao vivo.
+            Aquisição de clientes nos EUA, Google Ads, Meta Ads, CRM, automação e IA toda semana, ao vivo.
           </p>
 
           <ul className="mt-5 space-y-1.5 text-xs text-white/40">
@@ -136,7 +139,6 @@ export default function SkaleHubGroup() {
                 "Lives toda semana sobre crescimento de negócios",
                 "Avisos antecipados direto no WhatsApp",
                 "Conteúdo prático e aplicável imediatamente",
-                "Grátis para sempre",
               ].map((item) => (
                 <li key={item} className="flex items-center justify-center gap-2 lg:justify-start">
                   <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-[#25D366]" />
@@ -153,7 +155,7 @@ export default function SkaleHubGroup() {
             {/* Card header */}
             <div className="flex items-center gap-4 bg-[#25D366] px-7 py-5">
               <WhatsAppIcon className="h-8 w-8 shrink-0 text-white" />
-              <p className="text-xl font-bold text-white">Entrar no grupo</p>
+              <p className="text-xl font-bold text-white">Entrar no grupo gratuito</p>
               <Radio className="ml-auto h-7 w-7 text-white/80 animate-pulse" />
             </div>
 
@@ -164,9 +166,9 @@ export default function SkaleHubGroup() {
                   <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#25D366]/10">
                     <WhatsAppIcon className="h-10 w-10 text-[#25D366]" />
                   </div>
-                  <h2 className="mt-5 text-2xl font-bold text-white">Você está dentro! 🎉</h2>
+                  <h2 className="mt-5 text-2xl font-bold text-white">Recebemos suas informações</h2>
                   <p className="mt-3 text-base leading-7 text-white/50">
-                    Número confirmado. Você receberá os próximos avisos do Skale Hub direto no seu WhatsApp.
+                    Em breve alguém da nossa equipe entrará em contato com você.
                   </p>
                 </div>
               ) : (
@@ -186,7 +188,7 @@ export default function SkaleHubGroup() {
 
                   <div className={`flex overflow-hidden rounded-xl border bg-white/5 transition-colors ${phoneError ? "border-red-300" : "border-white/10 focus-within:border-[#25D366]"}`}>
                     <PhoneCountrySelect
-                      aria-label="País do telefone"
+                      ariaLabel="País do telefone"
                       value={selectedCountry}
                       onChange={(c) => {
                         setSelectedCountry(c);

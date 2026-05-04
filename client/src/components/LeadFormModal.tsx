@@ -39,22 +39,22 @@ type CountryConfig = {
   code: string;
   name: string;
   dialCode: string;
-  flag: string;
+  flagCode: string;
   format: string; // e.g., "(###) ###-####" for US
   maxDigits: number;
 };
 
 const COUNTRIES: CountryConfig[] = [
-  { code: "US", name: "United States", dialCode: "+1", flag: "🇺🇸", format: "(###) ###-####", maxDigits: 10 },
-  { code: "BR", name: "Brazil", dialCode: "+55", flag: "🇧🇷", format: "(##) #####-####", maxDigits: 11 },
-  { code: "MX", name: "Mexico", dialCode: "+52", flag: "🇲🇽", format: "(##) ####-####", maxDigits: 10 },
-  { code: "CA", name: "Canada", dialCode: "+1", flag: "🇨🇦", format: "(###) ###-####", maxDigits: 10 },
-  { code: "PT", name: "Portugal", dialCode: "+351", flag: "🇵🇹", format: "### ### ###", maxDigits: 9 },
-  { code: "ES", name: "Spain", dialCode: "+34", flag: "🇪🇸", format: "### ### ###", maxDigits: 9 },
-  { code: "UK", name: "United Kingdom", dialCode: "+44", flag: "🇬🇧", format: "#### ######", maxDigits: 10 },
-  { code: "DE", name: "Germany", dialCode: "+49", flag: "🇩🇪", format: "### #######", maxDigits: 10 },
-  { code: "FR", name: "France", dialCode: "+33", flag: "🇫🇷", format: "# ## ## ## ##", maxDigits: 9 },
-  { code: "IT", name: "Italy", dialCode: "+39", flag: "🇮🇹", format: "### ### ####", maxDigits: 10 },
+  { code: "US", name: "United States", dialCode: "+1", flagCode: "us", format: "(###) ###-####", maxDigits: 10 },
+  { code: "BR", name: "Brazil", dialCode: "+55", flagCode: "br", format: "(##) #####-####", maxDigits: 11 },
+  { code: "MX", name: "Mexico", dialCode: "+52", flagCode: "mx", format: "(##) ####-####", maxDigits: 10 },
+  { code: "CA", name: "Canada", dialCode: "+1", flagCode: "ca", format: "(###) ###-####", maxDigits: 10 },
+  { code: "PT", name: "Portugal", dialCode: "+351", flagCode: "pt", format: "### ### ###", maxDigits: 9 },
+  { code: "ES", name: "Spain", dialCode: "+34", flagCode: "es", format: "### ### ###", maxDigits: 9 },
+  { code: "UK", name: "United Kingdom", dialCode: "+44", flagCode: "gb", format: "#### ######", maxDigits: 10 },
+  { code: "DE", name: "Germany", dialCode: "+49", flagCode: "de", format: "### #######", maxDigits: 10 },
+  { code: "FR", name: "France", dialCode: "+33", flagCode: "fr", format: "# ## ## ## ##", maxDigits: 9 },
+  { code: "IT", name: "Italy", dialCode: "+39", flagCode: "it", format: "### ### ####", maxDigits: 10 },
 ];
 
 const DEFAULT_COUNTRY = "US";
@@ -62,6 +62,10 @@ const DEFAULT_COUNTRY = "US";
 const STORAGE_KEY = "skale-form-state";
 const EXPIRATION_HOURS = 24;
 const NAME_REGEX = /^[A-Za-z\u00C0-\u024F\s]{3,100}$/;
+
+function getCountryFlagUrl(country: CountryConfig) {
+  return `/flags/nucleo/${country.flagCode}.svg`;
+}
 
 // Build initial answers from config
 function buildInitialAnswers(config: FormConfig): Answers {
@@ -786,7 +790,11 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                                   "hover:border-[#406EF1]/70 focus:border-[#406EF1] focus:ring-2 focus:ring-[#406EF1]/30"
                                 )}
                               >
-                                <span className="text-lg sm:text-xl">{selectedCountry.flag}</span>
+                                <img
+                                  src={getCountryFlagUrl(selectedCountry)}
+                                  alt=""
+                                  className="h-4 w-5 rounded-[2px] object-cover shadow-sm"
+                                />
                                 <span className="text-xs sm:text-sm text-slate-600">{selectedCountry.dialCode}</span>
                                 <ChevronDown className={clsx(
                                   "h-3 w-3 sm:h-4 sm:w-4 text-slate-400 transition-transform",
@@ -825,7 +833,11 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                                             selectedCountryCode === country.code && "bg-[#EFF3FF]"
                                           )}
                                         >
-                                          <span className="text-xl">{country.flag}</span>
+                                          <img
+                                            src={getCountryFlagUrl(country)}
+                                            alt=""
+                                            className="h-4 w-5 rounded-[2px] object-cover shadow-sm"
+                                          />
                                           <span className="flex-1 text-sm font-medium text-slate-700">{country.name}</span>
                                           <span className="text-sm text-slate-500">{country.dialCode}</span>
                                         </button>

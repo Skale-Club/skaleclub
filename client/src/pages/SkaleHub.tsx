@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "@/components/ui/loader";
+import { PhoneCountrySelect } from "@/components/ui/PhoneCountrySelect";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import {
-  PHONE_COUNTRIES,
   detectDefaultPhoneCountry,
   formatPhoneForCountry,
   getInternationalPhone,
@@ -274,26 +274,19 @@ export default function SkaleHub() {
                             onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
                           />
                           <div>
-                            <div className={`flex overflow-hidden rounded-md border bg-white ${phoneError ? "border-red-300" : "border-input"}`}>
-                              <select
-                                aria-label="Phone country"
-                                value={selectedCountry.code}
-                                onChange={(event) => {
-                                  const nextCountry = PHONE_COUNTRIES.find((country) => country.code === event.target.value) || PHONE_COUNTRIES[0];
+                            <div className={`flex rounded-md border bg-white ${phoneError ? "border-red-300" : "border-input"}`}>
+                              <PhoneCountrySelect
+                                ariaLabel="Phone country"
+                                value={selectedCountry}
+                                onChange={(nextCountry) => {
                                   setSelectedCountry(nextCountry);
                                   setForm((current) => ({
                                     ...current,
                                     phone: formatPhoneForCountry(current.phone, nextCountry),
                                   }));
                                 }}
-                                className="min-h-10 max-w-[132px] border-0 bg-slate-50 px-3 text-sm font-medium text-slate-700 outline-none"
-                              >
-                                {PHONE_COUNTRIES.map((country) => (
-                                  <option key={country.code} value={country.code}>
-                                    {country.flag} {country.dialCode}
-                                  </option>
-                                ))}
-                              </select>
+                                buttonClassName="rounded-l-md"
+                              />
                               <Input
                                 type="tel"
                                 inputMode="tel"

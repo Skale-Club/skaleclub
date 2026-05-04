@@ -59,8 +59,7 @@ export function LanguageSwitch({
         >
           <span className="absolute inset-0 rounded-full overflow-hidden">
             <img
-              src={isPortuguese ? 'https://flagcdn.com/w40/br.png' : 'https://flagcdn.com/w40/us.png'}
-              srcSet={isPortuguese ? 'https://flagcdn.com/w80/br.png 2x' : 'https://flagcdn.com/w80/us.png 2x'}
+              src={isPortuguese ? '/flags/nucleo/br.svg' : '/flags/nucleo/us.svg'}
               alt={isPortuguese ? 'Brazil' : 'USA'}
               className={clsx(
                 'w-full h-full rounded-full object-cover',
