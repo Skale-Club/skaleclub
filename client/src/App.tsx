@@ -257,7 +257,7 @@ function Router() {
   return (
     <div className={`flex flex-col min-h-screen ${isInitialLoad ? 'invisible' : ''}`}>
       <Navbar />
-      <main className="flex-grow">
+      <main className="flex flex-col flex-grow">
         <Suspense fallback={fallback}>
           <Switch>
             <Route path="/" component={Home} />
