@@ -2,7 +2,7 @@
 
 ## What This Is
 
-Skale Club is an agency web platform combining a public marketing site, an admin dashboard, and a field sales CRM (Xpot). The platform ships four client-facing experiences: branded service proposals at `/e/:slug` (Estimates), immersive bilingual slide decks at `/p/:slug` (Presentations), a themed personal link page at `/links`, and a public blog. The admin controls all four from a single dashboard — including a Gemini-powered blog post generator, weekly live event gate (Skale Hub), and a multi-channel notification system (SMS + Telegram) with DB-editable templates.
+Skale Club is an agency web platform combining a public marketing site, an admin dashboard, and a field sales CRM (Xpot). The platform ships four client-facing experiences: branded service proposals at `/e/:slug` (Estimates), immersive bilingual slide decks at `/p/:slug` (Presentations), a themed personal link page at `/links`, and a public blog. The admin controls all four from a single dashboard, including a Gemini-powered blog post generator that runs on schedule or on-demand.
 
 ## Core Value
 
@@ -21,13 +21,12 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 - ✓ **LINKS-01 → LINKS-17**: Full Links Page Upgrade (upload foundation, click analytics, admin redesign, icon picker, theme editor, live preview, public rendering) — v1.3 (2026-04-20)
 - ✓ **PRES-01 → PRES-22**: Full Admin Presentations Page (schema, CRUD API, brand guidelines, AI SSE authoring, admin editor, public bilingual viewer) — v1.4 (2026-04-22)
 - ✓ **BLOG-01 → BLOG-19**: Full Blog Post Automation (blog tables, Gemini generator engine, REST API + cron, admin automation UI) — v1.5 (2026-04-24)
-- ✓ **HUB-01 → HUB-18**: Skale Hub Weekly Live Gate (schema, public page, admin CRUD, analytics) — v1.6 (2026-05-02)
-- ✓ **TRX-01 → TRX-11**: Translation System Overhaul (100% PT coverage, TypeScript-enforced keys) — v1.7 (2026-05-03)
-- ✓ **NOTIF-01 → NOTIF-14**: Notification Templates System (DB-stored templates, dispatchNotification, Telegram integration, admin Notifications panel) — v1.8 (2026-05-04)
+- ✓ **HUB-01 → HUB-18**: Skale Hub Weekly Live Gate (schema, tracking APIs, public registration gate, admin management, analytics) — v1.6 (2026-05-02)
+- ✓ **TRX-01 → TRX-11**: Translation System Completeness (TranslationKey type enforcement, dead key removal, 8 admin components wired, PrivacyPolicy + TermsOfService covered, 599-line translations.ts) — v1.7 (2026-05-04)
 
 ### Active
 
-_(No active milestone — run `/gsd:new-milestone` to define the next one)_
+(none — planning next milestone)
 
 ### Out of Scope
 
@@ -41,9 +40,6 @@ _(No active milestone — run `/gsd:new-milestone` to define the next one)_
 - Per-post AI regeneration — manual edit via existing admin editor sufficient
 - Visitor login/password accounts for Skale Hub — lightweight gate preferred over full membership
 - Course portal or member library for Skale Hub — not part of the weekly live scope
-- Notification delivery history / logs — future milestone
-- Email notification channel — separate infrastructure, future milestone
-- Per-admin recipient routing — all notifications go to configured recipients
 
 ## Context
 
@@ -51,15 +47,15 @@ _(No active milestone — run `/gsd:new-milestone` to define the next one)_
 - v1.1 shipped 2026-04-15: Multi-forms support (5 sub-phases, tracked in PAUL then synced to GSD)
 - v1.2 shipped 2026-04-20: Estimates System (4 phases, 8 plans, 62 files, +10,263 LOC)
 - v1.3 shipped 2026-04-20: Links Page Upgrade (5 phases, 10 plans, 17/17 requirements)
-- v1.4 shipped 2026-04-22: Admin Presentations Page (6 phases, 22/22 requirements)
+- v1.4 shipped 2026-04-22: Admin Presentations Page (6 phases, 22/22 requirements — schema, CRUD API, brand guidelines, AI authoring SSE, admin chat editor, public bilingual viewer)
 - v1.5 shipped 2026-04-24: Blog Post Automation (4 phases, 6 plans, 45 files, +6,343 LOC, 19/19 requirements)
-- v1.6 shipped 2026-05-02: Skale Hub Weekly Live Gate (5 phases, 18/18 requirements)
-- v1.7 shipped 2026-05-03: Translation System Overhaul (1 phase, 4 plans, 11/11 requirements)
-- v1.8 shipped 2026-05-04: Notification Templates System (3 phases, 6 plans, 53 files, +5,894 LOC, 14/14 NOTIF requirements)
+- v1.6 planned 2026-05-02: Skale Hub Weekly Live Gate (5 phases, 18 requirements - schema, tracking APIs, public page, admin management, analytics)
+- v1.6 shipped 2026-05-02: Skale Hub Weekly Live Gate (5 phases, 18/18 requirements complete)
+- v1.7 shipped 2026-05-04: Translation System Completeness (1 phase, 4 plans, 11/11 TRX requirements — TypeScript-enforced TranslationKey, 18 dead keys removed, 8 admin components wired, PrivacyPolicy + TermsOfService covered, translations.ts at 599 lines)
 - Stack: TypeScript/React + Express + Drizzle ORM + PostgreSQL + Supabase Auth + Vercel
-- DB migration pattern: raw SQL via tsx script OR `npx supabase db push` (Supabase CLI preferred going forward)
+- DB migration pattern: raw SQL via tsx script (drizzle-kit CJS can't resolve .js ESM imports)
 - AI providers: Gemini (blog automation via `@google/genai`), Anthropic Claude (presentations via `@anthropic-ai/sdk`), OpenAI/Groq/OpenRouter (chat via `getActiveAIClient()` shim)
-- Notification channels: Twilio SMS + Telegram Bot API (native fetch) — both routed through shared dispatcher
+- Public viewer pattern: IntersectionObserver for scroll-spy nav dots + framer-motion for section animations
 
 ## Constraints
 
@@ -81,21 +77,21 @@ _(No active milestone — run `/gsd:new-milestone` to define the next one)_
 | JSONB snapshot for estimate services (v1.2) | Immutability — edits to catalog don't corrupt sent proposals | ✅ Validated |
 | UUID slug for estimate public links (v1.2) | Unguessable public URL without auth | ✅ Validated |
 | Plain-text access_code, not bcrypt (v1.2) | GHL automation must read and inject codes into links | ✅ Validated |
-| Raw SQL tsx migration pattern (v1.2) | drizzle-kit CJS can't resolve .js ESM imports | ✅ Reusable pattern; `supabase db push` preferred for remote |
+| Raw SQL tsx migration pattern (v1.2) | drizzle-kit CJS can't resolve .js ESM imports | ✅ Reusable pattern established |
 | estimate_views event-log table, not counter column (v1.2) | Queryable history, cascade delete, no UPDATE contention | ✅ Validated |
 | isEstimateRoute guard before Navbar in App.tsx (v1.2) | Structural isolation — no conditional rendering inside layout | ✅ Validated |
-| `client.messages.stream()` for Anthropic SSE (v1.4) | MessageStream helper accumulates inputJson deltas | ✅ Phase 18 |
-| `tool_choice: {type:"tool"}` forced (v1.4) | Prevents Claude returning plain text for casual messages | ✅ Phase 18 |
-| Dedicated `@google/genai` singleton for blog (v1.5) | Blog Gemini pipeline decoupled from chat Gemini helper | ✅ Phase 22 |
-| `registerBlogAutomationRoutes` before `registerBlogRoutes` (v1.5) | Prevents wildcard from intercepting `/api/blog/settings` | ✅ Phase 23 |
-| Phone-first participant identity for Skale Hub (v1.6) | Phone is primary business identifier | ✅ Phase 25 |
-| No visitor auth for Skale Hub (v1.6) | Weekly live access must stay simple and fast | ✅ Phase 26 |
-| text columns (not enum) for event_key and channel (v1.8) | ALTER TABLE not needed for new event types | ✅ Phase 31 |
-| dispatchNotification() single entry point (v1.8) | Callers never deal with message text or channel routing | ✅ Phase 31-32 |
-| notifyOnNewChat guard at call site, not dispatcher (v1.8) | Dispatcher is channel-agnostic; per-event toggles stay at call site | ✅ Phase 31 |
-| Native fetch for Telegram Bot API (v1.8) | No SDK needed; single POST to sendMessage endpoint | ✅ Phase 32 |
-| chatId stored as TEXT not INTEGER (v1.8) | Telegram channel IDs use -100 prefix, overflow safe integer | ✅ Phase 32 |
-| Per-channel individual save in Notifications panel (v1.8) | Prevents accidental overwrites when editing multiple channels | ✅ Phase 33 |
+| `client.messages.stream()` not `.create({stream:true})` for Anthropic SSE (v1.4) | MessageStream helper accumulates inputJson deltas and fires named events | ✅ Phase 18 |
+| `tool_choice: {type:"tool",name:"update_slides"}` forced (v1.4) | Prevents Claude returning plain text for casual messages | ✅ Phase 18 |
+| `Anthropic.Tool` namespace access not named import (v1.4) | SDK doesn't export `Tool` at top-level index | ✅ Phase 18 |
+| Dedicated `@google/genai` singleton for blog (v1.5) | Blog Gemini pipeline decoupled from existing chat Gemini helper | ✅ Phase 22 |
+| `blog_generation_jobs.postId` nullable int, no FK (v1.5) | Job row can exist before draft post is created | ✅ Phase 21 |
+| Feature-image failure is non-blocking (v1.5) | Draft creation must succeed even when Gemini image API fails | ✅ Phase 22 |
+| `registerBlogAutomationRoutes` before `registerBlogRoutes` (v1.5) | Prevents `GET /api/blog/:idOrSlug` wildcard from intercepting `/api/blog/settings` | ✅ Phase 23 |
+| `startCron()` with `process.env.VERCEL` guard (v1.5) | Vercel serverless uses cron endpoint instead; avoid double-firing | ✅ Phase 23 |
+| BlogAutomationPanel co-located in BlogSection.tsx (v1.5) | Matches EstimatesSection + IntegrationsSection co-location patterns | ✅ Phase 24 |
+| Phone-first participant identity for Skale Hub (v1.6) | Phone is the primary business identifier; email strengthens matching and CRM value | ✅ Phase 25 |
+| Track unlock and access as separate events for Skale Hub (v1.6) | Admin needs to distinguish gate completion from actual click-through | ✅ Phase 25 foundation via event-log table |
+| No visitor auth for Skale Hub (v1.6) | Weekly live access must stay simple and fast | ✅ Phase 26 API contract |
 
 ## Evolution
 
@@ -106,6 +102,7 @@ This document evolves at phase transitions and milestone boundaries.
 2. Requirements validated? → Move to Validated with phase reference
 3. New requirements emerged? → Add to Active
 4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
 
 **After each milestone** (via `/gsd:complete-milestone`):
 1. Full review of all sections
@@ -115,4 +112,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-*Last updated: 2026-05-04 — v1.8 Notification Templates System shipped; all NOTIF-01–14 validated*
+*Last updated: 2026-05-04 after v1.7 milestone — Translation System Completeness shipped*

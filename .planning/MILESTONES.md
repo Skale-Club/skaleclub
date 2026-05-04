@@ -10,6 +10,21 @@
 
 ---
 
+## v1.7 Translation System Completeness (Shipped: 2026-05-04)
+
+**Phases completed:** 1 phase (Phase 30), 4 plans
+**Timeline:** 2026-05-03 (single-day sprint)
+
+**Key accomplishments:**
+
+- `t()` typed as `TranslationKey` via TypeScript overload cast — compile-time error for undefined keys, zero runtime overhead; 18 dead keys removed, correct 404 key added
+- 7 translation keys wired into PresentationsSection, LeadsSection, SEOSection, NewFormDialog, LinksSection — all "Back to X" variants covered
+- `useTranslation` added to DashboardSection and EstimatesSection from scratch — both had zero t() usage before; all visible strings wrapped
+- ~104 static keys added for PrivacyPolicy and TermsOfService — legal copy is now deterministic, zero API fallbacks
+- `translations.ts` at exactly 599 lines; `npm run check` green; 11/11 TRX requirements delivered
+
+---
+
 ## v1.5 Blog Post Automation (Shipped: 2026-04-24)
 
 **Phases completed:** 4 phases, 6 plans, 13 tasks

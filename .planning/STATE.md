@@ -3,37 +3,36 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: and earlier)
 status: completed
-last_updated: "2026-05-04T17:27:40.768Z"
+last_updated: "2026-05-04T23:09:49.975Z"
 last_activity: 2026-05-04
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 12
-  completed_plans: 12
+  total_phases: 5
+  completed_phases: 5
+  total_plans: 10
+  completed_plans: 10
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** v1.8 milestone complete
+**Status:** v1.7 milestone complete
 
 ---
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-05-02)
+See: `.planning/PROJECT.md` (updated 2026-05-04)
 
 **Core value:** Clients receive a proposal link and experience Skale Club services as an immersive, professional presentation — not a PDF.
-**Current focus:** Phase 33 — Admin Notifications Panel
+**Current focus:** Planning next milestone (v1.8)
 
 ---
 
 ## Current Position
 
-Phase: 33
-Plan: Not started
-Milestone: v1.6 shipped
-Status: Ready to execute
+Phase: — (between milestones)
+Milestone: v1.7 shipped 2026-05-04
+Status: Ready for /gsd:new-milestone
 Last activity: 2026-05-04
 
 ---
@@ -76,9 +75,6 @@ Last activity: 2026-05-04
 | Phase 30-translation-system-overhaul P01 | 8min | 3 tasks | 5 files |
 | Phase 30 P02 | 10min | 3 tasks | 5 files |
 | Phase 30-translation-system-overhaul P04 | 11min | 3 tasks | 1 files |
-| Phase 31-schema-templates-foundation P01 | 16min | 2 tasks | 6 files |
-| Phase 32-telegram-integration P02 | 7min | 2 tasks | 2 files |
-| Phase 33-admin-notifications-panel P02 | 2min | 2 tasks | 4 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -207,11 +203,6 @@ Last activity: 2026-05-04
 - [Phase 30-translation-system-overhaul]: useCallback overload cast pattern — primary overload (text: TranslationKey) enforces static strings; fallback (text: string) allows dynamic DB content to compile without cast
 - [Phase 30]: PAGE_SLUG_FIELDS moved inside SEOSection component body — the array uses t() for labels, so must be declared after useTranslation() hook call
 - [Phase 30-translation-system-overhaul]: Compact section format in translations.ts — merged section sub-comments into single-line headers and removed inter-section blank lines to stay within 600-line CLAUDE.md constraint
-- [Phase 31-schema-templates-foundation]: text columns (not enum) for event_key and channel — per D-05 from RESEARCH.md; enum ALTER TABLE not needed when adding new event types
-- [Phase 31-schema-templates-foundation]: upsertNotificationTemplate uses id-present check (update vs. insert) — matches upsertBrandGuidelines/upsertBlogSettings patterns; avoids ON CONFLICT complexity at ORM layer
-- [Phase 32-telegram-integration]: Local telegramSettingsSchema in integrations.ts mirrors twilioSettingsSchema — route-layer Zod schema decoupled from shared insertTelegramSettingsSchema
-- [Phase 32-telegram-integration]: Three-guard dispatch chain in notifications.ts: row exists + enabled=true + botToken+chatId non-empty — matches sms branch guard pattern, non-throwing
-- [Phase 33-admin-notifications-panel]: Per-id saving state (Record<number, boolean>) not a single isSaving boolean — 6 Save buttons must be independently enabled/disabled
 
 ### Quick Tasks Completed
 

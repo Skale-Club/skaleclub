@@ -41,6 +41,15 @@ Plans:
 ## Shipped Milestones
 
 <details>
+<summary>✅ v1.7 Translation System Completeness (Phase 30) — SHIPPED 2026-05-04</summary>
+
+- [x] Phase 30: Translation System Overhaul (4/4 plans) — completed 2026-05-03
+
+_Archive: `.planning/milestones/v1.7-ROADMAP.md`_
+
+</details>
+
+<details>
 <summary>✅ v1.6 Skale Hub Weekly Live Gate (Phases 25-29) — SHIPPED 2026-05-02</summary>
 
 - [x] Phase 25: Foundation (1/1 plans) — completed 2026-05-02
