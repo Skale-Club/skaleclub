@@ -92,6 +92,25 @@ export function registerFormRoutes(app: Express) {
     }
   });
 
+  // List leads for a form (admin), paginated.
+  app.get("/api/forms/:id/leads", requireAdmin, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+
+      const limit = Math.min(Number(req.query.limit) || 20, 100);
+      const offset = Number(req.query.offset) || 0;
+
+      const form = await storage.getForm(id);
+      if (!form) return res.status(404).json({ message: "Form not found" });
+
+      const result = await storage.listLeadsForForm(id, limit, offset);
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
   // Read one form (admin).
   app.get("/api/forms/:id", requireAdmin, async (req, res) => {
     try {

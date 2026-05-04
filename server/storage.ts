@@ -660,6 +660,7 @@ export interface IStorage {
   duplicateForm(id: number, overrides?: { slug?: string; name?: string }): Promise<Form>;
   setDefaultForm(id: number): Promise<Form>;
   countLeadsForForm(formId: number): Promise<number>;
+  listLeadsForForm(formId: number, limit: number, offset: number): Promise<{ data: (typeof formLeads.$inferSelect)[]; total: number }>;
 
   // Leads
   upsertFormLeadProgress(progress: FormLeadProgressInput, metadata?: { userAgent?: string; conversationId?: string; source?: string; formId?: number }, formConfig?: FormConfig): Promise<FormLead>;
@@ -1112,6 +1113,14 @@ export class DatabaseStorage implements IStorage {
       .from(formLeads)
       .where(eq(formLeads.formId, formId));
     return row?.count ?? 0;
+  }
+
+  async listLeadsForForm(formId: number, limit: number, offset: number): Promise<{ data: (typeof formLeads.$inferSelect)[]; total: number }> {
+    const [countRow, data] = await Promise.all([
+      db.select({ count: sql<number>`count(*)::int` }).from(formLeads).where(eq(formLeads.formId, formId)),
+      db.select().from(formLeads).where(eq(formLeads.formId, formId)).orderBy(desc(formLeads.createdAt)).limit(limit).offset(offset),
+    ]);
+    return { data, total: countRow[0]?.count ?? 0 };
   }
 
   // ──────────────────────────────────────────────────────────
