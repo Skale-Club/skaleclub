@@ -19,6 +19,7 @@ import {
   hubParticipants,
   hubRegistrations,
   hubAccessEvents,
+  notificationTemplates,
   portfolioServices,
   estimates,
   estimateViews,
@@ -114,6 +115,8 @@ import {
   type SalesRepRole,
   type SalesOpportunityStatus,
   type SalesTaskStatus,
+  type NotificationTemplate,
+  type InsertNotificationTemplate,
 } from "#shared/schema.js";
 import { eq, and, or, ilike, gte, lt, desc, asc, sql, ne, inArray, count } from "drizzle-orm";
 
@@ -787,6 +790,10 @@ export interface IStorage {
   // Brand Guidelines (PRES-09)
   getBrandGuidelines(): Promise<BrandGuidelines | undefined>;
   upsertBrandGuidelines(content: string): Promise<BrandGuidelines>;
+
+  // Notification Templates (NOTIF-01, NOTIF-02)
+  getNotificationTemplates(eventKey?: string): Promise<NotificationTemplate[]>;
+  upsertNotificationTemplate(template: InsertNotificationTemplate & { id?: number }): Promise<NotificationTemplate>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2801,6 +2808,33 @@ export class DatabaseStorage implements IStorage {
     }
     const [row] = await db.insert(brandGuidelines).values({ content }).returning();
     return row;
+  }
+
+  // Notification Templates (NOTIF-01, NOTIF-02)
+  async getNotificationTemplates(eventKey?: string): Promise<NotificationTemplate[]> {
+    if (eventKey) {
+      return db.select().from(notificationTemplates)
+        .where(eq(notificationTemplates.eventKey, eventKey));
+    }
+    return db.select().from(notificationTemplates);
+  }
+
+  async upsertNotificationTemplate(
+    template: InsertNotificationTemplate & { id?: number }
+  ): Promise<NotificationTemplate> {
+    if (template.id) {
+      const [updated] = await db
+        .update(notificationTemplates)
+        .set({ ...template, updatedAt: new Date() })
+        .where(eq(notificationTemplates.id, template.id))
+        .returning();
+      return updated;
+    }
+    const [created] = await db
+      .insert(notificationTemplates)
+      .values(template)
+      .returning();
+    return created;
   }
 }
 
