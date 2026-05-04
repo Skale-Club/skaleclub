@@ -68,10 +68,10 @@ export default function SkaleHubGroup() {
   });
 
   return (
-    <div className="min-h-screen bg-[#f7f9fc] text-slate-950">
-      <section className="relative overflow-hidden px-4 py-16 sm:px-6 lg:px-8">
+    <div className="bg-[#f7f9fc] text-slate-950">
+      <section className="relative overflow-hidden px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(64,110,241,0.20),transparent_42%),radial-gradient(circle_at_bottom_right,rgba(15,23,42,0.10),transparent_36%)]" />
-        <div className="relative mx-auto grid min-h-[calc(100vh-8rem)] max-w-6xl gap-10 lg:grid-cols-[1fr_0.85fr] lg:items-center">
+        <div className="relative mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1fr_0.85fr] lg:items-center">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-[#406EF1]/15 bg-white/80 px-4 py-2 text-sm font-semibold text-[#355CD0] shadow-sm backdrop-blur">
               <Sparkles className="h-4 w-4" />
