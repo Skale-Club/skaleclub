@@ -75,7 +75,7 @@ export default function SkaleHubGroup() {
       {/* Top gradient blob */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[500px] bg-[radial-gradient(ellipse_70%_60%_at_60%_-5%,rgba(37,211,102,0.12),transparent)]" />
 
-      <section className="relative mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-9 px-4 pt-[calc(5rem+36px)] pb-9 sm:px-6 lg:grid-cols-[1fr_380px] lg:px-8">
+      <section className="relative mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-9 px-4 pt-[calc(5rem+36px)] pb-9 sm:px-6 lg:grid-cols-[1fr_437px] lg:px-8">
 
         {/* ── Left column ── */}
         <div className="text-center lg:text-left">
