@@ -153,10 +153,7 @@ export default function SkaleHubGroup() {
             {/* Card header */}
             <div className="flex items-center gap-4 bg-[#25D366] px-7 py-5">
               <WhatsAppIcon className="h-8 w-8 shrink-0 text-white" />
-              <div>
-                <p className="text-base font-bold text-white">Entrar no grupo</p>
-                <p className="text-sm text-white/70">Skale Hub — Lives Semanais</p>
-              </div>
+              <p className="text-xl font-bold text-white">Entrar no grupo</p>
               <Radio className="ml-auto h-5 w-5 text-white/60 animate-pulse" />
             </div>
 
