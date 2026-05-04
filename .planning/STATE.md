@@ -24,17 +24,17 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-05-02)
 
 **Core value:** Clients receive a proposal link and experience Skale Club services as an immersive, professional presentation — not a PDF.
-**Current focus:** Phase 30 — Translation System Overhaul
+**Current focus:** Phase 32 — Telegram Integration
 
 ---
 
 ## Current Position
 
-Phase: 30
-Plan: Not started
-Milestone: v1.6 shipped
-Status: Ready to execute
-Last activity: 2026-05-03
+Phase: 32
+Plan: 01 complete (Plan 02 next)
+Milestone: v1.8 in progress
+Status: In progress
+Last activity: 2026-05-04
 
 ---
 
@@ -76,6 +76,7 @@ Last activity: 2026-05-03
 | Phase 30-translation-system-overhaul P01 | 8min | 3 tasks | 5 files |
 | Phase 30 P02 | 10min | 3 tasks | 5 files |
 | Phase 30-translation-system-overhaul P04 | 11min | 3 tasks | 1 files |
+| Phase 32-telegram-integration P01 | ~8min | 2 tasks | 5 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -204,6 +205,10 @@ Last activity: 2026-05-03
 - [Phase 30-translation-system-overhaul]: useCallback overload cast pattern — primary overload (text: TranslationKey) enforces static strings; fallback (text: string) allows dynamic DB content to compile without cast
 - [Phase 30]: PAGE_SLUG_FIELDS moved inside SEOSection component body — the array uses t() for labels, so must be declared after useTranslation() hook call
 - [Phase 30-translation-system-overhaul]: Compact section format in translations.ts — merged section sub-comments into single-line headers and removed inter-section blank lines to stay within 600-line CLAUDE.md constraint
+- [Phase 32-01]: telegramSettings singleton auto-create pattern mirrors getTwilioSettings — first read creates the row if absent
+- [Phase 32-01]: parse_mode: "Markdown" (legacy) not "MarkdownV2" — simpler escaping for notification strings
+- [Phase 32-01]: json.ok check (Telegram Bot API field) not response.ok (HTTP status) — Bot API returns 200 with ok:false on errors
+- [Phase 32-01]: sendTelegramMessage is non-throwing — catch all errors and return { success: false } so dispatcher (Plan 02) ignores return value safely
 
 ### Quick Tasks Completed
 
@@ -281,4 +286,6 @@ None.
 | 2026-04-29 | Plan 25-02 executed | ServiceDetailModal migrated to shadcn Dialog + browser back-button close + ServicesSection wires paused={isModalOpen}; npm run check clean (commit 1423e5e) |
 | 2026-04-29 | Phase 25 UAT passed | User confirmed fade mask, click-to-open modal, scroll lock, and carousel pause all working in browser |
 
-*Last updated: 2026-05-02 - v1.6 shipped; all Skale Hub phases complete*
+| 2026-05-04 | Plan 32-01 executed | Telegram foundation shipped: telegramSettings schema, SQL migration, migration runner, sendTelegramMessage integration module, getTelegramSettings/saveTelegramSettings storage methods (2 tasks, 2 commits: 0b4bbf4, 94bb5e3); Plan 32-02 next |
+
+*Last updated: 2026-05-04 - Phase 32 Plan 01 complete; Telegram integration foundation shipped*

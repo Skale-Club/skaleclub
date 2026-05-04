@@ -9,13 +9,14 @@
 - ✅ **v1.4 Admin Presentations Page** — Phases 15-20 (shipped 2026-04-22)
 - ✅ **v1.5 Blog Post Automation** — Phases 21-24 (shipped 2026-04-24)
 - ✅ **v1.6 Skale Hub Weekly Live Gate** — Phases 25-29 (shipped 2026-05-02)
-- 🔄 **v1.7 Translation System Completeness** — Phase 30 (active)
+- ✅ **v1.7 Translation System Completeness** — Phase 30 (shipped 2026-05-03)
+- 🔄 **v1.8 Telegram Integration** — Phase 32 (active)
 
 ## Active
 
-**v1.7 Translation System Completeness** — Phase 30
+**v1.8 Telegram Integration** — Phase 32
 
-- [ ] **Phase 30: Translation System Overhaul** — eliminate all hardcoded strings, fix missing/broken/unused keys, achieve 100% PT coverage with zero API fallbacks, add build-time validation
+- [x] **Phase 32: Telegram Integration** — Plan 01 complete (foundation: schema, migration, integration module, storage layer); Plan 02 next (routes + dispatcher)
 
 ## Shipped Milestones
 
