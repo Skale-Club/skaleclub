@@ -93,7 +93,14 @@ export default function SkaleHubGroup() {
             </div>
             <div className="flex flex-col gap-0.5 text-left">
               <span className="text-xs text-white/40">Grupo oficial</span>
-              <span className="text-lg font-bold text-white">Skale Hub — Lives</span>
+              <span className="flex items-center gap-2 text-lg font-bold text-white">
+                Skale Hub
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
+                </span>
+                Lives
+              </span>
               <div className="flex items-center gap-1.5 text-xs text-[#25D366]">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#25D366]" />
                 Grupo aberto para novos membros
