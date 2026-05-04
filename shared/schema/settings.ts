@@ -30,6 +30,16 @@ export const twilioSettings = pgTable("twilio_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Telegram Integration Settings
+export const telegramSettings = pgTable("telegram_settings", {
+  id: serial("id").primaryKey(),
+  enabled: boolean("enabled").default(false),
+  botToken: text("bot_token"),
+  chatId: text("chat_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Company Settings (singleton table - only one row)
 export const companySettings = pgTable("company_settings", {
   id: serial("id").primaryKey(),
@@ -141,6 +151,12 @@ export const insertTwilioSettingsSchema = z.object({
   notifyOnNewChat: z.boolean().default(true),
 });
 
+export const insertTelegramSettingsSchema = z.object({
+  enabled: z.boolean().default(false),
+  botToken: z.string().nullable().optional(),
+  chatId: z.string().nullable().optional(),
+});
+
 export const insertCompanySettingsSchema = z.object({
   companyName: z.string().default('Company Name'),
   companyEmail: z.string().email().default('contact@company.com'),
@@ -190,6 +206,8 @@ export type IntegrationSettings = typeof integrationSettings.$inferSelect;
 export type InsertIntegrationSettings = typeof integrationSettings.$inferInsert;
 export type TwilioSettings = typeof twilioSettings.$inferSelect;
 export type InsertTwilioSettings = typeof twilioSettings.$inferInsert;
+export type TelegramSettings = typeof telegramSettings.$inferSelect;
+export type InsertTelegramSettings = typeof telegramSettings.$inferInsert;
 export type CompanySettings = typeof companySettings.$inferSelect;
 export type InsertCompanySettings = typeof companySettings.$inferInsert;
 

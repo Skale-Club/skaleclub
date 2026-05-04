@@ -10,15 +10,13 @@
 - ✅ **v1.5 Blog Post Automation** — Phases 21-24 (shipped 2026-04-24)
 - ✅ **v1.6 Skale Hub Weekly Live Gate** — Phases 25-29 (shipped 2026-05-02)
 - ✅ **v1.7 Translation System Completeness** — Phase 30 (shipped 2026-05-03)
-- 🔄 **v1.8 Notification Templates System** — Phases 31-33 (active)
+- 🔄 **v1.8 Telegram Integration** — Phase 32 (active)
 
 ## Active
 
-**v1.8 Notification Templates System** — Phases 31-33
+**v1.8 Telegram Integration** — Phase 32
 
-- [ ] **Phase 31: Schema & Templates Foundation** — `notification_templates` table, migrate 3 existing hardcoded Twilio notification messages to DB-stored templates, shared dispatcher service routing to Twilio or Telegram by channel
-- [ ] **Phase 32: Telegram Integration** — Bot token config in admin integrations, `sendTelegramNotification()` function wired to the 3 existing notification events via shared templates
-- [ ] **Phase 33: Admin Notifications Panel** — Template editor UI: list active notification events, edit template body per channel (SMS/Telegram), preview variables, toggle channel on/off per event
+- [x] **Phase 32: Telegram Integration** — Plan 01 complete (foundation: schema, migration, integration module, storage layer); Plan 02 next (routes + dispatcher)
 
 ## Shipped Milestones
 
@@ -142,13 +140,10 @@ _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
 | 28. Admin Management | v1.6 | 1/1 | Complete | 2026-05-02 |
 | 29. Analytics & Reporting | v1.6 | 1/1 | Complete | 2026-05-02 |
 | 30. Translation System Overhaul | v1.7 | 4/4 | Complete    | 2026-05-03 |
-| 31. Schema & Templates Foundation | v1.8 | 1/2 | Complete    | 2026-05-04 |
-| 32. Telegram Integration | v1.8 | 0/- | Not started | - |
-| 33. Admin Notifications Panel | v1.8 | 0/- | Not started | - |
 
 ---
 
-_Last updated: 2026-05-04 — v1.8 Notification Templates System added (Phases 31-33)_
+_Last updated: 2026-04-22 — Phase 24 planned (2 plans, 2 waves); Phase 23 complete; BLOG-13-16 delivered_
 
 ---
 
@@ -359,57 +354,3 @@ Plans:
 - [x] 30-02-PLAN.md — PresentationsSection missing keys + LeadsSection/SEOSection/NewFormDialog/LinksSection t() wiring (TRX-01, TRX-02, TRX-03, TRX-04, TRX-05)
 - [x] 30-03-PLAN.md — DashboardSection + EstimatesSection — add useTranslation from scratch (TRX-01, TRX-04, TRX-05)
 - [x] 30-04-PLAN.md — PrivacyPolicy + TermsOfService static key coverage + final audit (TRX-01, TRX-06, TRX-09, TRX-11)
-
----
-
-## v1.8 Notification Templates System
-
-### Phase 31: Schema & Templates Foundation
-
-**Goal:** A `notification_templates` table stores all outbound notification messages as DB-editable templates with `{{variable}}` substitution. The 3 existing hardcoded Twilio messages (new chat, hot lead, low-perf alert) are migrated to seed templates. A shared dispatcher service (`server/lib/notifications.ts`) fans out to every active channel (SMS or Telegram) using the matching template row — callers never deal with message text again.
-**Requirements:** NOTIF-01, NOTIF-02, NOTIF-03, NOTIF-04, NOTIF-05
-**Depends on:** Nothing (first phase of v1.8)
-**Plans:** 2/2 plans complete
-
-Plans:
-- [x] 31-01-PLAN.md — SQL migration + Drizzle/Zod schema + storage layer (NOTIF-01, NOTIF-05)
-- [ ] 31-02-PLAN.md — Dispatcher service + twilio.ts exports + 4 call site refactors (NOTIF-02, NOTIF-03, NOTIF-04)
-
-**Canonical refs:** `.planning/milestones/v1.8-REQUIREMENTS.md`
-**Success Criteria** (what must be TRUE):
-  1. `notification_templates` table exists with columns `id`, `event_key`, `channel`, `body`, `active`, `created_at`, `updated_at` — Drizzle/Zod contracts in `shared/schema/notifications.ts`.
-  2. 6 seed rows exist (3 events × 2 channels: sms + telegram) with the current hardcoded message text preserved; calling the 3 existing Twilio functions produces identical output as before via the dispatcher.
-  3. `server/lib/notifications.ts` exports `dispatchNotification(eventKey, variables)` which queries active templates for that event and sends via the appropriate channel integration — Twilio if `channel='sms'`, Telegram stub if `channel='telegram'`.
-  4. `{{variable}}` tokens in template bodies are replaced with runtime values; unknown tokens render as empty string without throwing.
-  5. `npm run check` passes with zero TypeScript errors.
-
-### Phase 32: Telegram Integration
-
-**Goal:** Admin can configure a Telegram bot token + chat ID in the Integrations panel. All 3 notification events are delivered to Telegram via shared templates when the Telegram channel is active — using native fetch, no external SDK.
-**Requirements:** NOTIF-06, NOTIF-07, NOTIF-08, NOTIF-09
-**Depends on:** Phase 31 (dispatcher + template schema must exist)
-**Plans:** 2 plans
-**Canonical refs:** `.planning/milestones/v1.8-REQUIREMENTS.md`
-
-Plans:
-- [ ] 32-01-PLAN.md — telegramSettings schema + migration + integration module + storage methods (NOTIF-06, NOTIF-07)
-- [ ] 32-02-PLAN.md — GET/PUT routes + dispatcher wiring (NOTIF-06, NOTIF-08, NOTIF-09)
-
-**Success Criteria** (what must be TRUE):
-  1. `GET /api/integrations/telegram` and `PUT /api/integrations/telegram` exist, require admin auth, and persist `{ botToken, chatId, enabled }` using the same pattern as Twilio settings.
-  2. `server/integrations/telegram.ts` exports `sendTelegramMessage(config, text)` that posts to `api.telegram.org/bot{token}/sendMessage` — no SDK, native fetch only.
-  3. Triggering a hot-lead, new-chat, or low-perf-alert event dispatches to Telegram when the telegram template row for that event is `active=true` and the integration is enabled+configured.
-  4. Telegram message bodies render with Markdown (bold, newlines) matching the template; the integration settings UI appears in the existing Integrations section of admin.
-
-### Phase 33: Admin Notifications Panel
-
-**Goal:** Admin has a dedicated Notifications section in the dashboard listing all notification events. Each event shows its active channels and an inline editor to modify the template body per channel, toggle channels on/off, and see available variables — no code changes needed to update notification text.
-**Requirements:** NOTIF-10, NOTIF-11, NOTIF-12, NOTIF-13
-**Depends on:** Phase 31 (templates in DB), Phase 32 (Telegram config available)
-**Plans:** 0/- plans
-**Canonical refs:** `.planning/milestones/v1.8-REQUIREMENTS.md`
-**Success Criteria** (what must be TRUE):
-  1. Admin dashboard shows a `Notifications` section with one card per event (`new_chat`, `hot_lead`, `low_perf_alert`) — each card shows event name, and active-channel badges (SMS / Telegram).
-  2. Clicking Edit on an event opens an inline editor per channel with: a textarea for the template body, a variable reference list (e.g. `{{name}}`, `{{phone}}`), and an active toggle — all independently editable per channel.
-  3. Saving a template calls `PUT /api/notifications/templates/:id`, persists to DB, and the next triggered notification uses the new text without a server restart.
-  4. Toggling a channel inactive sets `active=false` for that template row — the dispatcher skips inactive templates.
