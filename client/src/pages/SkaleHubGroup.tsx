@@ -86,14 +86,6 @@ export default function SkaleHubGroup() {
             Skale Hub
           </div>
 
-          <h1 className="mt-8 text-[clamp(2.5rem,5vw,3.5rem)] font-bold leading-[1.1] tracking-tight text-white">
-            Receba os avisos das lives semanais <span className="text-[#25D366]">no seu WhatsApp</span>
-          </h1>
-
-          <p className="mt-4 text-base leading-relaxed text-white/50">
-            Aquisição de clientes nos EUA, Google Ads, Meta Ads, CRM, automação e IA — toda semana, ao vivo.
-          </p>
-
           {/* WhatsApp group info + social proof — mesma linha */}
           <div className="mt-6 flex flex-wrap items-center justify-center gap-6 lg:justify-start">
             {/* Grupo WA */}
@@ -130,6 +122,14 @@ export default function SkaleHubGroup() {
               </div>
             </div>
           </div>
+
+          <h1 className="mt-8 text-[clamp(2.5rem,5vw,3.5rem)] font-bold leading-[1.1] tracking-tight text-white">
+            Receba os avisos das lives semanais <span className="text-[#25D366]">no seu WhatsApp</span>
+          </h1>
+
+          <p className="mt-4 text-base leading-relaxed text-white/50">
+            Aquisição de clientes nos EUA, Google Ads, Meta Ads, CRM, automação e IA — toda semana, ao vivo.
+          </p>
 
           <ul className="mt-5 space-y-1.5 text-xs text-white/40">
               {[
