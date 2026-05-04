@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: and earlier)
 status: executing
-last_updated: "2026-05-04T14:23:39.872Z"
-last_activity: 2026-05-04 -- Phase 32 execution started
+last_updated: "2026-05-04T14:36:37.019Z"
+last_activity: 2026-05-04
 progress:
   total_phases: 5
   completed_phases: 5
@@ -15,7 +15,7 @@ progress:
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** Executing Phase 32
+**Status:** Ready to execute
 
 ---
 
@@ -31,10 +31,10 @@ See: `.planning/PROJECT.md` (updated 2026-05-02)
 ## Current Position
 
 Phase: 32 (Telegram Integration) — EXECUTING
-Plan: 1 of 2
+Plan: 2 of 2
 Milestone: v1.6 shipped
-Status: Executing Phase 32
-Last activity: 2026-05-04 -- Phase 32 execution started
+Status: Ready to execute
+Last activity: 2026-05-04
 
 ---
 
@@ -77,6 +77,7 @@ Last activity: 2026-05-04 -- Phase 32 execution started
 | Phase 30 P02 | 10min | 3 tasks | 5 files |
 | Phase 30-translation-system-overhaul P04 | 11min | 3 tasks | 1 files |
 | Phase 31-schema-templates-foundation P01 | 16min | 2 tasks | 6 files |
+| Phase 32-telegram-integration P02 | 7min | 2 tasks | 2 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -207,6 +208,8 @@ Last activity: 2026-05-04 -- Phase 32 execution started
 - [Phase 30-translation-system-overhaul]: Compact section format in translations.ts — merged section sub-comments into single-line headers and removed inter-section blank lines to stay within 600-line CLAUDE.md constraint
 - [Phase 31-schema-templates-foundation]: text columns (not enum) for event_key and channel — per D-05 from RESEARCH.md; enum ALTER TABLE not needed when adding new event types
 - [Phase 31-schema-templates-foundation]: upsertNotificationTemplate uses id-present check (update vs. insert) — matches upsertBrandGuidelines/upsertBlogSettings patterns; avoids ON CONFLICT complexity at ORM layer
+- [Phase 32-telegram-integration]: Local telegramSettingsSchema in integrations.ts mirrors twilioSettingsSchema — route-layer Zod schema decoupled from shared insertTelegramSettingsSchema
+- [Phase 32-telegram-integration]: Three-guard dispatch chain in notifications.ts: row exists + enabled=true + botToken+chatId non-empty — matches sms branch guard pattern, non-throwing
 
 ### Quick Tasks Completed
 
