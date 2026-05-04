@@ -6,6 +6,7 @@ import { AnalyticsSection } from './integrations/AnalyticsSection';
 import { GHLCard } from './integrations/GHLCard';
 import { GooglePlacesCard } from './integrations/GooglePlacesCard';
 import { GroqCard } from './integrations/GroqCard';
+import { TelegramSection } from './TelegramSection';
 import { TwilioSection } from './TwilioSection';
 
 type IntegrationTab = 'ai' | 'crm' | 'communications' | 'analytics';
@@ -55,6 +56,7 @@ export function IntegrationsSection() {
       {activeTab === 'communications' && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <TwilioSection />
+          <TelegramSection />
           <GroqCard />
         </div>
       )}
