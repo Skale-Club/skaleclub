@@ -87,18 +87,19 @@ export default function SkaleHubGroup() {
           </div>
 
           {/* WhatsApp group info + social proof — mesma linha */}
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
-            {/* Container 1: grupo WA */}
-            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#25D366] shadow-md shadow-[#25D366]/30">
-                <WhatsAppIcon className="h-6 w-6 text-white" />
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-6 lg:justify-start">
+            {/* Grupo WA */}
+            <div className="flex items-center gap-4">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#25D366] shadow-lg shadow-[#25D366]/30">
+                <WhatsAppIcon className="h-9 w-9 text-white" />
               </div>
               <div className="flex flex-col gap-0.5 text-left">
-                <span className="flex items-center gap-1.5 text-sm font-bold text-white">
+                <span className="text-xs text-white/40">Grupo oficial</span>
+                <span className="flex items-center gap-2 text-lg font-bold text-white">
                   Skale Hub
-                  <span className="relative flex h-2 w-2">
+                  <span className="relative flex h-2.5 w-2.5">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
                   </span>
                   Lives
                 </span>
@@ -106,8 +107,8 @@ export default function SkaleHubGroup() {
               </div>
             </div>
 
-            {/* Container 2: membros ativos */}
-            <div className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+            {/* Membros ativos */}
+            <div className="flex items-center gap-2.5">
               <div className="flex -space-x-2">
                 {["#25D366", "#128C7E", "#075E54", "#34C75A"].map((color, i) => (
                   <div key={i} className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#0a0f0d] text-[10px] font-bold text-white" style={{ backgroundColor: color }}>
