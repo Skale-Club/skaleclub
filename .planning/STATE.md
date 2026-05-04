@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.3
-milestone_name: and earlier)
-status: completed
-last_updated: "2026-05-03T22:20:48.744Z"
-last_activity: 2026-05-03
+milestone: v1.8
+milestone_name: Notification Templates System
+status: active
+last_updated: "2026-05-04T00:00:00.000Z"
+last_activity: 2026-05-04
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 10
-  completed_plans: 10
+  total_phases: 3
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # STATE: Skale Club Web Platform
