@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { ArrowRight, CheckCircle2, Loader2, MessageCircle, Radio, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle2, Loader2, MessageCircle, Radio, ShieldCheck } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PhoneCountrySelect } from "@/components/ui/PhoneCountrySelect";
 import { useToast } from "@/hooks/use-toast";
@@ -16,35 +15,39 @@ import {
 } from "@/lib/phoneCountries";
 
 function readUtmParams() {
-  if (typeof window === "undefined") {
-    return {};
-  }
-
-  const params = new URLSearchParams(window.location.search);
+  if (typeof window === "undefined") return {};
+  const p = new URLSearchParams(window.location.search);
   return {
     urlOrigem: window.location.href,
-    utmSource: params.get("utm_source") || undefined,
-    utmMedium: params.get("utm_medium") || undefined,
-    utmCampaign: params.get("utm_campaign") || undefined,
+    utmSource: p.get("utm_source") || undefined,
+    utmMedium: p.get("utm_medium") || undefined,
+    utmCampaign: p.get("utm_campaign") || undefined,
   };
 }
 
+const FEATURES = [
+  { icon: Radio, text: "Lives semanais sobre crescimento" },
+  { icon: MessageCircle, text: "Avisos direto no WhatsApp" },
+  { icon: ShieldCheck, text: "Conteúdo prático e aplicável" },
+];
+
 export default function SkaleHubGroup() {
   const { toast } = useToast();
-
-  useEffect(() => {
-    const prev = document.body.style.backgroundColor;
-    document.body.style.backgroundColor = '#f7f9fc';
-    return () => { document.body.style.backgroundColor = prev; };
-  }, []);
   const [phone, setPhone] = useState("");
   const [selectedCountry, setSelectedCountry] = useState<PhoneCountry>(() => detectDefaultPhoneCountry());
   const [submitted, setSubmitted] = useState(false);
 
+  // Ensure background fills the full viewport including the main flex gap
+  useEffect(() => {
+    const prev = document.body.style.backgroundColor;
+    document.body.style.backgroundColor = "#0d1117";
+    return () => { document.body.style.backgroundColor = prev; };
+  }, []);
+
   const phoneHasValue = phone.trim().length > 0;
   const phoneIsValid = phoneHasValue && isValidPhoneForCountry(phone, selectedCountry);
   const phoneError = phoneHasValue && !phoneIsValid
-    ? `Digite um telefone válido para ${selectedCountry.name}.`
+    ? `Digite um número válido para ${selectedCountry.name}.`
     : null;
 
   const payload = useMemo(() => ({
@@ -54,121 +57,124 @@ export default function SkaleHubGroup() {
 
   const submitMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/forms/skale-hub-group/leads", payload);
-      return response.json() as Promise<{ success: boolean; leadId: number }>;
+      const res = await apiRequest("POST", "/api/forms/skale-hub-group/leads", payload);
+      return res.json() as Promise<{ success: boolean; leadId: number }>;
     },
     onSuccess: () => {
       setSubmitted(true);
-      toast({
-        title: "Cadastro recebido",
-        description: "Vamos usar esse telefone para te colocar no radar do Skale Hub.",
-      });
+      toast({ title: "Cadastro recebido!", description: "Você receberá os avisos pelo WhatsApp." });
     },
-    onError: (error: Error) => {
-      toast({
-        title: "Não foi possível registrar",
-        description: error.message,
-        variant: "destructive",
-      });
+    onError: (err: Error) => {
+      toast({ title: "Não foi possível registrar", description: err.message, variant: "destructive" });
     },
   });
 
   return (
-    <div className="flex-1 bg-[#f7f9fc] text-slate-950">
-      <section className="relative overflow-hidden px-4 pt-28 pb-16 sm:px-6 lg:px-8">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(64,110,241,0.20),transparent_42%),radial-gradient(circle_at_bottom_right,rgba(15,23,42,0.10),transparent_36%)]" />
-        <div className="relative mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1fr_0.85fr] lg:items-center">
-          <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#406EF1]/15 bg-white/80 px-4 py-2 text-sm font-semibold text-[#355CD0] shadow-sm backdrop-blur">
-              <Sparkles className="h-4 w-4" />
-              Skale Hub
-            </div>
-            <h1 className="mt-6 text-4xl font-semibold tracking-tight sm:text-6xl">
-              Entre no grupo da live do Skale Hub
-            </h1>
-            <p className="mt-5 max-w-xl text-lg leading-8 text-slate-600">
-              Acompanhe os avisos das próximas lives sobre aquisição de clientes nos Estados Unidos, Google Ads, Meta Ads, CRM, automação e IA.
-            </p>
+    <div className="flex-1 bg-[#0d1117] text-white">
+      {/* Subtle gradient top */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(28,83,163,0.35),transparent)]" />
 
-            <div className="mt-8 grid gap-3 text-sm text-slate-700 sm:grid-cols-3">
-              <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 shadow-sm">
-                <Radio className="h-4 w-4 text-[#406EF1]" />
-                Lives semanais
-              </div>
-              <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 shadow-sm">
-                <MessageCircle className="h-4 w-4 text-[#406EF1]" />
-                Avisos no WhatsApp
-              </div>
-              <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 shadow-sm">
-                <CheckCircle2 className="h-4 w-4 text-[#406EF1]" />
-                Conteúdo prático
-              </div>
-            </div>
+      <section className="relative mx-auto flex min-h-[calc(100vh-5rem)] max-w-5xl flex-col items-center justify-center gap-16 px-4 py-20 sm:px-6 lg:flex-row lg:items-center lg:gap-20 lg:px-8">
+
+        {/* ── Left: copy ── */}
+        <div className="flex-1 text-center lg:text-left">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-[#1C53A3]">
+            <Radio className="h-3.5 w-3.5" />
+            Skale Hub
           </div>
 
-          <div className="rounded-2xl border border-white/70 bg-white/90 p-5 shadow-2xl shadow-[#406EF1]/10 backdrop-blur">
+          <h1 className="mt-6 text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-[3.25rem]">
+            Entre no grupo<br className="hidden sm:block" /> das lives ao vivo
+          </h1>
+
+          <p className="mt-5 max-w-md text-base leading-relaxed text-white/60 lg:max-w-sm">
+            Aquisição de clientes nos EUA, Google Ads, Meta Ads,
+            CRM, automação e IA — toda semana, ao vivo.
+          </p>
+
+          <ul className="mt-8 space-y-3">
+            {FEATURES.map(({ icon: Icon, text }) => (
+              <li key={text} className="flex items-center justify-center gap-3 text-sm text-white/70 lg:justify-start">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#1C53A3]/20">
+                  <Icon className="h-3.5 w-3.5 text-[#1C53A3]" />
+                </span>
+                {text}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* ── Right: form card ── */}
+        <div className="w-full max-w-sm shrink-0">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur-sm">
             {submitted ? (
-              <div className="flex min-h-[320px] flex-col justify-center rounded-xl bg-emerald-50 p-8 text-center">
-                <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-600" />
-                <h2 className="mt-5 text-2xl font-semibold text-emerald-950">Você está na lista</h2>
-                <p className="mt-3 text-sm leading-6 text-emerald-800">
-                  Recebemos seu telefone. Agora você pode receber os próximos avisos do Skale Hub pelo WhatsApp.
+              <div className="flex flex-col items-center py-8 text-center">
+                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/15">
+                  <CheckCircle2 className="h-7 w-7 text-emerald-400" />
+                </span>
+                <h2 className="mt-5 text-xl font-bold">Você está dentro!</h2>
+                <p className="mt-2 text-sm leading-6 text-white/50">
+                  Recebemos seu número. Você vai receber os próximos avisos do Skale Hub pelo WhatsApp.
                 </p>
               </div>
             ) : (
               <form
-                className="space-y-5"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  if (phoneIsValid && !submitMutation.isPending) {
-                    submitMutation.mutate();
-                  }
+                className="space-y-4"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (phoneIsValid && !submitMutation.isPending) submitMutation.mutate();
                 }}
               >
                 <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#406EF1]">Entrada rápida</p>
-                  <h2 className="mt-2 text-2xl font-semibold">Coloque seu WhatsApp</h2>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">
-                    Use o número que você prefere receber os avisos das lives.
+                  <p className="text-xs font-semibold uppercase tracking-widest text-[#1C53A3]">Acesso gratuito</p>
+                  <h2 className="mt-1.5 text-xl font-bold">Coloque seu WhatsApp</h2>
+                  <p className="mt-1 text-sm text-white/50">
+                    Número pelo qual você quer receber os avisos.
                   </p>
                 </div>
 
-                <div>
-                  <div className={`flex rounded-md border bg-white ${phoneError ? "border-red-300" : "border-input"}`}>
-                    <PhoneCountrySelect
-                      aria-label="País do telefone"
-                      value={selectedCountry}
-                      onChange={(nextCountry) => {
-                        setSelectedCountry(nextCountry);
-                        setPhone((current) => formatPhoneForCountry(current, nextCountry));
-                      }}
-                      buttonClassName="min-h-11 rounded-l-md"
-                    />
-                    <Input
-                      type="tel"
-                      inputMode="tel"
-                      autoComplete="tel"
-                      placeholder={selectedCountry.format}
-                      value={phone}
-                      onChange={(event) => setPhone(formatPhoneForCountry(event.target.value, selectedCountry))}
-                      className="min-h-11 border-0 bg-white focus-visible:ring-0"
-                      data-testid="input-skale-hub-group-phone"
-                    />
-                  </div>
-                  {phoneError ? (
-                    <p className="mt-2 text-xs font-medium text-red-600">{phoneError}</p>
-                  ) : null}
+                <div className={`flex overflow-hidden rounded-lg border bg-white/5 ${phoneError ? "border-red-500/50" : "border-white/10"} focus-within:border-[#1C53A3]/60 transition-colors`}>
+                  <PhoneCountrySelect
+                    aria-label="País do telefone"
+                    value={selectedCountry}
+                    onChange={(c) => {
+                      setSelectedCountry(c);
+                      setPhone((cur) => formatPhoneForCountry(cur, c));
+                    }}
+                    buttonClassName="min-h-11 rounded-none border-0 bg-transparent text-white"
+                  />
+                  <Input
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    placeholder={selectedCountry.format}
+                    value={phone}
+                    onChange={(e) => setPhone(formatPhoneForCountry(e.target.value, selectedCountry))}
+                    className="min-h-11 border-0 bg-transparent text-white placeholder:text-white/30 focus-visible:ring-0"
+                    data-testid="input-skale-hub-group-phone"
+                  />
                 </div>
+                {phoneError && (
+                  <p className="text-xs text-red-400">{phoneError}</p>
+                )}
 
-                <Button
+                <button
                   type="submit"
-                  className="min-h-11 w-full bg-[#406EF1] hover:bg-[#355CD0]"
                   disabled={!phoneIsValid || submitMutation.isPending}
                   data-testid="button-skale-hub-group-submit"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#FFFF01] px-4 py-3 text-sm font-bold text-black transition-opacity hover:opacity-90 disabled:opacity-40"
                 >
-                  {submitMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                  {submitMutation.isPending
+                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : <ArrowRight className="h-4 w-4" />
+                  }
                   Entrar no grupo
-                </Button>
+                </button>
+
+                <p className="text-center text-xs text-white/30">
+                  Sem spam. Só avisos de lives.
+                </p>
               </form>
             )}
           </div>
