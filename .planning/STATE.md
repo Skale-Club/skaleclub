@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: and earlier)
 status: completed
-last_updated: "2026-05-04T16:37:41.606Z"
+last_updated: "2026-05-04T17:06:39.060Z"
 last_activity: 2026-05-04
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 5
-  total_plans: 10
-  completed_plans: 10
+  total_plans: 12
+  completed_plans: 11
 ---
 
 # STATE: Skale Club Web Platform
@@ -78,6 +78,7 @@ Last activity: 2026-05-04
 | Phase 30-translation-system-overhaul P04 | 11min | 3 tasks | 1 files |
 | Phase 31-schema-templates-foundation P01 | 16min | 2 tasks | 6 files |
 | Phase 32-telegram-integration P02 | 7min | 2 tasks | 2 files |
+| Phase 33 P01 | 2min | 2 tasks | 2 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -210,6 +211,8 @@ Last activity: 2026-05-04
 - [Phase 31-schema-templates-foundation]: upsertNotificationTemplate uses id-present check (update vs. insert) — matches upsertBrandGuidelines/upsertBlogSettings patterns; avoids ON CONFLICT complexity at ORM layer
 - [Phase 32-telegram-integration]: Local telegramSettingsSchema in integrations.ts mirrors twilioSettingsSchema — route-layer Zod schema decoupled from shared insertTelegramSettingsSchema
 - [Phase 32-telegram-integration]: Three-guard dispatch chain in notifications.ts: row exists + enabled=true + botToken+chatId non-empty — matches sms branch guard pattern, non-throwing
+- [Phase 33]: insertNotificationTemplateSchema.partial() + type assertion bridges Zod partial output to storage interface without unsafe any
+- [Phase 33]: registerNotificationRoutes placed after registerIntegrationRoutes per CONTEXT.md D-04
 
 ### Quick Tasks Completed
 
