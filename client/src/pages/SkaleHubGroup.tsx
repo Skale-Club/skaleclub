@@ -101,7 +101,7 @@ export default function SkaleHubGroup() {
             </div>
           </div>
 
-          <h1 className="mt-8 text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
+          <h1 className="mt-8 text-[clamp(2.5rem,9vw,3.25rem)] font-bold leading-[1.1] tracking-tight text-white lg:text-5xl">
             Receba os avisos<br />
             das lives semanais<br />
             <span className="text-[#25D366]">no seu WhatsApp</span>
