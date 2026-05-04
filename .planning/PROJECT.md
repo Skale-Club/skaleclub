@@ -26,7 +26,7 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 
 - ✓ **HUB-01 → HUB-18**: Skale Hub Weekly Live Gate — v1.6 (2026-05-02)
 - ✓ **TRX-01 → TRX-11**: Translation System Overhaul — v1.7 (2026-05-03) — 100% PT static coverage, zero API fallbacks, TypeScript-enforced TranslationKey type, 599-line translations.ts
-- 🔄 **NOTIF-01 → NOTIF-09, NOTIF-14**: v1.8 Phases 31-32 complete — notification_templates table, dispatcher, 4 Twilio call site refactors (Phase 31); Telegram integration module, API routes, admin UI TelegramSection (Phase 32); Phase 33 (Admin Notifications Panel) pending
+- ✓ **NOTIF-01 → NOTIF-14**: v1.8 complete — notification_templates table + dispatcher (Phase 31); Telegram integration + TelegramSection UI (Phase 32); Notifications admin panel with 3-event template editor (Phase 33)
 
 ### Out of Scope
 
@@ -54,6 +54,7 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 - v1.7 shipped 2026-05-03: Translation System Overhaul (1 phase, 11/11 TRX requirements — 4 plans, ~170 keys added/cleaned, 8 admin components wired, PrivacyPolicy + TermsOfService covered)
 - v1.8 Phase 31 complete 2026-05-04: notification_templates table, Drizzle/Zod schema, seed (6 rows), dispatchNotification dispatcher, 4 Twilio call sites refactored
 - v1.8 Phase 32 complete 2026-05-04: telegram_settings table + migration, sendTelegramMessage (native fetch), GET/PUT/test routes, dispatcher stub replaced, TelegramSection admin UI
+- v1.8 Phase 33 complete 2026-05-04: Notifications section in admin dashboard — 3-event template editor, per-channel body + active toggle, variable badges, GET/PUT API routes
 - Stack: TypeScript/React + Express + Drizzle ORM + PostgreSQL + Supabase Auth + Vercel
 - DB migration pattern: raw SQL via tsx script (drizzle-kit CJS can't resolve .js ESM imports)
 - AI providers: Gemini (blog automation via `@google/genai`), Anthropic Claude (presentations via `@anthropic-ai/sdk`), OpenAI/Groq/OpenRouter (chat via `getActiveAIClient()` shim)
@@ -114,4 +115,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-*Last updated: 2026-05-04 — v1.8 Phase 32 (Telegram Integration) complete; Phase 33 (Admin Notifications Panel) pending*
+*Last updated: 2026-05-04 — v1.8 Notification Templates System complete (Phases 31-33, all 14 NOTIF requirements delivered)*
