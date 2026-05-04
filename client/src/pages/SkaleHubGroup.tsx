@@ -108,6 +108,36 @@ export default function SkaleHubGroup() {
           <p className="mt-4 text-base leading-relaxed text-white/50">
             Aquisição de clientes nos EUA, Google Ads, Meta Ads, CRM, automação e IA — toda semana, ao vivo.
           </p>
+
+          {/* Social proof + features */}
+          <div className="mt-6 space-y-3">
+            <div className="flex items-center justify-center gap-3 lg:justify-start">
+              <div className="flex -space-x-2">
+                {["#25D366", "#128C7E", "#075E54", "#34C75A"].map((color, i) => (
+                  <div key={i} className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#0a0f0d] text-[10px] font-bold text-white" style={{ backgroundColor: color }}>
+                    {["M", "A", "P", "R"][i]}
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-white/50">
+                <Users className="h-3.5 w-3.5 text-white/50" />
+                Centenas de membros ativos
+              </div>
+            </div>
+            <ul className="space-y-1.5 text-xs text-white/40">
+              {[
+                "Lives toda semana sobre crescimento de negócios",
+                "Avisos antecipados direto no WhatsApp",
+                "Conteúdo prático e aplicável imediatamente",
+                "Grátis para sempre",
+              ].map((item) => (
+                <li key={item} className="flex items-center justify-center gap-2 lg:justify-start">
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-[#25D366]" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         {/* ── Right column: form card + social proof ── */}
@@ -199,35 +229,6 @@ export default function SkaleHubGroup() {
             </div>
           </div>
 
-          {/* Social proof + features — abaixo do card */}
-          <div className="space-y-3 px-1">
-            <div className="flex items-center gap-3">
-              <div className="flex -space-x-2">
-                {["#25D366", "#128C7E", "#075E54", "#34C75A"].map((color, i) => (
-                  <div key={i} className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#0a0f0d] text-[10px] font-bold text-white" style={{ backgroundColor: color }}>
-                    {["M", "A", "P", "R"][i]}
-                  </div>
-                ))}
-              </div>
-              <div className="flex items-center gap-1.5 text-xs text-white/50">
-                <Users className="h-3.5 w-3.5 text-white/50" />
-                Centenas de membros ativos
-              </div>
-            </div>
-            <ul className="space-y-1.5 text-xs text-white/40">
-              {[
-                "Lives toda semana sobre crescimento de negócios",
-                "Avisos antecipados direto no WhatsApp",
-                "Conteúdo prático e aplicável imediatamente",
-                "Grátis para sempre",
-              ].map((item) => (
-                <li key={item} className="flex items-center gap-2">
-                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-[#25D366]" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
       </section>
     </div>
