@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { ArrowRight, CheckCircle2, Loader2, MessageCircle, Radio, Sparkles } from "lucide-react";
 
@@ -31,6 +31,12 @@ function readUtmParams() {
 
 export default function SkaleHubGroup() {
   const { toast } = useToast();
+
+  useEffect(() => {
+    const prev = document.body.style.backgroundColor;
+    document.body.style.backgroundColor = '#f7f9fc';
+    return () => { document.body.style.backgroundColor = prev; };
+  }, []);
   const [phone, setPhone] = useState("");
   const [selectedCountry, setSelectedCountry] = useState<PhoneCountry>(() => detectDefaultPhoneCountry());
   const [submitted, setSubmitted] = useState(false);
@@ -68,7 +74,7 @@ export default function SkaleHubGroup() {
   });
 
   return (
-    <div className="flex flex-col flex-1 bg-[#f7f9fc] text-slate-950">
+    <div className="bg-[#f7f9fc] text-slate-950">
       <section className="relative overflow-hidden px-4 pt-28 pb-16 sm:px-6 lg:px-8">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(64,110,241,0.20),transparent_42%),radial-gradient(circle_at_bottom_right,rgba(15,23,42,0.10),transparent_36%)]" />
         <div className="relative mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1fr_0.85fr] lg:items-center">
