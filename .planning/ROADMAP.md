@@ -388,8 +388,13 @@ Plans:
 **Goal:** Admin can configure a Telegram bot token + chat ID in the Integrations panel. All 3 notification events are delivered to Telegram via shared templates when the Telegram channel is active — using native fetch, no external SDK.
 **Requirements:** NOTIF-06, NOTIF-07, NOTIF-08, NOTIF-09
 **Depends on:** Phase 31 (dispatcher + template schema must exist)
-**Plans:** 0/- plans
+**Plans:** 2 plans
 **Canonical refs:** `.planning/milestones/v1.8-REQUIREMENTS.md`
+
+Plans:
+- [ ] 32-01-PLAN.md — telegramSettings schema + migration + integration module + storage methods (NOTIF-06, NOTIF-07)
+- [ ] 32-02-PLAN.md — GET/PUT routes + dispatcher wiring (NOTIF-06, NOTIF-08, NOTIF-09)
+
 **Success Criteria** (what must be TRUE):
   1. `GET /api/integrations/telegram` and `PUT /api/integrations/telegram` exist, require admin auth, and persist `{ botToken, chatId, enabled }` using the same pattern as Twilio settings.
   2. `server/integrations/telegram.ts` exports `sendTelegramMessage(config, text)` that posts to `api.telegram.org/bot{token}/sendMessage` — no SDK, native fetch only.
