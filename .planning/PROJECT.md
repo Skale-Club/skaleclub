@@ -26,6 +26,7 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 
 - ✓ **HUB-01 → HUB-18**: Skale Hub Weekly Live Gate — v1.6 (2026-05-02)
 - ✓ **TRX-01 → TRX-11**: Translation System Overhaul — v1.7 (2026-05-03) — 100% PT static coverage, zero API fallbacks, TypeScript-enforced TranslationKey type, 599-line translations.ts
+- 🔄 **NOTIF-01 → NOTIF-05**: v1.8 Phase 31 complete — notification_templates table + dispatcher service + 4 call site refactors; Phases 32-33 (Telegram + Admin Panel) pending
 
 ### Out of Scope
 
@@ -51,6 +52,7 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 - v1.6 planned 2026-05-02: Skale Hub Weekly Live Gate (5 phases, 18 requirements - schema, tracking APIs, public page, admin management, analytics)
 - v1.6 shipped 2026-05-02: Skale Hub Weekly Live Gate (5 phases, 18/18 requirements complete)
 - v1.7 shipped 2026-05-03: Translation System Overhaul (1 phase, 11/11 TRX requirements — 4 plans, ~170 keys added/cleaned, 8 admin components wired, PrivacyPolicy + TermsOfService covered)
+- v1.8 Phase 31 complete 2026-05-04: notification_templates table, Drizzle/Zod schema, seed (6 rows), dispatchNotification dispatcher, 4 Twilio call sites refactored — Phase 31 complete, Phases 32-33 pending
 - Stack: TypeScript/React + Express + Drizzle ORM + PostgreSQL + Supabase Auth + Vercel
 - DB migration pattern: raw SQL via tsx script (drizzle-kit CJS can't resolve .js ESM imports)
 - AI providers: Gemini (blog automation via `@google/genai`), Anthropic Claude (presentations via `@anthropic-ai/sdk`), OpenAI/Groq/OpenRouter (chat via `getActiveAIClient()` shim)
@@ -111,4 +113,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-*Last updated: 2026-05-02 - v1.6 Skale Hub Weekly Live Gate planned; active milestone initialized*
+*Last updated: 2026-05-04 — v1.8 Phase 31 (Schema & Templates Foundation) complete; Phases 32-33 pending*
