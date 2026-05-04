@@ -10,13 +10,26 @@
 - ✅ **v1.5 Blog Post Automation** — Phases 21-24 (shipped 2026-04-24)
 - ✅ **v1.6 Skale Hub Weekly Live Gate** — Phases 25-29 (shipped 2026-05-02)
 - ✅ **v1.7 Translation System Completeness** — Phase 30 (shipped 2026-05-03)
-- 🔄 **v1.8 Telegram Integration** — Phase 32 (active)
+- 🔄 **v1.8 Telegram Integration** — Phases 31-33 (active)
 
 ## Active
 
-**v1.8 Telegram Integration** — Phase 32
+**v1.8 Telegram Integration** — Phases 31-33
 
-- [x] **Phase 32: Telegram Integration** — Plan 01 complete (foundation: schema, migration, integration module, storage layer); Plan 02 next (routes + dispatcher)
+- [x] **Phase 31: Schema & Templates Foundation** — complete (DB table, storage methods, seed data)
+- [x] **Phase 32: Telegram Integration** — complete (routes, dispatcher, Telegram channel)
+- [ ] **Phase 33: Admin Notifications Panel** — 2 plans planned, ready to execute
+
+### Phase 33: Admin Notifications Panel
+
+**Goal:** Admin has a dedicated Notifications section in the dashboard listing all notification events. Each event shows active channels and an inline editor to modify template body per channel, toggle channels on/off, and see available variables.
+**Requirements:** NOTIF-10, NOTIF-11, NOTIF-12, NOTIF-13
+**Depends on:** Phase 31 (schema + storage), Phase 32 (dispatcher + routes)
+**Plans:** 2 plans
+
+Plans:
+- [ ] 33-01-PLAN.md — GET + PUT /api/notifications/templates routes + registration in server/routes.ts (NOTIF-10, NOTIF-13)
+- [ ] 33-02-PLAN.md — NotificationsSection.tsx + 4-file admin wiring (NOTIF-10, NOTIF-11, NOTIF-12, NOTIF-13)
 
 ## Shipped Milestones
 
@@ -140,10 +153,15 @@ _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
 | 28. Admin Management | v1.6 | 1/1 | Complete | 2026-05-02 |
 | 29. Analytics & Reporting | v1.6 | 1/1 | Complete | 2026-05-02 |
 | 30. Translation System Overhaul | v1.7 | 4/4 | Complete    | 2026-05-03 |
+| 31. Schema & Templates Foundation | v1.8 | 1/1 | Complete | 2026-05-04 |
+| 32. Telegram Integration | v1.8 | 2/2 | Complete | 2026-05-04 |
+| 33. Admin Notifications Panel | v1.8 | 0/2 | Ready | - |
 
 ---
 
 _Last updated: 2026-04-22 — Phase 24 planned (2 plans, 2 waves); Phase 23 complete; BLOG-13-16 delivered_
+_Last updated: 2026-05-02 - v1.6 Skale Hub Weekly Live Gate shipped (Phases 25-29)_
+_Last updated: 2026-05-04 - Phase 33 planned (2 plans, 2 waves); Phases 31-32 complete_
 
 ---
 
@@ -341,6 +359,7 @@ Plans:
 
 _Last updated: 2026-04-22 — Phase 20 complete (2/2 plans); PRES-17–22 all delivered; v1.4 feature-complete_
 _Last updated: 2026-05-02 - v1.6 Skale Hub Weekly Live Gate shipped (Phases 25-29)_
+_Last updated: 2026-05-04 - Phase 33 planned (2 plans, 2 waves); Phases 31-32 complete_
 
 ### Phase 30: Translation System Overhaul
 
