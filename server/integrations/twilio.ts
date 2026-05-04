@@ -2,7 +2,7 @@ import type { TwilioSettings, FormLead } from "#shared/schema.js";
 
 type TwilioResult = { success: boolean; message?: string };
 
-type TwilioConfig = {
+export type TwilioConfig = {
   accountSid: string;
   authToken: string;
   from: string;
@@ -10,7 +10,7 @@ type TwilioConfig = {
   companyName: string;
 };
 
-type TwilioValidationResult =
+export type TwilioValidationResult =
   | { success: true; config: TwilioConfig }
   | { success: false; message: string };
 
@@ -39,7 +39,7 @@ function collectRecipients(settings: TwilioSettings): string[] {
   return Array.from(new Set(recipients));
 }
 
-function validateConfig(
+export function validateConfig(
   twilioSettings: TwilioSettings,
   options?: { requireNotify?: boolean; companyName?: string }
 ): TwilioValidationResult {
@@ -72,7 +72,7 @@ function validateConfig(
   };
 }
 
-async function sendSms(config: TwilioConfig, body: string): Promise<TwilioResult> {
+export async function sendSms(config: TwilioConfig, body: string): Promise<TwilioResult> {
   try {
     const twilio = await import("twilio");
     const client = twilio.default(config.accountSid, config.authToken);
