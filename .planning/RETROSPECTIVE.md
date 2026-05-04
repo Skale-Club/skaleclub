@@ -4,6 +4,53 @@
 
 ---
 
+## Milestone: v1.8 — Notification Templates System
+
+**Shipped:** 2026-05-04
+**Phases:** 3 (Phases 31–33) | **Plans:** 6 | **Sessions:** 1 (single-day sprint)
+
+### What Was Built
+
+- `notification_templates` table (one row per event × channel pair), `dispatchNotification(storage, eventKey, vars)` dispatcher with `{{variable}}` substitution replacing 4 hardcoded Twilio call sites
+- `telegram_settings` singleton table, `sendTelegramMessage()` via native fetch to Telegram Bot API with `parse_mode: "Markdown"`
+- GET/PUT/test routes for Telegram integration settings; `TelegramSection` admin component in Communications tab
+- `GET /api/notifications/templates` + `PUT /api/notifications/templates/:id` routes; `NotificationsSection.tsx` — 3-event cards × 2-channel rows with per-row draft state, active toggle, variable badge clipboard copy
+- Admin sidebar and router wired for new `notifications` section; Supabase migrations applied via `npx supabase db push`
+
+### What Worked
+
+- **Dispatcher pattern completely decoupled callers from channel logic** — routes.ts and lead-processing.ts simply call `dispatchNotification(storage, eventKey, vars)` and never touch Twilio/Telegram directly; adding a third channel in the future touches only notifications.ts
+- **CONTEXT.md decisions resolved pitfalls before planning** — `chatId as TEXT` (overflow), `parse_mode: "Markdown"` vs MarkdownV2 (escaping), `notifyOnNewChat` guard at call site (not dispatcher) — all decided before the planner ran, resulting in zero deviations
+- **Supabase CLI `db push` established as preferred migration path** — faster and more reliable than the tsx script runner; migration history repair documented for future de-sync scenarios
+- **Phase 32 gap closure inline** — verifier found admin UI missing from Phase 32 scope; closed inline in under 5 minutes rather than spinning up a full gap cycle (TelegramSection was ~130 lines)
+
+### What Was Inefficient
+
+- **Worktree merge conflicts on STATE.md/ROADMAP.md** — same friction as v1.2; parallel executor agents always produce these conflicts on planning docs
+- **Migration history de-sync** — remote Supabase had 13 migrations not tracked in local history; required `supabase migration repair --status applied` before push could run; this should have been maintained throughout v1.0–v1.7
+- **sectionsWithOwnHeader correction** — CONTEXT.md incorrectly placed it in `AdminSidebar.tsx`; researcher caught the error; researcher read step before planning is essential for wiring phases
+
+### Patterns Established
+
+- **`dispatchNotification(storage, eventKey, vars)` as the single notification entry point** — any new event type adds: (1) seed row in notification_templates, (2) call site in routes/lead-processing, (3) Phase 33 admin panel surfaces it automatically
+- **Supabase migrations via `npx supabase db push`** — create files in `supabase/migrations/` with timestamp naming; use `migration repair --status applied` to re-sync stale history before push
+- **Per-row `Record<number, boolean>` saving state** — prevents 6+ Save buttons from all disabling when one fires; reuse for any admin panel with multiple independently-saveable rows
+- **Inline gap closure for small UI gaps** — if verification finds a UI gap that's < 150 LOC and fully self-contained, close it inline rather than creating a gap plan; saves overhead for trivial fixes
+
+### Key Lessons
+
+1. **Maintain Supabase migration history from day one** — `supabase db push` failing due to de-sync is predictable friction; run `migration list` after each milestone to catch drift early
+2. **sectionsWithOwnHeader is in Admin.tsx, not AdminSidebar.tsx** — this has now been corrected twice; capture as a known gotcha in the next codebase map update
+3. **Dispatcher guards at call site, not inside dispatcher** — `notifyOnNewChat` belongs where the event is triggered (routes.ts), not inside `dispatchNotification`; the dispatcher is channel-agnostic and event-agnostic by design
+
+### Cost Observations
+
+- Model mix: Sonnet 4.6 throughout
+- 3 phases, 6 plans, 40 commits in a single session
+- Notable: plan checker passed on first attempt for all plans; CONTEXT.md + researcher combination eliminated all ambiguity before execution agents ran
+
+---
+
 ## Milestone: v1.5 — Blog Post Automation
 
 **Shipped:** 2026-04-24
@@ -109,5 +156,8 @@
 | v1.3 Links Page Upgrade | 5 | 10 | ~50 | ~+8,000 | 1 session (2026-04-20) |
 | v1.4 Admin Presentations | 6 | 10 | ~55 | ~+9,000 | 2 sessions (2026-04-21/22) |
 | v1.5 Blog Post Automation | 4 | 6 | 45 | +6,343 | 1 session (2026-04-22) |
+| v1.6 Skale Hub Live Gate | 5 | 5 | ~45 | ~+5,000 | 1 session (2026-05-02) |
+| v1.7 Translation Overhaul | 1 | 4 | ~30 | ~+2,000 | 1 session (2026-05-03) |
+| v1.8 Notification Templates | 3 | 6 | 53 | +5,894 | 1 session (2026-05-04) |
 
-**Trend:** Delivery density increasing per milestone — v1.5 shipped 19 requirements across 4 phases in a single day with zero plan deviations, indicating that the CONTEXT.md → executable spec → plan → execute pipeline is fully mature. Executable test harnesses (introduced in v1.5) add upfront cost but reduce mid-execution surprises.
+**Trend:** Delivery density remains high and consistent — v1.8 shipped 14 requirements across 3 phases in a single day with zero execution deviations. The dispatcher pattern (v1.8) is the cleanest architectural expansion yet: adding a third notification channel (e.g., email) requires only a new branch in notifications.ts + seed row, with zero changes to callers. The CONTEXT.md investment continues to pay for itself by eliminating mid-execution pivots.
