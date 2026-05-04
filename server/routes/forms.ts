@@ -62,6 +62,12 @@ async function ensureSkaleHubGroupForm() {
 }
 
 export function registerFormRoutes(app: Express) {
+  // Ensure the Skale Hub group form exists in the DB at startup so it always
+  // appears in the admin Forms panel, even before the first lead submits.
+  ensureSkaleHubGroupForm().catch((err) =>
+    console.warn("[forms] Could not pre-create skale-hub form:", err?.message)
+  );
+
   // ──────────────────────────────────────────────────────────
   // Admin: list / CRUD
   // ──────────────────────────────────────────────────────────
@@ -144,6 +150,14 @@ export function registerFormRoutes(app: Express) {
 
       const parsed = updateFormSchema.parse(req.body);
 
+      // Prevent archiving the Skale Hub group form.
+      const existing = await storage.getForm(id);
+      if (existing?.slug === SKALE_HUB_GROUP_FORM_SLUG && parsed.isActive === false) {
+        return res.status(400).json({
+          message: "Cannot archive the Skale Hub group form — it is required by the landing page.",
+        });
+      }
+
       // Recompute maxScore if the caller sent a new config.
       const updates: typeof parsed = { ...parsed };
       if (parsed.config) {
@@ -176,6 +190,12 @@ export function registerFormRoutes(app: Express) {
       if (form.isDefault) {
         return res.status(400).json({
           message: "Cannot delete the default form. Set another form as default first.",
+        });
+      }
+
+      if (form.slug === SKALE_HUB_GROUP_FORM_SLUG) {
+        return res.status(400).json({
+          message: "Cannot delete the Skale Hub group form — it is required by the landing page.",
         });
       }
 
