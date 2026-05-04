@@ -101,8 +101,7 @@ export default function SkaleHubGroup() {
                 </span>
                 Lives
               </span>
-              <div className="flex items-center gap-1.5 text-xs text-[#25D366]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#25D366]" />
+              <div className="text-xs text-[#25D366]">
                 Grupo aberto para novos membros
               </div>
             </div>
