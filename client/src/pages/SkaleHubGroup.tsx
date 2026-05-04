@@ -212,7 +212,7 @@ export default function SkaleHubGroup() {
                 ))}
               </div>
               <div className="flex items-center gap-1.5 text-xs text-white/50">
-                <Users className="h-3.5 w-3.5 text-[#25D366]" />
+                <Users className="h-3.5 w-3.5 text-white/50" />
                 Centenas de membros ativos
               </div>
             </div>
