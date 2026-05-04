@@ -1,21 +1,21 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.8
-milestone_name: Notification Templates System
-status: active
-last_updated: "2026-05-04T00:00:00.000Z"
+milestone: v1.3
+milestone_name: and earlier)
+status: executing
+last_updated: "2026-05-04T12:46:32.844Z"
 last_activity: 2026-05-04
 progress:
-  total_phases: 3
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_phases: 5
+  completed_phases: 5
+  total_plans: 10
+  completed_plans: 10
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** Milestone complete
+**Status:** Ready to execute
 
 ---
 
@@ -24,17 +24,17 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-05-02)
 
 **Core value:** Clients receive a proposal link and experience Skale Club services as an immersive, professional presentation — not a PDF.
-**Current focus:** Phase 30 — Translation System Overhaul
+**Current focus:** Phase 31 — Schema & Templates Foundation
 
 ---
 
 ## Current Position
 
-Phase: 30
-Plan: Not started
+Phase: 31 (Schema & Templates Foundation) — EXECUTING
+Plan: 2 of 2
 Milestone: v1.6 shipped
 Status: Ready to execute
-Last activity: 2026-05-03
+Last activity: 2026-05-04
 
 ---
 
@@ -76,6 +76,7 @@ Last activity: 2026-05-03
 | Phase 30-translation-system-overhaul P01 | 8min | 3 tasks | 5 files |
 | Phase 30 P02 | 10min | 3 tasks | 5 files |
 | Phase 30-translation-system-overhaul P04 | 11min | 3 tasks | 1 files |
+| Phase 31-schema-templates-foundation P01 | 16min | 2 tasks | 6 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -204,6 +205,8 @@ Last activity: 2026-05-03
 - [Phase 30-translation-system-overhaul]: useCallback overload cast pattern — primary overload (text: TranslationKey) enforces static strings; fallback (text: string) allows dynamic DB content to compile without cast
 - [Phase 30]: PAGE_SLUG_FIELDS moved inside SEOSection component body — the array uses t() for labels, so must be declared after useTranslation() hook call
 - [Phase 30-translation-system-overhaul]: Compact section format in translations.ts — merged section sub-comments into single-line headers and removed inter-section blank lines to stay within 600-line CLAUDE.md constraint
+- [Phase 31-schema-templates-foundation]: text columns (not enum) for event_key and channel — per D-05 from RESEARCH.md; enum ALTER TABLE not needed when adding new event types
+- [Phase 31-schema-templates-foundation]: upsertNotificationTemplate uses id-present check (update vs. insert) — matches upsertBrandGuidelines/upsertBlogSettings patterns; avoids ON CONFLICT complexity at ORM layer
 
 ### Quick Tasks Completed
 
