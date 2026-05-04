@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: and earlier)
 status: completed
-last_updated: "2026-05-04T17:17:50.845Z"
+last_updated: "2026-05-04T17:27:40.768Z"
 last_activity: 2026-05-04
 progress:
   total_phases: 6
@@ -15,7 +15,7 @@ progress:
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** Milestone complete
+**Status:** v1.8 milestone complete
 
 ---
 

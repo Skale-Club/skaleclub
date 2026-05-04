@@ -1,5 +1,15 @@
 # Milestones
 
+## v1.8 Notification Templates System (Shipped: 2026-05-04)
+
+**Phases completed:** 6 phases, 12 plans, 21 tasks
+
+**Key accomplishments:**
+
+- Admin Notifications panel with 3 event cards (new_chat, hot_lead, low_perf_alert) x 2 channel rows (SMS, Telegram), per-row draft state, clipboard variable badges, and full admin sidebar/router wiring.
+
+---
+
 ## v1.5 Blog Post Automation (Shipped: 2026-04-24)
 
 **Phases completed:** 4 phases, 6 plans, 13 tasks
