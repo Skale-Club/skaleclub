@@ -110,40 +110,10 @@ export default function SkaleHubGroup() {
           <p className="mt-4 max-w-md text-base leading-relaxed text-white/50 lg:max-w-sm">
             Aquisição de clientes nos EUA, Google Ads, Meta Ads, CRM, automação e IA — toda semana, ao vivo.
           </p>
-
-          {/* Social proof */}
-          <div className="mt-8 flex items-center justify-center gap-3 lg:justify-start">
-            <div className="flex -space-x-2">
-              {["#25D366", "#128C7E", "#075E54", "#34C75A"].map((color, i) => (
-                <div key={i} className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#f0fdf4] text-xs font-bold text-white" style={{ backgroundColor: color }}>
-                  {["M", "A", "P", "R"][i]}
-                </div>
-              ))}
-            </div>
-            <div className="flex items-center gap-1.5 text-sm text-white/60">
-              <Users className="h-4 w-4 text-[#25D366]" />
-              Centenas de membros ativos
-            </div>
-          </div>
-
-          {/* Feature list */}
-          <ul className="mt-6 space-y-2 text-sm text-white/60">
-            {[
-              "Lives toda semana sobre crescimento de negócios",
-              "Avisos antecipados direto no WhatsApp",
-              "Conteúdo prático e aplicável imediatamente",
-              "Grátis para sempre",
-            ].map((item) => (
-              <li key={item} className="flex items-center justify-center gap-2 lg:justify-start">
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-[#25D366]" />
-                {item}
-              </li>
-            ))}
-          </ul>
         </div>
 
-        {/* ── Right column: form card ── */}
-        <div className="mt-12 w-full max-w-sm shrink-0 lg:mt-0">
+        {/* ── Right column: form card + social proof ── */}
+        <div className="mt-12 w-full max-w-sm shrink-0 space-y-5 lg:mt-0">
           <div className="overflow-hidden rounded-2xl bg-[#111a14] shadow-2xl shadow-black/40 ring-1 ring-white/10">
 
             {/* Card header */}
@@ -200,7 +170,7 @@ export default function SkaleHubGroup() {
                       placeholder={selectedCountry.format}
                       value={phone}
                       onChange={(e) => setPhone(formatPhoneForCountry(e.target.value, selectedCountry))}
-                      className="min-h-12 border-0 bg-transparent focus-visible:ring-0"
+                      className="min-h-12 border-0 bg-transparent text-white placeholder:text-white/50 focus-visible:ring-0"
                       data-testid="input-skale-hub-group-phone"
                     />
                   </div>
@@ -229,6 +199,36 @@ export default function SkaleHubGroup() {
                 </form>
               )}
             </div>
+          </div>
+
+          {/* Social proof + features — abaixo do card */}
+          <div className="space-y-3 px-1">
+            <div className="flex items-center gap-3">
+              <div className="flex -space-x-2">
+                {["#25D366", "#128C7E", "#075E54", "#34C75A"].map((color, i) => (
+                  <div key={i} className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#0a0f0d] text-[10px] font-bold text-white" style={{ backgroundColor: color }}>
+                    {["M", "A", "P", "R"][i]}
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-white/50">
+                <Users className="h-3.5 w-3.5 text-[#25D366]" />
+                Centenas de membros ativos
+              </div>
+            </div>
+            <ul className="space-y-1.5 text-xs text-white/40">
+              {[
+                "Lives toda semana sobre crescimento de negócios",
+                "Avisos antecipados direto no WhatsApp",
+                "Conteúdo prático e aplicável imediatamente",
+                "Grátis para sempre",
+              ].map((item) => (
+                <li key={item} className="flex items-center gap-2">
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-[#25D366]" />
+                  {item}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </section>
