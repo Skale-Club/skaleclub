@@ -142,6 +142,12 @@ const twilioSettingsSchema = z.object({
   enabled: z.boolean().optional(),
 });
 
+const telegramSettingsSchema = z.object({
+  botToken: z.string().trim().optional(),
+  chatId: z.string().trim().optional(),
+  enabled: z.boolean().optional(),
+});
+
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
 export function registerIntegrationRoutes(app: Express) {
@@ -787,6 +793,93 @@ export function registerIntegrationRoutes(app: Express) {
 
       res.json({ success: true, message: 'Google Places API connection successful' });
     } catch (err) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  });
+
+  // ===============================
+  // Telegram Integration Routes
+  // ===============================
+
+  app.get('/api/integrations/telegram', requireAdmin, async (_req, res) => {
+    try {
+      const settings = await storage.getTelegramSettings();
+      if (!settings) {
+        return res.json({ enabled: false, botToken: '', chatId: '' });
+      }
+      res.json({
+        enabled: settings.enabled ?? false,
+        botToken: settings.botToken ? '********' : '',
+        chatId: settings.chatId ?? '',
+      });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.put('/api/integrations/telegram', requireAdmin, async (req, res) => {
+    try {
+      const parsed = telegramSettingsSchema.parse(req.body);
+      const existingSettings = await storage.getTelegramSettings();
+
+      const tokenFromRequest = parsed.botToken && parsed.botToken !== '********'
+        ? parsed.botToken.trim()
+        : undefined;
+      const botTokenToPersist = tokenFromRequest || existingSettings?.botToken;
+      const chatId = parsed.chatId?.trim() ?? existingSettings?.chatId ?? '';
+      const enabled = parsed.enabled ?? existingSettings?.enabled ?? false;
+
+      if (enabled && (!botTokenToPersist || !chatId)) {
+        return res.status(400).json({ message: 'Bot token and chat ID are required to enable Telegram notifications' });
+      }
+
+      const settingsToSave: any = {
+        enabled,
+        chatId: chatId || null,
+      };
+
+      if (tokenFromRequest) {
+        settingsToSave.botToken = tokenFromRequest;
+      } else if (existingSettings?.botToken) {
+        settingsToSave.botToken = existingSettings.botToken;
+      }
+
+      const settings = await storage.saveTelegramSettings(settingsToSave);
+      res.json({
+        enabled: settings.enabled ?? false,
+        botToken: settings.botToken ? '********' : '',
+        chatId: settings.chatId ?? '',
+      });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid Telegram settings payload', errors: err.errors });
+      }
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.post('/api/integrations/telegram/test', requireAdmin, async (req, res) => {
+    try {
+      const parsed = telegramSettingsSchema.parse(req.body);
+      const existingSettings = await storage.getTelegramSettings();
+
+      const botToken = (parsed.botToken && parsed.botToken !== '********')
+        ? parsed.botToken.trim()
+        : existingSettings?.botToken;
+      const chatId = parsed.chatId?.trim() || existingSettings?.chatId;
+
+      if (!botToken || !chatId) {
+        return res.status(400).json({ success: false, message: 'Bot token and chat ID are required to test Telegram connection' });
+      }
+
+      const { sendTelegramMessage } = await import('../integrations/telegram.js');
+      const result = await sendTelegramMessage({ botToken, chatId }, 'Test message from Skale Club - Your Telegram integration is working!');
+
+      if (!result.success) {
+        return res.status(400).json({ success: false, message: result.message || 'Failed to send test Telegram message' });
+      }
+      res.json({ success: true, message: 'Test Telegram message sent successfully!' });
+    } catch (err: any) {
       res.status(500).json({ success: false, message: (err as Error).message });
     }
   });
