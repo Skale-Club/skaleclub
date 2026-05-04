@@ -10,7 +10,7 @@ import { DEFAULT_FORM_CONFIG, getSortedQuestions } from "#shared/form.js";
 import type { FormAnswers } from "#shared/form.js";
 import type { FormConfig } from "#shared/schema.js";
 import { getOrCreateGHLContact } from "./integrations/ghl.js";
-import { sendHotLeadNotification, sendLowPerformanceAlert, sendNewChatNotification } from "./integrations/twilio.js";
+import { dispatchNotification } from "./lib/notifications.js";
 import { registerStorageRoutes } from "./storage/storageAdapter.js";
 import { registerXpotRoutes } from "./routes/xpot/index.js";
 import { registerPortfolioRoutes } from "./routes/portfolio.js";
@@ -413,15 +413,15 @@ export async function registerRoutes(
 
         // Send SMS notification if phone is provided
         if (lead.telefone && !lead.notificacaoEnviada) {
+          const companyName = (await storage.getCompanySettings())?.companyName || 'My Company';
           try {
-            const twilioSettings = await storage.getTwilioSettings();
-            const companyName = (await storage.getCompanySettings())?.companyName || 'My Company';
-            if (twilioSettings) {
-              const notifyResult = await sendHotLeadNotification(twilioSettings, lead, companyName);
-              if (notifyResult.success) {
-                await storage.updateFormLead(lead.id, { notificacaoEnviada: true });
-              }
-            }
+            await dispatchNotification(storage, 'hot_lead', {
+              company: companyName,
+              name: lead.nome?.trim() || 'No name',
+              phone: lead.telefone?.trim() || 'No phone',
+              classification: lead.classificacao || '',
+            });
+            await storage.updateFormLead(lead.id, { notificacaoEnviada: true });
           } catch (err) {
             console.error('Lead notification error:', err);
           }
@@ -712,15 +712,17 @@ export async function registerRoutes(
         const now = Date.now();
         const canAlert = !lastLowPerformanceAlertAt || now - lastLowPerformanceAlertAt > cooldownMs;
         if (avgSeconds >= threshold && canAlert) {
-          const twilioSettings = await storage.getTwilioSettings();
-          if (twilioSettings) {
-            const company = await storage.getCompanySettings();
-            const companyName = company?.companyName || 'Company Name';
-            const result = await sendLowPerformanceAlert(twilioSettings, avgSeconds, samples, companyName);
-            if (result.success) {
-              lastLowPerformanceAlertAt = now;
-            }
-          }
+          const company = await storage.getCompanySettings();
+          const companyName = company?.companyName || 'Company Name';
+          const minutes = Math.floor(avgSeconds / 60);
+          const seconds = avgSeconds % 60;
+          const avgTime = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+          dispatchNotification(storage, 'low_perf_alert', {
+            company: companyName,
+            avgTime,
+            samples: String(samples),
+          }).catch(err => console.error('Low-perf alert error:', err));
+          lastLowPerformanceAlertAt = now;
         }
       }
 
@@ -927,11 +929,17 @@ export async function registerRoutes(
         });
 
         // Send Twilio notification for new chat
-        const twilioSettings = await storage.getTwilioSettings();
-        if (twilioSettings && isNewConversation) {
-          sendNewChatNotification(twilioSettings, conversationId, input.pageUrl, companyName).catch(err => {
-            console.error('Failed to send Twilio notification:', err);
-          });
+        if (isNewConversation) {
+          const twilioSettings = await storage.getTwilioSettings();
+          if (twilioSettings?.notifyOnNewChat) {
+            dispatchNotification(storage, 'new_chat', {
+              company: companyName,
+              conversationId,
+              pageUrl: input.pageUrl ?? "",
+            }).catch(err => {
+              console.error('Failed to send new chat notification:', err);
+            });
+          }
         }
       } else {
         await storage.updateConversation(conversationId, { lastMessageAt: new Date() });

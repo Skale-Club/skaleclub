@@ -6,7 +6,7 @@
 import { storage } from "../storage.js";
 import type { FormConfig, FormLead } from "#shared/schema.js";
 import { getOrCreateGHLContact } from "../integrations/ghl.js";
-import { sendHotLeadNotification } from "../integrations/twilio.js";
+import { dispatchNotification } from "./notifications.js";
 
 type PostProcessResult = {
   lead: FormLead;
@@ -29,14 +29,14 @@ export async function runLeadPostProcessing(
   const hasPhone = !!lead.telefone?.trim();
   if (hasPhone && !lead.notificacaoEnviada) {
     try {
-      const twilioSettings = await storage.getTwilioSettings();
-      if (twilioSettings) {
-        const notifyResult = await sendHotLeadNotification(twilioSettings, lead, companyName);
-        if (notifyResult.success) {
-          const updated = await storage.updateFormLead(lead.id, { notificacaoEnviada: true });
-          lead = updated || { ...lead, notificacaoEnviada: true };
-        }
-      }
+      await dispatchNotification(storage, 'hot_lead', {
+        company: companyName,
+        name: lead.nome?.trim() || 'No name',
+        phone: lead.telefone?.trim() || 'No phone',
+        classification: lead.classificacao || '',
+      });
+      const updated = await storage.updateFormLead(lead.id, { notificacaoEnviada: true });
+      lead = updated || { ...lead, notificacaoEnviada: true };
     } catch (err) {
       console.error("Lead notification error:", err);
     }
