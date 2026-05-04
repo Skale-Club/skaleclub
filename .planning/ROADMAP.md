@@ -155,7 +155,7 @@ _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
 | 30. Translation System Overhaul | v1.7 | 4/4 | Complete    | 2026-05-03 |
 | 31. Schema & Templates Foundation | v1.8 | 1/1 | Complete | 2026-05-04 |
 | 32. Telegram Integration | v1.8 | 2/2 | Complete | 2026-05-04 |
-| 33. Admin Notifications Panel | v1.8 | 2/2 | Complete   | 2026-05-04 |
+| 33. Admin Notifications Panel | v1.8 | 2/2 | Complete    | 2026-05-04 |
 
 ---
 
