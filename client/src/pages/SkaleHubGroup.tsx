@@ -69,7 +69,7 @@ export default function SkaleHubGroup() {
 
   return (
     <div className="bg-[#f7f9fc] text-slate-950">
-      <section className="relative overflow-hidden px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+      <section className="relative overflow-hidden px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(64,110,241,0.20),transparent_42%),radial-gradient(circle_at_bottom_right,rgba(15,23,42,0.10),transparent_36%)]" />
         <div className="relative mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1fr_0.85fr] lg:items-center">
           <div className="max-w-2xl">
