@@ -14,6 +14,7 @@
 
 import type { IStorage } from "../storage.js";
 import { validateConfig, sendSms } from "../integrations/twilio.js";
+import { sendTelegramMessage } from "../integrations/telegram.js";
 
 function substituteVariables(body: string, vars: Record<string, string>): string {
   // Replace {{token}} with vars[token], unknown tokens render as empty string (NOTIF-04).
@@ -40,8 +41,14 @@ export async function dispatchNotification(
         if (!validation.success) continue;
         await sendSms(validation.config, body);
       } else if (template.channel === "telegram") {
-        // Phase 32 stub — Telegram not yet configured
-        console.log(`[notifications] telegram stub for event: ${eventKey}`);
+        const telegramSettings = await storage.getTelegramSettings();
+        if (!telegramSettings) continue;
+        if (!telegramSettings.enabled) continue;
+        if (!telegramSettings.botToken || !telegramSettings.chatId) continue;
+        await sendTelegramMessage(
+          { botToken: telegramSettings.botToken, chatId: telegramSettings.chatId },
+          body
+        );
       }
     } catch (err) {
       console.error(`[notifications] dispatch error for ${eventKey}/${template.channel}:`, err);
