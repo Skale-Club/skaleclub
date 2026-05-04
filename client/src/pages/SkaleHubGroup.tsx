@@ -161,7 +161,7 @@ export default function SkaleHubGroup() {
                         setSelectedCountry(c);
                         setPhone((cur) => formatPhoneForCountry(cur, c));
                       }}
-                      buttonClassName="min-h-12 rounded-none border-0 bg-transparent"
+                      buttonClassName="min-h-12 rounded-none border-0 bg-transparent text-white"
                     />
                     <Input
                       type="tel"
