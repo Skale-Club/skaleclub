@@ -1,6 +1,6 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { arrayMove } from '@dnd-kit/sortable';
-import { ArrowDown, ArrowUp, LayoutGrid, LineChart, List, PhoneCall, Plus, Search, Sparkles, Target, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, LayoutGrid, LineChart, List, PhoneCall, Plus, Search, Sparkles, Target, Trash2 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +27,7 @@ interface ConsultingTabProps {
 }
 
 export function ConsultingTab({ homepageContent, updateHomepageContent, SavedIndicator }: ConsultingTabProps) {
+  const [activeStepIndex, setActiveStepIndex] = useState(0);
   const updateConsultingSection = useCallback(
     (updater: (section: NonNullable<HomepageContent['consultingStepsSection']>) => NonNullable<HomepageContent['consultingStepsSection']>, fieldKey?: string) => {
       updateHomepageContent(prev => {
@@ -81,6 +82,7 @@ export function ConsultingTab({ homepageContent, updateHomepageContent, SavedInd
       order: nextOrder, numberLabel: String(nextOrder).padStart(2, '0'),
       icon: 'sparkles', title: 'New Stage', whatWeDo: '', outcome: '',
     }]);
+    setActiveStepIndex(nextOrder - 1);
   }, [consultingStepsSection.steps, updateConsultingSteps]);
 
   const handleDeleteStep = useCallback(
@@ -89,6 +91,7 @@ export function ConsultingTab({ homepageContent, updateHomepageContent, SavedInd
         const ordered = [...steps].sort((a, b) => (a.order || 0) - (b.order || 0) || a.numberLabel.localeCompare(b.numberLabel));
         return ordered.filter((_, i) => i !== index).map((step, idx) => ({ ...step, order: step.order ?? idx + 1 }));
       });
+      setActiveStepIndex(prev => Math.max(0, prev >= index ? prev - 1 : prev));
     },
     [updateConsultingSteps]
   );
@@ -276,118 +279,173 @@ export function ConsultingTab({ homepageContent, updateHomepageContent, SavedInd
         </div>
       </div>
 
-      {/* Stages */}
-      <div className="bg-white dark:bg-card rounded-lg border p-6 space-y-6 transition-all">
+      {/* Stages carousel */}
+      <div className="bg-white dark:bg-card rounded-lg border p-6 space-y-5 transition-all">
+        {/* Header */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <List className="w-5 h-5 text-primary" />
               Stages
+              {consultingSteps.length > 0 && (
+                <span className="text-xs font-normal text-muted-foreground">
+                  {activeStepIndex + 1} / {consultingSteps.length}
+                </span>
+              )}
             </h2>
-            <p className="text-xs text-muted-foreground mt-1">Reorder using arrows or the Order field.</p>
+            <p className="text-xs text-muted-foreground mt-1">One stage at a time. Use arrows or tabs to navigate.</p>
           </div>
           <Button variant="outline" size="sm" className="border-dashed" onClick={handleAddStep}>
             <Plus className="w-4 h-4 mr-2" /> Add stage
           </Button>
         </div>
 
-        <div className="space-y-4">
-          {consultingSteps.map((step, index) => (
-            <div key={`${step.numberLabel}-${index}`} className="bg-muted rounded-lg p-5 space-y-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
-                    {step.numberLabel || String(index + 1).padStart(2, '0')}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold">{step.title || 'Stage'}</p>
-                    <p className="text-xs text-muted-foreground">Order {step.order ?? index + 1}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" disabled={index === 0} onClick={() => handleMoveStep(index, -1)}><ArrowUp className="w-4 h-4" /></Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" disabled={index === consultingSteps.length - 1} onClick={() => handleMoveStep(index, 1)}><ArrowDown className="w-4 h-4" /></Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8"><Trash2 className="w-4 h-4 text-destructive" /></Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete stage?</AlertDialogTitle>
-                        <AlertDialogDescription>This will remove "{step.title}". This action cannot be undone.</AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDeleteStep(index)}>Delete</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-4">
-                <div className="space-y-1">
-                  <Label>Order</Label>
-                  <div className="relative">
-                    <Input type="number" value={step.order ?? index + 1} onChange={(e) => handleStepChange(index, c => ({ ...c, order: Number(e.target.value) || index + 1 }), `homepageContent.consultingStepsSection.steps.${index}.order`, true)} />
-                    <SavedIndicator field={`homepageContent.consultingStepsSection.steps.${index}.order`} />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <Label>Number</Label>
-                  <div className="relative">
-                    <Input value={step.numberLabel || ''} onChange={(e) => handleStepChange(index, c => ({ ...c, numberLabel: e.target.value }), `homepageContent.consultingStepsSection.steps.${index}.numberLabel`)} placeholder="01" />
-                    <SavedIndicator field={`homepageContent.consultingStepsSection.steps.${index}.numberLabel`} />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <Label>Icon</Label>
-                  <Select value={step.icon || consultingIconOptions[0].value} onValueChange={(v) => handleStepChange(index, c => ({ ...c, icon: v }), `homepageContent.consultingStepsSection.steps.${index}.icon`)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {consultingIconOptions.map(opt => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          <div className="flex items-center gap-2"><opt.icon className="w-4 h-4" /><span>{opt.label}</span></div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Title</Label>
-                <div className="relative">
-                  <Input value={step.title} onChange={(e) => handleStepChange(index, c => ({ ...c, title: e.target.value }), `homepageContent.consultingStepsSection.steps.${index}.title`)} />
-                  <SavedIndicator field={`homepageContent.consultingStepsSection.steps.${index}.title`} />
-                </div>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>What we do</Label>
-                  <div className="relative">
-                    <Textarea value={step.whatWeDo} onChange={(e) => handleStepChange(index, c => ({ ...c, whatWeDo: e.target.value }), `homepageContent.consultingStepsSection.steps.${index}.whatWeDo`)} className="min-h-[100px]" />
-                    <SavedIndicator field={`homepageContent.consultingStepsSection.steps.${index}.whatWeDo`} />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>You leave with</Label>
-                  <div className="relative">
-                    <Textarea value={step.outcome} onChange={(e) => handleStepChange(index, c => ({ ...c, outcome: e.target.value }), `homepageContent.consultingStepsSection.steps.${index}.outcome`)} className="min-h-[100px]" />
-                    <SavedIndicator field={`homepageContent.consultingStepsSection.steps.${index}.outcome`} />
-                  </div>
-                </div>
-              </div>
+        {consultingSteps.length === 0 ? (
+          <div className="bg-muted rounded-lg p-8 text-center">
+            <List className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">No stages registered. Click "Add stage" to create one.</p>
+          </div>
+        ) : (
+          <>
+            {/* Stage tab pills */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {consultingSteps.map((step, index) => (
+                <button
+                  key={`tab-${step.numberLabel}-${index}`}
+                  type="button"
+                  onClick={() => setActiveStepIndex(index)}
+                  className={`h-8 min-w-[2.5rem] px-3 rounded-full text-xs font-semibold transition-colors ${
+                    index === activeStepIndex
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground'
+                  }`}
+                >
+                  {step.numberLabel || String(index + 1).padStart(2, '0')}
+                </button>
+              ))}
             </div>
-          ))}
-          {consultingSteps.length === 0 && (
-            <div className="bg-muted rounded-lg p-8 text-center">
-              <List className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">No stages registered. Click "Add stage" to create one.</p>
-            </div>
-          )}
-        </div>
+
+            {/* Active stage panel */}
+            {(() => {
+              const index = Math.min(activeStepIndex, consultingSteps.length - 1);
+              const step = consultingSteps[index];
+              return (
+                <div className="bg-muted rounded-lg p-5 space-y-4">
+                  {/* Stage header: title + controls */}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">
+                        {step.numberLabel || String(index + 1).padStart(2, '0')}
+                      </div>
+                      <p className="text-sm font-semibold truncate">{step.title || 'Stage'}</p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" disabled={index === 0}
+                        onClick={() => { handleMoveStep(index, -1); setActiveStepIndex(i => Math.max(0, i - 1)); }}>
+                        <ArrowUp className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" disabled={index === consultingSteps.length - 1}
+                        onClick={() => { handleMoveStep(index, 1); setActiveStepIndex(i => Math.min(consultingSteps.length - 1, i + 1)); }}>
+                        <ArrowDown className="w-4 h-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete stage?</AlertDialogTitle>
+                            <AlertDialogDescription>This will remove "{step.title}". This action cannot be undone.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteStep(index)}>Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+
+                  {/* Fields */}
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="space-y-1">
+                      <Label>Order</Label>
+                      <div className="relative">
+                        <Input type="number" value={step.order ?? index + 1}
+                          onChange={(e) => handleStepChange(index, c => ({ ...c, order: Number(e.target.value) || index + 1 }), `homepageContent.consultingStepsSection.steps.${index}.order`, true)} />
+                        <SavedIndicator field={`homepageContent.consultingStepsSection.steps.${index}.order`} />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Number</Label>
+                      <div className="relative">
+                        <Input value={step.numberLabel || ''} placeholder="01"
+                          onChange={(e) => handleStepChange(index, c => ({ ...c, numberLabel: e.target.value }), `homepageContent.consultingStepsSection.steps.${index}.numberLabel`)} />
+                        <SavedIndicator field={`homepageContent.consultingStepsSection.steps.${index}.numberLabel`} />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Icon</Label>
+                      <Select value={step.icon || consultingIconOptions[0].value}
+                        onValueChange={(v) => handleStepChange(index, c => ({ ...c, icon: v }), `homepageContent.consultingStepsSection.steps.${index}.icon`)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {consultingIconOptions.map(opt => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              <div className="flex items-center gap-2"><opt.icon className="w-4 h-4" /><span>{opt.label}</span></div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Title</Label>
+                    <div className="relative">
+                      <Input value={step.title}
+                        onChange={(e) => handleStepChange(index, c => ({ ...c, title: e.target.value }), `homepageContent.consultingStepsSection.steps.${index}.title`)} />
+                      <SavedIndicator field={`homepageContent.consultingStepsSection.steps.${index}.title`} />
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>What we do</Label>
+                      <div className="relative">
+                        <Textarea value={step.whatWeDo} className="min-h-[100px]"
+                          onChange={(e) => handleStepChange(index, c => ({ ...c, whatWeDo: e.target.value }), `homepageContent.consultingStepsSection.steps.${index}.whatWeDo`)} />
+                        <SavedIndicator field={`homepageContent.consultingStepsSection.steps.${index}.whatWeDo`} />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>You leave with</Label>
+                      <div className="relative">
+                        <Textarea value={step.outcome} className="min-h-[100px]"
+                          onChange={(e) => handleStepChange(index, c => ({ ...c, outcome: e.target.value }), `homepageContent.consultingStepsSection.steps.${index}.outcome`)} />
+                        <SavedIndicator field={`homepageContent.consultingStepsSection.steps.${index}.outcome`} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Prev / Next navigation */}
+                  <div className="flex items-center justify-between pt-1">
+                    <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" disabled={index === 0}
+                      onClick={() => setActiveStepIndex(i => Math.max(0, i - 1))}>
+                      <ChevronLeft className="w-4 h-4" /> Previous
+                    </Button>
+                    <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" disabled={index === consultingSteps.length - 1}
+                      onClick={() => setActiveStepIndex(i => Math.min(consultingSteps.length - 1, i + 1))}>
+                      Next <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })()}
+          </>
+        )}
       </div>
     </div>
   );
