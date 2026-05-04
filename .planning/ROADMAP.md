@@ -142,7 +142,7 @@ _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
 | 28. Admin Management | v1.6 | 1/1 | Complete | 2026-05-02 |
 | 29. Analytics & Reporting | v1.6 | 1/1 | Complete | 2026-05-02 |
 | 30. Translation System Overhaul | v1.7 | 4/4 | Complete    | 2026-05-03 |
-| 31. Schema & Templates Foundation | v1.8 | 0/- | Not started | - |
+| 31. Schema & Templates Foundation | v1.8 | 0/2 | Not started | - |
 | 32. Telegram Integration | v1.8 | 0/- | Not started | - |
 | 33. Admin Notifications Panel | v1.8 | 0/- | Not started | - |
 
@@ -369,7 +369,12 @@ Plans:
 **Goal:** A `notification_templates` table stores all outbound notification messages as DB-editable templates with `{{variable}}` substitution. The 3 existing hardcoded Twilio messages (new chat, hot lead, low-perf alert) are migrated to seed templates. A shared dispatcher service (`server/lib/notifications.ts`) fans out to every active channel (SMS or Telegram) using the matching template row — callers never deal with message text again.
 **Requirements:** NOTIF-01, NOTIF-02, NOTIF-03, NOTIF-04, NOTIF-05
 **Depends on:** Nothing (first phase of v1.8)
-**Plans:** 0/- plans
+**Plans:** 2 plans
+
+Plans:
+- [ ] 31-01-PLAN.md — SQL migration + Drizzle/Zod schema + storage layer (NOTIF-01, NOTIF-05)
+- [ ] 31-02-PLAN.md — Dispatcher service + twilio.ts exports + 4 call site refactors (NOTIF-02, NOTIF-03, NOTIF-04)
+
 **Canonical refs:** `.planning/milestones/v1.8-REQUIREMENTS.md`
 **Success Criteria** (what must be TRUE):
   1. `notification_templates` table exists with columns `id`, `event_key`, `channel`, `body`, `active`, `created_at`, `updated_at` — Drizzle/Zod contracts in `shared/schema/notifications.ts`.
