@@ -4,10 +4,10 @@ import { ArrowRight, CheckCircle2, Loader2, MessageCircle, Radio, Sparkles } fro
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhoneCountrySelect } from "@/components/ui/PhoneCountrySelect";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import {
-  PHONE_COUNTRIES,
   detectDefaultPhoneCountry,
   formatPhoneForCountry,
   getInternationalPhone,
@@ -38,7 +38,7 @@ export default function SkaleHubGroup() {
   const phoneHasValue = phone.trim().length > 0;
   const phoneIsValid = phoneHasValue && isValidPhoneForCountry(phone, selectedCountry);
   const phoneError = phoneHasValue && !phoneIsValid
-    ? `Digite um telefone válido de ${selectedCountry.name} (${selectedCountry.maxDigits} dígitos).`
+    ? `Digite um telefone válido para ${selectedCountry.name}.`
     : null;
 
   const payload = useMemo(() => ({
@@ -60,7 +60,7 @@ export default function SkaleHubGroup() {
     },
     onError: (error: Error) => {
       toast({
-        title: "Nao foi possivel registrar",
+        title: "Não foi possível registrar",
         description: error.message,
         variant: "destructive",
       });
@@ -81,7 +81,7 @@ export default function SkaleHubGroup() {
               Entre no grupo da live do Skale Hub
             </h1>
             <p className="mt-5 max-w-xl text-lg leading-8 text-slate-600">
-              Acompanhe os avisos das proximas lives sobre aquisicao de clientes nos Estados Unidos, Google Ads, Meta Ads, CRM, automacao e IA.
+              Acompanhe os avisos das próximas lives sobre aquisição de clientes nos Estados Unidos, Google Ads, Meta Ads, CRM, automação e IA.
             </p>
 
             <div className="mt-8 grid gap-3 text-sm text-slate-700 sm:grid-cols-3">
@@ -95,7 +95,7 @@ export default function SkaleHubGroup() {
               </div>
               <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 shadow-sm">
                 <CheckCircle2 className="h-4 w-4 text-[#406EF1]" />
-                Conteudo pratico
+                Conteúdo prático
               </div>
             </div>
           </div>
@@ -104,9 +104,9 @@ export default function SkaleHubGroup() {
             {submitted ? (
               <div className="flex min-h-[320px] flex-col justify-center rounded-xl bg-emerald-50 p-8 text-center">
                 <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-600" />
-                <h2 className="mt-5 text-2xl font-semibold text-emerald-950">Voce esta na lista</h2>
+                <h2 className="mt-5 text-2xl font-semibold text-emerald-950">Você está na lista</h2>
                 <p className="mt-3 text-sm leading-6 text-emerald-800">
-                  Recebemos seu telefone. Agora voce pode receber os proximos avisos do Skale Hub pelo WhatsApp.
+                  Recebemos seu telefone. Agora você pode receber os próximos avisos do Skale Hub pelo WhatsApp.
                 </p>
               </div>
             ) : (
@@ -120,31 +120,24 @@ export default function SkaleHubGroup() {
                 }}
               >
                 <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#406EF1]">Entrada rapida</p>
+                  <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#406EF1]">Entrada rápida</p>
                   <h2 className="mt-2 text-2xl font-semibold">Coloque seu WhatsApp</h2>
                   <p className="mt-2 text-sm leading-6 text-slate-600">
-                    Use o numero que voce prefere receber os avisos das lives.
+                    Use o número que você prefere receber os avisos das lives.
                   </p>
                 </div>
 
                 <div>
-                  <div className={`flex overflow-hidden rounded-md border bg-white ${phoneError ? "border-red-300" : "border-input"}`}>
-                    <select
-                      aria-label="Pais do telefone"
-                      value={selectedCountry.code}
-                      onChange={(event) => {
-                        const nextCountry = PHONE_COUNTRIES.find((country) => country.code === event.target.value) || PHONE_COUNTRIES[0];
+                  <div className={`flex rounded-md border bg-white ${phoneError ? "border-red-300" : "border-input"}`}>
+                    <PhoneCountrySelect
+                      aria-label="País do telefone"
+                      value={selectedCountry}
+                      onChange={(nextCountry) => {
                         setSelectedCountry(nextCountry);
                         setPhone((current) => formatPhoneForCountry(current, nextCountry));
                       }}
-                      className="min-h-11 max-w-[132px] border-0 bg-slate-50 px-3 text-sm font-medium text-slate-700 outline-none"
-                    >
-                      {PHONE_COUNTRIES.map((country) => (
-                        <option key={country.code} value={country.code}>
-                          {country.flag} {country.dialCode}
-                        </option>
-                      ))}
-                    </select>
+                      buttonClassName="min-h-11 rounded-l-md"
+                    />
                     <Input
                       type="tel"
                       inputMode="tel"
