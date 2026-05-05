@@ -28,12 +28,16 @@
 **Goal:** The database has additive tables for RSS sources and RSS items, with typed Drizzle/Zod contracts and a storage interface that downstream phases can call without raw SQL.
 **Depends on:** Nothing (first phase of v1.9)
 **Requirements:** RSS-01, RSS-02, RSS-03, RSS-04
-**Plans:** TBD
+**Plans:** 2 plans
 **Success Criteria** (what must be TRUE):
   1. SQL migration runs without error and creates `blog_rss_sources` and `blog_rss_items` tables with the columns, defaults, and FK from `blog_rss_items.source_id` → `blog_rss_sources.id` (cascade delete).
   2. `shared/schema/blog.ts` exports Drizzle tables, Zod insert/select schemas, and TypeScript types for both new entities.
   3. `IStorage` declares and `DatabaseStorage` implements: `listRssSources`, `getRssSource`, `createRssSource`, `updateRssSource`, `deleteRssSource`, `upsertRssItem(sourceId, guid, …)`, `listPendingRssItems`, `markRssItemUsed(itemId, postId)`.
   4. `npm run check` passes cleanly.
+
+Plans:
+- [ ] 34-01-PLAN.md — SQL migration (raw + Supabase mirror) for blog_rss_sources/blog_rss_items + Drizzle/Zod contracts in shared/schema/blog.ts (RSS-01, RSS-02, RSS-03)
+- [ ] 34-02-PLAN.md — IStorage RSS method declarations + DatabaseStorage implementations (9 methods including upsertRssItem with onConflictDoUpdate, markRssItemUsed/Skipped) (RSS-04)
 
 ### Phase 35: RSS Fetcher & Topic Selection
 
