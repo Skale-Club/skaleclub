@@ -36,7 +36,7 @@ export const SIDEBAR_MENU_ITEMS: SidebarMenuItem[] = [
   { id: 'portfolio', title: 'Portfolio', description: 'Services shown on the portfolio page — drag to reorder, click to edit', icon: Briefcase },
   { id: 'leads', title: 'Leads', description: 'All captured leads with ratings and follow-up status', icon: Sparkles },
   { id: 'forms', title: 'Forms', description: 'Manage lead capture forms — questions, scoring, and thresholds', icon: ClipboardList },
-  { id: 'chat', title: 'Chat', description: 'AI assistant conversations and response settings', icon: MessageSquare },
+  // { id: 'chat', title: 'Chat', description: 'AI assistant conversations and response settings', icon: MessageSquare },
   { id: 'faqs', title: 'FAQs', description: 'Questions and answers shown on the FAQ page', icon: HelpCircle },
   { id: 'users', title: 'Users', description: 'Manage admin and team member accounts', icon: Users },
   { id: 'blog', title: 'Blog', description: 'Articles, drafts and SEO-optimized content', icon: FileText },
