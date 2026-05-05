@@ -25,8 +25,8 @@
 - [ ] **BLOG2-02**: A server-side HTML validator strips or rejects disallowed tags (`script, iframe, form, style, link`) before saving the post.
 - [ ] **BLOG2-03**: Slug generation normalizes Portuguese accents (NFD + diacritic removal) so titles like "Análise de CRM" become `analise-de-crm`.
 - [ ] **BLOG2-04**: Content length is validated (min 600, max 4000 chars of body HTML) and runs that fail the bound are marked failed with a clear reason.
-- [ ] **BLOG2-05**: All Gemini API calls have an `AbortController` timeout (default 30s) and an empty-candidates check that throws a typed error.
-- [ ] **BLOG2-06**: Gemini model identifiers (`BLOG_CONTENT_MODEL`, `BLOG_IMAGE_MODEL`) are overridable via env vars with documented defaults.
+- [x] **BLOG2-05**: All Gemini API calls have an `AbortController` timeout (default 30s) and an empty-candidates check that throws a typed error.
+- [x] **BLOG2-06**: Gemini model identifiers (`BLOG_CONTENT_MODEL`, `BLOG_IMAGE_MODEL`) are overridable via env vars with documented defaults.
 
 ### Admin UX
 

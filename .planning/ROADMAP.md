@@ -65,7 +65,7 @@ Plans:
 
 Plans:
 - [ ] 36-01-PLAN.md — server/lib/blogContentValidator.ts pure module (sanitizeBlogHtml, getPlainTextLength, slugifyTitle, GeminiTimeoutError, GeminiEmptyResponseError) + sanitize-html dep (BLOG2-02, BLOG2-03)
-- [ ] 36-02-PLAN.md — Env-overridable BLOG_CONTENT_MODEL / BLOG_IMAGE_MODEL / BLOG_GEMINI_TIMEOUT_MS in server/lib/blog-gemini.ts + .env.example documentation (BLOG2-05, BLOG2-06)
+- [x] 36-02-PLAN.md — Env-overridable BLOG_CONTENT_MODEL / BLOG_IMAGE_MODEL / BLOG_GEMINI_TIMEOUT_MS in server/lib/blog-gemini.ts + .env.example documentation (BLOG2-05, BLOG2-06)
 - [ ] 36-03-PLAN.md — BlogGenerator integration: pt-BR brand voice + REGRAS DE FORMATAÇÃO prompts, AbortController-wrapped Gemini calls, sanitize + length validation in runPipeline, NFD slugifyTitle, typed error → reason mapping in catch block (BLOG2-01, BLOG2-02, BLOG2-03, BLOG2-04, BLOG2-05)
 
 **Success Criteria** (what must be TRUE):
@@ -261,7 +261,7 @@ _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
 | 33. Admin Notifications Panel | v1.8 | 2/2 | Complete | 2026-05-04 |
 | 34. RSS Sources Foundation | v1.9 | 2/2 | Complete    | 2026-05-05 |
 | 35. RSS Fetcher & Topic Selection | v1.9 | 3/3 | Complete    | 2026-05-05 |
-| 36. Generator Quality Overhaul | v1.9 | 0/3 | Planned     | - |
+| 36. Generator Quality Overhaul | v1.9 | 1/3 | In Progress|  |
 | 37. Admin UX (RSS + Job Improvements) | v1.9 | 0/0 | Not started | - |
 | 38. Dynamic Cron & Observability | v1.9 | 0/0 | Not started | - |
 | 31. Schema & Templates Foundation | v1.8 | 2/2 | Complete | 2026-05-04 |

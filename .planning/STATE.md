@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: and earlier)
-status: planning
-last_updated: "2026-05-05T02:50:41.283Z"
+status: executing
+last_updated: "2026-05-05T03:15:01.050Z"
 last_activity: 2026-05-05
 progress:
   total_phases: 11
   completed_phases: 8
-  total_plans: 17
-  completed_plans: 17
+  total_plans: 20
+  completed_plans: 18
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** Ready to plan
+**Status:** Ready to execute
 
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-05-04)
 
 **Core value:** Clients receive a proposal link and experience Skale Club services as an immersive, professional presentation — not a PDF.
-**Current focus:** Phase 35 — rss-fetcher-and-topic-selection
+**Current focus:** Phase 36 — generator-quality-overhaul
 
 ---
 
 ## Current Position
 
-Phase: 36
-Plan: Not started
+Phase: 36 (generator-quality-overhaul) — EXECUTING
+Plan: 2 of 3
 Milestone: v1.9 Blog Intelligence & RSS Sources
 Status: Ready to execute
 Last activity: 2026-05-05
@@ -81,6 +81,7 @@ Last activity: 2026-05-05
 | Phase 35-rss-fetcher-and-topic-selection P01 | 3min | 2 tasks | 3 files |
 | Phase 35-rss-fetcher-and-topic-selection P02 | ~5min | 1 tasks | 1 files |
 | Phase 35-rss-fetcher-and-topic-selection P03 | 3min | 2 tasks | 3 files |
+| Phase 36-generator-quality-overhaul P02 | 3min | 2 tasks | 2 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -214,6 +215,8 @@ Last activity: 2026-05-05
 - [Phase 35-rss-fetcher-and-topic-selection]: Plan 35-02: server/lib/rssTopicSelector.ts — pure scoreItem (0.6*keywordOverlap + 0.4*recency, 14-day window) + selectNextRssItem orchestrator (listPendingRssItems(50) → top scorer or null); empty seoKeywords → 0 (not NaN); null publishedAt → recency 0; strict > on score keeps newer publishedAt as implicit tiebreaker via DB DESC NULLS LAST ordering; selector is side-effect-free (markRssItemUsed deferred to Plan 35-03 generator hookup)
 - [Phase 35-rss-fetcher-and-topic-selection]: Plan 35-01: rss-parser@^3.13.0 + server/lib/rssFetcher.ts (254 lines) — sequential per-source loop, GUID fallback chain (guid->link->sha256), HTML strip + 1000-char summary cap, per-source try/catch never auto-disables source; D-01/02/04/05/06/07/13/14 implemented
 - [Phase 35-rss-fetcher-and-topic-selection]: Plan 35-03: cron.ts gets two independent setIntervals under one Vercel guard (fetcher + generator); POST /api/blog/cron/fetch-rss reuses isAuthorizedCronRequest (Bearer CRON_SECRET); BlogGenerator.generate() calls selectNextRssItem AFTER too_soon check and BEFORE acquireLock — null path inserts blog_generation_jobs(skipped, no_rss_items) and returns early without calling Gemini; rssItem threaded through runPipeline -> generateTopic/generatePost prompts; markRssItemUsed runs after createBlogPost in try/catch (warn-only on failure)
+- [Phase 36-generator-quality-overhaul]: Plan 36-02: BLOG_IMAGE_MODEL fallback verified to gemini-2.0-flash-exp (not the speculative gemini-2.5-flash-image-preview from CONTEXT) — preserves Phase 22 production default
+- [Phase 36-generator-quality-overhaul]: Plan 36-02: Defensive numeric env parse uses || not ?? — Number(env) || 30_000 catches NaN, 0, empty-string, undefined uniformly
 
 ### Quick Tasks Completed
 
