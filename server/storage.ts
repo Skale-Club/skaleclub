@@ -16,6 +16,8 @@ import {
   blogPosts,
   blogSettings,
   blogGenerationJobs,
+  blogRssSources,
+  blogRssItems,
   hubLives,
   hubParticipants,
   hubRegistrations,
@@ -103,6 +105,10 @@ import {
   type InsertBlogPost,
   type InsertBlogSettings,
   type InsertBlogGenerationJob,
+  type BlogRssSource,
+  type InsertBlogRssSource,
+  type BlogRssItem,
+  type InsertBlogRssItem,
   normalizeHubPhone,
   normalizeHubEmail,
   type InsertSalesRep,
@@ -696,6 +702,17 @@ export interface IStorage {
   createBlogGenerationJob(data: InsertBlogGenerationJob): Promise<BlogGenerationJob>;
   updateBlogGenerationJob(id: number, data: Partial<InsertBlogGenerationJob>): Promise<BlogGenerationJob>;
   getLatestBlogGenerationJob(): Promise<BlogGenerationJob | undefined>;
+
+  // Blog RSS Sources & Items (Phase 34 — RSS-04)
+  listRssSources(): Promise<BlogRssSource[]>;
+  getRssSource(id: number): Promise<BlogRssSource | undefined>;
+  createRssSource(input: InsertBlogRssSource): Promise<BlogRssSource>;
+  updateRssSource(id: number, patch: Partial<InsertBlogRssSource>): Promise<BlogRssSource | undefined>;
+  deleteRssSource(id: number): Promise<void>;
+  upsertRssItem(item: InsertBlogRssItem): Promise<BlogRssItem>;
+  listPendingRssItems(limit?: number): Promise<BlogRssItem[]>;
+  markRssItemUsed(itemId: number, postId: number): Promise<void>;
+  markRssItemSkipped(itemId: number, reason?: string): Promise<void>;
 
   getHubLives(status?: HubLiveStatus): Promise<HubLive[]>;
   getCurrentHubLive(): Promise<HubLive | undefined>;
