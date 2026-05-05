@@ -32,14 +32,12 @@ import {
 const STALE_LOCK_MS = 10 * 60 * 1000;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
-// Phase 36 D-11: pt-BR brand voice (verbatim, hardcoded per CONTEXT)
+// Phase 36 D-11/D-12/D-05: pt-BR prompt blocks (verbatim) + length bounds
 const BRAND_VOICE_PT_BR = [
   "Você é um redator da Skale Club, uma agência brasileira de marketing B2B.",
   "Escreva em português brasileiro (pt-BR). Público-alvo: donos de negócios B2B.",
   "Tom: profissional, orientado a dados, acionável. Sem floreios.",
 ].join("\n");
-
-// Phase 36 D-12: REGRAS DE FORMATAÇÃO (verbatim, appended to post prompt)
 const FORMATTING_RULES_PT_BR = [
   "REGRAS DE FORMATAÇÃO (obrigatórias):",
   "- Devolva APENAS HTML do corpo do post — sem <html>, <head>, <body>, sem ``` blocos.",
@@ -48,8 +46,6 @@ const FORMATTING_RULES_PT_BR = [
   '- Links: <a href="..."> apenas. Sem rel/target — o sistema adiciona.',
   "- Comprimento: entre 600 e 4000 caracteres de texto puro (sem contar tags).",
 ].join("\n");
-
-// Phase 36 D-05: content-quality bounds (post-sanitize plain-text length)
 const MIN_PLAIN_TEXT_CHARS = 600;
 const MAX_PLAIN_TEXT_CHARS = 4000;
 
@@ -226,17 +222,8 @@ async function releaseDatabaseLock(settings: BlogSettings): Promise<void> {
     .where(eq(blogSettings.id, settings.id));
 }
 
-function slugifyTitle(title: string): string {
-  return (
-    title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "") || "blog-post"
-  );
-}
-
 function buildSlug(title: string, now: Date): string {
-  const baseSlug = slugifyTitle(title);
+  const baseSlug = slugifyTitleNFD(title) || "blog-post";
   return `${baseSlug}-${now.getTime()}`;
 }
 
@@ -268,10 +255,9 @@ function extractJsonPayload(raw: string): string {
   return raw.trim();
 }
 
-// Phase 36 D-07: race a Gemini call against BLOG_GEMINI_TIMEOUT_MS. The SDK
-// (@google/genai 1.50.x) has no native AbortSignal support, so we use
-// Promise.race against a setTimeout-driven GeminiTimeoutError. The
-// AbortController is forward-compatible (no-op today, harmless).
+// Phase 36 D-07: race Gemini against BLOG_GEMINI_TIMEOUT_MS via Promise.race
+// (@google/genai 1.50.x has no native AbortSignal support). Controller is
+// forward-compat — calling .abort() is a no-op today.
 async function withGeminiTimeout<T>(
   label: string,
   run: (signal: AbortSignal) => Promise<T>,
@@ -335,24 +321,10 @@ async function generateTopicWithGemini({
 }): Promise<string> {
   resolveBlogGeminiApiKey();
   const client = getBlogGeminiClient();
-  const prompt = [
-    "You are an SEO strategist for Skale Club.",
-    `Source RSS item title: ${rssItem.title}`,
-    `Source RSS item summary: ${rssItem.summary ?? "(no summary)"}`,
-    `Refine into one timely blog topic idea aligned with these keywords: ${settings.seoKeywords}.`,
-    `Prompt style: ${settings.promptStyle || "clear and practical"}.`,
-    `Trend analysis enabled: ${settings.enableTrendAnalysis ? "yes" : "no"}.`,
-    `Run type: ${manual ? "manual" : "scheduled"}.`,
-    "Return only the topic title as plain text.",
-  ].join("\n");
-
-  const response = await getGeminiText(client, BLOG_CONTENT_MODEL, prompt);
+  const prompt = `${BRAND_VOICE_PT_BR}\n\nTarefa: refine o item de RSS abaixo em UMA ideia de pauta de blog em pt-BR alinhada às palavras-chave de SEO.\n\nItem de RSS de origem:\n- Título: ${rssItem.title}\n- Resumo: ${rssItem.summary ?? "(sem resumo)"}\n\nPalavras-chave de SEO: ${settings.seoKeywords}.\nEstilo de prompt: ${settings.promptStyle || "claro e prático"}.\nAnálise de tendências habilitada: ${settings.enableTrendAnalysis ? "sim" : "não"}.\nTipo de execução: ${manual ? "manual" : "agendada"}.\n\nDevolva APENAS o título da pauta como texto puro em pt-BR. Sem aspas, sem pontuação final, sem comentários.`;
+  const response = await withGeminiTimeout("topic", () => getGeminiText(client, BLOG_CONTENT_MODEL, prompt));
   const topic = response.trim();
-
-  if (!topic) {
-    throw new Error("Gemini did not return a blog topic");
-  }
-
+  if (!topic) throw new Error("Gemini did not return a blog topic");
   return topic;
 }
 
@@ -369,22 +341,8 @@ async function generatePostWithGemini({
 }): Promise<GeneratedPost> {
   resolveBlogGeminiApiKey();
   const client = getBlogGeminiClient();
-  const prompt = [
-    "You are an SEO content writer for Skale Club.",
-    `Source RSS item title: ${rssItem.title}`,
-    `Source RSS item summary: ${rssItem.summary ?? "(no summary)"}`,
-    `Source RSS item URL: ${rssItem.url}`,
-    `Write an HTML-ready blog draft about: ${topic}`,
-    `Primary SEO keywords: ${settings.seoKeywords}.`,
-    `Prompt style: ${settings.promptStyle || "clear and practical"}.`,
-    `Trend analysis enabled: ${settings.enableTrendAnalysis ? "yes" : "no"}.`,
-    `Run type: ${manual ? "manual" : "scheduled"}.`,
-    "Return valid JSON only with these exact fields:",
-    '{"title":"","content":"","excerpt":"","metaDescription":"","focusKeyword":"","tags":[""]}',
-    "The content field must be HTML-ready body content.",
-  ].join("\n");
-
-  const response = await getGeminiText(client, BLOG_CONTENT_MODEL, prompt);
+  const prompt = `${BRAND_VOICE_PT_BR}\n\nTarefa: escreva um rascunho de post de blog em pt-BR a partir da pauta abaixo.\n\nItem de RSS de origem:\n- Título: ${rssItem.title}\n- Resumo: ${rssItem.summary ?? "(sem resumo)"}\n- URL: ${rssItem.url}\n\nPauta: ${topic}\nPalavras-chave de SEO primárias: ${settings.seoKeywords}.\nEstilo de prompt: ${settings.promptStyle || "claro e prático"}.\nAnálise de tendências habilitada: ${settings.enableTrendAnalysis ? "sim" : "não"}.\nTipo de execução: ${manual ? "manual" : "agendada"}.\n\nDevolva JSON válido com EXATAMENTE estes campos (todos em pt-BR):\n{"title":"","content":"","excerpt":"","metaDescription":"","focusKeyword":"","tags":[""]}\nO campo "content" deve ser HTML pronto para publicação seguindo as regras abaixo.\n\n${FORMATTING_RULES_PT_BR}`;
+  const response = await withGeminiTimeout("post", () => getGeminiText(client, BLOG_CONTENT_MODEL, prompt));
   return parseGeneratedPostResponse(response);
 }
 
@@ -392,19 +350,25 @@ async function generateImageWithGemini({ post }: { settings: BlogSettings; post:
   resolveBlogGeminiApiKey();
   const client = getBlogGeminiClient();
   const prompt = [
-    "Create a cinematic blog feature image.",
-    `Title: ${post.title}`,
-    `Excerpt: ${post.excerpt ?? post.metaDescription ?? ""}`,
-    `Focus keyword: ${post.focusKeyword ?? ""}`,
-    "Return a single high-quality JPEG-style image response.",
+    "Crie uma imagem de capa cinematográfica para um post de blog brasileiro.",
+    `Título: ${post.title}`,
+    `Resumo: ${post.excerpt ?? post.metaDescription ?? ""}`,
+    `Palavra-chave foco: ${post.focusKeyword ?? ""}`,
+    "Devolva uma única imagem JPEG de alta qualidade.",
   ].join("\n");
 
-  const response = await (client.models as any).generateContent({
-    model: BLOG_IMAGE_MODEL,
-    contents: prompt,
-  });
+  const response = await withGeminiTimeout<any>("image", () =>
+    (client.models as any).generateContent({
+      model: BLOG_IMAGE_MODEL,
+      contents: prompt,
+    }),
+  );
 
-  const parts = response?.candidates?.flatMap((candidate: any) => candidate?.content?.parts ?? []) ?? [];
+  if (!response?.candidates || response.candidates.length === 0) {
+    throw new GeminiEmptyResponseError(`Gemini ${BLOG_IMAGE_MODEL} returned empty candidates`);
+  }
+
+  const parts = response.candidates.flatMap((candidate: any) => candidate?.content?.parts ?? []);
 
   for (const part of parts) {
     const inlineData = part?.inlineData;
@@ -436,6 +400,12 @@ async function getGeminiText(client: ReturnType<typeof getBlogGeminiClient>, mod
     model,
     contents: prompt,
   });
+
+  // D-08: distinct typed error when Gemini returns no candidates (content
+  // filter, model outage). Mapped to reason 'gemini_empty_response' upstream.
+  if (!response?.candidates || response.candidates.length === 0) {
+    throw new GeminiEmptyResponseError(`Gemini ${model} returned empty candidates`);
+  }
 
   const text = response?.text;
   if (typeof text === "string" && text.trim()) {
