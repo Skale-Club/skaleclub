@@ -11,10 +11,82 @@
 - ✅ **v1.6 Skale Hub Weekly Live Gate** — Phases 25-29 (shipped 2026-05-02)
 - ✅ **v1.7 Translation System Completeness** — Phase 30 (shipped 2026-05-03)
 - ✅ **v1.8 Notification Templates System** — Phases 31-33 (shipped 2026-05-04)
+- 🔄 **v1.9 Blog Intelligence & RSS Sources** — Phases 34-38 (active)
 
 ## Active
 
-_No active milestone — run `/gsd:new-milestone` to define the next one._
+**v1.9 Blog Intelligence & RSS Sources** — Phases 34-38
+
+- [ ] **Phase 34: RSS Sources Foundation** — schema for `blog_rss_sources` and `blog_rss_items`, Drizzle/Zod contracts, storage CRUD
+- [ ] **Phase 35: RSS Fetcher & Topic Selection** — RSS parser, hourly fetch cron, scoring algorithm to pick the best unused item, mark-as-used after generation
+- [ ] **Phase 36: Generator Quality Overhaul** — pt-BR prompts, strict HTML validation, slug normalization, length bounds, Gemini timeout + retry, env-overridable models
+- [ ] **Phase 37: Admin UX (RSS + Job Improvements)** — RSS sources panel, items queue view, draft preview modal, job history with retry, cancel stuck jobs, API-key warning, next-run countdown + cost estimate
+- [ ] **Phase 38: Dynamic Cron & Observability** — frequency from `postsPerDay`, structured per-stage `durationMs` logs, exponential-backoff retries
+
+### Phase 34: RSS Sources Foundation
+
+**Goal:** The database has additive tables for RSS sources and RSS items, with typed Drizzle/Zod contracts and a storage interface that downstream phases can call without raw SQL.
+**Depends on:** Nothing (first phase of v1.9)
+**Requirements:** RSS-01, RSS-02, RSS-03, RSS-04
+**Plans:** TBD
+**Success Criteria** (what must be TRUE):
+  1. SQL migration runs without error and creates `blog_rss_sources` and `blog_rss_items` tables with the columns, defaults, and FK from `blog_rss_items.source_id` → `blog_rss_sources.id` (cascade delete).
+  2. `shared/schema/blog.ts` exports Drizzle tables, Zod insert/select schemas, and TypeScript types for both new entities.
+  3. `IStorage` declares and `DatabaseStorage` implements: `listRssSources`, `getRssSource`, `createRssSource`, `updateRssSource`, `deleteRssSource`, `upsertRssItem(sourceId, guid, …)`, `listPendingRssItems`, `markRssItemUsed(itemId, postId)`.
+  4. `npm run check` passes cleanly.
+
+### Phase 35: RSS Fetcher & Topic Selection
+
+**Goal:** A scheduled fetcher pulls items from every enabled RSS source and the generator picks the highest-scored unused item per run instead of inventing a generic topic.
+**Depends on:** Phase 34 (tables and storage must exist)
+**Requirements:** RSS-05, RSS-06, RSS-07, RSS-08
+**Plans:** TBD
+**Success Criteria** (what must be TRUE):
+  1. A server-side fetcher iterates each `enabled` source, parses the feed, and upserts items by `guid` so the same item is never duplicated even after multiple fetches.
+  2. The fetcher cron runs hourly outside Vercel (and via `/api/blog/cron/fetch-rss` on Vercel) and writes `last_fetched_at` plus a status/error message per source.
+  3. The generator, before calling Gemini, queries pending items, scores them by SEO-keyword overlap and recency, picks the top one, and marks it `used` with the resulting `postId` after the post is created.
+  4. When zero pending items exist, the generator skips the run with `reason: 'no_rss_items'` and does not call Gemini.
+
+### Phase 36: Generator Quality Overhaul
+
+**Goal:** Generated posts are reliably Brazilian Portuguese, valid HTML only, well-formed slugs, length-bounded, and resilient to slow/flaky Gemini responses.
+**Depends on:** Phase 35 (the source item title/summary feeds the prompt)
+**Requirements:** BLOG2-01, BLOG2-02, BLOG2-03, BLOG2-04, BLOG2-05, BLOG2-06
+**Plans:** TBD
+**Success Criteria** (what must be TRUE):
+  1. The topic and content prompts explicitly target pt-BR, ingest the chosen RSS item title + summary as context, and instruct allowed HTML tags only — drafts saved to `blog_posts.content` parse cleanly with no `<script>`, `<iframe>`, `<form>`, `<style>`, or `<link>` tags.
+  2. A server-side HTML sanitizer removes disallowed tags before insert; a malformed AI response triggers a failed job with reason `invalid_html`.
+  3. Slugs from titles with Portuguese accents are normalized (NFD strip + lowercase + hyphenate) — "Análise de CRM em 2026" → `analise-de-crm-em-2026`.
+  4. Body content shorter than 600 chars or longer than 4000 chars marks the job failed with reason `content_length_out_of_bounds`.
+  5. Every Gemini call uses an `AbortController` (default 30s timeout); empty `candidates` arrays throw a typed error caught by the job runner.
+  6. `BLOG_CONTENT_MODEL` and `BLOG_IMAGE_MODEL` env vars override the hardcoded model IDs; defaults are documented in `.env.example`.
+
+### Phase 37: Admin UX (RSS + Job Improvements)
+
+**Goal:** The admin can manage RSS sources, see the items queue, preview drafts before they land in Posts, and operate the system (retry, cancel, configure) without touching the database.
+**Depends on:** Phase 34 (sources/items API), Phase 36 (preview content quality)
+**Requirements:** BLOG2-07, BLOG2-08, BLOG2-09, BLOG2-10, BLOG2-11, BLOG2-12, BLOG2-13
+**Plans:** TBD
+**UI hint:** yes
+**Success Criteria** (what must be TRUE):
+  1. Within the Blog section, the admin sees an "RSS Sources" tab/panel where they can list, add, edit, enable/disable, and delete feeds, with last-fetched-at and last error visible per row.
+  2. An "RSS Queue" view lists items grouped by status (pending/used/skipped) with source name, published date, and (when used) a clickable link to the resulting post.
+  3. Clicking "Generate Now" opens a preview modal with title, excerpt, feature image, and the first ~200 words of body; the admin can Save as Draft or Discard before the post is committed.
+  4. A "Job History" panel shows the last N jobs with timestamps, status badge, source item, error (if any), and a Retry button on failed rows.
+  5. Stuck jobs (lock older than the configured staleness) can be cancelled from the UI; the lock is force-released and the job marked failed with reason `cancelled_by_admin`.
+  6. A red banner in the Blog automation panel warns when the active Gemini integration is disabled or `BLOG_GEMINI_API_KEY` is missing.
+  7. The admin sees the next scheduled run countdown (`lastRunAt + 24h/postsPerDay`) plus an estimated monthly Gemini cost (posts per month × per-run model price).
+
+### Phase 38: Dynamic Cron & Observability
+
+**Goal:** The cron firing rate adapts to `postsPerDay`, every job records per-stage timing for observability, and transient Gemini failures auto-retry instead of being lost.
+**Depends on:** Phase 36 (Gemini call sites need to wrap timing + retry)
+**Requirements:** BLOG2-14, BLOG2-15, BLOG2-16
+**Plans:** TBD
+**Success Criteria** (what must be TRUE):
+  1. `startCron()` reads `postsPerDay` from settings and sets the interval to `24h / postsPerDay` (clamped to a minimum of 60min); changing settings updates the schedule on the next tick without redeploy.
+  2. `blog_generation_jobs` gains a `durationsMs` JSONB column with `{ topic, content, image, upload, total }` populated for every completed job; admin job history surfaces the breakdown.
+  3. Transient Gemini errors (timeouts, 5xx, network) retry with backoff `[1s, 5s, 30s]` per call site; only a final failure after the third attempt marks the job failed.
 
 <details>
 <summary>✅ v1.8 Notification Templates System (Phases 31-33) — SHIPPED 2026-05-04</summary>
@@ -169,6 +241,14 @@ _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
 | 28. Admin Management | v1.6 | 1/1 | Complete | 2026-05-02 |
 | 29. Analytics & Reporting | v1.6 | 1/1 | Complete | 2026-05-02 |
 | 30. Translation System Overhaul | v1.7 | 4/4 | Complete    | 2026-05-03 |
+| 31. Schema & Templates Foundation | v1.8 | 2/2 | Complete | 2026-05-04 |
+| 32. Telegram Integration | v1.8 | 2/2 | Complete | 2026-05-04 |
+| 33. Admin Notifications Panel | v1.8 | 2/2 | Complete | 2026-05-04 |
+| 34. RSS Sources Foundation | v1.9 | 0/0 | Not started | - |
+| 35. RSS Fetcher & Topic Selection | v1.9 | 0/0 | Not started | - |
+| 36. Generator Quality Overhaul | v1.9 | 0/0 | Not started | - |
+| 37. Admin UX (RSS + Job Improvements) | v1.9 | 0/0 | Not started | - |
+| 38. Dynamic Cron & Observability | v1.9 | 0/0 | Not started | - |
 | 31. Schema & Templates Foundation | v1.8 | 2/2 | Complete | 2026-05-04 |
 | 32. Telegram Integration | v1.8 | 2/2 | Complete | 2026-05-04 |
 | 33. Admin Notifications Panel | v1.8 | 2/2 | Complete | 2026-05-04 |

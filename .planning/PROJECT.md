@@ -23,10 +23,23 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 - ✓ **BLOG-01 → BLOG-19**: Full Blog Post Automation (blog tables, Gemini generator engine, REST API + cron, admin automation UI) — v1.5 (2026-04-24)
 - ✓ **HUB-01 → HUB-18**: Skale Hub Weekly Live Gate (schema, tracking APIs, public registration gate, admin management, analytics) — v1.6 (2026-05-02)
 - ✓ **TRX-01 → TRX-11**: Translation System Completeness (TranslationKey type enforcement, dead key removal, 8 admin components wired, PrivacyPolicy + TermsOfService covered, 599-line translations.ts) — v1.7 (2026-05-04)
+- ✓ **NOTIF-01 → NOTIF-14**: Notification Templates System (DB-stored templates, dispatchNotification, Telegram integration, admin Notifications panel) — v1.8 (2026-05-04)
+
+## Current Milestone: v1.9 Blog Intelligence & RSS Sources
+
+**Goal:** Make the auto-post system production-ready, fed by manually-registered RSS sources that supply curated content ideas — selecting the most relevant unused item per run, never duplicating.
+
+**Target features:**
+- RSS Sources: admin registers feeds; system fetches and queues items as content ideas
+- Topic selection: scoring algorithm picks best unused item, marks it as used
+- Generator quality overhaul: PT-BR prompts, strict HTML, SEO-aware, validation
+- Admin UX: preview before draft, job history, retry/cancel, RSS queue view
+- Cron + observability: dynamic frequency from settings, structured logs, cost estimate
 
 ### Active
 
-(none — planning next milestone)
+- [ ] **RSS-01 → RSS-NN**: RSS Sources & Topic Selection — v1.9 (in progress)
+- [ ] **BLOG2-01 → BLOG2-NN**: Generator Quality Overhaul — v1.9 (in progress)
 
 ### Out of Scope
 
@@ -112,4 +125,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-*Last updated: 2026-05-04 after v1.7 milestone — Translation System Completeness shipped*
+*Last updated: 2026-05-04 — v1.9 milestone started (Blog Intelligence & RSS Sources)*
