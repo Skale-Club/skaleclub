@@ -14,7 +14,7 @@ updated: 2026-05-05T15:50:00Z
 
 ### 1. Apply migration to live database
 expected: `npx tsx scripts/migrate-blog-durations-ms.ts` runs without error; `\d blog_generation_jobs` shows new `durations_ms jsonb` column; idempotent (safe to re-run)
-result: [pending]
+result: passed (applied via `supabase db push --include-all` on 2026-05-05; pushed two pending migrations: 20260504150000_create_blog_rss_tables.sql + 20260505120000_blog_jobs_durations_ms.sql; migration history now in sync with remote)
 
 ### 2. Cron interval responds to postsPerDay change without redeploy
 expected: With server running (`npm run dev`), set `postsPerDay=24` in admin → wait one tick → log shows `interval=60min` (the 60min clamp); change to `postsPerDay=2` → next tick log shows `interval=720min`. No restart required.
@@ -39,9 +39,9 @@ result: [pending]
 ## Summary
 
 total: 6
-passed: 0
+passed: 1
 issues: 0
-pending: 6
+pending: 5
 skipped: 0
 blocked: 0
 
