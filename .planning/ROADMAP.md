@@ -19,7 +19,7 @@
 
 - [ ] **Phase 34: RSS Sources Foundation** — schema for `blog_rss_sources` and `blog_rss_items`, Drizzle/Zod contracts, storage CRUD
 - [ ] **Phase 35: RSS Fetcher & Topic Selection** — RSS parser, hourly fetch cron, scoring algorithm to pick the best unused item, mark-as-used after generation
-- [ ] **Phase 36: Generator Quality Overhaul** — pt-BR prompts, strict HTML validation, slug normalization, length bounds, Gemini timeout + retry, env-overridable models
+- [x] **Phase 36: Generator Quality Overhaul** — pt-BR prompts, strict HTML validation, slug normalization, length bounds, Gemini timeout + retry, env-overridable models
 - [ ] **Phase 37: Admin UX (RSS + Job Improvements)** — RSS sources panel, items queue view, draft preview modal, job history with retry, cancel stuck jobs, API-key warning, next-run countdown + cost estimate
 - [ ] **Phase 38: Dynamic Cron & Observability** — frequency from `postsPerDay`, structured per-stage `durationMs` logs, exponential-backoff retries
 
@@ -66,7 +66,7 @@ Plans:
 Plans:
 - [x] 36-01-PLAN.md — server/lib/blogContentValidator.ts pure module (sanitizeBlogHtml, getPlainTextLength, slugifyTitle, GeminiTimeoutError, GeminiEmptyResponseError) + sanitize-html dep (BLOG2-02, BLOG2-03)
 - [x] 36-02-PLAN.md — Env-overridable BLOG_CONTENT_MODEL / BLOG_IMAGE_MODEL / BLOG_GEMINI_TIMEOUT_MS in server/lib/blog-gemini.ts + .env.example documentation (BLOG2-05, BLOG2-06)
-- [ ] 36-03-PLAN.md — BlogGenerator integration: pt-BR brand voice + REGRAS DE FORMATAÇÃO prompts, AbortController-wrapped Gemini calls, sanitize + length validation in runPipeline, NFD slugifyTitle, typed error → reason mapping in catch block (BLOG2-01, BLOG2-02, BLOG2-03, BLOG2-04, BLOG2-05)
+- [x] 36-03-PLAN.md — BlogGenerator integration: pt-BR brand voice + REGRAS DE FORMATAÇÃO prompts, AbortController-wrapped Gemini calls, sanitize + length validation in runPipeline, NFD slugifyTitle, typed error → reason mapping in catch block (BLOG2-01, BLOG2-02, BLOG2-03, BLOG2-04, BLOG2-05)
 
 **Success Criteria** (what must be TRUE):
   1. The topic and content prompts explicitly target pt-BR, ingest the chosen RSS item title + summary as context, and instruct allowed HTML tags only — drafts saved to `blog_posts.content` parse cleanly with no `<script>`, `<iframe>`, `<form>`, `<style>`, or `<link>` tags.

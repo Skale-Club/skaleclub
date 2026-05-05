@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: and earlier)
 status: executing
-last_updated: "2026-05-05T03:20:05.462Z"
+last_updated: "2026-05-05T03:30:00.000Z"
 last_activity: 2026-05-05
 progress:
   total_phases: 11
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 20
-  completed_plans: 19
+  completed_plans: 20
 ---
 
 # STATE: Skale Club Web Platform
@@ -30,10 +30,10 @@ See: `.planning/PROJECT.md` (updated 2026-05-04)
 
 ## Current Position
 
-Phase: 36 (generator-quality-overhaul) — EXECUTING
-Plan: 3 of 3
+Phase: 36 (generator-quality-overhaul) — COMPLETE
+Plan: 3 of 3 (all complete)
 Milestone: v1.9 Blog Intelligence & RSS Sources
-Status: Ready to execute
+Status: Phase 36 complete; ready for Phase 37 (Admin UX)
 Last activity: 2026-05-05
 
 ---
@@ -83,6 +83,7 @@ Last activity: 2026-05-05
 | Phase 35-rss-fetcher-and-topic-selection P03 | 3min | 2 tasks | 3 files |
 | Phase 36-generator-quality-overhaul P02 | 3min | 2 tasks | 2 files |
 | Phase 36-generator-quality-overhaul P01 | 7min | 2 tasks | 3 files |
+| Phase 36-generator-quality-overhaul P03 | 7min | 3 tasks | 1 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -219,6 +220,7 @@ Last activity: 2026-05-05
 - [Phase 36-generator-quality-overhaul]: Plan 36-02: BLOG_IMAGE_MODEL fallback verified to gemini-2.0-flash-exp (not the speculative gemini-2.5-flash-image-preview from CONTEXT) — preserves Phase 22 production default
 - [Phase 36-generator-quality-overhaul]: Plan 36-02: Defensive numeric env parse uses || not ?? — Number(env) || 30_000 catches NaN, 0, empty-string, undefined uniformly
 - [Phase 36-generator-quality-overhaul]: Plan 36-01: server/lib/blogContentValidator.ts (124 lines) — pure module with sanitize-html@2.17.3 + @types/sanitize-html; exports sanitizeBlogHtml/getPlainTextLength/slugifyTitle/GeminiTimeoutError/GeminiEmptyResponseError/ALLOWED_BLOG_TAGS; D-01/D-02/D-03/D-04/D-08/D-14/D-15 implemented; deviation Rule 1: allowedAttributes.a widened to [href,rel,target] because sanitize-html applies attribute allowlist AFTER transformTags, so transform-forced rel/target would otherwise be filtered out (transform still overwrites model values, security guarantee preserved)
+- [Phase 36-generator-quality-overhaul]: Plan 36-03: server/lib/blog-generator.ts integrated Wave 1 outputs (568 → 598 lines, under 600 cap) — pt-BR prompts (D-11 BRAND_VOICE_PT_BR + D-12 FORMATTING_RULES_PT_BR verbatim), withGeminiTimeout helper using Promise.race against setTimeout-driven GeminiTimeoutError (D-07), 3 Gemini call sites wrapped (topic, post, image), getGeminiText + generateImageWithGemini throw GeminiEmptyResponseError on empty candidates (D-08), runPipeline sanitizes content + validates plain-text length [600..4000] before createBlogPost (D-05/D-06: invalid_html if sanitizer dropped salvageable content; content_length_out_of_bounds otherwise), buildSlug uses imported slugifyTitleNFD (local slugifyTitle removed), catch block maps GeminiTimeoutError/GeminiEmptyResponseError + message-match for invalid_html/content_length_out_of_bounds onto reason taxonomy (D-13, no DB migration); deviation Rule 3: explicit `<any>` generic on withGeminiTimeout image call site to fix TS2339 inference; deviation Rule 3: prompt builders converted to template literals + comment trims + defaultStorage method-shorthand to fit 600-line cap (plan pre-authorized this)
 
 ### Quick Tasks Completed
 
@@ -297,5 +299,6 @@ None.
 | 2026-04-29 | Phase 25 UAT passed | User confirmed fade mask, click-to-open modal, scroll lock, and carousel pause all working in browser |
 | 2026-05-05 | Plan 35-02 executed | server/lib/rssTopicSelector.ts shipped — scoreItem + selectNextRssItem (1 task, commit 83c5e4f, 142 lines); RSS-07 scoring half complete; npm run check clean; Plan 35-03 will wire into BlogGenerator.generate() |
 | 2026-05-05 | Plan 35-03 executed | Cron + endpoint + generator integration (2 tasks, commits cd634c0, df83b55); server/cron.ts second setInterval, POST /api/blog/cron/fetch-rss with CRON_SECRET Bearer auth, BlogGenerator.generate() now calls selectNextRssItem before acquireLock and marks item used after createBlogPost; new SkipReason 'no_rss_items'; RSS-06 + RSS-07 + RSS-08 complete; Phase 35 plans 3/3 ✓ |
+| 2026-05-05 | Plan 36-03 executed | Generator integration Wave 2 (3 tasks, commits 7bbbf28, b2d973e, 0582164); server/lib/blog-generator.ts 568 → 598 lines (under 600 cap); pt-BR prompts + RSS context + REGRAS injected; withGeminiTimeout wraps 3 Gemini call sites (topic/post/image); sanitizeBlogHtml + getPlainTextLength gate before createBlogPost; 4 new failure reasons mapped (invalid_html, content_length_out_of_bounds, gemini_timeout, gemini_empty_response); BLOG2-01..05 complete; Phase 36 plans 3/3 ✓ |
 
-*Last updated: 2026-05-05 - Phase 35 complete (RSS fetcher + topic selection + integration)*
+*Last updated: 2026-05-05 - Phase 36 complete (generator quality overhaul integrated)*

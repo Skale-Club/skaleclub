@@ -21,10 +21,10 @@
 
 ### Generator Quality Overhaul
 
-- [ ] **BLOG2-01**: Topic and content prompts are explicitly Brazilian Portuguese (pt-BR), include the source item title/summary as context, and instruct strict HTML output with allowed tags only (`p, h2, h3, ul, ol, li, strong, em, a, blockquote`).
+- [x] **BLOG2-01**: Topic and content prompts are explicitly Brazilian Portuguese (pt-BR), include the source item title/summary as context, and instruct strict HTML output with allowed tags only (`p, h2, h3, ul, ol, li, strong, em, a, blockquote`).
 - [x] **BLOG2-02**: A server-side HTML validator strips or rejects disallowed tags (`script, iframe, form, style, link`) before saving the post.
 - [x] **BLOG2-03**: Slug generation normalizes Portuguese accents (NFD + diacritic removal) so titles like "Análise de CRM" become `analise-de-crm`.
-- [ ] **BLOG2-04**: Content length is validated (min 600, max 4000 chars of body HTML) and runs that fail the bound are marked failed with a clear reason.
+- [x] **BLOG2-04**: Content length is validated (min 600, max 4000 chars of body HTML) and runs that fail the bound are marked failed with a clear reason.
 - [x] **BLOG2-05**: All Gemini API calls have an `AbortController` timeout (default 30s) and an empty-candidates check that throws a typed error.
 - [x] **BLOG2-06**: Gemini model identifiers (`BLOG_CONTENT_MODEL`, `BLOG_IMAGE_MODEL`) are overridable via env vars with documented defaults.
 
@@ -68,12 +68,12 @@
 | RSS-06 | Phase 35 | Not started |
 | RSS-07 | Phase 35 | Not started |
 | RSS-08 | Phase 35 | Not started |
-| BLOG2-01 | Phase 36 | Not started |
-| BLOG2-02 | Phase 36 | Not started |
-| BLOG2-03 | Phase 36 | Not started |
-| BLOG2-04 | Phase 36 | Not started |
-| BLOG2-05 | Phase 36 | Not started |
-| BLOG2-06 | Phase 36 | Not started |
+| BLOG2-01 | Phase 36 | Complete |
+| BLOG2-02 | Phase 36 | Complete |
+| BLOG2-03 | Phase 36 | Complete |
+| BLOG2-04 | Phase 36 | Complete |
+| BLOG2-05 | Phase 36 | Complete |
+| BLOG2-06 | Phase 36 | Complete |
 | BLOG2-07 | Phase 37 | Not started |
 | BLOG2-08 | Phase 37 | Not started |
 | BLOG2-09 | Phase 37 | Not started |
