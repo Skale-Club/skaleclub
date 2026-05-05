@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: and earlier)
 status: executing
-last_updated: "2026-05-05T13:31:46.972Z"
+last_updated: "2026-05-05T13:40:01.490Z"
 last_activity: 2026-05-05
 progress:
   total_phases: 11
   completed_phases: 9
   total_plans: 23
-  completed_plans: 21
+  completed_plans: 22
 ---
 
 # STATE: Skale Club Web Platform
@@ -31,7 +31,7 @@ See: `.planning/PROJECT.md` (updated 2026-05-04)
 ## Current Position
 
 Phase: 37 (admin-ux-rss-job-improvements) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Milestone: v1.9 Blog Intelligence & RSS Sources
 Status: Ready to execute
 Last activity: 2026-05-05
@@ -85,6 +85,7 @@ Last activity: 2026-05-05
 | Phase 36-generator-quality-overhaul P01 | 7min | 2 tasks | 3 files |
 | Phase 36-generator-quality-overhaul P03 | 7min | 3 tasks | 1 files |
 | Phase 37 P01 | 4min | 2 tasks | 2 files |
+| Phase 37 P02 | 8min | 2 tasks | 2 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -225,6 +226,10 @@ Last activity: 2026-05-05
 - [Phase 37]: Plan 37-01: postId-based join (no schema migration) — blog_generation_jobs.postId === blog_rss_items.usedPostId is the only reliable link; skipped/failed jobs correctly return rssItemTitle=null
 - [Phase 37]: Plan 37-01: Reuse scoreItem from rssTopicSelector for D-05 pending-row score — keeps queue ranking byte-identical to the cron picker
 - [Phase 37]: Plan 37-01: Added getBlogGenerationJobWithRssItem(id) joined single-row variant (Info-9) to keep retry handler O(1) instead of scanning listBlogGenerationJobs(200).find(...)
+- [Phase 37]: Plan 37-02: runPreview() reuses getDeps() dep table — same test mock graph as runPipeline; preview/commit two-step over single endpoint enables Discard
+- [Phase 37]: Plan 37-02: BlogGenerator.generate signature is additively extended with rssItemId? — existing cron + manual call sites unchanged; retry handler bypasses selectNextRssItem when set
+- [Phase 37]: Plan 37-02: Compressed pre-existing prompt blocks/types/declarations (purely syntactic) to absorb runPreview addition under 600-line CLAUDE.md cap (598 -> 588 net)
+- [Phase 37]: Plan 37-02: from-preview slug recomputed server-side via static slugifyTitle import (Info-8) — admin client cannot inject arbitrary slugs
 
 ### Quick Tasks Completed
 

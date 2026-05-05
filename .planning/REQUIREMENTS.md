@@ -30,11 +30,11 @@
 
 ### Admin UX
 
-- [ ] **BLOG2-07**: Admin manages RSS sources (list, add, edit, enable/disable, delete) within the Blog section.
+- [x] **BLOG2-07**: Admin manages RSS sources (list, add, edit, enable/disable, delete) within the Blog section.
 - [x] **BLOG2-08**: Admin sees the RSS items queue (pending vs used vs skipped) with the source name, published date, and the resulting post link when used.
-- [ ] **BLOG2-09**: Manual "Generate Now" opens a preview modal with the draft (title, excerpt, feature image, first paragraphs) and lets the admin keep, edit, or discard before it lands in the Posts list.
+- [x] **BLOG2-09**: Manual "Generate Now" opens a preview modal with the draft (title, excerpt, feature image, first paragraphs) and lets the admin keep, edit, or discard before it lands in the Posts list.
 - [x] **BLOG2-10**: Admin sees a job history table (last N jobs) with status, started/completed timestamps, source item, error message, and a per-row Retry button.
-- [ ] **BLOG2-11**: A stuck job (lock older than the configured staleness window) can be cancelled from the admin UI; the lock is force-released.
+- [x] **BLOG2-11**: A stuck job (lock older than the configured staleness window) can be cancelled from the admin UI; the lock is force-released.
 - [x] **BLOG2-12**: A visible warning banner appears when `BLOG_GEMINI_API_KEY` is missing or the active Gemini integration is disabled.
 - [ ] **BLOG2-13**: The admin sees the next-run countdown (`lastRunAt + 24h/postsPerDay`) and an estimated monthly Gemini cost based on `postsPerDay`.
 
