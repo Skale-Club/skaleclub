@@ -9,11 +9,14 @@ import {
   Image,
   Pencil,
   Plus,
+  Rss,
   Tag,
   Trash2,
   Zap,
 } from 'lucide-react';
 import { AdminCard, EmptyState, SectionHeader } from './shared';
+import { RssAutomationTab } from './blog/RssAutomationTab';
+import { PreviewDraftDialog } from './blog/PreviewDraftDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -88,33 +91,8 @@ function BlogAutomationPanel() {
     },
   });
 
-  const generateMutation = useMutation({
-    mutationFn: () => apiRequest('POST', '/api/blog/generate'),
-    onSuccess: async (res) => {
-      const data = await res.json();
-      if (data.skipped) {
-        toast({ title: 'Generation skipped', description: `Reason: ${data.reason}` });
-        return;
-      }
-      if (data.error) {
-        toast({ title: 'Generation failed', description: data.error, variant: 'destructive' });
-        return;
-      }
-      const postTitle = data.post?.title ?? 'New draft post';
-      const postSlug = data.post?.slug;
-      toast({
-        title: 'Draft created',
-        description: postSlug
-          ? `"${postTitle}" — view at /blog/${postSlug}`
-          : postTitle,
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/blog/settings'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/blog/jobs/latest'] });
-    },
-    onError: (err: any) => {
-      toast({ title: 'Generation failed', description: err.message, variant: 'destructive' });
-    },
-  });
+  // Phase 37 D-17: "Generate Now" now opens PreviewDraftDialog instead of immediately committing.
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   return (
     <AdminCard>
@@ -125,14 +103,12 @@ function BlogAutomationPanel() {
             <p className="text-sm text-muted-foreground">Configure automatic blog post generation powered by Gemini.</p>
           </div>
           <Button
-            onClick={() => generateMutation.mutate()}
-            disabled={generateMutation.isPending}
+            onClick={() => setIsPreviewOpen(true)}
             variant="outline"
+            data-testid="button-generate-now"
           >
-            {generateMutation.isPending
-              ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              : <Zap className="w-4 h-4 mr-2" />}
-            {generateMutation.isPending ? 'Generating...' : 'Generate Now'}
+            <Zap className="w-4 h-4 mr-2" />
+            Generate Now
           </Button>
         </div>
 
@@ -244,6 +220,7 @@ function BlogAutomationPanel() {
           </div>
         </form>
       </div>
+      <PreviewDraftDialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen} />
     </AdminCard>
   );
 }
@@ -251,12 +228,13 @@ function BlogAutomationPanel() {
 const BLOG_TABS = [
   { id: 'posts' as const, label: 'Posts', icon: FileText },
   { id: 'automation' as const, label: 'Automation', icon: Zap },
+  { id: 'rss' as const, label: 'RSS', icon: Rss },
 ] as const;
 
 export function BlogSection({ resetSignal }: { resetSignal: number }) {
   const { toast } = useToast();
   const pagePaths = usePagePaths();
-  const [activeTab, setActiveTab] = useState<'posts' | 'automation'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'automation' | 'rss'>('posts');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'title-asc' | 'title-desc' | 'status'>('newest');
@@ -1344,6 +1322,7 @@ export function BlogSection({ resetSignal }: { resetSignal: number }) {
       </div>
       )}
       {activeTab === 'automation' && <BlogAutomationPanel />}
+      {activeTab === 'rss' && <RssAutomationTab />}
     </div>
   );
 }
