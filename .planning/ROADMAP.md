@@ -267,7 +267,7 @@ _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
 | 34. RSS Sources Foundation | v1.9 | 2/2 | Complete    | 2026-05-05 |
 | 35. RSS Fetcher & Topic Selection | v1.9 | 3/3 | Complete    | 2026-05-05 |
 | 36. Generator Quality Overhaul | v1.9 | 2/3 | Complete    | 2026-05-05 |
-| 37. Admin UX (RSS + Job Improvements) | v1.9 | 3/3 | Complete   | 2026-05-05 |
+| 37. Admin UX (RSS + Job Improvements) | v1.9 | 3/3 | Complete    | 2026-05-05 |
 | 38. Dynamic Cron & Observability | v1.9 | 0/0 | Not started | - |
 | 31. Schema & Templates Foundation | v1.8 | 2/2 | Complete | 2026-05-04 |
 | 32. Telegram Integration | v1.8 | 2/2 | Complete | 2026-05-04 |
