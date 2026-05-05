@@ -81,7 +81,7 @@ Plans:
 **Goal:** The admin can manage RSS sources, see the items queue, preview drafts before they land in Posts, and operate the system (retry, cancel, configure) without touching the database.
 **Depends on:** Phase 34 (sources/items API), Phase 36 (preview content quality)
 **Requirements:** BLOG2-07, BLOG2-08, BLOG2-09, BLOG2-10, BLOG2-11, BLOG2-12, BLOG2-13
-**Plans:** TBD
+**Plans:** 3 plans
 **UI hint:** yes
 **Success Criteria** (what must be TRUE):
   1. Within the Blog section, the admin sees an "RSS Sources" tab/panel where they can list, add, edit, enable/disable, and delete feeds, with last-fetched-at and last error visible per row.
@@ -91,6 +91,11 @@ Plans:
   5. Stuck jobs (lock older than the configured staleness) can be cancelled from the UI; the lock is force-released and the job marked failed with reason `cancelled_by_admin`.
   6. A red banner in the Blog automation panel warns when the active Gemini integration is disabled or `BLOG_GEMINI_API_KEY` is missing.
   7. The admin sees the next scheduled run countdown (`lastRunAt + 24h/postsPerDay`) plus an estimated monthly Gemini cost (posts per month × per-run model price).
+
+Plans:
+- [ ] 37-01-PLAN.md — Storage joins (listRssItemsByStatus, listBlogGenerationJobs, getBlogGenerationJob) + GET /api/blog/health endpoint (BLOG2-08, BLOG2-10, BLOG2-12)
+- [ ] 37-02-PLAN.md — 10 admin REST endpoints (sources CRUD, queue, jobs+retry/cancel, preview/from-preview) + runPreview() helper in blog-generator.ts (BLOG2-07, BLOG2-08, BLOG2-09, BLOG2-10, BLOG2-11)
+- [ ] 37-03-PLAN.md — 6 new files under client/src/components/admin/blog/ + BlogSection third tab + translations.ts compaction (BLOG2-07, BLOG2-08, BLOG2-09, BLOG2-10, BLOG2-11, BLOG2-12, BLOG2-13)
 
 ### Phase 38: Dynamic Cron & Observability
 
@@ -262,7 +267,7 @@ _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
 | 34. RSS Sources Foundation | v1.9 | 2/2 | Complete    | 2026-05-05 |
 | 35. RSS Fetcher & Topic Selection | v1.9 | 3/3 | Complete    | 2026-05-05 |
 | 36. Generator Quality Overhaul | v1.9 | 2/3 | Complete    | 2026-05-05 |
-| 37. Admin UX (RSS + Job Improvements) | v1.9 | 0/0 | Not started | - |
+| 37. Admin UX (RSS + Job Improvements) | v1.9 | 0/3 | Not started | - |
 | 38. Dynamic Cron & Observability | v1.9 | 0/0 | Not started | - |
 | 31. Schema & Templates Foundation | v1.8 | 2/2 | Complete | 2026-05-04 |
 | 32. Telegram Integration | v1.8 | 2/2 | Complete | 2026-05-04 |
