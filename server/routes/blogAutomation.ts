@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { storage } from "../storage.js";
 import { insertBlogSettingsSchema } from "#shared/schema.js";
 import { BlogGenerator } from "../lib/blog-generator.js";
+import { fetchAllRssSources } from "../lib/rssFetcher.js";
 import { requireAdmin, isAuthorizedCronRequest } from "./_shared.js";
 
 const BLOG_SETTINGS_DEFAULTS = {
@@ -60,6 +61,20 @@ export function registerBlogAutomationRoutes(app: Express) {
       return res.json({ skipped: result.skipped, reason: result.reason });
     }
     res.json({ jobId: result.jobId, postId: result.postId });
+  });
+
+  // RSS-06: POST /api/blog/cron/fetch-rss — Bearer token auth, runs the RSS fetcher
+  app.post("/api/blog/cron/fetch-rss", async (req, res) => {
+    if (!isAuthorizedCronRequest(req)) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const summary = await fetchAllRssSources();
+      res.json(summary);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      res.status(500).json({ error: message });
+    }
   });
 
   // BLOG-19: GET /api/blog/jobs/latest — admin-auth, returns most recent job or null
