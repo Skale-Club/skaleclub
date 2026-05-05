@@ -15,9 +15,9 @@
 ### RSS Fetcher & Topic Selection
 
 - [x] **RSS-05**: Server-side RSS parser fetches each enabled source, upserts items by `guid` (no duplicates), and records `last_fetched_at` + status per source.
-- [ ] **RSS-06**: A separate fetcher cron runs hourly (independent of the generator) and is Vercel-guarded.
-- [ ] **RSS-07**: Topic selection picks the highest-scored pending item per generator run using SEO keywords + recency, then marks the item `used` linked to the resulting post.
-- [ ] **RSS-08**: When no pending RSS items exist, the generator skips the run with reason `no_rss_items` (no fallback to a generic AI-invented topic).
+- [x] **RSS-06**: A separate fetcher cron runs hourly (independent of the generator) and is Vercel-guarded.
+- [x] **RSS-07**: Topic selection picks the highest-scored pending item per generator run using SEO keywords + recency, then marks the item `used` linked to the resulting post.
+- [x] **RSS-08**: When no pending RSS items exist, the generator skips the run with reason `no_rss_items` (no fallback to a generic AI-invented topic).
 
 ### Generator Quality Overhaul
 

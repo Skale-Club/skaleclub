@@ -54,7 +54,7 @@ Plans:
 Plans:
 - [x] 35-01-PLAN.md — server/lib/rssFetcher.ts (fetchAllRssSources orchestrator + GUID fallback + per-source error isolation) + add rss-parser dep (RSS-05)
 - [x] 35-02-PLAN.md — server/lib/rssTopicSelector.ts (scoreItem + selectNextRssItem helpers; 0.6*keywords + 0.4*recency; 14-day window) (RSS-07)
-- [ ] 35-03-PLAN.md — Wire fetcher into cron.ts + POST /api/blog/cron/fetch-rss + BlogGenerator selectNextRssItem integration with no_rss_items skip path (RSS-06, RSS-07, RSS-08)
+- [x] 35-03-PLAN.md — Wire fetcher into cron.ts + POST /api/blog/cron/fetch-rss + BlogGenerator selectNextRssItem integration with no_rss_items skip path (RSS-06, RSS-07, RSS-08)
 
 ### Phase 36: Generator Quality Overhaul
 
@@ -254,7 +254,7 @@ _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
 | 32. Telegram Integration | v1.8 | 2/2 | Complete | 2026-05-04 |
 | 33. Admin Notifications Panel | v1.8 | 2/2 | Complete | 2026-05-04 |
 | 34. RSS Sources Foundation | v1.9 | 2/2 | Complete    | 2026-05-05 |
-| 35. RSS Fetcher & Topic Selection | v1.9 | 2/3 | In Progress|  |
+| 35. RSS Fetcher & Topic Selection | v1.9 | 3/3 | Complete   | 2026-05-05 |
 | 36. Generator Quality Overhaul | v1.9 | 0/0 | Not started | - |
 | 37. Admin UX (RSS + Job Improvements) | v1.9 | 0/0 | Not started | - |
 | 38. Dynamic Cron & Observability | v1.9 | 0/0 | Not started | - |

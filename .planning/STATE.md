@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: and earlier)
 status: executing
-last_updated: "2026-05-05T02:38:47.561Z"
+last_updated: "2026-05-05T02:46:49.961Z"
 last_activity: 2026-05-05
 progress:
   total_phases: 11
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 17
-  completed_plans: 16
+  completed_plans: 17
 ---
 
 # STATE: Skale Club Web Platform
@@ -31,7 +31,7 @@ See: `.planning/PROJECT.md` (updated 2026-05-04)
 ## Current Position
 
 Phase: 35 (rss-fetcher-and-topic-selection) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Milestone: v1.9 Blog Intelligence & RSS Sources
 Status: Ready to execute
 Last activity: 2026-05-05
@@ -80,6 +80,7 @@ Last activity: 2026-05-05
 | Phase 34-rss-sources-foundation P02 | 2min | 2 tasks | 1 files |
 | Phase 35-rss-fetcher-and-topic-selection P01 | 3min | 2 tasks | 3 files |
 | Phase 35-rss-fetcher-and-topic-selection P02 | ~5min | 1 tasks | 1 files |
+| Phase 35-rss-fetcher-and-topic-selection P03 | 3min | 2 tasks | 3 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -212,6 +213,7 @@ Last activity: 2026-05-05
 - [Phase 34-rss-sources-foundation]: Phase 34-02: 9 typed RSS storage methods on DatabaseStorage; upsertRssItem uses onConflictDoUpdate against (sourceId, guid) UNIQUE index and refreshes only url/title/summary/publishedAt; listPendingRssItems orders by published_at DESC NULLS LAST via sql template; deleteRssSource relies on FK cascade; no generic updateRssItem (D-08 explicit verbs only)
 - [Phase 35-rss-fetcher-and-topic-selection]: Plan 35-02: server/lib/rssTopicSelector.ts — pure scoreItem (0.6*keywordOverlap + 0.4*recency, 14-day window) + selectNextRssItem orchestrator (listPendingRssItems(50) → top scorer or null); empty seoKeywords → 0 (not NaN); null publishedAt → recency 0; strict > on score keeps newer publishedAt as implicit tiebreaker via DB DESC NULLS LAST ordering; selector is side-effect-free (markRssItemUsed deferred to Plan 35-03 generator hookup)
 - [Phase 35-rss-fetcher-and-topic-selection]: Plan 35-01: rss-parser@^3.13.0 + server/lib/rssFetcher.ts (254 lines) — sequential per-source loop, GUID fallback chain (guid->link->sha256), HTML strip + 1000-char summary cap, per-source try/catch never auto-disables source; D-01/02/04/05/06/07/13/14 implemented
+- [Phase 35-rss-fetcher-and-topic-selection]: Plan 35-03: cron.ts gets two independent setIntervals under one Vercel guard (fetcher + generator); POST /api/blog/cron/fetch-rss reuses isAuthorizedCronRequest (Bearer CRON_SECRET); BlogGenerator.generate() calls selectNextRssItem AFTER too_soon check and BEFORE acquireLock — null path inserts blog_generation_jobs(skipped, no_rss_items) and returns early without calling Gemini; rssItem threaded through runPipeline -> generateTopic/generatePost prompts; markRssItemUsed runs after createBlogPost in try/catch (warn-only on failure)
 
 ### Quick Tasks Completed
 
@@ -289,5 +291,6 @@ None.
 | 2026-04-29 | Plan 25-02 executed | ServiceDetailModal migrated to shadcn Dialog + browser back-button close + ServicesSection wires paused={isModalOpen}; npm run check clean (commit 1423e5e) |
 | 2026-04-29 | Phase 25 UAT passed | User confirmed fade mask, click-to-open modal, scroll lock, and carousel pause all working in browser |
 | 2026-05-05 | Plan 35-02 executed | server/lib/rssTopicSelector.ts shipped — scoreItem + selectNextRssItem (1 task, commit 83c5e4f, 142 lines); RSS-07 scoring half complete; npm run check clean; Plan 35-03 will wire into BlogGenerator.generate() |
+| 2026-05-05 | Plan 35-03 executed | Cron + endpoint + generator integration (2 tasks, commits cd634c0, df83b55); server/cron.ts second setInterval, POST /api/blog/cron/fetch-rss with CRON_SECRET Bearer auth, BlogGenerator.generate() now calls selectNextRssItem before acquireLock and marks item used after createBlogPost; new SkipReason 'no_rss_items'; RSS-06 + RSS-07 + RSS-08 complete; Phase 35 plans 3/3 ✓ |
 
-*Last updated: 2026-05-05 - Plan 35-02 complete (RSS topic selector)*
+*Last updated: 2026-05-05 - Phase 35 complete (RSS fetcher + topic selection + integration)*
