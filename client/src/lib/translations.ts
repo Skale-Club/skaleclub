@@ -431,6 +431,7 @@ export const translations = {
     'Generating preview…': 'Gerando prévia…',
     'Save as Draft': 'Salvar como Rascunho', 'Discard': 'Descartar',
     'Source': 'Fonte', 'Excerpt': 'Resumo', 'Feature image': 'Imagem de capa', 'Body preview': 'Prévia do corpo',
+    'Topic': 'Pauta', 'Content': 'Conteúdo', 'Image': 'Imagem', 'Total': 'Total', 'Stage timings': 'Tempos por etapa',
     'Preview failed': 'Falha na prévia', 'Draft saved': 'Rascunho salvo',
     'Blog generator unavailable: configure Gemini integration to enable RSS-driven generation.': 'Gerador de blog indisponível: configure a integração Gemini para habilitar a geração via RSS.',
     'Open Integrations': 'Abrir Integrações',
