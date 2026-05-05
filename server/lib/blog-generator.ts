@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { and, eq, isNull, lt, or } from "drizzle-orm";
 import { z } from "zod";
 
-import type { BlogPost, InsertBlogPost } from "#shared/schema.js";
+import type { BlogPost, BlogRssItem, InsertBlogPost } from "#shared/schema.js";
 import type {
   BlogGenerationJob,
   BlogSettings,
@@ -19,6 +19,7 @@ import {
   getBlogGeminiClient,
   resolveBlogGeminiApiKey,
 } from "./blog-gemini.js";
+import { selectNextRssItem } from "./rssTopicSelector.js";
 
 const STALE_LOCK_MS = 10 * 60 * 1000;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
@@ -32,7 +33,13 @@ const generatedPostSchema = z.object({
   tags: z.union([z.array(z.string().min(1)), z.string().min(1)]),
 });
 
-type SkipReason = "no_settings" | "disabled" | "posts_per_day_zero" | "too_soon" | "locked";
+type SkipReason =
+  | "no_settings"
+  | "disabled"
+  | "posts_per_day_zero"
+  | "too_soon"
+  | "locked"
+  | "no_rss_items";
 
 type BlogGeneratorResult =
   | { skipped: true; reason: SkipReason }
@@ -45,6 +52,8 @@ type BlogGeneratorStorage = Pick<
   | "createBlogGenerationJob"
   | "updateBlogGenerationJob"
   | "createBlogPost"
+  | "listPendingRssItems"
+  | "markRssItemUsed"
 >;
 
 const defaultStorage: BlogGeneratorStorage = {
@@ -62,6 +71,12 @@ const defaultStorage: BlogGeneratorStorage = {
   },
   async createBlogPost(data) {
     return (await getStorage()).createBlogPost(data);
+  },
+  async listPendingRssItems(limit) {
+    return (await getStorage()).listPendingRssItems(limit);
+  },
+  async markRssItemUsed(itemId, postId) {
+    return (await getStorage()).markRssItemUsed(itemId, postId);
   },
 };
 
@@ -85,15 +100,18 @@ type BlogGeneratorDeps = {
     settings: BlogSettings;
     job: BlogGenerationJob;
     manual: boolean;
+    rssItem: BlogRssItem;
   }) => Promise<PipelineSuccess>;
   generateTopic: (context: {
     settings: BlogSettings;
     manual: boolean;
+    rssItem: BlogRssItem;
   }) => Promise<string>;
   generatePost: (context: {
     settings: BlogSettings;
     topic: string;
     manual: boolean;
+    rssItem: BlogRssItem;
   }) => Promise<GeneratedPost>;
   generateImage: (context: {
     settings: BlogSettings;
@@ -254,12 +272,22 @@ function parseGeneratedPostResponse(raw: string): GeneratedPost {
   };
 }
 
-async function generateTopicWithGemini({ settings, manual }: { settings: BlogSettings; manual: boolean }): Promise<string> {
+async function generateTopicWithGemini({
+  settings,
+  manual,
+  rssItem,
+}: {
+  settings: BlogSettings;
+  manual: boolean;
+  rssItem: BlogRssItem;
+}): Promise<string> {
   resolveBlogGeminiApiKey();
   const client = getBlogGeminiClient();
   const prompt = [
     "You are an SEO strategist for Skale Club.",
-    `Create exactly one timely blog topic idea for these keywords: ${settings.seoKeywords}.`,
+    `Source RSS item title: ${rssItem.title}`,
+    `Source RSS item summary: ${rssItem.summary ?? "(no summary)"}`,
+    `Refine into one timely blog topic idea aligned with these keywords: ${settings.seoKeywords}.`,
     `Prompt style: ${settings.promptStyle || "clear and practical"}.`,
     `Trend analysis enabled: ${settings.enableTrendAnalysis ? "yes" : "no"}.`,
     `Run type: ${manual ? "manual" : "scheduled"}.`,
@@ -276,11 +304,24 @@ async function generateTopicWithGemini({ settings, manual }: { settings: BlogSet
   return topic;
 }
 
-async function generatePostWithGemini({ settings, topic, manual }: { settings: BlogSettings; topic: string; manual: boolean }): Promise<GeneratedPost> {
+async function generatePostWithGemini({
+  settings,
+  topic,
+  manual,
+  rssItem,
+}: {
+  settings: BlogSettings;
+  topic: string;
+  manual: boolean;
+  rssItem: BlogRssItem;
+}): Promise<GeneratedPost> {
   resolveBlogGeminiApiKey();
   const client = getBlogGeminiClient();
   const prompt = [
     "You are an SEO content writer for Skale Club.",
+    `Source RSS item title: ${rssItem.title}`,
+    `Source RSS item summary: ${rssItem.summary ?? "(no summary)"}`,
+    `Source RSS item URL: ${rssItem.url}`,
     `Write an HTML-ready blog draft about: ${topic}`,
     `Primary SEO keywords: ${settings.seoKeywords}.`,
     `Prompt style: ${settings.promptStyle || "clear and practical"}.`,
@@ -362,12 +403,22 @@ async function getGeminiText(client: ReturnType<typeof getBlogGeminiClient>, mod
   return fallback;
 }
 
-async function runPipeline({ settings, job, manual }: { settings: BlogSettings; job: BlogGenerationJob; manual: boolean }): Promise<PipelineSuccess> {
+async function runPipeline({
+  settings,
+  job,
+  manual,
+  rssItem,
+}: {
+  settings: BlogSettings;
+  job: BlogGenerationJob;
+  manual: boolean;
+  rssItem: BlogRssItem;
+}): Promise<PipelineSuccess> {
   const deps = getDeps();
   const now = deps.now();
 
-  const topic = await deps.generateTopic({ settings, manual });
-  const generatedPost = await deps.generatePost({ settings, topic, manual });
+  const topic = await deps.generateTopic({ settings, manual, rssItem });
+  const generatedPost = await deps.generatePost({ settings, topic, manual, rssItem });
 
   let featureImageUrl: string | null = null;
 
@@ -398,6 +449,16 @@ async function runPipeline({ settings, job, manual }: { settings: BlogSettings; 
   };
 
   const post = await deps.storage.createBlogPost(postInput);
+
+  // RSS-07: mark item used AFTER post insert succeeds. If post creation throws,
+  // we never reach here and the item stays pending for the next run (intentional).
+  try {
+    await deps.storage.markRssItemUsed(rssItem.id, post.id);
+  } catch (markErr) {
+    // Non-fatal: post is created. Log and continue — admin can manually mark in Phase 37 UI.
+    const message = markErr instanceof Error ? markErr.message : String(markErr);
+    console.warn(`[blog-generator] markRssItemUsed failed for item ${rssItem.id}: ${message}`);
+  }
 
   await deps.storage.updateBlogGenerationJob(job.id, {
     status: "completed",
@@ -443,6 +504,19 @@ export class BlogGenerator {
       return { skipped: true, reason: "too_soon" };
     }
 
+    // D-09 / D-10: pick the next RSS item BEFORE acquiring the lock or invoking Gemini.
+    // When the queue is empty we record a 'no_rss_items' skip job and return — no API spend, no lock churn.
+    const rssItem = await selectNextRssItem(settings, now);
+    if (!rssItem) {
+      await deps.storage.createBlogGenerationJob({
+        status: "skipped",
+        reason: "no_rss_items",
+        startedAt: now,
+        completedAt: now,
+      });
+      return { skipped: true, reason: "no_rss_items" };
+    }
+
     const lockAcquired = await deps.acquireLock(settings, now);
     if (!lockAcquired) {
       return { skipped: true, reason: "locked" };
@@ -454,7 +528,7 @@ export class BlogGenerator {
     });
 
     try {
-      const result = await deps.runPipeline({ settings, job, manual });
+      const result = await deps.runPipeline({ settings, job, manual, rssItem });
 
       return {
         skipped: false,
