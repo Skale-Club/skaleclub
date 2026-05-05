@@ -16,13 +16,42 @@ import { getSupabaseAdmin } from "./supabase.js";
 import {
   BLOG_CONTENT_MODEL,
   BLOG_IMAGE_MODEL,
+  BLOG_GEMINI_TIMEOUT_MS,
   getBlogGeminiClient,
   resolveBlogGeminiApiKey,
 } from "./blog-gemini.js";
 import { selectNextRssItem } from "./rssTopicSelector.js";
+import {
+  GeminiEmptyResponseError,
+  GeminiTimeoutError,
+  getPlainTextLength,
+  sanitizeBlogHtml,
+  slugifyTitle as slugifyTitleNFD,
+} from "./blogContentValidator.js";
 
 const STALE_LOCK_MS = 10 * 60 * 1000;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+// Phase 36 D-11: pt-BR brand voice (verbatim, hardcoded per CONTEXT)
+const BRAND_VOICE_PT_BR = [
+  "Você é um redator da Skale Club, uma agência brasileira de marketing B2B.",
+  "Escreva em português brasileiro (pt-BR). Público-alvo: donos de negócios B2B.",
+  "Tom: profissional, orientado a dados, acionável. Sem floreios.",
+].join("\n");
+
+// Phase 36 D-12: REGRAS DE FORMATAÇÃO (verbatim, appended to post prompt)
+const FORMATTING_RULES_PT_BR = [
+  "REGRAS DE FORMATAÇÃO (obrigatórias):",
+  "- Devolva APENAS HTML do corpo do post — sem <html>, <head>, <body>, sem ``` blocos.",
+  "- Use SOMENTE estas tags: <p>, <h2>, <h3>, <ul>, <ol>, <li>, <strong>, <em>, <a>, <blockquote>.",
+  "- PROIBIDO: <script>, <iframe>, <form>, <style>, <link>, <img>, <video>, <table>, <h1>, <br>.",
+  '- Links: <a href="..."> apenas. Sem rel/target — o sistema adiciona.',
+  "- Comprimento: entre 600 e 4000 caracteres de texto puro (sem contar tags).",
+].join("\n");
+
+// Phase 36 D-05: content-quality bounds (post-sanitize plain-text length)
+const MIN_PLAIN_TEXT_CHARS = 600;
+const MAX_PLAIN_TEXT_CHARS = 4000;
 
 const generatedPostSchema = z.object({
   title: z.string().min(1),
@@ -237,6 +266,29 @@ function extractJsonPayload(raw: string): string {
   }
 
   return raw.trim();
+}
+
+// Phase 36 D-07: race a Gemini call against BLOG_GEMINI_TIMEOUT_MS. The SDK
+// (@google/genai 1.50.x) has no native AbortSignal support, so we use
+// Promise.race against a setTimeout-driven GeminiTimeoutError. The
+// AbortController is forward-compatible (no-op today, harmless).
+async function withGeminiTimeout<T>(
+  label: string,
+  run: (signal: AbortSignal) => Promise<T>,
+): Promise<T> {
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new GeminiTimeoutError(`Gemini ${label} exceeded ${BLOG_GEMINI_TIMEOUT_MS}ms`));
+    }, BLOG_GEMINI_TIMEOUT_MS);
+  });
+  try {
+    return await Promise.race([run(controller.signal), timeoutPromise]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 function parseGeneratedPostResponse(raw: string): GeneratedPost {
