@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: and earlier)
-status: planning
-last_updated: "2026-05-05T02:19:53.404Z"
+status: executing
+last_updated: "2026-05-05T02:38:47.561Z"
 last_activity: 2026-05-05
 progress:
   total_phases: 11
   completed_phases: 7
-  total_plans: 14
-  completed_plans: 14
+  total_plans: 17
+  completed_plans: 16
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** Ready to plan
+**Status:** Ready to execute
 
 ---
 
@@ -24,16 +24,16 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-05-04)
 
 **Core value:** Clients receive a proposal link and experience Skale Club services as an immersive, professional presentation — not a PDF.
-**Current focus:** Phase 34 — rss-sources-foundation
+**Current focus:** Phase 35 — rss-fetcher-and-topic-selection
 
 ---
 
 ## Current Position
 
-Phase: 35
-Plan: Not started
+Phase: 35 (rss-fetcher-and-topic-selection) — EXECUTING
+Plan: 2 of 3
 Milestone: v1.9 Blog Intelligence & RSS Sources
-Status: Phase complete — ready for verification
+Status: Ready to execute
 Last activity: 2026-05-05
 
 ---
@@ -78,6 +78,8 @@ Last activity: 2026-05-05
 | Phase 30-translation-system-overhaul P04 | 11min | 3 tasks | 1 files |
 | Phase 34-rss-sources-foundation P01 | 3min | 2 tasks | 3 files |
 | Phase 34-rss-sources-foundation P02 | 2min | 2 tasks | 1 files |
+| Phase 35-rss-fetcher-and-topic-selection P01 | 3min | 2 tasks | 3 files |
+| Phase 35-rss-fetcher-and-topic-selection P02 | ~5min | 1 tasks | 1 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -208,6 +210,8 @@ Last activity: 2026-05-05
 - [Phase 30-translation-system-overhaul]: Compact section format in translations.ts — merged section sub-comments into single-line headers and removed inter-section blank lines to stay within 600-line CLAUDE.md constraint
 - [Phase 34-rss-sources-foundation]: Phase 34-01: ON DELETE CASCADE on blog_rss_items.source_id; status as text+CHECK+Zod (no pgEnum); dual indexes (composite + UNIQUE); migrations mirrored byte-for-byte to migrations/ and supabase/migrations/
 - [Phase 34-rss-sources-foundation]: Phase 34-02: 9 typed RSS storage methods on DatabaseStorage; upsertRssItem uses onConflictDoUpdate against (sourceId, guid) UNIQUE index and refreshes only url/title/summary/publishedAt; listPendingRssItems orders by published_at DESC NULLS LAST via sql template; deleteRssSource relies on FK cascade; no generic updateRssItem (D-08 explicit verbs only)
+- [Phase 35-rss-fetcher-and-topic-selection]: Plan 35-02: server/lib/rssTopicSelector.ts — pure scoreItem (0.6*keywordOverlap + 0.4*recency, 14-day window) + selectNextRssItem orchestrator (listPendingRssItems(50) → top scorer or null); empty seoKeywords → 0 (not NaN); null publishedAt → recency 0; strict > on score keeps newer publishedAt as implicit tiebreaker via DB DESC NULLS LAST ordering; selector is side-effect-free (markRssItemUsed deferred to Plan 35-03 generator hookup)
+- [Phase 35-rss-fetcher-and-topic-selection]: Plan 35-01: rss-parser@^3.13.0 + server/lib/rssFetcher.ts (254 lines) — sequential per-source loop, GUID fallback chain (guid->link->sha256), HTML strip + 1000-char summary cap, per-source try/catch never auto-disables source; D-01/02/04/05/06/07/13/14 implemented
 
 ### Quick Tasks Completed
 
@@ -284,5 +288,6 @@ None.
 | 2026-04-29 | Plan 25-01 executed | ServicesCarousel.tsx — mask-image edges, 5px drag threshold, paused prop; npm run check clean (commit 1c723f6) |
 | 2026-04-29 | Plan 25-02 executed | ServiceDetailModal migrated to shadcn Dialog + browser back-button close + ServicesSection wires paused={isModalOpen}; npm run check clean (commit 1423e5e) |
 | 2026-04-29 | Phase 25 UAT passed | User confirmed fade mask, click-to-open modal, scroll lock, and carousel pause all working in browser |
+| 2026-05-05 | Plan 35-02 executed | server/lib/rssTopicSelector.ts shipped — scoreItem + selectNextRssItem (1 task, commit 83c5e4f, 142 lines); RSS-07 scoring half complete; npm run check clean; Plan 35-03 will wire into BlogGenerator.generate() |
 
-*Last updated: 2026-05-02 - v1.6 shipped; all Skale Hub phases complete*
+*Last updated: 2026-05-05 - Plan 35-02 complete (RSS topic selector)*
