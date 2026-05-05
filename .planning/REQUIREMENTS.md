@@ -36,7 +36,7 @@
 - [x] **BLOG2-10**: Admin sees a job history table (last N jobs) with status, started/completed timestamps, source item, error message, and a per-row Retry button.
 - [x] **BLOG2-11**: A stuck job (lock older than the configured staleness window) can be cancelled from the admin UI; the lock is force-released.
 - [x] **BLOG2-12**: A visible warning banner appears when `BLOG_GEMINI_API_KEY` is missing or the active Gemini integration is disabled.
-- [ ] **BLOG2-13**: The admin sees the next-run countdown (`lastRunAt + 24h/postsPerDay`) and an estimated monthly Gemini cost based on `postsPerDay`.
+- [x] **BLOG2-13**: The admin sees the next-run countdown (`lastRunAt + 24h/postsPerDay`) and an estimated monthly Gemini cost based on `postsPerDay`.
 
 ### Cron & Observability
 
