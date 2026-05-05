@@ -149,3 +149,37 @@ Gestão de pipeline, oportunidades, tasks e CRM é trabalho do GHL. O Xpot só p
 ---
 
 *Updated: 2026-04-06*
+
+---
+
+# Milestone 4 — Bilingual Public Site
+
+**Goal:** Todo conteúdo editável do site público tem campo PT nativo — sem depender de IA, sem fallbacks frágeis.
+**Status:** 🚧 In Progress
+**Phases:** 0 of 3 complete
+
+## Current Milestone
+
+**Scope revision (2026-05-04):** Investigação revelou que o backend de tradução (Gemini via `/api/translate`) funciona corretamente e as traduções estão cacheadas no DB. Os problemas são arquiteturais no frontend: (1) sem preload do cache na inicialização, causando flash EN→PT; (2) default language = 'en'; (3) gaps de cobertura em Footer e Links.tsx.
+
+| Phase | Name | Plans | Status | Completed |
+|-------|------|-------|--------|-----------|
+| m4-01 | Translation Architecture Fix | 2 | ✅ Complete | 2026-05-04 |
+| m4-02 | (retired — scope absorbed into m4-01) | - | - | - |
+| m4-03 | (retired — scope absorbed into m4-01) | - | - | - |
+
+---
+
+### Phase m4-01: Translation Architecture Fix
+
+**Focus:**
+- Plan 01: Adicionar `GET /api/translations/preload` que retorna todo o cache PT do DB. `LanguageContext` pre-aquece o `translationCache` antes do primeiro render quando lang='pt'. Mudar default de 'en' para 'pt'.
+- Plan 02: Corrigir gaps de cobertura: Footer `{tagline}` → `{t(tagline)}`, Links.tsx 5 strings hardcoded → `t()`, adicionar chaves estáticas faltando em `translations.ts`.
+
+**Critério de pronto:** Zero flash EN→PT no site público. Zero strings em inglês com lang=PT. `npm run check` verde.
+
+Plans: 2/2 (defined during /paul:plan)
+
+---
+
+*Updated: 2026-05-04*

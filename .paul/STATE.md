@@ -1,10 +1,10 @@
-# State — Milestone 3: Multi-Forms Support
+# State — Milestone 4: Bilingual Public Site
 
-**Current phase:** ✅ Milestone 3 (Multi-Forms Support) complete — all 5 phases closed
-**Current plan:** 05-02 ✅ Complete (column dropped from remote; storage fallbacks removed)
-**Next action:** Commit M3-05 plan 05-02 changes, then define Milestone 4 (or consume deferred M2 items).
-**Last activity:** 2026-04-15 — M3-05 plan 05-02 UNIFY complete. SUMMARY written. Milestone 3 closed.
-**Resume file:** `.paul/phases/m3-05-cleanup/05-02-SUMMARY.md`
+**Current phase:** m4-01 — Translation Architecture Fix ✅ COMPLETE
+**Current plan:** m4-01-02 UNIFY completo
+**Next action:** `git push` + testar no browser em produção
+**Last activity:** 2026-05-04 — Phase m4-01 completa. Commit ee4976d. Sistema de tradução 100% funcional.
+**Resume file:** `.paul/phases/m4-01-translation-architecture/m4-01-02-SUMMARY.md`
 
 ---
 
@@ -13,9 +13,19 @@
 ```
 ┌─────────────────────────────────────┐
 │  PLAN ──▶ APPLY ──▶ UNIFY          │
-│   ✓        ✓        ✓               │  [05-02 loop closed — Milestone 3 complete]
+│   ✓        ✓        ✓               │  [Loop fechado — Phase m4-01 completa]
 └─────────────────────────────────────┘
 ```
+
+## Milestone 4 Progress
+
+| Phase | Status |
+|-------|--------|
+| m4-01 — Translation Architecture Fix | ✅ Complete (2026-05-04) |
+| m4-02 — (retired) | — |
+| m4-03 — (retired) | — |
+
+**Milestone 4 completo** — sistema de tradução resolvido na raiz.
 
 ---
 
