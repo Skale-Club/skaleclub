@@ -7,12 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { getLeadClassificationLabel, getLeadStatusLabel } from '@/lib/leadDisplay';
 import { apiRequest } from '@/lib/queryClient';
 import { clsx } from 'clsx';
-import { AdminCard } from './shared';
+import { AdminCard, SectionHeader } from './shared';
 import { format } from 'date-fns';
 import type { BlogPost, Faq, Form, FormLead, LeadStatus } from '@shared/schema';
 import { SIDEBAR_MENU_ITEMS } from './shared/constants';
 import type { AdminSection, ChatSettingsData, CompanySettingsData, ConversationSummary, GHLSettings, TwilioSettings } from './shared/types';
 import { useTranslation } from '@/hooks/useTranslation';
+import { LayoutDashboard } from 'lucide-react';
 export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSection) => void }) {
   const { t } = useTranslation();
   const dashboardMenuTitle = SIDEBAR_MENU_ITEMS.find((item) => item.id === 'dashboard')?.title ?? 'Dashboard';
@@ -267,26 +268,33 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
     1
   );
 
+  const dashboardItem = SIDEBAR_MENU_ITEMS.find((item) => item.id === 'dashboard');
+
+  const formSelector = hasMultipleForms ? (
+    <Select
+      value={selectedFormId === 'all' ? 'all' : String(selectedFormId)}
+      onValueChange={(value) => setSelectedFormId(value === 'all' ? 'all' : Number(value))}
+    >
+      <SelectTrigger className="w-full sm:w-[200px] h-9 rounded-md bg-background">
+        <SelectValue placeholder="Form" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">{t('All forms')}</SelectItem>
+        {activeForms.map(form => (
+          <SelectItem key={form.id} value={String(form.id)}>{form.name}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  ) : undefined;
+
   return (
     <div className="space-y-6">
-      {hasMultipleForms && (
-        <div className="flex items-center justify-end">
-          <Select
-            value={selectedFormId === 'all' ? 'all' : String(selectedFormId)}
-            onValueChange={(value) => setSelectedFormId(value === 'all' ? 'all' : Number(value))}
-          >
-            <SelectTrigger className="w-full sm:w-[220px] h-9 rounded-md bg-background">
-              <SelectValue placeholder="Form" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('All forms')}</SelectItem>
-              {activeForms.map(form => (
-                <SelectItem key={form.id} value={String(form.id)}>{form.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+      <SectionHeader
+        title={dashboardItem?.title ?? t('Dashboard')}
+        description={dashboardItem?.description}
+        icon={dashboardItem ? <dashboardItem.icon className="w-5 h-5" /> : <LayoutDashboard className="w-5 h-5" />}
+        action={formSelector}
+      />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {topCards.map((card) => (
           <AdminCard key={card.label} padding="compact" className="transition-colors hover:bg-muted/30">

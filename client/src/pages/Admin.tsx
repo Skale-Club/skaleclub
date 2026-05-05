@@ -205,6 +205,8 @@ function AdminContent() {
             {(() => {
               const sectionsWithOwnHeader: AdminSection[] = ['leads', 'forms', 'faqs', 'users', 'blog', 'portfolio', 'links', 'vcards', 'fieldSales', 'estimates', 'company', 'website', 'seo', 'integrations', 'presentations', 'skaleHub', 'notifications'];
               if (sectionsWithOwnHeader.includes(activeSection)) return null;
+              // Dashboard renders its own SectionHeader (with form selector action)
+              if (activeSection === 'dashboard') return null;
               const currentItem = menuItems.find(item => item.id === activeSection);
               return currentItem ? (
                 <SectionHeader
