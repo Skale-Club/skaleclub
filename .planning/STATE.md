@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: and earlier)
 status: executing
-last_updated: "2026-05-05T15:29:52.841Z"
+last_updated: "2026-05-05T15:40:01.652Z"
 last_activity: 2026-05-05
 progress:
   total_phases: 11
   completed_phases: 10
   total_plans: 26
-  completed_plans: 24
+  completed_plans: 25
 ---
 
 # STATE: Skale Club Web Platform
@@ -31,7 +31,7 @@ See: `.planning/PROJECT.md` (updated 2026-05-04)
 ## Current Position
 
 Phase: 38 (dynamic-cron-observability) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Milestone: v1.9 Blog Intelligence & RSS Sources
 Status: Ready to execute
 Last activity: 2026-05-05
@@ -88,6 +88,7 @@ Last activity: 2026-05-05
 | Phase 37 P02 | 8min | 2 tasks | 2 files |
 | Phase 37 P03 | 25min | 7 tasks | 8 files |
 | Phase 38 P01 | 6min | 3 tasks | 4 files |
+| Phase 38 P02 | 6min | 3 tasks | 2 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -239,6 +240,11 @@ Last activity: 2026-05-05
 - [Phase 38]: Plan 38-01: durations_ms JSONB column on blog_generation_jobs is nullable, no default — D-04 spec preserves NULL for skipped jobs; populated for completed/failed runs by 38-02.
 - [Phase 38]: Plan 38-01: DurationsMs derived from Zod via z.infer<typeof durationsMsSchema> — single source of truth between Drizzle generic and runtime validation (RESEARCH Pitfall 4).
 - [Phase 38]: Plan 38-01: Drizzle $inferInsert/$inferSelect propagates durationsMs to storage — zero edits needed in server/storage.ts and server/lib/blog-generator.ts (RESEARCH 'single most important architectural fact').
+- [Phase 38]: Plan 38-02: Recursive setTimeout in cron.ts replaces setInterval — reads postsPerDay every tick, max(24h/postsPerDay, 60min) clamp, postsPerDay=0 enters poll mode; finally block guarantees rescheduling so loop never silently dies (BLOG2-14)
+- [Phase 38]: Plan 38-02: withGeminiRetry composes over withGeminiTimeout with [1s, 5s, 30s] backoff; isTransientError uses precise instanceof ApiError + .status >= 500 branch (NOT regex on .message) — survives @google/genai SDK upgrades; 4xx errors never retry (BLOG2-16)
+- [Phase 38]: Plan 38-02: partialDurationsMs propagation via Object.assign(err, { partialDurationsMs }) — runPipeline outer catch attaches { ...partial, total } to thrown error; BlogGenerator.generate catch reads via type-cast; preserves stage timings across stack-frame death (Pitfall 2 / Open Question 1 RESEARCH recommendation) (BLOG2-15)
+- [Phase 38]: Plan 38-02: Phase 22 D-04 image-failure non-blocking semantics preserved — image retry exhaustion-throw caught by existing image try/catch in runPipeline (now lines 359-367); did NOT move catch boundary; worst-case ~156s acceptable for background cron (Pitfall 6)
+- [Phase 38]: Plan 38-02: Compaction strategy in Task 2 freed 115 net lines (588 → 473) by collapsing multi-line destructured-parameter signatures, unifying type imports, inlining one-liners, trimming historical comments — kept Phase 36-03 strategies 1-3 (template literals, prompt strings, defaultStorage shorthand) untouched as future slack budget; Task 3 added 51 lines (473 → 524, 76-line headroom under 600 cap)
 
 ### Quick Tasks Completed
 

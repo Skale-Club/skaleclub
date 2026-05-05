@@ -110,7 +110,7 @@ Plans:
 
 Plans:
 - [x] 38-01-PLAN.md — durations_ms JSONB migration + Drizzle/Zod schema (foundation; no behavior change) (BLOG2-15)
-- [ ] 38-02-PLAN.md — Recursive setTimeout scheduler in cron.ts + withGeminiRetry wrapper + per-stage timing in runPipeline (BLOG2-14, BLOG2-15, BLOG2-16)
+- [x] 38-02-PLAN.md — Recursive setTimeout scheduler in cron.ts + withGeminiRetry wrapper + per-stage timing in runPipeline (BLOG2-14, BLOG2-15, BLOG2-16)
 - [ ] 38-03-PLAN.md — Storage SELECT projections + JobHistoryPanel expand-on-click row + 5 translation keys (BLOG2-15 admin facing)
 
 <details>
@@ -273,7 +273,7 @@ _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
 | 35. RSS Fetcher & Topic Selection | v1.9 | 3/3 | Complete    | 2026-05-05 |
 | 36. Generator Quality Overhaul | v1.9 | 2/3 | Complete    | 2026-05-05 |
 | 37. Admin UX (RSS + Job Improvements) | v1.9 | 3/3 | Complete    | 2026-05-05 |
-| 38. Dynamic Cron & Observability | v1.9 | 1/3 | In Progress|  |
+| 38. Dynamic Cron & Observability | v1.9 | 2/3 | In Progress|  |
 | 31. Schema & Templates Foundation | v1.8 | 2/2 | Complete | 2026-05-04 |
 | 32. Telegram Integration | v1.8 | 2/2 | Complete | 2026-05-04 |
 | 33. Admin Notifications Panel | v1.8 | 2/2 | Complete | 2026-05-04 |
