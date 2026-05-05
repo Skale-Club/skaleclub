@@ -59,7 +59,7 @@ export function Footer() {
           </Link>
           {tagline ? (
             <p className="text-gray-400 max-w-md text-sm leading-relaxed">
-              {tagline}
+              {t(tagline)}
             </p>
           ) : null}
 

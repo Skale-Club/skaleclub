@@ -2,8 +2,8 @@ import { useContext, useCallback, useEffect, useState } from 'react';
 import { LanguageContext } from '@/context/LanguageContext';
 import { translations as staticTranslations, type TranslationKey } from '@/lib/translations';
 
-// In-memory translation cache
-const translationCache = new Map<string, string>();
+// In-memory translation cache (exported for preload in LanguageContext)
+export const translationCache = new Map<string, string>();
 const pendingTranslations = new Set<string>();
 let batchTimeout: NodeJS.Timeout | null = null;
 const pendingBatch = new Set<string>();

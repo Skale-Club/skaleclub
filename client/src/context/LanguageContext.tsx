@@ -1,4 +1,5 @@
 import { createContext, useState, useEffect, ReactNode } from 'react';
+import { translationCache } from '@/hooks/useTranslation';
 
 export type Language = 'en' | 'pt';
 
@@ -15,13 +16,12 @@ interface LanguageProviderProps {
 
 export function LanguageProvider({ children }: LanguageProviderProps) {
   const [language, setLanguageState] = useState<Language>(() => {
-    // Check localStorage first
     const saved = localStorage.getItem('language');
     if (saved === 'en' || saved === 'pt') {
       return saved;
     }
-    // Default to English
-    return 'en';
+    // Default to Portuguese
+    return 'pt';
   });
 
   const setLanguage = (lang: Language) => {
@@ -30,8 +30,24 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
   };
 
   useEffect(() => {
-    // Update HTML lang attribute for accessibility
     document.documentElement.lang = language;
+  }, [language]);
+
+  // Pre-warm translation cache from DB on mount and on language switch
+  useEffect(() => {
+    if (language !== 'pt') return;
+    fetch(`/api/translations/preload?lang=pt`)
+      .then(r => r.json())
+      .then(({ translations }) => {
+        if (!translations) return;
+        Object.entries(translations).forEach(([src, tgt]) => {
+          translationCache.set(`pt:${src}`, tgt as string);
+        });
+        window.dispatchEvent(new CustomEvent('translations-updated', {
+          detail: { allDone: true },
+        }));
+      })
+      .catch(() => {});
   }, [language]);
 
   return (

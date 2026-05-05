@@ -11,6 +11,18 @@ import { getActiveAIClient } from "../lib/ai-provider.js";
  * sent to the AI once per (source, target) pair.
  */
 export function registerTranslateRoutes(app: Express) {
+  app.get("/api/translations/preload", async (req, res) => {
+    const lang = (req.query.lang as string) || "pt";
+    const cached = await db
+      .select({ sourceText: translations.sourceText, translatedText: translations.translatedText })
+      .from(translations)
+      .where(and(eq(translations.sourceLanguage, "en"), eq(translations.targetLanguage, lang)));
+
+    const result: Record<string, string> = {};
+    cached.forEach((row) => { result[row.sourceText] = row.translatedText; });
+    res.json({ translations: result });
+  });
+
   app.post("/api/translate", async (req, res) => {
     try {
       const { texts, targetLanguage = "pt" } = z

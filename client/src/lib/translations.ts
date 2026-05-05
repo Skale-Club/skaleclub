@@ -1,7 +1,6 @@
 // Translation keys and values
 // English is the default language (data in database)
 // Portuguese translations are provided here
-
 export const translations = {
   pt: {
     // Navbar
@@ -310,7 +309,6 @@ export const translations = {
     'Refresh': 'Atualizar',
     'Refresh preview': 'Atualizar pré-visualização',
     'Updates automatically after each save. Click Refresh to force reload.': 'Atualiza automaticamente após cada salvamento. Clique em Atualizar para recarregar.',
-
     // Admin — Brand Guidelines (Phase 17)
     '## Brand Identity\n\n**Primary Color:** #1C53A3\n**Accent Color:** #FFFF01\n**Fonts:** Outfit (headings), Inter (body)\n\n## Tone of Voice\n\n- Professional yet approachable\n- Action-oriented language\n\n## Always Include\n- Company name: Skale Club\n\n## Never Include\n- Competitor mentions': '## Identidade da Marca\n\n**Cor Primária:** #1C53A3\n**Cor de Destaque:** #FFFF01\n**Fontes:** Outfit (títulos), Inter (corpo)\n\n## Tom de Voz\n\n- Profissional e acessível\n- Linguagem orientada à ação\n\n## Sempre Incluir\n- Nome da empresa: Skale Club\n\n## Nunca Incluir\n- Menções a concorrentes',
     'Brand Guidelines': 'Diretrizes de Marca',
@@ -323,7 +321,6 @@ export const translations = {
     'Save guidelines': 'Salvar diretrizes',
     'Presentations': 'Apresentações',
     'Build AI-powered slide decks and share them as immersive fullscreen experiences.': 'Crie apresentações com IA e compartilhe-as como experiências imersivas em tela cheia.',
-
     // Admin — Presentations Section (Phase 19)
     'Create': 'Criar',
     'Search presentations...': 'Pesquisar apresentações...',
@@ -593,7 +590,11 @@ export const translations = {
     'We may update these terms periodically. The "Last updated" date reflects the latest version. Continued use after changes means you accept the revised terms.': 'Podemos atualizar estes termos periodicamente. A data "Última atualização" reflete a versão mais recente. O uso contínuo após as alterações significa que você aceita os termos revisados.',
     'We may suspend or terminate access if you violate these terms, create unsafe conditions, or engage in fraud or abuse.': 'Podemos suspender ou encerrar o acesso se você violar estes termos, criar condições inseguras ou envolver-se em fraude ou abuso.',
     'If you have questions or concerns about these Terms of Service, contact us:': 'Se você tiver dúvidas ou preocupações sobre estes Termos de Serviço, entre em contato conosco:',
+    'Data-Driven Marketing & Scalable Growth Solutions': 'Marketing Orientado a Dados e Soluções de Crescimento Escalável',
+    'Skale Club Official Website': 'Site Oficial da Skale Club',
+    'Book a Strategy Call': 'Agendar uma Chamada Estratégica',
+    'View Our Portfolio': 'Ver Nosso Portfólio',
+    'Read Our Blog': 'Ler Nosso Blog',
   }
 } as const;
-
 export type TranslationKey = keyof typeof translations.pt;

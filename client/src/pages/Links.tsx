@@ -178,7 +178,7 @@ export default function Links() {
 
         <h1 className="text-2xl font-bold mb-2 tracking-tight text-center text-white">{config.title}</h1>
         <p className="text-gray-400 text-center mb-10 px-4 whitespace-pre-wrap">
-          {config.description}
+          {t(config.description)}
         </p>
 
         <div className="w-full space-y-4 mb-12">
@@ -212,7 +212,7 @@ export default function Links() {
                 >
                   <div className="flex items-center text-gray-100 group-hover:text-white transition-colors">
                     {renderLinkIcon(link)}
-                    <span className="font-medium text-lg">{link.title}</span>
+                    <span className="font-medium text-lg">{t(link.title)}</span>
                   </div>
                 </div>
               </motion.a>
