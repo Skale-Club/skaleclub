@@ -82,4 +82,13 @@ export function registerBlogAutomationRoutes(app: Express) {
     const job = await storage.getLatestBlogGenerationJob();
     res.json(job ?? null);
   });
+
+  // Phase 37 BLOG2-12: GET /api/blog/health — admin-auth, drives the red banner
+  // in AutomationStatusBanners.tsx. Returns booleans only (no secrets).
+  app.get("/api/blog/health", requireAdmin, async (_req, res) => {
+    const apiKeyConfigured = Boolean(process.env.BLOG_GEMINI_API_KEY?.trim());
+    const integration = await storage.getChatIntegration("gemini");
+    const integrationEnabled = Boolean(integration?.enabled);
+    res.json({ apiKeyConfigured, integrationEnabled });
+  });
 }
