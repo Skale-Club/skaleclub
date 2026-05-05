@@ -102,11 +102,16 @@ Plans:
 **Goal:** The cron firing rate adapts to `postsPerDay`, every job records per-stage timing for observability, and transient Gemini failures auto-retry instead of being lost.
 **Depends on:** Phase 36 (Gemini call sites need to wrap timing + retry)
 **Requirements:** BLOG2-14, BLOG2-15, BLOG2-16
-**Plans:** TBD
+**Plans:** 3 plans (3 waves — strict dependency chain per CONTEXT D-06)
 **Success Criteria** (what must be TRUE):
   1. `startCron()` reads `postsPerDay` from settings and sets the interval to `24h / postsPerDay` (clamped to a minimum of 60min); changing settings updates the schedule on the next tick without redeploy.
   2. `blog_generation_jobs` gains a `durationsMs` JSONB column with `{ topic, content, image, upload, total }` populated for every completed job; admin job history surfaces the breakdown.
   3. Transient Gemini errors (timeouts, 5xx, network) retry with backoff `[1s, 5s, 30s]` per call site; only a final failure after the third attempt marks the job failed.
+
+Plans:
+- [ ] 38-01-PLAN.md — durations_ms JSONB migration + Drizzle/Zod schema (foundation; no behavior change) (BLOG2-15)
+- [ ] 38-02-PLAN.md — Recursive setTimeout scheduler in cron.ts + withGeminiRetry wrapper + per-stage timing in runPipeline (BLOG2-14, BLOG2-15, BLOG2-16)
+- [ ] 38-03-PLAN.md — Storage SELECT projections + JobHistoryPanel expand-on-click row + 5 translation keys (BLOG2-15 admin facing)
 
 <details>
 <summary>✅ v1.8 Notification Templates System (Phases 31-33) — SHIPPED 2026-05-04</summary>
@@ -268,7 +273,7 @@ _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
 | 35. RSS Fetcher & Topic Selection | v1.9 | 3/3 | Complete    | 2026-05-05 |
 | 36. Generator Quality Overhaul | v1.9 | 2/3 | Complete    | 2026-05-05 |
 | 37. Admin UX (RSS + Job Improvements) | v1.9 | 3/3 | Complete    | 2026-05-05 |
-| 38. Dynamic Cron & Observability | v1.9 | 0/0 | Not started | - |
+| 38. Dynamic Cron & Observability | v1.9 | 0/3 | Planned     | -          |
 | 31. Schema & Templates Foundation | v1.8 | 2/2 | Complete | 2026-05-04 |
 | 32. Telegram Integration | v1.8 | 2/2 | Complete | 2026-05-04 |
 | 33. Admin Notifications Panel | v1.8 | 2/2 | Complete | 2026-05-04 |
