@@ -33,53 +33,20 @@ const STALE_LOCK_MS = 10 * 60 * 1000;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 // Phase 36 D-11/D-12/D-05: pt-BR prompt blocks (verbatim) + length bounds
-const BRAND_VOICE_PT_BR = [
-  "Você é um redator da Skale Club, uma agência brasileira de marketing B2B.",
-  "Escreva em português brasileiro (pt-BR). Público-alvo: donos de negócios B2B.",
-  "Tom: profissional, orientado a dados, acionável. Sem floreios.",
-].join("\n");
-const FORMATTING_RULES_PT_BR = [
-  "REGRAS DE FORMATAÇÃO (obrigatórias):",
-  "- Devolva APENAS HTML do corpo do post — sem <html>, <head>, <body>, sem ``` blocos.",
-  "- Use SOMENTE estas tags: <p>, <h2>, <h3>, <ul>, <ol>, <li>, <strong>, <em>, <a>, <blockquote>.",
-  "- PROIBIDO: <script>, <iframe>, <form>, <style>, <link>, <img>, <video>, <table>, <h1>, <br>.",
-  '- Links: <a href="..."> apenas. Sem rel/target — o sistema adiciona.',
-  "- Comprimento: entre 600 e 4000 caracteres de texto puro (sem contar tags).",
-].join("\n");
+const BRAND_VOICE_PT_BR = "Você é um redator da Skale Club, uma agência brasileira de marketing B2B.\nEscreva em português brasileiro (pt-BR). Público-alvo: donos de negócios B2B.\nTom: profissional, orientado a dados, acionável. Sem floreios.";
+const FORMATTING_RULES_PT_BR = "REGRAS DE FORMATAÇÃO (obrigatórias):\n- Devolva APENAS HTML do corpo do post — sem <html>, <head>, <body>, sem ``` blocos.\n- Use SOMENTE estas tags: <p>, <h2>, <h3>, <ul>, <ol>, <li>, <strong>, <em>, <a>, <blockquote>.\n- PROIBIDO: <script>, <iframe>, <form>, <style>, <link>, <img>, <video>, <table>, <h1>, <br>.\n- Links: <a href=\"...\"> apenas. Sem rel/target — o sistema adiciona.\n- Comprimento: entre 600 e 4000 caracteres de texto puro (sem contar tags).";
 const MIN_PLAIN_TEXT_CHARS = 600;
 const MAX_PLAIN_TEXT_CHARS = 4000;
 
-const generatedPostSchema = z.object({
-  title: z.string().min(1),
-  content: z.string().min(1),
-  excerpt: z.string().nullable().optional(),
-  metaDescription: z.string().nullable().optional(),
-  focusKeyword: z.string().nullable().optional(),
-  tags: z.union([z.array(z.string().min(1)), z.string().min(1)]),
-});
+const generatedPostSchema = z.object({ title: z.string().min(1), content: z.string().min(1), excerpt: z.string().nullable().optional(), metaDescription: z.string().nullable().optional(), focusKeyword: z.string().nullable().optional(), tags: z.union([z.array(z.string().min(1)), z.string().min(1)]) });
 
-type SkipReason =
-  | "no_settings"
-  | "disabled"
-  | "posts_per_day_zero"
-  | "too_soon"
-  | "locked"
-  | "no_rss_items";
+type SkipReason = "no_settings" | "disabled" | "posts_per_day_zero" | "too_soon" | "locked" | "no_rss_items";
 
 type BlogGeneratorResult =
   | { skipped: true; reason: SkipReason }
   | { skipped: false; reason: null; jobId: number; postId: number; post: BlogPost };
 
-type BlogGeneratorStorage = Pick<
-  IStorage,
-  | "getBlogSettings"
-  | "upsertBlogSettings"
-  | "createBlogGenerationJob"
-  | "updateBlogGenerationJob"
-  | "createBlogPost"
-  | "listPendingRssItems"
-  | "markRssItemUsed"
->;
+type BlogGeneratorStorage = Pick<IStorage, "getBlogSettings" | "upsertBlogSettings" | "createBlogGenerationJob" | "updateBlogGenerationJob" | "createBlogPost" | "listPendingRssItems" | "markRssItemUsed">;
 
 const defaultStorage: BlogGeneratorStorage = {
   getBlogSettings: async () => (await getStorage()).getBlogSettings(),
@@ -92,57 +59,21 @@ const defaultStorage: BlogGeneratorStorage = {
 };
 
 type PipelineSuccess = { jobId: number; postId: number; post: BlogPost };
-
-type GeneratedPost = {
-  title: string;
-  content: string;
-  excerpt: string | null;
-  metaDescription: string | null;
-  focusKeyword: string | null;
-  tags: string[];
-};
+type GeneratedPost = { title: string; content: string; excerpt: string | null; metaDescription: string | null; focusKeyword: string | null; tags: string[] };
 
 type BlogGeneratorDeps = {
   storage: BlogGeneratorStorage;
   now: () => Date;
   acquireLock: (settings: BlogSettings, now: Date) => Promise<boolean>;
   releaseLock: (settings: BlogSettings) => Promise<void>;
-  runPipeline: (context: {
-    settings: BlogSettings;
-    job: BlogGenerationJob;
-    manual: boolean;
-    rssItem: BlogRssItem;
-  }) => Promise<PipelineSuccess>;
-  generateTopic: (context: {
-    settings: BlogSettings;
-    manual: boolean;
-    rssItem: BlogRssItem;
-  }) => Promise<string>;
-  generatePost: (context: {
-    settings: BlogSettings;
-    topic: string;
-    manual: boolean;
-    rssItem: BlogRssItem;
-  }) => Promise<GeneratedPost>;
-  generateImage: (context: {
-    settings: BlogSettings;
-    post: GeneratedPost;
-    manual: boolean;
-  }) => Promise<Buffer | null>;
-  uploadImage: (context: { bytes: Buffer; path: string }) => Promise<string>;
+  runPipeline: (ctx: { settings: BlogSettings; job: BlogGenerationJob; manual: boolean; rssItem: BlogRssItem }) => Promise<PipelineSuccess>;
+  generateTopic: (ctx: { settings: BlogSettings; manual: boolean; rssItem: BlogRssItem }) => Promise<string>;
+  generatePost: (ctx: { settings: BlogSettings; topic: string; manual: boolean; rssItem: BlogRssItem }) => Promise<GeneratedPost>;
+  generateImage: (ctx: { settings: BlogSettings; post: GeneratedPost; manual: boolean }) => Promise<Buffer | null>;
+  uploadImage: (ctx: { bytes: Buffer; path: string }) => Promise<string>;
 };
 
-const defaultDeps: BlogGeneratorDeps = {
-  storage: defaultStorage,
-  now: () => new Date(),
-  acquireLock: acquireDatabaseLock,
-  releaseLock: releaseDatabaseLock,
-  runPipeline,
-  generateTopic: generateTopicWithGemini,
-  generatePost: generatePostWithGemini,
-  generateImage: generateImageWithGemini,
-  uploadImage: uploadFeatureImage,
-};
+const defaultDeps: BlogGeneratorDeps = { storage: defaultStorage, now: () => new Date(), acquireLock: acquireDatabaseLock, releaseLock: releaseDatabaseLock, runPipeline, generateTopic: generateTopicWithGemini, generatePost: generatePostWithGemini, generateImage: generateImageWithGemini, uploadImage: uploadFeatureImage };
 
 let testDeps: Partial<BlogGeneratorDeps> | null = null;
 
@@ -169,12 +100,8 @@ function getCadenceWindowMs(postsPerDay: number): number {
 }
 
 function shouldSkipTooSoon(settings: BlogSettings, now: Date): boolean {
-  if (!settings.lastRunAt || settings.postsPerDay <= 0) {
-    return false;
-  }
-
-  const elapsedMs = now.getTime() - settings.lastRunAt.getTime();
-  return elapsedMs < getCadenceWindowMs(settings.postsPerDay);
+  if (!settings.lastRunAt || settings.postsPerDay <= 0) return false;
+  return now.getTime() - settings.lastRunAt.getTime() < getCadenceWindowMs(settings.postsPerDay);
 }
 
 async function acquireDatabaseLock(settings: BlogSettings, now: Date): Promise<boolean> {
@@ -182,48 +109,23 @@ async function acquireDatabaseLock(settings: BlogSettings, now: Date): Promise<b
   const staleBefore = new Date(now.getTime() - STALE_LOCK_MS);
   const [lockedSettings] = await db
     .update(blogSettings)
-    .set({
-      lockAcquiredAt: now,
-      updatedAt: now,
-    })
-    .where(
-      and(
-        eq(blogSettings.id, settings.id),
-        or(isNull(blogSettings.lockAcquiredAt), lt(blogSettings.lockAcquiredAt, staleBefore)),
-      ),
-    )
+    .set({ lockAcquiredAt: now, updatedAt: now })
+    .where(and(eq(blogSettings.id, settings.id), or(isNull(blogSettings.lockAcquiredAt), lt(blogSettings.lockAcquiredAt, staleBefore))))
     .returning({ id: blogSettings.id });
-
   return Boolean(lockedSettings);
 }
 
 async function releaseDatabaseLock(settings: BlogSettings): Promise<void> {
   const db = await getDb();
-  await db
-    .update(blogSettings)
-    .set({
-      lockAcquiredAt: null,
-      updatedAt: new Date(),
-    })
-    .where(eq(blogSettings.id, settings.id));
+  await db.update(blogSettings).set({ lockAcquiredAt: null, updatedAt: new Date() }).where(eq(blogSettings.id, settings.id));
 }
 
 function buildSlug(title: string, now: Date): string {
-  const baseSlug = slugifyTitleNFD(title) || "blog-post";
-  return `${baseSlug}-${now.getTime()}`;
+  return `${slugifyTitleNFD(title) || "blog-post"}-${now.getTime()}`;
 }
 
 function buildSettingsUpdate(settings: BlogSettings, updates: Partial<InsertBlogSettings>): InsertBlogSettings {
-  return {
-    enabled: settings.enabled,
-    postsPerDay: settings.postsPerDay,
-    seoKeywords: settings.seoKeywords,
-    enableTrendAnalysis: settings.enableTrendAnalysis,
-    promptStyle: settings.promptStyle,
-    lastRunAt: settings.lastRunAt,
-    lockAcquiredAt: settings.lockAcquiredAt,
-    ...updates,
-  };
+  return { enabled: settings.enabled, postsPerDay: settings.postsPerDay, seoKeywords: settings.seoKeywords, enableTrendAnalysis: settings.enableTrendAnalysis, promptStyle: settings.promptStyle, lastRunAt: settings.lastRunAt, lockAcquiredAt: settings.lockAcquiredAt, ...updates };
 }
 
 function extractJsonPayload(raw: string): string {
@@ -502,8 +404,89 @@ async function runPipeline({
   };
 }
 
+// Phase 37 D-07: preview-without-commit. Reuses generateTopic + generatePost
+// + sanitize + length validate + (best-effort) image from the same dep table
+// runPipeline uses, but RETURNS the content instead of persisting it. No lock,
+// no blog_generation_jobs row.
+export interface PreviewResult {
+  title: string;
+  slug: string;
+  content: string;
+  excerpt: string | null;
+  metaDescription: string | null;
+  focusKeyword: string | null;
+  tags: string[];
+  featureImageUrl: string | null;
+  rssItem: BlogRssItem;
+}
+
+export type RunPreviewResponse =
+  | { skipped: true; reason: SkipReason | "invalid_html" | "content_length_out_of_bounds" | "gemini_timeout" | "gemini_empty_response" }
+  | { skipped: false; result: PreviewResult };
+
+export async function runPreview(options?: { rssItemId?: number }): Promise<RunPreviewResponse> {
+  const deps = getDeps();
+  const settings = await deps.storage.getBlogSettings();
+  if (!settings) return { skipped: true, reason: "no_settings" };
+
+  let rssItem: BlogRssItem | null;
+  if (typeof options?.rssItemId === "number") {
+    const all = await deps.storage.listPendingRssItems();
+    rssItem = all.find((i) => i.id === options.rssItemId) ?? null;
+  } else {
+    rssItem = await selectNextRssItem(settings, deps.now());
+  }
+  if (!rssItem) return { skipped: true, reason: "no_rss_items" };
+
+  try {
+    const topic = await deps.generateTopic({ settings, manual: true, rssItem });
+    const generatedPost = await deps.generatePost({ settings, topic, manual: true, rssItem });
+    const sanitizedContent = sanitizeBlogHtml(generatedPost.content);
+    const plainTextLen = getPlainTextLength(sanitizedContent);
+    if (plainTextLen < MIN_PLAIN_TEXT_CHARS) {
+      const originalLen = getPlainTextLength(generatedPost.content);
+      return { skipped: true, reason: originalLen >= MIN_PLAIN_TEXT_CHARS ? "invalid_html" : "content_length_out_of_bounds" };
+    }
+    if (plainTextLen > MAX_PLAIN_TEXT_CHARS) return { skipped: true, reason: "content_length_out_of_bounds" };
+
+    let featureImageUrl: string | null = null;
+    try {
+      const imageBytes = await deps.generateImage({ settings, post: generatedPost, manual: true });
+      if (imageBytes?.length) {
+        const path = `blog-images/${deps.now().getTime()}-${randomUUID()}.jpg`;
+        featureImageUrl = await deps.uploadImage({ bytes: imageBytes, path });
+      }
+    } catch (imgErr) {
+      const m = imgErr instanceof Error ? imgErr.message : String(imgErr);
+      console.warn(`[blog-preview] image step failed (non-fatal): ${m}`);
+    }
+
+    return {
+      skipped: false,
+      result: {
+        title: generatedPost.title,
+        slug: slugifyTitleNFD(generatedPost.title) || "blog-post",
+        content: sanitizedContent,
+        excerpt: generatedPost.excerpt,
+        metaDescription: generatedPost.metaDescription,
+        focusKeyword: generatedPost.focusKeyword,
+        tags: generatedPost.tags,
+        featureImageUrl,
+        rssItem,
+      },
+    };
+  } catch (err) {
+    if (err instanceof GeminiTimeoutError) return { skipped: true, reason: "gemini_timeout" };
+    if (err instanceof GeminiEmptyResponseError) return { skipped: true, reason: "gemini_empty_response" };
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg === "invalid_html") return { skipped: true, reason: "invalid_html" };
+    if (msg === "content_length_out_of_bounds") return { skipped: true, reason: "content_length_out_of_bounds" };
+    throw err;
+  }
+}
+
 export class BlogGenerator {
-  static async generate({ manual }: { manual: boolean }): Promise<BlogGeneratorResult> {
+  static async generate({ manual, rssItemId }: { manual: boolean; rssItemId?: number }): Promise<BlogGeneratorResult> {
     const deps = getDeps();
     const now = deps.now();
     const settings = await deps.storage.getBlogSettings();
@@ -525,7 +508,14 @@ export class BlogGenerator {
     }
 
     // D-09/D-10: pick RSS item BEFORE lock + Gemini; empty queue → skip + return
-    const rssItem = await selectNextRssItem(settings, now);
+    // Phase 37 D-09: retry path passes rssItemId to bypass the selector.
+    let rssItem: BlogRssItem | null;
+    if (typeof rssItemId === "number") {
+      const candidates = await deps.storage.listPendingRssItems();
+      rssItem = candidates.find((i) => i.id === rssItemId) ?? null;
+    } else {
+      rssItem = await selectNextRssItem(settings, now);
+    }
     if (!rssItem) {
       await deps.storage.createBlogGenerationJob({
         status: "skipped",
