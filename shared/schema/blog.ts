@@ -1,4 +1,4 @@
-import { boolean, index, integer, pgTable, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { boolean, index, integer, jsonb, pgTable, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
 const nullableDateInputSchema = z.union([z.string(), z.date(), z.null()]).optional().transform((value) => {
@@ -29,6 +29,17 @@ const dateInputSchema = z.union([z.string(), z.date()]).optional().transform((va
   return new Date(value);
 });
 
+// Phase 38 BLOG2-15: per-stage timing shape on blog_generation_jobs.
+// Single source of truth — Drizzle's $type<> generic uses z.infer<> below.
+export const durationsMsSchema = z.object({
+  topic: z.number().int().nonnegative(),
+  content: z.number().int().nonnegative(),
+  image: z.number().int().nonnegative().nullable(),
+  upload: z.number().int().nonnegative(),
+  total: z.number().int().nonnegative(),
+});
+export type DurationsMs = z.infer<typeof durationsMsSchema>;
+
 export const blogSettings = pgTable("blog_settings", {
   id: serial("id").primaryKey(),
   enabled: boolean("enabled").notNull().default(false),
@@ -49,6 +60,9 @@ export const blogGenerationJobs = pgTable("blog_generation_jobs", {
   startedAt: timestamp("started_at").notNull().defaultNow(),
   completedAt: timestamp("completed_at"),
   error: text("error"),
+  // Phase 38 BLOG2-15: per-stage timing breakdown. NULL on skipped jobs.
+  // Failed jobs populate stages that completed before failure.
+  durationsMs: jsonb("durations_ms").$type<DurationsMs>(),
 });
 
 export type BlogSettings = typeof blogSettings.$inferSelect;
@@ -87,6 +101,7 @@ export const insertBlogGenerationJobSchema = z.object({
   startedAt: dateInputSchema,
   completedAt: nullableDateInputSchema,
   error: z.string().nullable().optional(),
+  durationsMs: durationsMsSchema.nullable().optional(),
 });
 
 export const selectBlogGenerationJobSchema = z.object({
@@ -97,6 +112,7 @@ export const selectBlogGenerationJobSchema = z.object({
   startedAt: z.date().nullable(),
   completedAt: z.date().nullable(),
   error: z.string().nullable(),
+  durationsMs: durationsMsSchema.nullable(),
 });
 
 // ─── RSS Sources & Items (Phase 34 — RSS-01, RSS-02, RSS-03) ───────────────
