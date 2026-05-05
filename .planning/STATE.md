@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: and earlier)
-status: executing
-last_updated: "2026-05-05T15:40:01.652Z"
+status: verifying
+last_updated: "2026-05-05T15:49:04.760Z"
 last_activity: 2026-05-05
 progress:
   total_phases: 11
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 26
-  completed_plans: 25
+  completed_plans: 26
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** Ready to execute
+**Status:** Phase complete — ready for verification
 
 ---
 
@@ -33,7 +33,7 @@ See: `.planning/PROJECT.md` (updated 2026-05-04)
 Phase: 38 (dynamic-cron-observability) — EXECUTING
 Plan: 3 of 3
 Milestone: v1.9 Blog Intelligence & RSS Sources
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-05-05
 
 ---
@@ -89,6 +89,7 @@ Last activity: 2026-05-05
 | Phase 37 P03 | 25min | 7 tasks | 8 files |
 | Phase 38 P01 | 6min | 3 tasks | 4 files |
 | Phase 38 P02 | 6min | 3 tasks | 2 files |
+| Phase 38 P03 | 5min | 3 tasks | 3 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -245,6 +246,8 @@ Last activity: 2026-05-05
 - [Phase 38]: Plan 38-02: partialDurationsMs propagation via Object.assign(err, { partialDurationsMs }) — runPipeline outer catch attaches { ...partial, total } to thrown error; BlogGenerator.generate catch reads via type-cast; preserves stage timings across stack-frame death (Pitfall 2 / Open Question 1 RESEARCH recommendation) (BLOG2-15)
 - [Phase 38]: Plan 38-02: Phase 22 D-04 image-failure non-blocking semantics preserved — image retry exhaustion-throw caught by existing image try/catch in runPipeline (now lines 359-367); did NOT move catch boundary; worst-case ~156s acceptable for background cron (Pitfall 6)
 - [Phase 38]: Plan 38-02: Compaction strategy in Task 2 freed 115 net lines (588 → 473) by collapsing multi-line destructured-parameter signatures, unifying type imports, inlining one-liners, trimming historical comments — kept Phase 36-03 strategies 1-3 (template literals, prompt strings, defaultStorage shorthand) untouched as future slack budget; Task 3 added 51 lines (473 → 524, 76-line headroom under 600 cap)
+- [Phase 38]: Plan 38-03: Drizzle explicit-projection extension — added durationsMs to both list/get SELECT projections in storage.ts; interface inheritance via extends BlogGenerationJob (no redeclaration)
+- [Phase 38]: Plan 38-03: JobHistoryPanel expand-on-click row — useState<Set<number>> for per-row toggle, total chip in collapsed view (one-decimal seconds), 5-cell breakdown grid in expanded view, action-button stopPropagation isolation
 
 ### Quick Tasks Completed
 
