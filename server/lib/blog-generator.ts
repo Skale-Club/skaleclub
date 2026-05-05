@@ -82,27 +82,13 @@ type BlogGeneratorStorage = Pick<
 >;
 
 const defaultStorage: BlogGeneratorStorage = {
-  async getBlogSettings() {
-    return (await getStorage()).getBlogSettings();
-  },
-  async upsertBlogSettings(data) {
-    return (await getStorage()).upsertBlogSettings(data);
-  },
-  async createBlogGenerationJob(data) {
-    return (await getStorage()).createBlogGenerationJob(data);
-  },
-  async updateBlogGenerationJob(id, data) {
-    return (await getStorage()).updateBlogGenerationJob(id, data);
-  },
-  async createBlogPost(data) {
-    return (await getStorage()).createBlogPost(data);
-  },
-  async listPendingRssItems(limit) {
-    return (await getStorage()).listPendingRssItems(limit);
-  },
-  async markRssItemUsed(itemId, postId) {
-    return (await getStorage()).markRssItemUsed(itemId, postId);
-  },
+  getBlogSettings: async () => (await getStorage()).getBlogSettings(),
+  upsertBlogSettings: async (data) => (await getStorage()).upsertBlogSettings(data),
+  createBlogGenerationJob: async (data) => (await getStorage()).createBlogGenerationJob(data),
+  updateBlogGenerationJob: async (id, data) => (await getStorage()).updateBlogGenerationJob(id, data),
+  createBlogPost: async (data) => (await getStorage()).createBlogPost(data),
+  listPendingRssItems: async (limit) => (await getStorage()).listPendingRssItems(limit),
+  markRssItemUsed: async (itemId, postId) => (await getStorage()).markRssItemUsed(itemId, postId),
 };
 
 type PipelineSuccess = { jobId: number; postId: number; post: BlogPost };
@@ -442,6 +428,20 @@ async function runPipeline({
   const topic = await deps.generateTopic({ settings, manual, rssItem });
   const generatedPost = await deps.generatePost({ settings, topic, manual, rssItem });
 
+  // Phase 36 BLOG2-02/BLOG2-04 (D-05/D-06): sanitize, then length-validate
+  const sanitizedContent = sanitizeBlogHtml(generatedPost.content);
+  const plainTextLen = getPlainTextLength(sanitizedContent);
+  if (plainTextLen < MIN_PLAIN_TEXT_CHARS) {
+    const originalPlainTextLen = getPlainTextLength(generatedPost.content);
+    throw new Error(
+      originalPlainTextLen >= MIN_PLAIN_TEXT_CHARS ? "invalid_html" : "content_length_out_of_bounds",
+    );
+  }
+  if (plainTextLen > MAX_PLAIN_TEXT_CHARS) {
+    throw new Error("content_length_out_of_bounds");
+  }
+  generatedPost.content = sanitizedContent;
+
   let featureImageUrl: string | null = null;
 
   try {
@@ -472,12 +472,10 @@ async function runPipeline({
 
   const post = await deps.storage.createBlogPost(postInput);
 
-  // RSS-07: mark item used AFTER post insert succeeds. If post creation throws,
-  // we never reach here and the item stays pending for the next run (intentional).
+  // RSS-07: mark item used AFTER post insert succeeds (non-fatal on failure)
   try {
     await deps.storage.markRssItemUsed(rssItem.id, post.id);
   } catch (markErr) {
-    // Non-fatal: post is created. Log and continue — admin can manually mark in Phase 37 UI.
     const message = markErr instanceof Error ? markErr.message : String(markErr);
     console.warn(`[blog-generator] markRssItemUsed failed for item ${rssItem.id}: ${message}`);
   }
@@ -526,8 +524,7 @@ export class BlogGenerator {
       return { skipped: true, reason: "too_soon" };
     }
 
-    // D-09 / D-10: pick the next RSS item BEFORE acquiring the lock or invoking Gemini.
-    // When the queue is empty we record a 'no_rss_items' skip job and return — no API spend, no lock churn.
+    // D-09/D-10: pick RSS item BEFORE lock + Gemini; empty queue → skip + return
     const rssItem = await selectNextRssItem(settings, now);
     if (!rssItem) {
       await deps.storage.createBlogGenerationJob({
@@ -562,8 +559,19 @@ export class BlogGenerator {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
 
+      // D-13: map Phase-36 typed/value errors to the reason taxonomy.
+      let reason: string | null = null;
+      if (error instanceof GeminiTimeoutError) {
+        reason = "gemini_timeout";
+      } else if (error instanceof GeminiEmptyResponseError) {
+        reason = "gemini_empty_response";
+      } else if (message === "invalid_html" || message === "content_length_out_of_bounds") {
+        reason = message;
+      }
+
       await deps.storage.updateBlogGenerationJob(job.id, {
         status: "failed",
+        reason,
         error: message,
         completedAt: deps.now(),
       });
