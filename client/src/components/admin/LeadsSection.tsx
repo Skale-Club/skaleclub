@@ -515,12 +515,13 @@ export function LeadsSection() {
       </AlertDialog>
 
       <Dialog open={isLeadDialogOpen} onOpenChange={setIsLeadDialogOpen}>
-        <DialogContent className="max-w-4xl w-[95vw] sm:w-full max-h-[90vh] overflow-hidden">
+        <DialogContent className="max-w-4xl w-[95vw] sm:w-full max-h-[90vh] flex flex-col overflow-hidden">
           {selectedLead ? (
-            <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-1">
-              <DialogHeader>
+            <>
+              <DialogHeader className="shrink-0 pr-6">
                 <DialogTitle>Lead Details</DialogTitle>
               </DialogHeader>
+            <div className="space-y-4 flex-1 overflow-y-auto pr-2 -mr-1">
 
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
@@ -604,6 +605,7 @@ export function LeadsSection() {
                 )}
               </div>
             </div>
+            </>
           ) : (
             <p className="text-sm text-muted-foreground">Select a lead to view details.</p>
           )}
