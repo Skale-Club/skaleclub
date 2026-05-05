@@ -125,4 +125,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-*Last updated: 2026-05-04 — v1.9 milestone started (Blog Intelligence & RSS Sources)*
+*Last updated: 2026-05-05 — Phase 37 complete (Admin UX: RSS Sources panel, RSS Queue, Job History with retry/cancel, preview-before-draft modal, Gemini health banner, next-run + cost chips)*
