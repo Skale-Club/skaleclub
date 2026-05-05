@@ -3,7 +3,7 @@ import { and, eq, isNull, lt, or } from "drizzle-orm";
 import { z } from "zod";
 import { ApiError } from "@google/genai";
 
-import type { BlogPost, BlogRssItem, InsertBlogPost, BlogGenerationJob, BlogSettings, InsertBlogGenerationJob, InsertBlogSettings } from "#shared/schema.js";
+import type { BlogPost, BlogRssItem, InsertBlogPost, BlogGenerationJob, BlogSettings, DurationsMs, InsertBlogGenerationJob, InsertBlogSettings } from "#shared/schema.js";
 import { blogSettings } from "#shared/schema.js";
 import type { IStorage } from "../storage.js";
 import { getSupabaseAdmin } from "./supabase.js";
@@ -267,69 +267,112 @@ async function getGeminiText(client: ReturnType<typeof getBlogGeminiClient>, mod
 async function runPipeline({ settings, job, manual, rssItem }: { settings: BlogSettings; job: BlogGenerationJob; manual: boolean; rssItem: BlogRssItem }): Promise<PipelineSuccess> {
   const deps = getDeps();
   const now = deps.now();
+  const tStart = Date.now();
 
-  const topic = await deps.generateTopic({ settings, manual, rssItem });
-  const generatedPost = await deps.generatePost({ settings, topic, manual, rssItem });
-
-  // Phase 36 BLOG2-02/BLOG2-04 (D-05/D-06): sanitize, then length-validate
-  const sanitizedContent = sanitizeBlogHtml(generatedPost.content);
-  const plainTextLen = getPlainTextLength(sanitizedContent);
-  if (plainTextLen < MIN_PLAIN_TEXT_CHARS) {
-    const originalPlainTextLen = getPlainTextLength(generatedPost.content);
-    throw new Error(originalPlainTextLen >= MIN_PLAIN_TEXT_CHARS ? "invalid_html" : "content_length_out_of_bounds");
-  }
-  if (plainTextLen > MAX_PLAIN_TEXT_CHARS) throw new Error("content_length_out_of_bounds");
-  generatedPost.content = sanitizedContent;
-
-  let featureImageUrl: string | null = null;
+  // Phase 38 BLOG2-15: per-stage timing in outer scope so the catch in
+  // BlogGenerator.generate can attach partial durations to thrown errors.
+  const partial: Partial<DurationsMs> = {};
 
   try {
-    const imageBytes = await deps.generateImage({ settings, post: generatedPost, manual });
-    if (imageBytes?.length) {
-      const path = `blog-images/${now.getTime()}-${randomUUID()}.jpg`;
-      featureImageUrl = await deps.uploadImage({ bytes: imageBytes, path });
-    } else {
-      console.warn("Blog generator image generation returned no bytes; continuing without feature image");
+    const tTopic = Date.now();
+    const topic = await deps.generateTopic({ settings, manual, rssItem });
+    partial.topic = Date.now() - tTopic;
+
+    const tContent = Date.now();
+    const generatedPost = await deps.generatePost({ settings, topic, manual, rssItem });
+    partial.content = Date.now() - tContent;
+
+    // Phase 36 BLOG2-02/BLOG2-04 (D-05/D-06): sanitize, then length-validate
+    const sanitizedContent = sanitizeBlogHtml(generatedPost.content);
+    const plainTextLen = getPlainTextLength(sanitizedContent);
+    if (plainTextLen < MIN_PLAIN_TEXT_CHARS) {
+      const originalPlainTextLen = getPlainTextLength(generatedPost.content);
+      throw new Error(originalPlainTextLen >= MIN_PLAIN_TEXT_CHARS ? "invalid_html" : "content_length_out_of_bounds");
     }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.warn(`Blog generator image pipeline failed; continuing without feature image: ${message}`);
+    if (plainTextLen > MAX_PLAIN_TEXT_CHARS) throw new Error("content_length_out_of_bounds");
+    generatedPost.content = sanitizedContent;
+
+    // Phase 38 BLOG2-15: image stage timing. null = stage gracefully skipped
+    // (Phase 22 D-04 / Phase 38 D-03: post still saves on full retry exhaustion).
+    let dImage: number | null = null;
+    let dUpload = 0;
+    let featureImageUrl: string | null = null;
+
+    try {
+      const tImage = Date.now();
+      const imageBytes = await deps.generateImage({ settings, post: generatedPost, manual });
+      dImage = Date.now() - tImage;
+      if (imageBytes?.length) {
+        const tUpload = Date.now();
+        const path = `blog-images/${now.getTime()}-${randomUUID()}.jpg`;
+        featureImageUrl = await deps.uploadImage({ bytes: imageBytes, path });
+        dUpload = Date.now() - tUpload;
+      } else {
+        console.warn("Blog generator image generation returned no bytes; continuing without feature image");
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`Blog generator image pipeline failed; continuing without feature image: ${message}`);
+      dImage = null; // exhaustion-after-retry: leave image timing as null per D-04
+      dUpload = 0;
+    }
+    partial.image = dImage;
+    partial.upload = dUpload;
+
+    const postInput: InsertBlogPost = {
+      title: generatedPost.title,
+      slug: buildSlug(generatedPost.title, now),
+      content: generatedPost.content,
+      excerpt: generatedPost.excerpt,
+      metaDescription: generatedPost.metaDescription,
+      focusKeyword: generatedPost.focusKeyword,
+      tags: generatedPost.tags.join(", "),
+      featureImageUrl,
+      status: "draft",
+      authorName: "AI Assistant",
+    };
+
+    const post = await deps.storage.createBlogPost(postInput);
+
+    // RSS-07: mark item used AFTER post insert succeeds (non-fatal on failure)
+    try {
+      await deps.storage.markRssItemUsed(rssItem.id, post.id);
+    } catch (markErr) {
+      const message = markErr instanceof Error ? markErr.message : String(markErr);
+      console.warn(`[blog-generator] markRssItemUsed failed for item ${rssItem.id}: ${message}`);
+    }
+
+    const durationsMs: DurationsMs = {
+      topic: partial.topic ?? 0,
+      content: partial.content ?? 0,
+      image: partial.image ?? null,
+      upload: partial.upload ?? 0,
+      total: Date.now() - tStart,
+    };
+
+    await deps.storage.updateBlogGenerationJob(job.id, {
+      status: "completed",
+      postId: post.id,
+      completedAt: now,
+      reason: null,
+      error: null,
+      durationsMs,
+    });
+
+    await deps.storage.upsertBlogSettings(buildSettingsUpdate(settings, { lastRunAt: now, lockAcquiredAt: null }));
+
+    return { jobId: job.id, postId: post.id, post };
+  } catch (err) {
+    // Phase 38 BLOG2-15 (Pitfall 2): attach partial durations so the outer catch
+    // in BlogGenerator.generate can persist whatever stages completed.
+    if (err && typeof err === "object") {
+      (err as { partialDurationsMs?: Partial<DurationsMs> }).partialDurationsMs = {
+        ...partial,
+        total: Date.now() - tStart,
+      };
+    }
+    throw err;
   }
-
-  const postInput: InsertBlogPost = {
-    title: generatedPost.title,
-    slug: buildSlug(generatedPost.title, now),
-    content: generatedPost.content,
-    excerpt: generatedPost.excerpt,
-    metaDescription: generatedPost.metaDescription,
-    focusKeyword: generatedPost.focusKeyword,
-    tags: generatedPost.tags.join(", "),
-    featureImageUrl,
-    status: "draft",
-    authorName: "AI Assistant",
-  };
-
-  const post = await deps.storage.createBlogPost(postInput);
-
-  // RSS-07: mark item used AFTER post insert succeeds (non-fatal on failure)
-  try {
-    await deps.storage.markRssItemUsed(rssItem.id, post.id);
-  } catch (markErr) {
-    const message = markErr instanceof Error ? markErr.message : String(markErr);
-    console.warn(`[blog-generator] markRssItemUsed failed for item ${rssItem.id}: ${message}`);
-  }
-
-  await deps.storage.updateBlogGenerationJob(job.id, {
-    status: "completed",
-    postId: post.id,
-    completedAt: now,
-    reason: null,
-    error: null,
-  });
-
-  await deps.storage.upsertBlogSettings(buildSettingsUpdate(settings, { lastRunAt: now, lockAcquiredAt: null }));
-
-  return { jobId: job.id, postId: post.id, post };
 }
 
 // Phase 37 D-07: preview-without-commit. Reuses generateTopic + generatePost + sanitize +
@@ -454,11 +497,19 @@ export class BlogGenerator {
       else if (error instanceof GeminiEmptyResponseError) reason = "gemini_empty_response";
       else if (message === "invalid_html" || message === "content_length_out_of_bounds") reason = message;
 
+      // Phase 38 BLOG2-15: persist partial timings if runPipeline attached them.
+      // Skipped jobs (no_settings/disabled/etc.) hit earlier returns and never reach here,
+      // so durationsMs stays NULL via Drizzle insert default — matches D-04.
+      const partialDurationsMs = (error && typeof error === "object")
+        ? (error as { partialDurationsMs?: Partial<DurationsMs> }).partialDurationsMs
+        : undefined;
+
       await deps.storage.updateBlogGenerationJob(job.id, {
         status: "failed",
         reason,
         error: message,
         completedAt: deps.now(),
+        durationsMs: partialDurationsMs as DurationsMs | undefined,
       });
       await deps.storage.upsertBlogSettings(buildSettingsUpdate(settings, { lastRunAt: settings.lastRunAt, lockAcquiredAt: null }));
 
