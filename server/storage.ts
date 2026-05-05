@@ -2048,6 +2048,104 @@ export class DatabaseStorage implements IStorage {
     return job;
   }
 
+  // ─── Blog RSS Sources & Items (Phase 34 — RSS-04) ─────────────────────────
+
+  async listRssSources(): Promise<BlogRssSource[]> {
+    return await db
+      .select()
+      .from(blogRssSources)
+      .orderBy(desc(blogRssSources.createdAt));
+  }
+
+  async getRssSource(id: number): Promise<BlogRssSource | undefined> {
+    const [row] = await db
+      .select()
+      .from(blogRssSources)
+      .where(eq(blogRssSources.id, id))
+      .limit(1);
+    return row;
+  }
+
+  async createRssSource(input: InsertBlogRssSource): Promise<BlogRssSource> {
+    const [created] = await db
+      .insert(blogRssSources)
+      .values(input)
+      .returning();
+    return created;
+  }
+
+  async updateRssSource(
+    id: number,
+    patch: Partial<InsertBlogRssSource>,
+  ): Promise<BlogRssSource | undefined> {
+    const [updated] = await db
+      .update(blogRssSources)
+      .set({ ...patch, updatedAt: new Date() })
+      .where(eq(blogRssSources.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteRssSource(id: number): Promise<void> {
+    await db.delete(blogRssSources).where(eq(blogRssSources.id, id));
+    // FK ON DELETE CASCADE drops all blog_rss_items rows automatically (D-01).
+  }
+
+  async upsertRssItem(item: InsertBlogRssItem): Promise<BlogRssItem> {
+    // Dedupe on the (source_id, guid) UNIQUE INDEX (D-06.2). On conflict,
+    // refresh metadata only — never touch status/used_*/skip_reason.
+    const [row] = await db
+      .insert(blogRssItems)
+      .values(item)
+      .onConflictDoUpdate({
+        target: [blogRssItems.sourceId, blogRssItems.guid],
+        set: {
+          url: item.url,
+          title: item.title,
+          summary: item.summary ?? null,
+          publishedAt: item.publishedAt ?? null,
+        },
+      })
+      .returning();
+    return row;
+  }
+
+  async listPendingRssItems(limit?: number): Promise<BlogRssItem[]> {
+    // Order by published_at DESC NULLS LAST so newest stories rank highest;
+    // items with no published_at fall to the bottom (rare but possible).
+    const query = db
+      .select()
+      .from(blogRssItems)
+      .where(eq(blogRssItems.status, "pending"))
+      .orderBy(sql`${blogRssItems.publishedAt} DESC NULLS LAST`);
+
+    if (typeof limit === "number" && limit > 0) {
+      return await query.limit(limit);
+    }
+    return await query;
+  }
+
+  async markRssItemUsed(itemId: number, postId: number): Promise<void> {
+    await db
+      .update(blogRssItems)
+      .set({
+        status: "used",
+        usedAt: new Date(),
+        usedPostId: postId,
+      })
+      .where(eq(blogRssItems.id, itemId));
+  }
+
+  async markRssItemSkipped(itemId: number, reason?: string): Promise<void> {
+    await db
+      .update(blogRssItems)
+      .set({
+        status: "skipped",
+        skipReason: reason ?? null,
+      })
+      .where(eq(blogRssItems.id, itemId));
+  }
+
   async getHubLives(status?: HubLiveStatus): Promise<HubLive[]> {
     let query = db.select().from(hubLives).orderBy(desc(hubLives.startsAt)).$dynamic();
 
