@@ -1,4 +1,5 @@
 import { db } from "./db.js";
+import { scoreItem } from "./lib/rssTopicSelector.js";
 import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead } from "#shared/form.js";
 import { normalizeLinksPageConfig } from "#shared/links.js";
 import {
@@ -109,6 +110,7 @@ import {
   type InsertBlogRssSource,
   type BlogRssItem,
   type InsertBlogRssItem,
+  type BlogRssItemStatus,
   normalizeHubPhone,
   normalizeHubEmail,
   type InsertSalesRep,
@@ -138,6 +140,19 @@ export type RecentSalesVisit = {
   syncStatus: string | null;
   syncLastError: string | null;
 };
+
+// Phase 37 — read-side joined shapes for admin RSS UI (BLOG2-08, BLOG2-10).
+// Exported so Plan 02 (REST endpoints) and Plan 03 (frontend types) can import.
+export interface RssItemWithSource extends BlogRssItem {
+  sourceName: string | null;
+  // D-05: real-time relevance score for `pending` rows; null for `used` / `skipped`.
+  score: number | null;
+}
+
+export interface BlogGenerationJobWithRssItem extends BlogGenerationJob {
+  rssItemTitle: string | null;
+  rssItemId: number | null;
+}
 
 const companySettingsSchemaPatches = [
   sql`ALTER TABLE "company_settings" ADD COLUMN IF NOT EXISTS "seo_keywords" text DEFAULT ''`,
@@ -713,6 +728,21 @@ export interface IStorage {
   listPendingRssItems(limit?: number): Promise<BlogRssItem[]>;
   markRssItemUsed(itemId: number, postId: number): Promise<void>;
   markRssItemSkipped(itemId: number, reason?: string): Promise<void>;
+
+  // Phase 37 — read-side joins for admin UI (BLOG2-08, BLOG2-10)
+  // D-05: when status === 'pending', each row carries a real-time relevance score
+  // computed via scoreItem() against the current blog_settings.seoKeywords.
+  // For 'used' / 'skipped' rows, score is null (relevance is moot post-decision).
+  listRssItemsByStatus(
+    status: BlogRssItemStatus,
+    limit: number,
+    offset: number,
+  ): Promise<RssItemWithSource[]>;
+  listBlogGenerationJobs(limit: number): Promise<BlogGenerationJobWithRssItem[]>;
+  getBlogGenerationJob(id: number): Promise<BlogGenerationJob | undefined>;
+  // Phase 37 Info-9: joined single-row variant for retry handler — avoids the
+  // O(N) listBlogGenerationJobs(200).find() pattern in Plan 02.
+  getBlogGenerationJobWithRssItem(id: number): Promise<BlogGenerationJobWithRssItem | undefined>;
 
   getHubLives(status?: HubLiveStatus): Promise<HubLive[]>;
   getCurrentHubLive(): Promise<HubLive | undefined>;
@@ -2144,6 +2174,120 @@ export class DatabaseStorage implements IStorage {
         skipReason: reason ?? null,
       })
       .where(eq(blogRssItems.id, itemId));
+  }
+
+  // Phase 37 — read-side joins for admin UI
+
+  async listRssItemsByStatus(
+    status: BlogRssItemStatus,
+    limit: number,
+    offset: number,
+  ): Promise<RssItemWithSource[]> {
+    // Order: published_at DESC NULLS LAST so newest items rank highest;
+    // matches the convention from listPendingRssItems (Phase 34-02).
+    const rows = await db
+      .select({
+        // All blogRssItems columns (listed explicitly to keep return shape stable):
+        id: blogRssItems.id,
+        sourceId: blogRssItems.sourceId,
+        guid: blogRssItems.guid,
+        url: blogRssItems.url,
+        title: blogRssItems.title,
+        summary: blogRssItems.summary,
+        publishedAt: blogRssItems.publishedAt,
+        status: blogRssItems.status,
+        usedAt: blogRssItems.usedAt,
+        usedPostId: blogRssItems.usedPostId,
+        skipReason: blogRssItems.skipReason,
+        createdAt: blogRssItems.createdAt,
+        sourceName: blogRssSources.name,
+      })
+      .from(blogRssItems)
+      .leftJoin(blogRssSources, eq(blogRssItems.sourceId, blogRssSources.id))
+      .where(eq(blogRssItems.status, status))
+      .orderBy(sql`${blogRssItems.publishedAt} DESC NULLS LAST`)
+      .limit(limit)
+      .offset(offset);
+
+    // Phase 37 D-05: attach real-time relevance score for pending rows ONLY.
+    // For used/skipped, score is null (the decision is already made).
+    if (status === "pending") {
+      const settings = await this.getBlogSettings();
+      if (settings) {
+        const now = new Date();
+        return rows.map((r) => ({
+          ...(r as RssItemWithSource),
+          score: scoreItem(r as BlogRssItem, settings, now),
+        }));
+      }
+      // No settings = cannot score; return null score for all pending rows.
+      return rows.map((r) => ({ ...(r as RssItemWithSource), score: null }));
+    }
+    return rows.map((r) => ({ ...(r as RssItemWithSource), score: null }));
+  }
+
+  async listBlogGenerationJobs(limit: number): Promise<BlogGenerationJobWithRssItem[]> {
+    // Join chain: blogGenerationJobs.postId -> blogRssItems.usedPostId
+    // (jobs have no direct rssItemId column; the only link is through the
+    // post they produced. Skipped/failed jobs that never created a post
+    // will have rssItemTitle=null and rssItemId=null — correct semantics.)
+    const rows = await db
+      .select({
+        id: blogGenerationJobs.id,
+        status: blogGenerationJobs.status,
+        reason: blogGenerationJobs.reason,
+        postId: blogGenerationJobs.postId,
+        startedAt: blogGenerationJobs.startedAt,
+        completedAt: blogGenerationJobs.completedAt,
+        error: blogGenerationJobs.error,
+        rssItemTitle: blogRssItems.title,
+        rssItemId: blogRssItems.id,
+      })
+      .from(blogGenerationJobs)
+      .leftJoin(
+        blogRssItems,
+        eq(blogGenerationJobs.postId, blogRssItems.usedPostId),
+      )
+      .orderBy(desc(blogGenerationJobs.id))
+      .limit(limit);
+
+    return rows as BlogGenerationJobWithRssItem[];
+  }
+
+  async getBlogGenerationJob(id: number): Promise<BlogGenerationJob | undefined> {
+    const [row] = await db
+      .select()
+      .from(blogGenerationJobs)
+      .where(eq(blogGenerationJobs.id, id))
+      .limit(1);
+    return row;
+  }
+
+  async getBlogGenerationJobWithRssItem(
+    id: number,
+  ): Promise<BlogGenerationJobWithRssItem | undefined> {
+    // Same join shape as listBlogGenerationJobs, scoped to a single id.
+    // Used by the retry handler (Plan 02) to recover rssItemId without an O(N) scan.
+    const [row] = await db
+      .select({
+        id: blogGenerationJobs.id,
+        status: blogGenerationJobs.status,
+        reason: blogGenerationJobs.reason,
+        postId: blogGenerationJobs.postId,
+        startedAt: blogGenerationJobs.startedAt,
+        completedAt: blogGenerationJobs.completedAt,
+        error: blogGenerationJobs.error,
+        rssItemTitle: blogRssItems.title,
+        rssItemId: blogRssItems.id,
+      })
+      .from(blogGenerationJobs)
+      .leftJoin(
+        blogRssItems,
+        eq(blogGenerationJobs.postId, blogRssItems.usedPostId),
+      )
+      .where(eq(blogGenerationJobs.id, id))
+      .limit(1);
+    return row as BlogGenerationJobWithRssItem | undefined;
   }
 
   async getHubLives(status?: HubLiveStatus): Promise<HubLive[]> {
