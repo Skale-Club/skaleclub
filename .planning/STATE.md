@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: and earlier)
-status: planning
-last_updated: "2026-05-05T14:23:15.168Z"
+status: executing
+last_updated: "2026-05-05T15:29:52.841Z"
 last_activity: 2026-05-05
 progress:
   total_phases: 11
   completed_phases: 10
-  total_plans: 23
-  completed_plans: 23
+  total_plans: 26
+  completed_plans: 24
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** Ready to plan
+**Status:** Ready to execute
 
 ---
 
@@ -24,16 +24,16 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-05-04)
 
 **Core value:** Clients receive a proposal link and experience Skale Club services as an immersive, professional presentation — not a PDF.
-**Current focus:** Phase 37 — admin-ux-rss-job-improvements
+**Current focus:** Phase 38 — dynamic-cron-observability
 
 ---
 
 ## Current Position
 
-Phase: 38
-Plan: Not started
+Phase: 38 (dynamic-cron-observability) — EXECUTING
+Plan: 2 of 3
 Milestone: v1.9 Blog Intelligence & RSS Sources
-Status: Phase complete — ready for verification
+Status: Ready to execute
 Last activity: 2026-05-05
 
 ---
@@ -87,6 +87,7 @@ Last activity: 2026-05-05
 | Phase 37 P01 | 4min | 2 tasks | 2 files |
 | Phase 37 P02 | 8min | 2 tasks | 2 files |
 | Phase 37 P03 | 25min | 7 tasks | 8 files |
+| Phase 38 P01 | 6min | 3 tasks | 4 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -235,6 +236,9 @@ Last activity: 2026-05-05
 - [Phase 37]: Plan 37-03: translations.ts compaction strategy 4 (logically-related single-line consolidation) freed 150+ lines headroom; final 443/600 (157 lines under cap)
 - [Phase 37]: Plan 37-03: BLOG_COST_PRICING co-located with consuming AutomationStatusBanners.tsx (D-16) — content USD 0.075/1M tokens × 3000 tokens + image USD 0.039/image
 - [Phase 37]: Plan 37-03: BlogSection.tsx 'Generate Now' generateMutation block removed entirely (no fallback) — D-17 single source of truth via PreviewDraftDialog open-toggle
+- [Phase 38]: Plan 38-01: durations_ms JSONB column on blog_generation_jobs is nullable, no default — D-04 spec preserves NULL for skipped jobs; populated for completed/failed runs by 38-02.
+- [Phase 38]: Plan 38-01: DurationsMs derived from Zod via z.infer<typeof durationsMsSchema> — single source of truth between Drizzle generic and runtime validation (RESEARCH Pitfall 4).
+- [Phase 38]: Plan 38-01: Drizzle $inferInsert/$inferSelect propagates durationsMs to storage — zero edits needed in server/storage.ts and server/lib/blog-generator.ts (RESEARCH 'single most important architectural fact').
 
 ### Quick Tasks Completed
 

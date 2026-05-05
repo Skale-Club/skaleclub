@@ -41,7 +41,7 @@
 ### Cron & Observability
 
 - [ ] **BLOG2-14**: The generator cron frequency is dynamic — derived from `postsPerDay` (e.g., 4 posts/day → every 6h) — instead of the current hardcoded 60-minute interval.
-- [ ] **BLOG2-15**: Structured logs include `durationMs` per stage (topic, content, image, upload) on every job, persisted in `blog_generation_jobs`.
+- [x] **BLOG2-15**: Structured logs include `durationMs` per stage (topic, content, image, upload) on every job, persisted in `blog_generation_jobs`.
 - [ ] **BLOG2-16**: Failed Gemini calls retry with exponential backoff (1s, 5s, 30s) before the run is marked failed.
 
 ## Out of Scope
