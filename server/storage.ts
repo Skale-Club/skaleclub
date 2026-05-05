@@ -149,6 +149,11 @@ export interface RssItemWithSource extends BlogRssItem {
   score: number | null;
 }
 
+// Phase 38 BLOG2-15: durationsMs is inherited from BlogGenerationJob
+// ($inferSelect after Plan 38-01 adds the JSONB column). The interface
+// itself does NOT redeclare the field — the SELECT projections below
+// must include `durationsMs: blogGenerationJobs.durationsMs` for the
+// value to actually round-trip on the wire.
 export interface BlogGenerationJobWithRssItem extends BlogGenerationJob {
   rssItemTitle: string | null;
   rssItemId: number | null;
@@ -2240,6 +2245,7 @@ export class DatabaseStorage implements IStorage {
         startedAt: blogGenerationJobs.startedAt,
         completedAt: blogGenerationJobs.completedAt,
         error: blogGenerationJobs.error,
+        durationsMs: blogGenerationJobs.durationsMs,
         rssItemTitle: blogRssItems.title,
         rssItemId: blogRssItems.id,
       })
@@ -2277,6 +2283,7 @@ export class DatabaseStorage implements IStorage {
         startedAt: blogGenerationJobs.startedAt,
         completedAt: blogGenerationJobs.completedAt,
         error: blogGenerationJobs.error,
+        durationsMs: blogGenerationJobs.durationsMs,
         rssItemTitle: blogRssItems.title,
         rssItemId: blogRssItems.id,
       })
