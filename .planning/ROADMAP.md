@@ -36,7 +36,7 @@
   4. `npm run check` passes cleanly.
 
 Plans:
-- [ ] 34-01-PLAN.md — SQL migration (raw + Supabase mirror) for blog_rss_sources/blog_rss_items + Drizzle/Zod contracts in shared/schema/blog.ts (RSS-01, RSS-02, RSS-03)
+- [x] 34-01-PLAN.md — SQL migration (raw + Supabase mirror) for blog_rss_sources/blog_rss_items + Drizzle/Zod contracts in shared/schema/blog.ts (RSS-01, RSS-02, RSS-03)
 - [ ] 34-02-PLAN.md — IStorage RSS method declarations + DatabaseStorage implementations (9 methods including upsertRssItem with onConflictDoUpdate, markRssItemUsed/Skipped) (RSS-04)
 
 ### Phase 35: RSS Fetcher & Topic Selection
@@ -248,7 +248,7 @@ _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
 | 31. Schema & Templates Foundation | v1.8 | 2/2 | Complete | 2026-05-04 |
 | 32. Telegram Integration | v1.8 | 2/2 | Complete | 2026-05-04 |
 | 33. Admin Notifications Panel | v1.8 | 2/2 | Complete | 2026-05-04 |
-| 34. RSS Sources Foundation | v1.9 | 0/0 | Not started | - |
+| 34. RSS Sources Foundation | v1.9 | 1/2 | In Progress|  |
 | 35. RSS Fetcher & Topic Selection | v1.9 | 0/0 | Not started | - |
 | 36. Generator Quality Overhaul | v1.9 | 0/0 | Not started | - |
 | 37. Admin UX (RSS + Job Improvements) | v1.9 | 0/0 | Not started | - |

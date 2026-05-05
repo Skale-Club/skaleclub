@@ -7,9 +7,9 @@
 
 ### RSS Sources Foundation
 
-- [ ] **RSS-01**: Additive table `blog_rss_sources` exists with `id, name, url, enabled, last_fetched_at, last_fetched_status, error_message`.
-- [ ] **RSS-02**: Additive table `blog_rss_items` exists with `id, source_id (FK), guid, url, title, summary, published_at, status (pending|used|skipped), used_at, used_post_id`.
-- [ ] **RSS-03**: Shared Drizzle/Zod contracts exist in `shared/schema/blog.ts` and re-export from the barrel.
+- [x] **RSS-01**: Additive table `blog_rss_sources` exists with `id, name, url, enabled, last_fetched_at, last_fetched_status, error_message`.
+- [x] **RSS-02**: Additive table `blog_rss_items` exists with `id, source_id (FK), guid, url, title, summary, published_at, status (pending|used|skipped), used_at, used_post_id`.
+- [x] **RSS-03**: Shared Drizzle/Zod contracts exist in `shared/schema/blog.ts` and re-export from the barrel.
 - [ ] **RSS-04**: Storage layer supports source CRUD, item upsert by `guid`, listing pending items, and marking items as used.
 
 ### RSS Fetcher & Topic Selection
