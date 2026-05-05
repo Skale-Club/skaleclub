@@ -125,4 +125,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-*Last updated: 2026-05-05 — Phase 37 complete (Admin UX: RSS Sources panel, RSS Queue, Job History with retry/cancel, preview-before-draft modal, Gemini health banner, next-run + cost chips)*
+*Last updated: 2026-05-05 — Phase 38 complete (Dynamic cron + per-stage timing observability + Gemini retry with [1s,5s,30s] backoff). v1.9 milestone feature-complete — all phases shipped (BLOG2-01..16, RSS-01..08).*
