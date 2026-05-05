@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: and earlier)
-status: planning
-last_updated: "2026-05-05T03:36:42.998Z"
+status: executing
+last_updated: "2026-05-05T13:31:46.972Z"
 last_activity: 2026-05-05
 progress:
   total_phases: 11
   completed_phases: 9
-  total_plans: 20
-  completed_plans: 20
+  total_plans: 23
+  completed_plans: 21
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** Ready to plan
+**Status:** Ready to execute
 
 ---
 
@@ -24,16 +24,16 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-05-04)
 
 **Core value:** Clients receive a proposal link and experience Skale Club services as an immersive, professional presentation — not a PDF.
-**Current focus:** Phase 36 — generator-quality-overhaul
+**Current focus:** Phase 37 — admin-ux-rss-job-improvements
 
 ---
 
 ## Current Position
 
-Phase: 37
-Plan: Not started
+Phase: 37 (admin-ux-rss-job-improvements) — EXECUTING
+Plan: 2 of 3
 Milestone: v1.9 Blog Intelligence & RSS Sources
-Status: Phase 36 complete; ready for Phase 37 (Admin UX)
+Status: Ready to execute
 Last activity: 2026-05-05
 
 ---
@@ -84,6 +84,7 @@ Last activity: 2026-05-05
 | Phase 36-generator-quality-overhaul P02 | 3min | 2 tasks | 2 files |
 | Phase 36-generator-quality-overhaul P01 | 7min | 2 tasks | 3 files |
 | Phase 36-generator-quality-overhaul P03 | 7min | 3 tasks | 1 files |
+| Phase 37 P01 | 4min | 2 tasks | 2 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -221,6 +222,9 @@ Last activity: 2026-05-05
 - [Phase 36-generator-quality-overhaul]: Plan 36-02: Defensive numeric env parse uses || not ?? — Number(env) || 30_000 catches NaN, 0, empty-string, undefined uniformly
 - [Phase 36-generator-quality-overhaul]: Plan 36-01: server/lib/blogContentValidator.ts (124 lines) — pure module with sanitize-html@2.17.3 + @types/sanitize-html; exports sanitizeBlogHtml/getPlainTextLength/slugifyTitle/GeminiTimeoutError/GeminiEmptyResponseError/ALLOWED_BLOG_TAGS; D-01/D-02/D-03/D-04/D-08/D-14/D-15 implemented; deviation Rule 1: allowedAttributes.a widened to [href,rel,target] because sanitize-html applies attribute allowlist AFTER transformTags, so transform-forced rel/target would otherwise be filtered out (transform still overwrites model values, security guarantee preserved)
 - [Phase 36-generator-quality-overhaul]: Plan 36-03: server/lib/blog-generator.ts integrated Wave 1 outputs (568 → 598 lines, under 600 cap) — pt-BR prompts (D-11 BRAND_VOICE_PT_BR + D-12 FORMATTING_RULES_PT_BR verbatim), withGeminiTimeout helper using Promise.race against setTimeout-driven GeminiTimeoutError (D-07), 3 Gemini call sites wrapped (topic, post, image), getGeminiText + generateImageWithGemini throw GeminiEmptyResponseError on empty candidates (D-08), runPipeline sanitizes content + validates plain-text length [600..4000] before createBlogPost (D-05/D-06: invalid_html if sanitizer dropped salvageable content; content_length_out_of_bounds otherwise), buildSlug uses imported slugifyTitleNFD (local slugifyTitle removed), catch block maps GeminiTimeoutError/GeminiEmptyResponseError + message-match for invalid_html/content_length_out_of_bounds onto reason taxonomy (D-13, no DB migration); deviation Rule 3: explicit `<any>` generic on withGeminiTimeout image call site to fix TS2339 inference; deviation Rule 3: prompt builders converted to template literals + comment trims + defaultStorage method-shorthand to fit 600-line cap (plan pre-authorized this)
+- [Phase 37]: Plan 37-01: postId-based join (no schema migration) — blog_generation_jobs.postId === blog_rss_items.usedPostId is the only reliable link; skipped/failed jobs correctly return rssItemTitle=null
+- [Phase 37]: Plan 37-01: Reuse scoreItem from rssTopicSelector for D-05 pending-row score — keeps queue ranking byte-identical to the cron picker
+- [Phase 37]: Plan 37-01: Added getBlogGenerationJobWithRssItem(id) joined single-row variant (Info-9) to keep retry handler O(1) instead of scanning listBlogGenerationJobs(200).find(...)
 
 ### Quick Tasks Completed
 
