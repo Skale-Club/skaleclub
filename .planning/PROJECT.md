@@ -24,22 +24,12 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 - ✓ **HUB-01 → HUB-18**: Skale Hub Weekly Live Gate (schema, tracking APIs, public registration gate, admin management, analytics) — v1.6 (2026-05-02)
 - ✓ **TRX-01 → TRX-11**: Translation System Completeness (TranslationKey type enforcement, dead key removal, 8 admin components wired, PrivacyPolicy + TermsOfService covered, 599-line translations.ts) — v1.7 (2026-05-04)
 - ✓ **NOTIF-01 → NOTIF-14**: Notification Templates System (DB-stored templates, dispatchNotification, Telegram integration, admin Notifications panel) — v1.8 (2026-05-04)
+- ✓ **RSS-01 → RSS-08**: RSS Sources & Topic Selection (blog_rss_sources + blog_rss_items tables, GUID-dedup fetcher, hourly cron, 0.6×keyword + 0.4×recency scoring, no_rss_items skip path) — v1.9 (2026-05-05)
+- ✓ **BLOG2-01 → BLOG2-16**: Blog Intelligence Full Stack (pt-BR prompts + brand voice, sanitize-html strict allowlist, NFD slug normalization, 30s AbortController timeouts, env-overridable model IDs, RSS Sources admin panel, items queue, two-step preview/commit modal, job history + retry/cancel, API-key banner, postsPerDay-driven cron, per-stage durationsMs JSONB, [1s,5s,30s] Gemini retry backoff) — v1.9 (2026-05-05)
 
-## Current Milestone: v1.9 Blog Intelligence & RSS Sources
+## Current Milestone: v2.0 (TBD)
 
-**Goal:** Make the auto-post system production-ready, fed by manually-registered RSS sources that supply curated content ideas — selecting the most relevant unused item per run, never duplicating.
-
-**Target features:**
-- RSS Sources: admin registers feeds; system fetches and queues items as content ideas
-- Topic selection: scoring algorithm picks best unused item, marks it as used
-- Generator quality overhaul: PT-BR prompts, strict HTML, SEO-aware, validation
-- Admin UX: preview before draft, job history, retry/cancel, RSS queue view
-- Cron + observability: dynamic frequency from settings, structured logs, cost estimate
-
-### Active
-
-- [ ] **RSS-01 → RSS-NN**: RSS Sources & Topic Selection — v1.9 (in progress)
-- [ ] **BLOG2-01 → BLOG2-NN**: Generator Quality Overhaul — v1.9 (in progress)
+**Goal:** To be defined via `/gsd:new-milestone`.
 
 ### Out of Scope
 
@@ -65,6 +55,8 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 - v1.6 planned 2026-05-02: Skale Hub Weekly Live Gate (5 phases, 18 requirements - schema, tracking APIs, public page, admin management, analytics)
 - v1.6 shipped 2026-05-02: Skale Hub Weekly Live Gate (5 phases, 18/18 requirements complete)
 - v1.7 shipped 2026-05-04: Translation System Completeness (1 phase, 4 plans, 11/11 TRX requirements — TypeScript-enforced TranslationKey, 18 dead keys removed, 8 admin components wired, PrivacyPolicy + TermsOfService covered, translations.ts at 599 lines)
+- v1.8 shipped 2026-05-04: Notification Templates System (3 phases, 6 plans, 14/14 NOTIF requirements — DB-stored templates, dispatchNotification engine, Telegram integration, admin Notifications panel)
+- v1.9 shipped 2026-05-05: Blog Intelligence & RSS Sources (5 phases, 14 plans, 24/24 requirements — RSS feed management, GUID-dedup hourly fetcher, scoring-based topic selection, pt-BR generator quality overhaul, admin RSS/queue/preview/job-history panels, postsPerDay dynamic cron, per-stage durationsMs observability, Gemini retry backoff)
 - Stack: TypeScript/React + Express + Drizzle ORM + PostgreSQL + Supabase Auth + Vercel
 - DB migration pattern: raw SQL via tsx script (drizzle-kit CJS can't resolve .js ESM imports)
 - AI providers: Gemini (blog automation via `@google/genai`), Anthropic Claude (presentations via `@anthropic-ai/sdk`), OpenAI/Groq/OpenRouter (chat via `getActiveAIClient()` shim)
@@ -105,6 +97,14 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 | Phone-first participant identity for Skale Hub (v1.6) | Phone is the primary business identifier; email strengthens matching and CRM value | ✅ Phase 25 |
 | Track unlock and access as separate events for Skale Hub (v1.6) | Admin needs to distinguish gate completion from actual click-through | ✅ Phase 25 foundation via event-log table |
 | No visitor auth for Skale Hub (v1.6) | Weekly live access must stay simple and fast | ✅ Phase 26 API contract |
+| ON DELETE CASCADE on blog_rss_items.source_id (v1.9) | Deleting a source cleans its items — no orphan rows | ✅ Phase 34 |
+| GUID fallback chain guid→link→SHA-256 for RSS dedup (v1.9) | Many feeds omit the guid element; SHA-256 of URL as last resort | ✅ Phase 35 |
+| scoreItem as pure function reused in storage + selector (v1.9) | Queue ranking byte-identical to cron picker — no drift | ✅ Phase 37 |
+| Two-step preview/commit for Generate Now (v1.9) | Discard path must not write to DB; runPreview acquires no lock | ✅ Phase 37 |
+| allowedAttributes.a widened to [href,rel,target] (v1.9) | sanitize-html applies attribute allowlist AFTER transformTags; forced rel/target would be stripped otherwise | ✅ Phase 36 |
+| Recursive setTimeout replaces setInterval for blog cron (v1.9) | Reads postsPerDay each tick; finally block guarantees rescheduling even on error | ✅ Phase 38 |
+| withGeminiRetry instanceof ApiError + status>=500 check (v1.9) | Precise transient-error detection survives SDK upgrades; regex on message would not | ✅ Phase 38 |
+| partialDurationsMs via Object.assign on thrown error (v1.9) | Propagates per-stage timings across stack-frame death without changing function signatures | ✅ Phase 38 |
 
 ## Evolution
 
@@ -125,4 +125,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-*Last updated: 2026-05-05 — Phase 38 complete (Dynamic cron + per-stage timing observability + Gemini retry with [1s,5s,30s] backoff). v1.9 milestone feature-complete — all phases shipped (BLOG2-01..16, RSS-01..08).*
+*Last updated: 2026-05-05 — v1.9 milestone archived. 9 milestones shipped (v1.0–v1.9), 38 phases, 24/24 v1.9 requirements complete.*

@@ -1,5 +1,31 @@
 # Milestones
 
+## v1.9 Blog Intelligence & RSS Sources (Shipped: 2026-05-06)
+
+**Phases completed:** 11 phases, 26 plans, 57 tasks
+
+**Key accomplishments:**
+
+- Not executed in this shell.
+- Live curl matrix not executed in this shell.
+- Not executed in this shell.
+- Three-zone admin grid (Profile | Live Preview placeholder | Main Links) with per-link Radix Switch visibility toggle and click-count Badge, wired to existing PUT /api/company-settings auto-save
+- Reusable drag-drop image uploader component (DragDropUploader) wired into the Profile zone Avatar and Background Image slots, replacing text inputs with a base64-JSON POST to `/api/uploads/links-page` (admin-auth cookie, 6-MIME allowlist, 2 MB cap), showing idle/uploading/success/error states and persisting URLs through the existing saveSettings path.
+- @dnd-kit-powered drag reorder on admin Main Links card with 6px pointer activation, keyboard sensor, arrayMove + order-reindex persistence, and PT aria-label — wired through existing updateConfig auto-save.
+- Reusable IconPicker (Popover + Tabs: Lucide search / Upload / Auto) wired per-link-row in admin LinksSection, persisting iconType + iconValue through the existing saveSettings → PUT /api/company-settings path.
+- ThemeEditor component mounted in admin Profile zone with native color pickers + hex inputs + free-form CSS gradient + reset-to-defaults button, persisting through existing 400ms-debounced saveSettings path.
+- Phone-framed `<iframe>` LivePreview mounted in admin Zone 2 rendering `/links` same-origin, auto-refreshing via React Query `dataUpdatedAt` cache-bust within ~1s of each save, with a manual Refresh button as belt-and-suspenders.
+- 1. [Rule 3 — Blocking] Fallback seed data missing `order` field triggered TS2339/TS2345
+- Foundation tables and typed contracts for admin-curated RSS feeds + parsed item ledger, ready for Phase 34-02 storage layer to implement IStorage methods.
+- 9 IStorage methods declared and implemented on DatabaseStorage so Phase 35's fetcher and Phase 37's admin UI can persist RSS sources and items through typed Drizzle queries — no raw SQL, no generic update paths.
+- Pure RSS ingestion module — fetchAllRssSources() iterates enabled blog_rss_sources sequentially, parses feeds via rss-parser@^3.13.0, upserts items by (source_id, guid) UNIQUE index, and records per-source success/error state. Plan 35-03 wires this into cron and the /api/blog/cron/fetch-rss endpoint.
+- Wires Wave 1 (rssFetcher.ts) and Wave 2 (rssTopicSelector.ts) into the running system — hourly setInterval, POST /api/blog/cron/fetch-rss endpoint, and a BlogGenerator pipeline that picks an RSS item before Gemini and marks it used after createBlogPost succeeds.
+- Pure HTML sanitizer + slug generator + typed Gemini error classes shipped as a dependency-free module ready for Plan 36-03 to consume.
+- Three env-var-overridable constants exported from blog-gemini.ts (BLOG_CONTENT_MODEL, BLOG_IMAGE_MODEL, BLOG_GEMINI_TIMEOUT_MS) with defensive `||` fallbacks, ready for Plan 36-03 AbortController integration.
+- BlogGenerator now ships with pt-BR brand voice prompts, 30s AbortController timeout on every Gemini call, strict HTML sanitization with 600..4000 plain-text length gate, NFD-normalized slugs, and four new failure reasons mapped from typed errors — all delivered in one file under the 600-line CLAUDE.md cap.
+
+---
+
 ## v1.8 Notification Templates System (Shipped: 2026-05-04)
 
 **Phases completed:** 6 phases, 12 plans, 21 tasks
