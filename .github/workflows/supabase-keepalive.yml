@@ -5,6 +5,13 @@ on:
     - cron: "0 0 * * *"
   workflow_dispatch:
 
+concurrency:
+  group: supabase-keepalive
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
 jobs:
   keepalive:
     runs-on: ubuntu-latest
@@ -25,11 +32,31 @@ jobs:
             exit 1
           fi
 
-          response=$(curl --silent --show-error --fail-with-body \
+          response_file="$(mktemp)"
+          set +e
+          status=$(curl --silent --show-error \
+            --output "$response_file" \
+            --write-out "%{http_code}" \
             --max-time 30 \
-            --retry 2 \
-            --retry-delay 2 \
+            --connect-timeout 10 \
+            --retry 5 \
+            --retry-delay 5 \
+            --retry-all-errors \
             -H "Authorization: Bearer $CRON_SECRET" \
             "$KEEPALIVE_URL")
+          curl_exit=$?
+          set -e
 
+          response="$(cat "$response_file")"
+          echo "Keep-alive status: $status"
           echo "Keep-alive response: $response"
+
+          if [ "$curl_exit" -ne 0 ]; then
+            echo "Keep-alive curl failed with exit code $curl_exit"
+            exit "$curl_exit"
+          fi
+
+          if [ "$status" -lt 200 ] || [ "$status" -gt 299 ]; then
+            echo "Keep-alive endpoint returned HTTP $status"
+            exit 1
+          fi

@@ -32,21 +32,34 @@ export function registerCompanyRoutes(app: Express) {
 
     try {
       await db.execute(sql`select now()`);
-      const [heartbeat] = await db
-        .insert(systemHeartbeats)
-        .values({
-          source: 'github-actions',
-          note: 'supabase-keepalive',
-        })
-        .returning({
-          id: systemHeartbeats.id,
-          createdAt: systemHeartbeats.createdAt,
-        });
+      let heartbeat: { id: number; createdAt: Date | null } | null = null;
+      let heartbeatLogged = false;
+      let heartbeatWarning: string | null = null;
+
+      try {
+        [heartbeat] = await db
+          .insert(systemHeartbeats)
+          .values({
+            source: 'github-actions',
+            note: 'supabase-keepalive',
+          })
+          .returning({
+            id: systemHeartbeats.id,
+            createdAt: systemHeartbeats.createdAt,
+          });
+        heartbeatLogged = true;
+      } catch (heartbeatError) {
+        heartbeatWarning = (heartbeatError as Error).message;
+        console.warn('[supabase-keepalive] Heartbeat logging failed:', heartbeatWarning);
+      }
 
       return res.json({
         ok: true,
+        databasePing: true,
+        heartbeatLogged,
         heartbeatId: heartbeat?.id ?? null,
         createdAt: heartbeat?.createdAt ?? null,
+        ...(heartbeatWarning ? { heartbeatWarning } : {}),
       });
     } catch (error) {
       return res.status(500).json({
