@@ -1,21 +1,21 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.9
-milestone_name: Blog Intelligence & RSS Sources
-status: milestone_complete
-last_updated: "2026-05-05T16:00:00.000Z"
-last_activity: 2026-05-05
+milestone: v2.0
+milestone_name: Presentations 2.0
+status: executing
+last_updated: "2026-05-16T01:07:11.652Z"
+last_activity: 2026-05-16
 progress:
-  total_phases: 38
-  completed_phases: 38
-  total_plans: 14
-  completed_plans: 14
+  total_phases: 2
+  completed_phases: 0
+  total_plans: 2
+  completed_plans: 1
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** v1.9 milestone complete — ready for next milestone
+**Status:** Ready to execute
 
 ---
 
@@ -24,17 +24,17 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-05-04)
 
 **Core value:** Clients receive a proposal link and experience Skale Club services as an immersive, professional presentation — not a PDF.
-**Current focus:** Planning next milestone (v2.0)
+**Current focus:** Phase 39 — Slide Design System v2
 
 ---
 
 ## Current Position
 
-Phase: 38
-Plan: Not started
+Phase: 39 (Slide Design System v2) — EXECUTING
+Plan: 2 of 2
 Milestone: v1.9 Blog Intelligence & RSS Sources
-Status: Phase complete — ready for verification
-Last activity: 2026-05-06
+Status: Ready to execute
+Last activity: 2026-05-16
 
 ---
 
@@ -90,6 +90,7 @@ Last activity: 2026-05-06
 | Phase 38 P01 | 6min | 3 tasks | 4 files |
 | Phase 38 P02 | 6min | 3 tasks | 2 files |
 | Phase 38 P03 | 5min | 3 tasks | 3 files |
+| Phase 39-slide-design-system-v2 P01 | 2min | 1 tasks | 1 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -248,6 +249,8 @@ Last activity: 2026-05-06
 - [Phase 38]: Plan 38-02: Compaction strategy in Task 2 freed 115 net lines (588 → 473) by collapsing multi-line destructured-parameter signatures, unifying type imports, inlining one-liners, trimming historical comments — kept Phase 36-03 strategies 1-3 (template literals, prompt strings, defaultStorage shorthand) untouched as future slack budget; Task 3 added 51 lines (473 → 524, 76-line headroom under 600 cap)
 - [Phase 38]: Plan 38-03: Drizzle explicit-projection extension — added durationsMs to both list/get SELECT projections in storage.ts; interface inheritance via extends BlogGenerationJob (no redeclaration)
 - [Phase 38]: Plan 38-03: JobHistoryPanel expand-on-click row — useState<Set<number>> for per-row toggle, total chip in collapsed view (one-decimal seconds), 5-cell breakdown grid in expanded view, action-button stopPropagation isolation
+- [Phase 39-slide-design-system-v2]: slideStyleSchema not exported — consumed only by slideBlockSchema.style field; consumers use SlideBlock type via z.infer<>
+- [Phase 39-slide-design-system-v2]: All new slideBlockSchema fields (attribution, attributionPt, style) use .optional() — zero-migration rollout; existing JSONB rows pass unchanged
 
 ### Quick Tasks Completed
 
