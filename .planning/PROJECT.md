@@ -27,10 +27,11 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 - ✓ **RSS-01 → RSS-08**: RSS Sources & Topic Selection (blog_rss_sources + blog_rss_items tables, GUID-dedup fetcher, hourly cron, 0.6×keyword + 0.4×recency scoring, no_rss_items skip path) — v1.9 (2026-05-05)
 - ✓ **BLOG2-01 → BLOG2-16**: Blog Intelligence Full Stack (pt-BR prompts + brand voice, sanitize-html strict allowlist, NFD slug normalization, 30s AbortController timeouts, env-overridable model IDs, RSS Sources admin panel, items queue, two-step preview/commit modal, job history + retry/cancel, API-key banner, postsPerDay-driven cron, per-stage durationsMs JSONB, [1s,5s,30s] Gemini retry backoff) — v1.9 (2026-05-05)
 - ✓ **PRES2-01 → PRES2-04**: Slide Design System v2 (slideBlockSchema extended with optional `style` sub-object: bgColor, textColor, headingColor, alignment, bgImageUrl, bgVideoUrl; 4 new layouts: image-left, image-right, full-bleed-image, quote; UPDATE_SLIDES_TOOL and buildSystemPrompt synced; backward compatible) — v2.0 Phase 39 (2026-05-15)
+- ✓ **PRES2-05 → PRES2-09**: AI Presentation Generator (POST /api/presentations/generate via Gemini tool-forced; POST /api/presentations/transcribe via Groq Whisper; GenerateModal with text + audio recording in admin; per-slide viewer toolbar in ?edit=1: delete, AI-redo, inline heading/body edit) — v2.0 Phase 40 (2026-05-15)
 
-## Current Milestone: v2.0 — Presentations 2.0
+## Current Milestone: v2.0 — Presentations 2.0 (COMPLETE)
 
-**Goal:** Elevate the presentation experience with richer AI-driven slide design and an AI-powered presentation generator (Gemini) with per-slide editing controls.
+**Shipped:** 2026-05-15 — Phases 39-40 complete.
 
 ### Out of Scope
 
