@@ -1,21 +1,21 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0
-milestone_name: Presentations 2.0
-status: planning
-last_updated: "2026-05-16T01:52:02.875Z"
-last_activity: 2026-05-16
+milestone: v1.0
+milestone_name: milestone
+status: completed
+last_updated: "2026-05-16T01:48:08.002Z"
+last_activity: 2026-05-06
 progress:
-  total_phases: 2
-  completed_phases: 1
-  total_plans: 5
-  completed_plans: 2
+  total_phases: 36
+  completed_phases: 34
+  total_plans: 66
+  completed_plans: 68
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** Ready to plan
+**Status:** v1.9 milestone complete — ready for next milestone
 
 ---
 
@@ -24,17 +24,17 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-05-04)
 
 **Core value:** Clients receive a proposal link and experience Skale Club services as an immersive, professional presentation — not a PDF.
-**Current focus:** Phase 39 — Slide Design System v2
+**Current focus:** Planning next milestone (v2.0)
 
 ---
 
 ## Current Position
 
-Phase: 40
+Phase: 38
 Plan: Not started
 Milestone: v1.9 Blog Intelligence & RSS Sources
 Status: Phase complete — ready for verification
-Last activity: 2026-05-16
+Last activity: 2026-05-06
 
 ---
 
@@ -90,9 +90,7 @@ Last activity: 2026-05-16
 | Phase 38 P01 | 6min | 3 tasks | 4 files |
 | Phase 38 P02 | 6min | 3 tasks | 2 files |
 | Phase 38 P03 | 5min | 3 tasks | 3 files |
-| Phase 39-slide-design-system-v2 P01 | 2min | 1 tasks | 1 files |
-| Phase 39-slide-design-system-v2 P02 | 2.5min | 2 tasks | 2 files |
-| Phase 40-ai-presentation-generator P01 | 5min | 2 tasks | 2 files |
+| Phase 40-ai-presentation-generator P03 | 3min | 1 tasks | 1 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -251,13 +249,8 @@ Last activity: 2026-05-16
 - [Phase 38]: Plan 38-02: Compaction strategy in Task 2 freed 115 net lines (588 → 473) by collapsing multi-line destructured-parameter signatures, unifying type imports, inlining one-liners, trimming historical comments — kept Phase 36-03 strategies 1-3 (template literals, prompt strings, defaultStorage shorthand) untouched as future slack budget; Task 3 added 51 lines (473 → 524, 76-line headroom under 600 cap)
 - [Phase 38]: Plan 38-03: Drizzle explicit-projection extension — added durationsMs to both list/get SELECT projections in storage.ts; interface inheritance via extends BlogGenerationJob (no redeclaration)
 - [Phase 38]: Plan 38-03: JobHistoryPanel expand-on-click row — useState<Set<number>> for per-row toggle, total chip in collapsed view (one-decimal seconds), 5-cell breakdown grid in expanded view, action-button stopPropagation isolation
-- [Phase 39-slide-design-system-v2]: slideStyleSchema not exported — consumed only by slideBlockSchema.style field; consumers use SlideBlock type via z.infer<>
-- [Phase 39-slide-design-system-v2]: All new slideBlockSchema fields (attribution, attributionPt, style) use .optional() — zero-migration rollout; existing JSONB rows pass unchanged
-- [Phase 39-slide-design-system-v2]: React default import added for React.CSSProperties type in buildSlideStyle/alignmentStyle helpers
-- [Phase 39-slide-design-system-v2]: full-bleed-image applies bgImageUrl via buildSlideStyle on motion.div wrapper; image-left/image-right/image-focus apply bgImageUrl directly on image panel div to avoid double application
-- [Phase 39-slide-design-system-v2]: quote case block-scoped with braces to allow const attribution declaration without TypeScript case scoping errors
-- [Phase 40-01]: GENERATE_SLIDES_TOOL uses OpenAI-compat format (type:function) not Anthropic format — Gemini uses OpenAI-compatible endpoint
-- [Phase 40-01]: tool_choice { type: 'function', function: { name } } NOT Anthropic format; arguments is a JSON string requiring JSON.parse
+- [Phase 40-ai-presentation-generator]: Per-slide toolbar gated on isEditMode (URLSearchParams.has('edit')) — public viewers see no controls
+- [Phase 40-ai-presentation-generator]: inlineSavePending ref prevents blur-on-rerender save loop; immediate index clamp on delete prevents index-out-of-bounds
 
 ### Quick Tasks Completed
 
