@@ -2,7 +2,17 @@ import { pgTable, uuid, text, serial, integer, jsonb, timestamp } from "drizzle-
 // slug column changed from uuid → text so human-readable slugs (e.g. "acme-corp") can be stored
 import { z } from "zod";
 
-// SlideBlock: flat schema with .optional() fields — all 8 layout variants share the same bilingual field names.
+// slideStyleSchema: per-slide visual overrides — all fields optional so existing slides pass unchanged.
+const slideStyleSchema = z.object({
+  bgColor:      z.string().optional(),
+  textColor:    z.string().optional(),
+  headingColor: z.string().optional(),
+  alignment:    z.enum(['left', 'center', 'right']).optional(),
+  bgImageUrl:   z.string().optional(),
+  bgVideoUrl:   z.string().optional(),
+});
+
+// SlideBlock: flat schema with .optional() fields — all 12 layout variants share the same bilingual field names.
 // A discriminated union on "layout" is valid but unnecessary at this stage; Phase 18 can refine.
 export const slideBlockSchema = z.object({
   layout: z.enum([
@@ -14,6 +24,10 @@ export const slideBlockSchema = z.object({
     "two-column",
     "image-focus",
     "closing",
+    "image-left",
+    "image-right",
+    "full-bleed-image",
+    "quote",
   ]),
   heading:    z.string().optional(),
   headingPt:  z.string().optional(),
@@ -28,6 +42,9 @@ export const slideBlockSchema = z.object({
       labelPt:  z.string().optional(),
     })
   ).optional(),
+  attribution:   z.string().optional(),
+  attributionPt: z.string().optional(),
+  style:         slideStyleSchema.optional(),
 });
 
 export type SlideBlock = z.infer<typeof slideBlockSchema>;
