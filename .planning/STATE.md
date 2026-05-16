@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Presentations 2.0
 status: planning
-last_updated: "2026-05-16T01:23:34.207Z"
+last_updated: "2026-05-16T01:52:02.875Z"
 last_activity: 2026-05-16
 progress:
   total_phases: 2
   completed_phases: 1
-  total_plans: 2
+  total_plans: 5
   completed_plans: 2
 ---
 
@@ -92,6 +92,7 @@ Last activity: 2026-05-16
 | Phase 38 P03 | 5min | 3 tasks | 3 files |
 | Phase 39-slide-design-system-v2 P01 | 2min | 1 tasks | 1 files |
 | Phase 39-slide-design-system-v2 P02 | 2.5min | 2 tasks | 2 files |
+| Phase 40-ai-presentation-generator P01 | 5min | 2 tasks | 2 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -255,6 +256,8 @@ Last activity: 2026-05-16
 - [Phase 39-slide-design-system-v2]: React default import added for React.CSSProperties type in buildSlideStyle/alignmentStyle helpers
 - [Phase 39-slide-design-system-v2]: full-bleed-image applies bgImageUrl via buildSlideStyle on motion.div wrapper; image-left/image-right/image-focus apply bgImageUrl directly on image panel div to avoid double application
 - [Phase 39-slide-design-system-v2]: quote case block-scoped with braces to allow const attribution declaration without TypeScript case scoping errors
+- [Phase 40-01]: GENERATE_SLIDES_TOOL uses OpenAI-compat format (type:function) not Anthropic format — Gemini uses OpenAI-compatible endpoint
+- [Phase 40-01]: tool_choice { type: 'function', function: { name } } NOT Anthropic format; arguments is a JSON string requiring JSON.parse
 
 ### Quick Tasks Completed
 
