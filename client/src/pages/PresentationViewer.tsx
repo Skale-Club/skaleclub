@@ -1,6 +1,6 @@
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams } from 'wouter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -56,6 +56,30 @@ function EmptySlidesScreen() {
 function resolveField(en: string | undefined, pt: string | undefined, activeLang: string): string {
   if (activeLang === 'pt-BR') return pt || en || '';
   return en || '';
+}
+
+function buildSlideStyle(s?: SlideBlock['style']): React.CSSProperties {
+  if (!s) return {};
+  const css: React.CSSProperties = {};
+  if (s.textColor) css.color = s.textColor;
+  // bgImageUrl takes priority over bgColor for the background property.
+  // bgColor used only when bgImageUrl is absent.
+  if (s.bgImageUrl && !s.bgVideoUrl) {
+    css.backgroundImage = `url(${s.bgImageUrl})`;
+    css.backgroundSize = 'cover';
+    css.backgroundPosition = 'center';
+  } else if (s.bgColor) {
+    css.background = s.bgColor;
+  }
+  return css;
+}
+
+function alignmentStyle(alignment?: 'left' | 'center' | 'right'): React.CSSProperties {
+  if (!alignment) return {};
+  return {
+    textAlign: alignment,
+    alignItems: alignment === 'left' ? 'flex-start' : alignment === 'right' ? 'flex-end' : 'center',
+  };
 }
 
 function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string }) {
@@ -143,10 +167,18 @@ function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string }) {
     case 'image-focus':
       return (
         <div className="w-full h-full absolute inset-0 flex flex-col md:flex-row">
-          <div className="flex-1 bg-zinc-800" />
+          <div
+            className="flex-1 bg-zinc-800 bg-cover bg-center"
+            style={slide.style?.bgImageUrl ? { backgroundImage: `url(${slide.style.bgImageUrl})` } : {}}
+          />
           <div className="flex-1 flex items-center justify-center md:justify-start px-8 py-12 md:py-0 md:px-16 lg:px-24">
-            <div className="max-w-2xl">
-              {heading && <h2 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight">{heading}</h2>}
+            <div className="max-w-2xl" style={alignmentStyle(slide.style?.alignment)}>
+              {heading && (
+                <h2
+                  style={{ fontFamily: "'Outfit', sans-serif", ...(slide.style?.headingColor ? { color: slide.style.headingColor } : {}) }}
+                  className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight"
+                >{heading}</h2>
+              )}
               {body && <p className="text-lg md:text-xl lg:text-2xl text-zinc-400 leading-relaxed">{body}</p>}
             </div>
           </div>
@@ -161,6 +193,84 @@ function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string }) {
           {body && <p className="text-base md:text-lg lg:text-xl text-zinc-400 mt-4 max-w-2xl mx-auto">{body}</p>}
         </div>
       );
+
+    case 'image-left':
+      return (
+        <div className="w-full h-full absolute inset-0 flex flex-col md:flex-row">
+          <div
+            className="md:w-2/5 bg-zinc-800 bg-cover bg-center"
+            style={slide.style?.bgImageUrl ? { backgroundImage: `url(${slide.style.bgImageUrl})` } : {}}
+          />
+          <div className="md:w-3/5 flex items-center justify-start px-8 py-12 md:py-0 md:px-16 lg:px-24">
+            <div className="max-w-2xl" style={alignmentStyle(slide.style?.alignment)}>
+              {heading && (
+                <h2
+                  style={{ fontFamily: "'Outfit', sans-serif", ...(slide.style?.headingColor ? { color: slide.style.headingColor } : {}) }}
+                  className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight"
+                >{heading}</h2>
+              )}
+              {body && <p className="text-lg md:text-xl lg:text-2xl text-zinc-400 leading-relaxed">{body}</p>}
+            </div>
+          </div>
+        </div>
+      );
+
+    case 'image-right':
+      return (
+        <div className="w-full h-full absolute inset-0 flex flex-col md:flex-row">
+          <div className="md:w-3/5 flex items-center justify-start px-8 py-12 md:py-0 md:px-16 lg:px-24">
+            <div className="max-w-2xl" style={alignmentStyle(slide.style?.alignment)}>
+              {heading && (
+                <h2
+                  style={{ fontFamily: "'Outfit', sans-serif", ...(slide.style?.headingColor ? { color: slide.style.headingColor } : {}) }}
+                  className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight"
+                >{heading}</h2>
+              )}
+              {body && <p className="text-lg md:text-xl lg:text-2xl text-zinc-400 leading-relaxed">{body}</p>}
+            </div>
+          </div>
+          <div
+            className="md:w-2/5 bg-zinc-800 bg-cover bg-center"
+            style={slide.style?.bgImageUrl ? { backgroundImage: `url(${slide.style.bgImageUrl})` } : {}}
+          />
+        </div>
+      );
+
+    case 'full-bleed-image':
+      return (
+        <div className="w-full h-full absolute inset-0">
+          {/* Dark scrim for text legibility over background images */}
+          <div className="absolute inset-0 bg-black/30 z-0" />
+          <div className="relative z-10 h-full flex items-center justify-center px-8 py-12">
+            <div className="text-center max-w-4xl" style={alignmentStyle(slide.style?.alignment)}>
+              {heading && (
+                <h2
+                  style={{ fontFamily: "'Outfit', sans-serif", ...(slide.style?.headingColor ? { color: slide.style.headingColor } : {}) }}
+                  className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight drop-shadow-lg"
+                >{heading}</h2>
+              )}
+              {body && <p className="text-base md:text-lg lg:text-xl text-white/90 max-w-2xl mx-auto leading-relaxed drop-shadow">{body}</p>}
+            </div>
+          </div>
+        </div>
+      );
+
+    case 'quote': {
+      const attribution = resolveField(slide.attribution, slide.attributionPt, lang);
+      return (
+        <div className="text-center max-w-3xl mx-auto" style={alignmentStyle(slide.style?.alignment)}>
+          <p
+            style={{ fontFamily: "'Outfit', sans-serif", ...(slide.style?.headingColor ? { color: slide.style.headingColor } : {}) }}
+            className="text-3xl md:text-4xl lg:text-5xl font-semibold text-white leading-snug mb-8"
+          >
+            &ldquo;{heading}&rdquo;
+          </p>
+          {attribution && (
+            <p className="text-zinc-400 text-base md:text-lg uppercase tracking-widest">— {attribution}</p>
+          )}
+        </div>
+      );
+    }
 
     default:
       return <p className="text-zinc-400 text-base md:text-lg lg:text-xl">{heading}</p>;
@@ -385,6 +495,19 @@ export default function PresentationViewer() {
 
       {/* Slide area */}
       <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+        {currentSlide.style?.bgVideoUrl && (
+          <video
+            key={currentSlide.style.bgVideoUrl}
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0"
+            onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none'; }}
+          >
+            <source src={currentSlide.style.bgVideoUrl} />
+          </video>
+        )}
         <div className="absolute inset-0 bg-gradient-to-b from-zinc-800/20 to-transparent pointer-events-none" />
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
@@ -396,6 +519,7 @@ export default function PresentationViewer() {
             exit="exit"
             transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
             className="relative z-10 px-8 max-w-3xl md:max-w-4xl lg:max-w-5xl mx-auto w-full"
+            style={buildSlideStyle(currentSlide.style)}
           >
             <SlideContent slide={currentSlide} lang={lang} />
           </motion.div>
