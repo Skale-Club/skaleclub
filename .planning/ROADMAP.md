@@ -12,6 +12,29 @@
 - ✅ **v1.7 Translation System Completeness** — Phase 30 (shipped 2026-05-04)
 - ✅ **v1.8 Notification Templates System** — Phases 31-33 (shipped 2026-05-04)
 - ✅ **v1.9 Blog Intelligence & RSS Sources** — Phases 34-38 (shipped 2026-05-05)
+- 🚧 **v2.0 Presentations 2.0** — Phases 39-40 (in progress)
+
+## Active
+
+**v2.0 Presentations 2.0** — Phases 39-40
+
+**Goal:** Elevate the presentation experience: richer slide design capabilities and an AI-powered presentation generator accessible from the admin, with per-slide editing controls in the viewer.
+
+- [ ] **Phase 39: Slide Design System v2** — Extend the SlideBlock schema with per-element alignment, custom colors, background images/videos, and additional layout primitives (image-left, image-right, full-bleed). Update the public viewer to render all new properties. No breaking change to existing slides.
+
+- [ ] **Phase 40: AI Presentation Generator** — Admin UI button (+ text input + audio recording) that calls Gemini to generate a full presentation from scratch. Viewer gains per-slide controls: delete individual slide, AI-redo individual slide (regenerate via Gemini), inline text edit for quick corrections.
+
+### Phase 39: Slide Design System v2
+
+**Goal:** The SlideBlock schema supports rich visual properties — per-element alignment, custom background/text colors, background images and video URLs, and new layout variants (image-left, image-right, full-bleed-image). The public viewer renders all new properties. Existing slides continue to render without modification.
+**Depends on:** Phases 15-20 (Presentations v1.4)
+**Requirements:** PRES2-01, PRES2-02, PRES2-03, PRES2-04
+
+### Phase 40: AI Presentation Generator
+
+**Goal:** Admin has a generator button that accepts a text prompt and/or a recorded audio clip to create a full presentation from scratch via Gemini. The public viewer gains per-slide controls: delete slide, AI-redo single slide, inline text edit for quick corrections.
+**Depends on:** Phase 39 (new schema fields available for generation)
+**Requirements:** PRES2-05, PRES2-06, PRES2-07, PRES2-08, PRES2-09
 
 ## Shipped Milestones
 
@@ -171,7 +194,9 @@ _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
 | 36. Generator Quality Overhaul | v1.9 | 3/3 | Complete | 2026-05-05 |
 | 37. Admin UX (RSS + Job Improvements) | v1.9 | 3/3 | Complete | 2026-05-05 |
 | 38. Dynamic Cron & Observability | v1.9 | 3/3 | Complete | 2026-05-05 |
+| 39. Slide Design System v2 | v2.0 | 0/? | Planned | — |
+| 40. AI Presentation Generator | v2.0 | 0/? | Planned | — |
 
 ---
 
-_Last updated: 2026-05-05 — v1.9 Blog Intelligence & RSS Sources shipped (Phases 34-38)_
+_Last updated: 2026-05-15 — v2.0 Presentations 2.0 started (Phases 39-40)_
