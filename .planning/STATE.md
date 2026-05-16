@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.9
-milestone_name: Blog Intelligence & RSS Sources
-status: milestone_complete
-last_updated: "2026-05-05T16:00:00.000Z"
-last_activity: 2026-05-05
+milestone: v1.0
+milestone_name: milestone
+status: completed
+last_updated: "2026-05-16T02:01:52.084Z"
+last_activity: 2026-05-06
 progress:
-  total_phases: 38
-  completed_phases: 38
-  total_plans: 14
-  completed_plans: 14
+  total_phases: 36
+  completed_phases: 34
+  total_plans: 66
+  completed_plans: 68
 ---
 
 # STATE: Skale Club Web Platform
@@ -90,6 +90,7 @@ Last activity: 2026-05-06
 | Phase 38 P01 | 6min | 3 tasks | 4 files |
 | Phase 38 P02 | 6min | 3 tasks | 2 files |
 | Phase 38 P03 | 5min | 3 tasks | 3 files |
+| Phase 40-ai-presentation-generator P02 | 2min | 1 tasks | 1 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -248,6 +249,7 @@ Last activity: 2026-05-06
 - [Phase 38]: Plan 38-02: Compaction strategy in Task 2 freed 115 net lines (588 → 473) by collapsing multi-line destructured-parameter signatures, unifying type imports, inlining one-liners, trimming historical comments — kept Phase 36-03 strategies 1-3 (template literals, prompt strings, defaultStorage shorthand) untouched as future slack budget; Task 3 added 51 lines (473 → 524, 76-line headroom under 600 cap)
 - [Phase 38]: Plan 38-03: Drizzle explicit-projection extension — added durationsMs to both list/get SELECT projections in storage.ts; interface inheritance via extends BlogGenerationJob (no redeclaration)
 - [Phase 38]: Plan 38-03: JobHistoryPanel expand-on-click row — useState<Set<number>> for per-row toggle, total chip in collapsed view (one-decimal seconds), 5-cell breakdown grid in expanded view, action-button stopPropagation isolation
+- [Phase 40-ai-presentation-generator]: GenerateModal co-located in PresentationsSection — two-step transcribe+generate mutationFn, setSelectedId(result.id) for post-generation navigation
 
 ### Quick Tasks Completed
 
