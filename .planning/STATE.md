@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Presentations 2.0
-status: executing
-last_updated: "2026-05-16T01:07:11.652Z"
+status: verifying
+last_updated: "2026-05-16T01:12:22.882Z"
 last_activity: 2026-05-16
 progress:
   total_phases: 2
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # STATE: Skale Club Web Platform
 
 **Created:** 2026-03-30
-**Status:** Ready to execute
+**Status:** Phase complete — ready for verification
 
 ---
 
@@ -33,7 +33,7 @@ See: `.planning/PROJECT.md` (updated 2026-05-04)
 Phase: 39 (Slide Design System v2) — EXECUTING
 Plan: 2 of 2
 Milestone: v1.9 Blog Intelligence & RSS Sources
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-05-16
 
 ---
@@ -91,6 +91,7 @@ Last activity: 2026-05-16
 | Phase 38 P02 | 6min | 3 tasks | 2 files |
 | Phase 38 P03 | 5min | 3 tasks | 3 files |
 | Phase 39-slide-design-system-v2 P01 | 2min | 1 tasks | 1 files |
+| Phase 39-slide-design-system-v2 P02 | 2.5min | 2 tasks | 2 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -251,6 +252,9 @@ Last activity: 2026-05-16
 - [Phase 38]: Plan 38-03: JobHistoryPanel expand-on-click row — useState<Set<number>> for per-row toggle, total chip in collapsed view (one-decimal seconds), 5-cell breakdown grid in expanded view, action-button stopPropagation isolation
 - [Phase 39-slide-design-system-v2]: slideStyleSchema not exported — consumed only by slideBlockSchema.style field; consumers use SlideBlock type via z.infer<>
 - [Phase 39-slide-design-system-v2]: All new slideBlockSchema fields (attribution, attributionPt, style) use .optional() — zero-migration rollout; existing JSONB rows pass unchanged
+- [Phase 39-slide-design-system-v2]: React default import added for React.CSSProperties type in buildSlideStyle/alignmentStyle helpers
+- [Phase 39-slide-design-system-v2]: full-bleed-image applies bgImageUrl via buildSlideStyle on motion.div wrapper; image-left/image-right/image-focus apply bgImageUrl directly on image panel div to avoid double application
+- [Phase 39-slide-design-system-v2]: quote case block-scoped with braces to allow const attribution declaration without TypeScript case scoping errors
 
 ### Quick Tasks Completed
 
