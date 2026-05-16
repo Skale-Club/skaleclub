@@ -40,6 +40,12 @@ Plans:
 **Goal:** Admin has a generator button that accepts a text prompt and/or a recorded audio clip to create a full presentation from scratch via Gemini. The public viewer gains per-slide controls: delete slide, AI-redo single slide, inline text edit for quick corrections.
 **Depends on:** Phase 39 (new schema fields available for generation)
 **Requirements:** PRES2-05, PRES2-06, PRES2-07, PRES2-08, PRES2-09
+**Plans:** 3 plans
+
+Plans:
+- [ ] 40-01-PLAN.md — Generator backend: POST /api/presentations/transcribe (Groq Whisper) + POST /api/presentations/generate (Gemini tool-forced)
+- [ ] 40-02-PLAN.md — Generator modal UI in PresentationsSection: "Generate with AI" button + title/text/audio modal
+- [ ] 40-03-PLAN.md — Per-slide viewer toolbar in PresentationViewer: delete, AI-redo, inline text edit (edit mode only)
 
 ## Shipped Milestones
 
@@ -199,9 +205,9 @@ _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
 | 36. Generator Quality Overhaul | v1.9 | 3/3 | Complete | 2026-05-05 |
 | 37. Admin UX (RSS + Job Improvements) | v1.9 | 3/3 | Complete | 2026-05-05 |
 | 38. Dynamic Cron & Observability | v1.9 | 3/3 | Complete | 2026-05-05 |
-| 39. Slide Design System v2 | v2.0 | 2/2 | Complete    | 2026-05-16 |
-| 40. AI Presentation Generator | v2.0 | 0/? | Planned | — |
+| 39. Slide Design System v2 | v2.0 | 2/2 | Complete | 2026-05-16 |
+| 40. AI Presentation Generator | v2.0 | 0/3 | Planned | — |
 
 ---
 
-_Last updated: 2026-05-15 — Phase 39 plans created (2 plans, 2 waves)_
+_Last updated: 2026-05-16 — Phase 40 plans created (3 plans, 2 waves)_
