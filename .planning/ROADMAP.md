@@ -206,7 +206,7 @@ _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
 | 37. Admin UX (RSS + Job Improvements) | v1.9 | 3/3 | Complete | 2026-05-05 |
 | 38. Dynamic Cron & Observability | v1.9 | 3/3 | Complete | 2026-05-05 |
 | 39. Slide Design System v2 | v2.0 | 2/2 | Complete | 2026-05-16 |
-| 40. AI Presentation Generator | v2.0 | 0/3 | Planned | — |
+| 40. AI Presentation Generator | v2.0 | 0/3 | Planned    |  |
 
 ---
 
