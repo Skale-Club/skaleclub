@@ -29,6 +29,11 @@
 **Goal:** The SlideBlock schema supports rich visual properties — per-element alignment, custom background/text colors, background images and video URLs, and new layout variants (image-left, image-right, full-bleed-image). The public viewer renders all new properties. Existing slides continue to render without modification.
 **Depends on:** Phases 15-20 (Presentations v1.4)
 **Requirements:** PRES2-01, PRES2-02, PRES2-03, PRES2-04
+**Plans:** 2 plans
+
+Plans:
+- [ ] 39-01-PLAN.md — Extend SlideBlock schema: style sub-object + 4 new layouts + attribution fields
+- [ ] 39-02-PLAN.md — Viewer new layout cases + style rendering + tool schema sync
 
 ### Phase 40: AI Presentation Generator
 
@@ -194,9 +199,9 @@ _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
 | 36. Generator Quality Overhaul | v1.9 | 3/3 | Complete | 2026-05-05 |
 | 37. Admin UX (RSS + Job Improvements) | v1.9 | 3/3 | Complete | 2026-05-05 |
 | 38. Dynamic Cron & Observability | v1.9 | 3/3 | Complete | 2026-05-05 |
-| 39. Slide Design System v2 | v2.0 | 0/? | Planned | — |
+| 39. Slide Design System v2 | v2.0 | 0/2 | Planned | — |
 | 40. AI Presentation Generator | v2.0 | 0/? | Planned | — |
 
 ---
 
-_Last updated: 2026-05-15 — v2.0 Presentations 2.0 started (Phases 39-40)_
+_Last updated: 2026-05-15 — Phase 39 plans created (2 plans, 2 waves)_
