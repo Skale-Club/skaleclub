@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams } from 'wouter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Trash2, RefreshCw, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -307,6 +307,11 @@ export default function PresentationViewer() {
   const hasTrackedView = useRef(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [direction, setDirection] = useState(1);
+  const [inlineEditIndex, setInlineEditIndex] = useState<number | null>(null);
+  const [inlineHeading, setInlineHeading] = useState('');
+  const [inlineBody, setInlineBody] = useState('');
+  const [isRedoing, setIsRedoing] = useState(false);
+  const inlineSavePending = useRef(false);
 
   const isEditMode = new URLSearchParams(window.location.search).has('edit');
   const queryClient = useQueryClient();
@@ -423,6 +428,94 @@ export default function PresentationViewer() {
     return () => window.removeEventListener('wheel', onWheel);
   }, [next, prev]);
 
+  // D-17: Delete slide — remove from array, clamp index, persist
+  async function handleDeleteSlide(index: number) {
+    if (!presentation) return;
+    const newSlides = presentation.slides.filter((_, i) => i !== index);
+    // Clamp immediately (Pitfall 7)
+    setActiveIndex(Math.min(activeIndex, Math.max(0, newSlides.length - 1)));
+    // Optimistic cache update
+    queryClient.setQueryData<PublicPresentation>(queryKey, (old) =>
+      old ? { ...old, slides: newSlides } : old
+    );
+    try {
+      await fetch(`/api/presentations/${presentation.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slides: newSlides }),
+      });
+    } catch (err) {
+      console.error('Failed to delete slide', err);
+      queryClient.invalidateQueries({ queryKey });
+    }
+  }
+
+  // D-18: AI-redo — call existing Claude chat endpoint with targeted instruction
+  async function handleRedoSlide(index: number) {
+    if (!presentation || isRedoing) return;
+    setIsRedoing(true);
+    try {
+      const res = await fetch(`/api/presentations/${presentation.id}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: `Regenerate only slide at index ${index}. Keep all other slides identical.`,
+        }),
+      });
+      if (!res.body) return;
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() ?? '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+            if (event.type === 'done' && event.slides) {
+              queryClient.setQueryData<PublicPresentation>(queryKey, (old) =>
+                old ? { ...old, slides: event.slides } : old
+              );
+            }
+          } catch {}
+        }
+      }
+    } catch (err) {
+      console.error('AI redo failed', err);
+    } finally {
+      setIsRedoing(false);
+    }
+  }
+
+  // D-19: Inline save — called on blur or Enter in contenteditable
+  async function handleInlineSave(index: number) {
+    if (!presentation || inlineSavePending.current) return;
+    inlineSavePending.current = true;
+    const updatedSlides = presentation.slides.map((s, i) =>
+      i === index ? { ...s, heading: inlineHeading, body: inlineBody } : s
+    );
+    setInlineEditIndex(null);
+    queryClient.setQueryData<PublicPresentation>(queryKey, (old) =>
+      old ? { ...old, slides: updatedSlides } : old
+    );
+    try {
+      await fetch(`/api/presentations/${presentation.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slides: updatedSlides }),
+      });
+    } catch (err) {
+      console.error('Inline save failed', err);
+      queryClient.invalidateQueries({ queryKey });
+    } finally {
+      inlineSavePending.current = false;
+    }
+  }
+
   if (isLoading) return <LoadingScreen />;
   if (!presentation) return <NotFoundScreen />;
   if (total === 0) return <EmptySlidesScreen />;
@@ -518,12 +611,77 @@ export default function PresentationViewer() {
             animate="center"
             exit="exit"
             transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
-            className="relative z-10 px-8 max-w-3xl md:max-w-4xl lg:max-w-5xl mx-auto w-full"
+            className="relative z-10 px-8 max-w-3xl md:max-w-4xl lg:max-w-5xl mx-auto w-full group"
             style={buildSlideStyle(currentSlide.style)}
           >
+            {isEditMode && (
+              <div className="absolute top-2 right-2 z-50 flex gap-1 bg-black/60 rounded-md p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  type="button"
+                  title="Delete slide"
+                  onClick={() => handleDeleteSlide(currentIndex)}
+                  className="p-1.5 rounded hover:bg-white/10 text-white/70 hover:text-white transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  title="AI redo"
+                  onClick={() => handleRedoSlide(currentIndex)}
+                  disabled={isRedoing}
+                  className="p-1.5 rounded hover:bg-white/10 text-white/70 hover:text-white transition-colors disabled:opacity-40"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isRedoing ? 'animate-spin' : ''}`} />
+                </button>
+                <button
+                  type="button"
+                  title="Edit text"
+                  onClick={() => {
+                    setInlineEditIndex(currentIndex);
+                    setInlineHeading(currentSlide.heading ?? '');
+                    setInlineBody(currentSlide.body ?? '');
+                  }}
+                  className="p-1.5 rounded hover:bg-white/10 text-white/70 hover:text-white transition-colors"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+              </div>
+            )}
             <SlideContent slide={currentSlide} lang={lang} />
           </motion.div>
         </AnimatePresence>
+        {isEditMode && inlineEditIndex === currentIndex && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 px-8 bg-zinc-950/95">
+            <p className="text-zinc-400 text-xs uppercase tracking-widest">Editing slide {currentIndex + 1}</p>
+            <div
+              contentEditable
+              suppressContentEditableWarning
+              onInput={(e) => setInlineHeading(e.currentTarget.textContent ?? '')}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleInlineSave(currentIndex); } }}
+              onBlur={() => handleInlineSave(currentIndex)}
+              className="w-full max-w-2xl text-3xl font-semibold text-white outline-none border-b border-white/20 pb-2 empty:before:content-['Heading...'] empty:before:text-zinc-600"
+            >
+              {inlineHeading}
+            </div>
+            <div
+              contentEditable
+              suppressContentEditableWarning
+              onInput={(e) => setInlineBody(e.currentTarget.textContent ?? '')}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleInlineSave(currentIndex); } }}
+              onBlur={() => handleInlineSave(currentIndex)}
+              className="w-full max-w-2xl text-lg text-zinc-300 outline-none border-b border-white/10 pb-2 empty:before:content-['Body text...'] empty:before:text-zinc-600"
+            >
+              {inlineBody}
+            </div>
+            <button
+              type="button"
+              onClick={() => setInlineEditIndex(null)}
+              className="text-xs text-zinc-500 hover:text-zinc-300"
+            >
+              Cancel (Esc)
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
