@@ -28,7 +28,7 @@ const UPDATE_SLIDES_TOOL: Anthropic.Tool = {
           properties: {
             layout: {
               type: "string",
-              enum: ["cover", "section-break", "title-body", "bullets", "stats", "two-column", "image-focus", "closing"],
+              enum: ["cover", "section-break", "title-body", "bullets", "stats", "two-column", "image-focus", "closing", "image-left", "image-right", "full-bleed-image", "quote"],
             },
             heading:   { type: "string" },
             headingPt: { type: "string" },
@@ -48,6 +48,19 @@ const UPDATE_SLIDES_TOOL: Anthropic.Tool = {
                 },
               },
             },
+            attribution:   { type: "string" },
+            attributionPt: { type: "string" },
+            style: {
+              type: "object",
+              properties: {
+                bgColor:      { type: "string" },
+                textColor:    { type: "string" },
+                headingColor: { type: "string" },
+                alignment:    { type: "string", enum: ["left", "center", "right"] },
+                bgImageUrl:   { type: "string" },
+                bgVideoUrl:   { type: "string" },
+              },
+            },
           },
         },
       },
@@ -61,7 +74,10 @@ function buildSystemPrompt(guidelinesContent: string): string {
     "You are a slide deck author for a professional marketing agency. " +
     "Your task is to create or edit presentation slides following the brand guidelines below.\n\n" +
     "Always output slides using the update_slides tool — never respond with plain text.\n" +
-    "Each slide must have a \"layout\" field matching one of: cover, section-break, title-body, bullets, stats, two-column, image-focus, closing.\n" +
+    "Each slide must have a \"layout\" field matching one of: cover, section-break, title-body, bullets, stats, two-column, image-focus, closing, image-left, image-right, full-bleed-image, quote.\n" +
+    "New layouts — image-left: image panel (~40%) left + text right; image-right: text left + image panel (~40%) right; full-bleed-image: background image fills entire slide with text overlay; quote: large centered pull-quote with optional attribution.\n" +
+    "Use the style object to set bgColor (CSS color or gradient), textColor, headingColor, alignment ('left'|'center'|'right'), bgImageUrl (public URL), bgVideoUrl (public video URL).\n" +
+    "Use attribution/attributionPt fields for the quote layout speaker attribution.\n" +
     "Always provide both English and Portuguese (pt-BR) versions of text fields (heading/headingPt, body/bodyPt, bullets/bulletsPt).\n" +
     "When editing specific slides, preserve ALL other slides exactly as provided in the current slides context.\n\n" +
     "--- Brand Guidelines ---\n" +
