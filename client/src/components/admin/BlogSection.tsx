@@ -2,228 +2,29 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft,
-  Calendar,
-  Check,
   ExternalLink,
   FileText,
-  Image,
-  Pencil,
   Plus,
   Rss,
   Tag,
-  Trash2,
   Zap,
 } from 'lucide-react';
-import { AdminCard, EmptyState, SectionHeader } from './shared';
+import { AdminCard, SectionHeader } from './shared';
 import { RssAutomationTab } from './blog/RssAutomationTab';
-import { PreviewDraftDialog } from './blog/PreviewDraftDialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
+import { BlogAutomationPanel } from './blog/BlogAutomationPanel';
+import { BlogTagManagerDialog } from './blog/BlogTagManagerDialog';
+import { BlogPostEditorForm, type BlogFormData } from './blog/BlogPostEditorForm';
+import { BlogPostsList } from './blog/BlogPostsList';
 import { Button } from '@/components/ui/button';
-import { Calendar as CalendarPicker } from '@/components/ui/calendar';
-import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { renderMarkdown } from '@/lib/markdown';
 import { usePagePaths } from '@/lib/pagePaths';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Loader2 } from '@/components/ui/loader';
-import { Switch } from '@/components/ui/switch';
-import { clsx } from 'clsx';
-import { format, formatDistanceToNow } from 'date-fns';
-import type { BlogPost, BlogSettings, BlogGenerationJob } from '@shared/schema';
+import type { BlogPost } from '@shared/schema';
 import { SIDEBAR_MENU_ITEMS } from './shared/constants';
 import { uploadFileToServer } from './shared/utils';
-
-const STATUS_BADGE: Record<string, { label: string; className: string }> = {
-  completed: { label: 'Completed', className: 'bg-green-500/15 text-green-600 dark:text-green-400' },
-  failed:    { label: 'Failed',    className: 'bg-red-500/15 text-red-600 dark:text-red-400' },
-  skipped:   { label: 'Skipped',   className: 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400' },
-  running:   { label: 'Running',   className: 'bg-blue-500/15 text-blue-600 dark:text-blue-400' },
-  pending:   { label: 'Pending',   className: 'bg-muted text-muted-foreground' },
-};
-
-function BlogAutomationPanel() {
-  const { toast } = useToast();
-  const [isSaved, setIsSaved] = useState(false);
-  const [formDraft, setFormDraft] = useState({
-    enabled: false,
-    postsPerDay: 0,
-    seoKeywords: '',
-    enableTrendAnalysis: false,
-    promptStyle: '',
-  });
-
-  const { data: settings } = useQuery<BlogSettings>({
-    queryKey: ['/api/blog/settings'],
-  });
-
-  const { data: latestJob } = useQuery<BlogGenerationJob | null>({
-    queryKey: ['/api/blog/jobs/latest'],
-  });
-
-  useEffect(() => {
-    if (settings) {
-      setFormDraft({
-        enabled: settings.enabled,
-        postsPerDay: settings.postsPerDay,
-        seoKeywords: settings.seoKeywords ?? '',
-        enableTrendAnalysis: settings.enableTrendAnalysis,
-        promptStyle: settings.promptStyle ?? '',
-      });
-    }
-  }, [settings]);
-
-  const saveMutation = useMutation({
-    mutationFn: (data: typeof formDraft) =>
-      apiRequest('PUT', '/api/blog/settings', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/blog/settings'] });
-      setIsSaved(true);
-      setTimeout(() => setIsSaved(false), 3000);
-    },
-    onError: (err: any) => {
-      toast({ title: 'Error saving settings', description: err.message, variant: 'destructive' });
-    },
-  });
-
-  // Phase 37 D-17: "Generate Now" now opens PreviewDraftDialog instead of immediately committing.
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-
-  return (
-    <AdminCard>
-      <div className="space-y-6 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">Blog Automation</h2>
-            <p className="text-sm text-muted-foreground">Configure automatic blog post generation powered by Gemini.</p>
-          </div>
-          <Button
-            onClick={() => setIsPreviewOpen(true)}
-            variant="outline"
-            data-testid="button-generate-now"
-          >
-            <Zap className="w-4 h-4 mr-2" />
-            Generate Now
-          </Button>
-        </div>
-
-        {/* Status bar */}
-        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground border rounded-lg px-4 py-2.5 bg-muted/30">
-          {settings?.lastRunAt ? (
-            <span>Last generated: {formatDistanceToNow(new Date(settings.lastRunAt), { addSuffix: true })}</span>
-          ) : (
-            <span>Never generated</span>
-          )}
-          {latestJob && (
-            <>
-              <span className="text-border">·</span>
-              <span>Last job:</span>
-              <span className={clsx('rounded-full px-2 py-0.5 font-medium', STATUS_BADGE[latestJob.status]?.className)}>
-                {STATUS_BADGE[latestJob.status]?.label ?? latestJob.status}
-              </span>
-              {latestJob.startedAt && (
-                <span>{formatDistanceToNow(new Date(latestJob.startedAt), { addSuffix: true })}</span>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Settings form */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            saveMutation.mutate(formDraft);
-          }}
-          className="space-y-5"
-        >
-          {/* enabled toggle */}
-          <div className="flex items-center justify-between p-3 border rounded-lg bg-card">
-            <div className="space-y-0.5">
-              <Label className="text-base">Enable Automation</Label>
-              <p className="text-xs text-muted-foreground">Automatically generate blog posts on the configured schedule</p>
-            </div>
-            <Switch
-              checked={formDraft.enabled}
-              onCheckedChange={(checked) => setFormDraft(prev => ({ ...prev, enabled: checked }))}
-            />
-          </div>
-
-          {/* postsPerDay select */}
-          <div className="space-y-1.5">
-            <Label>Posts Per Day</Label>
-            <Select
-              value={String(formDraft.postsPerDay)}
-              onValueChange={(v) => setFormDraft(prev => ({ ...prev, postsPerDay: Number(v) }))}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">0 — disabled</SelectItem>
-                <SelectItem value="1">1 post / day</SelectItem>
-                <SelectItem value="2">2 posts / day</SelectItem>
-                <SelectItem value="3">3 posts / day</SelectItem>
-                <SelectItem value="4">4 posts / day</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* seoKeywords textarea */}
-          <div className="space-y-1.5">
-            <Label>SEO Keywords</Label>
-            <Textarea
-              placeholder="e.g. field sales, CRM, B2B outreach"
-              value={formDraft.seoKeywords}
-              onChange={(e) => setFormDraft(prev => ({ ...prev, seoKeywords: e.target.value }))}
-              rows={3}
-            />
-          </div>
-
-          {/* enableTrendAnalysis toggle */}
-          <div className="flex items-center justify-between p-3 border rounded-lg bg-card">
-            <div className="space-y-0.5">
-              <Label className="text-base">Enable Trend Analysis</Label>
-              <p className="text-xs text-muted-foreground">Use current market trends to inform topic selection</p>
-            </div>
-            <Switch
-              checked={formDraft.enableTrendAnalysis}
-              onCheckedChange={(checked) => setFormDraft(prev => ({ ...prev, enableTrendAnalysis: checked }))}
-            />
-          </div>
-
-          {/* promptStyle textarea */}
-          <div className="space-y-1.5">
-            <Label>Prompt Style</Label>
-            <Textarea
-              placeholder="e.g. Professional, data-driven tone targeting sales managers"
-              value={formDraft.promptStyle}
-              onChange={(e) => setFormDraft(prev => ({ ...prev, promptStyle: e.target.value }))}
-              rows={3}
-            />
-          </div>
-
-          <div className="flex justify-end pt-2">
-            <Button
-              type="submit"
-              disabled={saveMutation.isPending}
-              className={isSaved ? 'bg-green-600 hover:bg-green-600' : ''}
-            >
-              {saveMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {isSaved && <Check className="w-4 h-4 mr-2" />}
-              {isSaved ? 'Saved' : 'Save Settings'}
-            </Button>
-          </div>
-        </form>
-      </div>
-      <PreviewDraftDialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen} />
-    </AdminCard>
-  );
-}
 
 const BLOG_TABS = [
   { id: 'posts' as const, label: 'Posts', icon: FileText },
@@ -247,14 +48,14 @@ export function BlogSection({ resetSignal }: { resetSignal: number }) {
   const [editingTagValue, setEditingTagValue] = useState('');
   const [isRenamingTag, setIsRenamingTag] = useState(false);
   const blogMenuTitle = SIDEBAR_MENU_ITEMS.find((item) => item.id === 'blog')?.title ?? 'Blog Posts';
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<BlogFormData>({
     title: '',
     slug: '',
     content: '',
     excerpt: '',
     metaDescription: '',
     focusKeyword: '',
-    tags: '' as string,
+    tags: '',
     featureImageUrl: '',
     status: 'published',
     authorName: 'Skale Club',
@@ -418,7 +219,7 @@ export function BlogSection({ resetSignal }: { resetSignal: number }) {
   }, [runEditorCommand]);
 
   const createMutation = useMutation({
-    mutationFn: (data: typeof formData) => apiRequest('POST', '/api/blog', data),
+    mutationFn: (data: BlogFormData) => apiRequest('POST', '/api/blog', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/blog'] });
       toast({ title: 'Blog post created successfully' });
@@ -431,7 +232,7 @@ export function BlogSection({ resetSignal }: { resetSignal: number }) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: typeof formData }) =>
+    mutationFn: ({ id, data }: { id: number; data: BlogFormData }) =>
       apiRequest('PUT', `/api/blog/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/blog'] });
@@ -574,10 +375,10 @@ export function BlogSection({ resetSignal }: { resetSignal: number }) {
     }
     const dataToSend = {
       ...formData,
-      publishedAt: formData.status === 'published' && formData.publishedAt 
-        ? new Date(formData.publishedAt).toISOString() 
-        : formData.status === 'published' 
-          ? new Date().toISOString() 
+      publishedAt: formData.status === 'published' && formData.publishedAt
+        ? new Date(formData.publishedAt).toISOString()
+        : formData.status === 'published'
+          ? new Date().toISOString()
           : null,
     };
 
@@ -601,440 +402,12 @@ export function BlogSection({ resetSignal }: { resetSignal: number }) {
     }
   };
 
-  const renderForm = () => {
-    const publishedDate = formData.publishedAt
-      ? new Date(`${formData.publishedAt}T00:00:00`)
-      : undefined;
-    const focusScore = (() => {
-      const keyword = formData.focusKeyword.toLowerCase().trim();
-      if (!keyword) return null;
-
-      const title = formData.title.toLowerCase();
-      const slug = formData.slug.toLowerCase();
-      const content = formData.content.toLowerCase();
-      const metaDesc = formData.metaDescription.toLowerCase();
-
-      let score = 0;
-      if (title.includes(keyword)) score += 25;
-      if (slug.includes(keyword.replace(/\s+/g, '-'))) score += 15;
-      if (metaDesc.includes(keyword)) score += 25;
-
-      const wordCount = content.split(/\s+/).filter(w => w.length > 0).length;
-      const keywordRegex = new RegExp(keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-      const keywordCount = (content.match(keywordRegex) || []).length;
-      const density = wordCount > 0 ? (keywordCount / wordCount) * 100 : 0;
-
-      if (keywordCount >= 1) score += 10;
-      if (keywordCount >= 3) score += 10;
-      if (density >= 0.5 && density <= 2.5) score += 15;
-
-      const barColor = score >= 80 ? 'bg-green-500' : score >= 50 ? 'bg-yellow-500' : 'bg-red-500';
-      const badgeClass = score >= 80
-        ? 'bg-green-500/15 text-green-600 dark:text-green-400'
-        : score >= 50
-        ? 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400'
-        : 'bg-red-500/15 text-red-600 dark:text-red-400';
-
-      return { score, barColor, badgeClass };
-    })();
-
-    return (
-      <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="space-y-2">
-          <Label htmlFor="title">Title *</Label>
-          <Input
-            id="title"
-            value={formData.title}
-            onChange={(e) => handleTitleChange(e.target.value)}
-            placeholder="Enter post title"
-            className="border-0 bg-background"
-            required
-            data-testid="input-blog-title"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="slug">Slug *</Label>
-          <Input
-            id="slug"
-            value={formData.slug}
-            onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
-            placeholder="url-friendly-slug"
-            className="border-0 bg-background"
-            required
-            data-testid="input-blog-slug"
-          />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="focusKeyword">Focus Keyword</Label>
-          <div className="rounded-md bg-background overflow-hidden">
-            <div className="relative">
-              <Input
-                id="focusKeyword"
-                value={formData.focusKeyword}
-                onChange={(e) => setFormData(prev => ({ ...prev, focusKeyword: e.target.value }))}
-                placeholder="Primary SEO keyword"
-                className="pr-14 rounded-none border-0 bg-transparent"
-                data-testid="input-blog-keyword"
-              />
-              {focusScore && (
-                <span
-                  className={clsx(
-                    "absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-2 py-0.5 text-[10px] font-medium",
-                    focusScore.badgeClass
-                  )}
-                >
-                  {focusScore.score}/100
-                </span>
-              )}
-            </div>
-            {focusScore && (
-              <div className="h-[3px] bg-slate-200 dark:bg-slate-700">
-                <div className={clsx("h-full transition-all", focusScore.barColor)} style={{ width: `${focusScore.score}%` }} />
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="content">Content *</Label>
-        <div className="rounded-md bg-background overflow-hidden">
-          <div className="flex flex-wrap items-center gap-1 border-b border-border/50 px-2 py-2 text-xs text-muted-foreground">
-            <button
-              type="button"
-              onClick={() => setEditorBlock('p')}
-              className="rounded-md px-2 py-1 text-xs text-foreground hover:bg-muted"
-            >
-              P
-            </button>
-            <button
-              type="button"
-              onClick={() => setEditorBlock('h2')}
-              className="rounded-md px-2 py-1 text-xs text-foreground hover:bg-muted"
-            >
-              H2
-            </button>
-            <span className="mx-1 h-4 w-px bg-border/60" />
-            <button
-              type="button"
-              onClick={() => runEditorCommand('bold')}
-              className="rounded-md px-2 py-1 text-xs text-foreground hover:bg-muted"
-            >
-              B
-            </button>
-            <button
-              type="button"
-              onClick={() => runEditorCommand('italic')}
-              className="rounded-md px-2 py-1 text-xs text-foreground hover:bg-muted"
-            >
-              I
-            </button>
-            <button
-              type="button"
-              onClick={() => runEditorCommand('insertUnorderedList')}
-              className="rounded-md px-2 py-1 text-xs text-foreground hover:bg-muted"
-            >
-              UL
-            </button>
-            <button
-              type="button"
-              onClick={() => runEditorCommand('insertOrderedList')}
-              className="rounded-md px-2 py-1 text-xs text-foreground hover:bg-muted"
-            >
-              OL
-            </button>
-            <button
-              type="button"
-              onClick={insertEditorLink}
-              className="rounded-md px-2 py-1 text-xs text-foreground hover:bg-muted"
-            >
-              Link
-            </button>
-            <button
-              type="button"
-              onClick={() => runEditorCommand('removeFormat')}
-              className="rounded-md px-2 py-1 text-xs text-foreground hover:bg-muted"
-            >
-              Clear
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsEditorExpanded(prev => !prev)}
-              className="ml-auto rounded-md px-2 py-1 text-xs text-foreground hover:bg-muted"
-            >
-              {isEditorExpanded ? 'Collapse' : 'Expand'}
-            </button>
-          </div>
-          <div
-            id="content"
-            ref={contentRef}
-            contentEditable
-            suppressContentEditableWarning
-            spellCheck
-            onInput={syncEditorContent}
-            onBlur={syncEditorContent}
-            data-placeholder="Write your blog post content here..."
-            className={clsx(
-              "admin-editor px-3 py-2 text-sm focus:outline-none prose prose-sm dark:prose-invert max-w-none overflow-y-auto",
-              isEditorExpanded
-                ? "min-h-[320px] max-h-[65vh] sm:min-h-[420px] sm:max-h-[70vh]"
-                : "min-h-[180px] max-h-[40vh] sm:min-h-[220px] sm:max-h-[45vh]"
-            )}
-            data-testid="textarea-blog-content"
-          />
-        </div>
-        <p className="text-xs text-muted-foreground">Supports HTML formatting</p>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="metaDescription">Meta Description</Label>
-          <Textarea
-            id="metaDescription"
-            value={formData.metaDescription}
-            onChange={(e) => setFormData(prev => ({
-              ...prev,
-              metaDescription: e.target.value.slice(0, 155)
-            }))}
-            placeholder="Short description for SEO and blog cards..."
-            className="min-h-[100px] border-0 bg-background"
-            data-testid="textarea-blog-meta"
-          />
-          <p className="text-xs text-muted-foreground">{formData.metaDescription.length}/155 characters ? Used for SEO and blog cards</p>
-        </div>
-        <div className="space-y-2">
-          <Label>Feature Image</Label>
-          <div
-            className="relative w-full sm:w-1/2 aspect-video rounded-lg border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 transition-colors cursor-pointer overflow-hidden group"
-            onClick={() => document.getElementById('featureImageInput')?.click()}
-          >
-            {formData.featureImageUrl ? (
-              <>
-                <img
-                  src={formData.featureImageUrl}
-                  alt="Feature"
-                  className="w-full h-full object-cover"
-                  data-testid="img-blog-feature-preview"
-                />
-                <div className="absolute top-2 left-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white">
-                  Uploaded
-                </div>
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <span className="text-white text-sm font-medium">Click to change</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setFormData(prev => ({ ...prev, featureImageUrl: '' }));
-                  }}
-                  className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 hover:bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </>
-            ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
-                <Image className="w-8 h-8 mb-2" />
-                <span className="text-sm">Click to upload</span>
-                <span className="text-xs mt-1">1200x675px (16:9)</span>
-              </div>
-            )}
-            <input
-              id="featureImageInput"
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="hidden"
-              data-testid="input-blog-feature-image"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-1">
-        <div className="space-y-2">
-          <Label>Tags</Label>
-          <div className="flex flex-wrap gap-2 min-h-9 rounded-md bg-background px-3 py-2">
-            {formData.tags.split(',').filter(t => t.trim()).map((tag, index) => (
-              <span
-                key={index}
-                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary"
-              >
-                {tag.trim()}
-                <button
-                  type="button"
-                  onClick={() => {
-                    const tags = formData.tags.split(',').filter(t => t.trim());
-                    tags.splice(index, 1);
-                    setFormData(prev => ({ ...prev, tags: tags.join(',') }));
-                  }}
-                  className="hover:text-destructive"
-                >
-                  ?
-                </button>
-              </span>
-            ))}
-            <input
-              type="text"
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ',') {
-                  e.preventDefault();
-                  const newTag = tagInput.trim();
-                  if (newTag && !formData.tags.split(',').map(t => t.trim().toLowerCase()).includes(newTag.toLowerCase())) {
-                    setFormData(prev => ({
-                      ...prev,
-                      tags: prev.tags ? `${prev.tags},${newTag}` : newTag
-                    }));
-                  }
-                  setTagInput('');
-                }
-              }}
-              placeholder={formData.tags ? "Add more..." : "Type and press Enter..."}
-              className="flex-1 min-w-[120px] bg-transparent border-0 outline-none text-sm placeholder:text-muted-foreground"
-            />
-          </div>
-          <p className="text-xs text-muted-foreground">Press Enter or comma to add a tag</p>
-          {availableTags.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">Available tags</p>
-              <div className="flex flex-wrap gap-2">
-                {availableTags
-                  .filter((tag) => !selectedTagSet.has(tag.toLowerCase()))
-                  .map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => addTag(tag)}
-                      className="rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-                    >
-                      + {tag}
-                    </button>
-                  ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="space-y-2">
-          <Label htmlFor="status">Status</Label>
-          <Select
-            value={formData.status}
-            onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
-          >
-            <SelectTrigger className="border-0 bg-background" data-testid="select-blog-status">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="published">Published</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="publishedAt">Publication Date</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <button
-                id="publishedAt"
-                type="button"
-                className={clsx(
-                  "flex h-9 w-full items-center justify-between rounded-md bg-background px-3 py-2 text-sm",
-                  !publishedDate && "text-muted-foreground"
-                )}
-                data-testid="input-blog-date"
-              >
-                <span className="truncate">
-                  {publishedDate ? format(publishedDate, "MM/dd/yyyy") : "Select date"}
-                </span>
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent
-              className="w-auto rounded-2xl border-0 p-0 shadow-lg overflow-hidden"
-              align="end"
-              side="bottom"
-              sideOffset={8}
-            >
-              <CalendarPicker
-                mode="single"
-                selected={publishedDate}
-                onSelect={(date) =>
-                  setFormData(prev => ({
-                    ...prev,
-                    publishedAt: date ? format(date, "yyyy-MM-dd") : null
-                  }))
-                }
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="authorName">Author</Label>
-          <Input
-            id="authorName"
-            value={formData.authorName}
-            onChange={(e) => setFormData(prev => ({ ...prev, authorName: e.target.value }))}
-            placeholder="Skale Club"
-            className="border-0 bg-background"
-            data-testid="input-blog-author"
-          />
-        </div>
-      </div>
-
-      <div className="flex justify-between items-center pt-4 border-t border-border/70">
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => {
-            setIsCreateOpen(false);
-            setEditingPost(null);
-            setIsSaved(false);
-            resetForm();
-          }}
-          data-testid="button-blog-back-bottom"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Posts
-        </Button>
-        <div className="flex gap-3">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => {
-              setIsCreateOpen(false);
-              setEditingPost(null);
-              setIsSaved(false);
-              resetForm();
-            }}
-            className="text-muted-foreground hover:text-foreground"
-            data-testid="button-blog-cancel"
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            disabled={createMutation.isPending || updateMutation.isPending}
-            className={isSaved ? 'bg-green-600 hover:bg-green-600' : ''}
-            data-testid="button-blog-save"
-          >
-            {(createMutation.isPending || updateMutation.isPending) && (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            )}
-            {isSaved && <Check className="w-4 h-4 mr-2" />}
-            {isSaved ? 'Saved' : editingPost ? 'Update Post' : 'Create Post'}
-          </Button>
-        </div>
-      </div>
-    </form>
-    );
-  };
+  const handleCancelEditor = useCallback(() => {
+    setIsCreateOpen(false);
+    setEditingPost(null);
+    setIsSaved(false);
+    resetForm();
+  }, [resetForm]);
 
   if (isLoading && !posts) {
     return (
@@ -1052,12 +425,7 @@ export function BlogSection({ resetSignal }: { resetSignal: number }) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => {
-                setIsCreateOpen(false);
-                setEditingPost(null);
-                setIsSaved(false);
-                resetForm();
-              }}
+              onClick={handleCancelEditor}
               data-testid="button-blog-back"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -1078,7 +446,29 @@ export function BlogSection({ resetSignal }: { resetSignal: number }) {
           )}
         </div>
         <AdminCard className="space-y-6">
-          {renderForm()}
+          <BlogPostEditorForm
+            formData={formData}
+            onFormDataChange={setFormData}
+            tagInput={tagInput}
+            onTagInputChange={setTagInput}
+            availableTags={availableTags}
+            selectedTagSet={selectedTagSet}
+            onAddTag={addTag}
+            isEditorExpanded={isEditorExpanded}
+            onEditorExpandedChange={setIsEditorExpanded}
+            contentRef={contentRef}
+            onSyncEditorContent={syncEditorContent}
+            onRunEditorCommand={runEditorCommand}
+            onSetEditorBlock={setEditorBlock}
+            onInsertEditorLink={insertEditorLink}
+            onTitleChange={handleTitleChange}
+            onImageUpload={handleImageUpload}
+            onSubmit={handleSubmit}
+            isPending={createMutation.isPending || updateMutation.isPending}
+            isSaved={isSaved}
+            isEditing={!!editingPost}
+            onCancel={handleCancelEditor}
+          />
         </AdminCard>
       </div>
     );
@@ -1092,98 +482,44 @@ export function BlogSection({ resetSignal }: { resetSignal: number }) {
         icon={<FileText className="w-5 h-5" />}
         action={
           <div className="flex items-center gap-2">
-          <Dialog open={isTagManagerOpen} onOpenChange={setIsTagManagerOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Tag className="w-4 h-4 mr-2" />
-                Manage Tags
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md border-0">
-              <DialogHeader>
-                <DialogTitle>Manage Tags</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-2 max-h-[320px] overflow-y-auto">
-                {availableTags.length > 0 ? (
-                  availableTags.map((tag) => (
-                    <div
-                      key={tag}
-                      className="flex items-center justify-between gap-3 rounded-md bg-muted/60 px-3 py-2"
-                      onDoubleClick={() => handleStartEditTag(tag)}
-                    >
-                      {editingTag === tag ? (
-                        <Input
-                          value={editingTagValue}
-                          onChange={(e) => setEditingTagValue(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleSubmitEditTag();
-                            }
-                            if (e.key === 'Escape') {
-                              e.preventDefault();
-                              handleCancelEditTag();
-                            }
-                          }}
-                          onBlur={handleSubmitEditTag}
-                          autoFocus
-                          className="h-8 border-0 bg-transparent px-0 text-sm"
-                          data-testid={`input-tag-edit-${tag}`}
-                        />
-                      ) : (
-                        <span className="text-sm font-medium">{tag}</span>
-                      )}
-                      <div className="flex items-center gap-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleStartEditTag(tag)}
-                          disabled={isDeletingTag || isRenamingTag}
-                          data-testid={`button-tag-edit-${tag}`}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setTagToDelete(tag)}
-                          disabled={isDeletingTag || editingTag === tag || isRenamingTag}
-                          data-testid={`button-tag-delete-${tag}`}
-                        >
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">No tags available.</p>
-                )}
-              </div>
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button type="button" variant="ghost">Close</Button>
-                </DialogClose>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          <Select value={sortBy} onValueChange={(value: typeof sortBy) => setSortBy(value)}>
-            <SelectTrigger className="w-[160px] h-9" data-testid="select-blog-sort">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="newest">Newest First</SelectItem>
-              <SelectItem value="oldest">Oldest First</SelectItem>
-              <SelectItem value="title-asc">Title (A-Z)</SelectItem>
-              <SelectItem value="title-desc">Title (Z-A)</SelectItem>
-              <SelectItem value="status">Status</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button size="sm" onClick={() => setIsCreateOpen(true)} data-testid="button-blog-create">
-            <Plus className="w-4 h-4 mr-2" />
-            New Post
-          </Button>
+            <Dialog open={isTagManagerOpen} onOpenChange={setIsTagManagerOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Tag className="w-4 h-4 mr-2" />
+                  Manage Tags
+                </Button>
+              </DialogTrigger>
+              <BlogTagManagerDialog
+                open={isTagManagerOpen}
+                onOpenChange={setIsTagManagerOpen}
+                availableTags={availableTags}
+                editingTag={editingTag}
+                editingTagValue={editingTagValue}
+                isDeletingTag={isDeletingTag}
+                isRenamingTag={isRenamingTag}
+                onEditingTagValueChange={setEditingTagValue}
+                onStartEdit={handleStartEditTag}
+                onSubmitEdit={handleSubmitEditTag}
+                onCancelEdit={handleCancelEditTag}
+                onRequestDelete={setTagToDelete}
+              />
+            </Dialog>
+            <Select value={sortBy} onValueChange={(value: typeof sortBy) => setSortBy(value)}>
+              <SelectTrigger className="w-[160px] h-9" data-testid="select-blog-sort">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest First</SelectItem>
+                <SelectItem value="oldest">Oldest First</SelectItem>
+                <SelectItem value="title-asc">Title (A-Z)</SelectItem>
+                <SelectItem value="title-desc">Title (Z-A)</SelectItem>
+                <SelectItem value="status">Status</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button size="sm" onClick={() => setIsCreateOpen(true)} data-testid="button-blog-create">
+              <Plus className="w-4 h-4 mr-2" />
+              New Post
+            </Button>
           </div>
         }
       />
@@ -1209,122 +545,19 @@ export function BlogSection({ resetSignal }: { resetSignal: number }) {
 
       {/* Tab content */}
       {activeTab === 'posts' && (
-      <div className="space-y-6">
-      <AdminCard className="space-y-6">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <FileText className="w-5 h-5 text-primary" />
-          Posts
-        </h2>
-        {sortedPosts && sortedPosts.length > 0 ? (
-          <div className="space-y-3">
-            {sortedPosts.map(post => (
-              <div key={post.id} className="flex flex-col gap-4 p-3 sm:p-4 bg-card/90 dark:bg-slate-900/70 rounded-lg sm:flex-row sm:items-start" data-testid={`row-blog-${post.id}`}>
-                {post.featureImageUrl ? (
-                  <img
-                    src={post.featureImageUrl}
-                    alt={post.title}
-                    className="w-full h-[160px] object-cover rounded-sm cursor-pointer hover:opacity-80 transition-opacity sm:w-[100px] sm:h-[68px] sm:flex-shrink-0"
-                    onClick={() => handleEdit(post)}
-                    data-testid={`img-blog-${post.id}`}
-                  />
-                ) : (
-                  <div
-                    className="w-full h-[160px] bg-muted rounded-sm flex items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors sm:w-[100px] sm:h-[68px] sm:flex-shrink-0"
-                    onClick={() => handleEdit(post)}
-                  >
-                    <FileText className="w-6 h-6 text-muted-foreground" />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <h3
-                    className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
-                    onClick={() => handleEdit(post)}
-                    data-testid={`text-blog-title-${post.id}`}
-                  >
-                    {post.title}
-                  </h3>
-                  <div className="flex flex-col items-start gap-1 text-sm text-muted-foreground">
-                    <span>{post.publishedAt ? format(new Date(post.publishedAt), 'MMM d, yyyy') : 'Not published'}</span>
-                    <Badge variant={post.status === 'published' ? 'default' : 'secondary'} data-testid={`badge-blog-status-${post.id}`}>
-                      {post.status}
-                    </Badge>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 self-end sm:self-center">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleEdit(post)}
-                    data-testid={`button-blog-edit-${post.id}`}
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" data-testid={`button-blog-delete-${post.id}`}>
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Blog Post?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will permanently delete "{post.title}". This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => deleteMutation.mutate(post.id)}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            icon={<FileText />}
-            title="No blog posts yet"
-            description="Create your first blog post to engage your audience"
-            action={
-              <Button onClick={() => setIsCreateOpen(true)} data-testid="button-blog-first-post">
-                <Plus className="w-4 h-4 mr-2" />
-                Create First Post
-              </Button>
-            }
-          />
-        )}
-      </AdminCard>
-      <AlertDialog open={!!tagToDelete} onOpenChange={(open) => !open && setTagToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remove tag</AlertDialogTitle>
-            <AlertDialogDescription>
-              {tagToDelete
-                ? `Remove "${tagToDelete}" from all posts? This cannot be undone.`
-                : 'Remove this tag from all posts?'}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeletingTag}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmRemoveTag} disabled={isDeletingTag}>
-              {isDeletingTag ? 'Removing...' : 'Remove'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      </div>
+        <BlogPostsList
+          posts={sortedPosts}
+          onEdit={handleEdit}
+          onDelete={(id) => deleteMutation.mutate(id)}
+          onCreateFirst={() => setIsCreateOpen(true)}
+          tagToDelete={tagToDelete}
+          isDeletingTag={isDeletingTag}
+          onCancelDeleteTag={() => setTagToDelete(null)}
+          onConfirmDeleteTag={handleConfirmRemoveTag}
+        />
       )}
       {activeTab === 'automation' && <BlogAutomationPanel />}
       {activeTab === 'rss' && <RssAutomationTab />}
     </div>
   );
 }
-
-
