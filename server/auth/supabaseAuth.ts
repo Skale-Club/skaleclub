@@ -156,6 +156,7 @@ export async function setupSupabaseAuth(app: Express) {
     res.json({
       url: process.env.SUPABASE_URL || "",
       anonKey: process.env.SUPABASE_ANON_KEY || "",
+      turnstileSiteKey: process.env.CLOUDFLARE_TURNSTILE_SITE_KEY || "",
     });
   });
 

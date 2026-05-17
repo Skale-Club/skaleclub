@@ -15,8 +15,18 @@ interface AuthContextType {
   lastName: string | null;
   loading: boolean;
   isSupabaseAuth: boolean;
-  signIn: (email?: string, password?: string, provider?: 'google') => Promise<void>;
-  signUp: (email: string, password: string) => Promise<{ needsEmailConfirmation: boolean }>;
+  turnstileSiteKey: string;
+  signIn: (
+    email?: string,
+    password?: string,
+    provider?: 'google',
+    options?: { captchaToken?: string }
+  ) => Promise<void>;
+  signUp: (
+    email: string,
+    password: string,
+    options?: { captchaToken?: string }
+  ) => Promise<{ needsEmailConfirmation: boolean }>;
   signOut: () => void;
   checkSession: () => Promise<AdminSession | null>;
 }
@@ -24,6 +34,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 let _isSupabaseAuth: boolean | null = null;
+let _turnstileSiteKey: string | null = null;
 
 function getCanonicalOrigin() {
   const env = (import.meta as any).env?.VITE_CANONICAL_ORIGIN as string | undefined;
@@ -48,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [lastName, setLastName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSupabaseAuth, setIsSupabaseAuth] = useState(false);
+  const [turnstileSiteKey, setTurnstileSiteKey] = useState('');
 
   const checkSession = useCallback(async () => {
     try {
@@ -79,11 +91,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const res = await fetch('/api/supabase-config');
           const config = await res.json();
           _isSupabaseAuth = !!(config.url && config.anonKey);
+          _turnstileSiteKey = typeof config.turnstileSiteKey === 'string' ? config.turnstileSiteKey : '';
         } catch {
           _isSupabaseAuth = false;
+          _turnstileSiteKey = '';
         }
       }
       setIsSupabaseAuth(_isSupabaseAuth);
+      setTurnstileSiteKey(_turnstileSiteKey ?? '');
       let sess = await checkSession();
 
       // If Supabase has a browser session (e.g. after OAuth redirect) but the server session
@@ -122,7 +137,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })();
   }, [checkSession]);
 
-  const signIn = async (emailArg?: string, passwordArg?: string, provider?: 'google') => {
+  const signIn = async (
+    emailArg?: string,
+    passwordArg?: string,
+    provider?: 'google',
+    options?: { captchaToken?: string }
+  ) => {
     if (isSupabaseAuth) {
       const supabase = await initSupabase();
 
@@ -144,6 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data, error } = await supabase.auth.signInWithPassword({
           email: emailArg,
           password: passwordArg,
+          options: options?.captchaToken ? { captchaToken: options.captchaToken } : undefined,
         });
 
         if (error) {
@@ -177,7 +198,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = '/api/login';
   };
 
-  const signUp = async (emailArg: string, passwordArg: string) => {
+  const signUp = async (
+    emailArg: string,
+    passwordArg: string,
+    options?: { captchaToken?: string }
+  ) => {
     if (!isSupabaseAuth) {
       throw new Error('Sign up is only available in Supabase auth mode');
     }
@@ -190,6 +215,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password: passwordArg,
       options: {
         emailRedirectTo: `${canonicalOrigin}/admin/login`,
+        ...(options?.captchaToken ? { captchaToken: options.captchaToken } : {}),
       },
     });
 
@@ -241,7 +267,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ isAdmin, email, firstName, lastName, loading, isSupabaseAuth, signIn, signUp, signOut, checkSession }}>
+    <AuthContext.Provider value={{ isAdmin, email, firstName, lastName, loading, isSupabaseAuth, turnstileSiteKey, signIn, signUp, signOut, checkSession }}>
       {children}
     </AuthContext.Provider>
   );

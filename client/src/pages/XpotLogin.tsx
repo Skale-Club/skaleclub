@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import {
   ArrowLeft,
@@ -16,6 +16,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from '@/components/ui/loader';
+import { TurnstileWidget } from "@/components/TurnstileWidget";
 import type { XpotMeResponse } from "./xpot/types";
 
 async function getCurrentUser() {
@@ -70,6 +71,12 @@ export default function XpotLogin() {
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
   const [isSupabaseAuth, setIsSupabaseAuth] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [turnstileSiteKey, setTurnstileSiteKey] = useState("");
+  const [captchaToken, setCaptchaToken] = useState("");
+  const captchaRequired = isSupabaseAuth && !!turnstileSiteKey;
+  const captchaReady = !captchaRequired || !!captchaToken;
+  const handleCaptchaVerify = useCallback((token: string) => setCaptchaToken(token), []);
+  const handleCaptchaExpire = useCallback(() => setCaptchaToken(""), []);
   const googleLogoUrl = "https://commons.wikimedia.org/wiki/Special:FilePath/Google_Favicon_2025.svg";
   const companyLogo = companySettings?.logoIcon || "";
 
@@ -99,6 +106,7 @@ export default function XpotLogin() {
         const response = await fetch("/api/supabase-config");
         const config = await response.json();
         const hasSupabase = Boolean(config.url && config.anonKey);
+        const siteKey = typeof config.turnstileSiteKey === "string" ? config.turnstileSiteKey : "";
 
         // Check existing server session first
         const user = await getCurrentUser();
@@ -109,6 +117,7 @@ export default function XpotLogin() {
 
         if (mounted) {
           setIsSupabaseAuth(hasSupabase);
+          setTurnstileSiteKey(siteKey);
           setIsInitializing(false);
         }
 
@@ -152,6 +161,10 @@ export default function XpotLogin() {
 
   const handleEmailLogin = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (captchaRequired && !captchaToken) {
+      setError("Please complete the verification before signing in.");
+      return;
+    }
     setError("");
     setSubmitting(true);
 
@@ -165,6 +178,7 @@ export default function XpotLogin() {
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
+        options: captchaToken ? { captchaToken } : undefined,
       });
 
       if (signInError) {
@@ -194,6 +208,7 @@ export default function XpotLogin() {
       }
     } catch (loginError: any) {
       setError(loginError.message || "Login failed");
+      setCaptchaToken("");
     } finally {
       setSubmitting(false);
     }
@@ -331,7 +346,15 @@ export default function XpotLogin() {
                       />
                     </div>
                   </div>
-                  <Button type="submit" disabled={submitting} className="h-12 w-full">
+                  {captchaRequired && (
+                    <TurnstileWidget
+                      siteKey={turnstileSiteKey}
+                      onVerify={handleCaptchaVerify}
+                      onExpire={handleCaptchaExpire}
+                      onError={handleCaptchaExpire}
+                    />
+                  )}
+                  <Button type="submit" disabled={submitting || !captchaReady} className="h-12 w-full">
                     {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Sign In
                   </Button>

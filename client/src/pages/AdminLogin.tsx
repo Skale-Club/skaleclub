@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAdminAuth } from '@/context/AuthContext';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from '@/components/ui/loader';
+import { TurnstileWidget } from '@/components/TurnstileWidget';
 import {
   ArrowLeft,
   Lock,
@@ -16,7 +17,7 @@ import type { CompanySettings } from '@shared/schema';
 
 export default function AdminLogin() {
   const googleLogoUrl = 'https://commons.wikimedia.org/wiki/Special:FilePath/Google_Favicon_2025.svg';
-  const { isAdmin, loading, signIn, isSupabaseAuth } = useAdminAuth();
+  const { isAdmin, loading, signIn, isSupabaseAuth, turnstileSiteKey } = useAdminAuth();
   const { data: companySettings } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
   });
@@ -26,6 +27,11 @@ export default function AdminLogin() {
   const [error, setError] = useState('');
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
   const [emailSubmitting, setEmailSubmitting] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState('');
+  const captchaRequired = isSupabaseAuth && !!turnstileSiteKey;
+  const captchaReady = !captchaRequired || !!captchaToken;
+  const handleCaptchaVerify = useCallback((token: string) => setCaptchaToken(token), []);
+  const handleCaptchaExpire = useCallback(() => setCaptchaToken(''), []);
 
   useEffect(() => {
     if (!loading && isAdmin) {
@@ -43,13 +49,18 @@ export default function AdminLogin() {
 
   const handleSupabaseLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (captchaRequired && !captchaToken) {
+      setError('Please complete the verification before signing in.');
+      return;
+    }
     setError('');
     setEmailSubmitting(true);
 
     try {
-      await signIn(email, password);
+      await signIn(email, password, undefined, captchaToken ? { captchaToken } : undefined);
     } catch (err: any) {
       setError(err.message || 'Login failed');
+      setCaptchaToken('');
     } finally {
       setEmailSubmitting(false);
     }
@@ -175,10 +186,18 @@ export default function AdminLogin() {
                       />
                     </div>
                   </div>
+                  {captchaRequired && (
+                    <TurnstileWidget
+                      siteKey={turnstileSiteKey}
+                      onVerify={handleCaptchaVerify}
+                      onExpire={handleCaptchaExpire}
+                      onError={handleCaptchaExpire}
+                    />
+                  )}
                   <Button
                     type="submit"
                     className="h-12 w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                    disabled={emailSubmitting}
+                    disabled={emailSubmitting || !captchaReady}
                     data-testid="button-login"
                   >
                     {emailSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

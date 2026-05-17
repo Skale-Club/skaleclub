@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAdminAuth } from '@/context/AuthContext';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from '@/components/ui/loader';
+import { TurnstileWidget } from '@/components/TurnstileWidget';
 import {
   ArrowLeft,
   Lock,
@@ -16,7 +17,7 @@ import type { CompanySettings } from '@shared/schema';
 
 export default function AdminSignup() {
   const googleLogoUrl = 'https://commons.wikimedia.org/wiki/Special:FilePath/Google_Favicon_2025.svg';
-  const { isAdmin, loading, signIn, signUp, isSupabaseAuth } = useAdminAuth();
+  const { isAdmin, loading, signIn, signUp, isSupabaseAuth, turnstileSiteKey } = useAdminAuth();
   const { data: companySettings } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
   });
@@ -28,6 +29,11 @@ export default function AdminSignup() {
   const [success, setSuccess] = useState('');
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState('');
+  const captchaRequired = isSupabaseAuth && !!turnstileSiteKey;
+  const captchaReady = !captchaRequired || !!captchaToken;
+  const handleCaptchaVerify = useCallback((token: string) => setCaptchaToken(token), []);
+  const handleCaptchaExpire = useCallback(() => setCaptchaToken(''), []);
 
   useEffect(() => {
     if (!loading && isAdmin) {
@@ -81,9 +87,14 @@ export default function AdminSignup() {
       return;
     }
 
+    if (captchaRequired && !captchaToken) {
+      setError('Please complete the verification before creating your account.');
+      return;
+    }
+
     setSubmitting(true);
     try {
-      const result = await signUp(email, password);
+      const result = await signUp(email, password, captchaToken ? { captchaToken } : undefined);
       if (result.needsEmailConfirmation) {
         setSuccess('Account created. Check your email to confirm your account before signing in.');
       } else {
@@ -91,6 +102,7 @@ export default function AdminSignup() {
       }
     } catch (err: any) {
       setError(err.message || 'Sign up failed');
+      setCaptchaToken('');
     } finally {
       setSubmitting(false);
     }
@@ -211,10 +223,18 @@ export default function AdminSignup() {
                       />
                     </div>
                   </div>
+                  {captchaRequired && (
+                    <TurnstileWidget
+                      siteKey={turnstileSiteKey}
+                      onVerify={handleCaptchaVerify}
+                      onExpire={handleCaptchaExpire}
+                      onError={handleCaptchaExpire}
+                    />
+                  )}
                   <Button
                     type="submit"
                     className="h-12 w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                    disabled={submitting}
+                    disabled={submitting || !captchaReady}
                   >
                     {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Sign Up
