@@ -208,6 +208,7 @@ _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
 | 39. Slide Design System v2 | v2.0 | 2/2 | Complete | 2026-05-16 |
 | 40. AI Presentation Generator | v2.0 | 0/3 | Complete    | 2026-05-16 |
 | 41. Split admin sections over 600 LOC | v2.0 | 9/9 | Complete | 2026-05-17 |
+| 42. Code-split admin bundle (Vite manualChunks + lazy sections) | v2.0 | 2/2 | Complete | 2026-05-17 |
 
 ### Phase 41: Split admin sections over 600 LOC into sub-components (SEED-002)
 
