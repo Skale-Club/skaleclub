@@ -1,11 +1,21 @@
 ---
 id: SEED-001
-status: dormant
+status: shipped
 planted: 2026-04-20
 planted_during: v1.3 Links Page Upgrade (roadmap created, Phase 10 not started)
 trigger_when: After v1.3 Links Page Upgrade ships (next milestone boundary — v1.4 candidate)
+shipped_as: v1.4 Admin Presentations Page (Phases 15-20)
+shipped_on: 2026-04-22
 scope: Large
 ---
+
+> **Shipped 2026-04-22 as v1.4.** Schema (`presentations`, `presentation_views`, `brand_guidelines`),
+> admin CRUD ([server/routes/presentations.ts](../../server/routes/presentations.ts)), Claude-streaming
+> authoring endpoint ([server/routes/presentationsChat.ts](../../server/routes/presentationsChat.ts)),
+> conversational admin editor ([client/src/components/admin/PresentationsSection.tsx](../../client/src/components/admin/PresentationsSection.tsx)),
+> bilingual EN/pt-BR slide fields, and public viewer at `/p/:slug`
+> ([client/src/pages/PresentationViewer.tsx](../../client/src/pages/PresentationViewer.tsx)) are all
+> live. See `.planning/milestones/v1.5-ROADMAP.md` for the v1.4 phase breakdown.
 
 # SEED-001: Admin Presentations Page — AI-authored slide decks
 
