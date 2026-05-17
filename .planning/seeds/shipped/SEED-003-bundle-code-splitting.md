@@ -1,11 +1,21 @@
 ---
 id: SEED-003
-status: dormant
+status: shipped
 planted: 2026-05-17
 planted_during: Debug sweep (post-v1.9)
 trigger_when: When admin dashboard or homepage TTI feels slow on real-world connections, OR when a perf milestone is being scoped
+shipped_as: Phase 42 (2 plans, v2.0)
+shipped_on: 2026-05-17
 scope: Small
 ---
+
+> **Shipped 2026-05-17 as Phase 42 (v2.0).** Vite `manualChunks` splits vendors
+> (`vendor-react` 147 KB, `vendor-ui` 178 KB, `vendor-query` 34 KB,
+> `vendor-utils` 44 KB). All 19 admin sections lazy-loaded via `React.lazy()` +
+> single Suspense boundary with `SectionSkeleton` fallback. Admin shell chunk:
+> 565 KB → 82.76 KB (-85%). Zero "chunks larger than 500 kB" warnings from
+> `npm run build`. See
+> `.planning/phases/42-code-split-admin-bundle-via-vite-manualchunks-and-lazy-admin-sections-seed-003/42-VERIFICATION.md`.
 
 # SEED-003: Code-split admin bundle (Vite manualChunks)
 

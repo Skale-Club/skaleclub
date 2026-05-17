@@ -1,11 +1,21 @@
 ---
 id: SEED-002
-status: dormant
+status: shipped
 planted: 2026-05-17
 planted_during: Debug sweep (post-v1.9)
 trigger_when: Next time an admin section >900 LOC needs a non-trivial feature added — or when /gsd:new-milestone scope touches admin DX / maintainability
+shipped_as: Phase 41 (9 plans, v2.0)
+shipped_on: 2026-05-17
 scope: Medium
 ---
+
+> **Shipped 2026-05-17 as Phase 41 (v2.0).** All 9 admin files split into per-area
+> subfolders. Parent files reduced from 7538 LOC total → 2899 LOC. ~36 new
+> cohesive sub-components across `admin/leads/`, `admin/integrations/`,
+> `admin/hub/`, `admin/forms/`, `admin/portfolio/`, `admin/estimates/`,
+> `admin/presentations/`, `admin/chat/`, `admin/blog/`. Behavior, props,
+> React Query keys, and `data-testid` attributes preserved verbatim. See
+> `.planning/phases/41-split-admin-sections-over-600-loc-into-sub-components-seed-002/41-VERIFICATION.md`.
 
 # SEED-002: Split admin sections >600 LOC into sub-components
 

@@ -129,6 +129,8 @@ Last activity: 2026-05-16
 - Phase 25 added: Services Carousel Polish — fix soft-edge fade masks, restore portfolio service modal open-on-click, lock body + carousel auto-scroll while modal is open
 - Phase 41 added: Split admin sections over 600 LOC into sub-components (SEED-002)
 - Phase 42 added: Code-split admin bundle via Vite manualChunks and lazy admin sections (SEED-003)
+- Phase 41 completed (2026-05-17): 9 admin files split into per-area subfolders; parents 7538→2899 LOC, zero files >600
+- Phase 42 completed (2026-05-17): Vite manualChunks + lazy admin sections; Admin chunk 565→82 KB, zero >500 KB warnings
 
 ### Decisions Made
 
