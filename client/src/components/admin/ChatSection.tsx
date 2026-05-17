@@ -1,124 +1,23 @@
 import {
-  DndContext,
   KeyboardSensor,
   PointerSensor,
-  closestCenter,
   useSensor,
   useSensors,
   type DragEndEvent,
 } from '@dnd-kit/core';
-import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import {
-  Archive,
-  GripVertical,
-  LayoutGrid,
-  MessageSquare,
-  RotateCcw,
-  Search,
-  Send,
-  Settings,
-  Trash2,
-  User,
-} from 'lucide-react';
-import { EmptyState } from './shared';
-import { SiGoogle, SiOpenai } from 'react-icons/si';
-import { Link } from 'wouter';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
+import { MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { renderMarkdown } from '@/lib/markdown';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { Loader2 } from '@/components/ui/loader';
-import { clsx } from 'clsx';
-import { format } from 'date-fns';
 import { DEFAULT_CHAT_OBJECTIVES, SIDEBAR_MENU_ITEMS } from './shared/constants';
 import type { ChatSettingsData, CompanySettingsData, ConversationMessage, ConversationSummary, IntakeObjective, UrlRule } from './shared/types';
 import { ensureArray, uploadFileToServer } from './shared/utils';
 import { SectionHeader } from './shared';
-
-function ChatBubble({ message, assistantAvatar }: { message: ConversationMessage; assistantAvatar?: string }) {
-  const isAssistant = message.role === "assistant";
-
-  return (
-    <div className={`flex w-full ${isAssistant ? "justify-start" : "justify-end"}`}>
-      <div className={`flex max-w-[80%] gap-2 ${isAssistant ? "flex-row" : "flex-row-reverse"}`}>
-        
-        {/* Avatar Pequeno (Apenas para o assistente) */}
-        {isAssistant && (
-          <div className="h-8 w-8 rounded-full bg-muted shrink-0 overflow-hidden mt-1 border flex items-center justify-center">
-            {assistantAvatar ? (
-              <img src={assistantAvatar} alt="Assistant" className="h-full w-full object-cover" />
-            ) : (
-              <MessageSquare className="w-4 h-4 text-slate-500" />
-            )}
-          </div>
-        )}
-
-        {/* O Balão de Texto */}
-        <div
-          className={`p-3 text-sm shadow-sm relative ${
-            isAssistant
-              ? "bg-card text-card-foreground rounded-tr-xl rounded-br-xl rounded-bl-xl border" // Formato bolha esquerda
-              : "bg-primary text-primary-foreground rounded-tl-xl rounded-bl-xl rounded-br-xl" // Formato bolha direita
-          }`}
-        >
-          {/* Conteúdo da Mensagem */}
-          <div className="leading-relaxed whitespace-pre-wrap">
-            {renderMarkdown(message.content)}
-          </div>
-
-          {/* Hora da mensagem */}
-          <span className={`text-[10px] block mt-1 ${
-            isAssistant ? "text-muted-foreground" : "text-primary-foreground/60"
-          }`}>
-            {format(new Date(message.createdAt), 'HH:mm')}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SortableObjectiveItem({ objective, onToggle }: { objective: IntakeObjective; onToggle: (enabled: boolean) => void }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({ id: objective.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-3 p-2 bg-card border rounded-md mb-2">
-      <div {...attributes} {...listeners} className="cursor-grab text-muted-foreground hover:text-foreground">
-        <GripVertical className="w-4 h-4" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{objective.label}</p>
-        <p className="text-xs text-muted-foreground truncate">{objective.description}</p>
-      </div>
-      <Switch 
-        checked={objective.enabled}
-        onCheckedChange={onToggle}
-      />
-    </div>
-  );
-}
+import { ChatConversationsListPanel } from './chat/ChatConversationsListPanel';
+import { ChatConversationPanel } from './chat/ChatConversationPanel';
+import { ChatSettingsSheet } from './chat/ChatSettingsSheet';
 
 export function ChatSection() {
   const { toast } = useToast();
@@ -143,7 +42,6 @@ export function ChatSection() {
   });
   const [selectedConversation, setSelectedConversation] = useState<ConversationSummary | null>(null);
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isMessagesLoading, setIsMessagesLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -499,8 +397,6 @@ You: "Excellent, John! A specialist will contact you within 24 hours!"`;
   const visitorName = selectedConversation?.visitorName || 'Guest';
   const conversationLastUpdated =
     selectedConversation?.lastMessageAt || selectedConversation?.updatedAt || selectedConversation?.createdAt;
-  const openConversations = conversations?.filter((conv) => conv.status === 'open').length || 0;
-  const closedConversations = conversations?.filter((conv) => conv.status === 'closed').length || 0;
   const visibleConversations = useMemo(() => {
     if (!conversations) return [];
     let result = conversations;
@@ -541,12 +437,6 @@ You: "Excellent, John! A specialist will contact you within 24 hours!"`;
     }
   }, [pageIndex, clampedPageIndex]);
 
-  useEffect(() => {
-    if (messages.length > 0 && !isMessagesLoading) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-    }
-  }, [messages, isMessagesLoading]);
-
   const handleSendMessage = () => {
     if (!newMessage.trim()) return;
     toast({ title: "Sending messages not implemented yet", description: "This feature requires backend support." });
@@ -560,419 +450,51 @@ You: "Excellent, John! A specialist will contact you within 24 hours!"`;
         description="AI assistant conversations and response settings"
         icon={<MessageSquare className="w-5 h-5" />}
         action={
-          <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                <Settings className="w-4 h-4" />
-                Settings
-              </Button>
-            </SheetTrigger>
-             <SheetContent className="w-[400px] sm:w-[540px] overflow-y-auto">
-               <SheetHeader>
-                 <SheetTitle>Chat Settings</SheetTitle>
-                 <SheetDescription>Configure your AI assistant and widget.</SheetDescription>
-               </SheetHeader>
-               
-               <div className="mt-6 space-y-6 pb-10">
-                  {/* General Settings */}
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">General</h3>
-                    
-                    <div className="flex items-center justify-between p-3 border rounded-lg bg-card">
-                      <div className="space-y-0.5">
-                        <Label className="text-base">Enable Chat Widget</Label>
-                        <p className="text-xs text-muted-foreground">Show the chat bubble on your website</p>
-                      </div>
-                      <Switch 
-                        checked={settingsDraft.enabled}
-                        onCheckedChange={handleToggleChat}
-                      />
-                    </div>
-
-                    <div className="grid gap-2">
-                      <Label>Agent Name</Label>
-                      <Input 
-                        value={settingsDraft.agentName || ''} 
-                        onChange={(e) => updateField('agentName', e.target.value)}
-                        placeholder="e.g. Sarah"
-                      />
-                    </div>
-
-                    <div className="grid gap-2">
-                      <Label>Avatar</Label>
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-full overflow-hidden border bg-muted flex items-center justify-center relative group">
-                           {settingsDraft.agentAvatarUrl ? (
-                             <img src={settingsDraft.agentAvatarUrl} alt="Avatar" className="h-full w-full object-cover" />
-                           ) : (
-                             <User className="h-6 w-6 text-muted-foreground" />
-                           )}
-                           {isUploadingAvatar && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><Loader2 className="w-4 h-4 animate-spin text-white" /></div>}
-                        </div>
-                        <div className="flex-1">
-                           <Input 
-                             ref={avatarFileInputRef}
-                             type="file" 
-                             accept="image/*" 
-                             onChange={handleAvatarUpload}
-                             className="text-xs"
-                           />
-                           <p className="text-[10px] text-muted-foreground mt-1">Recommended: 100x100px PNG or JPG</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid gap-2">
-                      <Label>Welcome Message</Label>
-                      <Textarea 
-                        value={settingsDraft.welcomeMessage || ''} 
-                        onChange={(e) => updateField('welcomeMessage', e.target.value)}
-                        placeholder="Hi! How can I help you?"
-                        rows={2}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="h-px bg-border" />
-
-                  {/* AI Configuration */}
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">AI Configuration</h3>
-                    
-                    <div className="grid gap-2">
-                      <Label>System Prompt</Label>
-                      <Textarea
-                        value={settingsDraft.systemPrompt || ''}
-                        onChange={(e) => updateField('systemPrompt', e.target.value)}
-                        placeholder="Define the behavior of your assistant..."
-                        className="min-h-[150px] font-mono text-xs"
-                      />
-                      <p className="text-[10px] text-muted-foreground">
-                        Instructions for the AI model on how to behave and qualify leads.
-                      </p>
-                    </div>
-
-                    <div className="grid gap-2">
-                      <Label>Active AI Provider</Label>
-                      <Select
-                        value={settingsDraft.activeAiProvider || 'openai'}
-                        onValueChange={(val) => updateField('activeAiProvider', val)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select AI provider" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="openai">
-                            <div className="flex items-center gap-2">
-                              <SiOpenai className="w-4 h-4" />
-                              <span>OpenAI (GPT)</span>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="gemini">
-                            <div className="flex items-center gap-2">
-                              <SiGoogle className="w-4 h-4" />
-                              <span>Google Gemini</span>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="openrouter">
-                            <div className="flex items-center gap-2">
-                              <LayoutGrid className="w-4 h-4" />
-                              <span>OpenRouter</span>
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <p className="text-[10px] text-muted-foreground">
-                        Select which AI will respond to chat messages. Make sure the selected provider is enabled in Integrations.
-                      </p>
-                    </div>
-
-                    <div className="grid gap-2">
-                      <Label>Qualification Form</Label>
-                      <Select
-                        value={settingsDraft.formSlug ?? '__default__'}
-                        onValueChange={(val) => updateField('formSlug', val === '__default__' ? null : val)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Use default form" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__default__">Use default form</SelectItem>
-                          {(formsList || [])
-                            .filter((f) => f.isActive)
-                            .map((f) => (
-                              <SelectItem key={f.id} value={f.slug}>
-                                {f.name}{f.isDefault ? ' (default)' : ''}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                      <p className="text-[10px] text-muted-foreground">
-                        The AI assistant will qualify leads with this form. Changes take effect on new conversations.
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 border rounded-lg bg-card">
-                      <div className="flex items-center gap-2">
-                        <SiOpenai className={clsx("w-5 h-5", openaiSettings?.enabled ? "text-green-600" : "text-slate-400")} />
-                        <div className="space-y-0.5">
-                          <span className="text-sm font-medium">OpenAI Integration</span>
-                          <p className="text-xs text-muted-foreground">{openaiSettings?.enabled ? 'Active and connected' : 'Not configured'}</p>
-                        </div>
-                      </div>
-                      {!openaiSettings?.enabled && (
-                         <Button variant="outline" size="sm" asChild>
-                           <Link href="/admin/integrations">Configure</Link>
-                         </Button>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 border rounded-lg bg-card">
-                      <div className="flex items-center gap-2">
-                        <SiGoogle className={clsx("w-5 h-5", geminiSettings?.enabled ? "text-green-600" : "text-slate-400")} />
-                        <div className="space-y-0.5">
-                          <span className="text-sm font-medium">Gemini Integration</span>
-                          <p className="text-xs text-muted-foreground">{geminiSettings?.enabled ? 'Active and connected' : 'Not configured'}</p>
-                        </div>
-                      </div>
-                      {!geminiSettings?.enabled && (
-                         <Button variant="outline" size="sm" asChild>
-                           <Link href="/admin/integrations">Configure</Link>
-                         </Button>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 border rounded-lg bg-card">
-                      <div className="flex items-center gap-2">
-                        <LayoutGrid className={clsx("w-5 h-5", openRouterSettings?.enabled ? "text-green-600" : "text-slate-400")} />
-                        <div className="space-y-0.5">
-                          <span className="text-sm font-medium">OpenRouter Integration</span>
-                          <p className="text-xs text-muted-foreground">{openRouterSettings?.enabled ? 'Active and connected' : 'Not configured'}</p>
-                        </div>
-                      </div>
-                      {!openRouterSettings?.enabled && (
-                         <Button variant="outline" size="sm" asChild>
-                           <Link href="/admin/integrations">Configure</Link>
-                         </Button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="h-px bg-border" />
-
-                  {/* Lead Qualification */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                       <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Lead Qualification</h3>
-                       <Button variant="ghost" size="sm" onClick={() => setSettingsDraft(prev => ({ ...prev, intakeObjectives: DEFAULT_CHAT_OBJECTIVES }))}>
-                         Reset Defaults
-                       </Button>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <DndContext 
-                        sensors={objectivesSensors}
-                        collisionDetection={closestCenter}
-                        onDragEnd={handleObjectivesDragEnd}
-                      >
-                        <SortableContext 
-                          items={(settingsDraft.intakeObjectives || DEFAULT_CHAT_OBJECTIVES).map(o => o.id)}
-                          strategy={verticalListSortingStrategy}
-                        >
-                          {(settingsDraft.intakeObjectives || DEFAULT_CHAT_OBJECTIVES).map((objective) => (
-                            <SortableObjectiveItem 
-                              key={objective.id} 
-                              objective={objective} 
-                              onToggle={(enabled) => toggleObjective(objective.id, enabled)}
-                            />
-                          ))}
-                        </SortableContext>
-                      </DndContext>
-                    </div>
-                  </div>
-               </div>
-            </SheetContent>
-          </Sheet>
+          <ChatSettingsSheet
+            open={settingsOpen}
+            onOpenChange={setSettingsOpen}
+            settingsDraft={settingsDraft}
+            onSettingsDraftChange={setSettingsDraft}
+            updateField={updateField}
+            onToggleChat={handleToggleChat}
+            isUploadingAvatar={isUploadingAvatar}
+            avatarFileInputRef={avatarFileInputRef}
+            onAvatarUpload={handleAvatarUpload}
+            formsList={formsList}
+            openaiSettings={openaiSettings}
+            geminiSettings={geminiSettings}
+            openRouterSettings={openRouterSettings}
+            objectivesSensors={objectivesSensors}
+            onObjectivesDragEnd={handleObjectivesDragEnd}
+            onToggleObjective={toggleObjective}
+          />
         }
       />
 
       <div className="flex flex-1 min-h-0 gap-4 overflow-hidden">
-        {/* Left Sidebar - Conversation List */}
-        <Card className="w-80 md:w-96 flex flex-col rounded-2xl shadow-none shrink-0 overflow-hidden">
-          <div className="p-3 border-b border-border/50 space-y-3">
-             <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                   <Input 
-                     placeholder="Search..." 
-                     className="pl-9 h-9 bg-background" 
-                     value={searchTerm}
-                     onChange={(e) => setSearchTerm(e.target.value)}
-                   />
-                </div>
-                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => refetchConversations()}>
-                   <RotateCcw className={clsx("w-4 h-4", loadingConversations && "animate-spin")} />
-                </Button>
-             </div>
-             
-             <div className="flex gap-1 bg-muted p-1 rounded-md">
-                <button 
-                  onClick={() => setStatusFilter('open')}
-                  className={clsx("flex-1 text-xs font-medium py-1.5 rounded-sm transition-all", statusFilter === 'open' ? "bg-white dark:bg-slate-800 shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}
-                >
-                  Open ({openConversations})
-                </button>
-                <button 
-                  onClick={() => setStatusFilter('closed')}
-                  className={clsx("flex-1 text-xs font-medium py-1.5 rounded-sm transition-all", statusFilter === 'closed' ? "bg-white dark:bg-slate-800 shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}
-                >
-                  Archived ({closedConversations})
-                </button>
-             </div>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
-             {loadingConversations ? (
-                <div className="flex w-full justify-center py-8">
-                   <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                </div>
-             ) : visibleConversations.length === 0 ? (
-                <EmptyState
-                  icon={<MessageSquare />}
-                  title="No conversations"
-                  description="Conversations started from the chat widget will appear here"
-                  className="p-8"
-                />
-             ) : (
-                visibleConversations.map(conv => (
-                   <div 
-                      key={conv.id}
-                      onClick={() => openConversation(conv)}
-                      className={clsx(
-                        "p-3 rounded-lg cursor-pointer transition-colors border",
-                        selectedConversation?.id === conv.id 
-                          ? "bg-white dark:bg-slate-800 border-primary/20 shadow-sm ring-1 ring-primary/20" 
-                          : "bg-transparent border-transparent hover:bg-white/50 dark:hover:bg-slate-800/50"
-                      )}
-                   >
-                      <div className="flex justify-between items-start mb-1">
-                         <span className={clsx("font-semibold text-sm", selectedConversation?.id === conv.id ? "text-primary" : "text-foreground")}>
-                            {conv.visitorName || 'Guest'}
-                         </span>
-                         <span className="text-[10px] text-muted-foreground">
-                            {conv.lastMessageAt ? format(new Date(conv.lastMessageAt), 'MMM d, HH:mm') : ''}
-                         </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground line-clamp-2">
-                         {conv.lastMessage || 'No messages'}
-                      </p>
-                   </div>
-                ))
-             )}
-          </div>
-        </Card>
-
-        {/* Right Area - Chat Interface */}
-        <Card className="flex-1 flex flex-col rounded-2xl shadow-none overflow-hidden">
-          {selectedConversation ? (
-             <>
-               {/* Chat Header */}
-               <div className="h-16 border-b border-border/50 flex items-center justify-between px-6 bg-muted/30 shrink-0">
-                  <div className="flex items-center gap-3">
-                     <div className="h-9 w-9 rounded-full bg-muted text-foreground flex items-center justify-center font-bold text-sm">
-                        {(selectedConversation.visitorName?.[0] || 'G').toUpperCase()}
-                     </div>
-                     <div>
-                        <h3 className="font-semibold text-sm">{selectedConversation.visitorName || 'Guest'}</h3>
-                        <p className="text-xs text-muted-foreground">{selectedConversation.visitorEmail || selectedConversation.visitorPhone || 'No contact info'}</p>
-                     </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                     <Button 
-                       variant="ghost" 
-                       size="icon" 
-                       onClick={() => statusMutation.mutate({ id: selectedConversation.id, status: selectedConversation.status === 'open' ? 'closed' : 'open' })}
-                       title={selectedConversation.status === 'open' ? "Archive" : "Reopen"}
-                     >
-                        {selectedConversation.status === 'open' ? <Archive className="w-4 h-4" /> : <RotateCcw className="w-4 h-4" />}
-                     </Button>
-                     
-                     <AlertDialog>
-                       <AlertDialogTrigger asChild>
-                         <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600 hover:bg-red-50">
-                            <Trash2 className="w-4 h-4" />
-                         </Button>
-                       </AlertDialogTrigger>
-                       <AlertDialogContent>
-                         <AlertDialogHeader>
-                           <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
-                           <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
-                         </AlertDialogHeader>
-                         <AlertDialogFooter>
-                           <AlertDialogCancel>Cancel</AlertDialogCancel>
-                           <AlertDialogAction onClick={() => deleteMutation.mutate(selectedConversation.id)} className="bg-destructive">Delete</AlertDialogAction>
-                         </AlertDialogFooter>
-                       </AlertDialogContent>
-                     </AlertDialog>
-                  </div>
-               </div>
-
-               {/* Messages Area */}
-               <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-muted/20">
-                  {isMessagesLoading ? (
-                     <div className="flex w-full justify-center py-10">
-                        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                     </div>
-                  ) : messages.length === 0 ? (
-                     <div className="flex flex-col items-center justify-center h-full text-muted-foreground opacity-50">
-                        <MessageSquare className="w-10 h-10 mb-2" />
-                        <p>No messages yet</p>
-                     </div>
-                  ) : (
-                     messages.map(msg => (
-                        <ChatBubble 
-                           key={msg.id} 
-                           message={msg} 
-                           assistantAvatar={assistantAvatar} 
-                        />
-                     ))
-                  )}
-                  <div ref={messagesEndRef} />
-               </div>
-
-               {/* Input Area */}
-               <div className="p-4 bg-background border-t border-border/50 shrink-0">
-                  <div className="relative">
-                     <Textarea
-                       value={newMessage}
-                       onChange={(e) => setNewMessage(e.target.value)}
-                       placeholder="Type your message..."
-                       className="min-h-[60px] resize-none pr-12"
-                       onKeyDown={(e) => {
-                         if (e.key === 'Enter' && !e.shiftKey) {
-                           e.preventDefault();
-                           handleSendMessage();
-                         }
-                       }}
-                     />
-                     <Button 
-                       size="icon" 
-                       className="absolute right-2 bottom-2 h-8 w-8"
-                       onClick={handleSendMessage}
-                       disabled={!newMessage.trim()}
-                     >
-                       <Send className="w-4 h-4" />
-                     </Button>
-                  </div>
-               </div>
-             </>
-          ) : (
-             <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
-               <MessageSquare className="h-12 w-12 mb-4 opacity-20" />
-               <p>Select a conversation to start chatting</p>
-             </div>
-          )}
-        </Card>
+        <ChatConversationsListPanel
+          conversations={conversations}
+          visibleConversations={visibleConversations}
+          loadingConversations={loadingConversations}
+          selectedConversation={selectedConversation}
+          searchTerm={searchTerm}
+          statusFilter={statusFilter}
+          onSearchChange={setSearchTerm}
+          onStatusFilterChange={setStatusFilter}
+          onSelect={openConversation}
+          onRefresh={() => refetchConversations()}
+        />
+        <ChatConversationPanel
+          selectedConversation={selectedConversation}
+          messages={messages}
+          isMessagesLoading={isMessagesLoading}
+          assistantAvatar={assistantAvatar}
+          onToggleStatus={() => selectedConversation && statusMutation.mutate({ id: selectedConversation.id, status: selectedConversation.status === 'open' ? 'closed' : 'open' })}
+          onDelete={() => selectedConversation && deleteMutation.mutate(selectedConversation.id)}
+          newMessage={newMessage}
+          onNewMessageChange={setNewMessage}
+          onSend={handleSendMessage}
+        />
       </div>
 
       {/* Calendar & Staff section removed - chat now uses dynamic form qualification */}
@@ -980,37 +502,6 @@ You: "Excellent, John! A specialist will contact you within 24 hours!"`;
 
 
 
-    </div>
-  );
-}
-
-function ObjectiveRow({ objective, onToggle }: { objective: IntakeObjective; onToggle: (id: IntakeObjective['id'], enabled: boolean) => void }) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: objective.id });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
-    >
-      <button
-        type="button"
-        className="h-8 w-8 inline-flex items-center justify-center rounded-md border hover:bg-muted text-muted-foreground"
-        {...attributes}
-        {...listeners}
-        aria-label="Drag to reorder"
-      >
-        <GripVertical className="h-4 w-4" />
-      </button>
-      <div className="flex-1">
-        <p className="text-sm font-medium dark:text-slate-200">{objective.label}</p>
-        <p className="text-xs text-muted-foreground">{objective.description}</p>
-      </div>
-      <Switch checked={objective.enabled} onCheckedChange={(checked) => onToggle(objective.id, checked)} />
     </div>
   );
 }
