@@ -208,6 +208,39 @@ _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
 | 39. Slide Design System v2 | v2.0 | 2/2 | Complete | 2026-05-16 |
 | 40. AI Presentation Generator | v2.0 | 0/3 | Complete    | 2026-05-16 |
 
+### Phase 41: Split admin sections over 600 LOC into sub-components (SEED-002)
+
+**Goal:** Every `.tsx` file under `client/src/components/admin/` is ≤ 600 lines (CLAUDE.md hard cap). Behavior, props, React Query keys, and `data-testid` attributes are unchanged — purely structural refactor. Files affected (current LOC → target ≤ 600): BlogSection (1330), ChatSection (1018), PresentationsSection (949), EstimatesSection (896), PortfolioSection (752), forms/FormsSection (677), SkaleHubSection (655), integrations/AIAssistantCard (643), LeadsSection (618).
+
+**Success Criteria:**
+  1. Every `.tsx` file under `client/src/components/admin/` reports ≤ 600 lines from `wc -l`.
+  2. `npm run check` passes with no new TypeScript errors.
+  3. `npm run build` succeeds.
+  4. Each extracted sub-component lives in a domain folder (e.g. `admin/blog/*.tsx`) mirroring the existing `admin/forms/` and `admin/integrations/` pattern.
+  5. Original Section component exports are preserved — `Admin.tsx` imports do not change.
+
+**Depends on:** Phase 40
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 41 to break down)
+
+### Phase 42: Code-split admin bundle via Vite manualChunks and lazy admin sections (SEED-003)
+
+**Goal:** All emitted JS chunks are under Vite's 500 KB warning threshold. Admin sections are lazy-loaded so that opening `/admin` only ships the shell + the active section. Vendor libraries (react/radix-ui/react-query) are split into stable cacheable chunks via `manualChunks`.
+
+**Success Criteria:**
+  1. `npm run build` emits zero "chunks larger than 500 kB" warnings.
+  2. The Admin shell loads each section via `lazy(() => import(...))`; navigating between sections shows a brief skeleton/spinner during the chunk fetch.
+  3. Vendor chunks (e.g. `vendor-react`, `vendor-ui`) appear in the build manifest and are shared across routes.
+  4. All existing admin functionality continues to work — no regressions on `npm run check`, `npm run build`, or smoke navigation across admin sections.
+
+**Depends on:** Phase 41
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 42 to break down)
+
 ---
 
 _Last updated: 2026-05-16 — Phase 40 plans created (3 plans, 2 waves)_

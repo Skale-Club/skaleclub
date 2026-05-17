@@ -127,6 +127,8 @@ Last activity: 2026-05-16
 ### Roadmap Evolution
 
 - Phase 25 added: Services Carousel Polish — fix soft-edge fade masks, restore portfolio service modal open-on-click, lock body + carousel auto-scroll while modal is open
+- Phase 41 added: Split admin sections over 600 LOC into sub-components (SEED-002)
+- Phase 42 added: Code-split admin bundle via Vite manualChunks and lazy admin sections (SEED-003)
 
 ### Decisions Made
 
