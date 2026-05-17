@@ -160,11 +160,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (emailArg && passwordArg) {
-        // Supabase Auth: sign in with email/password
+        // Supabase Auth: sign in with email/password (captcha verified server-side at /api/auth/login)
         const { data, error } = await supabase.auth.signInWithPassword({
           email: emailArg,
           password: passwordArg,
-          options: options?.captchaToken ? { captchaToken: options.captchaToken } : undefined,
         });
 
         if (error) {
@@ -172,12 +171,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         if (data.session?.access_token) {
-          // Send the token to our server to create a server session
+          // Send the token to our server to create a server session; include the captcha token
+          // so the server can verify it before issuing the session.
           const res = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ accessToken: data.session.access_token }),
+            body: JSON.stringify({
+              accessToken: data.session.access_token,
+              captchaToken: options?.captchaToken,
+            }),
           });
 
           if (!res.ok) {
@@ -210,12 +213,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const supabase = await initSupabase();
     const canonicalOrigin = getCanonicalOrigin();
 
+    // Captcha verified server-side at /api/auth/login (not at Supabase).
     const { data, error } = await supabase.auth.signUp({
       email: emailArg,
       password: passwordArg,
       options: {
         emailRedirectTo: `${canonicalOrigin}/admin/login`,
-        ...(options?.captchaToken ? { captchaToken: options.captchaToken } : {}),
       },
     });
 
@@ -229,7 +232,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ accessToken }),
+        body: JSON.stringify({
+          accessToken,
+          captchaToken: options?.captchaToken,
+        }),
       });
 
       if (!res.ok) {

@@ -5,6 +5,7 @@ import { getSupabaseAdmin } from "../lib/supabase.js";
 import { db, pool } from "../db.js";
 import { users } from "#shared/models/auth.js";
 import { eq } from "drizzle-orm";
+import { verifyTurnstileToken, getClientIp } from "../lib/turnstile.js";
 
 export async function setupSupabaseAuth(app: Express) {
   app.set("trust proxy", 1);
@@ -34,10 +35,12 @@ export async function setupSupabaseAuth(app: Express) {
     })
   );
 
-  // Login endpoint - validates with Supabase Auth, creates server session
+  // Login endpoint - validates with Supabase Auth, creates server session.
+  // Cloudflare Turnstile is required for password-based sign-ins; OAuth flows
+  // (Google, etc.) skip the captcha because the provider handles bot detection.
   app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
-      const { accessToken } = req.body;
+      const { accessToken, captchaToken } = req.body;
 
       if (!accessToken) {
         return res.status(400).json({ message: "Access token required" });
@@ -48,6 +51,19 @@ export async function setupSupabaseAuth(app: Express) {
 
       if (error || !supabaseUser) {
         return res.status(401).json({ message: "Invalid token" });
+      }
+
+      // Verify Turnstile for password sign-ins (skip for OAuth).
+      const provider = supabaseUser.app_metadata?.provider;
+      const isPasswordAuth = provider === "email";
+      if (isPasswordAuth) {
+        const verification = await verifyTurnstileToken(captchaToken, getClientIp(req));
+        if (!verification.success) {
+          return res.status(403).json({
+            message: "Captcha verification failed. Please refresh and try again.",
+            errorCodes: verification.errorCodes,
+          });
+        }
       }
 
       // Find or create user in our database

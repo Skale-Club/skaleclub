@@ -178,7 +178,6 @@ export default function XpotLogin() {
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
-        options: captchaToken ? { captchaToken } : undefined,
       });
 
       if (signInError) {
@@ -190,11 +189,12 @@ export default function XpotLogin() {
         throw new Error("No access token returned");
       }
 
+      // Captcha verified server-side at /api/auth/login (not at Supabase).
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ accessToken }),
+        body: JSON.stringify({ accessToken, captchaToken }),
       });
 
       if (!response.ok) {
