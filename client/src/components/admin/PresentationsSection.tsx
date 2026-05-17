@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { ChevronLeft, Copy, ExternalLink, Eye, Layers, Mic, MicOff, Plus, Presentation, Sparkles, StopCircle, Trash2, Search, X } from 'lucide-react';
-import { PageThumbnail } from '@/components/ui/PageThumbnail';
+import { Plus, Presentation, Sparkles, Search, X } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,7 +11,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Pagination,
   PaginationContent,
@@ -21,11 +19,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -37,200 +32,12 @@ import {
   createPresentationThumbnailDataUrl,
   getPresentationThumbnailSignature,
 } from '@/lib/thumbnails';
-import type { PresentationWithStats, SlideBlock } from '@shared/schema';
-
-// ─── SlideCard ────────────────────────────────────────────────────────────────
-
-function SlideCard({ slide }: { slide: SlideBlock; index: number }) {
-  return (
-    <div className="rounded-lg border p-3 space-y-1 bg-muted/30">
-      <Badge variant="outline" className="text-xs font-mono capitalize">
-        {slide.layout}
-      </Badge>
-      <p className="text-xs text-muted-foreground truncate">
-        {slide.heading ?? slide.headingPt ?? slide.layout}
-      </p>
-    </div>
-  );
-}
-
-// ─── PresentationEditor ───────────────────────────────────────────────────────
-
-function normalizePresentationSlug(value: string): string {
-  return value
-    .toLowerCase()
-    .trim()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-function PresentationEditor({
-  presentation,
-  onBack,
-}: {
-  presentation: PresentationWithStats;
-  onBack: () => void;
-}) {
-  const { t } = useTranslation();
-  const { toast } = useToast();
-
-  const [jsonText, setJsonText] = useState(() =>
-    JSON.stringify(presentation.slides ?? [], null, 2),
-  );
-  const [jsonError, setJsonError] = useState<string | null>(null);
-  const [parsedSlides, setParsedSlides] = useState<SlideBlock[]>(
-    presentation.slides ?? [],
-  );
-
-  function handleJsonChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
-    const text = e.target.value;
-    setJsonText(text);
-    try {
-      const parsed = JSON.parse(text);
-      setJsonError(null);
-      setParsedSlides(parsed);
-    } catch (err: any) {
-      setJsonError(err.message);
-    }
-  }
-
-  // Auto-save draft to localStorage so the preview tab can pick up edits in real time
-  useEffect(() => {
-    if (jsonError) return;
-    localStorage.setItem(
-      `presentation_draft_${presentation.slug}`,
-      JSON.stringify(parsedSlides),
-    );
-  }, [parsedSlides, presentation.slug, jsonError]);
-
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest('PUT', `/api/presentations/${presentation.id}`, {
-        slides: parsedSlides,
-      });
-      return response.json() as Promise<PresentationWithStats>;
-    },
-    onSuccess: async () => {
-      const thumbnailSignature = getPresentationThumbnailSignature({
-        title: presentation.title,
-        slides: parsedSlides,
-      });
-
-      if (presentation.thumbnailSignature !== thumbnailSignature) {
-        try {
-          const thumbnailUrl = await createPresentationThumbnailDataUrl({
-            title: presentation.title,
-            slides: parsedSlides,
-          });
-          await apiRequest('PUT', `/api/presentations/${presentation.id}/thumbnail`, {
-            thumbnailUrl,
-            thumbnailSignature,
-          });
-        } catch (err) {
-          console.warn('Failed to cache presentation thumbnail', err);
-        }
-      }
-
-      queryClient.invalidateQueries({ queryKey: ['/api/presentations'] });
-      queryClient.invalidateQueries({ queryKey: [`/api/presentations/slug/${presentation.slug}`] });
-      // Keep draft in localStorage so any open preview tab stays in sync; storage event will refetch
-      localStorage.setItem(
-        `presentation_draft_${presentation.slug}`,
-        JSON.stringify(parsedSlides),
-      );
-      toast({ title: t('Slides saved') });
-    },
-    onError: (err: any) => {
-      toast({
-        title: t('Failed to save slides'),
-        description: err.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  return (
-    <div className="space-y-6">
-      <SectionHeader
-        title={presentation.title}
-        description={`${parsedSlides.length} ${t('slides')}`}
-        icon={<Presentation className="w-5 h-5" />}
-        action={
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                localStorage.setItem(`presentation_draft_${presentation.slug}`, JSON.stringify(parsedSlides));
-                window.open(`/p/${presentation.slug}?edit=1`, '_blank');
-              }}
-              className="gap-2"
-            >
-              <ExternalLink className="w-4 h-4" />
-              {t('Preview')}
-            </Button>
-            <Button variant="outline" size="sm" onClick={onBack}>
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              {t('Back to presentations')}
-            </Button>
-          </div>
-        }
-      />
-
-      <AdminCard>
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Left: JSON editor */}
-          <div className="flex-1 min-w-0 space-y-3">
-            <p className="text-sm font-medium text-muted-foreground">
-              {t('JSON — paste Claude Code output here')}
-            </p>
-            <Textarea
-              value={jsonText}
-              onChange={handleJsonChange}
-              rows={20}
-              className="font-mono text-sm resize-y min-h-[300px]"
-            />
-            {jsonError && (
-              <p className="text-xs text-destructive">
-                {t('Invalid JSON')}: {jsonError}
-              </p>
-            )}
-            <div className="flex justify-end pt-2">
-              <Button
-                onClick={() => saveMutation.mutate()}
-                disabled={!!jsonError || saveMutation.isPending}
-                className="gap-2"
-              >
-                {saveMutation.isPending && (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                )}
-                {t('Save')}
-              </Button>
-            </div>
-          </div>
-
-          {/* Right: Slide mini-cards */}
-          <div className="w-full lg:w-72 space-y-3">
-            <p className="text-sm font-medium">{t('Slide preview')}</p>
-            {parsedSlides.length === 0 ? (
-              <p className="text-xs text-muted-foreground">{t('No slides yet')}</p>
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                {parsedSlides.map((slide, i) => (
-                  <SlideCard key={i} slide={slide} index={i} />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </AdminCard>
-    </div>
-  );
-}
-
-// ─── PresentationsSection (main export) ──────────────────────────────────────
+import { PresentationEditor } from './presentations/PresentationEditor';
+import { normalizePresentationSlug } from './presentations/presentationSlug';
+import { PresentationsListRow } from './presentations/PresentationsListRow';
+import { CreatePresentationDialog } from './presentations/CreatePresentationDialog';
+import { GeneratePresentationDialog } from './presentations/GeneratePresentationDialog';
+import type { PresentationWithStats } from '@shared/schema';
 
 export function PresentationsSection() {
   const { t } = useTranslation();
@@ -245,56 +52,13 @@ export function PresentationsSection() {
   const skipSlugBlurRef = useRef(false);
   const thumbnailJobsRef = useRef(new Set<string>());
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
-  const [newSlug, setNewSlug] = useState('');
-  const [newSlugEdited, setNewSlugEdited] = useState(false);
-
-  // Generator modal state
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
-  const [genTitle, setGenTitle] = useState('');
-  const [genPrompt, setGenPrompt] = useState('');
-  const [audioData, setAudioData] = useState<string | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [transcriptionPreview, setTranscriptionPreview] = useState('');
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<BlobPart[]>([]);
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
-  
+
   const ITEMS_PER_PAGE = 10;
   const [page, setPage] = useState(1);
   const offset = (page - 1) * ITEMS_PER_PAGE;
-
-  async function startRecording() {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : MediaRecorder.isTypeSupported('audio/webm')
-          ? 'audio/webm'
-          : 'audio/mp4';
-      const recorder = new MediaRecorder(stream, { mimeType });
-      audioChunksRef.current = [];
-      recorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
-      recorder.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, { type: mimeType });
-        const reader = new FileReader();
-        reader.onloadend = () => { setAudioData(reader.result as string); };
-        reader.readAsDataURL(blob);
-        stream.getTracks().forEach(t => t.stop());
-      };
-      mediaRecorderRef.current = recorder;
-      recorder.start();
-      setIsRecording(true);
-    } catch (err) {
-      toast({ title: t('Microphone access denied'), variant: 'destructive' });
-    }
-  }
-
-  function stopRecording() {
-    mediaRecorderRef.current?.stop();
-    setIsRecording(false);
-  }
 
   const { data: queryData, isLoading } = useQuery<{ data: PresentationWithStats[], total: number }>({
     queryKey: ['/api/presentations', page, debouncedSearch],
@@ -310,12 +74,6 @@ export function PresentationsSection() {
   const presentations = queryData?.data ?? [];
   const totalItems = queryData?.total ?? 0;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-
-  useEffect(() => {
-    if (!newSlugEdited) {
-      setNewSlug(normalizePresentationSlug(newTitle));
-    }
-  }, [newTitle, newSlugEdited]);
 
   useEffect(() => {
     presentations.forEach((presentation) => {
@@ -365,13 +123,10 @@ export function PresentationsSection() {
   const createMutation = useMutation({
     mutationFn: (data: { title: string; slug: string }) =>
       apiRequest('POST', '/api/presentations', data).then((r) => r.json()),
-    onSuccess: (newPres: { id: string; slug: string; slides: SlideBlock[] }) => {
+    onSuccess: (newPres: { id: string; slug: string }) => {
       queryClient.invalidateQueries({ queryKey: ['/api/presentations'] });
       toast({ title: t('Presentation created') });
       setIsCreateOpen(false);
-      setNewTitle('');
-      setNewSlug('');
-      setNewSlugEdited(false);
       setSelectedId(newPres.id);
     },
     onError: (err: any) => {
@@ -380,47 +135,6 @@ export function PresentationsSection() {
         description: err.message,
         variant: 'destructive',
       });
-    },
-  });
-
-  const generateMutation = useMutation({
-    mutationFn: async () => {
-      // Step 1: Transcribe audio if present (D-05)
-      let transcription = '';
-      if (audioData) {
-        const transcribeRes = await apiRequest('POST', '/api/presentations/transcribe', { audioData });
-        if (!transcribeRes.ok) throw new Error('Audio transcription failed');
-        const transcribeData = await transcribeRes.json();
-        transcription = transcribeData.transcription || '';
-        setTranscriptionPreview(transcription);
-      }
-      // Step 2: Build merged prompt (D-06)
-      const mergedPrompt = transcription && genPrompt
-        ? `[Audio input]: ${transcription}\n\n[Additional context]: ${genPrompt}`
-        : transcription || genPrompt;
-      if (!mergedPrompt.trim()) throw new Error('Please enter a prompt or record audio');
-      // Step 3: Generate presentation (D-08)
-      const res = await apiRequest('POST', '/api/presentations/generate', {
-        title: genTitle.trim(),
-        prompt: mergedPrompt,
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error((body as any).message || 'Generation failed');
-      }
-      return res.json() as Promise<{ id: string; slug: string }>;
-    },
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/presentations'] });
-      setIsGenerateOpen(false);
-      setGenTitle('');
-      setGenPrompt('');
-      setAudioData(null);
-      setTranscriptionPreview('');
-      setSelectedId(result.id);  // D-03: navigate to new presentation editor
-    },
-    onError: (err: any) => {
-      toast({ title: t('Generation failed'), description: err.message, variant: 'destructive' });
     },
   });
 
@@ -624,115 +338,39 @@ export function PresentationsSection() {
         ) : (
           <div className="space-y-3">
             {presentations.map((p) => (
-              <div
+              <PresentationsListRow
                 key={p.id}
-                className="flex flex-col gap-3 border rounded-lg p-4 bg-card md:flex-row md:items-center"
-              >
-                <PageThumbnail thumbnailUrl={p.thumbnailUrl} title={`${p.title} thumbnail`} />
-                <div className="min-w-0 flex-1 space-y-2">
-                  {renamingId === p.id ? (
-                    <Input
-                      autoFocus
-                      value={renamingTitle}
-                      onChange={(e) => setRenamingTitle(e.target.value)}
-                      onBlur={() => commitRename(p.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') commitRename(p.id);
-                        if (e.key === 'Escape') setRenamingId(null);
-                      }}
-                      className="h-8 text-sm font-semibold"
-                    />
-                  ) : (
-                    <span
-                      className="block font-semibold text-sm truncate cursor-pointer hover:underline"
-                      title={t('Click to rename')}
-                      onClick={() => { setRenamingId(p.id); setRenamingTitle(p.title); }}
-                    >
-                      {p.title}
-                    </span>
-                  )}
-                  {editingSlugId === p.id ? (
-                    <div className="flex h-6 max-w-xs items-center overflow-hidden rounded border bg-background focus-within:ring-1 focus-within:ring-ring">
-                      <span className="shrink-0 border-r bg-muted/50 px-2 text-[10px] font-mono leading-5 text-muted-foreground">
-                        /p/
-                      </span>
-                      <Input
-                        autoFocus
-                        value={slugValue}
-                        onChange={(e) => setSlugValue(e.target.value)}
-                        onBlur={(e) => commitSlug(p, e.currentTarget.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') e.currentTarget.blur();
-                          if (e.key === 'Escape') {
-                            skipSlugBlurRef.current = true;
-                            setEditingSlugId(null);
-                            setSlugValue('');
-                          }
-                        }}
-                        disabled={slugMutation.isPending}
-                        aria-label={t('Presentation slug')}
-                        className="h-5 min-w-0 border-0 bg-transparent px-2 text-[9px] font-mono leading-5 shadow-none focus-visible:ring-0"
-                      />
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => startSlugEdit(p)}
-                      className="inline-flex max-w-full items-center rounded border px-2 py-0.5 text-[10px] font-mono leading-4 text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
-                      title={t('Edit slug')}
-                    >
-                      <span className="truncate">/p/{p.slug}</span>
-                    </button>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 shrink-0 self-start md:self-auto">
-                  <Badge variant="secondary" className="text-xs gap-1">
-                    <Layers className="w-3 h-3" />
-                    {p.slideCount}
-                  </Badge>
-                </div>
-                <div className="flex gap-1 shrink-0 self-start md:self-auto">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    title={t('Open presentation')}
-                    onClick={() => window.open(`/p/${p.slug}`, '_blank')}
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    title={t('Link copied')}
-                    onClick={() => handleCopyLink(p.slug)}
-                  >
-                    <Copy className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => setDeleteTarget(p)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelectedId(p.id)}
-                  >
-                    {t('Open Editor')}
-                  </Button>
-                </div>
-              </div>
+                p={p}
+                renamingId={renamingId}
+                renamingTitle={renamingTitle}
+                editingSlugId={editingSlugId}
+                slugValue={slugValue}
+                isUpdatingSlug={slugMutation.isPending}
+                onStartRename={(target) => { setRenamingId(target.id); setRenamingTitle(target.title); }}
+                onRenameChange={setRenamingTitle}
+                onCommitRename={commitRename}
+                onCancelRename={() => setRenamingId(null)}
+                onStartSlugEdit={startSlugEdit}
+                onSlugChange={setSlugValue}
+                onCommitSlug={commitSlug}
+                onCancelSlug={() => {
+                  skipSlugBlurRef.current = true;
+                  setEditingSlugId(null);
+                  setSlugValue('');
+                }}
+                onOpenLink={(slug) => window.open(`/p/${slug}`, '_blank')}
+                onCopyLink={handleCopyLink}
+                onDelete={setDeleteTarget}
+                onOpenEditor={setSelectedId}
+              />
             ))}
-            
+
             {totalPages > 1 && (
               <div className="pt-4">
                 <Pagination>
                   <PaginationContent>
                     <PaginationItem>
-                      <PaginationPrevious 
+                      <PaginationPrevious
                         onClick={() => setPage(p => Math.max(1, p - 1))}
                         className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                       />
@@ -797,150 +435,19 @@ export function PresentationsSection() {
       )}
 
       {/* Create presentation dialog */}
-      <Dialog open={isCreateOpen} onOpenChange={(o) => {
-        setIsCreateOpen(o);
-        if (!o) {
-          setNewTitle('');
-          setNewSlug('');
-          setNewSlugEdited(false);
-        }
-      }}>
-        <DialogContent className="sm:max-w-sm border-0">
-          <DialogHeader>
-            <DialogTitle>{t('New Presentation')}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="new-title" className="text-xs">{t('Title')}</Label>
-              <Input
-                id="new-title"
-                autoFocus
-                placeholder="e.g. Acme Corp Q2 2025"
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && newTitle.trim() && newSlug.trim() && !createMutation.isPending) {
-                    createMutation.mutate({ title: newTitle.trim(), slug: newSlug.trim() });
-                  }
-                }}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="new-slug" className="text-xs">{t('Slug')}</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">/p/</span>
-                <Input
-                  id="new-slug"
-                  placeholder="acme-corp-q2-2025"
-                  value={newSlug}
-                  onChange={(e) => {
-                    setNewSlug(normalizePresentationSlug(e.target.value));
-                    setNewSlugEdited(true);
-                  }}
-                  className="pl-9"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && newTitle.trim() && newSlug.trim() && !createMutation.isPending) {
-                      createMutation.mutate({ title: newTitle.trim(), slug: newSlug.trim() });
-                    }
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsCreateOpen(false)}>{t('Cancel')}</Button>
-            <Button
-              onClick={() => createMutation.mutate({ title: newTitle.trim(), slug: newSlug.trim() })}
-              disabled={!newTitle.trim() || !newSlug.trim() || createMutation.isPending}
-              className="gap-2"
-            >
-              {createMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-              {t('Create')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CreatePresentationDialog
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        isPending={createMutation.isPending}
+        onCreate={(data) => createMutation.mutate(data)}
+      />
 
       {/* Generate presentation dialog */}
-      <Dialog open={isGenerateOpen} onOpenChange={(o) => {
-        setIsGenerateOpen(o);
-        if (!o) {
-          setGenTitle(''); setGenPrompt(''); setAudioData(null);
-          setTranscriptionPreview(''); setIsRecording(false);
-          mediaRecorderRef.current?.stop();
-        }
-      }}>
-        <DialogContent className="sm:max-w-md border-0">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4" />
-              {t('Generate Presentation with AI')}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="gen-title" className="text-xs">{t('Title')}</Label>
-              <Input
-                id="gen-title"
-                placeholder="e.g. Acme Corp Agency Intro"
-                value={genTitle}
-                onChange={(e) => setGenTitle(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="gen-prompt" className="text-xs">{t('Context prompt')}</Label>
-              <Textarea
-                id="gen-prompt"
-                placeholder="Describe the presentation: client, tone, number of slides, key messages..."
-                rows={4}
-                value={genPrompt}
-                onChange={(e) => setGenPrompt(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs">{t('Audio input (optional)')}</Label>
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant={isRecording ? 'destructive' : 'outline'}
-                  size="sm"
-                  onClick={isRecording ? stopRecording : startRecording}
-                  className="gap-2"
-                  disabled={generateMutation.isPending}
-                >
-                  {isRecording ? <StopCircle className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                  {isRecording ? t('Stop recording') : t('Record audio')}
-                </Button>
-                {audioData && !isRecording && (
-                  <span className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
-                    <MicOff className="w-3 h-3" />
-                    {t('Audio captured')}
-                  </span>
-                )}
-              </div>
-              {transcriptionPreview && (
-                <p className="text-xs text-muted-foreground italic truncate">
-                  {t('Transcription')}: {transcriptionPreview}
-                </p>
-              )}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsGenerateOpen(false)} disabled={generateMutation.isPending}>
-              {t('Cancel')}
-            </Button>
-            <Button
-              onClick={() => generateMutation.mutate()}
-              disabled={!genTitle.trim() || (!genPrompt.trim() && !audioData) || generateMutation.isPending}
-              className="gap-2"
-            >
-              {generateMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-              <Sparkles className="w-4 h-4" />
-              {t('Generate')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <GeneratePresentationDialog
+        open={isGenerateOpen}
+        onOpenChange={setIsGenerateOpen}
+        onSuccess={(result) => setSelectedId(result.id)}
+      />
 
       {/* Brand Guidelines always visible below presentations list */}
       <BrandGuidelinesSection />
