@@ -106,7 +106,6 @@ async function main() {
       slug,
       slides,
       guidelinesSnapshot: guidelinesContent,
-      accessCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
       version: 1,
     };
 

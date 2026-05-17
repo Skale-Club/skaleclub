@@ -97,8 +97,8 @@ async function createNegativeWordsPresentation() {
 
   const presentationData: InsertPresentation = {
     title: "Negative Words to Avoid",
+    slug: "negative-words-to-avoid",
     slides: slides,
-    accessCode: null,
   };
 
   try {
@@ -107,7 +107,7 @@ async function createNegativeWordsPresentation() {
     console.log(`Title: ${created.title}`);
     console.log(`Slug: ${created.slug}`);
     console.log(`ID: ${created.id}`);
-    console.log(`\nView URL: http://localhost:1000/presentation/${created.slug}`);
+    console.log(`\nView URL: http://localhost:1000/p/${created.slug}`);
   } catch (error) {
     console.error("Failed to create presentation:", error);
     process.exit(1);
