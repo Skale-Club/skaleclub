@@ -1,37 +1,40 @@
 import type { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAdminAuth } from '@/context/AuthContext';
 import { useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { UsersSection } from './UsersSection';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
-import { BlogSection } from '@/components/admin/BlogSection';
-import { ChatSection } from '@/components/admin/ChatSection';
-import { CompanySettingsSection } from '@/components/admin/CompanySettingsSection';
-import { DashboardSection } from '@/components/admin/DashboardSection';
-import { FaqsSection } from '@/components/admin/FaqsSection';
-import { PortfolioSection } from '@/components/admin/PortfolioSection';
-import { WebsiteSettingsSection } from '@/components/admin/WebsiteSettingsSection';
-import { IntegrationsSection } from '@/components/admin/IntegrationsSection';
-import { LeadsSection } from '@/components/admin/LeadsSection';
-import { FormsSection } from '@/components/admin/forms/FormsSection';
-import { SEOSection } from '@/components/admin/SEOSection';
-import { LinksSection } from '@/components/admin/LinksSection';
-import { VCardsManager } from '@/components/admin/VCardsManager';
-import { XpotSalesSection } from '@/components/admin/XpotSalesSection';
-import { EstimatesSection } from '@/components/admin/EstimatesSection';
-import { PresentationsSection } from '@/components/admin/PresentationsSection';
-import { SkaleHubSection } from '@/components/admin/SkaleHubSection';
-import { NotificationsSection } from '@/components/admin/NotificationsSection';
+import { SectionSkeleton } from '@/components/admin/SectionSkeleton';
 import { SIDEBAR_MENU_ITEMS } from '@/components/admin/shared/constants';
 import { SectionHeader } from '@/components/admin/shared';
 import type { AdminSection, CompanySettingsData } from '@/components/admin/shared/types';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { Loader2 } from '@/components/ui/loader';
+
+// Lazy-loaded admin sections — each becomes its own chunk in production builds.
+const UsersSection = lazy(() => import('./UsersSection').then(m => ({ default: m.UsersSection })));
+const BlogSection = lazy(() => import('@/components/admin/BlogSection').then(m => ({ default: m.BlogSection })));
+const ChatSection = lazy(() => import('@/components/admin/ChatSection').then(m => ({ default: m.ChatSection })));
+const CompanySettingsSection = lazy(() => import('@/components/admin/CompanySettingsSection').then(m => ({ default: m.CompanySettingsSection })));
+const DashboardSection = lazy(() => import('@/components/admin/DashboardSection').then(m => ({ default: m.DashboardSection })));
+const FaqsSection = lazy(() => import('@/components/admin/FaqsSection').then(m => ({ default: m.FaqsSection })));
+const PortfolioSection = lazy(() => import('@/components/admin/PortfolioSection').then(m => ({ default: m.PortfolioSection })));
+const WebsiteSettingsSection = lazy(() => import('@/components/admin/WebsiteSettingsSection').then(m => ({ default: m.WebsiteSettingsSection })));
+const IntegrationsSection = lazy(() => import('@/components/admin/IntegrationsSection').then(m => ({ default: m.IntegrationsSection })));
+const LeadsSection = lazy(() => import('@/components/admin/LeadsSection').then(m => ({ default: m.LeadsSection })));
+const FormsSection = lazy(() => import('@/components/admin/forms/FormsSection').then(m => ({ default: m.FormsSection })));
+const SEOSection = lazy(() => import('@/components/admin/SEOSection').then(m => ({ default: m.SEOSection })));
+const LinksSection = lazy(() => import('@/components/admin/LinksSection').then(m => ({ default: m.LinksSection })));
+const VCardsManager = lazy(() => import('@/components/admin/VCardsManager').then(m => ({ default: m.VCardsManager })));
+const XpotSalesSection = lazy(() => import('@/components/admin/XpotSalesSection').then(m => ({ default: m.XpotSalesSection })));
+const EstimatesSection = lazy(() => import('@/components/admin/EstimatesSection').then(m => ({ default: m.EstimatesSection })));
+const PresentationsSection = lazy(() => import('@/components/admin/PresentationsSection').then(m => ({ default: m.PresentationsSection })));
+const SkaleHubSection = lazy(() => import('@/components/admin/SkaleHubSection').then(m => ({ default: m.SkaleHubSection })));
+const NotificationsSection = lazy(() => import('@/components/admin/NotificationsSection').then(m => ({ default: m.NotificationsSection })));
 
 const menuItems = SIDEBAR_MENU_ITEMS;
 
@@ -192,50 +195,56 @@ function AdminContent() {
       <main className="flex-1 min-w-0 flex flex-col bg-background md:h-screen md:overflow-hidden" id="admin-top">
         <AdminHeader title={companySettings?.companyName || 'Admin Panel'} />
 
-        {/* Chat gets its own flex wrapper so it can fill the remaining height */}
-        {activeSection === 'chat' && (
-          <div className="flex-1 min-h-0 flex flex-col p-6 pb-6 md:p-8 md:pb-8">
-            <ChatSection />
-          </div>
-        )}
-
-        {/* All other sections scroll normally */}
-        {activeSection !== 'chat' && (
+        <Suspense fallback={
           <div className="flex-1 overflow-y-auto min-h-0 p-6 pb-16 md:p-8 md:pb-10">
-            {(() => {
-              const sectionsWithOwnHeader: AdminSection[] = ['leads', 'forms', 'faqs', 'users', 'blog', 'portfolio', 'links', 'vcards', 'fieldSales', 'estimates', 'company', 'website', 'seo', 'integrations', 'presentations', 'skaleHub', 'notifications'];
-              if (sectionsWithOwnHeader.includes(activeSection)) return null;
-              // Dashboard renders its own SectionHeader (with form selector action)
-              if (activeSection === 'dashboard') return null;
-              const currentItem = menuItems.find(item => item.id === activeSection);
-              return currentItem ? (
-                <SectionHeader
-                  title={currentItem.title}
-                  description={currentItem.description}
-                  icon={<currentItem.icon className="w-5 h-5" />}
-                />
-              ) : null;
-            })()}
-            {activeSection === 'dashboard' && <DashboardSection onNavigate={handleSectionSelect} />}
-            {activeSection === 'leads' && <LeadsSection />}
-            {activeSection === 'forms' && <FormsSection />}
-            {activeSection === 'website' && <WebsiteSettingsSection />}
-            {activeSection === 'portfolio' && <PortfolioSection />}
-            {activeSection === 'company' && <CompanySettingsSection />}
-            {activeSection === 'seo' && <SEOSection />}
-            {activeSection === 'faqs' && <FaqsSection />}
-            {activeSection === 'users' && <UsersSection />}
-            {activeSection === 'integrations' && <IntegrationsSection />}
-            {activeSection === 'blog' && <BlogSection resetSignal={blogResetSignal} />}
-            {activeSection === 'links' && <LinksSection />}
-            {activeSection === 'vcards' && <VCardsManager />}
-            {activeSection === 'fieldSales' && <XpotSalesSection />}
-            {activeSection === 'estimates' && <EstimatesSection />}
-            {activeSection === 'presentations' && <PresentationsSection />}
-            {activeSection === 'skaleHub' && <SkaleHubSection />}
-            {activeSection === 'notifications' && <NotificationsSection />}
+            <SectionSkeleton />
           </div>
-        )}
+        }>
+          {/* Chat gets its own flex wrapper so it can fill the remaining height */}
+          {activeSection === 'chat' && (
+            <div className="flex-1 min-h-0 flex flex-col p-6 pb-6 md:p-8 md:pb-8">
+              <ChatSection />
+            </div>
+          )}
+
+          {/* All other sections scroll normally */}
+          {activeSection !== 'chat' && (
+            <div className="flex-1 overflow-y-auto min-h-0 p-6 pb-16 md:p-8 md:pb-10">
+              {(() => {
+                const sectionsWithOwnHeader: AdminSection[] = ['leads', 'forms', 'faqs', 'users', 'blog', 'portfolio', 'links', 'vcards', 'fieldSales', 'estimates', 'company', 'website', 'seo', 'integrations', 'presentations', 'skaleHub', 'notifications'];
+                if (sectionsWithOwnHeader.includes(activeSection)) return null;
+                // Dashboard renders its own SectionHeader (with form selector action)
+                if (activeSection === 'dashboard') return null;
+                const currentItem = menuItems.find(item => item.id === activeSection);
+                return currentItem ? (
+                  <SectionHeader
+                    title={currentItem.title}
+                    description={currentItem.description}
+                    icon={<currentItem.icon className="w-5 h-5" />}
+                  />
+                ) : null;
+              })()}
+              {activeSection === 'dashboard' && <DashboardSection onNavigate={handleSectionSelect} />}
+              {activeSection === 'leads' && <LeadsSection />}
+              {activeSection === 'forms' && <FormsSection />}
+              {activeSection === 'website' && <WebsiteSettingsSection />}
+              {activeSection === 'portfolio' && <PortfolioSection />}
+              {activeSection === 'company' && <CompanySettingsSection />}
+              {activeSection === 'seo' && <SEOSection />}
+              {activeSection === 'faqs' && <FaqsSection />}
+              {activeSection === 'users' && <UsersSection />}
+              {activeSection === 'integrations' && <IntegrationsSection />}
+              {activeSection === 'blog' && <BlogSection resetSignal={blogResetSignal} />}
+              {activeSection === 'links' && <LinksSection />}
+              {activeSection === 'vcards' && <VCardsManager />}
+              {activeSection === 'fieldSales' && <XpotSalesSection />}
+              {activeSection === 'estimates' && <EstimatesSection />}
+              {activeSection === 'presentations' && <PresentationsSection />}
+              {activeSection === 'skaleHub' && <SkaleHubSection />}
+              {activeSection === 'notifications' && <NotificationsSection />}
+            </div>
+          )}
+        </Suspense>
       </main>
     </div>
   );
