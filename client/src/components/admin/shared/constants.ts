@@ -1,4 +1,4 @@
-import { Building2, Briefcase, ClipboardList, FileText, HelpCircle, Image, LayoutDashboard, LayoutPanelLeft, Link, MessageSquare, Puzzle, Receipt, Search, Sparkles, Users, Smartphone, MapPinned, Presentation, RadioTower, Bell } from 'lucide-react';
+import { Building2, Briefcase, ClipboardList, FileText, HelpCircle, Image, LayoutDashboard, LayoutPanelLeft, Link, MessageSquare, Puzzle, Receipt, Search, Sparkles, Users, Smartphone, MapPinned, Presentation, RadioTower, Bell, TrendingUp } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { AdminSection, BusinessHours, IntakeObjective } from './types';
 
@@ -50,4 +50,5 @@ export const SIDEBAR_MENU_ITEMS: SidebarMenuItem[] = [
   { id: 'skaleHub', title: 'Skale Hub', description: 'Manage weekly lives, registration gates, and active session access.', icon: RadioTower },
   { id: 'landings', title: 'Landings', description: 'Build managed landing pages at any /slug — composable sections, no code.', icon: LayoutPanelLeft },
   { id: 'notifications', title: 'Notifications', description: 'Configure notification templates for SMS and Telegram alerts.', icon: Bell },
+  { id: 'traffic', title: 'Traffic', description: 'Analytics for visits, sources, campaigns, and conversions.', icon: TrendingUp },
 ];

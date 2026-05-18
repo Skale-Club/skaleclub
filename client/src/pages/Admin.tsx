@@ -36,6 +36,7 @@ const PresentationsSection = lazy(() => import('@/components/admin/Presentations
 const SkaleHubSection = lazy(() => import('@/components/admin/SkaleHubSection').then(m => ({ default: m.SkaleHubSection })));
 const LandingsSection = lazy(() => import('@/components/admin/landings/LandingsSection').then(m => ({ default: m.LandingsSection })));
 const NotificationsSection = lazy(() => import('@/components/admin/NotificationsSection').then(m => ({ default: m.NotificationsSection })));
+const MarketingSection = lazy(() => import('@/components/admin/MarketingSection').then(m => ({ default: m.MarketingSection })));
 
 const menuItems = SIDEBAR_MENU_ITEMS;
 
@@ -66,6 +67,7 @@ function AdminContent() {
       'skale-hub': 'skaleHub',
       landings: 'landings',
       notifications: 'notifications',
+      traffic: 'traffic',
     };
     return slugMap[segment] || 'dashboard';
   }, [location]);
@@ -124,6 +126,7 @@ function AdminContent() {
       skaleHub: 'skale-hub',
       landings: 'landings',
       notifications: 'notifications',
+      traffic: 'traffic',
     };
     setLocation(`/admin/${slugMap[section]}`);
   }, [activeSection, setLocation]);
@@ -210,7 +213,7 @@ function AdminContent() {
           {activeSection !== 'chat' && (
             <div className="flex-1 overflow-y-auto min-h-0 p-6 pb-16 md:p-8 md:pb-10">
               {(() => {
-                const sectionsWithOwnHeader: AdminSection[] = ['leads', 'forms', 'faqs', 'users', 'blog', 'portfolio', 'links', 'vcards', 'fieldSales', 'estimates', 'company', 'website', 'seo', 'integrations', 'presentations', 'skaleHub', 'landings', 'notifications'];
+                const sectionsWithOwnHeader: AdminSection[] = ['leads', 'forms', 'faqs', 'users', 'blog', 'portfolio', 'links', 'vcards', 'fieldSales', 'estimates', 'company', 'website', 'seo', 'integrations', 'presentations', 'skaleHub', 'landings', 'notifications', 'traffic'];
                 if (sectionsWithOwnHeader.includes(activeSection)) return null;
                 // Dashboard renders its own SectionHeader (with form selector action)
                 if (activeSection === 'dashboard') return null;
@@ -242,6 +245,7 @@ function AdminContent() {
               {activeSection === 'skaleHub' && <SkaleHubSection />}
               {activeSection === 'landings' && <LandingsSection />}
               {activeSection === 'notifications' && <NotificationsSection />}
+              {activeSection === 'traffic' && <MarketingSection />}
             </div>
           )}
         </Suspense>

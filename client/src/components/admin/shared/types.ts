@@ -21,7 +21,8 @@ export type AdminSection =
   | 'presentations'
   | 'skaleHub'
   | 'landings'
-  | 'notifications';
+  | 'notifications'
+  | 'traffic';
 
 export interface DayHours {
   isOpen: boolean;
