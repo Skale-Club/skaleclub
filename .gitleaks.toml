@@ -8,9 +8,10 @@ useDefault = true
 # Global allowlist — paths / regexes whitelisted across all rules.
 # Use sparingly. Each entry needs a justification comment.
 [[allowlists]]
-description = "Known-leaked Neon Postgres password committed in 2026-01-14 (.claude/settings.local.json before .gitignore covered it). Suppressed AFTER the password was rotated in the Neon dashboard. If you re-introduce this allowlist for a NEW secret, you are doing the wrong thing — rotate first, suppress second."
-# Commit 88bec040 was a Replit auto-checkpoint that landed .claude/settings.local.json
-# before the .gitignore covered it. Password was rotated on 2026-05-17.
+description = "Historical Neon Postgres password from the Replit era (early 2026), abandoned when the project migrated to Supabase. The Neon database is no longer in use — the password points at a decommissioned host. Suppressed here so CI is not perpetually red over a credential that has no real attack surface. DO NOT use this pattern (per-commit suppression) for any LIVE secret — for those, rotate first, suppress second (or never)."
+# Commit 88bec040 was a Replit auto-checkpoint that landed
+# .claude/settings.local.json before .gitignore covered the directory.
+# The project later migrated off Replit/Neon to its own infra on Supabase.
 commits = ["88bec0406db2cbe9604c49d9fc9c6abb286d2b75"]
 
 [[allowlists]]
