@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response } from "express";
 import fs from "fs";
 import path from "path";
 
@@ -12,7 +12,16 @@ export function serveStatic(app: Express) {
 
   app.use(express.static(distPath));
 
-  // fall through to index.html if the file doesn't exist
+  // Missing hashed assets (e.g. a stale tab requests an old chunk after deploy)
+  // must 404 cleanly — otherwise the SPA fallback below would return index.html
+  // with text/html, and the browser would reject the module script with
+  // "Expected a JavaScript-or-Wasm module script but the server responded with
+  // a MIME type of text/html". The client catches the 404 and reloads.
+  app.use("/assets/", (_req: Request, res: Response) => {
+    res.status(404).type("text/plain").send("asset not found");
+  });
+
+  // Fall through to index.html for actual SPA routes (no extension / known UI paths).
   app.use("*", (_req, res) => {
     res.sendFile(path.resolve(distPath, "index.html"));
   });
