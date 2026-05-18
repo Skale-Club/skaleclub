@@ -68,7 +68,6 @@ const Blog = lazy(() => import("@/pages/Blog").then(m => ({ default: () => <Page
 const BlogPost = lazy(() => import("@/pages/BlogPost").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Portfolio = lazy(() => import("@/pages/Portfolio").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const SkaleHub = lazy(() => import("@/pages/SkaleHub").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const SkaleHubGroup = lazy(() => import("@/pages/SkaleHubGroup").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Links = lazy(() => import("@/pages/Links").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const VCard = lazy(() => import("@/pages/VCard").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const EstimateViewer = lazy(() => import("@/pages/EstimateViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
@@ -280,9 +279,7 @@ function Router() {
             <Route path={pagePaths.portfolio} component={Portfolio} />
             {pagePaths.portfolio !== legacyPaths.portfolio && <Route path={legacyPaths.portfolio} component={Portfolio} />}
             {/* Legacy Skale Hub group URLs — 301 to managed landing /grupo (43-05).
-                Production redirects live in vercel.json; these handle local dev parity.
-                The SkaleHubGroup lazy import is deliberately left in place until 43-06
-                deletes the source file. */}
+                Production redirects live in vercel.json; these handle local dev parity. */}
             <Route path={`${pagePaths.hub}/grupo`}>{() => <Redirect to="/grupo" />}</Route>
             <Route path={`${pagePaths.hub}/group`}>{() => <Redirect to="/grupo" />}</Route>
             {pagePaths.hub !== legacyPaths.hub && <Route path={`${legacyPaths.hub}/grupo`}>{() => <Redirect to="/grupo" />}</Route>}
