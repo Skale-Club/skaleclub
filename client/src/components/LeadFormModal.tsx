@@ -17,6 +17,14 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { Loader2 } from '@/components/ui/loader';
 import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead, getSortedQuestions, KNOWN_FIELD_IDS } from "@shared/form";
 import type { LeadClassification, FormLead, FormConfig, FormQuestion } from "@shared/schema";
+import { PhoneCountrySelect } from "@/components/ui/PhoneCountrySelect";
+import {
+  detectDefaultPhoneCountry,
+  formatPhoneForCountry as formatPhoneForPhoneCountry,
+  isValidPhoneForCountry as isValidPhoneForPhoneCountry,
+  getInternationalPhone,
+  type PhoneCountry,
+} from "@/lib/phoneCountries";
 
 type FormView = "form" | "loading";
 
@@ -158,7 +166,12 @@ function clearStoredState() {
   }
 }
 
-function getFieldError(question: FormQuestion | undefined, answers: Answers, selectedCountry?: CountryConfig): string | null {
+function getFieldError(
+  question: FormQuestion | undefined,
+  answers: Answers,
+  selectedCountry?: CountryConfig,
+  phoneCountrySelected?: PhoneCountry,
+): string | null {
   if (!question) return null;
 
   const value = (answers[question.id] || "").trim();
@@ -191,6 +204,14 @@ function getFieldError(question: FormQuestion | undefined, answers: Answers, sel
       if (value && selectedCountry) {
         if (!isValidPhoneForCountry(value, selectedCountry)) {
           return `Please enter a valid phone number (${selectedCountry.maxDigits} digits)`;
+        }
+      }
+      break;
+    }
+    case "phoneCountry": {
+      if (value && phoneCountrySelected) {
+        if (!isValidPhoneForPhoneCountry(value, phoneCountrySelected)) {
+          return `Please enter a valid phone number for ${phoneCountrySelected.name}`;
         }
       }
       break;
@@ -251,6 +272,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
   const [originUrl, setOriginUrl] = useState("");
   const [utmParams, setUtmParams] = useState({ source: "", medium: "", campaign: "" });
   const [selectedCountryCode, setSelectedCountryCode] = useState<string>(DEFAULT_COUNTRY);
+  const [phoneCountrySelected, setPhoneCountrySelected] = useState<PhoneCountry>(() => detectDefaultPhoneCountry());
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 256 });
   const autoSaveRef = useRef<number>();
@@ -468,6 +490,18 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
           payload.telefone = effectiveAnswers.telefone.trim();
         }
       }
+      // Phase 44 — phoneCountry field: override telefone payload and stash countryCode in customAnswers
+      const phoneCountryQuestion = config.questions.find((q) => q.type === "phoneCountry");
+      if (phoneCountryQuestion) {
+        const raw = (effectiveAnswers[phoneCountryQuestion.id] || "").trim();
+        if (raw) {
+          payload.telefone = getInternationalPhone(raw, phoneCountrySelected);
+          payload.customAnswers = {
+            ...(payload.customAnswers || {}),
+            countryCode: phoneCountrySelected.code,
+          };
+        }
+      }
       if (effectiveAnswers.cidadeEstado) payload.cidadeEstado = effectiveAnswers.cidadeEstado.trim();
       if (effectiveAnswers.tipoNegocio) payload.tipoNegocio = effectiveAnswers.tipoNegocio;
       if (effectiveAnswers.tipoNegocioOutro) payload.tipoNegocioOutro = effectiveAnswers.tipoNegocioOutro.trim();
@@ -515,11 +549,13 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
       originUrl,
       pendingSync,
       selectedCountry,
+      phoneCountrySelected,
       startedAt,
       updateStoredState,
       utmParams.campaign,
       utmParams.medium,
       utmParams.source,
+      progressUrl,
     ],
   );
 
@@ -536,18 +572,22 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
     const question = sortedQuestions.find(q => q.id === field);
     if (question?.type === "tel") {
       value = formatPhoneForCountry(value, selectedCountry);
+    } else if (question?.type === "phoneCountry") {
+      value = formatPhoneForPhoneCountry(value, phoneCountrySelected);
     }
     setAnswers(prev => ({ ...prev, [field]: value }));
     setErrorMessage(null);
 
     if (autoSaveRef.current) window.clearTimeout(autoSaveRef.current);
     autoSaveRef.current = window.setTimeout(() => {
-      const error = getFieldError(question, { ...answers, [field]: value }, selectedCountry);
+      const error = getFieldError(question, { ...answers, [field]: value }, selectedCountry, phoneCountrySelected);
       if (!error && currentQuestion?.id === field) {
         // For phone fields, save with country code prefix
         const valueToSave = question?.type === "tel" && value
           ? getFullPhoneNumber(value, selectedCountry)
-          : value;
+          : question?.type === "phoneCountry" && value
+            ? getInternationalPhone(value, phoneCountrySelected)
+            : value;
         void persistProgress(currentStep, { stepToResume: currentStep, overrideAnswers: { [field]: valueToSave } });
       }
     }, 400);
@@ -572,7 +612,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
       autoSaveRef.current = undefined;
     }
 
-    const error = getFieldError(currentQuestion, answers, selectedCountry);
+    const error = getFieldError(currentQuestion, answers, selectedCountry, phoneCountrySelected);
     if (error) {
       setErrorMessage(error);
       containerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -613,7 +653,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
   };
 
   const handleFinish = async () => {
-    const error = getFieldError(currentQuestion, answers, selectedCountry);
+    const error = getFieldError(currentQuestion, answers, selectedCountry, phoneCountrySelected);
     if (error) {
       setErrorMessage(error);
       return;
@@ -686,7 +726,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
   }
 
   const isLastStep = currentStep === totalQuestions;
-  const canProceed = !getFieldError(currentQuestion, answers, selectedCountry);
+  const canProceed = !getFieldError(currentQuestion, answers, selectedCountry, phoneCountrySelected);
 
   return createPortal(
     <AnimatePresence>
@@ -864,6 +904,47 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                               )}
                               aria-label={currentQuestion.title}
                               maxLength={selectedCountry.format.length}
+                            />
+                          </div>
+                        )}
+
+                        {/* Phone with shared country selector — Phase 44 */}
+                        {currentQuestion.type === "phoneCountry" && (
+                          <div
+                            className={clsx(
+                              "flex overflow-hidden rounded-xl border bg-white transition-colors",
+                              errorMessage ? "border-red-400" : "border focus-within:border-[#406EF1]"
+                            )}
+                          >
+                            <PhoneCountrySelect
+                              value={phoneCountrySelected}
+                              onChange={(c) => {
+                                setPhoneCountrySelected(c);
+                                // Re-format any existing input value to the new country's format
+                                setAnswers((prev) => ({
+                                  ...prev,
+                                  [currentQuestion.id]: formatPhoneForPhoneCountry(prev[currentQuestion.id] || "", c),
+                                }));
+                              }}
+                              ariaLabel="Phone country"
+                              buttonClassName="rounded-none border-0 bg-transparent h-[52px] text-base text-slate-700 hover:bg-slate-50"
+                            />
+                            <input
+                              ref={primaryInputRef}
+                              type="tel"
+                              inputMode="tel"
+                              autoComplete="tel"
+                              value={answers[currentQuestion.id] || ""}
+                              onChange={(e) => {
+                                const formatted = formatPhoneForPhoneCountry(e.target.value, phoneCountrySelected);
+                                setAnswers((prev) => ({ ...prev, [currentQuestion.id]: formatted }));
+                                setErrorMessage(null);
+                              }}
+                              onFocus={handleFieldFocus}
+                              placeholder={phoneCountrySelected.format.replace(/#/g, "0")}
+                              className="flex-1 min-w-0 border-0 px-4 py-3 text-base sm:text-lg bg-transparent text-slate-900 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-0"
+                              aria-label={currentQuestion.title}
+                              data-testid={`input-form-${currentQuestion.id}`}
                             />
                           </div>
                         )}
