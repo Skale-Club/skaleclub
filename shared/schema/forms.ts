@@ -178,6 +178,7 @@ export const formLeadProgressSchema = z.object({
   utmCampaign: z.string().max(200).optional(),
   startedAt: z.string().optional(),
   customAnswers: z.record(z.string()).optional(),
+  __visitorId: z.string().uuid().optional(), // Phase 45 — marketing attribution visitor UUID
 });
 
 // Types
