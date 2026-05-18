@@ -75,6 +75,7 @@ const EstimateViewer = lazy(() => import("@/pages/EstimateViewer").then(m => ({ 
 const PresentationViewer = lazy(() => import("@/pages/PresentationViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const XpotApp = lazy(() => import("@/pages/XpotApp").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const XpotLogin = lazy(() => import("@/pages/XpotLogin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const DynamicLanding = lazy(() => import("@/pages/DynamicLanding").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 
 function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const { data: settings } = useQuery<CompanySettings>({
@@ -284,6 +285,9 @@ function Router() {
             {pagePaths.hub !== legacyPaths.hub && <Route path={`${legacyPaths.hub}/group`} component={SkaleHubGroup} />}
             <Route path={pagePaths.hub} component={SkaleHub} />
             {pagePaths.hub !== legacyPaths.hub && <Route path={legacyPaths.hub} component={SkaleHub} />}
+            {/* Catch-all dynamic landing route — MUST be last before the 404 fallback.
+                Wouter matches top-down, so any new known route must be added ABOVE this line. */}
+            <Route path="/:slug" component={DynamicLanding} />
             <Route component={NotFound} />
           </Switch>
         </Suspense>
