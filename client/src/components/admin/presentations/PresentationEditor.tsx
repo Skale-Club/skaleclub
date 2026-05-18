@@ -19,14 +19,15 @@ import {
   getPresentationThumbnailSignature,
 } from '@/lib/thumbnails';
 import type { PresentationWithStats, SlideBlock } from '@shared/schema';
+import { SlidePreview } from '@/components/SlideRenderer';
 
 // ─── Quick AI prompts ──────────────────────────────────────────────────────────
 
 const QUICK_PROMPTS = [
-  { label: 'Mais conciso', value: 'Torne este slide mais conciso e impactante, mantendo as informações essenciais.' },
-  { label: 'Melhorar PT', value: 'Melhore a tradução em português (headingPt, bodyPt, bulletsPt) para PT-BR natural e fluente.' },
-  { label: 'Mais impacto', value: 'Reescreva o heading para ser mais poderoso e o corpo para ser mais persuasivo.' },
-  { label: 'Regenerar', value: 'Regenere completamente este slide mantendo o mesmo layout e tema geral da apresentação.' },
+  { label: 'More concise', value: 'Make this slide more concise and impactful while keeping the essential information.' },
+  { label: 'Improve PT', value: 'Improve the Portuguese translation (headingPt, bodyPt, bulletsPt) to natural, fluent PT-BR.' },
+  { label: 'More impact', value: 'Rewrite the heading to be more powerful and the body to be more persuasive.' },
+  { label: 'Regenerate', value: 'Completely regenerate this slide while keeping the same layout and overall presentation theme.' },
 ];
 
 // ─── SlideCard ─────────────────────────────────────────────────────────────────
@@ -66,7 +67,7 @@ function SlideCard({
           onClick={(e) => { e.stopPropagation(); onMoveUp(); }}
           disabled={isFirst}
           className="p-1 rounded hover:bg-muted disabled:opacity-30"
-          title="Mover para cima"
+          title="Move up"
         >
           <ArrowUp className="w-3 h-3" />
         </button>
@@ -74,14 +75,14 @@ function SlideCard({
           onClick={(e) => { e.stopPropagation(); onMoveDown(); }}
           disabled={isLast}
           className="p-1 rounded hover:bg-muted disabled:opacity-30"
-          title="Mover para baixo"
+          title="Move down"
         >
           <ArrowDown className="w-3 h-3" />
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
           className="p-1 rounded hover:bg-destructive/20 text-destructive"
-          title="Excluir slide"
+          title="Delete slide"
         >
           <Trash2 className="w-3 h-3" />
         </button>
@@ -182,6 +183,9 @@ function SlideDetailPanel({
 
   return (
     <div className="space-y-5">
+      {/* Live slide thumbnail */}
+      <SlidePreview slide={slide} lang="en" scale={0.38} className="rounded-md border shadow-sm" />
+
       <div className="flex items-center gap-2">
         <span className="text-sm font-semibold text-muted-foreground font-mono">#{index + 1}</span>
         <Badge variant="outline" className="capitalize">{slide.layout}</Badge>
