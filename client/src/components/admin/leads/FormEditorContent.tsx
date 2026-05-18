@@ -156,7 +156,13 @@ export function FormEditorContent({ formId }: FormEditorContentProps) {
   };
 
   const getQuestionTypeBadge = (type: FormQuestion['type']) => {
-    const labels = { text: 'Text', email: 'Email', tel: 'Phone', select: 'Multiple choice' };
+    const labels: Record<FormQuestion['type'], string> = {
+      text: 'Text',
+      email: 'Email',
+      tel: 'Phone',
+      select: 'Multiple choice',
+      phoneCountry: 'Phone + Country',
+    };
     return labels[type] || type;
   };
 

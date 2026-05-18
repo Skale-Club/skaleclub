@@ -186,7 +186,7 @@ export type LeadStatus = typeof leadStatusEnum.enumValues[number];
 export type FormLeadProgressInput = z.infer<typeof formLeadProgressSchema>;
 
 // Form Configuration Types
-export type FormQuestionType = 'text' | 'email' | 'tel' | 'select';
+export type FormQuestionType = 'text' | 'email' | 'tel' | 'select' | 'phoneCountry';
 
 export interface FormOption {
   value: string;
