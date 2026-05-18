@@ -22,6 +22,7 @@ import { registerUserRoutes } from "./routes/users.js";
 import { registerCompanyRoutes } from "./routes/company.js";
 import { registerFormRoutes } from "./routes/forms.js";
 import { registerAttributionRoutes } from "./routes/attribution.js";
+import { registerMarketingRoutes } from "./routes/marketing.js";
 import { registerIntegrationRoutes } from "./routes/integrations.js";
 import { registerEstimatesRoutes } from "./routes/estimates.js";
 import { registerPresentationsRoutes } from "./routes/presentations.js";
@@ -139,6 +140,7 @@ export async function registerRoutes(
   registerLinksPageRoutes(app);
   registerFormRoutes(app);
   registerAttributionRoutes(app);   // Phase 45 — public visitor/conversion ingest
+  registerMarketingRoutes(app);     // Phase 45 — admin marketing dashboard endpoints
   registerIntegrationRoutes(app);
   registerNotificationRoutes(app);
   registerEstimatesRoutes(app);
