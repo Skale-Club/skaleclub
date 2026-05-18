@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Presentations 2.0
 status: completed
-last_updated: "2026-05-18T05:00:45.990Z"
+last_updated: "2026-05-18T05:06:54.538Z"
 last_activity: 2026-05-17
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 35
-  completed_plans: 11
+  completed_plans: 12
 ---
 
 # STATE: Skale Club Web Platform
@@ -95,6 +95,7 @@ Last activity: 2026-05-17
 | Phase 43 P05 | 333 | 3 tasks | 5 files |
 | Phase 45 P03 | 8min | 2 tasks | 2 files |
 | Phase 45 P06 | 5m | 2 tasks | 10 files |
+| Phase 45 P07 | 4 | 2 tasks | 4 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -268,6 +269,7 @@ Last activity: 2026-05-17
 - [Phase 44-03]: Local COUNTRIES (10) and shared PHONE_COUNTRIES (17) coexist — legacy `tel` branch unchanged byte-for-byte; new `phoneCountry` branch uses aliased imports to avoid name collision
 - [Phase 45]: Replaced source's AdminPageHeader with destination's SectionHeader (CLAUDE.md design system)
 - [Phase 45]: Kept HOT/WARM/COLD column headers in English (admin uses raw English, no t() wrapping)
+- [Phase 45]: 45-07: Wire __visitorId via request body field (not header) for non-blocking lead-creation attribution hook
 
 ### Quick Tasks Completed
 
