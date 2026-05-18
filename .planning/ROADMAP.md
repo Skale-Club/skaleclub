@@ -281,11 +281,15 @@ Plans:
 
 **Depends on:** Phase 43
 
-**Plans:** 0 plans
+**Plans:** 1/5 plans executed
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 44 to break down)
+- [ ] 44-01-PLAN.md — HeroWebsites variant + landings/HeroWebsites.tsx + registry
+- [ ] 44-02-PLAN.md — processStepper net-new section component + registry
+- [x] 44-03-PLAN.md — 'phoneCountry' form-question type (schema + LeadFormModal renderer + submission)
+- [ ] 44-04-PLAN.md — Seed website-leads form + landing_pages row for /websites
+- [ ] 44-05-PLAN.md — E2E verification + visual polish
 
 ---
 
-_Last updated: 2026-05-16 — Phase 40 plans created (3 plans, 2 waves)_
+_Last updated: 2026-05-17 — Phase 44 Plan 03 complete (phoneCountry field type)_

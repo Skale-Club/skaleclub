@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Presentations 2.0
-status: completed
-last_updated: "2026-05-18T03:22:32.733Z"
-last_activity: 2026-05-16
+status: in_progress
+last_updated: "2026-05-17T00:00:00.000Z"
+last_activity: 2026-05-17
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 22
-  completed_plans: 7
+  completed_plans: 8
 ---
 
 # STATE: Skale Club Web Platform
@@ -30,11 +30,11 @@ See: `.planning/PROJECT.md` (updated 2026-05-04)
 
 ## Current Position
 
-Phase: 40
-Plan: Not started
-Milestone: v1.9 Blog Intelligence & RSS Sources
-Status: Phase complete — ready for verification
-Last activity: 2026-05-16
+Phase: 44 (Landing /websites)
+Plan: 44-03 complete (1/5); 44-01 / 44-02 / 44-04 / 44-05 pending
+Milestone: v2.0 Presentations 2.0
+Status: Plan 44-03 shipped — 'phoneCountry' field type live; ready for 44-04 to author website-leads form against the new contract
+Last activity: 2026-05-17
 
 ---
 
@@ -261,6 +261,9 @@ Last activity: 2026-05-16
 - [Phase 43]: Reserved-slug guard returns HTTP 409 (matches duplicate-slug semantics); reserved check runs before unique check (cheaper + clearer error)
 - [Phase 43]: WhatsAppGroupSection exposes ~23 optional prop knobs with defaults preserving the legacy production look byte-for-byte
 - [Phase 43]: Dual redirect strategy: vercel.json for prod 301s + wouter Redirect in App.tsx for local dev parity
+- [Phase 44-03]: New `'phoneCountry'` FormQuestionType — reuses shared <PhoneCountrySelect> + phoneCountries.ts; no schema migration (ISO country code stashed in form_leads.customAnswers.countryCode)
+- [Phase 44-03]: getFieldError extended with 4th optional `phoneCountrySelected` param — mirrors existing `selectedCountry` arg pattern
+- [Phase 44-03]: Local COUNTRIES (10) and shared PHONE_COUNTRIES (17) coexist — legacy `tel` branch unchanged byte-for-byte; new `phoneCountry` branch uses aliased imports to avoid name collision
 
 ### Quick Tasks Completed
 
@@ -341,4 +344,6 @@ None.
 | 2026-05-05 | Plan 35-03 executed | Cron + endpoint + generator integration (2 tasks, commits cd634c0, df83b55); server/cron.ts second setInterval, POST /api/blog/cron/fetch-rss with CRON_SECRET Bearer auth, BlogGenerator.generate() now calls selectNextRssItem before acquireLock and marks item used after createBlogPost; new SkipReason 'no_rss_items'; RSS-06 + RSS-07 + RSS-08 complete; Phase 35 plans 3/3 ✓ |
 | 2026-05-05 | Plan 36-03 executed | Generator integration Wave 2 (3 tasks, commits 7bbbf28, b2d973e, 0582164); server/lib/blog-generator.ts 568 → 598 lines (under 600 cap); pt-BR prompts + RSS context + REGRAS injected; withGeminiTimeout wraps 3 Gemini call sites (topic/post/image); sanitizeBlogHtml + getPlainTextLength gate before createBlogPost; 4 new failure reasons mapped (invalid_html, content_length_out_of_bounds, gemini_timeout, gemini_empty_response); BLOG2-01..05 complete; Phase 36 plans 3/3 ✓ |
 
-*Last updated: 2026-05-05 - Phase 36 complete (generator quality overhaul integrated)*
+| 2026-05-17 | Plan 44-03 executed | 'phoneCountry' form-question type shipped (2 commits: a12b543, 01ed5e2); shared/schema/forms.ts union extended + LeadFormModal.tsx renderer/submission branch + admin badge map; Phase 44 plans 1/5 — 44-04 next |
+
+*Last updated: 2026-05-17 - Plan 44-03 complete (phoneCountry field type)*
