@@ -8,6 +8,7 @@ import { BlogAdapter, blogPropsSchema } from "./sections/BlogAdapter";
 import { AboutAdapter, aboutPropsSchema } from "./sections/AboutAdapter";
 import { AreasServedAdapter, areasServedPropsSchema } from "./sections/AreasServedAdapter";
 import { LeadFormCtaAdapter, leadFormCtaPropsSchema } from "./sections/LeadFormCtaAdapter";
+import { WhatsAppGroupSection, whatsAppGroupPropsSchema } from "./sections/WhatsAppGroupSection";
 
 export interface SectionEntry {
   component: ComponentType<{ props: any }>;
@@ -18,16 +19,16 @@ export interface SectionEntry {
 // Add new section types here. Server-side validation lives in
 // shared/landingSectionRegistry (built in 43-02) and must stay in sync.
 //
-// 43-05 will add: whatsappGroup
 export const sectionRegistry: Record<string, SectionEntry> = {
-  hero:         { component: HeroSectionAdapter,    propsSchema: heroPropsSchema },
-  trustBadges:  { component: TrustBadgesAdapter,    propsSchema: trustBadgesPropsSchema },
-  services:     { component: ServicesAdapter,       propsSchema: servicesPropsSchema },
-  reviews:      { component: ReviewsAdapter,        propsSchema: reviewsPropsSchema },
-  blog:         { component: BlogAdapter,           propsSchema: blogPropsSchema },
-  about:        { component: AboutAdapter,          propsSchema: aboutPropsSchema },
-  areasServed:  { component: AreasServedAdapter,    propsSchema: areasServedPropsSchema },
-  leadFormCta:  { component: LeadFormCtaAdapter,    propsSchema: leadFormCtaPropsSchema },
+  hero:          { component: HeroSectionAdapter,    propsSchema: heroPropsSchema },
+  trustBadges:   { component: TrustBadgesAdapter,    propsSchema: trustBadgesPropsSchema },
+  services:      { component: ServicesAdapter,       propsSchema: servicesPropsSchema },
+  reviews:       { component: ReviewsAdapter,        propsSchema: reviewsPropsSchema },
+  blog:          { component: BlogAdapter,           propsSchema: blogPropsSchema },
+  about:         { component: AboutAdapter,          propsSchema: aboutPropsSchema },
+  areasServed:   { component: AreasServedAdapter,    propsSchema: areasServedPropsSchema },
+  leadFormCta:   { component: LeadFormCtaAdapter,    propsSchema: leadFormCtaPropsSchema },
+  whatsappGroup: { component: WhatsAppGroupSection,  propsSchema: whatsAppGroupPropsSchema },
 };
 
 export const registeredSectionTypes = Object.keys(sectionRegistry);
