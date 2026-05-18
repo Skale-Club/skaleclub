@@ -24,6 +24,7 @@ import { registerFormRoutes } from "./routes/forms.js";
 import { registerIntegrationRoutes } from "./routes/integrations.js";
 import { registerEstimatesRoutes } from "./routes/estimates.js";
 import { registerPresentationsRoutes } from "./routes/presentations.js";
+import { registerLandingPageRoutes } from "./routes/landingPages.js";
 import { registerUploadRoutes } from "./routes/uploads.js";
 import { registerLinksPageRoutes } from "./routes/linksPage.js";
 import { registerBrandGuidelinesRoutes } from "./routes/brandGuidelines.js";
@@ -141,6 +142,7 @@ export async function registerRoutes(
   registerEstimatesRoutes(app);
   registerSkaleHubRoutes(app);
   registerPresentationsRoutes(app);
+  registerLandingPageRoutes(app);
   registerBrandGuidelinesRoutes(app);
   registerPresentationsChatRoutes(app);
   registerPresentationsGeneratorRoutes(app);
