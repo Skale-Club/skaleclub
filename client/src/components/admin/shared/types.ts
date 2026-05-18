@@ -20,6 +20,7 @@ export type AdminSection =
   | 'estimates'
   | 'presentations'
   | 'skaleHub'
+  | 'landings'
   | 'notifications';
 
 export interface DayHours {

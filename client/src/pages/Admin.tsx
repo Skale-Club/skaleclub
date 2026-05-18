@@ -34,6 +34,7 @@ const XpotSalesSection = lazy(() => import('@/components/admin/XpotSalesSection'
 const EstimatesSection = lazy(() => import('@/components/admin/EstimatesSection').then(m => ({ default: m.EstimatesSection })));
 const PresentationsSection = lazy(() => import('@/components/admin/PresentationsSection').then(m => ({ default: m.PresentationsSection })));
 const SkaleHubSection = lazy(() => import('@/components/admin/SkaleHubSection').then(m => ({ default: m.SkaleHubSection })));
+const LandingsSection = lazy(() => import('@/components/admin/landings/LandingsSection').then(m => ({ default: m.LandingsSection })));
 const NotificationsSection = lazy(() => import('@/components/admin/NotificationsSection').then(m => ({ default: m.NotificationsSection })));
 
 const menuItems = SIDEBAR_MENU_ITEMS;
@@ -63,6 +64,7 @@ function AdminContent() {
       estimates: 'estimates',
       presentations: 'presentations',
       'skale-hub': 'skaleHub',
+      landings: 'landings',
       notifications: 'notifications',
     };
     return slugMap[segment] || 'dashboard';
@@ -120,6 +122,7 @@ function AdminContent() {
       estimates: 'estimates',
       presentations: 'presentations',
       skaleHub: 'skale-hub',
+      landings: 'landings',
       notifications: 'notifications',
     };
     setLocation(`/admin/${slugMap[section]}`);
@@ -207,7 +210,7 @@ function AdminContent() {
           {activeSection !== 'chat' && (
             <div className="flex-1 overflow-y-auto min-h-0 p-6 pb-16 md:p-8 md:pb-10">
               {(() => {
-                const sectionsWithOwnHeader: AdminSection[] = ['leads', 'forms', 'faqs', 'users', 'blog', 'portfolio', 'links', 'vcards', 'fieldSales', 'estimates', 'company', 'website', 'seo', 'integrations', 'presentations', 'skaleHub', 'notifications'];
+                const sectionsWithOwnHeader: AdminSection[] = ['leads', 'forms', 'faqs', 'users', 'blog', 'portfolio', 'links', 'vcards', 'fieldSales', 'estimates', 'company', 'website', 'seo', 'integrations', 'presentations', 'skaleHub', 'landings', 'notifications'];
                 if (sectionsWithOwnHeader.includes(activeSection)) return null;
                 // Dashboard renders its own SectionHeader (with form selector action)
                 if (activeSection === 'dashboard') return null;
@@ -237,6 +240,7 @@ function AdminContent() {
               {activeSection === 'estimates' && <EstimatesSection />}
               {activeSection === 'presentations' && <PresentationsSection />}
               {activeSection === 'skaleHub' && <SkaleHubSection />}
+              {activeSection === 'landings' && <LandingsSection />}
               {activeSection === 'notifications' && <NotificationsSection />}
             </div>
           )}
