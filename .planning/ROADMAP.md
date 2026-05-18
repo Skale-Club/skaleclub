@@ -290,6 +290,29 @@ Plans:
 - [ ] 44-04-PLAN.md — Seed website-leads form + landing_pages row for /websites
 - [ ] 44-05-PLAN.md — E2E verification + visual polish
 
+### Phase 45: Traffic Analytics — port Marketing dashboard from skaleclub-websites
+
+**Goal:** Port the Marketing Attribution feature from `C:\Users\Vanildo\Dev\skaleclub-websites` to this codebase. Admin gains a "Traffic" section with 5 tabs (Overview / Sources / Campaigns / Conversions / Journey) showing where visitors come from, which campaigns convert, and per-visitor journeys. Visitor tracking runs on every page load via a small client-side library posting to `/api/attribution/visit`. Form submissions create an `attribution_conversions` row linked to the visitor session. The source feature is multi-tenant; this port adapts to single-tenant (drop `tenant_id` everywhere).
+
+**Success Criteria:**
+  1. Tables `visitor_sessions` + `attribution_conversions` exist (single-tenant). Raw-SQL idempotent migration.
+  2. Public `POST /api/attribution/visit` upserts visitor session by UUID. FT columns immutable post-insert; LT columns updated every call.
+  3. Five admin endpoints `/api/admin/marketing/{overview,sources,campaigns,conversions,journey}` — admin-only.
+  4. Storage: 6 methods ported (upsertVisitorSession + 5 aggregation queries with identical SQL semantics).
+  5. Client tracking: `client/src/lib/attribution.ts` + `client/src/hooks/use-attribution.ts` ported. Cookie `_skv` persists visitorId. `App.tsx` mounts `useAttribution()` so every page load tracks.
+  6. Form leads link to visitor sessions: server inserts an `attribution_conversions` row with `conversionType='lead_created'` whenever a `form_leads` row is created, copying ft_/lt_ attribution.
+  7. Admin "Traffic" section (5 tabs, date-range filters Today / Yesterday / Last 7 / Last 30 / This month / Last month / Custom, source + campaign dropdowns, conversion-type filter, Visits & Conversions Over Time chart, KPI cards: Total Visits / Leads Generated / Conversion Rate / Top Traffic Source / Best Campaign / Best Landing Page).
+  8. UI matches the screenshot reference (dark admin theme).
+  9. All code in English. Single-tenant adaptation explicit (no orphan `tenantId` references).
+  10. `npm run check` + `npm run build` pass with zero new errors.
+
+**Depends on:** Phase 44
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 45 to break down)
+
 ---
 
 _Last updated: 2026-05-17 — Phase 44 Plan 03 complete (phoneCountry field type)_

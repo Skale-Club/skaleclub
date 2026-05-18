@@ -445,6 +445,10 @@ export const translations = {
     'Give AI instructions to improve this slide': 'Dê instruções para a IA melhorar este slide',
     'Improving...': 'Melhorando...', 'Improve this slide': 'Melhorar este slide',
     'Slide improved': 'Slide melhorado', 'Failed to improve slide': 'Falha ao melhorar slide',
+    'Apply': 'Aplicar', 'Delete slide': 'Excluir slide',
+    'Move up': 'Mover para cima', 'Move down': 'Mover para baixo',
+    'One bullet per line': 'Um tópico por linha',
+    'Unsaved changes': 'Alterações não salvas',
   }
 } as const;
 export type TranslationKey = keyof typeof translations.pt;
