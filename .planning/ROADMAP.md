@@ -308,7 +308,7 @@ Plans:
 
 **Depends on:** Phase 44
 
-**Plans:** 2/8 plans executed
+**Plans:** 3/8 plans executed
 
 Plans:
 - [ ] TBD (run /gsd:plan-phase 45 to break down)
