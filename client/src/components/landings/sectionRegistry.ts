@@ -10,6 +10,7 @@ import { AboutAdapter, aboutPropsSchema } from "./sections/AboutAdapter";
 import { AreasServedAdapter, areasServedPropsSchema } from "./sections/AreasServedAdapter";
 import { LeadFormCtaAdapter, leadFormCtaPropsSchema } from "./sections/LeadFormCtaAdapter";
 import { WhatsAppGroupSection, whatsAppGroupPropsSchema } from "./sections/WhatsAppGroupSection";
+import { ProcessStepperSection, processStepperPropsSchema } from "./sections/ProcessStepperSection";
 
 export interface SectionEntry {
   component: ComponentType<{ props: any }>;
@@ -30,7 +31,8 @@ export const sectionRegistry: Record<string, SectionEntry> = {
   about:         { component: AboutAdapter,          propsSchema: aboutPropsSchema },
   areasServed:   { component: AreasServedAdapter,    propsSchema: areasServedPropsSchema },
   leadFormCta:   { component: LeadFormCtaAdapter,    propsSchema: leadFormCtaPropsSchema },
-  whatsappGroup: { component: WhatsAppGroupSection,  propsSchema: whatsAppGroupPropsSchema },
+  whatsappGroup:  { component: WhatsAppGroupSection,  propsSchema: whatsAppGroupPropsSchema },
+  processStepper: { component: ProcessStepperSection, propsSchema: processStepperPropsSchema },
 };
 
 export const registeredSectionTypes = Object.keys(sectionRegistry);
