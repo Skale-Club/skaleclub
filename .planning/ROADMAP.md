@@ -243,6 +243,49 @@ Plans:
 Plans:
 - [ ] TBD (run /gsd:plan-phase 42 to break down)
 
+### Phase 43: Landing Page System (dynamic landings at root slugs)
+
+**Goal:** Admins can create unlimited landing pages from the admin panel, each addressable at a clean root URL like `skale.club/websites`. The renderer composes from a registry of section components. Existing `client/src/components/home/*` primitives are wired into the registry first (homepage-style sections). The Skale Hub group landing (currently hardcoded in `pages/SkaleHubGroup.tsx`) is migrated to the new system as a `whatsappGroup` section type, **preserving its current visual design verbatim** — only its plumbing changes (now managed via the admin instead of a hand-rolled page + route).
+
+**Success Criteria:**
+  1. New `landing_pages` table exists (uuid id, unique text slug, text name, jsonb sections, bool is_active, timestamps) — migration applied idempotently.
+  2. `/api/landing-pages` CRUD (admin-only) + `/api/landing-pages/slug/:slug` (public, no auth) work end-to-end.
+  3. POST/PUT slug validation rejects reserved system slugs (admin, blog, portfolio, contact, faq, privacy, terms, e, p, f, links, vcard, xpot, sites, api, assets) with HTTP 409.
+  4. New `pages/DynamicLanding.tsx` resolves `:slug` → fetches landing → composes sections in JSONB order via a `type → component` registry. Section type registry on ship: `hero`, `trustBadges`, `services`, `reviews`, `blog`, `about`, `areasServed`, `leadFormCta`, `whatsappGroup`.
+  5. New catch-all `<Route path="/:slug">` registered LAST in `App.tsx` Switch. Existing routes (`/admin`, `/blog`, `/contact`, etc.) keep matching first and are unaffected.
+  6. Visiting `/random-unknown-slug` shows the existing 404 page (no renderer crash).
+  7. Admin UI: new "Landings" section with list view (slug, name, is_active, updated_at) + create dialog (slug + name) + edit view with JSON editor for sections (textarea + validate-on-save against a Zod section-array schema).
+  8. **SkaleHubGroup migration:** existing landing at `<hub>/grupo` and `<hub>/group` migrated to the new system. A `whatsappGroup` section type is registered, rendering the exact same JSX/CSS as `pages/SkaleHubGroup.tsx` today (same hero, same phone+country form, same CTA, same UTM tracking, same GHL integration). Old hardcoded routes redirect (HTTP 301) to the new managed landing. `pages/SkaleHubGroup.tsx` is deleted only after the managed landing is verified live with the same behavior.
+  9. `npm run check` and `npm run build` pass with zero new errors/warnings.
+
+**Depends on:** Phase 42
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 43 to break down)
+
+### Phase 44: Landing /websites — homepage-style hero, new section, website-leads form with country selector
+
+**Goal:** Ship the first net-new managed landing at `skale.club/websites` using the system Phase 43 introduces. Visual style mirrors the Home page (full marketing page: hero → trust → services → reviews → CTA), NOT the minimal SkaleHubGroup style. The landing targets businesses looking to commission a website. Includes a new hero variant (custom copy + visual specifically for the website-build service), at least one section type that does NOT exist on the Home today (the planner picks the best fit — e.g. a "process / how we build" stepper, a portfolio carousel of past websites, or a pricing/packages table), and a dedicated `website-leads` form with a country selector field that actually works (reuses the existing `<PhoneCountrySelect>` + `phoneCountries.ts` library).
+
+**Success Criteria:**
+  1. New form `website-leads` exists in the `forms` table with questions tailored to website projects (project type, country, contact info, budget range, deadline). Created via the admin Forms UI or seeded via a migration script — either is acceptable.
+  2. Country selector field works end-to-end: dropdown shows the existing ~250-country list with flags, default detected from browser locale, phone number formatted per country, submission stores ISO 3166-1 alpha-2 code (`BR`, `US`, etc.) alongside the international phone string.
+  3. New section type `heroWebsites` registered in the Phase 43 section registry. Component lives at `client/src/components/landings/HeroWebsites.tsx`. Props accept headline, subheadline, CTA label, background image URL. Renders responsive at all breakpoints.
+  4. At least one additional NEW section type registered (planner decides which one fits best for /websites — e.g. `processStepper`, `pricingPackages`, or `portfolioGrid`). Component lives at `client/src/components/landings/<Name>.tsx`. Reusable for future landings.
+  5. Database seed: a `landing_pages` row with `slug='websites'`, `is_active=true`, and a `sections` JSONB composing — in order — `heroWebsites`, `trustBadges`, `services` (or the new `processStepper` etc.), `reviews`, `leadFormCta` pointing at `website-leads`. Seeded via a one-shot migration script under `scripts/`.
+  6. Visiting `https://skale.club/websites` (or `http://localhost:1000/websites` in dev) renders the landing with the homepage's visual tone — same fonts, colors, spacing system. Submitting the form creates a `form_leads` row in the `website-leads` form and triggers the same GHL contact-create pipeline used by the default form.
+  7. Mobile responsive (tested at 375px, 768px, 1280px). No layout shift on country-selector open. No console errors.
+  8. All UI strings (button labels, helper text, error messages) in English (per project convention reaffirmed by the user). Form content (questions) authored in pt-BR matching the project's market.
+  9. `npm run check` and `npm run build` pass.
+
+**Depends on:** Phase 43
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 44 to break down)
+
 ---
 
 _Last updated: 2026-05-16 — Phase 40 plans created (3 plans, 2 waves)_

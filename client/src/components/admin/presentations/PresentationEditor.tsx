@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { ChevronLeft, ExternalLink, Presentation } from 'lucide-react';
+import {
+  ChevronLeft, Code2, ExternalLink, Layers, Presentation, Wand2,
+} from 'lucide-react';
 import { AdminCard, SectionHeader } from '../shared';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,17 +17,153 @@ import {
 } from '@/lib/thumbnails';
 import type { PresentationWithStats, SlideBlock } from '@shared/schema';
 
-// ─── SlideCard ────────────────────────────────────────────────────────────────
+// ─── SlideCard ─────────────────────────────────────────────────────────────────
 
-function SlideCard({ slide }: { slide: SlideBlock; index: number }) {
+function SlideCard({
+  slide,
+  index,
+  selected,
+  onClick,
+}: {
+  slide: SlideBlock;
+  index: number;
+  selected: boolean;
+  onClick: () => void;
+}) {
   return (
-    <div className="rounded-lg border p-3 space-y-1 bg-muted/30">
-      <Badge variant="outline" className="text-xs font-mono capitalize">
-        {slide.layout}
-      </Badge>
-      <p className="text-xs text-muted-foreground truncate">
-        {slide.heading ?? slide.headingPt ?? slide.layout}
+    <button
+      onClick={onClick}
+      className={`w-full text-left rounded-lg border p-3 space-y-1 transition-colors ${
+        selected ? 'border-primary bg-primary/10' : 'bg-muted/30 hover:bg-muted/50'
+      }`}
+    >
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground font-mono w-5 shrink-0 text-right">
+          {index + 1}
+        </span>
+        <Badge variant="outline" className="text-xs font-mono capitalize">
+          {slide.layout}
+        </Badge>
+      </div>
+      <p className="text-xs text-muted-foreground truncate pl-7">
+        {slide.heading ?? slide.headingPt ?? '—'}
       </p>
+    </button>
+  );
+}
+
+// ─── SlideDetailPanel ──────────────────────────────────────────────────────────
+
+function SlideDetailPanel({
+  slide,
+  index,
+  presentationId,
+  onSlidesUpdated,
+  isImproving,
+  setIsImproving,
+}: {
+  slide: SlideBlock;
+  index: number;
+  presentationId: string;
+  onSlidesUpdated: (slides: SlideBlock[]) => void;
+  isImproving: boolean;
+  setIsImproving: (v: boolean) => void;
+}) {
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  const [instruction, setInstruction] = useState('');
+
+  async function handleImprove() {
+    if (!instruction.trim()) return;
+    setIsImproving(true);
+    try {
+      const message = `Edit only slide at index ${index}: ${instruction.trim()}. Keep all other slides identical.`;
+      const response = await fetch(`/api/presentations/${presentationId}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ message }),
+      });
+      if (!response.body) throw new Error('No response body');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const text = decoder.decode(value, { stream: true });
+        for (const line of text.split('\n')) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.type === 'done' && Array.isArray(data.slides)) {
+              onSlidesUpdated(data.slides);
+              setInstruction('');
+              toast({ title: t('Slide improved') });
+            }
+          } catch { /* skip malformed SSE lines */ }
+        }
+      }
+    } catch (err: any) {
+      toast({ title: t('Failed to improve slide'), description: err.message, variant: 'destructive' });
+    } finally {
+      setIsImproving(false);
+    }
+  }
+
+  const fields: { label: string; value: string | undefined }[] = [
+    { label: 'Layout', value: slide.layout },
+    { label: 'Heading EN', value: slide.heading },
+    { label: 'Heading PT', value: slide.headingPt },
+    { label: 'Body EN', value: slide.body },
+    { label: 'Body PT', value: slide.bodyPt },
+  ];
+  if (slide.bullets?.length) fields.push({ label: 'Bullets EN', value: slide.bullets.join(' · ') });
+  if (slide.bulletsPt?.length) fields.push({ label: 'Bullets PT', value: slide.bulletsPt.join(' · ') });
+  if (slide.stats?.length) {
+    fields.push({ label: 'Stats', value: slide.stats.map((s) => `${s.label}: ${s.value}`).join(' · ') });
+  }
+  if (slide.attribution) fields.push({ label: 'Attribution', value: slide.attribution });
+  if (slide.style?.bgImageUrl) fields.push({ label: 'Background image', value: slide.style.bgImageUrl });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-semibold text-muted-foreground font-mono">#{index + 1}</span>
+        <Badge variant="outline" className="capitalize">{slide.layout}</Badge>
+      </div>
+
+      <div className="space-y-2">
+        {fields.filter((f) => f.value).map(({ label, value }) => (
+          <div key={label} className="rounded-md bg-muted/30 border px-3 py-2">
+            <p className="text-xs font-medium text-muted-foreground mb-0.5">{label}</p>
+            <p className="text-sm text-foreground line-clamp-3">{value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="space-y-2 pt-3 border-t">
+        <p className="text-sm font-medium">{t('Improve with AI')}</p>
+        <Textarea
+          placeholder={t('Give AI instructions to improve this slide')}
+          value={instruction}
+          onChange={(e) => setInstruction(e.target.value)}
+          rows={3}
+          disabled={isImproving}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleImprove();
+          }}
+        />
+        <p className="text-xs text-muted-foreground">Ctrl+Enter para enviar</p>
+        <Button
+          onClick={handleImprove}
+          disabled={!instruction.trim() || isImproving}
+          className="w-full gap-2"
+        >
+          {isImproving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+          {isImproving ? t('Improving...') : t('Improve this slide')}
+        </Button>
+      </div>
     </div>
   );
 }
@@ -42,13 +180,21 @@ export function PresentationEditor({
   const { t } = useTranslation();
   const { toast } = useToast();
 
+  const [mode, setMode] = useState<'visual' | 'json'>('visual');
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [isImproving, setIsImproving] = useState(false);
+
   const [jsonText, setJsonText] = useState(() =>
     JSON.stringify(presentation.slides ?? [], null, 2),
   );
   const [jsonError, setJsonError] = useState<string | null>(null);
-  const [parsedSlides, setParsedSlides] = useState<SlideBlock[]>(
-    presentation.slides ?? [],
-  );
+  const [parsedSlides, setParsedSlides] = useState<SlideBlock[]>(presentation.slides ?? []);
+
+  function handleSlidesUpdated(slides: SlideBlock[]) {
+    setParsedSlides(slides);
+    setJsonText(JSON.stringify(slides, null, 2));
+    localStorage.setItem(`presentation_draft_${presentation.slug}`, JSON.stringify(slides));
+  }
 
   function handleJsonChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     const text = e.target.value;
@@ -62,13 +208,9 @@ export function PresentationEditor({
     }
   }
 
-  // Auto-save draft to localStorage so the preview tab can pick up edits in real time
   useEffect(() => {
     if (jsonError) return;
-    localStorage.setItem(
-      `presentation_draft_${presentation.slug}`,
-      JSON.stringify(parsedSlides),
-    );
+    localStorage.setItem(`presentation_draft_${presentation.slug}`, JSON.stringify(parsedSlides));
   }, [parsedSlides, presentation.slug, jsonError]);
 
   const saveMutation = useMutation({
@@ -83,7 +225,6 @@ export function PresentationEditor({
         title: presentation.title,
         slides: parsedSlides,
       });
-
       if (presentation.thumbnailSignature !== thumbnailSignature) {
         try {
           const thumbnailUrl = await createPresentationThumbnailDataUrl({
@@ -98,24 +239,17 @@ export function PresentationEditor({
           console.warn('Failed to cache presentation thumbnail', err);
         }
       }
-
       queryClient.invalidateQueries({ queryKey: ['/api/presentations'] });
       queryClient.invalidateQueries({ queryKey: [`/api/presentations/slug/${presentation.slug}`] });
-      // Keep draft in localStorage so any open preview tab stays in sync; storage event will refetch
-      localStorage.setItem(
-        `presentation_draft_${presentation.slug}`,
-        JSON.stringify(parsedSlides),
-      );
+      localStorage.setItem(`presentation_draft_${presentation.slug}`, JSON.stringify(parsedSlides));
       toast({ title: t('Slides saved') });
     },
     onError: (err: any) => {
-      toast({
-        title: t('Failed to save slides'),
-        description: err.message,
-        variant: 'destructive',
-      });
+      toast({ title: t('Failed to save slides'), description: err.message, variant: 'destructive' });
     },
   });
+
+  const selectedSlide = selectedIndex !== null ? parsedSlides[selectedIndex] ?? null : null;
 
   return (
     <div className="space-y-6">
@@ -124,7 +258,25 @@ export function PresentationEditor({
         description={`${parsedSlides.length} ${t('slides')}`}
         icon={<Presentation className="w-5 h-5" />}
         action={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={mode === 'visual' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setMode('visual')}
+              className="gap-1"
+            >
+              <Layers className="w-4 h-4" />
+              {t('Slides')}
+            </Button>
+            <Button
+              variant={mode === 'json' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setMode('json')}
+              className="gap-1"
+            >
+              <Code2 className="w-4 h-4" />
+              JSON
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -137,6 +289,15 @@ export function PresentationEditor({
               <ExternalLink className="w-4 h-4" />
               {t('Preview')}
             </Button>
+            <Button
+              onClick={() => saveMutation.mutate()}
+              disabled={!!jsonError || saveMutation.isPending || isImproving}
+              size="sm"
+              className="gap-2"
+            >
+              {saveMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+              {t('Save')}
+            </Button>
             <Button variant="outline" size="sm" onClick={onBack}>
               <ChevronLeft className="w-4 h-4 mr-1" />
               {t('Back to presentations')}
@@ -145,10 +306,48 @@ export function PresentationEditor({
         }
       />
 
-      <AdminCard>
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Left: JSON editor */}
-          <div className="flex-1 min-w-0 space-y-3">
+      {mode === 'visual' ? (
+        <AdminCard>
+          <div className="flex gap-6" style={{ minHeight: '520px' }}>
+            {/* Left: slide list */}
+            <div className="w-56 shrink-0 space-y-2 overflow-y-auto max-h-[600px] pr-1">
+              {parsedSlides.length === 0 ? (
+                <p className="text-xs text-muted-foreground">{t('No slides yet')}</p>
+              ) : (
+                parsedSlides.map((slide, i) => (
+                  <SlideCard
+                    key={i}
+                    slide={slide}
+                    index={i}
+                    selected={selectedIndex === i}
+                    onClick={() => setSelectedIndex(i)}
+                  />
+                ))
+              )}
+            </div>
+
+            {/* Right: detail + AI */}
+            <div className="flex-1 border-l pl-6 overflow-y-auto max-h-[600px]">
+              {selectedSlide ? (
+                <SlideDetailPanel
+                  slide={selectedSlide}
+                  index={selectedIndex!}
+                  presentationId={presentation.id}
+                  onSlidesUpdated={handleSlidesUpdated}
+                  isImproving={isImproving}
+                  setIsImproving={setIsImproving}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                  {t('Select a slide to edit')}
+                </div>
+              )}
+            </div>
+          </div>
+        </AdminCard>
+      ) : (
+        <AdminCard>
+          <div className="space-y-3">
             <p className="text-sm font-medium text-muted-foreground">
               {t('JSON — paste Claude Code output here')}
             </p>
@@ -163,35 +362,9 @@ export function PresentationEditor({
                 {t('Invalid JSON')}: {jsonError}
               </p>
             )}
-            <div className="flex justify-end pt-2">
-              <Button
-                onClick={() => saveMutation.mutate()}
-                disabled={!!jsonError || saveMutation.isPending}
-                className="gap-2"
-              >
-                {saveMutation.isPending && (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                )}
-                {t('Save')}
-              </Button>
-            </div>
           </div>
-
-          {/* Right: Slide mini-cards */}
-          <div className="w-full lg:w-72 space-y-3">
-            <p className="text-sm font-medium">{t('Slide preview')}</p>
-            {parsedSlides.length === 0 ? (
-              <p className="text-xs text-muted-foreground">{t('No slides yet')}</p>
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                {parsedSlides.map((slide, i) => (
-                  <SlideCard key={i} slide={slide} index={i} />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </AdminCard>
+        </AdminCard>
+      )}
     </div>
   );
 }

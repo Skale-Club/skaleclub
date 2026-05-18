@@ -439,6 +439,12 @@ export const translations = {
     'approximate, based on Gemini list pricing': 'aproximado, baseado na tabela de preços Gemini',
     'No upcoming run scheduled': 'Nenhuma execução programada',
     'per month': 'por mês', 'Pages': 'Páginas', 'Page': 'Página', 'of': 'de',
+    // Presentation Editor — Phase 43
+    'Slides': 'Slides', 'Select a slide to edit': 'Selecione um slide para editar',
+    'Improve with AI': 'Melhorar com IA',
+    'Give AI instructions to improve this slide': 'Dê instruções para a IA melhorar este slide',
+    'Improving...': 'Melhorando...', 'Improve this slide': 'Melhorar este slide',
+    'Slide improved': 'Slide melhorado', 'Failed to improve slide': 'Falha ao melhorar slide',
   }
 } as const;
 export type TranslationKey = keyof typeof translations.pt;

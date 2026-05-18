@@ -131,6 +131,8 @@ Last activity: 2026-05-16
 - Phase 42 added: Code-split admin bundle via Vite manualChunks and lazy admin sections (SEED-003)
 - Phase 41 completed (2026-05-17): 9 admin files split into per-area subfolders; parents 7538→2899 LOC, zero files >600
 - Phase 42 completed (2026-05-17): Vite manualChunks + lazy admin sections; Admin chunk 565→82 KB, zero >500 KB warnings
+- Phase 43 added: Landing Page System — dynamic landings at root slugs, section registry, admin editor, SkaleHubGroup migrated into the system preserving its design
+- Phase 44 added: /websites landing — homepage-style sections + heroWebsites variant + net-new section + website-leads form with country selector
 
 ### Decisions Made
 
