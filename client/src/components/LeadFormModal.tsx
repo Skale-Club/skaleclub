@@ -25,6 +25,7 @@ import {
   getInternationalPhone,
   type PhoneCountry,
 } from "@/lib/phoneCountries";
+import { getStoredVisitorId } from "@/lib/attribution";
 
 type FormView = "form" | "loading";
 
@@ -511,6 +512,12 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
       if (effectiveAnswers.principalDesafio) payload.principalDesafio = effectiveAnswers.principalDesafio;
       if (effectiveAnswers.disponibilidade) payload.disponibilidade = effectiveAnswers.disponibilidade;
       if (effectiveAnswers.expectativaResultado) payload.expectativaResultado = effectiveAnswers.expectativaResultado;
+
+      // Phase 45 — attach the marketing-attribution visitor UUID if present.
+      const __visitorId = getStoredVisitorId();
+      if (__visitorId) {
+        payload.__visitorId = __visitorId;
+      }
 
       updateStoredState(opts?.stepToResume ?? currentStep, questionNumber, pendingSync);
       try {

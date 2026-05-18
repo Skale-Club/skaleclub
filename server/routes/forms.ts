@@ -335,6 +335,7 @@ export function registerFormRoutes(app: Express) {
         initialLead,
         (form.config as FormConfig | null) ?? SKALE_HUB_GROUP_FORM_CONFIG,
         companyName,
+        typeof req.body?.__visitorId === 'string' ? req.body.__visitorId : undefined,
       );
 
       res.status(201).json({ success: true, leadId: lead.id });
@@ -374,7 +375,12 @@ export function registerFormRoutes(app: Express) {
         formConfig,
       );
 
-      const { lead } = await runLeadPostProcessing(initialLead, formConfig, companyName);
+      const { lead } = await runLeadPostProcessing(
+        initialLead,
+        formConfig,
+        companyName,
+        typeof req.body?.__visitorId === 'string' ? req.body.__visitorId : undefined,
+      );
       res.json(lead);
     } catch (err: any) {
       if (err instanceof z.ZodError) {
