@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from '@/components/ui/loader';
+import { AppLoader } from '@/components/ui/spinner';
 import { TurnstileWidget } from '@/components/TurnstileWidget';
 import {
   ArrowLeft,
@@ -42,11 +43,7 @@ export default function AdminSignup() {
   }, [loading, isAdmin, setLocation]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-100">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <AppLoader />;
   }
 
   const handleGoogleSignup = async () => {

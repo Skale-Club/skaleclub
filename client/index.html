@@ -29,6 +29,41 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <script>
+      // Pre-React theme bootstrap — applies `dark` or `light` class to <html>
+      // BEFORE React renders, so theme-aware Tailwind classes (bg-background,
+      // text-foreground, etc.) work correctly on the very first paint.
+      // Mirrors the rules in client/src/context/ThemeContext.tsx.
+      // Without this, full-screen loaders / route guards flash the wrong theme
+      // during the gap between HTML parse and React mount.
+      (function () {
+        try {
+          var path = window.location.pathname;
+          var host = window.location.hostname;
+          var isXpot = host === "xpot.skale.club" || host.indexOf("xpot.") === 0;
+          var isAdminThemeable =
+            path.indexOf("/admin") === 0 &&
+            path !== "/admin/login" &&
+            path !== "/admin/signup";
+
+          var theme = "light";
+          if (isXpot) {
+            theme = "dark";
+          } else if (isAdminThemeable) {
+            var stored = null;
+            try { stored = localStorage.getItem("skale-club-admin-theme"); } catch (e) {}
+            if (stored === "dark") {
+              theme = "dark";
+            } else if (stored === "system") {
+              theme = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+            }
+          }
+          document.documentElement.classList.add(theme);
+        } catch (e) {
+          document.documentElement.classList.add("light");
+        }
+      })();
+    </script>
+    <script>
       (function () {
         var hostname = window.location.hostname;
         var isXpotHost = hostname === "xpot.skale.club" || hostname.indexOf("xpot.") === 0;

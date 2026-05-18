@@ -13,7 +13,7 @@ import { SIDEBAR_MENU_ITEMS } from '@/components/admin/shared/constants';
 import { SectionHeader } from '@/components/admin/shared';
 import type { AdminSection, CompanySettingsData } from '@/components/admin/shared/types';
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { Loader2 } from '@/components/ui/loader';
+import { AppLoader } from '@/components/ui/spinner';
 
 // Lazy-loaded admin sections — each becomes its own chunk in production builds.
 const UsersSection = lazy(() => import('./UsersSection').then(m => ({ default: m.UsersSection })));
@@ -164,11 +164,7 @@ function AdminContent() {
   }, [companySettings?.sectionsOrder]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <AppLoader />;
   }
 
   if (!isAdmin) {

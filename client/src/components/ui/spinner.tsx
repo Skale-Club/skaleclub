@@ -61,9 +61,44 @@ export function InlineLoader({
   return <DotsLoader size={size} tone={tone} className={cn("inline-flex shrink-0", className)} />;
 }
 
+/**
+ * PageLoader — hardcoded dark splash for pre-React boot states.
+ * Use this only as the Suspense fallback during initial route transitions,
+ * where the theme class has not been applied yet and we want a consistent
+ * dark splash regardless of the user's preference. For any in-app
+ * "waiting" state (auth check, route guard, initial data fetch) use
+ * <AppLoader /> instead — it respects the active theme.
+ */
 export function PageLoader() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0f1014]">
+      <DotsLoader size="lg" tone="brand" />
+    </div>
+  );
+}
+
+/**
+ * AppLoader — full-screen, theme-aware loader.
+ *
+ * Use this for any top-level waiting state inside a themed area (admin
+ * dashboard, admin auth screens, any future page that gates rendering on
+ * an async check). Two non-obvious properties:
+ *
+ *   1. `fixed inset-0` — covers the entire viewport regardless of the
+ *      parent layout. Crucial inside <SidebarProvider> (and any other flex
+ *      container) where a relative-positioned loader would otherwise be
+ *      squeezed into a narrow strip of the content column.
+ *   2. `bg-background` — theme-aware via the Tailwind dark-class strategy.
+ *      Combined with the pre-React theme bootstrap in client/index.html,
+ *      this paints the correct color from the very first frame.
+ *
+ * NEVER write `<div className="min-h-screen flex items-center justify-center bg-slate-…"><Loader2 …/></div>`
+ * by hand again — use <AppLoader /> so the theme + layout behavior stays
+ * consistent across pages.
+ */
+export function AppLoader() {
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-background">
       <DotsLoader size="lg" tone="brand" />
     </div>
   );
