@@ -1,64 +1,69 @@
 import type { Express } from "express";
-import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { storage } from "../storage.js";
 import { requireAdmin } from "./_shared.js";
-import { getAnthropicClient } from "../lib/anthropic.js";
+import { getGeminiClient } from "../lib/gemini.js";
+import { getRuntimeGeminiKey } from "../lib/ai-provider.js";
 import { slideBlockSchema } from "#shared/schema.js";
 
-// Hand-written JSON Schema for the update_slides tool.
-// zod-to-json-schema is NOT installed — use this static definition.
-// Must satisfy @anthropic-ai/sdk Tool interface (input_schema.type must be "object").
-const UPDATE_SLIDES_TOOL: Anthropic.Tool = {
-  name: "update_slides",
-  description:
-    "Replace the entire slides array for this presentation. " +
-    "Always return ALL slides — preserve unmodified slides verbatim as provided in the current slides context. " +
-    "Populate bilingual fields (headingPt, bodyPt, bulletsPt) with Portuguese (pt-BR) translations. " +
-    "When editing a specific slide, return all other slides byte-for-byte identical to the input.",
-  input_schema: {
-    type: "object",
-    required: ["slides"],
-    properties: {
-      slides: {
-        type: "array",
-        items: {
-          type: "object",
-          required: ["layout"],
-          properties: {
-            layout: {
-              type: "string",
-              enum: ["cover", "section-break", "title-body", "bullets", "stats", "two-column", "image-focus", "closing", "image-left", "image-right", "full-bleed-image", "quote"],
-            },
-            heading:   { type: "string" },
-            headingPt: { type: "string" },
-            body:      { type: "string" },
-            bodyPt:    { type: "string" },
-            bullets:   { type: "array", items: { type: "string" } },
-            bulletsPt: { type: "array", items: { type: "string" } },
-            stats: {
-              type: "array",
-              items: {
-                type: "object",
-                required: ["label", "value"],
-                properties: {
-                  label:   { type: "string" },
-                  value:   { type: "string" },
-                  labelPt: { type: "string" },
+// OpenAI-compatible tool definition (Gemini via OpenAI-compat endpoint).
+const UPDATE_SLIDES_TOOL = {
+  type: "function" as const,
+  function: {
+    name: "update_slides",
+    description:
+      "Replace the entire slides array for this presentation. " +
+      "Always return ALL slides — preserve unmodified slides verbatim as provided in the current slides context. " +
+      "Populate bilingual fields (headingPt, bodyPt, bulletsPt) with Portuguese (pt-BR) translations. " +
+      "When editing a specific slide, return all other slides byte-for-byte identical to the input.",
+    parameters: {
+      type: "object",
+      required: ["slides"],
+      properties: {
+        slides: {
+          type: "array",
+          items: {
+            type: "object",
+            required: ["layout"],
+            properties: {
+              layout: {
+                type: "string",
+                enum: [
+                  "cover", "section-break", "title-body", "bullets", "stats",
+                  "two-column", "image-focus", "closing",
+                  "image-left", "image-right", "full-bleed-image", "quote",
+                ],
+              },
+              heading:   { type: "string" },
+              headingPt: { type: "string" },
+              body:      { type: "string" },
+              bodyPt:    { type: "string" },
+              bullets:   { type: "array", items: { type: "string" } },
+              bulletsPt: { type: "array", items: { type: "string" } },
+              stats: {
+                type: "array",
+                items: {
+                  type: "object",
+                  required: ["label", "value"],
+                  properties: {
+                    label:   { type: "string" },
+                    value:   { type: "string" },
+                    labelPt: { type: "string" },
+                  },
                 },
               },
-            },
-            attribution:   { type: "string" },
-            attributionPt: { type: "string" },
-            style: {
-              type: "object",
-              properties: {
-                bgColor:      { type: "string" },
-                textColor:    { type: "string" },
-                headingColor: { type: "string" },
-                alignment:    { type: "string", enum: ["left", "center", "right"] },
-                bgImageUrl:   { type: "string" },
-                bgVideoUrl:   { type: "string" },
+              attribution:   { type: "string" },
+              attributionPt: { type: "string" },
+              style: {
+                type: "object",
+                properties: {
+                  bgColor:      { type: "string" },
+                  textColor:    { type: "string" },
+                  headingColor: { type: "string" },
+                  alignment:    { type: "string", enum: ["left", "center", "right"] },
+                  bgImageUrl:   { type: "string" },
+                  bgVideoUrl:   { type: "string" },
+                },
               },
             },
           },
@@ -68,7 +73,6 @@ const UPDATE_SLIDES_TOOL: Anthropic.Tool = {
   },
 };
 
-// System prompt template — brand guidelines injected at request time
 function buildSystemPrompt(guidelinesContent: string): string {
   return (
     "You are a slide deck author for a professional marketing agency. " +
@@ -90,26 +94,43 @@ const chatBodySchema = z.object({
 });
 
 export function registerPresentationsChatRoutes(app: Express) {
-  // PRES-11, PRES-12, PRES-13
   // POST /api/presentations/:id/chat
   // Admin-auth required. Accepts { message: string }.
   // Returns text/event-stream SSE with progress, done, or error events.
-  // max_tokens: 4096 — covers ~15 slides comfortably; increase if needed for larger decks.
+  // Uses Gemini via the admin-configured API key (chat_integrations.gemini.apiKey),
+  // with the same model-resolution priority as the generator route.
   app.post("/api/presentations/:id/chat", requireAdmin, async (req, res) => {
-    // 1. Validate request body — must happen before SSE headers
+    // 1. Validate body BEFORE SSE headers
     const bodyParsed = chatBodySchema.safeParse(req.body);
     if (!bodyParsed.success) {
       return res.status(400).json({ message: "message is required and must be 1–4000 characters" });
     }
 
-    // 2. Pre-flight: verify Anthropic key is configured before committing to SSE headers
-    try {
-      getAnthropicClient();
-    } catch {
-      return res.status(503).json({ message: "Anthropic API not configured — set ANTHROPIC_API_KEY" });
+    // 2. Resolve Gemini key from admin integrations (no env requirement)
+    const geminiIntegration = await storage.getChatIntegration("gemini");
+    const apiKey =
+      getRuntimeGeminiKey() ||
+      process.env.GEMINI_API_KEY ||
+      geminiIntegration?.apiKey;
+
+    if (!apiKey) {
+      return res.status(503).json({
+        message: "Gemini API not configured — configure the Gemini integration in Admin → Integrations",
+      });
     }
 
-    // 3. Load presentation + brand guidelines — both needed before SSE starts
+    // Model resolution priority (same as generator):
+    //   1. process.env.GEMINI_PRESENTATION_MODEL — emergency deploy-time override
+    //   2. chat_integrations.gemini.presentation_model — admin UI selector
+    //   3. chat_integrations.gemini.model — chat model fallback
+    //   4. gemini-2.5-flash — safe default (tool calling on OpenAI-compat endpoint)
+    const model =
+      process.env.GEMINI_PRESENTATION_MODEL ||
+      geminiIntegration?.presentationModel ||
+      geminiIntegration?.model ||
+      "gemini-2.5-flash";
+
+    // 3. Load presentation + guidelines BEFORE SSE
     const existing = await storage.getPresentation(req.params.id);
     if (!existing) {
       return res.status(404).json({ message: "Presentation not found" });
@@ -117,56 +138,64 @@ export function registerPresentationsChatRoutes(app: Express) {
     const guidelinesRow = await storage.getBrandGuidelines();
     const guidelines = guidelinesRow?.content ?? "";
 
-    // 4. Set SSE headers and flush BEFORE any streaming begins.
-    // After this point all errors must go through data: {"type":"error",...} — never res.json() or next(err).
+    // 4. Open SSE — all subsequent errors must be SSE events, not res.json()
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
     res.flushHeaders();
 
-    try {
-      const client = getAnthropicClient();
+    // Heartbeat so the client can show a spinner immediately
+    res.write(`data: ${JSON.stringify({ type: "progress" })}\n\n`);
 
-      // PRES-13: full current slides injected so Claude can preserve untouched slides verbatim
+    try {
+      const client = getGeminiClient(apiKey);
+
       const userMessage =
         `Current slides:\n${JSON.stringify(existing.slides, null, 2)}\n\nInstruction: ${bodyParsed.data.message}`;
 
-      const stream = client.messages.stream({
-        model: "claude-sonnet-4-6",
-        max_tokens: 4096,
-        system: buildSystemPrompt(guidelines),
-        messages: [{ role: "user", content: userMessage }],
-        tools: [UPDATE_SLIDES_TOOL],
-        // Force tool invocation — prevents Claude from responding in plain text
-        tool_choice: { type: "tool", name: "update_slides" },
-      });
-
-      // Stream progress ticks to client so UI can show a spinner
-      stream.on("inputJson", () => {
-        res.write(`data: ${JSON.stringify({ type: "progress" })}\n\n`);
-      });
-
-      // finalMessage() resolves when the stream ends with all content blocks accumulated
-      const finalMsg = await stream.finalMessage();
-
-      const toolBlock = finalMsg.content.find(b => b.type === "tool_use");
-      if (!toolBlock || toolBlock.type !== "tool_use") {
-        res.write(`data: ${JSON.stringify({ type: "error", message: "Claude did not invoke the update_slides tool" })}\n\n`);
+      let response;
+      try {
+        response = await client.chat.completions.create({
+          model,
+          max_tokens: 8192,
+          messages: [
+            { role: "system", content: buildSystemPrompt(guidelines) },
+            { role: "user", content: userMessage },
+          ],
+          tools: [UPDATE_SLIDES_TOOL],
+          tool_choice: { type: "function", function: { name: "update_slides" } },
+        });
+      } catch (sdkErr) {
+        const err = sdkErr as { status?: number; message?: string };
+        res.write(`data: ${JSON.stringify({
+          type: "error",
+          message: `Gemini API error (model=${model}, status=${err.status ?? "unknown"}): ${err.message ?? "no message"}`,
+        })}\n\n`);
         res.end();
         return;
       }
 
-      // PRES-12: Zod validation on every DB write
-      const validation = z.array(slideBlockSchema).safeParse(
-        (toolBlock.input as { slides?: unknown }).slides
-      );
+      const toolCall = response.choices[0]?.message?.tool_calls?.[0];
+      if (!toolCall || toolCall.type !== "function") {
+        res.write(`data: ${JSON.stringify({
+          type: "error",
+          message: `Gemini did not invoke the update_slides tool (model=${model})`,
+        })}\n\n`);
+        res.end();
+        return;
+      }
+
+      const rawInput = JSON.parse(toolCall.function.arguments);
+      const validation = z.array(slideBlockSchema).safeParse(rawInput.slides);
       if (!validation.success) {
-        res.write(`data: ${JSON.stringify({ type: "error", message: "Claude returned slides that failed Zod validation" })}\n\n`);
+        res.write(`data: ${JSON.stringify({
+          type: "error",
+          message: "Gemini returned slides that failed Zod validation",
+        })}\n\n`);
         res.end();
         return;
       }
 
-      // PRES-11: Persist slides + guidelinesSnapshot; version = existing.version + 1 (same pattern as PUT route)
       await storage.updatePresentation(req.params.id, {
         slides: validation.data,
         guidelinesSnapshot: guidelines,
@@ -175,9 +204,7 @@ export function registerPresentationsChatRoutes(app: Express) {
 
       res.write(`data: ${JSON.stringify({ type: "done", slides: validation.data })}\n\n`);
       res.end();
-
     } catch (err) {
-      // SSE headers already sent — must write error as SSE event, not res.json()
       res.write(`data: ${JSON.stringify({ type: "error", message: (err as Error).message })}\n\n`);
       res.end();
     }
