@@ -21,7 +21,7 @@ export function AIAssistantGeminiTab({ onEnabledChange }: AIAssistantGeminiTabPr
   const { toast } = useToast();
 
   const [geminiSettings, setGeminiSettings] = useState<OpenAISettings>({
-    provider: 'gemini', enabled: false, model: 'gemini-2.0-flash', hasKey: false,
+    provider: 'gemini', enabled: false, model: 'gemini-2.0-flash', presentationModel: null, hasKey: false,
   });
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const [isTestingGemini, setIsTestingGemini] = useState(false);
@@ -36,7 +36,11 @@ export function AIAssistantGeminiTab({ onEnabledChange }: AIAssistantGeminiTabPr
   useEffect(() => {
     if (geminiSettingsData) {
       const model = VALID_GEMINI_MODELS.includes(geminiSettingsData.model) ? geminiSettingsData.model : 'gemini-2.0-flash';
-      setGeminiSettings({ ...geminiSettingsData, model });
+      const presentationModel =
+        geminiSettingsData.presentationModel && VALID_GEMINI_MODELS.includes(geminiSettingsData.presentationModel)
+          ? geminiSettingsData.presentationModel
+          : null;
+      setGeminiSettings({ ...geminiSettingsData, model, presentationModel });
       onEnabledChange?.(geminiSettingsData.enabled);
       if (geminiSettingsData.hasKey) {
         setGeminiTestResult('success');
@@ -57,6 +61,10 @@ export function AIAssistantGeminiTab({ onEnabledChange }: AIAssistantGeminiTabPr
       await apiRequest('PUT', '/api/integrations/gemini', {
         enabled: settingsToSave?.enabled ?? geminiSettings.enabled,
         model: settingsToSave?.model || geminiSettings.model,
+        presentationModel:
+          settingsToSave?.presentationModel !== undefined
+            ? settingsToSave.presentationModel
+            : geminiSettings.presentationModel ?? null,
         apiKey: (settingsToSave?.apiKey && settingsToSave.apiKey !== MASKED_KEY ? settingsToSave.apiKey : undefined) ||
                 (geminiApiKey && geminiApiKey !== MASKED_KEY ? geminiApiKey : undefined),
       });
@@ -162,6 +170,29 @@ export function AIAssistantGeminiTab({ onEnabledChange }: AIAssistantGeminiTabPr
               <SelectItem value="gemini-2.5-pro">gemini-2.5-pro</SelectItem>
             </SelectContent>
           </Select>
+          <p className="text-xs text-muted-foreground">Used by the chat assistant.</p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="gemini-presentation-model">Presentation model</Label>
+          <Select
+            value={geminiSettings.presentationModel ?? '__inherit__'}
+            onValueChange={(val) => {
+              const next = val === '__inherit__' ? null : val;
+              setGeminiSettings(prev => ({ ...prev, presentationModel: next }));
+              void saveGeminiSettings({ presentationModel: next });
+            }}
+          >
+            <SelectTrigger id="gemini-presentation-model" data-testid="select-gemini-presentation-model"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__inherit__">Same as chat model</SelectItem>
+              <SelectItem value="gemini-2.0-flash">gemini-2.0-flash</SelectItem>
+              <SelectItem value="gemini-2.0-flash-lite">gemini-2.0-flash-lite</SelectItem>
+              <SelectItem value="gemini-2.5-flash">gemini-2.5-flash</SelectItem>
+              <SelectItem value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</SelectItem>
+              <SelectItem value="gemini-2.5-pro">gemini-2.5-pro</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">Used by the AI slide generator. Pick a stronger model (e.g. 2.5-pro) for better decks.</p>
         </div>
       </div>
       <Button variant="outline" className={geminiTestButtonClass} onClick={testGeminiConnection} disabled={isTestingGemini || (!geminiApiKey && !geminiSettings.hasKey)} data-testid="button-test-gemini">

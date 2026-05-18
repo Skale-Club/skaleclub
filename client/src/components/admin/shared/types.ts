@@ -151,6 +151,8 @@ export interface OpenAISettings {
   provider: string;
   enabled: boolean;
   model: string;
+  /** Gemini-only: secondary model used by the presentation generator. Null = fall back to `model`. */
+  presentationModel?: string | null;
   hasKey: boolean;
 }
 

@@ -262,6 +262,8 @@ export function registerIntegrationRoutes(app: Express) {
         provider: 'gemini',
         enabled: integration?.enabled || false,
         model: integration?.model || DEFAULT_GEMINI_MODEL,
+        // Presentation generator model — falls back to the chat model on the client.
+        presentationModel: integration?.presentationModel || null,
         hasKey: !!(getRuntimeGeminiKey() || process.env.GEMINI_API_KEY || integration?.apiKey),
       });
     } catch (err) {
@@ -274,7 +276,10 @@ export function registerIntegrationRoutes(app: Express) {
       const existing = await storage.getChatIntegration('gemini');
       const payload = insertChatIntegrationsSchema
         .partial()
-        .extend({ apiKey: z.string().min(10).optional() })
+        .extend({
+          apiKey: z.string().min(10).optional(),
+          presentationModel: z.string().min(1).nullable().optional(),
+        })
         .parse({ ...req.body, provider: 'gemini' });
 
       const providedKey = payload.apiKey && payload.apiKey !== '********' ? payload.apiKey : undefined;
@@ -286,10 +291,17 @@ export function registerIntegrationRoutes(app: Express) {
         return res.status(400).json({ message: 'Provide a valid API key and test it before enabling.' });
       }
 
+      // Preserve presentationModel if the request didn't include it (PATCH semantics).
+      const presentationModelToPersist =
+        payload.presentationModel !== undefined
+          ? payload.presentationModel
+          : (existing?.presentationModel ?? null);
+
       const updated = await storage.upsertChatIntegration({
         provider: 'gemini',
         enabled: payload.enabled ?? false,
         model: payload.model || DEFAULT_GEMINI_MODEL,
+        presentationModel: presentationModelToPersist,
         apiKey: keyToPersist,
       });
 

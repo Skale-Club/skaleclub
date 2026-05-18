@@ -180,10 +180,11 @@ export function registerPresentationsGeneratorRoutes(app: Express) {
         return res.status(400).json({ message: "Invalid request body", errors: parsed.error.errors });
       }
 
+      const geminiIntegration = await storage.getChatIntegration("gemini");
       const apiKey =
         getRuntimeGeminiKey() ||
         process.env.GEMINI_API_KEY ||
-        (await storage.getChatIntegration("gemini"))?.apiKey;
+        geminiIntegration?.apiKey;
 
       if (!apiKey) {
         return res.status(503).json({
@@ -191,26 +192,47 @@ export function registerPresentationsGeneratorRoutes(app: Express) {
         });
       }
 
-      const model = process.env.GEMINI_PRESENTATION_MODEL || "gemini-2.0-flash";
+      // Model resolution priority:
+      //   1. process.env.GEMINI_PRESENTATION_MODEL — emergency override (deploy-time)
+      //   2. chat_integrations.gemini.presentation_model — admin UI "Presentation model" selector
+      //   3. chat_integrations.gemini.model            — falls back to the chat model
+      //   4. gemini-2.5-flash                          — safe default (supports tool calling,
+      //                                                  works on the OpenAI-compat endpoint;
+      //                                                  gemini-2.0-flash 404s on that endpoint)
+      const model =
+        process.env.GEMINI_PRESENTATION_MODEL ||
+        geminiIntegration?.presentationModel ||
+        geminiIntegration?.model ||
+        "gemini-2.5-flash";
+
       const guidelinesRow = await storage.getBrandGuidelines();
       const guidelines = guidelinesRow?.content ?? "";
 
       const client = getGeminiClient(apiKey);
-      const response = await client.chat.completions.create({
-        model,
-        max_tokens: 8192,
-        messages: [
-          { role: "system", content: buildGeneratorSystemPrompt(guidelines) },
-          { role: "user", content: parsed.data.prompt },
-        ],
-        tools: [GENERATE_SLIDES_TOOL],
-        tool_choice: { type: "function", function: { name: "generate_slides" } },
-      });
+      let response;
+      try {
+        response = await client.chat.completions.create({
+          model,
+          max_tokens: 8192,
+          messages: [
+            { role: "system", content: buildGeneratorSystemPrompt(guidelines) },
+            { role: "user", content: parsed.data.prompt },
+          ],
+          tools: [GENERATE_SLIDES_TOOL],
+          tool_choice: { type: "function", function: { name: "generate_slides" } },
+        });
+      } catch (sdkErr) {
+        // Surface model + status so a stale model identifier is obvious from the error toast.
+        const err = sdkErr as { status?: number; message?: string };
+        return res.status(502).json({
+          message: `Gemini API error (model=${model}, status=${err.status ?? "unknown"}): ${err.message ?? "no message"}`,
+        });
+      }
 
       const toolCall = response.choices[0]?.message?.tool_calls?.[0];
       if (!toolCall || toolCall.type !== "function") {
         return res.status(500).json({
-          message: "Gemini did not invoke the generate_slides tool",
+          message: `Gemini did not invoke the generate_slides tool (model=${model})`,
         });
       }
 

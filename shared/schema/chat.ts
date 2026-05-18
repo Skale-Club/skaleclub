@@ -35,6 +35,9 @@ export const chatIntegrations = pgTable("chat_integrations", {
   provider: text("provider").notNull().default("openai"),
   enabled: boolean("enabled").default(false),
   model: text("model").default("gpt-4o-mini"),
+  // Optional secondary model used by the presentation generator (only meaningful
+  // for the gemini provider today). Falls back to `model` when null.
+  presentationModel: text("presentation_model"),
   apiKey: text("api_key"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
