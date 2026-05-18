@@ -25,6 +25,8 @@ import {
   hubAccessEvents,
   notificationTemplates,
   portfolioServices,
+  visitorSessions,
+  attributionConversions,
   estimates,
   estimateViews,
   presentations,
@@ -131,8 +133,19 @@ import {
   type SalesTaskStatus,
   type NotificationTemplate,
   type InsertNotificationTemplate,
+  type VisitorSession,
+  type InsertVisitorSession,
+  type AttributionConversion,
+  type InsertAttributionConversion,
 } from "#shared/schema.js";
-import { eq, and, or, ilike, gte, lt, desc, asc, sql, ne, inArray, count } from "drizzle-orm";
+import type {
+  MarketingFilters,
+  MarketingOverview,
+  MarketingBySource,
+  MarketingByCampaign,
+  VisitorJourney,
+} from "#shared/marketing-types.js";
+import { eq, and, or, ilike, gte, lte, lt, desc, asc, sql, ne, inArray, count, getTableColumns } from "drizzle-orm";
 
 export type RecentSalesVisit = {
   visit: SalesVisit;
@@ -864,6 +877,20 @@ export interface IStorage {
   // Notification Templates (NOTIF-01, NOTIF-02)
   getNotificationTemplates(eventKey?: string): Promise<NotificationTemplate[]>;
   upsertNotificationTemplate(template: InsertNotificationTemplate & { id?: number }): Promise<NotificationTemplate>;
+
+  // === Marketing Attribution (Phase 45) ===
+  // Visitor session upsert (FT immutable, LT mutable per call).
+  upsertVisitorSession(session: InsertVisitorSession): Promise<VisitorSession>;
+  // Append-only conversion event (lead_created, phone_click, form_submitted, booking_started).
+  createAttributionConversion(conversion: InsertAttributionConversion): Promise<AttributionConversion>;
+  // Resolve visitor UUID → visitor_sessions.id, stamp it on form_leads.visitor_id, return the integer FK.
+  linkLeadToVisitor(leadId: number, visitorId: string): Promise<number | null>;
+  // === Marketing queries (5 aggregation methods) ===
+  getMarketingOverview(filters?: MarketingFilters): Promise<MarketingOverview>;
+  getMarketingBySource(filters?: MarketingFilters): Promise<MarketingBySource[]>;
+  getMarketingByCampaign(filters?: MarketingFilters): Promise<MarketingByCampaign[]>;
+  getMarketingConversions(filters?: MarketingFilters): Promise<Array<AttributionConversion & { visitorUuid: string | null }>>;
+  getVisitorJourney(visitorId: string): Promise<VisitorJourney | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -3177,6 +3204,283 @@ export class DatabaseStorage implements IStorage {
       .values(template)
       .returning();
     return created;
+  }
+
+  // ===========================================================================
+  // Marketing Attribution (Phase 45) — ported from skaleclub-websites,
+  // single-tenant adapted (no tenant_id scoping anywhere).
+  // ===========================================================================
+
+  async upsertVisitorSession(session: InsertVisitorSession): Promise<VisitorSession> {
+    const [row] = await db
+      .insert(visitorSessions)
+      .values(session)
+      .onConflictDoUpdate({
+        target: visitorSessions.visitorId,
+        set: {
+          // Last-touch (mutable on every visit)
+          ltSource: sql`excluded.lt_source`,
+          ltMedium: sql`excluded.lt_medium`,
+          ltCampaign: sql`excluded.lt_campaign`,
+          ltTerm: sql`excluded.lt_term`,
+          ltContent: sql`excluded.lt_content`,
+          ltId: sql`excluded.lt_id`,
+          ltLandingPage: sql`excluded.lt_landing_page`,
+          ltReferrer: sql`excluded.lt_referrer`,
+          ltSourceChannel: sql`excluded.lt_source_channel`,
+          // Metadata
+          deviceType: sql`excluded.device_type`,
+          lastSeenAt: sql`excluded.last_seen_at`,
+          // Monotonic converted flag — once true, never false.
+          converted: sql`GREATEST(visitor_sessions.converted::int, excluded.converted::int)::boolean`,
+          // INTENTIONALLY OMITTED: ftSource, ftMedium, ftCampaign, ftTerm, ftContent,
+          // ftId, ftLandingPage, ftReferrer, ftSourceChannel, firstSeenAt.
+          // First-touch is immutable after the initial INSERT.
+        },
+      })
+      .returning();
+    return row;
+  }
+
+  async createAttributionConversion(
+    conversion: InsertAttributionConversion,
+  ): Promise<AttributionConversion> {
+    const [row] = await db
+      .insert(attributionConversions)
+      .values({
+        ...conversion,
+        conversionType: conversion.conversionType as 'lead_created' | 'phone_click' | 'form_submitted' | 'booking_started',
+      })
+      .returning();
+    return row;
+  }
+
+  /**
+   * Stamp form_leads.visitor_id on an existing lead by looking up the visitor's
+   * integer PK from the UUID. Returns the integer FK (so callers can chain into
+   * createAttributionConversion without a second DB round-trip) or null when no
+   * visitor_sessions row matches.
+   *
+   * Caller MUST wrap this in try/catch — attribution failures must NEVER block
+   * the lead-create critical path.
+   */
+  async linkLeadToVisitor(leadId: number, visitorId: string): Promise<number | null> {
+    const [session] = await db
+      .select({ id: visitorSessions.id })
+      .from(visitorSessions)
+      .where(eq(visitorSessions.visitorId, visitorId));
+    if (!session) return null;
+    await db
+      .update(formLeads)
+      .set({ visitorId: session.id })
+      .where(eq(formLeads.id, leadId));
+    return session.id;
+  }
+
+  async getMarketingOverview(filters?: MarketingFilters): Promise<MarketingOverview> {
+    const from = filters?.from ?? new Date(Date.now() - 30 * 86400_000);
+    const to = filters?.to ?? new Date();
+
+    const conditions = [
+      gte(visitorSessions.firstSeenAt, from),
+      lte(visitorSessions.firstSeenAt, to),
+      ...(filters?.channel ? [eq(visitorSessions.ftSourceChannel, filters.channel)] : []),
+      ...(filters?.campaign ? [eq(visitorSessions.ftCampaign, filters.campaign)] : []),
+    ];
+
+    const [visitsRow] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(visitorSessions)
+      .where(and(...conditions));
+    const totalVisits = Number(visitsRow?.count ?? 0);
+
+    const [leadsRow] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(attributionConversions)
+      .where(and(
+        eq(attributionConversions.conversionType, 'lead_created'),
+        gte(attributionConversions.convertedAt, from),
+        lte(attributionConversions.convertedAt, to),
+      ));
+    const totalLeads = Number(leadsRow?.count ?? 0);
+
+    const [topSourceRow] = await db
+      .select({ channel: visitorSessions.ftSourceChannel, count: sql<number>`count(*)` })
+      .from(visitorSessions)
+      .where(and(...conditions))
+      .groupBy(visitorSessions.ftSourceChannel)
+      .orderBy(desc(sql`count(*)`))
+      .limit(1);
+
+    const [topCampaignRow] = await db
+      .select({ campaign: visitorSessions.ftCampaign, count: sql<number>`count(*)` })
+      .from(visitorSessions)
+      .where(and(...conditions))
+      .groupBy(visitorSessions.ftCampaign)
+      .orderBy(desc(sql`count(*)`))
+      .limit(1);
+
+    const [topLandingPageRow] = await db
+      .select({ page: visitorSessions.ftLandingPage, count: sql<number>`count(*)` })
+      .from(visitorSessions)
+      .where(and(...conditions))
+      .groupBy(visitorSessions.ftLandingPage)
+      .orderBy(desc(sql`count(*)`))
+      .limit(1);
+
+    const timeSeriesRows = await db
+      .select({
+        date: sql<string>`to_char(date_trunc('day', ${visitorSessions.firstSeenAt}), 'YYYY-MM-DD')`,
+        visits: sql<number>`count(distinct ${visitorSessions.id})`,
+      })
+      .from(visitorSessions)
+      .where(and(...conditions))
+      .groupBy(sql`date_trunc('day', ${visitorSessions.firstSeenAt})`)
+      .orderBy(sql`date_trunc('day', ${visitorSessions.firstSeenAt})`);
+
+    const conversionsByDay = await db
+      .select({
+        date: sql<string>`to_char(date_trunc('day', ${attributionConversions.convertedAt}), 'YYYY-MM-DD')`,
+        conversions: sql<number>`count(*)`,
+      })
+      .from(attributionConversions)
+      .where(and(
+        eq(attributionConversions.conversionType, 'lead_created'),
+        gte(attributionConversions.convertedAt, from),
+        lte(attributionConversions.convertedAt, to),
+      ))
+      .groupBy(sql`date_trunc('day', ${attributionConversions.convertedAt})`);
+
+    const convMap = new Map(conversionsByDay.map(r => [r.date, Number(r.conversions)]));
+
+    const timeSeries = timeSeriesRows.map(r => ({
+      date: r.date,
+      visits: Number(r.visits),
+      conversions: convMap.get(r.date) ?? 0,
+    }));
+
+    return {
+      totalVisits,
+      totalLeads,
+      conversionRate: totalVisits > 0 ? totalLeads / totalVisits : 0,
+      topSource: topSourceRow?.channel ?? null,
+      topCampaign: topCampaignRow?.campaign ?? null,
+      topLandingPage: topLandingPageRow?.page ?? null,
+      timeSeries,
+    };
+  }
+
+  async getMarketingBySource(filters?: MarketingFilters): Promise<MarketingBySource[]> {
+    const from = filters?.from ?? new Date(Date.now() - 30 * 86400_000);
+    const to = filters?.to ?? new Date();
+
+    const conditions = [
+      gte(visitorSessions.firstSeenAt, from),
+      lte(visitorSessions.firstSeenAt, to),
+      ...(filters?.channel ? [eq(visitorSessions.ftSourceChannel, filters.channel)] : []),
+      ...(filters?.campaign ? [eq(visitorSessions.ftCampaign, filters.campaign)] : []),
+    ];
+
+    // Hot/warm/cold use the destination's PT-BR enum values (QUENTE/MORNO/FRIO).
+    const rows = await db
+      .select({
+        channel: visitorSessions.ftSourceChannel,
+        visits: sql<number>`count(distinct ${visitorSessions.id})`,
+        leads: sql<number>`count(distinct ${formLeads.id})`,
+        hotLeads: sql<number>`count(distinct ${formLeads.id}) filter (where ${formLeads.classificacao} = 'QUENTE')`,
+        warmLeads: sql<number>`count(distinct ${formLeads.id}) filter (where ${formLeads.classificacao} = 'MORNO')`,
+        coldLeads: sql<number>`count(distinct ${formLeads.id}) filter (where ${formLeads.classificacao} = 'FRIO')`,
+      })
+      .from(visitorSessions)
+      .leftJoin(formLeads, eq(formLeads.visitorId, visitorSessions.id))
+      .where(and(...conditions))
+      .groupBy(visitorSessions.ftSourceChannel);
+
+    return rows.map(r => ({
+      channel: r.channel ?? 'Unknown',
+      visits: Number(r.visits),
+      leads: Number(r.leads),
+      hotLeads: Number(r.hotLeads),
+      warmLeads: Number(r.warmLeads),
+      coldLeads: Number(r.coldLeads),
+      conversionRate: Number(r.visits) > 0 ? Number(r.leads) / Number(r.visits) : 0,
+    }));
+  }
+
+  async getMarketingByCampaign(filters?: MarketingFilters): Promise<MarketingByCampaign[]> {
+    const from = filters?.from ?? new Date(Date.now() - 30 * 86400_000);
+    const to = filters?.to ?? new Date();
+
+    const conditions = [
+      gte(visitorSessions.firstSeenAt, from),
+      lte(visitorSessions.firstSeenAt, to),
+      ...(filters?.channel ? [eq(visitorSessions.ftSourceChannel, filters.channel)] : []),
+      ...(filters?.campaign ? [eq(visitorSessions.ftCampaign, filters.campaign)] : []),
+    ];
+
+    const rows = await db
+      .select({
+        campaign: visitorSessions.ftCampaign,
+        source: visitorSessions.ftSource,
+        channel: visitorSessions.ftSourceChannel,
+        visits: sql<number>`count(distinct ${visitorSessions.id})`,
+        leads: sql<number>`count(distinct ${formLeads.id})`,
+        landingPages: sql<string[]>`array_agg(distinct ${visitorSessions.ftLandingPage})`,
+      })
+      .from(visitorSessions)
+      .leftJoin(formLeads, eq(formLeads.visitorId, visitorSessions.id))
+      .where(and(...conditions))
+      .groupBy(visitorSessions.ftCampaign, visitorSessions.ftSource, visitorSessions.ftSourceChannel);
+
+    return rows.map(r => {
+      const allPages = (r.landingPages ?? []).filter(Boolean) as string[];
+      return {
+        campaign: r.campaign ?? 'Unknown',
+        source: r.source ?? 'Unknown',
+        channel: r.channel ?? 'Unknown',
+        visits: Number(r.visits),
+        leads: Number(r.leads),
+        conversionRate: Number(r.visits) > 0 ? Number(r.leads) / Number(r.visits) : 0,
+        topLandingPages: allPages.slice(0, 3),
+      };
+    });
+  }
+
+  async getMarketingConversions(filters?: MarketingFilters): Promise<Array<AttributionConversion & { visitorUuid: string | null }>> {
+    const from = filters?.from ?? new Date(Date.now() - 30 * 86400_000);
+    const to = filters?.to ?? new Date();
+
+    const rows = await db
+      .select({
+        ...getTableColumns(attributionConversions),
+        visitorUuid: visitorSessions.visitorId,
+      })
+      .from(attributionConversions)
+      .leftJoin(visitorSessions, eq(attributionConversions.visitorId, visitorSessions.id))
+      .where(and(
+        gte(attributionConversions.convertedAt, from),
+        lte(attributionConversions.convertedAt, to),
+      ))
+      .orderBy(desc(attributionConversions.convertedAt))
+      .limit(500);
+
+    return rows;
+  }
+
+  async getVisitorJourney(visitorIdUuid: string): Promise<VisitorJourney | undefined> {
+    const [session] = await db
+      .select()
+      .from(visitorSessions)
+      .where(eq(visitorSessions.visitorId, visitorIdUuid));
+    if (!session) return undefined;
+
+    const conversions = await db
+      .select()
+      .from(attributionConversions)
+      .where(eq(attributionConversions.visitorId, session.id))
+      .orderBy(asc(attributionConversions.convertedAt));
+
+    return { session, conversions };
   }
 }
 
