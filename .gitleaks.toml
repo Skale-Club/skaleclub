@@ -1,0 +1,35 @@
+# Gitleaks configuration — extends the built-in default rule set.
+# Docs: https://github.com/gitleaks/gitleaks#configuration
+
+[extend]
+# Inherit every default rule (AWS, GCP, Stripe, Slack, OAuth, generic, etc.).
+useDefault = true
+
+# Global allowlist — paths / regexes whitelisted across all rules.
+# Use sparingly. Each entry needs a justification comment.
+[[allowlists]]
+description = "Known-leaked Neon Postgres password committed in 2026-01-14 (.claude/settings.local.json before .gitignore covered it). Suppressed AFTER the password was rotated in the Neon dashboard. If you re-introduce this allowlist for a NEW secret, you are doing the wrong thing — rotate first, suppress second."
+# Commit 88bec040 was a Replit auto-checkpoint that landed .claude/settings.local.json
+# before the .gitignore covered it. Password was rotated on 2026-05-17.
+commits = ["88bec0406db2cbe9604c49d9fc9c6abb286d2b75"]
+
+[[allowlists]]
+description = "Documentation placeholders, plan/verification examples, and .env.example templates"
+paths = [
+    # All planning docs include curl examples with placeholder Bearer tokens
+    # (e.g., 'Bearer wrongtoken' for negative-path testing) and seed files
+    # may mention obvious example keys like '0x4AAAAAAA-replace-me'.
+    '''\.planning/.*''',
+    # Public-by-design env template — values are placeholders only.
+    '''\.env\.example''',
+    # Gitleaks config itself contains regex patterns that look like secrets.
+    '''\.gitleaks\.toml''',
+]
+regexes = [
+    # Explicit placeholder tokens used across docs.
+    '''wrongtoken''',
+    '''replace-me''',
+    '''your-[a-z-]+-(key|secret|hash)''',
+    '''\[project-ref\]''',
+    '''example\.hash\.here''',
+]
