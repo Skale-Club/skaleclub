@@ -9,3 +9,4 @@ export * from "./schema/presentations.js";
 export * from "./schema/blog.js";
 export * from "./schema/hub.js";
 export * from "./schema/notifications.js";
+export * from "./schema/landings.js";

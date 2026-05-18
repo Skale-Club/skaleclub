@@ -30,6 +30,7 @@ import {
   presentations,
   presentationViews,
   brandGuidelines,
+  landingPages,
   salesReps,
   salesLeads,
   salesLeadLocations,
@@ -93,6 +94,8 @@ import {
   type PresentationWithStats,
   type BrandGuidelines,
   type SlideBlock,
+  type LandingPage,
+  type InsertLandingPageInput,
   type InsertPortfolioService,
   type InsertChatSettings,
   type InsertChatIntegrations,
@@ -845,6 +848,14 @@ export interface IStorage {
   updatePresentation(id: string, data: Partial<InsertPresentation>): Promise<Presentation>;
   deletePresentation(id: string): Promise<void>;
   recordPresentationView(presentationId: string, ipHash?: string): Promise<void>;
+
+  // Landing Pages (Phase 43)
+  listLandingPages(): Promise<LandingPage[]>;
+  getLandingPage(id: string): Promise<LandingPage | undefined>;
+  getLandingPageBySlug(slug: string): Promise<LandingPage | undefined>;
+  createLandingPage(data: InsertLandingPageInput): Promise<LandingPage>;
+  updateLandingPage(id: string, data: Partial<InsertLandingPageInput>): Promise<LandingPage>;
+  deleteLandingPage(id: string): Promise<void>;
 
   // Brand Guidelines (PRES-09)
   getBrandGuidelines(): Promise<BrandGuidelines | undefined>;
@@ -3086,6 +3097,39 @@ export class DatabaseStorage implements IStorage {
       presentationId,
       ipHash: ipHash ?? null,
     });
+  }
+
+  // Landing Pages (Phase 43)
+  async listLandingPages(): Promise<LandingPage[]> {
+    return db.select().from(landingPages).orderBy(desc(landingPages.createdAt));
+  }
+
+  async getLandingPage(id: string): Promise<LandingPage | undefined> {
+    const [row] = await db.select().from(landingPages).where(eq(landingPages.id, id));
+    return row;
+  }
+
+  async getLandingPageBySlug(slug: string): Promise<LandingPage | undefined> {
+    const [row] = await db.select().from(landingPages).where(eq(landingPages.slug, slug));
+    return row;
+  }
+
+  async createLandingPage(data: InsertLandingPageInput): Promise<LandingPage> {
+    const [row] = await db.insert(landingPages).values(data).returning();
+    return row;
+  }
+
+  async updateLandingPage(id: string, data: Partial<InsertLandingPageInput>): Promise<LandingPage> {
+    const [row] = await db
+      .update(landingPages)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(landingPages.id, id))
+      .returning();
+    return row;
+  }
+
+  async deleteLandingPage(id: string): Promise<void> {
+    await db.delete(landingPages).where(eq(landingPages.id, id));
   }
 
   // Brand Guidelines (Phase 17 implements full upsert; Phase 15 adds typed stubs)
