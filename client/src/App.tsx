@@ -10,6 +10,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useSEO } from "@/hooks/use-seo";
 import { initAnalytics, trackPageView } from "@/lib/analytics";
+import { useAttribution } from "@/hooks/use-attribution";
 import { getXpotAppUrl, isLocalHostname, isXpotHost } from "@/lib/xpot";
 import { PageLoader, DotsLoader } from "@/components/ui/spinner";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -98,6 +99,11 @@ function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     trackPageView(location);
   }, [location]);
+
+  // Phase 45 — mount the marketing attribution lifecycle alongside GTM/GA4 tracking.
+  // The hook has its own /admin guard via isAttributionIgnoredPath, so admin routes
+  // are skipped automatically. Runs in the same lifecycle scope as trackPageView.
+  useAttribution();
 
   return <>{children}</>;
 }
