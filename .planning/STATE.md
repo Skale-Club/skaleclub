@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Presentations 2.0
 status: completed
-last_updated: "2026-05-18T02:59:01.989Z"
+last_updated: "2026-05-18T03:22:32.733Z"
 last_activity: 2026-05-16
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 22
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 # STATE: Skale Club Web Platform
@@ -92,6 +92,7 @@ Last activity: 2026-05-16
 | Phase 38 P03 | 5min | 3 tasks | 3 files |
 | Phase 40-ai-presentation-generator P02 | 2min | 1 tasks | 1 files |
 | Phase 43 P02 | 3min | 3 tasks | 3 files |
+| Phase 43 P05 | 333 | 3 tasks | 5 files |
 
 ### v1.1 — Multi-Forms Support (shipped 2026-04-15)
 
@@ -258,6 +259,8 @@ Last activity: 2026-05-16
 - [Phase 38]: Plan 38-03: JobHistoryPanel expand-on-click row — useState<Set<number>> for per-row toggle, total chip in collapsed view (one-decimal seconds), 5-cell breakdown grid in expanded view, action-button stopPropagation isolation
 - [Phase 40-ai-presentation-generator]: GenerateModal co-located in PresentationsSection — two-step transcribe+generate mutationFn, setSelectedId(result.id) for post-generation navigation
 - [Phase 43]: Reserved-slug guard returns HTTP 409 (matches duplicate-slug semantics); reserved check runs before unique check (cheaper + clearer error)
+- [Phase 43]: WhatsAppGroupSection exposes ~23 optional prop knobs with defaults preserving the legacy production look byte-for-byte
+- [Phase 43]: Dual redirect strategy: vercel.json for prod 301s + wouter Redirect in App.tsx for local dev parity
 
 ### Quick Tasks Completed
 
