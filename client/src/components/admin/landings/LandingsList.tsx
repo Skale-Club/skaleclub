@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { LayoutPanelLeft, Pencil, Trash2 } from 'lucide-react';
+import { ExternalLink, LayoutPanelLeft, Pencil, Trash2 } from 'lucide-react';
 import { AdminCard, EmptyState } from '@/components/admin/shared';
 import {
   AlertDialog,
@@ -158,6 +158,28 @@ export function LandingsList({ onEdit }: LandingsListProps) {
                 </td>
                 <td className="px-4 py-3 text-right">
                   <div className="inline-flex items-center gap-1">
+                    <Button
+                      asChild
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      aria-label={`Open ${landing.name} in a new tab`}
+                      data-testid={`button-open-landing-${landing.slug}`}
+                      disabled={!landing.isActive}
+                      title={landing.isActive ? `Open /${landing.slug} in a new tab` : 'Activate the landing to preview it'}
+                    >
+                      <a
+                        href={landing.isActive ? `/${landing.slug}` : undefined}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-disabled={!landing.isActive}
+                        onClick={(e) => {
+                          if (!landing.isActive) e.preventDefault();
+                        }}
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"
