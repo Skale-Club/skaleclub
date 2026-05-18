@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import type { z } from "zod";
 import { HeroSectionAdapter, heroPropsSchema } from "./sections/HeroSectionAdapter";
+import { HeroWebsitesSection, heroWebsitesPropsSchema } from "./sections/HeroWebsitesSection";
 import { TrustBadgesAdapter, trustBadgesPropsSchema } from "./sections/TrustBadgesAdapter";
 import { ServicesAdapter, servicesPropsSchema } from "./sections/ServicesAdapter";
 import { ReviewsAdapter, reviewsPropsSchema } from "./sections/ReviewsAdapter";
@@ -21,6 +22,7 @@ export interface SectionEntry {
 //
 export const sectionRegistry: Record<string, SectionEntry> = {
   hero:          { component: HeroSectionAdapter,    propsSchema: heroPropsSchema },
+  heroWebsites:  { component: HeroWebsitesSection,   propsSchema: heroWebsitesPropsSchema },
   trustBadges:   { component: TrustBadgesAdapter,    propsSchema: trustBadgesPropsSchema },
   services:      { component: ServicesAdapter,       propsSchema: servicesPropsSchema },
   reviews:       { component: ReviewsAdapter,        propsSchema: reviewsPropsSchema },
