@@ -21,6 +21,7 @@ import { registerTranslateRoutes } from "./routes/translate.js";
 import { registerUserRoutes } from "./routes/users.js";
 import { registerCompanyRoutes } from "./routes/company.js";
 import { registerFormRoutes } from "./routes/forms.js";
+import { registerAttributionRoutes } from "./routes/attribution.js";
 import { registerIntegrationRoutes } from "./routes/integrations.js";
 import { registerEstimatesRoutes } from "./routes/estimates.js";
 import { registerPresentationsRoutes } from "./routes/presentations.js";
@@ -137,6 +138,7 @@ export async function registerRoutes(
   registerUploadRoutes(app);
   registerLinksPageRoutes(app);
   registerFormRoutes(app);
+  registerAttributionRoutes(app);   // Phase 45 — public visitor/conversion ingest
   registerIntegrationRoutes(app);
   registerNotificationRoutes(app);
   registerEstimatesRoutes(app);
