@@ -1,4 +1,4 @@
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -279,10 +279,14 @@ function Router() {
             {pagePaths.blogPostPattern !== legacyPaths.blogPostPattern && <Route path={legacyPaths.blogPostPattern} component={BlogPost} />}
             <Route path={pagePaths.portfolio} component={Portfolio} />
             {pagePaths.portfolio !== legacyPaths.portfolio && <Route path={legacyPaths.portfolio} component={Portfolio} />}
-            <Route path={`${pagePaths.hub}/grupo`} component={SkaleHubGroup} />
-            <Route path={`${pagePaths.hub}/group`} component={SkaleHubGroup} />
-            {pagePaths.hub !== legacyPaths.hub && <Route path={`${legacyPaths.hub}/grupo`} component={SkaleHubGroup} />}
-            {pagePaths.hub !== legacyPaths.hub && <Route path={`${legacyPaths.hub}/group`} component={SkaleHubGroup} />}
+            {/* Legacy Skale Hub group URLs — 301 to managed landing /grupo (43-05).
+                Production redirects live in vercel.json; these handle local dev parity.
+                The SkaleHubGroup lazy import is deliberately left in place until 43-06
+                deletes the source file. */}
+            <Route path={`${pagePaths.hub}/grupo`}>{() => <Redirect to="/grupo" />}</Route>
+            <Route path={`${pagePaths.hub}/group`}>{() => <Redirect to="/grupo" />}</Route>
+            {pagePaths.hub !== legacyPaths.hub && <Route path={`${legacyPaths.hub}/grupo`}>{() => <Redirect to="/grupo" />}</Route>}
+            {pagePaths.hub !== legacyPaths.hub && <Route path={`${legacyPaths.hub}/group`}>{() => <Redirect to="/grupo" />}</Route>}
             <Route path={pagePaths.hub} component={SkaleHub} />
             {pagePaths.hub !== legacyPaths.hub && <Route path={legacyPaths.hub} component={SkaleHub} />}
             {/* Catch-all dynamic landing route — MUST be last before the 404 fallback.

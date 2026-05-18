@@ -90,6 +90,16 @@
       ],
       "destination": "https://skale.club/$1",
       "permanent": true
+    },
+    {
+      "source": "/skale-hub/grupo",
+      "destination": "/grupo",
+      "permanent": true
+    },
+    {
+      "source": "/skale-hub/group",
+      "destination": "/grupo",
+      "permanent": true
     }
   ],
   "rewrites": [
