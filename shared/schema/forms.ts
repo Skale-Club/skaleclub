@@ -81,6 +81,7 @@ export const formLeads = pgTable("form_leads", {
   ghlSyncStatus: text("ghl_sync_status").default("pending"),
   source: text("source").default("form"),
   conversationId: text("conversation_id"),
+  visitorId: integer("visitor_id"),  // Phase 45 — Marketing Attribution FK to visitor_sessions(id); FK enforced in migration SQL (avoids circular import with attribution.ts)
 }, (table) => ({
   emailIdx: index("form_leads_email_idx").on(table.email),
   classificacaoIdx: index("form_leads_classificacao_idx").on(table.classificacao),
@@ -90,6 +91,7 @@ export const formLeads = pgTable("form_leads", {
   sourceIdx: index("form_leads_source_idx").on(table.source),
   conversationIdx: index("form_leads_conversation_idx").on(table.conversationId),
   formIdIdx: index("form_leads_form_id_idx").on(table.formId),
+  visitorIdIdx: index("form_leads_visitor_id_idx").on(table.visitorId),
 }));
 
 // Insert schema
