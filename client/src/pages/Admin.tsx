@@ -30,7 +30,6 @@ const FormsSection = lazy(() => import('@/components/admin/forms/FormsSection').
 const SEOSection = lazy(() => import('@/components/admin/SEOSection').then(m => ({ default: m.SEOSection })));
 const LinksSection = lazy(() => import('@/components/admin/LinksSection').then(m => ({ default: m.LinksSection })));
 const VCardsManager = lazy(() => import('@/components/admin/VCardsManager').then(m => ({ default: m.VCardsManager })));
-const XpotSalesSection = lazy(() => import('@/components/admin/XpotSalesSection').then(m => ({ default: m.XpotSalesSection })));
 const EstimatesSection = lazy(() => import('@/components/admin/EstimatesSection').then(m => ({ default: m.EstimatesSection })));
 const PresentationsSection = lazy(() => import('@/components/admin/PresentationsSection').then(m => ({ default: m.PresentationsSection })));
 const SkaleHubSection = lazy(() => import('@/components/admin/SkaleHubSection').then(m => ({ default: m.SkaleHubSection })));
@@ -61,7 +60,6 @@ function AdminContent() {
       integrations: 'integrations',
       links: 'links',
       vcards: 'vcards',
-      'field-sales': 'fieldSales',
       estimates: 'estimates',
       presentations: 'presentations',
       'skale-hub': 'skaleHub',
@@ -120,7 +118,6 @@ function AdminContent() {
       integrations: 'integrations',
       links: 'links',
       vcards: 'vcards',
-      fieldSales: 'field-sales',
       estimates: 'estimates',
       presentations: 'presentations',
       skaleHub: 'skale-hub',
@@ -213,7 +210,7 @@ function AdminContent() {
           {activeSection !== 'chat' && (
             <div className="flex-1 overflow-y-auto min-h-0 p-6 pb-16 md:p-8 md:pb-10">
               {(() => {
-                const sectionsWithOwnHeader: AdminSection[] = ['leads', 'forms', 'faqs', 'users', 'blog', 'portfolio', 'links', 'vcards', 'fieldSales', 'estimates', 'company', 'website', 'seo', 'integrations', 'presentations', 'skaleHub', 'landings', 'notifications', 'traffic'];
+                const sectionsWithOwnHeader: AdminSection[] = ['leads', 'forms', 'faqs', 'users', 'blog', 'portfolio', 'links', 'vcards', 'estimates', 'company', 'website', 'seo', 'integrations', 'presentations', 'skaleHub', 'landings', 'notifications', 'traffic'];
                 if (sectionsWithOwnHeader.includes(activeSection)) return null;
                 // Dashboard renders its own SectionHeader (with form selector action)
                 if (activeSection === 'dashboard') return null;
@@ -239,7 +236,6 @@ function AdminContent() {
               {activeSection === 'blog' && <BlogSection resetSignal={blogResetSignal} />}
               {activeSection === 'links' && <LinksSection />}
               {activeSection === 'vcards' && <VCardsManager />}
-              {activeSection === 'fieldSales' && <XpotSalesSection />}
               {activeSection === 'estimates' && <EstimatesSection />}
               {activeSection === 'presentations' && <PresentationsSection />}
               {activeSection === 'skaleHub' && <SkaleHubSection />}

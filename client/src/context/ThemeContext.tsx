@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
-import { isXpotContext } from '@/lib/xpot';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -43,17 +42,10 @@ function isInAdminThemeArea(): boolean {
   return pathname !== '/admin/login' && pathname !== '/admin/signup';
 }
 
-function isInXpotArea(): boolean {
-  if (typeof window === 'undefined') return false;
-  return isXpotContext(window.location.pathname, window.location.hostname);
-}
-
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => getStoredTheme());
   const [isAdminArea, setIsAdminArea] = useState(() => isInAdminThemeArea());
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() => {
-    // Always dark in Xpot area
-    if (isInXpotArea()) return 'dark';
     // Only apply stored theme in themeable admin routes
     if (!isInAdminThemeArea()) return 'light';
     const stored = getStoredTheme();
@@ -62,12 +54,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const applyTheme = useCallback((newTheme: 'light' | 'dark', forceAdmin = false) => {
     const inAdmin = forceAdmin || isInAdminThemeArea();
-    const inXpot = isInXpotArea();
     const root = document.documentElement;
     root.classList.remove('light', 'dark');
 
-    // Dark theme only on themeable admin routes, or always dark in Xpot area.
-    const themeToApply = inXpot ? 'dark' : inAdmin ? newTheme : 'light';
+    // Dark theme only on themeable admin routes.
+    const themeToApply = inAdmin ? newTheme : 'light';
     root.classList.add(themeToApply);
     setResolvedTheme(themeToApply);
   }, []);
@@ -94,9 +85,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       if (inAdmin) {
         const resolved = theme === 'system' ? getSystemTheme() : theme;
         applyTheme(resolved, true);
-      } else if (isInXpotArea()) {
-        // Always dark mode in Xpot area
-        applyTheme('dark', false);
       } else {
         // Always light mode on frontend
         applyTheme('light', false);

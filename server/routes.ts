@@ -1,6 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import type { Server } from "http";
-import { initializeSalesSchema, storage } from "./storage.js";
+import { storage } from "./storage.js";
 import { z } from "zod";
 import OpenAI from "openai";
 import crypto from "crypto";
@@ -12,7 +12,6 @@ import type { FormConfig } from "#shared/schema.js";
 import { getOrCreateGHLContact } from "./integrations/ghl.js";
 import { dispatchNotification } from "./lib/notifications.js";
 import { registerStorageRoutes } from "./storage/storageAdapter.js";
-import { registerXpotRoutes } from "./routes/xpot/index.js";
 import { registerPortfolioRoutes } from "./routes/portfolio.js";
 import { registerFaqRoutes } from "./routes/faqs.js";
 import { registerVCardRoutes } from "./routes/vcards.js";
@@ -127,7 +126,7 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  registerXpotRoutes(app);
+  // Xpot was extracted to a standalone project at C:\Users\Vanildo\Dev\xpot on 2026-05-18.
   registerPortfolioRoutes(app);
   registerFaqRoutes(app);
   registerVCardRoutes(app);
@@ -150,7 +149,6 @@ export async function registerRoutes(
   registerBrandGuidelinesRoutes(app);
   registerPresentationsChatRoutes(app);
   registerPresentationsGeneratorRoutes(app);
-  await initializeSalesSchema();
 
 
 

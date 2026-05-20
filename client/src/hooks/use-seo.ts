@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { isXpotContext } from '@/lib/xpot';
 
 interface SeoSettings {
   seoTitle: string | null;
@@ -80,7 +79,7 @@ function setJsonLdSchema(settings: SeoSettings) {
 }
 
 export function useSEO() {
-  const skipSeo = typeof window !== 'undefined' && isXpotContext(window.location.pathname, window.location.hostname);
+  const skipSeo = false;
   const { data: settings } = useQuery<SeoSettings>({
     queryKey: ['/api/company-settings'],
     staleTime: 1000 * 60 * 5,

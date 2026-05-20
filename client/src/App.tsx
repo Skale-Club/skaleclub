@@ -11,7 +11,6 @@ import { Footer } from "@/components/layout/Footer";
 import { useSEO } from "@/hooks/use-seo";
 import { initAnalytics, trackPageView } from "@/lib/analytics";
 import { useAttribution } from "@/hooks/use-attribution";
-import { getXpotAppUrl, isLocalHostname, isXpotHost } from "@/lib/xpot";
 import { PageLoader, DotsLoader } from "@/components/ui/spinner";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useEffect, Suspense, lazy, useRef, useState, createContext, useContext } from "react";
@@ -73,8 +72,6 @@ const Links = lazy(() => import("@/pages/Links").then(m => ({ default: () => <Pa
 const VCard = lazy(() => import("@/pages/VCard").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const EstimateViewer = lazy(() => import("@/pages/EstimateViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const PresentationViewer = lazy(() => import("@/pages/PresentationViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const XpotApp = lazy(() => import("@/pages/XpotApp").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const XpotLogin = lazy(() => import("@/pages/XpotLogin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const DynamicLanding = lazy(() => import("@/pages/DynamicLanding").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 
 function AnalyticsProvider({ children }: { children: React.ReactNode }) {
@@ -114,8 +111,7 @@ function SEOProvider({ children }: { children: React.ReactNode }) {
 }
 
 function Router() {
-  const [location, setLocation] = useLocation();
-  const xpotHost = typeof window !== "undefined" && isXpotHost(window.location.hostname);
+  const [location] = useLocation();
   const { isInitialLoad } = useContext(InitialLoadContext);
   const { data: settings, isLoading } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
@@ -123,37 +119,15 @@ function Router() {
   const pagePaths = buildPagePaths(settings?.pageSlugs);
   const legacyPaths = buildPagePaths(DEFAULT_PAGE_SLUGS);
   const isAdminRoute = location.startsWith('/admin');
-  const isXpotRoute = xpotHost || location.startsWith('/xpot');
   const isLinksRoute = isRoutePrefixMatch(location, pagePaths.links) || isRoutePrefixMatch(location, legacyPaths.links);
   const isVCardRoute = isRoutePrefixMatch(location, pagePaths.vcard) || isRoutePrefixMatch(location, legacyPaths.vcard);
   const isEstimateRoute = location.startsWith('/e/');
   const isPresentationRoute = location.startsWith('/p/');
   const prevLocation = useRef(location);
 
-  useEffect(() => {
-    if (typeof window === "undefined" || !location.startsWith("/xpot") || xpotHost) {
-      return;
-    }
-
-    const { hostname, origin } = window.location;
-    if (isLocalHostname(hostname) || hostname.endsWith(".vercel.app")) {
-      return;
-    }
-
-    const targetPath = location.replace(/^\/xpot/, "") || "/";
-    const targetUrl = getXpotAppUrl(targetPath);
-    if (targetUrl !== `${origin}${location}`) {
-      window.location.replace(targetUrl);
-    }
-  }, [location, xpotHost]);
-
-  // On xpot host, normalize /xpot/* paths → strip /xpot prefix
-  useEffect(() => {
-    if (!xpotHost || !location.startsWith("/xpot/")) {
-      return;
-    }
-    setLocation(location.slice("/xpot".length));
-  }, [location, xpotHost, setLocation]);
+  // Xpot was extracted to a standalone app on xpot.skale.club.
+  // Any leftover /xpot/* request hitting this app falls through to the catch-all 404,
+  // or is redirected by vercel.json (preferred for SEO).
 
   // Scroll to top when navigating to a new page (not hash links)
   useEffect(() => {
@@ -182,27 +156,6 @@ function Router() {
           </Switch>
         </Suspense>
       </AuthProvider>
-    );
-  }
-
-  if (isXpotRoute) {
-    return (
-      <Suspense fallback={fallback}>
-        <Switch>
-          {xpotHost ? (
-            <>
-              <Route path="/login" component={XpotLogin} />
-              <Route path="/*?" component={XpotApp} />
-            </>
-          ) : (
-            <>
-              <Route path="/xpot/login" component={XpotLogin} />
-              <Route path="/xpot/*?" component={XpotApp} />
-            </>
-          )}
-          <Route component={NotFound} />
-        </Switch>
-      </Suspense>
     );
   }
 

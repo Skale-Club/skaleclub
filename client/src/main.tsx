@@ -3,7 +3,6 @@ import { Analytics } from "@vercel/analytics/react";
 import App from "./App";
 import "./index.css";
 import { registerServiceWorker } from "./lib/pwa";
-import { clearXpotPostLoginHint, getXpotPostLoginHint, getXpotCanonicalOrigin, isXpotHost } from "./lib/xpot";
 
 // ─── Stale-tab recovery for lazy chunks ───────────────────────────────────
 // After a deploy, content-hashed chunks (e.g. /assets/PresentationsSection-XYZ.js)
@@ -56,23 +55,8 @@ if (typeof window !== "undefined") {
   });
 }
 
-// Supabase OAuth can sometimes fall back to the main domain. If that happens, preserve the callback
-// params/hash and bounce the user back to the Xpot subdomain before the marketing app boots.
-try {
-  const xpotHint = getXpotPostLoginHint();
-  if (xpotHint && typeof window !== "undefined" && !isXpotHost(window.location.hostname)) {
-    const hasSupabaseCallback = Boolean(window.location.hash) || window.location.search.includes("code=") || window.location.search.includes("access_token=");
-    if (hasSupabaseCallback || window.location.pathname === "/") {
-      const xpotUrl = new URL(xpotHint || `${getXpotCanonicalOrigin()}/login`);
-      xpotUrl.search = window.location.search;
-      xpotUrl.hash = window.location.hash;
-      clearXpotPostLoginHint();
-      window.location.replace(xpotUrl.toString());
-    }
-  }
-} catch {
-  // Ignore storage/navigation errors.
-}
+// Xpot was extracted on 2026-05-18 to its own standalone app at xpot.skale.club;
+// the post-login bounce logic that lived here is now handled inside that app.
 
 // Supabase OAuth can sometimes return to "/" (Site URL fallback). If we have a transient hint that
 // the user is logging into the admin area, jump to /admin/login before rendering the homepage.

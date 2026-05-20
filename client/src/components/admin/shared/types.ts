@@ -16,7 +16,6 @@ export type AdminSection =
   | 'portfolio'
   | 'links'
   | 'vcards'
-  | 'fieldSales'
   | 'estimates'
   | 'presentations'
   | 'skaleHub'
