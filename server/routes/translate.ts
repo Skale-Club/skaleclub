@@ -25,10 +25,11 @@ export function registerTranslateRoutes(app: Express) {
 
   app.post("/api/translate", async (req, res) => {
     try {
-      const { texts, targetLanguage = "pt" } = z
+      const { texts, targetLanguage = "pt", sourceLanguage = "en" } = z
         .object({
           texts: z.array(z.string()),
           targetLanguage: z.string().default("pt"),
+          sourceLanguage: z.string().default("en"),
         })
         .parse(req.body);
 
@@ -42,7 +43,7 @@ export function registerTranslateRoutes(app: Express) {
         .from(translations)
         .where(
           and(
-            eq(translations.sourceLanguage, "en"),
+            eq(translations.sourceLanguage, sourceLanguage),
             eq(translations.targetLanguage, targetLanguage),
             inArray(translations.sourceText, texts),
           ),
@@ -71,8 +72,10 @@ export function registerTranslateRoutes(app: Express) {
         return res.json({ translations: result });
       }
 
-      const prompt = `Translate the following English texts to ${targetLanguage === "pt" ? "Brazilian Portuguese (pt-BR)" : targetLanguage}.
-Return ONLY a JSON object where keys are the original English texts and values are the translations.
+      const sourceLangLabel = sourceLanguage === "pt" ? "Brazilian Portuguese (pt-BR)" : "English";
+      const targetLangLabel = targetLanguage === "pt" ? "Brazilian Portuguese (pt-BR)" : targetLanguage === "en" ? "English" : targetLanguage;
+      const prompt = `Translate the following ${sourceLangLabel} texts to ${targetLangLabel}.
+Return ONLY a JSON object where keys are the original texts and values are the translations.
 Do not add any explanations or markdown formatting. Just pure JSON.
 
 Texts to translate:
@@ -101,7 +104,7 @@ ${untranslated.map((t, i) => `${i + 1}. ${t}`).join("\n")}`;
         .filter((text) => translationsFromAI[text])
         .map((text) => ({
           sourceText: text,
-          sourceLanguage: "en" as const,
+          sourceLanguage,
           targetLanguage,
           translatedText: translationsFromAI[text],
         }));

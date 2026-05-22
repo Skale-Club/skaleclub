@@ -27,6 +27,8 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
     localStorage.setItem('language', lang);
+    // Clear cache so stale translations from the previous language aren't served
+    translationCache.clear();
   };
 
   useEffect(() => {
@@ -35,13 +37,14 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 
   // Pre-warm translation cache from DB on mount and on language switch
   useEffect(() => {
-    if (language !== 'pt') return;
-    fetch(`/api/translations/preload?lang=pt`)
+    const targetLang = language === 'pt' ? 'pt' : null;
+    if (!targetLang) return;
+    fetch(`/api/translations/preload?lang=${targetLang}`)
       .then(r => r.json())
       .then(({ translations }) => {
         if (!translations) return;
         Object.entries(translations).forEach(([src, tgt]) => {
-          translationCache.set(`pt:${src}`, tgt as string);
+          translationCache.set(`${targetLang}:${src}`, tgt as string);
         });
         window.dispatchEvent(new CustomEvent('translations-updated', {
           detail: { allDone: true },

@@ -12,12 +12,12 @@ let activeBatchCount = 0;
 /**
  * Fetch translations from API and update cache
  */
-async function fetchTranslations(texts: string[], targetLanguage: string) {
+async function fetchTranslations(texts: string[], targetLanguage: string, sourceLanguage = 'en') {
   try {
     const response = await fetch('/api/translate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ texts, targetLanguage }),
+      body: JSON.stringify({ texts, targetLanguage, sourceLanguage }),
     });
 
     if (!response.ok) {
@@ -39,10 +39,13 @@ async function fetchTranslations(texts: string[], targetLanguage: string) {
   }
 }
 
+// Tracks the source language for the current pending batch
+let currentBatchSourceLanguage = 'en';
+
 /**
  * Batch translation requests to avoid excessive API calls
  */
-function scheduleBatchTranslation(text: string, targetLanguage: string) {
+function scheduleBatchTranslation(text: string, targetLanguage: string, sourceLanguage = 'en') {
   const cacheKey = `${targetLanguage}:${text}`;
 
   // Already translated or being fetched
@@ -52,6 +55,7 @@ function scheduleBatchTranslation(text: string, targetLanguage: string) {
 
   pendingTranslations.add(cacheKey);
   pendingBatch.add(text);
+  currentBatchSourceLanguage = sourceLanguage;
 
   // Clear existing timeout
   if (batchTimeout) {
@@ -61,12 +65,13 @@ function scheduleBatchTranslation(text: string, targetLanguage: string) {
   // Schedule batch fetch after 50ms of no new requests
   batchTimeout = setTimeout(async () => {
     const textsToTranslate = Array.from(pendingBatch);
+    const batchSourceLang = currentBatchSourceLanguage;
     pendingBatch.clear();
 
     activeBatchCount++;
     window.dispatchEvent(new CustomEvent('translations-batch-start'));
 
-    await fetchTranslations(textsToTranslate, targetLanguage);
+    await fetchTranslations(textsToTranslate, targetLanguage, batchSourceLang);
 
     // Remove from pending
     textsToTranslate.forEach(t => {
@@ -117,11 +122,26 @@ export function useTranslation() {
   // Implementation signature accepts string to satisfy both overloads below.
   // Call sites see the overload cast — string literals must be TranslationKey (TRX-08).
   const t = useCallback((text: string): string => {
-    if (language === 'en' || !text) {
+    if (!text) return text;
+
+    const cacheKey = `${language}:${text}`;
+
+    // When English is the UI language
+    if (language === 'en') {
+      // Static strings (keys in translations.pt) are already English — return as-is
+      if (text in staticTranslations.pt) return text;
+
+      // 1. Return from cache if PT→EN was already translated
+      if (translationCache.has(cacheKey)) {
+        return translationCache.get(cacheKey)!;
+      }
+
+      // 2. DB content stored in PT: schedule PT→EN translation via API
+      scheduleBatchTranslation(text, 'en', 'pt');
       return text;
     }
 
-    const cacheKey = `${language}:${text}`;
+    // When Portuguese is the UI language (existing logic)
 
     // 1. Return from runtime cache if available
     if (translationCache.has(cacheKey)) {
@@ -129,12 +149,10 @@ export function useTranslation() {
     }
 
     // 2. Check static dictionary (instant, no API call)
-    if (language === 'pt') {
-      const staticValue = staticTranslations.pt[text as TranslationKey];
-      if (staticValue) {
-        translationCache.set(cacheKey, staticValue);
-        return staticValue;
-      }
+    const staticValue = staticTranslations.pt[text as TranslationKey];
+    if (staticValue) {
+      translationCache.set(cacheKey, staticValue);
+      return staticValue;
     }
 
     // 3. Schedule batch translation via API
