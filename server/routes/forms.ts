@@ -177,7 +177,6 @@ export function registerFormRoutes(app: Express) {
       if (!existing) return res.status(404).json({ message: "Form not found" });
 
       // Prevent archiving the Skale Hub group form.
-      const existing = await storage.getForm(id);
       if (existing?.slug === SKALE_HUB_GROUP_FORM_SLUG && parsed.isActive === false) {
         return res.status(400).json({
           message: "Cannot archive the Skale Hub group form — it is required by the landing page.",
