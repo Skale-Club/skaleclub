@@ -20,7 +20,7 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Loader2 } from '@/components/ui/loader';
 import type { ChatSettingsData, OpenAISettings } from '../shared/types';
 
-type AIProviderTab = 'openai' | 'gemini' | 'openrouter';
+type AIProviderTab = 'openai' | 'gemini' | 'openrouter' | 'groq';
 
 type OpenRouterModelsResponse = {
   models: {
@@ -33,13 +33,15 @@ type OpenRouterModelsResponse = {
   count?: number;
 };
 
-const VALID_AI_PROVIDERS: AIProviderTab[] = ['openai', 'gemini', 'openrouter'];
+const VALID_AI_PROVIDERS: AIProviderTab[] = ['openai', 'gemini', 'openrouter', 'groq'];
 const AI_PROVIDER_LABELS: Record<AIProviderTab, string> = {
   openai: 'OpenAI',
   gemini: 'Gemini',
   openrouter: 'OpenRouter',
+  groq: 'Groq',
 };
 const DEFAULT_OPENROUTER_MODEL = 'openai/gpt-4o-mini';
+const DEFAULT_GROQ_MODEL = 'llama-3.1-8b-instant';
 const MASKED_KEY = '********';
 
 export function AIAssistantCard() {
@@ -78,6 +80,15 @@ export function AIAssistantCard() {
   const [openRouterModelPickerOpen, setOpenRouterModelPickerOpen] = useState(false);
   const [openRouterModelSearch, setOpenRouterModelSearch] = useState('');
 
+  const [groqSettings, setGroqSettings] = useState<OpenAISettings>({
+    provider: 'groq', enabled: false, model: DEFAULT_GROQ_MODEL, hasKey: false,
+  });
+  const [groqApiKey, setGroqApiKey] = useState('');
+  const [isTestingGroq, setIsTestingGroq] = useState(false);
+  const [isSavingGroq, setIsSavingGroq] = useState(false);
+  const [groqTestResult, setGroqTestResult] = useState<'idle' | 'success' | 'error'>('idle');
+  const [groqTestMessage, setGroqTestMessage] = useState<string | null>(null);
+
   const { data: chatSettingsData } = useQuery<ChatSettingsData>({
     queryKey: ['/api/chat/settings'],
   });
@@ -89,6 +100,9 @@ export function AIAssistantCard() {
   });
   const { data: openRouterSettingsData } = useQuery<OpenAISettings>({
     queryKey: ['/api/integrations/openrouter'],
+  });
+  const { data: groqSettingsData } = useQuery<OpenAISettings>({
+    queryKey: ['/api/integrations/groq'],
   });
   const { data: openRouterModelsData, isLoading: loadingOpenRouterModels } = useQuery<OpenRouterModelsResponse>({
     queryKey: ['/api/integrations/openrouter/models'],
@@ -147,6 +161,21 @@ export function AIAssistantCard() {
       }
     }
   }, [openRouterSettingsData]);
+
+  useEffect(() => {
+    if (groqSettingsData) {
+      setGroqSettings({ ...groqSettingsData, model: groqSettingsData.model || DEFAULT_GROQ_MODEL });
+      if (groqSettingsData.hasKey) {
+        setGroqTestResult('success');
+        setGroqTestMessage(groqSettingsData.enabled ? 'Groq is enabled.' : 'Key saved. Run test to verify connection.');
+        setGroqApiKey((current) => current || MASKED_KEY);
+      } else {
+        setGroqTestResult('idle');
+        setGroqTestMessage(null);
+        setGroqApiKey('');
+      }
+    }
+  }, [groqSettingsData]);
 
   const saveOpenAISettings = async (settingsToSave?: Partial<OpenAISettings> & { apiKey?: string }) => {
     setIsSavingOpenAI(true);
@@ -372,6 +401,70 @@ export function AIAssistantCard() {
     }
   };
 
+  const saveGroqSettings = async (settingsToSave?: Partial<OpenAISettings> & { apiKey?: string }) => {
+    setIsSavingGroq(true);
+    try {
+      await apiRequest('PUT', '/api/integrations/groq', {
+        enabled: settingsToSave?.enabled ?? groqSettings.enabled,
+        model: settingsToSave?.model || groqSettings.model || DEFAULT_GROQ_MODEL,
+        apiKey: (settingsToSave?.apiKey && settingsToSave.apiKey !== MASKED_KEY ? settingsToSave.apiKey : undefined) ||
+                (groqApiKey && groqApiKey !== MASKED_KEY ? groqApiKey : undefined),
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/integrations/groq'] });
+      setGroqApiKey('');
+      toast({ title: 'Groq settings saved' });
+    } catch (error: any) {
+      toast({ title: 'Failed to save Groq settings', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsSavingGroq(false);
+    }
+  };
+
+  const handleToggleGroq = async (checked: boolean) => {
+    if (checked && !(groqTestResult === 'success' || groqSettings.hasKey)) {
+      toast({ title: 'Please run Test Connection', description: 'You must have a successful test before enabling Groq.', variant: 'destructive' });
+      return;
+    }
+    const next = { ...groqSettings, enabled: checked };
+    setGroqSettings(next);
+    if (checked) { setGroqTestResult('success'); setGroqTestMessage('Groq is enabled.'); }
+    else { setGroqTestResult('idle'); setGroqTestMessage(null); }
+    await saveGroqSettings(next);
+  };
+
+  const testGroqConnection = async () => {
+    setIsTestingGroq(true);
+    setGroqTestResult('idle');
+    setGroqTestMessage(null);
+    try {
+      const response = await fetch('/api/integrations/groq/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: groqApiKey && groqApiKey !== MASKED_KEY ? groqApiKey : undefined, model: groqSettings.model || DEFAULT_GROQ_MODEL }),
+        credentials: 'include',
+      });
+      const result = await response.json();
+      if (result.success) {
+        setGroqTestResult('success');
+        setGroqTestMessage('Connection successful. You can now enable Groq.');
+        setGroqSettings(prev => ({ ...prev, hasKey: true }));
+        setGroqApiKey('');
+        queryClient.invalidateQueries({ queryKey: ['/api/integrations/groq'] });
+        toast({ title: 'Groq connected', description: 'API key saved. You can now enable the integration.' });
+      } else {
+        setGroqTestResult('error');
+        setGroqTestMessage(result.message || 'Could not reach Groq.');
+        toast({ title: 'Groq test failed', description: result.message || 'Could not reach Groq', variant: 'destructive' });
+      }
+    } catch (error: any) {
+      toast({ title: 'Groq test failed', description: error.message, variant: 'destructive' });
+      setGroqTestResult('error');
+      setGroqTestMessage(error.message || 'Connection failed.');
+    } finally {
+      setIsTestingGroq(false);
+    }
+  };
+
   const switchActiveProvider = async (provider: AIProviderTab) => {
     setActiveTab(provider);
     try {
@@ -385,6 +478,7 @@ export function AIAssistantCard() {
   const openAITestButtonClass = openAITestResult === 'success' ? 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200' : openAITestResult === 'error' ? 'bg-red-100 text-red-700 border-red-300 hover:bg-red-200' : '';
   const geminiTestButtonClass = geminiTestResult === 'success' ? 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200' : geminiTestResult === 'error' ? 'bg-red-100 text-red-700 border-red-300 hover:bg-red-200' : '';
   const openRouterTestButtonClass = openRouterTestResult === 'success' ? 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200' : openRouterTestResult === 'error' ? 'bg-red-100 text-red-700 border-red-300 hover:bg-red-200' : '';
+  const groqTestButtonClass = groqTestResult === 'success' ? 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200' : groqTestResult === 'error' ? 'bg-red-100 text-red-700 border-red-300 hover:bg-red-200' : '';
 
   const openRouterModels = openRouterModelsData?.models || [];
   const selectedOpenRouterModel = openRouterModels.find(model => model.id === openRouterSettings.model);
@@ -427,12 +521,13 @@ export function AIAssistantCard() {
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="flex gap-2">
-          {(['openai', 'gemini', 'openrouter'] as AIProviderTab[]).map((provider) => {
+          {(['openai', 'gemini', 'openrouter', 'groq'] as AIProviderTab[]).map((provider) => {
             const isActive = activeTab === provider;
             const enabled =
               provider === 'openai' ? openAISettings.enabled
               : provider === 'gemini' ? geminiSettings.enabled
-              : openRouterSettings.enabled;
+              : provider === 'openrouter' ? openRouterSettings.enabled
+              : groqSettings.enabled;
             return (
               <button
                 key={provider}
@@ -445,6 +540,7 @@ export function AIAssistantCard() {
                 {provider === 'openai' && <SiOpenai className="w-4 h-4" />}
                 {provider === 'gemini' && <SiGoogle className="w-4 h-4" />}
                 {provider === 'openrouter' && <LayoutGrid className="w-4 h-4" />}
+                {provider === 'groq' && <Bot className="w-4 h-4" />}
                 <span>{AI_PROVIDER_LABELS[provider]}</span>
                 <span className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full ${
                   enabled ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
@@ -633,6 +729,58 @@ export function AIAssistantCard() {
             </Button>
             {!openRouterSettings.hasKey && !openRouterSettings.enabled && (
               <div className="text-xs text-muted-foreground">Add a key and test the connection to enable OpenRouter responses.</div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'groq' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between p-4 bg-white dark:bg-card rounded-lg border">
+              <div>
+                <p className="font-medium text-sm">Enable Groq</p>
+                <p className="text-xs text-muted-foreground">Use Groq chat models for responses</p>
+              </div>
+              <Switch checked={groqSettings.enabled} onCheckedChange={handleToggleGroq} disabled={isSavingGroq} data-testid="switch-groq-enabled" />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="groq-api-key">API Key</Label>
+                <Input
+                  id="groq-api-key"
+                  type="password"
+                  value={groqApiKey}
+                  onChange={(e) => setGroqApiKey(e.target.value)}
+                  onFocus={() => { if (groqApiKey === MASKED_KEY) setGroqApiKey(''); }}
+                  onBlur={() => { if (!groqApiKey && groqSettings.hasKey) setGroqApiKey(MASKED_KEY); }}
+                  placeholder="gsk_..."
+                  data-testid="input-groq-api-key"
+                />
+                <p className="text-xs text-muted-foreground">Stored securely on the server. Not returned after saving.</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="groq-model">Model</Label>
+                <Select value={groqSettings.model || DEFAULT_GROQ_MODEL} onValueChange={(val) => setGroqSettings(prev => ({ ...prev, model: val }))}>
+                  <SelectTrigger id="groq-model"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="llama-3.1-8b-instant">llama-3.1-8b-instant</SelectItem>
+                    <SelectItem value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</SelectItem>
+                    <SelectItem value="openai/gpt-oss-120b">openai/gpt-oss-120b</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" className={groqTestButtonClass} onClick={testGroqConnection} disabled={isTestingGroq || (!groqApiKey && !groqSettings.hasKey)} data-testid="button-test-groq">
+                {isTestingGroq && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {groqTestResult === 'success' ? 'Test OK' : groqTestResult === 'error' ? 'Test Failed' : 'Test Connection'}
+              </Button>
+              <Button onClick={() => saveGroqSettings()} disabled={isSavingGroq}>
+                {isSavingGroq && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Save
+              </Button>
+            </div>
+            {!groqSettings.hasKey && !groqSettings.enabled && (
+              <div className="text-xs text-muted-foreground">Add a key and test the connection to enable Groq responses.</div>
             )}
           </div>
         )}

@@ -3,10 +3,11 @@ import { z } from "zod";
 import crypto from "crypto";
 import { storage } from "../storage.js";
 import { insertFormSchema, updateFormSchema, formLeadProgressSchema } from "#shared/schema.js";
-import { calculateMaxScore, DEFAULT_FORM_CONFIG } from "#shared/form.js";
+import { calculateMaxScore, DEFAULT_FORM_CONFIG, validateFormConfig } from "#shared/form.js";
 import type { FormConfig } from "#shared/schema.js";
 import { requireAdmin, setPublicCache } from "./_shared.js";
 import { runLeadPostProcessing } from "../lib/lead-processing.js";
+import { summarizeFormTranscript, transcribeFormAudio } from "../lib/form-audio.js";
 
 const SKALE_HUB_GROUP_FORM_SLUG = "skale-hub";
 
@@ -115,6 +116,10 @@ export function registerFormRoutes(app: Express) {
         },
       };
       const parsed = insertFormSchema.parse(body);
+      const configErrors = validateFormConfig(parsed.config, { requireQuestions: parsed.isActive === true });
+      if (configErrors.length > 0) {
+        return res.status(400).json({ message: "Invalid form configuration", errors: configErrors });
+      }
 
       // Normalize maxScore from the questions if the client didn't compute it.
       const normalizedConfig: FormConfig = {
@@ -143,11 +148,20 @@ export function registerFormRoutes(app: Express) {
       if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
 
       const parsed = updateFormSchema.parse(req.body);
+      const existing = await storage.getForm(id);
+      if (!existing) return res.status(404).json({ message: "Form not found" });
 
       // Recompute maxScore if the caller sent a new config.
       const updates: typeof parsed = { ...parsed };
       if (parsed.config) {
         updates.config = { ...parsed.config, maxScore: calculateMaxScore(parsed.config) };
+      }
+
+      const nextConfig = (updates.config ?? existing.config) as FormConfig;
+      const nextActive = parsed.isActive ?? existing.isActive;
+      const configErrors = validateFormConfig(nextConfig, { requireQuestions: nextActive === true });
+      if (configErrors.length > 0) {
+        return res.status(400).json({ message: "Invalid form configuration", errors: configErrors });
       }
 
       const updated = await storage.updateForm(id, updates);
@@ -349,6 +363,40 @@ export function registerFormRoutes(app: Express) {
         }
       }
       res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.post("/api/forms/slug/:slug/audio/transcribe", async (req, res) => {
+    try {
+      const form = await storage.getFormBySlug(req.params.slug);
+      if (!form || !form.isActive) {
+        return res.status(404).json({ message: "Form not found" });
+      }
+
+      const parsed = z.object({
+        audioData: z.string().min(100),
+        questionId: z.string().min(1).max(120),
+        language: z.string().min(2).max(8).optional(),
+      }).parse(req.body);
+
+      const result = await transcribeFormAudio({
+        audioData: parsed.audioData,
+        language: parsed.language,
+      });
+      const summary = await summarizeFormTranscript(result.text);
+
+      res.json({
+        questionId: parsed.questionId,
+        transcript: result.text,
+        summary,
+        provider: result.provider,
+        model: result.model,
+      });
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: err.errors });
+      }
+      res.status(400).json({ message: err?.message || "Failed to transcribe audio" });
     }
   });
 }

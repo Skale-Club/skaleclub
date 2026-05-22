@@ -158,7 +158,7 @@ export const formLeadProgressSchema = z.object({
   principalDesafio: z.string().max(160).optional(),
   disponibilidade: z.string().max(120).optional(),
   expectativaResultado: z.string().max(120).optional(),
-  scoreTotal: z.number().int().min(0).max(78).optional(),
+  scoreTotal: z.number().int().min(0).optional(),
   scoreTipoNegocio: z.number().int().min(0).max(10).optional(),
   scoreTempoNegocio: z.number().int().min(0).max(10).optional(),
   scoreExperiencia: z.number().int().min(0).max(10).optional(),
@@ -185,7 +185,7 @@ export type LeadStatus = typeof leadStatusEnum.enumValues[number];
 export type FormLeadProgressInput = z.infer<typeof formLeadProgressSchema>;
 
 // Form Configuration Types
-export type FormQuestionType = 'text' | 'email' | 'tel' | 'select';
+export type FormQuestionType = 'text' | 'textarea' | 'email' | 'tel' | 'select' | 'voice';
 
 export interface FormOption {
   value: string;
@@ -198,6 +198,7 @@ export interface FormConditionalField {
   id: string;
   title: string;
   placeholder: string;
+  type?: Exclude<FormQuestionType, 'select'>;
 }
 
 export interface FormQuestion {
@@ -209,6 +210,7 @@ export interface FormQuestion {
   placeholder?: string;
   options?: FormOption[];
   conditionalField?: FormConditionalField;
+  conditionalFields?: FormConditionalField[];
   ghlFieldId?: string;
 }
 

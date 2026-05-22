@@ -21,6 +21,10 @@ export function ThresholdsForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!(hot >= warm && warm >= cold)) {
+      window.alert('Thresholds must be ordered as HOT >= WARM >= COLD.');
+      return;
+    }
     onSave({ hot, warm, cold });
   };
 

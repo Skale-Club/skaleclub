@@ -3,7 +3,7 @@ import { getGeminiClient } from "./gemini.js";
 import { getOpenRouterClient } from "./openrouter.js";
 import { storage } from "../storage.js";
 
-export type AIProvider = "openai" | "gemini" | "openrouter";
+export type AIProvider = "openai" | "gemini" | "openrouter" | "groq";
 
 // Runtime cache for API keys (reduces database reads and allows in-memory override)
 let runtimeOpenAiKey: string | undefined;
@@ -87,7 +87,7 @@ export function getRuntimeGroqKey(): string | undefined {
  * @returns Active AI client configuration or null if none available
  */
 export async function getActiveAIClient(): Promise<{
-  client: OpenAI;
+  client: OpenAI | any;
   model: string;
   provider: AIProvider;
 } | null> {
@@ -133,6 +133,28 @@ export async function getActiveAIClient(): Promise<{
       client: getOpenRouterClient(apiKey),
       model: openRouterIntegration.model || "openai/gpt-4o-mini",
       provider: "openrouter",
+    };
+  }
+
+  if (activeProvider === "groq") {
+    const groqIntegration = await storage.getChatIntegration("groq");
+    if (!groqIntegration?.enabled) {
+      console.log("Groq provider selected but not enabled");
+      return null;
+    }
+
+    const apiKey = runtimeGroqKey || groqIntegration?.apiKey;
+
+    if (!apiKey) {
+      console.log("Groq provider enabled but no API key available");
+      return null;
+    }
+
+    const Groq = (await import("groq-sdk")).default;
+    return {
+      client: new Groq({ apiKey }),
+      model: groqIntegration.model || "llama-3.1-8b-instant",
+      provider: "groq",
     };
   }
 

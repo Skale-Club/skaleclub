@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } f
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   Archive,
+  Bot,
   GripVertical,
   LayoutGrid,
   MessageSquare,
@@ -678,6 +679,12 @@ You: "Excellent, John! A specialist will contact you within 24 hours!"`;
                             <div className="flex items-center gap-2">
                               <LayoutGrid className="w-4 h-4" />
                               <span>OpenRouter</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="groq">
+                            <div className="flex items-center gap-2">
+                              <Bot className="w-4 h-4" />
+                              <span>Groq</span>
                             </div>
                           </SelectItem>
                         </SelectContent>

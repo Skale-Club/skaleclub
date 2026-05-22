@@ -7,6 +7,9 @@ import {
   ArrowRight,
   Check,
   ChevronDown,
+  Mic,
+  RotateCcw,
+  Square,
   X,
 } from "lucide-react";
 import clsx from "clsx";
@@ -15,8 +18,8 @@ import { trackEvent } from "@/lib/analytics";
 import { usePagePaths } from "@/lib/pagePaths";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Loader2 } from '@/components/ui/loader';
-import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead, getSortedQuestions, KNOWN_FIELD_IDS } from "@shared/form";
-import type { LeadClassification, FormLead, FormConfig, FormQuestion } from "@shared/schema";
+import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead, getConditionalFields, getSortedQuestions, KNOWN_FIELD_IDS } from "@shared/form";
+import type { LeadClassification, FormLead, FormConfig, FormQuestion, FormConditionalField } from "@shared/schema";
 
 type FormView = "form" | "loading";
 
@@ -68,8 +71,8 @@ function buildInitialAnswers(config: FormConfig): Answers {
   const answers: Answers = {};
   for (const q of config.questions) {
     answers[q.id] = "";
-    if (q.conditionalField) {
-      answers[q.conditionalField.id] = "";
+    for (const field of getConditionalFields(q)) {
+      answers[field.id] = "";
     }
   }
   return answers;
@@ -179,6 +182,11 @@ function getFieldError(question: FormQuestion | undefined, answers: Answers, sel
       if (value && value.length < 3) return "Please enter at least 3 characters";
       break;
     }
+    case "textarea":
+    case "voice": {
+      if (value && value.length < 3) return "Please enter at least 3 characters";
+      break;
+    }
     case "email": {
       if (value && !/.+@.+\..+/.test(value)) return "Please enter a valid email";
       break;
@@ -193,8 +201,9 @@ function getFieldError(question: FormQuestion | undefined, answers: Answers, sel
     }
     case "select": {
       // Check conditional field if applicable
-      if (question.conditionalField && value === question.conditionalField.showWhen) {
-        const conditionalValue = (answers[question.conditionalField.id] || "").trim();
+      const activeFields = getConditionalFields(question).filter(field => value === field.showWhen);
+      for (const field of activeFields) {
+        const conditionalValue = (answers[field.id] || "").trim();
         if (!conditionalValue) {
           return `Please fill in the additional field`;
         }
@@ -211,6 +220,262 @@ type LeadFormModalProps = {
   onClose: () => void;
   formSlug: string;
 };
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(reader.error || new Error("Failed to read audio"));
+    reader.readAsDataURL(blob);
+  });
+}
+
+function VoiceAnswerInput({
+  formSlug,
+  questionId,
+  value,
+  summary,
+  onTranscribed,
+}: {
+  formSlug: string;
+  questionId: string;
+  value: string;
+  summary?: string;
+  onTranscribed: (transcript: string, summary?: string) => void;
+}) {
+  const { t } = useTranslation();
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [levels, setLevels] = useState<number[]>(Array(18).fill(0));
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const intervalRef = useRef<number>();
+  const animationRef = useRef<number>();
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  const stopStreams = useCallback(() => {
+    if (intervalRef.current) window.clearInterval(intervalRef.current);
+    if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    if (audioContextRef.current) void audioContextRef.current.close();
+    intervalRef.current = undefined;
+    animationRef.current = undefined;
+    audioContextRef.current = null;
+    analyserRef.current = null;
+    setLevels(Array(18).fill(0));
+  }, []);
+
+  const draw = useCallback(() => {
+    const analyser = analyserRef.current;
+    if (!analyser) return;
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteFrequencyData(data);
+    const bucketSize = Math.max(1, Math.floor(data.length / 18));
+    setLevels(Array.from({ length: 18 }, (_, i) => {
+      let sum = 0;
+      for (let j = 0; j < bucketSize; j++) sum += data[i * bucketSize + j] || 0;
+      return sum / bucketSize / 255;
+    }));
+    animationRef.current = requestAnimationFrame(draw);
+  }, []);
+
+  const transcribeBlob = useCallback(async (blob: Blob) => {
+    setIsTranscribing(true);
+    setError(null);
+    try {
+      const audioData = await blobToDataUrl(blob);
+      const response = await fetch(`/api/forms/slug/${encodeURIComponent(formSlug)}/audio/transcribe`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ audioData, questionId }),
+      });
+      if (!response.ok) {
+        const json = await response.json().catch(() => null);
+        throw new Error(json?.message || "Could not transcribe audio");
+      }
+      const json = await response.json() as { transcript: string; summary?: string };
+      onTranscribed(json.transcript, json.summary || undefined);
+    } catch (err: any) {
+      setError(err?.message || "Could not transcribe audio");
+    } finally {
+      setIsTranscribing(false);
+    }
+  }, [formSlug, onTranscribed, questionId]);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const context = new AudioContext();
+      audioContextRef.current = context;
+      const analyser = context.createAnalyser();
+      analyser.fftSize = 256;
+      context.createMediaStreamSource(stream).connect(analyser);
+      analyserRef.current = analyser;
+      animationRef.current = requestAnimationFrame(draw);
+
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+      chunksRef.current = [];
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) chunksRef.current.push(event.data);
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        stream.getTracks().forEach((track) => track.stop());
+        stopStreams();
+        void transcribeBlob(blob);
+      };
+      recorder.start();
+      setRecordingTime(0);
+      setIsRecording(true);
+      intervalRef.current = window.setInterval(() => setRecordingTime((value) => value + 1), 1000);
+    } catch {
+      setIsRecording(false);
+      setError("Microphone access denied");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
+    setIsRecording(false);
+  };
+
+  useEffect(() => () => stopStreams(), [stopStreams]);
+
+  return (
+    <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={isRecording ? stopRecording : startRecording}
+          disabled={isTranscribing}
+          className={clsx(
+            "flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-white transition-colors",
+            isRecording ? "bg-red-500 hover:bg-red-600" : "bg-[#406EF1] hover:bg-[#355CD0]",
+            isTranscribing && "opacity-60"
+          )}
+        >
+          {isRecording ? <Square className="h-5 w-5 fill-current" /> : <Mic className="h-5 w-5" />}
+        </button>
+        <div className="min-w-0 flex-1">
+          {isRecording ? (
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 flex-1 items-center gap-1">
+                {levels.map((level, index) => (
+                  <span
+                    key={index}
+                    className="flex-1 rounded-full bg-red-400"
+                    style={{ height: `${Math.max(8, level * 32)}px` }}
+                  />
+                ))}
+              </div>
+              <span className="font-mono text-sm text-slate-500">{Math.floor(recordingTime / 60)}:{String(recordingTime % 60).padStart(2, "0")}</span>
+            </div>
+          ) : isTranscribing ? (
+            <p className="font-medium text-slate-700">{t("Transcribing audio...")}</p>
+          ) : value ? (
+            <p className="font-medium text-slate-700">{t("Voice answer transcribed")}</p>
+          ) : (
+            <p className="font-medium text-slate-700">{t("Tap to record your answer")}</p>
+          )}
+        </div>
+        {value && !isRecording && !isTranscribing ? (
+          <button type="button" onClick={() => onTranscribed("", undefined)} className="rounded-lg p-2 text-slate-500 hover:bg-white">
+            <RotateCcw className="h-4 w-4" />
+          </button>
+        ) : null}
+      </div>
+      {value ? (
+        <div className="space-y-2 rounded-xl border bg-white p-3 text-sm text-slate-700">
+          <p>{value}</p>
+          {summary ? (
+            <div className="border-t pt-2 text-xs text-slate-500">
+              <strong>{t("Summary")}:</strong> {summary}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+      {error ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{t(error)}</div>
+      ) : null}
+    </div>
+  );
+}
+
+function ConditionalFieldInput({
+  field,
+  formSlug,
+  value,
+  summary,
+  errorMessage,
+  onTextChange,
+  onTranscribed,
+  onFocus,
+}: {
+  field: FormConditionalField;
+  formSlug: string;
+  value: string;
+  summary?: string;
+  errorMessage: string | null;
+  onTextChange: (value: string) => void;
+  onTranscribed: (transcript: string, summary?: string) => void;
+  onFocus: (event: React.FocusEvent<HTMLInputElement>) => void;
+}) {
+  const { t } = useTranslation();
+  const type = field.type || "text";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
+      className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200"
+    >
+      <label htmlFor={`conditional-${field.id}`} className="text-sm font-semibold text-slate-700 block mb-2">
+        {t(field.title)}
+      </label>
+      {type === "voice" ? (
+        <VoiceAnswerInput
+          formSlug={formSlug}
+          questionId={field.id}
+          value={value}
+          summary={summary}
+          onTranscribed={onTranscribed}
+        />
+      ) : type === "textarea" ? (
+        <textarea
+          id={`conditional-${field.id}`}
+          value={value}
+          onChange={e => onTextChange(e.target.value)}
+          placeholder={field.placeholder}
+          className={clsx(
+            "min-h-28 w-full rounded-lg border px-4 py-2 text-base transition-colors resize-y",
+            errorMessage ? "border-red-400 bg-red-50" : "border-blue-300 bg-white",
+            "focus:border-[#406EF1] focus:ring-2 focus:ring-[#406EF1]/30"
+          )}
+        />
+      ) : (
+        <input
+          id={`conditional-${field.id}`}
+          type={type === "email" ? "email" : type === "tel" ? "tel" : "text"}
+          value={value}
+          onChange={e => onTextChange(e.target.value)}
+          onFocus={onFocus}
+          placeholder={field.placeholder}
+          className={clsx(
+            "w-full rounded-lg border px-4 py-2 text-base transition-colors",
+            errorMessage ? "border-red-400 bg-red-50" : "border-blue-300 bg-white",
+            "focus:border-[#406EF1] focus:ring-2 focus:ring-[#406EF1]/30"
+          )}
+        />
+      )}
+    </motion.div>
+  );
+}
 
 export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
   const pagePaths = usePagePaths();
@@ -256,7 +521,6 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
   const countryDropdownRef = useRef<HTMLDivElement | null>(null);
   const countryButtonRef = useRef<HTMLButtonElement | null>(null);
   const primaryInputRef = useRef<HTMLInputElement | null>(null);
-  const conditionalInputRef = useRef<HTMLInputElement | null>(null);
   const lastFocusedInputRef = useRef<HTMLInputElement | null>(null);
 
   const selectedCountry = useMemo(() =>
@@ -279,6 +543,12 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
 
   const currentQuestion = sortedQuestions[currentStep - 1];
   const currentQuestionId = currentQuestion?.id;
+  const activeConditionalFields = useMemo(
+    () => currentQuestion
+      ? getConditionalFields(currentQuestion).filter(field => answers[currentQuestion.id] === field.showWhen)
+      : [],
+    [answers, currentQuestion]
+  );
 
   const handleFieldFocus = (event: React.FocusEvent<HTMLInputElement>) => {
     lastFocusedInputRef.current = event.currentTarget;
@@ -371,7 +641,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
     const rafId = requestAnimationFrame(() => {
       // Add a small delay to ensure the animation has completed
       const timerId = setTimeout(() => {
-        const target = lastFocusedInputRef.current || primaryInputRef.current || conditionalInputRef.current;
+        const target = lastFocusedInputRef.current || primaryInputRef.current;
         if (target && document.activeElement !== target) {
           target.focus();
         }
@@ -553,8 +823,13 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
     const updated = { ...answers, [field]: value };
     // Clear conditional field if option changes
     const question = sortedQuestions.find(q => q.id === field);
-    if (question?.conditionalField && value !== question.conditionalField.showWhen) {
-      updated[question.conditionalField.id] = "";
+    if (question) {
+      for (const conditional of getConditionalFields(question)) {
+        if (value !== conditional.showWhen) {
+          updated[conditional.id] = "";
+          updated[`${conditional.id}__summary`] = "";
+        }
+      }
     }
     setAnswers(updated);
     setErrorMessage(null);
@@ -681,6 +956,21 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
     );
   }
 
+  if (totalQuestions === 0) {
+    return createPortal(
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+        <div className="w-full max-w-md rounded-2xl bg-white p-6 text-center text-slate-900 shadow-2xl">
+          <p className="text-lg font-semibold">{t('Form unavailable')}</p>
+          <p className="mt-2 text-sm text-slate-500">{t('This form is not ready yet.')}</p>
+          <button type="button" className="mt-4 rounded-xl bg-[#406EF1] px-4 py-2 font-semibold text-white" onClick={handleClose}>
+            {t('Close')}
+          </button>
+        </div>
+      </div>,
+      document.body
+    );
+  }
+
   const isLastStep = currentStep === totalQuestions;
   const canProceed = !getFieldError(currentQuestion, answers, selectedCountry);
 
@@ -758,6 +1048,51 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                               "focus:border-[#406EF1] focus:ring-2 focus:ring-[#406EF1]/30"
                             )}
                             aria-label={currentQuestion.title}
+                          />
+                        )}
+
+                        {currentQuestion.type === "textarea" && (
+                          <textarea
+                            value={answers[currentQuestion.id] || ""}
+                            onChange={e => handleAnswerChange(currentQuestion.id, e.target.value)}
+                            placeholder={currentQuestion.placeholder || ""}
+                            className={clsx(
+                              "min-h-36 w-full rounded-xl border px-4 py-3 text-lg transition-colors resize-y",
+                              errorMessage ? "border-red-400" : "border",
+                              "focus:border-[#406EF1] focus:ring-2 focus:ring-[#406EF1]/30"
+                            )}
+                            aria-label={currentQuestion.title}
+                          />
+                        )}
+
+                        {currentQuestion.type === "voice" && (
+                          <VoiceAnswerInput
+                            formSlug={formSlug}
+                            questionId={currentQuestion.id}
+                            value={answers[currentQuestion.id] || ""}
+                            summary={answers[`${currentQuestion.id}__summary`]}
+                            onTranscribed={(transcript, summary) => {
+                              setAnswers(prev => ({
+                                ...prev,
+                                [currentQuestion.id]: transcript,
+                                [`${currentQuestion.id}__summary`]: summary || "",
+                              }));
+                              answersRef.current = {
+                                ...answersRef.current,
+                                [currentQuestion.id]: transcript,
+                                [`${currentQuestion.id}__summary`]: summary || "",
+                              };
+                              setErrorMessage(null);
+                              if (transcript) {
+                                void persistProgress(currentStep, {
+                                  stepToResume: currentStep,
+                                  overrideAnswers: {
+                                    [currentQuestion.id]: transcript,
+                                    [`${currentQuestion.id}__summary`]: summary || "",
+                                  },
+                                });
+                              }
+                            }}
                           />
                         )}
 
@@ -885,33 +1220,29 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                           </div>
                         )}
 
-                        {/* Conditional field (e.g., "Outro" text input) */}
-                        {currentQuestion.conditionalField &&
-                         answers[currentQuestion.id] === currentQuestion.conditionalField.showWhen && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200"
-                          >
-                            <label htmlFor={`conditional-${currentQuestion.conditionalField.id}`} className="text-sm font-semibold text-slate-700 block mb-2">
-                              {t(currentQuestion.conditionalField.title)}
-                            </label>
-                            <input
-                              id={`conditional-${currentQuestion.conditionalField.id}`}
-                              ref={conditionalInputRef}
-                              value={answers[currentQuestion.conditionalField.id] || ""}
-                              onChange={e => handleAnswerChange(currentQuestion.conditionalField!.id, e.target.value)}
-                              onFocus={handleFieldFocus}
-                              placeholder={currentQuestion.conditionalField.placeholder}
-                              className={clsx(
-                                "w-full rounded-lg border px-4 py-2 text-base transition-colors",
-                                errorMessage ? "border-red-400 bg-red-50" : "border-blue-300 bg-white",
-                                "focus:border-[#406EF1] focus:ring-2 focus:ring-[#406EF1]/30"
-                              )}
-                            />
-                          </motion.div>
-                        )}
+                        {activeConditionalFields.map((field) => (
+                          <ConditionalFieldInput
+                            key={`${field.id}:${field.showWhen}`}
+                            field={field}
+                            formSlug={formSlug}
+                            value={answers[field.id] || ""}
+                            summary={answers[`${field.id}__summary`]}
+                            errorMessage={errorMessage}
+                            onFocus={handleFieldFocus}
+                            onTextChange={(value) => handleAnswerChange(field.id, value)}
+                            onTranscribed={(transcript, summary) => {
+                              setAnswers(prev => ({ ...prev, [field.id]: transcript, [`${field.id}__summary`]: summary || "" }));
+                              answersRef.current = { ...answersRef.current, [field.id]: transcript, [`${field.id}__summary`]: summary || "" };
+                              setErrorMessage(null);
+                              if (transcript) {
+                                void persistProgress(currentStep, {
+                                  stepToResume: currentStep,
+                                  overrideAnswers: { [field.id]: transcript, [`${field.id}__summary`]: summary || "" },
+                                });
+                              }
+                            }}
+                          />
+                        ))}
 
                         {errorMessage && (
                           <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 animate-form-shake">

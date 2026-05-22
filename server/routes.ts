@@ -6,7 +6,7 @@ import OpenAI from "openai";
 import crypto from "crypto";
 import { getActiveAIClient } from "./lib/ai-provider.js";
 import { insertChatSettingsSchema } from "#shared/schema.js";
-import { DEFAULT_FORM_CONFIG, getSortedQuestions } from "#shared/form.js";
+import { DEFAULT_FORM_CONFIG, getConditionalFields, getSortedQuestions, KNOWN_FIELD_IDS } from "#shared/form.js";
 import type { FormAnswers } from "#shared/form.js";
 import type { FormConfig } from "#shared/schema.js";
 import { getOrCreateGHLContact } from "./integrations/ghl.js";
@@ -290,14 +290,14 @@ export async function registerRoutes(
       if (!answer || answer.trim() === '') {
         return question;
       }
-      // Check conditional field if applicable
-      if (question.conditionalField && answer === question.conditionalField.showWhen) {
-        const conditionalAnswer = answers[question.conditionalField.id];
+      // Check conditional fields if applicable.
+      for (const conditionalField of getConditionalFields(question).filter(field => answer === field.showWhen)) {
+        const conditionalAnswer = answers[conditionalField.id];
         if (!conditionalAnswer || conditionalAnswer.trim() === '') {
           return {
             ...question,
             isConditional: true,
-            conditionalQuestion: question.conditionalField,
+            conditionalQuestion: conditionalField,
           };
         }
       }
@@ -319,6 +319,20 @@ export async function registerRoutes(
 
         return {
           questions: sortedQuestions.map(q => ({
+            ...(() => {
+              const conditionalFields = getConditionalFields(q);
+              const firstConditional = conditionalFields[0];
+              return {
+                conditionalField: firstConditional ? {
+                  showWhen: firstConditional.showWhen,
+                  id: firstConditional.id,
+                  title: firstConditional.title,
+                  placeholder: firstConditional.placeholder,
+                  type: firstConditional.type || 'text',
+                } : undefined,
+                conditionalFields,
+              };
+            })(),
             id: q.id,
             order: q.order,
             title: q.title,
@@ -326,12 +340,6 @@ export async function registerRoutes(
             required: q.required,
             placeholder: q.placeholder,
             options: q.options?.map(o => ({ value: o.value, label: o.label })),
-            conditionalField: q.conditionalField ? {
-              showWhen: q.conditionalField.showWhen,
-              id: q.conditionalField.id,
-              title: q.conditionalField.title,
-              placeholder: q.conditionalField.placeholder,
-            } : undefined,
           })),
           thresholds: formConfig.thresholds,
           maxScore: formConfig.maxScore,
@@ -383,6 +391,11 @@ export async function registerRoutes(
         // Check if form is complete
         const answeredCount = Object.entries(currentAnswers).filter(([k, v]) => v && v.trim() !== '').length;
         const formCompleto = answeredCount >= sortedQuestions.length;
+        const customAnswers = Object.fromEntries(
+          Object.entries(currentAnswers)
+            .filter(([key, value]) => !KNOWN_FIELD_IDS.includes(key) && typeof value === 'string' && value.trim() !== '')
+            .map(([key, value]) => [key, value!.trim()])
+        );
 
         // Determine nome for upsert (required field)
         const nome = currentAnswers.nome || lead?.nome || answer; // Use first answer as nome if nome not yet set
@@ -405,7 +418,7 @@ export async function registerRoutes(
           expectativaResultado: currentAnswers.expectativaResultado,
           questionNumber,
           formCompleto,
-          customAnswers: lead?.customAnswers || undefined,
+          customAnswers,
         }, { conversationId, source: 'chat' }, formConfig);
 
         // Get next question
@@ -435,7 +448,7 @@ export async function registerRoutes(
           nextQuestion: nextQuestion ? {
             id: nextQuestion.isConditional ? nextQuestion.conditionalQuestion.id : nextQuestion.id,
             title: nextQuestion.isConditional ? nextQuestion.conditionalQuestion.title : nextQuestion.title,
-            type: nextQuestion.type,
+            type: nextQuestion.isConditional ? (nextQuestion.conditionalQuestion.type || 'text') : nextQuestion.type,
             placeholder: nextQuestion.isConditional ? nextQuestion.conditionalQuestion.placeholder : nextQuestion.placeholder,
             options: nextQuestion.options?.map((o: any) => ({ value: o.value, label: o.label })),
           } : null,
@@ -494,7 +507,7 @@ export async function registerRoutes(
           nextQuestion: nextQuestion ? {
             id: nextQuestion.isConditional ? nextQuestion.conditionalQuestion.id : nextQuestion.id,
             title: nextQuestion.isConditional ? nextQuestion.conditionalQuestion.title : nextQuestion.title,
-            type: nextQuestion.type,
+            type: nextQuestion.isConditional ? (nextQuestion.conditionalQuestion.type || 'text') : nextQuestion.type,
             placeholder: nextQuestion.isConditional ? nextQuestion.conditionalQuestion.placeholder : nextQuestion.placeholder,
             options: nextQuestion.options?.map((o: any) => ({ value: o.value, label: o.label })),
           } : null,
@@ -753,7 +766,7 @@ export async function registerRoutes(
           defaultLanguage: z.string().optional(),
           lowPerformanceSmsEnabled: z.boolean().optional(),
           lowPerformanceThresholdSeconds: z.number().int().positive().optional(),
-          activeAiProvider: z.enum(['openai', 'gemini', 'openrouter']).optional(),
+          activeAiProvider: z.enum(['openai', 'gemini', 'openrouter', 'groq']).optional(),
         })
         .parse(req.body);
       const updated = await storage.updateChatSettings(payload);
@@ -898,11 +911,11 @@ export async function registerRoutes(
         return res.status(403).json({ message: 'Chat is not available on this page.' });
       }
 
-      // Get active AI provider (OpenAI, Gemini, or OpenRouter)
+      // Get active AI provider (OpenAI, Gemini, OpenRouter, or Groq)
       const aiConfig = await getActiveAIClient();
       if (!aiConfig) {
         return res.status(503).json({
-          message: 'AI chat is not configured. Please enable an AI provider (OpenAI, Gemini, or OpenRouter) in Admin → Integrations.'
+          message: 'AI chat is not configured. Please enable an AI provider (OpenAI, Gemini, OpenRouter, or Groq) in Admin → Integrations.'
         });
       }
 
@@ -1135,4 +1148,5 @@ You: "Excellent, John! A specialist will contact you within 24 hours to discuss 
 
   return httpServer;
 }
+
 

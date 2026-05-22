@@ -70,6 +70,7 @@ export function NewFormDialog({ onCreated }: NewFormDialogProps) {
           maxScore: 0,
           thresholds: { hot: 70, warm: 50, cold: 30 },
         },
+        isActive: false,
       });
       return res.json();
     },

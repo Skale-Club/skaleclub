@@ -19,7 +19,7 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Loader2 } from '@/components/ui/loader';
 import { clsx } from 'clsx';
 import { format } from 'date-fns';
-import { DEFAULT_FORM_CONFIG, getSortedQuestions } from '@shared/form';
+import { DEFAULT_FORM_CONFIG, getConditionalFields, getSortedQuestions } from '@shared/form';
 import type { Form, FormConfig, FormLead, FormQuestion, LeadClassification, LeadStatus } from '@shared/schema';
 
 export function LeadsSection() {
@@ -248,16 +248,28 @@ export function LeadsSection() {
     return raw;
   };
 
-  const getConditionalAnswer = (lead: FormLead, question: FormQuestion) => {
-    if (!question.conditionalField) return '';
+  const getConditionalAnswers = (lead: FormLead, question: FormQuestion) => {
     const trigger = getLeadFieldValue(lead, question.id);
-    if (trigger !== question.conditionalField.showWhen) return '';
-    return getLeadFieldValue(lead, question.conditionalField.id);
+    return getConditionalFields(question)
+      .filter(field => trigger === field.showWhen)
+      .map(field => ({
+        field,
+        answer: getLeadFieldValue(lead, field.id),
+        summary: getLeadFieldValue(lead, `${field.id}__summary`),
+      }))
+      .filter(item => item.answer || item.summary);
   };
 
   const extraCustomAnswers = useMemo(() => {
     if (!selectedLead) return [];
     const knownIds = new Set(selectedLeadQuestions.map(q => q.id));
+    selectedLeadQuestions.forEach(q => {
+      knownIds.add(`${q.id}__summary`);
+      getConditionalFields(q).forEach(field => {
+        knownIds.add(field.id);
+        knownIds.add(`${field.id}__summary`);
+      });
+    });
     return Object.entries(selectedLead.customAnswers || {}).filter(([id]) => !knownIds.has(id));
   }, [selectedLeadQuestions, selectedLead]);
 
@@ -578,17 +590,29 @@ export function LeadsSection() {
                   <div className="divide-y divide-border rounded-lg border bg-card">
                     {selectedLeadQuestions.map((question) => {
                       const answer = getAnswerForQuestion(selectedLead, question);
-                      const conditionalAnswer = getConditionalAnswer(selectedLead, question);
+                      const answerSummary = getLeadFieldValue(selectedLead, `${question.id}__summary`);
+                      const conditionalAnswers = getConditionalAnswers(selectedLead, question);
                       return (
                         <div key={question.id} className="p-3">
                           <p className="text-xs uppercase text-muted-foreground mb-1">{question.id}</p>
                           <p className="font-semibold text-sm text-foreground">{question.title}</p>
                           <p className="text-sm text-muted-foreground mt-1">{answer || '?'}</p>
-                          {conditionalAnswer && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {(question.conditionalField?.title || 'Detalhe')}: <span className="text-foreground">{conditionalAnswer}</span>
+                          {answerSummary ? (
+                            <p className="mt-1 rounded-md bg-primary/5 p-2 text-xs text-muted-foreground">
+                              Summary: <span className="text-foreground">{answerSummary}</span>
                             </p>
-                          )}
+                          ) : null}
+                          {conditionalAnswers.map(({ field, answer: conditionalAnswer, summary }) => (
+                            <div key={field.id} className="mt-2 rounded-md border bg-muted/30 p-2">
+                              <p className="text-xs font-semibold text-muted-foreground">{field.title}</p>
+                              <p className="text-sm text-foreground whitespace-pre-wrap">{conditionalAnswer || '?'}</p>
+                              {summary ? (
+                                <p className="mt-1 border-t pt-1 text-xs text-muted-foreground">
+                                  Summary: <span className="text-foreground">{summary}</span>
+                                </p>
+                              ) : null}
+                            </div>
+                          ))}
                         </div>
                       );
                     })}
