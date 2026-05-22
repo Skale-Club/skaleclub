@@ -63,6 +63,17 @@ Proposed product shape from the discussion:
 - Save both the full transcript and an admin-facing summary on the lead. The lead dashboard should show the summary first, with full transcript expandable.
 - Keep fallback behavior in mind: microphone denied, upload fails, transcription provider disabled, model error, and retry/re-record flows.
 
+Required form builder upgrade:
+
+- Treat this as a form engine upgrade before it is a voice-recorder feature. The current builder is a flexible JSON editor around linear steps; voice branching needs a clearer runtime contract.
+- Replace or extend the single `conditionalField` shape with a branch-capable model. A select option should be able to reveal one or more fields, route to another question, or skip a block.
+- Add first-class question kinds beyond `text | email | tel | select`, including at least `textarea` and `voice`, with typed validation and storage behavior for each.
+- Add publish/readiness validation before a form can be active: at least one question, no required select without options, valid branch targets, no duplicate IDs, valid thresholds, and no unreachable required fields.
+- Remove the hidden dependency that a lead must start with `nome`. Leads should be startable with any first field, while still allowing `nome`, email, or phone to map to dedicated columns when present.
+- Make custom answer persistence consistent across public forms and chat so dynamic fields, branch fields, transcripts, and summaries are not dropped.
+- Revisit scoring for dynamic forms: no legacy fixed `scoreTotal` max, no `Math.max(...[])` behavior on empty options, and clear behavior for non-scored fields like text/audio.
+- Add a migration/compatibility path so existing forms keep working while new branch/audio capabilities are introduced.
+
 Related form builder audit concerns to consider in the same planning window:
 
 - Empty active forms can be published and produce a broken/blank public flow.
