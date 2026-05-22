@@ -752,10 +752,6 @@ export class DatabaseStorage implements IStorage {
     if (!existing) {
       existing = await this.getFormLeadBySession(progress.sessionId);
     }
-    if (!existing && !progress.nome) {
-      throw new Error("Name is required to start the form");
-    }
-
     // Resolve which form this lead belongs to.
     // Priority: explicit metadata.formId → existing lead's formId → default form (provisioned if missing).
     let resolvedFormId: number | null = metadata.formId ?? existing?.formId ?? null;

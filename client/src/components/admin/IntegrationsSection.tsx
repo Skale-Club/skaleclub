@@ -7,6 +7,7 @@ import { GHLCard } from './integrations/GHLCard';
 import { GooglePlacesCard } from './integrations/GooglePlacesCard';
 import { GroqCard } from './integrations/GroqCard';
 import { TelegramSection } from './TelegramSection';
+import { FormTranscriptionCard } from './integrations/FormTranscriptionCard';
 import { TwilioSection } from './TwilioSection';
 
 type IntegrationTab = 'ai' | 'crm' | 'communications' | 'analytics';
@@ -49,7 +50,12 @@ export function IntegrationsSection() {
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'ai' && <AIAssistantCard />}
+      {activeTab === 'ai' && (
+        <div className="space-y-6">
+          <AIAssistantCard />
+          <FormTranscriptionCard />
+        </div>
+      )}
 
       {activeTab === 'crm' && <GHLCard />}
 

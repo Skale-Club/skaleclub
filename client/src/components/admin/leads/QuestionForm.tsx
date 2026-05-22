@@ -39,6 +39,7 @@ export function QuestionForm({
   const [conditionalShowWhen, setConditionalShowWhen] = useState(question?.conditionalField?.showWhen || '');
   const [conditionalTitle, setConditionalTitle] = useState(question?.conditionalField?.title || '');
   const [conditionalPlaceholder, setConditionalPlaceholder] = useState(question?.conditionalField?.placeholder || '');
+  const [conditionalType, setConditionalType] = useState<Exclude<FormQuestion['type'], 'select'>>(question?.conditionalField?.type || 'text');
   const [ghlFieldId, setGhlFieldId] = useState(question?.ghlFieldId || '');
 
   const { data: ghlStatus } = useQuery<{ enabled: boolean }>({
@@ -65,6 +66,7 @@ export function QuestionForm({
     setConditionalShowWhen(question?.conditionalField?.showWhen || '');
     setConditionalTitle(question?.conditionalField?.title || '');
     setConditionalPlaceholder(question?.conditionalField?.placeholder || '');
+    setConditionalType(question?.conditionalField?.type || 'text');
     setGhlFieldId(question?.ghlFieldId || '');
   }, [question, nextOrder]);
 
@@ -94,6 +96,11 @@ export function QuestionForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title) return;
+    const validOptions = options.filter(o => o.label && o.value);
+    if (type === 'select' && validOptions.length === 0) {
+      window.alert('Multiple choice questions need at least one option.');
+      return;
+    }
 
     let finalId = id;
     if (!isEditing) {
@@ -126,12 +133,13 @@ export function QuestionForm({
       type,
       required,
       placeholder: placeholder || undefined,
-      options: type === 'select' ? options.filter(o => o.label && o.value) : undefined,
+      options: type === 'select' ? validOptions : undefined,
       conditionalField: hasConditional && conditionalShowWhen ? {
         showWhen: conditionalShowWhen,
         id: generatedConditionalId,
         title: conditionalTitle,
         placeholder: conditionalPlaceholder,
+        type: conditionalType,
       } : undefined,
       ghlFieldId: ghlFieldId || undefined,
     };
@@ -184,9 +192,11 @@ export function QuestionForm({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="text">Free text</SelectItem>
+                <SelectItem value="textarea">Long text</SelectItem>
                 <SelectItem value="email">Email</SelectItem>
                 <SelectItem value="tel">Phone</SelectItem>
                 <SelectItem value="select">Multiple choice</SelectItem>
+                <SelectItem value="voice">Voice note</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -311,6 +321,21 @@ export function QuestionForm({
                         {options.filter(o => o.value).map((opt) => (
                           <SelectItem key={opt.value} value={opt.value}>{opt.label || opt.value}</SelectItem>
                         ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">Additional field type</Label>
+                    <Select value={conditionalType} onValueChange={(value) => setConditionalType(value as Exclude<FormQuestion['type'], 'select'>)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="text">Free text</SelectItem>
+                        <SelectItem value="textarea">Long text</SelectItem>
+                        <SelectItem value="email">Email</SelectItem>
+                        <SelectItem value="tel">Phone</SelectItem>
+                        <SelectItem value="voice">Voice note</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

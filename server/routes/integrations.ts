@@ -17,12 +17,18 @@ import {
 } from "../lib/ai-provider.js";
 import { testGHLConnection, getGHLCustomFields } from "../integrations/ghl.js";
 import { requireAdmin } from "./_shared.js";
+import {
+  getFormTranscriptionSettings,
+  serializeTranscriptionModel,
+  type FormTranscriptionProvider,
+} from "../lib/form-audio.js";
 
 // ─── AI Model Defaults ───────────────────────────────────────────────────────
 
 export const DEFAULT_CHAT_MODEL = 'gpt-4o-mini';
 export const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
 export const DEFAULT_OPENROUTER_MODEL = "openai/gpt-4o-mini";
+export const DEFAULT_GROQ_CHAT_MODEL = "llama-3.1-8b-instant";
 
 // ─── OpenRouter Model Cache ──────────────────────────────────────────────────
 
@@ -474,6 +480,7 @@ export function registerIntegrationRoutes(app: Express) {
       res.json({
         provider: 'groq',
         enabled: integration?.enabled || false,
+        model: integration?.model || DEFAULT_GROQ_CHAT_MODEL,
         hasKey: !!(getRuntimeGroqKey() || integration?.apiKey),
       });
     } catch (err) {
@@ -484,7 +491,11 @@ export function registerIntegrationRoutes(app: Express) {
   app.put('/api/integrations/groq', requireAdmin, async (req, res) => {
     try {
       const existing = await storage.getChatIntegration('groq');
-      const payload = z.object({ apiKey: z.string().min(10).optional(), enabled: z.boolean().optional() }).parse(req.body);
+      const payload = z.object({
+        apiKey: z.string().min(10).optional(),
+        enabled: z.boolean().optional(),
+        model: z.string().min(1).optional(),
+      }).parse(req.body);
       const providedKey = payload.apiKey && payload.apiKey !== '********' ? payload.apiKey : undefined;
       const keyToPersist = providedKey ?? existing?.apiKey ?? getRuntimeGroqKey();
 
@@ -498,7 +509,7 @@ export function registerIntegrationRoutes(app: Express) {
       const updated = await storage.upsertChatIntegration({
         provider: 'groq',
         enabled: willEnable,
-        model: 'whisper-large-v3-turbo',
+        model: payload.model || existing?.model || DEFAULT_GROQ_CHAT_MODEL,
         apiKey: keyToPersist,
       });
 
@@ -510,7 +521,7 @@ export function registerIntegrationRoutes(app: Express) {
 
   app.post('/api/integrations/groq/test', requireAdmin, async (req, res) => {
     try {
-      const { apiKey } = z.object({ apiKey: z.string().min(10).optional() }).parse(req.body);
+      const { apiKey, model } = z.object({ apiKey: z.string().min(10).optional(), model: z.string().optional() }).parse(req.body);
       const existing = await storage.getChatIntegration('groq');
       const keyToUse =
         (apiKey && apiKey !== '********' ? apiKey : undefined) ||
@@ -523,7 +534,7 @@ export function registerIntegrationRoutes(app: Express) {
         const Groq = (await import('groq-sdk')).default;
         const groq = new Groq({ apiKey: keyToUse });
         await groq.chat.completions.create({
-          model: 'llama-3.1-8b-instant',
+          model: model || existing?.model || DEFAULT_GROQ_CHAT_MODEL,
           messages: [{ role: 'user', content: 'pong' }],
           max_tokens: 1,
         });
@@ -537,13 +548,60 @@ export function registerIntegrationRoutes(app: Express) {
       await storage.upsertChatIntegration({
         provider: 'groq',
         enabled: existing?.enabled ?? false,
-        model: 'whisper-large-v3-turbo',
+        model: model || existing?.model || DEFAULT_GROQ_CHAT_MODEL,
         apiKey: keyToUse,
       });
 
       res.json({ success: true, message: 'Connection successful' });
     } catch (err: any) {
       res.status(500).json({ success: false, message: err?.message || 'Failed to test Groq connection' });
+    }
+  });
+
+  app.get('/api/integrations/form-transcription', requireAdmin, async (_req, res) => {
+    try {
+      const settings = await getFormTranscriptionSettings();
+      res.json(settings);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.put('/api/integrations/form-transcription', requireAdmin, async (req, res) => {
+    try {
+      const payload = z.object({
+        provider: z.enum(['groq', 'openrouter']),
+        model: z.string().min(1),
+        enabled: z.boolean().optional(),
+      }).parse(req.body) as { provider: FormTranscriptionProvider; model: string; enabled?: boolean };
+
+      if (payload.provider === 'groq') {
+        const groq = await storage.getChatIntegration('groq');
+        if (!getRuntimeGroqKey() && !groq?.apiKey) {
+          return res.status(400).json({ message: 'Configure a Groq API key before selecting Groq transcription.' });
+        }
+      }
+
+      if (payload.provider === 'openrouter') {
+        const openRouter = await storage.getChatIntegration('openrouter');
+        if (!getRuntimeOpenRouterKey() && !process.env.OPENROUTER_API_KEY && !openRouter?.apiKey) {
+          return res.status(400).json({ message: 'Configure an OpenRouter API key before selecting OpenRouter transcription.' });
+        }
+      }
+
+      const updated = await storage.upsertChatIntegration({
+        provider: 'form-transcription',
+        enabled: payload.enabled ?? true,
+        model: serializeTranscriptionModel(payload.provider, payload.model),
+        apiKey: null,
+      });
+      const settings = await getFormTranscriptionSettings();
+      res.json({ ...settings, id: updated.id });
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      res.status(500).json({ message: err?.message || 'Failed to save transcription settings' });
     }
   });
 

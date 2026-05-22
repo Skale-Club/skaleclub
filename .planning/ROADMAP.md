@@ -12,150 +12,122 @@
 - ✅ **v1.7 Translation System Completeness** — Phase 30 (shipped 2026-05-04)
 - ✅ **v1.8 Notification Templates System** — Phases 31-33 (shipped 2026-05-04)
 - ✅ **v1.9 Blog Intelligence & RSS Sources** — Phases 34-38 (shipped 2026-05-05)
-- 🚧 **v2.0 Presentations 2.0** — Phases 39-40 (in progress)
+- ✅ **v2.0 Presentations 2.0** — Phases 39-40 (shipped 2026-05-15)
+- 🔄 **v1.7 Voice-Enabled Form Builder & Groq Provider** — Phases 30-35 (active)
 
 ## Active
 
-**v2.0 Presentations 2.0** — Phases 39-40
+**v1.7 Voice-Enabled Form Builder & Groq Provider** — Phases 30-35
 
-**Goal:** Elevate the presentation experience: richer slide design capabilities and an AI-powered presentation generator accessible from the admin, with per-slide editing controls in the viewer.
-
-- [ ] **Phase 39: Slide Design System v2** — Extend the SlideBlock schema with per-element alignment, custom colors, background images/videos, and additional layout primitives (image-left, image-right, full-bleed). Update the public viewer to render all new properties. No breaking change to existing slides.
-
-- [ ] **Phase 40: AI Presentation Generator** — Admin UI button (+ text input + audio recording) that calls Gemini to generate a full presentation from scratch. Viewer gains per-slide controls: delete individual slide, AI-redo individual slide (regenerate via Gemini), inline text edit for quick corrections.
-
-### Phase 39: Slide Design System v2
-
-**Goal:** The SlideBlock schema supports rich visual properties — per-element alignment, custom background/text colors, background images and video URLs, and new layout variants (image-left, image-right, full-bleed-image). The public viewer renders all new properties. Existing slides continue to render without modification.
-**Depends on:** Phases 15-20 (Presentations v1.4)
-**Requirements:** PRES2-01, PRES2-02, PRES2-03, PRES2-04
-**Plans:** 2 plans
-
-Plans:
-- [x] 39-01-PLAN.md — Extend SlideBlock schema: style sub-object + 4 new layouts + attribution fields
-- [x] 39-02-PLAN.md — Viewer new layout cases + style rendering + tool schema sync
-
-### Phase 40: AI Presentation Generator
-
-**Goal:** Admin has a generator button that accepts a text prompt and/or a recorded audio clip to create a full presentation from scratch via Gemini. The public viewer gains per-slide controls: delete slide, AI-redo single slide, inline text edit for quick corrections.
-**Depends on:** Phase 39 (new schema fields available for generation)
-**Requirements:** PRES2-05, PRES2-06, PRES2-07, PRES2-08, PRES2-09
-**Plans:** 3 plans
-
-Plans:
-- [ ] 40-01-PLAN.md — Generator backend: POST /api/presentations/transcribe (Groq Whisper) + POST /api/presentations/generate (Gemini tool-forced)
-- [ ] 40-02-PLAN.md — Generator modal UI in PresentationsSection: "Generate with AI" button + title/text/audio modal
-- [ ] 40-03-PLAN.md — Per-slide viewer toolbar in PresentationViewer: delete, AI-redo, inline text edit (edit mode only)
+- [x] **Phase 30: AI Provider + Transcription Settings** — Groq chat provider, Groq integration model support, form transcription selector for Groq/OpenRouter
+- [x] **Phase 31: Form Engine Hardening** — server validation, dynamic scoring, active-form safety, textarea/voice types, dynamic custom-answer preservation
+- [x] **Phase 32: Public Voice Capture + Basic Lead Summary** — recorder UI, visual feedback, transcription endpoint, transcript/summary storage, lead display cleanup
+- [ ] **Phase 33: Branch Builder UX** — multi-branch conditional editor, inline readiness errors, duplicate/unreachable-field prevention
+- [ ] **Phase 34: Voice Review + Lead Brief UX** — accept/retry/switch-to-text flow, project brief panel, transcript expansion, provider/model metadata
+- [ ] **Phase 35: UAT + Provider Verification** — real Groq/OpenRouter transcription checks and public form/chat qualification end-to-end verification
 
 ## Shipped Milestones
-
 <details>
 <summary>✅ v1.9 Blog Intelligence & RSS Sources (Phases 34-38) — SHIPPED 2026-05-05</summary>
 
-- [x] Phase 34: RSS Sources Foundation (2/2 plans) — completed 2026-05-05
-- [x] Phase 35: RSS Fetcher & Topic Selection (3/3 plans) — completed 2026-05-05
-- [x] Phase 36: Generator Quality Overhaul (3/3 plans) — completed 2026-05-05
-- [x] Phase 37: Admin UX (RSS + Job Improvements) (3/3 plans) — completed 2026-05-05
-- [x] Phase 38: Dynamic Cron & Observability (3/3 plans) — completed 2026-05-05
-
-_Archive: `.planning/milestones/v1.9-ROADMAP.md`_
+- [x] Phase 34: RSS Sources Foundation (2/2 plans)
+- [x] Phase 35: RSS Fetcher & Topic Selection (3/3 plans)
+- [x] Phase 36: Generator Quality Overhaul (3/3 plans)
+- [x] Phase 37: Admin UX (RSS + Job Improvements) (3/3 plans)
+- [x] Phase 38: Dynamic Cron & Observability (3/3 plans)
 
 </details>
 
 <details>
 <summary>✅ v1.8 Notification Templates System (Phases 31-33) — SHIPPED 2026-05-04</summary>
 
-- [x] Phase 31: Schema & Templates Foundation (2/2 plans) — completed 2026-05-04
-- [x] Phase 32: Telegram Integration (2/2 plans) — completed 2026-05-04
-- [x] Phase 33: Admin Notifications Panel (2/2 plans) — completed 2026-05-04
-
-_Archive: `.planning/milestones/v1.8-ROADMAP.md`_
+- [x] Phase 31: Schema & Templates Foundation (2/2 plans)
+- [x] Phase 32: Telegram Integration (2/2 plans)
+- [x] Phase 33: Admin Notifications Panel (2/2 plans)
 
 </details>
 
 <details>
 <summary>✅ v1.7 Translation System Completeness (Phase 30) — SHIPPED 2026-05-04</summary>
 
-- [x] Phase 30: Translation System Overhaul (4/4 plans) — completed 2026-05-03
-
-_Archive: `.planning/milestones/v1.7-ROADMAP.md`_
+- [x] Phase 30: Translation System Overhaul (4/4 plans)
 
 </details>
 
 <details>
 <summary>✅ v1.6 Skale Hub Weekly Live Gate (Phases 25-29) — SHIPPED 2026-05-02</summary>
 
-- [x] Phase 25: Foundation (1/1 plans) — completed 2026-05-02
-- [x] Phase 26: API & Tracking (1/1 plans) — completed 2026-05-02
-- [x] Phase 27: Public Experience (1/1 plans) — completed 2026-05-02
-- [x] Phase 28: Admin Management (1/1 plans) — completed 2026-05-02
-- [x] Phase 29: Analytics & Reporting (1/1 plans) — completed 2026-05-02
+- [x] Phase 25: Foundation (1/1 plans) â€” completed 2026-05-02
+- [x] Phase 26: API & Tracking (1/1 plans) â€” completed 2026-05-02
+- [x] Phase 27: Public Experience (1/1 plans) â€” completed 2026-05-02
+- [x] Phase 28: Admin Management (1/1 plans) â€” completed 2026-05-02
+- [x] Phase 29: Analytics & Reporting (1/1 plans) â€” completed 2026-05-02
 
 _Archive: `.planning/milestones/v1.6-ROADMAP.md`_
 
 </details>
 
 <details>
-<summary>✅ v1.5 Blog Post Automation (Phases 21-24) — SHIPPED 2026-04-24</summary>
+<summary>âœ… v1.5 Blog Post Automation (Phases 21-24) â€” SHIPPED 2026-04-24</summary>
 
-- [x] Phase 21: Schema & Storage Foundation (1/1 plans) — completed 2026-04-22
-- [x] Phase 22: Blog Generator Engine (2/2 plans) — completed 2026-04-22
-- [x] Phase 23: API Endpoints + Cron (1/1 plans) — completed 2026-04-22
-- [x] Phase 24: Admin UI — Automation Settings (2/2 plans) — completed 2026-04-22
+- [x] Phase 21: Schema & Storage Foundation (1/1 plans) â€” completed 2026-04-22
+- [x] Phase 22: Blog Generator Engine (2/2 plans) â€” completed 2026-04-22
+- [x] Phase 23: API Endpoints + Cron (1/1 plans) â€” completed 2026-04-22
+- [x] Phase 24: Admin UI â€” Automation Settings (2/2 plans) â€” completed 2026-04-22
 
 _Archive: `.planning/milestones/v1.5-ROADMAP.md`_
 
 </details>
 
 <details>
-<summary>✅ v1.4 Admin Presentations Page (Phases 15-20) — SHIPPED 2026-04-22</summary>
+<summary>âœ… v1.4 Admin Presentations Page (Phases 15-20) â€” SHIPPED 2026-04-22</summary>
 
-- [x] Phase 15: Schema & Foundation (2/2 plans) — completed 2026-04-21
-- [x] Phase 16: Admin CRUD API (1/1 plans) — completed 2026-04-21
-- [x] Phase 17: Brand Guidelines (1/1 plans) — completed 2026-04-21
-- [x] Phase 18: AI Authoring Endpoint (2/2 plans) — completed 2026-04-22
-- [x] Phase 19: Admin Presentations Editor (1/1 plans) — completed 2026-04-22
-- [x] Phase 20: Public Viewer (2/2 plans) — completed 2026-04-22
-
-</details>
-
-<details>
-<summary>✅ v1.3 Links Page Upgrade (Phases 10-14) — SHIPPED 2026-04-20</summary>
-
-- [x] Phase 10: Schema & Upload Foundation (2/2 plans) — completed 2026-04-20
-- [x] Phase 11: Click Analytics API (1/1 plans) — completed 2026-04-20
-- [x] Phase 12: Admin Redesign + Core Editing (3/3 plans) — completed 2026-04-20
-- [x] Phase 13: Icon Picker, Theme Editor & Live Preview (3/3 plans) — completed 2026-04-20
-- [x] Phase 14: Public Page Rendering + Click Tracking (1/1 plans) — completed 2026-04-20
+- [x] Phase 15: Schema & Foundation (2/2 plans) â€” completed 2026-04-21
+- [x] Phase 16: Admin CRUD API (1/1 plans) â€” completed 2026-04-21
+- [x] Phase 17: Brand Guidelines (1/1 plans) â€” completed 2026-04-21
+- [x] Phase 18: AI Authoring Endpoint (2/2 plans) â€” completed 2026-04-22
+- [x] Phase 19: Admin Presentations Editor (1/1 plans) â€” completed 2026-04-22
+- [x] Phase 20: Public Viewer (2/2 plans) â€” completed 2026-04-22
 
 </details>
 
 <details>
-<summary>✅ v1.2 Estimates System (Phases 6-9) — SHIPPED 2026-04-20</summary>
+<summary>âœ… v1.3 Links Page Upgrade (Phases 10-14) â€” SHIPPED 2026-04-20</summary>
 
-- [x] Phase 6: DB Schema + Storage Layer (2/2 plans) — completed 2026-04-19
-- [x] Phase 7: Admin API Routes (1/1 plans) — completed 2026-04-19
-- [x] Phase 8: Admin UI (EstimatesSection) (2/2 plans) — completed 2026-04-19
-- [x] Phase 9: Public Viewer (3/3 plans) — completed 2026-04-20
+- [x] Phase 10: Schema & Upload Foundation (2/2 plans) â€” completed 2026-04-20
+- [x] Phase 11: Click Analytics API (1/1 plans) â€” completed 2026-04-20
+- [x] Phase 12: Admin Redesign + Core Editing (3/3 plans) â€” completed 2026-04-20
+- [x] Phase 13: Icon Picker, Theme Editor & Live Preview (3/3 plans) â€” completed 2026-04-20
+- [x] Phase 14: Public Page Rendering + Click Tracking (1/1 plans) â€” completed 2026-04-20
+
+</details>
+
+<details>
+<summary>âœ… v1.2 Estimates System (Phases 6-9) â€” SHIPPED 2026-04-20</summary>
+
+- [x] Phase 6: DB Schema + Storage Layer (2/2 plans) â€” completed 2026-04-19
+- [x] Phase 7: Admin API Routes (1/1 plans) â€” completed 2026-04-19
+- [x] Phase 8: Admin UI (EstimatesSection) (2/2 plans) â€” completed 2026-04-19
+- [x] Phase 9: Public Viewer (3/3 plans) â€” completed 2026-04-20
 
 _Archive: `.planning/milestones/v1.2-ROADMAP.md`_
 
 </details>
 
 <details>
-<summary>✅ v1.1 Multi-Forms Support (Phase 5) — SHIPPED 2026-04-15</summary>
+<summary>âœ… v1.1 Multi-Forms Support (Phase 5) â€” SHIPPED 2026-04-15</summary>
 
 - [x] Phase 5: Multi-Forms Support (1/1 plans) — completed 2026-04-15
 
 </details>
 
 <details>
-<summary>✅ v1.0 Xpot Tech Debt (Phases 1-4) — SHIPPED 2026-03-30</summary>
+<summary>âœ… v1.0 Xpot Tech Debt (Phases 1-4) â€” SHIPPED 2026-03-30</summary>
 
-- [x] Phase 1: Error Handling Standardization (1/1 plans) — completed 2026-03-30
-- [x] Phase 2: Route File Splitting (3/3 plans) — completed 2026-03-30
-- [x] Phase 3: Schema Organization (3/3 plans) — completed 2026-03-30
-- [x] Phase 4: Context Refactoring (3/3 plans) — completed 2026-03-30
+- [x] Phase 1: Error Handling Standardization (1/1 plans) â€” completed 2026-03-30
+- [x] Phase 2: Route File Splitting (3/3 plans) â€” completed 2026-03-30
+- [x] Phase 3: Schema Organization (3/3 plans) â€” completed 2026-03-30
+- [x] Phase 4: Context Refactoring (3/3 plans) â€” completed 2026-03-30
 
 _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
 
@@ -190,7 +162,7 @@ _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
 | 21. Schema & Storage Foundation | v1.5 | 1/1 | Complete | 2026-04-22 |
 | 22. Blog Generator Engine | v1.5 | 2/2 | Complete | 2026-04-22 |
 | 23. API Endpoints + Cron | v1.5 | 1/1 | Complete | 2026-04-22 |
-| 24. Admin UI — Automation Settings | v1.5 | 2/2 | Complete | 2026-04-22 |
+| 24. Admin UI â€” Automation Settings | v1.5 | 2/2 | Complete | 2026-04-22 |
 | 25. Foundation | v1.6 | 1/1 | Complete | 2026-05-02 |
 | 26. API & Tracking | v1.6 | 1/1 | Complete | 2026-05-02 |
 | 27. Public Experience | v1.6 | 1/1 | Complete | 2026-05-02 |
@@ -209,10 +181,16 @@ _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
 | 40. AI Presentation Generator | v2.0 | 0/3 | Complete    | 2026-05-16 |
 | 41. Split admin sections over 600 LOC | v2.0 | 9/9 | Complete | 2026-05-17 |
 | 42. Code-split admin bundle (Vite manualChunks + lazy sections) | v2.0 | 2/2 | Complete | 2026-05-17 |
+| 30. AI Provider + Transcription Settings | v1.7-voice | 1/1 | Complete | 2026-05-22 |
+| 31. Form Engine Hardening | v1.7-voice | 1/1 | Complete | 2026-05-22 |
+| 32. Public Voice Capture + Basic Lead Summary | v1.7-voice | 1/1 | Complete | 2026-05-22 |
+| 33. Branch Builder UX | v1.7-voice | 0/1 | Not started | - |
+| 34. Voice Review + Lead Brief UX | v1.7-voice | 0/1 | Not started | - |
+| 35. UAT + Provider Verification | v1.7-voice | 0/1 | Not started | - |
 
 ### Phase 41: Split admin sections over 600 LOC into sub-components (SEED-002)
 
-**Goal:** Every `.tsx` file under `client/src/components/admin/` is ≤ 600 lines (CLAUDE.md hard cap). Behavior, props, React Query keys, and `data-testid` attributes are unchanged — purely structural refactor. Files affected (current LOC → target ≤ 600): BlogSection (1330), ChatSection (1018), PresentationsSection (949), EstimatesSection (896), PortfolioSection (752), forms/FormsSection (677), SkaleHubSection (655), integrations/AIAssistantCard (643), LeadsSection (618).
+**Goal:** Every `.tsx` file under `client/src/components/admin/` is ≤ 600 lines. Behavior, props, React Query keys, and `data-testid` attributes are unchanged — purely structural refactor.
 
 **Success Criteria:**
   1. Every `.tsx` file under `client/src/components/admin/` reports ≤ 600 lines from `wc -l`.
@@ -222,97 +200,7 @@ _Archive: `.planning/milestones/v1.0-ROADMAP.md`_
   5. Original Section component exports are preserved — `Admin.tsx` imports do not change.
 
 **Depends on:** Phase 40
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (run /gsd:plan-phase 41 to break down)
-
-### Phase 42: Code-split admin bundle via Vite manualChunks and lazy admin sections (SEED-003)
-
-**Goal:** All emitted JS chunks are under Vite's 500 KB warning threshold. Admin sections are lazy-loaded so that opening `/admin` only ships the shell + the active section. Vendor libraries (react/radix-ui/react-query) are split into stable cacheable chunks via `manualChunks`.
-
-**Success Criteria:**
-  1. `npm run build` emits zero "chunks larger than 500 kB" warnings.
-  2. The Admin shell loads each section via `lazy(() => import(...))`; navigating between sections shows a brief skeleton/spinner during the chunk fetch.
-  3. Vendor chunks (e.g. `vendor-react`, `vendor-ui`) appear in the build manifest and are shared across routes.
-  4. All existing admin functionality continues to work — no regressions on `npm run check`, `npm run build`, or smoke navigation across admin sections.
-
-**Depends on:** Phase 41
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (run /gsd:plan-phase 42 to break down)
-
-### Phase 43: Landing Page System (dynamic landings at root slugs)
-
-**Goal:** Admins can create unlimited landing pages from the admin panel, each addressable at a clean root URL like `skale.club/websites`. The renderer composes from a registry of section components. Existing `client/src/components/home/*` primitives are wired into the registry first (homepage-style sections). The Skale Hub group landing (currently hardcoded in `pages/SkaleHubGroup.tsx`) is migrated to the new system as a `whatsappGroup` section type, **preserving its current visual design verbatim** — only its plumbing changes (now managed via the admin instead of a hand-rolled page + route).
-
-**Success Criteria:**
-  1. New `landing_pages` table exists (uuid id, unique text slug, text name, jsonb sections, bool is_active, timestamps) — migration applied idempotently.
-  2. `/api/landing-pages` CRUD (admin-only) + `/api/landing-pages/slug/:slug` (public, no auth) work end-to-end.
-  3. POST/PUT slug validation rejects reserved system slugs (admin, blog, portfolio, contact, faq, privacy, terms, e, p, f, links, vcard, xpot, sites, api, assets) with HTTP 409.
-  4. New `pages/DynamicLanding.tsx` resolves `:slug` → fetches landing → composes sections in JSONB order via a `type → component` registry. Section type registry on ship: `hero`, `trustBadges`, `services`, `reviews`, `blog`, `about`, `areasServed`, `leadFormCta`, `whatsappGroup`.
-  5. New catch-all `<Route path="/:slug">` registered LAST in `App.tsx` Switch. Existing routes (`/admin`, `/blog`, `/contact`, etc.) keep matching first and are unaffected.
-  6. Visiting `/random-unknown-slug` shows the existing 404 page (no renderer crash).
-  7. Admin UI: new "Landings" section with list view (slug, name, is_active, updated_at) + create dialog (slug + name) + edit view with JSON editor for sections (textarea + validate-on-save against a Zod section-array schema).
-  8. **SkaleHubGroup migration:** existing landing at `<hub>/grupo` and `<hub>/group` migrated to the new system. A `whatsappGroup` section type is registered, rendering the exact same JSX/CSS as `pages/SkaleHubGroup.tsx` today (same hero, same phone+country form, same CTA, same UTM tracking, same GHL integration). Old hardcoded routes redirect (HTTP 301) to the new managed landing. `pages/SkaleHubGroup.tsx` is deleted only after the managed landing is verified live with the same behavior.
-  9. `npm run check` and `npm run build` pass with zero new errors/warnings.
-
-**Depends on:** Phase 42
-**Plans:** 2/6 plans executed
-
-Plans:
-- [ ] TBD (run /gsd:plan-phase 43 to break down)
-
-### Phase 44: Landing /websites — homepage-style hero, new section, website-leads form with country selector
-
-**Goal:** Ship the first net-new managed landing at `skale.club/websites` using the system Phase 43 introduces. Visual style mirrors the Home page (full marketing page: hero → trust → services → reviews → CTA), NOT the minimal SkaleHubGroup style. The landing targets businesses looking to commission a website. Includes a new hero variant (custom copy + visual specifically for the website-build service), at least one section type that does NOT exist on the Home today (the planner picks the best fit — e.g. a "process / how we build" stepper, a portfolio carousel of past websites, or a pricing/packages table), and a dedicated `website-leads` form with a country selector field that actually works (reuses the existing `<PhoneCountrySelect>` + `phoneCountries.ts` library).
-
-**Success Criteria:**
-  1. New form `website-leads` exists in the `forms` table with questions tailored to website projects (project type, country, contact info, budget range, deadline). Created via the admin Forms UI or seeded via a migration script — either is acceptable.
-  2. Country selector field works end-to-end: dropdown shows the existing ~250-country list with flags, default detected from browser locale, phone number formatted per country, submission stores ISO 3166-1 alpha-2 code (`BR`, `US`, etc.) alongside the international phone string.
-  3. New section type `heroWebsites` registered in the Phase 43 section registry. Component lives at `client/src/components/landings/HeroWebsites.tsx`. Props accept headline, subheadline, CTA label, background image URL. Renders responsive at all breakpoints.
-  4. At least one additional NEW section type registered (planner decides which one fits best for /websites — e.g. `processStepper`, `pricingPackages`, or `portfolioGrid`). Component lives at `client/src/components/landings/<Name>.tsx`. Reusable for future landings.
-  5. Database seed: a `landing_pages` row with `slug='websites'`, `is_active=true`, and a `sections` JSONB composing — in order — `heroWebsites`, `trustBadges`, `services` (or the new `processStepper` etc.), `reviews`, `leadFormCta` pointing at `website-leads`. Seeded via a one-shot migration script under `scripts/`.
-  6. Visiting `https://skale.club/websites` (or `http://localhost:1000/websites` in dev) renders the landing with the homepage's visual tone — same fonts, colors, spacing system. Submitting the form creates a `form_leads` row in the `website-leads` form and triggers the same GHL contact-create pipeline used by the default form.
-  7. Mobile responsive (tested at 375px, 768px, 1280px). No layout shift on country-selector open. No console errors.
-  8. All UI strings (button labels, helper text, error messages) in English (per project convention reaffirmed by the user). Form content (questions) authored in pt-BR matching the project's market.
-  9. `npm run check` and `npm run build` pass.
-
-**Depends on:** Phase 43
-
-**Plans:** 1/5 plans executed
-
-Plans:
-- [ ] 44-01-PLAN.md — HeroWebsites variant + landings/HeroWebsites.tsx + registry
-- [ ] 44-02-PLAN.md — processStepper net-new section component + registry
-- [x] 44-03-PLAN.md — 'phoneCountry' form-question type (schema + LeadFormModal renderer + submission)
-- [ ] 44-04-PLAN.md — Seed website-leads form + landing_pages row for /websites
-- [ ] 44-05-PLAN.md — E2E verification + visual polish
-
-### Phase 45: Traffic Analytics — port Marketing dashboard from skaleclub-websites
-
-**Goal:** Port the Marketing Attribution feature from `C:\Users\Vanildo\Dev\skaleclub-websites` to this codebase. Admin gains a "Traffic" section with 5 tabs (Overview / Sources / Campaigns / Conversions / Journey) showing where visitors come from, which campaigns convert, and per-visitor journeys. Visitor tracking runs on every page load via a small client-side library posting to `/api/attribution/visit`. Form submissions create an `attribution_conversions` row linked to the visitor session. The source feature is multi-tenant; this port adapts to single-tenant (drop `tenant_id` everywhere).
-
-**Success Criteria:**
-  1. Tables `visitor_sessions` + `attribution_conversions` exist (single-tenant). Raw-SQL idempotent migration.
-  2. Public `POST /api/attribution/visit` upserts visitor session by UUID. FT columns immutable post-insert; LT columns updated every call.
-  3. Five admin endpoints `/api/admin/marketing/{overview,sources,campaigns,conversions,journey}` — admin-only.
-  4. Storage: 6 methods ported (upsertVisitorSession + 5 aggregation queries with identical SQL semantics).
-  5. Client tracking: `client/src/lib/attribution.ts` + `client/src/hooks/use-attribution.ts` ported. Cookie `_skv` persists visitorId. `App.tsx` mounts `useAttribution()` so every page load tracks.
-  6. Form leads link to visitor sessions: server inserts an `attribution_conversions` row with `conversionType='lead_created'` whenever a `form_leads` row is created, copying ft_/lt_ attribution.
-  7. Admin "Traffic" section (5 tabs, date-range filters Today / Yesterday / Last 7 / Last 30 / This month / Last month / Custom, source + campaign dropdowns, conversion-type filter, Visits & Conversions Over Time chart, KPI cards: Total Visits / Leads Generated / Conversion Rate / Top Traffic Source / Best Campaign / Best Landing Page).
-  8. UI matches the screenshot reference (dark admin theme).
-  9. All code in English. Single-tenant adaptation explicit (no orphan `tenantId` references).
-  10. `npm run check` + `npm run build` pass with zero new errors.
-
-**Depends on:** Phase 44
-
-**Plans:** 4/8 plans executed
-
-Plans:
-- [ ] TBD (run /gsd:plan-phase 45 to break down)
 
 ---
 
-_Last updated: 2026-05-17 — Phase 44 Plan 03 complete (phoneCountry field type)_
+_Last updated: 2026-05-22 — v1.7 Voice-Enabled Form Builder & Groq Provider merged

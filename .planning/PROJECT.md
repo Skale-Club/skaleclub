@@ -4,9 +4,23 @@
 
 Skale Club is an agency web platform combining a public marketing site, an admin dashboard, and a field sales CRM (Xpot). The platform ships four client-facing experiences: branded service proposals at `/e/:slug` (Estimates), immersive bilingual slide decks at `/p/:slug` (Presentations), a themed personal link page at `/links`, and a public blog. The admin controls all four from a single dashboard, including a Gemini-powered blog post generator that runs on schedule or on-demand.
 
+## Current Milestone: v1.7 Voice-Enabled Form Builder & Groq Provider
+
+**Goal:** Upgrade lead capture forms into a branch-capable engine where leads can explain projects by text or voice, audio is transcribed through Groq/OpenRouter, and admins receive clean summaries.
+
+**Target features:**
+- Groq as a first-class chat provider alongside OpenAI, Gemini, and OpenRouter
+- Form voice transcription provider selector (Groq Whisper or OpenRouter STT)
+- Form engine hardening: publish validation, dynamic scoring, no hidden `nome` dependency, safer custom-answer handling
+- New form question types: `textarea` and `voice`
+- Branch-ready conditional model via `conditionalFields`
+- Public form voice recorder with visual recording feedback, transcription, and summary persistence
+- Admin lead detail improvements for transcript summaries and future project brief review
+- UAT pass for real Groq/OpenRouter transcription and branch text-vs-voice flow
+
 ## Core Value
 
-Clients receive a proposal link and experience Skale Club services as an immersive, professional presentation — not a PDF.
+Leads can qualify themselves through smarter forms that support branching, text or voice project explanations, AI transcription, and admin-ready summaries.
 
 ## Requirements
 
@@ -22,12 +36,10 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 - ✓ **PRES-01 → PRES-22**: Full Admin Presentations Page (schema, CRUD API, brand guidelines, AI SSE authoring, admin editor, public bilingual viewer) — v1.4 (2026-04-22)
 - ✓ **BLOG-01 → BLOG-19**: Full Blog Post Automation (blog tables, Gemini generator engine, REST API + cron, admin automation UI) — v1.5 (2026-04-24)
 - ✓ **HUB-01 → HUB-18**: Skale Hub Weekly Live Gate (schema, tracking APIs, public registration gate, admin management, analytics) — v1.6 (2026-05-02)
-- ✓ **TRX-01 → TRX-11**: Translation System Completeness (TranslationKey type enforcement, dead key removal, 8 admin components wired, PrivacyPolicy + TermsOfService covered, 599-line translations.ts) — v1.7 (2026-05-04)
-- ✓ **NOTIF-01 → NOTIF-14**: Notification Templates System (DB-stored templates, dispatchNotification, Telegram integration, admin Notifications panel) — v1.8 (2026-05-04)
-- ✓ **RSS-01 → RSS-08**: RSS Sources & Topic Selection (blog_rss_sources + blog_rss_items tables, GUID-dedup fetcher, hourly cron, 0.6×keyword + 0.4×recency scoring, no_rss_items skip path) — v1.9 (2026-05-05)
-- ✓ **BLOG2-01 → BLOG2-16**: Blog Intelligence Full Stack (pt-BR prompts + brand voice, sanitize-html strict allowlist, NFD slug normalization, 30s AbortController timeouts, env-overridable model IDs, RSS Sources admin panel, items queue, two-step preview/commit modal, job history + retry/cancel, API-key banner, postsPerDay-driven cron, per-stage durationsMs JSONB, [1s,5s,30s] Gemini retry backoff) — v1.9 (2026-05-05)
-- ✓ **PRES2-01 → PRES2-04**: Slide Design System v2 (slideBlockSchema extended with optional `style` sub-object: bgColor, textColor, headingColor, alignment, bgImageUrl, bgVideoUrl; 4 new layouts: image-left, image-right, full-bleed-image, quote; UPDATE_SLIDES_TOOL and buildSystemPrompt synced; backward compatible) — v2.0 Phase 39 (2026-05-15)
-- ✓ **PRES2-05 → PRES2-09**: AI Presentation Generator (POST /api/presentations/generate via Gemini tool-forced; POST /api/presentations/transcribe via Groq Whisper; GenerateModal with text + audio recording in admin; per-slide viewer toolbar in ?edit=1: delete, AI-redo, inline heading/body edit) — v2.0 Phase 40 (2026-05-15)
+- ✓ **TRX-01 → TRX-11**: Translation System Completeness — v1.7 (2026-05-04)
+- ✓ **NOTIF-01 → NOTIF-14**: Notification Templates System — v1.8 (2026-05-04)
+- ✓ **RSS-01 → RSS-08, BLOG2-01 → BLOG2-16**: Blog Intelligence & RSS Sources — v1.9 (2026-05-05)
+- ✓ **PRES2-01 → PRES2-09**: Presentations 2.0 (Slide Design v2 + AI Generator) — v2.0 (2026-05-15)
 
 ## Current Milestone: v2.0 — Presentations 2.0 (COMPLETE)
 
@@ -35,16 +47,16 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 
 ### Out of Scope
 
-- Estimate acceptance / e-signature — future milestone
-- PDF export — future milestone
-- Client login / per-estimate access control — public link + optional access code sufficient
-- Automated testing — no test framework in project
-- Automatic blog publish (autoPublish) — human review required; draft-only workflow maintained
-- Real trend analysis (internet scraping) — prompt instruction for Gemini considers seasonality; not real-time data
-- Blog post review UI — existing BlogSection editor handles draft review/publish
-- Per-post AI regeneration — manual edit via existing admin editor sufficient
-- Visitor login/password accounts for Skale Hub — lightweight gate preferred over full membership
-- Course portal or member library for Skale Hub — not part of the weekly live scope
+- Estimate acceptance / e-signature â€” future milestone
+- PDF export â€” future milestone
+- Client login / per-estimate access control â€” public link + optional access code sufficient
+- Automated testing â€” no test framework in project
+- Automatic blog publish (autoPublish) â€” human review required; draft-only workflow maintained
+- Real trend analysis (internet scraping) â€” prompt instruction for Gemini considers seasonality; not real-time data
+- Blog post review UI â€” existing BlogSection editor handles draft review/publish
+- Per-post AI regeneration â€” manual edit via existing admin editor sufficient
+- Visitor login/password accounts for Skale Hub â€” lightweight gate preferred over full membership
+- Course portal or member library for Skale Hub â€” not part of the weekly live scope
 
 ## Context
 
@@ -52,13 +64,14 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 - v1.1 shipped 2026-04-15: Multi-forms support (5 sub-phases, tracked in PAUL then synced to GSD)
 - v1.2 shipped 2026-04-20: Estimates System (4 phases, 8 plans, 62 files, +10,263 LOC)
 - v1.3 shipped 2026-04-20: Links Page Upgrade (5 phases, 10 plans, 17/17 requirements)
-- v1.4 shipped 2026-04-22: Admin Presentations Page (6 phases, 22/22 requirements — schema, CRUD API, brand guidelines, AI authoring SSE, admin chat editor, public bilingual viewer)
+- v1.4 shipped 2026-04-22: Admin Presentations Page (6 phases, 22/22 requirements â€” schema, CRUD API, brand guidelines, AI authoring SSE, admin chat editor, public bilingual viewer)
 - v1.5 shipped 2026-04-24: Blog Post Automation (4 phases, 6 plans, 45 files, +6,343 LOC, 19/19 requirements)
 - v1.6 planned 2026-05-02: Skale Hub Weekly Live Gate (5 phases, 18 requirements - schema, tracking APIs, public page, admin management, analytics)
 - v1.6 shipped 2026-05-02: Skale Hub Weekly Live Gate (5 phases, 18/18 requirements complete)
-- v1.7 shipped 2026-05-04: Translation System Completeness (1 phase, 4 plans, 11/11 TRX requirements — TypeScript-enforced TranslationKey, 18 dead keys removed, 8 admin components wired, PrivacyPolicy + TermsOfService covered, translations.ts at 599 lines)
-- v1.8 shipped 2026-05-04: Notification Templates System (3 phases, 6 plans, 14/14 NOTIF requirements — DB-stored templates, dispatchNotification engine, Telegram integration, admin Notifications panel)
-- v1.9 shipped 2026-05-05: Blog Intelligence & RSS Sources (5 phases, 14 plans, 24/24 requirements — RSS feed management, GUID-dedup hourly fetcher, scoring-based topic selection, pt-BR generator quality overhaul, admin RSS/queue/preview/job-history panels, postsPerDay dynamic cron, per-stage durationsMs observability, Gemini retry backoff)
+- v1.7 shipped 2026-05-04: Translation System Completeness (1 phase, 4 plans, 11/11 TRX requirements)
+- v1.8 shipped 2026-05-04: Notification Templates System (3 phases, 6 plans, 14/14 NOTIF requirements)
+- v1.9 shipped 2026-05-05: Blog Intelligence & RSS Sources (5 phases, 14 plans, 24/24 requirements)
+- v1.7 voice active 2026-05-22: Voice-Enabled Form Builder & Groq Provider - Phases 30-35
 - Stack: TypeScript/React + Express + Drizzle ORM + PostgreSQL + Supabase Auth + Vercel
 - DB migration pattern: raw SQL via tsx script (drizzle-kit CJS can't resolve .js ESM imports)
 - AI providers: Gemini (blog automation via `@google/genai`), Anthropic Claude (presentations via `@anthropic-ai/sdk`), OpenAI/Groq/OpenRouter (chat via `getActiveAIClient()` shim)
@@ -66,7 +79,7 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 
 ## Constraints
 
-- **No DB breaking changes**: Additive tables/columns only — no modifications to existing tables
+- **No DB breaking changes**: Additive tables/columns only â€” no modifications to existing tables
 - **API stability**: All existing `/api/*` signatures unchanged
 - **No test framework**: Manual QA only
 - **Snapshot immutability**: Estimate services must be a deep copy at save time, not a FK reference
@@ -103,28 +116,31 @@ Clients receive a proposal link and experience Skale Club services as an immersi
 | GUID fallback chain guid→link→SHA-256 for RSS dedup (v1.9) | Many feeds omit the guid element; SHA-256 of URL as last resort | ✅ Phase 35 |
 | scoreItem as pure function reused in storage + selector (v1.9) | Queue ranking byte-identical to cron picker — no drift | ✅ Phase 37 |
 | Two-step preview/commit for Generate Now (v1.9) | Discard path must not write to DB; runPreview acquires no lock | ✅ Phase 37 |
-| allowedAttributes.a widened to [href,rel,target] (v1.9) | sanitize-html applies attribute allowlist AFTER transformTags; forced rel/target would be stripped otherwise | ✅ Phase 36 |
-| Recursive setTimeout replaces setInterval for blog cron (v1.9) | Reads postsPerDay each tick; finally block guarantees rescheduling even on error | ✅ Phase 38 |
-| withGeminiRetry instanceof ApiError + status>=500 check (v1.9) | Precise transient-error detection survives SDK upgrades; regex on message would not | ✅ Phase 38 |
-| partialDurationsMs via Object.assign on thrown error (v1.9) | Propagates per-stage timings across stack-frame death without changing function signatures | ✅ Phase 38 |
+| allowedAttributes.a widened to [href,rel,target] (v1.9) | sanitize-html applies attribute allowlist AFTER transformTags | ✅ Phase 36 |
+| Recursive setTimeout replaces setInterval for blog cron (v1.9) | Reads postsPerDay each tick; finally block guarantees rescheduling | ✅ Phase 38 |
+| withGeminiRetry instanceof ApiError + status>=500 check (v1.9) | Precise transient-error detection | ✅ Phase 38 |
+| partialDurationsMs via Object.assign on thrown error (v1.9) | Propagates per-stage timings across stack-frame death | ✅ Phase 38 |
 
+| Form voice is an engine upgrade, not just a recorder (v1.7) | Branching, validation, dynamic fields, scoring, and lead display must move together | Active |
+| New forms start inactive/draft (v1.7) | Prevents empty public `/f/:slug` flows while admins build questions | Active |
+| `conditionalFields` plural keeps compatibility with legacy `conditionalField` (v1.7) | Enables future multi-branch UI without breaking existing forms | Active |
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
 
 **After each phase transition** (via `/gsd:transition`):
-1. Requirements invalidated? → Move to Out of Scope with reason
-2. Requirements validated? → Move to Validated with phase reference
-3. New requirements emerged? → Add to Active
-4. Decisions to log? → Add to Key Decisions
-5. "What This Is" still accurate? → Update if drifted
+1. Requirements invalidated? â†’ Move to Out of Scope with reason
+2. Requirements validated? â†’ Move to Validated with phase reference
+3. New requirements emerged? â†’ Add to Active
+4. Decisions to log? â†’ Add to Key Decisions
+5. "What This Is" still accurate? â†’ Update if drifted
 
 **After each milestone** (via `/gsd:complete-milestone`):
 1. Full review of all sections
-2. Core Value check — still the right priority?
-3. Audit Out of Scope — reasons still valid?
+2. Core Value check â€” still the right priority?
+3. Audit Out of Scope â€” reasons still valid?
 4. Update Context with current state
 
 ---
 
-*Last updated: 2026-05-05 — v1.9 milestone archived. 9 milestones shipped (v1.0–v1.9), 38 phases, 24/24 v1.9 requirements complete.*
+*Last updated: 2026-05-22 — v1.7 Voice-Enabled Form Builder & Groq Provider merged; phases 30-32 implemented, phases 33-35 remaining*

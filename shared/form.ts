@@ -1,4 +1,4 @@
-import type { LeadClassification, FormConfig, FormQuestion, FormOption as SchemaFormOption } from "./schema.js";
+import type { LeadClassification, FormConfig, FormQuestion, FormOption as SchemaFormOption, FormConditionalField } from "./schema.js";
 
 // Legacy type for backward compatibility
 export type FormOption = {
@@ -218,11 +218,12 @@ export function calculateFormScoresWithConfig(answers: FormAnswers, config: Form
       let points = resolvePoints(question.options, answer);
 
       // Handle conditional field with fallback points (e.g., "Other" option)
-      if (question.conditionalField && answer === question.conditionalField.showWhen) {
-        const conditionalAnswer = answers[question.conditionalField.id];
+      const activeConditional = getConditionalFields(question).find((field) => answer === field.showWhen);
+      if (activeConditional) {
+        const conditionalAnswer = answers[activeConditional.id];
         if (conditionalAnswer && points === 0) {
           // Use the points from the trigger option
-          const triggerOption = question.options.find(o => o.value === question.conditionalField!.showWhen);
+          const triggerOption = question.options.find(o => o.value === activeConditional.showWhen);
           points = triggerOption?.points ?? 0;
         }
       }
@@ -269,13 +270,98 @@ export function calculateMaxScore(config: FormConfig): number {
   return questions
     .filter((q) => q.type === "select" && q.options)
     .reduce((sum, q) => {
-      const maxPoints = Math.max(...(q.options || []).map((o) => o.points));
+      const optionPoints = (q.options || []).map((o) => o.points);
+      const maxPoints = optionPoints.length > 0 ? Math.max(...optionPoints) : 0;
       return sum + maxPoints;
     }, 0);
+}
+
+export function getConditionalFields(question: FormQuestion): FormConditionalField[] {
+  const fields: FormConditionalField[] = [];
+  if (question.conditionalField) fields.push(question.conditionalField);
+  if (Array.isArray(question.conditionalFields)) fields.push(...question.conditionalFields);
+
+  const seen = new Set<string>();
+  return fields.filter((field) => {
+    const key = `${field.id}:${field.showWhen}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 // Helper to get questions sorted by order
 export function getSortedQuestions(config: FormConfig): FormQuestion[] {
   const questions = Array.isArray(config?.questions) ? config.questions : [];
   return [...questions].sort((a, b) => a.order - b.order);
+}
+
+export function validateFormConfig(config: FormConfig, opts: { requireQuestions?: boolean } = {}): string[] {
+  const errors: string[] = [];
+  const questions = Array.isArray(config?.questions) ? config.questions : [];
+
+  if (opts.requireQuestions && questions.length === 0) {
+    errors.push("Active forms need at least one question.");
+  }
+
+  const thresholds = config?.thresholds;
+  if (!thresholds || !Number.isFinite(thresholds.hot) || !Number.isFinite(thresholds.warm) || !Number.isFinite(thresholds.cold)) {
+    errors.push("Thresholds must be valid numbers.");
+  } else if (!(thresholds.hot >= thresholds.warm && thresholds.warm >= thresholds.cold)) {
+    errors.push("Thresholds must be ordered as HOT >= WARM >= COLD.");
+  }
+
+  const questionIds = new Set<string>();
+  const fieldIds = new Set<string>();
+  questions.forEach((question, index) => {
+    const label = question.title || question.id || `Question ${index + 1}`;
+    if (!question.id?.trim()) {
+      errors.push(`${label} needs an id.`);
+      return;
+    }
+    if (questionIds.has(question.id)) {
+      errors.push(`Question id "${question.id}" is duplicated.`);
+    }
+    questionIds.add(question.id);
+    fieldIds.add(question.id);
+
+    if (!question.title?.trim()) {
+      errors.push(`Question "${question.id}" needs a title.`);
+    }
+
+    if (question.type === "select") {
+      const options = Array.isArray(question.options) ? question.options : [];
+      if (options.length === 0) {
+        errors.push(`Question "${label}" needs at least one option.`);
+      }
+      const optionValues = new Set<string>();
+      options.forEach((option) => {
+        if (!option.value?.trim() || !option.label?.trim()) {
+          errors.push(`Question "${label}" has an option missing label or value.`);
+        }
+        if (optionValues.has(option.value)) {
+          errors.push(`Question "${label}" has duplicate option value "${option.value}".`);
+        }
+        optionValues.add(option.value);
+      });
+
+      getConditionalFields(question).forEach((field) => {
+        if (!field.id?.trim()) {
+          errors.push(`Question "${label}" has a conditional field missing id.`);
+        }
+        if (questionIds.has(field.id) || fieldIds.has(field.id)) {
+          errors.push(`Conditional field id "${field.id}" conflicts with another field.`);
+        }
+        fieldIds.add(field.id);
+        if (!field.title?.trim()) {
+          errors.push(`Conditional field "${field.id}" needs a title.`);
+        }
+        if (!optionValues.has(field.showWhen)) {
+          errors.push(`Conditional field "${field.id}" references missing option "${field.showWhen}".`);
+        }
+      });
+    }
+  });
+
+  return errors;
 }
