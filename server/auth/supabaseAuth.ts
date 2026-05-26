@@ -7,6 +7,18 @@ import { users } from "#shared/models/auth.js";
 import { eq } from "drizzle-orm";
 import { verifyTurnstileToken, getClientIp } from "../lib/turnstile.js";
 
+const loginAttempts = new Map<string, { count: number; resetAt: number }>();
+function isLoginRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = loginAttempts.get(ip);
+  if (!entry || now > entry.resetAt) {
+    loginAttempts.set(ip, { count: 1, resetAt: now + 15 * 60_000 });
+    return false;
+  }
+  entry.count += 1;
+  return entry.count > 10; // 10 attempts per 15 minutes
+}
+
 export async function setupSupabaseAuth(app: Express) {
   app.set("trust proxy", 1);
 
@@ -40,6 +52,11 @@ export async function setupSupabaseAuth(app: Express) {
   // (Google, etc.) skip the captcha because the provider handles bot detection.
   app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
+      const ip = getClientIp(req) ?? 'unknown';
+      if (isLoginRateLimited(ip)) {
+        return res.status(429).json({ message: "Too many login attempts. Try again later." });
+      }
+
       const { accessToken, captchaToken } = req.body;
 
       if (!accessToken) {
