@@ -10,3 +10,4 @@ export * from "./schema/hub.js";
 export * from "./schema/notifications.js";
 export * from "./schema/landings.js";
 export * from "./schema/attribution.js";
+export * from "./schema/mcp.js";
