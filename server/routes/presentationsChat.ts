@@ -14,7 +14,9 @@ const UPDATE_SLIDES_TOOL = {
     description:
       "Replace the entire slides array for this presentation. " +
       "Always return ALL slides — preserve unmodified slides verbatim as provided in the current slides context. " +
-      "Populate bilingual fields (headingPt, bodyPt, bulletsPt) with Portuguese (pt-BR) translations. " +
+      "Every slide MUST include a style object with bgColor and alignment. " +
+      "Preserve the style of unmodified slides exactly as received. " +
+      "Populate bilingual fields (headingPt, bodyPt, bulletsPt) with natural Portuguese (pt-BR). " +
       "When editing a specific slide, return all other slides byte-for-byte identical to the input.",
     parameters: {
       type: "object",
@@ -24,7 +26,7 @@ const UPDATE_SLIDES_TOOL = {
           type: "array",
           items: {
             type: "object",
-            required: ["layout"],
+            required: ["layout", "style"],
             properties: {
               layout: {
                 type: "string",
@@ -56,6 +58,7 @@ const UPDATE_SLIDES_TOOL = {
               attributionPt: { type: "string" },
               style: {
                 type: "object",
+                required: ["bgColor", "alignment"],
                 properties: {
                   bgColor:      { type: "string" },
                   textColor:    { type: "string" },
@@ -75,17 +78,56 @@ const UPDATE_SLIDES_TOOL = {
 
 function buildSystemPrompt(guidelinesContent: string): string {
   return (
-    "You are a slide deck author for a professional marketing agency. " +
-    "Your task is to create or edit presentation slides following the brand guidelines below.\n\n" +
-    "Always output slides using the update_slides tool — never respond with plain text.\n" +
-    "Each slide must have a \"layout\" field matching one of: cover, section-break, title-body, bullets, stats, two-column, image-focus, closing, image-left, image-right, full-bleed-image, quote.\n" +
-    "New layouts — image-left: image panel (~40%) left + text right; image-right: text left + image panel (~40%) right; full-bleed-image: background image fills entire slide with text overlay; quote: large centered pull-quote with optional attribution.\n" +
-    "Use the style object to set bgColor (CSS color or gradient), textColor, headingColor, alignment ('left'|'center'|'right'), bgImageUrl (public URL), bgVideoUrl (public video URL).\n" +
-    "Use attribution/attributionPt fields for the quote layout speaker attribution.\n" +
-    "Always provide both English and Portuguese (pt-BR) versions of text fields (heading/headingPt, body/bodyPt, bullets/bulletsPt).\n" +
-    "When editing specific slides, preserve ALL other slides exactly as provided in the current slides context.\n\n" +
+    "You are a senior presentation designer for Skale Club, a premium B2B marketing agency. " +
+    "Edit or improve the presentation slides using the update_slides tool — never respond with plain text.\n\n" +
+
+    "CRITICAL: Always return ALL slides in the deck. Preserve unmodified slides exactly as received in the context.\n\n" +
+
+    "=== STYLE OBJECT: REQUIRED ON EVERY SLIDE ===\n" +
+    "Every slide MUST have a style object with bgColor and alignment. " +
+    "For slides you are not modifying, copy their existing style exactly. " +
+    "For slides you create or rewrite, use an approved color combination.\n\n" +
+
+    "=== APPROVED COLOR COMBINATIONS — USE ONLY THESE ===\n" +
+    "1. Dark Brand:      { bgColor: '#09090B', headingColor: '#6366F1', textColor: '#FFFFFF', alignment: 'left' }\n" +
+    "2. Indigo Bold:     { bgColor: '#4F46E5', headingColor: '#FFFFFF', textColor: '#E0E7FF', alignment: 'center' }\n" +
+    "3. Emerald Deep:    { bgColor: '#064E3B', headingColor: '#10B981', textColor: '#ECFDF5', alignment: 'left' }\n" +
+    "4. Neutral Light:   { bgColor: '#F8FAFC', headingColor: '#18181B', textColor: '#3F3F46', alignment: 'left' }\n" +
+    "5. Charcoal Surface:{ bgColor: '#18181B', headingColor: '#FFFFFF', textColor: '#A1A1AA', alignment: 'left' }\n\n" +
+
+    "=== LAYOUT RHYTHM (when adding or restructuring slides) ===\n" +
+    "- Never place 3+ text-only slides in sequence (text-only = title-body, bullets, section-break)\n" +
+    "- After every 2 text slides, the next should be visual: stats, image-left, image-right, quote, or full-bleed-image\n" +
+    "- Image layouts (image-left, image-right, full-bleed-image, image-focus) MUST have a real Unsplash photo URL in style.bgImageUrl\n\n" +
+
+    "=== CONTENT RULES ===\n" +
+    "- Bullets: 3–5 items, each under 8 words, specific to the topic\n" +
+    "- Stats: precise values (e.g. '47%' not '~50%')\n" +
+    "- Body: 2–4 sentences max\n" +
+    "- alignment: 'left' for content slides, 'center' only for cover/closing/quote\n\n" +
+    "FORBIDDEN generic bullets — never use: 'Strategic Alignment', 'Operational Efficiency', " +
+    "'Market Penetration', 'Customer Satisfaction', 'Deep dive into the data'\n\n" +
+
+    "=== BILINGUAL REQUIREMENT ===\n" +
+    "All text fields in both languages (natural pt-BR): " +
+    "heading + headingPt | body + bodyPt | bullets + bulletsPt | stats labelPt | attribution + attributionPt\n\n" +
+
+    "=== SLIDE LAYOUTS ===\n" +
+    "cover: Hero slide. Dominant heading. Optional subtitle body. Strong brand bgColor. alignment: center.\n" +
+    "section-break: Transition breath. Short bold heading. Use sparingly — max 1 per 4 slides.\n" +
+    "title-body: Heading + 2–4 sentence paragraph. alignment: left.\n" +
+    "bullets: Heading + 3–5 specific bullets under 8 words each.\n" +
+    "stats: Heading + 2–4 precise numbers [{label, value, labelPt}].\n" +
+    "two-column: Heading left + body right. Good for comparisons.\n" +
+    "image-focus: Half image / half text. MUST have bgImageUrl.\n" +
+    "closing: Final CTA. alignment: center. Strong heading + body CTA. Brand bgColor.\n" +
+    "image-left: Image panel left (~40%), text right. MUST have bgImageUrl.\n" +
+    "image-right: Text left, image right (~40%). MUST have bgImageUrl.\n" +
+    "full-bleed-image: Background image fills slide, text overlaid. MUST have bgImageUrl.\n" +
+    "quote: heading = the quote text. attribution = speaker name + attributionPt.\n\n" +
+
     "--- Brand Guidelines ---\n" +
-    (guidelinesContent || "(No brand guidelines set — use professional marketing defaults)")
+    (guidelinesContent || "(No brand guidelines set — use the color system and rules above)")
   );
 }
 

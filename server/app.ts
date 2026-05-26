@@ -1,6 +1,7 @@
 import 'express-async-errors';
 import { ZodError } from "zod";
 import express, { type Request, Response, NextFunction } from "express";
+import helmet from "helmet";
 import { registerRoutes } from "./routes.js";
 import path from "path";
 import { createServer, type Server } from "http";
@@ -24,6 +25,11 @@ export function log(message: string, source = "express") {
 
 export async function createApp(): Promise<{ app: express.Express; httpServer: Server }> {
   const app = express();
+
+  app.use(helmet({
+    contentSecurityPolicy: false, // managed per-route via meta tags in the SPA
+    crossOriginEmbedderPolicy: false, // needed for embedded iframes (maps, etc.)
+  }));
 
   // Serve attached_assets as static files
   app.use('/attached_assets', express.static(path.join(process.cwd(), 'attached_assets')));
