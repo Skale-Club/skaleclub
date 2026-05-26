@@ -4,6 +4,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Copy, Check } from "lucide-react";
 
 interface ApiToken {
   id: string;
@@ -84,12 +85,27 @@ function RevealToken({ rawToken, mcpUrl }: { rawToken: string; mcpUrl: string })
   );
 }
 
+function CopyButton({ text, className }: { text: string; className?: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <Button size="sm" variant="outline" onClick={copy} className={`shrink-0 gap-1.5 ${className ?? ""}`}>
+      {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+      {copied ? "Copiado!" : "Copiar"}
+    </Button>
+  );
+}
+
 export function McpSettingsSection() {
   const qc = useQueryClient();
   const [name, setName] = useState("");
   const [revealed, setRevealed] = useState<{ rawToken: string; mcpUrl: string } | null>(null);
 
-  const mcpUrl = `${window.location.origin}/mcp`;
+  const mcpUrl = "https://skale.club/mcp";
 
   const { data: tokens = [], isLoading } = useQuery<ApiToken[]>({
     queryKey: ["/api/mcp/tokens"],
@@ -121,15 +137,28 @@ export function McpSettingsSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-white">MCP Infrastructure</h2>
+        <h2 className="text-lg font-semibold text-white">MCP — Model Context Protocol</h2>
         <p className="text-sm text-zinc-400 mt-1">
-          Token-based access for AI agents to read and edit estimates and presentations via the MCP protocol.
+          Conecte o Claude Desktop ou Claude Code ao Skale Club para ler e editar estimates e presentations via MCP.
         </p>
       </div>
 
-      <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-lg space-y-2">
-        <p className="text-xs text-zinc-400 font-medium uppercase tracking-wider">MCP Endpoint</p>
-        <p className="font-mono text-sm text-white">{mcpUrl}</p>
+      {/* Connection URL */}
+      <div className="p-4 bg-zinc-900 border border-zinc-700 rounded-lg space-y-3">
+        <p className="text-xs text-zinc-400 font-medium uppercase tracking-wider">URL de Conexão</p>
+        <div className="flex items-center gap-2">
+          <Input
+            value={mcpUrl}
+            readOnly
+            className="font-mono text-sm bg-zinc-950 border-zinc-700 text-white"
+          />
+          <CopyButton text={mcpUrl} />
+        </div>
+        <div className="text-xs text-zinc-500 space-y-1">
+          <p className="font-medium text-zinc-400">Como conectar no Claude Code:</p>
+          <p>1. Gere um token abaixo e copie o Bearer Token</p>
+          <p>2. No terminal: <code className="bg-zinc-800 px-1 rounded">claude mcp add skale-club https://skale.club/mcp --transport http --header "Authorization: Bearer SEU_TOKEN"</code></p>
+        </div>
       </div>
 
       <div className="space-y-3">

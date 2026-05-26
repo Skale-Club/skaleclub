@@ -1,22 +1,24 @@
 import { useState } from 'react';
-import { BarChart2, Bot, Building2, Phone, Puzzle } from 'lucide-react';
+import { BarChart2, Bot, Building2, Network, Phone, Puzzle } from 'lucide-react';
 import { SectionHeader } from './shared';
 import { AIAssistantCard } from './integrations/AIAssistantCard';
 import { AnalyticsSection } from './integrations/AnalyticsSection';
 import { GHLCard } from './integrations/GHLCard';
 import { GooglePlacesCard } from './integrations/GooglePlacesCard';
 import { GroqCard } from './integrations/GroqCard';
+import { McpSettingsSection } from './McpSettingsSection';
 import { TelegramSection } from './TelegramSection';
 import { FormTranscriptionCard } from './integrations/FormTranscriptionCard';
 import { TwilioSection } from './TwilioSection';
 
-type IntegrationTab = 'ai' | 'crm' | 'communications' | 'analytics';
+type IntegrationTab = 'ai' | 'crm' | 'communications' | 'analytics' | 'mcp';
 
 const INTEGRATION_TABS: { id: IntegrationTab; label: string; icon: typeof Bot }[] = [
   { id: 'ai',             label: 'AI Assistant',    icon: Bot       },
   { id: 'crm',            label: 'CRM',             icon: Building2 },
   { id: 'communications', label: 'Communications',  icon: Phone     },
   { id: 'analytics',      label: 'Analytics',       icon: BarChart2 },
+  { id: 'mcp',            label: 'MCP',             icon: Network   },
 ];
 
 export function IntegrationsSection() {
@@ -73,6 +75,8 @@ export function IntegrationsSection() {
           <AnalyticsSection />
         </div>
       )}
+
+      {activeTab === 'mcp' && <McpSettingsSection />}
     </div>
   );
 }
