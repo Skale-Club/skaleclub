@@ -378,7 +378,10 @@ export default function PresentationViewer() {
             <source src={currentSlide.style.bgVideoUrl} />
           </video>
         )}
-        <div className="absolute inset-0 bg-gradient-to-b from-zinc-800/20 to-transparent pointer-events-none" />
+        {/* Readability gradient — only over video/image backgrounds, never over solid colors */}
+        {(currentSlide.style?.bgVideoUrl || currentSlide.style?.bgImageUrl) && (
+          <div className="absolute inset-0 bg-gradient-to-b from-zinc-800/20 to-transparent pointer-events-none" />
+        )}
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={currentIndex}
