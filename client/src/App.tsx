@@ -73,6 +73,7 @@ const VCard = lazy(() => import("@/pages/VCard").then(m => ({ default: () => <Pa
 const EstimateViewer = lazy(() => import("@/pages/EstimateViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const PresentationViewer = lazy(() => import("@/pages/PresentationViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const DynamicLanding = lazy(() => import("@/pages/DynamicLanding").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const OAuthAuthorize = lazy(() => import("@/pages/OAuthAuthorize"));
 
 function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const { data: settings } = useQuery<CompanySettings>({
@@ -118,6 +119,7 @@ function Router() {
   });
   const pagePaths = buildPagePaths(settings?.pageSlugs);
   const legacyPaths = buildPagePaths(DEFAULT_PAGE_SLUGS);
+  const isOAuthRoute = location.startsWith('/oauth/');
   const isAdminRoute = location.startsWith('/admin');
   const isLinksRoute = isRoutePrefixMatch(location, pagePaths.links) || isRoutePrefixMatch(location, legacyPaths.links);
   const isVCardRoute = isRoutePrefixMatch(location, pagePaths.vcard) || isRoutePrefixMatch(location, legacyPaths.vcard);
@@ -143,6 +145,17 @@ function Router() {
 
   // During initial load, show PageLoader for route transitions
   const fallback = isInitialLoad ? null : <PageLoader />;
+
+  if (isOAuthRoute) {
+    return (
+      <Suspense fallback={fallback}>
+        <Switch>
+          <Route path="/oauth/authorize" component={OAuthAuthorize} />
+          <Route component={NotFound} />
+        </Switch>
+      </Suspense>
+    );
+  }
 
   if (isAdminRoute) {
     return (

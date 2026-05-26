@@ -26,8 +26,23 @@ export const mcpAuditLogs = pgTable("mcp_audit_logs", {
   createdAt:    timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
+export const oauthCodes = pgTable("oauth_codes", {
+  id:                  uuid("id").primaryKey().defaultRandom(),
+  code:                text("code").notNull().unique(),
+  clientId:            text("client_id"),
+  redirectUri:         text("redirect_uri").notNull(),
+  codeChallenge:       text("code_challenge").notNull(),
+  codeChallengeMethod: text("code_challenge_method").notNull().default("S256"),
+  scope:               text("scope"),
+  tokenId:             uuid("token_id").references(() => apiTokens.id, { onDelete: "cascade" }),
+  rawToken:            text("raw_token"),
+  expiresAt:           timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt:              timestamp("used_at", { withTimezone: true }),
+});
+
 export type ApiToken    = typeof apiTokens.$inferSelect;
 export type McpAuditLog = typeof mcpAuditLogs.$inferSelect;
+export type OauthCode   = typeof oauthCodes.$inferSelect;
 
 export const insertApiTokenSchema = z.object({
   name: z.string().min(1).max(100),

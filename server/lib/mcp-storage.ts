@@ -87,6 +87,42 @@ export async function listAuditLogs(limit = 100) {
     .limit(limit);
 }
 
+// ── OAuth helpers ─────────────────────────────────────────────────────────────
+
+export async function createOAuthCode(params: {
+  code:                string;
+  clientId?:           string;
+  redirectUri:         string;
+  codeChallenge:       string;
+  codeChallengeMethod: string;
+  scope?:              string;
+  tokenId:             string;
+  rawToken:            string;
+  expiresAt:           Date;
+}) {
+  const [row] = await db.insert(oauthCodes).values(params).returning();
+  return row;
+}
+
+export async function consumeOAuthCode(code: string, codeVerifier: string, redirectUri: string) {
+  const [row] = await db.select().from(oauthCodes).where(eq(oauthCodes.code, code));
+  if (!row) return null;
+  if (row.usedAt) return null;
+  if (new Date() > row.expiresAt) return null;
+  if (row.redirectUri !== redirectUri) return null;
+
+  // PKCE: SHA-256(codeVerifier) base64url must match stored codeChallenge
+  const verifierHash = crypto
+    .createHash("sha256")
+    .update(codeVerifier)
+    .digest("base64url");
+  if (verifierHash !== row.codeChallenge) return null;
+
+  await db.update(oauthCodes).set({ usedAt: new Date(), rawToken: null }).where(eq(oauthCodes.id, row.id));
+  return row;
+}
+
 // Re-export type for consumers
 import type { ApiToken } from "#shared/schema.js";
+import { oauthCodes } from "#shared/schema.js";
 export type { ApiToken };
