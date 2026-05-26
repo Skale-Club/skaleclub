@@ -277,18 +277,16 @@ export function PresentationsSection() {
   return (
     <div className="space-y-6">
       <SectionHeader
-        title={t('Presentations')}
-        description={t(
-          'Build AI-powered slide decks and share them as immersive fullscreen experiences.',
-        )}
+        title="Presentations"
+        description="Build AI-powered slide decks and share them as immersive fullscreen experiences."
         icon={<Presentation className="w-5 h-5" />}
         action={
-          <div className="flex flex-col sm:flex-row items-center gap-3">
-            <div className="relative w-full sm:w-64 group">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full">
+            <div className="relative flex-1 sm:flex-initial sm:w-56 group">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
               <Input
-                placeholder={t('Search presentations...')}
-                className="pl-9 pr-8"
+                placeholder="Search presentations..."
+                className="pl-9 pr-8 w-full"
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
@@ -308,18 +306,18 @@ export function PresentationsSection() {
               variant="outline"
               size="sm"
               onClick={() => setIsGenerateOpen(true)}
-              className="gap-2 w-full sm:w-auto"
+              className="gap-2 shrink-0"
             >
               <Sparkles className="w-4 h-4" />
-              {t('Generate with AI')}
+              Generate with AI
             </Button>
             <Button
               size="sm"
               onClick={() => setIsCreateOpen(true)}
-              className="gap-2 w-full sm:w-auto"
+              className="gap-2 shrink-0"
             >
               <Plus className="w-4 h-4" />
-              {t('New Presentation')}
+              New Presentation
             </Button>
           </div>
         }
