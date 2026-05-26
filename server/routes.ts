@@ -34,6 +34,7 @@ import { registerPresentationsGeneratorRoutes } from "./routes/presentationsGene
 import { registerBlogAutomationRoutes } from "./routes/blogAutomation.js";
 import { registerSkaleHubRoutes } from "./routes/skaleHub.js";
 import { registerNotificationRoutes } from "./routes/notifications.js";
+import { registerMcpRoutes } from "./routes/mcpTokens.js";
 import { db, pool } from "./db.js";
 import { users } from "#shared/schema.js";
 import { eq } from "drizzle-orm";
@@ -144,6 +145,7 @@ export async function registerRoutes(
   registerNotificationRoutes(app);
   registerEstimatesRoutes(app);
   registerSkaleHubRoutes(app);
+  registerMcpRoutes(app);
   registerPresentationsRoutes(app);
   registerLandingPageRoutes(app);
   registerBrandGuidelinesRoutes(app);
