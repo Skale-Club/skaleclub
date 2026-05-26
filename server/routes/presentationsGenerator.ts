@@ -36,9 +36,9 @@ const GENERATE_SLIDES_TOOL = {
     name: "generate_slides",
     description:
       "Generate a complete slide deck from scratch based on the provided context. " +
-      "Populate bilingual fields (headingPt, bodyPt, bulletsPt) with Portuguese (pt-BR). " +
-      "Use brand-coherent colors in style.bgColor and style.headingColor. " +
-      "Return ALL slides for the complete presentation.",
+      "Every slide MUST include a style object with bgColor and alignment at minimum. " +
+      "Populate bilingual fields (headingPt, bodyPt, bulletsPt) with natural Portuguese (pt-BR). " +
+      "Use ONLY the approved brand color combinations. Return ALL slides for the complete presentation.",
     parameters: {
       type: "object",
       required: ["slides"],
@@ -47,7 +47,7 @@ const GENERATE_SLIDES_TOOL = {
           type: "array",
           items: {
             type: "object",
-            required: ["layout"],
+            required: ["layout", "style"],
             properties: {
               layout: {
                 type: "string",
@@ -79,6 +79,7 @@ const GENERATE_SLIDES_TOOL = {
               attributionPt: { type: "string" },
               style: {
                 type: "object",
+                required: ["bgColor", "alignment"],
                 properties: {
                   bgColor:      { type: "string" },
                   textColor:    { type: "string" },
@@ -96,29 +97,71 @@ const GENERATE_SLIDES_TOOL = {
   },
 };
 
-// System prompt — describes all 12 layouts, bilingual requirement, and brand guidelines.
+// System prompt — enforces brand design system, layout rhythm, and content quality rules.
 function buildGeneratorSystemPrompt(guidelines: string): string {
   return (
-    "You are a professional slide deck author for a marketing agency. " +
-    "Your task is to create a complete presentation from scratch using the generate_slides tool — never respond with plain text.\n\n" +
-    "Always invoke the generate_slides tool with ALL slides for the complete deck.\n" +
-    "Populate bilingual text fields: heading/headingPt, body/bodyPt, bullets/bulletsPt (Portuguese pt-BR).\n" +
-    "Use brand-coherent colors in style.bgColor and style.headingColor when appropriate.\n\n" +
-    "--- Slide Layouts ---\n" +
-    "cover: Title slide. Large heading, optional body subtitle. Use style.bgColor + style.headingColor for brand impact.\n" +
-    "section-break: Transition slide between major topics. Bold heading, optional short body.\n" +
-    "title-body: Main content slide. Heading + paragraph body.\n" +
-    "bullets: List of key points. Heading + bullets array (3–6 items). Use bulletsPt for Portuguese.\n" +
-    "stats: Data/metrics slide. Heading + stats array [{label, value, labelPt}]. Highlight numbers.\n" +
-    "two-column: Two content columns. Heading + body (split into columns by the renderer).\n" +
-    "image-focus: Visual-first slide. Heading + optional body. bgImageUrl in style for background.\n" +
-    "closing: Final CTA slide. Heading + body. Use brand primary color.\n" +
-    "image-left: Image on left half, text on right. Provide bgImageUrl in style.\n" +
-    "image-right: Text on left, image on right half. Provide bgImageUrl in style.\n" +
-    "full-bleed-image: Full-bleed background image. Heading overlaid. Provide bgImageUrl in style.\n" +
-    "quote: Pull-quote slide. body = the quote text, attribution = speaker name (also attributionPt).\n\n" +
+    "You are a senior presentation designer for Skale Club, a premium B2B marketing agency. " +
+    "Create a complete, visually sophisticated deck using the generate_slides tool — never respond with plain text.\n\n" +
+
+    "CRITICAL: Always invoke generate_slides with ALL slides. Never return partial decks.\n\n" +
+
+    "=== STYLE OBJECT: REQUIRED ON EVERY SINGLE SLIDE ===\n" +
+    "Every slide MUST have a style object with bgColor and alignment. No exceptions.\n\n" +
+
+    "=== APPROVED COLOR COMBINATIONS — USE ONLY THESE ===\n" +
+    "1. Dark Brand:      { bgColor: '#09090B', headingColor: '#6366F1', textColor: '#FFFFFF', alignment: 'left' }\n" +
+    "2. Indigo Bold:     { bgColor: '#4F46E5', headingColor: '#FFFFFF', textColor: '#E0E7FF', alignment: 'center' }\n" +
+    "3. Emerald Deep:    { bgColor: '#064E3B', headingColor: '#10B981', textColor: '#ECFDF5', alignment: 'left' }\n" +
+    "4. Neutral Light:   { bgColor: '#F8FAFC', headingColor: '#18181B', textColor: '#3F3F46', alignment: 'left' }\n" +
+    "5. Charcoal Surface:{ bgColor: '#18181B', headingColor: '#FFFFFF', textColor: '#A1A1AA', alignment: 'left' }\n\n" +
+    "Rules: Cover and closing → Indigo Bold or Dark Brand. Vary across the deck — never the same bgColor 3 slides in a row.\n\n" +
+
+    "=== LAYOUT RHYTHM: MANDATORY ===\n" +
+    "- Use at least 4 DIFFERENT layouts per deck\n" +
+    "- NEVER place 3+ text-only slides in sequence (text-only = title-body, bullets, section-break)\n" +
+    "- After every 2 text slides, insert one visual: stats, image-left, image-right, quote, or full-bleed-image\n" +
+    "- section-break: maximum 1 per 4 slides — sparingly, never consecutive\n" +
+    "- Image layouts MUST have a real Unsplash photo URL in style.bgImageUrl\n\n" +
+
+    "=== RECOMMENDED DECK STRUCTURE (8–12 slides) ===\n" +
+    "1. cover          — strong specific title, Indigo Bold or Dark Brand\n" +
+    "2. title-body     — context or problem statement\n" +
+    "3. stats          — 2–4 specific data points\n" +
+    "4. image-left or image-right — visual break with real Unsplash URL\n" +
+    "5. bullets        — solution or approach, 3–5 specific bullets\n" +
+    "6. two-column or quote — evidence or social proof\n" +
+    "7. bullets        — next steps, actionable\n" +
+    "8. closing        — clear CTA, Indigo Bold or Dark Brand\n\n" +
+
+    "=== CONTENT RULES ===\n" +
+    "- Bullets: 3–5 items, each under 8 words, specific to the presentation topic\n" +
+    "- Stats: 2–4 numbers per slide, precise values (e.g. '47%' not '~50%' or '50%+')\n" +
+    "- Body: 2–4 sentences max — never fill a slide with dense prose\n" +
+    "- alignment: 'left' for content slides, 'center' only for cover/closing/quote\n\n" +
+    "FORBIDDEN — never use these generic bullets or phrases:\n" +
+    "'Strategic Alignment', 'Operational Efficiency', 'Market Penetration', 'Customer Satisfaction',\n" +
+    "'Deep dive into the data', 'Comprehensive strategy presentation', 'In today's dynamic landscape'\n\n" +
+
+    "=== BILINGUAL REQUIREMENT ===\n" +
+    "All text fields in both languages (natural pt-BR, not machine-translated):\n" +
+    "heading + headingPt | body + bodyPt | bullets + bulletsPt | stats labelPt | attribution + attributionPt\n\n" +
+
+    "=== SLIDE LAYOUTS ===\n" +
+    "cover: Hero slide. Dominant heading. Optional subtitle body. Strong brand bgColor. alignment: center.\n" +
+    "section-break: Transition breath. Short bold heading only. Use sparingly.\n" +
+    "title-body: Heading + 2–4 sentence paragraph. alignment: left.\n" +
+    "bullets: Heading + 3–5 specific bullets under 8 words each. alignment: left.\n" +
+    "stats: Heading + 2–4 precise numbers [{label, value, labelPt}]. alignment: left.\n" +
+    "two-column: Heading (left col) + body (right col). Good for before/after or comparisons.\n" +
+    "image-focus: Half image / half text. MUST have bgImageUrl. Real Unsplash URL required.\n" +
+    "closing: Final CTA. alignment: center. Strong heading + clear body CTA. Brand bgColor.\n" +
+    "image-left: Image panel left (~40%), text right. MUST have bgImageUrl.\n" +
+    "image-right: Text left, image right (~40%). MUST have bgImageUrl.\n" +
+    "full-bleed-image: Background image fills slide, text overlaid. MUST have bgImageUrl.\n" +
+    "quote: Large pull-quote. heading = the quote. attribution = speaker name + attributionPt.\n\n" +
+
     "--- Brand Guidelines ---\n" +
-    (guidelines || "(No brand guidelines set — use professional marketing defaults)")
+    (guidelines || "(No brand guidelines set — use the color system and rules above)")
   );
 }
 
