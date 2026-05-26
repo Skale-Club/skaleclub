@@ -18,20 +18,34 @@ export function registerOAuthRoutes(app: Express) {
   app.options("/.well-known/oauth-authorization-server", (_req, res) => {
     res.set(CORS_HEADERS).status(204).end();
   });
-  app.options("/oauth/token", (_req, res) => {
+  app.options("/.well-known/oauth-protected-resource", (_req, res) => {
     res.set(CORS_HEADERS).status(204).end();
   });
-  app.options("/oauth/register", (_req, res) => {
+  app.options("/api/oauth/token", (_req, res) => {
+    res.set(CORS_HEADERS).status(204).end();
+  });
+  app.options("/api/oauth/register", (_req, res) => {
     res.set(CORS_HEADERS).status(204).end();
   });
 
-  // ── OAuth server metadata ─────────────────────────────────────────────────
+  // ── Protected Resource Metadata (RFC 9728) ────────────────────────────────
+  // Required by MCP spec: tells the client which auth servers protect this resource.
+  app.get("/.well-known/oauth-protected-resource", (_req, res) => {
+    res.set(CORS_HEADERS).json({
+      resource: `${BASE_URL}/mcp`,
+      authorization_servers: [BASE_URL],
+      bearer_methods_supported: ["header"],
+      scopes_supported: ["mcp"],
+    });
+  });
+
+  // ── OAuth server metadata (RFC 8414) ──────────────────────────────────────
   app.get("/.well-known/oauth-authorization-server", (_req, res) => {
     res.set(CORS_HEADERS).json({
       issuer: BASE_URL,
       authorization_endpoint: `${BASE_URL}/oauth/authorize`,
-      token_endpoint: `${BASE_URL}/oauth/token`,
-      registration_endpoint: `${BASE_URL}/oauth/register`,
+      token_endpoint: `${BASE_URL}/api/oauth/token`,
+      registration_endpoint: `${BASE_URL}/api/oauth/register`,
       response_types_supported: ["code"],
       grant_types_supported: ["authorization_code"],
       code_challenge_methods_supported: ["S256"],
@@ -42,7 +56,7 @@ export function registerOAuthRoutes(app: Express) {
 
   // ── Dynamic client registration (RFC 7591) ────────────────────────────────
   // Claude.ai may call this before the authorization flow.
-  app.post("/oauth/register", (req, res) => {
+  app.post("/api/oauth/register", (req, res) => {
     const clientId = "claude-" + crypto.randomBytes(8).toString("hex");
     res.set(CORS_HEADERS).status(201).json({
       client_id: clientId,
@@ -57,7 +71,7 @@ export function registerOAuthRoutes(app: Express) {
   // ── Authorization endpoint (POST — called by our React page) ─────────────
   // Body: { accessToken, client_id, redirect_uri, state, code_challenge,
   //         code_challenge_method, scope, response_type }
-  app.post("/oauth/authorize", async (req, res) => {
+  app.post("/api/oauth/authorize", async (req, res) => {
     const {
       accessToken,
       client_id,
@@ -109,7 +123,7 @@ export function registerOAuthRoutes(app: Express) {
   });
 
   // ── Token endpoint ─────────────────────────────────────────────────────────
-  app.post("/oauth/token", async (req, res) => {
+  app.post("/api/oauth/token", async (req, res) => {
     res.set(CORS_HEADERS);
 
     const { grant_type, code, code_verifier, redirect_uri } = req.body ?? {};

@@ -53,14 +53,34 @@ export function registerMcpRoutes(app: Express) {
   });
 
   // ── MCP endpoint ───────────────────────────────────────────────────────────
-  // Handles GET and POST for StreamableHTTPServerTransport.
+  // Handles GET, POST, DELETE for StreamableHTTPServerTransport.
   // Auth: Bearer token validated before handing off to MCP server.
+  // Per MCP spec (RFC 9728), 401 responses MUST include a WWW-Authenticate header
+  // pointing to /.well-known/oauth-protected-resource so the client can discover
+  // the authorization server.
+  const WWW_AUTH = 'Bearer resource_metadata="https://skale.club/.well-known/oauth-protected-resource", scope="mcp"';
+  const MCP_CORS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, mcp-session-id, MCP-Protocol-Version",
+    "Access-Control-Expose-Headers": "mcp-session-id, WWW-Authenticate",
+    "Access-Control-Max-Age": "86400",
+  };
+
+  app.options("/mcp", (_req, res) => {
+    res.set(MCP_CORS).status(204).end();
+  });
+
   app.all("/mcp", async (req, res) => {
+    res.set(MCP_CORS);
+
     const authHeader = req.headers.authorization ?? "";
     const raw = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
     if (!raw) {
-      res.status(401).json({ message: "Authorization: Bearer <token> required" });
+      res.set("WWW-Authenticate", WWW_AUTH)
+         .status(401)
+         .json({ message: "Authorization: Bearer <token> required" });
       return;
     }
 
@@ -69,7 +89,9 @@ export function registerMcpRoutes(app: Express) {
     const token = await getApiTokenByRaw(raw);
 
     if (!token || !token.isActive) {
-      res.status(401).json({ message: "Invalid or inactive MCP token" });
+      res.set("WWW-Authenticate", WWW_AUTH)
+         .status(401)
+         .json({ message: "Invalid or inactive MCP token" });
       return;
     }
 
