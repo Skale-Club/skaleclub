@@ -133,8 +133,8 @@ const i18n = {
     tagline: 'We help businesses grow smarter.',
     aboutBody: 'Skale Club is a company that helps businesses automate growth, close more deals, and deliver standout client experiences.',
     serviceOf: (n: number, total: number) => `Service ${n} of ${total}`,
-    closing: "Let's build something great together.",
-    closingBody: 'Reach out to discuss next steps.',
+    closing: "Let's grow your business.",
+    closingBody: 'Ready when you are.',
   },
   pt: {
     proposalFor: 'Proposta para',
@@ -142,8 +142,8 @@ const i18n = {
     tagline: 'Ajudamos empresas a crescerem de forma mais inteligente.',
     aboutBody: 'A Skale Club é uma agência de marketing digital e vendas que ajuda empresas a automatizar o crescimento, fechar mais negócios e oferecer experiências excepcionais aos clientes.',
     serviceOf: (n: number, total: number) => `Serviço ${n} de ${total}`,
-    closing: 'Vamos construir algo incrível juntos.',
-    closingBody: 'Entre em contato para discutir os próximos passos.',
+    closing: 'Vamos fazer seu negócio crescer.',
+    closingBody: 'Quando você estiver pronto, nós estamos.',
   },
 };
 
