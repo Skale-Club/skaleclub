@@ -29,6 +29,7 @@ import { registerLandingPageRoutes } from "./routes/landingPages.js";
 import { registerUploadRoutes } from "./routes/uploads.js";
 import { registerLinksPageRoutes } from "./routes/linksPage.js";
 import { registerBrandGuidelinesRoutes } from "./routes/brandGuidelines.js";
+import { registerEstimateGuidelinesRoutes } from "./routes/estimateGuidelines.js";
 import { registerPresentationsChatRoutes } from "./routes/presentationsChat.js";
 import { registerPresentationsGeneratorRoutes } from "./routes/presentationsGenerator.js";
 import { registerBlogAutomationRoutes } from "./routes/blogAutomation.js";
@@ -151,6 +152,7 @@ export async function registerRoutes(
   registerPresentationsRoutes(app);
   registerLandingPageRoutes(app);
   registerBrandGuidelinesRoutes(app);
+  registerEstimateGuidelinesRoutes(app);
   registerPresentationsChatRoutes(app);
   registerPresentationsGeneratorRoutes(app);
 

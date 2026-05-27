@@ -32,6 +32,7 @@ import {
   presentations,
   presentationViews,
   brandGuidelines,
+  estimateGuidelines,
   landingPages,
   type CompanySettings,
   type ChatSettings,
@@ -75,6 +76,7 @@ import {
   type PresentationView,
   type PresentationWithStats,
   type BrandGuidelines,
+  type EstimateGuidelines,
   type SlideBlock,
   type LandingPage,
   type InsertLandingPageInput,
@@ -324,6 +326,8 @@ export interface IStorage {
   // Brand Guidelines (PRES-03 / Phase 17)
   getBrandGuidelines(): Promise<BrandGuidelines | undefined>;
   upsertBrandGuidelines(content: string): Promise<BrandGuidelines>;
+  getEstimateGuidelines(): Promise<EstimateGuidelines | undefined>;
+  upsertEstimateGuidelines(content: string): Promise<EstimateGuidelines>;
 
   // Presentations (PRES-05 – PRES-08)
   listPresentations(limit?: number, offset?: number, search?: string): Promise<{ data: PresentationWithStats[], total: number }>;
@@ -345,6 +349,8 @@ export interface IStorage {
   // Brand Guidelines (PRES-09)
   getBrandGuidelines(): Promise<BrandGuidelines | undefined>;
   upsertBrandGuidelines(content: string): Promise<BrandGuidelines>;
+  getEstimateGuidelines(): Promise<EstimateGuidelines | undefined>;
+  upsertEstimateGuidelines(content: string): Promise<EstimateGuidelines>;
 
   // Notification Templates (NOTIF-01, NOTIF-02)
   getNotificationTemplates(eventKey?: string): Promise<NotificationTemplate[]>;
@@ -2144,6 +2150,26 @@ export class DatabaseStorage implements IStorage {
       return row;
     }
     const [row] = await db.insert(brandGuidelines).values({ content }).returning();
+    return row;
+  }
+
+  // Estimate Guidelines (Phase 49 — mirror of brandGuidelines)
+  async getEstimateGuidelines(): Promise<EstimateGuidelines | undefined> {
+    const [row] = await db.select().from(estimateGuidelines);
+    return row;
+  }
+
+  async upsertEstimateGuidelines(content: string): Promise<EstimateGuidelines> {
+    const existing = await this.getEstimateGuidelines();
+    if (existing) {
+      const [row] = await db
+        .update(estimateGuidelines)
+        .set({ content, updatedAt: new Date() })
+        .where(eq(estimateGuidelines.id, existing.id))
+        .returning();
+      return row;
+    }
+    const [row] = await db.insert(estimateGuidelines).values({ content }).returning();
     return row;
   }
 

@@ -85,6 +85,20 @@ export const insertEstimateSchema = z.object({
   thumbnailSignature: z.string().nullable().optional(),
 });
 
+// estimate_guidelines singleton — mirrors brand_guidelines from presentations.
+// Holds the playbook MCP tools fetch BEFORE building or editing any estimate.
+export const estimateGuidelines = pgTable("estimate_guidelines", {
+  id:        serial("id").primaryKey(),
+  content:   text("content").notNull().default(""),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
+});
+
+export type EstimateGuidelines = typeof estimateGuidelines.$inferSelect;
+
+export const upsertEstimateGuidelinesSchema = z.object({
+  content: z.string().max(50000),
+});
+
 // TypeScript types
 export type Estimate = typeof estimates.$inferSelect;
 export type InsertEstimate = typeof estimates.$inferInsert;
