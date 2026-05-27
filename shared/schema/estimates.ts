@@ -7,23 +7,35 @@ export const catalogServiceItemSchema = z.object({
   type: z.literal("catalog"),
   sourceId: z.number().int().positive(),
   title: z.string().min(1),
+  titlePt: z.string().optional(),
   subtitle: z.string().max(100).optional(),
+  subtitlePt: z.string().max(100).optional(),
   description: z.string().min(1),
+  descriptionPt: z.string().optional(),
   price: z.string().min(1),
+  pricePt: z.string().optional(),
   features: z.array(z.string()).default([]),
+  featuresPt: z.array(z.string()).optional(),
   order: z.number().int().min(0),
   section: z.string().max(50).optional(),
+  sectionPt: z.string().max(50).optional(),
 });
 
 export const customServiceItemSchema = z.object({
   type: z.literal("custom"),
   title: z.string().min(1),
+  titlePt: z.string().optional(),
   subtitle: z.string().max(100).optional(),
+  subtitlePt: z.string().max(100).optional(),
   description: z.string().min(1),
+  descriptionPt: z.string().optional(),
   price: z.string().min(1),
+  pricePt: z.string().optional(),
   features: z.array(z.string()).default([]),
+  featuresPt: z.array(z.string()).optional(),
   order: z.number().int().min(0),
   section: z.string().max(50).optional(),
+  sectionPt: z.string().max(50).optional(),
 });
 
 export const estimateServiceItemSchema = z.discriminatedUnion("type", [

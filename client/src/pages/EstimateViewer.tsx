@@ -203,6 +203,16 @@ function SectionContent({ index, data, lang, siteSettings }: { index: number; da
   const serviceIndex = index - 2;
   if (serviceIndex >= 0 && serviceIndex < data.services.length) {
     const service = data.services[serviceIndex];
+    // Bilingual resolver — falls back to EN field when PT is missing.
+    const pick = (en: string, pt?: string) => (lang === 'pt-BR' && pt ? pt : en);
+    const pickArr = (en: string[], pt?: string[]) =>
+      lang === 'pt-BR' && pt && pt.length === en.length ? pt : en;
+    const sectionLabel = service.section ? pick(service.section, service.sectionPt) : null;
+    const titleLabel = pick(service.title, service.titlePt);
+    const subtitleLabel = service.subtitle ? pick(service.subtitle, service.subtitlePt) : null;
+    const descriptionLabel = pick(service.description, service.descriptionPt);
+    const priceLabel = pick(service.price, service.pricePt);
+    const featuresLabel = pickArr(service.features, service.featuresPt);
     return (
       <>
         {gradientOverlay}
@@ -210,22 +220,22 @@ function SectionContent({ index, data, lang, siteSettings }: { index: number; da
           <p className="text-zinc-400 text-sm md:text-base lg:text-lg uppercase tracking-widest mb-4">
             {t.serviceOf(serviceIndex + 1, data.services.length)}
           </p>
-          {service.section && (
+          {sectionLabel && (
             <p className="text-primary text-xs md:text-sm uppercase tracking-widest font-semibold mb-3">
-              {service.section}
+              {sectionLabel}
             </p>
           )}
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-2 leading-tight">{service.title}</h2>
-          {service.subtitle && (
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-2 leading-tight">{titleLabel}</h2>
+          {subtitleLabel && (
             <p className="text-zinc-400 text-sm md:text-base lg:text-lg uppercase tracking-widest mb-4">
-              {service.subtitle}
+              {subtitleLabel}
             </p>
           )}
-          <p className="text-lg md:text-xl lg:text-2xl text-zinc-400 leading-relaxed mb-6 lg:mb-8">{service.description}</p>
-          <p className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-8 lg:mb-10">{service.price}</p>
-          {service.features.length > 0 && (
+          <p className="text-lg md:text-xl lg:text-2xl text-zinc-400 leading-relaxed mb-6 lg:mb-8">{descriptionLabel}</p>
+          <p className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-8 lg:mb-10">{priceLabel}</p>
+          {featuresLabel.length > 0 && (
             <ul className="space-y-3 lg:space-y-4">
-              {service.features.map((feature, fi) => (
+              {featuresLabel.map((feature, fi) => (
                 <li key={fi} className="flex items-start gap-3 md:gap-4 text-base md:text-lg lg:text-xl text-zinc-300">
                   <span className="text-zinc-500 shrink-0 mt-1 md:mt-0 lg:mt-0">–</span>
                   <span>{feature}</span>
