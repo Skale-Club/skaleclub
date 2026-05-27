@@ -4,6 +4,22 @@ import { storage } from "../../storage.js";
 import type { createAuditLog } from "../../lib/mcp-storage.js";
 import { estimateServiceItemSchema } from "#shared/schema.js";
 
+// Some MCP clients (notably Claude Code's tool harness) serialize array/object
+// parameters as JSON strings rather than structured values. Accept either form.
+const servicesParam = z.preprocess(
+  (val) => {
+    if (typeof val === "string") {
+      try {
+        return JSON.parse(val);
+      } catch {
+        return val;
+      }
+    }
+    return val;
+  },
+  z.array(estimateServiceItemSchema),
+).optional();
+
 type AuditFn = typeof createAuditLog;
 
 // Local slug normalizer — mirrors normalizeCustomSlug() in server/routes/estimates.ts.
@@ -98,7 +114,7 @@ export function registerEstimateTools(server: McpServer, audit: AuditFn, tokenId
       slug:                z.string().optional(),
       note:                z.string().optional(),
       accessCode:          z.string().optional(),
-      services:            z.array(estimateServiceItemSchema).optional(),
+      services:            servicesParam,
       thumbnailUrl:        z.string().optional(),
       thumbnailSignature:  z.string().optional(),
     },
