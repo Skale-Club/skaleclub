@@ -266,7 +266,13 @@ export default function EstimateViewer() {
   });
 
   const [isUnlocked, setIsUnlocked] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(0);
+  // Initial slide is read from the URL hash (1-based, e.g. #3 = slide 3).
+  // Falls back to 0 (cover) when hash is missing or invalid. Refresh and
+  // browser back/forward both restore the slide via the hashchange handler below.
+  const [activeIndex, setActiveIndex] = useState(() => {
+    const n = parseInt(window.location.hash.slice(1), 10);
+    return Number.isFinite(n) && n > 0 ? n - 1 : 0;
+  });
   const [direction, setDirection] = useState(1);
   const [lang, setLang] = useState<'en' | 'pt-BR'>(() => {
     const p = new URLSearchParams(window.location.search);
@@ -279,7 +285,11 @@ export default function EstimateViewer() {
     if (newLang === 'en') params.delete('lang');
     else params.set('lang', 'pt-BR');
     const newSearch = params.toString();
-    window.history.replaceState(null, '', window.location.pathname + (newSearch ? `?${newSearch}` : ''));
+    window.history.replaceState(
+      null,
+      '',
+      window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash,
+    );
   }
 
   function switchViewerLang(newLang: LanguageSwitchValue) {
@@ -317,10 +327,44 @@ export default function EstimateViewer() {
     const clamped = Math.max(0, Math.min(idx, total - 1));
     setDirection(clamped > activeIndex ? 1 : -1);
     setActiveIndex(clamped);
+    // Persist slide to URL hash (1-based) so refresh + back/forward + sharing
+    // all land the viewer on the same slide.
+    const newHash = `#${clamped + 1}`;
+    if (window.location.hash !== newHash) {
+      window.history.replaceState(
+        null,
+        '',
+        window.location.pathname + window.location.search + newHash,
+      );
+    }
   }, [activeIndex, total, data]);
 
   const prev = useCallback(() => goTo(activeIndex - 1), [activeIndex, goTo]);
   const next = useCallback(() => goTo(activeIndex + 1), [activeIndex, goTo]);
+
+  // Browser back/forward updates the hash — sync activeIndex from it.
+  useEffect(() => {
+    function onHashChange() {
+      const n = parseInt(window.location.hash.slice(1), 10);
+      if (!Number.isFinite(n) || n <= 0) return;
+      const newIdx = n - 1;
+      setActiveIndex((current) => {
+        if (newIdx === current) return current;
+        setDirection(newIdx > current ? 1 : -1);
+        return newIdx;
+      });
+    }
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  // Clamp activeIndex once data loads (handles e.g. #99 with only 8 slides).
+  useEffect(() => {
+    if (!data) return;
+    if (activeIndex > total - 1) {
+      goTo(total - 1);
+    }
+  }, [data, total, activeIndex, goTo]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
