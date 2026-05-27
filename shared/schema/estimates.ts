@@ -7,6 +7,7 @@ export const catalogServiceItemSchema = z.object({
   type: z.literal("catalog"),
   sourceId: z.number().int().positive(),
   title: z.string().min(1),
+  subtitle: z.string().max(100).optional(),
   description: z.string().min(1),
   price: z.string().min(1),
   features: z.array(z.string()).default([]),
@@ -17,6 +18,7 @@ export const catalogServiceItemSchema = z.object({
 export const customServiceItemSchema = z.object({
   type: z.literal("custom"),
   title: z.string().min(1),
+  subtitle: z.string().max(100).optional(),
   description: z.string().min(1),
   price: z.string().min(1),
   features: z.array(z.string()).default([]),

@@ -131,7 +131,7 @@ const i18n = {
     proposalFor: 'Proposal for',
     about: 'About Skale Club',
     tagline: 'We help businesses grow smarter.',
-    aboutBody: 'Skale Club is a digital marketing and sales agency helping businesses automate growth, close more deals, and deliver standout client experiences.',
+    aboutBody: 'Skale Club is a company that helps businesses automate growth, close more deals, and deliver standout client experiences.',
     serviceOf: (n: number, total: number) => `Service ${n} of ${total}`,
     closing: "Let's build something great together.",
     closingBody: 'Reach out to discuss next steps.',
@@ -147,7 +147,7 @@ const i18n = {
   },
 };
 
-function SectionContent({ index, data, lang }: { index: number; data: PublicEstimate; lang: 'en' | 'pt-BR' }) {
+function SectionContent({ index, data, lang, siteSettings }: { index: number; data: PublicEstimate; lang: 'en' | 'pt-BR'; siteSettings?: CompanySettings | null }) {
   const t = lang === 'pt-BR' ? i18n.pt : i18n.en;
 
   const gradientOverlay = (
@@ -171,7 +171,17 @@ function SectionContent({ index, data, lang }: { index: number; data: PublicEsti
           {subtitle && (
             <p className="text-zinc-300 text-xl md:text-2xl lg:text-3xl mt-6">{subtitle}</p>
           )}
-          <p className="text-zinc-500 text-xs md:text-sm lg:text-base uppercase tracking-widest mt-12">Skale Club</p>
+          {siteSettings?.logoDark || siteSettings?.logoMain ? (
+            <img
+              src={siteSettings.logoDark || siteSettings.logoMain || ''}
+              alt={siteSettings?.companyName || 'Skale Club'}
+              className="mx-auto mt-12 h-14 md:h-16 lg:h-20 w-auto object-contain"
+            />
+          ) : (
+            <p className="text-zinc-500 text-xs md:text-sm lg:text-base uppercase tracking-widest mt-12">
+              {siteSettings?.companyName || 'Skale Club'}
+            </p>
+          )}
         </div>
       </>
     );
@@ -205,7 +215,12 @@ function SectionContent({ index, data, lang }: { index: number; data: PublicEsti
               {service.section}
             </p>
           )}
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-4 leading-tight">{service.title}</h2>
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-2 leading-tight">{service.title}</h2>
+          {service.subtitle && (
+            <p className="text-zinc-400 text-sm md:text-base lg:text-lg uppercase tracking-widest mb-4">
+              {service.subtitle}
+            </p>
+          )}
           <p className="text-lg md:text-xl lg:text-2xl text-zinc-400 leading-relaxed mb-6 lg:mb-8">{service.description}</p>
           <p className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-8 lg:mb-10">{service.price}</p>
           {service.features.length > 0 && (
@@ -409,7 +424,7 @@ export default function EstimateViewer() {
             transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
             className="relative z-10 w-full h-full flex items-center justify-center"
           >
-            <SectionContent index={activeIndex} data={data} lang={lang} />
+            <SectionContent index={activeIndex} data={data} lang={lang} siteSettings={siteSettings} />
           </motion.div>
         </AnimatePresence>
       </div>
