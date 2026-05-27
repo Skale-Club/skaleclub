@@ -171,17 +171,25 @@ function SectionContent({ index, data, lang, siteSettings }: { index: number; da
           {subtitle && (
             <p className="text-zinc-300 text-xl md:text-2xl lg:text-3xl mt-6">{subtitle}</p>
           )}
-          {siteSettings?.logoDark || siteSettings?.logoMain ? (
-            <img
-              src={siteSettings.logoDark || siteSettings.logoMain || ''}
-              alt={siteSettings?.companyName || 'Skale Club'}
-              className="mx-auto mt-12 h-14 md:h-16 lg:h-20 w-auto object-contain"
-            />
-          ) : (
-            <p className="text-zinc-500 text-xs md:text-sm lg:text-base uppercase tracking-widest mt-12">
-              {siteSettings?.companyName || 'Skale Club'}
-            </p>
-          )}
+          <a
+            href="https://skale.club"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block mt-12 transition-opacity hover:opacity-80"
+            aria-label={`Visit ${siteSettings?.companyName || 'Skale Club'} website`}
+          >
+            {siteSettings?.logoDark || siteSettings?.logoMain ? (
+              <img
+                src={siteSettings.logoDark || siteSettings.logoMain || ''}
+                alt={siteSettings?.companyName || 'Skale Club'}
+                className="mx-auto h-14 md:h-16 lg:h-20 w-auto object-contain"
+              />
+            ) : (
+              <p className="text-zinc-500 text-xs md:text-sm lg:text-base uppercase tracking-widest">
+                {siteSettings?.companyName || 'Skale Club'}
+              </p>
+            )}
+          </a>
         </div>
       </>
     );
