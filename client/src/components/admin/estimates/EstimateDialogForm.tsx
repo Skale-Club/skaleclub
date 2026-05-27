@@ -217,6 +217,13 @@ export function EstimateDialogForm({
                     key={i}
                     id={i}
                     item={item}
+                    knownSections={Array.from(
+                      new Set(
+                        services
+                          .map((s) => s.section)
+                          .filter((s): s is string => !!s && s.trim().length > 0),
+                      ),
+                    )}
                     onChange={(updated) =>
                       setServices((prev) => prev.map((s, idx) => (idx === i ? updated : s)))
                     }

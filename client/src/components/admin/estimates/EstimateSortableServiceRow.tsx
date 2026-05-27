@@ -12,11 +12,13 @@ export function EstimateSortableServiceRow({
   item,
   onChange,
   onRemove,
+  knownSections = [],
 }: {
   id: number;
   item: EstimateServiceItem;
   onChange: (updated: EstimateServiceItem) => void;
   onRemove: () => void;
+  knownSections?: string[];
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
@@ -47,6 +49,21 @@ export function EstimateSortableServiceRow({
         {item.type}
       </Badge>
       <div className="flex-1 flex flex-col gap-2">
+        <Input
+          placeholder="Section (optional — e.g. Must Have)"
+          value={item.section ?? ''}
+          onChange={(e) => onChange({ ...item, section: e.target.value || undefined })}
+          list={`section-suggestions-${id}`}
+          maxLength={50}
+          className="text-xs"
+        />
+        {knownSections.length > 0 && (
+          <datalist id={`section-suggestions-${id}`}>
+            {knownSections.map((s) => (
+              <option key={s} value={s} />
+            ))}
+          </datalist>
+        )}
         <Input
           placeholder="Service title"
           value={item.title}

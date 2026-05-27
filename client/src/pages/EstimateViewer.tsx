@@ -200,6 +200,11 @@ function SectionContent({ index, data, lang }: { index: number; data: PublicEsti
           <p className="text-zinc-400 text-sm md:text-base lg:text-lg uppercase tracking-widest mb-4">
             {t.serviceOf(serviceIndex + 1, data.services.length)}
           </p>
+          {service.section && (
+            <p className="text-primary text-xs md:text-sm uppercase tracking-widest font-semibold mb-3">
+              {service.section}
+            </p>
+          )}
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-4 leading-tight">{service.title}</h2>
           <p className="text-lg md:text-xl lg:text-2xl text-zinc-400 leading-relaxed mb-6 lg:mb-8">{service.description}</p>
           <p className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-8 lg:mb-10">{service.price}</p>

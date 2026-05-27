@@ -11,6 +11,7 @@ export const catalogServiceItemSchema = z.object({
   price: z.string().min(1),
   features: z.array(z.string()).default([]),
   order: z.number().int().min(0),
+  section: z.string().max(50).optional(),
 });
 
 export const customServiceItemSchema = z.object({
@@ -20,6 +21,7 @@ export const customServiceItemSchema = z.object({
   price: z.string().min(1),
   features: z.array(z.string()).default([]),
   order: z.number().int().min(0),
+  section: z.string().max(50).optional(),
 });
 
 export const estimateServiceItemSchema = z.discriminatedUnion("type", [
