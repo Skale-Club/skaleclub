@@ -421,7 +421,7 @@ export default function PresentationViewer() {
             animate="center"
             exit="exit"
             transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
-            className="relative z-10 px-8 max-w-3xl md:max-w-4xl lg:max-w-5xl mx-auto w-full group"
+            className="relative z-10 px-6 sm:px-8 md:px-12 lg:px-16 max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto w-full group"
             style={buildSlideStyle(currentSlide.style)}
           >
             {isEditMode && (

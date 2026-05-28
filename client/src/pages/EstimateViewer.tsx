@@ -164,7 +164,7 @@ function SectionContent({ index, data, lang, siteSettings }: { index: number; da
     return (
       <>
         {gradientOverlay}
-        <div className="text-center px-8 max-w-3xl md:max-w-4xl lg:max-w-5xl mx-auto w-full">
+        <div className="text-center px-6 sm:px-8 md:px-12 lg:px-16 max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto w-full">
           <p className="text-zinc-400 text-sm md:text-base lg:text-lg uppercase tracking-widest mb-6 lg:mb-8">{t.proposalFor}</p>
           <h1 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-5xl md:text-6xl lg:text-7xl font-semibold text-white leading-tight">
             {headline}
@@ -200,7 +200,7 @@ function SectionContent({ index, data, lang, siteSettings }: { index: number; da
   if (index === 1) return (
     <>
       {gradientOverlay}
-      <div className="px-8 max-w-3xl md:max-w-4xl lg:max-w-5xl mx-auto w-full">
+      <div className="px-6 sm:px-8 md:px-12 lg:px-16 max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto w-full">
         <p className="text-zinc-400 text-sm md:text-base lg:text-lg uppercase tracking-widest mb-4 lg:mb-6">{t.about}</p>
         <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 lg:mb-8 leading-tight">{t.tagline}</h2>
         <p className="text-lg md:text-xl lg:text-2xl text-zinc-400 leading-relaxed">{t.aboutBody}</p>
@@ -225,7 +225,7 @@ function SectionContent({ index, data, lang, siteSettings }: { index: number; da
     return (
       <>
         {gradientOverlay}
-        <div className="px-8 max-w-3xl md:max-w-4xl lg:max-w-5xl mx-auto w-full">
+        <div className="px-6 sm:px-8 md:px-12 lg:px-16 max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto w-full">
           <p className="text-zinc-400 text-sm md:text-base lg:text-lg uppercase tracking-widest mb-4">
             {t.serviceOf(serviceIndex + 1, data.services.length)}
           </p>
@@ -261,7 +261,7 @@ function SectionContent({ index, data, lang, siteSettings }: { index: number; da
   return (
     <>
       {gradientOverlay}
-      <div className="text-center px-8 max-w-3xl md:max-w-4xl lg:max-w-5xl mx-auto w-full">
+      <div className="text-center px-6 sm:px-8 md:px-12 lg:px-16 max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto w-full">
         <p className="text-zinc-400 text-sm md:text-base lg:text-lg uppercase tracking-widest mb-6 lg:mb-8">Skale Club</p>
         <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight">{t.closing}</h2>
         <p className="text-base md:text-lg lg:text-xl text-zinc-400">{t.closingBody}</p>
