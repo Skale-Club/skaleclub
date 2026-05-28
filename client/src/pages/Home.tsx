@@ -84,14 +84,6 @@ export default function Home() {
           onCtaClick={handleConsultingCta}
         />
       </div>
-      {(companySettings?.mapEmbedUrl || areasServedSection?.heading || areasServedSection?.description) && (
-        <section id="areas-served" className="bg-white py-20">
-          <AreasServedMap
-            mapEmbedUrl={companySettings?.mapEmbedUrl}
-            content={areasServedSection}
-          />
-        </section>
-      )}
       <div className="h-0 bg-[#111111]"></div>
       <ReviewsSection
         embedUrl={reviewsEmbedUrl}
@@ -105,6 +97,14 @@ export default function Home() {
           content={homepageContent.aboutSection}
         />
       </section>
+      {(companySettings?.mapEmbedUrl || areasServedSection?.heading || areasServedSection?.description) && (
+        <section id="areas-served" className="bg-white py-20">
+          <AreasServedMap
+            mapEmbedUrl={companySettings?.mapEmbedUrl}
+            content={areasServedSection}
+          />
+        </section>
+      )}
       <LeadFormModal open={isFormOpen} onClose={() => setIsFormOpen(false)} formSlug="default" />
     </div>
   );
