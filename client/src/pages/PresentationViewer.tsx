@@ -11,6 +11,7 @@ import { LanguageSwitch, type LanguageSwitchValue } from '@/components/ui/Langua
 import type { CompanySettings, SlideBlock } from '@shared/schema';
 import { SlideContent, buildSlideStyle, resolveField } from '@/components/SlideRenderer';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { DottedSurface } from '@/components/ui/dotted-surface';
 
 interface PublicPresentation {
   id: string;
@@ -439,6 +440,11 @@ export default function PresentationViewer() {
         </button>
       </div>
 
+      {/* Animated dotted-surface background — only on cover slides */}
+      {currentSlide.layout === 'cover' && (
+        <DottedSurface className="absolute inset-0 -z-0" />
+      )}
+
       {/* Slide area */}
       <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
         {currentSlide.style?.bgVideoUrl && (
@@ -468,7 +474,11 @@ export default function PresentationViewer() {
             exit="exit"
             transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
             className="absolute inset-0 z-10 group"
-            style={buildSlideStyle(currentSlide.style)}
+            style={
+              currentSlide.layout === 'cover'
+                ? { ...buildSlideStyle(currentSlide.style), background: 'transparent' }
+                : buildSlideStyle(currentSlide.style)
+            }
           >
             <div
               ref={scrollContainerRef}
