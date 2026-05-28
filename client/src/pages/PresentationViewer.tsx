@@ -365,7 +365,7 @@ export default function PresentationViewer() {
   return (
     <div className="h-screen bg-zinc-950 text-white overflow-hidden relative flex items-center justify-center">
       {/* Language switcher */}
-      <div className="fixed top-4 right-16 z-50">
+      <div className="fixed top-4 right-4 z-50">
         <LanguageSwitch
           value={lang === 'pt-BR' ? 'pt' : 'en'}
           onValueChange={switchViewerLang}
