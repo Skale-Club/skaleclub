@@ -12,6 +12,7 @@ import type { CompanySettings, SlideBlock } from '@shared/schema';
 import { SlideContent, buildSlideStyle, resolveField } from '@/components/SlideRenderer';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { DottedSurface } from '@/components/ui/dotted-surface';
+import { GradientBackground } from '@/components/ui/gradient-background-4';
 
 interface PublicPresentation {
   id: string;
@@ -57,9 +58,9 @@ function EmptySlidesScreen() {
 }
 
 const slideVariants = {
-  enter: (dir: number) => ({ y: dir > 0 ? '100%' : '-100%', opacity: 0 }),
-  center: { y: 0, opacity: 1 },
-  exit: (dir: number) => ({ y: dir > 0 ? '-100%' : '100%', opacity: 0 }),
+  enter: (dir: number) => ({ y: dir > 0 ? '100%' : '-100%', opacity: 0, filter: 'blur(12px)' }),
+  center: { y: 0, opacity: 1, filter: 'blur(0px)' },
+  exit: (dir: number) => ({ y: dir > 0 ? '-100%' : '100%', opacity: 0, filter: 'blur(12px)' }),
 };
 
 export default function PresentationViewer() {
@@ -440,10 +441,8 @@ export default function PresentationViewer() {
         </button>
       </div>
 
-      {/* Animated dotted-surface background — only on cover slides */}
-      {currentSlide.layout === 'cover' && (
-        <DottedSurface className="absolute inset-0 -z-0" />
-      )}
+      {/* Animated dotted-surface background — only on cover slides, bottom 30% */}
+      {currentSlide.layout === 'cover' && <DottedSurface heightVh={40} />}
 
       {/* Slide area */}
       <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
@@ -480,9 +479,11 @@ export default function PresentationViewer() {
                 : buildSlideStyle(currentSlide.style)
             }
           >
+            {/* Internal slides: subtle indigo gradient over the slide bg (cover uses DottedSurface) */}
+            {currentSlide.layout !== 'cover' && <GradientBackground />}
             <div
               ref={scrollContainerRef}
-              className="h-full w-full overflow-y-auto overscroll-contain"
+              className="relative z-10 h-full w-full overflow-y-auto overscroll-contain"
             >
               <div className="min-h-full flex items-center justify-center px-6 sm:px-8 md:px-12 lg:px-16 py-12 md:py-16 pb-24 md:pb-16">
                 <div className="max-w-2xl md:max-w-3xl lg:max-w-4xl w-full">

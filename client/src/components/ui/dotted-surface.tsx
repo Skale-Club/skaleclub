@@ -3,7 +3,22 @@ import { useTheme } from '@/context/ThemeContext';
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 
-type DottedSurfaceProps = Omit<React.ComponentProps<'div'>, 'ref'>;
+type DottedSurfaceProps = Omit<React.ComponentProps<'div'>, 'ref'> & {
+  /**
+   * Vertical pan of the camera's look-at target (Three.js scene units).
+   * POSITIVE values tilt the camera UPWARD without scaling the particles.
+   * Default: 0.
+   */
+  lookAtY?: number;
+  /**
+   * Height of the surface band as a percentage of the viewport (0–100).
+   * Default 100 = full viewport. Pass 30 to render only the bottom 30%
+   * (top 70% stays empty / silent — good for cover headlines).
+   * The mesh isn't squished: the renderer + camera aspect adapt to the
+   * container's actual dimensions.
+   */
+  heightVh?: number;
+};
 
 /**
  * Animated 3D dotted surface — full-bleed background for hero / cover surfaces.
@@ -13,7 +28,7 @@ type DottedSurfaceProps = Omit<React.ComponentProps<'div'>, 'ref'>;
  * Three.js renders ~2400 particles in a sine-wave grid. CPU/GPU heavy on
  * mobile — only use sparingly (e.g. on cover slides).
  */
-export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
+export function DottedSurface({ className, lookAtY = 0, heightVh = 100, ...props }: DottedSurfaceProps) {
   const { resolvedTheme } = useTheme();
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -37,23 +52,29 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
     const scene = new THREE.Scene();
     scene.fog = new THREE.Fog(0xffffff, 2000, 10000);
 
+    const containerEl = containerRef.current;
+    // Use container dimensions so the consumer controls the visible area via
+    // CSS (full viewport, bottom band, sidebar, etc.) without squishing.
+    const initialWidth = containerEl.clientWidth || window.innerWidth;
+    const initialHeight = containerEl.clientHeight || window.innerHeight;
+
     const camera = new THREE.PerspectiveCamera(
       60,
-      window.innerWidth / window.innerHeight,
+      initialWidth / initialHeight,
       1,
       10000,
     );
     camera.position.set(0, 355, 1220);
+    camera.lookAt(0, lookAtY, 0);
 
     const renderer = new THREE.WebGLRenderer({
       alpha: true,
       antialias: true,
     });
     renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(initialWidth, initialHeight);
     renderer.setClearColor(scene.fog.color, 0);
 
-    const containerEl = containerRef.current;
     containerEl.appendChild(renderer.domElement);
 
     // Create geometry
@@ -108,13 +129,20 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
       count += 0.1;
     };
 
-    const handleResize = () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
+    const resize = () => {
+      const w = containerEl.clientWidth || window.innerWidth;
+      const h = containerEl.clientHeight || window.innerHeight;
+      camera.aspect = w / h;
       camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.lookAt(0, lookAtY, 0);
+      renderer.setSize(w, h);
     };
 
-    window.addEventListener('resize', handleResize);
+    window.addEventListener('resize', resize);
+    // ResizeObserver catches container size changes (e.g. heightVh prop change,
+    // sidebar collapse) that don't fire a window resize event.
+    const ro = new ResizeObserver(resize);
+    ro.observe(containerEl);
     animate();
 
     sceneRef.current = {
@@ -127,7 +155,8 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
     };
 
     return () => {
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('resize', resize);
+      ro.disconnect();
       if (sceneRef.current) {
         cancelAnimationFrame(sceneRef.current.animationId);
         sceneRef.current.scene.traverse((object) => {
@@ -146,12 +175,21 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
         }
       }
     };
-  }, [resolvedTheme]);
+  }, [resolvedTheme, lookAtY]);
 
+  const isFullHeight = heightVh >= 100;
   return (
     <div
       ref={containerRef}
-      className={cn('pointer-events-none fixed inset-0 -z-10', className)}
+      className={cn(
+        // z-0 (default flow) keeps the canvas ABOVE the page's bg color but
+        // BELOW positioned slide content (motion.div uses z-10). If a parent
+        // has bg-zinc-950 etc., a NEGATIVE z would hide the canvas.
+        'pointer-events-none fixed left-0 right-0 z-0 overflow-hidden',
+        isFullHeight ? 'top-0 bottom-0' : 'bottom-0',
+        className,
+      )}
+      style={isFullHeight ? undefined : { height: `${heightVh}vh` }}
       {...props}
     />
   );

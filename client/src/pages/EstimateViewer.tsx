@@ -9,6 +9,8 @@ import { cn } from '@/lib/utils';
 import { Loader2 } from '@/components/ui/loader';
 import { LanguageSwitch, type LanguageSwitchValue } from '@/components/ui/LanguageSwitch';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { DottedSurface } from '@/components/ui/dotted-surface';
+import { GradientBackground } from '@/components/ui/gradient-background-4';
 import type { CompanySettings, EstimateServiceItem } from '@shared/schema';
 
 interface PublicEstimate {
@@ -96,14 +98,16 @@ function AccessCodeGate({
   });
 
   return (
-    <div className="h-screen bg-zinc-950 flex items-center justify-center relative">
+    <div className="h-screen bg-zinc-950 flex items-center justify-center relative overflow-hidden">
+      {/* Animated dotted-surface background — bottom band, kept clear of the button */}
+      <DottedSurface heightVh={30} />
       <div className="fixed top-4 right-4 z-50">
         <LanguageSwitch
           value={lang === 'pt-BR' ? 'pt' : 'en'}
           onValueChange={onLanguageChange}
         />
       </div>
-      <div className="flex flex-col items-center gap-4 w-full max-w-sm px-6">
+      <div className="relative z-10 flex flex-col items-center gap-4 w-full max-w-sm px-6">
         {(() => {
           const gateLogo = siteSettings?.logoAvatarFull || siteSettings?.logoDark || siteSettings?.logoMain;
           return gateLogo ? (
@@ -134,7 +138,7 @@ function AccessCodeGate({
         <Button
           onClick={() => verify()}
           disabled={isPending || !code}
-          className="w-full"
+          className="w-full disabled:opacity-100 disabled:saturate-50 transition-[filter] duration-300"
         >
           {isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
           {t.unlock}
@@ -145,9 +149,9 @@ function AccessCodeGate({
 }
 
 const slideVariants = {
-  enter: (dir: number) => ({ y: dir > 0 ? '100%' : '-100%', opacity: 0 }),
-  center: { y: 0, opacity: 1 },
-  exit: (dir: number) => ({ y: dir > 0 ? '-100%' : '100%', opacity: 0 }),
+  enter: (dir: number) => ({ y: dir > 0 ? '100%' : '-100%', opacity: 0, filter: 'blur(12px)' }),
+  center: { y: 0, opacity: 1, filter: 'blur(0px)' },
+  exit: (dir: number) => ({ y: dir > 0 ? '-100%' : '100%', opacity: 0, filter: 'blur(12px)' }),
 };
 
 const i18n = {
@@ -516,6 +520,13 @@ export default function EstimateViewer() {
 
   return (
     <div className="h-screen bg-zinc-950 text-white overflow-hidden relative flex items-center justify-center">
+      {/* Cover slide: animated dotted surface. Internal slides: subtle indigo gradient. */}
+      {activeIndex === 0 ? (
+        <DottedSurface heightVh={40} />
+      ) : (
+        <GradientBackground />
+      )}
+
       {/* Language switcher */}
       <div className="fixed top-4 right-4 z-50">
         <LanguageSwitch
