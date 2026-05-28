@@ -42,6 +42,16 @@ function isInAdminThemeArea(): boolean {
   return pathname !== '/admin/login' && pathname !== '/admin/signup';
 }
 
+// Full-bleed dark viewers (estimate proposal + presentation deck). Paint dark
+// from first paint via the boot script in client/index.html. ThemeContext
+// MUST NOT slap a 'light' class on <html> for these routes — that would
+// undo the dark Tailwind variants and let CSS re-light the page.
+function isInFullBleedDarkViewer(): boolean {
+  if (typeof window === 'undefined') return false;
+  const { pathname } = window.location;
+  return pathname.startsWith('/e/') || pathname.startsWith('/p/');
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => getStoredTheme());
   const [isAdminArea, setIsAdminArea] = useState(() => isInAdminThemeArea());
@@ -54,11 +64,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const applyTheme = useCallback((newTheme: 'light' | 'dark', forceAdmin = false) => {
     const inAdmin = forceAdmin || isInAdminThemeArea();
+    const inFullBleedDark = isInFullBleedDarkViewer();
     const root = document.documentElement;
     root.classList.remove('light', 'dark');
 
-    // Dark theme only on themeable admin routes.
-    const themeToApply = inAdmin ? newTheme : 'light';
+    // Dark theme on admin themeable areas OR full-bleed dark viewers (/e/, /p/).
+    // Other routes are always light.
+    let themeToApply: 'light' | 'dark';
+    if (inFullBleedDark) themeToApply = 'dark';
+    else if (inAdmin) themeToApply = newTheme;
+    else themeToApply = 'light';
+
     root.classList.add(themeToApply);
     setResolvedTheme(themeToApply);
   }, []);

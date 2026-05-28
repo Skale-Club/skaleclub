@@ -36,6 +36,37 @@
       // Without this, full-screen loaders / route guards flash the wrong theme
       // during the gap between HTML parse and React mount.
       (function () {
+        // Universal chrome-tint bootstrap. Applied on EVERY route so mobile
+        // Safari + Chrome / PWA shells sample the correct theme color from
+        // first paint. Without this, Safari can lock in a light tint on
+        // initial paint that no React effect can later override.
+        var LIGHT_BG = "#FFFFFF";
+        var DARK_BG  = "#09090B";
+
+        function setMeta(name, content) {
+          var m = document.querySelector('meta[name="' + name + '"]');
+          if (!m) {
+            m = document.createElement("meta");
+            m.setAttribute("name", name);
+            document.head.appendChild(m);
+          }
+          m.setAttribute("content", content);
+        }
+
+        function applyChrome(theme) {
+          var bg = theme === "dark" ? DARK_BG : LIGHT_BG;
+          var root = document.documentElement;
+          root.style.backgroundColor = bg;
+          root.style.colorScheme = theme;
+          setMeta("theme-color", bg);
+          setMeta("color-scheme", theme);
+          function paintBody() {
+            if (document.body) document.body.style.backgroundColor = bg;
+          }
+          paintBody();
+          if (!document.body) document.addEventListener("DOMContentLoaded", paintBody);
+        }
+
         try {
           var path = window.location.pathname;
           var host = window.location.hostname;
@@ -44,9 +75,13 @@
             path.indexOf("/admin") === 0 &&
             path !== "/admin/login" &&
             path !== "/admin/signup";
+          // Full-bleed dark viewers (estimate + presentation) — always dark.
+          var isFullBleedDark = path.indexOf("/e/") === 0 || path.indexOf("/p/") === 0;
 
           var theme = "light";
           if (isXpot) {
+            theme = "dark";
+          } else if (isFullBleedDark) {
             theme = "dark";
           } else if (isAdminThemeable) {
             var stored = null;
@@ -58,8 +93,10 @@
             }
           }
           document.documentElement.classList.add(theme);
+          applyChrome(theme);
         } catch (e) {
           document.documentElement.classList.add("light");
+          try { applyChrome("light"); } catch (_) {}
         }
       })();
     </script>
