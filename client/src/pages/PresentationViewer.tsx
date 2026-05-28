@@ -206,6 +206,43 @@ export default function PresentationViewer() {
     return () => window.removeEventListener('wheel', onWheel);
   }, [next, prev]);
 
+  // Touch swipe — both axes navigate. Horizontal: left=next, right=prev.
+  // Vertical: up=next, down=prev. Matches the wheel scroll direction.
+  const touchStartRef = useRef<{ x: number; y: number; t: number } | null>(null);
+  useEffect(() => {
+    function onTouchStart(e: TouchEvent) {
+      const t = e.touches[0];
+      if (!t) return;
+      touchStartRef.current = { x: t.clientX, y: t.clientY, t: Date.now() };
+    }
+    function onTouchEnd(e: TouchEvent) {
+      const start = touchStartRef.current;
+      touchStartRef.current = null;
+      if (!start) return;
+      const t = e.changedTouches[0];
+      if (!t) return;
+      const dx = t.clientX - start.x;
+      const dy = t.clientY - start.y;
+      const dt = Date.now() - start.t;
+      if (dt > 800) return;
+      const absX = Math.abs(dx);
+      const absY = Math.abs(dy);
+      const THRESHOLD = 40;
+      if (absX < THRESHOLD && absY < THRESHOLD) return;
+      if (absX > absY) {
+        if (dx > 0) prev(); else next();
+      } else {
+        if (dy > 0) prev(); else next();
+      }
+    }
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [next, prev]);
+
   // D-17: Delete slide — remove from array, clamp index, persist
   async function handleDeleteSlide(index: number) {
     if (!presentation) return;
