@@ -63,11 +63,17 @@ function AccessCodeGate({
   lang,
   onLanguageChange,
   onUnlock,
+  companyName,
+  clientName,
+  siteSettings,
 }: {
   estimateId: number;
   lang: 'en' | 'pt-BR';
   onLanguageChange: (value: LanguageSwitchValue) => void;
   onUnlock: () => void;
+  companyName?: string | null;
+  clientName?: string | null;
+  siteSettings?: CompanySettings | null;
 }) {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
@@ -98,8 +104,22 @@ function AccessCodeGate({
         />
       </div>
       <div className="flex flex-col items-center gap-4 w-full max-w-sm px-6">
-        <p className="text-zinc-400 text-sm uppercase tracking-widest">Skale Club</p>
-        <h1 className="text-white text-3xl font-semibold text-center">{t.title}</h1>
+        {siteSettings?.logoAvatarFull ? (
+          <img
+            src={siteSettings.logoAvatarFull}
+            alt={siteSettings.companyName || 'Skale Club'}
+            className="h-20 md:h-24 w-auto object-contain mb-2"
+          />
+        ) : (
+          <p className="text-zinc-400 text-sm uppercase tracking-widest">{siteSettings?.companyName || 'Skale Club'}</p>
+        )}
+        {(companyName || clientName) && (
+          <div className="text-center -mt-1 mb-2">
+            {companyName && <p className="text-white text-lg font-semibold leading-tight">{companyName}</p>}
+            {clientName && <p className="text-zinc-400 text-sm mt-0.5">{clientName}</p>}
+          </div>
+        )}
+        <h1 className="text-white text-2xl md:text-3xl font-semibold text-center">{t.title}</h1>
         <Input
           type="text"
           value={code}
@@ -179,17 +199,20 @@ function SectionContent({ index, data, lang, siteSettings }: { index: number; da
             className="inline-block mt-12 transition-opacity hover:opacity-80"
             aria-label={`Visit ${siteSettings?.companyName || 'Skale Club'} website`}
           >
-            {siteSettings?.logoDark || siteSettings?.logoMain ? (
-              <img
-                src={siteSettings.logoDark || siteSettings.logoMain || ''}
-                alt={siteSettings?.companyName || 'Skale Club'}
-                className="mx-auto h-14 md:h-16 lg:h-20 w-auto object-contain"
-              />
-            ) : (
-              <p className="text-zinc-500 text-xs md:text-sm lg:text-base uppercase tracking-widest">
-                {siteSettings?.companyName || 'Skale Club'}
-              </p>
-            )}
+            {(() => {
+              const coverLogo = siteSettings?.logoAvatarFull || siteSettings?.logoDark || siteSettings?.logoMain;
+              return coverLogo ? (
+                <img
+                  src={coverLogo}
+                  alt={siteSettings?.companyName || 'Skale Club'}
+                  className="mx-auto h-16 md:h-20 lg:h-24 w-auto object-contain"
+                />
+              ) : (
+                <p className="text-zinc-500 text-xs md:text-sm lg:text-base uppercase tracking-widest">
+                  {siteSettings?.companyName || 'Skale Club'}
+                </p>
+              );
+            })()}
           </a>
         </div>
       </>
@@ -262,7 +285,17 @@ function SectionContent({ index, data, lang, siteSettings }: { index: number; da
     <>
       {gradientOverlay}
       <div className="text-center px-6 sm:px-8 md:px-12 lg:px-16 max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto w-full">
-        <p className="text-zinc-400 text-sm md:text-base lg:text-lg uppercase tracking-widest mb-6 lg:mb-8">Skale Club</p>
+        {siteSettings?.logoAvatarMark ? (
+          <img
+            src={siteSettings.logoAvatarMark}
+            alt={siteSettings.companyName || 'Skale Club'}
+            className="mx-auto mb-6 lg:mb-8 h-12 md:h-14 lg:h-16 w-auto object-contain"
+          />
+        ) : (
+          <p className="text-zinc-400 text-sm md:text-base lg:text-lg uppercase tracking-widest mb-6 lg:mb-8">
+            {siteSettings?.companyName || 'Skale Club'}
+          </p>
+        )}
         <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight">{t.closing}</h2>
         <p className="text-base md:text-lg lg:text-xl text-zinc-400">{t.closingBody}</p>
       </div>
@@ -468,6 +501,9 @@ export default function EstimateViewer() {
         lang={lang}
         onLanguageChange={switchViewerLang}
         onUnlock={() => setIsUnlocked(true)}
+        companyName={data.companyName}
+        clientName={data.contactName ?? data.clientName}
+        siteSettings={siteSettings}
       />
     );
   }

@@ -51,6 +51,8 @@ export interface CompanySettingsData {
   logoMain: string | null;
   logoDark: string | null;
   logoIcon: string | null;
+  logoAvatarFull: string | null;
+  logoAvatarMark: string | null;
   sectionsOrder: AdminSection[] | null;
   socialLinks: { platform: string; url: string }[] | null;
   mapEmbedUrl: string | null;

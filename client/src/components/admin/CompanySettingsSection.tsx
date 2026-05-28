@@ -32,6 +32,8 @@ export function CompanySettingsSection() {
     logoMain: '',
     logoDark: '',
     logoIcon: '',
+    logoAvatarFull: '',
+    logoAvatarMark: '',
     sectionsOrder: null,
     socialLinks: [],
     mapEmbedUrl: '',
@@ -100,14 +102,20 @@ export function CompanySettingsSection() {
     }, 800);
   }, [saveSettings]);
 
-  const handleLogoUpload = async (e: ChangeEvent<HTMLInputElement>, type: 'main' | 'dark' | 'icon') => {
+  const handleLogoUpload = async (e: ChangeEvent<HTMLInputElement>, type: 'main' | 'dark' | 'icon' | 'avatar-full' | 'avatar-mark') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     try {
       const imagePath = await uploadFileToServer(file);
 
-      const fieldMap = { main: 'logoMain', dark: 'logoDark', icon: 'logoIcon' } as const;
+      const fieldMap = {
+        main: 'logoMain',
+        dark: 'logoDark',
+        icon: 'logoIcon',
+        'avatar-full': 'logoAvatarFull',
+        'avatar-mark': 'logoAvatarMark',
+      } as const;
       const fieldName = fieldMap[type];
 
       setSettings(prev => ({ ...prev, [fieldName]: imagePath }));
@@ -300,6 +308,48 @@ export function CompanySettingsSection() {
                     )}
                     <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
                       <Input type="file" className="hidden" onChange={(e) => handleLogoUpload(e, 'icon')} accept="image/*" />
+                      <Plus className="w-6 h-6 text-white" />
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2 border-t pt-6">
+                <Label className="text-sm">Skale Club Avatar (Full)</Label>
+                <p className="text-xs text-muted-foreground">Complete logo for full-bleed surfaces (estimate cover, access-code gate, presentation closing).</p>
+                <div className="flex flex-col gap-3">
+                  <div className="h-32 w-32 rounded-lg border-2 border-dashed border-border bg-zinc-900 flex items-center justify-center overflow-hidden relative group mx-auto">
+                    {settings.logoAvatarFull ? (
+                      <img src={settings.logoAvatarFull} alt="Skale Club Avatar (Full)" className="max-h-full max-w-full object-contain p-2" />
+                    ) : (
+                      <div className="text-center p-2">
+                        <Image className="w-7 h-7 text-muted-foreground mx-auto mb-1" />
+                        <p className="text-[10px] text-muted-foreground">Avatar Full</p>
+                      </div>
+                    )}
+                    <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                      <Input type="file" className="hidden" onChange={(e) => handleLogoUpload(e, 'avatar-full')} accept="image/*" />
+                      <Plus className="w-7 h-7 text-white" />
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm">Skale Avatar Mark (S only)</Label>
+                <p className="text-xs text-muted-foreground">Compact S-only mark for signature/closing spots.</p>
+                <div className="flex flex-col gap-3">
+                  <div className="h-24 w-24 rounded-lg border-2 border-dashed border-border bg-zinc-900 flex items-center justify-center overflow-hidden relative group mx-auto">
+                    {settings.logoAvatarMark ? (
+                      <img src={settings.logoAvatarMark} alt="Skale Avatar Mark" className="max-h-full max-w-full object-contain p-2" />
+                    ) : (
+                      <div className="text-center p-2">
+                        <Image className="w-6 h-6 text-muted-foreground mx-auto mb-1" />
+                        <p className="text-[10px] text-muted-foreground">S Mark</p>
+                      </div>
+                    )}
+                    <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                      <Input type="file" className="hidden" onChange={(e) => handleLogoUpload(e, 'avatar-mark')} accept="image/*" />
                       <Plus className="w-6 h-6 text-white" />
                     </label>
                   </div>
