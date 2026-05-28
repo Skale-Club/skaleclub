@@ -10,6 +10,7 @@ import { Loader2 } from '@/components/ui/loader';
 import { LanguageSwitch, type LanguageSwitchValue } from '@/components/ui/LanguageSwitch';
 import type { CompanySettings, SlideBlock } from '@shared/schema';
 import { SlideContent, buildSlideStyle, resolveField } from '@/components/SlideRenderer';
+import { useThemeColor } from '@/hooks/use-theme-color';
 
 interface PublicPresentation {
   id: string;
@@ -292,6 +293,13 @@ export default function PresentationViewer() {
       inlineSavePending.current = false;
     }
   }
+
+  // Tint iOS Safari URL bar + status bar to match the current slide bg.
+  // Slides have varying bgColors (dark, indigo, white, etc) — the chrome
+  // follows the slide so there's no white "frame" clashing with bold slides.
+  // Called BEFORE early returns to satisfy Rules of Hooks.
+  const previewSlide = presentation?.slides?.[Math.min(activeIndex, (presentation?.slides?.length ?? 1) - 1)];
+  useThemeColor(previewSlide?.style?.bgColor ?? '#09090B');
 
   if (isLoading) return <LoadingScreen />;
   if (!presentation) return <NotFoundScreen />;

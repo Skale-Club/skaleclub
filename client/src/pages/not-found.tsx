@@ -8,7 +8,7 @@ export default function NotFound() {
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-zinc-950 px-4 relative overflow-hidden">
       {/* Background decorations */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-600/10 rounded-full blur-[100px] pointer-events-none"></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[100px] pointer-events-none"></div>
       <div className="absolute top-1/4 left-1/4 w-[300px] h-[300px] bg-zinc-800/20 rounded-full blur-[80px] pointer-events-none"></div>
 
       <div className="relative z-10 w-full max-w-lg flex flex-col items-center text-center">

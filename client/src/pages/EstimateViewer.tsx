@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Loader2 } from '@/components/ui/loader';
 import { LanguageSwitch, type LanguageSwitchValue } from '@/components/ui/LanguageSwitch';
+import { useThemeColor } from '@/hooks/use-theme-color';
 import type { CompanySettings, EstimateServiceItem } from '@shared/schema';
 
 interface PublicEstimate {
@@ -270,6 +271,10 @@ function SectionContent({ index, data, lang, siteSettings }: { index: number; da
 }
 
 export default function EstimateViewer() {
+  // Tint iOS Safari URL bar + status bar to match the slide background (#09090B = zinc-950).
+  // Prevents the white Safari chrome from clashing with the dark full-bleed slides on mobile.
+  useThemeColor('#09090B');
+
   const { slug } = useParams<{ slug: string }>();
   const hasTrackedView = useRef(false);
 
