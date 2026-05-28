@@ -68,35 +68,32 @@
         }
 
         try {
+          // The whole Skale Club site is dark by design. Admin themeable area
+          // is the only place where a user can override to "light" via stored
+          // preference. Everything else (public site, landings, /e/, /p/,
+          // xpot, admin login) is dark from first paint.
           var path = window.location.pathname;
-          var host = window.location.hostname;
-          var isXpot = host === "xpot.skale.club" || host.indexOf("xpot.") === 0;
           var isAdminThemeable =
             path.indexOf("/admin") === 0 &&
             path !== "/admin/login" &&
             path !== "/admin/signup";
-          // Full-bleed dark viewers (estimate + presentation) — always dark.
-          var isFullBleedDark = path.indexOf("/e/") === 0 || path.indexOf("/p/") === 0;
 
-          var theme = "light";
-          if (isXpot) {
-            theme = "dark";
-          } else if (isFullBleedDark) {
-            theme = "dark";
-          } else if (isAdminThemeable) {
+          var theme = "dark";
+          if (isAdminThemeable) {
             var stored = null;
             try { stored = localStorage.getItem("skale-club-admin-theme"); } catch (e) {}
-            if (stored === "dark") {
-              theme = "dark";
+            if (stored === "light") {
+              theme = "light";
             } else if (stored === "system") {
               theme = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
             }
+            // else stored is 'dark' or unset — keep default dark
           }
           document.documentElement.classList.add(theme);
           applyChrome(theme);
         } catch (e) {
-          document.documentElement.classList.add("light");
-          try { applyChrome("light"); } catch (_) {}
+          document.documentElement.classList.add("dark");
+          try { applyChrome("dark"); } catch (_) {}
         }
       })();
     </script>

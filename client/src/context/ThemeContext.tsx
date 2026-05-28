@@ -20,12 +20,12 @@ function getSystemTheme(): 'light' | 'dark' {
 }
 
 function getStoredTheme(): Theme {
-  if (typeof window === 'undefined') return 'light';
+  if (typeof window === 'undefined') return 'dark';
   const stored = localStorage.getItem(THEME_STORAGE_KEY);
   if (stored === 'light' || stored === 'dark' || stored === 'system') {
     return stored;
   }
-  return 'light';
+  return 'dark';
 }
 
 function isInAdminArea(): boolean {
@@ -42,38 +42,24 @@ function isInAdminThemeArea(): boolean {
   return pathname !== '/admin/login' && pathname !== '/admin/signup';
 }
 
-// Full-bleed dark viewers (estimate proposal + presentation deck). Paint dark
-// from first paint via the boot script in client/index.html. ThemeContext
-// MUST NOT slap a 'light' class on <html> for these routes — that would
-// undo the dark Tailwind variants and let CSS re-light the page.
-function isInFullBleedDarkViewer(): boolean {
-  if (typeof window === 'undefined') return false;
-  const { pathname } = window.location;
-  return pathname.startsWith('/e/') || pathname.startsWith('/p/');
-}
-
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => getStoredTheme());
   const [isAdminArea, setIsAdminArea] = useState(() => isInAdminThemeArea());
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() => {
-    // Only apply stored theme in themeable admin routes
-    if (!isInAdminThemeArea()) return 'light';
+    // Site-wide default: dark. Admin themeable area can override via stored pref.
+    if (!isInAdminThemeArea()) return 'dark';
     const stored = getStoredTheme();
     return stored === 'system' ? getSystemTheme() : stored;
   });
 
   const applyTheme = useCallback((newTheme: 'light' | 'dark', forceAdmin = false) => {
     const inAdmin = forceAdmin || isInAdminThemeArea();
-    const inFullBleedDark = isInFullBleedDarkViewer();
     const root = document.documentElement;
     root.classList.remove('light', 'dark');
 
-    // Dark theme on admin themeable areas OR full-bleed dark viewers (/e/, /p/).
-    // Other routes are always light.
-    let themeToApply: 'light' | 'dark';
-    if (inFullBleedDark) themeToApply = 'dark';
-    else if (inAdmin) themeToApply = newTheme;
-    else themeToApply = 'light';
+    // Site-wide default: dark. Only admin themeable area can flip to light
+    // (via user preference). Everything else stays dark.
+    const themeToApply: 'light' | 'dark' = inAdmin ? newTheme : 'dark';
 
     root.classList.add(themeToApply);
     setResolvedTheme(themeToApply);
@@ -102,8 +88,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         const resolved = theme === 'system' ? getSystemTheme() : theme;
         applyTheme(resolved, true);
       } else {
-        // Always light mode on frontend
-        applyTheme('light', false);
+        // Site-wide default: dark everywhere outside admin themeable area.
+        applyTheme('dark', false);
       }
     };
 
