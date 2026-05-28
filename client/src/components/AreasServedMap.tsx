@@ -42,7 +42,7 @@ export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
             <MapPin className="w-4 h-4" />
             {t(sectionContent?.label || "")}
           </div>
-          <h2 className="text-3xl md:text-5xl font-bold mb-6">
+          <h2 className="text-3xl md:text-5xl font-bold mb-6 text-slate-900">
             {t(sectionContent?.heading || "")}
           </h2>
           
