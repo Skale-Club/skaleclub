@@ -435,18 +435,20 @@ export default function EstimateViewer() {
         />
       </div>
 
-      {/* Navigation dots */}
-      <div className="fixed right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-50">
+      {/* Navigation dots — subtle on mobile, hugs the right edge; same as before on desktop */}
+      <div className="fixed right-1 md:right-4 top-1/2 -translate-y-1/2 flex flex-col gap-1 md:gap-2 z-50">
         {Array.from({ length: total }).map((_, i) => (
           <button
             key={i}
             onClick={() => goTo(i)}
             aria-label={`Go to section ${i + 1}`}
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="min-w-[32px] min-h-[32px] md:min-w-[44px] md:min-h-[44px] flex items-center justify-center"
           >
             <span className={cn(
               'rounded-full transition-all duration-200',
-              activeIndex === i ? 'w-3 h-3 bg-white scale-125' : 'w-2 h-2 bg-white/30 hover:bg-white/60'
+              activeIndex === i
+                ? 'w-2 h-2 md:w-3 md:h-3 bg-white/80 md:bg-white scale-110 md:scale-125'
+                : 'w-1.5 h-1.5 md:w-2 md:h-2 bg-white/20 md:bg-white/30 hover:bg-white/60'
             )} />
           </button>
         ))}
