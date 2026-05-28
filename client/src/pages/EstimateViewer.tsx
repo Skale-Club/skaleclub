@@ -277,6 +277,7 @@ export default function EstimateViewer() {
 
   const { slug } = useParams<{ slug: string }>();
   const hasTrackedView = useRef(false);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   const { data, isLoading } = useQuery<PublicEstimate>({
     queryKey: [`/api/estimates/slug/${slug}`],
@@ -436,9 +437,18 @@ export default function EstimateViewer() {
       const THRESHOLD = 40; // px — generous so small drags don't count
       if (absX < THRESHOLD && absY < THRESHOLD) return;
       if (absX > absY) {
-        if (dx > 0) prev(); else next(); // horizontal: swipe right → prev
+        // Horizontal: always navigates (no horizontal scroll inside slides)
+        if (dx > 0) prev(); else next();
       } else {
-        if (dy > 0) prev(); else next(); // vertical: swipe up → next
+        // Vertical: only navigate if the current slide isn't mid-scroll.
+        // If content fits in viewport (no overflow), the boundary checks are
+        // trivially true and behave like before.
+        const el = scrollContainerRef.current;
+        const atTop = !el || el.scrollTop <= 1;
+        const atBottom = !el || el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+        if (dy > 0 && atTop) prev();          // swipe down at top → prev
+        else if (dy < 0 && atBottom) next();  // swipe up at bottom → next
+        // else: native scroll already moved the content; do not nav
       }
     }
     window.addEventListener('touchstart', onTouchStart, { passive: true });
@@ -539,7 +549,8 @@ export default function EstimateViewer() {
         </button>
       </div>
 
-      {/* Slide area */}
+      {/* Slide area — outer keeps overflow-hidden so motion.div animations stay clipped;
+          the inner scroll container handles overflow per slide when content is too tall. */}
       <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
@@ -550,9 +561,16 @@ export default function EstimateViewer() {
             animate="center"
             exit="exit"
             transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
-            className="relative z-10 w-full h-full flex items-center justify-center"
+            className="relative z-10 w-full h-full"
           >
-            <SectionContent index={activeIndex} data={data} lang={lang} siteSettings={siteSettings} />
+            <div
+              ref={scrollContainerRef}
+              className="h-full w-full overflow-y-auto overscroll-contain"
+            >
+              <div className="min-h-full flex items-center justify-center py-12 md:py-16 pb-24 md:pb-16">
+                <SectionContent index={activeIndex} data={data} lang={lang} siteSettings={siteSettings} />
+              </div>
+            </div>
           </motion.div>
         </AnimatePresence>
       </div>

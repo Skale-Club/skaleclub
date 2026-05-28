@@ -230,9 +230,15 @@ export default function PresentationViewer() {
       const THRESHOLD = 40;
       if (absX < THRESHOLD && absY < THRESHOLD) return;
       if (absX > absY) {
+        // Horizontal: always navigates (no horizontal scroll inside slides)
         if (dx > 0) prev(); else next();
       } else {
-        if (dy > 0) prev(); else next();
+        // Vertical: only navigate if the current slide isn't mid-scroll.
+        const el = scrollContainerRef.current;
+        const atTop = !el || el.scrollTop <= 1;
+        const atBottom = !el || el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+        if (dy > 0 && atTop) prev();
+        else if (dy < 0 && atBottom) next();
       }
     }
     window.addEventListener('touchstart', onTouchStart, { passive: true });
@@ -337,6 +343,7 @@ export default function PresentationViewer() {
   // Called BEFORE early returns to satisfy Rules of Hooks.
   const previewSlide = presentation?.slides?.[Math.min(activeIndex, (presentation?.slides?.length ?? 1) - 1)];
   useThemeColor(previewSlide?.style?.bgColor ?? '#09090B');
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   if (isLoading) return <LoadingScreen />;
   if (!presentation) return <NotFoundScreen />;
@@ -460,9 +467,15 @@ export default function PresentationViewer() {
             animate="center"
             exit="exit"
             transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
-            className="relative z-10 px-6 sm:px-8 md:px-12 lg:px-16 max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto w-full group"
+            className="absolute inset-0 z-10 group"
             style={buildSlideStyle(currentSlide.style)}
           >
+            <div
+              ref={scrollContainerRef}
+              className="h-full w-full overflow-y-auto overscroll-contain"
+            >
+              <div className="min-h-full flex items-center justify-center px-6 sm:px-8 md:px-12 lg:px-16 py-12 md:py-16 pb-24 md:pb-16">
+                <div className="max-w-2xl md:max-w-3xl lg:max-w-4xl w-full">
             {isEditMode && (
               <div className="absolute top-2 right-2 z-50 flex gap-1 bg-black/60 rounded-md p-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
@@ -497,6 +510,9 @@ export default function PresentationViewer() {
               </div>
             )}
             <SlideContent slide={currentSlide} lang={lang} />
+                </div>
+              </div>
+            </div>
           </motion.div>
         </AnimatePresence>
         {isEditMode && inlineEditIndex === currentIndex && (
