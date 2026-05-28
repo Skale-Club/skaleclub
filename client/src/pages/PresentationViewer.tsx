@@ -345,17 +345,16 @@ export default function PresentationViewer() {
         ))}
       </div>
 
-      {/* Slide counter */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 text-zinc-500 text-xs tabular-nums">
+      {/* Desktop: counter centered at bottom, arrows on the sides at middle */}
+      <div className="hidden md:block fixed bottom-6 left-1/2 -translate-x-1/2 z-50 text-zinc-500 text-xs tabular-nums">
         {currentIndex + 1} / {total}
       </div>
 
-      {/* Arrow buttons */}
       {currentIndex > 0 && (
         <button
           onClick={prev}
           aria-label="Previous slide"
-          className="fixed left-4 top-1/2 -translate-y-1/2 z-50 w-10 h-10 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-all duration-200"
+          className="hidden md:flex fixed left-4 top-1/2 -translate-y-1/2 z-50 w-10 h-10 rounded-full items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-all duration-200"
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
@@ -365,11 +364,34 @@ export default function PresentationViewer() {
         <button
           onClick={next}
           aria-label="Next slide"
-          className="fixed right-16 top-1/2 -translate-y-1/2 z-50 w-10 h-10 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-all duration-200"
+          className="hidden md:flex fixed right-16 top-1/2 -translate-y-1/2 z-50 w-10 h-10 rounded-full items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-all duration-200"
         >
           <ChevronRight className="w-6 h-6" />
         </button>
       )}
+
+      {/* Mobile: prev + counter + next all together at bottom */}
+      <div className="md:hidden fixed bottom-4 left-0 right-0 z-50 flex items-center justify-center gap-4">
+        <button
+          onClick={prev}
+          disabled={currentIndex === 0}
+          aria-label="Previous slide"
+          className="w-9 h-9 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <span className="text-zinc-500 text-xs tabular-nums min-w-[48px] text-center">
+          {currentIndex + 1} / {total}
+        </span>
+        <button
+          onClick={next}
+          disabled={currentIndex === total - 1}
+          aria-label="Next slide"
+          className="w-9 h-9 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
 
       {/* Slide area */}
       <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
