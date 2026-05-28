@@ -104,15 +104,18 @@ function AccessCodeGate({
         />
       </div>
       <div className="flex flex-col items-center gap-4 w-full max-w-sm px-6">
-        {siteSettings?.logoAvatarFull ? (
-          <img
-            src={siteSettings.logoAvatarFull}
-            alt={siteSettings.companyName || 'Skale Club'}
-            className="h-20 md:h-24 w-auto object-contain mb-2"
-          />
-        ) : (
-          <p className="text-zinc-400 text-sm uppercase tracking-widest">{siteSettings?.companyName || 'Skale Club'}</p>
-        )}
+        {(() => {
+          const gateLogo = siteSettings?.logoAvatarFull || siteSettings?.logoDark || siteSettings?.logoMain;
+          return gateLogo ? (
+            <img
+              src={gateLogo}
+              alt={siteSettings?.companyName || 'Skale Club'}
+              className="h-20 md:h-24 w-auto object-contain mb-2"
+            />
+          ) : (
+            <p className="text-zinc-400 text-sm uppercase tracking-widest">{siteSettings?.companyName || 'Skale Club'}</p>
+          );
+        })()}
         {(companyName || clientName) && (
           <div className="text-center -mt-1 mb-2">
             {companyName && <p className="text-white text-lg font-semibold leading-tight">{companyName}</p>}
@@ -285,17 +288,20 @@ function SectionContent({ index, data, lang, siteSettings }: { index: number; da
     <>
       {gradientOverlay}
       <div className="text-center px-6 sm:px-8 md:px-12 lg:px-16 max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto w-full">
-        {siteSettings?.logoAvatarMark ? (
-          <img
-            src={siteSettings.logoAvatarMark}
-            alt={siteSettings.companyName || 'Skale Club'}
-            className="mx-auto mb-6 lg:mb-8 h-12 md:h-14 lg:h-16 w-auto object-contain"
-          />
-        ) : (
-          <p className="text-zinc-400 text-sm md:text-base lg:text-lg uppercase tracking-widest mb-6 lg:mb-8">
-            {siteSettings?.companyName || 'Skale Club'}
-          </p>
-        )}
+        {(() => {
+          const closingLogo = siteSettings?.logoAvatarMark || siteSettings?.logoIcon;
+          return closingLogo ? (
+            <img
+              src={closingLogo}
+              alt={siteSettings?.companyName || 'Skale Club'}
+              className="mx-auto mb-6 lg:mb-8 h-12 md:h-14 lg:h-16 w-auto object-contain"
+            />
+          ) : (
+            <p className="text-zinc-400 text-sm md:text-base lg:text-lg uppercase tracking-widest mb-6 lg:mb-8">
+              {siteSettings?.companyName || 'Skale Club'}
+            </p>
+          );
+        })()}
         <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight">{t.closing}</h2>
         <p className="text-base md:text-lg lg:text-xl text-zinc-400">{t.closingBody}</p>
       </div>
