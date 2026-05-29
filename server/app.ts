@@ -34,16 +34,27 @@ export async function createApp(): Promise<{ app: express.Express; httpServer: S
   // Serve attached_assets as static files
   app.use('/attached_assets', express.static(path.join(process.cwd(), 'attached_assets')));
 
-  app.use(
-    express.json({
-      limit: '50mb',
-      verify: (req, _res, buf) => {
-        req.rawBody = buf;
-      },
-    }),
-  );
+  // Body-size limits. A small default protects public/unauthenticated
+  // endpoints (forms, chat, attribution) from memory-pressure DoS. A handful
+  // of admin-only routes legitimately carry larger base64 payloads (image
+  // uploads, slide/proposal thumbnails, audio for transcription) and get an
+  // explicit higher cap. Keep the rawBody capture on both for webhook/raw use.
+  const captureRawBody = (req: Request, _res: Response, buf: Buffer) => {
+    req.rawBody = buf;
+  };
+  const jsonDefault = express.json({ limit: '1mb', verify: captureRawBody });
+  const jsonLarge = express.json({ limit: '25mb', verify: captureRawBody });
 
-  app.use(express.urlencoded({ extended: false, limit: '50mb' }));
+  // Admin-only routes that accept large base64 bodies.
+  const LARGE_BODY_RE =
+    /^\/api\/(uploads(\/|$)|presentations\/transcribe|presentations\/[^/]+\/thumbnail|estimates\/[^/]+\/thumbnail)/;
+
+  app.use((req, res, next) => {
+    if (LARGE_BODY_RE.test(req.path)) return jsonLarge(req, res, next);
+    return jsonDefault(req, res, next);
+  });
+
+  app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 
   // Logging middleware
   app.use((req, res, next) => {
@@ -83,12 +94,16 @@ export async function createApp(): Promise<{ app: express.Express; httpServer: S
 
     // All other errors → use status + message
     const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
 
     // Log server errors for debugging
     if (status >= 500) {
       console.error(err);
     }
+
+    // Do not leak internal error details on 5xx (info disclosure). Client-facing
+    // 4xx messages are intentional and safe to surface.
+    const message =
+      status >= 500 ? "Internal Server Error" : err.message || "Request failed";
 
     res.status(status).json({ message });
   });
