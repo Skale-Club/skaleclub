@@ -30,7 +30,8 @@ async function buildUniquePresentationSlug(title: string): Promise<string> {
 
 // OpenAI-compatible tool definition (NOT Anthropic format).
 // tool_choice must use { type: "function", function: { name } } when calling Gemini via OpenAI SDK.
-const GENERATE_SLIDES_TOOL = {
+// Exported for offline validation harness (scripts/test-presentation-generation.ts) — runtime behavior unchanged.
+export const GENERATE_SLIDES_TOOL = {
   type: "function" as const,
   function: {
     name: "generate_slides",
@@ -98,7 +99,8 @@ const GENERATE_SLIDES_TOOL = {
 };
 
 // System prompt — enforces brand design system, layout rhythm, and content quality rules.
-function buildGeneratorSystemPrompt(guidelines: string): string {
+// Exported for offline validation harness (scripts/test-presentation-generation.ts) — runtime behavior unchanged.
+export function buildGeneratorSystemPrompt(guidelines: string): string {
   return (
     "You are a senior presentation designer for Skale Club, a premium B2B marketing agency. " +
     "Create a complete, visually sophisticated deck using the generate_slides tool — never respond with plain text.\n\n" +
