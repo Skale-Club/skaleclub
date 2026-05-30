@@ -61,7 +61,7 @@ export default function Blog() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="bg-primary/5 py-8 md:py-10">
+      <div className="bg-primary/5 pt-24 pb-8 md:pt-28 md:pb-10">
         <div className="container-custom">
           <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-4" data-testid="nav-blog-breadcrumb">
             <Link href="/" className="hover:text-primary">Home</Link>
