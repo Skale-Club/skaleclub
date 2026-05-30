@@ -45,6 +45,8 @@ export default {
           DEFAULT: "hsl(var(--accent) / <alpha-value>)",
           foreground: "hsl(var(--accent-foreground) / <alpha-value>)",
           border: "var(--accent-border)",
+          hover: "var(--accent-hover)",
+          muted: "var(--accent-muted)",
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive) / <alpha-value>)",
@@ -91,6 +93,20 @@ export default {
           offline: "rgb(156 163 175)",
         },
         'light-gray': '#F1F5F9',
+
+        // --- xphere named design tokens (admin scope). Raw values; classes
+        //     like bg-bg-secondary / text-text-primary / border-border-subtle. ---
+        "bg-primary": "var(--bg-primary)",
+        "bg-secondary": "var(--bg-secondary)",
+        "bg-tertiary": "var(--bg-tertiary)",
+        "bg-elevated": "var(--bg-elevated)",
+        "border-subtle": "var(--border-subtle)",
+        "border-strong": "var(--border-strong)",
+        "text-primary": "var(--text-primary)",
+        "text-secondary": "var(--text-secondary)",
+        "text-tertiary": "var(--text-tertiary)",
+        danger: "hsl(var(--danger) / <alpha-value>)",
+        info: "hsl(var(--info) / <alpha-value>)",
       },
       fontFamily: {
         sans: ["var(--font-sans)"],

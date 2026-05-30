@@ -64,6 +64,21 @@
   --destructive-border: hsl(var(--destructive) / 0.8);
   --sidebar-primary-border: hsl(var(--primary) / 0.8);
   --badge-outline: var(--border);
+
+  /* ===== Shared design-system tokens (consumed by the ported primitives).
+     Public-safe values so Button/Card/Input render fine outside /admin.
+     The admin scope (html.admin-theme) overrides the brand-tinted ones. ===== */
+  --accent-ring: rgba(28, 83, 163, 0.30);
+  --shadow-sm:   0 1px 2px rgba(16, 24, 40, 0.06);
+  --shadow-md:   0 4px 12px rgba(16, 24, 40, 0.08), 0 0 0 1px rgba(16, 24, 40, 0.04);
+  --shadow-lg:   0 16px 40px rgba(16, 24, 40, 0.10), 0 0 0 1px rgba(16, 24, 40, 0.05);
+  --shadow-glow: 0 0 24px rgba(28, 83, 163, 0.18), 0 0 0 1px rgba(28, 83, 163, 0.25);
+  --motion-fast:  100ms;
+  --motion-base:  200ms;
+  --motion-modal: 300ms;
+  --motion-slow:  500ms;
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 /* Dark Mode Colors — neutral/desaturated charcoal */
@@ -125,6 +140,181 @@
   --badge-outline: var(--border);
 }
 
+/* ============================================================================
+ * ADMIN DESIGN SYSTEM — xphere tokens scoped to /admin via the `admin-theme`
+ * marker class on <html> (added by ThemeContext). The public site never
+ * carries this class, so its :root / .dark tokens above are untouched.
+ *
+ * Accent/brand = Skale blue #1C53A3 (NOT xphere indigo). Neutrals = xphere.
+ * shadcn tokens are HSL triplets (the Tailwind config wraps them in hsl(),
+ * so alpha utilities like bg-primary/10 keep working). The xphere named
+ * tokens (--bg-*, --text-*, --accent-muted, shadows…) are raw values used
+ * via arbitrary classes like bg-[--bg-secondary].
+ * ========================================================================== */
+html.admin-theme {
+  /* --- shadcn tokens (HSL triplets) --- */
+  --background: 240 20% 99%;       /* bg-primary  #FCFCFD */
+  --foreground: 240 6% 10%;        /* text-primary #18181B */
+  --card: 0 0% 100%;               /* bg-elevated #FFFFFF */
+  --card-foreground: 240 6% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 6% 10%;
+  --primary: 216 71% 37%;          /* Skale #1C53A3 */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 5% 96%;         /* bg-tertiary #F4F4F5 */
+  --secondary-foreground: 240 5% 34%;
+  --muted: 240 5% 96%;
+  --muted-foreground: 240 5% 34%;
+  --accent: 216 71% 37%;           /* Skale #1C53A3 (solid) */
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 142 76% 36%;
+  --success-foreground: 0 0% 100%;
+  --warning: 32 95% 44%;
+  --warning-foreground: 0 0% 100%;
+  --danger: 0 72% 51%;
+  --info: 221 83% 53%;
+  --section: 240 20% 99%;
+  --ring: 216 71% 37%;
+  --sidebar: 0 0% 100%;            /* bg-secondary #FFFFFF */
+  --sidebar-foreground: 240 6% 10%;
+  --sidebar-accent: 240 5% 96%;
+  --sidebar-accent-foreground: 240 6% 10%;
+  --sidebar-primary: 216 71% 37%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-ring: 216 71% 37%;
+
+  /* --- raw-mapped tokens (full color values) --- */
+  --border: #E4E4E7;
+  --input: #E4E4E7;
+  --sidebar-border: #ECECEF;
+  --button-outline: #E4E4E7;
+  --primary-border: #1C53A3;
+  --secondary-border: #E4E4E7;
+  --muted-border: #E4E4E7;
+  --accent-border: #E4E4E7;
+  --destructive-border: #DC2626;
+  --sidebar-primary-border: #1C53A3;
+  --sidebar-accent-border: #ECECEF;
+  --card-border: #E4E4E7;
+  --badge-outline: #E4E4E7;
+
+  /* --- xphere named tokens (raw; used via bg-[--x] etc.) --- */
+  --bg-primary:   #FCFCFD;
+  --bg-secondary: #FFFFFF;
+  --bg-tertiary:  #F4F4F5;
+  --bg-elevated:  #FFFFFF;
+  --border-subtle: #ECECEF;
+  --border-strong: #D4D4D8;
+  --text-primary:   #18181B;
+  --text-secondary: #52525B;
+  --text-tertiary:  #A1A1AA;
+  --accent-hover: #174490;
+  --accent-muted: rgba(28, 83, 163, 0.08);
+  --accent-glow:  rgba(28, 83, 163, 0.18);
+  --accent-ring:  rgba(28, 83, 163, 0.30);
+
+  /* --- elevation (light) --- */
+  --shadow-sm:   0 1px 2px rgba(16, 24, 40, 0.06);
+  --shadow-md:   0 4px 12px rgba(16, 24, 40, 0.08), 0 0 0 1px rgba(16, 24, 40, 0.04);
+  --shadow-lg:   0 16px 40px rgba(16, 24, 40, 0.10), 0 0 0 1px rgba(16, 24, 40, 0.05);
+  --shadow-glow: 0 0 24px rgba(28, 83, 163, 0.20), 0 0 0 1px rgba(28, 83, 163, 0.25);
+}
+
+html.admin-theme.dark {
+  /* --- shadcn tokens (HSL triplets) --- */
+  --background: 240 5% 4%;         /* bg-primary  #0A0A0B */
+  --foreground: 0 0% 98%;
+  --card: 240 6% 14%;              /* bg-elevated #222226 */
+  --card-foreground: 0 0% 98%;
+  --popover: 240 6% 14%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 216 71% 37%;          /* Skale #1C53A3 (both modes) */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 5% 11%;         /* bg-tertiary #1A1A1D */
+  --secondary-foreground: 240 5% 65%;
+  --muted: 240 5% 11%;
+  --muted-foreground: 240 5% 65%;
+  --accent: 216 71% 37%;           /* Skale #1C53A3 (solid) */
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 142 71% 45%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 11%;
+  --danger: 0 84% 60%;
+  --info: 217 91% 60%;
+  --section: 240 5% 4%;
+  --ring: 216 71% 37%;
+  --sidebar: 240 6% 7%;            /* bg-secondary #111113 */
+  --sidebar-foreground: 0 0% 98%;
+  --sidebar-accent: 240 5% 11%;
+  --sidebar-accent-foreground: 0 0% 98%;
+  --sidebar-primary: 216 71% 37%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-ring: 216 71% 37%;
+
+  /* --- raw-mapped tokens --- */
+  --border: #2A2A2F;
+  --input: #2A2A2F;
+  --sidebar-border: #1E1E22;
+  --button-outline: #2A2A2F;
+  --primary-border: #1C53A3;
+  --secondary-border: #2A2A2F;
+  --muted-border: #2A2A2F;
+  --accent-border: #2A2A2F;
+  --destructive-border: #EF4444;
+  --sidebar-primary-border: #1C53A3;
+  --sidebar-accent-border: #1E1E22;
+  --card-border: #2A2A2F;
+  --badge-outline: #2A2A2F;
+
+  /* --- xphere named tokens (raw) --- */
+  --bg-primary:   #0A0A0B;
+  --bg-secondary: #111113;
+  --bg-tertiary:  #1A1A1D;
+  --bg-elevated:  #222226;
+  --border-subtle: #1E1E22;
+  --border-strong: #3A3A40;
+  --text-primary:   #FAFAFA;
+  --text-secondary: #A1A1AA;
+  --text-tertiary:  #71717A;
+  --accent-hover: #2E6BC4;         /* lighter so hover reads on charcoal */
+  --accent-muted: rgba(28, 83, 163, 0.20);
+  --accent-glow:  rgba(46, 107, 196, 0.30);
+  --accent-ring:  rgba(46, 107, 196, 0.45);
+
+  /* --- elevation (dark needs stronger shadows) --- */
+  --shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md:   0 4px 12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --shadow-lg:   0 16px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --shadow-glow: 0 0 24px rgba(46, 107, 196, 0.35), 0 0 0 1px rgba(46, 107, 196, 0.45);
+}
+
+/* ===== Elevation + motion utilities (ported from xphere globals) ===== */
+@layer utilities {
+  .shadow-elevation-sm { box-shadow: var(--shadow-sm); }
+  .shadow-elevation-md { box-shadow: var(--shadow-md); }
+  .shadow-elevation-lg { box-shadow: var(--shadow-lg); }
+  .shadow-glow         { box-shadow: var(--shadow-glow); }
+
+  .motion-fast   { transition: all var(--motion-fast) var(--ease-out); }
+  .motion-base   { transition: all var(--motion-base) var(--ease-out); }
+  .motion-spring { transition: all var(--motion-modal) var(--ease-spring); }
+
+  .hover-lift {
+    transition: transform var(--motion-base) var(--ease-out),
+                box-shadow var(--motion-base) var(--ease-out),
+                border-color var(--motion-base) var(--ease-out);
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+}
+
 @layer base {
   *, *::before, *::after {
     border-color: var(--border);
@@ -139,16 +329,11 @@
     @apply font-display tracking-tight text-foreground;
   }
 
-  /* Remove default focus outline from all elements */
-  *:focus {
-    outline: none !important;
-  }
-
-  /* Remove focus-visible ring specifically for Shadcn/Tailwind components if needed */
-  .focus-visible\:ring-2,
-  .focus-visible\:ring-offset-2 {
-    --tw-ring-offset-width: 0px !important;
-    --tw-ring-width: 0px !important;
+  /* Suppress only the native outline; Tailwind focus-visible:ring-* handles
+     keyboard focus (the xphere primitives rely on a visible accent ring).
+     Using :focus-visible keeps rings off mouse clicks but on for keyboard a11y. */
+  *:focus-visible {
+    outline: none;
   }
 
   .dark input[type="date"]::-webkit-calendar-picker-indicator {
