@@ -25,6 +25,8 @@ function getStoredTheme(): Theme {
   if (stored === 'light' || stored === 'dark' || stored === 'system') {
     return stored;
   }
+  // Admin defaults to dark (matching the xphere design). The public site is
+  // always forced to light in applyTheme(), so this only affects /admin.
   return 'dark';
 }
 
@@ -62,6 +64,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const themeToApply: 'light' | 'dark' = inAdmin ? newTheme : 'dark';
 
     root.classList.add(themeToApply);
+
+    // Scope the xphere admin design tokens to <html> via an `admin-theme`
+    // marker. Defined on <html> so it also reaches Radix portals (dropdowns,
+    // dialogs, toasts) which mount on <body>. The public site never carries
+    // this class, so it keeps rendering with the untouched :root tokens.
+    if (inAdmin) {
+      root.classList.add('admin-theme');
+    } else {
+      root.classList.remove('admin-theme');
+    }
+
     setResolvedTheme(themeToApply);
   }, []);
 

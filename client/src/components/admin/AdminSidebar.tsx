@@ -79,19 +79,26 @@ function SidebarSortableItem({
       data-sidebar="menu-item"
       className="group/item group/menu-item relative touch-none"
     >
+      {/* xphere active indicator: a solid accent bar on the left edge */}
+      {isActive && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute left-0 top-1/2 z-10 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-primary"
+        />
+      )}
       <SidebarMenuButton
         isActive={isActive}
         onClick={() => {
           onSelect();
           if (isMobile) setOpenMobile(false);
         }}
-        className="w-full text-sidebar-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200"
+        className="w-full text-sidebar-foreground data-[active=true]:bg-accent-muted data-[active=true]:text-primary data-[active=true]:font-semibold hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200"
         data-testid={`menu-${item.id}`}
       >
         <GripVertical
           className={cn(
             "w-4 h-4 shrink-0 cursor-grab opacity-0 group-hover/item:opacity-100 transition-opacity",
-            isActive ? "text-primary-foreground/70" : "text-muted-foreground/60"
+            isActive ? "text-primary/60" : "text-muted-foreground/60"
           )}
         />
         <item.icon className="w-4 h-4" />
