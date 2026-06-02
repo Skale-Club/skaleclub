@@ -416,7 +416,7 @@ function VoiceAnswerInput({
         ) : null}
       </div>
       {value ? (
-        <div className="space-y-2 rounded-xl border bg-white p-3 text-sm text-slate-700">
+        <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-700">
           <p>{value}</p>
           {summary ? (
             <div className="border-t pt-2 text-xs text-slate-500">
@@ -1094,8 +1094,8 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                             onFocus={handleFieldFocus}
                             placeholder={currentQuestion.placeholder || ""}
                             className={clsx(
-                              "w-full rounded-xl border px-4 py-3 text-lg transition-colors",
-                              errorMessage ? "border-red-400" : "border",
+                              "w-full rounded-xl border bg-white px-4 py-3 text-lg text-slate-900 placeholder:text-slate-400 transition-colors",
+                              errorMessage ? "border-red-400" : "border-slate-200",
                               "focus:border-[#406EF1] focus:ring-2 focus:ring-[#406EF1]/30"
                             )}
                             aria-label={currentQuestion.title}
@@ -1108,8 +1108,8 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                             onChange={e => handleAnswerChange(currentQuestion.id, e.target.value)}
                             placeholder={currentQuestion.placeholder || ""}
                             className={clsx(
-                              "min-h-36 w-full rounded-xl border px-4 py-3 text-lg transition-colors resize-y",
-                              errorMessage ? "border-red-400" : "border",
+                              "min-h-36 w-full rounded-xl border bg-white px-4 py-3 text-lg text-slate-900 placeholder:text-slate-400 transition-colors resize-y",
+                              errorMessage ? "border-red-400" : "border-slate-200",
                               "focus:border-[#406EF1] focus:ring-2 focus:ring-[#406EF1]/30"
                             )}
                             aria-label={currentQuestion.title}
@@ -1167,8 +1167,8 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                                   setIsCountryDropdownOpen(!isCountryDropdownOpen);
                                 }}
                                 className={clsx(
-                                  "flex items-center gap-1 rounded-xl border px-2 sm:px-3 py-3 text-base sm:text-lg transition-colors h-[52px]",
-                                  errorMessage ? "border-red-400" : "border",
+                                  "flex items-center gap-1 rounded-xl border bg-white px-2 sm:px-3 py-3 text-base sm:text-lg transition-colors h-[52px]",
+                                  errorMessage ? "border-red-400" : "border-slate-200",
                                   "hover:border-[#406EF1]/70 focus:border-[#406EF1] focus:ring-2 focus:ring-[#406EF1]/30"
                                 )}
                               >
@@ -1192,7 +1192,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -10 }}
                                     transition={{ duration: 0.15 }}
-                                    className="fixed z-[200] rounded-xl border bg-card shadow-xl overflow-hidden"
+                                    className="fixed z-[200] rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden"
                                     style={{
                                       top: dropdownPosition.top,
                                       left: dropdownPosition.left,
@@ -1240,8 +1240,8 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                               onFocus={handleFieldFocus}
                               placeholder={selectedCountry.format.replace(/#/g, "0")}
                               className={clsx(
-                                "flex-1 min-w-0 rounded-xl border px-3 sm:px-4 py-3 text-base sm:text-lg transition-colors",
-                                errorMessage ? "border-red-400" : "border",
+                                "flex-1 min-w-0 rounded-xl border bg-white px-3 sm:px-4 py-3 text-base sm:text-lg text-slate-900 placeholder:text-slate-400 transition-colors",
+                                errorMessage ? "border-red-400" : "border-slate-200",
                                 "focus:border-[#406EF1] focus:ring-2 focus:ring-[#406EF1]/30"
                               )}
                               aria-label={currentQuestion.title}
@@ -1255,7 +1255,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                           <div
                             className={clsx(
                               "flex overflow-hidden rounded-xl border bg-white transition-colors",
-                              errorMessage ? "border-red-400" : "border focus-within:border-[#406EF1]"
+                              errorMessage ? "border-red-400" : "border-slate-200 focus-within:border-[#406EF1]"
                             )}
                           >
                             <PhoneCountrySelect
