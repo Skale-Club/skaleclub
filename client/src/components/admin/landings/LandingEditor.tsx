@@ -65,7 +65,7 @@ function HeroVideoPanel({
   onPatch,
 }: {
   sectionsText: string;
-  onPatch: (patch: Record<string, unknown>) => void;
+  onPatch: (patch: Record<string, unknown>) => Promise<void> | void;
 }) {
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -98,8 +98,8 @@ function HeroVideoPanel({
       const { uploadUrl, publicUrl } = await signRes.json();
       const up = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
       if (!up.ok) throw new Error('Upload to storage failed');
-      onPatch({ bgVideoUrl: publicUrl });
-      toast({ title: 'Video uploaded', description: 'Save the landing to apply.' });
+      await onPatch({ bgVideoUrl: publicUrl });
+      toast({ title: 'Video uploaded', description: 'Saved — refresh the hero to see it.' });
     } catch (err: any) {
       toast({ title: 'Upload failed', description: err?.message, variant: 'destructive' });
     } finally {
@@ -107,9 +107,9 @@ function HeroVideoPanel({
     }
   };
 
-  const handleDelete = () => {
-    onPatch({ bgVideoUrl: null });
-    toast({ title: 'Video removed', description: 'Save the landing to apply.' });
+  const handleDelete = async () => {
+    await onPatch({ bgVideoUrl: null });
+    toast({ title: 'Video removed', description: 'Saved — the hero reverts to the gradient background.' });
   };
 
   return (
@@ -157,7 +157,7 @@ function HeroVideoPanel({
                 <Trash2 className="w-4 h-4" /> Delete video
               </button>
             </div>
-            <p className="text-xs text-muted-foreground">Save the landing to apply changes.</p>
+            <p className="text-xs text-muted-foreground">Changes save automatically.</p>
           </div>
         </div>
       ) : (
@@ -298,21 +298,40 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
     });
   };
 
-  const patchHeroSections = (patch: Record<string, unknown>) => {
+  const patchHeroSections = async (patch: Record<string, unknown>) => {
+    let sections: any[];
     try {
-      const sections = JSON.parse(sectionsText);
-      const idx = sections.findIndex((s: any) => s.type === 'heroWebsites');
-      if (idx === -1) return;
-      // Merge the patch, then drop any null/undefined keys so removed assets stay
-      // truly absent — JSON has no `undefined`, and a persisted `null` fails the
-      // section's optional-URL schema and breaks the page render.
-      const merged: Record<string, unknown> = { ...sections[idx].props, ...patch };
-      for (const key of Object.keys(merged)) {
-        if (merged[key] === null || merged[key] === undefined) delete merged[key];
-      }
-      sections[idx] = { ...sections[idx], props: merged };
-      setSectionsText(JSON.stringify(sections, null, 2));
-    } catch { /* invalid JSON — silently ignore */ }
+      sections = JSON.parse(sectionsText);
+    } catch {
+      toast({ title: 'Fix the sections JSON first', variant: 'destructive' });
+      return;
+    }
+    const idx = sections.findIndex((s: any) => s.type === 'heroWebsites');
+    if (idx === -1) return;
+    // Merge the patch, then drop any null/undefined keys so removed assets stay
+    // truly absent — JSON has no `undefined`, and a persisted `null` fails the
+    // section's optional-URL schema and breaks the page render.
+    const merged: Record<string, unknown> = { ...sections[idx].props, ...patch };
+    for (const key of Object.keys(merged)) {
+      if (merged[key] === null || merged[key] === undefined) delete merged[key];
+    }
+    sections[idx] = { ...sections[idx], props: merged };
+    setSectionsText(JSON.stringify(sections, null, 2));
+
+    // Persist the video change immediately (partial update — only `sections`) so
+    // it never depends on the far-away Save button. We deliberately don't refetch
+    // the single landing here: invalidating its query would reset all local form
+    // state via the load effect and clobber any unsaved name/slug edits.
+    try {
+      await apiRequest('PUT', `/api/landing-pages/${landingId}`, { sections });
+      queryClient.invalidateQueries({ queryKey: ['/api/landing-pages'] });
+    } catch (err) {
+      toast({
+        title: 'Failed to save video',
+        description: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'destructive',
+      });
+    }
   };
 
   const previewHref = isActive && landing ? `/${landing.slug}` : null;
