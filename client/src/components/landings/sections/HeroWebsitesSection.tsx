@@ -19,6 +19,8 @@ const DEFAULTS = {
   subheadline:
     "From landing page to e-commerce: we build fast, Google-optimized websites ready to turn visitors into customers.",
   ctaLabel: "I want my website",
+  // Served from client/public — language-neutral brand illustration.
+  backgroundImageUrl: "/SkaleClub.webp",
 } as const;
 
 export function HeroWebsitesSection({ props }: { props: HeroWebsitesProps }) {
@@ -26,7 +28,7 @@ export function HeroWebsitesSection({ props }: { props: HeroWebsitesProps }) {
   const headline = props.headline ?? DEFAULTS.headline;
   const subheadline = props.subheadline ?? DEFAULTS.subheadline;
   const ctaLabel = props.ctaLabel ?? DEFAULTS.ctaLabel;
-  const bgUrl = props.backgroundImageUrl;
+  const bgUrl = props.backgroundImageUrl ?? DEFAULTS.backgroundImageUrl;
 
   const handleCtaClick = () => {
     const trigger = document.querySelector<HTMLElement>('[data-landing-lead-cta]');
