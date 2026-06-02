@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { ArrowLeft, ExternalLink, LayoutPanelLeft, Loader2, Upload, Video, X } from 'lucide-react';
+import { ArrowLeft, ExternalLink, LayoutPanelLeft, Loader2, Trash2, Upload, Video } from 'lucide-react';
 import { AdminCard, SectionHeader } from '@/components/admin/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -107,6 +107,11 @@ function HeroVideoPanel({
     }
   };
 
+  const handleDelete = () => {
+    onPatch({ bgVideoUrl: null });
+    toast({ title: 'Video removed', description: 'Save the landing to apply.' });
+  };
+
   return (
     <AdminCard className="space-y-3">
       <div className="flex items-center gap-2">
@@ -115,33 +120,60 @@ function HeroVideoPanel({
         <span className="text-xs text-muted-foreground ml-1">.mp4 or .webm</span>
       </div>
 
+      <input ref={fileRef} type="file" accept="video/mp4,video/webm" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }} />
+
       {currentVideoUrl ? (
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/40 border text-sm">
-          <Video className="w-4 h-4 shrink-0 text-primary" />
-          <span className="truncate flex-1 font-mono text-xs text-muted-foreground">{currentVideoUrl}</span>
-          <button
-            type="button"
-            onClick={() => onPatch({ bgVideoUrl: null })}
-            className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
-            title="Remove video"
-          >
-            <X className="w-4 h-4" />
-          </button>
+        <div className="flex flex-col sm:flex-row gap-4">
+          {/* Small inline preview so the admin sees exactly what the hero will show. */}
+          <video
+            key={currentVideoUrl}
+            src={currentVideoUrl}
+            className="w-full sm:w-56 aspect-video shrink-0 rounded-lg border bg-black object-cover"
+            muted
+            loop
+            playsInline
+            autoPlay
+            controls
+          />
+          <div className="flex-1 min-w-0 space-y-3">
+            <p className="break-all font-mono text-xs text-muted-foreground">{currentVideoUrl}</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={uploading}
+                onClick={() => fileRef.current?.click()}
+                className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted/50 transition-colors disabled:opacity-50"
+              >
+                {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                {uploading ? 'Uploading…' : 'Replace'}
+              </button>
+              <button
+                type="button"
+                disabled={uploading}
+                onClick={handleDelete}
+                className="inline-flex items-center gap-2 rounded-lg border border-destructive/40 px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                data-testid="button-delete-hero-video"
+              >
+                <Trash2 className="w-4 h-4" /> Delete video
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">Save the landing to apply changes.</p>
+          </div>
         </div>
       ) : (
-        <p className="text-xs text-muted-foreground">No video set — hero uses the gradient background.</p>
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">No video set — hero uses the gradient background.</p>
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={() => fileRef.current?.click()}
+            className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted/50 transition-colors disabled:opacity-50"
+          >
+            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+            {uploading ? 'Uploading…' : 'Upload video'}
+          </button>
+        </div>
       )}
-
-      <input ref={fileRef} type="file" accept="video/mp4,video/webm" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }} />
-      <button
-        type="button"
-        disabled={uploading}
-        onClick={() => fileRef.current?.click()}
-        className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted/50 transition-colors disabled:opacity-50"
-      >
-        {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-        {uploading ? 'Uploading…' : currentVideoUrl ? 'Replace video' : 'Upload video'}
-      </button>
     </AdminCard>
   );
 }
@@ -271,7 +303,14 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
       const sections = JSON.parse(sectionsText);
       const idx = sections.findIndex((s: any) => s.type === 'heroWebsites');
       if (idx === -1) return;
-      sections[idx] = { ...sections[idx], props: { ...sections[idx].props, ...patch } };
+      // Merge the patch, then drop any null/undefined keys so removed assets stay
+      // truly absent — JSON has no `undefined`, and a persisted `null` fails the
+      // section's optional-URL schema and breaks the page render.
+      const merged: Record<string, unknown> = { ...sections[idx].props, ...patch };
+      for (const key of Object.keys(merged)) {
+        if (merged[key] === null || merged[key] === undefined) delete merged[key];
+      }
+      sections[idx] = { ...sections[idx], props: merged };
       setSectionsText(JSON.stringify(sections, null, 2));
     } catch { /* invalid JSON — silently ignore */ }
   };

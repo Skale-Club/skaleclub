@@ -450,8 +450,8 @@ export const translations = {
     'One bullet per line': 'Um tópico por linha',
     'Unsaved changes': 'Alterações não salvas',
     // Landing — Websites (bilingual: EN source, PT translation)
-    'Websites that sell for your business': 'Sites que vendem para o seu negócio',
-    'From landing page to e-commerce: we build fast, Google-optimized websites ready to turn visitors into customers.': 'Da página de captura ao e-commerce: criamos sites rápidos, otimizados para Google e prontos para converter visitantes em clientes.',
+    'Is your website still stuck in the Stone Age?': 'O seu site ainda está no tempo das pedras?',
+    'We build fast, Google-optimized websites for service businesses — deployed in days, not months.': 'Criamos sites rápidos e otimizados para o Google para negócios de serviço | entregues em dias, não em meses.',
     'I want my website': 'Quero meu site',
     'How we work': 'Como trabalhamos',
     'From briefing to launch in 4 steps': 'Do briefing ao lançamento em 4 etapas',

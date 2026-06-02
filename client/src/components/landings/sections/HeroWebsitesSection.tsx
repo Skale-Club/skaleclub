@@ -6,12 +6,20 @@ import { useTranslation } from "@/hooks/useTranslation";
 // white gradient headline) and ships a brand-blue (#406EF1) pill CTA per the
 // CLAUDE.md Brand Guidelines. Copy defaults are English (the t() source
 // language); PT is served via translations.ts when language is 'pt'.
+// Tolerant optional URL: treats null and "" as "absent" so a removed asset
+// (the editor may persist null, and JSON has no `undefined`) never fails
+// validation and breaks the page render.
+const optionalUrl = z.preprocess(
+  (v) => (v === null || v === "" ? undefined : v),
+  z.string().url().optional(),
+);
+
 export const heroWebsitesPropsSchema = z.object({
   headline: z.string().optional(),
   subheadline: z.string().optional(),
   ctaLabel: z.string().optional(),
-  backgroundImageUrl: z.string().url().optional(),
-  bgVideoUrl: z.string().url().optional(),
+  backgroundImageUrl: optionalUrl,
+  bgVideoUrl: optionalUrl,
 });
 export type HeroWebsitesProps = z.infer<typeof heroWebsitesPropsSchema>;
 
