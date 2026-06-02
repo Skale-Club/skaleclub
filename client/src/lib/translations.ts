@@ -449,6 +449,23 @@ export const translations = {
     'Move up': 'Mover para cima', 'Move down': 'Mover para baixo',
     'One bullet per line': 'Um tópico por linha',
     'Unsaved changes': 'Alterações não salvas',
+    // Landing — Websites (bilingual: EN source, PT translation)
+    'Websites that sell for your business': 'Sites que vendem para o seu negócio',
+    'From landing page to e-commerce: we build fast, Google-optimized websites ready to turn visitors into customers.': 'Da página de captura ao e-commerce: criamos sites rápidos, otimizados para Google e prontos para converter visitantes em clientes.',
+    'I want my website': 'Quero meu site',
+    'How we work': 'Como trabalhamos',
+    'From briefing to launch in 4 steps': 'Do briefing ao lançamento em 4 etapas',
+    'A clear process, with deadlines and deliverables agreed from the first contact.': 'Um processo claro, com prazos e entregas combinados desde o primeiro contato.',
+    'Discovery': 'Descoberta',
+    'We understand your business, target audience, and website goals. You get a briefing with scope and timeline.': 'Entendemos o seu negócio, o público-alvo e os objetivos do site. Você recebe um briefing com escopo e prazos.',
+    'Design': 'Design',
+    'We create visual prototypes aligned with your brand. You approve before any code is written.': 'Criamos protótipos visuais alinhados à sua marca. Você aprova antes de qualquer código ser escrito.',
+    'Build': 'Construção',
+    'We develop the website focused on speed, SEO, and conversion. You follow the progress in a staging environment.': 'Desenvolvemos o site com foco em velocidade, SEO e conversão. Você acompanha o progresso em ambiente de testes.',
+    'Launch': 'Lançamento',
+    'We publish with your own domain, analytics integration, and forms connected to your CRM. Post-launch support included.': 'Publicamos com domínio próprio, integração de analytics e formulários conectados ao seu CRM. Suporte pós-lançamento incluso.',
+    "Let's talk about your website": 'Vamos conversar sobre seu site',
+    "Tell us about your project in 1 minute. We'll reply within 24 hours with a proposal.": 'Conte sobre o seu projeto em 1 minuto. Respondemos em até 24 horas com uma proposta.',
   }
 } as const;
 export type TranslationKey = keyof typeof translations.pt;

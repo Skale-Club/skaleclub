@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from '@/components/ui/loader';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -77,6 +78,8 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [pageLanguage, setPageLanguage] = useState<'en' | 'pt'>('pt');
+  const [alternateSlug, setAlternateSlug] = useState('');
   const [sectionsText, setSectionsText] = useState('[]');
   const [parseError, setParseError] = useState<string | null>(null);
 
@@ -85,6 +88,8 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
     setName(landing.name);
     setSlug(landing.slug);
     setIsActive(landing.isActive);
+    setPageLanguage(landing.language === 'en' ? 'en' : 'pt');
+    setAlternateSlug(landing.alternateSlug ?? '');
     const sections = Array.isArray(landing.sections) ? landing.sections : [];
     setSectionsText(JSON.stringify(sections, null, 2));
     setParseError(null);
@@ -104,6 +109,8 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
       name: string;
       slug: string;
       isActive: boolean;
+      language: 'en' | 'pt';
+      alternateSlug: string | null;
       sections: SectionShape[];
     }) => {
       const res = await apiRequest('PUT', `/api/landing-pages/${landingId}`, payload);
@@ -168,6 +175,8 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
       name: name.trim(),
       slug: slug.trim(),
       isActive,
+      language: pageLanguage,
+      alternateSlug: alternateSlug.trim() || null,
       sections,
     });
   };
@@ -258,6 +267,42 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
             {slugError ? (
               <p className="text-xs text-destructive">{slugError}</p>
             ) : null}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="edit-landing-language">Language</Label>
+            <Select value={pageLanguage} onValueChange={(v) => setPageLanguage(v === 'en' ? 'en' : 'pt')}>
+              <SelectTrigger id="edit-landing-language" data-testid="select-edit-landing-language">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="pt">Português (pt-BR)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Drives the page chrome language and is the t() source ('en') vs translation ('pt').
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-landing-alternate-slug">Alternate slug</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">/</span>
+              <Input
+                id="edit-landing-alternate-slug"
+                value={alternateSlug}
+                onChange={(e) => setAlternateSlug(e.target.value.toLowerCase())}
+                maxLength={80}
+                placeholder="websites-br"
+                className="pl-7 font-mono"
+                data-testid="input-edit-landing-alternate-slug"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Slug of this page in the other language (powers hreflang). Optional.
+            </p>
           </div>
         </div>
 

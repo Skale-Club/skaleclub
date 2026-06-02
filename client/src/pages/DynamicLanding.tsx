@@ -1,8 +1,9 @@
 import { useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { AppLoader } from "@/components/ui/spinner";
 import { sectionRegistry } from "@/components/landings/sectionRegistry";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const NotFound = lazy(() => import("@/pages/not-found"));
 
@@ -11,16 +12,61 @@ interface LandingResponse {
   name: string;
   sections: Array<{ type: string; props: Record<string, unknown> }>;
   isActive: boolean;
+  language: "en" | "pt";
+  alternateSlug?: string | null;
 }
 
 export default function DynamicLanding() {
   const { slug } = useParams<{ slug: string }>();
+  const { setLanguage } = useTranslation();
 
   const { data, isLoading, error } = useQuery<LandingResponse>({
     queryKey: [`/api/landing-pages/slug/${slug}`],
     enabled: !!slug,
     retry: false,
   });
+
+  // Drive the site chrome (Navbar/Footer/t()-based sections) from the page's
+  // configured language. A fresh ad visitor lands directly in the right language.
+  const pageLanguage = data?.language;
+  useEffect(() => {
+    if (pageLanguage === "en" || pageLanguage === "pt") {
+      setLanguage(pageLanguage);
+    }
+    // setLanguage is recreated each render but stable in behavior — re-run only
+    // when the page's language changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageLanguage]);
+
+  // Inject hreflang alternates for the bilingual pair; remove them on unmount so
+  // they don't leak onto other pages. Canonical stays managed globally by useSEO.
+  const slugForSeo = data?.slug;
+  const altSlug = data?.alternateSlug;
+  useEffect(() => {
+    if (!slugForSeo || !altSlug) return;
+    const origin = window.location.origin;
+    const selfHref = `${origin}/${slugForSeo}`;
+    const altHref = `${origin}/${altSlug}`;
+    const selfTag = pageLanguage === "en" ? "en" : "pt-BR";
+    const altTag = pageLanguage === "en" ? "pt-BR" : "en";
+    const xDefaultHref = pageLanguage === "en" ? selfHref : altHref;
+
+    const created: HTMLLinkElement[] = [];
+    const add = (hreflang: string, href: string) => {
+      const link = document.createElement("link");
+      link.rel = "alternate";
+      link.hreflang = hreflang;
+      link.href = href;
+      link.setAttribute("data-landing-i18n", "true");
+      document.head.appendChild(link);
+      created.push(link);
+    };
+    add(selfTag, selfHref);
+    add(altTag, altHref);
+    add("x-default", xDefaultHref);
+
+    return () => created.forEach((l) => l.remove());
+  }, [slugForSeo, altSlug, pageLanguage]);
 
   if (isLoading) return <AppLoader />;
 

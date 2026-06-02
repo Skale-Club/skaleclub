@@ -27,6 +27,11 @@ export type LandingSection = z.infer<typeof landingSectionSchema>;
 // Slug pattern mirrors forms.ts:231 — lowercase, alphanumeric, single hyphens between segments.
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
+// Language of a landing page. 'en' is the source language (t() keys); 'pt' is
+// the translation. Drives the chrome language (DynamicLanding calls setLanguage).
+export const landingLanguages = ["en", "pt"] as const;
+export type LandingLanguage = (typeof landingLanguages)[number];
+
 // landing_pages table
 export const landingPages = pgTable("landing_pages", {
   id:        uuid("id").primaryKey().defaultRandom(),
@@ -34,6 +39,10 @@ export const landingPages = pgTable("landing_pages", {
   name:      text("name").notNull(),
   sections:  jsonb("sections").$type<LandingSection[]>().notNull().default([]),
   isActive:  boolean("is_active").notNull().default(true),
+  // Per-page language ('en' | 'pt'). Default 'pt' keeps existing rows unchanged.
+  language:  text("language").$type<LandingLanguage>().notNull().default("pt"),
+  // Slug of the same page in the other language — powers hreflang alternates.
+  alternateSlug: text("alternate_slug"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
 }, (table) => ({
@@ -50,6 +59,10 @@ export const insertLandingPageSchema = z.object({
   name:     z.string().min(1).max(200),
   sections: z.array(landingSectionSchema).default([]),
   isActive: z.boolean().default(true),
+  language: z.enum(landingLanguages).default("pt"),
+  alternateSlug: z.string().max(80).regex(slugPattern, {
+    message: "Alternate slug must be lowercase alphanumeric with single hyphens between segments",
+  }).nullable().optional(),
 });
 
 export const updateLandingPageSchema = insertLandingPageSchema.partial();

@@ -1,10 +1,11 @@
 // Phase 44 — `processStepper` section type.
 // A reusable 4-step "how we work" stepper. All copy is prop-driven with
-// pt-BR defaults baked in so the /websites seed can pass `props: {}` and
-// future service landings can override per-service by passing `props.steps`.
+// English defaults (the t() source language) so the /websites seed can pass
+// `props: {}`; PT is served via translations.ts when language is 'pt'.
 
 import { z } from "zod";
 import { Search, Palette, Code2, Rocket } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const stepSchema = z.object({
   title:       z.string(),
@@ -20,25 +21,25 @@ export const processStepperPropsSchema = z.object({
 export type ProcessStepperProps = z.infer<typeof processStepperPropsSchema>;
 
 const DEFAULTS = {
-  eyebrow:    "Como trabalhamos",
-  heading:    "Do briefing ao lançamento em 4 etapas",
-  subheading: "Um processo claro, com prazos e entregas combinados desde o primeiro contato.",
+  eyebrow:    "How we work",
+  heading:    "From briefing to launch in 4 steps",
+  subheading: "A clear process, with deadlines and deliverables agreed from the first contact.",
   steps: [
     {
-      title:       "Descoberta",
-      description: "Entendemos o seu negócio, o público-alvo e os objetivos do site. Você recebe um briefing com escopo e prazos.",
+      title:       "Discovery",
+      description: "We understand your business, target audience, and website goals. You get a briefing with scope and timeline.",
     },
     {
       title:       "Design",
-      description: "Criamos protótipos visuais alinhados à sua marca. Você aprova antes de qualquer código ser escrito.",
+      description: "We create visual prototypes aligned with your brand. You approve before any code is written.",
     },
     {
-      title:       "Construção",
-      description: "Desenvolvemos o site com foco em velocidade, SEO e conversão. Você acompanha o progresso em ambiente de testes.",
+      title:       "Build",
+      description: "We develop the website focused on speed, SEO, and conversion. You follow the progress in a staging environment.",
     },
     {
-      title:       "Lançamento",
-      description: "Publicamos com domínio próprio, integração de analytics e formulários conectados ao seu CRM. Suporte pós-launch incluso.",
+      title:       "Launch",
+      description: "We publish with your own domain, analytics integration, and forms connected to your CRM. Post-launch support included.",
     },
   ],
 } as const;
@@ -46,6 +47,7 @@ const DEFAULTS = {
 const ICONS = [Search, Palette, Code2, Rocket] as const;
 
 export function ProcessStepperSection({ props }: { props: ProcessStepperProps }) {
+  const { t } = useTranslation();
   const eyebrow    = props.eyebrow    ?? DEFAULTS.eyebrow;
   const heading    = props.heading    ?? DEFAULTS.heading;
   const subheading = props.subheading ?? DEFAULTS.subheading;
@@ -59,13 +61,13 @@ export function ProcessStepperSection({ props }: { props: ProcessStepperProps })
       <div className="container-custom mx-auto px-6">
         <div className="max-w-3xl mx-auto text-center mb-12 sm:mb-16">
           <p className="text-sm font-semibold uppercase tracking-widest text-[#1C53A3] mb-3">
-            {eyebrow}
+            {t(eyebrow)}
           </p>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-display text-zinc-900 leading-tight mb-4">
-            {heading}
+            {t(heading)}
           </h2>
           <p className="text-base sm:text-lg text-zinc-600 leading-relaxed">
-            {subheading}
+            {t(subheading)}
           </p>
         </div>
 
@@ -92,10 +94,10 @@ export function ProcessStepperSection({ props }: { props: ProcessStepperProps })
                   </span>
                 </div>
                 <h3 className="text-lg sm:text-xl font-bold font-display text-zinc-900 mb-2">
-                  {step.title}
+                  {t(step.title)}
                 </h3>
                 <p className="text-sm sm:text-base text-zinc-600 leading-relaxed max-w-xs">
-                  {step.description}
+                  {t(step.description)}
                 </p>
               </li>
             );

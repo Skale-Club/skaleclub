@@ -3,12 +3,15 @@
 //
 // Run: npx tsx --env-file=.env scripts/seed-websites-landing.ts
 //
-// Creates / updates two rows:
+// Creates / updates:
 //   1. forms          WHERE slug = 'website-leads'
-//   2. landing_pages  WHERE slug = 'websites'
+//   2. landing_pages  WHERE slug = 'websites'    (EN mother, language='en')
+//   3. landing_pages  WHERE slug = 'websites-br' (PT,        language='pt')
 //
-// After running, visiting http://localhost:1000/websites renders the landing
-// composed of [heroWebsites, trustBadges, processStepper, reviews, leadFormCta].
+// Both landings share the SAME sections [heroWebsites, trustBadges,
+// processStepper, reviews, leadFormCta]; copy is t()-based so the language
+// column drives EN vs PT. After running, /websites renders in English and
+// /websites-br in Portuguese.
 import "dotenv/config";
 import { eq } from "drizzle-orm";
 import { pool, db } from "../server/db.js";
@@ -23,8 +26,10 @@ const FORM_NAME = "Website Leads";
 const FORM_DESCRIPTION =
   "Leads for the /websites landing — businesses looking to commission a website.";
 
-const LANDING_SLUG = "websites";
-const LANDING_NAME = "Sites que vendem";
+// Bilingual pair: EN mother at /websites, PT at /websites-br. Same sections;
+// only the language + alternateSlug differ.
+const LANDING_EN = { slug: "websites",    name: "Websites (EN)", language: "en" as const, alternateSlug: "websites-br" };
+const LANDING_PT = { slug: "websites-br", name: "Websites (PT)", language: "pt" as const, alternateSlug: "websites" };
 
 // ── Form questions (pt-BR copy per 44-CONTEXT.md decisions) ───────────────
 //
@@ -133,20 +138,15 @@ const WEBSITE_LEADS_CONFIG: FormConfig = {
 
 // ── Landing sections (in render order) ─────────────────────────────────────
 
+// Sections are IDENTICAL for both languages. All copy is t()-based now (EN
+// source defaults + PT in translations.ts), so language is driven solely by the
+// landing_pages.language column — no per-language copy duplicated here.
 const LANDING_SECTIONS: LandingSection[] = [
-  { type: "heroWebsites",   props: {} }, // pt-BR defaults from 44-01
-  { type: "trustBadges",    props: {} }, // adapter from 43-03 — reads /api/company-settings
-  { type: "processStepper", props: {} }, // pt-BR defaults from 44-02
-  { type: "reviews",        props: {} }, // adapter from 43-03 — reads /api/company-settings
-  {
-    type: "leadFormCta",
-    props: {
-      formSlug:   FORM_SLUG,
-      heading:    "Vamos conversar sobre seu site",
-      subheading: "Conte sobre o seu projeto em 1 minuto. Respondemos em até 24 horas com uma proposta.",
-      ctaLabel:   "Quero meu site",
-    },
-  },
+  { type: "heroWebsites",   props: {} }, // copy via t() (HeroWebsitesSection defaults)
+  { type: "trustBadges",    props: {} }, // adapter — reads /api/company-settings (t()-based)
+  { type: "processStepper", props: {} }, // copy via t() (ProcessStepperSection defaults)
+  { type: "reviews",        props: {} }, // adapter — reads /api/company-settings (t()-based)
+  { type: "leadFormCta",    props: { formSlug: FORM_SLUG } }, // copy via t() (LeadFormCtaAdapter defaults)
 ];
 
 // ── Seed runner ───────────────────────────────────────────────────────────
@@ -187,23 +187,27 @@ async function upsertForm() {
   }
 }
 
-async function upsertLanding() {
-  console.log(`Seeding landing: slug='${LANDING_SLUG}'`);
+type LandingSpec = { slug: string; name: string; language: "en" | "pt"; alternateSlug: string };
+
+async function upsertLanding(spec: LandingSpec) {
+  console.log(`Seeding landing: slug='${spec.slug}' (${spec.language})`);
   const existing = await db
     .select()
     .from(landingPages)
-    .where(eq(landingPages.slug, LANDING_SLUG));
+    .where(eq(landingPages.slug, spec.slug));
 
   if (existing.length > 0) {
     const [row] = await db
       .update(landingPages)
       .set({
-        name:      LANDING_NAME,
-        sections:  LANDING_SECTIONS,
-        isActive:  true,
-        updatedAt: new Date(),
+        name:          spec.name,
+        sections:      LANDING_SECTIONS,
+        isActive:      true,
+        language:      spec.language,
+        alternateSlug: spec.alternateSlug,
+        updatedAt:     new Date(),
       })
-      .where(eq(landingPages.slug, LANDING_SLUG))
+      .where(eq(landingPages.slug, spec.slug))
       .returning();
     console.log(`  Updated existing landing (id=${row.id}).`);
     return row;
@@ -211,10 +215,12 @@ async function upsertLanding() {
     const [row] = await db
       .insert(landingPages)
       .values({
-        slug:     LANDING_SLUG,
-        name:     LANDING_NAME,
-        sections: LANDING_SECTIONS,
-        isActive: true,
+        slug:          spec.slug,
+        name:          spec.name,
+        sections:      LANDING_SECTIONS,
+        isActive:      true,
+        language:      spec.language,
+        alternateSlug: spec.alternateSlug,
       })
       .returning();
     console.log(`  Inserted new landing (id=${row.id}).`);
@@ -224,7 +230,8 @@ async function upsertLanding() {
 
 async function main() {
   await upsertForm();
-  await upsertLanding();
+  await upsertLanding(LANDING_EN);
+  await upsertLanding(LANDING_PT);
   console.log("Done.");
   await pool.end();
 }

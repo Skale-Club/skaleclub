@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from '@/components/ui/loader';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -42,11 +43,15 @@ export function CreateLandingDialog({ open, onOpenChange, onCreated }: CreateLan
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [slugEdited, setSlugEdited] = useState(false);
+  const [language, setLanguage] = useState<'en' | 'pt'>('pt');
+  const [alternateSlug, setAlternateSlug] = useState('');
 
   const reset = () => {
     setName('');
     setSlug('');
     setSlugEdited(false);
+    setLanguage('pt');
+    setAlternateSlug('');
   };
 
   const effectiveSlug = (slugEdited ? slug : slugify(name)).trim();
@@ -67,6 +72,8 @@ export function CreateLandingDialog({ open, onOpenChange, onCreated }: CreateLan
         slug: effectiveSlug,
         name: name.trim(),
         sections: [],
+        language,
+        alternateSlug: alternateSlug.trim() || null,
       });
       return res.json();
     },
@@ -150,6 +157,36 @@ export function CreateLandingDialog({ open, onOpenChange, onCreated }: CreateLan
                   Lowercase letters, digits, and hyphens only. Becomes the public URL.
                 </p>
               )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-landing-language">Language</Label>
+              <Select value={language} onValueChange={(v) => setLanguage(v === 'en' ? 'en' : 'pt')}>
+                <SelectTrigger id="create-landing-language" data-testid="select-create-landing-language">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="en">English</SelectItem>
+                  <SelectItem value="pt">Português (pt-BR)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-landing-alternate-slug">Alternate slug (optional)</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">/</span>
+                <Input
+                  id="create-landing-alternate-slug"
+                  value={alternateSlug}
+                  onChange={(e) => setAlternateSlug(e.target.value.toLowerCase())}
+                  placeholder="websites-br"
+                  maxLength={80}
+                  className="pl-7"
+                  data-testid="input-create-landing-alternate-slug"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Slug of this page in the other language (powers hreflang).
+              </p>
             </div>
           </div>
           <DialogFooter>

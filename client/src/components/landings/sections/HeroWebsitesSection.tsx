@@ -1,10 +1,11 @@
 import { z } from "zod";
+import { useTranslation } from "@/hooks/useTranslation";
 
 // Hero variant for the /websites landing.
 // Mirrors the visual tone of the Home hero (brand blue + gradient overlay,
 // white gradient headline) and ships a brand-blue (#406EF1) pill CTA per the
-// CLAUDE.md Brand Guidelines. All props are optional so the seed can pass
-// `props: {}` and the component will fall back to pt-BR defaults.
+// CLAUDE.md Brand Guidelines. Copy defaults are English (the t() source
+// language); PT is served via translations.ts when language is 'pt'.
 export const heroWebsitesPropsSchema = z.object({
   headline: z.string().optional(),
   subheadline: z.string().optional(),
@@ -14,13 +15,14 @@ export const heroWebsitesPropsSchema = z.object({
 export type HeroWebsitesProps = z.infer<typeof heroWebsitesPropsSchema>;
 
 const DEFAULTS = {
-  headline: "Sites que vendem para o seu negócio",
+  headline: "Websites that sell for your business",
   subheadline:
-    "Da página de captura ao e-commerce: criamos sites rápidos, otimizados para Google e prontos para converter visitantes em clientes.",
-  ctaLabel: "Quero meu site",
+    "From landing page to e-commerce: we build fast, Google-optimized websites ready to turn visitors into customers.",
+  ctaLabel: "I want my website",
 } as const;
 
 export function HeroWebsitesSection({ props }: { props: HeroWebsitesProps }) {
+  const { t } = useTranslation();
   const headline = props.headline ?? DEFAULTS.headline;
   const subheadline = props.subheadline ?? DEFAULTS.subheadline;
   const ctaLabel = props.ctaLabel ?? DEFAULTS.ctaLabel;
@@ -46,11 +48,11 @@ export function HeroWebsitesSection({ props }: { props: HeroWebsitesProps }) {
           <div className="order-1 lg:order-2 text-white pt-6 sm:pt-8 lg:pt-16 pb-16 sm:pb-24 lg:pb-32 relative z-20">
             <h1 className="text-[9vw] sm:text-5xl md:text-6xl lg:text-4xl xl:text-5xl font-bold mb-3 lg:mb-6 font-display leading-[1.05] sm:leading-[1.1]">
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">
-                {headline}
+                {t(headline)}
               </span>
             </h1>
             <p className="text-base sm:text-xl text-blue-50/80 mb-4 lg:mb-8 leading-relaxed max-w-xl">
-              {subheadline}
+              {t(subheadline)}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 lg:gap-5 flex-wrap">
               <button
@@ -59,7 +61,7 @@ export function HeroWebsitesSection({ props }: { props: HeroWebsitesProps }) {
                 data-testid="button-hero-websites-cta"
                 className="w-full sm:w-auto shrink-0 px-6 sm:px-8 py-3 sm:py-4 bg-[#406EF1] hover:bg-[#355CD0] hover:scale-105 text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
               >
-                {ctaLabel}
+                {t(ctaLabel)}
               </button>
             </div>
           </div>
