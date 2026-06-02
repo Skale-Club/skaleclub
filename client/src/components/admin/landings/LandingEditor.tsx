@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { ArrowLeft, ExternalLink, LayoutPanelLeft } from 'lucide-react';
+import { ArrowLeft, ExternalLink, LayoutPanelLeft, Loader2, Upload, Video, X } from 'lucide-react';
 import { AdminCard, SectionHeader } from '@/components/admin/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,6 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2 } from '@/components/ui/loader';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { isReservedSlug } from '@shared/reservedSlugs';
@@ -59,6 +58,92 @@ function validateSections(value: unknown): string | null {
     }
   }
   return null;
+}
+
+function HeroVideoPanel({
+  sectionsText,
+  onPatch,
+}: {
+  sectionsText: string;
+  onPatch: (patch: Record<string, unknown>) => void;
+}) {
+  const { toast } = useToast();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  // Only show when sections contain a heroWebsites entry.
+  let currentVideoUrl: string | null = null;
+  try {
+    const sections = JSON.parse(sectionsText);
+    const hero = sections.find((s: any) => s.type === 'heroWebsites');
+    currentVideoUrl = hero?.props?.bgVideoUrl ?? null;
+  } catch { /* invalid JSON */ }
+
+  const hasHero = (() => {
+    try { return JSON.parse(sectionsText).some((s: any) => s.type === 'heroWebsites'); }
+    catch { return false; }
+  })();
+
+  if (!hasHero) return null;
+
+  const handleFile = async (file: File) => {
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (!['mp4', 'webm'].includes(ext ?? '')) {
+      toast({ title: 'Only .mp4 and .webm files are supported', variant: 'destructive' });
+      return;
+    }
+    setUploading(true);
+    try {
+      const signRes = await apiRequest('POST', '/api/uploads/landing-media/sign', { filename: file.name });
+      const { uploadUrl, publicUrl } = await signRes.json();
+      const up = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+      if (!up.ok) throw new Error('Upload to storage failed');
+      onPatch({ bgVideoUrl: publicUrl });
+      toast({ title: 'Video uploaded', description: 'Save the landing to apply.' });
+    } catch (err: any) {
+      toast({ title: 'Upload failed', description: err?.message, variant: 'destructive' });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <AdminCard className="space-y-3">
+      <div className="flex items-center gap-2">
+        <Video className="w-4 h-4 text-muted-foreground" />
+        <Label className="text-base font-semibold">Hero background video</Label>
+        <span className="text-xs text-muted-foreground ml-1">.mp4 or .webm</span>
+      </div>
+
+      {currentVideoUrl ? (
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/40 border text-sm">
+          <Video className="w-4 h-4 shrink-0 text-primary" />
+          <span className="truncate flex-1 font-mono text-xs text-muted-foreground">{currentVideoUrl}</span>
+          <button
+            type="button"
+            onClick={() => onPatch({ bgVideoUrl: null })}
+            className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
+            title="Remove video"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">No video set — hero uses the gradient background.</p>
+      )}
+
+      <input ref={fileRef} type="file" accept="video/mp4,video/webm" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }} />
+      <button
+        type="button"
+        disabled={uploading}
+        onClick={() => fileRef.current?.click()}
+        className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted/50 transition-colors disabled:opacity-50"
+      >
+        {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+        {uploading ? 'Uploading…' : currentVideoUrl ? 'Replace video' : 'Upload video'}
+      </button>
+    </AdminCard>
+  );
 }
 
 export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
@@ -179,6 +264,16 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
       alternateSlug: alternateSlug.trim() || null,
       sections,
     });
+  };
+
+  const patchHeroSections = (patch: Record<string, unknown>) => {
+    try {
+      const sections = JSON.parse(sectionsText);
+      const idx = sections.findIndex((s: any) => s.type === 'heroWebsites');
+      if (idx === -1) return;
+      sections[idx] = { ...sections[idx], props: { ...sections[idx].props, ...patch } };
+      setSectionsText(JSON.stringify(sections, null, 2));
+    } catch { /* invalid JSON — silently ignore */ }
   };
 
   const previewHref = isActive && landing ? `/${landing.slug}` : null;
@@ -318,6 +413,8 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
           </Label>
         </div>
       </AdminCard>
+
+      <HeroVideoPanel sectionsText={sectionsText} onPatch={patchHeroSections} />
 
       <AdminCard className="space-y-3">
         <div className="flex items-center justify-between gap-4 flex-wrap">

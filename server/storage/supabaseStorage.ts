@@ -121,6 +121,21 @@ export class SupabaseStorageService {
     }
   }
 
+  // Create a presigned upload URL for a landing hero video (mp4/webm).
+  // The client PUTs the file directly to Supabase — no large payload through Express.
+  async getSignedUploadUrlForLandingMedia(filename: string): Promise<{ uploadUrl: string; publicUrl: string }> {
+    await ensureBucket();
+    const supabase = getSupabaseAdmin();
+    const ext = (filename.split(".").pop() || "mp4").toLowerCase();
+    const objectId = `landing-hero/${Date.now()}-${randomUUID()}.${ext}`;
+
+    const { data, error } = await supabase.storage.from(BUCKET_NAME).createSignedUploadUrl(objectId);
+    if (error || !data) throw new Error(`Failed to create signed upload URL: ${error?.message}`);
+
+    const { data: urlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(objectId);
+    return { uploadUrl: data.signedUrl, publicUrl: urlData.publicUrl };
+  }
+
   // Serve a file from Supabase Storage by redirecting to the public URL
   async serveFile(objectPath: string, res: Response): Promise<void> {
     const supabase = getSupabaseAdmin();

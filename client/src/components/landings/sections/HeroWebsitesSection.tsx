@@ -11,13 +11,13 @@ export const heroWebsitesPropsSchema = z.object({
   subheadline: z.string().optional(),
   ctaLabel: z.string().optional(),
   backgroundImageUrl: z.string().url().optional(),
+  bgVideoUrl: z.string().url().optional(),
 });
 export type HeroWebsitesProps = z.infer<typeof heroWebsitesPropsSchema>;
 
 const DEFAULTS = {
-  headline: "Websites that sell for your business",
-  subheadline:
-    "From landing page to e-commerce: we build fast, Google-optimized websites ready to turn visitors into customers.",
+  headline: "Is your website still stuck in the Stone Age?",
+  subheadline: "We build fast, Google-optimized websites for service businesses — deployed in days, not months.",
   ctaLabel: "I want my website",
   // Served from client/public — language-neutral brand illustration.
   backgroundImageUrl: "/SkaleClub.webp",
@@ -29,6 +29,7 @@ export function HeroWebsitesSection({ props }: { props: HeroWebsitesProps }) {
   const subheadline = props.subheadline ?? DEFAULTS.subheadline;
   const ctaLabel = props.ctaLabel ?? DEFAULTS.ctaLabel;
   const bgUrl = props.backgroundImageUrl ?? DEFAULTS.backgroundImageUrl;
+  const bgVideoUrl = props.bgVideoUrl;
 
   const handleCtaClick = () => {
     const trigger = document.querySelector<HTMLElement>('[data-landing-lead-cta]');
@@ -72,25 +73,39 @@ export function HeroWebsitesSection({ props }: { props: HeroWebsitesProps }) {
               <img
                 src={bgUrl}
                 alt=""
-                className="w-[92vw] sm:w-[98%] lg:w-full max-w-[380px] sm:max-w-[360px] md:max-w-[430px] lg:max-w-[500px] xl:max-w-[560px] object-contain drop-shadow-2xl origin-bottom"
+                className="w-[70vw] sm:w-[75%] lg:w-full max-w-[260px] sm:max-w-[260px] md:max-w-[300px] lg:max-w-[340px] xl:max-w-[380px] object-contain drop-shadow-2xl origin-bottom"
               />
             ) : null}
           </div>
         </div>
       </div>
 
+      {/* Video background — renders below the gradient overlay */}
+      {bgVideoUrl && (
+        <video
+          className="absolute inset-0 w-full h-full object-cover"
+          src={bgVideoUrl}
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+      )}
+
       <div
         className="absolute inset-0"
         style={{
-          background: `
-            radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.35) 80%, rgba(0, 0, 0, 0.85) 100%),
-            radial-gradient(circle at 65% 10%, rgba(100, 135, 215, 0.30) 0%, transparent 60%),
-            linear-gradient(
-              to right bottom,
-              #09152d, #0b152a, #0d1427, #0f1424, #101421, #121622,
-              #151723, #171924, #1c1c29, #21202e, #262332, #2c2637
-            )
-          `,
+          background: bgVideoUrl
+            ? `linear-gradient(to right bottom, rgba(9,21,45,0.75), rgba(28,83,163,0.55))`
+            : `
+              radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.35) 80%, rgba(0, 0, 0, 0.85) 100%),
+              radial-gradient(circle at 65% 10%, rgba(100, 135, 215, 0.30) 0%, transparent 60%),
+              linear-gradient(
+                to right bottom,
+                #09152d, #0b152a, #0d1427, #0f1424, #101421, #121622,
+                #151723, #171924, #1c1c29, #21202e, #262332, #2c2637
+              )
+            `,
         }}
       />
     </section>
