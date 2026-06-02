@@ -2,7 +2,7 @@ import { z } from "zod";
 
 // Hero variant for the /websites landing.
 // Mirrors the visual tone of the Home hero (brand blue + gradient overlay,
-// white gradient headline) but ships a BRAND YELLOW pill CTA per the
+// white gradient headline) and ships a brand-blue (#406EF1) pill CTA per the
 // CLAUDE.md Brand Guidelines. All props are optional so the seed can pass
 // `props: {}` and the component will fall back to pt-BR defaults.
 export const heroWebsitesPropsSchema = z.object({
@@ -57,7 +57,7 @@ export function HeroWebsitesSection({ props }: { props: HeroWebsitesProps }) {
                 type="button"
                 onClick={handleCtaClick}
                 data-testid="button-hero-websites-cta"
-                className="w-full sm:w-auto shrink-0 px-6 sm:px-8 py-3 sm:py-4 bg-[#FFFF01] hover:bg-[#e6e600] hover:scale-105 text-black font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
+                className="w-full sm:w-auto shrink-0 px-6 sm:px-8 py-3 sm:py-4 bg-[#406EF1] hover:bg-[#355CD0] hover:scale-105 text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
               >
                 {ctaLabel}
               </button>

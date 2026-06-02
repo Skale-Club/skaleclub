@@ -87,7 +87,7 @@ export function ProcessStepperSection({ props }: { props: ProcessStepperProps })
               >
                 <div className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full bg-[#1C53A3] text-white shadow-lg shadow-[#1C53A3]/20 mb-5">
                   <Icon className="h-7 w-7" />
-                  <span className="absolute -top-2 -right-2 flex h-7 w-7 items-center justify-center rounded-full bg-[#FFFF01] text-xs font-bold text-black border-2 border-zinc-50">
+                  <span className="absolute -top-2 -right-2 flex h-7 w-7 items-center justify-center rounded-full bg-[#406EF1] text-xs font-bold text-white border-2 border-zinc-50">
                     {stepNumber}
                   </span>
                 </div>

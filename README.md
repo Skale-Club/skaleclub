@@ -118,8 +118,8 @@ shared/
 
 ## Brand Guidelines
 
-- **Primary Blue**: `#1C53A3`
-- **Brand Yellow**: `#FFFF01` (for CTAs)
+- **Primary Navy**: `#0A162E` (dark surfaces, headings)
+- **Action Blue (CTAs/buttons)**: `#406EF1` (hover `#355CD0`, white bold text)
 - **Fonts**: Outfit (headings), Inter (body)
 
 ## License

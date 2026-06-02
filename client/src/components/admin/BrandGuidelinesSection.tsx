@@ -76,7 +76,7 @@ export function BrandGuidelinesSection() {
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   rows={20}
-                  placeholder={t('## Brand Identity\n\n**Primary Color:** #1C53A3\n**Accent Color:** #FFFF01\n**Fonts:** Outfit (headings), Inter (body)\n\n## Tone of Voice\n\n- Professional yet approachable\n- Action-oriented language\n\n## Always Include\n- Company name: Skale Club\n\n## Never Include\n- Competitor mentions')}
+                  placeholder={t('## Brand Identity\n\n**Primary Color:** #0A162E\n**CTA / Button Color:** #406EF1\n**Fonts:** Outfit (headings), Inter (body)\n\n## Tone of Voice\n\n- Professional yet approachable\n- Action-oriented language\n\n## Always Include\n- Company name: Skale Club\n\n## Never Include\n- Competitor mentions')}
                   className="font-mono text-sm resize-y min-h-[300px]"
                 />
                 <p className={`text-xs text-right ${content.length > 2000 ? 'text-destructive' : 'text-muted-foreground'}`}>

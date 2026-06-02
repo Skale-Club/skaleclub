@@ -30,18 +30,19 @@ Skale Club is a professional marketing service platform that emphasizes trust, q
 
 ### Brand Colors
 
-#### Primary Blue - `#1C53A3`
-- HSL: `215 71% 37%`
-- **Usage**: Hero backgrounds, headers, primary branding elements
-- **Meaning**: Trust, reliability, cleanliness
-- **Dark Mode**: `#3B82F6` (217 91% 60%) - Lighter blue for contrast
+> The brand is a **two-color palette**: Primary navy `#0A162E` and Action Blue `#406EF1`. There is **no brand yellow** (legacy, fully removed). The amber `warning` color below is a functional UI state, not a brand color.
 
-#### Brand Yellow - `#FFFF01`
-- HSL: `60 100% 50%`
-- **Usage**: CTA buttons, highlights, important accents
-- **Required**: All "Book Now" and "Instant Price" buttons
-- **Hover**: `#e6e600` (slightly darker yellow)
+#### Primary Navy - `#0A162E`
+- **Usage**: Dark surfaces, hero backgrounds, headings when convenient
+- **Meaning**: Trust, depth, premium
+
+#### Action Blue - `#406EF1`
+- **Usage**: CTAs and buttons, links, interactive accents
+- **Required**: All primary CTA buttons (pill-shaped `rounded-full`, white bold text)
+- **Hover**: `#355CD0` (slightly darker blue)
 - **Same color** in dark mode
+
+> Note: the theme `--primary` token is still `#1C53A3` (HSL `215 71% 37%`) and was intentionally left untouched — it remains the interactive token used across the admin/theme. Brand-level CTAs use Action Blue `#406EF1`.
 
 #### Text Colors
 - **Primary**: `#1D1D1D` (light mode) / `#F1F5F9` (dark mode)
@@ -266,7 +267,7 @@ Tailwind units: 4, 6, 8, 12, 16, 24
 - `default` - Primary blue
 - `destructive` - Destructive red
 - `outline` - Border with transparent background
-- `secondary` - Brand yellow
+- `secondary` - Neutral slate
 - `ghost` - No border or background
 
 **Sizes:**
@@ -285,7 +286,7 @@ Tailwind units: 4, 6, 8, 12, 16, 24
 
 **Variants:**
 - `default` - Primary blue
-- `secondary` - Brand yellow
+- `secondary` - Neutral slate
 - `destructive` - Destructive red
 - `success` - Success green
 - `warning` - Warning yellow
@@ -464,7 +465,7 @@ Large hero image showing professional cleaners in modern home setting with brigh
   - Service type dropdown
   - Location/address input
   - Date/time selector
-  - "Get Instant Quote" CTA button (Brand Yellow)
+  - "Get Instant Quote" CTA button (Action Blue `#406EF1`)
 
 #### Services Grid (3 columns desktop, 1 column mobile)
 
@@ -513,7 +514,7 @@ Clean receipt-style summary with booking details, professional assigned (photo +
 ### Frontend Component Specifications
 
 #### Buttons
-- **Primary CTA**: Brand Yellow (`#FFFF01`) with black bold text, `rounded-full` (pill shape)
+- **Primary CTA**: Action Blue (`#406EF1`, hover `#355CD0`) with white bold text, `rounded-full` (pill shape)
 - **Secondary**: Outlined version, `rounded-lg`
 - **Text buttons**: For tertiary actions
 - **Buttons on images**: `backdrop-blur-md bg-white/20 text-white`
@@ -559,7 +560,7 @@ Small `rounded-full` pills with colored backgrounds:
 - Use `admin-*` utility classes for consistency in admin
 - Apply transitions to elements that change with theme
 - Test UI in both themes before committing
-- Use Brand Yellow (`#FFFF01`) for all main CTAs
+- Use Action Blue (`#406EF1`) for all main CTAs
 - Apply `rounded-full` to main CTA buttons
 - Maintain generous spacing (according to defined primitives)
 - Follow typographic hierarchy (Outfit for headings, Inter for body)
@@ -569,7 +570,7 @@ Small `rounded-full` pills with colored backgrounds:
 - Ignoring dark mode in new components
 - Creating spacing variations outside the standard
 - Removing focus states (accessibility)
-- Using different colors from Brand Yellow for main CTAs
+- Using different colors from Action Blue for main CTAs (and never the legacy brand yellow)
 - Mixing fonts different from the established ones
 - Creating unnecessary abstractions or over-engineering
 
@@ -585,7 +586,7 @@ Small `rounded-full` pills with colored backgrounds:
 - [ ] Uses `admin-*` utility classes when applicable
 
 #### Public Frontend
-- [ ] Uses Brand Yellow for main CTAs
+- [ ] Uses Action Blue (`#406EF1`) for main CTAs
 - [ ] Main buttons with `rounded-full`
 - [ ] Optimized and high-quality images
 - [ ] Follows typographic hierarchy (Outfit/Inter)
@@ -598,8 +599,9 @@ Small `rounded-full` pills with colored backgrounds:
 ## Quick Reference
 
 ### Main Colors
-- **Primary Blue**: `#1C53A3` (light) / `#3B82F6` (dark)
-- **Brand Yellow**: `#FFFF01` (both modes)
+- **Primary Navy**: `#0A162E` (dark surfaces, headings)
+- **Action Blue (CTAs/buttons)**: `#406EF1` (hover `#355CD0`, both modes)
+- **Theme `--primary` token**: `#1C53A3` (light) / `#3B82F6` (dark) — interactive token, intentionally unchanged
 - **Success**: `#059669` (light) / `#10B981` (dark)
 - **Warning**: `#F59E0B` (both modes)
 - **Destructive**: `#DC2626` (light) / `#EF4444` (dark)

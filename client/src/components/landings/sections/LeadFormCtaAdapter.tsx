@@ -26,7 +26,7 @@ export function LeadFormCtaAdapter({ props }: { props: z.infer<typeof leadFormCt
           type="button"
           data-landing-lead-cta
           onClick={() => setIsOpen(true)}
-          className="inline-flex items-center justify-center rounded-full bg-[#FFFF01] px-8 py-4 text-base font-bold text-black hover:scale-105 transition-transform"
+          className="inline-flex items-center justify-center rounded-full bg-[#406EF1] px-8 py-4 text-base font-bold text-white hover:bg-[#355CD0] hover:scale-105 transition-all"
         >
           {ctaLabel}
         </button>
