@@ -305,10 +305,19 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
     <div className="space-y-6">
       <SectionHeader
         title={landing.name}
-        description={`Editing /${landing.slug}`}
+        description={`/${landing.slug}`}
         icon={<LayoutPanelLeft className="w-5 h-5" />}
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <a
+              href={`/${landing.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 font-mono text-xs text-muted-foreground hover:text-primary hover:border-primary transition-colors"
+              title="Open in new tab"
+            >
+              /{landing.slug} <ExternalLink className="w-3 h-3" />
+            </a>
             <Button
               variant="outline"
               size="sm"
@@ -317,19 +326,6 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
             >
               <ArrowLeft className="w-4 h-4 mr-2" /> Back
             </Button>
-            {previewHref ? (
-              <a
-                href={previewHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-                data-testid="link-preview-landing"
-              >
-                <ExternalLink className="w-4 h-4" /> Preview
-              </a>
-            ) : (
-              <span className="text-xs text-muted-foreground">Preview disabled (inactive)</span>
-            )}
           </div>
         }
       />
