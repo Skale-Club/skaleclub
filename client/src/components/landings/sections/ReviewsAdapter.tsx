@@ -4,7 +4,7 @@ import type { CompanySettings } from "@shared/schema";
 import { ReviewsSection } from "@/components/home/ReviewsSection";
 
 export const reviewsPropsSchema = z.object({
-  embedUrl: z.string().url().optional(),
+  embedUrl: z.string().optional(),
   title: z.string().optional(),
   subtitle: z.string().optional(),
 });

@@ -136,9 +136,9 @@ export function SectionsTab({
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Embed URL</Label>
+              <Label>Embed Code</Label>
               <div className="relative">
-                <Input
+                <Textarea
                   value={reviewsSection.embedUrl || ''}
                   onChange={(e) =>
                     updateHomepageContent(prev => ({
@@ -146,11 +146,12 @@ export function SectionsTab({
                       reviewsSection: { ...DEFAULT_HOMEPAGE_CONTENT.reviewsSection, ...(prev.reviewsSection || {}), embedUrl: e.target.value },
                     }), 'homepageContent.reviewsSection.embedUrl')
                   }
-                  placeholder="https://..."
+                  placeholder="https://... ou cole um <iframe> ou <script>"
+                  className="min-h-[80px] font-mono text-xs"
                 />
                 <SavedIndicator field="homepageContent.reviewsSection.embedUrl" />
               </div>
-              <p className="text-xs text-muted-foreground">External review widget embed URL.</p>
+              <p className="text-xs text-muted-foreground">Cole uma URL, um código &lt;iframe&gt; ou um &lt;script&gt; de widget externo.</p>
             </div>
           </div>
         </div>
