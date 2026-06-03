@@ -117,9 +117,9 @@ export function LeadsSection() {
     const incomplete = list.filter(l => !l.formCompleto);
     return {
       total: list.length,
-      hot: list.filter(l => l.classificacao === 'QUENTE').length,
-      warm: list.filter(l => l.classificacao === 'MORNO').length,
-      cold: list.filter(l => l.classificacao === 'FRIO').length,
+      hot: list.filter(l => l.classificacao === 'HOT').length,
+      warm: list.filter(l => l.classificacao === 'WARM').length,
+      cold: list.filter(l => l.classificacao === 'COLD').length,
       complete: list.filter(l => l.formCompleto).length,
       inProgress: incomplete.filter(l => l.updatedAt && new Date(l.updatedAt) >= oneDayAgo).length,
       abandoned: incomplete.filter(l => !l.updatedAt || new Date(l.updatedAt) < oneDayAgo).length,
@@ -137,10 +137,10 @@ export function LeadsSection() {
 
   const classificationOptions: { value: LeadClassification | 'all'; label: string }[] = [
     { value: 'all', label: 'All ratings' },
-    { value: 'QUENTE', label: 'Hot' },
-    { value: 'MORNO', label: 'Warm' },
-    { value: 'FRIO', label: 'Cold' },
-    { value: 'DESQUALIFICADO', label: 'Disqualified' },
+    { value: 'HOT', label: 'Hot' },
+    { value: 'WARM', label: 'Warm' },
+    { value: 'COLD', label: 'Cold' },
+    { value: 'DISQUALIFIED', label: 'Disqualified' },
   ];
 
   const completionOptions: { value: 'all' | 'completo' | 'em_progresso' | 'abandonado'; label: string }[] = [

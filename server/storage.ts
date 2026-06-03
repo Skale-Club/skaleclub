@@ -2375,15 +2375,15 @@ export class DatabaseStorage implements IStorage {
       ...(filters?.campaign ? [eq(visitorSessions.ftCampaign, filters.campaign)] : []),
     ];
 
-    // Hot/warm/cold use the destination's PT-BR enum values (QUENTE/MORNO/FRIO).
+    // Hot/warm/cold use the destination's enum values (HOT/WARM/COLD).
     const rows = await db
       .select({
         channel: visitorSessions.ftSourceChannel,
         visits: sql<number>`count(distinct ${visitorSessions.id})`,
         leads: sql<number>`count(distinct ${formLeads.id})`,
-        hotLeads: sql<number>`count(distinct ${formLeads.id}) filter (where ${formLeads.classificacao} = 'QUENTE')`,
-        warmLeads: sql<number>`count(distinct ${formLeads.id}) filter (where ${formLeads.classificacao} = 'MORNO')`,
-        coldLeads: sql<number>`count(distinct ${formLeads.id}) filter (where ${formLeads.classificacao} = 'FRIO')`,
+        hotLeads: sql<number>`count(distinct ${formLeads.id}) filter (where ${formLeads.classificacao} = 'HOT')`,
+        warmLeads: sql<number>`count(distinct ${formLeads.id}) filter (where ${formLeads.classificacao} = 'WARM')`,
+        coldLeads: sql<number>`count(distinct ${formLeads.id}) filter (where ${formLeads.classificacao} = 'COLD')`,
       })
       .from(visitorSessions)
       .leftJoin(formLeads, eq(formLeads.visitorId, visitorSessions.id))

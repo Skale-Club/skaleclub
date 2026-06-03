@@ -1,10 +1,10 @@
 import type { LeadClassification, LeadStatus } from '@shared/schema';
 
 const leadClassificationLabels: Record<LeadClassification, string> = {
-  QUENTE: 'Hot',
-  MORNO: 'Warm',
-  FRIO: 'Cold',
-  DESQUALIFICADO: 'Disqualified',
+  HOT: 'Hot',
+  WARM: 'Warm',
+  COLD: 'Cold',
+  DISQUALIFIED: 'Disqualified',
 };
 
 const leadStatusLabels: Record<LeadStatus, string> = {

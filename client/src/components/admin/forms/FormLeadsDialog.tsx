@@ -28,10 +28,10 @@ export function FormLeadsDialog({ form, onClose }: { form: FormRow | null; onClo
   const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 1;
 
   const classColor: Record<string, string> = {
-    QUENTE: 'text-red-500',
-    MORNO: 'text-amber-500',
-    FRIO: 'text-blue-500',
-    DESQUALIFICADO: 'text-muted-foreground',
+    HOT: 'text-red-500',
+    WARM: 'text-amber-500',
+    COLD: 'text-blue-500',
+    DISQUALIFIED: 'text-muted-foreground',
   };
 
   return (

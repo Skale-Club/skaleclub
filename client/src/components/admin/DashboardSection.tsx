@@ -123,7 +123,7 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
     };
 
     const qualification = {
-      hot: leadsList.filter((lead) => lead.classificacao === 'QUENTE').length,
+      hot: leadsList.filter((lead) => lead.classificacao === 'HOT').length,
       complete: leadsList.filter((lead) => lead.formCompleto).length,
     };
     const completion = {

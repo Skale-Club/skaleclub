@@ -258,10 +258,10 @@ export function calculateFormScores(answers: Partial<FormAnswers>) {
 
 export function classifyLead(score: number, thresholds?: FormConfig["thresholds"]): LeadClassification {
   const t = thresholds || DEFAULT_FORM_CONFIG.thresholds;
-  if (score >= t.hot) return "QUENTE";
-  if (score >= t.warm) return "MORNO";
-  if (score >= t.cold) return "FRIO";
-  return "DESQUALIFICADO";
+  if (score >= t.hot) return "HOT";
+  if (score >= t.warm) return "WARM";
+  if (score >= t.cold) return "COLD";
+  return "DISQUALIFIED";
 }
 
 // Helper to calculate max possible score from config

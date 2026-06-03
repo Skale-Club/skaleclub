@@ -225,6 +225,7 @@ export const translations = {
     'Go to slide {n}': 'Ir para o slide {n}', 'Switch to Portuguese': 'Mudar para Português', 'Switch to English': 'Mudar para Inglês',
     // Admin — Dashboard Section (Phase 30)
     'Total Leads': 'Total de Leads', 'Leads (7 Days)': 'Leads (7 Dias)', 'Hot Leads': 'Leads Quentes',
+    'Hot': 'Quente', 'Warm': 'Morno', 'Cold': 'Frio', 'Disqualified': 'Desqualificado',
     'Open Chats': 'Chats Abertos', 'Complete Forms': 'Formulários Completos', 'In Progress': 'Em Andamento',
     'Abandoned': 'Abandonados', 'Chat Response': 'Resposta do Chat',
     'High priority contacts': 'Contatos de alta prioridade', 'Last 24h activity': 'Atividade nas últimas 24h',

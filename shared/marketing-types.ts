@@ -41,9 +41,9 @@ export interface MarketingBySource {
   channel: string;              // "Organic Search" | "Paid Ads" | "Social Media" | "Referral" | "Direct" | "Unknown"
   visits: number;
   leads: number;
-  hotLeads: number;             // form_leads.classificacao = 'quente'
-  warmLeads: number;            // 'morno'
-  coldLeads: number;            // 'frio'
+  hotLeads: number;             // form_leads.classificacao = 'HOT'
+  warmLeads: number;            // 'WARM'
+  coldLeads: number;            // 'COLD'
   conversionRate: number;       // leads / visits
 }
 

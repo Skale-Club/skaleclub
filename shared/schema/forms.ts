@@ -4,10 +4,10 @@ import { z } from "zod";
 
 // Enums
 export const leadClassificationEnum = pgEnum("lead_classificacao", [
-  "QUENTE",
-  "MORNO",
-  "FRIO",
-  "DESQUALIFICADO",
+  "HOT",
+  "WARM",
+  "COLD",
+  "DISQUALIFIED",
 ]);
 
 export const leadStatusEnum = pgEnum("lead_status", [
