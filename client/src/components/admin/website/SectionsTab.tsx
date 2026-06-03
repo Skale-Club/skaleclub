@@ -12,7 +12,7 @@ interface SectionsTabProps {
   updateHomepageContent: (updater: (prev: HomepageContent) => HomepageContent, fieldKey?: string) => void;
   aboutImageUrl: string;
   setAboutImageUrl: (v: string) => void;
-  triggerAutoSave: (updates: Record<string, unknown>, fieldKeys?: string[]) => void;
+  saveImmediately: (updates: Record<string, unknown>) => Promise<void>;
   SavedIndicator: React.FC<{ field: string }>;
 }
 
@@ -21,7 +21,7 @@ export function SectionsTab({
   updateHomepageContent,
   aboutImageUrl,
   setAboutImageUrl,
-  triggerAutoSave,
+  saveImmediately,
   SavedIndicator,
 }: SectionsTabProps) {
   const { toast } = useToast();
@@ -306,7 +306,7 @@ export function SectionsTab({
                       try {
                         const imagePath = await uploadFileToServer(file);
                         setAboutImageUrl(imagePath);
-                        triggerAutoSave({ aboutImageUrl: imagePath }, ['aboutImageUrl']);
+                        await saveImmediately({ aboutImageUrl: imagePath });
                         toast({ title: 'Success', description: 'Image uploaded successfully!' });
                       } catch (error: any) {
                         toast({ title: 'Upload error', description: error.message, variant: 'destructive' });

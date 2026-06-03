@@ -2,12 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   BadgeCheck,
-  Check,
   Image,
   LayoutGrid,
   List,
+  Save,
 } from 'lucide-react';
 import { SectionHeader } from './shared';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { DEFAULT_HOMEPAGE_CONTENT } from '@/lib/homepageDefaults';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -35,6 +36,9 @@ const HERO_DEFAULTS = {
   image: '',
 };
 
+// No-op — keep to avoid compile errors in child tabs that reference it
+const SavedIndicator = (_: { field: string }) => null;
+
 export function WebsiteSettingsSection() {
   const { toast } = useToast();
   const { data: settings, isLoading } = useQuery<CompanySettingsData>({
@@ -49,15 +53,9 @@ export function WebsiteSettingsSection() {
   const [ctaText, setCtaText] = useState('');
   const [homepageContent, setHomepageContent] = useState<HomepageContent>(DEFAULT_HOMEPAGE_CONTENT);
   const [isSaving, setIsSaving] = useState(false);
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  // Keep for image-upload immediate saves (no dirty tracking)
   const savedFieldTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-  const [savedFields, setSavedFields] = useState<Record<string, boolean>>({});
-
-  const SavedIndicator = ({ field }: { field: string }) => (
-    savedFields[field] ? (
-      <Check className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600 w-4 h-4" />
-    ) : null
-  );
 
   // Load settings from API
   useEffect(() => {
@@ -101,6 +99,7 @@ export function WebsiteSettingsSection() {
             : DEFAULT_HOMEPAGE_CONTENT.consultingStepsSection?.steps) || [],
         },
       });
+      setIsDirty(false);
     }
   }, [settings]);
 
@@ -112,59 +111,64 @@ export function WebsiteSettingsSection() {
       setAboutImageUrl('');
       setCtaText(HERO_DEFAULTS.ctaText);
       setHomepageContent(DEFAULT_HOMEPAGE_CONTENT);
+      setIsDirty(false);
     }
   }, [isLoading, settings]);
 
   useEffect(() => {
     return () => {
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       Object.values(savedFieldTimers.current).forEach(timer => clearTimeout(timer));
     };
   }, []);
 
-  // Shared helpers
-  const markFieldsSaved = useCallback((fields: string[]) => {
-    fields.forEach(field => {
-      setSavedFields(prev => ({ ...prev, [field]: true }));
-      if (savedFieldTimers.current[field]) clearTimeout(savedFieldTimers.current[field]);
-      savedFieldTimers.current[field] = setTimeout(() => {
-        setSavedFields(prev => {
-          const next = { ...prev };
-          delete next[field];
-          return next;
-        });
-      }, 3000);
-    });
-  }, []);
-
-  const saveHeroSettings = useCallback(async (updates: Partial<CompanySettingsData>, fieldKeys?: string[]) => {
+  // Immediate save used only by image upload handlers
+  const saveImmediately = useCallback(async (updates: Partial<CompanySettingsData>) => {
     setIsSaving(true);
     try {
       await apiRequest('PUT', '/api/company-settings', updates);
-      queryClient.invalidateQueries({ queryKey: ['/api/company-settings'] });
-      const keysToMark = fieldKeys && fieldKeys.length > 0 ? fieldKeys : Object.keys(updates);
-      if (keysToMark.length > 0) markFieldsSaved(keysToMark);
     } catch (error: any) {
-      toast({ title: 'Error saving settings', description: error.message, variant: 'destructive' });
+      toast({ title: 'Error saving', description: error.message, variant: 'destructive' });
     } finally {
       setIsSaving(false);
     }
-  }, [toast, markFieldsSaved]);
+  }, [toast]);
 
-  const triggerAutoSave = useCallback((updates: Partial<CompanySettingsData>, fieldKeys?: string[]) => {
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => {
-      saveHeroSettings(updates, fieldKeys);
-    }, 800);
-  }, [saveHeroSettings]);
+  // Legacy prop — passed to child tabs that call it on text-field changes.
+  // Now just marks the form dirty; params are intentionally ignored.
+  const triggerAutoSave = useCallback((_updates: unknown, _fieldKeys?: unknown) => {
+    setIsDirty(true);
+  }, []);
 
-  const updateHomepageContent = useCallback((updater: (prev: HomepageContent) => HomepageContent, fieldKey?: string) => {
-    setHomepageContent(prev => {
-      const updated = updater(prev);
-      triggerAutoSave({ homepageContent: updated }, fieldKey ? [fieldKey] : ['homepageContent']);
-      return updated;
-    });
-  }, [triggerAutoSave]);
+  // Also used directly by HeroTab image upload
+  const saveHeroSettings = useCallback(async (updates: Partial<CompanySettingsData>, _fieldKeys?: string[]) => {
+    await saveImmediately(updates);
+  }, [saveImmediately]);
+
+  const updateHomepageContent = useCallback((updater: (prev: HomepageContent) => HomepageContent, _fieldKey?: string) => {
+    setHomepageContent(prev => updater(prev));
+    setIsDirty(true);
+  }, []);
+
+  const handleSave = useCallback(async () => {
+    setIsSaving(true);
+    try {
+      await apiRequest('PUT', '/api/company-settings', {
+        heroTitle,
+        heroSubtitle,
+        ctaText,
+        heroImageUrl,
+        aboutImageUrl,
+        homepageContent,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/company-settings'] });
+      setIsDirty(false);
+      toast({ title: 'Saved!', description: 'Settings saved successfully.', duration: 2500 });
+    } catch (error: any) {
+      toast({ title: 'Error saving', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [heroTitle, heroSubtitle, ctaText, heroImageUrl, aboutImageUrl, homepageContent, toast]);
 
   if (isLoading) {
     return (
@@ -175,19 +179,11 @@ export function WebsiteSettingsSection() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24">
       <SectionHeader
         title="Website"
         description="Customize homepage content and sections"
         icon={<Image className="w-5 h-5" />}
-        action={
-          isSaving ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Saving...</span>
-            </div>
-          ) : null
-        }
       />
 
       {/* Tab Navigation */}
@@ -241,7 +237,7 @@ export function WebsiteSettingsSection() {
           updateHomepageContent={updateHomepageContent}
           aboutImageUrl={aboutImageUrl}
           setAboutImageUrl={setAboutImageUrl}
-          triggerAutoSave={triggerAutoSave}
+          saveImmediately={saveImmediately}
           SavedIndicator={SavedIndicator}
         />
       )}
@@ -253,7 +249,24 @@ export function WebsiteSettingsSection() {
           SavedIndicator={SavedIndicator}
         />
       )}
+
+      {/* Floating Save Bar */}
+      {isDirty && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-card border shadow-xl rounded-2xl px-5 py-3 animate-in slide-in-from-bottom-4 duration-200">
+          <span className="text-sm text-muted-foreground whitespace-nowrap">Alterações não salvas</span>
+          <Button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="bg-[#406EF1] hover:bg-[#355CD0] text-white rounded-full px-5"
+          >
+            {isSaving ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Salvando...</>
+            ) : (
+              <><Save className="w-4 h-4 mr-2" />Salvar alterações</>
+            )}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
-
