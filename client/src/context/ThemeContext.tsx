@@ -44,11 +44,22 @@ function isInAdminThemeArea(): boolean {
   return pathname !== '/admin/login' && pathname !== '/admin/signup';
 }
 
+// Login & signup have a dedicated light design and must always render light,
+// regardless of the site-wide dark default — otherwise color-scheme:dark leaks
+// into the inputs (and browser autofill renders them dark).
+function isAuthPage(): boolean {
+  if (typeof window === 'undefined') return false;
+  const { pathname } = window.location;
+  return pathname === '/admin/login' || pathname === '/admin/signup';
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => getStoredTheme());
   const [isAdminArea, setIsAdminArea] = useState(() => isInAdminThemeArea());
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() => {
-    // Site-wide default: dark. Admin themeable area can override via stored pref.
+    // Auth pages are always light. Site-wide default otherwise: dark. Admin
+    // themeable area can override via stored pref.
+    if (isAuthPage()) return 'light';
     if (!isInAdminThemeArea()) return 'dark';
     const stored = getStoredTheme();
     return stored === 'system' ? getSystemTheme() : stored;
@@ -60,10 +71,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     root.classList.remove('light', 'dark');
 
     // Site-wide default: dark. Only admin themeable area can flip to light
-    // (via user preference). Everything else stays dark.
-    const themeToApply: 'light' | 'dark' = inAdmin ? newTheme : 'dark';
+    // (via user preference). Auth pages are always light. Everything else stays
+    // dark.
+    let themeToApply: 'light' | 'dark' = inAdmin ? newTheme : 'dark';
+    if (isAuthPage()) themeToApply = 'light';
 
     root.classList.add(themeToApply);
+    // Keep color-scheme in sync with the class so native form controls and
+    // browser autofill render in the matching scheme — including on client-side
+    // navigation, where the index.html bootstrap no longer runs.
+    root.style.colorScheme = themeToApply;
 
     // Scope the xphere admin design tokens to <html> via an `admin-theme`
     // marker. Defined on <html> so it also reaches Radix portals (dropdowns,

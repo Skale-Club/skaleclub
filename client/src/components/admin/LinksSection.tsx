@@ -9,6 +9,8 @@ import {
   ExternalLink,
   Link as LinkIcon,
   AtSign,
+  User,
+  Palette,
 } from 'lucide-react';
 import {
   DndContext,
@@ -27,7 +29,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { AdminCard, DragDropUploader, EmptyState, FormGrid, SectionHeader } from './shared';
+import { AdminCard, DragDropUploader, EmptyState, FormGrid, SectionHeader, SubSidebar, SubSidebarLayout } from './shared';
 import { IconPicker } from './links/IconPicker';
 import { ThemeEditor } from './links/ThemeEditor';
 import { LivePreview } from './links/LivePreview';
@@ -90,6 +92,15 @@ const LINKS_PAGE_DEFAULTS: LinksPageConfig = {
   links: [],
   socialLinks: []
 };
+
+type LinksView = 'profile' | 'appearance' | 'links' | 'social';
+
+const LINKS_NAV: { id: LinksView; label: string; icon: typeof LinkIcon }[] = [
+  { id: 'profile', label: 'Profile', icon: User },
+  { id: 'appearance', label: 'Appearance', icon: Palette },
+  { id: 'links', label: 'Links', icon: LinkIcon },
+  { id: 'social', label: 'Social', icon: AtSign },
+];
 
 function SortableLinkRow({
   link,
@@ -188,6 +199,7 @@ export function LinksSection() {
   const [config, setConfig] = useState<LinksPageConfig>(LINKS_PAGE_DEFAULTS);
   const [isSaving, setIsSaving] = useState(false);
   const [savedFields, setSavedFields] = useState<Record<string, boolean>>({});
+  const [activeView, setActiveView] = useState<LinksView>('profile');
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -335,201 +347,216 @@ export function LinksSection() {
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">
-        {/* Zone 1: Profile — Avatar + Title + Bio + Background Image + Social */}
-        <div className="md:col-span-2 lg:col-span-4 space-y-6">
-          <AdminCard>
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold">Profile Information</h3>
-              <p className="text-sm text-muted-foreground">How you appear on the links page</p>
-            </div>
-            <FormGrid cols={1}>
-              <div className="space-y-2">
-                <div className="flex justify-end">
-                  <SavedIndicator field="avatarUrl" />
-                </div>
-                <DragDropUploader
-                  label="Avatar"
-                  assetType="avatar"
-                  value={config.avatarUrl || undefined}
-                  helperText="PNG, JPG, WebP, SVG, or AVIF up to 2 MB"
-                  thumbnailShape="square"
-                  onChange={(url) => {
-                    const newConfig = { ...config, avatarUrl: url };
-                    setConfig(newConfig);
-                    saveSettings(newConfig, 'avatarUrl');
-                  }}
-                  onDelete={config.avatarUrl ? () => deleteAsset(config.avatarUrl!, 'avatarUrl') : undefined}
-                />
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="title">Page Title</Label>
-                  <SavedIndicator field="title" />
-                </div>
-                <Input
-                  id="title"
-                  value={config.title}
-                  onChange={(e) => setConfig({ ...config, title: e.target.value })}
-                  onBlur={() => saveSettings(config, 'title')}
-                  placeholder="Skale Club"
-                />
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="description">Short Bio</Label>
-                  <SavedIndicator field="description" />
-                </div>
-                <Textarea
-                  id="description"
-                  value={config.description}
-                  onChange={(e) => setConfig({ ...config, description: e.target.value })}
-                  onBlur={() => saveSettings(config, 'description')}
-                  placeholder="Marketing agency specializing in growth..."
-                  className="min-h-[100px]"
-                />
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-end">
-                  <SavedIndicator field="theme" />
-                </div>
-                <DragDropUploader
-                  label="Background Image"
-                  assetType="background"
-                  value={config.theme?.backgroundImageUrl || undefined}
-                  helperText="Optional. Appears behind the /links page."
-                  thumbnailShape="wide"
-                  onChange={(url) => {
-                    const newTheme = { ...(config.theme ?? {}), backgroundImageUrl: url };
-                    const newConfig = { ...config, theme: newTheme };
-                    setConfig(newConfig);
-                    saveSettings(newConfig, 'backgroundImageUrl');
-                  }}
-                  onDelete={config.theme?.backgroundImageUrl ? () => deleteAsset(config.theme!.backgroundImageUrl!, 'backgroundImageUrl') : undefined}
-                />
-              </div>
-            </FormGrid>
-          </AdminCard>
-
-          <ThemeEditor
-            theme={config.theme ?? {}}
-            onChange={(patch) =>
-              updateConfig({ theme: { ...(config.theme ?? {}), ...patch } }, 'theme')
-            }
+      <SubSidebarLayout
+        nav={
+          <SubSidebar
+            items={LINKS_NAV}
+            value={activeView}
+            onValueChange={(id) => setActiveView(id as LinksView)}
+            storageKey="links"
           />
-
-        </div>
-
-        {/* Zone 2: Live Preview */}
-        <div className="md:col-span-2 lg:col-span-4">
-          <LivePreview />
-        </div>
-
-        {/* Zone 3: Main Links + Social Links */}
-        <div className="md:col-span-2 lg:col-span-4 space-y-6">
-          <AdminCard>
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h3 className="text-lg font-semibold">Main Links</h3>
-                <p className="text-sm text-muted-foreground">The primary action buttons on your page</p>
-              </div>
-              <Button onClick={addLink} className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Add New Link
-              </Button>
-            </div>
-            {config.links.length === 0 ? (
-              <EmptyState
-                icon={<LinkIcon />}
-                title="No links yet"
-                description="Add your first link to show on the bio page"
-                action={<Button onClick={addLink}><Plus className="h-4 w-4 mr-2" /> Add first link</Button>}
-              />
-            ) : (
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={config.links.map((l) => l.id!)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <div className="space-y-3">
-                    {config.links.map((link, index) => (
-                      <SortableLinkRow
-                        key={link.id}
-                        link={link}
-                        index={index}
-                        onUpdate={updateLink}
-                        onRemove={removeLink}
-                        t={t}
-                      />
-                    ))}
+        }
+      >
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          {/* Active editor panel */}
+          <div className="space-y-6">
+            {activeView === 'profile' && (
+              <AdminCard>
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold">Profile Information</h3>
+                  <p className="text-sm text-muted-foreground">How you appear on the links page</p>
+                </div>
+                <FormGrid cols={1}>
+                  <div className="space-y-2">
+                    <div className="flex justify-end">
+                      <SavedIndicator field="avatarUrl" />
+                    </div>
+                    <DragDropUploader
+                      label="Avatar"
+                      assetType="avatar"
+                      value={config.avatarUrl || undefined}
+                      helperText="PNG, JPG, WebP, SVG, or AVIF up to 2 MB"
+                      thumbnailShape="square"
+                      onChange={(url) => {
+                        const newConfig = { ...config, avatarUrl: url };
+                        setConfig(newConfig);
+                        saveSettings(newConfig, 'avatarUrl');
+                      }}
+                      onDelete={config.avatarUrl ? () => deleteAsset(config.avatarUrl!, 'avatarUrl') : undefined}
+                    />
                   </div>
-                </SortableContext>
-              </DndContext>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <Label htmlFor="title">Page Title</Label>
+                      <SavedIndicator field="title" />
+                    </div>
+                    <Input
+                      id="title"
+                      value={config.title}
+                      onChange={(e) => setConfig({ ...config, title: e.target.value })}
+                      onBlur={() => saveSettings(config, 'title')}
+                      placeholder="Skale Club"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <Label htmlFor="description">Short Bio</Label>
+                      <SavedIndicator field="description" />
+                    </div>
+                    <Textarea
+                      id="description"
+                      value={config.description}
+                      onChange={(e) => setConfig({ ...config, description: e.target.value })}
+                      onBlur={() => saveSettings(config, 'description')}
+                      placeholder="Marketing agency specializing in growth..."
+                      className="min-h-[100px]"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-end">
+                      <SavedIndicator field="theme" />
+                    </div>
+                    <DragDropUploader
+                      label="Background Image"
+                      assetType="background"
+                      value={config.theme?.backgroundImageUrl || undefined}
+                      helperText="Optional. Appears behind the /links page."
+                      thumbnailShape="wide"
+                      onChange={(url) => {
+                        const newTheme = { ...(config.theme ?? {}), backgroundImageUrl: url };
+                        const newConfig = { ...config, theme: newTheme };
+                        setConfig(newConfig);
+                        saveSettings(newConfig, 'backgroundImageUrl');
+                      }}
+                      onDelete={config.theme?.backgroundImageUrl ? () => deleteAsset(config.theme!.backgroundImageUrl!, 'backgroundImageUrl') : undefined}
+                    />
+                  </div>
+                </FormGrid>
+              </AdminCard>
             )}
-          </AdminCard>
 
-          <AdminCard>
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h3 className="text-lg font-semibold">Social Links</h3>
-                <p className="text-sm text-muted-foreground">Icons at the bottom</p>
-              </div>
-              <Button size="icon" variant="outline" onClick={addSocial} className="h-8 w-8">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="space-y-3">
-              {config.socialLinks.map((social, index) => (
-                <div key={index} className="flex gap-2 items-center">
-                  <Select
-                    value={social.platform}
-                    onValueChange={(val) => {
-                      const username = urlToUsername(social.platform, social.url);
-                      updateSocial(index, { platform: val, url: usernameToUrl(val, username) });
-                    }}
-                  >
-                    <SelectTrigger className="w-[140px] shrink-0">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SOCIAL_PLATFORMS.map((p) => (
-                        <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    value={urlToUsername(social.platform, social.url)}
-                    onChange={(e) => updateSocial(index, { url: usernameToUrl(social.platform, e.target.value) })}
-                    placeholder={social.platform === 'email' ? 'you@example.com' : social.platform === 'website' ? 'example.com' : '@username'}
-                    className="flex-1"
-                  />
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => removeSocial(index)}
-                    className="h-10 w-10 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                  >
-                    <Trash2 className="h-4 w-4" />
+            {activeView === 'appearance' && (
+              <ThemeEditor
+                theme={config.theme ?? {}}
+                onChange={(patch) =>
+                  updateConfig({ theme: { ...(config.theme ?? {}), ...patch } }, 'theme')
+                }
+              />
+            )}
+
+            {activeView === 'links' && (
+              <AdminCard>
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold">Main Links</h3>
+                    <p className="text-sm text-muted-foreground">The primary action buttons on your page</p>
+                  </div>
+                  <Button onClick={addLink} className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add New Link
                   </Button>
                 </div>
-              ))}
-              {config.socialLinks.length === 0 && (
-                <EmptyState
-                  icon={<AtSign />}
-                  title="No social links"
-                  description="Add platforms like Instagram, LinkedIn, Twitter"
-                  action={<Button size="sm" variant="outline" onClick={addSocial}><Plus className="h-4 w-4 mr-2" /> Add social</Button>}
-                  className="p-6"
-                />
-              )}
-            </div>
-          </AdminCard>
+                {config.links.length === 0 ? (
+                  <EmptyState
+                    icon={<LinkIcon />}
+                    title="No links yet"
+                    description="Add your first link to show on the bio page"
+                    action={<Button onClick={addLink}><Plus className="h-4 w-4 mr-2" /> Add first link</Button>}
+                  />
+                ) : (
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={config.links.map((l) => l.id!)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="space-y-3">
+                        {config.links.map((link, index) => (
+                          <SortableLinkRow
+                            key={link.id}
+                            link={link}
+                            index={index}
+                            onUpdate={updateLink}
+                            onRemove={removeLink}
+                            t={t}
+                          />
+                        ))}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
+                )}
+              </AdminCard>
+            )}
+
+            {activeView === 'social' && (
+              <AdminCard>
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold">Social Links</h3>
+                    <p className="text-sm text-muted-foreground">Icons at the bottom</p>
+                  </div>
+                  <Button size="icon" variant="outline" onClick={addSocial} className="h-8 w-8">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="space-y-3">
+                  {config.socialLinks.map((social, index) => (
+                    <div key={index} className="flex gap-2 items-center">
+                      <Select
+                        value={social.platform}
+                        onValueChange={(val) => {
+                          const username = urlToUsername(social.platform, social.url);
+                          updateSocial(index, { platform: val, url: usernameToUrl(val, username) });
+                        }}
+                      >
+                        <SelectTrigger className="w-[140px] shrink-0">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SOCIAL_PLATFORMS.map((p) => (
+                            <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        value={urlToUsername(social.platform, social.url)}
+                        onChange={(e) => updateSocial(index, { url: usernameToUrl(social.platform, e.target.value) })}
+                        placeholder={social.platform === 'email' ? 'you@example.com' : social.platform === 'website' ? 'example.com' : '@username'}
+                        className="flex-1"
+                      />
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => removeSocial(index)}
+                        className="h-10 w-10 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  {config.socialLinks.length === 0 && (
+                    <EmptyState
+                      icon={<AtSign />}
+                      title="No social links"
+                      description="Add platforms like Instagram, LinkedIn, Twitter"
+                      action={<Button size="sm" variant="outline" onClick={addSocial}><Plus className="h-4 w-4 mr-2" /> Add social</Button>}
+                      className="p-6"
+                    />
+                  )}
+                </div>
+              </AdminCard>
+            )}
+          </div>
+
+          {/* Live preview — stays pinned beside the active panel */}
+          <div className="xl:sticky xl:top-2 xl:self-start">
+            <LivePreview />
+          </div>
         </div>
-      </div>
+      </SubSidebarLayout>
     </div>
   );
 }

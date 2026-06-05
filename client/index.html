@@ -68,18 +68,20 @@
         }
 
         try {
-          // The whole Skale Club site is dark by design. Admin themeable area
-          // is the only place where a user can override to "light" via stored
-          // preference. Everything else (public site, landings, /e/, /p/,
-          // xpot, admin login) is dark from first paint.
+          // The whole Skale Club site is dark by design. Two exceptions:
+          //  - Admin login & signup have a dedicated LIGHT design, so they are
+          //    forced light from first paint (otherwise color-scheme:dark leaks
+          //    into the inputs / autofill).
+          //  - The admin themeable area honors the user's stored preference.
+          // Everything else (public site, landings, /e/, /p/, xpot) is dark.
           var path = window.location.pathname;
-          var isAdminThemeable =
-            path.indexOf("/admin") === 0 &&
-            path !== "/admin/login" &&
-            path !== "/admin/signup";
+          var isAuthPage = path === "/admin/login" || path === "/admin/signup";
+          var isAdminThemeable = path.indexOf("/admin") === 0 && !isAuthPage;
 
           var theme = "dark";
-          if (isAdminThemeable) {
+          if (isAuthPage) {
+            theme = "light";
+          } else if (isAdminThemeable) {
             var stored = null;
             try { stored = localStorage.getItem("skale-club-admin-theme"); } catch (e) {}
             if (stored === "light") {

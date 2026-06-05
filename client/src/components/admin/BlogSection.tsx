@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { LanguageContext } from '@/context/LanguageContext';
 import {
   ArrowLeft,
   ExternalLink,
@@ -9,7 +10,7 @@ import {
   Tag,
   Zap,
 } from 'lucide-react';
-import { AdminCard, SectionHeader } from './shared';
+import { AdminCard, SectionHeader, SubSidebar, SubSidebarLayout } from './shared';
 import { RssAutomationTab } from './blog/RssAutomationTab';
 import { BlogAutomationPanel } from './blog/BlogAutomationPanel';
 import { BlogTagManagerDialog } from './blog/BlogTagManagerDialog';
@@ -26,13 +27,13 @@ import type { BlogPost } from '@shared/schema';
 import { SIDEBAR_MENU_ITEMS } from './shared/constants';
 import { uploadFileToServer } from './shared/utils';
 
-const BLOG_TABS = [
-  { id: 'posts' as const, label: 'Posts', icon: FileText },
-  { id: 'automation' as const, label: 'Automation', icon: Zap },
-  { id: 'rss' as const, label: 'RSS', icon: Rss },
-] as const;
+const BLOG_TABS: { id: 'posts' | 'automation' | 'rss'; label: string; icon: typeof FileText }[] = [
+  { id: 'posts', label: 'Posts', icon: FileText },
+  { id: 'automation', label: 'Automation', icon: Zap },
+  { id: 'rss', label: 'RSS', icon: Rss },
+];
 
-export function BlogSection({ resetSignal }: { resetSignal: number }) {
+function BlogSectionInner({ resetSignal }: { resetSignal: number }) {
   const { toast } = useToast();
   const pagePaths = usePagePaths();
   const [activeTab, setActiveTab] = useState<'posts' | 'automation' | 'rss'>('posts');
@@ -524,40 +525,44 @@ export function BlogSection({ resetSignal }: { resetSignal: number }) {
         }
       />
 
-      {/* Tab strip */}
-      <div className="flex gap-1.5 bg-muted p-1.5 rounded-lg overflow-x-auto">
-        {BLOG_TABS.map(tab => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-all flex-1 min-w-0 justify-center ${
-              activeTab === tab.id
-                ? 'bg-white dark:bg-card border-border shadow-sm'
-                : 'bg-transparent border-transparent hover:bg-white/50 dark:hover:bg-card/50'
-            }`}
-          >
-            <tab.icon className="w-4 h-4 shrink-0" />
-            <span className="truncate">{tab.label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Tab content */}
-      {activeTab === 'posts' && (
-        <BlogPostsList
-          posts={sortedPosts}
-          onEdit={handleEdit}
-          onDelete={(id) => deleteMutation.mutate(id)}
-          onCreateFirst={() => setIsCreateOpen(true)}
-          tagToDelete={tagToDelete}
-          isDeletingTag={isDeletingTag}
-          onCancelDeleteTag={() => setTagToDelete(null)}
-          onConfirmDeleteTag={handleConfirmRemoveTag}
-        />
-      )}
-      {activeTab === 'automation' && <BlogAutomationPanel />}
-      {activeTab === 'rss' && <RssAutomationTab />}
+      <SubSidebarLayout
+        nav={
+          <SubSidebar
+            items={BLOG_TABS}
+            value={activeTab}
+            onValueChange={(id) => setActiveTab(id as 'posts' | 'automation' | 'rss')}
+            storageKey="blog"
+          />
+        }
+      >
+        {activeTab === 'posts' && (
+          <BlogPostsList
+            posts={sortedPosts}
+            onEdit={handleEdit}
+            onDelete={(id) => deleteMutation.mutate(id)}
+            onCreateFirst={() => setIsCreateOpen(true)}
+            tagToDelete={tagToDelete}
+            isDeletingTag={isDeletingTag}
+            onCancelDeleteTag={() => setTagToDelete(null)}
+            onConfirmDeleteTag={handleConfirmRemoveTag}
+          />
+        )}
+        {activeTab === 'automation' && <BlogAutomationPanel />}
+        {activeTab === 'rss' && <RssAutomationTab />}
+      </SubSidebarLayout>
     </div>
+  );
+}
+
+// The admin UI is English. The app-wide LanguageContext defaults to Portuguese
+// (for the public site), which otherwise routes this section's t() strings
+// through the PT dictionary. Force English for the Blog subtree so its chrome
+// stays consistent with the rest of the admin.
+export function BlogSection(props: { resetSignal: number }) {
+  const parent = useContext(LanguageContext);
+  return (
+    <LanguageContext.Provider value={{ language: 'en', setLanguage: parent?.setLanguage ?? (() => {}) }}>
+      <BlogSectionInner {...props} />
+    </LanguageContext.Provider>
   );
 }

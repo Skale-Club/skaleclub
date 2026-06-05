@@ -1,10 +1,26 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Check, Copy, Cpu, KeyRound, Loader2, Plug, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Check } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+import { AdminCard, EmptyState, SectionHeader, SubSidebar, SubSidebarLayout } from "./shared";
+
+const MCP_URL = "https://skale.club/mcp";
+const CONNECT_CMD = `claude mcp add skale-club ${MCP_URL} --transport http --header "Authorization: Bearer YOUR_TOKEN"`;
+
+const MCP_NAV: { id: "connection" | "tokens"; label: string; icon: typeof Plug }[] = [
+  { id: "connection", label: "Connection", icon: Plug },
+  { id: "tokens", label: "Tokens", icon: KeyRound },
+];
+
+type McpView = "connection" | "tokens";
 
 interface ApiToken {
   id: string;
@@ -16,76 +32,7 @@ interface ApiToken {
   rotatedAt: string | null;
 }
 
-function TokenRow({ token, onRotate, onDelete }: {
-  token: ApiToken;
-  onRotate: (id: string) => void;
-  onDelete: (id: string) => void;
-}) {
-  return (
-    <div className="flex items-center justify-between py-3 border-b border-zinc-800 last:border-0">
-      <div className="flex flex-col gap-0.5">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-white">{token.name}</span>
-          {token.isActive ? (
-            <Badge variant="outline" className="text-emerald-400 border-emerald-800 text-xs">active</Badge>
-          ) : (
-            <Badge variant="outline" className="text-zinc-500 border-zinc-700 text-xs">inactive</Badge>
-          )}
-        </div>
-        <span className="text-xs text-zinc-500 font-mono">{token.tokenPrefix}••••••••••••••••••••••••••••••••••••••</span>
-        <span className="text-xs text-zinc-600">
-          Created {new Date(token.createdAt).toLocaleDateString()}
-          {token.lastUsedAt && ` · Last used ${new Date(token.lastUsedAt).toLocaleDateString()}`}
-        </span>
-      </div>
-      <div className="flex gap-2">
-        <Button size="sm" variant="outline" onClick={() => onRotate(token.id)} className="text-xs">
-          Rotate
-        </Button>
-        <Button size="sm" variant="outline" onClick={() => onDelete(token.id)} className="text-xs text-red-400 border-red-900 hover:bg-red-950">
-          Delete
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function RevealToken({ rawToken, mcpUrl }: { rawToken: string; mcpUrl: string }) {
-  const [copied, setCopied] = useState(false);
-  const [copiedUrl, setCopiedUrl] = useState(false);
-
-  const copy = (text: string, setter: (v: boolean) => void) => {
-    navigator.clipboard.writeText(text);
-    setter(true);
-    setTimeout(() => setter(false), 2000);
-  };
-
-  return (
-    <div className="mt-4 p-4 bg-zinc-900 border border-yellow-700 rounded-lg space-y-3">
-      <p className="text-sm text-yellow-400 font-medium">⚠ Copy this token now — it will never be shown again.</p>
-      <div>
-        <p className="text-xs text-zinc-400 mb-1">Bearer Token</p>
-        <div className="flex gap-2">
-          <Input value={rawToken} readOnly className="font-mono text-xs bg-zinc-950 border-zinc-700 text-white" />
-          <Button size="sm" onClick={() => copy(rawToken, setCopied)} className="shrink-0">
-            {copied ? "Copied!" : "Copy"}
-          </Button>
-        </div>
-      </div>
-      <div>
-        <p className="text-xs text-zinc-400 mb-1">MCP Endpoint URL</p>
-        <div className="flex gap-2">
-          <Input value={mcpUrl} readOnly className="font-mono text-xs bg-zinc-950 border-zinc-700 text-white" />
-          <Button size="sm" variant="outline" onClick={() => copy(mcpUrl, setCopiedUrl)} className="shrink-0">
-            {copiedUrl ? "Copied!" : "Copy"}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function CopyButton({ text, className }: { text: string; className?: string }) {
+function CopyButton({ text, label = "Copy", className }: { text: string; label?: string; className?: string }) {
   const [copied, setCopied] = useState(false);
   const copy = () => {
     navigator.clipboard.writeText(text);
@@ -93,19 +40,89 @@ function CopyButton({ text, className }: { text: string; className?: string }) {
     setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <Button size="sm" variant="outline" onClick={copy} className={`shrink-0 gap-1.5 ${className ?? ""}`}>
-      {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-      {copied ? "Copiado!" : "Copiar"}
+    <Button type="button" size="sm" variant="outline" onClick={copy} className={`shrink-0 gap-1.5 ${className ?? ""}`}>
+      {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+      {copied ? "Copied" : label}
     </Button>
   );
 }
 
-export function McpSettingsSection() {
-  const qc = useQueryClient();
-  const [name, setName] = useState("");
-  const [revealed, setRevealed] = useState<{ rawToken: string; mcpUrl: string } | null>(null);
+function RevealToken({ rawToken }: { rawToken: string }) {
+  return (
+    <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <KeyRound className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 space-y-0.5">
+          <p className="text-sm font-semibold text-foreground">Your new token</p>
+          <p className="text-sm text-muted-foreground">Copy it now. For security, it won't be shown again.</p>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <Input value={rawToken} readOnly className="font-mono text-xs" />
+        <CopyButton text={rawToken} />
+      </div>
+    </div>
+  );
+}
 
-  const mcpUrl = "https://skale.club/mcp";
+function TokenRow({ token, onRotate, onDelete }: {
+  token: ApiToken;
+  onRotate: (t: ApiToken) => void;
+  onDelete: (t: ApiToken) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-4 border-b last:border-b-0">
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+          <KeyRound className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 space-y-0.5">
+          <div className="flex items-center gap-2">
+            <span className="truncate text-sm font-medium text-foreground">{token.name}</span>
+            {token.isActive
+              ? <Badge variant="success">Active</Badge>
+              : <Badge variant="secondary">Inactive</Badge>}
+          </div>
+          <p className="truncate font-mono text-xs text-muted-foreground">
+            {token.tokenPrefix}{"•".repeat(24)}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Created {new Date(token.createdAt).toLocaleDateString()}
+            {token.lastUsedAt ? ` · Last used ${new Date(token.lastUsedAt).toLocaleDateString()}` : ""}
+          </p>
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-1.5">
+        <Button type="button" size="sm" variant="outline" className="gap-1.5" onClick={() => onRotate(token)}>
+          <RefreshCw className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Rotate</span>
+        </Button>
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          className="text-destructive hover:text-destructive"
+          title="Delete token"
+          onClick={() => onDelete(token)}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+type ConfirmTarget = { token: ApiToken; mode: "rotate" | "delete" };
+
+export function McpSettingsSection({ embedded = false }: { embedded?: boolean }) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const [name, setName] = useState("");
+  const [revealed, setRevealed] = useState<string | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<ConfirmTarget | null>(null);
+  const [activeView, setActiveView] = useState<McpView>("connection");
 
   const { data: tokens = [], isLoading } = useQuery<ApiToken[]>({
     queryKey: ["/api/mcp/tokens"],
@@ -117,85 +134,185 @@ export function McpSettingsSection() {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["/api/mcp/tokens"] });
       setName("");
-      setRevealed({ rawToken: data.rawToken, mcpUrl });
+      setRevealed(data.rawToken);
+      toast({ title: "Token generated" });
     },
+    onError: (e: any) => toast({ title: "Could not generate token", description: e?.message, variant: "destructive" }),
   });
 
   const rotate = useMutation({
     mutationFn: (id: string) => apiRequest("POST", `/api/mcp/tokens/${id}/rotate`).then(r => r.json()),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["/api/mcp/tokens"] });
-      setRevealed({ rawToken: data.rawToken, mcpUrl });
+      setRevealed(data.rawToken);
+      toast({ title: "Token rotated" });
     },
+    onError: (e: any) => toast({ title: "Could not rotate token", description: e?.message, variant: "destructive" }),
   });
 
   const del = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/mcp/tokens/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/mcp/tokens"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/mcp/tokens"] });
+      toast({ title: "Token deleted" });
+    },
+    onError: (e: any) => toast({ title: "Could not delete token", description: e?.message, variant: "destructive" }),
   });
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold text-white">MCP — Model Context Protocol</h2>
-        <p className="text-sm text-zinc-400 mt-1">
-          Conecte o Claude Desktop ou Claude Code ao Skale Club para ler e editar estimates e presentations via MCP.
+  const confirmAction = () => {
+    if (!confirmTarget) return;
+    if (confirmTarget.mode === "rotate") rotate.mutate(confirmTarget.token.id);
+    else del.mutate(confirmTarget.token.id);
+    setConfirmTarget(null);
+  };
+
+  const connectionPanel = (
+    <AdminCard className="space-y-5">
+      <div className="space-y-1">
+        <h3 className="text-sm font-semibold text-foreground">Connection</h3>
+        <p className="text-sm text-muted-foreground">
+          Connect Claude Desktop or Claude Code to Skale Club to read and edit estimates and presentations over MCP.
         </p>
       </div>
 
-      {/* Connection URL */}
-      <div className="p-4 bg-zinc-900 border border-zinc-700 rounded-lg space-y-3">
-        <p className="text-xs text-zinc-400 font-medium uppercase tracking-wider">URL de Conexão</p>
-        <div className="flex items-center gap-2">
-          <Input
-            value={mcpUrl}
-            readOnly
-            className="font-mono text-sm bg-zinc-950 border-zinc-700 text-white"
-          />
-          <CopyButton text={mcpUrl} />
-        </div>
-        <div className="text-xs text-zinc-500 space-y-1">
-          <p className="font-medium text-zinc-400">Como conectar no Claude Code:</p>
-          <p>1. Gere um token abaixo e copie o Bearer Token</p>
-          <p>2. No terminal: <code className="bg-zinc-800 px-1 rounded">claude mcp add skale-club https://skale.club/mcp --transport http --header "Authorization: Bearer SEU_TOKEN"</code></p>
+      <div className="space-y-2">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Connection URL</p>
+        <div className="flex gap-2">
+          <Input value={MCP_URL} readOnly className="font-mono text-sm" />
+          <CopyButton text={MCP_URL} />
         </div>
       </div>
 
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-white">Generate New Token</h3>
-        <div className="flex gap-2">
+        <p className="text-sm font-medium text-foreground">How to connect in Claude Code</p>
+        <ol className="space-y-2.5 text-sm text-muted-foreground">
+          <li className="flex gap-2.5">
+            <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">1</span>
+            Generate a token below and copy the Bearer token.
+          </li>
+          <li className="flex gap-2.5">
+            <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">2</span>
+            Run this command in your terminal:
+          </li>
+        </ol>
+        <div className="flex items-stretch gap-2">
+          <code className="flex-1 overflow-x-auto whitespace-nowrap rounded-lg bg-muted px-3 py-2.5 font-mono text-xs text-foreground">
+            {CONNECT_CMD}
+          </code>
+          <CopyButton text={CONNECT_CMD} />
+        </div>
+      </div>
+    </AdminCard>
+  );
+
+  const tokensPanel = (
+    <div className="space-y-6">
+      <AdminCard className="space-y-4">
+        <div className="space-y-1">
+          <h3 className="text-sm font-semibold text-foreground">Generate a new token</h3>
+          <p className="text-sm text-muted-foreground">Give it a recognizable name so you can revoke it later.</p>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
           <Input
             placeholder="Token name (e.g. Claude Desktop)"
             value={name}
             onChange={e => setName(e.target.value)}
-            className="bg-zinc-900 border-zinc-700 text-white"
+            onKeyDown={e => { if (e.key === "Enter" && name.trim() && !create.isPending) create.mutate(name); }}
+            className="flex-1"
           />
-          <Button
-            onClick={() => create.mutate(name)}
-            disabled={!name.trim() || create.isPending}
-            className="shrink-0"
-          >
-            {create.isPending ? "Generating…" : "Generate"}
+          <Button onClick={() => create.mutate(name)} disabled={!name.trim() || create.isPending} className="shrink-0 gap-1.5">
+            {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            Generate
           </Button>
         </div>
-        {revealed && <RevealToken rawToken={revealed.rawToken} mcpUrl={mcpUrl} />}
-      </div>
+        {revealed && <RevealToken rawToken={revealed} />}
+      </AdminCard>
 
-      <div className="space-y-1">
-        <h3 className="text-sm font-medium text-white">Active Tokens</h3>
-        {isLoading && <p className="text-sm text-zinc-500">Loading…</p>}
-        {!isLoading && tokens.length === 0 && (
-          <p className="text-sm text-zinc-500">No tokens yet. Generate one above.</p>
-        )}
-        {tokens.map(token => (
-          <TokenRow
-            key={token.id}
-            token={token}
-            onRotate={id => rotate.mutate(id)}
-            onDelete={id => del.mutate(id)}
+      <AdminCard className="space-y-1">
+        <h3 className="mb-2 text-sm font-semibold text-foreground">Active tokens</h3>
+        {isLoading ? (
+          <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading tokens…
+          </div>
+        ) : tokens.length === 0 ? (
+          <EmptyState
+            icon={<KeyRound />}
+            title="No tokens yet"
+            description="Generate a token above to connect an AI agent to Skale Club."
           />
-        ))}
-      </div>
+        ) : (
+          <div>
+            {tokens.map(token => (
+              <TokenRow
+                key={token.id}
+                token={token}
+                onRotate={(t) => setConfirmTarget({ token: t, mode: "rotate" })}
+                onDelete={(t) => setConfirmTarget({ token: t, mode: "delete" })}
+              />
+            ))}
+          </div>
+        )}
+      </AdminCard>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      {!embedded && (
+        <SectionHeader
+          title="MCP"
+          description="Token-based access for AI agents to read and edit estimates and presentations."
+          icon={<Cpu className="h-5 w-5" />}
+        />
+      )}
+
+      {embedded ? (
+        <div className="space-y-6">
+          {connectionPanel}
+          {tokensPanel}
+        </div>
+      ) : (
+        <SubSidebarLayout
+          nav={
+            <SubSidebar
+              items={MCP_NAV}
+              value={activeView}
+              onValueChange={(id) => setActiveView(id as McpView)}
+              storageKey="mcp"
+            />
+          }
+        >
+          {activeView === "connection" && connectionPanel}
+          {activeView === "tokens" && tokensPanel}
+        </SubSidebarLayout>
+      )}
+
+      {/* Confirm rotate / delete */}
+      {confirmTarget && (
+        <AlertDialog open onOpenChange={(o) => !o && setConfirmTarget(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {confirmTarget.mode === "rotate" ? "Rotate this token?" : "Delete this token?"}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {confirmTarget.mode === "rotate"
+                  ? `The current secret for "${confirmTarget.token.name}" stops working immediately and a new one is issued. Any agent using the old token must be updated.`
+                  : `"${confirmTarget.token.name}" will be permanently revoked. Any agent using it loses access. This cannot be undone.`}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmAction}
+                className={confirmTarget.mode === "delete" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : undefined}
+              >
+                {confirmTarget.mode === "rotate" ? "Rotate" : "Delete"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 }

@@ -12,6 +12,7 @@ declare global {
           'expired-callback'?: () => void;
           theme?: 'light' | 'dark' | 'auto';
           size?: 'normal' | 'flexible' | 'compact';
+          appearance?: 'always' | 'execute' | 'interaction-only';
         }
       ) => string;
       reset: (widgetId?: string) => void;
@@ -54,6 +55,12 @@ interface TurnstileWidgetProps {
   onExpire?: () => void;
   onError?: () => void;
   theme?: 'light' | 'dark' | 'auto';
+  /**
+   * 'interaction-only' (default) keeps the widget invisible and only renders UI
+   * if Cloudflare actually requires an interactive challenge. The token is still
+   * delivered silently via onVerify in the common pass-through case.
+   */
+  appearance?: 'always' | 'execute' | 'interaction-only';
 }
 
 export function TurnstileWidget({
@@ -62,6 +69,7 @@ export function TurnstileWidget({
   onExpire,
   onError,
   theme = 'auto',
+  appearance = 'interaction-only',
 }: TurnstileWidgetProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
@@ -81,6 +89,7 @@ export function TurnstileWidget({
           'error-callback': () => onError?.(),
           theme,
           size: 'flexible',
+          appearance,
         });
       })
       .catch(() => onError?.());
@@ -96,7 +105,7 @@ export function TurnstileWidget({
         widgetIdRef.current = null;
       }
     };
-  }, [siteKey, onVerify, onExpire, onError, theme]);
+  }, [siteKey, onVerify, onExpire, onError, theme, appearance]);
 
   if (!siteKey) return null;
 

@@ -14,3 +14,9 @@ export { uploadFileToServer, getImageUrl, getOriginalImageUrl, ensureArray } fro
 
 export { DragDropUploader } from "./DragDropUploader";
 export type { DragDropUploaderProps } from "./DragDropUploader";
+
+export { SubSidebar } from "./SubSidebar";
+export type { SubSidebarProps, SubNavItem } from "./SubSidebar";
+
+export { SubSidebarLayout } from "./SubSidebarLayout";
+export type { SubSidebarLayoutProps } from "./SubSidebarLayout";

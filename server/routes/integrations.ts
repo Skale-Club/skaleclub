@@ -692,7 +692,7 @@ export function registerIntegrationRoutes(app: Express) {
   // Twilio Integration Routes
   // ===============================
 
-  app.get('/api/integrations/twilio', requireAdmin, async (_req, res) => {
+  app.get('/api/integrations/sms', requireAdmin, async (_req, res) => {
     try {
       const settings = await storage.getTwilioSettings();
       if (!settings) {
@@ -710,7 +710,7 @@ export function registerIntegrationRoutes(app: Express) {
     }
   });
 
-  app.put('/api/integrations/twilio', requireAdmin, async (req, res) => {
+  app.put('/api/integrations/sms', requireAdmin, async (req, res) => {
     try {
       const parsed = twilioSettingsSchema.parse(req.body);
       const existingSettings = await storage.getTwilioSettings();
@@ -751,7 +751,7 @@ export function registerIntegrationRoutes(app: Express) {
     }
   });
 
-  app.post('/api/integrations/twilio/test', requireAdmin, async (req, res) => {
+  app.post('/api/integrations/sms/test', requireAdmin, async (req, res) => {
     try {
       const parsed = twilioSettingsSchema.parse(req.body);
       const existingSettings = await storage.getTwilioSettings();

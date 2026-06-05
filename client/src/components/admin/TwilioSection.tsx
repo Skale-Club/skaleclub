@@ -35,7 +35,7 @@ export function TwilioSection() {
   const [testMessage, setTestMessage] = useState<string | null>(null);
 
   const { data: twilioSettings, isLoading, error: twilioLoadError } = useQuery<TwilioSettings>({
-    queryKey: ['/api/integrations/twilio']
+    queryKey: ['/api/integrations/sms']
   });
 
   const cleanPhone = useCallback((value: string) => value.replace(/[^\d+]/g, '').trim(), []);
@@ -122,12 +122,12 @@ export function TwilioSection() {
   ) => {
     setIsSaving(true);
     try {
-      await apiRequest('PUT', '/api/integrations/twilio', {
+      await apiRequest('PUT', '/api/integrations/sms', {
         ...nextSettings,
         toPhoneNumbers: nextSettings.toPhoneNumbers,
         toPhoneNumber: nextSettings.toPhoneNumbers[0] || ''
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/integrations/twilio'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/integrations/sms'] });
       if (options?.successTitle) {
         toast({ title: options.successTitle });
       }
@@ -193,7 +193,7 @@ export function TwilioSection() {
     setTestMessage(null);
     try {
       const recipients = resolveRecipients(settings.toPhoneNumbers);
-      const response = await fetch('/api/integrations/twilio/test', {
+      const response = await fetch('/api/integrations/sms/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

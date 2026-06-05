@@ -7,7 +7,7 @@ import {
   List,
   Save,
 } from 'lucide-react';
-import { SectionHeader } from './shared';
+import { SectionHeader, SubSidebar, SubSidebarLayout } from './shared';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { DEFAULT_HOMEPAGE_CONTENT } from '@/lib/homepageDefaults';
@@ -186,69 +186,60 @@ export function WebsiteSettingsSection() {
         icon={<Image className="w-5 h-5" />}
       />
 
-      {/* Tab Navigation */}
-      <div className="flex gap-1.5 bg-muted p-1.5 rounded-lg overflow-x-auto">
-        {WEBSITE_TABS.map(tab => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-all flex-1 min-w-0 justify-center ${
-              activeTab === tab.id
-                ? 'bg-white dark:bg-card border-border shadow-sm'
-                : 'bg-transparent border-transparent hover:bg-white/50 dark:hover:bg-card/50'
-            }`}
-          >
-            <tab.icon className="w-4 h-4 shrink-0" />
-            <span className="truncate">{tab.label}</span>
-          </button>
-        ))}
-      </div>
+      <SubSidebarLayout
+        nav={
+          <SubSidebar
+            items={WEBSITE_TABS}
+            value={activeTab}
+            onValueChange={(id) => setActiveTab(id as WebsiteTab)}
+            storageKey="website"
+          />
+        }
+      >
+        {activeTab === 'hero' && (
+          <HeroTab
+            heroTitle={heroTitle}
+            setHeroTitle={setHeroTitle}
+            heroSubtitle={heroSubtitle}
+            setHeroSubtitle={setHeroSubtitle}
+            ctaText={ctaText}
+            setCtaText={setCtaText}
+            heroImageUrl={heroImageUrl}
+            setHeroImageUrl={setHeroImageUrl}
+            triggerAutoSave={triggerAutoSave}
+            saveHeroSettings={saveHeroSettings}
+            SavedIndicator={SavedIndicator}
+          />
+        )}
 
-      {/* Tab Content */}
-      {activeTab === 'hero' && (
-        <HeroTab
-          heroTitle={heroTitle}
-          setHeroTitle={setHeroTitle}
-          heroSubtitle={heroSubtitle}
-          setHeroSubtitle={setHeroSubtitle}
-          ctaText={ctaText}
-          setCtaText={setCtaText}
-          heroImageUrl={heroImageUrl}
-          setHeroImageUrl={setHeroImageUrl}
-          triggerAutoSave={triggerAutoSave}
-          saveHeroSettings={saveHeroSettings}
-          SavedIndicator={SavedIndicator}
-        />
-      )}
+        {activeTab === 'trust' && (
+          <TrustBadgesTab
+            homepageContent={homepageContent}
+            updateHomepageContent={updateHomepageContent}
+            triggerAutoSave={triggerAutoSave}
+            SavedIndicator={SavedIndicator}
+          />
+        )}
 
-      {activeTab === 'trust' && (
-        <TrustBadgesTab
-          homepageContent={homepageContent}
-          updateHomepageContent={updateHomepageContent}
-          triggerAutoSave={triggerAutoSave}
-          SavedIndicator={SavedIndicator}
-        />
-      )}
+        {activeTab === 'sections' && (
+          <SectionsTab
+            homepageContent={homepageContent}
+            updateHomepageContent={updateHomepageContent}
+            aboutImageUrl={aboutImageUrl}
+            setAboutImageUrl={setAboutImageUrl}
+            saveImmediately={saveImmediately}
+            SavedIndicator={SavedIndicator}
+          />
+        )}
 
-      {activeTab === 'sections' && (
-        <SectionsTab
-          homepageContent={homepageContent}
-          updateHomepageContent={updateHomepageContent}
-          aboutImageUrl={aboutImageUrl}
-          setAboutImageUrl={setAboutImageUrl}
-          saveImmediately={saveImmediately}
-          SavedIndicator={SavedIndicator}
-        />
-      )}
-
-      {activeTab === 'consulting' && (
-        <ConsultingTab
-          homepageContent={homepageContent}
-          updateHomepageContent={updateHomepageContent}
-          SavedIndicator={SavedIndicator}
-        />
-      )}
+        {activeTab === 'consulting' && (
+          <ConsultingTab
+            homepageContent={homepageContent}
+            updateHomepageContent={updateHomepageContent}
+            SavedIndicator={SavedIndicator}
+          />
+        )}
+      </SubSidebarLayout>
 
       {/* Floating Save Bar */}
       {isDirty && (

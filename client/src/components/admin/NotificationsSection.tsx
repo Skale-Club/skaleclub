@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Bell, MessageSquare, Send, Plus } from 'lucide-react';
-import { SectionHeader } from './shared';
-import { Badge } from '@/components/ui/badge';
+import { Bell, MessageSquare, Send, Plus, MoreHorizontal } from 'lucide-react';
+import { SectionHeader, SubSidebar, SubSidebarLayout, EmptyState } from './shared';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -44,7 +43,14 @@ const CHANNEL_ICONS: Record<string, typeof MessageSquare> = {
 };
 
 const EVENT_KEYS = ['new_chat', 'hot_lead', 'low_perf_alert'] as const;
-const CHANNELS = ['sms', 'telegram'] as const;
+
+type ChannelTab = 'sms' | 'telegram' | 'others';
+
+const CHANNEL_NAV: { id: ChannelTab; label: string; icon: typeof MessageSquare }[] = [
+  { id: 'sms', label: 'SMS', icon: MessageSquare },
+  { id: 'telegram', label: 'Telegram', icon: Send },
+  { id: 'others', label: 'Others', icon: MoreHorizontal },
+];
 
 // --- State types ---
 
@@ -52,6 +58,7 @@ type DraftState = { body: string; active: boolean };
 
 export function NotificationsSection() {
   const { toast } = useToast();
+  const [activeChannel, setActiveChannel] = useState<ChannelTab>('sms');
   const [drafts, setDrafts] = useState<Record<number, DraftState>>({});
   const [savingIds, setSavingIds] = useState<Record<number, boolean>>({});
   const textareaRefs = useRef<Record<number, HTMLTextAreaElement | null>>({});
@@ -140,142 +147,134 @@ export function NotificationsSection() {
         icon={<Bell className="w-5 h-5" />}
       />
 
-      <div className="space-y-6">
-        {EVENT_KEYS.map(eventKey => {
-          const activeChannels = grouped[eventKey]?.filter(t => t.active) ?? [];
-          const variables = EVENT_VARIABLES[eventKey] ?? [];
+      <SubSidebarLayout
+        nav={
+          <SubSidebar
+            items={CHANNEL_NAV}
+            value={activeChannel}
+            onValueChange={(id) => setActiveChannel(id as ChannelTab)}
+            storageKey="notifications"
+          />
+        }
+      >
+        {activeChannel === 'others' ? (
+          <EmptyState
+            icon={<MoreHorizontal />}
+            title="No other channels yet"
+            description="SMS and Telegram are the only notification channels available right now."
+          />
+        ) : (
+          <div className="space-y-6">
+            {EVENT_KEYS.map(eventKey => {
+              const template = grouped[eventKey]?.find(t => t.channel === activeChannel);
+              const variables = EVENT_VARIABLES[eventKey] ?? [];
+              const Icon = CHANNEL_ICONS[activeChannel] ?? MessageSquare;
 
-          return (
-            <Card key={eventKey}>
-              <CardHeader>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
+              return (
+                <Card key={eventKey}>
+                  <CardHeader>
                     <CardTitle>{EVENT_LABELS[eventKey]}</CardTitle>
                     <p className="mt-1 text-sm text-muted-foreground">{EVENT_DESCRIPTIONS[eventKey]}</p>
-                  </div>
-                  {activeChannels.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {activeChannels.map(t => (
-                        <Badge key={t.id} variant="secondary" className="text-xs">
-                          {CHANNEL_LABELS[t.channel] ?? t.channel}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </CardHeader>
+                  </CardHeader>
 
-              <CardContent>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {CHANNELS.map(channel => {
-                    const template = grouped[eventKey]?.find(t => t.channel === channel);
-                    const Icon = CHANNEL_ICONS[channel] ?? MessageSquare;
+                  <CardContent>
+                    {!template ? (
+                      <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground flex items-center gap-2">
+                        <Icon className="w-4 h-4" />
+                        <span className="font-medium">{CHANNEL_LABELS[activeChannel]}</span>
+                        <span>— Not configured</span>
+                      </div>
+                    ) : (() => {
+                      const draft = drafts[template.id];
+                      const isSaving = !!savingIds[template.id];
+                      const currentBody = draft?.body ?? template.body;
+                      const currentActive = draft?.active ?? template.active;
+                      const isDirty =
+                        !!draft && (draft.body !== template.body || draft.active !== template.active);
 
-                    if (!template) {
                       return (
-                        <div
-                          key={channel}
-                          className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground flex items-center gap-2"
-                        >
-                          <Icon className="w-4 h-4" />
-                          <span className="font-medium">{CHANNEL_LABELS[channel]}</span>
-                          <span>— Not configured</span>
-                        </div>
-                      );
-                    }
-
-                    const draft = drafts[template.id];
-                    const isSaving = !!savingIds[template.id];
-                    const currentBody = draft?.body ?? template.body;
-                    const currentActive = draft?.active ?? template.active;
-                    const isDirty =
-                      !!draft && (draft.body !== template.body || draft.active !== template.active);
-
-                    return (
-                      <div
-                        key={channel}
-                        className="flex flex-col gap-3 rounded-lg border border-border bg-card/40 p-4"
-                      >
-                        {/* Channel label + active toggle */}
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            <Icon className="w-4 h-4 text-muted-foreground" />
-                            <Label className="text-sm font-semibold">{CHANNEL_LABELS[channel]}</Label>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Switch
-                              id={`active-${template.id}`}
-                              checked={currentActive}
-                              onCheckedChange={(checked) => updateDraft(template, { active: checked })}
-                            />
-                            <Label htmlFor={`active-${template.id}`} className="text-xs text-muted-foreground">
-                              Active
-                            </Label>
-                          </div>
-                        </div>
-
-                        {/* Template body */}
-                        <div className="space-y-1.5">
-                          <Label htmlFor={`body-${template.id}`} className="text-xs text-muted-foreground">
-                            Message body
-                          </Label>
-                          <Textarea
-                            id={`body-${template.id}`}
-                            ref={(el) => { textareaRefs.current[template.id] = el; }}
-                            rows={4}
-                            value={currentBody}
-                            onChange={(e) => updateDraft(template, { body: e.target.value })}
-                            placeholder="Enter template message..."
-                            className="resize-y font-mono text-sm min-h-[96px]"
-                          />
-                        </div>
-
-                        {/* Clickable variables */}
-                        {variables.length > 0 && (
-                          <div className="space-y-1.5">
-                            <p className="text-xs text-muted-foreground">
-                              Click a variable to insert it at the cursor:
-                            </p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {variables.map(v => (
-                                <button
-                                  key={v}
-                                  type="button"
-                                  onClick={() => insertVariable(template, v)}
-                                  className="group inline-flex items-center gap-1 font-mono text-xs bg-muted hover:bg-primary/10 hover:text-primary px-2 py-1 rounded border border-border hover:border-primary/40 transition-colors"
-                                  title={`Insert ${v}`}
-                                >
-                                  <Plus className="w-3 h-3 opacity-60 group-hover:opacity-100" />
-                                  {v}
-                                </button>
-                              ))}
+                        <div className="flex flex-col gap-3 rounded-lg border border-border bg-card/40 p-4">
+                          {/* Channel label + active toggle */}
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2">
+                              <Icon className="w-4 h-4 text-muted-foreground" />
+                              <Label className="text-sm font-semibold">{CHANNEL_LABELS[activeChannel]}</Label>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                id={`active-${template.id}`}
+                                checked={currentActive}
+                                onCheckedChange={(checked) => updateDraft(template, { active: checked })}
+                              />
+                              <Label htmlFor={`active-${template.id}`} className="text-xs text-muted-foreground">
+                                Active
+                              </Label>
                             </div>
                           </div>
-                        )}
 
-                        {/* Save button */}
-                        <div className="mt-auto flex items-center justify-between gap-2 pt-1">
-                          <span className="text-xs text-muted-foreground">
-                            {isDirty ? 'Unsaved changes' : 'Saved'}
-                          </span>
-                          <Button
-                            size="sm"
-                            onClick={() => handleSave(template.id)}
-                            disabled={!isDirty || currentBody.trim() === '' || isSaving}
-                          >
-                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                            Save
-                          </Button>
+                          {/* Template body */}
+                          <div className="space-y-1.5">
+                            <Label htmlFor={`body-${template.id}`} className="text-xs text-muted-foreground">
+                              Message body
+                            </Label>
+                            <Textarea
+                              id={`body-${template.id}`}
+                              ref={(el) => { textareaRefs.current[template.id] = el; }}
+                              rows={4}
+                              value={currentBody}
+                              onChange={(e) => updateDraft(template, { body: e.target.value })}
+                              placeholder="Enter template message..."
+                              className="resize-y font-mono text-sm min-h-[96px]"
+                            />
+                          </div>
+
+                          {/* Clickable variables */}
+                          {variables.length > 0 && (
+                            <div className="space-y-1.5">
+                              <p className="text-xs text-muted-foreground">
+                                Click a variable to insert it at the cursor:
+                              </p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {variables.map(v => (
+                                  <button
+                                    key={v}
+                                    type="button"
+                                    onClick={() => insertVariable(template, v)}
+                                    className="group inline-flex items-center gap-1 font-mono text-xs bg-muted hover:bg-primary/10 hover:text-primary px-2 py-1 rounded border border-border hover:border-primary/40 transition-colors"
+                                    title={`Insert ${v}`}
+                                  >
+                                    <Plus className="w-3 h-3 opacity-60 group-hover:opacity-100" />
+                                    {v}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Save button */}
+                          <div className="mt-auto flex items-center justify-between gap-2 pt-1">
+                            <span className="text-xs text-muted-foreground">
+                              {isDirty ? 'Unsaved changes' : 'Saved'}
+                            </span>
+                            <Button
+                              size="sm"
+                              onClick={() => handleSave(template.id)}
+                              disabled={!isDirty || currentBody.trim() === '' || isSaving}
+                            >
+                              {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                              Save
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </SubSidebarLayout>
     </div>
   );
 }

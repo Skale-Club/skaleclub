@@ -57,7 +57,7 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
     queryKey: ['/api/integrations/ghl'],
   });
   const { data: twilioSettings } = useQuery<TwilioSettings>({
-    queryKey: ['/api/integrations/twilio'],
+    queryKey: ['/api/integrations/sms'],
   });
   const { data: publishedPosts } = useQuery<BlogPost[]>({
     queryKey: ['/api/blog', 'published'],
