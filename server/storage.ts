@@ -9,6 +9,7 @@ import {
   chatIntegrations,
   twilioSettings,
   telegramSettings,
+  resendSettings,
   conversations,
   conversationMessages,
   companySettings,
@@ -39,6 +40,7 @@ import {
   type ChatIntegrations,
   type TwilioSettings,
   type TelegramSettings,
+  type ResendSettings,
   type Conversation,
   type ConversationMessage,
   type FormLead,
@@ -85,6 +87,7 @@ import {
   type InsertChatIntegrations,
   type InsertTwilioSettings,
   type InsertTelegramSettings,
+  type InsertResendSettings,
   type InsertConversation,
   type InsertConversationMessage,
   type FormLeadProgressInput,
@@ -206,6 +209,8 @@ export interface IStorage {
   // Telegram Integration
   getTelegramSettings(): Promise<TelegramSettings | undefined>;
   saveTelegramSettings(settings: InsertTelegramSettings): Promise<TelegramSettings>;
+  getResendSettings(): Promise<ResendSettings | undefined>;
+  saveResendSettings(settings: InsertResendSettings): Promise<ResendSettings>;
 
   listConversations(): Promise<Conversation[]>;
   getConversation(id: string): Promise<Conversation | undefined>;
@@ -355,6 +360,7 @@ export interface IStorage {
   // Notification Templates (NOTIF-01, NOTIF-02)
   getNotificationTemplates(eventKey?: string): Promise<NotificationTemplate[]>;
   upsertNotificationTemplate(template: InsertNotificationTemplate & { id?: number }): Promise<NotificationTemplate>;
+  deleteNotificationTemplate(id: number): Promise<void>;
 
   // === Marketing Attribution (Phase 45) ===
   // Visitor session upsert (FT immutable, LT mutable per call).
@@ -542,6 +548,31 @@ export class DatabaseStorage implements IStorage {
     }
 
     const [created] = await db.insert(telegramSettings).values(settings).returning();
+    return created;
+  }
+
+  async getResendSettings(): Promise<ResendSettings | undefined> {
+    const [settings] = await db.select().from(resendSettings).orderBy(asc(resendSettings.id)).limit(1);
+    if (settings) return settings;
+
+    // Singleton auto-create — same pattern as getTwilioSettings/getTelegramSettings
+    const [created] = await db.insert(resendSettings).values({}).returning();
+    return created;
+  }
+
+  async saveResendSettings(settings: InsertResendSettings): Promise<ResendSettings> {
+    const existing = await this.getResendSettings();
+
+    if (existing) {
+      const [updated] = await db
+        .update(resendSettings)
+        .set({ ...settings, updatedAt: new Date() })
+        .where(eq(resendSettings.id, existing.id))
+        .returning();
+      return updated;
+    }
+
+    const [created] = await db.insert(resendSettings).values(settings).returning();
     return created;
   }
 
@@ -2198,6 +2229,10 @@ export class DatabaseStorage implements IStorage {
       .values(template)
       .returning();
     return created;
+  }
+
+  async deleteNotificationTemplate(id: number): Promise<void> {
+    await db.delete(notificationTemplates).where(eq(notificationTemplates.id, id));
   }
 
   // ===========================================================================

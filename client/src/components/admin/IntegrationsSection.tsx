@@ -10,6 +10,7 @@ import { McpSettingsSection } from './McpSettingsSection';
 import { TelegramSection } from './TelegramSection';
 import { FormTranscriptionCard } from './integrations/FormTranscriptionCard';
 import { TwilioSection } from './TwilioSection';
+import { ResendSection } from './ResendSection';
 
 type IntegrationTab = 'ai' | 'crm' | 'communications' | 'analytics' | 'mcp';
 
@@ -55,6 +56,7 @@ export function IntegrationsSection() {
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <TwilioSection />
             <TelegramSection />
+            <ResendSection />
             <GroqCard />
           </div>
         )}

@@ -40,6 +40,18 @@ export const telegramSettings = pgTable("telegram_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Resend (email) Integration Settings
+export const resendSettings = pgTable("resend_settings", {
+  id: serial("id").primaryKey(),
+  enabled: boolean("enabled").default(false),
+  apiKey: text("api_key"),
+  fromName: text("from_name"),
+  fromEmail: text("from_email"),
+  toEmails: jsonb("to_emails").$type<string[]>().default([]),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Company Settings (singleton table - only one row)
 export const companySettings = pgTable("company_settings", {
   id: serial("id").primaryKey(),
@@ -159,6 +171,14 @@ export const insertTelegramSettingsSchema = z.object({
   chatId: z.string().nullable().optional(),
 });
 
+export const insertResendSettingsSchema = z.object({
+  enabled: z.boolean().default(false),
+  apiKey: z.string().nullable().optional(),
+  fromName: z.string().nullable().optional(),
+  fromEmail: z.string().nullable().optional(),
+  toEmails: z.array(z.string()).default([]),
+});
+
 export const insertCompanySettingsSchema = z.object({
   companyName: z.string().default('Company Name'),
   companyEmail: z.string().email().default('contact@company.com'),
@@ -212,6 +232,8 @@ export type TwilioSettings = typeof twilioSettings.$inferSelect;
 export type InsertTwilioSettings = typeof twilioSettings.$inferInsert;
 export type TelegramSettings = typeof telegramSettings.$inferSelect;
 export type InsertTelegramSettings = typeof telegramSettings.$inferInsert;
+export type ResendSettings = typeof resendSettings.$inferSelect;
+export type InsertResendSettings = typeof resendSettings.$inferInsert;
 export type CompanySettings = typeof companySettings.$inferSelect;
 export type InsertCompanySettings = typeof companySettings.$inferInsert;
 

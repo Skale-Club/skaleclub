@@ -1,14 +1,17 @@
 import { boolean, index, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
-// notification_templates: one row per (event_key x channel) pair.
+// notification_templates: a notification message for a trigger event on a channel.
+// Multiple templates may target the same (event_key, channel) pair.
 // event_key values: 'new_chat' | 'hot_lead' | 'low_perf_alert'
-// channel values:   'sms' | 'telegram'  (D-05: text not enum)
+// channel values:   'sms' | 'telegram' | 'email'  (D-05: text not enum)
 export const notificationTemplates = pgTable("notification_templates", {
   id: serial("id").primaryKey(),
+  name: text("name"),               // human label shown in the admin tab strip
   eventKey: text("event_key").notNull(),
   channel: text("channel").notNull(),
-  body: text("body").notNull(),
+  subject: text("subject"),         // used by the email channel only
+  body: text("body").notNull().default(""),
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
@@ -21,16 +24,20 @@ export type InsertNotificationTemplate = typeof notificationTemplates.$inferInse
 
 // Manual Zod schema (hub.ts pattern — not drizzle-zod)
 export const insertNotificationTemplateSchema = z.object({
+  name: z.string().max(200).optional(),
   eventKey: z.string().min(1).max(100),
-  channel: z.enum(["sms", "telegram"]),
-  body: z.string().min(1),
+  channel: z.enum(["sms", "telegram", "email"]),
+  subject: z.string().max(300).optional(),
+  body: z.string().default(""),
   active: z.boolean().default(true),
 });
 
 export const selectNotificationTemplateSchema = z.object({
   id: z.number().int(),
+  name: z.string().nullable(),
   eventKey: z.string(),
   channel: z.string(),
+  subject: z.string().nullable(),
   body: z.string(),
   active: z.boolean(),
   createdAt: z.date().nullable(),

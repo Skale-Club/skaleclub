@@ -30,4 +30,30 @@ export function registerNotificationRoutes(app: Express) {
       return res.status(500).json({ message: (err as Error).message });
     }
   });
+
+  app.post("/api/notifications/templates", requireAdmin, async (req, res) => {
+    try {
+      const parsed = insertNotificationTemplateSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: parsed.error.errors[0].message });
+      }
+      const created = await storage.upsertNotificationTemplate(parsed.data);
+      return res.status(201).json(created);
+    } catch (err) {
+      return res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.delete("/api/notifications/templates/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ message: "Invalid template id" });
+      }
+      await storage.deleteNotificationTemplate(id);
+      return res.status(204).end();
+    } catch (err) {
+      return res.status(500).json({ message: (err as Error).message });
+    }
+  });
 }

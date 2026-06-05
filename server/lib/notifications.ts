@@ -15,6 +15,7 @@
 import type { IStorage } from "../storage.js";
 import { validateConfig, sendSms } from "../integrations/twilio.js";
 import { sendTelegramMessage } from "../integrations/telegram.js";
+import { sendEmail } from "../integrations/resend.js";
 
 function substituteVariables(body: string, vars: Record<string, string>): string {
   // Replace {{token}} with vars[token], unknown tokens render as empty string (NOTIF-04).
@@ -47,6 +48,20 @@ export async function dispatchNotification(
         if (!telegramSettings.botToken || !telegramSettings.chatId) continue;
         await sendTelegramMessage(
           { botToken: telegramSettings.botToken, chatId: telegramSettings.chatId },
+          body
+        );
+      } else if (template.channel === "email") {
+        const resendSettings = await storage.getResendSettings();
+        if (!resendSettings || !resendSettings.enabled) continue;
+        if (!resendSettings.apiKey || !resendSettings.fromEmail) continue;
+        const toEmails = (resendSettings.toEmails as string[] | null) ?? [];
+        if (!toEmails.length) continue;
+        const subjectTemplate = template.subject?.trim() || "Notification from {{company}}";
+        const subject = substituteVariables(subjectTemplate, variables) || "Notification";
+        await sendEmail(
+          { apiKey: resendSettings.apiKey, fromName: resendSettings.fromName, fromEmail: resendSettings.fromEmail },
+          toEmails,
+          subject,
           body
         );
       }

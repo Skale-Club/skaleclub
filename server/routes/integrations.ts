@@ -154,6 +154,14 @@ const telegramSettingsSchema = z.object({
   enabled: z.boolean().optional(),
 });
 
+const resendSettingsSchema = z.object({
+  apiKey: z.string().trim().optional(),
+  fromName: z.string().trim().optional(),
+  fromEmail: z.string().trim().optional(),
+  toEmails: z.array(z.string().trim()).optional(),
+  enabled: z.boolean().optional(),
+});
+
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
 export function registerIntegrationRoutes(app: Express) {
@@ -949,6 +957,107 @@ export function registerIntegrationRoutes(app: Express) {
         return res.status(400).json({ success: false, message: result.message || 'Failed to send test Telegram message' });
       }
       res.json({ success: true, message: 'Test Telegram message sent successfully!' });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  });
+
+  // ===============================
+  // Resend (Email) Integration Routes
+  // ===============================
+
+  app.get('/api/integrations/email', requireAdmin, async (_req, res) => {
+    try {
+      const settings = await storage.getResendSettings();
+      if (!settings) {
+        return res.json({ enabled: false, apiKey: '', fromName: '', fromEmail: '', toEmails: [] });
+      }
+      res.json({
+        enabled: settings.enabled ?? false,
+        apiKey: settings.apiKey ? '********' : '',
+        fromName: settings.fromName ?? '',
+        fromEmail: settings.fromEmail ?? '',
+        toEmails: (settings.toEmails as string[] | null) ?? [],
+      });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
+  app.put('/api/integrations/email', requireAdmin, async (req, res) => {
+    try {
+      const parsed = resendSettingsSchema.parse(req.body);
+      const existing = await storage.getResendSettings();
+
+      const keyFromRequest = parsed.apiKey && parsed.apiKey !== '********' ? parsed.apiKey.trim() : undefined;
+      const apiKeyToPersist = keyFromRequest || existing?.apiKey || undefined;
+      const fromName = parsed.fromName?.trim() ?? existing?.fromName ?? '';
+      const fromEmail = parsed.fromEmail?.trim() ?? existing?.fromEmail ?? '';
+      const toEmails = parsed.toEmails
+        ? parsed.toEmails.map(e => e.trim()).filter(Boolean)
+        : ((existing?.toEmails as string[] | null) ?? []);
+      const enabled = parsed.enabled ?? existing?.enabled ?? false;
+
+      if (enabled && (!apiKeyToPersist || !fromEmail || toEmails.length === 0)) {
+        return res.status(400).json({ message: 'API key, From email and at least one recipient are required to enable email notifications' });
+      }
+
+      const settingsToSave: any = {
+        enabled,
+        fromName: fromName || null,
+        fromEmail: fromEmail || null,
+        toEmails,
+      };
+      if (keyFromRequest) {
+        settingsToSave.apiKey = keyFromRequest;
+      } else if (existing?.apiKey) {
+        settingsToSave.apiKey = existing.apiKey;
+      }
+
+      const settings = await storage.saveResendSettings(settingsToSave);
+      res.json({
+        enabled: settings.enabled ?? false,
+        apiKey: settings.apiKey ? '********' : '',
+        fromName: settings.fromName ?? '',
+        fromEmail: settings.fromEmail ?? '',
+        toEmails: (settings.toEmails as string[] | null) ?? [],
+      });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid email settings payload', errors: err.errors });
+      }
+      res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  app.post('/api/integrations/email/test', requireAdmin, async (req, res) => {
+    try {
+      const parsed = resendSettingsSchema.parse(req.body);
+      const existing = await storage.getResendSettings();
+
+      const apiKey = (parsed.apiKey && parsed.apiKey !== '********') ? parsed.apiKey.trim() : existing?.apiKey;
+      const fromEmail = parsed.fromEmail?.trim() || existing?.fromEmail;
+      const fromName = parsed.fromName?.trim() || existing?.fromName;
+      const toEmails = (parsed.toEmails && parsed.toEmails.length)
+        ? parsed.toEmails.map(e => e.trim()).filter(Boolean)
+        : ((existing?.toEmails as string[] | null) ?? []);
+
+      if (!apiKey || !fromEmail || toEmails.length === 0) {
+        return res.status(400).json({ success: false, message: 'API key, From email and at least one recipient are required to test email' });
+      }
+
+      const { sendEmail } = await import('../integrations/resend.js');
+      const result = await sendEmail(
+        { apiKey, fromName, fromEmail },
+        toEmails,
+        'Test email from Skale Club',
+        'Your Resend email integration is working. You will receive notifications at this address.'
+      );
+
+      if (!result.success) {
+        return res.status(400).json({ success: false, message: result.message || 'Failed to send test email' });
+      }
+      res.json({ success: true, message: 'Test email sent successfully!' });
     } catch (err: any) {
       res.status(500).json({ success: false, message: (err as Error).message });
     }

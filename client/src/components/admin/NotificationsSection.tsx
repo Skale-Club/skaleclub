@@ -1,280 +1,364 @@
-import { useEffect, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Bell, MessageSquare, Send, Plus, MoreHorizontal } from 'lucide-react';
-import { SectionHeader, SubSidebar, SubSidebarLayout, EmptyState } from './shared';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Bell, MessageSquare, Send, Mail, Plus, Trash2, type LucideIcon } from 'lucide-react';
+import { SectionHeader, AdminCard, EmptyState } from './shared';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from '@/components/ui/loader';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import type { NotificationTemplate } from '@shared/schema';
+import { cn } from '@/lib/utils';
 
-// --- Hardcoded data maps ---
+interface Template {
+  id: number;
+  name: string | null;
+  eventKey: string;
+  channel: string;
+  subject: string | null;
+  body: string;
+  active: boolean;
+}
 
-const EVENT_LABELS: Record<string, string> = {
-  new_chat: 'New Chat',
-  hot_lead: 'Hot Lead',
-  low_perf_alert: 'Low Performance Alert',
-};
+type Draft = Omit<Template, 'id'> & { id?: number };
 
-const EVENT_DESCRIPTIONS: Record<string, string> = {
-  new_chat: 'Sent when a new visitor starts a chat conversation',
-  hot_lead: 'Sent when a lead is classified as hot',
-  low_perf_alert: 'Sent when chat response time exceeds threshold',
-};
+const TRIGGERS: { value: string; label: string; description: string }[] = [
+  { value: 'new_chat', label: 'New Chat', description: 'A new visitor starts a chat conversation' },
+  { value: 'hot_lead', label: 'Hot Lead', description: 'A lead is classified as hot' },
+  { value: 'low_perf_alert', label: 'Low Performance', description: 'Chat response time exceeds the threshold' },
+];
 
-const EVENT_VARIABLES: Record<string, string[]> = {
+const CHANNELS: { value: string; label: string; icon: LucideIcon }[] = [
+  { value: 'sms', label: 'SMS (Twilio)', icon: MessageSquare },
+  { value: 'telegram', label: 'Telegram', icon: Send },
+  { value: 'email', label: 'Email (Resend)', icon: Mail },
+];
+
+const TRIGGER_VARIABLES: Record<string, string[]> = {
   new_chat: ['{{company}}', '{{conversationId}}', '{{pageUrl}}'],
   hot_lead: ['{{company}}', '{{name}}', '{{phone}}', '{{classification}}'],
   low_perf_alert: ['{{company}}', '{{avgTime}}', '{{samples}}'],
 };
 
-const CHANNEL_LABELS: Record<string, string> = {
-  sms: 'SMS (Twilio)',
-  telegram: 'Telegram',
-};
+const triggerLabel = (key: string) => TRIGGERS.find(t => t.value === key)?.label ?? key;
+const channelMeta = (key: string) => CHANNELS.find(c => c.value === key);
+const channelLabel = (key: string) => channelMeta(key)?.label ?? key;
 
-const CHANNEL_ICONS: Record<string, typeof MessageSquare> = {
-  sms: MessageSquare,
-  telegram: Send,
-};
-
-const EVENT_KEYS = ['new_chat', 'hot_lead', 'low_perf_alert'] as const;
-
-type ChannelTab = 'sms' | 'telegram' | 'others';
-
-const CHANNEL_NAV: { id: ChannelTab; label: string; icon: typeof MessageSquare }[] = [
-  { id: 'sms', label: 'SMS', icon: MessageSquare },
-  { id: 'telegram', label: 'Telegram', icon: Send },
-  { id: 'others', label: 'Others', icon: MoreHorizontal },
-];
-
-// --- State types ---
-
-type DraftState = { body: string; active: boolean };
+function templateLabel(t: { name?: string | null; eventKey: string; channel: string }) {
+  if (t.name && t.name.trim()) return t.name.trim();
+  return `${triggerLabel(t.eventKey)} · ${channelMeta(t.channel)?.label.split(' ')[0] ?? t.channel}`;
+}
 
 export function NotificationsSection() {
   const { toast } = useToast();
-  const [activeChannel, setActiveChannel] = useState<ChannelTab>('sms');
-  const [drafts, setDrafts] = useState<Record<number, DraftState>>({});
-  const [savingIds, setSavingIds] = useState<Record<number, boolean>>({});
-  const textareaRefs = useRef<Record<number, HTMLTextAreaElement | null>>({});
+  const qc = useQueryClient();
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Template | null>(null);
+  const bodyRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const { data: templates, isLoading } = useQuery<NotificationTemplate[]>({
+  const { data: templates = [], isLoading } = useQuery<Template[]>({
     queryKey: ['/api/notifications/templates'],
   });
 
+  // Auto-select the first template once loaded / keep selection valid after deletes.
   useEffect(() => {
-    if (templates) {
-      const initial: Record<number, DraftState> = {};
-      templates.forEach(t => {
-        initial[t.id] = { body: t.body, active: t.active };
-      });
-      setDrafts(initial);
+    if (!templates.length) {
+      if (selectedId !== null) { setSelectedId(null); setDraft(null); }
+      return;
     }
-  }, [templates]);
+    if (selectedId === null || !templates.some(t => t.id === selectedId)) {
+      const first = templates[0];
+      setSelectedId(first.id);
+      setDraft({ ...first });
+    }
+  }, [templates, selectedId]);
 
-  const grouped = (templates ?? []).reduce((acc, t) => {
-    if (!acc[t.eventKey]) acc[t.eventKey] = [];
-    acc[t.eventKey].push(t);
-    return acc;
-  }, {} as Record<string, NotificationTemplate[]>);
-
-  const updateDraft = (template: NotificationTemplate, patch: Partial<DraftState>) => {
-    setDrafts(prev => ({
-      ...prev,
-      [template.id]: {
-        ...(prev[template.id] ?? { body: template.body, active: template.active }),
-        ...patch,
-      },
-    }));
+  const select = (t: Template) => {
+    setSelectedId(t.id);
+    setDraft({ ...t });
   };
 
-  const insertVariable = (template: NotificationTemplate, variable: string) => {
-    const textarea = textareaRefs.current[template.id];
-    const current = drafts[template.id]?.body ?? template.body;
+  const source = useMemo(() => templates.find(t => t.id === selectedId) ?? null, [templates, selectedId]);
+  const isDirty = !!draft && !!source && (
+    (draft.name ?? '') !== (source.name ?? '') ||
+    draft.eventKey !== source.eventKey ||
+    draft.channel !== source.channel ||
+    (draft.subject ?? '') !== (source.subject ?? '') ||
+    draft.body !== source.body ||
+    draft.active !== source.active
+  );
 
-    if (textarea) {
-      const start = textarea.selectionStart ?? current.length;
-      const end = textarea.selectionEnd ?? current.length;
-      const next = current.slice(0, start) + variable + current.slice(end);
-      updateDraft(template, { body: next });
-      // Restore focus + put cursor right after the inserted variable
+  const createMutation = useMutation({
+    mutationFn: () => apiRequest('POST', '/api/notifications/templates', {
+      name: 'New template', eventKey: 'new_chat', channel: 'sms', subject: '', body: '', active: false,
+    }).then(r => r.json() as Promise<Template>),
+    onSuccess: (created) => {
+      qc.invalidateQueries({ queryKey: ['/api/notifications/templates'] });
+      select(created);
+      toast({ title: 'Template created' });
+    },
+    onError: (e: any) => toast({ title: 'Could not create template', description: e?.message, variant: 'destructive' }),
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: (d: Draft) => apiRequest('PUT', `/api/notifications/templates/${d.id}`, {
+      name: d.name, eventKey: d.eventKey, channel: d.channel,
+      subject: d.subject ?? '', body: d.body, active: d.active,
+    }).then(r => r.json() as Promise<Template>),
+    onSuccess: (saved) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications/templates'] });
+      setDraft({ ...saved });
+      toast({ title: 'Template saved' });
+    },
+    onError: (e: any) => toast({ title: 'Could not save template', description: e?.message, variant: 'destructive' }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/notifications/templates/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['/api/notifications/templates'] });
+      setSelectedId(null);
+      setDraft(null);
+      toast({ title: 'Template deleted' });
+    },
+    onError: (e: any) => toast({ title: 'Could not delete template', description: e?.message, variant: 'destructive' }),
+  });
+
+  const patch = (p: Partial<Draft>) => setDraft(prev => (prev ? { ...prev, ...p } : prev));
+
+  const insertVariable = (v: string) => {
+    if (!draft) return;
+    const el = bodyRef.current;
+    const current = draft.body ?? '';
+    if (el) {
+      const start = el.selectionStart ?? current.length;
+      const end = el.selectionEnd ?? current.length;
+      const next = current.slice(0, start) + v + current.slice(end);
+      patch({ body: next });
       requestAnimationFrame(() => {
-        textarea.focus();
-        const cursor = start + variable.length;
-        textarea.setSelectionRange(cursor, cursor);
+        el.focus();
+        const cursor = start + v.length;
+        el.setSelectionRange(cursor, cursor);
       });
     } else {
-      updateDraft(template, { body: current + variable });
-    }
-  };
-
-  const handleSave = async (templateId: number) => {
-    const draft = drafts[templateId];
-    if (!draft || draft.body.trim() === '') return;
-    setSavingIds(prev => ({ ...prev, [templateId]: true }));
-    try {
-      await apiRequest('PUT', `/api/notifications/templates/${templateId}`, {
-        body: draft.body,
-        active: draft.active,
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/notifications/templates'] });
-      toast({ title: 'Template saved' });
-    } catch (err: any) {
-      toast({ title: 'Failed to save template', description: err.message, variant: 'destructive' });
-    } finally {
-      setSavingIds(prev => ({ ...prev, [templateId]: false }));
+      patch({ body: current + v });
     }
   };
 
   if (isLoading) {
-    return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
-    );
+    return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
   }
+
+  const variables = draft ? (TRIGGER_VARIABLES[draft.eventKey] ?? []) : [];
 
   return (
     <div className="space-y-6">
       <SectionHeader
         title="Notifications"
-        description="Configure notification templates for SMS and Telegram alerts."
+        description="Message templates sent on SMS, Telegram and Email when key events happen."
         icon={<Bell className="w-5 h-5" />}
       />
 
-      <SubSidebarLayout
-        nav={
-          <SubSidebar
-            items={CHANNEL_NAV}
-            value={activeChannel}
-            onValueChange={(id) => setActiveChannel(id as ChannelTab)}
-            storageKey="notifications"
-          />
-        }
-      >
-        {activeChannel === 'others' ? (
-          <EmptyState
-            icon={<MoreHorizontal />}
-            title="No other channels yet"
-            description="SMS and Telegram are the only notification channels available right now."
-          />
-        ) : (
-          <div className="space-y-6">
-            {EVENT_KEYS.map(eventKey => {
-              const template = grouped[eventKey]?.find(t => t.channel === activeChannel);
-              const variables = EVENT_VARIABLES[eventKey] ?? [];
-              const Icon = CHANNEL_ICONS[activeChannel] ?? MessageSquare;
-
-              return (
-                <Card key={eventKey}>
-                  <CardHeader>
-                    <CardTitle>{EVENT_LABELS[eventKey]}</CardTitle>
-                    <p className="mt-1 text-sm text-muted-foreground">{EVENT_DESCRIPTIONS[eventKey]}</p>
-                  </CardHeader>
-
-                  <CardContent>
-                    {!template ? (
-                      <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground flex items-center gap-2">
-                        <Icon className="w-4 h-4" />
-                        <span className="font-medium">{CHANNEL_LABELS[activeChannel]}</span>
-                        <span>— Not configured</span>
-                      </div>
-                    ) : (() => {
-                      const draft = drafts[template.id];
-                      const isSaving = !!savingIds[template.id];
-                      const currentBody = draft?.body ?? template.body;
-                      const currentActive = draft?.active ?? template.active;
-                      const isDirty =
-                        !!draft && (draft.body !== template.body || draft.active !== template.active);
-
-                      return (
-                        <div className="flex flex-col gap-3 rounded-lg border border-border bg-card/40 p-4">
-                          {/* Channel label + active toggle */}
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2">
-                              <Icon className="w-4 h-4 text-muted-foreground" />
-                              <Label className="text-sm font-semibold">{CHANNEL_LABELS[activeChannel]}</Label>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Switch
-                                id={`active-${template.id}`}
-                                checked={currentActive}
-                                onCheckedChange={(checked) => updateDraft(template, { active: checked })}
-                              />
-                              <Label htmlFor={`active-${template.id}`} className="text-xs text-muted-foreground">
-                                Active
-                              </Label>
-                            </div>
-                          </div>
-
-                          {/* Template body */}
-                          <div className="space-y-1.5">
-                            <Label htmlFor={`body-${template.id}`} className="text-xs text-muted-foreground">
-                              Message body
-                            </Label>
-                            <Textarea
-                              id={`body-${template.id}`}
-                              ref={(el) => { textareaRefs.current[template.id] = el; }}
-                              rows={4}
-                              value={currentBody}
-                              onChange={(e) => updateDraft(template, { body: e.target.value })}
-                              placeholder="Enter template message..."
-                              className="resize-y font-mono text-sm min-h-[96px]"
-                            />
-                          </div>
-
-                          {/* Clickable variables */}
-                          {variables.length > 0 && (
-                            <div className="space-y-1.5">
-                              <p className="text-xs text-muted-foreground">
-                                Click a variable to insert it at the cursor:
-                              </p>
-                              <div className="flex flex-wrap gap-1.5">
-                                {variables.map(v => (
-                                  <button
-                                    key={v}
-                                    type="button"
-                                    onClick={() => insertVariable(template, v)}
-                                    className="group inline-flex items-center gap-1 font-mono text-xs bg-muted hover:bg-primary/10 hover:text-primary px-2 py-1 rounded border border-border hover:border-primary/40 transition-colors"
-                                    title={`Insert ${v}`}
-                                  >
-                                    <Plus className="w-3 h-3 opacity-60 group-hover:opacity-100" />
-                                    {v}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Save button */}
-                          <div className="mt-auto flex items-center justify-between gap-2 pt-1">
-                            <span className="text-xs text-muted-foreground">
-                              {isDirty ? 'Unsaved changes' : 'Saved'}
-                            </span>
-                            <Button
-                              size="sm"
-                              onClick={() => handleSave(template.id)}
-                              disabled={!isDirty || currentBody.trim() === '' || isSaving}
-                            >
-                              {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                              Save
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </CardContent>
-                </Card>
-              );
-            })}
+      {templates.length === 0 ? (
+        <EmptyState
+          icon={<Bell />}
+          title="No templates yet"
+          description="Create a template to send SMS, Telegram or Email alerts when a chat starts or a hot lead arrives."
+          action={
+            <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending}>
+              {createMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+              New template
+            </Button>
+          }
+        />
+      ) : (
+        <>
+          {/* Template tabs + add */}
+          <div className="flex items-center gap-2 border-b">
+            <div className="flex flex-1 gap-1 overflow-x-auto">
+              {templates.map(t => {
+                const Icon = channelMeta(t.channel)?.icon ?? MessageSquare;
+                const active = t.id === selectedId;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => select(t)}
+                    className={cn(
+                      'flex items-center gap-2 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition-colors',
+                      active
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span>{templateLabel(active && draft ? draft : t)}</span>
+                    {!t.active && <span className="text-xs opacity-60">(off)</span>}
+                  </button>
+                );
+              })}
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="shrink-0 gap-1.5"
+              onClick={() => createMutation.mutate()}
+              disabled={createMutation.isPending}
+            >
+              <Plus className="h-4 w-4" /> New
+            </Button>
           </div>
-        )}
-      </SubSidebarLayout>
+
+          {/* Editor */}
+          {draft && (
+            <AdminCard className="space-y-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0 space-y-1">
+                  <h3 className="text-sm font-semibold text-foreground">Edit template</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Sent when <span className="font-medium text-foreground">{triggerLabel(draft.eventKey)}</span> fires,
+                    via <span className="font-medium text-foreground">{channelLabel(draft.channel)}</span>.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={draft.active} onCheckedChange={(c) => patch({ active: c })} id="tpl-active" />
+                  <Label htmlFor="tpl-active" className="text-sm text-muted-foreground">Active</Label>
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="tpl-name">Name</Label>
+                  <Input
+                    id="tpl-name"
+                    value={draft.name ?? ''}
+                    onChange={(e) => patch({ name: e.target.value })}
+                    placeholder="e.g. Hot Lead alert"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Trigger</Label>
+                    <Select value={draft.eventKey} onValueChange={(v) => patch({ eventKey: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {TRIGGERS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Channel</Label>
+                    <Select value={draft.channel} onValueChange={(v) => patch({ channel: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {CHANNELS.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              {draft.channel === 'email' && (
+                <div className="space-y-2">
+                  <Label htmlFor="tpl-subject">Email subject</Label>
+                  <Input
+                    id="tpl-subject"
+                    value={draft.subject ?? ''}
+                    onChange={(e) => patch({ subject: e.target.value })}
+                    placeholder="New lead from {{company}}"
+                  />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="tpl-body">Message body</Label>
+                <Textarea
+                  id="tpl-body"
+                  ref={bodyRef}
+                  rows={5}
+                  value={draft.body}
+                  onChange={(e) => patch({ body: e.target.value })}
+                  placeholder="Enter the message…"
+                  className="resize-y font-mono text-sm min-h-[120px]"
+                />
+                {variables.length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs text-muted-foreground">Click a variable to insert it at the cursor:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {variables.map(v => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() => insertVariable(v)}
+                          className="group inline-flex items-center gap-1 rounded border bg-muted px-2 py-1 font-mono text-xs transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
+                          title={`Insert ${v}`}
+                        >
+                          <Plus className="h-3 w-3 opacity-60 group-hover:opacity-100" />
+                          {v}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between gap-2 border-t pt-4">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => source && setDeleteTarget(source)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" /> Delete
+                </Button>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground">{isDirty ? 'Unsaved changes' : 'Saved'}</span>
+                  <Button
+                    onClick={() => draft.id && saveMutation.mutate(draft)}
+                    disabled={!isDirty || saveMutation.isPending}
+                  >
+                    {saveMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Save
+                  </Button>
+                </div>
+              </div>
+            </AdminCard>
+          )}
+        </>
+      )}
+
+      {deleteTarget && (
+        <AlertDialog open onOpenChange={(o) => !o && setDeleteTarget(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this template?</AlertDialogTitle>
+              <AlertDialogDescription>
+                "{templateLabel(deleteTarget)}" will be permanently removed. This cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => { deleteMutation.mutate(deleteTarget.id); setDeleteTarget(null); }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 }
