@@ -42,21 +42,21 @@ export default function Contact() {
             <form onSubmit={handleSubmit} className="space-y-6 bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">{t('Full Name')}</label>
-                  <Input placeholder="John Doe" required />
+                  <label className="text-sm font-medium text-slate-700">{t('Full Name')}</label>
+                  <Input placeholder="John Doe" className="bg-white text-slate-900 border-slate-200 placeholder:text-slate-400" required />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">{t('Email Address')}</label>
-                  <Input type="email" placeholder="john@example.com" required />
+                  <label className="text-sm font-medium text-slate-700">{t('Email Address')}</label>
+                  <Input type="email" placeholder="john@example.com" className="bg-white text-slate-900 border-slate-200 placeholder:text-slate-400" required />
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">{t('Subject')}</label>
-                <Input placeholder={t("How can we help?")} required />
+                <label className="text-sm font-medium text-slate-700">{t('Subject')}</label>
+                <Input placeholder={t("How can we help?")} className="bg-white text-slate-900 border-slate-200 placeholder:text-slate-400" required />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">{t('Message')}</label>
-                <Textarea placeholder={t("Tell us more about your needs...")} className="min-h-[150px]" required />
+                <label className="text-sm font-medium text-slate-700">{t('Message')}</label>
+                <Textarea placeholder={t("Tell us more about your needs...")} className="min-h-[150px] bg-white text-slate-900 border-slate-200 placeholder:text-slate-400" required />
               </div>
               <Button type="submit" className="w-full md:w-auto px-8 py-6 rounded-full text-lg">
                 <Send className="w-5 h-5 mr-2" />
