@@ -40,6 +40,25 @@ export const insertFaqSchema = z.object({
 export type Faq = typeof faqs.$inferSelect;
 export type InsertFaq = typeof faqs.$inferInsert;
 
+// Redirects table — short-link / vanity URL system
+export const redirects = pgTable("redirects", {
+  id: serial("id").primaryKey(),
+  slug: text("slug").notNull().unique(),
+  destinationUrl: text("destination_url").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertRedirectSchema = z.object({
+  slug: z.string().min(1).max(60).regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers and hyphens"),
+  destinationUrl: z.string().url("Must be a valid URL"),
+  isActive: z.boolean().default(true),
+});
+
+export type Redirect = typeof redirects.$inferSelect;
+export type InsertRedirect = typeof redirects.$inferInsert;
+
 // Blog Posts table
 export const blogPosts = pgTable("blog_posts", {
   id: serial("id").primaryKey(),

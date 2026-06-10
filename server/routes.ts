@@ -14,6 +14,7 @@ import { dispatchNotification } from "./lib/notifications.js";
 import { registerStorageRoutes } from "./storage/storageAdapter.js";
 import { registerPortfolioRoutes } from "./routes/portfolio.js";
 import { registerFaqRoutes } from "./routes/faqs.js";
+import { registerRedirectRoutes, registerPublicRedirectResolver } from "./routes/redirects.js";
 import { registerVCardRoutes } from "./routes/vcards.js";
 import { registerBlogRoutes } from "./routes/blog.js";
 import { registerTranslateRoutes } from "./routes/translate.js";
@@ -132,6 +133,7 @@ export async function registerRoutes(
   // Xpot was extracted to a standalone project at C:\Users\Vanildo\Dev\xpot on 2026-05-18.
   registerPortfolioRoutes(app);
   registerFaqRoutes(app);
+  registerRedirectRoutes(app);
   registerVCardRoutes(app);
   registerBlogAutomationRoutes(app);
   registerBlogRoutes(app);
@@ -1167,6 +1169,9 @@ You: "Excellent, John! A specialist will contact you within 24 hours to discuss 
       res.status(500).json({ message: (err as Error).message });
     }
   });
+
+  // Public /:slug resolver — must be last, after all explicit routes.
+  registerPublicRedirectResolver(app);
 
   return httpServer;
 }

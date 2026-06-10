@@ -14,6 +14,7 @@ import {
   conversationMessages,
   companySettings,
   faqs,
+  redirects,
   integrationSettings,
   blogPosts,
   blogSettings,
@@ -92,6 +93,8 @@ import {
   type InsertConversationMessage,
   type FormLeadProgressInput,
   type InsertFaq,
+  type Redirect,
+  type InsertRedirect,
   type InsertIntegrationSettings,
   type InsertBlogPost,
   type InsertBlogSettings,
@@ -191,6 +194,13 @@ export interface IStorage {
   createFaq(faq: InsertFaq): Promise<Faq>;
   updateFaq(id: number, faq: Partial<InsertFaq>): Promise<Faq>;
   deleteFaq(id: number): Promise<void>;
+
+  // Redirects
+  getRedirects(): Promise<Redirect[]>;
+  getRedirectBySlug(slug: string): Promise<Redirect | undefined>;
+  createRedirect(r: InsertRedirect): Promise<Redirect>;
+  updateRedirect(id: number, r: Partial<InsertRedirect>): Promise<Redirect>;
+  deleteRedirect(id: number): Promise<void>;
 
   // Integration Settings
   getIntegrationSettings(provider: string): Promise<IntegrationSettings | undefined>;
@@ -419,6 +429,29 @@ export class DatabaseStorage implements IStorage {
 
   async deleteFaq(id: number): Promise<void> {
     await db.delete(faqs).where(eq(faqs.id, id));
+  }
+
+  async getRedirects(): Promise<Redirect[]> {
+    return await db.select().from(redirects).orderBy(redirects.createdAt);
+  }
+
+  async getRedirectBySlug(slug: string): Promise<Redirect | undefined> {
+    const [row] = await db.select().from(redirects).where(eq(redirects.slug, slug)).limit(1);
+    return row;
+  }
+
+  async createRedirect(r: InsertRedirect): Promise<Redirect> {
+    const [row] = await db.insert(redirects).values(r).returning();
+    return row;
+  }
+
+  async updateRedirect(id: number, r: Partial<InsertRedirect>): Promise<Redirect> {
+    const [row] = await db.update(redirects).set({ ...r, updatedAt: new Date() }).where(eq(redirects.id, id)).returning();
+    return row;
+  }
+
+  async deleteRedirect(id: number): Promise<void> {
+    await db.delete(redirects).where(eq(redirects.id, id));
   }
 
   async getIntegrationSettings(provider: string): Promise<IntegrationSettings | undefined> {

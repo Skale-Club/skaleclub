@@ -22,7 +22,8 @@ export type AdminSection =
   | 'landings'
   | 'notifications'
   | 'traffic'
-  | 'mcp';
+  | 'mcp'
+  | 'redirects';
 
 export interface DayHours {
   isOpen: boolean;
