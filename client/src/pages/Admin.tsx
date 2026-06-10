@@ -198,7 +198,7 @@ function AdminContent() {
       />
 
       <main className="flex-1 min-w-0 flex flex-col bg-background md:h-screen md:overflow-hidden" id="admin-top">
-        <AdminHeader title={companySettings?.companyName || 'Admin Panel'} />
+        <AdminHeader title={companySettings?.companyName || 'Admin Panel'} companySettings={companySettings} />
 
         <Suspense fallback={
           <div className="flex-1 overflow-y-auto min-h-0 p-6 pb-16 md:p-8 md:pb-10">
