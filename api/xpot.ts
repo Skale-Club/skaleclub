@@ -1,4 +1,5 @@
-import 'dotenv/config';
+// Must be first: initializes Sentry (and loads dotenv) before anything else.
+import "../server/instrument.js";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createApp } from "../server/app.js";
 import type express from "express";

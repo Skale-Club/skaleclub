@@ -1,4 +1,7 @@
+// Must be first: initializes Sentry before anything else loads.
+import "./instrument";
 import { createRoot } from "react-dom/client";
+import * as Sentry from "@sentry/react";
 import { Analytics } from "@vercel/analytics/react";
 import App from "./App";
 import "./index.css";
@@ -94,8 +97,14 @@ setTimeout(() => {
 registerServiceWorker();
 
 createRoot(document.getElementById("root")!).render(
-  <>
+  <Sentry.ErrorBoundary
+    fallback={
+      <p style={{ padding: "2rem", textAlign: "center" }}>
+        An unexpected error occurred. Please reload the page.
+      </p>
+    }
+  >
     <App />
     <Analytics />
-  </>
+  </Sentry.ErrorBoundary>
 );

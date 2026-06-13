@@ -1,4 +1,5 @@
-import 'dotenv/config';
+// Must be first: initializes Sentry (and loads dotenv) before anything else.
+import "./instrument.js";
 import { createApp, log } from "./app.js";
 import { serveStatic } from "./static.js";
 import { startCron } from "./cron.js";
