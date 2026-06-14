@@ -52,21 +52,22 @@ type CountryConfig = {
   name: string;
   dialCode: string;
   flagCode: string;
-  format: string; // e.g., "(###) ###-####" for US
+  format: string;
+  placeholder: string;
   maxDigits: number;
 };
 
 const COUNTRIES: CountryConfig[] = [
-  { code: "US", name: "United States", dialCode: "+1", flagCode: "us", format: "(###) ###-####", maxDigits: 10 },
-  { code: "BR", name: "Brazil", dialCode: "+55", flagCode: "br", format: "(##) #####-####", maxDigits: 11 },
-  { code: "MX", name: "Mexico", dialCode: "+52", flagCode: "mx", format: "(##) ####-####", maxDigits: 10 },
-  { code: "CA", name: "Canada", dialCode: "+1", flagCode: "ca", format: "(###) ###-####", maxDigits: 10 },
-  { code: "PT", name: "Portugal", dialCode: "+351", flagCode: "pt", format: "### ### ###", maxDigits: 9 },
-  { code: "ES", name: "Spain", dialCode: "+34", flagCode: "es", format: "### ### ###", maxDigits: 9 },
-  { code: "UK", name: "United Kingdom", dialCode: "+44", flagCode: "gb", format: "#### ######", maxDigits: 10 },
-  { code: "DE", name: "Germany", dialCode: "+49", flagCode: "de", format: "### #######", maxDigits: 10 },
-  { code: "FR", name: "France", dialCode: "+33", flagCode: "fr", format: "# ## ## ## ##", maxDigits: 9 },
-  { code: "IT", name: "Italy", dialCode: "+39", flagCode: "it", format: "### ### ####", maxDigits: 10 },
+  { code: "US", name: "United States", dialCode: "+1", flagCode: "us", format: "(###) ###-####", placeholder: "(555) 555-5555", maxDigits: 10 },
+  { code: "BR", name: "Brazil", dialCode: "+55", flagCode: "br", format: "(##) #####-####", placeholder: "(11) 98765-4321", maxDigits: 11 },
+  { code: "MX", name: "Mexico", dialCode: "+52", flagCode: "mx", format: "(##) ####-####", placeholder: "(55) 1234-5678", maxDigits: 10 },
+  { code: "CA", name: "Canada", dialCode: "+1", flagCode: "ca", format: "(###) ###-####", placeholder: "(416) 555-1234", maxDigits: 10 },
+  { code: "PT", name: "Portugal", dialCode: "+351", flagCode: "pt", format: "### ### ###", placeholder: "912 345 678", maxDigits: 9 },
+  { code: "ES", name: "Spain", dialCode: "+34", flagCode: "es", format: "### ### ###", placeholder: "612 345 678", maxDigits: 9 },
+  { code: "UK", name: "United Kingdom", dialCode: "+44", flagCode: "gb", format: "#### ######", placeholder: "7911 123456", maxDigits: 10 },
+  { code: "DE", name: "Germany", dialCode: "+49", flagCode: "de", format: "### #######", placeholder: "030 1234567", maxDigits: 10 },
+  { code: "FR", name: "France", dialCode: "+33", flagCode: "fr", format: "# ## ## ## ##", placeholder: "6 12 34 56 78", maxDigits: 9 },
+  { code: "IT", name: "Italy", dialCode: "+39", flagCode: "it", format: "### ### ####", placeholder: "312 345 6789", maxDigits: 10 },
 ];
 
 const DEFAULT_COUNTRY = "US";
@@ -1238,7 +1239,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                               value={answers[currentQuestion.id] || ""}
                               onChange={e => handleAnswerChange(currentQuestion.id, e.target.value)}
                               onFocus={handleFieldFocus}
-                              placeholder={selectedCountry.format.replace(/#/g, "0")}
+                              placeholder={selectedCountry.placeholder}
                               className={clsx(
                                 "flex-1 min-w-0 rounded-xl border bg-white px-3 sm:px-4 py-3 text-base sm:text-lg text-slate-900 placeholder:text-slate-400 transition-colors",
                                 errorMessage ? "border-red-400" : "border-slate-200",

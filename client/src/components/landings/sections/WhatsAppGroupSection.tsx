@@ -287,7 +287,7 @@ export function WhatsAppGroupSection({ props }: { props: WhatsAppGroupProps }) {
                       type="tel"
                       inputMode="tel"
                       autoComplete="tel"
-                      placeholder={selectedCountry.format}
+                      placeholder={selectedCountry.placeholder}
                       value={phone}
                       onChange={(e) => setPhone(formatPhoneForCountry(e.target.value, selectedCountry))}
                       className="min-h-14 border-0 bg-transparent text-base text-white placeholder:text-white/50 focus-visible:ring-0"

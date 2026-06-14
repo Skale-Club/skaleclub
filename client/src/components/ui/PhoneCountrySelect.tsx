@@ -97,7 +97,6 @@ export function PhoneCountrySelect({
           alt=""
           className="h-4 w-5 rounded-[2px] object-cover shadow-sm"
         />
-        <span className="text-xs font-semibold">{value.code}</span>
         <span>{value.dialCode}</span>
         <ChevronDown
           className={cn(

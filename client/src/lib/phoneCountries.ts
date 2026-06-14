@@ -4,27 +4,28 @@ export type PhoneCountry = {
   dialCode: string;
   flagCode: string;
   format: string;
+  placeholder: string;
   maxDigits: number;
 };
 
 export const PHONE_COUNTRIES: PhoneCountry[] = [
-  { code: "US", name: "United States", dialCode: "+1", flagCode: "us", format: "(###) ###-####", maxDigits: 10 },
-  { code: "BR", name: "Brazil", dialCode: "+55", flagCode: "br", format: "(##) #####-####", maxDigits: 11 },
-  { code: "PT", name: "Portugal", dialCode: "+351", flagCode: "pt", format: "### ### ###", maxDigits: 9 },
-  { code: "CA", name: "Canada", dialCode: "+1", flagCode: "ca", format: "(###) ###-####", maxDigits: 10 },
-  { code: "UK", name: "United Kingdom", dialCode: "+44", flagCode: "gb", format: "#### ######", maxDigits: 10 },
-  { code: "ES", name: "Spain", dialCode: "+34", flagCode: "es", format: "### ### ###", maxDigits: 9 },
-  { code: "IT", name: "Italy", dialCode: "+39", flagCode: "it", format: "### ### ####", maxDigits: 10 },
-  { code: "DE", name: "Germany", dialCode: "+49", flagCode: "de", format: "### #######", maxDigits: 10 },
-  { code: "FR", name: "France", dialCode: "+33", flagCode: "fr", format: "# ## ## ## ##", maxDigits: 9 },
-  { code: "IE", name: "Ireland", dialCode: "+353", flagCode: "ie", format: "## ### ####", maxDigits: 9 },
-  { code: "AU", name: "Australia", dialCode: "+61", flagCode: "au", format: "### ### ###", maxDigits: 9 },
-  { code: "JP", name: "Japan", dialCode: "+81", flagCode: "jp", format: "## #### ####", maxDigits: 10 },
-  { code: "MX", name: "Mexico", dialCode: "+52", flagCode: "mx", format: "## #### ####", maxDigits: 10 },
-  { code: "AR", name: "Argentina", dialCode: "+54", flagCode: "ar", format: "## ####-####", maxDigits: 10 },
-  { code: "PY", name: "Paraguay", dialCode: "+595", flagCode: "py", format: "### ### ###", maxDigits: 9 },
-  { code: "UY", name: "Uruguay", dialCode: "+598", flagCode: "uy", format: "## ### ###", maxDigits: 8 },
-  { code: "CL", name: "Chile", dialCode: "+56", flagCode: "cl", format: "# #### ####", maxDigits: 9 },
+  { code: "US", name: "United States", dialCode: "+1", flagCode: "us", format: "(###) ###-####", placeholder: "(555) 555-5555", maxDigits: 10 },
+  { code: "BR", name: "Brazil", dialCode: "+55", flagCode: "br", format: "(##) #####-####", placeholder: "(11) 98765-4321", maxDigits: 11 },
+  { code: "PT", name: "Portugal", dialCode: "+351", flagCode: "pt", format: "### ### ###", placeholder: "912 345 678", maxDigits: 9 },
+  { code: "CA", name: "Canada", dialCode: "+1", flagCode: "ca", format: "(###) ###-####", placeholder: "(416) 555-1234", maxDigits: 10 },
+  { code: "UK", name: "United Kingdom", dialCode: "+44", flagCode: "gb", format: "#### ######", placeholder: "7911 123456", maxDigits: 10 },
+  { code: "ES", name: "Spain", dialCode: "+34", flagCode: "es", format: "### ### ###", placeholder: "612 345 678", maxDigits: 9 },
+  { code: "IT", name: "Italy", dialCode: "+39", flagCode: "it", format: "### ### ####", placeholder: "312 345 6789", maxDigits: 10 },
+  { code: "DE", name: "Germany", dialCode: "+49", flagCode: "de", format: "### #######", placeholder: "030 1234567", maxDigits: 10 },
+  { code: "FR", name: "France", dialCode: "+33", flagCode: "fr", format: "# ## ## ## ##", placeholder: "6 12 34 56 78", maxDigits: 9 },
+  { code: "IE", name: "Ireland", dialCode: "+353", flagCode: "ie", format: "## ### ####", placeholder: "87 123 4567", maxDigits: 9 },
+  { code: "AU", name: "Australia", dialCode: "+61", flagCode: "au", format: "### ### ###", placeholder: "412 345 678", maxDigits: 9 },
+  { code: "JP", name: "Japan", dialCode: "+81", flagCode: "jp", format: "## #### ####", placeholder: "90 1234 5678", maxDigits: 10 },
+  { code: "MX", name: "Mexico", dialCode: "+52", flagCode: "mx", format: "## #### ####", placeholder: "55 1234 5678", maxDigits: 10 },
+  { code: "AR", name: "Argentina", dialCode: "+54", flagCode: "ar", format: "## ####-####", placeholder: "11 1234-5678", maxDigits: 10 },
+  { code: "PY", name: "Paraguay", dialCode: "+595", flagCode: "py", format: "### ### ###", placeholder: "981 234 567", maxDigits: 9 },
+  { code: "UY", name: "Uruguay", dialCode: "+598", flagCode: "uy", format: "## ### ###", placeholder: "98 765 432", maxDigits: 8 },
+  { code: "CL", name: "Chile", dialCode: "+56", flagCode: "cl", format: "# #### ####", placeholder: "9 8765 4321", maxDigits: 9 },
 ];
 
 export function getPhoneCountryFlagUrl(country: PhoneCountry) {

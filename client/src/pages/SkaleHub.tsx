@@ -291,7 +291,7 @@ export default function SkaleHub() {
                                 type="tel"
                                 inputMode="tel"
                                 autoComplete="tel"
-                                placeholder={selectedCountry.format}
+                                placeholder={selectedCountry.placeholder}
                                 value={form.phone}
                                 onChange={(event) => setForm((current) => ({
                                   ...current,
