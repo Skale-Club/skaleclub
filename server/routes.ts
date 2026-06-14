@@ -38,6 +38,7 @@ import { registerSkaleHubRoutes } from "./routes/skaleHub.js";
 import { registerNotificationRoutes } from "./routes/notifications.js";
 import { registerMcpRoutes } from "./routes/mcpTokens.js";
 import { registerOAuthRoutes } from "./routes/oauth.js";
+import { registerContactRoutes } from "./routes/contact.js";
 import { db, pool } from "./db.js";
 import { users } from "#shared/schema.js";
 import { eq } from "drizzle-orm";
@@ -147,6 +148,7 @@ export async function registerRoutes(
   registerMarketingRoutes(app);     // Phase 45 — admin marketing dashboard endpoints
   registerIntegrationRoutes(app);
   registerNotificationRoutes(app);
+  registerContactRoutes(app);
   registerEstimatesRoutes(app);
   registerSkaleHubRoutes(app);
   registerMcpRoutes(app);
