@@ -1,4 +1,4 @@
-import { Shield, Eye, Lock, Users, Cookie, FileText, Mail, Bell } from "lucide-react";
+import { Shield, Eye, Lock, Users, Cookie, FileText, Mail, Bell, MessageSquare } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -207,10 +207,40 @@ export default function PrivacyPolicy() {
             </p>
           </Section>
 
+          {/* SMS / Text Message Communications */}
+          <Section
+            icon={<MessageSquare className="w-6 h-6" />}
+            title={t('11. SMS / Text Message Communications')}
+          >
+            <h4 className="font-semibold text-gray-900 mt-2 mb-2">{t('Message Frequency')}</h4>
+            <p>
+              {`If you opt in to transactional SMS messages from ${companyName}, you may receive messages related to your account, service requests, appointment reminders, order confirmations, and account notifications. Message frequency varies based on your activity and service interactions.`}
+            </p>
+            <p>
+              {`If you opt in to marketing SMS messages from ${companyName}, you may receive periodic promotional messages, special offers, discounts, and product updates. Message frequency may vary.`}
+            </p>
+
+            <h4 className="font-semibold text-gray-900 mt-4 mb-2">{t('Message and Data Rates')}</h4>
+            <p>
+              <strong>{t('Message and data rates may apply.')}</strong>{' '}
+              {`Contact your wireless carrier for details about your messaging plan. ${companyName} is not responsible for any charges incurred from your wireless provider.`}
+            </p>
+
+            <h4 className="font-semibold text-gray-900 mt-4 mb-2">{t('Privacy of Your Mobile Number')}</h4>
+            <p>
+              {`${companyName} will not sell, rent, or share your mobile phone number with third parties or affiliates for their marketing or promotional purposes. Your mobile phone number is used solely to send you the messages you have consented to receive from ${companyName}.`}
+            </p>
+
+            <h4 className="font-semibold text-gray-900 mt-4 mb-2">{t('Opt-Out Instructions')}</h4>
+            <p>
+              {`You may opt out of SMS communications at any time by replying STOP to any message you receive from us. After opting out, you will receive one final confirmation message and no further SMS messages will be sent. To re-subscribe, reply START. For help, reply HELP or contact us at ${companyEmail}${companyPhone ? ` or ${companyPhone}` : ''}.`}
+            </p>
+          </Section>
+
           {/* Contact Us */}
           <Section
             icon={<Mail className="w-6 h-6" />}
-            title={t('11. Contact Us')}
+            title={t('12. Contact Us')}
           >
             <p>
               {t('If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us:')}

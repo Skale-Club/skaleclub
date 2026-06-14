@@ -275,7 +275,14 @@ export const translations = {
     '8. Data Retention': '8. Retenção de Dados',
     "9. Children's Privacy": '9. Privacidade de Crianças',
     '10. Changes to This Privacy Policy': '10. Alterações nesta Política de Privacidade',
-    '11. Contact Us': '11. Fale Conosco',
+    // Privacy Policy — SMS Section (A2P Compliance)
+    '11. SMS / Text Message Communications': '11. Comunicações por SMS / Mensagens de Texto',
+    '12. Contact Us': '12. Fale Conosco',
+    'Message Frequency': 'Frequência das Mensagens',
+    'Message and Data Rates': 'Tarifas de Mensagens e Dados',
+    'Privacy of Your Mobile Number': 'Privacidade do Seu Número de Telefone Celular',
+    'Opt-Out Instructions': 'Instruções para Cancelar',
+    'Message and data rates may apply.': 'Tarifas de mensagens e dados podem ser aplicadas.',
     // Privacy Policy — Section bodies
     'By using our services, you agree to the collection and use of information in accordance with this policy. If you do not agree with our policies and practices, please do not use our services.': 'Ao usar nossos serviços, você concorda com a coleta e uso de informações de acordo com esta política. Se você não concordar com nossas políticas e práticas, por favor não use nossos serviços.',
     'We collect information that you provide directly to us and information collected automatically when you use our services.': 'Coletamos informações que você nos fornece diretamente e informações coletadas automaticamente quando você usa nossos serviços.',
