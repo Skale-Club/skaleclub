@@ -22,7 +22,6 @@ export type AdminSection =
   | 'pages'
   | 'notifications'
   | 'traffic'
-  | 'mcp'
   | 'redirects';
 
 export interface DayHours {
