@@ -3,7 +3,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PageThumbnail } from '@/components/ui/PageThumbnail';
-import { useTranslation } from '@/hooks/useTranslation';
 import type { PresentationWithStats } from '@shared/schema';
 
 export type PresentationsListRowProps = {
@@ -47,8 +46,6 @@ export function PresentationsListRow({
   onDelete,
   onOpenEditor,
 }: PresentationsListRowProps) {
-  const { t } = useTranslation();
-
   return (
     <div
       key={p.id}
@@ -71,7 +68,7 @@ export function PresentationsListRow({
         ) : (
           <span
             className="block font-semibold text-sm truncate cursor-pointer hover:underline"
-            title={t('Click to rename')}
+            title="Click to rename"
             onClick={() => onStartRename(p)}
           >
             {p.title}
@@ -94,7 +91,7 @@ export function PresentationsListRow({
                 }
               }}
               disabled={isUpdatingSlug}
-              aria-label={t('Presentation slug')}
+              aria-label="Presentation slug"
               className="h-5 min-w-0 border-0 bg-transparent px-2 text-[9px] font-mono leading-5 shadow-none focus-visible:ring-0"
             />
           </div>
@@ -103,7 +100,7 @@ export function PresentationsListRow({
             type="button"
             onClick={() => onStartSlugEdit(p)}
             className="inline-flex max-w-full items-center rounded border px-2 py-0.5 text-[10px] font-mono leading-4 text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
-            title={t('Edit slug')}
+            title="Edit slug"
           >
             <span className="truncate">/p/{p.slug}</span>
           </button>
@@ -119,7 +116,7 @@ export function PresentationsListRow({
         <Button
           variant="ghost"
           size="icon"
-          title={t('Open presentation')}
+          title="Open presentation"
           onClick={() => onOpenLink(p.slug)}
         >
           <ExternalLink className="w-4 h-4" />
@@ -127,7 +124,7 @@ export function PresentationsListRow({
         <Button
           variant="ghost"
           size="icon"
-          title={t('Link copied')}
+          title="Copy link"
           onClick={() => onCopyLink(p.slug)}
         >
           <Copy className="w-4 h-4" />
@@ -145,7 +142,7 @@ export function PresentationsListRow({
           size="sm"
           onClick={() => onOpenEditor(p.id)}
         >
-          {t('Open Editor')}
+          Open Editor
         </Button>
       </div>
     </div>

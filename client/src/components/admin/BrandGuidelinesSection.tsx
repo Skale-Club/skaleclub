@@ -6,12 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { useTranslation } from '@/hooks/useTranslation';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Loader2 } from '@/components/ui/loader';
 
 export function BrandGuidelinesSection() {
-  const { t } = useTranslation();
   const { toast } = useToast();
   const [content, setContent] = useState('');
 
@@ -31,13 +29,13 @@ export function BrandGuidelinesSection() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/brand-guidelines'] });
       toast({
-        title: t('Brand guidelines saved'),
-        description: t('Claude will use these guidelines when generating slides.'),
+        title: 'Brand guidelines saved',
+        description: 'Claude will use these guidelines when generating slides.',
       });
     },
     onError: (err: any) => {
       toast({
-        title: t('Save failed'),
+        title: 'Save failed',
         description: err.message,
         variant: 'destructive',
       });
@@ -51,8 +49,8 @@ export function BrandGuidelinesSection() {
   return (
     <div className="space-y-6">
       <SectionHeader
-        title={t('Brand Guidelines')}
-        description={t('Define your brand voice, colors, fonts, and rules for Claude to follow when building slides.')}
+        title="Brand Guidelines"
+        description="Define your brand voice, colors, fonts, and rules for Claude to follow when building slides."
         icon={<BookOpen className="w-5 h-5" />}
       />
 
@@ -60,10 +58,10 @@ export function BrandGuidelinesSection() {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="brand-guidelines-content">
-              {t('Guidelines document')}
+              Guidelines document
             </Label>
             <p className="text-sm text-muted-foreground">
-              {t('Write in Markdown. Describe logo usage, primary colors, fonts, tone of voice, and any "always include / never include" rules. Claude reads this before generating each presentation.')}
+              Write in Markdown. Describe logo usage, primary colors, fonts, tone of voice, and any "always include / never include" rules. Claude reads this before generating each presentation.
             </p>
             {isLoading ? (
               <div className="flex items-center justify-center h-48">
@@ -76,7 +74,7 @@ export function BrandGuidelinesSection() {
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   rows={20}
-                  placeholder={t('## Brand Identity\n\n**Primary Color:** #0A162E\n**CTA / Button Color:** #406EF1\n**Fonts:** Outfit (headings), Inter (body)\n\n## Tone of Voice\n\n- Professional yet approachable\n- Action-oriented language\n\n## Always Include\n- Company name: Skale Club\n\n## Never Include\n- Competitor mentions')}
+                  placeholder={'## Brand Identity\n\n**Primary Color:** #0A162E\n**CTA / Button Color:** #406EF1\n**Fonts:** Outfit (headings), Inter (body)\n\n## Tone of Voice\n\n- Professional yet approachable\n- Action-oriented language\n\n## Always Include\n- Company name: Skale Club\n\n## Never Include\n- Competitor mentions'}
                   className="font-mono text-sm resize-y min-h-[300px]"
                 />
                 <p className={`text-xs text-right ${content.length > 2000 ? 'text-destructive' : 'text-muted-foreground'}`}>
@@ -97,7 +95,7 @@ export function BrandGuidelinesSection() {
               ) : (
                 <Save className="w-4 h-4" />
               )}
-              {t('Save guidelines')}
+              Save guidelines
             </Button>
           </div>
         </div>

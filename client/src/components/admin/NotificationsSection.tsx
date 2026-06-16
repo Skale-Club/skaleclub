@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Bell, MessageSquare, Send, Mail, Plus, Trash2, type LucideIcon } from 'lucide-react';
+import { Bell, MessageSquare, Send, Mail, Plus, Trash2, PanelLeft, PanelLeftClose, type LucideIcon } from 'lucide-react';
 import { SectionHeader, AdminCard, EmptyState } from './shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -64,6 +64,7 @@ export function NotificationsSection() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Template | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const bodyRef = useRef<HTMLTextAreaElement | null>(null);
 
   const { data: templates = [], isLoading } = useQuery<Template[]>({
@@ -182,160 +183,213 @@ export function NotificationsSection() {
           }
         />
       ) : (
-        <>
-          {/* Template tabs + add */}
-          <div className="flex items-center gap-2 border-b">
-            <div className="flex flex-1 gap-1 overflow-x-auto">
-              {templates.map(t => {
-                const Icon = channelMeta(t.channel)?.icon ?? MessageSquare;
-                const active = t.id === selectedId;
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => select(t)}
-                    className={cn(
-                      'flex items-center gap-2 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition-colors',
-                      active
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-muted-foreground hover:text-foreground',
-                    )}
+        <div className="flex gap-4 items-start">
+          {/* Sub-sidebar */}
+          <div className={cn(
+            'flex-shrink-0 border rounded-lg overflow-hidden transition-all duration-200',
+            sidebarOpen ? 'w-52' : 'w-10',
+          )}>
+            {sidebarOpen ? (
+              <>
+                <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/30">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Templates</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground"
+                    onClick={() => setSidebarOpen(false)}
                   >
-                    <Icon className="h-4 w-4 shrink-0" />
-                    <span>{templateLabel(active && draft ? draft : t)}</span>
-                    {!t.active && <span className="text-xs opacity-60">(off)</span>}
-                  </button>
-                );
-              })}
-            </div>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="shrink-0 gap-1.5"
-              onClick={() => createMutation.mutate()}
-              disabled={createMutation.isPending}
-            >
-              <Plus className="h-4 w-4" /> New
-            </Button>
+                    <PanelLeftClose className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div>
+                  {templates.map(t => {
+                    const Icon = channelMeta(t.channel)?.icon ?? MessageSquare;
+                    const active = t.id === selectedId;
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => select(t)}
+                        className={cn(
+                          'flex items-center gap-2 w-full px-3 py-2.5 text-sm text-left transition-colors border-l-2',
+                          active
+                            ? 'border-l-primary bg-primary/5 text-primary'
+                            : 'border-l-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground',
+                        )}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        <span className="truncate flex-1 min-w-0">{templateLabel(active && draft ? draft : t)}</span>
+                        {!t.active && <span className="text-[10px] opacity-50">off</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="border-t p-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="w-full gap-1.5"
+                    onClick={() => createMutation.mutate()}
+                    disabled={createMutation.isPending}
+                  >
+                    <Plus className="h-4 w-4" /> New
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center py-2 gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground"
+                  onClick={() => setSidebarOpen(true)}
+                >
+                  <PanelLeft className="h-4 w-4" />
+                </Button>
+                {templates.map(t => {
+                  const Icon = channelMeta(t.channel)?.icon ?? MessageSquare;
+                  const active = t.id === selectedId;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => select(t)}
+                      title={templateLabel(t)}
+                      className={cn(
+                        'flex items-center justify-center h-8 w-8 rounded transition-colors',
+                        active
+                          ? 'text-primary bg-primary/10'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Editor */}
-          {draft && (
-            <AdminCard className="space-y-5">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0 space-y-1">
-                  <h3 className="text-sm font-semibold text-foreground">Edit template</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Sent when <span className="font-medium text-foreground">{triggerLabel(draft.eventKey)}</span> fires,
-                    via <span className="font-medium text-foreground">{channelLabel(draft.channel)}</span>.
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Switch checked={draft.active} onCheckedChange={(c) => patch({ active: c })} id="tpl-active" />
-                  <Label htmlFor="tpl-active" className="text-sm text-muted-foreground">Active</Label>
-                </div>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="tpl-name">Name</Label>
-                  <Input
-                    id="tpl-name"
-                    value={draft.name ?? ''}
-                    onChange={(e) => patch({ name: e.target.value })}
-                    placeholder="e.g. Hot Lead alert"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label>Trigger</Label>
-                    <Select value={draft.eventKey} onValueChange={(v) => patch({ eventKey: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {TRIGGERS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+          <div className="flex-1 min-w-0">
+            {draft && (
+              <AdminCard className="space-y-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 space-y-1">
+                    <h3 className="text-sm font-semibold text-foreground">Edit template</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Sent when <span className="font-medium text-foreground">{triggerLabel(draft.eventKey)}</span> fires,
+                      via <span className="font-medium text-foreground">{channelLabel(draft.channel)}</span>.
+                    </p>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Channel</Label>
-                    <Select value={draft.channel} onValueChange={(v) => patch({ channel: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {CHANNELS.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                  <div className="flex items-center gap-2">
+                    <Switch checked={draft.active} onCheckedChange={(c) => patch({ active: c })} id="tpl-active" />
+                    <Label htmlFor="tpl-active" className="text-sm text-muted-foreground">Active</Label>
                   </div>
                 </div>
-              </div>
 
-              {draft.channel === 'email' && (
-                <div className="space-y-2">
-                  <Label htmlFor="tpl-subject">Email subject</Label>
-                  <Input
-                    id="tpl-subject"
-                    value={draft.subject ?? ''}
-                    onChange={(e) => patch({ subject: e.target.value })}
-                    placeholder="New lead from {{company}}"
-                  />
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="tpl-body">Message body</Label>
-                <Textarea
-                  id="tpl-body"
-                  ref={bodyRef}
-                  rows={5}
-                  value={draft.body}
-                  onChange={(e) => patch({ body: e.target.value })}
-                  placeholder="Enter the message…"
-                  className="resize-y font-mono text-sm min-h-[120px]"
-                />
-                {variables.length > 0 && (
-                  <div className="space-y-1.5">
-                    <p className="text-xs text-muted-foreground">Click a variable to insert it at the cursor:</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {variables.map(v => (
-                        <button
-                          key={v}
-                          type="button"
-                          onClick={() => insertVariable(v)}
-                          className="group inline-flex items-center gap-1 rounded border bg-muted px-2 py-1 font-mono text-xs transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
-                          title={`Insert ${v}`}
-                        >
-                          <Plus className="h-3 w-3 opacity-60 group-hover:opacity-100" />
-                          {v}
-                        </button>
-                      ))}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="tpl-name">Name</Label>
+                    <Input
+                      id="tpl-name"
+                      value={draft.name ?? ''}
+                      onChange={(e) => patch({ name: e.target.value })}
+                      placeholder="e.g. Hot Lead alert"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label>Trigger</Label>
+                      <Select value={draft.eventKey} onValueChange={(v) => patch({ eventKey: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {TRIGGERS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Channel</Label>
+                      <Select value={draft.channel} onValueChange={(v) => patch({ channel: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {CHANNELS.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between gap-2 border-t pt-4">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => source && setDeleteTarget(source)}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" /> Delete
-                </Button>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-muted-foreground">{isDirty ? 'Unsaved changes' : 'Saved'}</span>
-                  <Button
-                    onClick={() => draft.id && saveMutation.mutate(draft)}
-                    disabled={!isDirty || saveMutation.isPending}
-                  >
-                    {saveMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    Save
-                  </Button>
                 </div>
-              </div>
-            </AdminCard>
-          )}
-        </>
+
+                {draft.channel === 'email' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="tpl-subject">Email subject</Label>
+                    <Input
+                      id="tpl-subject"
+                      value={draft.subject ?? ''}
+                      onChange={(e) => patch({ subject: e.target.value })}
+                      placeholder="New lead from {{company}}"
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="tpl-body">Message body</Label>
+                  <Textarea
+                    id="tpl-body"
+                    ref={bodyRef}
+                    rows={5}
+                    value={draft.body}
+                    onChange={(e) => patch({ body: e.target.value })}
+                    placeholder="Enter the message…"
+                    className="resize-y font-mono text-sm min-h-[120px]"
+                  />
+                  {variables.length > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-xs text-muted-foreground">Click a variable to insert it at the cursor:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {variables.map(v => (
+                          <button
+                            key={v}
+                            type="button"
+                            onClick={() => insertVariable(v)}
+                            className="group inline-flex items-center gap-1 rounded border bg-muted px-2 py-1 font-mono text-xs transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
+                            title={`Insert ${v}`}
+                          >
+                            <Plus className="h-3 w-3 opacity-60 group-hover:opacity-100" />
+                            {v}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between gap-2 border-t pt-4">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => source && setDeleteTarget(source)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" /> Delete
+                  </Button>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground">{isDirty ? 'Unsaved changes' : 'Saved'}</span>
+                    <Button
+                      onClick={() => draft.id && saveMutation.mutate(draft)}
+                      disabled={!isDirty || saveMutation.isPending}
+                    >
+                      {saveMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              </AdminCard>
+            )}
+          </div>
+        </div>
       )}
 
       {deleteTarget && (
