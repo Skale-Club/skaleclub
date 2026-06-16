@@ -19,7 +19,7 @@ export type AdminSection =
   | 'estimates'
   | 'presentations'
   | 'skaleHub'
-  | 'landings'
+  | 'pages'
   | 'notifications'
   | 'traffic'
   | 'mcp'

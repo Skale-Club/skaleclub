@@ -72,7 +72,7 @@ const Links = lazy(() => import("@/pages/Links").then(m => ({ default: () => <Pa
 const VCard = lazy(() => import("@/pages/VCard").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const EstimateViewer = lazy(() => import("@/pages/EstimateViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const PresentationViewer = lazy(() => import("@/pages/PresentationViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const DynamicLanding = lazy(() => import("@/pages/DynamicLanding").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const DynamicPage = lazy(() => import("@/pages/DynamicLanding").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const OAuthAuthorize = lazy(() => import("@/pages/OAuthAuthorize"));
 
 function AnalyticsProvider({ children }: { children: React.ReactNode }) {
@@ -260,7 +260,7 @@ function Router() {
             {pagePaths.hub !== legacyPaths.hub && <Route path={legacyPaths.hub} component={SkaleHub} />}
             {/* Catch-all dynamic landing route — MUST be last before the 404 fallback.
                 Wouter matches top-down, so any new known route must be added ABOVE this line. */}
-            <Route path="/:slug" component={DynamicLanding} />
+            <Route path="/:slug" component={DynamicPage} />
             <Route component={NotFound} />
           </Switch>
         </Suspense>

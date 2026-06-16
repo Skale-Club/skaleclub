@@ -48,8 +48,8 @@ const ALLOWED_VIDEO_EXT = new Set(["mp4", "webm"]);
 export function registerUploadRoutes(app: Express) {
   const storageService = new SupabaseStorageService();
 
-  // Landing hero video — presigned upload URL (client PUTs directly to Supabase).
-  app.post("/api/uploads/landing-media/sign", requireAdmin, async (req: Request, res: Response) => {
+  // Page hero video — presigned upload URL (client PUTs directly to Supabase).
+  app.post("/api/uploads/page-media/sign", requireAdmin, async (req: Request, res: Response) => {
     if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
       return res.status(503).json({ message: "Storage not configured" });
     }
@@ -61,7 +61,7 @@ export function registerUploadRoutes(app: Express) {
       return res.status(415).json({ message: "Only .mp4 and .webm videos are supported" });
     }
     try {
-      const result = await storageService.getSignedUploadUrlForLandingMedia(parsed.data.filename);
+      const result = await storageService.getSignedUploadUrlForPageMedia(parsed.data.filename);
       return res.json(result);
     } catch (err: any) {
       return res.status(500).json({ message: err?.message ?? "Failed to create upload URL" });

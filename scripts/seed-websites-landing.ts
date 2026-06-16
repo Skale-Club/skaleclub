@@ -15,7 +15,7 @@
 import "dotenv/config";
 import { eq } from "drizzle-orm";
 import { pool, db } from "../server/db.js";
-import { landingPages, type LandingSection } from "../shared/schema/landings.js";
+import { pages, type PageSection } from "../shared/schema/pages.js";
 import { forms } from "../shared/schema/forms.js";
 import type { FormConfig, FormQuestion } from "../shared/schema/forms.js";
 
@@ -141,7 +141,7 @@ const WEBSITE_LEADS_CONFIG: FormConfig = {
 // Sections are IDENTICAL for both languages. All copy is t()-based now (EN
 // source defaults + PT in translations.ts), so language is driven solely by the
 // landing_pages.language column — no per-language copy duplicated here.
-const LANDING_SECTIONS: LandingSection[] = [
+const LANDING_SECTIONS: PageSection[] = [
   { type: "heroWebsites",   props: {} }, // copy via t() (HeroWebsitesSection defaults)
   { type: "trustBadges",    props: {} }, // adapter — reads /api/company-settings (t()-based)
   { type: "processStepper", props: {} }, // copy via t() (ProcessStepperSection defaults)
@@ -193,12 +193,12 @@ async function upsertLanding(spec: LandingSpec) {
   console.log(`Seeding landing: slug='${spec.slug}' (${spec.language})`);
   const existing = await db
     .select()
-    .from(landingPages)
-    .where(eq(landingPages.slug, spec.slug));
+    .from(pages)
+    .where(eq(pages.slug, spec.slug));
 
   if (existing.length > 0) {
     const [row] = await db
-      .update(landingPages)
+      .update(pages)
       .set({
         name:          spec.name,
         sections:      LANDING_SECTIONS,
@@ -207,13 +207,13 @@ async function upsertLanding(spec: LandingSpec) {
         alternateSlug: spec.alternateSlug,
         updatedAt:     new Date(),
       })
-      .where(eq(landingPages.slug, spec.slug))
+      .where(eq(pages.slug, spec.slug))
       .returning();
     console.log(`  Updated existing landing (id=${row.id}).`);
     return row;
   } else {
     const [row] = await db
-      .insert(landingPages)
+      .insert(pages)
       .values({
         slug:          spec.slug,
         name:          spec.name,

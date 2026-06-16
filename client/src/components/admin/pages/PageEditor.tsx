@@ -11,12 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { isReservedSlug } from '@shared/reservedSlugs';
-import type { LandingPage } from '@shared/schema';
+import type { Page } from '@shared/schema';
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 // Section types currently registered. Update as the registry grows.
-// Plan 43-05 adds `whatsappGroup`.
 const AVAILABLE_TYPES = [
   'hero',
   'trustBadges',
@@ -28,8 +27,8 @@ const AVAILABLE_TYPES = [
   'leadFormCta',
 ];
 
-interface LandingEditorProps {
-  landingId: string;
+interface PageEditorProps {
+  pageId: string;
   onBack: () => void;
 }
 
@@ -38,10 +37,6 @@ interface SectionShape {
   props: Record<string, unknown>;
 }
 
-/**
- * Validate the parsed sections value. Returns null on success, error string on failure.
- * Allows empty arrays (UI surfaces a non-blocking warning instead).
- */
 function validateSections(value: unknown): string | null {
   if (!Array.isArray(value)) return 'Sections must be a JSON array.';
   for (let i = 0; i < value.length; i++) {
@@ -71,7 +66,6 @@ function HeroVideoPanel({
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
-  // Only show when sections contain a heroWebsites entry.
   let currentVideoUrl: string | null = null;
   try {
     const sections = JSON.parse(sectionsText);
@@ -94,7 +88,7 @@ function HeroVideoPanel({
     }
     setUploading(true);
     try {
-      const signRes = await apiRequest('POST', '/api/uploads/landing-media/sign', { filename: file.name });
+      const signRes = await apiRequest('POST', '/api/uploads/page-media/sign', { filename: file.name });
       const { uploadUrl, publicUrl } = await signRes.json();
       const up = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
       if (!up.ok) throw new Error('Upload to storage failed');
@@ -124,7 +118,6 @@ function HeroVideoPanel({
 
       {currentVideoUrl ? (
         <div className="flex flex-col sm:flex-row gap-4">
-          {/* Small inline preview so the admin sees exactly what the hero will show. */}
           <video
             key={currentVideoUrl}
             src={currentVideoUrl}
@@ -178,20 +171,19 @@ function HeroVideoPanel({
   );
 }
 
-export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
+export function PageEditor({ pageId, onBack }: PageEditorProps) {
   const { toast } = useToast();
 
-  const queryKey = useMemo(() => [`/api/landing-pages/${landingId}`] as const, [landingId]);
+  const queryKey = useMemo(() => [`/api/pages/${pageId}`] as const, [pageId]);
 
-  const { data: landing, isLoading, error } = useQuery<LandingPage>({
+  const { data: page, isLoading, error } = useQuery<Page>({
     queryKey,
     queryFn: async () => {
-      const res = await apiRequest('GET', `/api/landing-pages/${landingId}`);
+      const res = await apiRequest('GET', `/api/pages/${pageId}`);
       return res.json();
     },
   });
 
-  // Local edit state — synced from server data once loaded.
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [isActive, setIsActive] = useState(true);
@@ -201,16 +193,16 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
   const [parseError, setParseError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!landing) return;
-    setName(landing.name);
-    setSlug(landing.slug);
-    setIsActive(landing.isActive);
-    setPageLanguage(landing.language === 'en' ? 'en' : 'pt');
-    setAlternateSlug(landing.alternateSlug ?? '');
-    const sections = Array.isArray(landing.sections) ? landing.sections : [];
+    if (!page) return;
+    setName(page.name);
+    setSlug(page.slug);
+    setIsActive(page.isActive);
+    setPageLanguage(page.language === 'en' ? 'en' : 'pt');
+    setAlternateSlug(page.alternateSlug ?? '');
+    const sections = Array.isArray(page.sections) ? page.sections : [];
     setSectionsText(JSON.stringify(sections, null, 2));
     setParseError(null);
-  }, [landing]);
+  }, [page]);
 
   let slugError: string | null = null;
   if (slug.length > 0) {
@@ -230,13 +222,13 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
       alternateSlug: string | null;
       sections: SectionShape[];
     }) => {
-      const res = await apiRequest('PUT', `/api/landing-pages/${landingId}`, payload);
-      return res.json() as Promise<LandingPage>;
+      const res = await apiRequest('PUT', `/api/pages/${pageId}`, payload);
+      return res.json() as Promise<Page>;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/landing-pages'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/pages'] });
       queryClient.invalidateQueries({ queryKey });
-      toast({ title: 'Landing saved' });
+      toast({ title: 'Page saved' });
     },
     onError: (err: Error) => {
       toast({ title: 'Save failed', description: err.message, variant: 'destructive' });
@@ -246,7 +238,6 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
   const handleSave = () => {
     setParseError(null);
 
-    // 1. Parse JSON
     let parsed: unknown;
     try {
       parsed = JSON.parse(sectionsText);
@@ -257,7 +248,6 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
       return;
     }
 
-    // 2. Validate shape
     const shapeError = validateSections(parsed);
     if (shapeError) {
       setParseError(shapeError);
@@ -267,18 +257,16 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
 
     const sections = parsed as SectionShape[];
 
-    // 3. Empty-array warning (non-blocking — per CONTEXT.md, save still proceeds)
     if (sections.length === 0) {
-      setParseError('A landing must have at least one section.');
+      setParseError('A page must have at least one section.');
       toast({
-        title: 'A landing must have at least one section.',
-        description: 'The landing was not saved — add at least one section and try again.',
+        title: 'A page must have at least one section.',
+        description: 'The page was not saved — add at least one section and try again.',
         variant: 'destructive',
       });
       return;
     }
 
-    // 4. Slug validation
     if (slug.trim().length === 0 || slugError) {
       toast({ title: 'Fix the slug before saving', variant: 'destructive' });
       return;
@@ -308,9 +296,6 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
     }
     const idx = sections.findIndex((s: any) => s.type === 'heroWebsites');
     if (idx === -1) return;
-    // Merge the patch, then drop any null/undefined keys so removed assets stay
-    // truly absent — JSON has no `undefined`, and a persisted `null` fails the
-    // section's optional-URL schema and breaks the page render.
     const merged: Record<string, unknown> = { ...sections[idx].props, ...patch };
     for (const key of Object.keys(merged)) {
       if (merged[key] === null || merged[key] === undefined) delete merged[key];
@@ -318,13 +303,9 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
     sections[idx] = { ...sections[idx], props: merged };
     setSectionsText(JSON.stringify(sections, null, 2));
 
-    // Persist the video change immediately (partial update — only `sections`) so
-    // it never depends on the far-away Save button. We deliberately don't refetch
-    // the single landing here: invalidating its query would reset all local form
-    // state via the load effect and clobber any unsaved name/slug edits.
     try {
-      await apiRequest('PUT', `/api/landing-pages/${landingId}`, { sections });
-      queryClient.invalidateQueries({ queryKey: ['/api/landing-pages'] });
+      await apiRequest('PUT', `/api/pages/${pageId}`, { sections });
+      queryClient.invalidateQueries({ queryKey: ['/api/pages'] });
     } catch (err) {
       toast({
         title: 'Failed to save video',
@@ -334,8 +315,6 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
     }
   };
 
-  const previewHref = isActive && landing ? `/${landing.slug}` : null;
-
   if (isLoading) {
     return (
       <div className="flex w-full items-center justify-center py-12">
@@ -344,15 +323,15 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
     );
   }
 
-  if (error || !landing) {
+  if (error || !page) {
     return (
       <div className="space-y-4">
-        <Button variant="ghost" onClick={onBack} data-testid="button-back-to-landings">
-          <ArrowLeft className="w-4 h-4 mr-2" /> Back to landings
+        <Button variant="ghost" onClick={onBack} data-testid="button-back-to-pages">
+          <ArrowLeft className="w-4 h-4 mr-2" /> Back to pages
         </Button>
         <AdminCard>
           <p className="text-sm text-destructive">
-            Failed to load landing: {error instanceof Error ? error.message : 'Unknown error'}
+            Failed to load page: {error instanceof Error ? error.message : 'Unknown error'}
           </p>
         </AdminCard>
       </div>
@@ -362,25 +341,25 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
   return (
     <div className="space-y-6">
       <SectionHeader
-        title={landing.name}
-        description={`/${landing.slug}`}
+        title={page.name}
+        description={`/${page.slug}`}
         icon={<LayoutPanelLeft className="w-5 h-5" />}
         action={
           <div className="flex items-center gap-2 flex-wrap">
             <a
-              href={`/${landing.slug}`}
+              href={`/${page.slug}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 font-mono text-xs text-muted-foreground hover:text-primary hover:border-primary transition-colors"
               title="Open in new tab"
             >
-              /{landing.slug} <ExternalLink className="w-3 h-3" />
+              /{page.slug} <ExternalLink className="w-3 h-3" />
             </a>
             <Button
               variant="outline"
               size="sm"
               onClick={onBack}
-              data-testid="button-back-to-landings"
+              data-testid="button-back-to-pages"
             >
               <ArrowLeft className="w-4 h-4 mr-2" /> Back
             </Button>
@@ -391,26 +370,26 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
       <AdminCard className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="edit-landing-name">Name</Label>
+            <Label htmlFor="edit-page-name">Name</Label>
             <Input
-              id="edit-landing-name"
+              id="edit-page-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={200}
-              data-testid="input-edit-landing-name"
+              data-testid="input-edit-page-name"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-landing-slug">Slug</Label>
+            <Label htmlFor="edit-page-slug">Slug</Label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">/</span>
               <Input
-                id="edit-landing-slug"
+                id="edit-page-slug"
                 value={slug}
                 onChange={(e) => setSlug(e.target.value.toLowerCase())}
                 maxLength={80}
                 className="pl-7 font-mono"
-                data-testid="input-edit-landing-slug"
+                data-testid="input-edit-page-slug"
               />
             </div>
             {slugError ? (
@@ -421,9 +400,9 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="edit-landing-language">Language</Label>
+            <Label htmlFor="edit-page-language">Language</Label>
             <Select value={pageLanguage} onValueChange={(v) => setPageLanguage(v === 'en' ? 'en' : 'pt')}>
-              <SelectTrigger id="edit-landing-language" data-testid="select-edit-landing-language">
+              <SelectTrigger id="edit-page-language" data-testid="select-edit-page-language">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -436,17 +415,17 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
             </p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-landing-alternate-slug">Alternate slug</Label>
+            <Label htmlFor="edit-page-alternate-slug">Alternate slug</Label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">/</span>
               <Input
-                id="edit-landing-alternate-slug"
+                id="edit-page-alternate-slug"
                 value={alternateSlug}
                 onChange={(e) => setAlternateSlug(e.target.value.toLowerCase())}
                 maxLength={80}
                 placeholder="websites-br"
                 className="pl-7 font-mono"
-                data-testid="input-edit-landing-alternate-slug"
+                data-testid="input-edit-page-alternate-slug"
               />
             </div>
             <p className="text-xs text-muted-foreground">
@@ -457,12 +436,12 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
 
         <div className="flex items-center gap-3 pt-2">
           <Switch
-            id="edit-landing-active"
+            id="edit-page-active"
             checked={isActive}
             onCheckedChange={setIsActive}
-            data-testid="switch-edit-landing-active"
+            data-testid="switch-edit-page-active"
           />
-          <Label htmlFor="edit-landing-active" className="cursor-pointer">
+          <Label htmlFor="edit-page-active" className="cursor-pointer">
             Active {isActive ? null : <span className="text-muted-foreground text-xs">(public URL returns 404)</span>}
           </Label>
         </div>
@@ -473,7 +452,7 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
       <AdminCard className="space-y-3">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <Label htmlFor="edit-landing-sections" className="text-base font-semibold">
+            <Label htmlFor="edit-page-sections" className="text-base font-semibold">
               Sections (JSON)
             </Label>
             <p className="text-xs text-muted-foreground mt-1">
@@ -482,7 +461,7 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
           </div>
         </div>
         <Textarea
-          id="edit-landing-sections"
+          id="edit-page-sections"
           value={sectionsText}
           onChange={(e) => {
             setSectionsText(e.target.value);
@@ -490,10 +469,10 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
           }}
           spellCheck={false}
           className="font-mono text-xs min-h-[400px] resize-y"
-          data-testid="textarea-edit-landing-sections"
+          data-testid="textarea-edit-page-sections"
         />
         {parseError ? (
-          <p className="text-sm text-destructive" data-testid="error-edit-landing-sections">
+          <p className="text-sm text-destructive" data-testid="error-edit-page-sections">
             {parseError}
           </p>
         ) : (
@@ -505,7 +484,7 @@ export function LandingEditor({ landingId, onBack }: LandingEditorProps) {
           <Button
             onClick={handleSave}
             disabled={saveMutation.isPending}
-            data-testid="button-save-landing"
+            data-testid="button-save-page"
           >
             {saveMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Save

@@ -47,7 +47,7 @@ export const SIDEBAR_MENU_ITEMS: SidebarMenuItem[] = [
   { id: 'estimates', title: 'Estimates', description: 'Client proposals with shareable links', icon: Receipt },
   { id: 'presentations', title: 'Presentations', description: 'Build AI-powered slide decks and share them as immersive fullscreen experiences.', icon: Presentation },
   { id: 'skaleHub', title: 'Skale Hub', description: 'Manage weekly lives, registration gates, and active session access.', icon: RadioTower },
-  { id: 'landings', title: 'Landings', description: 'Build managed landing pages at any /slug — composable sections, no code.', icon: LayoutPanelLeft },
+  { id: 'pages', title: 'Pages', description: 'Build managed pages at any /slug — composable sections, no code.', icon: LayoutPanelLeft },
   { id: 'notifications', title: 'Notifications', description: 'Configure notification templates for SMS and Telegram alerts.', icon: Bell },
   { id: 'traffic', title: 'Traffic', description: 'Analytics for visits, sources, campaigns, and conversions.', icon: TrendingUp },
   { id: 'mcp', title: 'MCP', description: 'Token-based access for AI agents to read and edit estimates and presentations.', icon: Cpu },

@@ -17,7 +17,7 @@ import { Loader2 } from '@/components/ui/loader';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { isReservedSlug } from '@shared/reservedSlugs';
-import type { LandingPage } from '@shared/schema';
+import type { Page } from '@shared/schema';
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -32,13 +32,13 @@ function slugify(input: string): string {
     .replace(/-+/g, '-');
 }
 
-interface CreateLandingDialogProps {
+interface CreatePageDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated: (id: string) => void;
 }
 
-export function CreateLandingDialog({ open, onOpenChange, onCreated }: CreateLandingDialogProps) {
+export function CreatePageDialog({ open, onOpenChange, onCreated }: CreatePageDialogProps) {
   const { toast } = useToast();
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
@@ -67,8 +67,8 @@ export function CreateLandingDialog({ open, onOpenChange, onCreated }: CreateLan
   }
 
   const createMutation = useMutation({
-    mutationFn: async (): Promise<LandingPage> => {
-      const res = await apiRequest('POST', '/api/landing-pages', {
+    mutationFn: async (): Promise<Page> => {
+      const res = await apiRequest('POST', '/api/pages', {
         slug: effectiveSlug,
         name: name.trim(),
         sections: [],
@@ -78,13 +78,13 @@ export function CreateLandingDialog({ open, onOpenChange, onCreated }: CreateLan
       return res.json();
     },
     onSuccess: (created) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/landing-pages'] });
-      toast({ title: 'Landing created', description: `"${created.name}" is ready to edit.` });
+      queryClient.invalidateQueries({ queryKey: ['/api/pages'] });
+      toast({ title: 'Page created', description: `"${created.name}" is ready to edit.` });
       reset();
       onCreated(created.id);
     },
     onError: (err: Error) => {
-      toast({ title: 'Failed to create landing', description: err.message, variant: 'destructive' });
+      toast({ title: 'Failed to create page', description: err.message, variant: 'destructive' });
     },
   });
 
@@ -111,31 +111,31 @@ export function CreateLandingDialog({ open, onOpenChange, onCreated }: CreateLan
       <DialogContent className="sm:max-w-md">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>New landing</DialogTitle>
+            <DialogTitle>New page</DialogTitle>
             <DialogDescription>
               Pick a URL slug and a name. You will add sections in the editor next.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="create-landing-name">Name</Label>
+              <Label htmlFor="create-page-name">Name</Label>
               <Input
-                id="create-landing-name"
+                id="create-page-name"
                 autoFocus
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Websites"
                 maxLength={200}
                 required
-                data-testid="input-create-landing-name"
+                data-testid="input-create-page-name"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="create-landing-slug">Slug</Label>
+              <Label htmlFor="create-page-slug">Slug</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">/</span>
                 <Input
-                  id="create-landing-slug"
+                  id="create-page-slug"
                   value={effectiveSlug}
                   onChange={(e) => {
                     setSlug(slugify(e.target.value));
@@ -145,11 +145,11 @@ export function CreateLandingDialog({ open, onOpenChange, onCreated }: CreateLan
                   maxLength={80}
                   className="pl-7"
                   required
-                  data-testid="input-create-landing-slug"
+                  data-testid="input-create-page-slug"
                 />
               </div>
               {slugError ? (
-                <p className="text-xs text-destructive" data-testid="error-create-landing-slug">
+                <p className="text-xs text-destructive" data-testid="error-create-page-slug">
                   {slugError}
                 </p>
               ) : (
@@ -159,9 +159,9 @@ export function CreateLandingDialog({ open, onOpenChange, onCreated }: CreateLan
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="create-landing-language">Language</Label>
+              <Label htmlFor="create-page-language">Language</Label>
               <Select value={language} onValueChange={(v) => setLanguage(v === 'en' ? 'en' : 'pt')}>
-                <SelectTrigger id="create-landing-language" data-testid="select-create-landing-language">
+                <SelectTrigger id="create-page-language" data-testid="select-create-page-language">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -171,17 +171,17 @@ export function CreateLandingDialog({ open, onOpenChange, onCreated }: CreateLan
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="create-landing-alternate-slug">Alternate slug (optional)</Label>
+              <Label htmlFor="create-page-alternate-slug">Alternate slug (optional)</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">/</span>
                 <Input
-                  id="create-landing-alternate-slug"
+                  id="create-page-alternate-slug"
                   value={alternateSlug}
                   onChange={(e) => setAlternateSlug(e.target.value.toLowerCase())}
                   placeholder="websites-br"
                   maxLength={80}
                   className="pl-7"
-                  data-testid="input-create-landing-alternate-slug"
+                  data-testid="input-create-page-alternate-slug"
                 />
               </div>
               <p className="text-xs text-muted-foreground">
@@ -196,7 +196,7 @@ export function CreateLandingDialog({ open, onOpenChange, onCreated }: CreateLan
             <Button
               type="submit"
               disabled={!canSubmit}
-              data-testid="button-create-landing-submit"
+              data-testid="button-create-page-submit"
             >
               {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Create

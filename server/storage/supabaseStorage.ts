@@ -121,9 +121,9 @@ export class SupabaseStorageService {
     }
   }
 
-  // Create a presigned upload URL for a landing hero video (mp4/webm).
+  // Create a presigned upload URL for a page hero video (mp4/webm).
   // The client PUTs the file directly to Supabase — no large payload through Express.
-  async getSignedUploadUrlForLandingMedia(filename: string): Promise<{ uploadUrl: string; publicUrl: string }> {
+  async getSignedUploadUrlForPageMedia(filename: string): Promise<{ uploadUrl: string; publicUrl: string }> {
     await ensureBucket();
     const supabase = getSupabaseAdmin();
     const ext = (filename.split(".").pop() || "mp4").toLowerCase();

@@ -17,13 +17,13 @@ import { Switch } from '@/components/ui/switch';
 import { Loader2 } from '@/components/ui/loader';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import type { LandingPage } from '@shared/schema';
+import type { Page } from '@shared/schema';
 
-interface LandingsListProps {
+interface PagesListProps {
   onEdit: (id: string) => void;
 }
 
-const LIST_QUERY_KEY = ['/api/landing-pages'] as const;
+const LIST_QUERY_KEY = ['/api/pages'] as const;
 
 function formatDate(value: string | Date | null | undefined): string {
   if (!value) return '—';
@@ -41,14 +41,14 @@ function formatDate(value: string | Date | null | undefined): string {
   }
 }
 
-export function LandingsList({ onEdit }: LandingsListProps) {
+export function PagesList({ onEdit }: PagesListProps) {
   const { toast } = useToast();
-  const [deleteTarget, setDeleteTarget] = useState<LandingPage | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Page | null>(null);
 
-  const { data: landings, isLoading } = useQuery<LandingPage[]>({
+  const { data: pageList, isLoading } = useQuery<Page[]>({
     queryKey: LIST_QUERY_KEY,
     queryFn: async () => {
-      const res = await apiRequest('GET', '/api/landing-pages');
+      const res = await apiRequest('GET', '/api/pages');
       return res.json();
     },
   });
@@ -57,12 +57,12 @@ export function LandingsList({ onEdit }: LandingsListProps) {
 
   const toggleActiveMutation = useMutation({
     mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
-      const res = await apiRequest('PUT', `/api/landing-pages/${id}`, { isActive });
+      const res = await apiRequest('PUT', `/api/pages/${id}`, { isActive });
       return res.json();
     },
     onSuccess: (_data, vars) => {
       invalidate();
-      toast({ title: vars.isActive ? 'Landing activated' : 'Landing deactivated' });
+      toast({ title: vars.isActive ? 'Page activated' : 'Page deactivated' });
     },
     onError: (err: Error) => {
       toast({ title: 'Failed to update', description: err.message, variant: 'destructive' });
@@ -71,11 +71,11 @@ export function LandingsList({ onEdit }: LandingsListProps) {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      await apiRequest('DELETE', `/api/landing-pages/${id}`);
+      await apiRequest('DELETE', `/api/pages/${id}`);
     },
     onSuccess: () => {
       invalidate();
-      toast({ title: 'Landing deleted' });
+      toast({ title: 'Page deleted' });
       setDeleteTarget(null);
     },
     onError: (err: Error) => {
@@ -84,12 +84,12 @@ export function LandingsList({ onEdit }: LandingsListProps) {
   });
 
   const sorted = useMemo(() => {
-    if (!landings) return [];
-    return [...landings].sort((a, b) => {
+    if (!pageList) return [];
+    return [...pageList].sort((a, b) => {
       if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
       return a.slug.localeCompare(b.slug);
     });
-  }, [landings]);
+  }, [pageList]);
 
   if (isLoading) {
     return (
@@ -104,8 +104,8 @@ export function LandingsList({ onEdit }: LandingsListProps) {
       <AdminCard>
         <EmptyState
           icon={<LayoutPanelLeft />}
-          title="No landings yet"
-          description='Click "New landing" to create your first managed landing page.'
+          title="No pages yet"
+          description='Click "New page" to create your first managed page.'
         />
       </AdminCard>
     );
@@ -125,36 +125,36 @@ export function LandingsList({ onEdit }: LandingsListProps) {
             </tr>
           </thead>
           <tbody className="divide-y">
-            {sorted.map((landing) => (
+            {sorted.map((page) => (
               <tr
-                key={landing.id}
+                key={page.id}
                 className="hover:bg-muted/30 transition-colors"
-                data-testid={`landings-list-row-${landing.id}`}
+                data-testid={`pages-list-row-${page.id}`}
               >
                 <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                  /{landing.slug}
+                  /{page.slug}
                 </td>
                 <td className="px-4 py-3">
                   <button
                     type="button"
-                    onClick={() => onEdit(landing.id)}
+                    onClick={() => onEdit(page.id)}
                     className="font-medium hover:text-primary transition-colors text-left"
                   >
-                    {landing.name}
+                    {page.name}
                   </button>
                 </td>
                 <td className="px-4 py-3">
                   <Switch
-                    checked={landing.isActive}
+                    checked={page.isActive}
                     disabled={toggleActiveMutation.isPending}
                     onCheckedChange={(checked) =>
-                      toggleActiveMutation.mutate({ id: landing.id, isActive: checked })
+                      toggleActiveMutation.mutate({ id: page.id, isActive: checked })
                     }
-                    data-testid={`switch-landing-active-${landing.slug}`}
+                    data-testid={`switch-page-active-${page.slug}`}
                   />
                 </td>
                 <td className="px-4 py-3 text-muted-foreground tabular-nums text-xs">
-                  {formatDate(landing.updatedAt)}
+                  {formatDate(page.updatedAt)}
                 </td>
                 <td className="px-4 py-3 text-right">
                   <div className="inline-flex items-center gap-1">
@@ -163,18 +163,18 @@ export function LandingsList({ onEdit }: LandingsListProps) {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
-                      aria-label={`Open ${landing.name} in a new tab`}
-                      data-testid={`button-open-landing-${landing.slug}`}
-                      disabled={!landing.isActive}
-                      title={landing.isActive ? `Open /${landing.slug} in a new tab` : 'Activate the landing to preview it'}
+                      aria-label={`Open ${page.name} in a new tab`}
+                      data-testid={`button-open-page-${page.slug}`}
+                      disabled={!page.isActive}
+                      title={page.isActive ? `Open /${page.slug} in a new tab` : 'Activate the page to preview it'}
                     >
                       <a
-                        href={landing.isActive ? `/${landing.slug}` : undefined}
+                        href={page.isActive ? `/${page.slug}` : undefined}
                         target="_blank"
                         rel="noopener noreferrer"
-                        aria-disabled={!landing.isActive}
+                        aria-disabled={!page.isActive}
                         onClick={(e) => {
-                          if (!landing.isActive) e.preventDefault();
+                          if (!page.isActive) e.preventDefault();
                         }}
                       >
                         <ExternalLink className="w-4 h-4" />
@@ -184,9 +184,9 @@ export function LandingsList({ onEdit }: LandingsListProps) {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
-                      aria-label={`Edit ${landing.name}`}
-                      data-testid={`button-edit-landing-${landing.slug}`}
-                      onClick={() => onEdit(landing.id)}
+                      aria-label={`Edit ${page.name}`}
+                      data-testid={`button-edit-page-${page.slug}`}
+                      onClick={() => onEdit(page.id)}
                     >
                       <Pencil className="w-4 h-4" />
                     </Button>
@@ -194,9 +194,9 @@ export function LandingsList({ onEdit }: LandingsListProps) {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 text-destructive hover:text-destructive"
-                      aria-label={`Delete ${landing.name}`}
-                      data-testid={`button-delete-landing-${landing.slug}`}
-                      onClick={() => setDeleteTarget(landing)}
+                      aria-label={`Delete ${page.name}`}
+                      data-testid={`button-delete-page-${page.slug}`}
+                      onClick={() => setDeleteTarget(page)}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -212,9 +212,9 @@ export function LandingsList({ onEdit }: LandingsListProps) {
         <AlertDialog open={true} onOpenChange={(o) => !o && setDeleteTarget(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete landing &quot;{deleteTarget.name}&quot;?</AlertDialogTitle>
+              <AlertDialogTitle>Delete page &quot;{deleteTarget.name}&quot;?</AlertDialogTitle>
               <AlertDialogDescription>
-                This permanently removes the landing at <span className="font-mono">/{deleteTarget.slug}</span>.
+                This permanently removes the page at <span className="font-mono">/{deleteTarget.slug}</span>.
                 This action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>

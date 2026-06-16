@@ -2,12 +2,12 @@ import { useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { lazy, Suspense, useEffect } from "react";
 import { AppLoader } from "@/components/ui/spinner";
-import { sectionRegistry } from "@/components/landings/sectionRegistry";
+import { sectionRegistry } from "@/components/pages/sectionRegistry";
 import { useTranslation } from "@/hooks/useTranslation";
 
 const NotFound = lazy(() => import("@/pages/not-found"));
 
-interface LandingResponse {
+interface PageResponse {
   slug: string;
   name: string;
   sections: Array<{ type: string; props: Record<string, unknown> }>;
@@ -16,12 +16,12 @@ interface LandingResponse {
   alternateSlug?: string | null;
 }
 
-export default function DynamicLanding() {
+export default function DynamicPage() {
   const { slug } = useParams<{ slug: string }>();
   const { setLanguage } = useTranslation();
 
-  const { data, isLoading, error } = useQuery<LandingResponse>({
-    queryKey: [`/api/landing-pages/slug/${slug}`],
+  const { data, isLoading, error } = useQuery<PageResponse>({
+    queryKey: [`/api/pages/slug/${slug}`],
     enabled: !!slug,
     retry: false,
   });
@@ -57,7 +57,7 @@ export default function DynamicLanding() {
       link.rel = "alternate";
       link.hreflang = hreflang;
       link.href = href;
-      link.setAttribute("data-landing-i18n", "true");
+      link.setAttribute("data-page-i18n", "true");
       document.head.appendChild(link);
       created.push(link);
     };
@@ -70,7 +70,7 @@ export default function DynamicLanding() {
 
   if (isLoading) return <AppLoader />;
 
-  // Inactive landings come back as 404 from the public endpoint (43-02 contract).
+  // Inactive pages come back as 404 from the public endpoint (43-02 contract).
   if (error || !data) {
     return (
       <Suspense fallback={<AppLoader />}>
