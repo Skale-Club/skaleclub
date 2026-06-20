@@ -459,8 +459,8 @@ export default function PresentationViewer() {
             <source src={currentSlide.style.bgVideoUrl} />
           </video>
         )}
-        {/* Readability gradient — only over video/image backgrounds, never over solid colors */}
-        {(currentSlide.style?.bgVideoUrl || currentSlide.style?.bgImageUrl) && (
+        {/* Readability gradient — only over full-bleed image/video backgrounds, not panel layouts */}
+        {(currentSlide.style?.bgVideoUrl || (currentSlide.style?.bgImageUrl && currentSlide.layout !== 'image-right' && currentSlide.layout !== 'image-left')) && (
           <div className="absolute inset-0 bg-gradient-to-b from-zinc-800/20 to-transparent pointer-events-none" />
         )}
         <AnimatePresence mode="wait" custom={direction}>
@@ -475,12 +475,12 @@ export default function PresentationViewer() {
             className="absolute inset-0 z-10 group"
             style={
               currentSlide.layout === 'cover'
-                ? { ...buildSlideStyle(currentSlide.style), background: 'transparent' }
-                : buildSlideStyle(currentSlide.style)
+                ? { ...buildSlideStyle(currentSlide.style, currentSlide.layout), background: 'transparent' }
+                : buildSlideStyle(currentSlide.style, currentSlide.layout)
             }
           >
             {/* Internal slides: subtle indigo gradient over the slide bg (cover uses DottedSurface) */}
-            {currentSlide.layout !== 'cover' && <GradientBackground />}
+            {currentSlide.layout !== 'cover' && currentSlide.layout !== 'image-right' && currentSlide.layout !== 'image-left' && <GradientBackground />}
             <div
               ref={scrollContainerRef}
               className="relative z-10 h-full w-full overflow-y-auto overscroll-contain"

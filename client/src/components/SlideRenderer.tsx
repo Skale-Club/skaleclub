@@ -12,11 +12,17 @@ export function resolveField(
   return en || '';
 }
 
-export function buildSlideStyle(s?: SlideBlock['style']): React.CSSProperties {
+// image-right / image-left handle bgImageUrl themselves in their own column div.
+// Passing the layout prevents the image from leaking into the text-side background.
+export function buildSlideStyle(
+  s?: SlideBlock['style'],
+  layout?: SlideBlock['layout'],
+): React.CSSProperties {
   if (!s) return {};
   const css: React.CSSProperties = {};
   if (s.textColor) css.color = s.textColor;
-  if (s.bgImageUrl && !s.bgVideoUrl) {
+  const panelOwnsImage = layout === 'image-right' || layout === 'image-left';
+  if (s.bgImageUrl && !s.bgVideoUrl && !panelOwnsImage) {
     css.backgroundImage = `url(${s.bgImageUrl})`;
     css.backgroundSize = 'cover';
     css.backgroundPosition = 'center';
@@ -48,17 +54,17 @@ export function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string 
     case 'cover':
       return (
         <div className="text-center">
-          <p className="text-zinc-400 text-sm md:text-base lg:text-lg uppercase tracking-widest mb-4">Skale Club</p>
+          <p className="text-white/40 text-sm md:text-base lg:text-lg uppercase tracking-widest mb-4">Skale Club</p>
           <h1 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-5xl md:text-6xl lg:text-7xl font-semibold text-white leading-tight">{heading}</h1>
-          {body && <p className="text-zinc-400 text-base md:text-lg lg:text-xl mt-6 max-w-2xl mx-auto">{body}</p>}
+          {body && <p className="text-white/80 text-base md:text-lg lg:text-xl mt-6 max-w-2xl mx-auto">{body}</p>}
         </div>
       );
 
     case 'section-break':
       return (
         <div className="text-center">
-          <p className="text-zinc-400 text-sm md:text-base lg:text-lg uppercase tracking-widest mb-4">{heading}</p>
-          {body && <p className="text-lg md:text-xl lg:text-2xl text-zinc-400 leading-relaxed mt-6">{body}</p>}
+          <p className="text-white text-2xl md:text-3xl lg:text-4xl font-semibold" style={{ fontFamily: "'Outfit', sans-serif" }}>{heading}</p>
+          {body && <p className="text-lg md:text-xl lg:text-2xl text-white/80 leading-relaxed mt-6">{body}</p>}
         </div>
       );
 
@@ -66,7 +72,7 @@ export function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string 
       return (
         <div>
           <h2 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight">{heading}</h2>
-          {body && <p className="text-lg md:text-xl lg:text-2xl text-zinc-400 leading-relaxed">{body}</p>}
+          {body && <p className="text-lg md:text-xl lg:text-2xl text-white/80 leading-relaxed">{body}</p>}
         </div>
       );
 
@@ -77,8 +83,8 @@ export function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string 
           {bullets.length > 0 && (
             <ul className="space-y-4">
               {bullets.map((bullet, i) => (
-                <li key={i} className="flex gap-3 text-base md:text-lg lg:text-xl text-zinc-300">
-                  <span className="text-zinc-500 shrink-0 mt-1 md:mt-0 lg:mt-0">–</span>
+                <li key={i} className="flex gap-3 text-base md:text-lg lg:text-xl text-white/90">
+                  <span className="text-white/40 shrink-0 mt-1 md:mt-0 lg:mt-0">–</span>
                   <span>{bullet}</span>
                 </li>
               ))}
@@ -96,7 +102,7 @@ export function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string 
               {slide.stats.map((stat, i) => (
                 <div key={i}>
                   <dt className="text-6xl md:text-7xl lg:text-8xl font-semibold text-white">{stat.value}</dt>
-                  <dd className="text-base md:text-lg lg:text-xl text-zinc-400 mt-2">
+                  <dd className="text-base md:text-lg lg:text-xl text-white/80 mt-2">
                     {lang === 'pt-BR' ? (stat.labelPt || stat.label) : stat.label}
                   </dd>
                 </div>
@@ -113,7 +119,7 @@ export function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string 
             <h2 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white leading-tight">{heading}</h2>
           </div>
           <div>
-            {body && <p className="text-lg md:text-xl lg:text-2xl text-zinc-400 leading-relaxed">{body}</p>}
+            {body && <p className="text-lg md:text-xl lg:text-2xl text-white/80 leading-relaxed">{body}</p>}
           </div>
         </div>
       );
@@ -122,7 +128,7 @@ export function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string 
       return (
         <div className="w-full h-full absolute inset-0 flex flex-col md:flex-row">
           <div
-            className="flex-1 bg-zinc-800 bg-cover bg-center"
+            className="flex-1 min-h-48 md:min-h-0 bg-zinc-800 bg-cover bg-center"
             style={slide.style?.bgImageUrl ? { backgroundImage: `url(${slide.style.bgImageUrl})` } : {}}
           />
           <div className="flex-1 flex items-center justify-center md:justify-start px-8 py-12 md:py-0 md:px-16 lg:px-24">
@@ -133,7 +139,7 @@ export function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string 
                   className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight"
                 >{heading}</h2>
               )}
-              {body && <p className="text-lg md:text-xl lg:text-2xl text-zinc-400 leading-relaxed">{body}</p>}
+              {body && <p className="text-lg md:text-xl lg:text-2xl text-white/80 leading-relaxed">{body}</p>}
             </div>
           </div>
         </div>
@@ -142,9 +148,9 @@ export function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string 
     case 'closing':
       return (
         <div className="text-center">
-          <p className="text-zinc-400 text-sm md:text-base lg:text-lg uppercase tracking-widest mb-4 lg:mb-6">Skale Club</p>
+          <p className="text-white/40 text-sm md:text-base lg:text-lg uppercase tracking-widest mb-4 lg:mb-6">Skale Club</p>
           <h2 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight">{heading}</h2>
-          {body && <p className="text-base md:text-lg lg:text-xl text-zinc-400 mt-4 max-w-2xl mx-auto">{body}</p>}
+          {body && <p className="text-base md:text-lg lg:text-xl text-white/80 mt-4 max-w-2xl mx-auto">{body}</p>}
         </div>
       );
 
@@ -152,7 +158,7 @@ export function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string 
       return (
         <div className="w-full h-full absolute inset-0 flex flex-col md:flex-row">
           <div
-            className="md:w-2/5 bg-zinc-800 bg-cover bg-center"
+            className="md:w-2/5 min-h-48 md:min-h-0 bg-zinc-800 bg-cover bg-center"
             style={slide.style?.bgImageUrl ? { backgroundImage: `url(${slide.style.bgImageUrl})` } : {}}
           />
           <div className="md:w-3/5 flex items-center justify-start px-8 py-12 md:py-0 md:px-16 lg:px-24">
@@ -163,7 +169,7 @@ export function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string 
                   className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight"
                 >{heading}</h2>
               )}
-              {body && <p className="text-lg md:text-xl lg:text-2xl text-zinc-400 leading-relaxed">{body}</p>}
+              {body && <p className="text-lg md:text-xl lg:text-2xl text-white/80 leading-relaxed">{body}</p>}
             </div>
           </div>
         </div>
@@ -180,11 +186,11 @@ export function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string 
                   className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight"
                 >{heading}</h2>
               )}
-              {body && <p className="text-lg md:text-xl lg:text-2xl text-zinc-400 leading-relaxed">{body}</p>}
+              {body && <p className="text-lg md:text-xl lg:text-2xl text-white/80 leading-relaxed">{body}</p>}
             </div>
           </div>
           <div
-            className="md:w-2/5 bg-zinc-800 bg-cover bg-center"
+            className="md:w-2/5 min-h-48 md:min-h-0 bg-zinc-800 bg-cover bg-center"
             style={slide.style?.bgImageUrl ? { backgroundImage: `url(${slide.style.bgImageUrl})` } : {}}
           />
         </div>
@@ -219,14 +225,14 @@ export function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string 
             &ldquo;{heading}&rdquo;
           </p>
           {attribution && (
-            <p className="text-zinc-400 text-base md:text-lg uppercase tracking-widest">— {attribution}</p>
+            <p className="text-white/70 text-base md:text-lg uppercase tracking-widest">— {attribution}</p>
           )}
         </div>
       );
     }
 
     default:
-      return <p className="text-zinc-400 text-base md:text-lg lg:text-xl">{heading}</p>;
+      return <p className="text-white/80 text-base md:text-lg lg:text-xl">{heading}</p>;
   }
 }
 

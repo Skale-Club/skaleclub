@@ -20,6 +20,7 @@ import {
 } from '@/lib/thumbnails';
 import type { PresentationWithStats, SlideBlock } from '@shared/schema';
 import { SlidePreview } from '@/components/SlideRenderer';
+import { SlideStylePanel } from './SlideStylePanel';
 
 // ─── Quick AI prompts ──────────────────────────────────────────────────────────
 
@@ -114,6 +115,7 @@ function SlideDetailPanel({
   const [bullets, setBullets] = useState(slide.bullets?.join('\n') ?? '');
   const [bulletsPt, setBulletsPt] = useState(slide.bulletsPt?.join('\n') ?? '');
   const [attribution, setAttribution] = useState(slide.attribution ?? '');
+  const [slideStyle, setSlideStyle] = useState<SlideBlock['style']>(slide.style);
   const [instruction, setInstruction] = useState('');
 
   useEffect(() => {
@@ -124,6 +126,7 @@ function SlideDetailPanel({
     setBullets(slide.bullets?.join('\n') ?? '');
     setBulletsPt(slide.bulletsPt?.join('\n') ?? '');
     setAttribution(slide.attribution ?? '');
+    setSlideStyle(slide.style);
   }, [slide]);
 
   function handleApplyEdits() {
@@ -136,6 +139,7 @@ function SlideDetailPanel({
       bullets: bullets ? bullets.split('\n').filter(Boolean) : undefined,
       bulletsPt: bulletsPt ? bulletsPt.split('\n').filter(Boolean) : undefined,
       attribution: attribution || undefined,
+      style: slideStyle,
     };
     onSlideEdited(updated);
     toast({ title: t('Slides saved') });
@@ -183,8 +187,8 @@ function SlideDetailPanel({
 
   return (
     <div className="space-y-5">
-      {/* Live slide thumbnail */}
-      <SlidePreview slide={slide} lang="en" scale={0.38} className="rounded-md border shadow-sm" />
+      {/* Live slide thumbnail — reflects live style changes before Apply */}
+      <SlidePreview slide={{ ...slide, style: slideStyle }} lang="en" scale={0.38} className="rounded-md border shadow-sm" />
 
       <div className="flex items-center gap-2">
         <span className="text-sm font-semibold text-muted-foreground font-mono">#{index + 1}</span>
@@ -253,6 +257,9 @@ function SlideDetailPanel({
           {t('Apply')}
         </Button>
       </div>
+
+      {/* Style controls */}
+      <SlideStylePanel style={slideStyle} onChange={setSlideStyle} />
 
       {/* AI improve */}
       <div className="space-y-2 pt-3 border-t">

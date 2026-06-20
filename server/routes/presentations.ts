@@ -83,11 +83,10 @@ export function registerPresentationsRoutes(app: Express) {
     }
   });
 
-  // PRES-06: Create accepts { title, slug? }; slug is generated from title unless provided.
-  // insertPresentationSchema has slides default([]) so omitting slides is valid
+  // PRES-06: Create accepts { title, slug?, slides? }; slug is generated from title unless provided.
   app.post("/api/presentations", requireAdmin, async (req, res) => {
     try {
-      const parsed = insertPresentationSchema.pick({ title: true, slug: true }).safeParse(req.body);
+      const parsed = insertPresentationSchema.pick({ title: true, slug: true, slides: true }).safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ message: "Validation error", errors: parsed.error.errors });
       }
@@ -97,10 +96,52 @@ export function registerPresentationsRoutes(app: Express) {
       if (parsed.data.slug && await storage.getPresentationBySlug(slug)) {
         return res.status(409).json({ message: "Slug already in use" });
       }
-      const presentation = await storage.createPresentation({ title: parsed.data.title, slides: [], slug });
+      const presentation = await storage.createPresentation({ title: parsed.data.title, slides: parsed.data.slides ?? [], slug });
       res.status(201).json({ id: presentation.id, slug: presentation.slug, slides: presentation.slides });
     } catch (err) {
       res.status(400).json({ message: (err as Error).message });
+    }
+  });
+
+  // Upload a slide image to Supabase Storage; returns { url } for use in slide style.bgImageUrl.
+  // Accepts { base64, filename, mimeType }. Large body limit set in LARGE_BODY_RE (server/app.ts).
+  app.post("/api/presentations/upload-image", requireAdmin, async (req, res) => {
+    try {
+      const schema = z.object({
+        base64: z.string().min(1),
+        filename: z.string().min(1).max(200),
+        mimeType: z.string().regex(/^image\//),
+      });
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Validation error", errors: parsed.error.errors });
+      }
+      const { base64, filename, mimeType } = parsed.data;
+      const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, '');
+      const path = `presentations/${crypto.randomUUID()}-${safeName}`;
+      const buf = Buffer.from(base64, 'base64');
+      const supabaseUrl = process.env.SUPABASE_URL;
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (!supabaseUrl || !serviceKey) {
+        return res.status(500).json({ message: "Storage not configured" });
+      }
+      const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/uploads/${path}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${serviceKey}`,
+          'Content-Type': mimeType,
+          'x-upsert': 'true',
+        },
+        body: buf,
+      });
+      if (!uploadRes.ok) {
+        const text = await uploadRes.text();
+        return res.status(502).json({ message: `Storage upload failed: ${text}` });
+      }
+      const url = `${supabaseUrl}/storage/v1/object/public/uploads/${path}`;
+      res.json({ url });
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
     }
   });
 

@@ -47,7 +47,7 @@ export async function createApp(): Promise<{ app: express.Express; httpServer: S
 
   // Admin-only routes that accept large base64 bodies.
   const LARGE_BODY_RE =
-    /^\/api\/(uploads(\/|$)|presentations\/transcribe|presentations\/[^/]+\/thumbnail|estimates\/[^/]+\/thumbnail)/;
+    /^\/api\/(uploads(\/|$)|presentations\/(transcribe|upload-image)|presentations\/[^/]+\/thumbnail|estimates\/[^/]+\/thumbnail)/;
 
   app.use((req, res, next) => {
     if (LARGE_BODY_RE.test(req.path)) return jsonLarge(req, res, next);
