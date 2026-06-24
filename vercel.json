@@ -50,7 +50,7 @@
   "functions": {
     "api/index.ts": {
       "maxDuration": 60,
-      "includeFiles": "server/**,shared/**,drizzle.config.ts,migrations/**"
+      "includeFiles": "server/**,shared/**,drizzle.config.ts,migrations/**,dist/public/index.html"
     },
     "api/xpot.ts": {
       "maxDuration": 30,
@@ -133,6 +133,10 @@
     },
     {
       "source": "/sitemap_index.xml",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/([a-z0-9][a-z0-9-]*)",
       "destination": "/api/index"
     },
     {

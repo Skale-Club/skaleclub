@@ -1,4 +1,6 @@
 import 'dotenv/config';
+import fs from 'fs';
+import path from 'path';
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createApp } from "../server/app.js";
 import type express from "express";
@@ -13,6 +15,19 @@ async function getApp() {
     initPromise = createApp()
       .then((result) => {
         app = result.app;
+
+        // SPA fallback for single-segment paths routed here by Vercel rewrites.
+        // When the redirect resolver finds no DB record it calls next(), and this
+        // serves index.html so the React router can render the correct page.
+        const indexPath = path.join(__dirname, '..', 'dist', 'public', 'index.html');
+        app.use((_req: any, res: any) => {
+          if (fs.existsSync(indexPath)) {
+            res.sendFile(indexPath);
+          } else {
+            res.status(404).send('Not found');
+          }
+        });
+
         return app;
       })
       .catch((err) => {
