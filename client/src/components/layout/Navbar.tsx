@@ -63,6 +63,8 @@ export function Navbar() {
               <img
                 src={companySettings.logoMain}
                 alt={companySettings.companyName || ""}
+                width={54}
+                height={54}
                 className="h-auto w-[54px] object-contain p-1.5"
               />
             ) : (
@@ -128,6 +130,7 @@ export function Navbar() {
             <button
               className="p-2 -mr-2 text-white"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-label={isMenuOpen ? "Close menu" : "Open menu"}
             >
               {isMenuOpen ? <X /> : <Menu />}
             </button>
@@ -148,6 +151,8 @@ export function Navbar() {
                 <img
                   src={companySettings.logoMain}
                   alt={companySettings.companyName || ""}
+                  width={54}
+                  height={54}
                   className="h-auto w-[54px] object-contain p-1.5"
                 />
               ) : companySettings?.companyName ? (

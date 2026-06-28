@@ -141,7 +141,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
                     <span className="text-5xl font-extrabold tracking-tight">{service.price}</span>
                     <span className="text-sm text-white/50 font-medium uppercase tracking-wider">{t(service.priceLabel)}</span>
                   </div>
-                  <span className="shrink-0 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+                  <span className="shrink-0 bg-blue-700 text-white text-xs font-bold px-3 py-1 rounded-full">
                     {t(service.badgeText)}
                   </span>
                 </div>

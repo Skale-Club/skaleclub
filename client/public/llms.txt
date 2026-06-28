@@ -1,0 +1,21 @@
+# Skale Club
+
+Skale Club is a data-driven marketing agency that helps businesses scale with marketing systems, automation, AI-powered tools, and growth strategy.
+
+## Services
+
+- [Website Design & Development](https://skale.club/portfolio)
+- [CRM Setup & Automation](https://skale.club/portfolio)
+- [AI Chatbots & Voice Assistants](https://skale.club/portfolio)
+- [Scheduling Systems](https://skale.club/portfolio)
+- [Marketing Automation](https://skale.club/portfolio)
+
+## Pages
+
+- [Home](https://skale.club/)
+- [Portfolio](https://skale.club/portfolio)
+- [Blog](https://skale.club/blog)
+
+## Contact
+
+Contact Skale Club via the website contact form at https://skale.club/

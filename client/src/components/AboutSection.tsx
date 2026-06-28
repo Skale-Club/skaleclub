@@ -35,7 +35,7 @@ export function AboutSection({ content, aboutImageUrl }: AboutSectionProps) {
                 <div key={index} className="flex items-start gap-3">
                   <CheckCircle className="w-6 h-6 text-green-500 shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="font-semibold text-[#1D1D1D] mb-1">{t(highlight.title)}</h4>
+                    <h3 className="font-semibold text-[#1D1D1D] mb-1">{t(highlight.title)}</h3>
                     <p className="text-slate-600">{t(highlight.description)}</p>
                   </div>
                 </div>

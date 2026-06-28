@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { PortfolioService } from "@shared/schema";
-import { getImageUrl, getOriginalImageUrl } from "@/components/admin/shared/utils";
+import { getImageUrl } from "@/components/admin/shared/utils";
 
 // Helper to check if string is a hex color
 function isHexColor(color: string): boolean {
@@ -68,7 +68,7 @@ export function PortfolioCard({ service, onClick, className = "", variant = 'dar
                     style={{ aspectRatio: imageAspectRatio }}
                 >
                     <img
-                        src={getOriginalImageUrl(service.imageUrl)}
+                        src={getImageUrl(service.imageUrl, { width: 800, quality: 80 })}
                         alt={service.title}
                         loading="lazy"
                         decoding="async"
@@ -102,7 +102,7 @@ export function PortfolioCard({ service, onClick, className = "", variant = 'dar
                         <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </div>
                     {service.badgeText && (
-                        <span className="shrink-0 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                        <span className="shrink-0 bg-blue-700 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
                             {t(service.badgeText)}
                         </span>
                     )}

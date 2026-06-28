@@ -55,6 +55,8 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick }: He
               <img
                 src={heroImageUrl}
                 alt={companySettings?.companyName || ""}
+                fetchPriority="high"
+                loading="eager"
                 className="w-[92vw] sm:w-[98%] lg:w-full max-w-[380px] sm:max-w-[360px] md:max-w-[430px] lg:max-w-[500px] xl:max-w-[560px] object-contain drop-shadow-2xl origin-bottom"
               />
             ) : (

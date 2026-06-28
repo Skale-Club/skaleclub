@@ -43,7 +43,7 @@ export function TrustBadges({ badges }: TrustBadgesProps) {
                   <Icon className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-[#1D1D1D]">{t(feature.title)}</h3>
+                  <p className="font-bold text-[#1D1D1D]">{t(feature.title)}</p>
                   <p className="text-sm text-slate-500">{t(feature.description)}</p>
                 </div>
               </div>
