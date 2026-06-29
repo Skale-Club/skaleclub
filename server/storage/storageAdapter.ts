@@ -1,9 +1,41 @@
 import type { Express, Request, Response } from "express";
+import sharp from "sharp";
 
 // Register storage routes using Supabase Storage
 export async function registerStorageRoutes(app: Express, requireAdmin: any) {
   const { SupabaseStorageService } = await import("./supabaseStorage.js");
   const storageService = new SupabaseStorageService();
+
+  // Raster formats we transcode to WebP on upload. SVG (vector) and WebP
+  // (already optimal) are left untouched.
+  const convertibleToWebp = new Set([
+    "png", "jpg", "jpeg", "gif", "avif", "bmp", "tiff", "tif", "heic", "heif",
+  ]);
+
+  // Convert a raster image buffer to WebP. Returns the original buffer/name
+  // unchanged for non-raster inputs or if conversion fails, so uploads never
+  // break because of image processing.
+  async function toWebp(
+    buffer: Buffer,
+    filename: string,
+    ext: string,
+  ): Promise<{ buffer: Buffer; filename: string; contentType: string } | null> {
+    if (!convertibleToWebp.has(ext)) return null;
+    try {
+      const webp = await sharp(buffer, { animated: ext === "gif" })
+        .rotate() // honor EXIF orientation before stripping metadata
+        .webp({ quality: 80 })
+        .toBuffer();
+      return {
+        buffer: webp,
+        filename: filename.replace(/\.[^.]+$/, "") + ".webp",
+        contentType: "image/webp",
+      };
+    } catch (err) {
+      console.warn("WebP conversion failed, uploading original:", err);
+      return null;
+    }
+  }
 
   const mimeFromExt: Record<string, string> = {
     png: "image/png",
@@ -24,7 +56,12 @@ export async function registerStorageRoutes(app: Express, requireAdmin: any) {
       const buffer = Buffer.from(data, 'base64');
       const ext = (filename.split('.').pop() || '').toLowerCase();
       const contentType = mimeFromExt[ext] || "application/octet-stream";
-      const publicUrl = await storageService.uploadBuffer(buffer, filename, contentType);
+
+      // Transcode raster images to WebP immediately on upload.
+      const converted = await toWebp(buffer, filename, ext);
+      const publicUrl = converted
+        ? await storageService.uploadBuffer(converted.buffer, converted.filename, converted.contentType)
+        : await storageService.uploadBuffer(buffer, filename, contentType);
       res.json({ path: publicUrl });
     } catch (error) {
       console.error("Upload error:", error);
