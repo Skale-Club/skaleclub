@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Image, Trash2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DialogClose, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -32,6 +31,7 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
         badgeText: service?.badgeText || 'One-time Fee',
         features: service?.features || [],
         imageUrl: service?.imageUrl || '',
+        logoIconUrl: service?.logoIconUrl || '',
         toolUrl: service?.toolUrl || '',
         iconName: service?.iconName || 'Rocket',
         ctaText: service?.ctaText || 'Get Started',
@@ -68,6 +68,25 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
             ...prev,
             features: prev.features?.filter((_: string, i: number) => i !== index) || []
         }));
+    };
+
+    const updateFeature = (index: number, value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            features: prev.features?.map((f: string, i: number) => (i === index ? value : f)) || []
+        }));
+    };
+
+    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            const path = await uploadFileToServer(file);
+            setFormData(prev => ({ ...prev, logoIconUrl: path }));
+            toast({ title: 'Logo icon uploaded successfully' });
+        } catch (error: any) {
+            toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+        }
     };
 
     return (
@@ -190,23 +209,62 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
                         )}
                     </div>
 
-                    {/* Tool URL */}
-                    <div className="space-y-1.5">
-                        <Label htmlFor="toolUrl">Tool URL (optional)</Label>
-                        <Input
-                            id="toolUrl"
-                            type="text"
-                            value={formData.toolUrl ?? ''}
-                            onChange={(e) => setFormData(prev => ({ ...prev, toolUrl: e.target.value }))}
-                            onBlur={(e) => {
-                                const val = e.target.value.trim();
-                                if (val && !/^https?:\/\//i.test(val)) {
-                                    setFormData(prev => ({ ...prev, toolUrl: `https://${val}` }));
-                                }
-                            }}
-                            placeholder="example.com"
-                        />
-                        <p className="text-xs text-muted-foreground">External URL to open the tool. A link will appear next to the service title.</p>
+                    {/* Right column: Logo Icon + Tool URL */}
+                    <div className="space-y-4">
+                        {/* Logo Icon — small square shown on the card */}
+                        <div className="space-y-1.5">
+                            <Label>Logo Icon</Label>
+                            {formData.logoIconUrl ? (
+                                <div className="relative w-24 h-24 rounded-lg overflow-hidden border bg-muted">
+                                    <img
+                                        src={getOriginalImageUrl(formData.logoIconUrl)}
+                                        alt="Logo icon"
+                                        className="w-full h-full object-contain p-1"
+                                    />
+                                    <label
+                                        className="absolute inset-0 flex items-center justify-center cursor-pointer bg-black/50 opacity-0 hover:opacity-100 transition-opacity"
+                                        title="Click to replace"
+                                    >
+                                        <span className="text-white text-xs font-medium">Replace</span>
+                                        <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setFormData(prev => ({ ...prev, logoIconUrl: '' })); }}
+                                        className="absolute top-1 right-1 z-10 p-1 bg-black/60 hover:bg-red-500/80 text-white rounded-full transition-colors"
+                                        title="Remove logo icon"
+                                    >
+                                        <Trash2 className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            ) : (
+                                <label className="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                                    <Image className="w-5 h-5 text-muted-foreground" />
+                                    <span className="text-[10px] text-muted-foreground mt-1">Upload</span>
+                                    <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
+                                </label>
+                            )}
+                            <p className="text-xs text-muted-foreground">Small square shown on the card. Transparent PNG recommended.</p>
+                        </div>
+
+                        {/* Tool URL */}
+                        <div className="space-y-1.5">
+                            <Label htmlFor="toolUrl">Tool URL (optional)</Label>
+                            <Input
+                                id="toolUrl"
+                                type="text"
+                                value={formData.toolUrl ?? ''}
+                                onChange={(e) => setFormData(prev => ({ ...prev, toolUrl: e.target.value }))}
+                                onBlur={(e) => {
+                                    const val = e.target.value.trim();
+                                    if (val && !/^https?:\/\//i.test(val)) {
+                                        setFormData(prev => ({ ...prev, toolUrl: `https://${val}` }));
+                                    }
+                                }}
+                                placeholder="example.com"
+                            />
+                            <p className="text-xs text-muted-foreground">External URL to open the tool. A link will appear next to the service title.</p>
+                        </div>
                     </div>
                 </div>
 
@@ -309,27 +367,42 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
 
                 <div className="border-t" />
 
-                {/* Section: Features */}
+                {/* Section: Feature Bubbles */}
                 <div className="space-y-3">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Features</p>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Feature Bubbles</p>
+                    {formData.features && formData.features.length > 0 && (
+                        <div className="space-y-2">
+                            {formData.features.map((feature: string, idx: number) => (
+                                <div key={idx} className="flex items-center gap-2">
+                                    <Input
+                                        value={feature}
+                                        onChange={(e) => updateFeature(idx, e.target.value)}
+                                        placeholder="Bubble text"
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="shrink-0 text-red-500"
+                                        onClick={() => removeFeature(idx)}
+                                        aria-label="Delete bubble"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                     <div className="flex gap-2">
                         <Input
                             value={featureInput}
                             onChange={(e) => setFeatureInput(e.target.value)}
-                            placeholder="Add a feature..."
+                            placeholder="Add a bubble..."
                             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addFeature())}
                         />
                         <Button type="button" onClick={addFeature} variant="secondary">Add</Button>
                     </div>
-                    {formData.features && formData.features.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                            {formData.features.map((feature: string, idx: number) => (
-                                <Badge key={idx} variant="secondary" className="cursor-pointer gap-1" onClick={() => removeFeature(idx)}>
-                                    {feature} ×
-                                </Badge>
-                            ))}
-                        </div>
-                    )}
+                    <p className="text-xs text-muted-foreground">Shown as bubbles on the card. They sit in a fixed-height area, so adding or removing them won't change the card's height.</p>
                 </div>
 
                 <div className="border-t" />
@@ -338,8 +411,8 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
                 <div className="space-y-3">
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Appearance</p>
 
-                    <div className="grid grid-cols-3 gap-3">
-                        <div className="space-y-1.5">
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="hidden">
                             <Label htmlFor="iconName">Icon</Label>
                             <select
                                 id="iconName"
