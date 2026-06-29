@@ -61,8 +61,9 @@ export function PortfolioCard({ service, onClick, className = "", variant = 'dar
             onClick={onClick}
             className={`group flex h-full cursor-pointer flex-col gap-4 rounded-2xl border p-4 transition-all duration-300 hover:-translate-y-1 ${themeClasses.card} ${className}`}
         >
-            {/* Hero image — fixed ratio so all cards line up; object-contain so
-                the whole image fits inside the box without cropping */}
+            {/* Hero image — fixed ratio so all cards line up; object-cover so
+                the image fills the box (shorter side to the edge), cropping the
+                longer side as needed */}
             <div className={`relative w-full overflow-hidden rounded-xl aspect-[16/10] ${themeClasses.imageBg}`}>
                 {service.imageUrl ? (
                     <img
@@ -70,7 +71,7 @@ export function PortfolioCard({ service, onClick, className = "", variant = 'dar
                         alt={t(service.title)}
                         loading="lazy"
                         decoding="async"
-                        className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-[1.02] pointer-events-none"
+                        className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-[1.02] pointer-events-none"
                         draggable={false}
                     />
                 ) : (
