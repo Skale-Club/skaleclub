@@ -1,8 +1,22 @@
+import * as Sentry from "@sentry/react";
 import { createRoot } from "react-dom/client";
 import { Analytics } from "@vercel/analytics/react";
 import App from "./App";
 import "./index.css";
 import { registerServiceWorker } from "./lib/pwa";
+
+Sentry.init({
+  dsn: import.meta.env.VITE_SENTRY_DSN,
+  environment: import.meta.env.MODE,
+  enabled: !!import.meta.env.VITE_SENTRY_DSN && import.meta.env.PROD,
+  integrations: [
+    Sentry.browserTracingIntegration(),
+    Sentry.replayIntegration({ maskAllText: false, blockAllMedia: false }),
+  ],
+  tracesSampleRate: 0.1,
+  replaysSessionSampleRate: 0.05,
+  replaysOnErrorSampleRate: 1.0,
+});
 
 // ─── Stale-tab recovery for lazy chunks ───────────────────────────────────
 // After a deploy, content-hashed chunks (e.g. /assets/PresentationsSection-XYZ.js)
