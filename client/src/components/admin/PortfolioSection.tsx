@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Loader2 } from '@/components/ui/loader';
 import type { PortfolioService, InsertPortfolioService } from '@shared/schema';
-import { arrayMove, SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
+import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { DndContext, closestCenter, DragEndEvent, MouseSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { PortfolioServiceCard } from './portfolio/PortfolioServiceCard';
 import { PortfolioServiceForm } from './portfolio/PortfolioServiceForm';
@@ -206,8 +206,8 @@ export function PortfolioSection() {
                 />
             ) : (
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                    <SortableContext items={sortedServices.map(s => s.id)} strategy={rectSortingStrategy}>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <SortableContext items={sortedServices.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                        <div className="flex flex-col gap-2">
                             {sortedServices.map((service) => (
                                 <PortfolioServiceCard
                                     key={service.id}
