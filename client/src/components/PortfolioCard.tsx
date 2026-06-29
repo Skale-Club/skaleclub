@@ -39,6 +39,7 @@ export function PortfolioCard({ service, onClick, className = "", variant = 'dar
             card: 'bg-white/5 hover:bg-white/10 border-white/10 hover:border-white/20',
             title: 'text-white',
             subtitle: 'text-white/60',
+            imageBg: 'bg-black/20',
             iconBox: 'bg-white/10 border-white/10',
             iconPlaceholder: 'text-white/30',
             bubble: 'bg-white/10 text-white/80 border-white/10',
@@ -47,6 +48,7 @@ export function PortfolioCard({ service, onClick, className = "", variant = 'dar
             card: 'bg-white/90 hover:bg-white border-slate-200/70 shadow-[0_24px_60px_-60px_rgba(15,23,42,0.45)] hover:shadow-[0_28px_70px_-55px_rgba(23,37,84,0.4)]',
             title: 'text-slate-900',
             subtitle: 'text-slate-600',
+            imageBg: 'bg-slate-100',
             iconBox: 'bg-slate-100 border-slate-200',
             iconPlaceholder: 'text-slate-400',
             bubble: 'bg-slate-100 text-slate-700 border-slate-200',
@@ -59,15 +61,16 @@ export function PortfolioCard({ service, onClick, className = "", variant = 'dar
             onClick={onClick}
             className={`group flex h-full cursor-pointer flex-col gap-4 rounded-2xl border p-4 transition-all duration-300 hover:-translate-y-1 ${themeClasses.card} ${className}`}
         >
-            {/* Hero image — fixed ratio so all cards line up */}
-            <div className="relative w-full overflow-hidden rounded-xl bg-black/20 aspect-[16/10]">
+            {/* Hero image — fixed ratio so all cards line up; object-contain so
+                the whole image fits inside the box without cropping */}
+            <div className={`relative w-full overflow-hidden rounded-xl aspect-[16/10] ${themeClasses.imageBg}`}>
                 {service.imageUrl ? (
                     <img
                         src={getImageUrl(service.imageUrl, { width: 800, quality: 80 })}
                         alt={t(service.title)}
                         loading="lazy"
                         decoding="async"
-                        className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-[1.02] pointer-events-none"
+                        className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-[1.02] pointer-events-none"
                         draggable={false}
                     />
                 ) : (
