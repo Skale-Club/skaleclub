@@ -19,7 +19,9 @@ async function getApp() {
         // SPA fallback for single-segment paths routed here by Vercel rewrites.
         // When the redirect resolver finds no DB record it calls next(), and this
         // serves index.html so the React router can render the correct page.
-        const indexPath = path.join(__dirname, '..', 'dist', 'public', 'index.html');
+        // Use process.cwd() (the Vercel function root, /vercel/path0) — this is
+        // an ES module, so __dirname is not defined. Matches server/app.ts.
+        const indexPath = path.join(process.cwd(), 'dist', 'public', 'index.html');
         app.use((_req: any, res: any) => {
           if (fs.existsSync(indexPath)) {
             res.sendFile(indexPath);
