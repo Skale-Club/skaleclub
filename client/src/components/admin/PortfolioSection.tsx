@@ -4,6 +4,7 @@ import {
   Briefcase,
   Plus,
   Image,
+  Settings,
 } from 'lucide-react';
 import { EmptyState, SectionHeader } from './shared';
 import { Button } from '@/components/ui/button';
@@ -16,11 +17,13 @@ import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-ki
 import { DndContext, closestCenter, DragEndEvent, MouseSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { PortfolioServiceCard } from './portfolio/PortfolioServiceCard';
 import { PortfolioServiceForm } from './portfolio/PortfolioServiceForm';
+import { PortfolioHeroSettings } from './portfolio/PortfolioHeroSettings';
 
 export function PortfolioSection() {
     const { toast } = useToast();
     const [editingService, setEditingService] = useState<PortfolioService | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     const sensors = useSensors(
         useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
@@ -28,7 +31,7 @@ export function PortfolioSection() {
     );
 
     const { data: services, isLoading } = useQuery<PortfolioService[]>({
-        queryKey: ['/api/portfolio-services']
+        queryKey: ['/api/admin/portfolio-services']
     });
 
     const restoreScroll = (scrollY: number) => {
@@ -42,7 +45,7 @@ export function PortfolioSection() {
         },
         onSuccess: (created) => {
             const scrollY = window.scrollY;
-            queryClient.setQueryData<PortfolioService[]>(['/api/portfolio-services'], (old) =>
+            queryClient.setQueryData<PortfolioService[]>(['/api/admin/portfolio-services'], (old) =>
                 old ? [...old, created] : [created]
             );
             setIsDialogOpen(false);
@@ -61,7 +64,7 @@ export function PortfolioSection() {
         },
         onSuccess: (updated) => {
             const scrollY = window.scrollY;
-            queryClient.setQueryData<PortfolioService[]>(['/api/portfolio-services'], (old) =>
+            queryClient.setQueryData<PortfolioService[]>(['/api/admin/portfolio-services'], (old) =>
                 old?.map((s) => (s.id === updated.id ? updated : s)) ?? [updated]
             );
             setEditingService(null);
@@ -74,13 +77,38 @@ export function PortfolioSection() {
         }
     });
 
+    const toggleActive = useMutation({
+        mutationFn: async (data: { id: number; isActive: boolean }) => {
+            const res = await apiRequest('PUT', `/api/portfolio-services/${data.id}`, { isActive: data.isActive });
+            return res.json() as Promise<PortfolioService>;
+        },
+        onMutate: ({ id, isActive }) => {
+            // Optimistic flip so the switch responds instantly.
+            queryClient.setQueryData<PortfolioService[]>(['/api/admin/portfolio-services'], (old) =>
+                old?.map((s) => (s.id === id ? { ...s, isActive } : s)) ?? []
+            );
+        },
+        onSuccess: (updated) => {
+            queryClient.setQueryData<PortfolioService[]>(['/api/admin/portfolio-services'], (old) =>
+                old?.map((s) => (s.id === updated.id ? updated : s)) ?? [updated]
+            );
+            // Public portfolio page filters to active-only; refetch it so the change shows there too.
+            queryClient.invalidateQueries({ queryKey: ['/api/portfolio-services'] });
+            toast({ title: updated.isActive ? 'Service activated' : 'Service deactivated' });
+        },
+        onError: (error: Error) => {
+            queryClient.refetchQueries({ queryKey: ['/api/admin/portfolio-services'] });
+            toast({ title: 'Failed to update status', description: error.message, variant: 'destructive' });
+        }
+    });
+
     const deleteService = useMutation({
         mutationFn: async (id: number) => {
             await apiRequest('DELETE', `/api/portfolio-services/${id}`);
             return id;
         },
         onSuccess: (deletedId) => {
-            queryClient.setQueryData<PortfolioService[]>(['/api/portfolio-services'], (old) =>
+            queryClient.setQueryData<PortfolioService[]>(['/api/admin/portfolio-services'], (old) =>
                 old?.filter((s) => s.id !== deletedId) ?? []
             );
             toast({ title: 'Service deleted successfully' });
@@ -95,7 +123,7 @@ export function PortfolioSection() {
             return apiRequest('POST', '/api/portfolio-services/seed', {});
         },
         onSuccess: () => {
-            queryClient.refetchQueries({ queryKey: ['/api/portfolio-services'] });
+            queryClient.refetchQueries({ queryKey: ['/api/admin/portfolio-services'] });
             toast({ title: 'Default services seeded successfully!' });
         },
         onError: (error: Error) => {
@@ -108,7 +136,7 @@ export function PortfolioSection() {
             return apiRequest('PUT', '/api/portfolio-services/reorder', { orders });
         },
         onSuccess: () => {
-            queryClient.refetchQueries({ queryKey: ['/api/portfolio-services'] });
+            queryClient.refetchQueries({ queryKey: ['/api/admin/portfolio-services'] });
             toast({ title: 'Order updated successfully' });
         },
         onError: (error: Error) => {
@@ -121,7 +149,7 @@ export function PortfolioSection() {
         if (!over || active.id === over.id) return;
 
         const sortedServices = [...(services || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-        // DnD Kit may return IDs as strings — coerce both sides to number
+        // DnD Kit may return IDs as strings; coerce both sides to number.
         const oldIndex = sortedServices.findIndex(s => s.id === Number(active.id));
         const newIndex = sortedServices.findIndex(s => s.id === Number(over.id));
 
@@ -151,38 +179,52 @@ export function PortfolioSection() {
     return (
         <div className="space-y-6">
             <SectionHeader
-            title="Portfolio"
-            description="Services shown on the portfolio page"
-            icon={<Image className="w-5 h-5" />}
-            action={
-                <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingService(null); }}>
-                    <DialogTrigger asChild>
-                        <Button size="sm" onClick={handleCreate} data-testid="button-add-service">
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add Service
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent
-                        className="max-w-3xl max-h-[90vh] overflow-hidden p-0 [&>button:last-child]:hidden"
-                        onCloseAutoFocus={(e) => e.preventDefault()}
-                    >
-                        <PortfolioServiceForm
-                            key={editingService?.id ?? 'new'}
-                            service={editingService}
-                            onSubmit={(data) => {
-                                if (editingService) {
-                                    updateService.mutate({ id: editingService.id, service: data });
-                                } else {
-                                    createService.mutate(data as InsertPortfolioService);
-                                }
-                            }}
-                            isLoading={createService.isPending || updateService.isPending}
-                            nextOrder={services?.length || 0}
-                        />
-                    </DialogContent>
-                </Dialog>
-            }
-        />
+                title="Portfolio"
+                description="Services shown on the portfolio page"
+                icon={<Image className="w-5 h-5" />}
+                action={
+                    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                        <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+                            <DialogTrigger asChild>
+                                <Button size="sm" type="button" data-testid="button-portfolio-settings">
+                                    <Settings className="w-4 h-4 mr-2" />
+                                    Settings
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto p-0">
+                                <PortfolioHeroSettings />
+                            </DialogContent>
+                        </Dialog>
+
+                        <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingService(null); }}>
+                            <DialogTrigger asChild>
+                                <Button size="sm" onClick={handleCreate} data-testid="button-add-service">
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Add Service
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent
+                                className="max-w-3xl max-h-[90vh] overflow-hidden p-0 [&>button:last-child]:hidden"
+                                onCloseAutoFocus={(e) => e.preventDefault()}
+                            >
+                                <PortfolioServiceForm
+                                    key={editingService?.id ?? 'new'}
+                                    service={editingService}
+                                    onSubmit={(data) => {
+                                        if (editingService) {
+                                            updateService.mutate({ id: editingService.id, service: data });
+                                        } else {
+                                            createService.mutate(data as InsertPortfolioService);
+                                        }
+                                    }}
+                                    isLoading={createService.isPending || updateService.isPending}
+                                    nextOrder={services?.length || 0}
+                                />
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+                }
+            />
 
             {services?.length === 0 ? (
                 <EmptyState
@@ -214,6 +256,7 @@ export function PortfolioSection() {
                                     service={service}
                                     onEdit={handleEdit}
                                     onDelete={(id) => deleteService.mutate(id)}
+                                    onToggleActive={(id, isActive) => toggleActive.mutate({ id, isActive })}
                                 />
                             ))}
                         </div>

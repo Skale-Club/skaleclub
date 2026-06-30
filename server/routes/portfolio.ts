@@ -16,6 +16,18 @@ export function registerPortfolioRoutes(app: Express) {
     }
   });
 
+  // Admin-only: returns ALL services including inactive ones, so the admin can
+  // see and re-enable services that are toggled off (the public endpoint above
+  // filters to active-only).
+  app.get("/api/admin/portfolio-services", requireAdmin, async (_req, res) => {
+    try {
+      const services = await storage.getPortfolioServices(true);
+      res.json(services);
+    } catch (err) {
+      res.status(500).json({ message: (err as Error).message });
+    }
+  });
+
   app.get("/api/portfolio-services/:idOrSlug", async (req, res) => {
     try {
       const { idOrSlug } = req.params;

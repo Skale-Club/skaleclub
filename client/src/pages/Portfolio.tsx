@@ -10,6 +10,7 @@ import { LeadFormModal } from "@/components/LeadFormModal";
 import { PortfolioCard } from "@/components/PortfolioCard";
 import { ServiceDetailModal } from "@/components/portfolio/ServiceDetailModal";
 import { Loader2 } from '@/components/ui/loader';
+import { getImageUrl } from "@/components/admin/shared/utils";
 
 export default function Portfolio() {
     const { t } = useTranslation();
@@ -22,6 +23,8 @@ export default function Portfolio() {
         staleTime: 0,
         refetchOnMount: true,
     });
+
+    const portfolioHero = companySettings?.homepageContent?.portfolioHero;
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -59,13 +62,30 @@ export default function Portfolio() {
 
     return (
         <>
-            <section className="relative pt-28 pb-12 flex flex-col items-center justify-center text-center px-6 bg-gradient-to-br from-[#050810] via-[#080c14] to-[#050810]">
-                <div className="relative z-10 max-w-5xl mx-auto">
+            <section className="relative pt-40 pb-40 flex flex-col items-center justify-center text-center px-6 bg-gradient-to-br from-[#050810] via-[#080c14] to-[#050810]">
+                {portfolioHero?.backgroundImage && (
+                    <>
+                        <div
+                            aria-hidden="true"
+                            className="absolute inset-0 z-0 bg-cover bg-center pointer-events-none"
+                            style={{ backgroundImage: `url(${getImageUrl(portfolioHero.backgroundImage, { width: 1920, quality: 80 })})` }}
+                        />
+                        {/* Darkening layers: vertical gradient (blends into the dark section below)
+                            + radial vignette for a soft drop-shadow so the image isn't too bright */}
+                        <div aria-hidden="true" className="absolute inset-0 z-0 pointer-events-none bg-gradient-to-b from-black/50 via-black/40 to-black/85" />
+                        <div
+                            aria-hidden="true"
+                            className="absolute inset-0 z-0 pointer-events-none"
+                            style={{ background: 'radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.55) 100%)' }}
+                        />
+                    </>
+                )}
+                <div className="relative z-10 max-w-5xl mx-auto -translate-y-[30px]">
                     <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-full mb-8 inline-flex items-center gap-2 border border-white/20">
-                        <span className="text-white font-medium uppercase tracking-wider text-xs md:text-sm">{t("Our Services")}</span>
+                        <span className="text-white font-medium uppercase tracking-wider text-xs md:text-sm">{t(portfolioHero?.badge || "Our Services")}</span>
                     </div>
                     <h1 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
-                        {t(companySettings?.heroTitle || "Scale Your Business")}
+                        {t(portfolioHero?.title || companySettings?.heroTitle || "Scale Your Business")}
                     </h1>
                 </div>
             </section>
@@ -78,6 +98,7 @@ export default function Portfolio() {
                                 key={service.id}
                                 service={service}
                                 onClick={() => openServiceModal(service)}
+                                className="!border-[rgba(64,110,241,0.25)] hover:!border-[rgba(64,110,241,0.5)]"
                             />
                         ))}
                     </div>

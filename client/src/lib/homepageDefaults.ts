@@ -67,4 +67,9 @@ export const DEFAULT_HOMEPAGE_CONTENT: HomepageContent = {
     nextStepLabel: '',
     nextStepText: '',
   },
+  portfolioHero: {
+    badge: 'Our Services',
+    title: '',
+    backgroundImage: '',
+  },
 };

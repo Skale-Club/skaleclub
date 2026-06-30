@@ -42,7 +42,7 @@ export function OurServicesTab({ homepageContent, updateHomepageContent }: OurSe
   };
 
   const addCard = () => {
-    mutateCards(cs => [...cs, { order: cs.length, title: 'New Service', subtitle: '', description: '', features: [], imageUrl: '' }]);
+    mutateCards(cs => [...cs, { order: cs.length, enabled: true, title: 'New Service', subtitle: '', description: '', features: [], imageUrl: '' }]);
     setEditingIndex(cards.length); // open the newly appended card
   };
   const deleteCard = (idx: number) => mutateCards(cs => cs.filter((_, i) => i !== idx));
@@ -137,6 +137,12 @@ export function OurServicesTab({ homepageContent, updateHomepageContent }: OurSe
             </div>
 
             {/* Actions */}
+            <Switch
+              checked={card.enabled !== false}
+              onCheckedChange={(checked) => patchCard(idx, { enabled: checked })}
+              aria-label={card.enabled !== false ? 'Hide card' : 'Show card'}
+              className="mr-1 shrink-0"
+            />
             <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingIndex(idx)} aria-label="Edit card">
               <Pencil className="w-3.5 h-3.5" />
             </Button>

@@ -18,7 +18,10 @@ export function OurServicesSection({ section }: { section?: OurServicesSectionDa
   const [selected, setSelected] = useState<OurServicesCard | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
-  const cards = (section?.cards || []).slice().sort((a, b) => (a.order || 0) - (b.order || 0));
+  const cards = (section?.cards || [])
+    .filter((c) => c.enabled !== false)
+    .slice()
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
   if (!section?.enabled || cards.length === 0) return null;
 
   const openCard = (card: OurServicesCard) => {

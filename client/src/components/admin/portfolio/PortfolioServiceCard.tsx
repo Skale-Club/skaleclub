@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { getImageUrl } from '../shared/utils';
@@ -21,9 +22,10 @@ type PortfolioServiceCardProps = {
     service: PortfolioService;
     onEdit: (service: PortfolioService) => void;
     onDelete: (id: number) => void;
+    onToggleActive: (id: number, isActive: boolean) => void;
 };
 
-export function PortfolioServiceCard({ service, onEdit, onDelete }: PortfolioServiceCardProps) {
+export function PortfolioServiceCard({ service, onEdit, onDelete, onToggleActive }: PortfolioServiceCardProps) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: service.id,
         transition: { duration: 200, easing: 'cubic-bezier(0.25, 1, 0.5, 1)' },
@@ -96,6 +98,12 @@ export function PortfolioServiceCard({ service, onEdit, onDelete }: PortfolioSer
 
             {/* Actions */}
             <div className="flex items-center gap-1 shrink-0">
+                <Switch
+                    checked={service.isActive ?? true}
+                    onCheckedChange={(checked) => onToggleActive(service.id, checked)}
+                    aria-label={service.isActive ? 'Deactivate service' : 'Activate service'}
+                    className="mr-1"
+                />
                 <Button
                     variant="ghost"
                     size="icon"

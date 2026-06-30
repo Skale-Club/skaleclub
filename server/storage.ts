@@ -331,7 +331,7 @@ export interface IStorage {
   listHubRegistrationSummaries(liveId: number): Promise<HubRegistrationSummary[]>;
 
   // Portfolio Services
-  getPortfolioServices(): Promise<PortfolioService[]>;
+  getPortfolioServices(includeInactive?: boolean): Promise<PortfolioService[]>;
   getPortfolioService(id: number): Promise<PortfolioService | undefined>;
   getPortfolioServiceBySlug(slug: string): Promise<PortfolioService | undefined>;
   createPortfolioService(service: InsertPortfolioService): Promise<PortfolioService>;
@@ -1932,7 +1932,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Portfolio Services
-  async getPortfolioServices(): Promise<PortfolioService[]> {
+  async getPortfolioServices(includeInactive = false): Promise<PortfolioService[]> {
+    if (includeInactive) {
+      return await db.select().from(portfolioServices).orderBy(asc(portfolioServices.order));
+    }
     return await db.select().from(portfolioServices).where(eq(portfolioServices.isActive, true)).orderBy(asc(portfolioServices.order));
   }
 

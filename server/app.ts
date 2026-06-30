@@ -46,8 +46,10 @@ export async function createApp(): Promise<{ app: express.Express; httpServer: S
   const jsonLarge = express.json({ limit: '25mb', verify: captureRawBody });
 
   // Admin-only routes that accept large base64 bodies.
+  // Matches the base64 image endpoints (/api/upload, /api/upload-local,
+  // /api/uploads/*, /api/update-favicon) plus presentation/estimate media.
   const LARGE_BODY_RE =
-    /^\/api\/(uploads(\/|$)|presentations\/(transcribe|upload-image)|presentations\/[^/]+\/thumbnail|estimates\/[^/]+\/thumbnail)/;
+    /^\/api\/(upload(s|-local)?(\/|$)|update-favicon(\/|$)|presentations\/(transcribe|upload-image)|presentations\/[^/]+\/thumbnail|estimates\/[^/]+\/thumbnail)/;
 
   app.use((req, res, next) => {
     if (LARGE_BODY_RE.test(req.path)) return jsonLarge(req, res, next);
