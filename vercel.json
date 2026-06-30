@@ -145,6 +145,14 @@
       "destination": "/api/index"
     },
     {
+      "source": "/admin",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin/(.*)",
+      "destination": "/index.html"
+    },
+    {
       "source": "/([a-z0-9][a-z0-9-]*)",
       "destination": "/api/index"
     },

@@ -1,5 +1,5 @@
-const APP_CACHE = "skaleclub-app-v3";
-const RUNTIME_CACHE = "skaleclub-runtime-v1";
+const APP_CACHE = "skaleclub-app-v4";
+const RUNTIME_CACHE = "skaleclub-runtime-v2";
 const APP_SHELL = [
   "/",
   "/login",

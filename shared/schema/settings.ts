@@ -299,6 +299,22 @@ export interface HorizontalScrollSection {
   nextStepText?: string;
 }
 
+export interface OurServicesCard {
+  order: number;
+  imageUrl?: string;
+  title: string;
+  subtitle?: string;
+  description?: string;
+  features?: string[];
+}
+
+export interface OurServicesSection {
+  enabled?: boolean;
+  title?: string;
+  subtitle?: string;
+  cards?: OurServicesCard[];
+}
+
 export interface HomepageContent {
   heroBadgeImageUrl?: string;
   heroBadgeAlt?: string;
@@ -316,6 +332,7 @@ export interface HomepageContent {
   areasServedSection?: { label?: string; heading?: string; description?: string; ctaText?: string };
   horizontalScrollSection?: HorizontalScrollSection;
   consultingStepsSection?: ConsultingStepsSection;
+  ourServicesSection?: OurServicesSection;
 }
 
 // Derive TS types from the Zod schemas using `z.input` so pre-Phase-12 client code

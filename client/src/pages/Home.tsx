@@ -10,6 +10,7 @@ import { ServicesSection } from "@/components/home/ServicesSection";
 import { TrustBadges } from "@/components/home/TrustBadges";
 import { ReviewsSection } from "@/components/home/ReviewsSection";
 import { BlogSection } from "@/components/home/BlogSection";
+import { OurServicesSection } from "@/components/home/OurServicesSection";
 import { DEFAULT_HOMEPAGE_CONTENT } from "@/lib/homepageDefaults";
 
 export default function Home() {
@@ -97,6 +98,7 @@ export default function Home() {
           content={homepageContent.aboutSection}
         />
       </section>
+      <OurServicesSection section={homepageContent.ourServicesSection} />
       {(companySettings?.mapEmbedUrl || areasServedSection?.heading || areasServedSection?.description) && (
         <section id="areas-served" className="bg-white py-20">
           <AreasServedMap

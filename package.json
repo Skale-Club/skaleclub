@@ -107,6 +107,7 @@
     "rss-parser": "^3.13.0",
     "run-deepseek-cli": "^0.1.1",
     "sanitize-html": "^2.17.4",
+    "sharp": "^0.34.5",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.183.2",
