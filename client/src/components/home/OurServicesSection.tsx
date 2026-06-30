@@ -27,38 +27,45 @@ export function OurServicesSection({ section }: { section?: OurServicesSectionDa
   };
 
   return (
-    <section id="our-services" className="bg-[#111111] text-white overflow-hidden py-16 md:py-20">
-      <div className="container-custom mx-auto mb-10 md:mb-14 text-center px-4">
-        <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white">{t(section.title || 'Our Services')}</h2>
-        {section.subtitle && (
-          <p className="text-slate-300 max-w-2xl mx-auto text-lg">{t(section.subtitle)}</p>
-        )}
-      </div>
-
-      <ServicesCarousel
-        items={cards}
-        paused={isOpen}
-        ariaLabel="Our services carousel"
-        renderItem={(card, idx) => (
-          <div
-            key={`our-service-${idx}`}
-            className="flex-shrink-0 w-full sm:w-[70%] md:w-[52%] lg:w-[36%] xl:w-[30%]"
-          >
-            <PortfolioCard
-              service={{
-                id: idx,
-                title: card.title,
-                subtitle: card.subtitle ?? '',
-                imageUrl: card.imageUrl ?? null,
-                logoIconUrl: null,
-                features: card.features ?? [],
-              } as unknown as PortfolioService}
-              variant="dark"
-              onClick={() => openCard(card)}
-            />
+    <section id="our-services" className="bg-[#111111] text-white overflow-hidden pt-16 md:pt-20 pb-12 md:pb-16">
+      <div className="space-y-6 md:space-y-8">
+        {/* Header — mirrors ServicesHeader spacing + type sizes (dark variant) */}
+        <div className="container-custom mx-auto px-4 sm:px-6 md:px-10">
+          <div className="max-w-4xl space-y-3">
+            <h2 className="text-3xl md:text-4xl font-bold leading-tight text-white">
+              {t(section.title || 'Our Services')}
+            </h2>
+            {section.subtitle && (
+              <p className="text-lg md:text-xl leading-relaxed text-slate-300">{t(section.subtitle)}</p>
+            )}
           </div>
-        )}
-      />
+        </div>
+
+        <ServicesCarousel
+          items={cards}
+          paused={isOpen}
+          ariaLabel="Our services carousel"
+          renderItem={(card, idx) => (
+            <div
+              key={`our-service-${idx}`}
+              className="flex-shrink-0 w-full sm:w-[70%] md:w-[52%] lg:w-[36%] xl:w-[30%]"
+            >
+              <PortfolioCard
+                service={{
+                  id: idx,
+                  title: card.title,
+                  subtitle: card.subtitle ?? '',
+                  imageUrl: card.imageUrl ?? null,
+                  logoIconUrl: null,
+                  features: card.features ?? [],
+                } as unknown as PortfolioService}
+                variant="dark"
+                onClick={() => openCard(card)}
+              />
+            </div>
+          )}
+        />
+      </div>
 
       <OurServiceDetailModal card={selected} isOpen={isOpen} onClose={() => setIsOpen(false)} />
     </section>
