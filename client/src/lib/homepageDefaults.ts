@@ -42,6 +42,12 @@ export const DEFAULT_HOMEPAGE_CONTENT: HomepageContent = {
     subtitle: '',
     cards: [],
   },
+  ourServicesSection: {
+    enabled: false,
+    title: 'Our Services',
+    subtitle: '',
+    cards: [],
+  },
   consultingStepsSection: {
     enabled: false,
     sectionId: '',

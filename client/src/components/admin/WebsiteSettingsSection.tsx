@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   BadgeCheck,
+  Briefcase,
   Image,
   LayoutGrid,
   List,
@@ -19,14 +20,16 @@ import { HeroTab } from './website/HeroTab';
 import { TrustBadgesTab } from './website/TrustBadgesTab';
 import { SectionsTab } from './website/SectionsTab';
 import { ConsultingTab } from './website/ConsultingTab';
+import { OurServicesTab } from './website/OurServicesTab';
 
-type WebsiteTab = 'hero' | 'trust' | 'sections' | 'consulting';
+type WebsiteTab = 'hero' | 'trust' | 'sections' | 'consulting' | 'ourservices';
 
 const WEBSITE_TABS: { id: WebsiteTab; label: string; icon: typeof Image }[] = [
   { id: 'hero', label: 'Hero', icon: Image },
   { id: 'trust', label: 'Badges', icon: BadgeCheck },
   { id: 'sections', label: 'Sections', icon: LayoutGrid },
   { id: 'consulting', label: 'Services', icon: List },
+  { id: 'ourservices', label: 'Our Services', icon: Briefcase },
 ];
 
 const HERO_DEFAULTS = {
@@ -237,6 +240,13 @@ export function WebsiteSettingsSection() {
             homepageContent={homepageContent}
             updateHomepageContent={updateHomepageContent}
             SavedIndicator={SavedIndicator}
+          />
+        )}
+
+        {activeTab === 'ourservices' && (
+          <OurServicesTab
+            homepageContent={homepageContent}
+            updateHomepageContent={updateHomepageContent}
           />
         )}
       </SubSidebarLayout>
