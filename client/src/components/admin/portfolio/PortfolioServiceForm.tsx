@@ -40,9 +40,13 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
         accentColor: service?.accentColor || '#406EF1',
         order: service?.order ?? nextOrder,
         isActive: service?.isActive ?? true,
+        popupBgImageUrl: service?.popupBgImageUrl || '',
+        popupSliderImages: (service?.popupSliderImages as string[]) || [],
+        popupUrls: (service?.popupUrls as string[]) || [],
     });
 
     const [featureInput, setFeatureInput] = useState('');
+    const [urlInput, setUrlInput] = useState('');
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -50,7 +54,7 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
         if (toolUrl && !/^https?:\/\//i.test(toolUrl)) {
             toolUrl = `https://${toolUrl}`;
         }
-        onSubmit({ ...formData, toolUrl: toolUrl || null });
+        onSubmit({ ...formData, toolUrl: toolUrl || null, popupBgImageUrl: formData.popupBgImageUrl || null });
     };
 
     const addFeature = () => {
@@ -463,6 +467,193 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
                         </div>
                     </div>
 
+                </div>
+
+                <div className="border-t" />
+
+                {/* Section: Popup Background Image */}
+                <div className="space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Popup — Imagem de Fundo</p>
+                    <p className="text-xs text-muted-foreground">Aparece atrás do card escuro com overlay roxo nas bordas do popup.</p>
+                    {formData.popupBgImageUrl ? (
+                        <div className="relative rounded-lg overflow-hidden border" style={{ aspectRatio: '16/7' }}>
+                            <img
+                                src={getOriginalImageUrl(formData.popupBgImageUrl)}
+                                alt="Popup background"
+                                className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-[#6f12e1aa] pointer-events-none" />
+                            <div className="absolute top-2 right-2 flex gap-2">
+                                <label className="cursor-pointer px-3 py-1.5 bg-black/60 hover:bg-black/80 text-white text-xs rounded-md transition-colors">
+                                    Trocar
+                                    <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                            try {
+                                                const path = await uploadFileToServer(file);
+                                                setFormData(prev => ({ ...prev, popupBgImageUrl: path }));
+                                                toast({ title: 'Imagem de fundo enviada' });
+                                            } catch (err: any) {
+                                                toast({ title: 'Upload falhou', description: err.message, variant: 'destructive' });
+                                            }
+                                        }
+                                    }} />
+                                </label>
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData(prev => ({ ...prev, popupBgImageUrl: '' }))}
+                                    className="px-2 py-1.5 bg-black/60 hover:bg-red-500/80 text-white rounded-md transition-colors"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <label className="flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors" style={{ aspectRatio: '16/7' }}>
+                            <Image className="w-8 h-8 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground mt-2">Clique para enviar imagem de fundo</span>
+                            <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                    try {
+                                        const path = await uploadFileToServer(file);
+                                        setFormData(prev => ({ ...prev, popupBgImageUrl: path }));
+                                        toast({ title: 'Imagem de fundo enviada' });
+                                    } catch (err: any) {
+                                        toast({ title: 'Upload falhou', description: err.message, variant: 'destructive' });
+                                    }
+                                }
+                            }} />
+                        </label>
+                    )}
+                </div>
+
+                <div className="border-t" />
+
+                {/* Section: Laptop Slider Images */}
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Popup — Screenshots do Laptop</p>
+                        <span className="text-xs text-muted-foreground">{(formData.popupSliderImages as string[])?.length || 0} imagem(ns)</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Imagens que passam como slides dentro da tela do laptop no popup.</p>
+
+                    {/* Existing slides */}
+                    {(formData.popupSliderImages as string[])?.length > 0 && (
+                        <div className="grid grid-cols-3 gap-2">
+                            {(formData.popupSliderImages as string[]).map((src, idx) => (
+                                <div key={idx} className="relative rounded-lg overflow-hidden border" style={{ aspectRatio: '16/10' }}>
+                                    <img
+                                        src={getOriginalImageUrl(src)}
+                                        alt={`Slide ${idx + 1}`}
+                                        className="w-full h-full object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-black/0 hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData(prev => ({
+                                                ...prev,
+                                                popupSliderImages: (prev.popupSliderImages as string[]).filter((_, i) => i !== idx)
+                                            }))}
+                                            className="p-1.5 bg-red-500/80 text-white rounded-full"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                    <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">{idx + 1}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Add slide */}
+                    <label className="flex items-center gap-2 px-4 py-3 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                        <Image className="w-5 h-5 text-muted-foreground shrink-0" />
+                        <span className="text-sm text-muted-foreground">Adicionar screenshot...</span>
+                        <input type="file" className="hidden" accept="image/*" multiple onChange={async (e) => {
+                            const files = Array.from(e.target.files || []);
+                            if (!files.length) return;
+                            try {
+                                const paths = await Promise.all(files.map(f => uploadFileToServer(f)));
+                                setFormData(prev => ({
+                                    ...prev,
+                                    popupSliderImages: [...((prev.popupSliderImages as string[]) || []), ...paths]
+                                }));
+                                toast({ title: `${paths.length} imagem(ns) adicionada(s)` });
+                            } catch (err: any) {
+                                toast({ title: 'Upload falhou', description: err.message, variant: 'destructive' });
+                            }
+                        }} />
+                    </label>
+                </div>
+
+                <div className="border-t" />
+
+                {/* Section: Popup URLs */}
+                <div className="space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Popup — URLs / Links</p>
+                    <p className="text-xs text-muted-foreground">Lista de URLs que aparece no canto inferior esquerdo do popup.</p>
+                    {(formData.popupUrls as string[])?.length > 0 && (
+                        <div className="space-y-2">
+                            {(formData.popupUrls as string[]).map((url, idx) => (
+                                <div key={idx} className="flex items-center gap-2">
+                                    <Input
+                                        value={url}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            setFormData(prev => {
+                                                const updated = [...((prev.popupUrls as string[]) || [])];
+                                                updated[idx] = value;
+                                                return { ...prev, popupUrls: updated };
+                                            });
+                                        }}
+                                        placeholder="exemplo.com"
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="shrink-0 text-red-500"
+                                        onClick={() => setFormData(prev => ({
+                                            ...prev,
+                                            popupUrls: (prev.popupUrls as string[]).filter((_, i) => i !== idx)
+                                        }))}
+                                        aria-label="Remover URL"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    <div className="flex gap-2">
+                        <Input
+                            value={urlInput}
+                            onChange={(e) => setUrlInput(e.target.value)}
+                            placeholder="Adicionar URL..."
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    if (urlInput.trim()) {
+                                        setFormData(prev => ({ ...prev, popupUrls: [...((prev.popupUrls as string[]) || []), urlInput.trim()] }));
+                                        setUrlInput('');
+                                    }
+                                }
+                            }}
+                        />
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => {
+                                if (urlInput.trim()) {
+                                    setFormData(prev => ({ ...prev, popupUrls: [...((prev.popupUrls as string[]) || []), urlInput.trim()] }));
+                                    setUrlInput('');
+                                }
+                            }}
+                        >
+                            Add
+                        </Button>
+                    </div>
                 </div>
 
             </div>

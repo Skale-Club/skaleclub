@@ -1,17 +1,9 @@
-import { useEffect, useState } from "react";
-import { ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, ExternalLink, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, ExternalLink, X } from "lucide-react";
 import type { PortfolioService } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
-import { badgeColorMap } from "@/components/PortfolioCard";
 import { getOriginalImageUrl } from "@/components/admin/shared/utils";
-
-const checkColorMap: Record<string, string> = {
-  blue: "text-blue-400",
-  purple: "text-purple-400",
-  green: "text-green-400",
-  orange: "text-orange-400",
-  red: "text-red-400",
-};
+import { LaptopMockup } from "./LaptopMockup";
 
 interface ServiceDetailModalProps {
   service: PortfolioService;
@@ -24,41 +16,80 @@ interface ServiceDetailModalProps {
 
 export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, onNext }: ServiceDetailModalProps) {
   const { t } = useTranslation();
-  const [imageAspectRatio, setImageAspectRatio] = useState("16 / 9");
-  const checkColor = checkColorMap[service.accentColor || 'blue'] || checkColorMap.blue;
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const sliderImages: string[] = (service.popupSliderImages as string[]) || [];
+  const popupUrls: string[] = (service.popupUrls as string[]) || [];
+  const features: string[] = (service.features as string[]) || [];
+
+  // Reset slide when service changes
+  useEffect(() => {
+    setCurrentSlide(0);
+  }, [service.id]);
+
+  // Auto-advance slider
+  useEffect(() => {
+    if (!isOpen || sliderImages.length <= 1 || isPaused) return;
+    intervalRef.current = setInterval(() => {
+      setCurrentSlide(prev => (prev + 1) % sliderImages.length);
+    }, 3000);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [isOpen, sliderImages.length, isPaused]);
+
+  // Keyboard navigation
   useEffect(() => {
     if (!isOpen) return;
     const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
 
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-      else if (e.key === 'ArrowLeft' && onPrev) onPrev();
-      else if (e.key === 'ArrowRight' && onNext) onNext();
+      if (e.key === "Escape") onClose();
+      else if (e.key === "ArrowLeft" && onPrev) onPrev();
+      else if (e.key === "ArrowRight" && onNext) onNext();
     };
-    window.addEventListener('keydown', handleKey);
+    window.addEventListener("keydown", handleKey);
     return () => {
       document.body.style.overflow = originalOverflow;
-      window.removeEventListener('keydown', handleKey);
+      window.removeEventListener("keydown", handleKey);
     };
   }, [isOpen, onClose, onPrev, onNext]);
 
   if (!isOpen) return null;
 
+  const bgImage = service.popupBgImageUrl
+    ? getOriginalImageUrl(service.popupBgImageUrl)
+    : null;
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+      className="fixed inset-0 z-50 relative flex min-h-full items-start md:items-center justify-center p-4 md:p-8 overflow-y-auto"
       onClick={onClose}
     >
+      {/* Background: image + purple overlay */}
+      {bgImage && (
+        <img
+          src={bgImage}
+          alt=""
+          aria-hidden="true"
+          className="fixed inset-0 w-full h-full object-cover"
+        />
+      )}
+      <div className="fixed inset-0 bg-[#6f12e1cc]" />
+
+      {/* Close */}
       <button
-        onClick={onClose}
+        onClick={(e) => { e.stopPropagation(); onClose(); }}
         className="fixed top-4 right-4 z-[60] p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
         aria-label="Close"
       >
         <X className="w-6 h-6" />
       </button>
 
+      {/* Prev service */}
       {onPrev && (
         <button
           onClick={(e) => { e.stopPropagation(); onPrev(); }}
@@ -69,6 +100,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
         </button>
       )}
 
+      {/* Next service */}
       {onNext && (
         <button
           onClick={(e) => { e.stopPropagation(); onNext(); }}
@@ -79,96 +111,159 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
         </button>
       )}
 
+      {/* Main card */}
       <div
-        className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl bg-gradient-to-br from-[#0a0f18] to-[#0d1320]"
+        className="relative z-10 w-full max-w-5xl my-4 md:my-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-8 md:p-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-              <div className="flex items-center gap-3 mb-1 flex-wrap">
-                <h2 className="text-3xl md:text-4xl font-bold text-white">
-                  {t(service.title)}
-                </h2>
-                {service.toolUrl && (
-                  <a
-                    href={service.toolUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-sm text-blue-300 hover:text-blue-200 bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full transition-colors"
-                    title="Open tool in new tab"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    Open tool
-                  </a>
-                )}
-              </div>
-              <p className="text-lg text-purple-100 mb-6">
-                {t(service.subtitle)}
-              </p>
-              {service.imageUrl && (
-                <div
-                  className="w-full rounded-2xl shadow-xl overflow-hidden mb-6 bg-[radial-gradient(circle_at_top,_rgba(64,110,241,0.16),_rgba(15,23,42,0.94)_70%)] border border-white/10"
-                  style={{ aspectRatio: imageAspectRatio }}
-                >
-                  <img
-                    src={getOriginalImageUrl(service.imageUrl)}
-                    alt={service.title}
-                    loading="eager"
-                    decoding="async"
-                    onLoad={(e) => {
-                      const { naturalWidth, naturalHeight } = e.currentTarget;
-                      if (naturalWidth > 0 && naturalHeight > 0) {
-                        setImageAspectRatio(`${naturalWidth} / ${naturalHeight}`);
-                      }
-                    }}
-                    className="w-full h-full object-cover object-center"
-                    style={{ imageRendering: 'auto', transform: 'translateZ(0)', WebkitBackfaceVisibility: 'hidden' }}
-                  />
-                </div>
-              )}
-              <p className="text-white/90 leading-relaxed">
-                {t(service.description)}
-              </p>
-            </div>
+        <div className="bg-[#070b13] rounded-[39px] border border-[#524eae60] overflow-hidden">
+          <div className="p-8 md:p-12">
 
-            <div className="flex flex-col">
-              <div className="relative bg-gradient-to-br from-white/[0.08] to-white/[0.02] backdrop-blur-sm rounded-2xl p-7 mb-6 flex-1 overflow-hidden">
-                <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
+            {/* Top divider line */}
+            <div className="w-full h-px bg-white/20 mb-8" />
 
-                <div className="relative mb-6 flex items-start justify-between gap-4">
-                  <div className="flex items-baseline gap-1.5 text-white">
-                    <span className="text-5xl font-extrabold tracking-tight">{service.price}</span>
-                    <span className="text-sm text-white/50 font-medium uppercase tracking-wider">{t(service.priceLabel)}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+
+              {/* LEFT COLUMN */}
+              <div className="flex flex-col gap-5">
+
+                {/* Logo + Title */}
+                <div className="flex items-center gap-4">
+                  {service.logoIconUrl && (
+                    <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-white/10 flex items-center justify-center">
+                      <img
+                        src={getOriginalImageUrl(service.logoIconUrl)}
+                        alt={service.title}
+                        className="w-full h-full object-contain p-1"
+                      />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h2 className="text-3xl md:text-4xl font-bold text-white leading-tight">
+                      {t(service.title)}
+                    </h2>
+                    {service.toolUrl && (
+                      <a
+                        href={service.toolUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-sm text-purple-200 hover:text-white bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full transition-colors"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        Open tool
+                      </a>
+                    )}
                   </div>
-                  <span className="shrink-0 bg-blue-700 text-white text-xs font-bold px-3 py-1 rounded-full">
-                    {t(service.badgeText)}
+                </div>
+
+                {/* Feature pill badges */}
+                {features.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {features.map((f, i) => (
+                      <span
+                        key={i}
+                        className="px-4 py-1.5 rounded-full text-sm font-semibold"
+                        style={{ backgroundColor: "#d4b9f6", color: "#6f12e1" }}
+                      >
+                        {t(f)}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Price */}
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-5xl font-extrabold text-white tracking-tight">
+                    {service.price}
+                  </span>
+                  <span className="text-lg text-white/50 font-medium">
+                    {t(service.priceLabel)}
                   </span>
                 </div>
 
-                <div className="flex items-center gap-3 mb-5">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-white/40">
-                    {t("What's included")}
-                  </span>
-                  <div className="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent" />
-                </div>
+                {/* URL list */}
+                {popupUrls.length > 0 && (
+                  <div className="flex flex-col gap-1 mt-1">
+                    {popupUrls.map((url, i) => (
+                      <a
+                        key={i}
+                        href={url.startsWith("http") ? url : `https://${url}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-white/70 font-light hover:text-white transition-colors"
+                      >
+                        {url}
+                      </a>
+                    ))}
+                  </div>
+                )}
 
-                <ul className="space-y-3">
-                  {(service.features || []).map((item, i) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <CheckCircle2 className={`w-5 h-5 ${checkColor} shrink-0 mt-0.5`} />
-                      <span className="text-white/85 text-sm leading-snug">{t(item)}</span>
-                    </li>
-                  ))}
-                </ul>
+                {/* CTA */}
+                <button
+                  onClick={() => onCta(service.slug)}
+                  className="mt-auto w-full md:w-auto px-8 py-3 bg-primary text-white font-bold rounded-full text-base hover:shadow-lg hover:-translate-y-0.5 transition-all"
+                >
+                  {t(service.ctaText)}
+                </button>
               </div>
-              <button
-                onClick={() => onCta(service.slug)}
-                className="w-full px-8 py-4 bg-primary text-white font-bold rounded-full text-lg hover:shadow-lg hover:-translate-y-1 transition-all flex items-center justify-center gap-2"
-              >
-                {t(service.ctaText)}
-                <ArrowRight className="w-5 h-5" />
-              </button>
+
+              {/* RIGHT COLUMN */}
+              <div className="flex flex-col gap-4">
+
+                {/* Description */}
+                {service.description && (
+                  <p className="text-white/70 text-sm leading-relaxed">
+                    {t(service.description)}
+                  </p>
+                )}
+
+                {/* Laptop mockup with slider */}
+                <div
+                  className="relative"
+                  onMouseEnter={() => setIsPaused(true)}
+                  onMouseLeave={() => setIsPaused(false)}
+                >
+                  <LaptopMockup>
+                    {sliderImages.length > 0 ? (
+                      <div className="w-full h-full relative overflow-hidden">
+                        {sliderImages.map((src, i) => (
+                          <img
+                            key={i}
+                            src={getOriginalImageUrl(src)}
+                            alt={`Screenshot ${i + 1}`}
+                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-in-out"
+                            style={{
+                              transform: `translateX(${(i - currentSlide) * 100}%)`,
+                            }}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                        <span className="text-gray-500 text-xs">No screenshots</span>
+                      </div>
+                    )}
+                  </LaptopMockup>
+
+                  {/* Dot indicators */}
+                  {sliderImages.length > 1 && (
+                    <div className="flex justify-center gap-2 mt-3">
+                      {sliderImages.map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setCurrentSlide(i)}
+                          aria-label={`Go to slide ${i + 1}`}
+                          className={`rounded-full transition-all duration-300 ${
+                            i === currentSlide
+                              ? "bg-white w-4 h-2.5"
+                              : "bg-white/30 w-2.5 h-2.5 hover:bg-white/60"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
