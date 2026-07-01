@@ -65,22 +65,11 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
     : null;
 
   return (
-    /* Outer backdrop — fixed, fills viewport, flex-centers the card */
+    /* Dark backdrop — fills viewport, click to close */
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-6 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm overflow-y-auto"
       onClick={onClose}
     >
-      {/* Background layers — absolute so they're contained by the fixed parent */}
-      {bgImage && (
-        <img
-          src={bgImage}
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-        />
-      )}
-      <div className="absolute inset-0 bg-[#6f12e1cc] pointer-events-none" />
-
       {/* Close */}
       <button
         onClick={(e) => { e.stopPropagation(); onClose(); }}
@@ -112,13 +101,28 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
         </button>
       )}
 
-      {/* Main card — relative z-10 sits above absolute backgrounds, max-w-4xl like old modal */}
+      {/* Purple card frame — the purple is ONLY here, like Frame 54 in Figma.
+          Background image fills this area with purple overlay on top.
+          The dark inner card sits inside with a gap so purple shows as border. */}
       <div
-        className="relative z-10 w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+        className="relative w-full max-w-4xl rounded-[32px] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="bg-[#070b13] rounded-[32px] border border-[#524eae60] overflow-hidden">
-          <div className="p-6 md:p-10">
+        {/* Purple background layer (with optional bg image behind it) */}
+        {bgImage && (
+          <img
+            src={bgImage}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        )}
+        <div className="absolute inset-0 bg-[#6f12e1d9]" />
+
+        {/* Dark inner card with margin so purple shows around edges */}
+        <div className="relative z-10 m-5 max-h-[85vh] overflow-y-auto">
+          <div className="bg-[#070b13] rounded-[24px] border border-[#524eae60] overflow-hidden">
+            <div className="p-6 md:p-8">
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
@@ -264,6 +268,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
               </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>
