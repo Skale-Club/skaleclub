@@ -65,25 +65,26 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
     : null;
 
   return (
+    /* Outer backdrop — fixed, fills viewport, flex-centers the card */
     <div
-      className="fixed inset-0 z-50 relative flex min-h-full items-start md:items-center justify-center p-4 md:p-8 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-6 overflow-y-auto"
       onClick={onClose}
     >
-      {/* Background: image + purple overlay */}
+      {/* Background layers — absolute so they're contained by the fixed parent */}
       {bgImage && (
         <img
           src={bgImage}
           alt=""
           aria-hidden="true"
-          className="fixed inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
         />
       )}
-      <div className="fixed inset-0 bg-[#6f12e1cc]" />
+      <div className="absolute inset-0 bg-[#6f12e1cc] pointer-events-none" />
 
       {/* Close */}
       <button
         onClick={(e) => { e.stopPropagation(); onClose(); }}
-        className="fixed top-4 right-4 z-[60] p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+        className="absolute top-4 right-4 z-20 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
         aria-label="Close"
       >
         <X className="w-6 h-6" />
@@ -93,7 +94,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
       {onPrev && (
         <button
           onClick={(e) => { e.stopPropagation(); onPrev(); }}
-          className="fixed left-4 top-1/2 -translate-y-1/2 z-[60] p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
           aria-label="Previous service"
         >
           <ChevronLeft className="w-6 h-6" />
@@ -104,25 +105,22 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
       {onNext && (
         <button
           onClick={(e) => { e.stopPropagation(); onNext(); }}
-          className="fixed right-4 top-1/2 -translate-y-1/2 z-[60] p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
           aria-label="Next service"
         >
           <ChevronRight className="w-6 h-6" />
         </button>
       )}
 
-      {/* Main card */}
+      {/* Main card — relative z-10 sits above absolute backgrounds, max-w-4xl like old modal */}
       <div
-        className="relative z-10 w-full max-w-5xl my-4 md:my-auto"
+        className="relative z-10 w-full max-w-4xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="bg-[#070b13] rounded-[39px] border border-[#524eae60] overflow-hidden">
-          <div className="p-8 md:p-12">
+        <div className="bg-[#070b13] rounded-[32px] border border-[#524eae60] overflow-hidden">
+          <div className="p-6 md:p-10">
 
-            {/* Top divider line */}
-            <div className="w-full h-px bg-white/20 mb-8" />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
               {/* LEFT COLUMN */}
               <div className="flex flex-col gap-5">
@@ -139,7 +137,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
                     </div>
                   )}
                   <div className="flex items-center gap-3 flex-wrap">
-                    <h2 className="text-3xl md:text-4xl font-bold text-white leading-tight">
+                    <h2 className="text-2xl md:text-3xl font-bold text-white leading-tight">
                       {t(service.title)}
                     </h2>
                     {service.toolUrl && (
@@ -173,7 +171,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
 
                 {/* Price */}
                 <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-5xl font-extrabold text-white tracking-tight">
+                  <span className="text-4xl font-extrabold text-white tracking-tight">
                     {service.price}
                   </span>
                   <span className="text-lg text-white/50 font-medium">
