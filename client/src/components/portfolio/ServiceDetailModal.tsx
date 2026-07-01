@@ -101,14 +101,14 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
         </button>
       )}
 
-      {/* Purple card frame — the purple is ONLY here, like Frame 54 in Figma.
-          Background image fills this area with purple overlay on top.
-          The dark inner card sits inside with a gap so purple shows as border. */}
+      {/* Purple card frame — proportions from Frame 54 Figma:
+          inner dark card has ~67px margin on sides, ~32px on top/bottom.
+          Background image fills this purple layer. */}
       <div
-        className="relative w-full max-w-4xl rounded-[32px] overflow-hidden"
+        className="relative w-full max-w-4xl rounded-[32px] overflow-hidden p-6 md:px-14 md:py-7"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Purple background layer (with optional bg image behind it) */}
+        {/* Optional bg image behind the purple */}
         {bgImage && (
           <img
             src={bgImage}
@@ -117,12 +117,16 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
             className="absolute inset-0 w-full h-full object-cover"
           />
         )}
+        {/* Purple overlay */}
         <div className="absolute inset-0 bg-[#6f12e1d9]" />
 
-        {/* Dark inner card with margin so purple shows around edges */}
-        <div className="relative z-10 m-5 max-h-[85vh] overflow-y-auto">
-          <div className="bg-[#070b13] rounded-[24px] border border-[#524eae60] overflow-hidden">
-            <div className="p-6 md:p-8">
+        {/* Dark inner card — radius 39px like Figma Rectangle 2040 */}
+        <div className="relative z-10 max-h-[80vh] overflow-y-auto rounded-[39px]">
+          <div className="bg-[#070b13] rounded-[39px] border border-[#524eae60] overflow-hidden">
+            <div className="p-8 md:p-10">
+
+            {/* Top divider line — as in Frame 54 */}
+            <div className="w-full h-px bg-white/20 mb-7" />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
