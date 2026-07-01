@@ -113,16 +113,17 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
 
         {/* Dark inner card — Rectangle 2040 from Figma */}
         <div className="relative rounded-[39px] bg-[#070b13] border border-[#524eae60] overflow-hidden">
-          <div className="px-10 py-8">
+          <div className="px-20 pt-14 pb-10">
 
-            {/* Divider line — y:104 from card top in Figma */}
+            {/* Divider line — y:104 from card top, content at y:171 in Figma */}
             <div className="w-full h-px bg-white/20 mb-8" />
 
-            {/* Main content — flex row, not grid */}
-            <div className="flex">
+            {/* Main content — flex row, proportions from Figma:
+                left col ~37%, gap ~9%, right col ~54% of content area */}
+            <div className="flex gap-[8%]">
 
-              {/* LEFT COLUMN — flex-1, grows to fill */}
-              <div className="flex-1 min-w-0 pr-8 flex flex-col gap-5">
+              {/* LEFT COLUMN — flex-1 */}
+              <div className="flex-1 min-w-0 flex flex-col gap-5">
 
                 {/* Logo + Title on same row */}
                 <div className="flex items-center gap-4">
@@ -191,8 +192,8 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
                 </button>
               </div>
 
-              {/* RIGHT COLUMN — fixed 45%, description at top then laptop */}
-              <div className="w-[45%] shrink-0 flex flex-col gap-3">
+              {/* RIGHT COLUMN — 54% of content area (Figma: laptop 730/1350 = 54%) */}
+              <div className="w-[54%] shrink-0 flex flex-col gap-3">
 
                 {/* Description — upper-right as in Figma (y:192 in card) */}
                 {service.description && (
