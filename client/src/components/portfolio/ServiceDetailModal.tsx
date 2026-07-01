@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, ExternalLink, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import type { PortfolioService } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getOriginalImageUrl } from "@/components/admin/shared/utils";
@@ -24,12 +24,10 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
   const popupUrls: string[] = (service.popupUrls as string[]) || [];
   const features: string[] = (service.features as string[]) || [];
 
-  // Reset slide when service changes
   useEffect(() => {
     setCurrentSlide(0);
   }, [service.id]);
 
-  // Auto-advance slider
   useEffect(() => {
     if (!isOpen || sliderImages.length <= 1 || isPaused) return;
     intervalRef.current = setInterval(() => {
@@ -40,12 +38,10 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
     };
   }, [isOpen, sliderImages.length, isPaused]);
 
-  // Keyboard navigation
   useEffect(() => {
     if (!isOpen) return;
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
       else if (e.key === "ArrowLeft" && onPrev) onPrev();
@@ -65,7 +61,6 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
     : null;
 
   return (
-    /* Dark backdrop — fills viewport, click to close */
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm overflow-y-auto"
       onClick={onClose}
@@ -79,7 +74,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
         <X className="w-6 h-6" />
       </button>
 
-      {/* Prev service */}
+      {/* Prev */}
       {onPrev && (
         <button
           onClick={(e) => { e.stopPropagation(); onPrev(); }}
@@ -90,7 +85,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
         </button>
       )}
 
-      {/* Next service */}
+      {/* Next */}
       {onNext && (
         <button
           onClick={(e) => { e.stopPropagation(); onNext(); }}
@@ -101,14 +96,11 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
         </button>
       )}
 
-      {/* Purple card frame — proportions from Frame 54 Figma:
-          inner dark card has ~67px margin on sides, ~32px on top/bottom.
-          Background image fills this purple layer. */}
+      {/* Purple outer frame — thin border as in Figma (67px/1799 ≈ 3.7% each side) */}
       <div
-        className="relative w-full max-w-4xl rounded-[32px] overflow-hidden p-6 md:px-14 md:py-7"
+        className="relative w-full max-w-[900px] rounded-[32px] px-8 py-4 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Optional bg image behind the purple */}
         {bgImage && (
           <img
             src={bgImage}
@@ -117,23 +109,22 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
             className="absolute inset-0 w-full h-full object-cover"
           />
         )}
-        {/* Purple overlay */}
         <div className="absolute inset-0 bg-[#6f12e1d9]" />
 
-        {/* Dark inner card — radius 39px like Figma Rectangle 2040 */}
-        <div className="relative z-10 max-h-[80vh] overflow-y-auto rounded-[39px]">
-          <div className="bg-[#070b13] rounded-[39px] border border-[#524eae60] overflow-hidden">
-            <div className="p-8 md:p-10">
+        {/* Dark inner card — Rectangle 2040 from Figma */}
+        <div className="relative rounded-[39px] bg-[#070b13] border border-[#524eae60] overflow-hidden">
+          <div className="px-10 py-8">
 
-            {/* Top divider line — as in Frame 54 */}
-            <div className="w-full h-px bg-white/20 mb-7" />
+            {/* Divider line — y:104 from card top in Figma */}
+            <div className="w-full h-px bg-white/20 mb-8" />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Main content — flex row, not grid */}
+            <div className="flex">
 
-              {/* LEFT COLUMN */}
-              <div className="flex flex-col gap-5">
+              {/* LEFT COLUMN — flex-1, grows to fill */}
+              <div className="flex-1 min-w-0 pr-8 flex flex-col gap-5">
 
-                {/* Logo + Title */}
+                {/* Logo + Title on same row */}
                 <div className="flex items-center gap-4">
                   {service.logoIconUrl && (
                     <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-white/10 flex items-center justify-center">
@@ -144,32 +135,19 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
                       />
                     </div>
                   )}
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <h2 className="text-2xl md:text-3xl font-bold text-white leading-tight">
-                      {t(service.title)}
-                    </h2>
-                    {service.toolUrl && (
-                      <a
-                        href={service.toolUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-sm text-purple-200 hover:text-white bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full transition-colors"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        Open tool
-                      </a>
-                    )}
-                  </div>
+                  <h2 className="text-[43px] font-bold text-white leading-tight">
+                    {t(service.title)}
+                  </h2>
                 </div>
 
-                {/* Feature pill badges */}
+                {/* Feature pill badges — lavanda fill, purple border, purple text */}
                 {features.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-3">
                     {features.map((f, i) => (
                       <span
                         key={i}
-                        className="px-4 py-1.5 rounded-full text-sm font-semibold"
-                        style={{ backgroundColor: "#d4b9f6", color: "#6f12e1" }}
+                        className="px-4 py-1.5 rounded-full text-xs font-semibold border"
+                        style={{ background: "#d4b9f6", color: "#6f12e1", borderColor: "#6f12e1" }}
                       >
                         {t(f)}
                       </span>
@@ -177,26 +155,26 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
                   </div>
                 )}
 
-                {/* Price */}
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-4xl font-extrabold text-white tracking-tight">
+                {/* Price — large amount + smaller label */}
+                <div className="flex items-baseline gap-1">
+                  <span className="text-5xl font-black text-white leading-none">
                     {service.price}
                   </span>
-                  <span className="text-lg text-white/50 font-medium">
+                  <span className="text-xl text-white/50 ml-1">
                     {t(service.priceLabel)}
                   </span>
                 </div>
 
                 {/* URL list */}
                 {popupUrls.length > 0 && (
-                  <div className="flex flex-col gap-1 mt-1">
+                  <div className="flex flex-col gap-0.5">
                     {popupUrls.map((url, i) => (
                       <a
                         key={i}
                         href={url.startsWith("http") ? url : `https://${url}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-white/70 font-light hover:text-white transition-colors"
+                        className="text-[15px] text-white font-light hover:underline"
                       >
                         {url}
                       </a>
@@ -207,25 +185,25 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
                 {/* CTA */}
                 <button
                   onClick={() => onCta(service.slug)}
-                  className="mt-auto w-full md:w-auto px-8 py-3 bg-primary text-white font-bold rounded-full text-base hover:shadow-lg hover:-translate-y-0.5 transition-all"
+                  className="mt-auto w-fit px-6 py-2.5 bg-primary text-white font-bold rounded-full text-sm hover:opacity-90 transition-opacity"
                 >
                   {t(service.ctaText)}
                 </button>
               </div>
 
-              {/* RIGHT COLUMN */}
-              <div className="flex flex-col gap-4">
+              {/* RIGHT COLUMN — fixed 45%, description at top then laptop */}
+              <div className="w-[45%] shrink-0 flex flex-col gap-3">
 
-                {/* Description */}
+                {/* Description — upper-right as in Figma (y:192 in card) */}
                 {service.description && (
-                  <p className="text-white/70 text-sm leading-relaxed">
+                  <p className="text-[15px] text-white/70 font-light leading-relaxed">
                     {t(service.description)}
                   </p>
                 )}
 
-                {/* Laptop mockup with slider */}
+                {/* Laptop mockup with image slider */}
                 <div
-                  className="relative"
+                  className="flex-1"
                   onMouseEnter={() => setIsPaused(true)}
                   onMouseLeave={() => setIsPaused(false)}
                 >
@@ -238,9 +216,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
                             src={getOriginalImageUrl(src)}
                             alt={`Screenshot ${i + 1}`}
                             className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-in-out"
-                            style={{
-                              transform: `translateX(${(i - currentSlide) * 100}%)`,
-                            }}
+                            style={{ transform: `translateX(${(i - currentSlide) * 100}%)` }}
                           />
                         ))}
                       </div>
@@ -271,8 +247,8 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
                 </div>
               </div>
             </div>
+
           </div>
-        </div>
         </div>
       </div>
     </div>
