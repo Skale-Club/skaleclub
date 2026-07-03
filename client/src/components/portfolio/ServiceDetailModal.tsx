@@ -161,9 +161,10 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
           style={{ left: cqw(224), top: cqw(136), width: cqw(1350), height: "1px", background: "rgba(255,255,255,0.22)" }}
         />
 
-        {/* ── LEFT CONTENT — each block absolutely anchored at its EXACT Figma (x,y) so
-             every inter-element distance is pixel-faithful to Frame 54 (logo/title 203,
-             pills 354, price 435, URLs 618, CTA 815). ── */}
+        {/* ── LEFT CONTENT — each block absolutely anchored at a fixed Figma (x,y). Base
+             Figma positions were logo/title 203, pills 354, price 435, URLs 618, CTA 815;
+             pills/price/URLs are now shifted +50.51 to make room for the 2-line title, and
+             the CTA sits beside the URL list instead of below it (see each block's comment). ── */}
 
         {/* Logo slot — Favicon 96×96 r20 @ (224,203) */}
         <div
@@ -177,26 +178,33 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
           {service.logoIconUrl && (
             <img
               src={getOriginalImageUrl(service.logoIconUrl)}
-              alt={t(service.title)}
+              alt={service.title}
               className="w-full h-full object-contain"
             />
           )}
         </div>
 
-        {/* Title — Inter Bold 86.31 @ box (342,195); Figma line-box 148 centers the text
-            vertically against the logo exactly as in the design */}
+        {/* Title — Inter Bold 86.31 @ box (342,195). Product/app names are proper nouns and are
+            never translated. Wraps to a max of 2 lines (compact line-height so the extra line
+            doesn't push everything below it down too far) instead of overlapping the
+            description; width is still capped to the gap before the description (starts at 844). */}
         <h2
-          className="absolute font-bold text-white m-0 whitespace-nowrap"
-          style={{ left: cqw(342), top: cqw(195), fontSize: cqw(86.31), lineHeight: cqw(148), letterSpacing: "-0.01em" }}
+          className="absolute font-bold text-white m-0 overflow-hidden"
+          style={{
+            left: cqw(342), top: cqw(195), width: cqw(482), fontSize: cqw(86.31),
+            lineHeight: cqw(99.26), letterSpacing: "-0.01em",
+            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+          }}
         >
-          {t(service.title) || FALLBACK_TITLE}
+          {service.title || FALLBACK_TITLE}
         </h2>
 
-        {/* Feature pills — #d4b9f6 fill, #6f12e1 border+text, SemiBold 23.23, h45, gap28 @ (224,354).
+        {/* Feature pills — #d4b9f6 fill, #6f12e1 border+text, SemiBold 23.23, h45, gap28.
+            top shifted +50.51 vs the original 354 to absorb the 2-line title's extra height.
             Pills auto-width to their label and wrap to a second row when they exceed 660. */}
         <div
           className="absolute flex flex-wrap items-center"
-          style={{ left: cqw(224), top: cqw(354), width: cqw(660), gap: cqw(28) }}
+          style={{ left: cqw(224), top: cqw(404.51), width: cqw(660), gap: cqw(28) }}
         >
           {displayFeatures.map((f, i) => (
             <span
@@ -213,8 +221,8 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
           ))}
         </div>
 
-        {/* Price — "$69" big (800) + "/mo" small (300) @ (226,435) */}
-        <div className="absolute flex items-baseline" style={{ left: cqw(226), top: cqw(435) }}>
+        {/* Price — "$69" big (800) + "/mo" small (300). top shifted +50.51 (see title comment) */}
+        <div className="absolute flex items-baseline" style={{ left: cqw(226), top: cqw(485.51) }}>
           <span className="text-white" style={{ fontSize: cqw(120), fontWeight: 800, lineHeight: 1, letterSpacing: "-0.02em" }}>
             {service.price || "$69"}
           </span>
@@ -223,16 +231,18 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
           </span>
         </div>
 
-        {/* URL list — Inter Regular 29.31, line-height 35 @ (226,618) */}
-        <div className="absolute flex flex-col items-start" style={{ left: cqw(226), top: cqw(618) }}>
+        {/* URL list — Inter Regular 29.31, line-height 35. top shifted +50.51 (see title comment).
+            Capped to 280 wide with an ellipsis so long domains can never run under the CTA
+            button, which now sits to the right of this list instead of below it. */}
+        <div className="absolute flex flex-col items-start" style={{ left: cqw(226), top: cqw(668.51) }}>
           {displayUrls.map((url, i) => (
             <a
               key={i}
               href={url.startsWith("http") ? url : `https://${url}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-white hover:underline whitespace-nowrap"
-              style={{ fontSize: cqw(29.31), lineHeight: cqw(35), fontWeight: 400 }}
+              className="text-white hover:underline whitespace-nowrap overflow-hidden text-ellipsis block"
+              style={{ fontSize: cqw(29.31), lineHeight: cqw(35), fontWeight: 400, maxWidth: cqw(280) }}
               onClick={(e) => e.stopPropagation()}
             >
               {url}
@@ -240,12 +250,18 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
           ))}
         </div>
 
-        {/* CTA — not in Figma; kept in the empty lower-left band @ (226,815) so it never
-            overlaps the clone (URLs end ≈758, card bottom ≈961) */}
+        {/* CTA — not in Figma; sits to the right of the URL list, vertically centered against
+            it (URL block spans 668.51-808.51, center 738.51, minus half the button height).
+            Capped to the remaining width up to the laptop boundary (844) with an ellipsis
+            safety net so it can never overlap the mockup even with a very long label. */}
         <button
           onClick={(e) => { e.stopPropagation(); onCta(service.slug); }}
-          className="absolute bg-primary text-white font-bold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap"
-          style={{ left: cqw(226), top: cqw(815), paddingLeft: cqw(44), paddingRight: cqw(44), height: cqw(83), fontSize: cqw(29) }}
+          className="absolute bg-primary text-white font-bold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap overflow-hidden text-ellipsis"
+          style={{
+            left: cqw(534), top: cqw(697.01),
+            paddingLeft: cqw(44), paddingRight: cqw(44), height: cqw(83), fontSize: cqw(29),
+            maxWidth: cqw(310),
+          }}
         >
           {t(service.ctaText) || "Get Started"}
         </button>

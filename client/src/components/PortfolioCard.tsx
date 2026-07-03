@@ -68,7 +68,7 @@ export function PortfolioCard({ service, onClick, className = "", variant = 'dar
                 {service.imageUrl ? (
                     <img
                         src={getImageUrl(service.imageUrl, { width: 800, quality: 80 })}
-                        alt={t(service.title)}
+                        alt={service.title}
                         loading="lazy"
                         decoding="async"
                         className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-[1.02] pointer-events-none"
@@ -85,7 +85,7 @@ export function PortfolioCard({ service, onClick, className = "", variant = 'dar
             <div className="flex items-center gap-3">
                 <div className="min-w-0 flex-1">
                     <h3 className={`truncate text-lg font-bold leading-tight ${themeClasses.title}`}>
-                        {t(service.title)}
+                        {service.title}
                     </h3>
                     {service.subtitle && (
                         <p className={`truncate text-sm ${themeClasses.subtitle}`}>{t(service.subtitle)}</p>
@@ -95,7 +95,7 @@ export function PortfolioCard({ service, onClick, className = "", variant = 'dar
                     <div className={`flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border ${themeClasses.iconBox}`}>
                         <img
                             src={getImageUrl(service.logoIconUrl, { width: 160, quality: 80 })}
-                            alt={`${t(service.title)} logo`}
+                            alt={`${service.title} logo`}
                             loading="lazy"
                             decoding="async"
                             className="h-full w-full object-contain p-1.5 pointer-events-none"
