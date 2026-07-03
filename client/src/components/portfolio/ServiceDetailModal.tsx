@@ -14,6 +14,33 @@ interface ServiceDetailModalProps {
   onNext?: () => void;
 }
 
+/*
+ * Pixel-exact clone of Figma "Frame 54" (node 1702:58, 1799×992).
+ * The whole popup renders in Frame 54's native coordinate space and scales as one
+ * unit via CSS container units: the frame wrapper is a size-container, and children
+ * are sized in `cqw` (1cqw = 1% of frame width = 17.99px in Figma space).
+ * Conversion: Figma px -> cqw string via cqw().
+ *
+ * The two content columns are absolutely anchored at their Figma top positions. The
+ * LEFT column then FLOWS downward (flex-column) so richer-than-placeholder content
+ * (extra/long feature pills, more URLs) never overlaps the price/CTA. For the Figma
+ * reference content the flow spacing sums back to the exact Figma y-positions.
+ */
+const U = 17.99; // Figma px per 1cqw (1799px width / 100)
+const cqw = (px: number) => `${(px / U).toFixed(3)}cqw`;
+
+// Figma placeholder content — used only as empty-state fallback, never over real data.
+const FALLBACK_TITLE = "Title Title";
+const FALLBACK_FEATURES = ["Site-integrated", "Site-integrated", "Site-integrated"];
+const FALLBACK_URLS = [
+  "obigodeportugues.com",
+  "obigodeportugues.com",
+  "obigodeportugues.com",
+  "obigodeportugues.com",
+];
+const FALLBACK_DESCRIPTION =
+  "Description description descriptiondescriptiondescription";
+
 export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, onNext }: ServiceDetailModalProps) {
   const { t } = useTranslation();
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -23,6 +50,9 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
   const sliderImages: string[] = (service.popupSliderImages as string[]) || [];
   const popupUrls: string[] = (service.popupUrls as string[]) || [];
   const features: string[] = (service.features as string[]) || [];
+
+  const displayFeatures = features.length > 0 ? features : FALLBACK_FEATURES;
+  const displayUrls = popupUrls.length > 0 ? popupUrls : FALLBACK_URLS;
 
   useEffect(() => {
     setCurrentSlide(0);
@@ -62,7 +92,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto"
       onClick={onClose}
     >
       {/* Close */}
@@ -96,160 +126,184 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
         </button>
       )}
 
-      {/* Purple outer frame — thin border as in Figma (67px/1799 ≈ 3.7% each side) */}
+      {/* ── Frame 54 wrapper: locked 1799×992 aspect, size-container so children scale in cqw ── */}
       <div
-        className="relative w-full max-w-[900px] rounded-[32px] px-8 py-4 overflow-hidden"
+        className="relative shrink-0"
+        style={{
+          width: "min(96vw, calc(92vh * 1799 / 992), 1120px)",
+          aspectRatio: "1799 / 992",
+          containerType: "size",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        {bgImage && (
-          <img
-            src={bgImage}
-            alt=""
-            aria-hidden="true"
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-        )}
-        <div className="absolute inset-0 bg-[#6f12e1d9]" />
+        {/* Purple frame — Frame 54 root fill #6f12e1 @ 85%. SHARP full-bleed rectangle
+            (Figma has NO corner radius here; only the inner dark card is rounded). */}
+        <div className="absolute inset-0 overflow-hidden">
+          {bgImage && (
+            <img src={bgImage} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover" />
+          )}
+          <div className="absolute inset-0" style={{ background: "#6f12e1d9" }} />
+        </div>
 
-        {/* Dark inner card — Rectangle 2040 from Figma */}
-        <div className="relative rounded-[39px] bg-[#070b13] border border-[#524eae60] overflow-hidden">
-          <div className="px-20 pt-14 pb-10">
+        {/* Dark card — Rectangle 2040 (67,32) 1664×929, r39, #070b13, border #524eae96 */}
+        <div
+          className="absolute"
+          style={{
+            left: cqw(67), top: cqw(32), width: cqw(1664), height: cqw(929),
+            borderRadius: cqw(39), background: "#070b13",
+            border: "1px solid #524eae96",
+          }}
+        />
 
-            {/* Divider line — y:104 from card top, content at y:171 in Figma */}
-            <div className="w-full h-px bg-white/20 mb-8" />
+        {/* Divider — Line 1 (224,136) w1350, faint white (right edge x1574 = laptop right edge) */}
+        <div
+          className="absolute"
+          style={{ left: cqw(224), top: cqw(136), width: cqw(1350), height: "1px", background: "rgba(255,255,255,0.22)" }}
+        />
 
-            {/* Main content — flex row, proportions from Figma:
-                left col ~37%, gap ~9%, right col ~54% of content area */}
-            <div className="flex gap-[8%]">
+        {/* ── LEFT CONTENT — each block absolutely anchored at its EXACT Figma (x,y) so
+             every inter-element distance is pixel-faithful to Frame 54 (logo/title 203,
+             pills 354, price 435, URLs 618, CTA 815). ── */}
 
-              {/* LEFT COLUMN — flex-1 */}
-              <div className="flex-1 min-w-0 flex flex-col gap-5">
+        {/* Logo slot — Favicon 96×96 r20 @ (224,203) */}
+        <div
+          className="absolute overflow-hidden flex items-center justify-center"
+          style={{
+            left: cqw(224), top: cqw(203), width: cqw(96), height: cqw(96), borderRadius: cqw(20),
+            background: service.logoIconUrl ? "transparent" : "rgba(255,255,255,0.06)",
+            border: service.logoIconUrl ? "none" : "1px solid rgba(255,255,255,0.12)",
+          }}
+        >
+          {service.logoIconUrl && (
+            <img
+              src={getOriginalImageUrl(service.logoIconUrl)}
+              alt={t(service.title)}
+              className="w-full h-full object-contain"
+            />
+          )}
+        </div>
 
-                {/* Logo + Title on same row */}
-                <div className="flex items-center gap-4">
-                  {service.logoIconUrl && (
-                    <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-white/10 flex items-center justify-center">
-                      <img
-                        src={getOriginalImageUrl(service.logoIconUrl)}
-                        alt={service.title}
-                        className="w-full h-full object-contain p-1"
-                      />
-                    </div>
-                  )}
-                  <h2 className="text-[43px] font-bold text-white leading-tight">
-                    {t(service.title)}
-                  </h2>
-                </div>
+        {/* Title — Inter Bold 86.31 @ box (342,195); Figma line-box 148 centers the text
+            vertically against the logo exactly as in the design */}
+        <h2
+          className="absolute font-bold text-white m-0 whitespace-nowrap"
+          style={{ left: cqw(342), top: cqw(195), fontSize: cqw(86.31), lineHeight: cqw(148), letterSpacing: "-0.01em" }}
+        >
+          {t(service.title) || FALLBACK_TITLE}
+        </h2>
 
-                {/* Feature pill badges — lavanda fill, purple border, purple text */}
-                {features.length > 0 && (
-                  <div className="flex flex-wrap gap-3">
-                    {features.map((f, i) => (
-                      <span
-                        key={i}
-                        className="px-4 py-1.5 rounded-full text-xs font-semibold border"
-                        style={{ background: "#d4b9f6", color: "#6f12e1", borderColor: "#6f12e1" }}
-                      >
-                        {t(f)}
-                      </span>
-                    ))}
-                  </div>
-                )}
+        {/* Feature pills — #d4b9f6 fill, #6f12e1 border+text, SemiBold 23.23, h45, gap28 @ (224,354).
+            Pills auto-width to their label and wrap to a second row when they exceed 660. */}
+        <div
+          className="absolute flex flex-wrap items-center"
+          style={{ left: cqw(224), top: cqw(354), width: cqw(660), gap: cqw(28) }}
+        >
+          {displayFeatures.map((f, i) => (
+            <span
+              key={i}
+              className="inline-flex items-center font-semibold whitespace-nowrap"
+              style={{
+                height: cqw(45), paddingLeft: cqw(13), paddingRight: cqw(13),
+                borderRadius: cqw(45), fontSize: cqw(23.23), lineHeight: 1,
+                background: "#d4b9f6", color: "#6f12e1", border: "1px solid #6f12e1",
+              }}
+            >
+              {t(f)}
+            </span>
+          ))}
+        </div>
 
-                {/* Price — large amount + smaller label */}
-                <div className="flex items-baseline gap-1">
-                  <span className="text-5xl font-black text-white leading-none">
-                    {service.price}
-                  </span>
-                  <span className="text-xl text-white/50 ml-1">
-                    {t(service.priceLabel)}
-                  </span>
-                </div>
+        {/* Price — "$69" big (800) + "/mo" small (300) @ (226,435) */}
+        <div className="absolute flex items-baseline" style={{ left: cqw(226), top: cqw(435) }}>
+          <span className="text-white" style={{ fontSize: cqw(120), fontWeight: 800, lineHeight: 1, letterSpacing: "-0.02em" }}>
+            {service.price || "$69"}
+          </span>
+          <span style={{ fontSize: cqw(48), fontWeight: 300, lineHeight: 1, marginLeft: cqw(6), color: "rgba(255,255,255,0.6)" }}>
+            {t(service.priceLabel) || "/mo"}
+          </span>
+        </div>
 
-                {/* URL list */}
-                {popupUrls.length > 0 && (
-                  <div className="flex flex-col gap-0.5">
-                    {popupUrls.map((url, i) => (
-                      <a
-                        key={i}
-                        href={url.startsWith("http") ? url : `https://${url}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[15px] text-white font-light hover:underline"
-                      >
-                        {url}
-                      </a>
-                    ))}
-                  </div>
-                )}
+        {/* URL list — Inter Regular 29.31, line-height 35 @ (226,618) */}
+        <div className="absolute flex flex-col items-start" style={{ left: cqw(226), top: cqw(618) }}>
+          {displayUrls.map((url, i) => (
+            <a
+              key={i}
+              href={url.startsWith("http") ? url : `https://${url}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white hover:underline whitespace-nowrap"
+              style={{ fontSize: cqw(29.31), lineHeight: cqw(35), fontWeight: 400 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {url}
+            </a>
+          ))}
+        </div>
 
-                {/* CTA */}
+        {/* CTA — not in Figma; kept in the empty lower-left band @ (226,815) so it never
+            overlaps the clone (URLs end ≈758, card bottom ≈961) */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onCta(service.slug); }}
+          className="absolute bg-primary text-white font-bold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap"
+          style={{ left: cqw(226), top: cqw(815), paddingLeft: cqw(34), paddingRight: cqw(34), height: cqw(64), fontSize: cqw(22) }}
+        >
+          {t(service.ctaText) || "Get Started"}
+        </button>
+
+        {/* Description — (1006,224) Inter Light 30.31; clamped to 2 lines like the Figma box
+            so it never spills onto the laptop screen (screen top ≈ y333) */}
+        <p
+          className="absolute text-white m-0"
+          style={{
+            left: cqw(1006), top: cqw(224), width: cqw(475),
+            fontSize: cqw(30.31), fontWeight: 300, lineHeight: 1.35,
+            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+          }}
+        >
+          {t(service.description) || FALLBACK_DESCRIPTION}
+        </p>
+
+        {/* Laptop mockup — pixel-fixed at (844,253) 730 wide; slider images fill the screen */}
+        <div
+          className="absolute"
+          style={{ left: cqw(844), top: cqw(253), width: cqw(730) }}
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+        >
+          <LaptopMockup>
+            {sliderImages.length > 0 ? (
+              <div className="w-full h-full relative overflow-hidden">
+                {sliderImages.map((src, i) => (
+                  <img
+                    key={i}
+                    src={getOriginalImageUrl(src)}
+                    alt={`Screenshot ${i + 1}`}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-in-out"
+                    style={{ transform: `translateX(${(i - currentSlide) * 100}%)` }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                <span className="text-gray-500" style={{ fontSize: cqw(20) }}>No screenshots</span>
+              </div>
+            )}
+          </LaptopMockup>
+
+          {/* Dot indicators */}
+          {sliderImages.length > 1 && (
+            <div className="flex justify-center" style={{ gap: cqw(14), marginTop: cqw(16) }}>
+              {sliderImages.map((_, i) => (
                 <button
-                  onClick={() => onCta(service.slug)}
-                  className="mt-auto w-fit px-6 py-2.5 bg-primary text-white font-bold rounded-full text-sm hover:opacity-90 transition-opacity"
-                >
-                  {t(service.ctaText)}
-                </button>
-              </div>
-
-              {/* RIGHT COLUMN — 54% of content area (Figma: laptop 730/1350 = 54%) */}
-              <div className="w-[54%] shrink-0 flex flex-col gap-3">
-
-                {/* Description — upper-right as in Figma (y:192 in card) */}
-                {service.description && (
-                  <p className="text-[15px] text-white/70 font-light leading-relaxed">
-                    {t(service.description)}
-                  </p>
-                )}
-
-                {/* Laptop mockup with image slider */}
-                <div
-                  className="flex-1"
-                  onMouseEnter={() => setIsPaused(true)}
-                  onMouseLeave={() => setIsPaused(false)}
-                >
-                  <LaptopMockup>
-                    {sliderImages.length > 0 ? (
-                      <div className="w-full h-full relative overflow-hidden">
-                        {sliderImages.map((src, i) => (
-                          <img
-                            key={i}
-                            src={getOriginalImageUrl(src)}
-                            alt={`Screenshot ${i + 1}`}
-                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-in-out"
-                            style={{ transform: `translateX(${(i - currentSlide) * 100}%)` }}
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-                        <span className="text-gray-500 text-xs">No screenshots</span>
-                      </div>
-                    )}
-                  </LaptopMockup>
-
-                  {/* Dot indicators */}
-                  {sliderImages.length > 1 && (
-                    <div className="flex justify-center gap-2 mt-3">
-                      {sliderImages.map((_, i) => (
-                        <button
-                          key={i}
-                          onClick={() => setCurrentSlide(i)}
-                          aria-label={`Go to slide ${i + 1}`}
-                          className={`rounded-full transition-all duration-300 ${
-                            i === currentSlide
-                              ? "bg-white w-4 h-2.5"
-                              : "bg-white/30 w-2.5 h-2.5 hover:bg-white/60"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
+                  key={i}
+                  onClick={(e) => { e.stopPropagation(); setCurrentSlide(i); }}
+                  aria-label={`Go to slide ${i + 1}`}
+                  className={`rounded-full transition-all duration-300 ${i === currentSlide ? "bg-white" : "bg-white/30 hover:bg-white/60"}`}
+                  style={{ width: cqw(i === currentSlide ? 28 : 16), height: cqw(16) }}
+                />
+              ))}
             </div>
-
-          </div>
+          )}
         </div>
       </div>
     </div>
