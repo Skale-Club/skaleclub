@@ -92,7 +92,7 @@ export default function Portfolio() {
 
             <section className="py-16 px-6 bg-gradient-to-b from-[#0a0f18] to-[#0d1320]">
                 <div className="max-w-7xl mx-auto">
-                    <div className="flex flex-wrap justify-center gap-6 [&>*]:flex-[0_1_calc(33.333%-1rem)] [&>*]:min-w-[280px] [&>*]:max-w-[440px]">
+                    <div className="flex flex-wrap justify-center gap-6 [&>*]:basis-full sm:[&>*]:flex-[0_1_calc(50%-0.75rem)] lg:[&>*]:flex-[0_1_calc(33.333%-1rem)] lg:[&>*]:min-w-[280px] lg:[&>*]:max-w-[440px]">
                         {portfolioServices?.map((service) => (
                             <PortfolioCard
                                 key={service.id}

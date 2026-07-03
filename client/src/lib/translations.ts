@@ -22,6 +22,7 @@ export const translations = {
     'Submit': 'Enviar', 'Cancel': 'Cancelar', 'Save': 'Salvar', 'Edit': 'Editar', 'Delete': 'Deletar',
     'Add': 'Adicionar', 'Update': 'Atualizar', 'Search': 'Buscar', 'Filter': 'Filtrar',
     'Loading...': 'Carregando...', 'Yes': 'Sim', 'No': 'Não', 'Close': 'Fechar',
+    'No screenshots': 'Sem capturas de tela',
     'Back': 'Voltar', 'Next': 'Próximo', 'Previous': 'Anterior', 'Continue': 'Continuar', 'Finish': 'Finalizar',
     // Forms
     'Name': 'Nome', 'Email': 'E-mail', 'Phone': 'Telefone', 'Message': 'Mensagem',

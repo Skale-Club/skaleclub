@@ -245,19 +245,19 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
         <button
           onClick={(e) => { e.stopPropagation(); onCta(service.slug); }}
           className="absolute bg-primary text-white font-bold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap"
-          style={{ left: cqw(226), top: cqw(815), paddingLeft: cqw(34), paddingRight: cqw(34), height: cqw(64), fontSize: cqw(22) }}
+          style={{ left: cqw(226), top: cqw(815), paddingLeft: cqw(44), paddingRight: cqw(44), height: cqw(83), fontSize: cqw(29) }}
         >
           {t(service.ctaText) || "Get Started"}
         </button>
 
-        {/* Description — (1006,224) Inter Light 30.31; clamped to 2 lines like the Figma box
-            so it never spills onto the laptop screen (screen top ≈ y333) */}
+        {/* Description — spans the same left/width as the laptop mockup below (844,730)
+            so its edges line up with the laptop's borders; clamped to 3 lines */}
         <p
           className="absolute text-white m-0"
           style={{
-            left: cqw(1006), top: cqw(224), width: cqw(475),
+            left: cqw(844), top: cqw(224), width: cqw(730),
             fontSize: cqw(30.31), fontWeight: 300, lineHeight: 1.35,
-            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+            display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden",
           }}
         >
           {t(service.description) || FALLBACK_DESCRIPTION}
@@ -285,7 +285,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
               </div>
             ) : (
               <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-                <span className="text-gray-500" style={{ fontSize: cqw(20) }}>No screenshots</span>
+                <span className="text-gray-500" style={{ fontSize: cqw(20) }}>{t("No screenshots")}</span>
               </div>
             )}
           </LaptopMockup>
