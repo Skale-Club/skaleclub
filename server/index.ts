@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import "./instrument.js";
 import { createApp, log } from "./app.js";
 import { serveStatic } from "./static.js";
 import { startCron } from "./cron.js";

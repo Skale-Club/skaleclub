@@ -1,4 +1,5 @@
 import 'express-async-errors';
+import * as Sentry from "@sentry/node";
 import { ZodError } from "zod";
 import express, { type Request, Response, NextFunction } from "express";
 import helmet from "helmet";
@@ -78,6 +79,9 @@ export async function createApp(): Promise<{ app: express.Express; httpServer: S
 
   const httpServer = createServer(app);
   await registerRoutes(httpServer, app);
+
+  // Sentry error handler (must come before custom error middleware)
+  Sentry.setupExpressErrorHandler(app);
 
   // Error handling middleware
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
