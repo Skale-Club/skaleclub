@@ -6,14 +6,13 @@ interface LaptopMockupProps {
 
 export function LaptopMockup({ children }: LaptopMockupProps) {
   return (
-    <div className="relative w-full select-none">
-      {/* Screen overlay — calibrated to the transparent screen cutout in laptop-mockup.png
-          (730×730; hole measured at x115-607, y164-466px). Kept slightly inset from the
-          measured hole edges since the cutout tapers ~1% narrower at the top (perspective),
-          so the overlay never bleeds past the opaque bezel at any row. */}
+    <div className="relative w-full select-none overflow-hidden" style={{ aspectRatio: "690 / 446" }}>
+      {/* The source PNG has transparent padding around the visible laptop.
+          Crop the wrapper to the measured opaque bounds so the modal layout
+          uses the actual computer size, not the padded image box. */}
       <div
         className="absolute overflow-hidden bg-gray-900"
-        style={{ top: "22.47%", left: "15.75%", width: "67.4%", height: "41.37%" }}
+        style={{ top: "4.93%", left: "13.77%", width: "71.3%", height: "67.71%" }}
       >
         {children}
       </div>
@@ -21,7 +20,8 @@ export function LaptopMockup({ children }: LaptopMockupProps) {
         src="/laptop-mockup.png"
         alt=""
         aria-hidden="true"
-        className="w-full h-auto relative z-10"
+        className="absolute z-10 max-w-none h-auto"
+        style={{ width: "105.8%", left: "-2.9%", top: "-31.84%" }}
         draggable={false}
       />
     </div>

@@ -28,6 +28,12 @@ export function getImageUrl(
   const params = new URLSearchParams();
   if (opts.width) params.set('width', String(opts.width));
   if (opts.quality) params.set('quality', String(opts.quality));
+  // Without an explicit resize mode, Supabase's image transform only constrains
+  // the given dimension and leaves the other at its original size instead of
+  // scaling proportionally — e.g. width=160 on a 512x517 source came back
+  // 160x517, stretching/cropping when object-fit later scales it into a square
+  // box. 'contain' scales to fit within width/height while preserving aspect ratio.
+  if (opts.width) params.set('resize', 'contain');
   return `${rendered}?${params.toString()}`;
 }
 

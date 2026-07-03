@@ -98,7 +98,7 @@ export function PortfolioCard({ service, onClick, className = "", variant = 'dar
                             alt={`${service.title} logo`}
                             loading="lazy"
                             decoding="async"
-                            className="h-full w-full object-contain p-1.5 pointer-events-none"
+                            className="h-full w-full object-contain pointer-events-none"
                             draggable={false}
                         />
                     </div>

@@ -25,6 +25,7 @@ export default function Portfolio() {
     });
 
     const portfolioHero = companySettings?.homepageContent?.portfolioHero;
+    const portfolioCta = companySettings?.homepageContent?.portfolioCtaSection;
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -105,19 +106,29 @@ export default function Portfolio() {
                 </div>
             </section>
 
-            <section className="py-20 px-6 bg-[#111114]">
-                <div className="max-w-4xl mx-auto text-center">
+            <section className="relative py-20 px-6 bg-[#111114] overflow-hidden">
+                {portfolioCta?.backgroundImage && (
+                    <>
+                        <div
+                            aria-hidden="true"
+                            className="absolute inset-0 z-0 bg-cover bg-center pointer-events-none"
+                            style={{ backgroundImage: `url(${getImageUrl(portfolioCta.backgroundImage, { width: 1920, quality: 80 })})` }}
+                        />
+                        <div aria-hidden="true" className="absolute inset-0 z-0 pointer-events-none bg-black/70" />
+                    </>
+                )}
+                <div className="relative z-10 max-w-4xl mx-auto text-center">
                     <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
-                        {t("Ready to Redefine Your Potential?")}
+                        {t(portfolioCta?.title || "Ready to Redefine Your Potential?")}
                     </h2>
                     <p className="text-xl text-blue-100 mb-8">
-                        {t("Join the forward-thinking companies already scaling with Skale Club.")}
+                        {t(portfolioCta?.subtitle || "Join the forward-thinking companies already scaling with Skale Club.")}
                     </p>
                     <button
                         onClick={() => handleCta('footer')}
                         className="px-8 py-4 bg-white text-[#0A192F] font-bold rounded-full text-lg hover:scale-105 transition-transform flex items-center justify-center gap-2 mx-auto shadow-[0_20px_40px_rgba(0,0,0,0.5)]"
                     >
-                        {t("Book a Strategy Session")}
+                        {t(portfolioCta?.buttonText || "Book a Strategy Session")}
                         <ArrowRight className="w-5 h-5" />
                     </button>
                 </div>

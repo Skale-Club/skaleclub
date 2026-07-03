@@ -339,6 +339,12 @@ export interface HomepageContent {
     title?: string;
     backgroundImage?: string;
   };
+  portfolioCtaSection?: {
+    title?: string;
+    subtitle?: string;
+    buttonText?: string;
+    backgroundImage?: string;
+  };
 }
 
 // Derive TS types from the Zod schemas using `z.input` so pre-Phase-12 client code

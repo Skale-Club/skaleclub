@@ -1,6 +1,7 @@
 import { pgTable, text, serial, integer, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { PORTFOLIO_DESCRIPTION_MAX_WORDS, countWords } from "../portfolio";
 
 // Translations Table (AI-powered dynamic translations)
 export const translations = pgTable("translations", {
@@ -112,7 +113,6 @@ export const portfolioServices = pgTable("portfolio_services", {
   imageUrl: text("image_url"),
   logoIconUrl: text("logo_icon_url"),
   toolUrl: text("tool_url"),
-  popupBgImageUrl: text("popup_bg_image_url"),
   popupSliderImages: jsonb("popup_slider_images").$type<string[]>().default([]),
   popupUrls: jsonb("popup_urls").$type<string[]>().default([]),
   iconName: text("icon_name").default("Rocket"),
@@ -131,7 +131,12 @@ export const insertPortfolioServiceSchema = z.object({
   slug: z.string().min(1),
   title: z.string().min(1),
   subtitle: z.string().min(1),
-  description: z.string().min(1),
+  description: z.string()
+    .min(1)
+    .refine(
+      (value) => countWords(value) <= PORTFOLIO_DESCRIPTION_MAX_WORDS,
+      `Description must be ${PORTFOLIO_DESCRIPTION_MAX_WORDS} words or fewer`,
+    ),
   price: z.string().min(1),
   priceLabel: z.string().default("One-time"),
   badgeText: z.string().default("One-time Fee"),
@@ -139,7 +144,6 @@ export const insertPortfolioServiceSchema = z.object({
   imageUrl: z.string().nullable().optional(),
   logoIconUrl: z.string().nullable().optional(),
   toolUrl: z.string().nullable().optional(),
-  popupBgImageUrl: z.string().nullable().optional(),
   popupSliderImages: z.array(z.string()).nullable().optional().default([]),
   popupUrls: z.array(z.string()).nullable().optional().default([]),
   iconName: z.string().default("Rocket"),
@@ -201,3 +205,4 @@ export const insertVCardSchema = z.object({
 
 export type VCard = typeof vcards.$inferSelect;
 export type InsertVCard = typeof vcards.$inferInsert;
+

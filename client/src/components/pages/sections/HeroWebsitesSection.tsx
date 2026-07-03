@@ -55,8 +55,8 @@ export function HeroWebsitesSection({ props }: { props: HeroWebsitesProps }) {
       data-testid="section-hero-websites"
     >
       <div className="container-custom mx-auto relative z-10 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-1 sm:gap-6 lg:gap-8 items-end">
-          <div className="order-1 lg:order-2 text-white pt-6 sm:pt-8 lg:pt-16 pb-16 sm:pb-24 lg:pb-32 relative z-20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-1 sm:gap-6 lg:gap-12 items-end">
+          <div className="order-1 lg:order-2 text-white pt-6 sm:pt-8 lg:pt-16 pb-16 sm:pb-24 lg:pb-24 relative z-20">
             <h1 className="text-[9vw] sm:text-5xl md:text-6xl lg:text-4xl xl:text-5xl font-bold mb-3 lg:mb-6 font-display leading-[1.05] sm:leading-[1.1]">
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">
                 {t(headline)}

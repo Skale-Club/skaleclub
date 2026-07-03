@@ -10,6 +10,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { uploadFileToServer, getOriginalImageUrl } from '../shared/utils';
 import type { InsertPortfolioService, PortfolioService } from '@shared/schema';
+import { PORTFOLIO_DESCRIPTION_MAX_LINES, PORTFOLIO_DESCRIPTION_MAX_WORDS, countWords } from '@shared/portfolio';
+
+const MAX_SLIDER_IMAGES = 10;
 
 type PortfolioServiceFormProps = {
     service: PortfolioService | null;
@@ -40,21 +43,30 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
         accentColor: service?.accentColor || '#406EF1',
         order: service?.order ?? nextOrder,
         isActive: service?.isActive ?? true,
-        popupBgImageUrl: service?.popupBgImageUrl || '',
         popupSliderImages: (service?.popupSliderImages as string[]) || [],
         popupUrls: (service?.popupUrls as string[]) || [],
     });
 
     const [featureInput, setFeatureInput] = useState('');
     const [urlInput, setUrlInput] = useState('');
+    const descriptionWordCount = countWords(formData.description ?? '');
+    const descriptionTooLong = descriptionWordCount > PORTFOLIO_DESCRIPTION_MAX_WORDS;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (descriptionTooLong) {
+            toast({
+                title: 'Description too long',
+                description: 'Use ' + PORTFOLIO_DESCRIPTION_MAX_WORDS + ' words or fewer so the popup fits within ' + PORTFOLIO_DESCRIPTION_MAX_LINES + ' lines.',
+                variant: 'destructive',
+            });
+            return;
+        }
         let toolUrl = (formData.toolUrl ?? '').trim();
         if (toolUrl && !/^https?:\/\//i.test(toolUrl)) {
             toolUrl = `https://${toolUrl}`;
         }
-        onSubmit({ ...formData, toolUrl: toolUrl || null, popupBgImageUrl: formData.popupBgImageUrl || null });
+        onSubmit({ ...formData, description: (formData.description ?? '').trim(), toolUrl: toolUrl || null });
     };
 
     const addFeature = () => {
@@ -316,8 +328,11 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
                             onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                             required
                             placeholder="Service description"
-                            rows={3}
+                            rows={4}
                         />
+                        <p className={descriptionTooLong ? 'text-xs text-red-500' : 'text-xs text-muted-foreground'}>
+                            {descriptionWordCount}/{PORTFOLIO_DESCRIPTION_MAX_WORDS} words. Popup descriptions support up to {PORTFOLIO_DESCRIPTION_MAX_LINES} lines.
+                        </p>
                     </div>
                 </div>
 
@@ -471,72 +486,13 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
 
                 <div className="border-t" />
 
-                {/* Section: Popup Background Image */}
-                <div className="space-y-3">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Popup — Imagem de Fundo</p>
-                    <p className="text-xs text-muted-foreground">Aparece atrás do card escuro com overlay roxo nas bordas do popup.</p>
-                    {formData.popupBgImageUrl ? (
-                        <div className="relative rounded-lg overflow-hidden border" style={{ aspectRatio: '16/7' }}>
-                            <img
-                                src={getOriginalImageUrl(formData.popupBgImageUrl)}
-                                alt="Popup background"
-                                className="w-full h-full object-cover"
-                            />
-                            <div className="absolute inset-0 bg-[#6f12e1aa] pointer-events-none" />
-                            <div className="absolute top-2 right-2 flex gap-2">
-                                <label className="cursor-pointer px-3 py-1.5 bg-black/60 hover:bg-black/80 text-white text-xs rounded-md transition-colors">
-                                    Trocar
-                                    <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) {
-                                            try {
-                                                const path = await uploadFileToServer(file);
-                                                setFormData(prev => ({ ...prev, popupBgImageUrl: path }));
-                                                toast({ title: 'Imagem de fundo enviada' });
-                                            } catch (err: any) {
-                                                toast({ title: 'Upload falhou', description: err.message, variant: 'destructive' });
-                                            }
-                                        }
-                                    }} />
-                                </label>
-                                <button
-                                    type="button"
-                                    onClick={() => setFormData(prev => ({ ...prev, popupBgImageUrl: '' }))}
-                                    className="px-2 py-1.5 bg-black/60 hover:bg-red-500/80 text-white rounded-md transition-colors"
-                                >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                            </div>
-                        </div>
-                    ) : (
-                        <label className="flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors" style={{ aspectRatio: '16/7' }}>
-                            <Image className="w-8 h-8 text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground mt-2">Clique para enviar imagem de fundo</span>
-                            <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                    try {
-                                        const path = await uploadFileToServer(file);
-                                        setFormData(prev => ({ ...prev, popupBgImageUrl: path }));
-                                        toast({ title: 'Imagem de fundo enviada' });
-                                    } catch (err: any) {
-                                        toast({ title: 'Upload falhou', description: err.message, variant: 'destructive' });
-                                    }
-                                }
-                            }} />
-                        </label>
-                    )}
-                </div>
-
-                <div className="border-t" />
-
                 {/* Section: Laptop Slider Images */}
                 <div className="space-y-3">
                     <div className="flex items-center justify-between">
                         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Popup — Screenshots do Laptop</p>
-                        <span className="text-xs text-muted-foreground">{(formData.popupSliderImages as string[])?.length || 0} imagem(ns)</span>
+                        <span className="text-xs text-muted-foreground">{(formData.popupSliderImages as string[])?.length || 0}/{MAX_SLIDER_IMAGES} imagem(ns)</span>
                     </div>
-                    <p className="text-xs text-muted-foreground">Imagens que passam como slides dentro da tela do laptop no popup.</p>
+                    <p className="text-xs text-muted-foreground">Imagens que passam como slides dentro da tela do laptop no popup. Máximo de {MAX_SLIDER_IMAGES} imagens.</p>
 
                     {/* Existing slides */}
                     {(formData.popupSliderImages as string[])?.length > 0 && (
@@ -567,24 +523,37 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
                     )}
 
                     {/* Add slide */}
-                    <label className="flex items-center gap-2 px-4 py-3 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-                        <Image className="w-5 h-5 text-muted-foreground shrink-0" />
-                        <span className="text-sm text-muted-foreground">Adicionar screenshot...</span>
-                        <input type="file" className="hidden" accept="image/*" multiple onChange={async (e) => {
-                            const files = Array.from(e.target.files || []);
-                            if (!files.length) return;
-                            try {
-                                const paths = await Promise.all(files.map(f => uploadFileToServer(f)));
-                                setFormData(prev => ({
-                                    ...prev,
-                                    popupSliderImages: [...((prev.popupSliderImages as string[]) || []), ...paths]
-                                }));
-                                toast({ title: `${paths.length} imagem(ns) adicionada(s)` });
-                            } catch (err: any) {
-                                toast({ title: 'Upload falhou', description: err.message, variant: 'destructive' });
-                            }
-                        }} />
-                    </label>
+                    {(formData.popupSliderImages as string[])?.length >= MAX_SLIDER_IMAGES ? (
+                        <p className="text-xs text-muted-foreground px-4 py-3 border-2 border-dashed rounded-lg text-center">
+                            Limite de {MAX_SLIDER_IMAGES} imagens atingido. Remova uma para adicionar outra.
+                        </p>
+                    ) : (
+                        <label className="flex items-center gap-2 px-4 py-3 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                            <Image className="w-5 h-5 text-muted-foreground shrink-0" />
+                            <span className="text-sm text-muted-foreground">Adicionar screenshot...</span>
+                            <input type="file" className="hidden" accept="image/*" multiple onChange={async (e) => {
+                                const existing = (formData.popupSliderImages as string[]) || [];
+                                const remaining = MAX_SLIDER_IMAGES - existing.length;
+                                const selected = Array.from(e.target.files || []);
+                                const files = selected.slice(0, remaining);
+                                e.target.value = '';
+                                if (!files.length) return;
+                                if (selected.length > files.length) {
+                                    toast({ title: `Apenas ${files.length} de ${selected.length} imagens foram adicionadas (limite de ${MAX_SLIDER_IMAGES})` });
+                                }
+                                try {
+                                    const paths = await Promise.all(files.map(f => uploadFileToServer(f)));
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        popupSliderImages: [...((prev.popupSliderImages as string[]) || []), ...paths]
+                                    }));
+                                    toast({ title: `${paths.length} imagem(ns) adicionada(s)` });
+                                } catch (err: any) {
+                                    toast({ title: 'Upload falhou', description: err.message, variant: 'destructive' });
+                                }
+                            }} />
+                        </label>
+                    )}
                 </div>
 
                 <div className="border-t" />
@@ -661,3 +630,4 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
         </form>
     );
 }
+
