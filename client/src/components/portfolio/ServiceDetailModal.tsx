@@ -36,10 +36,19 @@ const cqw = (px: number) => `${(px / U).toFixed(3)}cqw`;
 const U_TABLET = 5.86; // Tablet: card width (586px) / 100
 const cqwT = (px: number) => `${(px / U_TABLET).toFixed(3)}cqw`;
 
+const U_TABLET_CONTENT = 6.67; // Tablet content: Figma Frame 58 card width (667px) / 100
+const cqwTContent = (px: number) => `${(px / U_TABLET_CONTENT).toFixed(3)}cqw`;
+
 const U_MOBILE = 3.06; // Mobile: card width (306px) / 100
 const cqwM = (px: number) => `${(px / U_MOBILE).toFixed(3)}cqw`;
 
 type CqwFn = (px: number) => string;
+
+// Shrinks proportionally with the card on viewports narrower than the Figma
+// reference (so content never looks oversized on a real device), but never
+// grows past the exact Figma pixel value on wider cards (the "don't make
+// icons/text bigger, just stretch the container" rule from an earlier pass).
+const capAtFigmaSize = (cqwFn: CqwFn, px: number) => `min(${cqwFn(px)}, ${px}px)`;
 
 // Figma placeholder content — used only as empty-state fallback, never over real data.
 const FALLBACK_TITLE = "Title Title";
@@ -84,11 +93,16 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
   }, [isOpen, service.id]);
 
   const LAPTOP_RATIO = 690 / 446;
+  // Desktop Container 3 has no gap between its columns (see gridTemplateColumns
+  // below) — the right column's own width equals the left column's width plus
+  // the gap that used to sit between them. Keep this in sync with that calc.
+  const RECLAIMED_GAP = 32;
   let laptopBoxSize: { width: number; height: number } | null = null;
   if (leftColSize) {
-    laptopBoxSize = leftColSize.width / leftColSize.height > LAPTOP_RATIO
+    const rightColWidth = leftColSize.width + RECLAIMED_GAP;
+    laptopBoxSize = rightColWidth / leftColSize.height > LAPTOP_RATIO
       ? { width: leftColSize.height * LAPTOP_RATIO, height: leftColSize.height }
-      : { width: leftColSize.width, height: leftColSize.width / LAPTOP_RATIO };
+      : { width: rightColWidth, height: rightColWidth / LAPTOP_RATIO };
   }
 
   useEffect(() => {
@@ -127,7 +141,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
     <div
       className="shrink-0 overflow-hidden flex items-center justify-center"
       style={{
-        width: cqwFn(size), height: cqwFn(size), borderRadius: cqwFn(radius),
+        width: capAtFigmaSize(cqwFn, size), height: capAtFigmaSize(cqwFn, size), borderRadius: capAtFigmaSize(cqwFn, radius),
         background: service.logoIconUrl ? "transparent" : "rgba(255,255,255,0.06)",
         border: service.logoIconUrl ? "none" : "1px solid rgba(255,255,255,0.12)",
       }}
@@ -142,8 +156,8 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
     <h2
       className="font-bold text-white m-0 overflow-hidden flex-1 min-w-0"
       style={{
-        fontSize: cqwFn(fontSize),
-        lineHeight: cqwFn(lineHeight), letterSpacing: "-0.01em",
+        fontSize: capAtFigmaSize(cqwFn, fontSize),
+        lineHeight: capAtFigmaSize(cqwFn, lineHeight), letterSpacing: "-0.01em",
         display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
       }}
     >
@@ -151,15 +165,21 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
     </h2>
   );
 
-  const renderPills = (cqwFn: CqwFn, height: number, fontSize: number, gap: number) => (
-    <div className="flex items-center" style={{ gap: cqwFn(gap) }}>
+  // Pill padding follows an X/2X rule: paddingY (top+bottom) = X, paddingX
+  // (left+right) = 2X — same amount above/below the text, double that on
+  // each side. `gap` is a literal pre-formatted CSS value (not run through
+  // cqwFn) since it must be the exact same fixed pixel amount on every
+  // breakpoint, not proportional to the card.
+  const renderPills = (cqwFn: CqwFn, fontSize: number, paddingY: number, paddingX: number, gap: string) => (
+    <div className="flex items-center flex-wrap" style={{ gap }}>
       {displayFeatures.map((f, i) => (
         <span
           key={i}
           className="inline-flex items-center font-semibold whitespace-nowrap rounded-full shrink-0"
           style={{
-            height: cqwFn(height), paddingLeft: cqwFn(height * 0.289), paddingRight: cqwFn(height * 0.289),
-            fontSize: cqwFn(fontSize), lineHeight: 1,
+            paddingTop: capAtFigmaSize(cqwFn, paddingY), paddingBottom: capAtFigmaSize(cqwFn, paddingY),
+            paddingLeft: capAtFigmaSize(cqwFn, paddingX), paddingRight: capAtFigmaSize(cqwFn, paddingX),
+            fontSize: capAtFigmaSize(cqwFn, fontSize), lineHeight: 1,
             background: "#d4b9f6", color: "#6f12e1", border: "1px solid #6f12e1",
           }}
         >
@@ -171,10 +191,10 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
 
   const renderPrice = (cqwFn: CqwFn, bigSize: number, smallSize: number) => (
     <div className="flex items-baseline">
-      <span className="text-white" style={{ fontSize: cqwFn(bigSize), fontWeight: 800, lineHeight: 1, letterSpacing: "-0.02em" }}>
+      <span className="text-white" style={{ fontSize: capAtFigmaSize(cqwFn, bigSize), fontWeight: 800, lineHeight: 1, letterSpacing: "-0.02em" }}>
         {service.price || "$69"}
       </span>
-      <span style={{ fontSize: cqwFn(smallSize), fontWeight: 300, lineHeight: 1, marginLeft: cqwFn(smallSize * 0.125), color: "rgba(255,255,255,0.6)" }}>
+      <span style={{ fontSize: capAtFigmaSize(cqwFn, smallSize), fontWeight: 300, lineHeight: 1, marginLeft: capAtFigmaSize(cqwFn, smallSize * 0.125), color: "rgba(255,255,255,0.6)" }}>
         {t(service.priceLabel) || "/mo"}
       </span>
     </div>
@@ -184,7 +204,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
     <p
       className="text-white m-0"
       style={{
-        fontSize: cqwFn(fontSize),
+        fontSize: capAtFigmaSize(cqwFn, fontSize),
         fontWeight: 300, lineHeight: 1.35,
         display: "-webkit-box", WebkitLineClamp: maxLines, WebkitBoxOrient: "vertical", overflow: "hidden",
       }}
@@ -193,7 +213,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
     </p>
   );
 
-  const renderUrls = (cqwFn: CqwFn, fontSize: number, lineHeight: number, maxWidth: number) => (
+  const renderUrls = (cqwFn: CqwFn, fontSize: number, lineHeight: number, maxWidth: string) => (
     <div className="flex flex-col items-start">
       {displayUrls.map((url, i) => (
         <a
@@ -202,7 +222,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
           target="_blank"
           rel="noopener noreferrer"
           className="text-white hover:underline whitespace-nowrap overflow-hidden text-ellipsis block"
-          style={{ fontSize: cqwFn(fontSize), lineHeight: cqwFn(lineHeight), fontWeight: 400, maxWidth: cqwFn(maxWidth) }}
+          style={{ fontSize: capAtFigmaSize(cqwFn, fontSize), lineHeight: capAtFigmaSize(cqwFn, lineHeight), fontWeight: 400, maxWidth }}
           onClick={(e) => e.stopPropagation()}
         >
           {url}
@@ -211,11 +231,14 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
     </div>
   );
 
-  const renderCta = (cqwFn: CqwFn, width: number, height: number, fontSize: number) => (
+  // width is a plain percentage string (e.g. "50%") so the button stretches
+  // relative to its container instead of a fixed size — height and fontSize
+  // stay independently controlled via cqwFn, unaffected by that stretch.
+  const renderCta = (cqwFn: CqwFn, width: string, height: number, fontSize: number) => (
     <button
       onClick={(e) => { e.stopPropagation(); onCta(service.slug); }}
       className="flex items-center justify-center rounded-full text-white font-bold hover:opacity-90 transition-opacity whitespace-nowrap"
-      style={{ width: cqwFn(width), height: cqwFn(height), fontSize: cqwFn(fontSize), background: "#4c4ac1", border: "1px solid #34336f" }}
+      style={{ width, height: capAtFigmaSize(cqwFn, height), fontSize: capAtFigmaSize(cqwFn, fontSize), background: "#4c4ac1", border: "1px solid #34336f", alignSelf: "center" }}
     >
       {isEnglish ? "Start" : "Começar"}
     </button>
@@ -237,31 +260,31 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
       </div>
     ) : (
       <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-        <span className="text-gray-500" style={{ fontSize: cqwFn(emptyFontSize) }}>{t("No screenshots")}</span>
+        <span className="text-gray-500" style={{ fontSize: capAtFigmaSize(cqwFn, emptyFontSize) }}>{t("No screenshots")}</span>
       </div>
     )
   );
 
   const renderDots = (cqwFn: CqwFn) => (
     sliderImages.length > 1 && (
-      <div className="flex justify-center" style={{ gap: cqwFn(14), marginTop: cqwFn(16) }}>
+      <div className="flex justify-center" style={{ gap: capAtFigmaSize(cqwFn, 14), marginTop: capAtFigmaSize(cqwFn, 16) }}>
         {sliderImages.map((_, i) => (
           <button
             key={i}
             onClick={(e) => { e.stopPropagation(); setCurrentSlide(i); }}
             aria-label={`Go to slide ${i + 1}`}
             className={`rounded-full transition-all duration-300 ${i === currentSlide ? "bg-white" : "bg-white/30 hover:bg-white/60"}`}
-            style={{ width: cqwFn(i === currentSlide ? 28 : 16), height: cqwFn(16) }}
+            style={{ width: capAtFigmaSize(cqwFn, i === currentSlide ? 28 : 16), height: capAtFigmaSize(cqwFn, 16) }}
           />
         ))}
       </div>
     )
   );
 
-  const renderLaptop = (cqwFn: CqwFn, width: number, marginLeft: number, emptyFontSize: number) => (
+  const renderLaptop = (cqwFn: CqwFn, width: string, emptyFontSize: number) => (
     <div
       className="shrink-0"
-      style={{ width: cqwFn(width), marginLeft: cqwFn(marginLeft) }}
+      style={{ width, alignSelf: "center" }}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
@@ -273,7 +296,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
   return (
     <div
       className="fixed inset-0 z-50 flex justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto"
-      style={{ alignItems: "safe center" }}
+      style={{ alignItems: "safe center", scrollbarGutter: "stable both-edges" }}
       onClick={onClose}
     >
       <button
@@ -307,7 +330,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
       <div
         className="relative shrink-0 hidden lg:block"
         style={{
-          width: "min(84vw, 80vh, 1150px)",
+          width: "min(72vw, 980px)",
           containerType: "inline-size",
         }}
         onClick={(e) => e.stopPropagation()}
@@ -322,7 +345,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
             <div
               className="shrink-0 overflow-hidden flex items-center justify-center"
               style={{
-                width: cqw(96), height: cqw(96), borderRadius: cqw(20),
+                width: cqw(115.2), height: cqw(115.2), borderRadius: cqw(24),
                 background: service.logoIconUrl ? "transparent" : "rgba(255,255,255,0.06)",
                 border: service.logoIconUrl ? "none" : "1px solid rgba(255,255,255,0.12)",
               }}
@@ -339,8 +362,8 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
             <h2
               className="font-bold text-white m-0 flex-1 min-w-0"
               style={{
-                fontSize: cqw(86.31),
-                lineHeight: cqw(99.26), letterSpacing: "-0.01em",
+                fontSize: cqw(103.57),
+                lineHeight: cqw(119.11), letterSpacing: "-0.01em",
                 whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
               }}
             >
@@ -351,31 +374,37 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
           {/* Container 2: description, full width, no truncation */}
           <p
             className="text-white m-0"
-            style={{ fontSize: cqw(27.5), fontWeight: 300, lineHeight: 1.32 }}
+            style={{ fontSize: cqw(33), fontWeight: 300, lineHeight: 1.32 }}
           >
             {t(service.description) || FALLBACK_DESCRIPTION}
           </p>
 
-          {/* Container 3: two equal-width containers side by side */}
-          <div className="grid items-start" style={{ gridTemplateColumns: "1fr 1fr", gap: "32px" }}>
-            {/* Left: pills, price, CTA button, reference links */}
-            <div ref={leftColRef} className="flex flex-col" style={{ gap: "32px" }}>
-              <div className="flex items-center flex-wrap" style={{ gap: cqw(14) }}>
-                {displayFeatures.map((f, i) => (
-                  <span
-                    key={i}
-                    className="inline-flex items-center font-semibold whitespace-nowrap"
-                    style={{
-                      height: cqw(45), paddingLeft: cqw(13), paddingRight: cqw(13),
-                      borderRadius: cqw(45), fontSize: cqw(23.23), lineHeight: 1,
-                      background: "#d4b9f6", color: "#6f12e1", border: "1px solid #6f12e1",
-                    }}
-                  >
-                    {t(f)}
-                  </span>
-                ))}
-              </div>
+          {/* Pills: own full-width row so they always stay on one line,
+              regardless of the two-column grid below. No padding of its own —
+              it just sits in the same top-level flex column, so it inherits
+              the existing 32px gap above and below like every other row. */}
+          <div className="flex items-center flex-wrap" style={{ gap: "7.61px" }}>
+            {displayFeatures.map((f, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center font-semibold whitespace-nowrap rounded-full"
+                style={{
+                  paddingTop: cqw(13.06), paddingBottom: cqw(13.06),
+                  paddingLeft: cqw(26.12), paddingRight: cqw(26.12),
+                  fontSize: cqw(27.88), lineHeight: 1,
+                  background: "#d4b9f6", color: "#6f12e1", border: "1px solid #6f12e1",
+                }}
+              >
+                {t(f)}
+              </span>
+            ))}
+          </div>
 
+          {/* Container 3: two containers side by side, no gap — the right
+              (laptop) column absorbs the space a gap would have taken. */}
+          <div className="grid items-start" style={{ gridTemplateColumns: `calc(50% - ${RECLAIMED_GAP / 2}px) 1fr` }}>
+            {/* Left: price, CTA button, reference links */}
+            <div ref={leftColRef} className="flex flex-col" style={{ gap: "32px" }}>
               <div className="flex items-baseline">
                 <span className="text-white" style={{ fontSize: cqw(120), fontWeight: 800, lineHeight: 1, letterSpacing: "-0.02em" }}>
                   {service.price || "$69"}
@@ -389,7 +418,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
                 onClick={(e) => { e.stopPropagation(); onCta(service.slug); }}
                 className="flex items-center justify-center text-white font-bold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap overflow-hidden text-ellipsis"
                 style={{
-                  width: cqw(214), height: cqw(68), fontSize: cqw(25),
+                  width: cqw(308.16), height: cqw(97.92), fontSize: cqw(36),
                   background: "#4c4ac1", border: "1px solid #34336f",
                 }}
               >
@@ -413,7 +442,8 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
               </div>
             </div>
 
-            {/* Right: laptop mockup, shrunk to fit within the left column's size */}
+            {/* Right: laptop mockup, sized to fill this (gap-enlarged) column,
+                capped to the left column's height so row height is unaffected */}
             <div
               className="flex flex-col items-center justify-center"
               style={{ height: leftColSize ? `${leftColSize.height}px` : undefined }}
@@ -463,48 +493,51 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
       <div
         className="relative shrink-0 hidden sm:block lg:hidden"
         style={{
-          width: "min(100vw, 82vh, 700px)",
+          width: "min(100vw, 90vh, 900px)",
           containerType: "inline-size",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="absolute inset-0" style={{ borderRadius: cqwT(39), background: "#070b13", border: "1px solid #524eae96" }} />
-        <div className="flex flex-col" style={{ marginLeft: cqwT(52), width: cqwT(476), paddingTop: "64px", paddingBottom: "64px", gap: "32px" }}>
+        <div className="relative flex flex-col" style={{ paddingLeft: cqwT(52), paddingRight: cqwT(52), paddingTop: "66px", paddingBottom: "66px", gap: "33px" }}>
           {renderDivider()}
-          <div className="flex items-center" style={{ gap: cqwT(21) }}>
-            {renderFavicon(cqwT, 96, 20)}
-            {renderTitle(cqwT, 51.86, 59.64)}
+          {/* Content sizes below are Figma Frame 58's values scaled by 0.8 (per
+              explicit request to shrink content ~20% without touching any
+              gap/padding/margin, which stay at their original values). */}
+          <div className="flex items-center" style={{ gap: "27px" }}>
+            {renderFavicon(cqwTContent, 76.8, 16)}
+            {renderTitle(cqwTContent, 51.52, 59.25)}
           </div>
-          {renderPills(cqwT, 32.58, 16.82, 20.55)}
-          {renderPrice(cqwT, 72, 29)}
-          {renderDescription(cqwT, 21.87, 4)}
-          {renderCta(cqwT, 226, 85, 28.82)}
-          {renderLaptop(cqwT, 489, -3, 13)}
-          {renderUrls(cqwT, 21.87, 26.1, 460)}
+          {renderDescription(cqwTContent, 17.5, 4)}
+          {renderPills(cqwTContent, 16.15, 7.56, 15.12, "7.61px")}
+          {renderPrice(cqwTContent, 57.6, 23.2)}
+          {renderCta(cqwTContent, "50%", 68, 23.06)}
+          {renderLaptop(cqwTContent, "100%", 12.15)}
+          {renderUrls(cqwTContent, 17.5, 20.88, "100%")}
         </div>
       </div>
 
       <div
         className="relative shrink-0 block sm:hidden"
         style={{
-          width: "min(96vw, 46vh, 440px)",
+          width: "min(94vw, 60vh, 580px)",
           containerType: "inline-size",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="absolute inset-0" style={{ borderRadius: cqwM(38.37), background: "#070b13", border: "1px solid #524eae96" }} />
-        <div className="flex flex-col" style={{ marginLeft: cqwM(34), width: cqwM(236), paddingTop: "64px", paddingBottom: "64px", gap: "32px" }}>
+        <div className="relative flex flex-col" style={{ paddingLeft: cqwM(34), paddingRight: cqwM(34), paddingTop: "42px", paddingBottom: "42px", gap: "21px" }}>
           {renderDivider()}
-          <div className="flex items-center" style={{ gap: cqwM(8) }}>
+          <div className="flex items-center" style={{ gap: "8px" }}>
             {renderFavicon(cqwM, 56, 11.72)}
             {renderTitle(cqwM, 36.03, 41.43)}
           </div>
-          {renderPills(cqwM, 16.42, 8.48, 10.36)}
+          {renderDescription(cqwM, 13.55, 4)}
+          {renderPills(cqwM, 11.54, 5.39, 10.8, "7.61px")}
           {renderPrice(cqwM, 50, 20)}
-          {renderDescription(cqwM, 10.71, 4)}
-          {renderCta(cqwM, 151, 44, 17)}
-          {renderLaptop(cqwM, 331, -46, 9)}
-          {renderUrls(cqwM, 10.71, 12.79, 240)}
+          {renderCta(cqwM, "70%", 49.09, 16.65)}
+          {renderLaptop(cqwM, "100%", 8.62)}
+          {renderUrls(cqwM, 10.71, 12.79, "100%")}
         </div>
       </div>
     </div>
