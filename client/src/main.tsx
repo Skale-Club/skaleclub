@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import { Analytics } from "@vercel/analytics/react";
 import App from "./App";
 import "./index.css";
-import { registerServiceWorker } from "./lib/pwa";
+import { registerServiceWorker, unregisterStaleServiceWorker } from "./lib/pwa";
 
 Sentry.init({
   dsn: import.meta.env.VITE_SENTRY_DSN,
@@ -106,6 +106,7 @@ setTimeout(() => {
 }, 5000);
 
 registerServiceWorker();
+unregisterStaleServiceWorker();
 
 createRoot(document.getElementById("root")!).render(
   <>
