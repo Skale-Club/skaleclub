@@ -1,7 +1,7 @@
 import { pgTable, text, serial, integer, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { PORTFOLIO_DESCRIPTION_MAX_WORDS, countWords } from "../portfolio";
+import { PORTFOLIO_DESCRIPTION_MAX_WORDS, countWords } from "../portfolio.js";
 
 // Translations Table (AI-powered dynamic translations)
 export const translations = pgTable("translations", {
