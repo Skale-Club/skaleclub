@@ -58,6 +58,8 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const leftColRef = useRef<HTMLDivElement>(null);
+  const [leftColSize, setLeftColSize] = useState<{ width: number; height: number } | null>(null);
 
   const sliderImages: string[] = (service.popupSliderImages as string[]) || [];
   const popupUrls: string[] = (service.popupUrls as string[]) || [];
@@ -69,6 +71,25 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
   useEffect(() => {
     setCurrentSlide(0);
   }, [service.id]);
+
+  useEffect(() => {
+    if (!isOpen || !leftColRef.current) return;
+    const el = leftColRef.current;
+    const observer = new ResizeObserver((entries) => {
+      const rect = entries[0]?.contentRect;
+      if (rect && rect.width && rect.height) setLeftColSize({ width: rect.width, height: rect.height });
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isOpen, service.id]);
+
+  const LAPTOP_RATIO = 690 / 446;
+  let laptopBoxSize: { width: number; height: number } | null = null;
+  if (leftColSize) {
+    laptopBoxSize = leftColSize.width / leftColSize.height > LAPTOP_RATIO
+      ? { width: leftColSize.height * LAPTOP_RATIO, height: leftColSize.height }
+      : { width: leftColSize.width, height: leftColSize.width / LAPTOP_RATIO };
+  }
 
   useEffect(() => {
     if (!isOpen || sliderImages.length <= 1 || isPaused) return;
@@ -98,8 +119,8 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
 
   if (!isOpen) return null;
 
-  const renderDivider = (cqwFn: CqwFn, left: number, top: number, width: number) => (
-    <div className="absolute" style={{ left: cqwFn(left), top: cqwFn(top), width: cqwFn(width), height: "1px", background: "rgba(255,255,255,0.22)" }} />
+  const renderDivider = () => (
+    <div className="w-full shrink-0" style={{ height: "1px", background: "rgba(255,255,255,0.22)" }} />
   );
 
   const renderFavicon = (cqwFn: CqwFn, size: number, radius: number) => (
@@ -286,160 +307,156 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
       <div
         className="relative shrink-0 hidden lg:block"
         style={{
-          width: "min(99vw, calc((96vh - 32px) * 1799 / 992), 1280px)",
-          aspectRatio: "1799 / 992",
-          containerType: "size",
+          width: "min(84vw, 80vh, 1150px)",
+          containerType: "inline-size",
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div
-          className="absolute"
-          style={{
-            left: cqw(67), top: cqw(32), width: cqw(1664), height: cqw(929),
-            borderRadius: cqw(39), background: "#070b13",
-            border: "1px solid #524eae96",
-          }}
-        />
+        <div className="absolute inset-0" style={{ borderRadius: cqw(39), background: "#070b13", border: "1px solid #524eae96" }} />
 
-        <div
-          className="absolute"
-          style={{ left: cqw(224), top: cqw(136), width: cqw(1350), height: "1px", background: "rgba(255,255,255,0.22)" }}
-        />
+        <div className="relative flex flex-col" style={{ padding: `64px ${cqw(157)}`, gap: "32px" }}>
+          {renderDivider()}
 
-        <div
-          className="absolute overflow-hidden flex items-center justify-center"
-          style={{
-            left: cqw(224), top: cqw(160), width: cqw(96), height: cqw(96), borderRadius: cqw(20),
-            background: service.logoIconUrl ? "transparent" : "rgba(255,255,255,0.06)",
-            border: service.logoIconUrl ? "none" : "1px solid rgba(255,255,255,0.12)",
-          }}
-        >
-          {service.logoIconUrl && (
-            <img
-              src={getOriginalImageUrl(service.logoIconUrl)}
-              alt={service.title}
-              className="w-full h-full object-contain"
-            />
-          )}
-        </div>
-
-        <h2
-          className="absolute font-bold text-white m-0"
-          style={{
-            left: cqw(366), top: cqw(158), width: cqw(1208), fontSize: cqw(86.31),
-            lineHeight: cqw(99.26), letterSpacing: "-0.01em",
-            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-          }}
-        >
-          {service.title || FALLBACK_TITLE}
-        </h2>
-
-        <div
-          className="absolute flex items-center"
-          style={{ left: cqw(224), top: cqw(414), width: cqw(518), gap: cqw(14) }}
-        >
-          {displayFeatures.map((f, i) => (
-            <span
-              key={i}
-              className="inline-flex items-center font-semibold whitespace-nowrap"
+          {/* Container 1: logo + title, full width */}
+          <div className="flex items-center" style={{ gap: cqw(46) }}>
+            <div
+              className="shrink-0 overflow-hidden flex items-center justify-center"
               style={{
-                height: cqw(45), paddingLeft: cqw(13), paddingRight: cqw(13),
-                borderRadius: cqw(45), fontSize: cqw(23.23), lineHeight: 1,
-                background: "#d4b9f6", color: "#6f12e1", border: "1px solid #6f12e1",
+                width: cqw(96), height: cqw(96), borderRadius: cqw(20),
+                background: service.logoIconUrl ? "transparent" : "rgba(255,255,255,0.06)",
+                border: service.logoIconUrl ? "none" : "1px solid rgba(255,255,255,0.12)",
               }}
             >
-              {t(f)}
-            </span>
-          ))}
-        </div>
+              {service.logoIconUrl && (
+                <img
+                  src={getOriginalImageUrl(service.logoIconUrl)}
+                  alt={service.title}
+                  className="w-full h-full object-contain"
+                />
+              )}
+            </div>
 
-        <div className="absolute flex items-baseline" style={{ left: cqw(224), top: cqw(483) }}>
-          <span className="text-white" style={{ fontSize: cqw(120), fontWeight: 800, lineHeight: 1, letterSpacing: "-0.02em" }}>
-            {service.price || "$69"}
-          </span>
-          <span style={{ fontSize: cqw(48), fontWeight: 300, lineHeight: 1, marginLeft: cqw(6), color: "rgba(255,255,255,0.6)" }}>
-            {t(service.priceLabel) || "/mo"}
-          </span>
-        </div>
-
-        <div className="absolute flex flex-col items-start" style={{ left: cqw(224), top: cqw(719) }}>
-          {displayUrls.map((url, i) => (
-            <a
-              key={i}
-              href={url.startsWith("http") ? url : `https://${url}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-white hover:underline whitespace-nowrap overflow-hidden text-ellipsis block"
-              style={{ fontSize: cqw(29.31), lineHeight: cqw(35), fontWeight: 400, maxWidth: cqw(460) }}
-              onClick={(e) => e.stopPropagation()}
+            <h2
+              className="font-bold text-white m-0 flex-1 min-w-0"
+              style={{
+                fontSize: cqw(86.31),
+                lineHeight: cqw(99.26), letterSpacing: "-0.01em",
+                whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+              }}
             >
-              {url}
-            </a>
-          ))}
-        </div>
+              {service.title || FALLBACK_TITLE}
+            </h2>
+          </div>
 
-        <button
-          onClick={(e) => { e.stopPropagation(); onCta(service.slug); }}
-          className="absolute flex items-center justify-center text-white font-bold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap overflow-hidden text-ellipsis"
-          style={{
-            left: cqw(224), top: cqw(627),
-            width: cqw(214), height: cqw(68), fontSize: cqw(25),
-            background: "#4c4ac1", border: "1px solid #34336f",
-          }}
-        >
-          {isEnglish ? "Start" : "Começar"}
-        </button>
+          {/* Container 2: description, full width, no truncation */}
+          <p
+            className="text-white m-0"
+            style={{ fontSize: cqw(27.5), fontWeight: 300, lineHeight: 1.32 }}
+          >
+            {t(service.description) || FALLBACK_DESCRIPTION}
+          </p>
 
-        <p
-          className="absolute text-white m-0"
-          style={{
-            left: cqw(224), top: cqw(281), width: cqw(1350),
-            fontSize: cqw(27.5), fontWeight: 300, lineHeight: 1.32,
-            display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden",
-          }}
-        >
-          {t(service.description) || FALLBACK_DESCRIPTION}
-        </p>
-
-        <div
-          className="absolute"
-          style={{ left: cqw(844), top: cqw(414), width: cqw(684) }}
-          onMouseEnter={() => setIsPaused(true)}
-          onMouseLeave={() => setIsPaused(false)}
-        >
-          <LaptopMockup>
-            {sliderImages.length > 0 ? (
-              <div className="w-full h-full relative overflow-hidden">
-                {sliderImages.map((src, i) => (
-                  <img
+          {/* Container 3: two equal-width containers side by side */}
+          <div className="grid items-start" style={{ gridTemplateColumns: "1fr 1fr", gap: "32px" }}>
+            {/* Left: pills, price, CTA button, reference links */}
+            <div ref={leftColRef} className="flex flex-col" style={{ gap: "32px" }}>
+              <div className="flex items-center flex-wrap" style={{ gap: cqw(14) }}>
+                {displayFeatures.map((f, i) => (
+                  <span
                     key={i}
-                    src={getOriginalImageUrl(src)}
-                    alt={`Screenshot ${i + 1}`}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-in-out"
-                    style={{ transform: `translateX(${(i - currentSlide) * 100}%)` }}
-                  />
+                    className="inline-flex items-center font-semibold whitespace-nowrap"
+                    style={{
+                      height: cqw(45), paddingLeft: cqw(13), paddingRight: cqw(13),
+                      borderRadius: cqw(45), fontSize: cqw(23.23), lineHeight: 1,
+                      background: "#d4b9f6", color: "#6f12e1", border: "1px solid #6f12e1",
+                    }}
+                  >
+                    {t(f)}
+                  </span>
                 ))}
               </div>
-            ) : (
-              <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-                <span className="text-gray-500" style={{ fontSize: cqw(20) }}>{t("No screenshots")}</span>
-              </div>
-            )}
-          </LaptopMockup>
 
-          {sliderImages.length > 1 && (
-            <div className="flex justify-center" style={{ gap: cqw(14), marginTop: cqw(16) }}>
-              {sliderImages.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={(e) => { e.stopPropagation(); setCurrentSlide(i); }}
-                  aria-label={`Go to slide ${i + 1}`}
-                  className={`rounded-full transition-all duration-300 ${i === currentSlide ? "bg-white" : "bg-white/30 hover:bg-white/60"}`}
-                  style={{ width: cqw(i === currentSlide ? 28 : 16), height: cqw(16) }}
-                />
-              ))}
+              <div className="flex items-baseline">
+                <span className="text-white" style={{ fontSize: cqw(120), fontWeight: 800, lineHeight: 1, letterSpacing: "-0.02em" }}>
+                  {service.price || "$69"}
+                </span>
+                <span style={{ fontSize: cqw(48), fontWeight: 300, lineHeight: 1, marginLeft: cqw(6), color: "rgba(255,255,255,0.6)" }}>
+                  {t(service.priceLabel) || "/mo"}
+                </span>
+              </div>
+
+              <button
+                onClick={(e) => { e.stopPropagation(); onCta(service.slug); }}
+                className="flex items-center justify-center text-white font-bold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap overflow-hidden text-ellipsis"
+                style={{
+                  width: cqw(214), height: cqw(68), fontSize: cqw(25),
+                  background: "#4c4ac1", border: "1px solid #34336f",
+                }}
+              >
+                {isEnglish ? "Start" : "Começar"}
+              </button>
+
+              <div className="flex flex-col items-start">
+                {displayUrls.map((url, i) => (
+                  <a
+                    key={i}
+                    href={url.startsWith("http") ? url : `https://${url}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-white hover:underline whitespace-nowrap overflow-hidden text-ellipsis block"
+                    style={{ fontSize: cqw(29.31), lineHeight: cqw(35), fontWeight: 400, maxWidth: "100%" }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {url}
+                  </a>
+                ))}
+              </div>
             </div>
-          )}
+
+            {/* Right: laptop mockup, shrunk to fit within the left column's size */}
+            <div
+              className="flex flex-col items-center justify-center"
+              style={{ height: leftColSize ? `${leftColSize.height}px` : undefined }}
+              onMouseEnter={() => setIsPaused(true)}
+              onMouseLeave={() => setIsPaused(false)}
+            >
+              <div className="shrink-0" style={laptopBoxSize ? { width: laptopBoxSize.width, height: laptopBoxSize.height } : { width: "100%", aspectRatio: "690 / 446" }}>
+                <LaptopMockup>
+                  {sliderImages.length > 0 ? (
+                    <div className="w-full h-full relative overflow-hidden">
+                      {sliderImages.map((src, i) => (
+                        <img
+                          key={i}
+                          src={getOriginalImageUrl(src)}
+                          alt={`Screenshot ${i + 1}`}
+                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-in-out"
+                          style={{ transform: `translateX(${(i - currentSlide) * 100}%)` }}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                      <span className="text-gray-500" style={{ fontSize: cqw(20) }}>{t("No screenshots")}</span>
+                    </div>
+                  )}
+                </LaptopMockup>
+              </div>
+
+              {sliderImages.length > 1 && (
+                <div className="flex justify-center shrink-0" style={{ gap: cqw(14), marginTop: cqw(16) }}>
+                  {sliderImages.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={(e) => { e.stopPropagation(); setCurrentSlide(i); }}
+                      aria-label={`Go to slide ${i + 1}`}
+                      className={`rounded-full transition-all duration-300 ${i === currentSlide ? "bg-white" : "bg-white/30 hover:bg-white/60"}`}
+                      style={{ width: cqw(i === currentSlide ? 28 : 16), height: cqw(16) }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -447,14 +464,13 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
         className="relative shrink-0 hidden sm:block lg:hidden"
         style={{
           width: "min(100vw, 82vh, 700px)",
-          aspectRatio: "586 / 1214",
-          containerType: "size",
+          containerType: "inline-size",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="absolute inset-0" style={{ borderRadius: cqwT(39), background: "#070b13", border: "1px solid #524eae96" }} />
-        {renderDivider(cqwT, 52, 74, 476)}
-        <div className="absolute flex flex-col" style={{ left: cqwT(52), top: cqwT(117), width: cqwT(476), gap: cqwT(32) }}>
+        <div className="flex flex-col" style={{ marginLeft: cqwT(52), width: cqwT(476), paddingTop: "64px", paddingBottom: "64px", gap: "32px" }}>
+          {renderDivider()}
           <div className="flex items-center" style={{ gap: cqwT(21) }}>
             {renderFavicon(cqwT, 96, 20)}
             {renderTitle(cqwT, 51.86, 59.64)}
@@ -472,14 +488,13 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
         className="relative shrink-0 block sm:hidden"
         style={{
           width: "min(96vw, 46vh, 440px)",
-          aspectRatio: "306 / 774",
-          containerType: "size",
+          containerType: "inline-size",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="absolute inset-0" style={{ borderRadius: cqwM(38.37), background: "#070b13", border: "1px solid #524eae96" }} />
-        {renderDivider(cqwM, 35, 32, 236)}
-        <div className="absolute flex flex-col" style={{ left: cqwM(34), top: "50%", width: cqwM(236), gap: cqwM(22), transform: "translateY(-50%)" }}>
+        <div className="flex flex-col" style={{ marginLeft: cqwM(34), width: cqwM(236), paddingTop: "64px", paddingBottom: "64px", gap: "32px" }}>
+          {renderDivider()}
           <div className="flex items-center" style={{ gap: cqwM(8) }}>
             {renderFavicon(cqwM, 56, 11.72)}
             {renderTitle(cqwM, 36.03, 41.43)}
