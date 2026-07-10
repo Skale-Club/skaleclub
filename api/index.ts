@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import '../server/instrument.js';
 import fs from 'fs';
 import path from 'path';
 import type { VercelRequest, VercelResponse } from "@vercel/node";

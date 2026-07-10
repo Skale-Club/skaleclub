@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
+import crypto from "crypto";
 import { db } from "../db.js";
 import { users } from "#shared/schema.js";
 import { eq } from "drizzle-orm";
@@ -31,7 +32,10 @@ export function setPublicCache(res: Response, seconds: number) {
 }
 
 /**
- * Check whether a cron request is authorized (Vercel cron header or Bearer token).
+ * Check whether a cron request is authorized via a constant-time Bearer token
+ * comparison against CRON_SECRET. In production, an unset CRON_SECRET denies
+ * all requests — the `x-vercel-cron` header is client-supplied and therefore
+ * spoofable, so it is never trusted as an auth mechanism.
  */
 export function isAuthorizedCronRequest(req: Request): boolean {
   const cronSecret = process.env.CRON_SECRET;
@@ -40,15 +44,22 @@ export function isAuthorizedCronRequest(req: Request): boolean {
     typeof authHeader === "string" && authHeader.startsWith("Bearer ")
       ? authHeader.slice("Bearer ".length)
       : null;
-  const hasVercelCronHeader = typeof req.headers["x-vercel-cron"] === "string";
 
   if (cronSecret) {
-    return bearerToken === cronSecret;
+    if (!bearerToken) {
+      return false;
+    }
+    const expected = Buffer.from(cronSecret);
+    const actual = Buffer.from(bearerToken);
+    if (expected.length !== actual.length) {
+      return false;
+    }
+    return crypto.timingSafeEqual(expected, actual);
   }
 
   if (process.env.NODE_ENV !== "production") {
     return true;
   }
 
-  return hasVercelCronHeader;
+  return false;
 }
