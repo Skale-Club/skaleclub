@@ -47,6 +47,14 @@ export const blogSettings = pgTable("blog_settings", {
   seoKeywords: text("seo_keywords").notNull().default(""),
   enableTrendAnalysis: boolean("enable_trend_analysis").notNull().default(false),
   promptStyle: text("prompt_style").notNull().default(""),
+  // Autopost port (Xkedule): editorial guide injected into every generation.
+  systemPrompt: text("system_prompt").notNull().default(""),
+  // true → generator publishes immediately; false → drafts wait in the approval queue.
+  autoApprove: boolean("auto_approve").notNull().default(false),
+  // OpenRouter model ids picked in the admin panel. Automation cannot be
+  // enabled until both are set AND an OpenRouter API key is configured.
+  openrouterTextModel: text("openrouter_text_model").notNull().default(""),
+  openrouterImageModel: text("openrouter_image_model").notNull().default(""),
   lastRunAt: timestamp("last_run_at"),
   lockAcquiredAt: timestamp("lock_acquired_at"),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
@@ -76,6 +84,10 @@ export const insertBlogSettingsSchema = z.object({
   seoKeywords: z.string().default(""),
   enableTrendAnalysis: z.boolean().default(false),
   promptStyle: z.string().default(""),
+  systemPrompt: z.string().default(""),
+  autoApprove: z.boolean().default(false),
+  openrouterTextModel: z.string().default(""),
+  openrouterImageModel: z.string().default(""),
   lastRunAt: nullableDateInputSchema,
   lockAcquiredAt: nullableDateInputSchema,
 });
@@ -87,6 +99,10 @@ export const selectBlogSettingsSchema = z.object({
   seoKeywords: z.string(),
   enableTrendAnalysis: z.boolean(),
   promptStyle: z.string(),
+  systemPrompt: z.string(),
+  autoApprove: z.boolean(),
+  openrouterTextModel: z.string(),
+  openrouterImageModel: z.string(),
   lastRunAt: z.date().nullable(),
   lockAcquiredAt: z.date().nullable(),
   updatedAt: z.date().nullable(),
@@ -205,5 +221,49 @@ export const selectBlogRssItemSchema = z.object({
   usedAt: z.date().nullable(),
   usedPostId: z.number().int().nullable(),
   skipReason: z.string().nullable(),
+  createdAt: z.date(),
+});
+
+// ─── Post Feedback (Autopost port — approve/reject learning loop) ──────────
+//
+// Approving a generated post records a positive signal; rejecting records a
+// negative one (with an optional reason) and deletes the post. Title/topic are
+// snapshotted so the learning survives post deletion. The generator injects
+// the most recent signals into its prompts ("more like these / avoid these").
+
+export const blogPostFeedback = pgTable("blog_post_feedback", {
+  id: serial("id").primaryKey(),
+  // No FK on purpose: rejected posts are deleted but their feedback must survive.
+  postId: integer("post_id"),
+  postTitle: text("post_title").notNull(),
+  rssItemTitle: text("rss_item_title"),
+  signal: text("signal").notNull(),
+  reason: text("reason"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  signalCreatedIdx: index("blog_post_feedback_signal_created_idx").on(table.signal, table.createdAt),
+}));
+
+export type BlogPostFeedback = typeof blogPostFeedback.$inferSelect;
+export type InsertBlogPostFeedback = typeof blogPostFeedback.$inferInsert;
+
+export const blogFeedbackSignalSchema = z.enum(["positive", "negative"]);
+export type BlogFeedbackSignal = z.infer<typeof blogFeedbackSignalSchema>;
+
+export const insertBlogPostFeedbackSchema = z.object({
+  postId: z.number().int().nullable().optional(),
+  postTitle: z.string().min(1).max(500),
+  rssItemTitle: z.string().nullable().optional(),
+  signal: blogFeedbackSignalSchema,
+  reason: z.string().max(1000).nullable().optional(),
+});
+
+export const selectBlogPostFeedbackSchema = z.object({
+  id: z.number().int(),
+  postId: z.number().int().nullable(),
+  postTitle: z.string(),
+  rssItemTitle: z.string().nullable(),
+  signal: blogFeedbackSignalSchema,
+  reason: z.string().nullable(),
   createdAt: z.date(),
 });

@@ -21,6 +21,7 @@ import {
   blogGenerationJobs,
   blogRssSources,
   blogRssItems,
+  blogPostFeedback,
   hubLives,
   hubParticipants,
   hubRegistrations,
@@ -56,6 +57,8 @@ import {
   type BlogPost,
   type BlogSettings,
   type BlogGenerationJob,
+  type BlogPostFeedback,
+  type InsertBlogPostFeedback,
   type HubLive,
   type InsertHubLive,
   type HubLiveStatus,
@@ -289,6 +292,12 @@ export interface IStorage {
     limit: number,
     offset: number,
   ): Promise<RssItemWithSource[]>;
+
+  // Autopost port — approve/reject feedback loop
+  createBlogPostFeedback(data: InsertBlogPostFeedback): Promise<BlogPostFeedback>;
+  listBlogPostFeedback(limit?: number): Promise<BlogPostFeedback[]>;
+  getRssItemByUsedPostId(postId: number): Promise<BlogRssItem | undefined>;
+
   listBlogGenerationJobs(limit: number): Promise<BlogGenerationJobWithRssItem[]>;
   getBlogGenerationJob(id: number): Promise<BlogGenerationJob | undefined>;
   // Phase 37 Info-9: joined single-row variant for retry handler — avoids the
@@ -1255,6 +1264,30 @@ export class DatabaseStorage implements IStorage {
         skipReason: reason ?? null,
       })
       .where(eq(blogRssItems.id, itemId));
+  }
+
+  // ─── Blog Post Feedback (Autopost port — approve/reject learning loop) ───
+
+  async createBlogPostFeedback(data: InsertBlogPostFeedback): Promise<BlogPostFeedback> {
+    const [created] = await db.insert(blogPostFeedback).values(data).returning();
+    return created;
+  }
+
+  async listBlogPostFeedback(limit = 20): Promise<BlogPostFeedback[]> {
+    return await db
+      .select()
+      .from(blogPostFeedback)
+      .orderBy(desc(blogPostFeedback.createdAt))
+      .limit(limit);
+  }
+
+  async getRssItemByUsedPostId(postId: number): Promise<BlogRssItem | undefined> {
+    const [row] = await db
+      .select()
+      .from(blogRssItems)
+      .where(eq(blogRssItems.usedPostId, postId))
+      .limit(1);
+    return row;
   }
 
   // Phase 37 — read-side joins for admin UI

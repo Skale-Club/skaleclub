@@ -107,18 +107,19 @@ export function slugifyTitle(title: string): string {
     .replace(/-+$/g, ""); // re-trim if slice cut mid-hyphen-run
 }
 
-// ─── D-08 / D-07: typed errors thrown by Plan 36-03 Gemini call sites ──
+// ─── D-08 / D-07: typed errors thrown at the generator's AI call sites ──
+// (provider-neutral since the OpenRouter port; formerly Gemini*Error)
 
-export class GeminiTimeoutError extends Error {
-  constructor(message: string = "Gemini call timed out") {
+export class AiTimeoutError extends Error {
+  constructor(message: string = "AI provider call timed out") {
     super(message);
-    this.name = "GeminiTimeoutError";
+    this.name = "AiTimeoutError";
   }
 }
 
-export class GeminiEmptyResponseError extends Error {
-  constructor(message: string = "Gemini returned empty candidates array") {
+export class AiEmptyResponseError extends Error {
+  constructor(message: string = "AI provider returned an empty response") {
     super(message);
-    this.name = "GeminiEmptyResponseError";
+    this.name = "AiEmptyResponseError";
   }
 }

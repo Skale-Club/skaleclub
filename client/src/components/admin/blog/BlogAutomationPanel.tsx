@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Check, Zap } from 'lucide-react';
+import { AlertCircle, Check, Zap } from 'lucide-react';
 import { AdminCard } from '../shared';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -13,6 +13,7 @@ import { Loader2 } from '@/components/ui/loader';
 import { clsx } from 'clsx';
 import { formatDistanceToNow } from 'date-fns';
 import { PreviewDraftDialog } from './PreviewDraftDialog';
+import { OpenRouterModelPicker, type OpenRouterModelsResponse } from './OpenRouterModelPicker';
 import type { BlogSettings, BlogGenerationJob } from '@shared/schema';
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
@@ -23,6 +24,13 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   pending:   { label: 'Pending',   className: 'bg-muted text-muted-foreground' },
 };
 
+interface BlogHealth {
+  openrouterKeyConfigured: boolean;
+  textModelConfigured: boolean;
+  imageModelConfigured: boolean;
+  configured: boolean;
+}
+
 export function BlogAutomationPanel() {
   const { toast } = useToast();
   const [isSaved, setIsSaved] = useState(false);
@@ -32,6 +40,10 @@ export function BlogAutomationPanel() {
     seoKeywords: '',
     enableTrendAnalysis: false,
     promptStyle: '',
+    systemPrompt: '',
+    autoApprove: false,
+    openrouterTextModel: '',
+    openrouterImageModel: '',
   });
 
   const { data: settings } = useQuery<BlogSettings>({
@@ -42,6 +54,15 @@ export function BlogAutomationPanel() {
     queryKey: ['/api/blog/jobs/latest'],
   });
 
+  const { data: health } = useQuery<BlogHealth>({
+    queryKey: ['/api/blog/health'],
+    staleTime: 30_000,
+  });
+
+  const { data: modelsData, isLoading: isLoadingModels } = useQuery<OpenRouterModelsResponse>({
+    queryKey: ['/api/integrations/openrouter/models'],
+  });
+
   useEffect(() => {
     if (settings) {
       setFormDraft({
@@ -50,6 +71,10 @@ export function BlogAutomationPanel() {
         seoKeywords: settings.seoKeywords ?? '',
         enableTrendAnalysis: settings.enableTrendAnalysis,
         promptStyle: settings.promptStyle ?? '',
+        systemPrompt: settings.systemPrompt ?? '',
+        autoApprove: settings.autoApprove ?? false,
+        openrouterTextModel: settings.openrouterTextModel ?? '',
+        openrouterImageModel: settings.openrouterImageModel ?? '',
       });
     }
   }, [settings]);
@@ -59,6 +84,7 @@ export function BlogAutomationPanel() {
       apiRequest('PUT', '/api/blog/settings', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/blog/settings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/blog/health'] });
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);
     },
@@ -67,8 +93,17 @@ export function BlogAutomationPanel() {
     },
   });
 
-  // Phase 37 D-17: "Generate Now" now opens PreviewDraftDialog instead of immediately committing.
+  // Phase 37 D-17: "Generate Now" opens PreviewDraftDialog instead of immediately committing.
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  const allModels = modelsData?.models ?? [];
+  // Only image-capable models belong in the image picker; fall back to the
+  // full list if the catalog did not report modalities (stale cache/fallback).
+  const imageModels = allModels.filter((m) => m.outputModalities?.includes('image'));
+  const hasKey = health?.openrouterKeyConfigured ?? false;
+  const canEnable = hasKey
+    && formDraft.openrouterTextModel.trim().length > 0
+    && formDraft.openrouterImageModel.trim().length > 0;
 
   return (
     <AdminCard>
@@ -76,7 +111,7 @@ export function BlogAutomationPanel() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold">Blog Automation</h2>
-            <p className="text-sm text-muted-foreground">Configure automatic blog post generation powered by Gemini.</p>
+            <p className="text-sm text-muted-foreground">Configure automatic blog post generation powered by OpenRouter.</p>
           </div>
           <Button
             onClick={() => setIsPreviewOpen(true)}
@@ -117,15 +152,83 @@ export function BlogAutomationPanel() {
           }}
           className="space-y-5"
         >
-          {/* enabled toggle */}
+          {/* AI provider configuration (autopost port) */}
+          <div className="space-y-4 p-4 border rounded-lg bg-card">
+            <div>
+              <Label className="text-base">AI Provider (OpenRouter)</Label>
+              <p className="text-xs text-muted-foreground">
+                The API key lives in{' '}
+                <a href="/admin?section=integrations" className="underline hover:text-foreground">
+                  Integrations → AI Assistant → OpenRouter
+                </a>
+                . Pick here which models write the posts and generate the cover images.
+              </p>
+            </div>
+            {!hasKey && (
+              <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>
+                  No OpenRouter API key configured. Add one in Integrations before enabling automation.
+                </span>
+              </div>
+            )}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>Text Model</Label>
+                <OpenRouterModelPicker
+                  value={formDraft.openrouterTextModel}
+                  onChange={(id) => setFormDraft(prev => ({ ...prev, openrouterTextModel: id }))}
+                  models={allModels}
+                  isLoading={isLoadingModels}
+                  placeholder="Select a text model..."
+                  testId="select-blog-text-model"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Image Model</Label>
+                <OpenRouterModelPicker
+                  value={formDraft.openrouterImageModel}
+                  onChange={(id) => setFormDraft(prev => ({ ...prev, openrouterImageModel: id }))}
+                  models={imageModels.length > 0 ? imageModels : allModels}
+                  isLoading={isLoadingModels}
+                  placeholder="Select an image model..."
+                  testId="select-blog-image-model"
+                />
+                <p className="text-xs text-muted-foreground">Only image-capable models are listed.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* enabled toggle — gated on key + models */}
           <div className="flex items-center justify-between p-3 border rounded-lg bg-card">
             <div className="space-y-0.5">
               <Label className="text-base">Enable Automation</Label>
-              <p className="text-xs text-muted-foreground">Automatically generate blog posts on the configured schedule</p>
+              <p className="text-xs text-muted-foreground">
+                {canEnable
+                  ? 'Automatically generate blog posts on the configured schedule'
+                  : 'Configure the OpenRouter key and both models to enable automation'}
+              </p>
             </div>
             <Switch
               checked={formDraft.enabled}
+              disabled={!canEnable && !formDraft.enabled}
               onCheckedChange={(checked) => setFormDraft(prev => ({ ...prev, enabled: checked }))}
+              data-testid="switch-blog-automation-enabled"
+            />
+          </div>
+
+          {/* autoApprove toggle (autopost port) */}
+          <div className="flex items-center justify-between p-3 border rounded-lg bg-card">
+            <div className="space-y-0.5">
+              <Label className="text-base">Auto-approve posts</Label>
+              <p className="text-xs text-muted-foreground">
+                On: generated posts are published immediately. Off: they wait in the approval queue below, and every approve/reject teaches the generator.
+              </p>
+            </div>
+            <Switch
+              checked={formDraft.autoApprove}
+              onCheckedChange={(checked) => setFormDraft(prev => ({ ...prev, autoApprove: checked }))}
+              data-testid="switch-blog-auto-approve"
             />
           </div>
 
@@ -147,6 +250,20 @@ export function BlogAutomationPanel() {
                 <SelectItem value="4">4 posts / day</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* systemPrompt textarea (autopost port) */}
+          <div className="space-y-1.5">
+            <Label>System Prompt (editorial guide)</Label>
+            <Textarea
+              placeholder="e.g. Você é o redator do blog da Skale Club. Escreva para donos de negócios B2B no Brasil, tom direto e orientado a dados..."
+              value={formDraft.systemPrompt}
+              onChange={(e) => setFormDraft(prev => ({ ...prev, systemPrompt: e.target.value }))}
+              rows={4}
+            />
+            <p className="text-xs text-muted-foreground">
+              Injected into every generation as the editorial voice. Leave empty to use the built-in Skale Club voice.
+            </p>
           </div>
 
           {/* seoKeywords textarea */}
