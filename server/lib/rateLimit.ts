@@ -28,7 +28,9 @@ const buckets = new Map<string, Bucket>();
 const PURGE_INTERVAL_MS = 5 * 60_000;
 const purgeTimer: ReturnType<typeof setInterval> = setInterval(() => {
   const now = Date.now();
-  for (const [key, bucket] of buckets) {
+  // Array.from(...) rather than iterating the Map directly: tsconfig has no
+  // `target`/`downlevelIteration`, so `for..of` over a Map hits TS2802.
+  for (const [key, bucket] of Array.from(buckets.entries())) {
     if (now > bucket.resetAt) buckets.delete(key);
   }
 }, PURGE_INTERVAL_MS);
