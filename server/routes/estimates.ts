@@ -28,8 +28,10 @@ async function buildUniqueEstimateSlug(data: {
   const source = data.companyName?.trim() || data.contactName?.trim() || data.clientName.trim();
   const base = slugifyName(source);
 
-  if (!await storage.getEstimateBySlug(base)) return base;
-
+  // Always append a short random suffix for newly created estimates so slugs
+  // aren't trivially guessable from the company/contact name alone (SEC-01
+  // defense-in-depth). Existing stored slugs are unaffected — this only
+  // changes what's generated going forward.
   for (let i = 0; i < 5; i++) {
     const candidate = `${base}-${crypto.randomBytes(2).toString("hex")}`;
     if (!await storage.getEstimateBySlug(candidate)) return candidate;
@@ -48,15 +50,80 @@ function normalizeCustomSlug(slug: string): string {
     .replace(/^-+|-+$/g, "") || "estimate";
 }
 
+// Strips access_code + thumbnail fields from an estimate for client consumption
+// (D-07, RESEARCH pitfall 1). Used for both the public (no-gate) slug response
+// and the post-unlock verify-code response - same shape either way.
+function toPublicEstimate(estimate: any) {
+  const { accessCode, thumbnailUrl, thumbnailSignature, ...publicEstimate } = estimate;
+  return { ...publicEstimate, hasAccessCode: Boolean(accessCode) };
+}
+
+// Best-effort client IP extraction (mirrors the pattern already used by the
+// /view endpoint below and server/auth/supabaseAuth.ts's login limiter).
+function getRequestIp(req: { headers: Record<string, unknown>; ip?: string }): string {
+  const fwd = req.headers["x-forwarded-for"];
+  if (typeof fwd === "string" && fwd.length > 0) return fwd.split(",")[0]!.trim();
+  if (Array.isArray(fwd) && fwd.length > 0) return String(fwd[0]);
+  return req.ip || "unknown";
+}
+
+// Constant-time access-code comparison - guards against timing attacks that
+// could leak code length/contents. Mismatched lengths are treated as failure
+// without ever calling timingSafeEqual (which throws on differing lengths).
+function isValidAccessCode(stored: string, provided: string): boolean {
+  const storedBuf = Buffer.from(stored);
+  const providedBuf = Buffer.from(provided);
+  if (storedBuf.length !== providedBuf.length) return false;
+  return crypto.timingSafeEqual(storedBuf, providedBuf);
+}
+
+// Per-IP rate limit for verify-code guesses (SEC-01) - mirrors the in-memory
+// Map + purge style used in server/auth/supabaseAuth.ts and server/routes/linksPage.ts.
+const VERIFY_CODE_WINDOW_MS = 5 * 60_000;
+const VERIFY_CODE_MAX_ATTEMPTS = 10;
+const VERIFY_CODE_PRUNE_AT_SIZE = 5000;
+const verifyCodeAttempts = new Map<string, { count: number; resetAt: number }>();
+
+function pruneVerifyCodeAttempts() {
+  const now = Date.now();
+  for (const [key, entry] of Array.from(verifyCodeAttempts.entries())) {
+    if (now > entry.resetAt) verifyCodeAttempts.delete(key);
+  }
+}
+
+function isVerifyCodeRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = verifyCodeAttempts.get(ip);
+  if (!entry || now > entry.resetAt) {
+    verifyCodeAttempts.set(ip, { count: 1, resetAt: now + VERIFY_CODE_WINDOW_MS });
+    if (verifyCodeAttempts.size > VERIFY_CODE_PRUNE_AT_SIZE) pruneVerifyCodeAttempts();
+    return false;
+  }
+  entry.count += 1;
+  return entry.count > VERIFY_CODE_MAX_ATTEMPTS;
+}
+
 export function registerEstimatesRoutes(app: Express) {
   // Public slug endpoint registered first to avoid Express matching "slug" as an :id value
   app.get("/api/estimates/slug/:slug", async (req, res) => {
     try {
       const estimate = await storage.getEstimateBySlug(req.params.slug);
       if (!estimate) return res.status(404).json({ message: "Estimate not found" });
-      // Never expose access_code to the public client (D-07, RESEARCH pitfall 1)
-      const { accessCode, thumbnailUrl, thumbnailSignature, ...publicEstimate } = estimate as any;
-      res.json({ ...publicEstimate, hasAccessCode: Boolean(accessCode) });
+      // Gated estimates: enforce the access-code wall server-side (SEC-01). Only
+      // minimal, non-confidential metadata needed to render the gate is returned -
+      // no services, pricing, notes, or other financial/line-item data.
+      if (estimate.accessCode) {
+        return res.json({
+          id: estimate.id,
+          slug: estimate.slug,
+          clientName: estimate.clientName,
+          companyName: estimate.companyName,
+          contactName: estimate.contactName,
+          hasAccessCode: true,
+        });
+      }
+      // No gate set - full public estimate, minus access_code/thumbnail fields.
+      res.json(toPublicEstimate(estimate));
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
     }
@@ -77,15 +144,24 @@ export function registerEstimatesRoutes(app: Express) {
 
   app.post("/api/estimates/:id/verify-code", async (req, res) => {
     try {
+      const ip = getRequestIp(req);
+      if (isVerifyCodeRateLimited(ip)) {
+        return res.status(429).json({ message: "Too many attempts. Please try again later." });
+      }
       const id = Number(req.params.id);
-      const { code } = req.body as { code: string };
+      const { code } = req.body as { code?: unknown };
       const estimate = await storage.getEstimate(id);
       if (!estimate) return res.status(404).json({ message: "Estimate not found" });
-      // No gate set — treat as unlocked
-      if (!estimate.accessCode) return res.json({ success: true });
-      // Plain text comparison — D-07 (NOT bcrypt — codes must be readable for GHL automation)
-      if (estimate.accessCode !== code) return res.status(401).json({ message: "Incorrect code" });
-      res.json({ success: true });
+      // No gate set — treat as unlocked, return the full estimate so the client
+      // can render it (same shape as the public slug endpoint).
+      if (!estimate.accessCode) return res.json({ success: true, ...toPublicEstimate(estimate) });
+      // Constant-time comparison — D-07 (NOT bcrypt — codes must be readable for GHL automation)
+      const provided = typeof code === "string" ? code : "";
+      if (!isValidAccessCode(estimate.accessCode, provided)) {
+        return res.status(401).json({ message: "Incorrect code" });
+      }
+      // Correct code — unlock and return the full estimate for rendering.
+      res.json({ success: true, ...toPublicEstimate(estimate) });
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
     }
