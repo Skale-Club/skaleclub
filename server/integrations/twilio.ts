@@ -77,7 +77,17 @@ export async function sendSms(config: TwilioConfig, body: string): Promise<Twili
     const twilio = await import("twilio");
     const client = twilio.default(config.accountSid, config.authToken);
 
-    for (const to of config.recipients) {
+    // Sanity cap on fan-out so a misconfigured recipient list can't run up an
+    // unbounded SMS bill. Recipients are admin-configured, so this is generous.
+    const MAX_RECIPIENTS = 25;
+    const recipients = config.recipients.slice(0, MAX_RECIPIENTS);
+    if (config.recipients.length > MAX_RECIPIENTS) {
+      console.warn(
+        `Twilio: recipient list of ${config.recipients.length} exceeds cap; sending to first ${MAX_RECIPIENTS} only.`,
+      );
+    }
+
+    for (const to of recipients) {
       await client.messages.create({
         body,
         from: config.from,

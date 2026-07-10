@@ -111,12 +111,15 @@ export async function consumeOAuthCode(code: string, codeVerifier: string, redir
   if (new Date() > row.expiresAt) return null;
   if (row.redirectUri !== redirectUri) return null;
 
-  // PKCE: SHA-256(codeVerifier) base64url must match stored codeChallenge
+  // PKCE: SHA-256(codeVerifier) base64url must match stored codeChallenge.
+  // Constant-time compare to avoid leaking the challenge via timing.
   const verifierHash = crypto
     .createHash("sha256")
     .update(codeVerifier)
     .digest("base64url");
-  if (verifierHash !== row.codeChallenge) return null;
+  const a = Buffer.from(verifierHash);
+  const b = Buffer.from(row.codeChallenge ?? "");
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
 
   await db.update(oauthCodes).set({ usedAt: new Date(), rawToken: null }).where(eq(oauthCodes.id, row.id));
   return row;
