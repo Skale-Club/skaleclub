@@ -3,6 +3,7 @@ import { z } from "zod";
 import { storage } from "../storage.js";
 import { insertBlogPostSchema } from "#shared/schema.js";
 import { requireAdmin, setPublicCache } from "./_shared.js";
+import { sanitizeBlogHtml } from "../lib/blogContentValidator.js";
 
 export function registerBlogRoutes(app: Express) {
   app.get("/api/blog", async (req, res) => {
@@ -149,6 +150,9 @@ export function registerBlogRoutes(app: Express) {
   app.post("/api/blog", requireAdmin, async (req, res) => {
     try {
       const validatedData = insertBlogPostSchema.parse(req.body);
+      if (typeof validatedData.content === "string") {
+        validatedData.content = sanitizeBlogHtml(validatedData.content);
+      }
       const post = await storage.createBlogPost(validatedData);
       res.status(201).json(post);
     } catch (err) {
@@ -162,6 +166,9 @@ export function registerBlogRoutes(app: Express) {
   app.put("/api/blog/:id", requireAdmin, async (req, res) => {
     try {
       const validatedData = insertBlogPostSchema.partial().parse(req.body);
+      if (typeof validatedData.content === "string") {
+        validatedData.content = sanitizeBlogHtml(validatedData.content);
+      }
       const post = await storage.updateBlogPost(Number(req.params.id), validatedData);
       res.json(post);
     } catch (err) {
