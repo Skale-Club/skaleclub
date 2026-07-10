@@ -1,6 +1,9 @@
 const GHL_BASE_URL = "https://services.leadconnectorhq.com";
 const GHL_API_VERSION = "2021-07-28";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const GHL_FETCH_TIMEOUT_MS = 15_000;
+// Set GHL_DEBUG_LOGGING=true to enable minimal, non-PII diagnostic logging.
+const GHL_DEBUG = process.env.GHL_DEBUG_LOGGING === "true";
 
 function normalizeEmail(email?: string | null) {
   const value = email?.trim().toLowerCase();
@@ -60,18 +63,31 @@ async function ghlFetch(
   options: RequestInit = {}
 ): Promise<Response> {
   const url = `${GHL_BASE_URL}${endpoint}`;
-  
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Version": GHL_API_VERSION,
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
 
-  return response;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), GHL_FETCH_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Version": GHL_API_VERSION,
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+    });
+
+    return response;
+  } catch (error: any) {
+    if (error?.name === "AbortError") {
+      throw new Error(`GHL API request timed out after ${GHL_FETCH_TIMEOUT_MS}ms: ${endpoint}`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 export async function testGHLConnection(apiKey: string, locationId: string): Promise<{ success: boolean; message: string }> {
@@ -172,8 +188,11 @@ export async function getGHLFreeSlots(
 
     if (response.ok) {
       const data = await response.json();
-      console.log('GHL raw API response:', JSON.stringify(data, null, 2));
-      
+      if (GHL_DEBUG) {
+        // Non-PII: only the response's top-level shape, never slot/contact values.
+        console.log('[ghl] free-slots response shape:', Array.isArray(data) ? 'array' : Object.keys(data));
+      }
+
       let slotsArray: GHLSlotItem[] = [];
       
       if (Array.isArray(data)) {
@@ -431,7 +450,10 @@ export async function updateGHLContact(
       body.address1 = parsed.street;
       if (parsed.city) body.city = parsed.city;
       if (parsed.state) body.state = parsed.state;
-      console.log(`Parsed address: street="${parsed.street}", city="${parsed.city}", state="${parsed.state}"`);
+      if (GHL_DEBUG) {
+        // Non-PII: confirms parsing happened without logging the actual address.
+        console.log('[ghl] address parsed into street/city/state fields');
+      }
     }
 
     // Add custom fields if provided
@@ -445,11 +467,13 @@ export async function updateGHLContact(
     });
 
     if (response.ok) {
-      console.log(`GHL contact ${contactId} updated successfully`);
+      if (GHL_DEBUG) {
+        console.log('[ghl] contact updated successfully');
+      }
       return { success: true };
     } else {
       const error = await response.json().catch(() => ({}));
-      console.log(`GHL contact update failed: ${error.message || response.status}`);
+      console.error(`[ghl] contact update failed: ${error.message || response.status}`);
       return {
         success: false,
         message: error.message || `Failed to update contact: ${response.status}`
@@ -482,7 +506,9 @@ export async function getOrCreateGHLContact(
     : { success: true as const };
 
   if (existingByEmail.contactId) {
-    console.log(`GHL contact found by email: ${existingByEmail.contactId}`);
+    if (GHL_DEBUG) {
+      console.log('[ghl] existing contact found by email lookup');
+    }
     // Update with address and/or custom fields if provided
     if (contact.address || (contact.customFields && contact.customFields.length > 0)) {
       await updateGHLContact(apiKey, existingByEmail.contactId, {
@@ -496,7 +522,9 @@ export async function getOrCreateGHLContact(
   const existingByPhone = await findGHLContactByPhone(apiKey, locationId, contact.phone || "");
 
   if (existingByPhone.contactId) {
-    console.log(`GHL contact found by phone: ${existingByPhone.contactId}`);
+    if (GHL_DEBUG) {
+      console.log('[ghl] existing contact found by phone lookup');
+    }
     // Update with address and/or custom fields if provided
     if (contact.address || (contact.customFields && contact.customFields.length > 0)) {
       await updateGHLContact(apiKey, existingByPhone.contactId, {

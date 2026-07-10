@@ -6,9 +6,27 @@ export type ResendConfig = {
   fromEmail: string;
 };
 
+export type SendEmailOptions = {
+  // Set by callers (e.g. the notifications dispatcher) that have already HTML-escaped
+  // untrusted values within `body` themselves and want the rest of the body (e.g.
+  // admin-authored template markup) left untouched. Defaults to false, in which case
+  // this function HTML-escapes the whole body as a defensive measure for callers that
+  // pass raw, potentially-untrusted text straight through.
+  alreadyEscaped?: boolean;
+};
+
 function buildFrom(config: ResendConfig): string {
   const name = config.fromName?.trim();
   return name ? `${name} <${config.fromEmail}>` : config.fromEmail;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 export async function sendEmail(
@@ -16,6 +34,7 @@ export async function sendEmail(
   to: string[],
   subject: string,
   body: string,
+  options?: SendEmailOptions,
 ): Promise<ResendResult> {
   try {
     const recipients = to.map((e) => e.trim()).filter(Boolean);
@@ -26,7 +45,11 @@ export async function sendEmail(
     const { Resend } = await import("resend");
     const resend = new Resend(config.apiKey);
 
-    const html = body
+    // The plain-text `text` field below always uses the raw body (text is never HTML-
+    // interpreted). Only the `html` field needs escaping, and only when the caller
+    // hasn't already escaped untrusted values itself (avoids double-escaping).
+    const htmlSource = options?.alreadyEscaped ? body : escapeHtml(body);
+    const html = htmlSource
       .split("\n")
       .map((line) => line || "&nbsp;")
       .join("<br>");
