@@ -27,6 +27,10 @@ const selectedSettings = selectBlogSettingsSchema.parse({
   seoKeywords: "seo",
   enableTrendAnalysis: false,
   promptStyle: "brief",
+  systemPrompt: "",
+  autoApprove: false,
+  openrouterTextModel: "",
+  openrouterImageModel: "",
   lastRunAt: null,
   lockAcquiredAt: null,
   updatedAt: new Date(),
@@ -55,6 +59,7 @@ const selectedJob = selectBlogGenerationJobSchema.parse({
   startedAt: new Date(),
   completedAt: null,
   error: null,
+  durationsMs: null,
 });
 assert.equal(selectedJob.id, 1);
 

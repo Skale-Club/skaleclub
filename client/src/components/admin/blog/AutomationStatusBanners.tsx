@@ -1,31 +1,16 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, Clock, DollarSign } from "lucide-react";
+import { AlertCircle, Clock } from "lucide-react";
 import { addHours, formatDistanceToNow } from "date-fns";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { BlogSettings } from "#shared/schema.js";
 
-// Phase 37 D-16: hardcoded cost pricing — UI-side approximation, NOT billing-grade.
-// Source: ai.google.dev/pricing (verified 2026-05-05)
-export const BLOG_COST_PRICING = {
-  contentTokensPerPost: 3000,
-  contentPricePer1M: 0.075,    // gemini-2.5-flash, USD per 1M tokens
-  imagePricePerImage: 0.039,   // gemini-2.0-flash-exp image, USD per image
-} as const;
-
 interface BlogHealth {
-  apiKeyConfigured: boolean;
-  integrationEnabled: boolean;
-}
-
-function computeMonthlyCost(postsPerDay: number): number {
-  const contentCost = (BLOG_COST_PRICING.contentTokensPerPost / 1_000_000)
-    * BLOG_COST_PRICING.contentPricePer1M
-    * postsPerDay
-    * 30;
-  const imageCost = BLOG_COST_PRICING.imagePricePerImage * postsPerDay * 30;
-  return Math.round((contentCost + imageCost) * 100) / 100;
+  openrouterKeyConfigured: boolean;
+  textModelConfigured: boolean;
+  imageModelConfigured: boolean;
+  configured: boolean;
 }
 
 function computeNextRun(settings: BlogSettings | undefined): Date | null {
@@ -51,14 +36,19 @@ export function AutomationStatusBanners() {
 
   const showBanner = useMemo(() => {
     if (!health) return false;
-    return !health.apiKeyConfigured || !health.integrationEnabled;
+    return !health.configured;
   }, [health]);
 
+  const missingPieces = useMemo(() => {
+    if (!health) return [];
+    const pieces: string[] = [];
+    if (!health.openrouterKeyConfigured) pieces.push(t("OpenRouter API key (Integrations)"));
+    if (!health.textModelConfigured) pieces.push(t("text model (Automation settings)"));
+    if (!health.imageModelConfigured) pieces.push(t("image model (Automation settings)"));
+    return pieces;
+  }, [health, t]);
+
   const nextRun = useMemo(() => computeNextRun(settings), [settings]);
-  const monthlyCost = useMemo(() => {
-    if (!settings?.postsPerDay) return null;
-    return computeMonthlyCost(settings.postsPerDay);
-  }, [settings]);
 
   return (
     <div className="space-y-3">
@@ -71,7 +61,7 @@ export function AutomationStatusBanners() {
           <AlertCircle className="w-5 h-5 mt-0.5 text-red-500 shrink-0" />
           <div className="flex-1 space-y-2">
             <p className="text-sm text-red-600 dark:text-red-400 font-medium">
-              {t("Blog generator unavailable: configure Gemini integration to enable RSS-driven generation.")}
+              {t("Blog generator unavailable — missing configuration:")} {missingPieces.join(", ")}
             </p>
             {/* W-5: unconditional remedy link to Integrations admin section.
                 Uses the project's existing `?section=` query-string nav
@@ -103,22 +93,6 @@ export function AutomationStatusBanners() {
               </div>
             </TooltipTrigger>
             {nextRun && <TooltipContent>{nextRun.toLocaleString()}</TooltipContent>}
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div
-                className="flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 text-xs"
-                data-testid="chip-cost"
-              >
-                <DollarSign className="w-3.5 h-3.5 text-muted-foreground" />
-                <span className="text-muted-foreground">{t("Estimated cost")}:</span>
-                <span className="font-medium">
-                  {monthlyCost !== null ? `~$${monthlyCost.toFixed(2)} ${t("per month")}` : "—"}
-                </span>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>{t("approximate, based on Gemini list pricing")}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>

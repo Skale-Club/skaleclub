@@ -38,6 +38,9 @@ type OpenRouterModelItem = {
   description?: string;
   contextLength?: number;
   pricing?: { prompt?: string; completion?: string };
+  // e.g. ["text"] or ["text", "image"] — used by the blog automation panel
+  // to offer only image-capable models in the image-model picker.
+  outputModalities?: string[];
 };
 
 const OPENROUTER_MODEL_FALLBACKS: OpenRouterModelItem[] = [
@@ -90,6 +93,9 @@ async function getOpenRouterModels(): Promise<OpenRouterModelItem[]> {
             prompt: typeof item.pricing.prompt === "string" ? item.pricing.prompt : undefined,
             completion: typeof item.pricing.completion === "string" ? item.pricing.completion : undefined,
           }
+          : undefined,
+        outputModalities: Array.isArray(item?.architecture?.output_modalities)
+          ? item.architecture.output_modalities.filter((m: unknown): m is string => typeof m === "string")
           : undefined,
       };
     })

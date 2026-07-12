@@ -1,6 +1,6 @@
 import { strict as assert } from "node:assert";
 
-import type { BlogPost } from "#shared/schema.js";
+import type { BlogPost, BlogRssItem } from "#shared/schema.js";
 import type {
   BlogGenerationJob,
   BlogSettings,
@@ -21,6 +21,9 @@ type StorageStub = {
   updateBlogGenerationJob(id: number, data: Partial<InsertBlogGenerationJob>): Promise<BlogGenerationJob>;
   createBlogPost(data: InsertBlogPost): Promise<BlogPost>;
   upsertBlogSettings(data: InsertBlogSettings): Promise<BlogSettings>;
+  listPendingRssItems(limit?: number): Promise<BlogRssItem[]>;
+  markRssItemUsed(itemId: number, postId: number): Promise<void>;
+  listBlogPostFeedback(limit?: number): Promise<never[]>;
 };
 
 type StorageSpies = {
@@ -30,6 +33,15 @@ type StorageSpies = {
   onUpsertSettings?: (data: InsertBlogSettings) => void;
 };
 
+const TEST_AI_CONFIG = {
+  apiKey: "test-openrouter-key",
+  textModel: "openai/gpt-4o-mini",
+  imageModel: "google/gemini-2.5-flash-image",
+};
+
+// Pipeline enforces a 600..4000 plain-text char window — stub content must clear it.
+const LONG_CONTENT = `<p>${"Strong HTML-ready content for service businesses. ".repeat(16).trim()}</p>`;
+
 function createSettings(overrides: Partial<BlogSettings> = {}): BlogSettings {
   return {
     id: 1,
@@ -38,9 +50,31 @@ function createSettings(overrides: Partial<BlogSettings> = {}): BlogSettings {
     seoKeywords: "seo, local rankings",
     enableTrendAnalysis: true,
     promptStyle: "confident but practical",
+    systemPrompt: "",
+    autoApprove: false,
+    openrouterTextModel: TEST_AI_CONFIG.textModel,
+    openrouterImageModel: TEST_AI_CONFIG.imageModel,
     lastRunAt: null,
     lockAcquiredAt: null,
     updatedAt: new Date("2026-04-22T00:00:00Z"),
+    ...overrides,
+  };
+}
+
+function createRssItem(overrides: Partial<BlogRssItem> = {}): BlogRssItem {
+  return {
+    id: 5,
+    sourceId: 1,
+    guid: "guid-5",
+    url: "https://example.com/source-article",
+    title: "Local SEO shifts in 2026",
+    summary: "Search behavior is changing for local B2B services.",
+    publishedAt: new Date("2026-04-21T09:00:00Z"),
+    status: "pending",
+    usedAt: null,
+    usedPostId: null,
+    skipReason: null,
+    createdAt: new Date("2026-04-21T10:00:00Z"),
     ...overrides,
   };
 }
@@ -54,6 +88,7 @@ function createJob(overrides: Partial<BlogGenerationJob> = {}): BlogGenerationJo
     startedAt: new Date("2026-04-22T00:00:00Z"),
     completedAt: null,
     error: null,
+    durationsMs: null,
     ...overrides,
   };
 }
@@ -98,8 +133,18 @@ function createStorageStub(settings?: BlogSettings, spies: StorageSpies = {}): S
       spies.onUpsertSettings?.(data);
       return createSettings({ ...settings, ...data, id: settings?.id ?? 1 });
     },
+    async listPendingRssItems() {
+      return [createRssItem()];
+    },
+    async markRssItemUsed() {},
+    async listBlogPostFeedback() {
+      return [];
+    },
   };
 }
+
+const stubAiConfig = async () => TEST_AI_CONFIG;
+const stubSelectRssItem = async () => createRssItem();
 
 async function expectSkip(
   label: string,
@@ -107,18 +152,21 @@ async function expectSkip(
     manual: boolean;
     settings?: BlogSettings;
     acquireLock?: () => Promise<boolean>;
+    resolveAiConfig?: () => Promise<typeof TEST_AI_CONFIG | null>;
   },
-  reason: "no_settings" | "disabled" | "posts_per_day_zero" | "too_soon" | "locked",
+  reason: "no_settings" | "disabled" | "posts_per_day_zero" | "too_soon" | "locked" | "not_configured",
 ) {
   __setBlogGeneratorTestDeps({
     storage: createStorageStub(options.settings),
     acquireLock: options.acquireLock,
     releaseLock: async () => {},
+    resolveAiConfig: options.resolveAiConfig ?? stubAiConfig,
+    selectRssItem: stubSelectRssItem,
     runPipeline: async () => {
       throw new Error(`${label} should have skipped before pipeline`);
     },
     now: () => new Date("2026-04-22T12:00:00Z"),
-  });
+  } as never);
 
   const result = await BlogGenerator.generate({ manual: options.manual });
   assert.deepEqual(result, { skipped: true, reason }, label);
@@ -136,6 +184,8 @@ async function expectManualBypass() {
     storage: createStorageStub(settings),
     acquireLock: async () => true,
     releaseLock: async () => {},
+    resolveAiConfig: stubAiConfig,
+    selectRssItem: stubSelectRssItem,
     runPipeline: async ({ job }) => ({
       jobId: job.id,
       postId: 42,
@@ -157,7 +207,7 @@ async function expectManualBypass() {
       } satisfies BlogPost,
     }),
     now: () => new Date("2026-04-22T12:00:00Z"),
-  });
+  } as never);
 
   const result = await BlogGenerator.generate({ manual: true });
   assert.equal(result.skipped, false, "manual runs can bypass automatic gates when pipeline succeeds");
@@ -173,8 +223,6 @@ async function expectManualBypass() {
 }
 
 async function expectSuccessfulGeneration() {
-  process.env.BLOG_GEMINI_API_KEY = "test-key";
-
   const callOrder: string[] = [];
   let createdPostInput: InsertBlogPost | null = null;
   let completedJobUpdate: Partial<InsertBlogGenerationJob> | null = null;
@@ -202,6 +250,8 @@ async function expectSuccessfulGeneration() {
     releaseLock: async () => {
       callOrder.push("releaseLock");
     },
+    resolveAiConfig: stubAiConfig,
+    selectRssItem: stubSelectRssItem,
     now: () => new Date("2026-04-22T12:00:00Z"),
     generateTopic: async ({ settings }: { settings: BlogSettings }) => {
       callOrder.push("generateTopic");
@@ -213,7 +263,7 @@ async function expectSuccessfulGeneration() {
       assert.match(topic, /local SEO trends/i);
       return {
         title: "5 Local SEO Trends Service Businesses Should Act On in 2026",
-        content: "<p>Strong HTML-ready content.</p>",
+        content: LONG_CONTENT,
         excerpt: "Actionable trend summary for service businesses.",
         metaDescription: "Use these local SEO trends to win more nearby customers in 2026.",
         focusKeyword: "local SEO trends",
@@ -222,11 +272,12 @@ async function expectSuccessfulGeneration() {
     },
     generateImage: async () => {
       callOrder.push("generateImage");
-      return Buffer.from([255, 216, 255]);
+      return { bytes: Buffer.from([255, 216, 255]), mime: "image/jpeg" };
     },
-    uploadImage: async ({ bytes, path }: { bytes: Buffer; path: string }) => {
+    uploadImage: async ({ bytes, mime, path }: { bytes: Buffer; mime: string; path: string }) => {
       callOrder.push("uploadImage");
       assert.equal(bytes.length, 3);
+      assert.equal(mime, "image/jpeg");
       assert.match(path, /^blog-images\/\d+-[0-9a-f-]+\.jpg$/);
       return `https://cdn.example.com/${path}`;
     },
@@ -242,7 +293,8 @@ async function expectSuccessfulGeneration() {
   assert.ok(createdPostInput, "successful runs create a draft post");
 
   const createdPost = createdPostInput as InsertBlogPost;
-  assert.equal(createdPost.status, "draft", "created post is saved as a draft");
+  assert.equal(createdPost.status, "draft", "created post is saved as a draft when autoApprove is off");
+  assert.equal(createdPost.publishedAt, null, "draft posts carry no publishedAt");
   assert.equal(createdPost.authorName, "AI Assistant", "created post is attributed to AI Assistant");
   assert.equal(createdPost.tags, "SEO, Local Marketing, AI Content", "tags are serialized before insertion");
   assert.match(
@@ -267,6 +319,11 @@ async function expectSuccessfulGeneration() {
   const successSettings = finalizedSettings as InsertBlogSettings;
   assert.equal(successSettings.lockAcquiredAt, null, "successful runs clear the lock timestamp");
   assert.ok(successSettings.lastRunAt instanceof Date, "successful runs set lastRunAt");
+  assert.equal(
+    Object.keys(successSettings).length,
+    2,
+    "finalization writes ONLY timing/lock fields — no stale full-snapshot write-back",
+  );
 
   assert.deepEqual(
     callOrder,
@@ -288,9 +345,45 @@ async function expectSuccessfulGeneration() {
   __resetBlogGeneratorTestDeps();
 }
 
-async function expectImageFailureFallback() {
-  process.env.BLOG_GEMINI_API_KEY = "test-key";
+async function expectAutoApprovePublishes() {
+  let createdPostInput: InsertBlogPost | null = null;
 
+  __setBlogGeneratorTestDeps({
+    storage: createStorageStub(createSettings({ autoApprove: true }), {
+      onCreatePost: (data) => {
+        createdPostInput = data;
+      },
+    }),
+    acquireLock: async () => true,
+    releaseLock: async () => {},
+    resolveAiConfig: stubAiConfig,
+    selectRssItem: stubSelectRssItem,
+    now: () => new Date("2026-04-22T12:00:00Z"),
+    generateTopic: async () => "Auto approve topic",
+    generatePost: async () => ({
+      title: "Auto Approve Topic",
+      content: LONG_CONTENT,
+      excerpt: "Excerpt",
+      metaDescription: "Meta",
+      focusKeyword: "keyword",
+      tags: ["Tag"],
+    }),
+    generateImage: async () => null,
+    uploadImage: async () => {
+      throw new Error("upload should not run without image bytes");
+    },
+  } as never);
+
+  const result = await BlogGenerator.generate({ manual: false });
+  assert.equal(result.skipped, false, "auto-approve runs still succeed");
+  const createdPost = createdPostInput as unknown as InsertBlogPost;
+  assert.ok(createdPost, "auto-approve runs create a post");
+  assert.equal(createdPost.status, "published", "autoApprove=true publishes immediately");
+  assert.ok(createdPost.publishedAt instanceof Date, "autoApprove=true stamps publishedAt");
+  __resetBlogGeneratorTestDeps();
+}
+
+async function expectImageFailureFallback() {
   let createdPostInput: InsertBlogPost | null = null;
 
   __setBlogGeneratorTestDeps({
@@ -301,11 +394,13 @@ async function expectImageFailureFallback() {
     }),
     acquireLock: async () => true,
     releaseLock: async () => {},
+    resolveAiConfig: stubAiConfig,
+    selectRssItem: stubSelectRssItem,
     now: () => new Date("2026-04-22T12:00:00Z"),
     generateTopic: async () => "Image fallback topic",
     generatePost: async () => ({
       title: "Image Fallback Topic",
-      content: "<p>Fallback content.</p>",
+      content: LONG_CONTENT,
       excerpt: "Fallback excerpt",
       metaDescription: "Fallback meta",
       focusKeyword: "fallback keyword",
@@ -330,8 +425,6 @@ async function expectImageFailureFallback() {
 }
 
 async function expectFailureCleanup() {
-  process.env.BLOG_GEMINI_API_KEY = "test-key";
-
   const previousRunAt = new Date("2026-04-20T09:30:00Z");
   let createdJobCount = 0;
   let failedUpdate: Partial<InsertBlogGenerationJob> | null = null;
@@ -353,6 +446,8 @@ async function expectFailureCleanup() {
     releaseLock: async () => {
       throw new Error("releaseLock should be replaced by settings finalization");
     },
+    resolveAiConfig: stubAiConfig,
+    selectRssItem: stubSelectRssItem,
     now: () => new Date("2026-04-22T12:00:00Z"),
     generateTopic: async () => {
       throw new Error("topic generation exploded");
@@ -403,6 +498,24 @@ async function main() {
     "too_soon",
   );
   await expectSkip(
+    "automatic run skips when OpenRouter key/models are not configured",
+    {
+      manual: false,
+      settings: createSettings(),
+      resolveAiConfig: async () => null,
+    },
+    "not_configured",
+  );
+  await expectSkip(
+    "manual run also requires OpenRouter configuration",
+    {
+      manual: true,
+      settings: createSettings(),
+      resolveAiConfig: async () => null,
+    },
+    "not_configured",
+  );
+  await expectSkip(
     "automatic run skips when another runner holds the lock",
     {
       manual: false,
@@ -414,6 +527,7 @@ async function main() {
   await expectSkip("manual run still requires a settings row", { manual: true }, "no_settings");
   await expectManualBypass();
   await expectSuccessfulGeneration();
+  await expectAutoApprovePublishes();
   await expectImageFailureFallback();
   await expectFailureCleanup();
 

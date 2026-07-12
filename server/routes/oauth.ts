@@ -13,6 +13,64 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
+// ── redirect_uri allowlist ─────────────────────────────────────────────────
+// Prevents a phished admin from being redirected (with a live auth code) to
+// an attacker-controlled host. Configurable via MCP_OAUTH_ALLOWED_REDIRECT_HOSTS
+// (comma-separated hostnames) so operators can adjust without a code change if
+// the real Claude.ai connector ever uses a different callback host. When unset,
+// falls back to a built-in list that keeps the live Claude.ai MCP connector
+// working, plus localhost/127.0.0.1 for local development.
+const DEFAULT_ALLOWED_REDIRECT_HOSTS = [
+  "claude.ai",
+  "claude.com",
+  "www.claude.ai",
+  "www.claude.com",
+  "localhost",
+  "127.0.0.1",
+];
+
+function getAllowedRedirectHosts(): { hosts: string[]; source: "env" | "default" } {
+  const envValue = process.env.MCP_OAUTH_ALLOWED_REDIRECT_HOSTS;
+  if (envValue && envValue.trim().length > 0) {
+    const hosts = envValue
+      .split(",")
+      .map((h) => h.trim().toLowerCase())
+      .filter(Boolean);
+    if (hosts.length > 0) return { hosts, source: "env" };
+  }
+  return { hosts: DEFAULT_ALLOWED_REDIRECT_HOSTS, source: "default" };
+}
+
+// Allows a redirect_uri only if its scheme is https: (or http: for
+// localhost/127.0.0.1, to support local dev) and its host matches an allowed
+// host exactly or is a subdomain of one.
+function isRedirectUriAllowed(redirectUri: unknown, allowedHosts: string[]): boolean {
+  if (typeof redirectUri !== "string" || !redirectUri) return false;
+
+  let url: URL;
+  try {
+    url = new URL(redirectUri);
+  } catch {
+    return false;
+  }
+
+  const host = url.hostname.toLowerCase();
+  const isLocalHost = host === "localhost" || host === "127.0.0.1";
+
+  if (url.protocol !== "https:" && !(isLocalHost && url.protocol === "http:")) {
+    return false;
+  }
+
+  return allowedHosts.some((allowed) => host === allowed || host.endsWith(`.${allowed}`));
+}
+
+function warnRejectedRedirectUri(context: string, redirectUri: unknown, source: "env" | "default") {
+  console.warn(
+    `[oauth] ${context}: rejected redirect_uri ${JSON.stringify(redirectUri)} ` +
+      `(allowlist source: ${source}). Adjust MCP_OAUTH_ALLOWED_REDIRECT_HOSTS if this is unexpected.`
+  );
+}
+
 export function registerOAuthRoutes(app: Express) {
   // ── CORS preflight ────────────────────────────────────────────────────────
   app.options("/.well-known/oauth-authorization-server", (_req, res) => {
@@ -57,6 +115,21 @@ export function registerOAuthRoutes(app: Express) {
   // ── Dynamic client registration (RFC 7591) ────────────────────────────────
   // Claude.ai may call this before the authorization flow.
   app.post("/api/oauth/register", (req, res) => {
+    const rawRedirectUris = req.body?.redirect_uris;
+    const redirectUris: unknown[] = Array.isArray(rawRedirectUris)
+      ? rawRedirectUris
+      : rawRedirectUris !== undefined && rawRedirectUris !== null
+        ? [rawRedirectUris]
+        : [];
+
+    const { hosts: allowedHosts, source } = getAllowedRedirectHosts();
+    for (const uri of redirectUris) {
+      if (!isRedirectUriAllowed(uri, allowedHosts)) {
+        warnRejectedRedirectUri("register", uri, source);
+        return res.set(CORS_HEADERS).status(400).json({ error: "invalid_redirect_uri" });
+      }
+    }
+
     const clientId = "claude-" + crypto.randomBytes(8).toString("hex");
     res.set(CORS_HEADERS).status(201).json({
       client_id: clientId,
@@ -88,6 +161,13 @@ export function registerOAuthRoutes(app: Express) {
     if (!code_challenge) return res.status(400).json({ message: "code_challenge required" });
     if (response_type !== "code") return res.status(400).json({ message: "response_type must be code" });
     if (code_challenge_method !== "S256") return res.status(400).json({ message: "Only S256 supported" });
+
+    // Reject disallowed redirect_uri hosts before minting any code/token.
+    const { hosts: allowedRedirectHosts, source: redirectHostsSource } = getAllowedRedirectHosts();
+    if (!isRedirectUriAllowed(redirect_uri, allowedRedirectHosts)) {
+      warnRejectedRedirectUri("authorize", redirect_uri, redirectHostsSource);
+      return res.status(400).json({ error: "invalid_redirect_uri" });
+    }
 
     // Validate Supabase access token
     const supabase = getSupabaseAdmin();

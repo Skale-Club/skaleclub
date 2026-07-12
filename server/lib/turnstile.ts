@@ -17,9 +17,11 @@ export interface TurnstileVerifyResult {
  * Verify a Cloudflare Turnstile token against the siteverify endpoint.
  * Returns `{ success: true }` on a valid token; otherwise `{ success: false, errorCodes }`.
  *
- * If `CLOUDFLARE_TURNSTILE_SECRET_KEY` is not set, returns `{ success: true }` so the
- * verification is effectively disabled — useful for local development without keys.
- * In production set the secret key to actually enforce the captcha.
+ * If `CLOUDFLARE_TURNSTILE_SECRET_KEY` is not set:
+ *   - In production (`NODE_ENV === "production"`), verification FAILS CLOSED — returns
+ *     `{ success: false, errorCodes: ["missing-secret"] }` so the captcha can never be
+ *     silently disabled by a missing/misconfigured secret.
+ *   - Otherwise (dev/test), returns `{ success: true }` for local development convenience.
  */
 export async function verifyTurnstileToken(
   token: string | undefined | null,
@@ -27,8 +29,13 @@ export async function verifyTurnstileToken(
 ): Promise<TurnstileVerifyResult> {
   const secret = process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY;
 
-  // No secret configured → skip verification (dev convenience).
+  // No secret configured.
   if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      // Fail closed in production: never silently disable captcha verification.
+      return { success: false, errorCodes: ["missing-secret"] };
+    }
+    // Dev convenience: skip verification when no secret is configured.
     return { success: true };
   }
 

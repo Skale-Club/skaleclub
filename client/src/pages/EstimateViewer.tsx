@@ -25,6 +25,27 @@ interface PublicEstimate {
   hasAccessCode: boolean;
 }
 
+// Returned by GET /api/estimates/slug/:slug when the estimate has an access
+// code set. The server withholds services/pricing/notes until the code is
+// verified (SEC-01) — only enough to render the gate is included here.
+interface GatedEstimateMeta {
+  id: number;
+  slug: string;
+  clientName: string;
+  companyName: string | null;
+  contactName: string | null;
+  hasAccessCode: true;
+}
+
+type EstimateSlugResponse = PublicEstimate | GatedEstimateMeta;
+
+// Full response body shares no reliable discriminant on `hasAccessCode` (both
+// shapes can have it `true`) — `services` is only ever present on the full
+// public estimate, so it's used as the runtime type guard below.
+function hasFullEstimateData(d: EstimateSlugResponse): d is PublicEstimate {
+  return "services" in d;
+}
+
 function LoadingScreen() {
   return (
     <div className="h-screen bg-zinc-950 flex items-center justify-center">
@@ -72,7 +93,7 @@ function AccessCodeGate({
   estimateId: number;
   lang: 'en' | 'pt-BR';
   onLanguageChange: (value: LanguageSwitchValue) => void;
-  onUnlock: () => void;
+  onUnlock: (estimate: PublicEstimate) => void;
   companyName?: string | null;
   clientName?: string | null;
   siteSettings?: CompanySettings | null;
@@ -90,8 +111,11 @@ function AccessCodeGate({
       });
       if (res.status === 401) throw new Error('Incorrect code');
       if (!res.ok) throw new Error('Verification failed');
+      // Correct code — server returns the full estimate (minus accessCode/thumbnail)
+      // so the viewer can render it now that it's unlocked.
+      return (await res.json()) as { success: true } & PublicEstimate;
     },
-    onSuccess: () => onUnlock(),
+    onSuccess: (unlocked) => onUnlock(unlocked),
     onError: (err: Error) => {
       setError(err.message === 'Incorrect code' ? t.incorrectCode : t.verificationFailed);
     },
@@ -322,7 +346,7 @@ export default function EstimateViewer() {
   const hasTrackedView = useRef(false);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
-  const { data, isLoading } = useQuery<PublicEstimate>({
+  const { data, isLoading } = useQuery<EstimateSlugResponse>({
     queryKey: [`/api/estimates/slug/${slug}`],
     enabled: !!slug,
     retry: false,
@@ -333,6 +357,16 @@ export default function EstimateViewer() {
   });
 
   const [isUnlocked, setIsUnlocked] = useState(false);
+  // Populated from the verify-code response once a gated estimate is unlocked
+  // (the initial slug fetch withholds services/pricing for gated estimates).
+  const [unlockedEstimate, setUnlockedEstimate] = useState<PublicEstimate | null>(null);
+  // The estimate content to render: the slug fetch directly if it already carries
+  // full data (no gate), otherwise whatever verify-code returned after unlock.
+  const content: PublicEstimate | undefined = !data
+    ? undefined
+    : hasFullEstimateData(data)
+      ? data
+      : unlockedEstimate ?? undefined;
   // Initial slide is read from the URL hash (1-based, e.g. #3 = slide 3).
   // Falls back to 0 (cover) when hash is missing or invalid. Refresh and
   // browser back/forward both restore the slide via the hashchange handler below.
@@ -379,7 +413,7 @@ export default function EstimateViewer() {
     }
   }, [data, isUnlocked]);
 
-  const total = data ? 2 + data.services.length + 1 : 0;
+  const total = content ? 2 + content.services.length + 1 : 0;
 
   useEffect(() => {
     if (!data) return;
@@ -390,7 +424,7 @@ export default function EstimateViewer() {
   }, [data, siteSettings?.companyName]);
 
   const goTo = useCallback((idx: number) => {
-    if (!data) return;
+    if (!content) return;
     const clamped = Math.max(0, Math.min(idx, total - 1));
     setDirection(clamped > activeIndex ? 1 : -1);
     setActiveIndex(clamped);
@@ -404,7 +438,7 @@ export default function EstimateViewer() {
         window.location.pathname + window.location.search + newHash,
       );
     }
-  }, [activeIndex, total, data]);
+  }, [activeIndex, total, content]);
 
   const prev = useCallback(() => goTo(activeIndex - 1), [activeIndex, goTo]);
   const next = useCallback(() => goTo(activeIndex + 1), [activeIndex, goTo]);
@@ -427,11 +461,11 @@ export default function EstimateViewer() {
 
   // Clamp activeIndex once data loads (handles e.g. #99 with only 8 slides).
   useEffect(() => {
-    if (!data) return;
+    if (!content) return;
     if (activeIndex > total - 1) {
       goTo(total - 1);
     }
-  }, [data, total, activeIndex, goTo]);
+  }, [content, total, activeIndex, goTo]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -510,13 +544,19 @@ export default function EstimateViewer() {
         estimateId={data.id}
         lang={lang}
         onLanguageChange={switchViewerLang}
-        onUnlock={() => setIsUnlocked(true)}
+        onUnlock={(estimate) => {
+          setUnlockedEstimate(estimate);
+          setIsUnlocked(true);
+        }}
         companyName={data.companyName}
         clientName={data.contactName ?? data.clientName}
         siteSettings={siteSettings}
       />
     );
   }
+  // Defensive: should be populated by the time we get here (either the slug
+  // fetch already had full data, or verify-code just supplied it on unlock).
+  if (!content) return <LoadingScreen />;
 
   return (
     <div className="h-screen bg-zinc-950 text-white overflow-hidden relative flex items-center justify-center">
@@ -621,7 +661,7 @@ export default function EstimateViewer() {
               className="h-full w-full overflow-y-auto overscroll-contain"
             >
               <div className="min-h-full flex items-center justify-center py-12 md:py-16 pb-24 md:pb-16">
-                <SectionContent index={activeIndex} data={data} lang={lang} siteSettings={siteSettings} />
+                <SectionContent index={activeIndex} data={content} lang={lang} siteSettings={siteSettings} />
               </div>
             </div>
           </motion.div>

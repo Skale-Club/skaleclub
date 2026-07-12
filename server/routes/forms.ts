@@ -8,6 +8,7 @@ import type { FormConfig } from "#shared/schema.js";
 import { requireAdmin, setPublicCache } from "./_shared.js";
 import { runLeadPostProcessing } from "../lib/lead-processing.js";
 import { summarizeFormTranscript, transcribeFormAudio } from "../lib/form-audio.js";
+import { rateLimitMiddleware } from "../lib/rateLimit.js";
 
 const SKALE_HUB_GROUP_FORM_SLUG = "skale-hub";
 
@@ -410,37 +411,45 @@ export function registerFormRoutes(app: Express) {
     }
   });
 
-  app.post("/api/forms/slug/:slug/audio/transcribe", async (req, res) => {
-    try {
-      const form = await storage.getFormBySlug(req.params.slug);
-      if (!form || !form.isActive) {
-        return res.status(404).json({ message: "Form not found" });
+  app.post(
+    "/api/forms/slug/:slug/audio/transcribe",
+    rateLimitMiddleware({
+      limit: 10,
+      windowMs: 5 * 60_000,
+      message: "Too many transcription requests. Please try again in a few minutes.",
+    }),
+    async (req, res) => {
+      try {
+        const form = await storage.getFormBySlug(req.params.slug);
+        if (!form || !form.isActive) {
+          return res.status(404).json({ message: "Form not found" });
+        }
+
+        const parsed = z.object({
+          audioData: z.string().min(100),
+          questionId: z.string().min(1).max(120),
+          language: z.string().min(2).max(8).optional(),
+        }).parse(req.body);
+
+        const result = await transcribeFormAudio({
+          audioData: parsed.audioData,
+          language: parsed.language,
+        });
+        const summary = await summarizeFormTranscript(result.text);
+
+        res.json({
+          questionId: parsed.questionId,
+          transcript: result.text,
+          summary,
+          provider: result.provider,
+          model: result.model,
+        });
+      } catch (err: any) {
+        if (err instanceof z.ZodError) {
+          return res.status(400).json({ message: "Validation error", errors: err.errors });
+        }
+        res.status(400).json({ message: err?.message || "Failed to transcribe audio" });
       }
-
-      const parsed = z.object({
-        audioData: z.string().min(100),
-        questionId: z.string().min(1).max(120),
-        language: z.string().min(2).max(8).optional(),
-      }).parse(req.body);
-
-      const result = await transcribeFormAudio({
-        audioData: parsed.audioData,
-        language: parsed.language,
-      });
-      const summary = await summarizeFormTranscript(result.text);
-
-      res.json({
-        questionId: parsed.questionId,
-        transcript: result.text,
-        summary,
-        provider: result.provider,
-        model: result.model,
-      });
-    } catch (err: any) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({ message: "Validation error", errors: err.errors });
-      }
-      res.status(400).json({ message: err?.message || "Failed to transcribe audio" });
-    }
-  });
+    },
+  );
 }

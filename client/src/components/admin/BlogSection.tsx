@@ -12,7 +12,9 @@ import {
 } from 'lucide-react';
 import { AdminCard, SectionHeader, SubSidebar, SubSidebarLayout } from './shared';
 import { RssAutomationTab } from './blog/RssAutomationTab';
+import { AutomationStatusBanners } from './blog/AutomationStatusBanners';
 import { BlogAutomationPanel } from './blog/BlogAutomationPanel';
+import { PostApprovalPanel } from './blog/PostApprovalPanel';
 import { BlogTagManagerDialog } from './blog/BlogTagManagerDialog';
 import { BlogPostEditorForm, type BlogFormData } from './blog/BlogPostEditorForm';
 import { BlogPostsList } from './blog/BlogPostsList';
@@ -547,7 +549,13 @@ function BlogSectionInner({ resetSignal }: { resetSignal: number }) {
             onConfirmDeleteTag={handleConfirmRemoveTag}
           />
         )}
-        {activeTab === 'automation' && <BlogAutomationPanel />}
+        {activeTab === 'automation' && (
+          <div className="space-y-4">
+            <AutomationStatusBanners />
+            <BlogAutomationPanel />
+            <PostApprovalPanel />
+          </div>
+        )}
         {activeTab === 'rss' && <RssAutomationTab />}
       </SubSidebarLayout>
     </div>

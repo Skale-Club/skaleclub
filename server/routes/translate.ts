@@ -4,12 +4,20 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../db.js";
 import { translations } from "#shared/schema.js";
 import { getActiveAIClient } from "../lib/ai-provider.js";
+import { rateLimitMiddleware } from "../lib/rateLimit.js";
 
 /**
  * Dynamic AI-powered translation endpoint.
  * Caches translations in the `translations` DB table so the same string is only
  * sent to the AI once per (source, target) pair.
  */
+
+// Sane upper bounds on a single request so an unauthenticated caller can't
+// force unbounded AI provider calls (or an unbounded prompt) through this
+// endpoint. Cache hits still short-circuit before any AI call is made.
+const MAX_TEXTS_PER_REQUEST = 100;
+const MAX_TOTAL_TEXT_LENGTH = 50_000;
+
 export function registerTranslateRoutes(app: Express) {
   app.get("/api/translations/preload", async (req, res) => {
     const lang = (req.query.lang as string) || "pt";
@@ -23,112 +31,133 @@ export function registerTranslateRoutes(app: Express) {
     res.json({ translations: result });
   });
 
-  app.post("/api/translate", async (req, res) => {
-    try {
-      const { texts, targetLanguage = "pt", sourceLanguage = "en" } = z
-        .object({
-          texts: z.array(z.string()),
-          targetLanguage: z.string().default("pt"),
-          sourceLanguage: z.string().default("en"),
-        })
-        .parse(req.body);
+  app.post(
+    "/api/translate",
+    rateLimitMiddleware({
+      limit: 30,
+      windowMs: 60_000,
+      message: "Too many translation requests. Please try again in a minute.",
+    }),
+    async (req, res) => {
+      try {
+        const { texts, targetLanguage = "pt", sourceLanguage = "en" } = z
+          .object({
+            texts: z.array(z.string()),
+            targetLanguage: z.string().default("pt"),
+            sourceLanguage: z.string().default("en"),
+          })
+          .parse(req.body);
 
-      if (texts.length === 0) {
-        return res.json({ translations: {} });
-      }
+        if (texts.length > MAX_TEXTS_PER_REQUEST) {
+          return res.status(400).json({
+            message: `Too many texts in one request (max ${MAX_TEXTS_PER_REQUEST}).`,
+          });
+        }
 
-      // Check cache for existing translations
-      const cached = await db
-        .select()
-        .from(translations)
-        .where(
-          and(
-            eq(translations.sourceLanguage, sourceLanguage),
-            eq(translations.targetLanguage, targetLanguage),
-            inArray(translations.sourceText, texts),
-          ),
-        );
+        const totalLength = texts.reduce((sum, text) => sum + text.length, 0);
+        if (totalLength > MAX_TOTAL_TEXT_LENGTH) {
+          return res.status(400).json({
+            message: `Combined text length too large (max ${MAX_TOTAL_TEXT_LENGTH} characters).`,
+          });
+        }
 
-      const cacheMap = new Map(cached.map((t) => [t.sourceText, t.translatedText]));
-      const untranslated = texts.filter((text) => !cacheMap.has(text));
+        if (texts.length === 0) {
+          return res.json({ translations: {} });
+        }
 
-      // If all translations are cached, return immediately
-      if (untranslated.length === 0) {
-        const result: Record<string, string> = {};
-        texts.forEach((text) => {
-          result[text] = cacheMap.get(text)!;
-        });
-        return res.json({ translations: result });
-      }
+        // Check cache for existing translations
+        const cached = await db
+          .select()
+          .from(translations)
+          .where(
+            and(
+              eq(translations.sourceLanguage, sourceLanguage),
+              eq(translations.targetLanguage, targetLanguage),
+              inArray(translations.sourceText, texts),
+            ),
+          );
 
-      // Use Gemini/OpenAI/etc to translate untranslated texts
-      const aiClient = await getActiveAIClient();
-      if (!aiClient || !aiClient.client) {
-        // Fallback: return original texts
-        const result: Record<string, string> = {};
-        texts.forEach((text) => {
-          result[text] = cacheMap.get(text) || text;
-        });
-        return res.json({ translations: result });
-      }
+        const cacheMap = new Map(cached.map((t) => [t.sourceText, t.translatedText]));
+        const untranslated = texts.filter((text) => !cacheMap.has(text));
 
-      const sourceLangLabel = sourceLanguage === "pt" ? "Brazilian Portuguese (pt-BR)" : "English";
-      const targetLangLabel = targetLanguage === "pt" ? "Brazilian Portuguese (pt-BR)" : targetLanguage === "en" ? "English" : targetLanguage;
-      const prompt = `Translate the following ${sourceLangLabel} texts to ${targetLangLabel}.
+        // If all translations are cached, return immediately
+        if (untranslated.length === 0) {
+          const result: Record<string, string> = {};
+          texts.forEach((text) => {
+            result[text] = cacheMap.get(text)!;
+          });
+          return res.json({ translations: result });
+        }
+
+        // Use Gemini/OpenAI/etc to translate untranslated texts
+        const aiClient = await getActiveAIClient();
+        if (!aiClient || !aiClient.client) {
+          // Fallback: return original texts
+          const result: Record<string, string> = {};
+          texts.forEach((text) => {
+            result[text] = cacheMap.get(text) || text;
+          });
+          return res.json({ translations: result });
+        }
+
+        const sourceLangLabel = sourceLanguage === "pt" ? "Brazilian Portuguese (pt-BR)" : "English";
+        const targetLangLabel = targetLanguage === "pt" ? "Brazilian Portuguese (pt-BR)" : targetLanguage === "en" ? "English" : targetLanguage;
+        const prompt = `Translate the following ${sourceLangLabel} texts to ${targetLangLabel}.
 Return ONLY a JSON object where keys are the original texts and values are the translations.
 Do not add any explanations or markdown formatting. Just pure JSON.
 
 Texts to translate:
 ${untranslated.map((t, i) => `${i + 1}. ${t}`).join("\n")}`;
 
-      const completion = await aiClient.client.chat.completions.create({
-        model: aiClient.model,
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.3,
-      });
+        const completion = await aiClient.client.chat.completions.create({
+          model: aiClient.model,
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.3,
+        });
 
-      const responseText = completion.choices[0]?.message?.content?.trim() || "{}";
-      let translationsFromAI: Record<string, string> = {};
+        const responseText = completion.choices[0]?.message?.content?.trim() || "{}";
+        let translationsFromAI: Record<string, string> = {};
 
-      try {
-        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          translationsFromAI = JSON.parse(jsonMatch[0]);
+        try {
+          const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            translationsFromAI = JSON.parse(jsonMatch[0]);
+          }
+        } catch (parseErr) {
+          console.error("Failed to parse AI translation response:", parseErr);
         }
-      } catch (parseErr) {
-        console.error("Failed to parse AI translation response:", parseErr);
+
+        // Save new translations to database
+        const toInsert = untranslated
+          .filter((text) => translationsFromAI[text])
+          .map((text) => ({
+            sourceText: text,
+            sourceLanguage,
+            targetLanguage,
+            translatedText: translationsFromAI[text],
+          }));
+
+        if (toInsert.length > 0) {
+          await db.insert(translations).values(toInsert).onConflictDoNothing();
+        }
+
+        // Combine cached and new translations
+        const result: Record<string, string> = {};
+        texts.forEach((text) => {
+          result[text] = cacheMap.get(text) || translationsFromAI[text] || text;
+        });
+
+        res.json({ translations: result });
+      } catch (err) {
+        console.error("Translation error:", err);
+        // Fallback: return original texts
+        const fallbackTexts = Array.isArray(req.body?.texts) ? req.body.texts : [];
+        const result: Record<string, string> = {};
+        fallbackTexts.forEach((text: string) => {
+          result[text] = text;
+        });
+        res.json({ translations: result });
       }
-
-      // Save new translations to database
-      const toInsert = untranslated
-        .filter((text) => translationsFromAI[text])
-        .map((text) => ({
-          sourceText: text,
-          sourceLanguage,
-          targetLanguage,
-          translatedText: translationsFromAI[text],
-        }));
-
-      if (toInsert.length > 0) {
-        await db.insert(translations).values(toInsert).onConflictDoNothing();
-      }
-
-      // Combine cached and new translations
-      const result: Record<string, string> = {};
-      texts.forEach((text) => {
-        result[text] = cacheMap.get(text) || translationsFromAI[text] || text;
-      });
-
-      res.json({ translations: result });
-    } catch (err) {
-      console.error("Translation error:", err);
-      // Fallback: return original texts
-      const fallbackTexts = Array.isArray(req.body?.texts) ? req.body.texts : [];
-      const result: Record<string, string> = {};
-      fallbackTexts.forEach((text: string) => {
-        result[text] = text;
-      });
-      res.json({ translations: result });
-    }
-  });
+    },
+  );
 }
