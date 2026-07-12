@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import { storage } from "../storage.js";
 import {
@@ -7,6 +7,7 @@ import {
   blogRssItemStatusSchema,
 } from "#shared/schema.js";
 import { BlogGenerator, runPreview } from "../lib/blog-generator.js";
+import { resolveOpenRouterKey } from "../lib/blog-openrouter.js";
 import { fetchAllRssSources } from "../lib/rssFetcher.js";
 import { slugifyTitle } from "../lib/blogContentValidator.js";
 import { requireAdmin, isAuthorizedCronRequest } from "./_shared.js";
@@ -17,13 +18,19 @@ const BLOG_SETTINGS_DEFAULTS = {
   seoKeywords: "",
   enableTrendAnalysis: false,
   promptStyle: "",
+  systemPrompt: "",
+  autoApprove: false,
+  openrouterTextModel: "",
+  openrouterImageModel: "",
   lastRunAt: null,
   lockAcquiredAt: null,
 };
 
 export function registerBlogAutomationRoutes(app: Express) {
-  // BLOG-13: GET /api/blog/settings — public, safe defaults when no DB row
-  app.get("/api/blog/settings", async (_req, res) => {
+  // BLOG-13: GET /api/blog/settings — safe defaults when no DB row.
+  // Autopost port: admin-only now — the row carries the editorial system
+  // prompt, which must not be publicly readable.
+  app.get("/api/blog/settings", requireAdmin, async (_req, res) => {
     const row = await storage.getBlogSettings();
     res.json(row ?? BLOG_SETTINGS_DEFAULTS);
   });
@@ -36,6 +43,19 @@ export function registerBlogAutomationRoutes(app: Express) {
       .safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ message: parsed.error.errors[0].message });
+    }
+    // Autopost port gate: automation can only be enabled once an OpenRouter
+    // key exists AND both blog models are picked.
+    if (parsed.data.enabled) {
+      const missing: string[] = [];
+      if (!parsed.data.openrouterTextModel?.trim()) missing.push("text model");
+      if (!parsed.data.openrouterImageModel?.trim()) missing.push("image model");
+      if (!(await resolveOpenRouterKey())) missing.push("OpenRouter API key (Integrations)");
+      if (missing.length > 0) {
+        return res.status(400).json({
+          message: `Cannot enable automation — configure first: ${missing.join(", ")}.`,
+        });
+      }
     }
     const saved = await storage.upsertBlogSettings(parsed.data);
     res.json(saved);
@@ -57,8 +77,9 @@ export function registerBlogAutomationRoutes(app: Express) {
     }
   });
 
-  // BLOG-15: POST /api/blog/cron/generate — Bearer token auth (no session)
-  app.post("/api/blog/cron/generate", async (req, res) => {
+  // BLOG-15: /api/blog/cron/generate — Bearer token auth (no session).
+  // Registered for GET **and** POST: Vercel Cron invokes cron paths via GET.
+  const cronGenerateHandler = async (req: Request, res: Response) => {
     if (!isAuthorizedCronRequest(req)) {
       return res.status(401).json({ message: "Unauthorized" });
     }
@@ -67,10 +88,13 @@ export function registerBlogAutomationRoutes(app: Express) {
       return res.json({ skipped: result.skipped, reason: result.reason });
     }
     res.json({ jobId: result.jobId, postId: result.postId });
-  });
+  };
+  app.post("/api/blog/cron/generate", cronGenerateHandler);
+  app.get("/api/blog/cron/generate", cronGenerateHandler);
 
-  // RSS-06: POST /api/blog/cron/fetch-rss — Bearer token auth, runs the RSS fetcher
-  app.post("/api/blog/cron/fetch-rss", async (req, res) => {
+  // RSS-06: /api/blog/cron/fetch-rss — Bearer token auth, runs the RSS fetcher.
+  // Registered for GET **and** POST: Vercel Cron invokes cron paths via GET.
+  const cronFetchRssHandler = async (req: Request, res: Response) => {
     if (!isAuthorizedCronRequest(req)) {
       return res.status(401).json({ message: "Unauthorized" });
     }
@@ -81,7 +105,9 @@ export function registerBlogAutomationRoutes(app: Express) {
       const message = err instanceof Error ? err.message : String(err);
       res.status(500).json({ error: message });
     }
-  });
+  };
+  app.post("/api/blog/cron/fetch-rss", cronFetchRssHandler);
+  app.get("/api/blog/cron/fetch-rss", cronFetchRssHandler);
 
   // BLOG-19: GET /api/blog/jobs/latest — admin-auth, returns most recent job or null
   app.get("/api/blog/jobs/latest", requireAdmin, async (_req, res) => {
@@ -90,12 +116,19 @@ export function registerBlogAutomationRoutes(app: Express) {
   });
 
   // Phase 37 BLOG2-12: GET /api/blog/health — admin-auth, drives the red banner
-  // in AutomationStatusBanners.tsx. Returns booleans only (no secrets).
+  // in AutomationStatusBanners.tsx and the enable-gate in BlogAutomationPanel.
+  // Autopost port: reports OpenRouter key + blog model configuration (no secrets).
   app.get("/api/blog/health", requireAdmin, async (_req, res) => {
-    const apiKeyConfigured = Boolean(process.env.BLOG_GEMINI_API_KEY?.trim());
-    const integration = await storage.getChatIntegration("gemini");
-    const integrationEnabled = Boolean(integration?.enabled);
-    res.json({ apiKeyConfigured, integrationEnabled });
+    const openrouterKeyConfigured = Boolean(await resolveOpenRouterKey());
+    const settings = await storage.getBlogSettings();
+    const textModelConfigured = Boolean(settings?.openrouterTextModel?.trim());
+    const imageModelConfigured = Boolean(settings?.openrouterImageModel?.trim());
+    res.json({
+      openrouterKeyConfigured,
+      textModelConfigured,
+      imageModelConfigured,
+      configured: openrouterKeyConfigured && textModelConfigured && imageModelConfigured,
+    });
   });
 
   // ========================================================================
@@ -231,15 +264,9 @@ export function registerBlogAutomationRoutes(app: Express) {
       });
     }
     if (settings) {
-      await storage.upsertBlogSettings({
-        enabled: settings.enabled,
-        postsPerDay: settings.postsPerDay,
-        seoKeywords: settings.seoKeywords,
-        enableTrendAnalysis: settings.enableTrendAnalysis,
-        promptStyle: settings.promptStyle,
-        lockAcquiredAt: null,
-        lastRunAt: settings.lastRunAt,
-      });
+      // Release the lock only — a full-snapshot write here could clobber
+      // admin edits saved while the stale job was stuck.
+      await storage.upsertBlogSettings({ lockAcquiredAt: null });
     }
     const updated = await storage.updateBlogGenerationJob(id, {
       status: "failed",
@@ -335,5 +362,80 @@ export function registerBlogAutomationRoutes(app: Express) {
       const message = err instanceof Error ? err.message : String(err);
       res.status(500).json({ error: message });
     }
+  });
+
+  // ========================================================================
+  // Autopost port — approval queue + feedback learning loop
+  // ========================================================================
+
+  // POST /api/blog/posts/:id/approve — publish the draft NOW and record a
+  // positive signal the generator will feed into future prompts.
+  app.post("/api/blog/posts/:id/approve", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id) || id <= 0) {
+      return res.status(400).json({ message: "Invalid post id" });
+    }
+    const post = await storage.getBlogPost(id);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+    if (post.status === "published") {
+      return res.status(409).json({ message: "Post is already published" });
+    }
+    try {
+      const rssItem = await storage.getRssItemByUsedPostId(id).catch(() => undefined);
+      const updated = await storage.updateBlogPost(id, {
+        status: "published",
+        publishedAt: post.publishedAt ?? new Date(),
+      });
+      await storage.createBlogPostFeedback({
+        postId: id,
+        postTitle: post.title,
+        rssItemTitle: rssItem?.title ?? null,
+        signal: "positive",
+        reason: null,
+      });
+      res.json(updated);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      res.status(500).json({ error: message });
+    }
+  });
+
+  // POST /api/blog/posts/:id/reject — record a negative signal (the optional
+  // reason is the strongest learning input) and DELETE the post. Title/topic
+  // are snapshotted on the feedback row so learning survives the deletion.
+  app.post("/api/blog/posts/:id/reject", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id) || id <= 0) {
+      return res.status(400).json({ message: "Invalid post id" });
+    }
+    const bodySchema = z.object({ reason: z.string().max(1000).optional() });
+    const parsed = bodySchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0].message });
+    }
+    const post = await storage.getBlogPost(id);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+    try {
+      const rssItem = await storage.getRssItemByUsedPostId(id).catch(() => undefined);
+      await storage.createBlogPostFeedback({
+        postId: id,
+        postTitle: post.title,
+        rssItemTitle: rssItem?.title ?? null,
+        signal: "negative",
+        reason: parsed.data.reason?.trim() || null,
+      });
+      await storage.deleteBlogPost(id);
+      res.json({ success: true });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      res.status(500).json({ error: message });
+    }
+  });
+
+  // GET /api/blog/feedback?limit=20 — recent approve/reject signals for the admin UI.
+  app.get("/api/blog/feedback", requireAdmin, async (req, res) => {
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
+    const rows = await storage.listBlogPostFeedback(limit);
+    res.json(rows);
   });
 }
