@@ -337,6 +337,8 @@ export interface HomepageContent {
   portfolioHero?: {
     badge?: string;
     title?: string;
+    subtitle?: string;
+    buttonText?: string;
     backgroundImage?: string;
   };
   portfolioCtaSection?: {

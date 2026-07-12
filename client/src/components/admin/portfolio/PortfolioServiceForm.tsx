@@ -31,6 +31,7 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
         description: service?.description || '',
         price: service?.price || '',
         priceLabel: service?.priceLabel || '/month',
+        setupPrice: service?.setupPrice || '',
         badgeText: service?.badgeText || 'One-time Fee',
         features: service?.features || [],
         imageUrl: service?.imageUrl || '',
@@ -66,7 +67,8 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
         if (toolUrl && !/^https?:\/\//i.test(toolUrl)) {
             toolUrl = `https://${toolUrl}`;
         }
-        onSubmit({ ...formData, description: (formData.description ?? '').trim(), toolUrl: toolUrl || null });
+        const setupPrice = (formData.setupPrice ?? '').trim();
+        onSubmit({ ...formData, description: (formData.description ?? '').trim(), toolUrl: toolUrl || null, setupPrice: setupPrice || null });
     };
 
     const addFeature = () => {
@@ -341,7 +343,7 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
                 {/* Section: Pricing */}
                 <div className="space-y-3">
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Pricing</p>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
                             <Label htmlFor="price">Price</Label>
                             <div className="relative">
@@ -371,6 +373,20 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
                                 <option value="per project">per project</option>
                                 <option value="per seat">/seat</option>
                             </select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="setupPrice">Setup Price (optional)</Label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                                <Input
+                                    id="setupPrice"
+                                    value={formData.setupPrice?.replace(/^\$/, '') || ''}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, setupPrice: e.target.value ? '$' + e.target.value.replace(/^\$/, '') : '' }))}
+                                    placeholder="499"
+                                    className="pl-7"
+                                />
+                            </div>
+                            <p className="text-xs text-muted-foreground">Shown smaller, next to the price, as a one-time setup fee. Leave blank to hide.</p>
                         </div>
                         <div className="space-y-1.5">
                             <Label htmlFor="badgeText">Badge</Label>

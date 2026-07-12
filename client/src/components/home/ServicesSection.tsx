@@ -6,7 +6,7 @@ import { ServicesHeader } from '@/components/home/ServicesHeader';
 import { ServicesCarousel } from '@/components/home/ServicesCarousel';
 import { StepCard } from '@/components/home/StepCard';
 import type { StepItem } from '@/components/home/StepCard';
-import { ServiceDetailModal } from '@/components/home/ServiceDetailModal';
+import { ServiceDetailModal } from '@/components/ServiceDetailModal';
 
 type Props = {
   section?: HomepageContent['consultingStepsSection'] | HomepageContent['horizontalScrollSection'] | null;
@@ -23,8 +23,8 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
     enabled: displayMode === 'services',
   });
 
-  const [selectedService, setSelectedService] = useState<PortfolioService | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const isModalOpen = selectedIndex !== null;
 
   const rawItems = (section as any)?.cards || (section as any)?.steps || [];
   const sortedSteps = useMemo<StepItem[]>(() => {
@@ -45,22 +45,33 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
   const whatWeDoLabel = section?.whatWeDoLabel || '';
   const outcomeLabel = section?.outcomeLabel || '';
 
-  const openServiceModal = (service: PortfolioService) => {
-    setSelectedService(service);
-    setIsModalOpen(true);
-  };
-
   if (displayMode === 'services') {
     const services = portfolioServices || [];
     if (services.length === 0) return null;
 
+    const selectedService = selectedIndex !== null ? services[selectedIndex] : null;
+
+    const openServiceModal = (service: PortfolioService) => {
+      const idx = services.findIndex((s) => s.id === service.id);
+      if (idx >= 0) setSelectedIndex(idx);
+    };
+    const goToPrev = () => {
+      if (selectedIndex === null) return;
+      setSelectedIndex((selectedIndex - 1 + services.length) % services.length);
+    };
+    const goToNext = () => {
+      if (selectedIndex === null) return;
+      setSelectedIndex((selectedIndex + 1) % services.length);
+    };
+
     return (
       <>
-        <SectionShell sectionId={sectionId}>
+        <SectionShell sectionId={sectionId} dark>
           <ServicesHeader
             tagLabel={tagLabel}
             title={section?.title || ''}
             subtitle={section?.subtitle}
+            dark
           />
           <ServicesCarousel
             items={services}
@@ -73,22 +84,29 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
               >
                 <PortfolioCard
                   service={service}
-                  variant="light"
+                  variant="dark"
                   onClick={() => openServiceModal(service)}
+                  className="!border-[rgba(64,110,241,0.25)] hover:!border-[rgba(64,110,241,0.5)]"
                 />
               </div>
             )}
           />
         </SectionShell>
 
-        <ServiceDetailModal
-          service={selectedService}
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          onCta={() => {
-            if (onCtaClick) onCtaClick();
-          }}
-        />
+        {selectedService && (
+          <ServiceDetailModal
+            service={selectedService}
+            isOpen={isModalOpen}
+            onClose={() => setSelectedIndex(null)}
+            onCta={() => {
+              setSelectedIndex(null);
+              if (onCtaClick) onCtaClick();
+            }}
+            onPrev={services.length > 1 ? goToPrev : undefined}
+            onNext={services.length > 1 ? goToNext : undefined}
+            variant="dark"
+          />
+        )}
       </>
     );
   }
@@ -121,15 +139,15 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
   );
 }
 
-function SectionShell({ sectionId, children }: { sectionId: string; children: React.ReactNode }) {
+function SectionShell({ sectionId, children, dark = false }: { sectionId: string; children: React.ReactNode; dark?: boolean }) {
   return (
     <section
       id={sectionId}
-      className="relative pt-0 pb-14 md:pb-16 bg-gradient-to-br from-[#f7f9fc] via-white to-[#eaf1ff] overflow-hidden"
+      className={`relative pt-0 pb-14 md:pb-16 overflow-hidden ${dark ? 'bg-gradient-to-b from-[#0a0f18] to-[#0d1320]' : 'bg-gradient-to-br from-[#f7f9fc] via-white to-[#eaf1ff]'}`}
     >
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute w-80 h-80 bg-primary/5 blur-3xl -left-20 top-0 rounded-full" />
-        <div className="absolute w-[420px] h-[420px] bg-indigo-200/30 blur-3xl right-[-10%] bottom-[-20%] rounded-full" />
+        <div className={`absolute w-80 h-80 blur-3xl -left-20 top-0 rounded-full ${dark ? 'bg-primary/10' : 'bg-primary/5'}`} />
+        <div className={`absolute w-[420px] h-[420px] blur-3xl right-[-10%] bottom-[-20%] rounded-full ${dark ? 'bg-indigo-500/20' : 'bg-indigo-200/30'}`} />
       </div>
       {/* Heavy top padding on mobile to guard against the absolute overlay half (-translate-y-1/2) */}
       <div className="relative z-10 pt-64 sm:pt-[22rem] md:pt-48 lg:pt-24 space-y-6 md:space-y-8 pb-4 md:pb-8">

@@ -12,6 +12,7 @@ interface ServiceDetailModalProps {
   onCta: (source: string) => void;
   onPrev?: () => void;
   onNext?: () => void;
+  variant?: "dark" | "light";
 }
 
 /*
@@ -29,6 +30,9 @@ interface ServiceDetailModalProps {
  * card has within its Figma frame (67/32px inset); tablet/mobile cards fill their
  * wrapper edge-to-edge, since in those frames the card is effectively the whole
  * popup with no extra chrome around it.
+ *
+ * Shared by both the dark /portfolio popup and the light homepage "Solutions"
+ * carousel popup (`variant` swaps card/text colors only — geometry never changes).
  */
 const U = 17.99; // Desktop: Figma px per 1cqw (1799px width / 100)
 const cqw = (px: number) => `${(px / U).toFixed(3)}cqw`;
@@ -50,20 +54,48 @@ type CqwFn = (px: number) => string;
 // icons/text bigger, just stretch the container" rule from an earlier pass).
 const capAtFigmaSize = (cqwFn: CqwFn, px: number) => `min(${cqwFn(px)}, ${px}px)`;
 
+// Card chrome + text colors. Everything else (feature pills, CTA button,
+// laptop bezel, nav/close buttons, slider dots) is a self-contained element
+// that already reads fine on both a dark and a light card, so it stays fixed
+// across variants — only what sits directly on the card background changes.
+const THEME = {
+  dark: {
+    cardBg: "#070b13",
+    cardBorder: "1px solid #524eae96",
+    cardShadow: "none",
+    divider: "rgba(255,255,255,0.22)",
+    iconBg: "rgba(255,255,255,0.06)",
+    iconBorder: "1px solid rgba(255,255,255,0.12)",
+    title: "#ffffff",
+    description: "#ffffff",
+    price: "#ffffff",
+    priceLabel: "rgba(255,255,255,0.6)",
+    urlClass: "text-white hover:underline",
+  },
+  light: {
+    cardBg: "#ffffff",
+    cardBorder: "1px solid #e2e8f0",
+    cardShadow: "0 40px 100px -25px rgba(0,0,0,0.55)",
+    divider: "rgba(15,23,42,0.1)",
+    iconBg: "#f1f5f9",
+    iconBorder: "1px solid #e2e8f0",
+    title: "#0f172a",
+    description: "#334155",
+    price: "#0f172a",
+    priceLabel: "#64748b",
+    urlClass: "text-slate-600 hover:text-slate-900 hover:underline",
+  },
+} as const;
+
 // Figma placeholder content — used only as empty-state fallback, never over real data.
 const FALLBACK_TITLE = "Title Title";
 const FALLBACK_FEATURES = ["Site-integrated", "Site-integrated", "Site-integrated"];
-const FALLBACK_URLS = [
-  "obigodeportugues.com",
-  "obigodeportugues.com",
-  "obigodeportugues.com",
-  "obigodeportugues.com",
-];
 const FALLBACK_DESCRIPTION =
   "Description description descriptiondescriptiondescription";
 
-export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, onNext }: ServiceDetailModalProps) {
+export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, onNext, variant = "dark" }: ServiceDetailModalProps) {
   const { t, isEnglish } = useTranslation();
+  const theme = THEME[variant];
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -75,7 +107,6 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
   const features: string[] = (service.features as string[]) || [];
 
   const displayFeatures = features.length > 0 ? features : FALLBACK_FEATURES;
-  const displayUrls = popupUrls.length > 0 ? popupUrls : FALLBACK_URLS;
 
   useEffect(() => {
     setCurrentSlide(0);
@@ -134,7 +165,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
   if (!isOpen) return null;
 
   const renderDivider = () => (
-    <div className="w-full shrink-0" style={{ height: "1px", background: "rgba(255,255,255,0.22)" }} />
+    <div className="w-full shrink-0" style={{ height: "1px", background: theme.divider }} />
   );
 
   const renderFavicon = (cqwFn: CqwFn, size: number, radius: number) => (
@@ -142,8 +173,8 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
       className="shrink-0 overflow-hidden flex items-center justify-center"
       style={{
         width: capAtFigmaSize(cqwFn, size), height: capAtFigmaSize(cqwFn, size), borderRadius: capAtFigmaSize(cqwFn, radius),
-        background: service.logoIconUrl ? "transparent" : "rgba(255,255,255,0.06)",
-        border: service.logoIconUrl ? "none" : "1px solid rgba(255,255,255,0.12)",
+        background: service.logoIconUrl ? "transparent" : theme.iconBg,
+        border: service.logoIconUrl ? "none" : theme.iconBorder,
       }}
     >
       {service.logoIconUrl && (
@@ -154,11 +185,12 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
 
   const renderTitle = (cqwFn: CqwFn, fontSize: number, lineHeight: number) => (
     <h2
-      className="font-bold text-white m-0 overflow-hidden flex-1 min-w-0"
+      className="font-bold m-0 overflow-hidden flex-1 min-w-0"
       style={{
         fontSize: capAtFigmaSize(cqwFn, fontSize),
         lineHeight: capAtFigmaSize(cqwFn, lineHeight), letterSpacing: "-0.01em",
         display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+        color: theme.title,
       }}
     >
       {service.title || FALLBACK_TITLE}
@@ -190,23 +222,36 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
   );
 
   const renderPrice = (cqwFn: CqwFn, bigSize: number, smallSize: number) => (
-    <div className="flex items-baseline">
-      <span className="text-white" style={{ fontSize: capAtFigmaSize(cqwFn, bigSize), fontWeight: 800, lineHeight: 1, letterSpacing: "-0.02em" }}>
-        {service.price || "$69"}
-      </span>
-      <span style={{ fontSize: capAtFigmaSize(cqwFn, smallSize), fontWeight: 300, lineHeight: 1, marginLeft: capAtFigmaSize(cqwFn, smallSize * 0.125), color: "rgba(255,255,255,0.6)" }}>
-        {t(service.priceLabel) || "/mo"}
-      </span>
+    <div className="flex items-baseline flex-wrap" style={{ columnGap: capAtFigmaSize(cqwFn, bigSize * 0.2), rowGap: capAtFigmaSize(cqwFn, smallSize * 0.3) }}>
+      <div className="flex items-baseline">
+        <span style={{ fontSize: capAtFigmaSize(cqwFn, bigSize), fontWeight: 800, lineHeight: 1, letterSpacing: "-0.02em", color: theme.price }}>
+          {service.price || "$69"}
+        </span>
+        <span style={{ fontSize: capAtFigmaSize(cqwFn, smallSize), fontWeight: 300, lineHeight: 1, marginLeft: capAtFigmaSize(cqwFn, smallSize * 0.125), color: theme.priceLabel }}>
+          {t(service.priceLabel) || "/mo"}
+        </span>
+      </div>
+      {service.setupPrice && (
+        <div className="flex items-baseline">
+          <span style={{ fontSize: capAtFigmaSize(cqwFn, smallSize), fontWeight: 700, lineHeight: 1, color: theme.priceLabel }}>
+            +{service.setupPrice}
+          </span>
+          <span style={{ fontSize: capAtFigmaSize(cqwFn, smallSize * 0.7), fontWeight: 300, lineHeight: 1, marginLeft: capAtFigmaSize(cqwFn, smallSize * 0.125), color: theme.priceLabel }}>
+            {t("setup")}
+          </span>
+        </div>
+      )}
     </div>
   );
 
   const renderDescription = (cqwFn: CqwFn, fontSize: number, maxLines = 4) => (
     <p
-      className="text-white m-0"
+      className="m-0"
       style={{
         fontSize: capAtFigmaSize(cqwFn, fontSize),
         fontWeight: 300, lineHeight: 1.35,
         display: "-webkit-box", WebkitLineClamp: maxLines, WebkitBoxOrient: "vertical", overflow: "hidden",
+        color: theme.description,
       }}
     >
       {t(service.description) || FALLBACK_DESCRIPTION}
@@ -215,13 +260,13 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
 
   const renderUrls = (cqwFn: CqwFn, fontSize: number, lineHeight: number, maxWidth: string) => (
     <div className="flex flex-col items-start">
-      {displayUrls.map((url, i) => (
+      {popupUrls.map((url, i) => (
         <a
           key={i}
           href={url.startsWith("http") ? url : `https://${url}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-white hover:underline whitespace-nowrap overflow-hidden text-ellipsis block"
+          className={`${theme.urlClass} whitespace-nowrap overflow-hidden text-ellipsis block`}
           style={{ fontSize: capAtFigmaSize(cqwFn, fontSize), lineHeight: capAtFigmaSize(cqwFn, lineHeight), fontWeight: 400, maxWidth }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -335,7 +380,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="absolute inset-0" style={{ borderRadius: cqw(39), background: "#070b13", border: "1px solid #524eae96" }} />
+        <div className="absolute inset-0" style={{ borderRadius: cqw(39), background: theme.cardBg, border: theme.cardBorder, boxShadow: theme.cardShadow }} />
 
         <div className="relative flex flex-col" style={{ padding: `64px ${cqw(157)}`, gap: "32px" }}>
           {renderDivider()}
@@ -346,8 +391,8 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
               className="shrink-0 overflow-hidden flex items-center justify-center"
               style={{
                 width: cqw(115.2), height: cqw(115.2), borderRadius: cqw(24),
-                background: service.logoIconUrl ? "transparent" : "rgba(255,255,255,0.06)",
-                border: service.logoIconUrl ? "none" : "1px solid rgba(255,255,255,0.12)",
+                background: service.logoIconUrl ? "transparent" : theme.iconBg,
+                border: service.logoIconUrl ? "none" : theme.iconBorder,
               }}
             >
               {service.logoIconUrl && (
@@ -360,11 +405,12 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
             </div>
 
             <h2
-              className="font-bold text-white m-0 flex-1 min-w-0"
+              className="font-bold m-0 flex-1 min-w-0"
               style={{
                 fontSize: cqw(103.57),
                 lineHeight: cqw(119.11), letterSpacing: "-0.01em",
                 whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                color: theme.title,
               }}
             >
               {service.title || FALLBACK_TITLE}
@@ -373,8 +419,8 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
 
           {/* Container 2: description, full width, no truncation */}
           <p
-            className="text-white m-0"
-            style={{ fontSize: cqw(33), fontWeight: 300, lineHeight: 1.32 }}
+            className="m-0"
+            style={{ fontSize: cqw(33), fontWeight: 300, lineHeight: 1.32, color: theme.description }}
           >
             {t(service.description) || FALLBACK_DESCRIPTION}
           </p>
@@ -405,13 +451,25 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
           <div className="grid items-start" style={{ gridTemplateColumns: `calc(50% - ${RECLAIMED_GAP / 2}px) 1fr` }}>
             {/* Left: price, CTA button, reference links */}
             <div ref={leftColRef} className="flex flex-col" style={{ gap: "32px" }}>
-              <div className="flex items-baseline">
-                <span className="text-white" style={{ fontSize: cqw(120), fontWeight: 800, lineHeight: 1, letterSpacing: "-0.02em" }}>
-                  {service.price || "$69"}
-                </span>
-                <span style={{ fontSize: cqw(48), fontWeight: 300, lineHeight: 1, marginLeft: cqw(6), color: "rgba(255,255,255,0.6)" }}>
-                  {t(service.priceLabel) || "/mo"}
-                </span>
+              <div className="flex items-baseline flex-wrap" style={{ columnGap: cqw(24), rowGap: cqw(14) }}>
+                <div className="flex items-baseline">
+                  <span style={{ fontSize: cqw(120), fontWeight: 800, lineHeight: 1, letterSpacing: "-0.02em", color: theme.price }}>
+                    {service.price || "$69"}
+                  </span>
+                  <span style={{ fontSize: cqw(48), fontWeight: 300, lineHeight: 1, marginLeft: cqw(6), color: theme.priceLabel }}>
+                    {t(service.priceLabel) || "/mo"}
+                  </span>
+                </div>
+                {service.setupPrice && (
+                  <div className="flex items-baseline">
+                    <span style={{ fontSize: cqw(48), fontWeight: 700, lineHeight: 1, color: theme.priceLabel }}>
+                      +{service.setupPrice}
+                    </span>
+                    <span style={{ fontSize: cqw(34), fontWeight: 300, lineHeight: 1, marginLeft: cqw(6), color: theme.priceLabel }}>
+                      {t("setup")}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <button
@@ -426,13 +484,13 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
               </button>
 
               <div className="flex flex-col items-start">
-                {displayUrls.map((url, i) => (
+                {popupUrls.map((url, i) => (
                   <a
                     key={i}
                     href={url.startsWith("http") ? url : `https://${url}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-white hover:underline whitespace-nowrap overflow-hidden text-ellipsis block"
+                    className={`${theme.urlClass} whitespace-nowrap overflow-hidden text-ellipsis block`}
                     style={{ fontSize: cqw(29.31), lineHeight: cqw(35), fontWeight: 400, maxWidth: "100%" }}
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -498,7 +556,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="absolute inset-0" style={{ borderRadius: cqwT(39), background: "#070b13", border: "1px solid #524eae96" }} />
+        <div className="absolute inset-0" style={{ borderRadius: cqwT(39), background: theme.cardBg, border: theme.cardBorder, boxShadow: theme.cardShadow }} />
         <div className="relative flex flex-col" style={{ paddingLeft: cqwT(52), paddingRight: cqwT(52), paddingTop: "66px", paddingBottom: "66px", gap: "33px" }}>
           {renderDivider()}
           {/* Content sizes below are Figma Frame 58's values scaled by 0.8 (per
@@ -525,7 +583,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="absolute inset-0" style={{ borderRadius: cqwM(38.37), background: "#070b13", border: "1px solid #524eae96" }} />
+        <div className="absolute inset-0" style={{ borderRadius: cqwM(38.37), background: theme.cardBg, border: theme.cardBorder, boxShadow: theme.cardShadow }} />
         <div className="relative flex flex-col" style={{ paddingLeft: cqwM(34), paddingRight: cqwM(34), paddingTop: "42px", paddingBottom: "42px", gap: "21px" }}>
           {renderDivider()}
           <div className="flex items-center" style={{ gap: "8px" }}>

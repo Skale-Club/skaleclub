@@ -70,6 +70,8 @@ export const DEFAULT_HOMEPAGE_CONTENT: HomepageContent = {
   portfolioHero: {
     badge: 'Our Services',
     title: '',
+    subtitle: '',
+    buttonText: '',
     backgroundImage: '',
   },
   portfolioCtaSection: {

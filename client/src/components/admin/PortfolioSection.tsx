@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, startTransition } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   Briefcase,
@@ -161,13 +161,19 @@ export function PortfolioSection() {
     };
 
     const handleEdit = (service: PortfolioService) => {
-        setEditingService(service);
-        setIsDialogOpen(true);
+        // Mounting PortfolioServiceForm is heavy (image previews, uploaders, many fields);
+        // startTransition lets the click return immediately instead of blocking on that mount.
+        startTransition(() => {
+            setEditingService(service);
+            setIsDialogOpen(true);
+        });
     };
 
     const handleCreate = () => {
-        setEditingService(null);
-        setIsDialogOpen(true);
+        startTransition(() => {
+            setEditingService(null);
+            setIsDialogOpen(true);
+        });
     };
 
     if (isLoading && !services) {
@@ -196,7 +202,7 @@ export function PortfolioSection() {
                             </DialogContent>
                         </Dialog>
 
-                        <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingService(null); }}>
+                        <Dialog open={isDialogOpen} onOpenChange={(open) => { startTransition(() => { setIsDialogOpen(open); if (!open) setEditingService(null); }); }}>
                             <DialogTrigger asChild>
                                 <Button size="sm" onClick={handleCreate} data-testid="button-add-service">
                                     <Plus className="w-4 h-4 mr-2" />

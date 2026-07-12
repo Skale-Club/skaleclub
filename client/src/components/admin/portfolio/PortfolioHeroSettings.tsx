@@ -23,6 +23,8 @@ export function PortfolioHeroSettings() {
 
   const [badge, setBadge] = useState('');
   const [title, setTitle] = useState('');
+  const [subtitle, setSubtitle] = useState('');
+  const [buttonText, setButtonText] = useState('');
   const [backgroundImage, setBackgroundImage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
@@ -36,6 +38,8 @@ export function PortfolioHeroSettings() {
     const ph = companySettings?.homepageContent?.portfolioHero;
     setBadge(ph?.badge ?? '');
     setTitle(ph?.title ?? '');
+    setSubtitle(ph?.subtitle ?? '');
+    setButtonText(ph?.buttonText ?? '');
     setBackgroundImage(ph?.backgroundImage ?? '');
 
     const cta = companySettings?.homepageContent?.portfolioCtaSection;
@@ -66,13 +70,13 @@ export function PortfolioHeroSettings() {
 
   const persist = (overrides: Partial<PortfolioHero>) =>
     save.mutate({
-      hero: { badge, title, backgroundImage, ...overrides },
+      hero: { badge, title, subtitle, buttonText, backgroundImage, ...overrides },
       cta: { title: ctaTitle, subtitle: ctaSubtitle, buttonText: ctaButtonText, backgroundImage: ctaBackgroundImage },
     });
 
   const persistCta = (overrides: Partial<PortfolioCtaSection>) =>
     save.mutate({
-      hero: { badge, title, backgroundImage },
+      hero: { badge, title, subtitle, buttonText, backgroundImage },
       cta: { title: ctaTitle, subtitle: ctaSubtitle, buttonText: ctaButtonText, backgroundImage: ctaBackgroundImage, ...overrides },
     });
 
@@ -128,7 +132,7 @@ export function PortfolioHeroSettings() {
           Portfolio Hero
         </DialogTitle>
         <DialogDescription>
-          The badge, title and background image shown at the top of the portfolio page.
+          The badge, title, subtitle, button and background image shown at the top of the portfolio page.
         </DialogDescription>
       </DialogHeader>
 
@@ -151,6 +155,26 @@ export function PortfolioHeroSettings() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Scale Your Business"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="portfolioHeroSubtitle">Subtitle</Label>
+            <Input
+              id="portfolioHeroSubtitle"
+              value={subtitle}
+              onChange={(e) => setSubtitle(e.target.value)}
+              placeholder="Explore the tools and services we've built to help businesses grow."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="portfolioHeroButtonText">Button text</Label>
+            <Input
+              id="portfolioHeroButtonText"
+              value={buttonText}
+              onChange={(e) => setButtonText(e.target.value)}
+              placeholder="Book a Strategy Session"
             />
           </div>
         </div>

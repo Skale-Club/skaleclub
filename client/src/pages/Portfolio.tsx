@@ -8,7 +8,7 @@ import {
 import { trackCTAClick } from "@/lib/analytics";
 import { LeadFormModal } from "@/components/LeadFormModal";
 import { PortfolioCard } from "@/components/PortfolioCard";
-import { ServiceDetailModal } from "@/components/portfolio/ServiceDetailModal";
+import { ServiceDetailModal } from "@/components/ServiceDetailModal";
 import { Loader2 } from '@/components/ui/loader';
 import { getImageUrl } from "@/components/admin/shared/utils";
 
@@ -88,6 +88,16 @@ export default function Portfolio() {
                     <h1 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
                         {t(portfolioHero?.title || companySettings?.heroTitle || "Scale Your Business")}
                     </h1>
+                    <p className="text-lg md:text-xl text-white/70 max-w-2xl mx-auto mb-8">
+                        {t(portfolioHero?.subtitle || "Explore the tools and services we've built to help businesses grow.")}
+                    </p>
+                    <button
+                        onClick={() => handleCta('hero')}
+                        className="px-8 py-4 bg-white text-[#0A192F] font-bold rounded-full text-lg hover:scale-105 transition-transform inline-flex items-center justify-center gap-2 shadow-[0_20px_40px_rgba(0,0,0,0.5)]"
+                    >
+                        {t(portfolioHero?.buttonText || "Book a Strategy Session")}
+                        <ArrowRight className="w-5 h-5" />
+                    </button>
                 </div>
             </section>
 
@@ -142,6 +152,7 @@ export default function Portfolio() {
                     onCta={handleCta}
                     onPrev={portfolioServices && portfolioServices.length > 1 ? goToPrev : undefined}
                     onNext={portfolioServices && portfolioServices.length > 1 ? goToNext : undefined}
+                    variant="dark"
                 />
             )}
 
