@@ -18,6 +18,8 @@ interface PortfolioCardProps {
     onClick?: () => void;
     className?: string;
     variant?: 'dark' | 'light'; // Add theme variant
+    description?: string;
+    compact?: boolean; // ~20% smaller — used by the homepage carousels
 }
 
 /**
@@ -31,7 +33,7 @@ interface PortfolioCardProps {
  * reserved space even when a service has no features, so removing bubbles
  * never shortens the card.
  */
-export function PortfolioCard({ service, onClick, className = "", variant = 'dark' }: PortfolioCardProps) {
+export function PortfolioCard({ service, onClick, className = "", variant = 'dark', description, compact = false }: PortfolioCardProps) {
     const { t } = useTranslation();
 
     const themeClasses = variant === 'dark'
@@ -59,12 +61,12 @@ export function PortfolioCard({ service, onClick, className = "", variant = 'dar
     return (
         <div
             onClick={onClick}
-            className={`group flex h-full cursor-pointer flex-col gap-4 rounded-2xl border p-4 transition-all duration-300 hover:-translate-y-1 ${themeClasses.card} ${className}`}
+            className={`group flex h-full cursor-pointer flex-col ${compact ? 'gap-3 rounded-xl p-3' : 'gap-4 rounded-2xl p-4'} border transition-all duration-300 hover:-translate-y-1 ${themeClasses.card} ${className}`}
         >
             {/* Hero image — fixed ratio so all cards line up; object-cover so
                 the image fills the box (shorter side to the edge), cropping the
                 longer side as needed */}
-            <div className={`relative w-full overflow-hidden rounded-xl aspect-[16/10] ${themeClasses.imageBg}`}>
+            <div className={`relative w-full overflow-hidden ${compact ? 'rounded-lg' : 'rounded-xl'} aspect-[16/10] ${themeClasses.imageBg}`}>
                 {service.imageUrl ? (
                     <img
                         src={getImageUrl(service.imageUrl, { width: 800, quality: 80 })}
@@ -76,23 +78,23 @@ export function PortfolioCard({ service, onClick, className = "", variant = 'dar
                     />
                 ) : (
                     <div className="flex h-full w-full items-center justify-center">
-                        <ImageIcon className={`h-10 w-10 ${themeClasses.iconPlaceholder}`} />
+                        <ImageIcon className={`${compact ? 'h-8 w-8' : 'h-10 w-10'} ${themeClasses.iconPlaceholder}`} />
                     </div>
                 )}
             </div>
 
             {/* Title / subtitle + logo icon */}
-            <div className="flex items-center gap-3">
+            <div className={`flex items-center ${compact ? 'gap-2' : 'gap-3'}`}>
                 <div className="min-w-0 flex-1">
-                    <h3 className={`truncate text-lg font-bold leading-tight ${themeClasses.title}`}>
+                    <h3 className={`truncate font-bold leading-tight ${compact ? 'text-base' : 'text-lg'} ${themeClasses.title}`}>
                         {service.title}
                     </h3>
                     {service.subtitle && (
-                        <p className={`truncate text-sm ${themeClasses.subtitle}`}>{t(service.subtitle)}</p>
+                        <p className={`truncate ${compact ? 'text-xs' : 'text-sm'} ${themeClasses.subtitle}`}>{t(service.subtitle)}</p>
                     )}
                 </div>
                 {service.logoIconUrl && (
-                    <div className={`flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border ${themeClasses.iconBox}`}>
+                    <div className={`flex shrink-0 items-center justify-center overflow-hidden border ${compact ? 'h-11 w-11 rounded-lg' : 'h-14 w-14 rounded-xl'} ${themeClasses.iconBox}`}>
                         <img
                             src={getImageUrl(service.logoIconUrl, { width: 160, quality: 80 })}
                             alt={`${service.title} logo`}
@@ -105,14 +107,20 @@ export function PortfolioCard({ service, onClick, className = "", variant = 'dar
                 )}
             </div>
 
+            {description && (
+                <p className={`leading-relaxed line-clamp-3 ${compact ? 'text-xs' : 'text-sm'} ${themeClasses.subtitle}`}>
+                    {t(description)}
+                </p>
+            )}
+
             {/* Feature bubbles — reserved fixed-height band, hovers over its own
                 spacing so removing bubbles never shrinks the card */}
-            <div className="mt-auto h-7 overflow-hidden">
+            <div className={`mt-auto overflow-hidden ${compact ? 'h-6' : 'h-7'}`}>
                 <div className="flex flex-wrap gap-1.5">
                     {features.map((feature, idx) => (
                         <span
                             key={idx}
-                            className={`inline-flex h-7 items-center rounded-full border px-3 text-xs font-medium ${themeClasses.bubble}`}
+                            className={`inline-flex items-center rounded-full border font-medium ${compact ? 'h-6 px-2.5 text-[11px]' : 'h-7 px-3 text-xs'} ${themeClasses.bubble}`}
                         >
                             {t(feature)}
                         </span>

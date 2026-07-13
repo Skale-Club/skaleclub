@@ -13,11 +13,10 @@ export function TrustBadgesAdapter({ props: _ }: { props: z.infer<typeof trustBa
   const badges = settings?.homepageContent?.trustBadges ?? [];
   if (badges.length === 0) return null;
 
-  // TrustBadges is absolutely positioned and expects a relative parent (the
-  // gradient wrapper on Home.tsx). Mirror that here so the badges sit at the
-  // expected vertical offset under the hero.
+  // TrustBadges renders as a plain block (no absolute overlap); provide its
+  // own centered, padded container since it's used standalone here.
   return (
-    <div className="bg-gradient-to-br from-[#f7f9fc] via-white to-[#eaf1ff] relative w-full mt-0 pt-0">
+    <div className="container-custom mx-auto px-4 sm:px-6 py-6">
       <TrustBadges badges={badges} />
     </div>
   );

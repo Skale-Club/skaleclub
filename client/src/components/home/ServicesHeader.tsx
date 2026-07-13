@@ -13,7 +13,7 @@ export function ServicesHeader({ tagLabel, title, subtitle, dark = false }: Serv
 
   return (
     <div className="container-custom mx-auto px-4 sm:px-6 md:px-10">
-      <div className="max-w-4xl space-y-3">
+      <div className="max-w-4xl space-y-10">
         <div className={`inline-flex items-center gap-2 px-3 py-1 border rounded-full shadow-sm text-[11px] font-semibold uppercase tracking-[0.08em] ${dark ? 'bg-white/10 border-white/10 text-white/80' : 'bg-white/70 text-slate-600'}`}>
           <Sparkles className="w-3.5 h-3.5 text-primary" />
           <span>{t(tagLabel)}</span>

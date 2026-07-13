@@ -33,14 +33,14 @@ export function BlogSection({ content }: BlogSectionProps) {
   };
 
   return (
-    <section className="py-20 bg-[#F8FAFC]">
+    <section className="py-20 bg-[#111111]">
       <div className="container-custom mx-auto">
-        <div className="flex items-center justify-between mb-12">
+        <div className="flex items-center justify-between mb-10">
           <div>
-            <h2 className="text-3xl md:text-4xl font-bold text-[#1D1D1D] mb-2" data-testid="text-blog-section-title">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4" data-testid="text-blog-section-title">
               {t(sectionContent.title || '')}
             </h2>
-            <p className="text-slate-600 text-lg">{t(sectionContent.subtitle || '')}</p>
+            <p className="text-slate-300 text-lg">{t(sectionContent.subtitle || '')}</p>
           </div>
           <Link href={pagePaths.blog} className="hidden md:flex items-center gap-2 text-primary font-semibold hover:underline" data-testid="link-view-all-blog">
             {t(sectionContent.viewAllText || '')}
@@ -51,7 +51,7 @@ export function BlogSection({ content }: BlogSectionProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {posts.map(post => (
             <Link key={post.id} href={pagePaths.blogPost(post.slug)} className="group" data-testid={`link-blog-card-${post.id}`}>
-              <div className="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 h-full flex flex-col">
+              <div className="bg-white/5 rounded-xl overflow-hidden border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300 h-full flex flex-col">
                 {post.featureImageUrl ? (
                   <div className="aspect-video overflow-hidden">
                     <img
@@ -62,24 +62,24 @@ export function BlogSection({ content }: BlogSectionProps) {
                     />
                   </div>
                 ) : (
-                  <div className="aspect-video bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
-                    <FileText className="w-12 h-12 text-blue-300" />
+                  <div className="aspect-video bg-black/20 flex items-center justify-center">
+                    <FileText className="w-12 h-12 text-white/30" />
                   </div>
                 )}
                 <div className="p-6 flex flex-col flex-1">
-                  <div className="flex items-center gap-2 text-sm text-slate-500 mb-3">
+                  <div className="flex items-center gap-2 text-sm text-slate-400 mb-3">
                     <Calendar className="w-4 h-4" />
                     <span data-testid={`text-blog-home-date-${post.id}`}>
                       {post.publishedAt ? format(new Date(post.publishedAt), 'MMMM d, yyyy') : ''}
                     </span>
                   </div>
-                  <h3 className="text-lg font-bold text-[#1D1D1D] mb-2 line-clamp-2 group-hover:text-primary transition-colors" data-testid={`text-blog-home-title-${post.id}`}>
+                  <h3 className="text-lg font-bold text-white mb-2 line-clamp-2 group-hover:text-primary transition-colors" data-testid={`text-blog-home-title-${post.id}`}>
                     {post.title}
                   </h3>
-                  <p className="text-slate-600 text-sm line-clamp-3 flex-1" data-testid={`text-blog-home-excerpt-${post.id}`}>
+                  <p className="text-slate-300 text-sm line-clamp-3 flex-1" data-testid={`text-blog-home-excerpt-${post.id}`}>
                     {getExcerpt(post)}
                   </p>
-                  <div className="mt-4 pt-4 border-t border-gray-100">
+                  <div className="mt-4 pt-4 border-t border-white/10">
                     <span className="text-primary font-semibold text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
                       {t(sectionContent.readMoreText || '')}
                       <ArrowRight className="w-4 h-4" />

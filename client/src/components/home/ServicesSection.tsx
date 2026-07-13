@@ -80,11 +80,12 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
             renderItem={(service, idx) => (
               <div
                 key={`service-${service.id}-${idx}`}
-                className="flex-shrink-0 w-full sm:w-[70%] md:w-[52%] lg:w-[36%] xl:w-[30%]"
+                className="flex-shrink-0 w-[85%] sm:w-[280px] md:w-[260px] lg:w-[250px] xl:w-[245px]"
               >
                 <PortfolioCard
                   service={service}
                   variant="dark"
+                  compact
                   onClick={() => openServiceModal(service)}
                   className="!border-[rgba(64,110,241,0.25)] hover:!border-[rgba(64,110,241,0.5)]"
                 />
@@ -123,6 +124,7 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
       <ServicesCarousel
         items={sortedSteps}
         ariaLabel="Consulting steps"
+        dark={false}
         renderItem={(step, idx) => (
           <div key={`${step.numberLabel}-${step.title}-${idx}`}>
             <StepCard
@@ -143,14 +145,13 @@ function SectionShell({ sectionId, children, dark = false }: { sectionId: string
   return (
     <section
       id={sectionId}
-      className={`relative pt-0 pb-14 md:pb-16 overflow-hidden ${dark ? 'bg-gradient-to-b from-[#0a0f18] to-[#0d1320]' : 'bg-gradient-to-br from-[#f7f9fc] via-white to-[#eaf1ff]'}`}
+      className={`relative pt-20 pb-20 overflow-hidden ${dark ? 'bg-gradient-to-b from-[#0a0f18] to-[#0d1320]' : 'bg-gradient-to-br from-[#f7f9fc] via-white to-[#eaf1ff]'}`}
     >
       <div className="absolute inset-0 pointer-events-none">
         <div className={`absolute w-80 h-80 blur-3xl -left-20 top-0 rounded-full ${dark ? 'bg-primary/10' : 'bg-primary/5'}`} />
         <div className={`absolute w-[420px] h-[420px] blur-3xl right-[-10%] bottom-[-20%] rounded-full ${dark ? 'bg-indigo-500/20' : 'bg-indigo-200/30'}`} />
       </div>
-      {/* Heavy top padding on mobile to guard against the absolute overlay half (-translate-y-1/2) */}
-      <div className="relative z-10 pt-64 sm:pt-[22rem] md:pt-48 lg:pt-24 space-y-6 md:space-y-8 pb-4 md:pb-8">
+      <div className="relative z-10 space-y-10">
         {children}
       </div>
     </section>

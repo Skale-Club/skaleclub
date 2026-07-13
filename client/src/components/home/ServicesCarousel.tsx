@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 const DRAG_THRESHOLD = 5;
+const MOBILE_SCROLL_GAP = 24; // matches the track's gap-6 on mobile
 const FADE_MASK = 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)';
 
 interface ServicesCarouselProps<T> {
@@ -10,15 +12,23 @@ interface ServicesCarouselProps<T> {
   renderItem: (item: T, index: number) => ReactNode;
   ariaLabel: string;
   paused?: boolean;
+  dark?: boolean;
 }
 
-export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused }: ServicesCarouselProps<T>) {
+function getFirstRealItem(track: HTMLElement): HTMLElement | undefined {
+  return Array.from(track.children).find(
+    (child) => !(child as HTMLElement).dataset.carouselSpacer
+  ) as HTMLElement | undefined;
+}
+
+export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused, dark = true }: ServicesCarouselProps<T>) {
   const isMobile = useMediaQuery('(max-width: 767px)');
 
   const desktopLoop = useMemo(() => [...items, ...items], [items]);
 
   const [isPaused, setIsPaused] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [edgeSpacer, setEdgeSpacer] = useState(0);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const isPausedRef = useRef(isPaused);
   const resumeTimerRef = useRef<number | null>(null);
@@ -31,7 +41,7 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused }: Se
   const lastMoveTimeRef = useRef<number>(0);
   const lastMoveXRef = useRef<number>(0);
   const momentumFrameRef = useRef<number | null>(null);
-  const pendingDownRef = useRef<{ x: number; pointerId: number | null } | null>(null);
+  const pendingDownRef = useRef<{ x: number; y: number; pointerId: number | null } | null>(null);
 
   useEffect(() => {
     if (isMobile) return;
@@ -70,6 +80,27 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused }: Se
     return () => cancelAnimationFrame(animationFrame);
   }, [isMobile, desktopLoop.length]);
 
+  // Pad both ends of the mobile track so the first/last card can reach the
+  // center of the viewport, matching how snap-centering works for the rest.
+  useEffect(() => {
+    if (!isMobile) {
+      setEdgeSpacer(0);
+      return;
+    }
+    const track = trackRef.current;
+    if (!track) return;
+
+    const measure = () => {
+      const firstReal = getFirstRealItem(track);
+      if (!firstReal) return;
+      setEdgeSpacer(Math.max(0, (track.clientWidth - firstReal.offsetWidth) / 2));
+    };
+
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [isMobile, items.length]);
+
   // Avoid getting stuck paused on touch devices (e.g., missed touchend)
   useEffect(() => {
     if (isMobile || !isPaused || dragStateRef.current.isDown) return;
@@ -100,7 +131,6 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused }: Se
   };
 
   useEffect(() => {
-    if (isMobile) return;
     const track = trackRef.current;
     if (!track) return;
     const supportsPointerEvents = typeof window !== 'undefined' && 'PointerEvent' in window;
@@ -114,7 +144,7 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused }: Se
 
       if (Math.abs(velocityRef.current) > 0.3) {
         track.scrollLeft -= velocityRef.current;
-        wrapScrollPosition(track);
+        if (!isMobile) wrapScrollPosition(track);
         momentumFrameRef.current = requestAnimationFrame(applyMomentum);
       } else {
         velocityRef.current = 0;
@@ -133,6 +163,13 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused }: Se
       return e.clientX;
     };
 
+    const getClientY = (e: PointerEvent | TouchEvent): number => {
+      if ('touches' in e) {
+        return e.touches[0]?.clientY ?? 0;
+      }
+      return e.clientY;
+    };
+
     const handleStart = (e: PointerEvent | TouchEvent) => {
       if (momentumFrameRef.current) {
         cancelAnimationFrame(momentumFrameRef.current);
@@ -149,6 +186,7 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused }: Se
       };
       pendingDownRef.current = {
         x: clientX,
+        y: getClientY(e),
         pointerId: 'pointerId' in e ? e.pointerId : null,
       };
       lastMoveXRef.current = clientX;
@@ -161,10 +199,17 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused }: Se
       if (!dragStateRef.current.isDown) {
         if (!pendingDownRef.current) return;
         const dx = clientX - pendingDownRef.current.x;
-        if (Math.abs(dx) < DRAG_THRESHOLD) {
+        const dy = getClientY(e) - pendingDownRef.current.y;
+        if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) {
           return;
         }
-        // Crossed threshold: NOW activate drag.
+        if (Math.abs(dy) > Math.abs(dx)) {
+          // Vertical intent (e.g. a finger swipe to scroll the page) — leave
+          // this gesture to the browser instead of hijacking it.
+          pendingDownRef.current = null;
+          return;
+        }
+        // Crossed threshold with horizontal intent: NOW activate drag.
         pauseAutoScroll();
         setIsDragging(true);
         dragStateRef.current.isDown = true;
@@ -248,6 +293,20 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused }: Se
     };
   }, [isMobile]);
 
+  const scrollByCard = (direction: 1 | -1) => {
+    const track = trackRef.current;
+    if (!track) return;
+    const firstReal = getFirstRealItem(track);
+    const amount = firstReal ? firstReal.offsetWidth + MOBILE_SCROLL_GAP : track.clientWidth * 0.85;
+    track.scrollBy({ left: direction * amount, behavior: 'smooth' });
+  };
+
+  const arrowButtonClass = `absolute top-1/2 -translate-y-1/2 -mt-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${
+    dark
+      ? 'border-white/20 bg-white/10 text-white hover:bg-white/20'
+      : 'border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50'
+  }`;
+
   return (
     <div
       className="relative w-screen left-1/2 -translate-x-1/2 px-4 sm:px-6 md:px-10"
@@ -255,19 +314,44 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused }: Se
       onMouseLeave={isMobile ? undefined : () => setIsPaused(false)}
       aria-label={ariaLabel}
     >
-      {isMobile ? (
-        <div className="flex flex-col items-center gap-6">
-          {items.map((item, idx) => renderItem(item, idx))}
-        </div>
-      ) : (
+      <div className="relative">
         <div
           ref={trackRef}
           style={{ maskImage: FADE_MASK, WebkitMaskImage: FADE_MASK }}
-          className={`flex gap-6 md:gap-7 xl:gap-8 overflow-x-scroll overflow-y-visible no-scrollbar pt-2 pb-10 select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+          className={`flex gap-6 md:gap-7 xl:gap-8 overflow-x-scroll overflow-y-visible no-scrollbar touch-pan-y pt-2 pb-10 select-none [&>*]:snap-center ${
+            isMobile ? (isDragging ? 'snap-none' : 'snap-x snap-mandatory') : 'snap-none'
+          } ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
         >
-          {desktopLoop.map((item, idx) => renderItem(item, idx))}
+          {isMobile && edgeSpacer > 0 && (
+            <div aria-hidden="true" data-carousel-spacer="true" style={{ width: edgeSpacer, flexShrink: 0, scrollSnapAlign: 'none' }} />
+          )}
+          {(isMobile ? items : desktopLoop).map((item, idx) => renderItem(item, idx))}
+          {isMobile && edgeSpacer > 0 && (
+            <div aria-hidden="true" data-carousel-spacer="true" style={{ width: edgeSpacer, flexShrink: 0, scrollSnapAlign: 'none' }} />
+          )}
         </div>
-      )}
+
+        {isMobile && (
+          <>
+            <button
+              type="button"
+              aria-label="Previous"
+              onClick={() => scrollByCard(-1)}
+              className={`${arrowButtonClass} left-1`}
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              aria-label="Next"
+              onClick={() => scrollByCard(1)}
+              className={`${arrowButtonClass} right-1`}
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </>
+        )}
+      </div>
     </div>
   );
 }

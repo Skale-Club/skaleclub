@@ -341,6 +341,9 @@ export interface HomepageContent {
     buttonText?: string;
     backgroundImage?: string;
   };
+  portfolioServicesSection?: {
+    showTitle?: boolean;
+  };
   portfolioCtaSection?: {
     title?: string;
     subtitle?: string;

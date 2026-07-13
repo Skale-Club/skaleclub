@@ -17,15 +17,15 @@ export function AboutSection({ content, aboutImageUrl }: AboutSectionProps) {
     <div className="container-custom mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <div className="order-2 lg:order-1">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-sm font-medium mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-blue-300 text-sm font-medium mb-10">
             <User className="w-4 h-4" />
             {t(sectionContent?.label || '')}
           </div>
-          <h2 className="text-3xl md:text-5xl font-bold mb-6 text-[#1D1D1D]">
+          <h2 className="text-3xl md:text-5xl font-bold mb-10 text-white">
             {t(sectionContent?.heading || "")}
           </h2>
 
-          <p className="text-slate-600 text-lg mb-6 leading-relaxed">
+          <p className="text-slate-300 text-lg mb-10 leading-relaxed">
             {t(sectionContent?.description || '')}
           </p>
 
@@ -35,8 +35,8 @@ export function AboutSection({ content, aboutImageUrl }: AboutSectionProps) {
                 <div key={index} className="flex items-start gap-3">
                   <CheckCircle className="w-6 h-6 text-green-500 shrink-0 mt-0.5" />
                   <div>
-                    <h3 className="font-semibold text-[#1D1D1D] mb-1">{t(highlight.title)}</h3>
-                    <p className="text-slate-600">{t(highlight.description)}</p>
+                    <h3 className="font-semibold text-white mb-1">{t(highlight.title)}</h3>
+                    <p className="text-slate-300">{t(highlight.description)}</p>
                   </div>
                 </div>
               ))}
@@ -44,7 +44,7 @@ export function AboutSection({ content, aboutImageUrl }: AboutSectionProps) {
           )}
         </div>
 
-        <div className="order-1 lg:order-2 aspect-square max-h-[500px] rounded-2xl overflow-hidden shadow-2xl border relative">
+        <div className="order-1 lg:order-2 aspect-square max-h-[500px] rounded-2xl overflow-hidden shadow-2xl border border-white/10 relative">
           {aboutImageUrl || sectionContent?.defaultImageUrl ? (
             <img
               src={aboutImageUrl || sectionContent?.defaultImageUrl}

@@ -55,13 +55,13 @@ export function OurServiceDetailModal({ card, isOpen, onClose }: OurServiceDetai
             <div className="w-full aspect-[16/10] mb-6 rounded-2xl overflow-hidden border bg-slate-100 flex items-center justify-center">
               <img
                 src={getImageUrl(card.imageUrl, { width: 1000, quality: 85 })}
-                alt={t(card.title)}
+                alt={card.title}
                 className="w-full h-full object-contain"
               />
             </div>
           )}
 
-          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">{t(card.title)}</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">{card.title}</h2>
           {card.subtitle && <p className="text-lg text-slate-600 mb-4">{t(card.subtitle)}</p>}
           {card.description && (
             <p className="text-slate-700 leading-relaxed mb-6 whitespace-pre-line">{t(card.description)}</p>

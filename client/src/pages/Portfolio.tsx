@@ -26,6 +26,7 @@ export default function Portfolio() {
 
     const portfolioHero = companySettings?.homepageContent?.portfolioHero;
     const portfolioCta = companySettings?.homepageContent?.portfolioCtaSection;
+    const showServicesTitle = companySettings?.homepageContent?.portfolioServicesSection?.showTitle ?? false;
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -63,7 +64,7 @@ export default function Portfolio() {
 
     return (
         <>
-            <section className="relative pt-40 pb-40 flex flex-col items-center justify-center text-center px-6 bg-gradient-to-br from-[#050810] via-[#080c14] to-[#050810]">
+            <section className="relative pt-60 pb-40 flex flex-col items-center justify-center text-center px-6 bg-gradient-to-br from-[#050810] via-[#080c14] to-[#050810]">
                 {portfolioHero?.backgroundImage && (
                     <>
                         <div
@@ -81,7 +82,7 @@ export default function Portfolio() {
                         />
                     </>
                 )}
-                <div className="relative z-10 max-w-5xl mx-auto -translate-y-[30px]">
+                <div className="relative z-10 max-w-5xl mx-auto">
                     <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-full mb-8 inline-flex items-center gap-2 border border-white/20">
                         <span className="text-white font-medium uppercase tracking-wider text-xs md:text-sm">{t(portfolioHero?.badge || "Our Services")}</span>
                     </div>
@@ -103,6 +104,11 @@ export default function Portfolio() {
 
             <section className="py-16 px-6 bg-gradient-to-b from-[#0a0f18] to-[#0d1320]">
                 <div className="max-w-7xl mx-auto">
+                    {showServicesTitle && (
+                        <h2 className="text-3xl md:text-5xl font-bold text-white text-center mb-10">
+                            {t("Our Solutions")}
+                        </h2>
+                    )}
                     <div className="flex flex-wrap justify-center gap-6 [&>*]:basis-full sm:[&>*]:flex-[0_1_calc(50%-0.75rem)] lg:[&>*]:flex-[0_1_calc(33.333%-1rem)] lg:[&>*]:min-w-[280px] lg:[&>*]:max-w-[440px]">
                         {portfolioServices?.map((service) => (
                             <PortfolioCard

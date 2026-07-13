@@ -38,15 +38,15 @@ export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
     <div className="container-custom mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-sm font-medium mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-blue-300 text-sm font-medium mb-10">
             <MapPin className="w-4 h-4" />
             {t(sectionContent?.label || "")}
           </div>
-          <h2 className="text-3xl md:text-5xl font-bold mb-6 text-slate-900">
+          <h2 className="text-3xl md:text-5xl font-bold mb-10 text-white">
             {t(sectionContent?.heading || "")}
           </h2>
-          
-          <p className="text-slate-600 text-lg mb-8 leading-relaxed">
+
+          <p className="text-slate-300 text-lg mb-10 leading-relaxed">
             {t(sectionContent?.description || "")}
           </p>
 
@@ -62,7 +62,7 @@ export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
           ) : null}
         </div>
         
-        <div className="h-[450px] rounded-2xl overflow-hidden shadow-2xl border lg:col-span-1 relative">
+        <div className="h-[450px] rounded-2xl overflow-hidden shadow-2xl border border-white/10 lg:col-span-1 relative">
           {embedUrl ? (
             <iframe
               src={embedUrl}

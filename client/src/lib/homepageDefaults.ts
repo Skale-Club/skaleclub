@@ -74,6 +74,9 @@ export const DEFAULT_HOMEPAGE_CONTENT: HomepageContent = {
     buttonText: '',
     backgroundImage: '',
   },
+  portfolioServicesSection: {
+    showTitle: false,
+  },
   portfolioCtaSection: {
     title: '',
     subtitle: '',

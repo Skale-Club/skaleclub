@@ -1,6 +1,7 @@
 import type { CompanySettings, HomepageContent } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
 import { trackCTAClick } from "@/lib/analytics";
+import { TrustBadges } from "@/components/home/TrustBadges";
 
 interface HeroSectionProps {
   companySettings?: CompanySettings;
@@ -11,12 +12,13 @@ interface HeroSectionProps {
 export function HeroSection({ companySettings, homepageContent, onCtaClick }: HeroSectionProps) {
   const { t } = useTranslation();
   const heroImageUrl = (companySettings?.heroImageUrl || '').trim();
+  const trustBadges = homepageContent.trustBadges || [];
 
   return (
-    <section className="relative flex items-end pt-28 sm:pt-24 lg:pt-16 pb-36 sm:pb-48 lg:pb-4 overflow-hidden bg-[#1C53A3] min-h-[70vh] sm:min-h-[55vh] lg:min-h-[550px]">
+    <section className="relative flex flex-col justify-end pt-28 sm:pt-24 lg:pt-12 pb-6 sm:pb-8 lg:pb-6 overflow-hidden bg-[#1C53A3] min-h-[100dvh]">
       <div className="container-custom mx-auto relative z-10 w-full">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-1 sm:gap-6 lg:gap-8 items-end">
-          <div className="order-1 lg:order-2 text-white pt-6 sm:pt-8 lg:pt-16 pb-16 sm:pb-24 lg:pb-32 lg:translate-y-0 relative z-20">
+          <div className="order-1 lg:order-1 text-white pt-6 sm:pt-8 lg:pt-16 pb-16 sm:pb-24 lg:pb-32 lg:translate-y-0 relative z-20">
             {homepageContent.heroBadgeImageUrl ? (
               <div className="mt-4 sm:mt-0 mb-3 lg:mb-6">
                 <img
@@ -50,7 +52,7 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick }: He
               ) : null}
             </div>
           </div>
-          <div className="order-2 lg:order-1 relative flex h-full items-end justify-center lg:justify-end self-end w-full lg:min-h-[400px] z-10 lg:ml-[-3%]">
+          <div className="order-2 lg:order-2 relative flex h-full items-end justify-center lg:justify-start self-end w-full lg:min-h-[400px] z-10 lg:mr-[-3%]">
             {heroImageUrl ? (
               <img
                 src={heroImageUrl}
@@ -64,6 +66,12 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick }: He
             )}
           </div>
         </div>
+
+        {trustBadges.length > 0 && (
+          <div className="mt-0">
+            <TrustBadges badges={trustBadges} />
+          </div>
+        )}
       </div>
 
       <div

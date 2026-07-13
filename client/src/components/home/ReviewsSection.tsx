@@ -85,9 +85,9 @@ export function ReviewsSection({ embedUrl, title, subtitle }: ReviewsSectionProp
   }
 
   return (
-    <section className="pt-6 sm:pt-10 lg:pt-12 pb-0 bg-[#111111] overflow-hidden mb-0 text-white">
-      <div className="w-full">
-        <div className="container-custom mx-auto mb-16 text-center">
+    <section className="pt-20 pb-20 bg-[#111111] overflow-hidden mb-0 text-white">
+      <div className="w-full space-y-10">
+        <div className="container-custom mx-auto text-center">
           <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white">
             {t(title || '')}
           </h2>
@@ -97,7 +97,7 @@ export function ReviewsSection({ embedUrl, title, subtitle }: ReviewsSectionProp
         </div>
         {embedUrl ? (
           <div className="w-full px-0">
-            <div className="pb-0 bg-[#111111] -mt-6 sm:-mt-8 lg:-mt-10">
+            <div className="bg-[#111111]">
               <EmbedRenderer code={embedUrl.trim()} />
             </div>
           </div>

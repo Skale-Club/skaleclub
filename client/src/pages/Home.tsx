@@ -7,7 +7,6 @@ import { trackCTAClick } from "@/lib/analytics";
 import { LeadFormModal } from "@/components/LeadFormModal";
 import { HeroSection } from "@/components/home/HeroSection";
 import { ServicesSection } from "@/components/home/ServicesSection";
-import { TrustBadges } from "@/components/home/TrustBadges";
 import { ReviewsSection } from "@/components/home/ReviewsSection";
 import { BlogSection } from "@/components/home/BlogSection";
 import { OurServicesSection } from "@/components/home/OurServicesSection";
@@ -29,7 +28,6 @@ export default function Home() {
     ...(homepageContent.areasServedSection || {}),
   };
 
-  const trustBadges = homepageContent.trustBadges || [];
   const reviewsEmbedUrl = homepageContent.reviewsSection?.embedUrl || '';
   const reviewsTitle = homepageContent.reviewsSection?.title || '';
   const reviewsSubtitle = homepageContent.reviewsSection?.subtitle || '';
@@ -77,14 +75,12 @@ export default function Home() {
         onCtaClick={() => setIsFormOpen(true)}
       />
 
-      {/* Wrapper to connect backgrounds and eliminate white gap */}
-      <div className="bg-gradient-to-br from-[#f7f9fc] via-white to-[#eaf1ff] relative w-full mt-0 pt-0">
-        <TrustBadges badges={trustBadges} />
-        <ServicesSection
-          section={horizontalScrollSection}
-          onCtaClick={handleConsultingCta}
-        />
-      </div>
+      <OurServicesSection section={homepageContent.ourServicesSection} />
+
+      <ServicesSection
+        section={horizontalScrollSection}
+        onCtaClick={handleConsultingCta}
+      />
       <div className="h-0 bg-[#111111]"></div>
       <ReviewsSection
         embedUrl={reviewsEmbedUrl}
@@ -92,15 +88,20 @@ export default function Home() {
         subtitle={reviewsSubtitle}
       />
       <BlogSection content={homepageContent.blogSection} />
-      <section id="about" className="bg-white py-20">
-        <AboutSection
-          aboutImageUrl={companySettings?.aboutImageUrl}
-          content={homepageContent.aboutSection}
-        />
+      <section id="about" className="relative py-20 overflow-hidden bg-gradient-to-b from-[#0a1830] to-[#050b18]">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute w-80 h-80 blur-3xl -left-20 top-0 rounded-full bg-primary/10" />
+          <div className="absolute w-[420px] h-[420px] blur-3xl right-[-10%] bottom-[-20%] rounded-full bg-indigo-500/20" />
+        </div>
+        <div className="relative z-10">
+          <AboutSection
+            aboutImageUrl={companySettings?.aboutImageUrl}
+            content={homepageContent.aboutSection}
+          />
+        </div>
       </section>
-      <OurServicesSection section={homepageContent.ourServicesSection} />
       {(companySettings?.mapEmbedUrl || areasServedSection?.heading || areasServedSection?.description) && (
-        <section id="areas-served" className="bg-white py-20">
+        <section id="areas-served" className="bg-[#111111] py-20">
           <AreasServedMap
             mapEmbedUrl={companySettings?.mapEmbedUrl}
             content={areasServedSection}

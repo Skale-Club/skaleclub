@@ -5,6 +5,7 @@ import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { Loader2 } from '@/components/ui/loader';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -13,6 +14,7 @@ import type { CompanySettings, HomepageContent } from '@shared/schema';
 
 type PortfolioHero = NonNullable<HomepageContent['portfolioHero']>;
 type PortfolioCtaSection = NonNullable<HomepageContent['portfolioCtaSection']>;
+type PortfolioServicesSection = NonNullable<HomepageContent['portfolioServicesSection']>;
 
 export function PortfolioHeroSettings() {
   const { toast } = useToast();
@@ -34,6 +36,8 @@ export function PortfolioHeroSettings() {
   const [ctaBackgroundImage, setCtaBackgroundImage] = useState('');
   const [isCtaUploading, setIsCtaUploading] = useState(false);
 
+  const [showServicesTitle, setShowServicesTitle] = useState(false);
+
   useEffect(() => {
     const ph = companySettings?.homepageContent?.portfolioHero;
     setBadge(ph?.badge ?? '');
@@ -47,14 +51,18 @@ export function PortfolioHeroSettings() {
     setCtaSubtitle(cta?.subtitle ?? '');
     setCtaButtonText(cta?.buttonText ?? '');
     setCtaBackgroundImage(cta?.backgroundImage ?? '');
+
+    const services = companySettings?.homepageContent?.portfolioServicesSection;
+    setShowServicesTitle(services?.showTitle ?? false);
   }, [companySettings]);
 
   const save = useMutation({
-    mutationFn: async (data: { hero: PortfolioHero; cta: PortfolioCtaSection }) => {
+    mutationFn: async (data: { hero: PortfolioHero; cta: PortfolioCtaSection; services: PortfolioServicesSection }) => {
       const homepageContent = {
         ...(companySettings?.homepageContent || {}),
         portfolioHero: data.hero,
         portfolioCtaSection: data.cta,
+        portfolioServicesSection: data.services,
       };
       const res = await apiRequest('PUT', '/api/company-settings', { homepageContent });
       return res.json() as Promise<CompanySettings>;
@@ -72,12 +80,21 @@ export function PortfolioHeroSettings() {
     save.mutate({
       hero: { badge, title, subtitle, buttonText, backgroundImage, ...overrides },
       cta: { title: ctaTitle, subtitle: ctaSubtitle, buttonText: ctaButtonText, backgroundImage: ctaBackgroundImage },
+      services: { showTitle: showServicesTitle },
     });
 
   const persistCta = (overrides: Partial<PortfolioCtaSection>) =>
     save.mutate({
       hero: { badge, title, subtitle, buttonText, backgroundImage },
       cta: { title: ctaTitle, subtitle: ctaSubtitle, buttonText: ctaButtonText, backgroundImage: ctaBackgroundImage, ...overrides },
+      services: { showTitle: showServicesTitle },
+    });
+
+  const persistServices = (overrides: Partial<PortfolioServicesSection>) =>
+    save.mutate({
+      hero: { badge, title, subtitle, buttonText, backgroundImage },
+      cta: { title: ctaTitle, subtitle: ctaSubtitle, buttonText: ctaButtonText, backgroundImage: ctaBackgroundImage },
+      services: { showTitle: showServicesTitle, ...overrides },
     });
 
   const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -219,6 +236,30 @@ export function PortfolioHeroSettings() {
             )}
           </div>
           <p className="text-xs text-muted-foreground">Uploaded images are converted to WebP automatically.</p>
+        </div>
+      </div>
+
+      <div className="space-y-4 border-t border-border pt-6">
+        <div className="space-y-1">
+          <h3 className="text-base font-semibold">Services Section</h3>
+          <p className="text-sm text-muted-foreground">
+            The grid of service cards shown below the hero.
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between rounded-lg border border-border p-3">
+          <div className="space-y-0.5">
+            <Label htmlFor="portfolioServicesShowTitle">Show "Our Solutions" title</Label>
+            <p className="text-xs text-muted-foreground">Displays a heading above the service cards.</p>
+          </div>
+          <Switch
+            id="portfolioServicesShowTitle"
+            checked={showServicesTitle}
+            onCheckedChange={(checked) => {
+              setShowServicesTitle(checked);
+              persistServices({ showTitle: checked });
+            }}
+          />
         </div>
       </div>
 

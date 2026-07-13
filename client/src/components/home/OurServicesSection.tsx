@@ -30,11 +30,11 @@ export function OurServicesSection({ section }: { section?: OurServicesSectionDa
   };
 
   return (
-    <section id="our-services" className="bg-[#111111] text-white overflow-hidden pt-16 md:pt-20 pb-12 md:pb-16">
-      <div className="space-y-6 md:space-y-8">
+    <section id="our-services" className="bg-[#111111] text-white overflow-hidden pt-20 pb-20">
+      <div className="space-y-10">
         {/* Header — mirrors ServicesHeader spacing + type sizes (dark variant) */}
         <div className="container-custom mx-auto px-4 sm:px-6 md:px-10">
-          <div className="max-w-4xl space-y-3">
+          <div className="max-w-4xl space-y-10">
             <h2 className="text-3xl md:text-4xl font-bold leading-tight text-white">
               {t(section.title || 'Our Services')}
             </h2>
@@ -51,7 +51,7 @@ export function OurServicesSection({ section }: { section?: OurServicesSectionDa
           renderItem={(card, idx) => (
             <div
               key={`our-service-${idx}`}
-              className="flex-shrink-0 w-full sm:w-[70%] md:w-[52%] lg:w-[36%] xl:w-[30%]"
+              className="flex-shrink-0 w-[85%] sm:w-[280px] md:w-[260px] lg:w-[250px] xl:w-[245px]"
             >
               <PortfolioCard
                 service={{
@@ -63,6 +63,8 @@ export function OurServicesSection({ section }: { section?: OurServicesSectionDa
                   features: card.features ?? [],
                 } as unknown as PortfolioService}
                 variant="dark"
+                compact
+                description={card.description}
                 onClick={() => openCard(card)}
               />
             </div>
