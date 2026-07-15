@@ -82,6 +82,17 @@ The app will be available at `http://localhost:1000`.
   - `CRON_SECRET`
 - Storage: each run writes a timestamp row into `system_heartbeats`
 
+## Blog Autopost Cron (GitHub Actions)
+
+Runs hourly — not on Vercel Cron, since the Hobby plan only allows cron jobs
+that run once per day (`0 * * * *` / `30 * * * *` fail deployment there).
+
+- Cron routes: `GET /api/blog/cron/generate`, `GET /api/blog/cron/fetch-rss`
+- Schedule: hourly (`0 * * * *` and `30 * * * *`) via `.github/workflows/blog-cron.yml`
+- Security: reuses the same `CRON_SECRET` as the keepalive cron (bearer token)
+- No extra GitHub secrets needed — the target URLs are hardcoded to `https://skale.club/...`
+- `/api/blog/cron/generate` self-gates on `blogSettings.postsPerDay`/`lastRunAt`, so hourly polling is expected — most invocations skip until the cadence window elapses
+
 ## Project Structure
 
 ```

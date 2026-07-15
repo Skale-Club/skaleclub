@@ -142,6 +142,15 @@ Configure these GitHub repository secrets:
 Workflow file:
 - `.github/workflows/supabase-keepalive.yml` with schedule `0 0 * * *`
 
+### GitHub Actions Cron (Blog Autopost)
+
+Not deployable as Vercel Cron: the Hobby plan rejects any cron expression
+that runs more than once per day, and `/api/blog/cron/generate` +
+`/api/blog/cron/fetch-rss` need to run hourly.
+
+- Reuses `CRON_SECRET` from above — no new secrets required
+- Workflow file: `.github/workflows/blog-cron.yml` with schedules `0 * * * *` (generate) and `30 * * * *` (fetch-rss)
+
 ## Troubleshooting
 
 ### Still Getting 500 Errors?

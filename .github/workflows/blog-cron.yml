@@ -1,0 +1,105 @@
+name: Blog Autopost Cron
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+    - cron: "30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    if: github.event.schedule == '0 * * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: blog-cron-generate
+      cancel-in-progress: false
+    steps:
+      - name: Call blog generate endpoint
+        env:
+          BLOG_CRON_URL: https://skale.club/api/blog/cron/generate
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "Missing secret: CRON_SECRET"
+            exit 1
+          fi
+
+          response_file="$(mktemp)"
+          set +e
+          status=$(curl --silent --show-error \
+            --output "$response_file" \
+            --write-out "%{http_code}" \
+            --max-time 55 \
+            --connect-timeout 10 \
+            --retry 3 \
+            --retry-delay 5 \
+            --retry-all-errors \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$BLOG_CRON_URL")
+          curl_exit=$?
+          set -e
+
+          response="$(cat "$response_file")"
+          echo "Blog generate status: $status"
+          echo "Blog generate response: $response"
+
+          if [ "$curl_exit" -ne 0 ]; then
+            echo "Blog generate curl failed with exit code $curl_exit"
+            exit "$curl_exit"
+          fi
+
+          if [ "$status" -lt 200 ] || [ "$status" -gt 299 ]; then
+            echo "Blog generate endpoint returned HTTP $status"
+            exit 1
+          fi
+
+  fetch-rss:
+    if: github.event.schedule == '30 * * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: blog-cron-fetch-rss
+      cancel-in-progress: false
+    steps:
+      - name: Call blog RSS fetch endpoint
+        env:
+          BLOG_CRON_URL: https://skale.club/api/blog/cron/fetch-rss
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "Missing secret: CRON_SECRET"
+            exit 1
+          fi
+
+          response_file="$(mktemp)"
+          set +e
+          status=$(curl --silent --show-error \
+            --output "$response_file" \
+            --write-out "%{http_code}" \
+            --max-time 55 \
+            --connect-timeout 10 \
+            --retry 3 \
+            --retry-delay 5 \
+            --retry-all-errors \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$BLOG_CRON_URL")
+          curl_exit=$?
+          set -e
+
+          response="$(cat "$response_file")"
+          echo "Blog fetch-rss status: $status"
+          echo "Blog fetch-rss response: $response"
+
+          if [ "$curl_exit" -ne 0 ]; then
+            echo "Blog fetch-rss curl failed with exit code $curl_exit"
+            exit "$curl_exit"
+          fi
+
+          if [ "$status" -lt 200 ] || [ "$status" -gt 299 ]; then
+            echo "Blog fetch-rss endpoint returned HTTP $status"
+            exit 1
+          fi
