@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
@@ -23,12 +24,12 @@ const platformIcons: Record<string, any> = {
   tiktok: SiTiktok,
 };
 
-export function Footer() {
+function FooterComponent() {
   const { t } = useTranslation();
   const { data: companySettings } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
   });
-  const pagePaths = buildPagePaths(companySettings?.pageSlugs);
+  const pagePaths = useMemo(() => buildPagePaths(companySettings?.pageSlugs), [companySettings?.pageSlugs]);
 
   const companyName = companySettings?.companyName?.trim() || "";
   const tagline =
@@ -96,3 +97,7 @@ export function Footer() {
     </footer>
   );
 }
+
+// Footer's output doesn't depend on route — memoize so it skips re-rendering
+// on every navigation (it was previously re-rendering on each Router location change).
+export const Footer = memo(FooterComponent);

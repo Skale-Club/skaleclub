@@ -13,10 +13,13 @@ import { initAnalytics, trackPageView } from "@/lib/analytics";
 import { useAttribution } from "@/hooks/use-attribution";
 import { PageLoader, DotsLoader } from "@/components/ui/spinner";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useEffect, Suspense, lazy, useRef, useState, createContext, useContext } from "react";
+import { useEffect, Suspense, lazy, useMemo, useRef, useState, createContext, useContext } from "react";
 import type { CompanySettings } from "@shared/schema";
 import { buildPagePaths, DEFAULT_PAGE_SLUGS, isRoutePrefixMatch } from "@shared/pageSlugs";
 import { ChatWidget } from "@/components/chat/ChatWidget";
+
+// DEFAULT_PAGE_SLUGS never changes at runtime — compute once instead of on every Router render.
+const LEGACY_PATHS = buildPagePaths(DEFAULT_PAGE_SLUGS);
 
 // Context to track initial app load state
 const InitialLoadContext = createContext<{ isInitialLoad: boolean; markLoaded: () => void }>({
@@ -117,12 +120,11 @@ function Router() {
   const { data: settings, isLoading } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
   });
-  const pagePaths = buildPagePaths(settings?.pageSlugs);
-  const legacyPaths = buildPagePaths(DEFAULT_PAGE_SLUGS);
+  const pagePaths = useMemo(() => buildPagePaths(settings?.pageSlugs), [settings?.pageSlugs]);
   const isOAuthRoute = location.startsWith('/oauth/');
   const isAdminRoute = location.startsWith('/admin');
-  const isLinksRoute = isRoutePrefixMatch(location, pagePaths.links) || isRoutePrefixMatch(location, legacyPaths.links);
-  const isVCardRoute = isRoutePrefixMatch(location, pagePaths.vcard) || isRoutePrefixMatch(location, legacyPaths.vcard);
+  const isLinksRoute = isRoutePrefixMatch(location, pagePaths.links) || isRoutePrefixMatch(location, LEGACY_PATHS.links);
+  const isVCardRoute = isRoutePrefixMatch(location, pagePaths.vcard) || isRoutePrefixMatch(location, LEGACY_PATHS.vcard);
   const isEstimateRoute = location.startsWith('/e/');
   const isPresentationRoute = location.startsWith('/p/');
   const prevLocation = useRef(location);
@@ -181,7 +183,7 @@ function Router() {
       <Suspense fallback={fallback}>
         <Switch>
           <Route path={pagePaths.links} component={Links} />
-          {pagePaths.links !== legacyPaths.links && <Route path={legacyPaths.links} component={Links} />}
+          {pagePaths.links !== LEGACY_PATHS.links && <Route path={LEGACY_PATHS.links} component={Links} />}
           <Route component={NotFound} />
         </Switch>
       </Suspense>
@@ -194,8 +196,8 @@ function Router() {
         <Switch>
           <Route path={pagePaths.vcard} component={VCard} />
           <Route path={pagePaths.vcardPattern} component={VCard} />
-          {pagePaths.vcard !== legacyPaths.vcard && <Route path={legacyPaths.vcard} component={VCard} />}
-          {pagePaths.vcardPattern !== legacyPaths.vcardPattern && <Route path={legacyPaths.vcardPattern} component={VCard} />}
+          {pagePaths.vcard !== LEGACY_PATHS.vcard && <Route path={LEGACY_PATHS.vcard} component={VCard} />}
+          {pagePaths.vcardPattern !== LEGACY_PATHS.vcardPattern && <Route path={LEGACY_PATHS.vcardPattern} component={VCard} />}
           <Route component={NotFound} />
         </Switch>
       </Suspense>
@@ -235,29 +237,29 @@ function Router() {
             <Route path="/" component={Home} />
             <Route path="/f/:slug" component={PublicForm} />
             <Route path={pagePaths.thankYou} component={LeadThankYou} />
-            {pagePaths.thankYou !== legacyPaths.thankYou && <Route path={legacyPaths.thankYou} component={LeadThankYou} />}
+            {pagePaths.thankYou !== LEGACY_PATHS.thankYou && <Route path={LEGACY_PATHS.thankYou} component={LeadThankYou} />}
             <Route path={pagePaths.privacyPolicy} component={PrivacyPolicy} />
-            {pagePaths.privacyPolicy !== legacyPaths.privacyPolicy && <Route path={legacyPaths.privacyPolicy} component={PrivacyPolicy} />}
+            {pagePaths.privacyPolicy !== LEGACY_PATHS.privacyPolicy && <Route path={LEGACY_PATHS.privacyPolicy} component={PrivacyPolicy} />}
             <Route path={pagePaths.termsOfService} component={TermsOfService} />
-            {pagePaths.termsOfService !== legacyPaths.termsOfService && <Route path={legacyPaths.termsOfService} component={TermsOfService} />}
+            {pagePaths.termsOfService !== LEGACY_PATHS.termsOfService && <Route path={LEGACY_PATHS.termsOfService} component={TermsOfService} />}
             <Route path={pagePaths.contact} component={Contact} />
-            {pagePaths.contact !== legacyPaths.contact && <Route path={legacyPaths.contact} component={Contact} />}
+            {pagePaths.contact !== LEGACY_PATHS.contact && <Route path={LEGACY_PATHS.contact} component={Contact} />}
             <Route path={pagePaths.faq} component={Faq} />
-            {pagePaths.faq !== legacyPaths.faq && <Route path={legacyPaths.faq} component={Faq} />}
+            {pagePaths.faq !== LEGACY_PATHS.faq && <Route path={LEGACY_PATHS.faq} component={Faq} />}
             <Route path={pagePaths.blog} component={Blog} />
-            {pagePaths.blog !== legacyPaths.blog && <Route path={legacyPaths.blog} component={Blog} />}
+            {pagePaths.blog !== LEGACY_PATHS.blog && <Route path={LEGACY_PATHS.blog} component={Blog} />}
             <Route path={pagePaths.blogPostPattern} component={BlogPost} />
-            {pagePaths.blogPostPattern !== legacyPaths.blogPostPattern && <Route path={legacyPaths.blogPostPattern} component={BlogPost} />}
+            {pagePaths.blogPostPattern !== LEGACY_PATHS.blogPostPattern && <Route path={LEGACY_PATHS.blogPostPattern} component={BlogPost} />}
             <Route path={pagePaths.portfolio} component={Portfolio} />
-            {pagePaths.portfolio !== legacyPaths.portfolio && <Route path={legacyPaths.portfolio} component={Portfolio} />}
+            {pagePaths.portfolio !== LEGACY_PATHS.portfolio && <Route path={LEGACY_PATHS.portfolio} component={Portfolio} />}
             {/* Legacy Skale Hub group URLs — 301 to managed landing /grupo (43-05).
                 Production redirects live in vercel.json; these handle local dev parity. */}
             <Route path={`${pagePaths.hub}/grupo`}>{() => <Redirect to="/grupo" />}</Route>
             <Route path={`${pagePaths.hub}/group`}>{() => <Redirect to="/grupo" />}</Route>
-            {pagePaths.hub !== legacyPaths.hub && <Route path={`${legacyPaths.hub}/grupo`}>{() => <Redirect to="/grupo" />}</Route>}
-            {pagePaths.hub !== legacyPaths.hub && <Route path={`${legacyPaths.hub}/group`}>{() => <Redirect to="/grupo" />}</Route>}
+            {pagePaths.hub !== LEGACY_PATHS.hub && <Route path={`${LEGACY_PATHS.hub}/grupo`}>{() => <Redirect to="/grupo" />}</Route>}
+            {pagePaths.hub !== LEGACY_PATHS.hub && <Route path={`${LEGACY_PATHS.hub}/group`}>{() => <Redirect to="/grupo" />}</Route>}
             <Route path={pagePaths.hub} component={SkaleHub} />
-            {pagePaths.hub !== legacyPaths.hub && <Route path={legacyPaths.hub} component={SkaleHub} />}
+            {pagePaths.hub !== LEGACY_PATHS.hub && <Route path={LEGACY_PATHS.hub} component={SkaleHub} />}
             {/* Catch-all dynamic landing route — MUST be last before the 404 fallback.
                 Wouter matches top-down, so any new known route must be added ABOVE this line. */}
             <Route path="/:slug" component={DynamicPage} />

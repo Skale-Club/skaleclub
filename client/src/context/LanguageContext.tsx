@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { translationCache } from '@/hooks/useTranslation';
 
 export type Language = 'en' | 'pt';
@@ -24,12 +24,12 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     return 'pt';
   });
 
-  const setLanguage = (lang: Language) => {
+  const setLanguage = useCallback((lang: Language) => {
     setLanguageState(lang);
     localStorage.setItem('language', lang);
     // Clear cache so stale translations from the previous language aren't served
     translationCache.clear();
-  };
+  }, []);
 
   useEffect(() => {
     document.documentElement.lang = language;
@@ -53,8 +53,10 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
       .catch(() => {});
   }, [language]);
 
+  const value = useMemo(() => ({ language, setLanguage }), [language, setLanguage]);
+
   return (
-    <LanguageContext.Provider value={{ language, setLanguage }}>
+    <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   );

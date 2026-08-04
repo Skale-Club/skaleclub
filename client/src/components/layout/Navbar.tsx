@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Menu, X, Phone } from "lucide-react";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { clsx } from "clsx";
 import { LanguageToggle } from "@/components/ui/LanguageToggle";
 import { useQuery } from "@tanstack/react-query";
@@ -34,7 +34,7 @@ export function Navbar() {
   const { data: companySettings } = useQuery<CompanySettings>({
     queryKey: ["/api/company-settings"],
   });
-  const pagePaths = buildPagePaths(companySettings?.pageSlugs);
+  const pagePaths = useMemo(() => buildPagePaths(companySettings?.pageSlugs), [companySettings?.pageSlugs]);
 
   const displayPhone = companySettings?.companyPhone || "";
   const telPhone = displayPhone.replace(/\D/g, "");
