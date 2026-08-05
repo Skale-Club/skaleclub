@@ -30,11 +30,11 @@ export function OurServicesSection({ section }: { section?: OurServicesSectionDa
   };
 
   return (
-    <section id="our-services" className="bg-[#111111] text-white overflow-hidden pt-20 pb-20">
-      <div className="space-y-10">
+    <section id="our-services" className="bg-[#111111] text-white overflow-hidden pt-[4.25rem] pb-[4.25rem]">
+      <div className="space-y-[2.125rem]">
         {/* Header — mirrors ServicesHeader spacing + type sizes (dark variant) */}
         <div className="container-custom mx-auto px-4 sm:px-6 md:px-10">
-          <div className="max-w-4xl space-y-10">
+          <div className="max-w-4xl space-y-[2.125rem]">
             <h2 className="text-3xl md:text-4xl font-bold leading-tight text-white">
               {t(section.title || 'Our Services')}
             </h2>

@@ -15,12 +15,12 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick }: He
   const trustBadges = homepageContent.trustBadges || [];
 
   return (
-    <section className="relative flex flex-col justify-end pt-28 sm:pt-24 lg:pt-12 pb-6 sm:pb-8 lg:pb-6 overflow-hidden bg-[#1C53A3] min-h-[100dvh]">
+    <section className="relative flex flex-col justify-end pt-[5.95rem] sm:pt-[5.1rem] lg:pt-[2.55rem] pb-[1.275rem] sm:pb-[1.7rem] lg:pb-[1.275rem] overflow-hidden bg-[#1C53A3] min-h-[100dvh]">
       <div className="container-custom mx-auto relative z-10 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-1 sm:gap-6 lg:gap-8 items-end">
-          <div className="order-1 lg:order-1 text-white pt-6 sm:pt-8 lg:pt-16 pb-16 sm:pb-24 lg:pb-32 lg:translate-y-0 relative z-20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-1 sm:gap-[1.275rem] lg:gap-[1.7rem] items-end">
+          <div className="order-1 lg:order-1 text-white pt-[1.275rem] sm:pt-[1.7rem] lg:pt-[3.4rem] pb-[3.4rem] sm:pb-[5.1rem] lg:pb-[6.8rem] lg:translate-y-0 relative z-20">
             {homepageContent.heroBadgeImageUrl ? (
-              <div className="mt-4 sm:mt-0 mb-3 lg:mb-6">
+              <div className="mt-[0.85rem] sm:mt-0 mb-3 lg:mb-[1.275rem]">
                 <img
                   src={homepageContent.heroBadgeImageUrl}
                   alt={homepageContent.heroBadgeAlt || ''}
@@ -28,15 +28,15 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick }: He
                 />
               </div>
             ) : null}
-            <h1 className="text-[9vw] sm:text-5xl md:text-6xl lg:text-4xl xl:text-5xl font-bold mb-3 lg:mb-6 font-display leading-[1.05] sm:leading-[1.1]">
+            <h1 className="text-[9vw] sm:text-5xl md:text-6xl lg:text-4xl xl:text-5xl font-bold mb-3 lg:mb-[1.275rem] font-display leading-[1.05] sm:leading-[1.1]">
               {companySettings?.heroTitle ? (
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">{t(companySettings.heroTitle)}</span>
               ) : null}
             </h1>
-            <p className="text-base sm:text-xl text-blue-50/80 mb-4 lg:mb-8 leading-relaxed max-w-xl">
+            <p className="text-base sm:text-xl text-blue-50/80 mb-[0.85rem] lg:mb-[1.7rem] leading-relaxed max-w-xl">
               {companySettings?.heroSubtitle ? t(companySettings.heroSubtitle) : ""}
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 lg:gap-5 flex-wrap">
+            <div className="flex flex-col sm:flex-row gap-3 lg:gap-[1.0625rem] flex-wrap">
               {companySettings?.ctaText ? (
                 <button
                   data-form-trigger="lead-form"

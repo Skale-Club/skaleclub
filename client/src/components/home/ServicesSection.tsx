@@ -145,13 +145,13 @@ function SectionShell({ sectionId, children, dark = false }: { sectionId: string
   return (
     <section
       id={sectionId}
-      className={`relative pt-20 pb-20 overflow-hidden ${dark ? 'bg-gradient-to-b from-[#0a0f18] to-[#0d1320]' : 'bg-gradient-to-br from-[#f7f9fc] via-white to-[#eaf1ff]'}`}
+      className={`relative pt-[4.25rem] pb-[4.25rem] overflow-hidden ${dark ? 'bg-gradient-to-b from-[#0a0f18] to-[#0d1320]' : 'bg-gradient-to-br from-[#f7f9fc] via-white to-[#eaf1ff]'}`}
     >
       <div className="absolute inset-0 pointer-events-none">
         <div className={`absolute w-80 h-80 blur-3xl -left-20 top-0 rounded-full ${dark ? 'bg-primary/10' : 'bg-primary/5'}`} />
         <div className={`absolute w-[420px] h-[420px] blur-3xl right-[-10%] bottom-[-20%] rounded-full ${dark ? 'bg-indigo-500/20' : 'bg-indigo-200/30'}`} />
       </div>
-      <div className="relative z-10 space-y-10">
+      <div className="relative z-10 space-y-[2.125rem]">
         {children}
       </div>
     </section>

@@ -318,7 +318,7 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused, dark
         <div
           ref={trackRef}
           style={{ maskImage: FADE_MASK, WebkitMaskImage: FADE_MASK }}
-          className={`flex gap-6 md:gap-7 xl:gap-8 overflow-x-scroll overflow-y-visible no-scrollbar touch-pan-y pt-2 pb-10 select-none [&>*]:snap-center ${
+          className={`flex gap-6 md:gap-7 xl:gap-8 overflow-x-scroll overflow-y-visible no-scrollbar touch-pan-y pt-2 pb-[2.125rem] select-none [&>*]:snap-center ${
             isMobile ? (isDragging ? 'snap-none' : 'snap-x snap-mandatory') : 'snap-none'
           } ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
         >

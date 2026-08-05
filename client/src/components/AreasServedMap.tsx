@@ -36,22 +36,22 @@ export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
 
   return (
     <div className="container-custom mx-auto">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[2.55rem] items-center">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-blue-300 text-sm font-medium mb-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-blue-300 text-sm font-medium mb-[2.125rem]">
             <MapPin className="w-4 h-4" />
             {t(sectionContent?.label || "")}
           </div>
-          <h2 className="text-3xl md:text-5xl font-bold mb-10 text-white">
+          <h2 className="text-3xl md:text-5xl font-bold mb-[2.125rem] text-white">
             {t(sectionContent?.heading || "")}
           </h2>
 
-          <p className="text-slate-300 text-lg mb-10 leading-relaxed">
+          <p className="text-slate-300 text-lg mb-[2.125rem] leading-relaxed">
             {t(sectionContent?.description || "")}
           </p>
 
           {sectionContent?.ctaText ? (
-            <div className="mb-4">
+            <div className="mb-[0.85rem]">
               <Link href={pagePaths.contact}>
                 <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5">
                   {t(sectionContent.ctaText)}

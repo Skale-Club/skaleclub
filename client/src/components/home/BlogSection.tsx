@@ -33,11 +33,11 @@ export function BlogSection({ content }: BlogSectionProps) {
   };
 
   return (
-    <section className="py-20 bg-[#111111]">
+    <section className="py-[4.25rem] bg-[#111111]">
       <div className="container-custom mx-auto">
-        <div className="flex items-center justify-between mb-10">
+        <div className="flex items-center justify-between mb-[2.125rem]">
           <div>
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4" data-testid="text-blog-section-title">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-[0.85rem]" data-testid="text-blog-section-title">
               {t(sectionContent.title || '')}
             </h2>
             <p className="text-slate-300 text-lg">{t(sectionContent.subtitle || '')}</p>
@@ -48,7 +48,7 @@ export function BlogSection({ content }: BlogSectionProps) {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[1.7rem]">
           {posts.map(post => (
             <Link key={post.id} href={pagePaths.blogPost(post.slug)} className="group" data-testid={`link-blog-card-${post.id}`}>
               <div className="bg-white/5 rounded-xl overflow-hidden border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300 h-full flex flex-col">
@@ -79,7 +79,7 @@ export function BlogSection({ content }: BlogSectionProps) {
                   <p className="text-slate-300 text-sm line-clamp-3 flex-1" data-testid={`text-blog-home-excerpt-${post.id}`}>
                     {getExcerpt(post)}
                   </p>
-                  <div className="mt-4 pt-4 border-t border-white/10">
+                  <div className="mt-[0.85rem] pt-[0.85rem] border-t border-white/10">
                     <span className="text-primary font-semibold text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
                       {t(sectionContent.readMoreText || '')}
                       <ArrowRight className="w-4 h-4" />
@@ -91,7 +91,7 @@ export function BlogSection({ content }: BlogSectionProps) {
           ))}
         </div>
 
-        <div className="mt-10 text-center md:hidden">
+        <div className="mt-[2.125rem] text-center md:hidden">
           <Link href={pagePaths.blog} className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white font-bold rounded-full hover:bg-primary/90 transition-colors" data-testid="link-view-all-blog-mobile">
             {t(sectionContent.viewAllText || '')}
             <ArrowRight className="w-4 h-4" />

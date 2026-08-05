@@ -85,10 +85,10 @@ export function ReviewsSection({ embedUrl, title, subtitle }: ReviewsSectionProp
   }
 
   return (
-    <section className="pt-20 pb-20 bg-[#111111] overflow-hidden mb-0 text-white">
-      <div className="w-full space-y-10">
+    <section className="pt-[4.25rem] pb-[4.25rem] bg-[#111111] overflow-hidden mb-0 text-white">
+      <div className="w-full space-y-[2.125rem]">
         <div className="container-custom mx-auto text-center">
-          <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white">
+          <h2 className="text-3xl md:text-5xl font-bold mb-[0.85rem] text-white">
             {t(title || '')}
           </h2>
           <p className="text-slate-300 max-w-2xl mx-auto text-lg">
