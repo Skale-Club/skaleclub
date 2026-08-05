@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import QRCode from "react-qr-code";
-import { Printer, Phone, Mail, MapPin, Globe, Check, Info } from "lucide-react";
+import { Printer, Phone, Mail, MapPin, Globe, Check, Info, Loader2, Palette } from "lucide-react";
 import type { CompanySettings, PortfolioService } from "@shared/schema";
 
 // Half-fold folder: one landscape sheet, folded once vertically.
@@ -147,6 +147,32 @@ export default function PrintFolder() {
     document.title = `folder-${(settings?.companyName || "empresa").toLowerCase().replace(/\s+/g, "-")}`;
     window.print();
     document.title = previousTitle;
+  };
+
+  // Step 2 — native CMYK conversion of the saved PDF, in-browser via Ghostscript WASM
+  const cmykInputRef = useRef<HTMLInputElement>(null);
+  const [cmykState, setCmykState] = useState<"idle" | "converting" | "done" | "error">("idle");
+  const [cmykError, setCmykError] = useState("");
+
+  const handleCmykFile = async (file: File) => {
+    setCmykState("converting");
+    setCmykError("");
+    try {
+      const { convertPdfToCmyk } = await import("@/lib/cmykPdf");
+      const input = new Uint8Array(await file.arrayBuffer());
+      const output = await convertPdfToCmyk(input);
+      const blob = new Blob([output as BlobPart], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${file.name.replace(/\.pdf$/i, "")}-cmyk.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setCmykState("done");
+    } catch (err) {
+      setCmykState("error");
+      setCmykError((err as Error).message || "Falha na conversão");
+    }
   };
 
   const toggleService = (id: number) => {
@@ -395,23 +421,63 @@ export default function PrintFolder() {
             </div>
           </div>
 
-          <button
-            onClick={handlePrint}
-            className="flex items-center justify-center gap-2 rounded-full px-5 py-3 text-white font-bold text-sm transition-colors"
-            style={{ backgroundColor: ACTION_BLUE }}
-            data-testid="button-print-pdf"
-          >
-            <Printer className="w-4 h-4" />
-            Baixar PDF
-          </button>
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={handlePrint}
+              className="flex items-center justify-center gap-2 rounded-full px-5 py-3 text-white font-bold text-sm transition-colors"
+              style={{ backgroundColor: ACTION_BLUE }}
+              data-testid="button-print-pdf"
+            >
+              <Printer className="w-4 h-4" />
+              1 · Baixar PDF
+            </button>
+            <button
+              onClick={() => cmykInputRef.current?.click()}
+              disabled={cmykState === "converting"}
+              className="flex items-center justify-center gap-2 rounded-full px-5 py-3 font-bold text-sm border transition-colors disabled:opacity-60"
+              style={{ borderColor: NAVY, color: NAVY }}
+              data-testid="button-convert-cmyk"
+            >
+              {cmykState === "converting" ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Palette className="w-4 h-4" />
+              )}
+              {cmykState === "converting" ? "Convertendo…" : "2 · Converter para CMYK"}
+            </button>
+            <input
+              ref={cmykInputRef}
+              type="file"
+              accept="application/pdf,.pdf"
+              className="hidden"
+              data-testid="input-cmyk-file"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleCmykFile(file);
+                e.target.value = "";
+              }}
+            />
+            {cmykState === "done" && (
+              <p className="text-xs text-emerald-600 text-center" data-testid="text-cmyk-done">
+                PDF em CMYK baixado com sucesso.
+              </p>
+            )}
+            {cmykState === "error" && (
+              <p className="text-xs text-red-500 text-center" data-testid="text-cmyk-error">
+                Erro na conversão: {cmykError}
+              </p>
+            )}
+          </div>
 
           <div className="flex gap-2 text-xs text-slate-500 bg-slate-50 rounded-lg p-3">
             <Info className="w-4 h-4 shrink-0 mt-0.5" />
             <p>
-              Na janela que abrir, escolha <strong>“Salvar como PDF”</strong>, papel no
-              tamanho exato mostrado, margens <strong>“Nenhuma”</strong> e desative
-              cabeçalhos e rodapés. O PDF sai em RGB — peça à gráfica a conversão para{" "}
-              <strong>CMYK</strong> (padrão do mercado) ou converta no Acrobat/Ghostscript.
+              <strong>Passo 1:</strong> na janela que abrir, escolha{" "}
+              <strong>“Salvar como PDF”</strong>, papel no tamanho exato mostrado, margens{" "}
+              <strong>“Nenhuma”</strong> e sem cabeçalhos e rodapés.{" "}
+              <strong>Passo 2:</strong> selecione o PDF salvo e ele será convertido para{" "}
+              <strong>CMYK nativo</strong> (padrão de gráfica) aqui mesmo no navegador — na
+              primeira vez o conversor (~16 MB) é baixado.
             </p>
           </div>
         </aside>
