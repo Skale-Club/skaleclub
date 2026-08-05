@@ -4,6 +4,7 @@ import {
   Briefcase,
   Plus,
   Image,
+  Printer,
   Settings,
 } from 'lucide-react';
 import { EmptyState, SectionHeader } from './shared';
@@ -190,6 +191,13 @@ export function PortfolioSection() {
                 icon={<Image className="w-5 h-5" />}
                 action={
                     <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                        <Button size="sm" type="button" variant="outline" asChild data-testid="button-print-folder">
+                            <a href="/print/folder" target="_blank" rel="noopener noreferrer">
+                                <Printer className="w-4 h-4 mr-2" />
+                                Print Folder
+                            </a>
+                        </Button>
+
                         <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
                             <DialogTrigger asChild>
                                 <Button size="sm" type="button" data-testid="button-portfolio-settings">
