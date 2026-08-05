@@ -72,6 +72,7 @@ const Links = lazy(() => import("@/pages/Links").then(m => ({ default: () => <Pa
 const VCard = lazy(() => import("@/pages/VCard").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const EstimateViewer = lazy(() => import("@/pages/EstimateViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const PresentationViewer = lazy(() => import("@/pages/PresentationViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const PrintFolder = lazy(() => import("@/pages/PrintFolder").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const DynamicPage = lazy(() => import("@/pages/DynamicLanding").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const OAuthAuthorize = lazy(() => import("@/pages/OAuthAuthorize"));
 
@@ -125,6 +126,7 @@ function Router() {
   const isVCardRoute = isRoutePrefixMatch(location, pagePaths.vcard) || isRoutePrefixMatch(location, legacyPaths.vcard);
   const isEstimateRoute = location.startsWith('/e/');
   const isPresentationRoute = location.startsWith('/p/');
+  const isPrintRoute = location.startsWith('/print/');
   const prevLocation = useRef(location);
 
   // Xpot was extracted to a standalone app on xpot.skale.club.
@@ -218,6 +220,17 @@ function Router() {
       <Suspense fallback={fallback}>
         <Switch>
           <Route path="/p/:slug" component={PresentationViewer} />
+          <Route component={NotFound} />
+        </Switch>
+      </Suspense>
+    );
+  }
+
+  if (isPrintRoute) {
+    return (
+      <Suspense fallback={fallback}>
+        <Switch>
+          <Route path="/print/folder" component={PrintFolder} />
           <Route component={NotFound} />
         </Switch>
       </Suspense>
