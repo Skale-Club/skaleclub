@@ -6,6 +6,7 @@ import type { CompanySettings, HomepageContent } from "@shared/schema";
 import { trackCTAClick } from "@/lib/analytics";
 import { LeadFormModal } from "@/components/LeadFormModal";
 import { HeroSection } from "@/components/home/HeroSection";
+import { TrustBadges } from "@/components/home/TrustBadges";
 import { ServicesSection } from "@/components/home/ServicesSection";
 import { ReviewsSection } from "@/components/home/ReviewsSection";
 import { BlogSection } from "@/components/home/BlogSection";
@@ -27,6 +28,8 @@ export default function Home() {
     ...DEFAULT_HOMEPAGE_CONTENT.areasServedSection,
     ...(homepageContent.areasServedSection || {}),
   };
+
+  const trustBadges = homepageContent.trustBadges || [];
 
   const reviewsEmbedUrl = homepageContent.reviewsSection?.embedUrl || '';
   const reviewsTitle = homepageContent.reviewsSection?.title || '';
@@ -73,7 +76,40 @@ export default function Home() {
         companySettings={companySettings}
         homepageContent={homepageContent}
         onCtaClick={() => setIsFormOpen(true)}
+        showTrustBadges={false}
       />
+
+      {trustBadges.length > 0 && (
+        // ── Trust-bar bleed contract ──────────────────────────────────────
+        // These `mt` values must exactly match:
+        //   1. HeroSection's `bottomPadding` (showTrustBadges=false branch) —
+        //      keeps the hero photo glued to the card's top edge, no gap.
+        //   2. The fill `<div>`'s `top-[…]` below — keeps the dark fill
+        //      starting exactly at the hero's true bottom edge, so only the
+        //      rounded card (not a full-width bar) shows over the hero.
+        // If you change one, change all three, at every breakpoint.
+        <section className="relative z-20 mt-[-3.4rem] md:mt-[-6.0625rem] lg:mt-[-4.0625rem]">
+          {/*
+            Bleeds up into the hero by roughly half the card's height (tuned per
+            breakpoint, since TrustBadges' own grid — and thus its height —
+            changes at md/lg) so the split reads ~50/50 across the hero/services
+            boundary. Real flow (not absolute/zero-height): the card's bottom
+            half pushes OurServicesSection down naturally. No extra trailing
+            padding here — OurServicesSection's own pt-[4.25rem] (the standard
+            section-to-section rhythm used across this page) is what creates
+            the gap before its heading, so it matches every other transition.
+
+            The fill below only starts at `top: <bleed>` — i.e. right where this
+            section crosses back below the hero's true bottom edge — so only the
+            rounded card (not a full-width bar) shows above that line, over the
+            hero's own background/photo.
+          */}
+          <div className="absolute inset-x-0 bottom-0 top-[3.4rem] md:top-[6.0625rem] lg:top-[4.0625rem] bg-[#111111]" aria-hidden />
+          <div className="container-custom mx-auto relative">
+            <TrustBadges badges={trustBadges} />
+          </div>
+        </section>
+      )}
 
       <OurServicesSection section={homepageContent.ourServicesSection} />
 
