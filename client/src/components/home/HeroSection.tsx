@@ -7,18 +7,33 @@ interface HeroSectionProps {
   companySettings?: CompanySettings;
   homepageContent: Partial<HomepageContent>;
   onCtaClick: () => void;
+  /**
+   * Render the trust bar inside the hero. The homepage opts out and renders it
+   * as its own section that bleeds up over the hero; dynamic landings using the
+   * `hero` section type keep the badges inline.
+   */
+  showTrustBadges?: boolean;
 }
 
-export function HeroSection({ companySettings, homepageContent, onCtaClick }: HeroSectionProps) {
+export function HeroSection({ companySettings, homepageContent, onCtaClick, showTrustBadges = true }: HeroSectionProps) {
   const { t } = useTranslation();
   const heroImageUrl = (companySettings?.heroImageUrl || '').trim();
   const trustBadges = homepageContent.trustBadges || [];
+  // ── Trust-bar bleed contract ──────────────────────────────────────────
+  // Must exactly match Home.tsx's trust-bar `mt-[…]` bleed values (and its
+  // fill div's `top-[…]`) at every breakpoint. Equal (not larger) so the
+  // photo's bottom edge sits flush against the card's top edge — glued, not
+  // floating with a gap, and not clipped by overlap either. If you change
+  // one, change all three.
+  const bottomPadding = showTrustBadges
+    ? 'pb-[1.275rem] sm:pb-[1.7rem] lg:pb-[1.275rem]'
+    : 'pb-[3.4rem] md:pb-[6.0625rem] lg:pb-[4.0625rem]';
 
   return (
-    <section className="relative flex flex-col justify-end pt-[5.95rem] sm:pt-[5.1rem] lg:pt-[2.55rem] pb-[1.275rem] sm:pb-[1.7rem] lg:pb-[1.275rem] overflow-hidden bg-[#1C53A3] min-h-[100dvh]">
-      <div className="container-custom mx-auto relative z-10 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-1 sm:gap-[1.275rem] lg:gap-[1.7rem] items-end">
-          <div className="order-1 lg:order-1 text-white pt-[1.275rem] sm:pt-[1.7rem] lg:pt-[3.4rem] pb-[3.4rem] sm:pb-[5.1rem] lg:pb-[6.8rem] lg:translate-y-0 relative z-20">
+    <section className={`relative flex flex-col justify-end pt-[5.95rem] sm:pt-[5.1rem] lg:pt-[2.55rem] ${bottomPadding} overflow-hidden bg-[#1C53A3] min-h-[100dvh]`}>
+      <div className="container-custom mx-auto relative z-10">
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_560px] gap-1 sm:gap-[1.275rem] lg:gap-[1.7rem] items-end">
+          <div className="order-1 lg:order-1 text-white pt-[1.275rem] sm:pt-[1.7rem] lg:pt-[3.4rem] pb-[3.4rem] sm:pb-[5.1rem] lg:pb-[6.8rem] lg:translate-y-0 lg:max-w-[600px] relative z-20">
             {homepageContent.heroBadgeImageUrl ? (
               <div className="mt-[0.85rem] sm:mt-0 mb-3 lg:mb-[1.275rem]">
                 <img
@@ -28,7 +43,7 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick }: He
                 />
               </div>
             ) : null}
-            <h1 className="text-[9vw] sm:text-5xl md:text-6xl lg:text-4xl xl:text-5xl font-bold mb-3 lg:mb-[1.275rem] font-display leading-[1.05] sm:leading-[1.1]">
+            <h1 className="text-[9vw] sm:text-5xl font-bold mb-3 lg:mb-[1.275rem] font-display leading-[1.05] sm:leading-[1.1]">
               {companySettings?.heroTitle ? (
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">{t(companySettings.heroTitle)}</span>
               ) : null}
@@ -52,22 +67,22 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick }: He
               ) : null}
             </div>
           </div>
-          <div className="order-2 lg:order-2 relative flex h-full items-end justify-center lg:justify-start self-end w-full lg:min-h-[400px] z-10 lg:mr-[-3%]">
+          <div className="order-2 lg:order-2 relative flex h-full items-end justify-center xl:justify-start self-end w-full xl:min-h-[400px] z-10 xl:mr-[-3%]">
             {heroImageUrl ? (
               <img
                 src={heroImageUrl}
                 alt={companySettings?.companyName || ""}
                 fetchPriority="high"
                 loading="eager"
-                className="w-[92vw] sm:w-[98%] lg:w-full max-w-[380px] sm:max-w-[360px] md:max-w-[430px] lg:max-w-[500px] xl:max-w-[560px] object-contain drop-shadow-2xl origin-bottom"
+                className="w-[92vw] sm:w-[98%] lg:w-full max-w-[380px] sm:max-w-[360px] md:max-w-[430px] lg:max-w-[560px] object-contain drop-shadow-2xl origin-bottom"
               />
             ) : (
-              <div className="w-[92vw] sm:w-[98%] lg:w-full max-w-[380px] sm:max-w-[360px] md:max-w-[430px] lg:max-w-[500px] xl:max-w-[560px]" />
+              <div className="w-[92vw] sm:w-[98%] lg:w-full max-w-[380px] sm:max-w-[360px] md:max-w-[430px] lg:max-w-[560px]" />
             )}
           </div>
         </div>
 
-        {trustBadges.length > 0 && (
+        {showTrustBadges && trustBadges.length > 0 && (
           <div className="mt-0">
             <TrustBadges badges={trustBadges} />
           </div>

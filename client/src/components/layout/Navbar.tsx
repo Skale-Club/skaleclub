@@ -55,8 +55,8 @@ export function Navbar() {
   }, [location]);
 
   return (
-    <nav className="fixed top-4 left-0 right-0 z-50 px-4">
-      <div className="max-w-7xl mx-auto bg-[#0B1E3D]/60 backdrop-blur-md border border-white/5 rounded-full shadow-md shadow-black/10 px-4">
+    <nav className="fixed top-4 left-0 right-0 z-50 px-4 lg:px-0">
+      <div className="container-nav bg-[#0B1E3D]/60 backdrop-blur-md border border-white/5 rounded-full shadow-md shadow-black/10 px-4">
         <div className="flex justify-between items-center h-16">
           <Link href="/" className="flex items-center gap-2 min-h-[40px] min-w-[54px] pl-3 pr-4">
             {companySettings?.logoMain ? (

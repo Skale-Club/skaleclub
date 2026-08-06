@@ -80,7 +80,7 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
             renderItem={(service, idx) => (
               <div
                 key={`service-${service.id}-${idx}`}
-                className="flex-shrink-0 w-[85%] sm:w-[280px] md:w-[260px] lg:w-[250px] xl:w-[245px]"
+                className="flex-shrink-0 w-[85%] sm:w-[280px] md:w-[260px] lg:w-[245px]"
               >
                 <PortfolioCard
                   service={service}

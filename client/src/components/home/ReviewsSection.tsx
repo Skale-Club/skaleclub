@@ -96,7 +96,7 @@ export function ReviewsSection({ embedUrl, title, subtitle }: ReviewsSectionProp
           </p>
         </div>
         {embedUrl ? (
-          <div className="w-full px-0">
+          <div className="container-custom mx-auto">
             <div className="bg-[#111111]">
               <EmbedRenderer code={embedUrl.trim()} />
             </div>
