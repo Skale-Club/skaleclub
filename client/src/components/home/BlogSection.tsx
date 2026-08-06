@@ -48,7 +48,7 @@ export function BlogSection({ content }: BlogSectionProps) {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[1.7rem]">
+        <div className="grid grid-cols-1 md:grid-cols-2 tablet:grid-cols-3 gap-[1.7rem]">
           {posts.map(post => (
             <Link key={post.id} href={pagePaths.blogPost(post.slug)} className="group" data-testid={`link-blog-card-${post.id}`}>
               <div className="bg-white/5 rounded-xl overflow-hidden border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300 h-full flex flex-col">

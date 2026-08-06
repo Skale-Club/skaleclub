@@ -23,7 +23,7 @@ export function StepCard({ step, index, stepLabel, whatWeDoLabel, outcomeLabel }
 
   return (
     <div
-      className="group relative overflow-visible rounded-3xl bg-white/90 border shadow-[0_24px_60px_-60px_rgba(15,23,42,0.45)] hover:-translate-y-2 hover:shadow-[0_28px_70px_-55px_rgba(23,37,84,0.4)] transition-all duration-300 backdrop-blur flex-shrink-0 w-full sm:w-[70%] md:w-[52%] lg:w-[365px]"
+      className="group relative overflow-visible rounded-3xl bg-white/90 border shadow-[0_24px_60px_-60px_rgba(15,23,42,0.45)] hover:-translate-y-2 hover:shadow-[0_28px_70px_-55px_rgba(23,37,84,0.4)] transition-all duration-300 backdrop-blur flex-shrink-0 w-full sm:w-[70%] md:w-[52%] tablet:w-[365px]"
     >
       <div className="absolute right-4 top-3 text-6xl font-black text-slate-100/80 pointer-events-none">
         {numberLabel}

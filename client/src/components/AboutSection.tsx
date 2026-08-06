@@ -15,8 +15,8 @@ export function AboutSection({ content, aboutImageUrl }: AboutSectionProps) {
 
   return (
     <div className="container-custom mx-auto">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[2.55rem] items-center">
-        <div className="order-2 lg:order-1">
+      <div className="grid grid-cols-1 tablet:grid-cols-2 gap-[2.55rem] items-center">
+        <div className="order-2 tablet:order-1">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-blue-300 text-sm font-medium mb-[2.125rem]">
             <User className="w-4 h-4" />
             {t(sectionContent?.label || '')}
@@ -44,7 +44,7 @@ export function AboutSection({ content, aboutImageUrl }: AboutSectionProps) {
           )}
         </div>
 
-        <div className="order-1 lg:order-2 aspect-square max-h-[500px] rounded-2xl overflow-hidden shadow-2xl border border-white/10 relative">
+        <div className="order-1 tablet:order-2 aspect-square max-h-[500px] rounded-2xl overflow-hidden shadow-2xl border border-white/10 relative">
           {aboutImageUrl || sectionContent?.defaultImageUrl ? (
             <img
               src={aboutImageUrl || sectionContent?.defaultImageUrl}

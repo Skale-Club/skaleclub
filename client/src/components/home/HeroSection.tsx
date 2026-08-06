@@ -32,10 +32,18 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
   return (
     <section className={`relative flex flex-col justify-end pt-[5.95rem] sm:pt-[5.1rem] lg:pt-[2.55rem] ${bottomPadding} overflow-hidden bg-[#1C53A3] min-h-[100dvh]`}>
       <div className="container-custom mx-auto relative z-10">
-        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_560px] gap-1 sm:gap-[1.275rem] lg:gap-[1.7rem] items-end">
-          <div className="order-1 lg:order-1 text-white pt-[1.275rem] sm:pt-[1.7rem] lg:pt-[3.4rem] pb-[3.4rem] sm:pb-[5.1rem] lg:pb-[6.8rem] lg:translate-y-0 lg:max-w-[600px] relative z-20">
+        {/* Below tablet (770px): stacked, image full-width beneath the text
+            (grid-cols-1). From tablet up: the photo is pinned at its full,
+            frozen 560px — never shrunk — as an absolutely-positioned panel
+            on the right (see the image wrapper below); the text stays at its
+            own full 560px and simply overlaps it (z-20 over z-10) whenever
+            the viewport isn't wide enough to fit both side by side. Nothing
+            about either element's size changes across this range — only
+            whether they happen to overlap. */}
+        <div className="grid grid-cols-1 tablet:block relative gap-1 sm:gap-[1.275rem] lg:gap-[1.7rem] items-end">
+          <div className="order-1 lg:order-1 text-white pt-[1.275rem] sm:pt-[1.7rem] tablet:pt-[3.4rem] pb-[3.4rem] sm:pb-[5.1rem] tablet:pb-[6.8rem] tablet:translate-y-0 sm:max-w-[560px] tablet:max-w-[420px] min-[935px]:max-w-[560px] relative z-20">
             {homepageContent.heroBadgeImageUrl ? (
-              <div className="mt-[0.85rem] sm:mt-0 mb-3 lg:mb-[1.275rem]">
+              <div className="mt-[0.85rem] sm:mt-0 mb-3 tablet:mb-[1.275rem]">
                 <img
                   src={homepageContent.heroBadgeImageUrl}
                   alt={homepageContent.heroBadgeAlt || ''}
@@ -43,15 +51,15 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
                 />
               </div>
             ) : null}
-            <h1 className="text-[9vw] sm:text-5xl font-bold mb-3 lg:mb-[1.275rem] font-display leading-[1.05] sm:leading-[1.1]">
+            <h1 className="text-[9vw] sm:text-5xl font-bold mb-3 tablet:mb-[1.275rem] font-display leading-[1.05] sm:leading-[1.1]">
               {companySettings?.heroTitle ? (
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">{t(companySettings.heroTitle)}</span>
               ) : null}
             </h1>
-            <p className="text-base sm:text-xl text-blue-50/80 mb-[0.85rem] lg:mb-[1.7rem] leading-relaxed max-w-xl">
+            <p className="text-base sm:text-xl text-blue-50/80 mb-[0.85rem] tablet:mb-[1.7rem] leading-relaxed max-w-xl">
               {companySettings?.heroSubtitle ? t(companySettings.heroSubtitle) : ""}
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 lg:gap-[1.0625rem] flex-wrap">
+            <div className="flex flex-col sm:flex-row gap-3 tablet:gap-[1.0625rem] flex-wrap">
               {companySettings?.ctaText ? (
                 <button
                   data-form-trigger="lead-form"
@@ -67,17 +75,17 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
               ) : null}
             </div>
           </div>
-          <div className="order-2 lg:order-2 relative flex h-full items-end justify-center xl:justify-start self-end w-full xl:min-h-[400px] z-10 xl:mr-[-3%]">
+          <div className="order-2 lg:order-2 relative flex h-full items-end justify-center self-end w-full z-10 tablet:absolute tablet:inset-y-0 tablet:right-0 tablet:w-[560px]">
             {heroImageUrl ? (
               <img
                 src={heroImageUrl}
                 alt={companySettings?.companyName || ""}
                 fetchPriority="high"
                 loading="eager"
-                className="w-[92vw] sm:w-[98%] lg:w-full max-w-[380px] sm:max-w-[360px] md:max-w-[430px] lg:max-w-[560px] object-contain drop-shadow-2xl origin-bottom"
+                className="w-[92vw] sm:w-[98%] tablet:w-full max-w-[380px] sm:max-w-[360px] md:max-w-[430px] tablet:max-w-[560px] object-contain drop-shadow-2xl origin-bottom"
               />
             ) : (
-              <div className="w-[92vw] sm:w-[98%] lg:w-full max-w-[380px] sm:max-w-[360px] md:max-w-[430px] lg:max-w-[560px]" />
+              <div className="w-[92vw] sm:w-[98%] tablet:w-full max-w-[380px] sm:max-w-[360px] md:max-w-[430px] tablet:max-w-[560px]" />
             )}
           </div>
         </div>

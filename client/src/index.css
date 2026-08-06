@@ -342,10 +342,17 @@ html.admin-theme.dark {
 }
 
 @layer components {
-  /* Below lg: fixed gutters. From lg up (1024px+, i.e. every desktop/laptop
-     width) the gutter is 10% a side, so the side margins read the same at
-     1024 / 1280 / 1440 / 1512 / 1920. Capped at 1600px so line length stays
-     sane on ultrawide displays. */
+  /* Below 770px (phones): fixed gutters.
+     770px+ (iPad, any orientation): gutter is 5% a side — half of the
+     desktop gutter — so iPad screens sit tighter to the edges than laptops.
+     1367px+ (real laptop/monitor widths): the later, more specific rule
+     below wins and restores the original 10% a side, so the side margins
+     read the same across 1367 / 1440 / 1512 / 1920. Deliberately min-width
+     only (no max-width range) — mixing in a max-width query here hits a
+     fractional-viewport edge case in some environments where a value like
+     1366 fails to match "max-width: 1366px". Two open-ended, cascading
+     min-width rules sidestep that entirely, same pattern as sm:/lg: above.
+     Both tiers cap at 1600px so line length stays sane on ultrawide displays. */
   .container-custom {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
@@ -357,7 +364,21 @@ html.admin-theme.dark {
     @apply max-w-7xl mx-auto w-full;
   }
 
-  @media (min-width: 1024px) {
+  @media (min-width: 770px) {
+    .container-custom {
+      width: 90%;
+      max-width: 1600px;
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    .container-nav {
+      width: calc(90% + 3.5rem);
+      max-width: calc(1600px + 3.5rem);
+    }
+  }
+
+  @media (min-width: 1367px) {
     .container-custom {
       width: 80%;
       max-width: 1600px;

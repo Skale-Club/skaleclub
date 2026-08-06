@@ -36,7 +36,7 @@ export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
 
   return (
     <div className="container-custom mx-auto">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[2.55rem] items-center">
+      <div className="grid grid-cols-1 tablet:grid-cols-2 gap-[2.55rem] items-center">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-blue-300 text-sm font-medium mb-[2.125rem]">
             <MapPin className="w-4 h-4" />
@@ -62,7 +62,7 @@ export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
           ) : null}
         </div>
         
-        <div className="h-[450px] rounded-2xl overflow-hidden shadow-2xl border border-white/10 lg:col-span-1 relative">
+        <div className="h-[450px] rounded-2xl overflow-hidden shadow-2xl border border-white/10 tablet:col-span-1 relative">
           {embedUrl ? (
             <iframe
               src={embedUrl}

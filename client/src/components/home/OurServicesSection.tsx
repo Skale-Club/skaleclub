@@ -51,7 +51,7 @@ export function OurServicesSection({ section }: { section?: OurServicesSectionDa
           renderItem={(card, idx) => (
             <div
               key={`our-service-${idx}`}
-              className="flex-shrink-0 w-[85%] sm:w-[280px] md:w-[260px] lg:w-[245px]"
+              className="flex-shrink-0 w-[85%] sm:w-[280px] md:w-[260px] tablet:w-[245px]"
             >
               <PortfolioCard
                 service={{
