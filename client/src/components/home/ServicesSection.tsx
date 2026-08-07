@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { startTransition, useCallback, useMemo, useState } from 'react';
 import type { HomepageContent, PortfolioService } from '@shared/schema';
 import { useQuery } from '@tanstack/react-query';
 import { PortfolioCard } from '@/components/PortfolioCard';
@@ -37,24 +37,59 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
       }));
   }, [rawItems]);
 
-  if (!section || section.enabled === false) return null;
+  const services = useMemo(() => portfolioServices || [], [portfolioServices]);
 
-  const tagLabel = section?.tagLabel || 'Consulting';
-  const sectionId = section?.sectionId || 'how-it-works';
+  // startTransition lets the tap's frame paint before React mounts the heavy
+  // modal + re-renders the paused carousel — this render used to block the
+  // main thread on tap (INP ~300ms).
+  const openServiceModal = useCallback((service: PortfolioService) => {
+    const idx = services.findIndex((s) => s.id === service.id);
+    if (idx >= 0) startTransition(() => setSelectedIndex(idx));
+  }, [services]);
+
+  // Stable renderItem so ServicesCarousel's memoized children survive
+  // re-renders of this section (e.g. the paused prop flipping on modal open).
+  const renderServiceItem = useCallback((service: PortfolioService, idx: number) => (
+    <div
+      key={`service-${service.id}-${idx}`}
+      className="flex-shrink-0 w-[85%] sm:w-[280px] md:w-[260px] tablet:w-[245px]"
+    >
+      <PortfolioCard
+        service={service}
+        variant="dark"
+        compact
+        onClick={() => openServiceModal(service)}
+        className="!border-[rgba(64,110,241,0.25)] hover:!border-[rgba(64,110,241,0.5)]"
+      />
+    </div>
+  ), [openServiceModal]);
+
   const stepLabel = section?.stepLabel || '';
   const whatWeDoLabel = section?.whatWeDoLabel || '';
   const outcomeLabel = section?.outcomeLabel || '';
 
+  const renderStepItem = useCallback((step: StepItem, idx: number) => (
+    <div key={`${step.numberLabel}-${step.title}-${idx}`}>
+      <StepCard
+        step={step}
+        index={idx}
+        stepLabel={stepLabel}
+        whatWeDoLabel={whatWeDoLabel}
+        outcomeLabel={outcomeLabel}
+      />
+    </div>
+  ), [stepLabel, whatWeDoLabel, outcomeLabel]);
+
+  if (!section || section.enabled === false) return null;
+
+  const tagLabel = section?.tagLabel || 'Consulting';
+  const sectionId = section?.sectionId || 'how-it-works';
+
   if (displayMode === 'services') {
-    const services = portfolioServices || [];
     if (services.length === 0) return null;
 
     const selectedService = selectedIndex !== null ? services[selectedIndex] : null;
 
-    const openServiceModal = (service: PortfolioService) => {
-      const idx = services.findIndex((s) => s.id === service.id);
-      if (idx >= 0) setSelectedIndex(idx);
-    };
     const goToPrev = () => {
       if (selectedIndex === null) return;
       setSelectedIndex((selectedIndex - 1 + services.length) % services.length);
@@ -77,20 +112,7 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
             items={services}
             paused={isModalOpen}
             ariaLabel="Services carousel"
-            renderItem={(service, idx) => (
-              <div
-                key={`service-${service.id}-${idx}`}
-                className="flex-shrink-0 w-[85%] sm:w-[280px] md:w-[260px] tablet:w-[245px]"
-              >
-                <PortfolioCard
-                  service={service}
-                  variant="dark"
-                  compact
-                  onClick={() => openServiceModal(service)}
-                  className="!border-[rgba(64,110,241,0.25)] hover:!border-[rgba(64,110,241,0.5)]"
-                />
-              </div>
-            )}
+            renderItem={renderServiceItem}
           />
         </SectionShell>
 
@@ -125,17 +147,7 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
         items={sortedSteps}
         ariaLabel="Consulting steps"
         dark={false}
-        renderItem={(step, idx) => (
-          <div key={`${step.numberLabel}-${step.title}-${idx}`}>
-            <StepCard
-              step={step}
-              index={idx}
-              stepLabel={stepLabel}
-              whatWeDoLabel={whatWeDoLabel}
-              outcomeLabel={outcomeLabel}
-            />
-          </div>
-        )}
+        renderItem={renderStepItem}
       />
     </SectionShell>
   );

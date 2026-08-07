@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Image as ImageIcon } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { PortfolioService } from "@shared/schema";
@@ -33,7 +34,7 @@ interface PortfolioCardProps {
  * reserved space even when a service has no features, so removing bubbles
  * never shortens the card.
  */
-export function PortfolioCard({ service, onClick, className = "", variant = 'dark', description, compact = false }: PortfolioCardProps) {
+export const PortfolioCard = memo(function PortfolioCard({ service, onClick, className = "", variant = 'dark', description, compact = false }: PortfolioCardProps) {
     const { t } = useTranslation();
 
     const themeClasses = variant === 'dark'
@@ -129,6 +130,6 @@ export function PortfolioCard({ service, onClick, className = "", variant = 'dar
             </div>
         </div>
     );
-}
+});
 
 export default PortfolioCard;

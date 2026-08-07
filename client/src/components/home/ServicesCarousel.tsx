@@ -331,6 +331,16 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused, dark
     };
   }, [isMobile]);
 
+  // Memoized so carousel-local state flips (isDragging/isPaused, or a parent
+  // re-render with a stable renderItem) don't re-render every card in the
+  // 2x/3x loop — that render cascade is what blocked the main thread on tap
+  // (INP). Parents must pass a stable (useCallback) renderItem for this to
+  // take effect.
+  const renderedItems = useMemo(
+    () => (isMobile ? mobileLoop : desktopLoop).map((item, idx) => renderItem(item, idx)),
+    [isMobile, mobileLoop, desktopLoop, renderItem]
+  );
+
   const scrollByCard = (direction: 1 | -1) => {
     const track = trackRef.current;
     if (!track) return;
@@ -347,7 +357,7 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused, dark
 
   return (
     <div
-      className="relative w-screen left-1/2 -translate-x-1/2 tablet:w-4/5 tablet:max-w-[1600px] tablet:mx-auto tablet:left-0 tablet:translate-x-0"
+      className="relative w-screen left-1/2 -translate-x-1/2"
       onMouseEnter={isMobile ? undefined : () => setIsPaused(true)}
       onMouseLeave={isMobile ? undefined : () => setIsPaused(false)}
       aria-label={ariaLabel}
@@ -360,7 +370,7 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused, dark
             isMobile ? (isDragging ? 'snap-none' : 'snap-x snap-mandatory') : 'snap-none'
           } ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
         >
-          {(isMobile ? mobileLoop : desktopLoop).map((item, idx) => renderItem(item, idx))}
+          {renderedItems}
         </div>
 
         {isMobile && (

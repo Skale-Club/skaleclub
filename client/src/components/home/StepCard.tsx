@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Sparkles } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 
@@ -17,7 +18,7 @@ interface StepCardProps {
   outcomeLabel: string;
 }
 
-export function StepCard({ step, index, stepLabel, whatWeDoLabel, outcomeLabel }: StepCardProps) {
+export const StepCard = memo(function StepCard({ step, index, stepLabel, whatWeDoLabel, outcomeLabel }: StepCardProps) {
   const { t } = useTranslation();
   const numberLabel = step.numberLabel || String(index + 1).padStart(2, '0');
 
@@ -54,4 +55,4 @@ export function StepCard({ step, index, stepLabel, whatWeDoLabel, outcomeLabel }
       </div>
     </div>
   );
-}
+});
