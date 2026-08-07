@@ -56,7 +56,10 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">{t(companySettings.heroTitle)}</span>
               ) : null}
             </h1>
-            <p className="text-base sm:text-xl text-blue-50/80 mb-[0.85rem] tablet:mb-[1.7rem] leading-relaxed max-w-xl">
+            {/* text-balance distributes the copy evenly across however many
+                lines it ends up on, instead of greedily filling each line and
+                leaving a short orphan on the last one. */}
+            <p className="text-base sm:text-xl text-blue-50/80 mb-[0.85rem] tablet:mb-[1.7rem] leading-relaxed max-w-xl text-balance">
               {companySettings?.heroSubtitle ? t(companySettings.heroSubtitle) : ""}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 tablet:gap-[1.0625rem] flex-wrap">

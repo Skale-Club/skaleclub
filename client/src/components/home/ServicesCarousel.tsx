@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -22,13 +22,23 @@ function getFirstRealItem(track: HTMLElement): HTMLElement | undefined {
 }
 
 export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused, dark = true }: ServicesCarouselProps<T>) {
-  const isMobile = useMediaQuery('(max-width: 767px)');
+  // Matches the `tablet` breakpoint (770px) used everywhere else — below it,
+  // the carousel gets the touch/snap/arrows treatment; at and above it, the
+  // continuous auto-scroll treatment.
+  const isMobile = useMediaQuery('(max-width: 769px)');
 
   const desktopLoop = useMemo(() => [...items, ...items], [items]);
+  // Three copies (not two): the mobile track needs a full real-item buffer on
+  // BOTH sides of whatever's currently visible, not just ahead of it, since
+  // the user can swipe either direction. Start parked at the middle copy
+  // (see the layout effect below) so both directions always have real
+  // content to reveal, then silently snap back by one copy's width whenever
+  // the user scrolls into the leading or trailing copy — because the three
+  // copies are pixel-identical, that jump is invisible.
+  const mobileLoop = useMemo(() => (items.length ? [...items, ...items, ...items] : []), [items]);
 
   const [isPaused, setIsPaused] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [edgeSpacer, setEdgeSpacer] = useState(0);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const isPausedRef = useRef(isPaused);
   const resumeTimerRef = useRef<number | null>(null);
@@ -80,26 +90,54 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused, dark
     return () => cancelAnimationFrame(animationFrame);
   }, [isMobile, desktopLoop.length]);
 
-  // Pad both ends of the mobile track so the first/last card can reach the
-  // center of the viewport, matching how snap-centering works for the rest.
-  useEffect(() => {
-    if (!isMobile) {
-      setEdgeSpacer(0);
-      return;
-    }
+  // Park the mobile track at the start of the middle copy before first
+  // paint, so there's a full copy of real items to reveal in either swipe
+  // direction right from the start (no dedicated edge-spacer needed — the
+  // loop itself keeps every card centerable).
+  useLayoutEffect(() => {
+    if (!isMobile) return;
     const track = trackRef.current;
     if (!track) return;
+    track.scrollLeft = track.scrollWidth / 3;
+  }, [isMobile, mobileLoop.length]);
 
-    const measure = () => {
-      const firstReal = getFirstRealItem(track);
-      if (!firstReal) return;
-      setEdgeSpacer(Math.max(0, (track.clientWidth - firstReal.offsetWidth) / 2));
+  // Once scrolling settles (drag, momentum, or an arrow click), silently
+  // snap back into the middle copy if the user has wandered into the
+  // leading or trailing copy — invisible, since all three copies are
+  // pixel-identical, so this reads as an infinite loop in both directions.
+  useEffect(() => {
+    if (!isMobile) return;
+    const track = trackRef.current;
+    if (!track) return;
+    let settleTimer: number | null = null;
+
+    const wrapIfNeeded = () => {
+      const third = track.scrollWidth / 3;
+      if (third <= 0) return;
+      // A viewport-width safety margin from the true edges, not the exact
+      // 1/3 and 2/3 boundaries — CSS scroll-snap nudges the settled position
+      // to the nearest card, which can land a few px on either side of an
+      // exact third and would otherwise trigger a spurious wrap right after
+      // the initial parked position settles.
+      const margin = track.clientWidth;
+      if (track.scrollLeft <= margin) {
+        track.scrollLeft += third;
+      } else if (track.scrollLeft >= track.scrollWidth - margin) {
+        track.scrollLeft -= third;
+      }
     };
 
-    measure();
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  }, [isMobile, items.length]);
+    const handleScroll = () => {
+      if (settleTimer) window.clearTimeout(settleTimer);
+      settleTimer = window.setTimeout(wrapIfNeeded, 150);
+    };
+
+    track.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      track.removeEventListener('scroll', handleScroll);
+      if (settleTimer) window.clearTimeout(settleTimer);
+    };
+  }, [isMobile, mobileLoop.length]);
 
   // Avoid getting stuck paused on touch devices (e.g., missed touchend)
   useEffect(() => {
@@ -309,7 +347,7 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused, dark
 
   return (
     <div
-      className="relative w-screen left-1/2 -translate-x-1/2"
+      className="relative w-screen left-1/2 -translate-x-1/2 tablet:w-4/5 tablet:max-w-[1600px] tablet:mx-auto tablet:left-0 tablet:translate-x-0"
       onMouseEnter={isMobile ? undefined : () => setIsPaused(true)}
       onMouseLeave={isMobile ? undefined : () => setIsPaused(false)}
       aria-label={ariaLabel}
@@ -322,13 +360,7 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused, dark
             isMobile ? (isDragging ? 'snap-none' : 'snap-x snap-mandatory') : 'snap-none'
           } ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
         >
-          {isMobile && edgeSpacer > 0 && (
-            <div aria-hidden="true" data-carousel-spacer="true" style={{ width: edgeSpacer, flexShrink: 0, scrollSnapAlign: 'none' }} />
-          )}
-          {(isMobile ? items : desktopLoop).map((item, idx) => renderItem(item, idx))}
-          {isMobile && edgeSpacer > 0 && (
-            <div aria-hidden="true" data-carousel-spacer="true" style={{ width: edgeSpacer, flexShrink: 0, scrollSnapAlign: 'none' }} />
-          )}
+          {(isMobile ? mobileLoop : desktopLoop).map((item, idx) => renderItem(item, idx))}
         </div>
 
         {isMobile && (

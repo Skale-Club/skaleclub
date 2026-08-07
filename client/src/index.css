@@ -320,6 +320,20 @@ html.admin-theme.dark {
     border-color: var(--border);
   }
 
+  /* The full-bleed carousels use the standard `w-screen` + centering-transform
+     breakout, but 100vw INCLUDES the vertical scrollbar's width while the
+     actual content box does not — so on any scrollbar-rendering browser the
+     document ends up a scrollbar's width (~15px) wider than the viewport.
+     That lets the page scroll horizontally by that sliver, and once it does,
+     every element shifts left and the first characters of the hero headline
+     and body copy get clipped off the left edge. Locking horizontal overflow
+     at the document level makes that impossible regardless of what any
+     descendant does. Vertical scrolling is untouched. */
+  html, body {
+    overflow-x: clip;
+    max-width: 100%;
+  }
+
   body {
     @apply bg-background text-foreground antialiased font-sans;
     transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
