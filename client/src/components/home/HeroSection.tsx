@@ -41,7 +41,7 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
             about either element's size changes across this range — only
             whether they happen to overlap. */}
         <div className="grid grid-cols-1 tablet:block relative gap-1 sm:gap-[1.275rem] lg:gap-[1.7rem] items-end">
-          <div className="order-1 lg:order-1 text-white pt-[1.275rem] sm:pt-[1.7rem] tablet:pt-[3.4rem] pb-[3.4rem] sm:pb-[5.1rem] tablet:pb-[6.8rem] tablet:translate-y-0 sm:max-w-[560px] tablet:max-w-[420px] min-[935px]:max-w-[560px] relative z-20">
+          <div className="order-1 lg:order-1 text-white pt-[1.275rem] sm:pt-[1.7rem] tablet:pt-[3.4rem] pb-[3.4rem] sm:pb-[5.1rem] tablet:pb-[6.8rem] tablet:translate-y-0 sm:max-w-[560px] tablet:max-w-[420px] min-[963px]:max-w-[560px] relative z-20">
             {homepageContent.heroBadgeImageUrl ? (
               <div className="mt-[0.85rem] sm:mt-0 mb-3 tablet:mb-[1.275rem]">
                 <img
@@ -82,10 +82,10 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
                 alt={companySettings?.companyName || ""}
                 fetchPriority="high"
                 loading="eager"
-                className="w-[92vw] sm:w-[98%] tablet:w-full max-w-[380px] sm:max-w-[360px] md:max-w-[430px] tablet:max-w-[560px] object-contain drop-shadow-2xl origin-bottom"
+                className="w-[92vw] sm:w-[98%] tablet:w-full max-w-[380px] sm:max-w-[430px] tablet:max-w-[560px] object-contain drop-shadow-2xl origin-bottom"
               />
             ) : (
-              <div className="w-[92vw] sm:w-[98%] tablet:w-full max-w-[380px] sm:max-w-[360px] md:max-w-[430px] tablet:max-w-[560px]" />
+              <div className="w-[92vw] sm:w-[98%] tablet:w-full max-w-[380px] sm:max-w-[430px] tablet:max-w-[560px]" />
             )}
           </div>
         </div>
