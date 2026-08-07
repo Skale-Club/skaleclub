@@ -309,7 +309,7 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused, dark
 
   return (
     <div
-      className="relative w-screen left-1/2 -translate-x-1/2 px-4 sm:px-6 md:px-10 tablet:w-4/5 tablet:max-w-[1600px] tablet:mx-auto tablet:left-0 tablet:translate-x-0 tablet:px-0"
+      className="relative w-screen left-1/2 -translate-x-1/2"
       onMouseEnter={isMobile ? undefined : () => setIsPaused(true)}
       onMouseLeave={isMobile ? undefined : () => setIsPaused(false)}
       aria-label={ariaLabel}

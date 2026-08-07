@@ -31,7 +31,7 @@ export function TrustBadges({ badges }: TrustBadgesProps) {
   }
 
   return (
-    <div className="relative z-20 bg-[#111111] rounded-2xl shadow-xl border border-white/10 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/10 overflow-hidden">
+    <div className="relative z-20 bg-[#111111] rounded-2xl shadow-xl border border-white/10 grid grid-cols-1 tablet:grid-cols-3 divide-y tablet:divide-y-0 tablet:divide-x divide-white/10 overflow-hidden">
       {badges.map((feature, i) => {
         const iconKey = (feature.icon || '').toLowerCase();
         const Icon = badgeIconMap[iconKey] || badgeIconMap.star || Star;

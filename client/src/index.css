@@ -342,7 +342,8 @@ html.admin-theme.dark {
 }
 
 @layer components {
-  /* Below 770px (phones): fixed gutters.
+  /* Below 770px (phones and small tablets): no lateral gutter at all —
+     content sits flush against the viewport edges.
      770px+ (iPad, any orientation): gutter is 5% a side — half of the
      desktop gutter — so iPad screens sit tighter to the edges than laptops.
      1367px+ (real laptop/monitor widths): the later, more specific rule
@@ -352,9 +353,18 @@ html.admin-theme.dark {
      fractional-viewport edge case in some environments where a value like
      1366 fails to match "max-width: 1366px". Two open-ended, cascading
      min-width rules sidestep that entirely, same pattern as sm:/lg: above.
-     Both tiers cap at 1600px so line length stays sane on ultrawide displays. */
+     Both tiers cap at 1600px so line length stays sane on ultrawide displays.
+     width:100% (not just relying on block-level auto-width) because at least
+     one usage sits inside a `flex flex-col` ancestor — a plain block width
+     of `auto` doesn't reliably stretch to fill the cross axis there in every
+     browser, so it's set explicitly. Lives in this same components-layer
+     rule (not a `w-full` utility class on the element) specifically so the
+     770px+/1367px+ overrides below — same layer, later in source — keep
+     winning via normal cascade; a utility class would sit in Tailwind's
+     utilities layer and always beat this regardless of source order. */
   .container-custom {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+    @apply max-w-7xl mx-auto;
+    width: 100%;
   }
 
   /* Same column as .container-custom, but 28px wider on each side — the nav
