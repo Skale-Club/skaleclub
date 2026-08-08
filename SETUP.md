@@ -144,9 +144,10 @@ Workflow file:
 
 ### GitHub Actions Cron (Blog Autopost)
 
-Not deployable as Vercel Cron: the Hobby plan rejects any cron expression
-that runs more than once per day, and `/api/blog/cron/generate` +
-`/api/blog/cron/fetch-rss` need to run hourly.
+GitHub Actions is the single scheduler for `/api/blog/cron/generate` and
+`/api/blog/cron/fetch-rss`. The in-process scheduler in `server/cron.ts` is
+disabled in production via `DISABLE_INPROCESS_CRON=true`; enabling both would
+generate every blog post twice.
 
 - Reuses `CRON_SECRET` from above — no new secrets required
 - Workflow file: `.github/workflows/blog-cron.yml` with schedules `0 * * * *` (generate) and `30 * * * *` (fetch-rss)
@@ -196,16 +197,33 @@ that runs more than once per day, and `/api/blog/cron/generate` +
 
 - `.env` is already in `.gitignore`
 - Use `.env.example` for documentation
-- Use environment variables in production (Vercel/hosting dashboard)
+- Use environment variables in production (the Coolify app's Environment tab)
 - Rotate secrets regularly
 
 ## Production Deployment
 
-### Vercel
-Add environment variables in your Vercel project dashboard:
-1. Go to Project Settings → Environment Variables
-2. Add all required variables from `.env`
-3. Redeploy the application
+### Coolify (current host)
+
+The app runs as a Docker container on the shared Coolify/Hetzner host, built
+from the repo's `Dockerfile`. Environment variables live in the Coolify app,
+split into build-time and runtime:
+
+- **Build-time** (`is_buildtime=true`): `VITE_SENTRY_DSN` (Vite inlines it) and
+  `POSTGRES_URL` (`scripts/inject-seo-build.ts` reads `companySettings` to
+  pre-render the SEO meta tags into `dist/public/index.html`). `POSTGRES_URL`
+  is also a runtime variable.
+- **Runtime** (`is_runtime=true`): everything else — `SUPABASE_*`,
+  `SESSION_SECRET`, `ADMIN_EMAIL`, `CRON_SECRET`, `SENTRY_DSN`, plus the
+  container-specific `NODE_ENV`, `PORT`, `CANONICAL_HOST` and
+  `DISABLE_INPROCESS_CRON`.
+
+Note the Coolify API field is `is_buildtime` (no underscore); the wrong name is
+silently ignored and everything defaults to build-time, which bakes runtime
+secrets into image layers.
+
+Deploys are triggered by pushing to `main` — `.github/workflows/deploy.yml`
+pings the Coolify deploy API and Coolify does the build. Coolify's own
+"Automatic Deployment" toggle must stay off, or every push deploys twice.
 
 ### Other Platforms
 Follow your hosting provider's documentation for setting environment variables.

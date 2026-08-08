@@ -84,8 +84,12 @@ The app will be available at `http://localhost:1000`.
 
 ## Blog Autopost Cron (GitHub Actions)
 
-Runs hourly — not on Vercel Cron, since the Hobby plan only allows cron jobs
-that run once per day (`0 * * * *` / `30 * * * *` fail deployment there).
+Runs hourly from GitHub Actions, which is the **single** scheduler for the blog.
+
+`server/cron.ts` also has an in-process scheduler (`startCron()`), which would
+otherwise wake up on a long-running host like the Coolify container and generate
+every post twice. It is switched off there by the `DISABLE_INPROCESS_CRON=true`
+environment variable — don't unset it without disabling this workflow first.
 
 - Cron routes: `GET /api/blog/cron/generate`, `GET /api/blog/cron/fetch-rss`
 - Schedule: hourly (`0 * * * *` and `30 * * * *`) via `.github/workflows/blog-cron.yml`

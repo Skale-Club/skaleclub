@@ -1,6 +1,5 @@
 import * as Sentry from "@sentry/react";
 import { createRoot } from "react-dom/client";
-import { Analytics } from "@vercel/analytics/react";
 import App from "./App";
 import "./index.css";
 import { registerServiceWorker, unregisterStaleServiceWorker } from "./lib/pwa";
@@ -108,9 +107,4 @@ setTimeout(() => {
 registerServiceWorker();
 unregisterStaleServiceWorker();
 
-createRoot(document.getElementById("root")!).render(
-  <>
-    <App />
-    <Analytics />
-  </>
-);
+createRoot(document.getElementById("root")!).render(<App />);
