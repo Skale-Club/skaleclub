@@ -94,8 +94,8 @@ export default function Home() {
             breakpoint, since TrustBadges' own grid — and thus its height —
             changes at md/lg) so the split reads ~50/50 across the hero/services
             boundary. Real flow (not absolute/zero-height): the card's bottom
-            half pushes OurServicesSection down naturally. No extra trailing
-            padding here — OurServicesSection's own pt-[4.25rem] (the standard
+            half pushes the What We Do section down naturally. No extra trailing
+            padding here — that section's own pt-[4.25rem] (the standard
             section-to-section rhythm used across this page) is what creates
             the gap before its heading, so it matches every other transition.
 
@@ -111,12 +111,17 @@ export default function Home() {
         </section>
       )}
 
-      <OurServicesSection section={homepageContent.ourServicesSection} />
-
+      {/* Sections swapped (What We Do first), but each SLOT keeps its original
+          background: slot 1 stays flat #111111 so it still merges seamlessly
+          with the trust-bar fill above; slot 2 keeps the dark gradient (now on
+          OurServicesSection itself). */}
       <ServicesSection
         section={horizontalScrollSection}
         onCtaClick={handleConsultingCta}
+        background="bg-[#111111]"
       />
+
+      <OurServicesSection section={homepageContent.ourServicesSection} />
       <div className="h-0 bg-[#111111]"></div>
       <ReviewsSection
         embedUrl={reviewsEmbedUrl}

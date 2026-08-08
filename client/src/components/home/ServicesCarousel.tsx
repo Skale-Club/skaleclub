@@ -13,6 +13,9 @@ interface ServicesCarouselProps<T> {
   ariaLabel: string;
   paused?: boolean;
   dark?: boolean;
+  /** Desktop auto-scroll speed in px/frame. Vary per instance so stacked
+   *  carousels on the same page don't move in visible lockstep. */
+  speed?: number;
 }
 
 function getFirstRealItem(track: HTMLElement): HTMLElement | undefined {
@@ -21,7 +24,7 @@ function getFirstRealItem(track: HTMLElement): HTMLElement | undefined {
   ) as HTMLElement | undefined;
 }
 
-export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused, dark = true }: ServicesCarouselProps<T>) {
+export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused, dark = true, speed = 0.6 }: ServicesCarouselProps<T>) {
   // Matches the `tablet` breakpoint (770px) used everywhere else — below it,
   // the carousel gets the touch/snap/arrows treatment; at and above it, the
   // continuous auto-scroll treatment.
@@ -76,7 +79,6 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused, dark
     const track = trackRef.current;
     if (!track) return;
     let animationFrame: number;
-    const speed = 0.6;
 
     const step = () => {
       if (!isPausedRef.current && track.scrollWidth > track.clientWidth) {
@@ -88,7 +90,7 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused, dark
 
     animationFrame = requestAnimationFrame(step);
     return () => cancelAnimationFrame(animationFrame);
-  }, [isMobile, desktopLoop.length]);
+  }, [isMobile, desktopLoop.length, speed]);
 
   // Park the mobile track at the start of the middle copy before first
   // paint, so there's a full copy of real items to reveal in either swipe

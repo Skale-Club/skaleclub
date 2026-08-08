@@ -61,7 +61,9 @@ export function OurServicesSection({ section }: { section?: OurServicesSectionDa
   if (!section?.enabled || cards.length === 0) return null;
 
   return (
-    <section id="our-services" className="bg-[#111111] text-white overflow-hidden pt-[4.25rem] pb-[4.25rem]">
+    // Gradient (not #111111): this section now sits in the homepage's second
+    // dark slot — the slot colors stayed put when the sections swapped order.
+    <section id="our-services" className="bg-gradient-to-b from-[#0a0f18] to-[#0d1320] text-white overflow-hidden pt-[4.25rem] pb-[4.25rem]">
       <div className="space-y-[2.125rem]">
         {/* Header — mirrors ServicesHeader spacing + type sizes (dark variant) */}
         <div className="container-custom mx-auto">
@@ -80,6 +82,7 @@ export function OurServicesSection({ section }: { section?: OurServicesSectionDa
           paused={isOpen}
           ariaLabel="Our services carousel"
           renderItem={renderCardItem}
+          speed={0.42}
         />
       </div>
 
