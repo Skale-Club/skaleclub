@@ -8,10 +8,18 @@ const MIN_BLOG_INTERVAL_MS = 60 * 60 * 1000; // 60min clamp per Phase 38 D-01
 // Phase 38 BLOG2-14: read postsPerDay on every tick so admin changes
 // take effect on the next interval boundary (no restart, no clearTimeout).
 async function getBlogIntervalMs(): Promise<number> {
-  const { storage } = await import("./storage.js");
-  const settings = await storage.getBlogSettings();
-  if (!settings || settings.postsPerDay <= 0) return MIN_BLOG_INTERVAL_MS;
-  return Math.max(DAY_IN_MS / settings.postsPerDay, MIN_BLOG_INTERVAL_MS);
+  // Never throws: this is called from startCron (no .catch) and from
+  // blogTick's finally — an unhandled rejection here kills the whole
+  // server process (observed with DB auth timeouts and schema drift).
+  try {
+    const { storage } = await import("./storage.js");
+    const settings = await storage.getBlogSettings();
+    if (!settings || settings.postsPerDay <= 0) return MIN_BLOG_INTERVAL_MS;
+    return Math.max(DAY_IN_MS / settings.postsPerDay, MIN_BLOG_INTERVAL_MS);
+  } catch (err) {
+    console.error("[cron] failed to read blog settings, using min interval:", err);
+    return MIN_BLOG_INTERVAL_MS;
+  }
 }
 
 async function blogTick(): Promise<void> {

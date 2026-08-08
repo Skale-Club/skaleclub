@@ -173,7 +173,7 @@ export default function SkaleHub() {
         <div className="relative mx-auto max-w-6xl">
           <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
             <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#406EF1]/15 bg-white/80 px-4 py-2 text-sm font-semibold text-[#355CD0] shadow-sm backdrop-blur">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#5173D6]/15 bg-white/80 px-4 py-2 text-sm font-semibold text-[#3B5BBE] shadow-sm backdrop-blur">
                 <Sparkles className="h-4 w-4" />
                 Skale Hub by Skale Club
               </div>
@@ -191,27 +191,27 @@ export default function SkaleHub() {
               </div>
 
               <div className="mt-10 grid gap-4 sm:grid-cols-3">
-                <Card className="border-white/70 bg-white/80 shadow-lg shadow-[#406EF1]/5">
+                <Card className="border-white/70 bg-white/80 shadow-lg shadow-[#5173D6]/5">
                   <CardContent className="flex items-center gap-3 p-5">
-                    <Radio className="h-5 w-5 text-[#406EF1]" />
+                    <Radio className="h-5 w-5 text-[#5173D6]" />
                     <div>
                       <p className="text-sm font-semibold text-slate-900">Live every week</p>
                       <p className="text-xs text-slate-500">Fresh tactical sessions</p>
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="border-white/70 bg-white/80 shadow-lg shadow-[#406EF1]/5">
+                <Card className="border-white/70 bg-white/80 shadow-lg shadow-[#5173D6]/5">
                   <CardContent className="flex items-center gap-3 p-5">
-                    <Users className="h-5 w-5 text-[#406EF1]" />
+                    <Users className="h-5 w-5 text-[#5173D6]" />
                     <div>
                       <p className="text-sm font-semibold text-slate-900">Business focused</p>
                       <p className="text-xs text-slate-500">Built for growth-minded owners</p>
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="border-white/70 bg-white/80 shadow-lg shadow-[#406EF1]/5">
+                <Card className="border-white/70 bg-white/80 shadow-lg shadow-[#5173D6]/5">
                   <CardContent className="flex items-center gap-3 p-5">
-                    <CheckCircle2 className="h-5 w-5 text-[#406EF1]" />
+                    <CheckCircle2 className="h-5 w-5 text-[#5173D6]" />
                     <div>
                       <p className="text-sm font-semibold text-slate-900">Fast unlock</p>
                       <p className="text-xs text-slate-500">No account or password</p>
@@ -222,7 +222,7 @@ export default function SkaleHub() {
             </div>
 
             <div className="space-y-6">
-              <Card className="border-slate-200/80 bg-white/90 shadow-xl shadow-[#406EF1]/10">
+              <Card className="border-slate-200/80 bg-white/90 shadow-xl shadow-[#5173D6]/10">
                 <CardHeader>
                   <CardTitle className="text-2xl text-slate-950">This week&apos;s live</CardTitle>
                   <CardDescription>
@@ -232,7 +232,7 @@ export default function SkaleHub() {
                 <CardContent>
                   {activeQuery.isLoading ? (
                     <div className="flex min-h-[220px] items-center justify-center">
-                      <Loader2 className="h-7 w-7 animate-spin text-[#406EF1]" />
+                      <Loader2 className="h-7 w-7 animate-spin text-[#5173D6]" />
                     </div>
                   ) : !live ? (
                     <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
@@ -313,7 +313,7 @@ export default function SkaleHub() {
                         </div>
 
                         <Button
-                          className="mt-5 w-full bg-[#406EF1] hover:bg-[#355CD0]"
+                          className="mt-5 w-full bg-[#5173D6] hover:bg-[#3B5BBE]"
                           disabled={!canSubmit || registerMutation.isPending}
                           onClick={() => registerMutation.mutate()}
                         >

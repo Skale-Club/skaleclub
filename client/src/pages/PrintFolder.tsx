@@ -14,7 +14,7 @@ const PAPER_PRESETS = {
 
 const MM_TO_PX = 96 / 25.4;
 const NAVY = "#0A162E";
-const ACTION_BLUE = "#406EF1";
+const ACTION_BLUE = "#5173D6";
 const CONTENT_PAD_MM = 10; // safe margin between trim edge and content
 
 // Free-text blocks are contentEditable so copy can be tweaked before printing —

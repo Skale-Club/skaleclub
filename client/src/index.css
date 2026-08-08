@@ -315,6 +315,16 @@ html.admin-theme.dark {
   }
 }
 
+/* ===== xphere reviews widget (reviews-widget.js, .orw-* classes) =====
+   The widget's scrollport starts flush with the cards' top edge, so their
+   upward box-shadow (~20px of blur) gets clipped flat. Give the scrollport
+   headroom and pull it back up with a negative margin so the layout height
+   doesn't change. Scoped to the embed host so nothing else is affected. */
+[data-operator-reviews] .orw-carousel-viewport {
+  padding-top: 32px;
+  margin-top: -32px;
+}
+
 @layer base {
   *, *::before, *::after {
     border-color: var(--border);

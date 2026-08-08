@@ -382,7 +382,7 @@ function VoiceAnswerInput({
           disabled={isTranscribing}
           className={clsx(
             "flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-white transition-colors",
-            isRecording ? "bg-red-500 hover:bg-red-600" : "bg-[#406EF1] hover:bg-[#355CD0]",
+            isRecording ? "bg-red-500 hover:bg-red-600" : "bg-[#5173D6] hover:bg-[#3B5BBE]",
             isTranscribing && "opacity-60"
           )}
         >
@@ -482,7 +482,7 @@ function ConditionalFieldInput({
           className={clsx(
             "min-h-28 w-full rounded-lg border px-4 py-2 text-base transition-colors resize-y",
             errorMessage ? "border-red-400 bg-red-50" : "border-blue-300 bg-white",
-            "focus:border-[#406EF1] focus:ring-2 focus:ring-[#406EF1]/30"
+            "focus:border-[#5173D6] focus:ring-2 focus:ring-[#5173D6]/30"
           )}
         />
       ) : (
@@ -496,7 +496,7 @@ function ConditionalFieldInput({
           className={clsx(
             "w-full rounded-lg border px-4 py-2 text-base transition-colors",
             errorMessage ? "border-red-400 bg-red-50" : "border-blue-300 bg-white",
-            "focus:border-[#406EF1] focus:ring-2 focus:ring-[#406EF1]/30"
+            "focus:border-[#5173D6] focus:ring-2 focus:ring-[#5173D6]/30"
           )}
         />
       )}
@@ -1000,7 +1000,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
     return createPortal(
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
         <div className="bg-white rounded-2xl p-8 flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-[#406EF1]" />
+          <Loader2 className="h-8 w-8 animate-spin text-[#5173D6]" />
           <p className="text-slate-600">{t('Loading form...')}</p>
         </div>
       </div>,
@@ -1014,7 +1014,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
         <div className="w-full max-w-md rounded-2xl bg-white p-6 text-center text-slate-900 shadow-2xl">
           <p className="text-lg font-semibold">{t('Form unavailable')}</p>
           <p className="mt-2 text-sm text-slate-500">{t('This form is not ready yet.')}</p>
-          <button type="button" className="mt-4 rounded-xl bg-[#406EF1] px-4 py-2 font-semibold text-white" onClick={handleClose}>
+          <button type="button" className="mt-4 rounded-xl bg-[#5173D6] px-4 py-2 font-semibold text-white" onClick={handleClose}>
             {t('Close')}
           </button>
         </div>
@@ -1050,7 +1050,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
           <div className="flex flex-col h-full">
             <div className="absolute inset-x-6 sm:inset-x-10 h-3 -top-[6px] bg-slate-100 rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#406EF1] transition-all duration-300 rounded-full"
+                className="h-full bg-[#5173D6] transition-all duration-300 rounded-full"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
@@ -1070,7 +1070,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                   <form onSubmit={handleSubmit}>
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="text-sm font-semibold text-[#406EF1] uppercase tracking-wide">{t("Let's begin!")}</p>
+                        <p className="text-sm font-semibold text-[#5173D6] uppercase tracking-wide">{t("Let's begin!")}</p>
                         <h2 className="text-2xl sm:text-3xl font-bold leading-tight mt-1">{t(currentQuestion.title)}</h2>
                       </div>
                     </div>
@@ -1097,7 +1097,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                             className={clsx(
                               "w-full rounded-xl border bg-white px-4 py-3 text-lg text-slate-900 placeholder:text-slate-400 transition-colors",
                               errorMessage ? "border-red-400" : "border-slate-200",
-                              "focus:border-[#406EF1] focus:ring-2 focus:ring-[#406EF1]/30"
+                              "focus:border-[#5173D6] focus:ring-2 focus:ring-[#5173D6]/30"
                             )}
                             aria-label={currentQuestion.title}
                           />
@@ -1111,7 +1111,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                             className={clsx(
                               "min-h-36 w-full rounded-xl border bg-white px-4 py-3 text-lg text-slate-900 placeholder:text-slate-400 transition-colors resize-y",
                               errorMessage ? "border-red-400" : "border-slate-200",
-                              "focus:border-[#406EF1] focus:ring-2 focus:ring-[#406EF1]/30"
+                              "focus:border-[#5173D6] focus:ring-2 focus:ring-[#5173D6]/30"
                             )}
                             aria-label={currentQuestion.title}
                           />
@@ -1170,7 +1170,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                                 className={clsx(
                                   "flex items-center gap-1 rounded-xl border bg-white px-2 sm:px-3 py-3 text-base sm:text-lg transition-colors h-[52px]",
                                   errorMessage ? "border-red-400" : "border-slate-200",
-                                  "hover:border-[#406EF1]/70 focus:border-[#406EF1] focus:ring-2 focus:ring-[#406EF1]/30"
+                                  "hover:border-[#5173D6]/70 focus:border-[#5173D6] focus:ring-2 focus:ring-[#5173D6]/30"
                                 )}
                               >
                                 <img
@@ -1243,7 +1243,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                               className={clsx(
                                 "flex-1 min-w-0 rounded-xl border bg-white px-3 sm:px-4 py-3 text-base sm:text-lg text-slate-900 placeholder:text-slate-400 transition-colors",
                                 errorMessage ? "border-red-400" : "border-slate-200",
-                                "focus:border-[#406EF1] focus:ring-2 focus:ring-[#406EF1]/30"
+                                "focus:border-[#5173D6] focus:ring-2 focus:ring-[#5173D6]/30"
                               )}
                               aria-label={currentQuestion.title}
                               maxLength={selectedCountry.format.length}
@@ -1256,7 +1256,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                           <div
                             className={clsx(
                               "flex overflow-hidden rounded-xl border bg-white transition-colors",
-                              errorMessage ? "border-red-400" : "border-slate-200 focus-within:border-[#406EF1]"
+                              errorMessage ? "border-red-400" : "border-slate-200 focus-within:border-[#5173D6]"
                             )}
                           >
                             <PhoneCountrySelect
@@ -1303,8 +1303,8 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                                 className={clsx(
                                   "flex items-center justify-between rounded-xl border px-4 py-3 text-left transition-all shadow-sm",
                                   answers[currentQuestion.id] === option.value
-                                    ? "border-[#406EF1] bg-[#EFF3FF] shadow-md"
-                                    : "border hover:border-[#406EF1]/70 hover:bg-muted",
+                                    ? "border-[#5173D6] bg-[#EFF3FF] shadow-md"
+                                    : "border hover:border-[#5173D6]/70 hover:bg-muted",
                                   errorMessage && !answers[currentQuestion.id] ? "border-red-400" : ""
                                 )}
                               >
@@ -1312,7 +1312,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                                   <p className="font-semibold text-slate-900">{t(option.label)}</p>
                                 </div>
                                 {answers[currentQuestion.id] === option.value && (
-                                  <span className="h-8 w-8 min-h-8 min-w-8 rounded-full bg-[#406EF1] text-white flex items-center justify-center shrink-0">
+                                  <span className="h-8 w-8 min-h-8 min-w-8 rounded-full bg-[#5173D6] text-white flex items-center justify-center shrink-0">
                                     <Check className="h-4 w-4" />
                                   </span>
                                 )}
@@ -1368,7 +1368,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                         type="submit"
                         aria-disabled={!canProceed}
                         className={clsx(
-                          "inline-flex items-center justify-center gap-2 rounded-xl bg-[#406EF1] px-6 py-3 text-white font-semibold hover:bg-[#355CD0] transition-colors flex-1",
+                          "inline-flex items-center justify-center gap-2 rounded-xl bg-[#5173D6] px-6 py-3 text-white font-semibold hover:bg-[#3B5BBE] transition-colors flex-1",
                           !canProceed && "opacity-60 cursor-not-allowed"
                         )}
                       >
@@ -1381,7 +1381,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
 
                 {view === "loading" && (
                   <div className="py-12 flex flex-col items-center justify-center gap-4">
-                    <div className="h-14 w-14 rounded-full border-4 border-t-[#406EF1] animate-spin" />
+                    <div className="h-14 w-14 rounded-full border-4 border-t-[#5173D6] animate-spin" />
                     <div className="text-center space-y-2">
                       <p className="text-xl font-semibold text-slate-900">{t('Analyzing your profile...')}</p>
                       <p className="text-slate-500">{t('This takes just a few moments.')}</p>

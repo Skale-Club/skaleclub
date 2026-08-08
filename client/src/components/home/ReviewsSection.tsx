@@ -96,7 +96,10 @@ export function ReviewsSection({ embedUrl, title, subtitle }: ReviewsSectionProp
           </p>
         </div>
         {embedUrl ? (
-          <div className="container-custom mx-auto">
+          // Full-bleed like the services carousels: span the viewport edge to
+          // edge at every breakpoint; the section's overflow-hidden clips the
+          // scrollbar-width excess of w-screen.
+          <div className="relative w-screen left-1/2 -translate-x-1/2">
             <div className="bg-[#111111]">
               <EmbedRenderer code={embedUrl.trim()} />
             </div>

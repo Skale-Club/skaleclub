@@ -3,7 +3,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 
 // Hero variant for the /websites landing.
 // Mirrors the visual tone of the Home hero (brand blue + gradient overlay,
-// white gradient headline) and ships a brand-blue (#406EF1) pill CTA per the
+// white gradient headline) and ships a brand-blue (#5173D6) pill CTA per the
 // CLAUDE.md Brand Guidelines. Copy defaults are English (the t() source
 // language); PT is served via translations.ts when language is 'pt'.
 // Tolerant optional URL: treats null and "" as "absent" so a removed asset
@@ -70,7 +70,7 @@ export function HeroWebsitesSection({ props }: { props: HeroWebsitesProps }) {
                 type="button"
                 onClick={handleCtaClick}
                 data-testid="button-hero-websites-cta"
-                className="w-full sm:w-auto shrink-0 px-6 sm:px-8 py-3 sm:py-4 bg-[#406EF1] hover:bg-[#355CD0] hover:scale-105 text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
+                className="w-full sm:w-auto shrink-0 px-6 sm:px-8 py-3 sm:py-4 bg-[#5173D6] hover:bg-[#3B5BBE] hover:scale-105 text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
               >
                 {t(ctaLabel)}
               </button>

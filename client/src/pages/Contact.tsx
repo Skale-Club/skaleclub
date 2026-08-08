@@ -194,7 +194,7 @@ export default function Contact() {
               <Button
                 type="submit"
                 disabled={submitting}
-                className="w-full md:w-auto px-8 py-6 rounded-full text-lg bg-[#406EF1] hover:bg-[#355CD0] text-white font-bold"
+                className="w-full md:w-auto px-8 py-6 rounded-full text-lg bg-[#5173D6] hover:bg-[#3B5BBE] text-white font-bold"
               >
                 <Send className="w-5 h-5 mr-2" />
                 {submitting ? t("Sending...") : t("Send Message")}

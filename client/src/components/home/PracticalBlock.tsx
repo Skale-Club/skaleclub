@@ -59,7 +59,7 @@ export function PracticalBlock({
         <a
           href={ctaHref}
           onClick={onCtaClick}
-          className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-[#406EF1] hover:bg-[#355CD0] text-white font-semibold shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#406EF1] whitespace-nowrap"
+          className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-[#5173D6] hover:bg-[#3B5BBE] text-white font-semibold shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#5173D6] whitespace-nowrap"
           data-form-trigger="lead-form"
         >
           {t(ctaLabel)}

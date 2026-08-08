@@ -20,6 +20,7 @@ const AVAILABLE_TYPES = [
   'hero',
   'trustBadges',
   'services',
+  'ourServices',
   'reviews',
   'blog',
   'about',

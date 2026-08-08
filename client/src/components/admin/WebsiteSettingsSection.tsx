@@ -258,7 +258,7 @@ export function WebsiteSettingsSection() {
           <Button
             onClick={handleSave}
             disabled={isSaving}
-            className="bg-[#406EF1] hover:bg-[#355CD0] text-white rounded-full px-5"
+            className="bg-[#5173D6] hover:bg-[#3B5BBE] text-white rounded-full px-5"
           >
             {isSaving ? (
               <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Salvando...</>

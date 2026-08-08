@@ -53,7 +53,7 @@ export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
           {sectionContent?.ctaText ? (
             <div className="mb-[0.85rem]">
               <Link href={pagePaths.contact}>
-                <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5">
+                <button className="px-4 py-2 bg-[#5173D6] hover:bg-[#3B5BBE] text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5">
                   {t(sectionContent.ctaText)}
                   <ArrowRight className="w-4 h-4" />
                 </button>

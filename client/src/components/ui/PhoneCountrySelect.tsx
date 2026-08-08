@@ -88,7 +88,7 @@ export function PhoneCountrySelect({
           setOpen((current) => !current);
         }}
         className={cn(
-          "flex min-h-10 w-auto shrink-0 items-center gap-2 bg-slate-50 px-3 text-sm font-medium text-slate-700 outline-none transition-colors hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-[#406EF1]/30",
+          "flex min-h-10 w-auto shrink-0 items-center gap-2 bg-slate-50 px-3 text-sm font-medium text-slate-700 outline-none transition-colors hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-[#5173D6]/30",
           buttonClassName,
         )}
       >
@@ -132,7 +132,7 @@ export function PhoneCountrySelect({
                 }}
                 className={cn(
                   "flex w-full items-center gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-slate-50",
-                  selected && "bg-[#EFF3FF] text-[#355CD0]",
+                  selected && "bg-[#EFF3FF] text-[#3B5BBE]",
                 )}
               >
                 <img
@@ -142,7 +142,7 @@ export function PhoneCountrySelect({
                 />
                 <span className="flex-1 font-medium text-slate-700">{country.name}</span>
                 <span className="text-slate-500">{country.dialCode}</span>
-                {selected ? <Check className="h-4 w-4 text-[#406EF1]" /> : null}
+                {selected ? <Check className="h-4 w-4 text-[#5173D6]" /> : null}
               </button>
             );
           })}

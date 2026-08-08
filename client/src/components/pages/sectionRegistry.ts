@@ -4,6 +4,7 @@ import { HeroSectionAdapter, heroPropsSchema } from "./sections/HeroSectionAdapt
 import { HeroWebsitesSection, heroWebsitesPropsSchema } from "./sections/HeroWebsitesSection";
 import { TrustBadgesAdapter, trustBadgesPropsSchema } from "./sections/TrustBadgesAdapter";
 import { ServicesAdapter, servicesPropsSchema } from "./sections/ServicesAdapter";
+import { OurServicesAdapter, ourServicesPropsSchema } from "./sections/OurServicesAdapter";
 import { ReviewsAdapter, reviewsPropsSchema } from "./sections/ReviewsAdapter";
 import { BlogAdapter, blogPropsSchema } from "./sections/BlogAdapter";
 import { AboutAdapter, aboutPropsSchema } from "./sections/AboutAdapter";
@@ -26,6 +27,7 @@ export const sectionRegistry: Record<string, SectionEntry> = {
   heroWebsites:  { component: HeroWebsitesSection,   propsSchema: heroWebsitesPropsSchema },
   trustBadges:   { component: TrustBadgesAdapter,    propsSchema: trustBadgesPropsSchema },
   services:      { component: ServicesAdapter,       propsSchema: servicesPropsSchema },
+  ourServices:   { component: OurServicesAdapter,    propsSchema: ourServicesPropsSchema },
   reviews:       { component: ReviewsAdapter,        propsSchema: reviewsPropsSchema },
   blog:          { component: BlogAdapter,           propsSchema: blogPropsSchema },
   about:         { component: AboutAdapter,          propsSchema: aboutPropsSchema },

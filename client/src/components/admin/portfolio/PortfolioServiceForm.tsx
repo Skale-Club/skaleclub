@@ -41,7 +41,7 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
         ctaText: service?.ctaText || 'Get Started',
         backgroundColor: service?.backgroundColor || 'bg-white',
         textColor: service?.textColor || 'text-slate-900',
-        accentColor: service?.accentColor || '#406EF1',
+        accentColor: service?.accentColor || '#5173D6',
         order: service?.order ?? nextOrder,
         isActive: service?.isActive ?? true,
         popupSliderImages: (service?.popupSliderImages as string[]) || [],
@@ -480,11 +480,11 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
                             <div className="flex items-center gap-2 h-10">
                                 <input
                                     type="color"
-                                    value={formData.accentColor || '#406EF1'}
+                                    value={formData.accentColor || '#5173D6'}
                                     onChange={(e) => setFormData(prev => ({ ...prev, accentColor: e.target.value }))}
                                     className="w-10 h-10 rounded-md border cursor-pointer shrink-0"
                                 />
-                                <span className="text-sm font-mono text-muted-foreground">{formData.accentColor || '#406EF1'}</span>
+                                <span className="text-sm font-mono text-muted-foreground">{formData.accentColor || '#5173D6'}</span>
                             </div>
                         </div>
                         <div className="space-y-1.5">
