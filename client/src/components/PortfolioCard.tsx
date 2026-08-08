@@ -43,7 +43,6 @@ export const PortfolioCard = memo(function PortfolioCard({ service, onClick, cla
             title: 'text-white',
             subtitle: 'text-white/60',
             imageBg: 'bg-black/20',
-            iconBox: 'bg-white/10 border-white/10',
             iconPlaceholder: 'text-white/30',
             bubble: 'bg-white/10 text-white/80 border-white/10',
         }
@@ -52,7 +51,6 @@ export const PortfolioCard = memo(function PortfolioCard({ service, onClick, cla
             title: 'text-slate-900',
             subtitle: 'text-slate-600',
             imageBg: 'bg-slate-100',
-            iconBox: 'bg-slate-100 border-slate-200',
             iconPlaceholder: 'text-slate-400',
             bubble: 'bg-slate-100 text-slate-700 border-slate-200',
         };
@@ -84,8 +82,21 @@ export const PortfolioCard = memo(function PortfolioCard({ service, onClick, cla
                 )}
             </div>
 
-            {/* Title / subtitle + logo icon */}
+            {/* Logo icon + title / subtitle */}
             <div className={`flex items-center ${compact ? 'gap-2' : 'gap-3'}`}>
+                {/* No box/mask around the logo — these are already finished
+                    app icons with their own shape, so a rounded container with
+                    a background just clips their corners. */}
+                {service.logoIconUrl && (
+                    <img
+                        src={getImageUrl(service.logoIconUrl, { width: 160, quality: 80 })}
+                        alt={`${service.title} logo`}
+                        loading="lazy"
+                        decoding="async"
+                        className={`shrink-0 object-contain pointer-events-none ${compact ? 'h-11 w-11' : 'h-14 w-14'}`}
+                        draggable={false}
+                    />
+                )}
                 <div className="min-w-0 flex-1">
                     <h3 className={`truncate font-bold leading-tight ${compact ? 'text-base' : 'text-lg'} ${themeClasses.title}`}>
                         {service.title}
@@ -94,18 +105,6 @@ export const PortfolioCard = memo(function PortfolioCard({ service, onClick, cla
                         <p className={`truncate ${compact ? 'text-xs' : 'text-sm'} ${themeClasses.subtitle}`}>{t(service.subtitle)}</p>
                     )}
                 </div>
-                {service.logoIconUrl && (
-                    <div className={`flex shrink-0 items-center justify-center overflow-hidden border ${compact ? 'h-11 w-11 rounded-lg' : 'h-14 w-14 rounded-xl'} ${themeClasses.iconBox}`}>
-                        <img
-                            src={getImageUrl(service.logoIconUrl, { width: 160, quality: 80 })}
-                            alt={`${service.title} logo`}
-                            loading="lazy"
-                            decoding="async"
-                            className="h-full w-full object-contain pointer-events-none"
-                            draggable={false}
-                        />
-                    </div>
-                )}
             </div>
 
             {description && (

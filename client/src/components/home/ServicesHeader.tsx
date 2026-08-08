@@ -18,14 +18,18 @@ export function ServicesHeader({ tagLabel, title, subtitle, dark = false }: Serv
           <Sparkles className="w-3.5 h-3.5 text-primary" />
           <span>{t(tagLabel)}</span>
         </div>
-        <h2 className={`text-3xl md:text-4xl font-bold leading-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
-          {t(title)}
-        </h2>
-        {subtitle && (
-          <p className={`text-lg md:text-xl leading-relaxed ${dark ? 'text-white/70' : 'text-slate-600'}`}>
-            {t(subtitle)}
-          </p>
-        )}
+        {/* Title + subtitle are one block — they get their own tight spacing
+            instead of the section rhythm that separates them from the tag. */}
+        <div className="space-y-3">
+          <h2 className={`text-3xl md:text-4xl font-bold leading-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
+            {t(title)}
+          </h2>
+          {subtitle && (
+            <p className={`text-lg md:text-xl leading-relaxed ${dark ? 'text-white/70' : 'text-slate-600'}`}>
+              {t(subtitle)}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

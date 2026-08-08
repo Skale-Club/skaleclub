@@ -67,7 +67,7 @@ export function OurServicesSection({ section }: { section?: OurServicesSectionDa
       <div className="space-y-[2.125rem]">
         {/* Header — mirrors ServicesHeader spacing + type sizes (dark variant) */}
         <div className="container-custom mx-auto">
-          <div className="max-w-4xl space-y-[2.125rem]">
+          <div className="max-w-4xl space-y-3">
             <h2 className="text-3xl md:text-4xl font-bold leading-tight text-white">
               {t(section.title || 'Our Services')}
             </h2>

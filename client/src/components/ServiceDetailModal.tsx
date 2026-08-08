@@ -63,7 +63,6 @@ const THEME = {
     cardBg: "#070b13",
     cardBorder: "1px solid #524eae96",
     cardShadow: "none",
-    divider: "rgba(255,255,255,0.22)",
     iconBg: "rgba(255,255,255,0.06)",
     iconBorder: "1px solid rgba(255,255,255,0.12)",
     title: "#ffffff",
@@ -76,7 +75,6 @@ const THEME = {
     cardBg: "#ffffff",
     cardBorder: "1px solid #e2e8f0",
     cardShadow: "0 40px 100px -25px rgba(0,0,0,0.55)",
-    divider: "rgba(15,23,42,0.1)",
     iconBg: "#f1f5f9",
     iconBorder: "1px solid #e2e8f0",
     title: "#0f172a",
@@ -85,6 +83,15 @@ const THEME = {
     priceLabel: "#64748b",
     urlClass: "text-slate-600 hover:text-slate-900 hover:underline",
   },
+} as const;
+
+// Feature pills: the lavender fill only as a translucent tint with white
+// text, so they read as part of the card instead of three saturated blocks.
+// Calibrated for the dark card — the only variant in use today.
+const PILL_COLORS = {
+  background: "rgba(212,185,246,0.16)",
+  color: "#ffffff",
+  border: "1px solid rgba(212,185,246,0.38)",
 } as const;
 
 // Figma placeholder content — used only as empty-state fallback, never over real data.
@@ -128,11 +135,16 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
   // below) — the right column's own width equals the left column's width plus
   // the gap that used to sit between them. Keep this in sync with that calc.
   const RECLAIMED_GAP = 32;
+  // The laptop column is pulled this far above the row and given the same
+  // amount of extra height, so the laptop grows upward into the empty space
+  // beside the price without making the card any taller.
+  const LAPTOP_LIFT = 32;
   let laptopBoxSize: { width: number; height: number } | null = null;
   if (leftColSize) {
     const rightColWidth = leftColSize.width + RECLAIMED_GAP;
-    laptopBoxSize = rightColWidth / leftColSize.height > LAPTOP_RATIO
-      ? { width: leftColSize.height * LAPTOP_RATIO, height: leftColSize.height }
+    const availableHeight = leftColSize.height + LAPTOP_LIFT;
+    laptopBoxSize = rightColWidth / availableHeight > LAPTOP_RATIO
+      ? { width: availableHeight * LAPTOP_RATIO, height: availableHeight }
       : { width: rightColWidth, height: rightColWidth / LAPTOP_RATIO };
   }
 
@@ -163,10 +175,6 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
   }, [isOpen, onClose, onPrev, onNext]);
 
   if (!isOpen) return null;
-
-  const renderDivider = () => (
-    <div className="w-full shrink-0" style={{ height: "1px", background: theme.divider }} />
-  );
 
   const renderFavicon = (cqwFn: CqwFn, size: number, radius: number) => (
     <div
@@ -212,7 +220,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
             paddingTop: capAtFigmaSize(cqwFn, paddingY), paddingBottom: capAtFigmaSize(cqwFn, paddingY),
             paddingLeft: capAtFigmaSize(cqwFn, paddingX), paddingRight: capAtFigmaSize(cqwFn, paddingX),
             fontSize: capAtFigmaSize(cqwFn, fontSize), lineHeight: 1,
-            background: "#d4b9f6", color: "#6f12e1", border: "1px solid #6f12e1",
+            ...PILL_COLORS,
           }}
         >
           {t(f)}
@@ -383,8 +391,6 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
         <div className="absolute inset-0" style={{ borderRadius: cqw(39), background: theme.cardBg, border: theme.cardBorder, boxShadow: theme.cardShadow }} />
 
         <div className="relative flex flex-col" style={{ padding: `64px ${cqw(157)}`, gap: "32px" }}>
-          {renderDivider()}
-
           {/* Container 1: logo + title, full width */}
           <div className="flex items-center" style={{ gap: cqw(46) }}>
             <div
@@ -435,10 +441,10 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
                 key={i}
                 className="inline-flex items-center font-semibold whitespace-nowrap rounded-full"
                 style={{
-                  paddingTop: cqw(13.06), paddingBottom: cqw(13.06),
-                  paddingLeft: cqw(26.12), paddingRight: cqw(26.12),
-                  fontSize: cqw(27.88), lineHeight: 1,
-                  background: "#d4b9f6", color: "#6f12e1", border: "1px solid #6f12e1",
+                  paddingTop: cqw(11.2), paddingBottom: cqw(11.2),
+                  paddingLeft: cqw(22.4), paddingRight: cqw(22.4),
+                  fontSize: cqw(24), lineHeight: 1,
+                  ...PILL_COLORS,
                 }}
               >
                 {t(f)}
@@ -504,7 +510,10 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
                 capped to the left column's height so row height is unaffected */}
             <div
               className="flex flex-col items-center justify-center"
-              style={{ height: leftColSize ? `${leftColSize.height}px` : undefined }}
+              style={{
+                height: leftColSize ? `${leftColSize.height + LAPTOP_LIFT}px` : undefined,
+                marginTop: `-${LAPTOP_LIFT}px`,
+              }}
               onMouseEnter={() => setIsPaused(true)}
               onMouseLeave={() => setIsPaused(false)}
             >
@@ -558,7 +567,6 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
       >
         <div className="absolute inset-0" style={{ borderRadius: cqwT(39), background: theme.cardBg, border: theme.cardBorder, boxShadow: theme.cardShadow }} />
         <div className="relative flex flex-col" style={{ paddingLeft: cqwT(52), paddingRight: cqwT(52), paddingTop: "66px", paddingBottom: "66px", gap: "33px" }}>
-          {renderDivider()}
           {/* Content sizes below are Figma Frame 58's values scaled by 0.8 (per
               explicit request to shrink content ~20% without touching any
               gap/padding/margin, which stay at their original values). */}
@@ -567,7 +575,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
             {renderTitle(cqwTContent, 51.52, 59.25)}
           </div>
           {renderDescription(cqwTContent, 17.5, 4)}
-          {renderPills(cqwTContent, 16.15, 7.56, 15.12, "7.61px")}
+          {renderPills(cqwTContent, 13.9, 6.48, 12.96, "7.61px")}
           {renderPrice(cqwTContent, 57.6, 23.2)}
           {renderCta(cqwTContent, "50%", 68, 23.06)}
           {renderLaptop(cqwTContent, "100%", 12.15)}
@@ -585,13 +593,12 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
       >
         <div className="absolute inset-0" style={{ borderRadius: cqwM(38.37), background: theme.cardBg, border: theme.cardBorder, boxShadow: theme.cardShadow }} />
         <div className="relative flex flex-col" style={{ paddingLeft: cqwM(34), paddingRight: cqwM(34), paddingTop: "42px", paddingBottom: "42px", gap: "21px" }}>
-          {renderDivider()}
           <div className="flex items-center" style={{ gap: "8px" }}>
             {renderFavicon(cqwM, 56, 11.72)}
             {renderTitle(cqwM, 36.03, 41.43)}
           </div>
           {renderDescription(cqwM, 13.55, 4)}
-          {renderPills(cqwM, 11.54, 5.39, 10.8, "7.61px")}
+          {renderPills(cqwM, 9.93, 4.62, 9.26, "7.61px")}
           {renderPrice(cqwM, 50, 20)}
           {renderCta(cqwM, "70%", 49.09, 16.65)}
           {renderLaptop(cqwM, "100%", 8.62)}

@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { X } from 'lucide-react';
 import type { HomepageContent } from '@shared/schema';
 import { useTranslation } from '@/hooks/useTranslation';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { getImageUrl } from '@/components/admin/shared/utils';
 
 type OurServicesCard = NonNullable<NonNullable<HomepageContent['ourServicesSection']>['cards']>[number];
@@ -41,44 +41,50 @@ export function OurServiceDetailModal({ card, isOpen, onClose }: OurServiceDetai
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-0 border-0 [&>button]:hidden">
+      <DialogContent className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl border border-white/10 bg-gradient-to-b from-[#0a0f18] to-[#0d1320] p-0 text-white [&>button]:hidden">
         <button
           onClick={onClose}
           aria-label="Close"
-          className="absolute top-4 right-4 z-10 p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600"
+          className="absolute top-4 right-4 z-10 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div className="p-6 md:p-10">
+        {/* Image sits in its own side column on desktop so it can never take
+            over the popup; on mobile it collapses to a short banner above the
+            text instead of a full-width hero. object-contain everywhere —
+            these are illustrations, cropping them loses the subject. */}
+        <div className="grid gap-6 p-6 md:grid-cols-[minmax(0,300px)_minmax(0,1fr)] md:gap-8 md:p-8">
           {card.imageUrl && (
-            <div className="w-full aspect-[16/10] mb-6 rounded-2xl overflow-hidden border bg-slate-100 flex items-center justify-center">
+            <div className="aspect-[16/9] w-full self-start overflow-hidden rounded-2xl border bg-white/5 md:aspect-[4/3]">
               <img
-                src={getImageUrl(card.imageUrl, { width: 1000, quality: 85 })}
+                src={getImageUrl(card.imageUrl, { width: 800, quality: 85 })}
                 alt={card.title}
-                className="w-full h-full object-contain"
+                className="h-full w-full object-contain"
               />
             </div>
           )}
 
-          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">{card.title}</h2>
-          {card.subtitle && <p className="text-lg text-slate-600 mb-4">{t(card.subtitle)}</p>}
-          {card.description && (
-            <p className="text-slate-700 leading-relaxed mb-6 whitespace-pre-line">{t(card.description)}</p>
-          )}
+          <div className="min-w-0">
+            <DialogTitle className="mb-2 pr-10 text-2xl font-bold text-white md:text-3xl">{card.title}</DialogTitle>
+            {card.subtitle && <p className="mb-4 text-lg text-slate-300">{t(card.subtitle)}</p>}
+            {card.description && (
+              <p className="mb-6 whitespace-pre-line leading-relaxed text-slate-300">{t(card.description)}</p>
+            )}
 
-          {features.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {features.map((f, i) => (
-                <span
-                  key={i}
-                  className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700"
-                >
-                  {t(f)}
-                </span>
-              ))}
-            </div>
-          )}
+            {features.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {features.map((f, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center rounded-full border border-white/10 bg-white/10 px-3 py-1 text-sm font-medium text-white/80"
+                  >
+                    {t(f)}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
