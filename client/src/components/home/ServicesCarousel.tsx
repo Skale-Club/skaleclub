@@ -79,11 +79,20 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused, dark
     const track = trackRef.current;
     if (!track) return;
     let animationFrame: number;
+    // scrollLeft assignments snap to physical pixels (on DPR-1 displays,
+    // `x + 0.42` rounds back to `x`, freezing the carousel), so fractional
+    // speeds must be accumulated here and applied in whole pixels.
+    let remainder = 0;
 
     const step = () => {
       if (!isPausedRef.current && track.scrollWidth > track.clientWidth) {
-        track.scrollLeft += speed;
-        wrapScrollPosition(track);
+        remainder += speed;
+        const px = Math.floor(remainder);
+        if (px >= 1) {
+          remainder -= px;
+          track.scrollLeft += px;
+          wrapScrollPosition(track);
+        }
       }
       animationFrame = requestAnimationFrame(step);
     };
