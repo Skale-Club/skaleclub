@@ -46,6 +46,14 @@ export function startCron(): void {
     return;
   }
 
+  if (process.env.DISABLE_INPROCESS_CRON === "true") {
+    // Long-running host (Coolify container) where scheduling is owned by
+    // GitHub Actions (.github/workflows/blog-cron.yml) instead. Without this
+    // gate both would fire and blog posts would be generated twice.
+    console.log("[cron] in-process scheduler disabled (DISABLE_INPROCESS_CRON=true)");
+    return;
+  }
+
   // Phase 38 BLOG2-14: dynamic interval = max(24h / postsPerDay, 60min).
   // First tick fires AFTER the initial computed interval — matches setInterval semantics.
   console.log("[cron] blog auto-generator starting (recursive setTimeout, postsPerDay-driven)");

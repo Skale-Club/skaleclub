@@ -4,6 +4,8 @@ import { ZodError } from "zod";
 import express, { type Request, Response, NextFunction } from "express";
 import helmet from "helmet";
 import { registerRoutes } from "./routes.js";
+import { registerHealthRoutes } from "./routes/health.js";
+import { registerCanonicalHostRedirects } from "./canonicalHost.js";
 import path from "path";
 import { createServer, type Server } from "http";
 
@@ -31,6 +33,14 @@ export async function createApp(): Promise<{ app: express.Express; httpServer: S
     contentSecurityPolicy: false, // managed per-route via meta tags in the SPA
     crossOriginEmbedderPolicy: false, // needed for embedded iframes (maps, etc.)
   }));
+
+  // www→apex and /skale-hub/* redirects. These lived in vercel.json's edge
+  // `redirects` block; off Vercel they have to run in-process. Registered
+  // before body parsing so a redirect never reads a request body.
+  registerCanonicalHostRedirects(app);
+
+  // Liveness probe — before auth/session setup so it stays dependency-free.
+  registerHealthRoutes(app);
 
   // Serve attached_assets as static files
   app.use('/attached_assets', express.static(path.join(process.cwd(), 'attached_assets')));
