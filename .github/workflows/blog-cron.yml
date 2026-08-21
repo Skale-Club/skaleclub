@@ -1,9 +1,12 @@
 name: Blog Autopost Cron
 
 on:
-  schedule:
-    - cron: "0 * * * *"
-    - cron: "30 * * * *"
+  # Scheduling moved to the skale-cron service on the Coolify VPS (one crontab
+  # for every project in the org). GitHub billed a full minute per run for a
+  # curl that finishes in seconds, and throttled short schedules badly - the
+  # */5 jobs in the sibling repos were landing 28-37 minutes apart. The VPS
+  # crontab does neither. workflow_dispatch stays as the manual and emergency
+  # trigger for when the box is unreachable.
   workflow_dispatch:
 
 permissions:
