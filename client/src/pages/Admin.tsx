@@ -1,6 +1,6 @@
 import type { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, startTransition, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAdminAuth } from '@/context/AuthContext';
 import { useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
@@ -101,7 +101,9 @@ function AdminContent() {
       if (activeSection === 'blog') {
         setBlogResetSignal(prev => prev + 1);
       } else {
-        setLocation('/admin/blog');
+        startTransition(() => {
+          setLocation('/admin/blog');
+        });
       }
       return;
     }
@@ -128,7 +130,9 @@ function AdminContent() {
       traffic: 'traffic',
       redirects: 'redirects',
     };
-    setLocation(`/admin/${slugMap[section]}`);
+    startTransition(() => {
+      setLocation(`/admin/${slugMap[section]}`);
+    });
   }, [activeSection, setLocation]);
 
   const handleSidebarDragEnd = useCallback((event: DragEndEvent) => {
