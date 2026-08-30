@@ -55,6 +55,7 @@ function SidebarSortableItem({
   const {
     attributes,
     listeners,
+    setActivatorNodeRef,
     setNodeRef,
     transform,
     transition,
@@ -73,8 +74,6 @@ function SidebarSortableItem({
     <li
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
       data-slot="sidebar-menu-item"
       data-sidebar="menu-item"
       className="group/item group/menu-item relative touch-none"
@@ -95,12 +94,19 @@ function SidebarSortableItem({
         className="w-full text-sidebar-foreground data-[active=true]:bg-accent-muted data-[active=true]:text-primary data-[active=true]:font-semibold hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200"
         data-testid={`menu-${item.id}`}
       >
-        <GripVertical
+        <span
+          ref={setActivatorNodeRef}
+          {...attributes}
+          {...listeners}
+          aria-label={`Reorder ${item.title}`}
           className={cn(
-            "w-4 h-4 shrink-0 cursor-grab opacity-0 group-hover/item:opacity-100 transition-opacity",
+            "shrink-0 cursor-grab opacity-0 transition-opacity group-hover/item:opacity-100",
             isActive ? "text-primary/60" : "text-muted-foreground/60"
           )}
-        />
+          onClick={(event) => event.stopPropagation()}
+        >
+          <GripVertical className="w-4 h-4" />
+        </span>
         <item.icon className="w-4 h-4" />
         <span className="font-medium">{item.title}</span>
       </SidebarMenuButton>
