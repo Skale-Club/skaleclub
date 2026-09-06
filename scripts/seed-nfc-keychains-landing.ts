@@ -5,10 +5,15 @@
 //
 // Creates / updates (5 rows):
 //   1. forms   WHERE slug = 'nfc-keychain-leads'
-//   2. pages   WHERE slug = 'nfc-keychains'    (landing,  EN, language='en')
-//   3. pages   WHERE slug = 'chaveiros-nfc'    (landing,  PT, language='pt')
+//   2. pages   WHERE slug = 'nfc-keychains'    (landing,   EN, language='en')
+//   3. pages   WHERE slug = 'nfc-keychains-br' (landing,   PT, language='pt')
 //   4. pages   WHERE slug = 'nfc-pricing'      (explainer, EN, language='en')
-//   5. pages   WHERE slug = 'precos-chaveiros' (explainer, PT, language='pt')
+//   5. pages   WHERE slug = 'nfc-pricing-br'   (explainer, PT, language='pt')
+//
+// The PT slugs stay single-segment (the DB forbids a slash), but their public
+// URLs are the two-segment /nfc-keychains/br and /nfc-pricing/br served by the
+// /:slug/br client route (quick 260906-qwl). The legacy one-segment
+// /nfc-keychains-br and /nfc-pricing-br URLs keep working too.
 //
 // The landing pair shares LANDING_SECTIONS [heroWebsites, trustBadges,
 // processStepper, reviews, leadFormCta]. The explainer pair shares
@@ -249,12 +254,18 @@ const LANDING_SECTIONS: PageSection[] = [
       ctaLabel: "I want my keychains",
     },
   },
-  { type: "trustBadges",    props: {} },                // adapter — reads /api/company-settings (t()-based)
-  { type: "processStepper", props: NFC_STEPPER_PROPS }, // custom steps + icons for this product
-  { type: "reviews",        props: {} },                // adapter — real reviews only, from /api/company-settings
+  // `theme: "dark"` is the opt-in dark treatment for the NFC pages only (quick
+  // 260906-qwl). heroWebsites already sits on solid #1C53A3 and `reviews` wraps
+  // an already-dark section, so neither needs the prop. NFC_STEPPER_PROPS is
+  // spread (never mutated) because /websites and /barbershops share nothing
+  // with it but the shape — the const itself must stay theme-free.
+  { type: "trustBadges",    props: { theme: "dark" } },                       // adapter — reads /api/company-settings (t()-based)
+  { type: "processStepper", props: { ...NFC_STEPPER_PROPS, theme: "dark" } }, // custom steps + icons for this product
+  { type: "reviews",        props: {} },                                      // adapter — real reviews only, from /api/company-settings
   {
     type: "leadFormCta",
     props: {
+      theme: "dark",
       formSlug: FORM_SLUG,
       heading: "Ready to get your keychains?",
       subheading: "Tell us about your business in 1 minute and we will get back to you on WhatsApp.",
@@ -272,6 +283,7 @@ const PRICING_SECTIONS: PageSection[] = [
   {
     type: "contentBlocks",
     props: {
+      theme:      "dark",
       eyebrow:    "How it works",
       heading:    "NFC keychains, explained",
       subheading: "What they are, where they work, and what you need to get started.",
@@ -316,6 +328,7 @@ const PRICING_SECTIONS: PageSection[] = [
   {
     type: "pricingTable",
     props: {
+      theme:      "dark",
       eyebrow:    "Pricing",
       heading:    "Simple, upfront pricing",
       subheading: "No hidden fees. You know the total before we start.",
@@ -327,10 +340,11 @@ const PRICING_SECTIONS: PageSection[] = [
       footnote: "100% payment upfront. Production starts after payment clears.",
     },
   },
-  { type: "processStepper", props: NFC_STEPPER_PROPS }, // same steps + icons as the landing
+  { type: "processStepper", props: { ...NFC_STEPPER_PROPS, theme: "dark" } }, // same steps + icons as the landing
   {
     type: "faqAccordion",
     props: {
+      theme:      "dark",
       eyebrow:    "FAQ",
       heading:    "Questions people ask before ordering",
       subheading: "Everything you need to decide, without waiting for a reply.",
@@ -375,6 +389,7 @@ const PRICING_SECTIONS: PageSection[] = [
   {
     type: "leadFormCta",
     props: {
+      theme: "dark",
       formSlug: FORM_SLUG,
       heading: "Ready to order?",
       subheading: "Fill out the form and we will confirm your quantity, artwork, and total with you on WhatsApp.",
@@ -395,10 +410,10 @@ type LandingSpec = {
 
 // Two bilingual pairs. Same sections within each pair; only the language +
 // alternateSlug differ (reciprocal alternateSlug drives hreflang).
-const LANDING_EN: LandingSpec = { slug: "nfc-keychains",    name: "NFC Keychains (EN)", language: "en", alternateSlug: "chaveiros-nfc",    sections: LANDING_SECTIONS };
-const LANDING_PT: LandingSpec = { slug: "chaveiros-nfc",    name: "NFC Keychains (PT)", language: "pt", alternateSlug: "nfc-keychains",    sections: LANDING_SECTIONS };
-const PRICING_EN: LandingSpec = { slug: "nfc-pricing",      name: "NFC Pricing (EN)",   language: "en", alternateSlug: "precos-chaveiros", sections: PRICING_SECTIONS };
-const PRICING_PT: LandingSpec = { slug: "precos-chaveiros", name: "NFC Pricing (PT)",   language: "pt", alternateSlug: "nfc-pricing",      sections: PRICING_SECTIONS };
+const LANDING_EN: LandingSpec = { slug: "nfc-keychains",    name: "NFC Keychains (EN)", language: "en", alternateSlug: "nfc-keychains-br", sections: LANDING_SECTIONS };
+const LANDING_PT: LandingSpec = { slug: "nfc-keychains-br", name: "NFC Keychains (PT)", language: "pt", alternateSlug: "nfc-keychains",    sections: LANDING_SECTIONS };
+const PRICING_EN: LandingSpec = { slug: "nfc-pricing",      name: "NFC Pricing (EN)",   language: "en", alternateSlug: "nfc-pricing-br",   sections: PRICING_SECTIONS };
+const PRICING_PT: LandingSpec = { slug: "nfc-pricing-br",   name: "NFC Pricing (PT)",   language: "pt", alternateSlug: "nfc-pricing",      sections: PRICING_SECTIONS };
 
 // ── Seed runner ───────────────────────────────────────────────────────────
 
@@ -477,12 +492,34 @@ async function upsertLanding(spec: LandingSpec) {
   }
 }
 
+// One-time cleanup for the 260906-qwl slug rename (chaveiros-nfc -> nfc-keychains-br,
+// precos-chaveiros -> nfc-pricing-br). upsertLanding() keys on `slug`, so the renamed
+// specs INSERT new rows and orphan the originals. Delete exactly these two slugs and
+// nothing else. Idempotent: once they are gone this deletes zero rows and logs a no-op.
+const RENAMED_LEGACY_SLUGS = ["chaveiros-nfc", "precos-chaveiros"] as const;
+
+async function deleteRenamedLegacyPages() {
+  for (const slug of RENAMED_LEGACY_SLUGS) {
+    const deleted = await db
+      .delete(pages)
+      .where(eq(pages.slug, slug))
+      .returning({ id: pages.id, slug: pages.slug });
+    if (deleted.length > 0) {
+      console.log(`  Deleted orphaned legacy page slug='${slug}' (id=${deleted[0].id}).`);
+    } else {
+      console.log(`  No page with slug='${slug}' — nothing to delete.`);
+    }
+  }
+}
+
 async function main() {
   await upsertForm();
   await upsertLanding(LANDING_EN);
   await upsertLanding(LANDING_PT);
   await upsertLanding(PRICING_EN);
   await upsertLanding(PRICING_PT);
+  console.log("Cleaning up slugs renamed by quick 260906-qwl:");
+  await deleteRenamedLegacyPages();
   console.log("Done.");
   await pool.end();
 }
