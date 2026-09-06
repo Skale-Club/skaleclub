@@ -82,4 +82,12 @@ export function startCron(): void {
       console.error("[rss-fetcher] cron error:", err);
     }
   }, HOUR_IN_MS);
+
+  // Xphere delivery sweep (quick 260906-g80): drains retry/pending lead deliveries.
+  console.log("[xphere] delivery sweep cron starting — runs every 5 minutes");
+  setInterval(() => {
+    void import("./integrations/xphere.js")
+      .then((m) => m.queueXphereDeliverySweep())
+      .catch((err) => console.error("[xphere] sweep cron error:", err));
+  }, 5 * 60_000);
 }

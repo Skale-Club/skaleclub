@@ -1,7 +1,7 @@
 // Shared helpers for the public lead-progress endpoint
 // (`POST /api/forms/slug/:slug/leads/progress`) and the chat tool-use sites.
-// Centralizes post-upsert work (notifications, GHL sync) so behavior stays
-// consistent across entry points.
+// Centralizes post-upsert work (notifications, GHL sync, Xphere handoff +
+// booking URL) so behavior stays consistent across entry points.
 
 import { storage } from "../storage.js";
 import { db } from "../db.js";
@@ -9,10 +9,12 @@ import { visitorSessions } from "#shared/schema.js";
 import { eq } from "drizzle-orm";
 import type { FormConfig, FormLead } from "#shared/schema.js";
 import { getOrCreateGHLContact } from "../integrations/ghl.js";
+import { enqueueXphereLead, buildXphereBookingUrl } from "../integrations/xphere.js";
 import { dispatchNotification } from "./notifications.js";
 
 type PostProcessResult = {
   lead: FormLead;
+  bookingUrl: string | null;
 };
 
 /**
@@ -26,6 +28,7 @@ export async function runLeadPostProcessing(
   formConfig: FormConfig,
   companyName: string,
   visitorUuid?: string,
+  formSlug?: string,
 ): Promise<PostProcessResult> {
   let lead = initialLead;
 
@@ -157,5 +160,20 @@ export async function runLeadPostProcessing(
     }
   }
 
-  return { lead };
+  // 4) Xphere lead handoff + visit booking URL (quick 260906-g80) — best-effort, never throws
+  let bookingUrl: string | null = null;
+  if (lead.formCompleto) {
+    try {
+      const xphere = await storage.getXphereSettings();
+      if (xphere?.enabled) await enqueueXphereLead(lead, formConfig, formSlug);
+      if (xphere) bookingUrl = buildXphereBookingUrl(lead, formConfig, xphere);
+    } catch (err) {
+      console.error(
+        "[xphere] lead handoff error (non-blocking):",
+        err instanceof Error ? err.message.replace(/xph_[a-zA-Z0-9]+/g, "[REDACTED]") : err,
+      );
+    }
+  }
+
+  return { lead, bookingUrl };
 }

@@ -7,6 +7,7 @@ import { calculateMaxScore, DEFAULT_FORM_CONFIG, validateFormConfig } from "#sha
 import type { FormConfig } from "#shared/schema.js";
 import { requireAdmin, setPublicCache } from "./_shared.js";
 import { runLeadPostProcessing } from "../lib/lead-processing.js";
+import { buildXphereBookingUrl } from "../integrations/xphere.js";
 import { summarizeFormTranscript, transcribeFormAudio } from "../lib/form-audio.js";
 import { rateLimitMiddleware } from "../lib/rateLimit.js";
 
@@ -389,13 +390,14 @@ export function registerFormRoutes(app: Express) {
         formConfig,
       );
 
-      const { lead } = await runLeadPostProcessing(
+      const { lead, bookingUrl } = await runLeadPostProcessing(
         initialLead,
         formConfig,
         companyName,
         typeof req.body?.__visitorId === 'string' ? req.body.__visitorId : undefined,
+        form.slug,
       );
-      res.json(lead);
+      res.json(bookingUrl ? { ...lead, bookingUrl } : lead);
     } catch (err: any) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors?.[0]?.message || "Validation error" });
@@ -404,7 +406,21 @@ export function registerFormRoutes(app: Express) {
         const sessionId = typeof req.body?.sessionId === "string" ? req.body.sessionId : null;
         if (sessionId) {
           const existing = await storage.getFormLeadBySession(sessionId);
-          if (existing) return res.json(existing);
+          if (existing) {
+            // Double-submitted final step: still surface the booking URL so the
+            // thank-you CTA appears. No enqueue here — the original request did
+            // it, or the sweep's reconcile will.
+            if (existing.formCompleto) {
+              try {
+                const form = await storage.getFormBySlug(req.params.slug);
+                const cfg = (form?.config as FormConfig | null) ?? DEFAULT_FORM_CONFIG;
+                const xphere = await storage.getXphereSettings();
+                const bookingUrl = xphere ? buildXphereBookingUrl(existing, cfg, xphere) : null;
+                if (bookingUrl) return res.json({ ...existing, bookingUrl });
+              } catch { /* fall through: respond exactly as before */ }
+            }
+            return res.json(existing);
+          }
         }
       }
       res.status(400).json({ message: (err as Error).message });

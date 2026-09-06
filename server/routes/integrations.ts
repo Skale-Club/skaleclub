@@ -16,7 +16,16 @@ import {
   getRuntimeGroqKey,
 } from "../lib/ai-provider.js";
 import { testGHLConnection, getGHLCustomFields } from "../integrations/ghl.js";
-import { requireAdmin } from "./_shared.js";
+import {
+  validateKey as validateXphereKey,
+  listXphereDeliveries,
+  retryXphereDelivery,
+  reconcileMissingXphereDeliveries,
+  cancelPendingXphereDeliveries,
+  queueXphereDeliverySweep,
+} from "../integrations/xphere.js";
+import type { XphereSettings } from "#shared/schema.js";
+import { requireAdmin, isAuthorizedCronRequest } from "./_shared.js";
 import {
   getFormTranscriptionSettings,
   serializeTranscriptionModel,
@@ -167,6 +176,50 @@ const resendSettingsSchema = z.object({
   toEmails: z.array(z.string().trim()).optional(),
   enabled: z.boolean().optional(),
 });
+
+const xphereSettingsSchema = z.object({
+  apiKey: z.string().trim().optional(),
+  enabled: z.boolean().optional(),
+  bookingEnabled: z.boolean().optional(),
+  bookingProfileSlug: z.string().trim().max(120).optional(),
+  inPersonEventSlug: z.string().trim().max(120).optional(),
+  onlineEventSlug: z.string().trim().max(120).optional(),
+  visitTypeQuestionId: z.string().trim().max(120).optional(),
+  inPersonAnswerValue: z.string().trim().max(120).optional(),
+  onlineAnswerValue: z.string().trim().max(120).optional(),
+  tenantRef: z.string().trim().min(1, "Tenant reference cannot be empty").max(80).optional(),
+});
+
+const XPHERE_MASK = '********';
+
+function sanitizeXphereMessage(err: unknown): string {
+  const message = err instanceof Error ? err.message : String(err);
+  return message.replace(/xph_[a-zA-Z0-9]+/g, '[REDACTED]').slice(0, 300);
+}
+
+function toXphereResponse(s: XphereSettings | undefined) {
+  const iso = (d: Date | null | undefined) => (d ? new Date(d).toISOString() : null);
+  return {
+    enabled: s?.enabled ?? false,
+    apiKey: s?.apiKey ? XPHERE_MASK : '',
+    keyPrefix: s?.keyPrefix ?? null,
+    xphereOrgId: s?.xphereOrgId ?? null,
+    xphereOrgName: s?.xphereOrgName ?? null,
+    status: s?.status ?? 'disconnected',
+    lastValidatedAt: iso(s?.lastValidatedAt),
+    lastSuccessAt: iso(s?.lastSuccessAt),
+    lastErrorAt: iso(s?.lastErrorAt),
+    lastErrorCode: s?.lastErrorCode ?? null,
+    bookingEnabled: s?.bookingEnabled ?? false,
+    bookingProfileSlug: s?.bookingProfileSlug ?? '',
+    inPersonEventSlug: s?.inPersonEventSlug ?? '',
+    onlineEventSlug: s?.onlineEventSlug ?? '',
+    visitTypeQuestionId: s?.visitTypeQuestionId || 'tipoVisita',
+    inPersonAnswerValue: s?.inPersonAnswerValue || 'presencial',
+    onlineAnswerValue: s?.onlineAnswerValue || 'online',
+    tenantRef: s?.tenantRef || 'skaleclub',
+  };
+}
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
@@ -878,6 +931,158 @@ export function registerIntegrationRoutes(app: Express) {
       res.json({ success: true, message: 'Google Places API connection successful' });
     } catch (err) {
       res.status(500).json({ success: false, message: (err as Error).message });
+    }
+  });
+
+  // ===============================
+  // Xphere Integration Routes (quick 260906-g80)
+  // ===============================
+
+  app.get('/api/integrations/xphere', requireAdmin, async (_req, res) => {
+    try {
+      res.json(toXphereResponse(await storage.getXphereSettings()));
+    } catch (err) {
+      res.status(500).json({ message: sanitizeXphereMessage(err) });
+    }
+  });
+
+  app.put('/api/integrations/xphere', requireAdmin, async (req, res) => {
+    try {
+      const parsed = xphereSettingsSchema.parse(req.body);
+      const existing = await storage.getXphereSettings();
+      const keyFromRequest = parsed.apiKey && parsed.apiKey !== XPHERE_MASK ? parsed.apiKey : undefined;
+
+      const patch: Record<string, unknown> = {};
+      if (keyFromRequest) {
+        let info;
+        try {
+          info = await validateXphereKey(keyFromRequest);
+        } catch (err) {
+          return res.status(400).json({ message: sanitizeXphereMessage(err) });
+        }
+        patch.apiKey = keyFromRequest;
+        patch.keyPrefix = keyFromRequest.slice(0, 12);
+        patch.xphereOrgId = info.organization.id;
+        patch.xphereOrgName = info.organization.name;
+        patch.lastValidatedAt = new Date();
+        patch.lastErrorAt = null;
+        patch.lastErrorCode = null;
+      }
+
+      const enabled = parsed.enabled ?? existing?.enabled ?? false;
+      if (enabled && !(keyFromRequest || existing?.apiKey)) {
+        return res.status(400).json({ message: 'Add and test an Xphere API key before enabling' });
+      }
+
+      const bookingEnabled = parsed.bookingEnabled ?? existing?.bookingEnabled ?? false;
+      const bookingProfileSlug = parsed.bookingProfileSlug ?? existing?.bookingProfileSlug ?? '';
+      const inPersonEventSlug = parsed.inPersonEventSlug ?? existing?.inPersonEventSlug ?? '';
+      const onlineEventSlug = parsed.onlineEventSlug ?? existing?.onlineEventSlug ?? '';
+      if (bookingEnabled && (!bookingProfileSlug || (!inPersonEventSlug && !onlineEventSlug))) {
+        return res.status(400).json({ message: 'Booking needs a profile slug and at least one event slug' });
+      }
+
+      const wasEnabled = existing?.enabled ?? false;
+      const keepDegraded = existing?.status === 'degraded' && enabled && wasEnabled;
+      const status = keepDegraded
+        ? 'degraded'
+        : enabled
+          ? 'enabled'
+          : (existing?.xphereOrgId || keyFromRequest ? 'connected' : 'disconnected');
+
+      if (wasEnabled && !enabled) {
+        await cancelPendingXphereDeliveries();
+      }
+
+      const saved = await storage.saveXphereSettings({
+        ...patch,
+        enabled,
+        status,
+        bookingEnabled,
+        bookingProfileSlug: bookingProfileSlug || null,
+        inPersonEventSlug: inPersonEventSlug || null,
+        onlineEventSlug: onlineEventSlug || null,
+        visitTypeQuestionId: parsed.visitTypeQuestionId || existing?.visitTypeQuestionId || 'tipoVisita',
+        inPersonAnswerValue: parsed.inPersonAnswerValue || existing?.inPersonAnswerValue || 'presencial',
+        onlineAnswerValue: parsed.onlineAnswerValue || existing?.onlineAnswerValue || 'online',
+        tenantRef: parsed.tenantRef ?? existing?.tenantRef ?? 'skaleclub',
+      });
+      res.json(toXphereResponse(saved));
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors?.[0]?.message || 'Invalid Xphere settings payload',
+          errors: err.errors,
+        });
+      }
+      res.status(400).json({ message: sanitizeXphereMessage(err) });
+    }
+  });
+
+  app.post('/api/integrations/xphere/test', requireAdmin, async (req, res) => {
+    try {
+      const bodyKey = typeof req.body?.apiKey === 'string' ? req.body.apiKey.trim() : '';
+      const keyFromBody = bodyKey && bodyKey !== XPHERE_MASK ? bodyKey : undefined;
+      const existing = await storage.getXphereSettings();
+      const key = keyFromBody || existing?.apiKey;
+      if (!key) {
+        return res.status(400).json({ success: false, message: 'Paste an Xphere API key first' });
+      }
+      const info = await validateXphereKey(key);
+      await storage.saveXphereSettings({
+        ...(keyFromBody ? { apiKey: keyFromBody } : {}),
+        keyPrefix: key.slice(0, 12),
+        xphereOrgId: info.organization.id,
+        xphereOrgName: info.organization.name,
+        lastValidatedAt: new Date(),
+        lastErrorAt: null,
+        lastErrorCode: null,
+        status: existing?.enabled ? 'enabled' : 'connected',
+        enabled: existing?.enabled ?? false,
+        bookingEnabled: existing?.bookingEnabled ?? false,
+      });
+      res.json({
+        success: true,
+        organization: info.organization,
+        message: `Connected to ${info.organization.name}`,
+      });
+    } catch (err) {
+      res.status(400).json({ success: false, message: sanitizeXphereMessage(err) });
+    }
+  });
+
+  app.get('/api/integrations/xphere/deliveries', requireAdmin, async (req, res) => {
+    try {
+      const rows = await listXphereDeliveries(Number(req.query.limit) || 20);
+      // payload carries lead PII — keep it out of the admin list.
+      res.json(rows.map(({ payload: _payload, ...rest }) => rest));
+    } catch (err) {
+      res.status(500).json({ message: sanitizeXphereMessage(err) });
+    }
+  });
+
+  app.post('/api/integrations/xphere/deliveries/:id/retry', requireAdmin, async (req, res) => {
+    try {
+      const { payload: _payload, ...row } = await retryXphereDelivery(req.params.id);
+      res.json(row);
+    } catch (err) {
+      const message = sanitizeXphereMessage(err);
+      res.status(message === 'Delivery not found' ? 404 : 400).json({ message });
+    }
+  });
+
+  // Cron-guarded (Bearer CRON_SECRET), not admin: reconciles missed completed
+  // leads and drains due deliveries. Used when DISABLE_INPROCESS_CRON=true.
+  app.post('/api/integrations/xphere/sweep', async (req, res) => {
+    if (!isAuthorizedCronRequest(req)) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    try {
+      await reconcileMissingXphereDeliveries();
+      queueXphereDeliverySweep();
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(500).json({ message: sanitizeXphereMessage(err) });
     }
   });
 
