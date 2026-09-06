@@ -478,7 +478,7 @@ function ConditionalFieldInput({
           id={`conditional-${field.id}`}
           value={value}
           onChange={e => onTextChange(e.target.value)}
-          placeholder={field.placeholder}
+          placeholder={t(field.placeholder)}
           className={clsx(
             "min-h-28 w-full rounded-lg border px-4 py-2 text-base transition-colors resize-y",
             errorMessage ? "border-red-400 bg-red-50" : "border-blue-300 bg-white",
@@ -492,7 +492,7 @@ function ConditionalFieldInput({
           value={value}
           onChange={e => onTextChange(e.target.value)}
           onFocus={onFocus}
-          placeholder={field.placeholder}
+          placeholder={t(field.placeholder)}
           className={clsx(
             "w-full rounded-lg border px-4 py-2 text-base transition-colors",
             errorMessage ? "border-red-400 bg-red-50" : "border-blue-300 bg-white",
@@ -955,13 +955,20 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
         clearStoredState();
         const leadClassification = lead.classificacao || classification;
         const leadScore = lead.scoreTotal ?? score.total;
+        // Xphere visit booking (quick 260906-g80): the progress route appends
+        // bookingUrl when the lead's visit-type answer maps to a booking event.
+        const rawBookingUrl = (lead as FormLead & { bookingUrl?: unknown }).bookingUrl;
+        const bookingUrl = typeof rawBookingUrl === 'string' ? rawBookingUrl : null;
         trackEvent("form_completed", {
           classification: leadClassification,
           score: leadScore,
           synced: true,
+          booking: Boolean(bookingUrl),
         });
         onClose();
-        window.location.href = pagePaths.thankYou;
+        window.location.href = bookingUrl
+          ? `${pagePaths.thankYou}?booking=${encodeURIComponent(bookingUrl)}`
+          : pagePaths.thankYou;
         return;
       }
 

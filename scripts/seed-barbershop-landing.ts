@@ -44,7 +44,9 @@ const LANDING_PT = { slug: "barbershops-br", name: "Barbershops (PT)", language:
 //   dedicated column instead of customAnswers.
 // - All other IDs (nomeBarbearia, numeroCadeiras, numeroBarbeiros,
 //   sistemaAgendamento, ticketMedio, investimentoAnuncios, tipoVisita,
-//   observacoes) fall through into form_leads.customAnswers (jsonb).
+//   enderecoBarbearia, observacoes) fall through into form_leads.customAnswers
+//   (jsonb). `enderecoBarbearia` is a conditional field shown only when
+//   tipoVisita = presencial.
 // - `points` is 0 for every option — this form is NOT scored; all leads route
 //   as `novo` regardless of answers.
 // - Question 2 uses the `phoneCountry` type (Plan 44-03) which renders the
@@ -164,12 +166,12 @@ const BARBERSHOP_LEADS_QUESTIONS: FormQuestion[] = [
     ],
   },
   // ── Xphere booking integration hook point ────────────────────────────────
-  // tipoVisita captures the MEETING FORMAT only. Actual date/slot picking is a
-  // deliberate follow-up: Xphere (the separate ops platform at
-  // C:\Users\Vanildo\Dev\xphere) owns Calendly-style scheduling, and this
-  // answer is the branch point where the free-slots picker will be injected
-  // later. Do NOT add a date/time question here — no such form question type
-  // exists.
+  // tipoVisita captures the MEETING FORMAT only. Date/slot picking happens on
+  // Xphere's side: since quick 260906-g80 the post-submit redirect consumes
+  // this answer (via the admin-configured in-person/online event slugs in
+  // Admin -> Integrations -> CRM -> Xphere) and sends the lead to the matching
+  // https://xphere.app/book/... page from the thank-you CTA. Do NOT add a
+  // date/time question here — no such form question type exists.
   {
     id: "tipoVisita", // → customAnswers.tipoVisita
     order: 11,
@@ -180,6 +182,12 @@ const BARBERSHOP_LEADS_QUESTIONS: FormQuestion[] = [
       { value: "presencial", label: "In-person visit at my shop",  points: 0 },
       { value: "online",     label: "Online meeting (video call)", points: 0 },
     ],
+    conditionalField: {
+      showWhen: "presencial",
+      id: "enderecoBarbearia", // → customAnswers.enderecoBarbearia
+      title: "What's your shop address?",
+      placeholder: "Street, number, city",
+    },
   },
   {
     id: "observacoes", // → customAnswers.observacoes

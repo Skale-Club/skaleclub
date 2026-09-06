@@ -151,6 +151,40 @@ export interface GHLSettings {
   isEnabled: boolean;
 }
 
+export interface XphereSettings {
+  enabled: boolean;
+  apiKey: string; // '********' when a key is stored, '' otherwise
+  keyPrefix: string | null;
+  xphereOrgId: string | null;
+  xphereOrgName: string | null;
+  status: string;
+  lastValidatedAt: string | null;
+  lastSuccessAt: string | null;
+  lastErrorAt: string | null;
+  lastErrorCode: string | null;
+  bookingEnabled: boolean;
+  bookingProfileSlug: string;
+  inPersonEventSlug: string;
+  onlineEventSlug: string;
+  visitTypeQuestionId: string;
+  inPersonAnswerValue: string;
+  onlineAnswerValue: string;
+  tenantRef: string; // source.tenant_ref on every delivery; default 'skaleclub'
+}
+
+export interface XphereDelivery {
+  id: string;
+  status: string;
+  attemptCount: number;
+  responseStatus: number | null;
+  lastErrorCode: string | null;
+  lastErrorMessage: string | null;
+  aggregateId: number;
+  createdAt: string;
+  deliveredAt: string | null;
+  nextAttemptAt: string;
+}
+
 export interface OpenAISettings {
   provider: string;
   enabled: boolean;

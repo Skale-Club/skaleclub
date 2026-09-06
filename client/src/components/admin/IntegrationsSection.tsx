@@ -4,6 +4,7 @@ import { SectionHeader, SubSidebar, SubSidebarLayout } from './shared';
 import { AIAssistantCard } from './integrations/AIAssistantCard';
 import { AnalyticsSection } from './integrations/AnalyticsSection';
 import { GHLCard } from './integrations/GHLCard';
+import { XphereCard } from './integrations/XphereCard';
 import { GooglePlacesCard } from './integrations/GooglePlacesCard';
 import { GroqCard } from './integrations/GroqCard';
 import { McpSettingsSection } from './McpSettingsSection';
@@ -50,7 +51,12 @@ export function IntegrationsSection() {
           </div>
         )}
 
-        {activeTab === 'crm' && <GHLCard />}
+        {activeTab === 'crm' && (
+          <div className="space-y-6">
+            <XphereCard />
+            <GHLCard />
+          </div>
+        )}
 
         {activeTab === 'communications' && (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

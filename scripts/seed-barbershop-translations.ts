@@ -110,6 +110,12 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
   { source: "How would you like to meet us?", translated: "Como você prefere falar com a gente?" },
   { source: "In-person visit at my shop", translated: "Visita presencial na minha barbearia" },
   { source: "Online meeting (video call)", translated: "Reunião online (chamada de vídeo)" },
+  { source: "What's your shop address?", translated: "Qual é o endereço da sua barbearia?" },
+  { source: "Street, number, city", translated: "Rua, número, cidade" },
+
+  // ── Thank-you booking CTA (LeadThankYou.tsx, quick 260906-g80) ──────────
+  { source: "Schedule your visit", translated: "Agendar minha visita" },
+  { source: "Pick the day and time that work best for you. It only takes a minute.", translated: "Escolha o dia e o horário que funcionam melhor para você. Leva só um minuto." },
 
   // ── Free-form ───────────────────────────────────────────────────────────
   { source: "Anything else we should know?", translated: "Mais alguma coisa que a gente deva saber?" },

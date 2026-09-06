@@ -1,5 +1,6 @@
+import { useMemo } from "react";
 import { Link } from "wouter";
-import { Sparkles, Home } from "lucide-react";
+import { Sparkles, Home, CalendarCheck } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
 import Lottie from "lottie-react";
@@ -14,6 +15,13 @@ export default function LeadThankYou() {
 
   const companyName = companySettings?.companyName || "Company Name";
   const headline = t(`Thank you for trusting ${companyName}.`);
+
+  // Xphere visit booking CTA (quick 260906-g80). Open-redirect guard: only
+  // accept URLs on Xphere's public booking host.
+  const bookingUrl = useMemo(() => {
+    const raw = new URLSearchParams(window.location.search).get('booking');
+    return raw && raw.startsWith('https://xphere.app/') ? raw : null;
+  }, []);
 
   const heroGradient = `
     linear-gradient(
@@ -57,9 +65,30 @@ export default function LeadThankYou() {
             <p className="mt-4 text-slate-200 text-lg leading-relaxed">
               {t('Your form was submitted successfully. A specialist from our team will review the information and contact you shortly for the next step.')}
             </p>
+            {bookingUrl && (
+              <div className="mt-6">
+                <a
+                  href={bookingUrl}
+                  data-testid="link-book-visit"
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#5173D6] hover:bg-[#3B5BBE] text-white font-semibold py-3.5 text-lg shadow-lg shadow-blue-500/20 hover:-translate-y-0.5 transition-all"
+                >
+                  <CalendarCheck className="w-5 h-5" />
+                  {t('Schedule your visit')}
+                </a>
+                <p className="mt-2 text-sm text-slate-300">
+                  {t('Pick the day and time that work best for you. It only takes a minute.')}
+                </p>
+              </div>
+            )}
             <div className="mt-6 grid sm:grid-cols-2 gap-3">
               <Link href="/">
-                <button className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#5173D6] hover:bg-[#3B5BBE] text-white font-semibold py-3 shadow-lg shadow-blue-500/20 hover:-translate-y-0.5 transition-all">
+                <button
+                  className={
+                    bookingUrl
+                      ? "w-full inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 text-white font-semibold py-3 transition-all"
+                      : "w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#5173D6] hover:bg-[#3B5BBE] text-white font-semibold py-3 shadow-lg shadow-blue-500/20 hover:-translate-y-0.5 transition-all"
+                  }
+                >
                   <Home className="w-4 h-4" />
                   {t('Back to website')}
                 </button>
