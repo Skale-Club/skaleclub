@@ -33,7 +33,7 @@ See: `.planning/PROJECT.md` (updated 2026-05-22)
 Phase: 44 (Landing /websites) / Phase 33 (v1.7 voice form)
 Plan: 44-03 complete; Phases 30-32 (voice) complete
 Status: Both v2.0 and v1.7 voice form in progress
-Last activity: 2026-09-06 - Completed quick task 260906-edl: Barbershop PT copy + Xphere booking integration scope
+Last activity: 2026-09-06 - Completed quick task 260906-fu3: NFC keychain landing + pricing explainer pages (EN+PT)
 
 ---
 
@@ -239,6 +239,7 @@ Last activity: 2026-09-06 - Completed quick task 260906-edl: Barbershop PT copy 
 | 260419-rfo | Add EST-11 view tracking and EST-12 password protection requirements | 2026-04-19 | c6fa749 | [260419-rfo](./quick/260419-rfo-add-est-11-view-tracking-and-est-12-pass/) |
 | 260906-e15 | Barbershop landing pages (EN + PT) + barbershop-leads form seed | 2026-09-06 | eac40cc | [260906-e15](./quick/260906-e15-barbershop-landing-pages-en-pt-and-barbe/) |
 | 260906-edl | Barbershop PT copy + Xphere booking integration scope | 2026-09-06 | dceb450 | [260906-edl](./quick/260906-edl-barbershop-pt-copy-xphere-booking-integr/) |
+| 260906-fu3 | NFC keychain landing + pricing explainer pages (EN+PT) | 2026-09-06 | 98f4bf4 | [260906-fu3](./quick/260906-fu3-nfc-keychain-landing-pricing-explainer-p/) |
 
 ### Blockers
 
