@@ -2,10 +2,18 @@ import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import type { CompanySettings } from "@shared/schema";
 import { TrustBadges } from "@/components/home/TrustBadges";
+import { sectionThemeSchema } from "./sectionTheme";
 
-export const trustBadgesPropsSchema = z.object({}).passthrough();
+export const trustBadgesPropsSchema = z.object({ theme: sectionThemeSchema }).passthrough();
 
-export function TrustBadgesAdapter({ props: _ }: { props: z.infer<typeof trustBadgesPropsSchema> }) {
+// Quick 260906-qwl — the underlying TrustBadges card is already dark
+// (`bg-[#111111]`, shared with the homepage and NOT modified here). The dark
+// branch only paints this wrapper so there is no light gutter around the card,
+// and gives it a little more breathing room on a full-dark page.
+const LIGHT = { wrapper: "py-6" } as const;
+const DARK = { wrapper: "bg-[#0f1014] py-6 sm:py-8" } as const;
+
+export function TrustBadgesAdapter({ props }: { props: z.infer<typeof trustBadgesPropsSchema> }) {
   const { data: settings } = useQuery<CompanySettings>({
     queryKey: ["/api/company-settings"],
   });
@@ -13,10 +21,12 @@ export function TrustBadgesAdapter({ props: _ }: { props: z.infer<typeof trustBa
   const badges = settings?.homepageContent?.trustBadges ?? [];
   if (badges.length === 0) return null;
 
+  const c = props.theme === "dark" ? DARK : LIGHT;
+
   // TrustBadges renders as a plain block (no absolute overlap); provide its
   // own centered, padded container since it's used standalone here.
   return (
-    <div className="container-custom mx-auto px-4 sm:px-6 py-6">
+    <div className={`container-custom mx-auto px-4 sm:px-6 ${c.wrapper}`}>
       <TrustBadges badges={badges} />
     </div>
   );

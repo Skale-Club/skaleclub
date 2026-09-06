@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { sectionThemeSchema } from "./sectionTheme";
 
 const stepSchema = z.object({
   title:       z.string(),
@@ -42,6 +43,7 @@ export const processStepperPropsSchema = z.object({
   subheading:  z.string().optional(),
   steps:       z.array(stepSchema).length(4).optional(),
   icons:       z.array(z.enum(processStepperIconNames)).length(4).optional(),
+  theme:       sectionThemeSchema,
 });
 export type ProcessStepperProps = z.infer<typeof processStepperPropsSchema>;
 
@@ -71,6 +73,33 @@ const DEFAULTS = {
 
 const ICONS = [Search, Palette, Code2, Rocket] as const;
 
+// Quick 260906-qwl — LIGHT is copied verbatim from the pre-task classNames, so
+// `theme` undefined renders exactly as before. `#5173D6` stays a FILL only
+// (it is 4.3:1 on dark, below AA); `text-blue-300` is the dark text accent.
+const LIGHT = {
+  section:    "bg-zinc-50",
+  eyebrow:    "text-[#1C53A3]",
+  heading:    "text-zinc-900",
+  subheading: "text-zinc-600",
+  connector:  "bg-zinc-300",
+  iconCircle: "bg-[#1C53A3] text-white shadow-lg shadow-[#1C53A3]/20",
+  stepBadge:  "bg-[#5173D6] text-white border-2 border-zinc-50",
+  stepTitle:  "text-zinc-900",
+  stepBody:   "text-zinc-600",
+} as const;
+
+const DARK = {
+  section:    "bg-[#0f1014]",
+  eyebrow:    "text-blue-300",
+  heading:    "text-white",
+  subheading: "text-zinc-300",
+  connector:  "bg-white/15",
+  iconCircle: "bg-[#1C53A3] text-white shadow-lg shadow-[#5173D6]/30",
+  stepBadge:  "bg-[#5173D6] text-white border-2 border-[#0f1014]",
+  stepTitle:  "text-white",
+  stepBody:   "text-zinc-300",
+} as const;
+
 export function ProcessStepperSection({ props }: { props: ProcessStepperProps }) {
   const { t } = useTranslation();
   const eyebrow    = props.eyebrow    ?? DEFAULTS.eyebrow;
@@ -78,21 +107,22 @@ export function ProcessStepperSection({ props }: { props: ProcessStepperProps })
   const subheading = props.subheading ?? DEFAULTS.subheading;
   const steps      = props.steps      ?? DEFAULTS.steps;
   const icons      = props.icons ? props.icons.map((n) => ICON_MAP[n]) : ICONS;
+  const c          = props.theme === "dark" ? DARK : LIGHT;
 
   return (
     <section
-      className="bg-zinc-50 py-20 sm:py-24"
+      className={`${c.section} py-20 sm:py-24`}
       data-testid="section-process-stepper"
     >
       <div className="container-custom mx-auto px-6">
         <div className="max-w-3xl mx-auto text-center mb-12 sm:mb-16">
-          <p className="text-sm font-semibold uppercase tracking-widest text-[#1C53A3] mb-3">
+          <p className={`text-sm font-semibold uppercase tracking-widest ${c.eyebrow} mb-3`}>
             {t(eyebrow)}
           </p>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-display text-zinc-900 leading-tight mb-4">
+          <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-bold font-display ${c.heading} leading-tight mb-4`}>
             {t(heading)}
           </h2>
-          <p className="text-base sm:text-lg text-zinc-600 leading-relaxed">
+          <p className={`text-base sm:text-lg ${c.subheading} leading-relaxed`}>
             {t(subheading)}
           </p>
         </div>
@@ -101,7 +131,7 @@ export function ProcessStepperSection({ props }: { props: ProcessStepperProps })
           {/* Connecting line — only on lg, sits behind the numbered circles */}
           <div
             aria-hidden="true"
-            className="hidden lg:block absolute top-8 left-[12.5%] right-[12.5%] h-px bg-zinc-300"
+            className={`hidden lg:block absolute top-8 left-[12.5%] right-[12.5%] h-px ${c.connector}`}
           />
 
           {steps.map((step, idx) => {
@@ -113,16 +143,16 @@ export function ProcessStepperSection({ props }: { props: ProcessStepperProps })
                 className="relative flex flex-col items-center text-center"
                 data-testid={`step-process-${stepNumber}`}
               >
-                <div className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full bg-[#1C53A3] text-white shadow-lg shadow-[#1C53A3]/20 mb-5">
+                <div className={`relative z-10 flex h-16 w-16 items-center justify-center rounded-full ${c.iconCircle} mb-5`}>
                   <Icon className="h-7 w-7" />
-                  <span className="absolute -top-2 -right-2 flex h-7 w-7 items-center justify-center rounded-full bg-[#5173D6] text-xs font-bold text-white border-2 border-zinc-50">
+                  <span className={`absolute -top-2 -right-2 flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${c.stepBadge}`}>
                     {stepNumber}
                   </span>
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold font-display text-zinc-900 mb-2">
+                <h3 className={`text-lg sm:text-xl font-bold font-display ${c.stepTitle} mb-2`}>
                   {t(step.title)}
                 </h3>
-                <p className="text-sm sm:text-base text-zinc-600 leading-relaxed max-w-xs">
+                <p className={`text-sm sm:text-base ${c.stepBody} leading-relaxed max-w-xs`}>
                   {t(step.description)}
                 </p>
               </li>

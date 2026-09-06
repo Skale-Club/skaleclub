@@ -12,6 +12,7 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
+import { sectionThemeSchema } from "./sectionTheme";
 
 const faqItemSchema = z.object({
   question: z.string(),
@@ -23,6 +24,7 @@ export const faqAccordionPropsSchema = z.object({
   heading:    z.string().optional(),
   subheading: z.string().optional(),
   items:      z.array(faqItemSchema).min(1).optional(),
+  theme:      sectionThemeSchema,
 });
 export type FaqAccordionProps = z.infer<typeof faqAccordionPropsSchema>;
 
@@ -46,27 +48,50 @@ const DEFAULTS = {
   ],
 } as const;
 
+// Quick 260906-qwl — LIGHT is copied verbatim from the pre-task classNames, so
+// `theme` undefined renders exactly as before.
+const LIGHT = {
+  section:    "bg-white",
+  eyebrow:    "text-[#1C53A3]",
+  heading:    "text-zinc-900",
+  subheading: "text-zinc-600",
+  item:       "border-zinc-200",
+  question:   "text-zinc-900",
+  answer:     "text-zinc-600",
+} as const;
+
+const DARK = {
+  section:    "bg-[#111111]",
+  eyebrow:    "text-blue-300",
+  heading:    "text-white",
+  subheading: "text-zinc-300",
+  item:       "border-white/10",
+  question:   "text-white",
+  answer:     "text-zinc-300",
+} as const;
+
 export function FaqAccordionSection({ props }: { props: FaqAccordionProps }) {
   const { t } = useTranslation();
   const eyebrow    = props.eyebrow    ?? DEFAULTS.eyebrow;
   const heading    = props.heading    ?? DEFAULTS.heading;
   const subheading = props.subheading ?? DEFAULTS.subheading;
   const items      = props.items      ?? DEFAULTS.items;
+  const c          = props.theme === "dark" ? DARK : LIGHT;
 
   return (
     <section
-      className="bg-white py-20 sm:py-24"
+      className={`${c.section} py-20 sm:py-24`}
       data-testid="section-faq-accordion"
     >
       <div className="container-custom mx-auto px-6">
         <div className="max-w-3xl mx-auto text-center mb-12 sm:mb-16">
-          <p className="text-sm font-semibold uppercase tracking-widest text-[#1C53A3] mb-3">
+          <p className={`text-sm font-semibold uppercase tracking-widest ${c.eyebrow} mb-3`}>
             {t(eyebrow)}
           </p>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-display text-zinc-900 leading-tight mb-4">
+          <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-bold font-display ${c.heading} leading-tight mb-4`}>
             {t(heading)}
           </h2>
-          <p className="text-base sm:text-lg text-zinc-600 leading-relaxed">
+          <p className={`text-base sm:text-lg ${c.subheading} leading-relaxed`}>
             {t(subheading)}
           </p>
         </div>
@@ -77,13 +102,13 @@ export function FaqAccordionSection({ props }: { props: FaqAccordionProps }) {
               <AccordionItem
                 key={idx}
                 value={`faq-${idx}`}
-                className="border-zinc-200"
+                className={c.item}
                 data-testid={`faq-item-${idx + 1}`}
               >
-                <AccordionTrigger className="text-left text-base sm:text-lg font-semibold text-zinc-900 hover:no-underline py-5">
+                <AccordionTrigger className={`text-left text-base sm:text-lg font-semibold ${c.question} hover:no-underline py-5`}>
                   {t(item.question)}
                 </AccordionTrigger>
-                <AccordionContent className="text-base text-zinc-600 leading-relaxed pb-5">
+                <AccordionContent className={`text-base ${c.answer} leading-relaxed pb-5`}>
                   {t(item.answer)}
                 </AccordionContent>
               </AccordionItem>
