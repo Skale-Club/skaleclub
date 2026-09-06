@@ -478,7 +478,7 @@ function ConditionalFieldInput({
           id={`conditional-${field.id}`}
           value={value}
           onChange={e => onTextChange(e.target.value)}
-          placeholder={field.placeholder}
+          placeholder={t(field.placeholder || "")}
           className={clsx(
             "min-h-28 w-full rounded-lg border px-4 py-2 text-base transition-colors resize-y",
             errorMessage ? "border-red-400 bg-red-50" : "border-blue-300 bg-white",
@@ -492,7 +492,7 @@ function ConditionalFieldInput({
           value={value}
           onChange={e => onTextChange(e.target.value)}
           onFocus={onFocus}
-          placeholder={field.placeholder}
+          placeholder={t(field.placeholder || "")}
           className={clsx(
             "w-full rounded-lg border px-4 py-2 text-base transition-colors",
             errorMessage ? "border-red-400 bg-red-50" : "border-blue-300 bg-white",
@@ -1093,7 +1093,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                             value={answers[currentQuestion.id] || ""}
                             onChange={e => handleAnswerChange(currentQuestion.id, e.target.value)}
                             onFocus={handleFieldFocus}
-                            placeholder={currentQuestion.placeholder || ""}
+                            placeholder={t(currentQuestion.placeholder || "")}
                             className={clsx(
                               "w-full rounded-xl border bg-white px-4 py-3 text-lg text-slate-900 placeholder:text-slate-400 transition-colors",
                               errorMessage ? "border-red-400" : "border-slate-200",
@@ -1107,7 +1107,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                           <textarea
                             value={answers[currentQuestion.id] || ""}
                             onChange={e => handleAnswerChange(currentQuestion.id, e.target.value)}
-                            placeholder={currentQuestion.placeholder || ""}
+                            placeholder={t(currentQuestion.placeholder || "")}
                             className={clsx(
                               "min-h-36 w-full rounded-xl border bg-white px-4 py-3 text-lg text-slate-900 placeholder:text-slate-400 transition-colors resize-y",
                               errorMessage ? "border-red-400" : "border-slate-200",
