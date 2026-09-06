@@ -33,7 +33,7 @@ See: `.planning/PROJECT.md` (updated 2026-05-22)
 Phase: 44 (Landing /websites) / Phase 33 (v1.7 voice form)
 Plan: 44-03 complete; Phases 30-32 (voice) complete
 Status: Both v2.0 and v1.7 voice form in progress
-Last activity: 2026-09-06 - Completed quick task 260906-g80: Xphere lead handoff + visit booking (outbox, admin card, thank-you CTA)
+Last activity: 2026-09-06 - Completed quick task 260906-gye: Translate lead form question placeholders via t()
 
 ---
 
@@ -244,6 +244,7 @@ Last activity: 2026-09-06 - Completed quick task 260906-g80: Xphere lead handoff
 | 260906-edl | Barbershop PT copy + Xphere booking integration scope | 2026-09-06 | dceb450 | [260906-edl](./quick/260906-edl-barbershop-pt-copy-xphere-booking-integr/) |
 | 260906-fu3 | NFC keychain landing + pricing explainer pages (EN+PT) | 2026-09-06 | 98f4bf4 | [260906-fu3](./quick/260906-fu3-nfc-keychain-landing-pricing-explainer-p/) |
 | 260906-g80 | Xphere lead handoff + visit booking for niche landings | 2026-09-06 | 1b844e1 | [260906-g80](./quick/260906-g80-xphere-lead-handoff-visit-booking-for-ni/) |
+| 260906-gye | Translate lead form question placeholders via t() | 2026-09-06 | 5dc68c4 | [260906-gye](./quick/260906-gye-translate-lead-form-question-placeholder/) |
 
 ### Blockers
 
