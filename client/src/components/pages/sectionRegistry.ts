@@ -12,6 +12,9 @@ import { AreasServedAdapter, areasServedPropsSchema } from "./sections/AreasServ
 import { LeadFormCtaAdapter, leadFormCtaPropsSchema } from "./sections/LeadFormCtaAdapter";
 import { WhatsAppGroupSection, whatsAppGroupPropsSchema } from "./sections/WhatsAppGroupSection";
 import { ProcessStepperSection, processStepperPropsSchema } from "./sections/ProcessStepperSection";
+import { PricingTableSection, pricingTablePropsSchema } from "./sections/PricingTableSection";
+import { FaqAccordionSection, faqAccordionPropsSchema } from "./sections/FaqAccordionSection";
+import { ContentBlocksSection, contentBlocksPropsSchema } from "./sections/ContentBlocksSection";
 
 export interface SectionEntry {
   component: ComponentType<{ props: any }>;
@@ -19,8 +22,11 @@ export interface SectionEntry {
 }
 
 // Map of section `type` → React component + zod props schema.
-// Add new section types here. Server-side validation lives in
-// shared/landingSectionRegistry (built in 43-02) and must stay in sync.
+// Add new section types here. This registry is the ONLY registration point:
+// there is no server-side section registry — `insertPageSchema` accepts
+// `props: z.record(z.unknown())`, so the server stores each section's props
+// bag unvalidated and DynamicLanding validates via `propsSchema.safeParse`
+// at render time (a failed parse renders nothing in production).
 //
 export const sectionRegistry: Record<string, SectionEntry> = {
   hero:          { component: HeroSectionAdapter,    propsSchema: heroPropsSchema },
@@ -35,6 +41,9 @@ export const sectionRegistry: Record<string, SectionEntry> = {
   leadFormCta:   { component: LeadFormCtaAdapter,    propsSchema: leadFormCtaPropsSchema },
   whatsappGroup:  { component: WhatsAppGroupSection,  propsSchema: whatsAppGroupPropsSchema },
   processStepper: { component: ProcessStepperSection, propsSchema: processStepperPropsSchema },
+  pricingTable:   { component: PricingTableSection,   propsSchema: pricingTablePropsSchema },
+  faqAccordion:   { component: FaqAccordionSection,   propsSchema: faqAccordionPropsSchema },
+  contentBlocks:  { component: ContentBlocksSection,  propsSchema: contentBlocksPropsSchema },
 };
 
 export const registeredSectionTypes = Object.keys(sectionRegistry);

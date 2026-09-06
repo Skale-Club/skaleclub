@@ -4,7 +4,13 @@
 // `props: {}`; PT is served via translations.ts when language is 'pt'.
 
 import { z } from "zod";
-import { Search, Palette, Code2, Rocket } from "lucide-react";
+import {
+  Search, Palette, Code2, Rocket,
+  MessageCircle, PenTool, Factory, Truck,
+  Nfc, Smartphone, QrCode, Star,
+  CreditCard, Package, Link2, Check,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 
 const stepSchema = z.object({
@@ -12,11 +18,30 @@ const stepSchema = z.object({
   description: z.string(),
 });
 
+// Optional per-step icon override (quick 260906-fu3). A closed enum allowlist
+// keyed to a lucide component map — NOT free-form strings — so seeded props
+// can never reference an icon that does not exist in the bundle.
+export const processStepperIconNames = [
+  "Search", "Palette", "Code2", "Rocket",
+  "MessageCircle", "PenTool", "Factory", "Truck",
+  "Nfc", "Smartphone", "QrCode", "Star",
+  "CreditCard", "Package", "Link2", "Check",
+] as const;
+export type ProcessStepperIconName = (typeof processStepperIconNames)[number];
+
+const ICON_MAP: Record<ProcessStepperIconName, LucideIcon> = {
+  Search, Palette, Code2, Rocket,
+  MessageCircle, PenTool, Factory, Truck,
+  Nfc, Smartphone, QrCode, Star,
+  CreditCard, Package, Link2, Check,
+};
+
 export const processStepperPropsSchema = z.object({
   eyebrow:     z.string().optional(),
   heading:     z.string().optional(),
   subheading:  z.string().optional(),
   steps:       z.array(stepSchema).length(4).optional(),
+  icons:       z.array(z.enum(processStepperIconNames)).length(4).optional(),
 });
 export type ProcessStepperProps = z.infer<typeof processStepperPropsSchema>;
 
@@ -52,6 +77,7 @@ export function ProcessStepperSection({ props }: { props: ProcessStepperProps })
   const heading    = props.heading    ?? DEFAULTS.heading;
   const subheading = props.subheading ?? DEFAULTS.subheading;
   const steps      = props.steps      ?? DEFAULTS.steps;
+  const icons      = props.icons ? props.icons.map((n) => ICON_MAP[n]) : ICONS;
 
   return (
     <section
@@ -79,7 +105,7 @@ export function ProcessStepperSection({ props }: { props: ProcessStepperProps })
           />
 
           {steps.map((step, idx) => {
-            const Icon = ICONS[idx];
+            const Icon = icons[idx];
             const stepNumber = idx + 1;
             return (
               <li
