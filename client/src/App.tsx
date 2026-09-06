@@ -77,6 +77,8 @@ const EstimateViewer = lazy(() => import("@/pages/EstimateViewer").then(m => ({ 
 const PresentationViewer = lazy(() => import("@/pages/PresentationViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const PrintFolder = lazy(() => import("@/pages/PrintFolder").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const DynamicPage = lazy(() => import("@/pages/DynamicLanding").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+// `/:slug/br` — the PT member of a bilingual pair, resolved to the `<slug>-br` DB row.
+const DynamicPageBr = lazy(() => import("@/pages/DynamicLanding").then(m => ({ default: () => <PageWrapper><m.default brVariant /></PageWrapper> })));
 const OAuthAuthorize = lazy(() => import("@/pages/OAuthAuthorize"));
 
 function AnalyticsProvider({ children }: { children: React.ReactNode }) {
@@ -273,6 +275,9 @@ function Router() {
             {pagePaths.hub !== LEGACY_PATHS.hub && <Route path={`${LEGACY_PATHS.hub}/group`}>{() => <Redirect to="/grupo" />}</Route>}
             <Route path={pagePaths.hub} component={SkaleHub} />
             {pagePaths.hub !== LEGACY_PATHS.hub && <Route path={LEGACY_PATHS.hub} component={SkaleHub} />}
+            {/* Portuguese member of a bilingual landing pair. Resolves the `<slug>-br` row;
+                the legacy one-segment `/<slug>-br` URL below still works and is not redirected. */}
+            <Route path="/:slug/br" component={DynamicPageBr} />
             {/* Catch-all dynamic landing route — MUST be last before the 404 fallback.
                 Wouter matches top-down, so any new known route must be added ABOVE this line. */}
             <Route path="/:slug" component={DynamicPage} />

@@ -16,8 +16,19 @@ interface PageResponse {
   alternateSlug?: string | null;
 }
 
-export default function DynamicPage() {
-  const { slug } = useParams<{ slug: string }>();
+// A managed bilingual pair stores single-segment slugs (`x` and `x-br`), but the PT
+// member's canonical public URL is the two-segment `/x/br` form (quick 260906-qwl).
+// Legacy `/x-br` URLs keep rendering; they simply self-report the `/x/br` canonical.
+function landingPath(slug: string): string {
+  return slug.endsWith("-br") ? `/${slug.slice(0, -3)}/br` : `/${slug}`;
+}
+
+export default function DynamicPage({ brVariant = false }: { brVariant?: boolean }) {
+  const { slug: routeSlug } = useParams<{ slug: string }>();
+  // `/x/br` resolves the `x-br` row. The DB never stores a slash: shared/schema/pages.ts
+  // slugPattern forbids it, so the two-segment form lives only in the route.
+  const slug =
+    brVariant && routeSlug && !routeSlug.endsWith("-br") ? `${routeSlug}-br` : routeSlug;
   const { setLanguage } = useTranslation();
 
   const { data, isLoading, error } = useQuery<PageResponse>({
@@ -45,8 +56,8 @@ export default function DynamicPage() {
   useEffect(() => {
     if (!slugForSeo || !altSlug) return;
     const origin = window.location.origin;
-    const selfHref = `${origin}/${slugForSeo}`;
-    const altHref = `${origin}/${altSlug}`;
+    const selfHref = `${origin}${landingPath(slugForSeo)}`;
+    const altHref = `${origin}${landingPath(altSlug)}`;
     const selfTag = pageLanguage === "en" ? "en" : "pt-BR";
     const altTag = pageLanguage === "en" ? "pt-BR" : "en";
     const xDefaultHref = pageLanguage === "en" ? selfHref : altHref;
