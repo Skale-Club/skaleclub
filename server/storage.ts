@@ -37,6 +37,9 @@ import {
   brandGuidelines,
   estimateGuidelines,
   pages,
+  xphereSettings,
+  type XphereSettings,
+  type InsertXphereSettings,
   type CompanySettings,
   type ChatSettings,
   type ChatIntegrations,
@@ -224,6 +227,10 @@ export interface IStorage {
   saveTelegramSettings(settings: InsertTelegramSettings): Promise<TelegramSettings>;
   getResendSettings(): Promise<ResendSettings | undefined>;
   saveResendSettings(settings: InsertResendSettings): Promise<ResendSettings>;
+
+  // Xphere Integration (quick 260906-g80)
+  getXphereSettings(): Promise<XphereSettings | undefined>;
+  saveXphereSettings(settings: InsertXphereSettings): Promise<XphereSettings>;
 
   listConversations(): Promise<Conversation[]>;
   getConversation(id: string): Promise<Conversation | undefined>;
@@ -615,6 +622,31 @@ export class DatabaseStorage implements IStorage {
     }
 
     const [created] = await db.insert(resendSettings).values(settings).returning();
+    return created;
+  }
+
+  async getXphereSettings(): Promise<XphereSettings | undefined> {
+    const [settings] = await db.select().from(xphereSettings).orderBy(asc(xphereSettings.id)).limit(1);
+    if (settings) return settings;
+
+    // Singleton auto-create — same pattern as getTelegramSettings
+    const [created] = await db.insert(xphereSettings).values({}).returning();
+    return created;
+  }
+
+  async saveXphereSettings(settings: InsertXphereSettings): Promise<XphereSettings> {
+    const existing = await this.getXphereSettings();
+
+    if (existing) {
+      const [updated] = await db
+        .update(xphereSettings)
+        .set({ ...settings, updatedAt: new Date() })
+        .where(eq(xphereSettings.id, existing.id))
+        .returning();
+      return updated;
+    }
+
+    const [created] = await db.insert(xphereSettings).values(settings).returning();
     return created;
   }
 
