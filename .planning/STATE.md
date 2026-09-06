@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0
-milestone_name: Presentations 2.0 (with v1.7 voice form merge)
+milestone: v1.0
+milestone_name: milestone
 status: completed
-last_updated: "2026-05-22"
-last_activity: 2026-05-22
+last_updated: "2026-09-06T16:14:53.497Z"
+last_activity: "2026-09-06 - Completed quick task 260906-g80: Xphere lead handoff + visit booking (outbox, admin card, thank-you CTA)"
 progress:
-  total_phases: 7
-  completed_phases: 2
-  total_plans: 35
-  completed_plans: 12
+  total_phases: 1
+  completed_phases: 0
+  total_plans: 9
+  completed_plans: 0
 ---
 
 # STATE: Skale Club Web Platform
@@ -33,7 +33,7 @@ See: `.planning/PROJECT.md` (updated 2026-05-22)
 Phase: 44 (Landing /websites) / Phase 33 (v1.7 voice form)
 Plan: 44-03 complete; Phases 30-32 (voice) complete
 Status: Both v2.0 and v1.7 voice form in progress
-Last activity: 2026-09-06 - Completed quick task 260906-fu3: NFC keychain landing + pricing explainer pages (EN+PT)
+Last activity: 2026-09-06 - Completed quick task 260906-g80: Xphere lead handoff + visit booking (outbox, admin card, thank-you CTA)
 
 ---
 
@@ -231,6 +231,9 @@ Last activity: 2026-09-06 - Completed quick task 260906-fu3: NFC keychain landin
 - [Phase 43]: Landing Page System — reserved slugs, WhatsAppGroupSection
 - [Phase 44-03]: phoneCountry form question type
 - [Phase 45]: Traffic analytics — marketing attribution ported
+- [Phase quick-260906-g80]: Xphere source.product is a code constant ('skaleclub', closed contract enum); source.tenant_ref is admin-editable in xphere_settings.tenant_ref (default 'skaleclub')
+- [Phase quick-260906-g80]: Unscored forms (maxScore 0 / no option points) ship lead.score and lead.classification as null to Xphere — derived from form config, never from the HOT-stamped lead row
+- [Phase quick-260906-g80]: Thank-you booking CTA only honours ?booking= URLs starting with https://xphere.app/ (open-redirect guard); plaintext key in xphere_settings singleton, no env var
 
 ### Quick Tasks Completed
 
@@ -240,6 +243,7 @@ Last activity: 2026-09-06 - Completed quick task 260906-fu3: NFC keychain landin
 | 260906-e15 | Barbershop landing pages (EN + PT) + barbershop-leads form seed | 2026-09-06 | eac40cc | [260906-e15](./quick/260906-e15-barbershop-landing-pages-en-pt-and-barbe/) |
 | 260906-edl | Barbershop PT copy + Xphere booking integration scope | 2026-09-06 | dceb450 | [260906-edl](./quick/260906-edl-barbershop-pt-copy-xphere-booking-integr/) |
 | 260906-fu3 | NFC keychain landing + pricing explainer pages (EN+PT) | 2026-09-06 | 98f4bf4 | [260906-fu3](./quick/260906-fu3-nfc-keychain-landing-pricing-explainer-p/) |
+| 260906-g80 | Xphere lead handoff + visit booking for niche landings | 2026-09-06 | 1b844e1 | [260906-g80](./quick/260906-g80-xphere-lead-handoff-visit-booking-for-ni/) |
 
 ### Blockers
 
@@ -257,6 +261,7 @@ None.
 | 33 | Branch Builder UX | Next | Multi-branch editor, branch validation, duplicate/unreachable-field protection |
 | 34 | Voice Review + Lead Brief UX | Pending | Accept/retry/switch-to-text, audio metadata, polished project brief |
 | 35 | UAT + Provider Verification | Pending | Real Groq/OpenRouter checks and text-vs-voice public form flow |
+
 ## v1.6 Phase Plan
 
 | Phase | Plans | Status |
@@ -330,5 +335,6 @@ None.
 | 2026-05-22 | v1.7 voice form merged from dev | Phases 30-32 complete; Phase 33 is next |
 
 | 2026-09-06 | Quick task 260906-e15 executed | Barbershop landing seed shipped (commit eac40cc); forms.barbershop-leads id=4 + pages barbershops/barbershops-br seeded in prod |
+| 2026-09-06 | Quick task 260906-g80 executed | Xphere lead handoff + visit booking shipped (3 commits: cb38f9b, 1103e2c, 1b844e1); migration 0054 applied (xphere_settings + integration_deliveries); barbershop seeds re-run; admin must paste an xph_ key to activate |
 
-*Last updated: 2026-09-06 — quick task 260906-e15 (barbershop landing) complete*
+*Last updated: 2026-09-06 — quick task 260906-g80 (Xphere lead handoff + visit booking) complete*
