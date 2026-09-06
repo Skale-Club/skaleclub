@@ -237,6 +237,7 @@ Last activity: 2026-05-22
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260419-rfo | Add EST-11 view tracking and EST-12 password protection requirements | 2026-04-19 | c6fa749 | [260419-rfo](./quick/260419-rfo-add-est-11-view-tracking-and-est-12-pass/) |
+| 260906-e15 | Barbershop landing pages (EN + PT) + barbershop-leads form seed | 2026-09-06 | eac40cc | [260906-e15](./quick/260906-e15-barbershop-landing-pages-en-pt-and-barbe/) |
 
 ### Blockers
 
@@ -326,4 +327,6 @@ None.
 | 2026-05-17 | Plan 44-03 executed | phoneCountry form-question type shipped |
 | 2026-05-22 | v1.7 voice form merged from dev | Phases 30-32 complete; Phase 33 is next |
 
-*Last updated: 2026-05-22 — v1.7 voice form merged; Phases 30-32 complete*
+| 2026-09-06 | Quick task 260906-e15 executed | Barbershop landing seed shipped (commit eac40cc); forms.barbershop-leads id=4 + pages barbershops/barbershops-br seeded in prod |
+
+*Last updated: 2026-09-06 — quick task 260906-e15 (barbershop landing) complete*
