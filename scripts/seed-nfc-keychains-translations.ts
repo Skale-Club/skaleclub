@@ -4,10 +4,15 @@
 //
 // Run: npx tsx --env-file=.env scripts/seed-nfc-keychains-translations.ts
 //
-// Touches ONLY the `translations` table, and only rows matching
-// (source_language = 'en', target_language = 'pt'). The `forms` and `pages`
-// rows seeded by scripts/seed-nfc-keychains-landing.ts are never read or
-// written.
+// TWO passes:
+//   1. en -> pt  hand-written Portuguese for /chaveiros-nfc + /precos-chaveiros
+//   2. pt -> en  IDENTITY rows so the EN pages stop being auto-"translated"
+//                into Portuguese (see the block comment above seedEnIdentityRows)
+//
+// Touches ONLY the `translations` table, and only the two directions listed
+// above: (en -> pt) for the Portuguese copy and (pt -> en) identity rows for the
+// English pages. The `forms` and `pages` rows seeded by
+// scripts/seed-nfc-keychains-landing.ts are never read or written.
 //
 // Why hand-seed instead of letting the AI translator fill the cache:
 //   t() consults the `translations` table BEFORE calling POST /api/translate.
@@ -340,6 +345,120 @@ async function hasUniqueTranslationIndex(): Promise<boolean> {
   return rows[0]?.present === true;
 }
 
+// ── EN-page protection: pt → en identity rows ─────────────────────────────
+//
+// Why this second pass exists (read before removing it):
+//   useTranslation.t() assumes ALL DB-backed content is authored in PORTUGUESE.
+//   When the UI language is 'en' and a string is not a known static key, it calls
+//   scheduleBatchTranslation(text, 'en', 'pt') — i.e. it asks POST /api/translate
+//   to translate the string FROM pt TO en. Our page props are authored in
+//   ENGLISH, so the AI is handed English text labelled as Portuguese and asked
+//   for English. It frequently answers in PORTUGUESE, and that answer is then
+//   cached under (source_language='pt', target_language='en') forever.
+//
+//   Observed in production on 2026-09-06: /nfc-pricing (language='en') rendered
+//   "Preços simples e transparentes" instead of "Simple, upfront pricing".
+//
+//   server/routes/translate.ts checks the DB cache BEFORE calling the AI, keyed
+//   on (source_language, target_language, source_text). So seeding an IDENTITY
+//   row (English in, same English out) in the pt → en direction short-circuits
+//   the lookup and the AI is never consulted for these strings.
+//
+//   Scoped deliberately to the English strings on the NFC pages only. Other
+//   pages (e.g. the Portuguese-authored website-leads form) have LEGITIMATE
+//   pt → en rows that must not be flattened to identity.
+const EN_IDENTITY_SOURCE_LANGUAGE = "pt";
+const EN_IDENTITY_TARGET_LANGUAGE = "en";
+
+// English strings that appear on the EN pages but are deliberately absent from
+// PT_TRANSLATIONS, so the loop above would never cover them. "One-time" is the
+// `one-time` kind badge in PricingTableSection KIND_LABELS: it is excluded from
+// the en -> pt pass because production already caches it as "Única" (shared with
+// other pages), but the EN page still needs its pt -> en identity row or the AI
+// renders it as "Única vez" on /nfc-pricing.
+const EXTRA_EN_IDENTITY_STRINGS = ["One-time"];
+
+async function seedEnIdentityRows() {
+  // Every English display string on the NFC pages == the `source` side of the
+  // PT pairs above, plus the deliberate exclusions listed right above.
+  // De-duplicated because a few strings repeat across sections.
+  const englishStrings = Array.from(
+    new Set([...PT_TRANSLATIONS.map((p) => p.source), ...EXTRA_EN_IDENTITY_STRINGS]),
+  );
+
+  console.log(
+    `Seeding ${englishStrings.length} ${EN_IDENTITY_SOURCE_LANGUAGE} → ${EN_IDENTITY_TARGET_LANGUAGE} identity rows (EN-page protection)...`,
+  );
+
+  const existingRows = await db
+    .select({ sourceText: translations.sourceText })
+    .from(translations)
+    .where(
+      and(
+        eq(translations.sourceLanguage, EN_IDENTITY_SOURCE_LANGUAGE),
+        eq(translations.targetLanguage, EN_IDENTITY_TARGET_LANGUAGE),
+      ),
+    );
+  const existing = new Set(existingRows.map((row) => row.sourceText));
+
+  const canUpsert = await hasUniqueTranslationIndex();
+
+  let inserted = 0;
+  let repaired = 0;
+
+  for (const text of englishStrings) {
+    const isNew = !existing.has(text);
+
+    if (canUpsert) {
+      await db
+        .insert(translations)
+        .values({
+          sourceText: text,
+          sourceLanguage: EN_IDENTITY_SOURCE_LANGUAGE,
+          targetLanguage: EN_IDENTITY_TARGET_LANGUAGE,
+          translatedText: text, // identity — English stays English
+        })
+        .onConflictDoUpdate({
+          target: [
+            translations.sourceText,
+            translations.sourceLanguage,
+            translations.targetLanguage,
+          ],
+          set: { translatedText: text, updatedAt: new Date() },
+        });
+    } else if (isNew) {
+      await db.insert(translations).values({
+        sourceText: text,
+        sourceLanguage: EN_IDENTITY_SOURCE_LANGUAGE,
+        targetLanguage: EN_IDENTITY_TARGET_LANGUAGE,
+        translatedText: text,
+      });
+    } else {
+      // Overwrites any AI-generated Portuguese already poisoning this key.
+      await db
+        .update(translations)
+        .set({ translatedText: text, updatedAt: new Date() })
+        .where(
+          and(
+            eq(translations.sourceText, text),
+            eq(translations.sourceLanguage, EN_IDENTITY_SOURCE_LANGUAGE),
+            eq(translations.targetLanguage, EN_IDENTITY_TARGET_LANGUAGE),
+          ),
+        );
+    }
+
+    if (isNew) {
+      inserted++;
+    } else {
+      repaired++;
+    }
+  }
+
+  console.log(
+    `  Done. ${englishStrings.length} identity rows - ${inserted} inserted, ${repaired} repaired.`,
+  );
+}
+
 async function main() {
   console.log(
     `Seeding ${PT_TRANSLATIONS.length} ${SOURCE_LANGUAGE} → ${TARGET_LANGUAGE} translations...`,
@@ -423,6 +542,9 @@ async function main() {
   console.log(
     `Done. ${PT_TRANSLATIONS.length} rows processed - ${inserted} inserted, ${updated} updated.`,
   );
+
+  await seedEnIdentityRows();
+
   await pool.end();
 }
 
