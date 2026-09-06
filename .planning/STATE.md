@@ -33,7 +33,7 @@ See: `.planning/PROJECT.md` (updated 2026-05-22)
 Phase: 44 (Landing /websites) / Phase 33 (v1.7 voice form)
 Plan: 44-03 complete; Phases 30-32 (voice) complete
 Status: Both v2.0 and v1.7 voice form in progress
-Last activity: 2026-05-22
+Last activity: 2026-09-06 - Completed quick task 260906-gye: Translate lead form question placeholders via t()
 
 ---
 
@@ -237,6 +237,7 @@ Last activity: 2026-05-22
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260419-rfo | Add EST-11 view tracking and EST-12 password protection requirements | 2026-04-19 | c6fa749 | [260419-rfo](./quick/260419-rfo-add-est-11-view-tracking-and-est-12-pass/) |
+| 260906-gye | Translate lead form question placeholders via t() | 2026-09-06 | 5dc68c4 | [260906-gye](./quick/260906-gye-translate-lead-form-question-placeholder/) |
 
 ### Blockers
 

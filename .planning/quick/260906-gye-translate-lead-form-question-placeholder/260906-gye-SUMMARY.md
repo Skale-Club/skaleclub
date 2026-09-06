@@ -108,3 +108,50 @@ None. No hardcoded empty values, placeholder text, or unwired data sources were 
 - `client/src/components/LeadFormModal.tsx` — FOUND (modified, contains `t(currentQuestion.placeholder` as required by the plan's `artifacts.contains` assertion)
 - Commit `5dc68c4` — FOUND in `git log`
 - Key link verified: `LeadFormModal.tsx` -> `client/src/hooks/useTranslation.ts` via existing in-scope `const { t } = useTranslation()`; pattern `t\((currentQuestion|field)\.placeholder` matches 4 sites
+
+---
+
+## Task 2 — Browser verification (orchestrator, 2026-09-06)
+
+Dev server `skaleclub-dev`; port 5000 was busy so autoPort assigned **59656**.
+`.env` was absent in this worktree and had to be copied from the main checkout before the server would boot.
+
+### Live-data reality check (queried the running API)
+
+| Form | textarea questions | conditional fields |
+|------|--------------------|--------------------|
+| `nfc-keychain-leads` | 0 | 0 |
+| `barbershop-leads`   | 0 | 0 |
+| `website-leads`      | 0 | 0 |
+
+So of the four edited sites, **only L1096 (text/email input) is reachable by current live data**. L1110 (textarea) and L481/L495 (ConditionalFieldInput) are the identical defect in code paths no configured form exercises today — correct to fix, zero live blast radius.
+
+`GET /api/translations/preload?lang=pt` returns 514 cached rows and already contains every relevant pair:
+`Your full name → Seu nome completo`, `Optional → Opcional`, `you@yourbusiness.com → voce@suaempresa.com`, `you@yourshop.com → voce@suabarbearia.com`, `Your business name → O nome da sua empresa`, `Your shop name → O nome da sua barbearia`. PT resolves synchronously from the preload cache — no `POST /api/translate` round trip on the render path.
+
+### Results
+
+| Page | `pages.language` | Question title | Placeholder | Verdict |
+|------|------------------|----------------|-------------|---------|
+| `/chaveiros-nfc` Q1 | pt | `Qual é o seu nome?` | **`Seu nome completo`** | FIXED |
+| `/chaveiros-nfc` Q3 | pt | `Qual é o seu e-mail?` | **`voce@suaempresa.com`** | FIXED |
+| `/chaveiros-nfc` Q2 | pt | `Qual é o seu WhatsApp?` | `(000) 000-0000` | non-goal intact (mask untranslated) |
+| `/barbershops-br` Q1 | pt | `Qual é o seu nome?` | **`Seu nome completo`** | FIXED |
+| `/nfc-keychains` Q1 | en | `What's your name?` | `Your full name` | unchanged |
+| `/barbershops` Q1 | en | `What's your name?` | `Your full name` | unchanged |
+
+EN no-op gate passed the required second pass: `/nfc-keychains` was re-checked after the background batch settled (+5s) and again after a hard reload with `localStorage` cleared. The placeholder stayed `Your full name` every time — no bad `source_language='pt', target_language='en'` row was written. No console errors; `POST /api/translate` fires and is harmless.
+
+### Pre-existing bug found in passing (NOT caused by this change, NOT fixed here)
+
+On EN pages the **section copy** renders in Portuguese. `/nfc-keychains` stores `"One tap. Your customers land exactly where you want them."` in the DB (verified via `GET /api/pages/slug/nfc-keychains`) but the `<h1>` renders `"Um toque. Seus clientes chegam exatamente onde você quer."`. The `POST /api/translate` response on that page returns Portuguese values keyed by the English source strings.
+
+Mechanism: `useTranslation.ts:139` calls `scheduleBatchTranslation(text, 'en', 'pt')` for EN pages, and the server answers with PT despite `targetLanguage: 'en'`. Strings present in `staticTranslations.pt` short-circuit at line 133 and stay English — which is exactly why the lead-form copy (titles *and*, now, placeholders) is unaffected while free-form section copy is not.
+
+This is untouched by this task's diff (4 lines, all `placeholder=` attributes in `LeadFormModal.tsx`; the `<h1>` render path was never modified). It also **contradicts the task brief's premise** that `POST /api/translate` "returns nothing usable" — an AI client *is* configured and the endpoint returns real translations. Worth its own task.
+
+### Correction to the brief
+
+`scripts/seed-barbershop-translations.ts` and `scripts/seed-nfc-keychains-translations.ts` **do not exist on this branch** (`ls scripts/` shows no translation seed scripts). The PT placeholder rows are nonetheless present in the `translations` table, so the fix resolves them regardless of what seeded them.
+
+**Status: verified.**
