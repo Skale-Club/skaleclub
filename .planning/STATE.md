@@ -33,7 +33,7 @@ See: `.planning/PROJECT.md` (updated 2026-05-22)
 Phase: 44 (Landing /websites) / Phase 33 (v1.7 voice form)
 Plan: 44-03 complete; Phases 30-32 (voice) complete
 Status: Both v2.0 and v1.7 voice form in progress
-Last activity: 2026-09-06 - Completed quick task 260906-gye: Translate lead form question placeholders via t()
+Last activity: 2026-09-07 - Completed quick task 260906-qwl: /br routes for PT landings + dark NFC pages
 
 ---
 
@@ -245,6 +245,7 @@ Last activity: 2026-09-06 - Completed quick task 260906-gye: Translate lead form
 | 260906-fu3 | NFC keychain landing + pricing explainer pages (EN+PT) | 2026-09-06 | 98f4bf4 | [260906-fu3](./quick/260906-fu3-nfc-keychain-landing-pricing-explainer-p/) |
 | 260906-g80 | Xphere lead handoff + visit booking for niche landings | 2026-09-06 | 1b844e1 | [260906-g80](./quick/260906-g80-xphere-lead-handoff-visit-booking-for-ni/) |
 | 260906-gye | Translate lead form question placeholders via t() | 2026-09-06 | 5dc68c4 | [260906-gye](./quick/260906-gye-translate-lead-form-question-placeholder/) |
+| 260906-qwl | /br path-segment routes for PT landings + dark NFC pages | 2026-09-07 | 9293ec7 | [260906-qwl](./quick/260906-qwl-nfc-barbershop-br-routes-and-dark-nfc-pa/) |
 
 ### Blockers
 
