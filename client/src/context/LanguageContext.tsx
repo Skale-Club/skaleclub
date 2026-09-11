@@ -1,5 +1,5 @@
-import { createContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
-import { translationCache } from '@/hooks/useTranslation';
+import { createContext, useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react';
+import { translationCache, markLanguageSwitch } from '@/hooks/useTranslation';
 
 export type Language = 'en' | 'pt';
 
@@ -24,7 +24,12 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     return 'pt';
   });
 
+  const languageRef = useRef(language);
+
   const setLanguage = useCallback((lang: Language) => {
+    // Only a real switch may show the translation overlay (capped in useTranslation)
+    if (languageRef.current !== lang) markLanguageSwitch();
+    languageRef.current = lang;
     setLanguageState(lang);
     localStorage.setItem('language', lang);
     // Clear cache so stale translations from the previous language aren't served

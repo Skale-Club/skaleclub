@@ -17,6 +17,7 @@ import { rateLimitMiddleware } from "../lib/rateLimit.js";
 // endpoint. Cache hits still short-circuit before any AI call is made.
 const MAX_TEXTS_PER_REQUEST = 100;
 const MAX_TOTAL_TEXT_LENGTH = 50_000;
+const AI_TRANSLATE_TIMEOUT_MS = 20_000;
 
 export function registerTranslateRoutes(app: Express) {
   app.get("/api/translations/preload", async (req, res) => {
@@ -102,18 +103,26 @@ export function registerTranslateRoutes(app: Express) {
 
         const sourceLangLabel = sourceLanguage === "pt" ? "Brazilian Portuguese (pt-BR)" : "English";
         const targetLangLabel = targetLanguage === "pt" ? "Brazilian Portuguese (pt-BR)" : targetLanguage === "en" ? "English" : targetLanguage;
-        const prompt = `Translate the following ${sourceLangLabel} texts to ${targetLangLabel}.
+        // The source label is a hint, not a guarantee: English page copy has been sent
+        // labelled as Portuguese, and the AI "translated" it into Portuguese.
+        const prompt = `Translate the following texts from ${sourceLangLabel} to ${targetLangLabel}.
+Some texts may already be written in ${targetLangLabel}; return those exactly unchanged. Never answer in any language other than ${targetLangLabel}.
 Return ONLY a JSON object where keys are the original texts and values are the translations.
 Do not add any explanations or markdown formatting. Just pure JSON.
 
 Texts to translate:
 ${untranslated.map((t, i) => `${i + 1}. ${t}`).join("\n")}`;
 
-        const completion = await aiClient.client.chat.completions.create({
-          model: aiClient.model,
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.3,
-        });
+        // Fail fast instead of the SDK default (10-minute timeout, 2 retries). The client
+        // gives up sooner; finishing here still caches the result for the next visit.
+        const completion = await aiClient.client.chat.completions.create(
+          {
+            model: aiClient.model,
+            messages: [{ role: "user", content: prompt }],
+            temperature: 0.3,
+          },
+          { timeout: AI_TRANSLATE_TIMEOUT_MS, maxRetries: 0 },
+        );
 
         const responseText = completion.choices[0]?.message?.content?.trim() || "{}";
         let translationsFromAI: Record<string, string> = {};
