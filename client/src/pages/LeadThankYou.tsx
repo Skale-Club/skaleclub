@@ -8,13 +8,15 @@ import successAnimation from "../assets/success-animation.json";
 import { useTranslation } from "@/hooks/useTranslation";
 
 export default function LeadThankYou() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { data: companySettings } = useQuery<CompanySettings>({
     queryKey: ["/api/company-settings"],
   });
 
   const companyName = companySettings?.companyName || "Company Name";
   const headline = t(`Thank you for trusting ${companyName}.`);
+  const formSlug = useMemo(() => new URLSearchParams(window.location.search).get("form"), []);
+  const isNfcLead = formSlug === "nfc-keychain-leads";
 
   // Xphere visit booking CTA (quick 260906-g80). Open-redirect guard: only
   // accept URLs on Xphere's public booking host.
@@ -63,7 +65,9 @@ export default function LeadThankYou() {
             </div>
             <h1 className="text-3xl md:text-4xl font-bold leading-tight text-white">{headline}</h1>
             <p className="mt-4 text-slate-200 text-lg leading-relaxed">
-              {t('Your form was submitted successfully. A specialist from our team will review the information and contact you shortly for the next step.')}
+              {t(isNfcLead
+                ? 'Your NFC keychain request was submitted successfully. We will review the quantity, artwork, and preferred contact method, then contact you on WhatsApp.'
+                : 'Your form was submitted successfully. A specialist from our team will review the information and contact you shortly for the next step.')}
             </p>
             {bookingUrl && (
               <div className="mt-6">
@@ -93,9 +97,19 @@ export default function LeadThankYou() {
                   {t('Back to website')}
                 </button>
               </Link>
+              {isNfcLead && (
+                <Link href={language === "pt" ? "/nfc-pricing/br" : "/nfc-pricing"}>
+                  <button className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 text-white font-semibold py-3 transition-all">
+                    <Sparkles className="w-4 h-4" />
+                    {t('Review pricing and details')}
+                  </button>
+                </Link>
+              )}
             </div>
             <p className="mt-3 text-sm text-slate-300">
-              {t('If you prefer, you can also reply to this email with your preferred times and contact channel.')}
+              {t(isNfcLead
+                ? 'Keep your WhatsApp available. We will use the number you provided in the form.'
+                : 'Keep your preferred contact channel available so our team can reach you.')}
             </p>
           </div>
 
@@ -107,15 +121,15 @@ export default function LeadThankYou() {
                 <div className="space-y-3 text-sm text-white/90">
                   <div className="p-3 rounded-xl bg-white/10 border border-white/10 flex items-center gap-3">
                     <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#5173D6]/20 border border-[#5173D6]/30 flex items-center justify-center text-blue-300 font-bold text-sm">1</span>
-                    <span>{t('Our team reviews your answers and identifies the best plan.')}</span>
+                    <span>{t(isNfcLead ? 'We review your quantity, logo, and the link you want the NFC tap to open.' : 'Our team reviews your answers and identifies the best plan.')}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-white/10 border border-white/10 flex items-center gap-3">
                     <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#5173D6]/20 border border-[#5173D6]/30 flex items-center justify-center text-blue-300 font-bold text-sm">2</span>
-                    <span>{t('We will contact you to align objectives and next steps.')}</span>
+                    <span>{t(isNfcLead ? 'We contact you on WhatsApp to confirm the artwork, total, and production window.' : 'We will contact you to align objectives and next steps.')}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-white/10 border border-white/10 flex items-center gap-3">
                     <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#5173D6]/20 border border-[#5173D6]/30 flex items-center justify-center text-blue-300 font-bold text-sm">3</span>
-                    <span>{t('You receive a summary of the initial plan and practical instructions.')}</span>
+                    <span>{t(isNfcLead ? 'Production starts after payment and your artwork approval.' : 'You receive a summary of the initial plan and practical instructions.')}</span>
                   </div>
                 </div>
               </div>

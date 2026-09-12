@@ -11,14 +11,20 @@ import { useTranslation } from "@/hooks/useTranslation";
 // validation and breaks the page render.
 const optionalUrl = z.preprocess(
   (v) => (v === null || v === "" ? undefined : v),
-  z.string().url().optional(),
+  z.string().refine(
+    (value) => value.startsWith("/") || z.string().url().safeParse(value).success,
+    "Expected an absolute URL or a root-relative asset path",
+  ).optional(),
 );
 
 export const heroWebsitesPropsSchema = z.object({
   headline: z.string().optional(),
   subheadline: z.string().optional(),
   ctaLabel: z.string().optional(),
+  secondaryCtaLabel: z.string().optional(),
+  secondaryCtaHref: z.string().regex(/^\/[a-z0-9/-]*$/).optional(),
   backgroundImageUrl: optionalUrl,
+  backgroundImageAlt: z.string().optional(),
   bgVideoUrl: optionalUrl,
 });
 export type HeroWebsitesProps = z.infer<typeof heroWebsitesPropsSchema>;
@@ -32,11 +38,12 @@ const DEFAULTS = {
 } as const;
 
 export function HeroWebsitesSection({ props }: { props: HeroWebsitesProps }) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const headline = props.headline ?? DEFAULTS.headline;
   const subheadline = props.subheadline ?? DEFAULTS.subheadline;
   const ctaLabel = props.ctaLabel ?? DEFAULTS.ctaLabel;
   const bgUrl = props.backgroundImageUrl ?? DEFAULTS.backgroundImageUrl;
+  const bgAlt = props.backgroundImageAlt ?? "";
   const bgVideoUrl = props.bgVideoUrl;
 
   const handleCtaClick = () => {
@@ -74,13 +81,21 @@ export function HeroWebsitesSection({ props }: { props: HeroWebsitesProps }) {
               >
                 {t(ctaLabel)}
               </button>
+              {props.secondaryCtaLabel && props.secondaryCtaHref ? (
+                <a
+                  href={`${props.secondaryCtaHref}${language === "pt" ? "/br" : ""}`}
+                  className="w-full sm:w-auto shrink-0 px-6 sm:px-8 py-3 sm:py-4 border border-white/30 hover:bg-white/10 text-white font-bold rounded-full transition-all flex items-center justify-center text-base sm:text-lg whitespace-nowrap"
+                >
+                  {t(props.secondaryCtaLabel)}
+                </a>
+              ) : null}
             </div>
           </div>
           <div className="order-2 lg:order-1 relative flex h-full items-end justify-center lg:justify-end self-end w-full lg:min-h-[400px] z-10 lg:ml-[-3%]">
             {bgUrl ? (
               <img
                 src={bgUrl}
-                alt=""
+                alt={t(bgAlt)}
                 className="w-[70vw] sm:w-[75%] lg:w-full max-w-[260px] sm:max-w-[260px] md:max-w-[300px] lg:max-w-[340px] xl:max-w-[380px] object-contain drop-shadow-2xl origin-bottom"
               />
             ) : null}

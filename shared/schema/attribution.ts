@@ -66,6 +66,7 @@ export const attributionConversions = pgTable("attribution_conversions", {
 }, (table) => ({
   visitorIdIdx: index("attribution_conversions_visitor_id_idx").on(table.visitorId),
   leadIdIdx: index("attribution_conversions_lead_id_idx").on(table.leadId),
+  leadTypeUniqueIdx: uniqueIndex("attribution_conversions_lead_type_unique").on(table.leadId, table.conversionType),
   conversionTypeIdx: index("attribution_conversions_conversion_type_idx").on(table.conversionType),
   convertedAtIdx: index("attribution_conversions_converted_at_idx").on(table.convertedAt),
 }));

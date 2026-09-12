@@ -16,6 +16,25 @@ interface PageResponse {
   alternateSlug?: string | null;
 }
 
+const PAGE_SEO: Record<string, { title: string; description: string }> = {
+  "nfc-keychains": {
+    title: "Custom NFC Keychains for Businesses | Skale Club",
+    description: "Custom 3D-printed NFC keychains that open your reviews, Instagram, menu, digital card, or website with one tap.",
+  },
+  "nfc-keychains-br": {
+    title: "Chaveiros NFC Personalizados para Empresas | Skale Club",
+    description: "Chaveiros NFC personalizados e impressos em 3D para abrir avaliações, Instagram, cardápio, cartão digital ou site com um toque.",
+  },
+  "nfc-pricing": {
+    title: "NFC Keychain Pricing and Instructions | Skale Club",
+    description: "See NFC keychain pricing, minimum order, setup process, compatible phones, and answers to common questions.",
+  },
+  "nfc-pricing-br": {
+    title: "Preços e Instruções dos Chaveiros NFC | Skale Club",
+    description: "Veja preços, pedido mínimo, processo de produção, celulares compatíveis e respostas sobre os chaveiros NFC.",
+  },
+};
+
 // A managed bilingual pair stores single-segment slugs (`x` and `x-br`), but the PT
 // member's canonical public URL is the two-segment `/x/br` form (quick 260906-qwl).
 // Legacy `/x-br` URLs keep rendering; they simply self-report the `/x/br` canonical.
@@ -78,6 +97,42 @@ export default function DynamicPage({ brVariant = false }: { brVariant?: boolean
 
     return () => created.forEach((l) => l.remove());
   }, [slugForSeo, altSlug, pageLanguage]);
+
+  // Managed landing pages need their own search/social metadata; the global
+  // site metadata points at the homepage and would otherwise create duplicate
+  // canonicals for every campaign page.
+  useEffect(() => {
+    if (!slugForSeo) return;
+    const seo = PAGE_SEO[slugForSeo];
+    if (!seo) return;
+    const canonical = `${window.location.origin}${landingPath(slugForSeo)}`;
+    document.title = seo.title;
+    document.documentElement.lang = pageLanguage === "pt" ? "pt-BR" : "en";
+
+    const setMeta = (selector: string, attribute: "name" | "property", key: string, value: string) => {
+      let node = document.querySelector<HTMLMetaElement>(selector);
+      if (!node) {
+        node = document.createElement("meta");
+        node.setAttribute(attribute, key);
+        document.head.appendChild(node);
+      }
+      node.content = value;
+    };
+    setMeta('meta[name="description"]', "name", "description", seo.description);
+    setMeta('meta[property="og:title"]', "property", "og:title", seo.title);
+    setMeta('meta[property="og:description"]', "property", "og:description", seo.description);
+    setMeta('meta[property="og:url"]', "property", "og:url", canonical);
+    setMeta('meta[name="twitter:title"]', "name", "twitter:title", seo.title);
+    setMeta('meta[name="twitter:description"]', "name", "twitter:description", seo.description);
+
+    let canonicalTag = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (!canonicalTag) {
+      canonicalTag = document.createElement("link");
+      canonicalTag.rel = "canonical";
+      document.head.appendChild(canonicalTag);
+    }
+    canonicalTag.href = canonical;
+  }, [pageLanguage, slugForSeo]);
 
   if (isLoading) return <AppLoader />;
 

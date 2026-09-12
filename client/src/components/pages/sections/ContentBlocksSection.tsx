@@ -20,6 +20,7 @@ export const contentBlocksPropsSchema = z.object({
   eyebrow:    z.string().optional(),
   heading:    z.string().optional(),
   subheading: z.string().optional(),
+  headingLevel: z.enum(["h1", "h2"]).optional(),
   blocks:     z.array(contentBlockSchema).min(1).optional(),
   theme:      sectionThemeSchema,
 });
@@ -85,6 +86,7 @@ export function ContentBlocksSection({ props }: { props: ContentBlocksProps }) {
   const subheading = props.subheading ?? DEFAULTS.subheading;
   const blocks     = props.blocks     ?? DEFAULTS.blocks;
   const c          = props.theme === "dark" ? DARK : LIGHT;
+  const HeadingTag = props.headingLevel === "h1" ? "h1" : "h2";
 
   return (
     <section
@@ -96,9 +98,9 @@ export function ContentBlocksSection({ props }: { props: ContentBlocksProps }) {
           <p className={`text-sm font-semibold uppercase tracking-widest ${c.eyebrow} mb-3`}>
             {t(eyebrow)}
           </p>
-          <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-bold font-display ${c.heading} leading-tight mb-4`}>
+          <HeadingTag className={`text-3xl sm:text-4xl lg:text-5xl font-bold font-display ${c.heading} leading-tight mb-4`}>
             {t(heading)}
-          </h2>
+          </HeadingTag>
           <p className={`text-base sm:text-lg ${c.subheading} leading-relaxed`}>
             {t(subheading)}
           </p>

@@ -36,6 +36,7 @@ type FormView = "form" | "loading";
 type Answers = Record<string, string>;
 
 type StoredFormState = {
+  formSlug: string;
   sessionId: string;
   answers: Answers;
   currentStep: number;
@@ -72,7 +73,7 @@ const COUNTRIES: CountryConfig[] = [
 
 const DEFAULT_COUNTRY = "US";
 
-const STORAGE_KEY = "skale-form-state";
+const STORAGE_KEY_PREFIX = "skale-form-state";
 const EXPIRATION_HOURS = 24;
 const NAME_REGEX = /^[A-Za-z\u00C0-\u024F\s]{3,100}$/;
 
@@ -140,13 +141,18 @@ function isExpired(timestamp: string) {
   return diffHours > EXPIRATION_HOURS;
 }
 
-function loadStoredState(): StoredFormState | null {
+function storageKey(formSlug: string) {
+  return `${STORAGE_KEY_PREFIX}:${encodeURIComponent(formSlug)}`;
+}
+
+function loadStoredState(formSlug: string): StoredFormState | null {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const key = storageKey(formSlug);
+    const raw = window.localStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as StoredFormState;
-    if (!parsed.sessionId || !parsed.startedAt || isExpired(parsed.lastUpdatedAt)) {
-      window.localStorage.removeItem(STORAGE_KEY);
+    if (parsed.formSlug !== formSlug || !parsed.sessionId || !parsed.startedAt || isExpired(parsed.lastUpdatedAt)) {
+      window.localStorage.removeItem(key);
       return null;
     }
     return parsed;
@@ -157,15 +163,15 @@ function loadStoredState(): StoredFormState | null {
 
 function saveStoredState(state: StoredFormState) {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    window.localStorage.setItem(storageKey(state.formSlug), JSON.stringify(state));
   } catch {
     // ignore persistence failures
   }
 }
 
-function clearStoredState() {
+function clearStoredState(formSlug: string) {
   try {
-    window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(storageKey(formSlug));
   } catch {
     // ignore
   }
@@ -550,6 +556,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
   const countryButtonRef = useRef<HTMLButtonElement | null>(null);
   const primaryInputRef = useRef<HTMLInputElement | null>(null);
   const lastFocusedInputRef = useRef<HTMLInputElement | null>(null);
+  const loadedStorageSlugRef = useRef<string | null>(null);
 
   const selectedCountry = useMemo(() =>
     COUNTRIES.find(c => c.code === selectedCountryCode) || COUNTRIES[0],
@@ -618,7 +625,9 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
   }, []);
 
   useEffect(() => {
-    const stored = loadStoredState();
+    if (!formConfig || loadedStorageSlugRef.current === formSlug) return;
+    loadedStorageSlugRef.current = formSlug;
+    const stored = loadStoredState(formSlug);
     if (stored) {
       setSessionId(stored.sessionId);
       setAnswers(stored.answers);
@@ -629,8 +638,17 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
       if (stored.selectedCountry) {
         setSelectedCountryCode(stored.selectedCountry);
       }
+    } else {
+      const initial = buildInitialAnswers(formConfig);
+      setSessionId(null);
+      setAnswers(initial);
+      answersRef.current = initial;
+      setCurrentStep(1);
+      setLastAnsweredStep(0);
+      setStartedAt(null);
+      setPendingSync(false);
     }
-  }, []);
+  }, [formConfig, formSlug, totalQuestions]);
 
   // Close country dropdown when clicking outside
   useEffect(() => {
@@ -661,6 +679,14 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
     lastFocusedInputRef.current = null;
   }, [currentQuestionId]);
 
+  const handleClose = useCallback(() => {
+    if (view === "form") {
+      trackEvent("form_closed_draft", { step: currentStep });
+    }
+    // The draft is intentionally preserved for this specific form.
+    onClose();
+  }, [currentStep, onClose, view]);
+
   // Auto-focus input when changing steps
   useEffect(() => {
     if (!open || view !== "form") return;
@@ -686,17 +712,19 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
       if (open && e.key === "Escape") {
         e.preventDefault();
         e.stopPropagation();
+        handleClose();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [open]);
+  }, [handleClose, open]);
 
   const updateStoredState = useCallback(
     (stepToResume: number, answeredStep: number, pending = pendingSync) => {
       const session = ensureSession();
       if (!storageAvailable || !session) return;
       const payload: StoredFormState = {
+        formSlug,
         sessionId: session,
         answers,
         currentStep: stepToResume,
@@ -708,7 +736,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
       };
       saveStoredState(payload);
     },
-    [answers, ensureSession, pendingSync, selectedCountryCode, startedAt, storageAvailable],
+    [answers, ensureSession, formSlug, pendingSync, selectedCountryCode, startedAt, storageAvailable],
   );
 
   useEffect(() => {
@@ -952,7 +980,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
 
       setLastAnsweredStep(totalQuestions);
       if (lead) {
-        clearStoredState();
+        clearStoredState(formSlug);
         const leadClassification = lead.classificacao || classification;
         const leadScore = lead.scoreTotal ?? score.total;
         // Xphere visit booking (quick 260906-g80): the progress route appends
@@ -967,8 +995,8 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
         });
         onClose();
         window.location.href = bookingUrl
-          ? `${pagePaths.thankYou}?booking=${encodeURIComponent(bookingUrl)}`
-          : pagePaths.thankYou;
+          ? `${pagePaths.thankYou}?form=${encodeURIComponent(formSlug)}&booking=${encodeURIComponent(bookingUrl)}`
+          : `${pagePaths.thankYou}?form=${encodeURIComponent(formSlug)}`;
         return;
       }
 
@@ -990,14 +1018,6 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
     } else {
       await handleNext();
     }
-  };
-
-  const handleClose = () => {
-    if (view === "form") {
-      trackEvent("form_closed_draft", { step: currentStep });
-    }
-    // Draft preservation: we no longer clear state on close
-    onClose();
   };
 
   if (!open) return null;
@@ -1037,6 +1057,9 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
     <AnimatePresence>
       <motion.div
         className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 py-6 sm:py-10"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="lead-form-question"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -1048,7 +1071,8 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
           <div className="relative bg-white text-slate-900 h-full sm:h-auto rounded-none sm:rounded-3xl shadow-2xl overflow-hidden" ref={containerRef}>
             <button
               className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
-              aria-label="Close form"
+              aria-label={t("Close form")}
+              type="button"
               onClick={handleClose}
             >
               <X className="h-5 w-5" />
@@ -1078,7 +1102,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                     <div className="flex items-start justify-between">
                       <div>
                         <p className="text-sm font-semibold text-[#5173D6] uppercase tracking-wide">{t("Let's begin!")}</p>
-                        <h2 className="text-2xl sm:text-3xl font-bold leading-tight mt-1">{t(currentQuestion.title)}</h2>
+                        <h2 id="lead-form-question" className="text-2xl sm:text-3xl font-bold leading-tight mt-1">{t(currentQuestion.title)}</h2>
                       </div>
                     </div>
 
@@ -1106,7 +1130,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                               errorMessage ? "border-red-400" : "border-slate-200",
                               "focus:border-[#5173D6] focus:ring-2 focus:ring-[#5173D6]/30"
                             )}
-                            aria-label={currentQuestion.title}
+                            aria-label={t(currentQuestion.title)}
                           />
                         )}
 
@@ -1120,7 +1144,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                               errorMessage ? "border-red-400" : "border-slate-200",
                               "focus:border-[#5173D6] focus:ring-2 focus:ring-[#5173D6]/30"
                             )}
-                            aria-label={currentQuestion.title}
+                            aria-label={t(currentQuestion.title)}
                           />
                         )}
 
@@ -1252,7 +1276,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                                 errorMessage ? "border-red-400" : "border-slate-200",
                                 "focus:border-[#5173D6] focus:ring-2 focus:ring-[#5173D6]/30"
                               )}
-                              aria-label={currentQuestion.title}
+                              aria-label={t(currentQuestion.title)}
                               maxLength={selectedCountry.format.length}
                             />
                           </div>
@@ -1276,7 +1300,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                                   [currentQuestion.id]: formatPhoneForPhoneCountry(prev[currentQuestion.id] || "", c),
                                 }));
                               }}
-                              ariaLabel="Phone country"
+                              ariaLabel={t("Phone country")}
                               buttonClassName="rounded-none border-0 bg-transparent h-[52px] text-base text-slate-700 hover:bg-slate-50"
                             />
                             <input
@@ -1293,7 +1317,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                               onFocus={handleFieldFocus}
                               placeholder={phoneCountrySelected.format.replace(/#/g, "0")}
                               className="flex-1 min-w-0 border-0 px-4 py-3 text-base sm:text-lg bg-transparent text-slate-900 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-0"
-                              aria-label={currentQuestion.title}
+                              aria-label={t(currentQuestion.title)}
                               data-testid={`input-form-${currentQuestion.id}`}
                             />
                           </div>
@@ -1367,7 +1391,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                         onClick={handleBack}
                         disabled={currentStep === 1}
                         className="inline-flex items-center justify-center rounded-xl border p-3 text-muted-foreground hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        aria-label="Go back"
+                        aria-label={t("Go back")}
                       >
                         <ArrowLeft className="h-5 w-5" />
                       </button>

@@ -131,7 +131,7 @@ export function PricingTableSection({ props }: { props: PricingTableProps }) {
                   )}
                 </div>
                 <span className={`shrink-0 text-2xl font-bold ${c.price}`}>
-                  {line.price}
+                  {t(line.price)}
                 </span>
               </div>
             ))}

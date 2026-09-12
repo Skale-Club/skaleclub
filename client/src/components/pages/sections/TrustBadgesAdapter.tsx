@@ -4,7 +4,16 @@ import type { CompanySettings } from "@shared/schema";
 import { TrustBadges } from "@/components/home/TrustBadges";
 import { sectionThemeSchema } from "./sectionTheme";
 
-export const trustBadgesPropsSchema = z.object({ theme: sectionThemeSchema }).passthrough();
+const badgeSchema = z.object({
+  title: z.string(),
+  description: z.string(),
+  icon: z.string().optional(),
+});
+
+export const trustBadgesPropsSchema = z.object({
+  theme: sectionThemeSchema,
+  badges: z.array(badgeSchema).max(6).optional(),
+}).passthrough();
 
 // Quick 260906-qwl — the underlying TrustBadges card is already dark
 // (`bg-[#111111]`, shared with the homepage and NOT modified here). The dark
@@ -18,7 +27,7 @@ export function TrustBadgesAdapter({ props }: { props: z.infer<typeof trustBadge
     queryKey: ["/api/company-settings"],
   });
 
-  const badges = settings?.homepageContent?.trustBadges ?? [];
+  const badges = props.badges ?? settings?.homepageContent?.trustBadges ?? [];
   if (badges.length === 0) return null;
 
   const c = props.theme === "dark" ? DARK : LIGHT;

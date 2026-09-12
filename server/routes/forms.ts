@@ -364,7 +364,14 @@ export function registerFormRoutes(app: Express) {
 
   // Public: progressive lead submission for a specific form (by slug). Stamps
   // the lead with the form resolved from the URL slug.
-  app.post("/api/forms/slug/:slug/leads/progress", async (req, res) => {
+  app.post(
+    "/api/forms/slug/:slug/leads/progress",
+    rateLimitMiddleware({
+      limit: 120,
+      windowMs: 10 * 60_000,
+      message: "Too many form requests. Please try again in a few minutes.",
+    }),
+    async (req, res) => {
     try {
       const form = await storage.getFormBySlug(req.params.slug);
       if (!form || !form.isActive) {
@@ -381,7 +388,9 @@ export function registerFormRoutes(app: Express) {
       const payload = {
         ...parsed,
         questionNumber,
-        formCompleto: parsed.formCompleto || questionNumber >= totalQuestions,
+        // Reaching the last question is not the same as submitting it. The
+        // client marks completion only after the explicit Finish action.
+        formCompleto: parsed.formCompleto === true,
       };
 
       const initialLead = await storage.upsertFormLeadProgress(
@@ -425,7 +434,8 @@ export function registerFormRoutes(app: Express) {
       }
       res.status(400).json({ message: (err as Error).message });
     }
-  });
+    },
+  );
 
   app.post(
     "/api/forms/slug/:slug/audio/transcribe",

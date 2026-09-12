@@ -323,6 +323,25 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
     translated: "Preencha o formulário e a gente confirma a quantidade, a arte e o total com você pelo WhatsApp.",
   },
   { source: "I want to order", translated: "Quero pedir" },
+
+  // ── Product presentation + thank-you ───────────────────────────────────
+  { source: "See pricing and details", translated: "Ver preços e detalhes" },
+  { source: "Custom 3D-printed NFC keychains in different designs", translated: "Chaveiros NFC personalizados e impressos em 3D em diferentes modelos" },
+  { source: "Programmed and tested", translated: "Programados e testados" },
+  { source: "Every NFC tag is checked before shipping", translated: "Cada tag NFC é verificada antes do envio" },
+  { source: "Custom 3D design", translated: "Design 3D personalizado" },
+  { source: "Made with your logo and approved artwork", translated: "Feito com a sua logo e a arte aprovada" },
+  { source: "No app required", translated: "Sem aplicativo" },
+  { source: "Works with modern iPhone and Android phones", translated: "Funciona com iPhones e celulares Android modernos" },
+  { source: "$10", translated: "US$ 10" },
+  { source: "$200", translated: "US$ 200" },
+  { source: "$50", translated: "US$ 50" },
+  { source: "Your NFC keychain request was submitted successfully. We will review the quantity, artwork, and preferred contact method, then contact you on WhatsApp.", translated: "Seu pedido de chaveiros NFC foi enviado com sucesso. Vamos revisar a quantidade, a arte e a forma de contato e falar com você pelo WhatsApp." },
+  { source: "Review pricing and details", translated: "Rever preços e detalhes" },
+  { source: "Keep your WhatsApp available. We will use the number you provided in the form.", translated: "Fique de olho no WhatsApp. Vamos usar o número informado no formulário." },
+  { source: "We review your quantity, logo, and the link you want the NFC tap to open.", translated: "Revisamos a quantidade, a sua logo e o link que você quer abrir com o toque NFC." },
+  { source: "We contact you on WhatsApp to confirm the artwork, total, and production window.", translated: "Falamos com você pelo WhatsApp para confirmar a arte, o total e o prazo de produção." },
+  { source: "Production starts after payment and your artwork approval.", translated: "A produção começa depois do pagamento e da aprovação da sua arte." },
 ];
 
 // ── Seed runner ───────────────────────────────────────────────────────────

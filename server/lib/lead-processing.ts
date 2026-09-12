@@ -34,7 +34,7 @@ export async function runLeadPostProcessing(
 
   // 1) Twilio SMS notification
   const hasPhone = !!lead.telefone?.trim();
-  if (hasPhone && !lead.notificacaoEnviada) {
+  if (lead.formCompleto && hasPhone && !lead.notificacaoEnviada) {
     try {
       await dispatchNotification(storage, 'hot_lead', {
         company: companyName,
@@ -120,7 +120,7 @@ export async function runLeadPostProcessing(
   // 3) Marketing attribution (Phase 45) — fire-and-forget.
   // Wrapped so any failure (missing visitor, network blip, FK violation, etc.) cannot
   // bubble up and break the lead-create caller. Logs to console but always returns.
-  if (visitorUuid) {
+  if (visitorUuid && lead.formCompleto) {
     try {
       const fk = await storage.linkLeadToVisitor(lead.id, visitorUuid);
       if (fk !== null) {

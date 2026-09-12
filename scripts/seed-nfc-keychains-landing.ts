@@ -252,6 +252,10 @@ const LANDING_SECTIONS: PageSection[] = [
       headline: "One tap. Your customers land exactly where you want them.",
       subheadline: "Custom 3D-printed NFC keychains with your logo. A customer taps their phone and opens your Google review page, Instagram, digital business card, menu, or website. No app needed.",
       ctaLabel: "I want my keychains",
+      secondaryCtaLabel: "See pricing and details",
+      secondaryCtaHref: "/nfc-pricing",
+      backgroundImageUrl: "/nfc-keychains-hero.webp",
+      backgroundImageAlt: "Custom 3D-printed NFC keychains in different designs",
     },
   },
   // `theme: "dark"` is the opt-in dark treatment for the NFC pages only (quick
@@ -259,7 +263,17 @@ const LANDING_SECTIONS: PageSection[] = [
   // an already-dark section, so neither needs the prop. NFC_STEPPER_PROPS is
   // spread (never mutated) because /websites and /barbershops share nothing
   // with it but the shape — the const itself must stay theme-free.
-  { type: "trustBadges",    props: { theme: "dark" } },                       // adapter — reads /api/company-settings (t()-based)
+  {
+    type: "trustBadges",
+    props: {
+      theme: "dark",
+      badges: [
+        { title: "Programmed and tested", description: "Every NFC tag is checked before shipping", icon: "badgecheck" },
+        { title: "Custom 3D design", description: "Made with your logo and approved artwork", icon: "sparkles" },
+        { title: "No app required", description: "Works with modern iPhone and Android phones", icon: "zap" },
+      ],
+    },
+  },
   { type: "processStepper", props: { ...NFC_STEPPER_PROPS, theme: "dark" } }, // custom steps + icons for this product
   { type: "reviews",        props: {} },                                      // adapter — real reviews only, from /api/company-settings
   {
@@ -286,6 +300,7 @@ const PRICING_SECTIONS: PageSection[] = [
       theme:      "dark",
       eyebrow:    "How it works",
       heading:    "NFC keychains, explained",
+      headingLevel: "h1",
       subheading: "What they are, where they work, and what you need to get started.",
       blocks: [
         {

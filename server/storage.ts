@@ -909,9 +909,12 @@ export class DatabaseStorage implements IStorage {
     };
 
     const scoreResult = calculateFormScoresWithConfig(answersForScoring, config);
-    const isComplete = progress.formCompleto || safeQuestionNumber >= totalQuestions;
+    // Completion is an explicit state transition. Autosaving the final
+    // question must never trigger integrations before the visitor clicks Finish.
+    const isComplete = progress.formCompleto === true || existing?.formCompleto === true;
+    const isUnscored = config.maxScore <= 0;
     const classification: LeadClassification | undefined = isComplete
-      ? classifyLead(scoreResult.total, config.thresholds)
+      ? (isUnscored ? undefined : classifyLead(scoreResult.total, config.thresholds))
       : (existing?.classificacao ?? (progress.classificacao as LeadClassification | undefined));
     const now = new Date();
     const latestQuestion = Math.max(safeQuestionNumber, existing?.ultimaPerguntaRespondida ?? 0);
@@ -2375,6 +2378,17 @@ export class DatabaseStorage implements IStorage {
   async createAttributionConversion(
     conversion: InsertAttributionConversion,
   ): Promise<AttributionConversion> {
+    if (conversion.leadId) {
+      const [existing] = await db
+        .select()
+        .from(attributionConversions)
+        .where(and(
+          eq(attributionConversions.leadId, conversion.leadId),
+          eq(attributionConversions.conversionType, conversion.conversionType),
+        ))
+        .limit(1);
+      if (existing) return existing;
+    }
     const [row] = await db
       .insert(attributionConversions)
       .values({
