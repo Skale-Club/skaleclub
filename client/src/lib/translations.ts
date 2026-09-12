@@ -482,6 +482,11 @@ export const translations = {
     'We publish with your own domain, analytics integration, and forms connected to your CRM. Post-launch support included.': 'Publicamos com domínio próprio, integração de analytics e formulários conectados ao seu CRM. Suporte pós-lançamento incluso.',
     "Let's talk about your website": 'Vamos conversar sobre seu site',
     "Tell us about your project in 1 minute. We'll reply within 24 hours with a proposal.": 'Conte sobre o seu projeto em 1 minuto. Respondemos em até 24 horas com uma proposta.',
+    // Chunk load failure (ChunkErrorBoundary)
+    'This page failed to load': 'Esta página não carregou',
+    'Part of the site failed to load, usually because a new version was just published.': 'Parte do site não carregou, geralmente porque uma nova versão acabou de ser publicada.',
+    'Trying again automatically in a moment.': 'Tentando novamente em instantes.',
+    'Reload page': 'Recarregar página',
   }
 } as const;
 export type TranslationKey = keyof typeof translations.pt;
