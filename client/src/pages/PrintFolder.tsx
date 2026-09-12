@@ -71,16 +71,11 @@ function CropMarks({ bleed }: { bleed: number }) {
 }
 
 export default function PrintFolder() {
-  // retryOnMount: false — the Router observes the same company-settings query;
-  // a mount-triggered refetch while it is errored flips the Router back to its
-  // loading state, unmounting this page and re-triggering the refetch forever.
   const { data: settings } = useQuery<CompanySettings>({
     queryKey: ["/api/company-settings"],
-    retryOnMount: false,
   });
   const { data: services } = useQuery<PortfolioService[]>({
     queryKey: ["/api/portfolio-services"],
-    retryOnMount: false,
   });
 
   const [sheetW, setSheetW] = useState<number>(PAPER_PRESETS.a4.w);

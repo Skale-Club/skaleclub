@@ -120,7 +120,7 @@ function SEOProvider({ children }: { children: React.ReactNode }) {
 function Router() {
   const [location] = useLocation();
   const { isInitialLoad } = useContext(InitialLoadContext);
-  const { data: settings, isLoading } = useQuery<CompanySettings>({
+  const { data: settings, isLoading, errorUpdateCount } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
   });
   const pagePaths = useMemo(() => buildPagePaths(settings?.pageSlugs), [settings?.pageSlugs]);
@@ -178,7 +178,11 @@ function Router() {
     );
   }
 
-  if (isLoading && !settings) {
+  // Block only the first load. A refetch after a failure puts the query back in
+  // "pending" (it has no data), and gating on that would unmount the whole layout
+  // (Navbar, page, lead forms, ChatWidget) and, if anything refetches it again on
+  // remount, loop. Once it has failed, the site renders with default slugs instead.
+  if (isLoading && errorUpdateCount === 0) {
     return fallback;
   }
 

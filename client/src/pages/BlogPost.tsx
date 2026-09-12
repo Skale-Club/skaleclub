@@ -18,6 +18,7 @@ import {
 import { format } from 'date-fns';
 import type { BlogPost, CompanySettings } from '@shared/schema';
 import { usePagePaths } from '@/lib/pagePaths';
+import { fetchJson } from '@/lib/queryClient';
 
 export default function BlogPostPage() {
   const params = useParams<{ slug: string }>();
@@ -33,7 +34,7 @@ export default function BlogPostPage() {
 
   const { data: relatedPosts } = useQuery<BlogPost[]>({
     queryKey: ['/api/blog', post?.id, 'related'],
-    queryFn: () => fetch(`/api/blog/${post?.id}/related?limit=2`).then(r => r.json()),
+    queryFn: () => fetchJson<BlogPost[]>(`/api/blog/${post?.id}/related?limit=2`),
     enabled: !!post?.id,
   });
 

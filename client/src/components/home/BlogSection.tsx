@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import type { BlogPost, HomepageContent } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
 import { usePagePaths } from "@/lib/pagePaths";
+import { fetchJson } from "@/lib/queryClient";
 
 interface BlogSectionProps {
   content: HomepageContent['blogSection'];
@@ -19,7 +20,7 @@ export function BlogSection({ content }: BlogSectionProps) {
 
   const { data: posts, isLoading } = useQuery<BlogPost[]>({
     queryKey: ['/api/blog', 'published', 3, 0],
-    queryFn: () => fetch('/api/blog?status=published&limit=3&offset=0').then(r => r.json()),
+    queryFn: () => fetchJson<BlogPost[]>('/api/blog?status=published&limit=3&offset=0'),
   });
 
   if (isLoading || !posts || posts.length === 0) {
