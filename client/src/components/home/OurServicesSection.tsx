@@ -61,9 +61,10 @@ export function OurServicesSection({ section }: { section?: OurServicesSectionDa
   if (!section?.enabled || cards.length === 0) return null;
 
   return (
-    // Gradient (not #111111): this section now sits in the homepage's second
-    // dark slot — the slot colors stayed put when the sections swapped order.
-    <section id="our-services" className="bg-gradient-to-b from-[#0a0f18] to-[#0d1320] text-white overflow-hidden pt-[4.25rem] pb-[4.25rem]">
+    // Gradient (not surface-dark): this section now sits in the homepage's
+    // second dark slot — the slot colors stayed put when the sections
+    // swapped order.
+    <section id="our-services" className="bg-dark-gradient text-white overflow-hidden pt-[4.25rem] pb-[4.25rem]">
       <div className="space-y-[2.125rem]">
         {/* Header — mirrors ServicesHeader spacing + type sizes (dark variant) */}
         <div className="container-custom mx-auto">

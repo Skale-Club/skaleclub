@@ -41,7 +41,7 @@ export function OurServiceDetailModal({ card, isOpen, onClose }: OurServiceDetai
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl border border-white/10 bg-gradient-to-b from-[#0a0f18] to-[#0d1320] p-0 text-white [&>button]:hidden">
+      <DialogContent className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 bg-dark-gradient p-0 text-white [&>button]:hidden">
         <button
           onClick={onClose}
           aria-label="Close"

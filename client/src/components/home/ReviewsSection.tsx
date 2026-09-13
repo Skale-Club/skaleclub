@@ -46,7 +46,7 @@ function EmbedRenderer({ code }: { code: string }) {
         src={code}
         frameBorder="0"
         scrolling="no"
-        style={{ minWidth: '100%', width: '100%', height: '488px', border: 'none', display: 'block', borderRadius: '0', background: '#111111' }}
+        style={{ minWidth: '100%', width: '100%', height: '488px', border: 'none', display: 'block', borderRadius: '0', background: 'var(--surface-dark)' }}
         onLoad={() => {
           const script = document.createElement('script');
           script.type = 'text/javascript';
@@ -85,10 +85,10 @@ export function ReviewsSection({ embedUrl, title, subtitle }: ReviewsSectionProp
   }
 
   return (
-    <section className="pt-[4.25rem] pb-[4.25rem] bg-[#111111] overflow-hidden mb-0 text-white">
+    <section className="pt-[4.25rem] pb-[4.25rem] bg-surface-dark overflow-hidden mb-0 text-white">
       <div className="w-full space-y-[2.125rem]">
         <div className="container-custom mx-auto text-center">
-          <h2 className="text-3xl md:text-5xl font-bold mb-[0.85rem] text-white">
+          <h2 className="text-3xl md:text-4xl font-bold mb-[0.85rem] text-white">
             {t(title || '')}
           </h2>
           <p className="text-slate-300 max-w-2xl mx-auto text-lg">
@@ -100,7 +100,7 @@ export function ReviewsSection({ embedUrl, title, subtitle }: ReviewsSectionProp
           // edge at every breakpoint; the section's overflow-hidden clips the
           // scrollbar-width excess of w-screen.
           <div className="relative w-screen left-1/2 -translate-x-1/2">
-            <div className="bg-[#111111]">
+            <div className="bg-surface-dark">
               <EmbedRenderer code={embedUrl.trim()} />
             </div>
           </div>

@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import type { BlogPost, HomepageContent } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
 import { usePagePaths } from "@/lib/pagePaths";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface BlogSectionProps {
   content: HomepageContent['blogSection'];
@@ -22,7 +23,35 @@ export function BlogSection({ content }: BlogSectionProps) {
     queryFn: () => fetch('/api/blog?status=published&limit=3&offset=0').then(r => r.json()),
   });
 
-  if (isLoading || !posts || posts.length === 0) {
+  if (isLoading) {
+    return (
+      <section className="py-[4.25rem] bg-surface-dark">
+        <div className="container-custom mx-auto">
+          <div className="flex items-center justify-between mb-[2.125rem]">
+            <div className="space-y-3">
+              <Skeleton className="h-9 w-64" />
+              <Skeleton className="h-6 w-48" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 tablet:grid-cols-3 gap-[1.7rem]">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="bg-white/5 rounded-xl overflow-hidden border border-white/10 h-full flex flex-col">
+                <Skeleton className="aspect-video w-full rounded-none" />
+                <div className="p-6 flex flex-col flex-1 gap-3">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-5 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (!posts || posts.length === 0) {
     return null;
   }
 
@@ -33,7 +62,7 @@ export function BlogSection({ content }: BlogSectionProps) {
   };
 
   return (
-    <section className="py-[4.25rem] bg-[#111111]">
+    <section className="py-[4.25rem] bg-surface-dark">
       <div className="container-custom mx-auto">
         <div className="flex items-center justify-between mb-[2.125rem]">
           <div>
@@ -92,7 +121,7 @@ export function BlogSection({ content }: BlogSectionProps) {
         </div>
 
         <div className="mt-[2.125rem] text-center md:hidden">
-          <Link href={pagePaths.blog} className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white font-bold rounded-full hover:bg-primary/90 transition-colors" data-testid="link-view-all-blog-mobile">
+          <Link href={pagePaths.blog} className="inline-flex items-center gap-2 px-6 py-3 bg-cta hover:bg-cta-hover text-white font-bold rounded-full transition-colors" data-testid="link-view-all-blog-mobile">
             {t(sectionContent.viewAllText || '')}
             <ArrowRight className="w-4 h-4" />
           </Link>

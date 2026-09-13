@@ -306,20 +306,6 @@ html.admin-theme.dark {
   .shadow-elevation-md { box-shadow: var(--shadow-md); }
   .shadow-elevation-lg { box-shadow: var(--shadow-lg); }
   .shadow-glow         { box-shadow: var(--shadow-glow); }
-
-  .motion-fast   { transition: all var(--motion-fast) var(--ease-out); }
-  .motion-base   { transition: all var(--motion-base) var(--ease-out); }
-  .motion-spring { transition: all var(--motion-modal) var(--ease-spring); }
-
-  .hover-lift {
-    transition: transform var(--motion-base) var(--ease-out),
-                box-shadow var(--motion-base) var(--ease-out),
-                border-color var(--motion-base) var(--ease-out);
-  }
-  .hover-lift:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
-  }
 }
 
 /* ===== xphere reviews widget (reviews-widget.js, .orw-* classes) =====
@@ -442,8 +428,32 @@ html.admin-theme.dark {
     }
   }
 
-  .glass-panel {
-    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-xl;
+  /* Dark section gradient shared by ServicesSection, OurServicesSection and
+     Home's #about section — unified tone (was three near-identical
+     gradients hard-coded per section). */
+  .bg-dark-gradient {
+    background: linear-gradient(to bottom, #10151f, #0a0c11);
+  }
+
+  /* ── Trust-bar bleed contract ──────────────────────────────────────────
+     Single source of truth for the trust-bar bleed amount, consumed by
+     Home.tsx (mt-[calc(var(--trust-bleed)*-1)] on the bleed section, and
+     top-[var(--trust-bleed)] on its dark fill div) and HeroSection.tsx (the
+     showTrustBadges=false branch's bottom padding). Apply `.trust-bar-bleed`
+     to the wrapper around the hero + trust bar. If you change a value here,
+     every consumer picks it up automatically — no need to touch them. */
+  .trust-bar-bleed {
+    --trust-bleed: 3.4rem;
+  }
+  @media (min-width: 768px) {
+    .trust-bar-bleed {
+      --trust-bleed: 6.0625rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .trust-bar-bleed {
+      --trust-bleed: 4.0625rem;
+    }
   }
 
   /* Admin Panel Design Tokens */

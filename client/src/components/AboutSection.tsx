@@ -21,7 +21,7 @@ export function AboutSection({ content, aboutImageUrl }: AboutSectionProps) {
             <User className="w-4 h-4" />
             {t(sectionContent?.label || '')}
           </div>
-          <h2 className="text-3xl md:text-5xl font-bold mb-[2.125rem] text-white">
+          <h2 className="text-3xl md:text-4xl font-bold mb-[2.125rem] text-white">
             {t(sectionContent?.heading || "")}
           </h2>
 

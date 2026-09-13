@@ -38,7 +38,7 @@ function FooterComponent() {
     '';
 
   return (
-    <footer className="bg-[#18191f] text-slate-300 py-8 md:py-10">
+    <footer className="bg-surface-dark text-slate-300 py-8 md:py-10">
       <div className="container-custom mx-auto">
         <div className="flex flex-col items-center md:items-start text-center md:text-left space-y-6">
           <Link href="/" className="flex items-center gap-2">
@@ -46,12 +46,16 @@ function FooterComponent() {
               <img
                 src={companySettings.logoDark}
                 alt={companyName}
+                width={54}
+                height={54}
                 className="h-auto w-[54px] object-contain p-1.5"
               />
             ) : companySettings?.logoIcon ? (
               <img
                 src={companySettings.logoIcon}
                 alt={companyName}
+                width={54}
+                height={54}
                 className="h-auto w-[54px] object-contain p-1.5 brightness-0 invert"
               />
             ) : (
@@ -85,7 +89,7 @@ function FooterComponent() {
           )}
         </div>
       </div>
-      <div className="container-custom mx-auto mt-8 pt-6 border-t border-[#25262c]">
+      <div className="container-custom mx-auto mt-8 pt-6 border-t border-white/10">
         <div className="flex flex-col md:flex-row items-center md:items-center justify-between gap-4 text-center md:text-left">
           <p className="text-gray-400 text-xs md:text-sm">&copy; {new Date().getFullYear()} {companyName}. {t('All rights reserved.')}</p>
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 text-xs md:text-sm md:justify-end">

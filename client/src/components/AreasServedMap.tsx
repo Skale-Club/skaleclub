@@ -42,7 +42,7 @@ export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
             <MapPin className="w-4 h-4" />
             {t(sectionContent?.label || "")}
           </div>
-          <h2 className="text-3xl md:text-5xl font-bold mb-[2.125rem] text-white">
+          <h2 className="text-3xl md:text-4xl font-bold mb-[2.125rem] text-white">
             {t(sectionContent?.heading || "")}
           </h2>
 
@@ -53,7 +53,7 @@ export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
           {sectionContent?.ctaText ? (
             <div className="mb-[0.85rem]">
               <Link href={pagePaths.contact}>
-                <button className="px-4 py-2 bg-[#5173D6] hover:bg-[#3B5BBE] text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5">
+                <button className="px-4 py-2 bg-cta hover:bg-cta-hover text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cta/40 focus-visible:ring-offset-2">
                   {t(sectionContent.ctaText)}
                   <ArrowRight className="w-4 h-4" />
                 </button>
