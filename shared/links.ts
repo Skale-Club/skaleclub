@@ -10,7 +10,7 @@ const randomUUID = (): string => globalThis.crypto.randomUUID();
  * visible change. Admins customize via the Phase 13 theme editor.
  */
 export const DEFAULT_LINKS_PAGE_THEME: Required<Pick<LinksPageTheme, 'primaryColor' | 'backgroundColor' | 'backgroundGradient' | 'backgroundImageUrl'>> = {
-  primaryColor: "#1C53A3",
+  primaryColor: "#5173D6",
   backgroundColor: "#0f1014",
   backgroundGradient: "",
   backgroundImageUrl: "",

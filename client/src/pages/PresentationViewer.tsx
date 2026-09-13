@@ -3,13 +3,11 @@ import { useParams } from 'wouter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Trash2, RefreshCw, Pencil } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Loader2 } from '@/components/ui/loader';
 import { LanguageSwitch, type LanguageSwitchValue } from '@/components/ui/LanguageSwitch';
 import type { CompanySettings, SlideBlock } from '@shared/schema';
-import { SlideContent, buildSlideStyle, resolveField } from '@/components/SlideRenderer';
+import { SlideContent, buildSlideStyle } from '@/components/SlideRenderer';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { DottedSurface } from '@/components/ui/dotted-surface';
 import { GradientBackground } from '@/components/ui/gradient-background-4';
@@ -143,6 +141,8 @@ export default function PresentationViewer() {
   });
 
   const presentation = data;
+  // Cover/closing slides carry the brand name — prefer the configured company.
+  const brandName = companySettings?.companyName?.trim() || undefined;
 
   const { mutate: trackView } = useMutation({
     mutationFn: async () => {
@@ -185,14 +185,27 @@ export default function PresentationViewer() {
   const prev = useCallback(() => goTo(activeIndex - 1), [activeIndex, goTo]);
   const next = useCallback(() => goTo(activeIndex + 1), [activeIndex, goTo]);
 
+  // Same action as the "Cancel (Esc)" button in the inline editor.
+  const cancelInlineEdit = useCallback(() => setInlineEditIndex(null), []);
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        // While the inline editor is open, Escape cancels it instead of
+        // falling through to slide navigation.
+        if (inlineEditIndex !== null) {
+          e.preventDefault();
+          cancelInlineEdit();
+        }
+        return;
+      }
+      if (inlineEditIndex !== null) return;
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next();
       if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prev();
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [next, prev]);
+  }, [next, prev, inlineEditIndex, cancelInlineEdit]);
 
   const wheelLocked = useRef(false);
   useEffect(() => {
@@ -355,7 +368,7 @@ export default function PresentationViewer() {
     return (
       <div className="h-screen bg-zinc-950 text-white flex items-center justify-center overflow-hidden">
         <div className="px-8 max-w-xl mx-auto w-full">
-          <SlideContent slide={presentation.slides[0]} lang="en" />
+          <SlideContent slide={presentation.slides[0]} lang="en" brandName={brandName} />
         </div>
       </div>
     );
@@ -446,6 +459,8 @@ export default function PresentationViewer() {
 
       {/* Slide area */}
       <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+        {/* No dedicated poster field in the slide schema — the slide's own
+            background image doubles as the first frame when one is set. */}
         {currentSlide.style?.bgVideoUrl && (
           <video
             key={currentSlide.style.bgVideoUrl}
@@ -453,7 +468,9 @@ export default function PresentationViewer() {
             muted
             loop
             playsInline
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0"
+            preload="metadata"
+            poster={currentSlide.style.bgImageUrl || undefined}
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 bg-black"
             onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none'; }}
           >
             <source src={currentSlide.style.bgVideoUrl} />
@@ -488,7 +505,7 @@ export default function PresentationViewer() {
               <div className="min-h-full flex items-center justify-center px-6 sm:px-8 md:px-12 lg:px-16 py-12 md:py-16 pb-24 md:pb-16">
                 <div className="max-w-2xl md:max-w-3xl lg:max-w-4xl w-full">
             {isEditMode && (
-              <div className="absolute top-2 right-2 z-50 flex gap-1 bg-black/60 rounded-md p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute top-2 right-2 z-50 flex gap-1 bg-black/60 rounded-md p-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                 <button
                   type="button"
                   title="Delete slide"
@@ -520,7 +537,7 @@ export default function PresentationViewer() {
                 </button>
               </div>
             )}
-            <SlideContent slide={currentSlide} lang={lang} />
+            <SlideContent slide={currentSlide} lang={lang} brandName={brandName} />
                 </div>
               </div>
             </div>
@@ -551,7 +568,7 @@ export default function PresentationViewer() {
             </div>
             <button
               type="button"
-              onClick={() => setInlineEditIndex(null)}
+              onClick={cancelInlineEdit}
               className="text-xs text-zinc-500 hover:text-zinc-300"
             >
               Cancel (Esc)

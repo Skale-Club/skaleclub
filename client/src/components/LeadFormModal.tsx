@@ -73,6 +73,17 @@ const COUNTRIES: CountryConfig[] = [
 
 const DEFAULT_COUNTRY = "US";
 
+// Shared class strings for this modal's native inputs. They stay native
+// (not the shadcn <Input>) because they carry the form's own sizing/focus
+// treatment — this const just stops the string from being copy-pasted.
+const inputBaseClass =
+  "rounded-xl border bg-white text-slate-900 placeholder:text-slate-400 transition-colors focus:border-cta focus:ring-2 focus:ring-cta/30";
+const inputClass = `w-full px-4 py-3 text-lg ${inputBaseClass}`;
+
+// Focusable descendants used by the dialog's focus trap.
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 const STORAGE_KEY_PREFIX = "skale-form-state";
 const EXPIRATION_HOURS = 24;
 const NAME_REGEX = /^[A-Za-z\u00C0-\u024F\s]{3,100}$/;
@@ -388,7 +399,7 @@ function VoiceAnswerInput({
           disabled={isTranscribing}
           className={clsx(
             "flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-white transition-colors",
-            isRecording ? "bg-red-500 hover:bg-red-600" : "bg-[#5173D6] hover:bg-[#3B5BBE]",
+            isRecording ? "bg-red-500 hover:bg-red-600" : "bg-cta hover:bg-cta-hover",
             isTranscribing && "opacity-60"
           )}
         >
@@ -486,9 +497,8 @@ function ConditionalFieldInput({
           onChange={e => onTextChange(e.target.value)}
           placeholder={t(field.placeholder || "")}
           className={clsx(
-            "min-h-28 w-full rounded-lg border px-4 py-2 text-base transition-colors resize-y",
-            errorMessage ? "border-red-400 bg-red-50" : "border-blue-300 bg-white",
-            "focus:border-[#5173D6] focus:ring-2 focus:ring-[#5173D6]/30"
+            "min-h-28 w-full rounded-lg border px-4 py-2 text-base transition-colors resize-y focus:border-cta focus:ring-2 focus:ring-cta/30",
+            errorMessage ? "border-red-400 bg-red-50" : "border-blue-300 bg-white"
           )}
         />
       ) : (
@@ -500,9 +510,8 @@ function ConditionalFieldInput({
           onFocus={onFocus}
           placeholder={t(field.placeholder || "")}
           className={clsx(
-            "w-full rounded-lg border px-4 py-2 text-base transition-colors",
-            errorMessage ? "border-red-400 bg-red-50" : "border-blue-300 bg-white",
-            "focus:border-[#5173D6] focus:ring-2 focus:ring-[#5173D6]/30"
+            "w-full rounded-lg border px-4 py-2 text-base transition-colors focus:border-cta focus:ring-2 focus:ring-cta/30",
+            errorMessage ? "border-red-400 bg-red-50" : "border-blue-300 bg-white"
           )}
         />
       )}
@@ -679,6 +688,31 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
     lastFocusedInputRef.current = null;
   }, [currentQuestionId]);
 
+  // Focus trap: Tab / Shift+Tab cycle through the dialog's own focusable
+  // nodes. Skipped while the country dropdown is open — it renders in a portal
+  // outside the container and needs to stay reachable.
+  const handleContainerKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Tab" || isCountryDropdownOpen) return;
+    const container = containerRef.current;
+    if (!container) return;
+    const focusable = Array.from(
+      container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+    ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement as HTMLElement | null;
+    if (event.shiftKey) {
+      if (!active || active === first || !container.contains(active)) {
+        event.preventDefault();
+        last.focus();
+      }
+    } else if (!active || active === last || !container.contains(active)) {
+      event.preventDefault();
+      first.focus();
+    }
+  }, [isCountryDropdownOpen]);
+
   const handleClose = useCallback(() => {
     if (view === "form") {
       trackEvent("form_closed_draft", { step: currentStep });
@@ -695,7 +729,11 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
     const rafId = requestAnimationFrame(() => {
       // Add a small delay to ensure the animation has completed
       const timerId = setTimeout(() => {
-        const target = lastFocusedInputRef.current || primaryInputRef.current;
+        const target: HTMLElement | null =
+          lastFocusedInputRef.current ||
+          primaryInputRef.current ||
+          containerRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR) ||
+          null;
         if (target && document.activeElement !== target) {
           target.focus();
         }
@@ -1027,7 +1065,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
     return createPortal(
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
         <div className="bg-white rounded-2xl p-8 flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-[#5173D6]" />
+          <Loader2 className="h-8 w-8 animate-spin text-cta" />
           <p className="text-slate-600">{t('Loading form...')}</p>
         </div>
       </div>,
@@ -1041,7 +1079,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
         <div className="w-full max-w-md rounded-2xl bg-white p-6 text-center text-slate-900 shadow-2xl">
           <p className="text-lg font-semibold">{t('Form unavailable')}</p>
           <p className="mt-2 text-sm text-slate-500">{t('This form is not ready yet.')}</p>
-          <button type="button" className="mt-4 rounded-xl bg-[#5173D6] px-4 py-2 font-semibold text-white" onClick={handleClose}>
+          <button type="button" className="mt-4 rounded-xl bg-cta px-4 py-2 font-semibold text-white" onClick={handleClose}>
             {t('Close')}
           </button>
         </div>
@@ -1068,7 +1106,11 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
         }}
       >
         <div className="w-full max-w-[640px]">
-          <div className="relative bg-white text-slate-900 h-full sm:h-auto rounded-none sm:rounded-3xl shadow-2xl overflow-hidden" ref={containerRef}>
+          <div
+            className="relative bg-white text-slate-900 h-full sm:h-auto rounded-none sm:rounded-3xl shadow-2xl overflow-hidden"
+            ref={containerRef}
+            onKeyDown={handleContainerKeyDown}
+          >
             <button
               className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
               aria-label={t("Close form")}
@@ -1079,9 +1121,15 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
           </button>
 
           <div className="flex flex-col h-full">
-            <div className="absolute inset-x-6 sm:inset-x-10 h-3 -top-[6px] bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className="absolute inset-x-0 top-0 h-1.5 bg-slate-100 overflow-hidden"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={totalQuestions}
+              aria-valuenow={currentStep}
+            >
               <div
-                className="h-full bg-[#5173D6] transition-all duration-300 rounded-full"
+                className="h-full bg-cta transition-all duration-300 rounded-r-full"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
@@ -1101,7 +1149,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                   <form onSubmit={handleSubmit}>
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="text-sm font-semibold text-[#5173D6] uppercase tracking-wide">{t("Let's begin!")}</p>
+                        <p className="text-sm font-semibold text-cta uppercase tracking-wide">{`${t("Step")} ${currentStep}/${totalQuestions}`}</p>
                         <h2 id="lead-form-question" className="text-2xl sm:text-3xl font-bold leading-tight mt-1">{t(currentQuestion.title)}</h2>
                       </div>
                     </div>
@@ -1126,9 +1174,8 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                             onFocus={handleFieldFocus}
                             placeholder={t(currentQuestion.placeholder || "")}
                             className={clsx(
-                              "w-full rounded-xl border bg-white px-4 py-3 text-lg text-slate-900 placeholder:text-slate-400 transition-colors",
-                              errorMessage ? "border-red-400" : "border-slate-200",
-                              "focus:border-[#5173D6] focus:ring-2 focus:ring-[#5173D6]/30"
+                              inputClass,
+                              errorMessage ? "border-red-400" : "border-slate-200"
                             )}
                             aria-label={t(currentQuestion.title)}
                           />
@@ -1140,9 +1187,9 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                             onChange={e => handleAnswerChange(currentQuestion.id, e.target.value)}
                             placeholder={t(currentQuestion.placeholder || "")}
                             className={clsx(
-                              "min-h-36 w-full rounded-xl border bg-white px-4 py-3 text-lg text-slate-900 placeholder:text-slate-400 transition-colors resize-y",
-                              errorMessage ? "border-red-400" : "border-slate-200",
-                              "focus:border-[#5173D6] focus:ring-2 focus:ring-[#5173D6]/30"
+                              inputClass,
+                              "min-h-36 resize-y",
+                              errorMessage ? "border-red-400" : "border-slate-200"
                             )}
                             aria-label={t(currentQuestion.title)}
                           />
@@ -1201,7 +1248,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                                 className={clsx(
                                   "flex items-center gap-1 rounded-xl border bg-white px-2 sm:px-3 py-3 text-base sm:text-lg transition-colors h-[52px]",
                                   errorMessage ? "border-red-400" : "border-slate-200",
-                                  "hover:border-[#5173D6]/70 focus:border-[#5173D6] focus:ring-2 focus:ring-[#5173D6]/30"
+                                  "hover:border-cta/70 focus:border-cta focus:ring-2 focus:ring-cta/30"
                                 )}
                               >
                                 <img
@@ -1244,7 +1291,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                                           }}
                                           className={clsx(
                                             "w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-slate-50 transition-colors",
-                                            selectedCountryCode === country.code && "bg-[#EFF3FF]"
+                                            selectedCountryCode === country.code && "bg-cta/10"
                                           )}
                                         >
                                           <img
@@ -1272,9 +1319,9 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                               onFocus={handleFieldFocus}
                               placeholder={selectedCountry.placeholder}
                               className={clsx(
-                                "flex-1 min-w-0 rounded-xl border bg-white px-3 sm:px-4 py-3 text-base sm:text-lg text-slate-900 placeholder:text-slate-400 transition-colors",
-                                errorMessage ? "border-red-400" : "border-slate-200",
-                                "focus:border-[#5173D6] focus:ring-2 focus:ring-[#5173D6]/30"
+                                "flex-1 min-w-0 px-3 sm:px-4 py-3 text-base sm:text-lg",
+                                inputBaseClass,
+                                errorMessage ? "border-red-400" : "border-slate-200"
                               )}
                               aria-label={t(currentQuestion.title)}
                               maxLength={selectedCountry.format.length}
@@ -1287,7 +1334,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                           <div
                             className={clsx(
                               "flex overflow-hidden rounded-xl border bg-white transition-colors",
-                              errorMessage ? "border-red-400" : "border-slate-200 focus-within:border-[#5173D6]"
+                              errorMessage ? "border-red-400" : "border-slate-200 focus-within:border-cta"
                             )}
                           >
                             <PhoneCountrySelect
@@ -1334,8 +1381,8 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                                 className={clsx(
                                   "flex items-center justify-between rounded-xl border px-4 py-3 text-left transition-all shadow-sm",
                                   answers[currentQuestion.id] === option.value
-                                    ? "border-[#5173D6] bg-[#EFF3FF] shadow-md"
-                                    : "border hover:border-[#5173D6]/70 hover:bg-muted",
+                                    ? "border-cta bg-cta/10 shadow-md"
+                                    : "border hover:border-cta/70 hover:bg-muted",
                                   errorMessage && !answers[currentQuestion.id] ? "border-red-400" : ""
                                 )}
                               >
@@ -1343,7 +1390,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                                   <p className="font-semibold text-slate-900">{t(option.label)}</p>
                                 </div>
                                 {answers[currentQuestion.id] === option.value && (
-                                  <span className="h-8 w-8 min-h-8 min-w-8 rounded-full bg-[#5173D6] text-white flex items-center justify-center shrink-0">
+                                  <span className="h-8 w-8 min-h-8 min-w-8 rounded-full bg-cta text-white flex items-center justify-center shrink-0">
                                     <Check className="h-4 w-4" />
                                   </span>
                                 )}
@@ -1399,7 +1446,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                         type="submit"
                         aria-disabled={!canProceed}
                         className={clsx(
-                          "inline-flex items-center justify-center gap-2 rounded-xl bg-[#5173D6] px-6 py-3 text-white font-semibold hover:bg-[#3B5BBE] transition-colors flex-1",
+                          "inline-flex items-center justify-center gap-2 rounded-full bg-cta px-6 py-3 text-white font-semibold hover:bg-cta-hover transition-colors flex-1",
                           !canProceed && "opacity-60 cursor-not-allowed"
                         )}
                       >
@@ -1412,7 +1459,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
 
                 {view === "loading" && (
                   <div className="py-12 flex flex-col items-center justify-center gap-4">
-                    <div className="h-14 w-14 rounded-full border-4 border-t-[#5173D6] animate-spin" />
+                    <div className="h-14 w-14 rounded-full border-4 border-t-cta animate-spin" />
                     <div className="text-center space-y-2">
                       <p className="text-xl font-semibold text-slate-900">{t('Analyzing your profile...')}</p>
                       <p className="text-slate-500">{t('This takes just a few moments.')}</p>

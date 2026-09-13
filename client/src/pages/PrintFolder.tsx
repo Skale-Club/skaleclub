@@ -14,6 +14,9 @@ const PAPER_PRESETS = {
 
 const MM_TO_PX = 96 / 25.4;
 const NAVY = "#0A162E";
+// Same value as the `cta` token (#5173D6). Kept as a literal because the
+// printed sheets set their colours through inline styles (like NAVY) so the
+// PDF/CMYK pipeline gets exact values independent of the Tailwind build.
 const ACTION_BLUE = "#5173D6";
 const CONTENT_PAD_MM = 10; // safe margin between trim edge and content
 
@@ -36,7 +39,7 @@ function Editable({
       contentEditable
       suppressContentEditableWarning
       spellCheck={false}
-      className={`outline-none focus:ring-1 focus:ring-blue-400/60 rounded-sm ${className ?? ""}`}
+      className={`outline-none rounded-sm cursor-text hover:underline decoration-dotted underline-offset-4 focus:ring-1 focus:ring-cta/60 ${className ?? ""}`}
       style={style}
     >
       {children}
@@ -107,6 +110,9 @@ export default function PrintFolder() {
     () => activeServices.filter((s) => (selectedIds ?? []).includes(s.id)),
     [activeServices, selectedIds],
   );
+  // Beyond this the two inside panels start clipping their service cards
+  // (the panels are fixed-height and `overflow-hidden`).
+  const MAX_SERVICES_PER_FOLDER = 6;
   // Inside spread: split services across the two panels (intro sits on the left)
   const leftCount = Math.floor(chosenServices.length / 2);
   const leftServices = chosenServices.slice(0, leftCount);
@@ -230,7 +236,7 @@ export default function PrintFolder() {
   );
 
   const serviceCard = (s: PortfolioService) => (
-    <div key={s.id} className="bg-white rounded-lg border border-slate-200 px-4 py-3">
+    <div key={s.id} className="print-block bg-white rounded-lg border border-slate-200 px-4 py-3">
       <div className="flex items-baseline justify-between gap-3">
         <Editable className="text-[10.5pt] font-bold" style={{ color: NAVY }}>
           {s.title}
@@ -281,16 +287,27 @@ export default function PrintFolder() {
           }
           .print-sheet:last-child { break-after: auto; }
           .print-preview-col { padding: 0 !important; }
+          /* zoom only scales the on-screen preview; reset it and the
+             transform fallback so sheets print at their real mm size. */
+          .print-zoom { transform: none !important; }
+          /* Never split a service card across pages */
+          .print-block { break-inside: avoid; page-break-inside: avoid; }
           /* collapse screen-only layout so no empty trailing page is emitted */
           .min-h-screen { min-height: 0 !important; }
           .print-zoom { display: block !important; gap: 0 !important; }
           * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
+        /* The preview scaler uses zoom (not transform) because it reflows the
+           layout, so the preview column keeps the scaled height. Browsers
+           without zoom support fall back to a plain scale. */
+        @supports not (zoom: 1) {
+          .print-zoom { transform: scale(var(--preview-zoom, 1)); transform-origin: top left; }
+        }
       `}</style>
 
-      <div className="flex min-h-screen">
+      <div className="flex flex-col lg:flex-row min-h-screen">
         {/* ============ Toolbar (screen only) ============ */}
-        <aside className="no-print w-[300px] shrink-0 bg-white border-r border-slate-200 p-5 flex flex-col gap-5 sticky top-0 h-screen overflow-y-auto">
+        <aside className="no-print w-full lg:w-[300px] shrink-0 bg-white border-b lg:border-b-0 lg:border-r border-slate-200 p-5 flex flex-col gap-5 lg:sticky lg:top-0 lg:h-screen overflow-y-auto">
           <div>
             <h1 className="text-lg font-bold" style={{ color: NAVY }}>
               Folder para impressão
@@ -312,7 +329,7 @@ export default function PrintFolder() {
                   onClick={() => applyPreset(key)}
                   className={`flex-1 rounded-lg border px-2 py-1.5 text-xs transition-colors ${
                     sheetW === PAPER_PRESETS[key].w && sheetH === PAPER_PRESETS[key].h
-                      ? "border-blue-500 bg-blue-50 font-semibold"
+                      ? "border-cta bg-cta/10 font-semibold"
                       : "border-slate-200 hover:border-slate-300"
                   }`}
                 >
@@ -366,7 +383,7 @@ export default function PrintFolder() {
             <label className="mt-2 flex items-center gap-2 text-sm cursor-pointer">
               <input
                 type="checkbox"
-                className="accent-blue-600"
+                className="accent-cta"
                 checked={showCropMarks}
                 onChange={(e) => setShowCropMarks(e.target.checked)}
                 disabled={bleed <= 0}
@@ -379,7 +396,7 @@ export default function PrintFolder() {
             <label className="flex items-center gap-2 text-sm cursor-pointer">
               <input
                 type="checkbox"
-                className="accent-blue-600"
+                className="accent-cta"
                 checked={showPrices}
                 onChange={(e) => setShowPrices(e.target.checked)}
               />
@@ -388,7 +405,7 @@ export default function PrintFolder() {
             <label className="flex items-center gap-2 text-sm cursor-pointer">
               <input
                 type="checkbox"
-                className="accent-blue-600"
+                className="accent-cta"
                 checked={showGuides}
                 onChange={(e) => setShowGuides(e.target.checked)}
               />
@@ -400,7 +417,19 @@ export default function PrintFolder() {
             <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Serviços no folder
             </label>
-            <div className="mt-2 flex flex-col gap-1 max-h-56 overflow-y-auto pr-1">
+            {chosenServices.length > MAX_SERVICES_PER_FOLDER && (
+              <p
+                className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-snug text-amber-800"
+                data-testid="text-services-overflow-warning"
+              >
+                {chosenServices.length} serviços selecionados. O miolo comporta cerca de{" "}
+                {MAX_SERVICES_PER_FOLDER} — os excedentes podem ser cortados na impressão.
+              </p>
+            )}
+            <div
+              className="mt-2 flex flex-col gap-1 max-h-56 overflow-y-auto pr-1"
+              title={`O miolo do folder comporta cerca de ${MAX_SERVICES_PER_FOLDER} serviços.`}
+            >
               {activeServices.map((s) => (
                 <label
                   key={s.id}
@@ -408,7 +437,7 @@ export default function PrintFolder() {
                 >
                   <input
                     type="checkbox"
-                    className="mt-0.5 accent-blue-600"
+                    className="mt-0.5 accent-cta"
                     checked={(selectedIds ?? []).includes(s.id)}
                     onChange={() => toggleService(s.id)}
                   />
@@ -484,7 +513,10 @@ export default function PrintFolder() {
 
         {/* ============ Preview ============ */}
         <div ref={previewRef} className="print-preview-col flex-1 p-4 lg:p-8 overflow-x-hidden">
-          <div className="print-zoom flex flex-col items-start gap-6" style={{ zoom }}>
+          <div
+            className="print-zoom flex flex-col items-start gap-6"
+            style={{ zoom, ["--preview-zoom" as any]: zoom }}
+          >
             {/* ---------- Sheet 1: outside (back cover | front cover) ---------- */}
             <div className="w-full no-print text-xs font-semibold uppercase tracking-widest text-slate-500">
               Lado externo — contracapa (esq.) e capa (dir.)
@@ -578,7 +610,9 @@ export default function PrintFolder() {
                     <img
                       src={logoDarkOnLight}
                       alt={settings?.companyName || ""}
-                      className="h-8 object-contain"
+                      width={120}
+                      height={32}
+                      className="h-8 w-auto object-contain"
                     />
                   )}
                 </div>
@@ -597,7 +631,9 @@ export default function PrintFolder() {
                   <img
                     src={logoLight}
                     alt={settings?.companyName || ""}
-                    className="h-10 object-contain self-start mt-4 relative"
+                    width={150}
+                    height={40}
+                    className="h-10 w-auto object-contain self-start mt-4 relative"
                   />
                 ) : (
                   <div className="text-[16pt] font-extrabold mt-4 relative">
@@ -686,7 +722,7 @@ export default function PrintFolder() {
                 <div className="mt-auto pt-3 flex items-center justify-between text-[9pt] text-slate-500">
                   <span>{siteLabel}</span>
                   {logoDarkOnLight && (
-                    <img src={logoDarkOnLight} alt="" className="h-6 object-contain opacity-80" />
+                    <img src={logoDarkOnLight} alt="" width={90} height={24} className="h-6 w-auto object-contain opacity-80" />
                   )}
                 </div>
               </div>
