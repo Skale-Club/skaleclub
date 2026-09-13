@@ -31,6 +31,13 @@ export default {
           foreground: "hsl(var(--popover-foreground) / <alpha-value>)",
           border: "hsl(var(--popover-border) / <alpha-value>)",
         },
+        // Brand tokens (public site). Hex so `bg-cta/20` alpha modifiers work;
+        // mirrored as CSS vars in index.css (--cta, --cta-hover, --surface-dark).
+        cta: {
+          DEFAULT: "#5173D6",
+          hover: "#3B5BBE",
+        },
+        "surface-dark": "#111111",
         primary: {
           DEFAULT: "hsl(var(--primary) / <alpha-value>)",
           foreground: "hsl(var(--primary-foreground) / <alpha-value>)",

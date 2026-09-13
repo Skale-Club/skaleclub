@@ -5,7 +5,14 @@
 
 :root {
   --font-sans: 'Inter', sans-serif;
-  --font-display: 'Inter', sans-serif;
+  --font-display: 'Outfit', sans-serif;
+
+  /* ===== Brand tokens (public site). Mirrored as hex in tailwind.config.ts
+     (`cta`, `cta-hover`, `surface-dark`) so utilities keep alpha support;
+     keep both in sync. ===== */
+  --cta: #5173D6;          /* primary CTA / action blue */
+  --cta-hover: #3B5BBE;    /* CTA hover */
+  --surface-dark: #111111; /* dark section surface used across the public site */
 
   /* Light Mode Colors */
   --background: 0 0% 100%;
@@ -360,6 +367,15 @@ html.admin-theme.dark {
     outline: none;
   }
 
+  /* Keyboard-focus fallback for plain interactive elements that do not carry
+     a Tailwind `focus-visible:ring-*`. Zero-specificity (`:where`) so any
+     component-level focus styling still wins. */
+  :where(a, button, [role="button"], summary):focus-visible {
+    outline: 2px solid var(--cta);
+    outline-offset: 2px;
+    border-radius: 0.25rem;
+  }
+
   .dark input[type="date"]::-webkit-calendar-picker-indicator {
     filter: invert(1);
   }
@@ -527,7 +543,7 @@ html.admin-theme.dark {
 /* Reviews widget should keep square edges */
 .lc_reviews_widget {
   border-radius: 0 !important;
-  background: #111111 !important;
+  background: var(--surface-dark) !important;
 }
 
 /* If the widget injects its own markup, keep all corners square */
