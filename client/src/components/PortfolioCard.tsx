@@ -60,7 +60,15 @@ export const PortfolioCard = memo(function PortfolioCard({ service, onClick, cla
     return (
         <div
             onClick={onClick}
-            className={`group flex h-full cursor-pointer flex-col ${compact ? 'gap-3 rounded-xl p-3' : 'gap-4 rounded-2xl p-4'} border transition-all duration-300 hover:-translate-y-1 ${themeClasses.card} ${className}`}
+            role={onClick ? "button" : undefined}
+            tabIndex={onClick ? 0 : undefined}
+            onKeyDown={onClick ? (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onClick();
+                }
+            } : undefined}
+            className={`group flex h-full cursor-pointer flex-col ${compact ? 'gap-3 rounded-xl p-3' : 'gap-4 rounded-2xl p-4'} border transition-all duration-300 hover:-translate-y-1 focus-visible:ring-2 focus-visible:ring-cta/40 focus-visible:ring-offset-2 ${themeClasses.card} ${className}`}
         >
             {/* Hero image — fixed ratio so all cards line up; object-cover so
                 the image fills the box (shorter side to the edge), cropping the

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams, useLocation } from 'wouter';
+import { useParams, useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { LeadFormModal } from '@/components/LeadFormModal';
-import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Loader2 } from '@/components/ui/loader';
+import { NotFoundState } from '@/components/NotFoundState';
 
 type SlugParams = { slug: string };
 
@@ -57,17 +57,12 @@ export default function PublicForm() {
 
   if (isError || data === null) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
-        <div className="max-w-md space-y-4">
-          <h1 className="text-2xl font-semibold tracking-tight">{t('Form not found')}</h1>
-          <p className="text-sm text-muted-foreground">
-            {t("The form you're looking for is unavailable. Please double-check the link or go back to the homepage.")}
-          </p>
-          <Button asChild>
-            <Link href="/">{t('Back to homepage')}</Link>
-          </Button>
-        </div>
-      </div>
+      <NotFoundState
+        layout="section"
+        title={t('Form not found')}
+        description={t("The form you're looking for is unavailable. Please double-check the link or go back to the homepage.")}
+        actionLabel={t('Back to homepage')}
+      />
     );
   }
 

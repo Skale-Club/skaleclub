@@ -56,7 +56,7 @@ export default function Portfolio() {
 
     if (isLoadingServices) {
         return (
-            <div className="min-h-screen w-full flex items-center justify-center bg-[#0A192F]">
+            <div className="min-h-screen w-full flex items-center justify-center bg-[#0A162E]">
                 <Loader2 className="w-10 h-10 animate-spin text-white" />
             </div>
         );
@@ -94,7 +94,7 @@ export default function Portfolio() {
                     </p>
                     <button
                         onClick={() => handleCta('hero')}
-                        className="px-8 py-4 bg-white text-[#0A192F] font-bold rounded-full text-lg hover:scale-105 transition-transform inline-flex items-center justify-center gap-2 shadow-[0_20px_40px_rgba(0,0,0,0.5)]"
+                        className="px-8 py-4 bg-white text-[#0A162E] font-bold rounded-full text-lg hover:scale-105 transition-transform inline-flex items-center justify-center gap-2 shadow-[0_20px_40px_rgba(0,0,0,0.5)]"
                     >
                         {t(portfolioHero?.buttonText || "Book a Strategy Session")}
                         <ArrowRight className="w-5 h-5" />
@@ -103,7 +103,7 @@ export default function Portfolio() {
             </section>
 
             <section className="py-16 px-6 bg-gradient-to-b from-[#0a0f18] to-[#0d1320]">
-                <div className="max-w-7xl mx-auto">
+                <div className="container-custom px-4 sm:px-6 tablet:px-0">
                     {showServicesTitle && (
                         <h2 className="text-3xl md:text-5xl font-bold text-white text-center mb-10">
                             {t("Our Solutions")}
@@ -142,7 +142,7 @@ export default function Portfolio() {
                     </p>
                     <button
                         onClick={() => handleCta('footer')}
-                        className="px-8 py-4 bg-white text-[#0A192F] font-bold rounded-full text-lg hover:scale-105 transition-transform flex items-center justify-center gap-2 mx-auto shadow-[0_20px_40px_rgba(0,0,0,0.5)]"
+                        className="px-8 py-4 bg-white text-[#0A162E] font-bold rounded-full text-lg hover:scale-105 transition-transform flex items-center justify-center gap-2 mx-auto shadow-[0_20px_40px_rgba(0,0,0,0.5)]"
                     >
                         {t(portfolioCta?.buttonText || "Book a Strategy Session")}
                         <ArrowRight className="w-5 h-5" />

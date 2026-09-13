@@ -4,7 +4,7 @@
 // Only the plumbing changed: hardcoded strings became optional props with
 // defaults that preserve the current production look.
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { z } from "zod";
 import { ArrowRight, CheckCircle2, Loader2, Radio, Sparkles, Users } from "lucide-react";
@@ -20,6 +20,7 @@ import {
   isValidPhoneForCountry,
   type PhoneCountry,
 } from "@/lib/phoneCountries";
+import { sectionThemeSchema } from "./sectionTheme";
 
 // All optional — defaults preserve the current SkaleHubGroup look verbatim.
 export const whatsAppGroupPropsSchema = z.object({
@@ -46,6 +47,7 @@ export const whatsAppGroupPropsSchema = z.object({
   toastSuccessBody: z.string().optional(),
   toastErrorTitle: z.string().optional(),
   phoneInvalidPrefix: z.string().optional(),
+  theme: sectionThemeSchema,
 });
 export type WhatsAppGroupProps = z.infer<typeof whatsAppGroupPropsSchema>;
 
@@ -130,12 +132,6 @@ export function WhatsAppGroupSection({ props }: { props: WhatsAppGroupProps }) {
   const toastErrorTitle = props.toastErrorTitle ?? DEFAULTS.toastErrorTitle;
   const phoneInvalidPrefix = props.phoneInvalidPrefix ?? DEFAULTS.phoneInvalidPrefix;
 
-  useEffect(() => {
-    const prev = document.body.style.backgroundColor;
-    document.body.style.backgroundColor = "#0a0f0d";
-    return () => { document.body.style.backgroundColor = prev; };
-  }, []);
-
   const phoneHasValue = phone.trim().length > 0;
   const phoneIsValid = phoneHasValue && isValidPhoneForCountry(phone, selectedCountry);
   const phoneError = phoneHasValue && !phoneIsValid
@@ -165,7 +161,7 @@ export function WhatsAppGroupSection({ props }: { props: WhatsAppGroupProps }) {
   });
 
   return (
-    <div className="flex-1 bg-[#0a0f0d] text-white">
+    <div className="relative flex-1 bg-[#0a0f0d] text-white">
       {/* Top gradient blob */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[500px] bg-[radial-gradient(ellipse_70%_60%_at_60%_-5%,rgba(37,211,102,0.12),transparent)]" />
 

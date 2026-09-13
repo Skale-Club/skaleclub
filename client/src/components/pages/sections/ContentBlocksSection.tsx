@@ -69,7 +69,7 @@ const LIGHT = {
 } as const;
 
 const DARK = {
-  section:      "bg-[#111111]",
+  section:      "bg-surface-dark",
   eyebrow:      "text-blue-300",
   heading:      "text-white",
   subheading:   "text-zinc-300",
@@ -90,7 +90,7 @@ export function ContentBlocksSection({ props }: { props: ContentBlocksProps }) {
 
   return (
     <section
-      className={`${c.section} py-20 sm:py-24`}
+      className={`${c.section} py-16 md:py-24`}
       data-testid="section-content-blocks"
     >
       <div className="container-custom mx-auto px-6">

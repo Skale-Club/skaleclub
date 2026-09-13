@@ -53,7 +53,7 @@ const DEFAULTS = {
 
 // Quick 260906-qwl — LIGHT is copied verbatim from the pre-task classNames, so
 // `theme` undefined renders exactly as before. On dark the accent moves to
-// `text-blue-300`; `#5173D6` is never used as a text color (4.3:1, below AA).
+// `text-blue-300`; the `cta` token is never used as a text color (4.3:1, below AA).
 const LIGHT = {
   section:    "bg-zinc-50",
   eyebrow:    "text-[#1C53A3]",
@@ -74,7 +74,7 @@ const DARK = {
   subheading: "text-zinc-300",
   card:       "border-white/10 bg-white/5 shadow-none divide-white/10",
   label:      "text-white",
-  kindChip:   "bg-[#5173D6]/20 text-blue-300",
+  kindChip:   "bg-cta/20 text-blue-300",
   note:       "text-zinc-400",
   price:      "text-white",
   footnote:   "text-zinc-300",
@@ -91,7 +91,7 @@ export function PricingTableSection({ props }: { props: PricingTableProps }) {
 
   return (
     <section
-      className={`${c.section} py-20 sm:py-24`}
+      className={`${c.section} py-16 md:py-24`}
       data-testid="section-pricing-table"
     >
       <div className="container-custom mx-auto px-6">

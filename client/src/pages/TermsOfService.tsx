@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import type { CompanySettings } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 export default function TermsOfService() {
   const { t } = useTranslation();
@@ -33,19 +34,17 @@ export default function TermsOfService() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      <div className="bg-primary text-white pt-28 pb-16">
-        <div className="container-custom">
-          <div className="flex items-center gap-3 mb-4">
-            <ShieldCheck className="w-10 h-10" />
-            <h1 className="text-4xl font-bold font-heading text-white">{t('Terms of Service')}</h1>
-          </div>
-          <p className="text-primary-foreground/80 text-lg max-w-2xl">
-            {t(`These terms govern your use of ${companyName}'s website and services. Please read them carefully before using our platform.`)}
-          </p>
-          <p className="text-primary-foreground/60 mt-4 text-sm">
-            {t('Last updated: January 10, 2026')}
-          </p>
-        </div>
+      <div className="pt-24">
+        <PageHeader
+          title={t('Terms of Service')}
+          subtitle={
+            <>
+              {t(`These terms govern your use of ${companyName}'s website and services. Please read them carefully before using our platform.`)}
+              <br />
+              <span className="text-white/50 text-sm">{t('Last updated: January 10, 2026')}</span>
+            </>
+          }
+        />
       </div>
 
       <div className="container-custom py-12">

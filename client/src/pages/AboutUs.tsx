@@ -2,6 +2,7 @@ import { Building2, CheckCircle, Users, Award } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 export default function AboutUs() {
   const { t } = useTranslation();
@@ -13,15 +14,13 @@ export default function AboutUs() {
 
   return (
     <div className="pt-24 pb-20">
-      <section className="container-custom mx-auto mb-20">
-        <div className="max-w-3xl">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6">{t('About Us')}</h1>
-          <p className="text-xl text-slate-600 leading-relaxed mb-8">
-            {t(`At ${companyName}, we believe in empowering businesses to reach their full potential. Founded with a passion for excellence, we've become a trusted name in digital marketing services.`)}
-          </p>
-        </div>
+      <PageHeader
+        title={t('About Us')}
+        subtitle={t(`At ${companyName}, we believe in empowering businesses to reach their full potential. Founded with a passion for excellence, we've become a trusted name in digital marketing services.`)}
+      />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
+      <section className="container-custom mx-auto px-4 sm:px-6 tablet:px-0 pt-16 mb-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {[
             { icon: Building2, title: t("Local Expertise"), desc: t("Serving our community with pride and dedication.") },
             { icon: CheckCircle, title: t("Quality Guaranteed"), desc: t("We don't stop until you see results.") },

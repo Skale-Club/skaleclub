@@ -291,7 +291,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
     <button
       onClick={(e) => { e.stopPropagation(); onCta(service.slug); }}
       className="flex items-center justify-center rounded-full text-white font-bold hover:opacity-90 transition-opacity whitespace-nowrap"
-      style={{ width, height: capAtFigmaSize(cqwFn, height), fontSize: capAtFigmaSize(cqwFn, fontSize), background: "#4c4ac1", border: "1px solid #34336f", alignSelf: "center" }}
+      style={{ width, height: capAtFigmaSize(cqwFn, height), fontSize: capAtFigmaSize(cqwFn, fontSize), background: "var(--cta)", border: "1px solid var(--cta-hover)", alignSelf: "center" }}
     >
       {isEnglish ? "Start" : "Começar"}
     </button>
@@ -483,7 +483,7 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
                 className="flex items-center justify-center text-white font-bold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap overflow-hidden text-ellipsis"
                 style={{
                   width: cqw(308.16), height: cqw(97.92), fontSize: cqw(36),
-                  background: "#4c4ac1", border: "1px solid #34336f",
+                  background: "var(--cta)", border: "1px solid var(--cta-hover)",
                 }}
               >
                 {isEnglish ? "Start" : "Começar"}

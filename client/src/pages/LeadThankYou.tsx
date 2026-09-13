@@ -48,7 +48,7 @@ export default function LeadThankYou() {
       className="w-full text-white overflow-hidden flex items-center pt-16"
       style={{ background: heroGradient, minHeight: 'calc(100vh - 120px)' }}
     >
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="container-custom px-4 sm:px-6 tablet:px-0 py-8">
         <div className="grid md:grid-cols-[1.2fr_1fr] gap-6 items-start">
           <div className="bg-white/5 border border-white/10 rounded-3xl p-8 md:p-10 shadow-2xl backdrop-blur">
             <div className="flex items-center gap-4 mb-6">
@@ -59,7 +59,7 @@ export default function LeadThankYou() {
                   style={{ width: '100%', height: '100%' }}
                 />
               </div>
-              <div className="inline-flex items-center px-3 py-1 rounded-full bg-[#5173D6]/10 text-blue-200 text-xs font-semibold border border-[#5173D6]/30">
+              <div className="inline-flex items-center px-3 py-1 rounded-full bg-cta/10 text-blue-200 text-xs font-semibold border border-cta/30">
                 {t('We received your information')}
               </div>
             </div>
@@ -74,7 +74,7 @@ export default function LeadThankYou() {
                 <a
                   href={bookingUrl}
                   data-testid="link-book-visit"
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#5173D6] hover:bg-[#3B5BBE] text-white font-semibold py-3.5 text-lg shadow-lg shadow-blue-500/20 hover:-translate-y-0.5 transition-all"
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-cta hover:bg-cta-hover text-white font-semibold py-3.5 text-lg shadow-lg shadow-blue-500/20 hover:-translate-y-0.5 transition-all"
                 >
                   <CalendarCheck className="w-5 h-5" />
                   {t('Schedule your visit')}
@@ -90,7 +90,7 @@ export default function LeadThankYou() {
                   className={
                     bookingUrl
                       ? "w-full inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 text-white font-semibold py-3 transition-all"
-                      : "w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#5173D6] hover:bg-[#3B5BBE] text-white font-semibold py-3 shadow-lg shadow-blue-500/20 hover:-translate-y-0.5 transition-all"
+                      : "w-full inline-flex items-center justify-center gap-2 rounded-xl bg-cta hover:bg-cta-hover text-white font-semibold py-3 shadow-lg shadow-blue-500/20 hover:-translate-y-0.5 transition-all"
                   }
                 >
                   <Home className="w-4 h-4" />
@@ -115,20 +115,20 @@ export default function LeadThankYou() {
 
           <div className="hidden md:block">
             <div className="relative overflow-hidden rounded-3xl bg-white/5 border border-white/10 p-8 shadow-2xl backdrop-blur">
-              <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_20%_20%,#5173D6,transparent_35%),radial-gradient(circle_at_80%_0%,#60a5fa,transparent_30%),radial-gradient(circle_at_50%_80%,#3b82f6,transparent_25%)]" />
+              <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_20%_20%,var(--cta),transparent_35%),radial-gradient(circle_at_80%_0%,#60a5fa,transparent_30%),radial-gradient(circle_at_50%_80%,#3b82f6,transparent_25%)]" />
               <div className="relative space-y-4">
                 <p className="text-sm text-slate-200/90">{t('Next steps')}</p>
                 <div className="space-y-3 text-sm text-white/90">
                   <div className="p-3 rounded-xl bg-white/10 border border-white/10 flex items-center gap-3">
-                    <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#5173D6]/20 border border-[#5173D6]/30 flex items-center justify-center text-blue-300 font-bold text-sm">1</span>
+                    <span className="flex-shrink-0 w-7 h-7 rounded-full bg-cta/20 border border-cta/30 flex items-center justify-center text-blue-300 font-bold text-sm">1</span>
                     <span>{t(isNfcLead ? 'We review your quantity, logo, and the link you want the NFC tap to open.' : 'Our team reviews your answers and identifies the best plan.')}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-white/10 border border-white/10 flex items-center gap-3">
-                    <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#5173D6]/20 border border-[#5173D6]/30 flex items-center justify-center text-blue-300 font-bold text-sm">2</span>
+                    <span className="flex-shrink-0 w-7 h-7 rounded-full bg-cta/20 border border-cta/30 flex items-center justify-center text-blue-300 font-bold text-sm">2</span>
                     <span>{t(isNfcLead ? 'We contact you on WhatsApp to confirm the artwork, total, and production window.' : 'We will contact you to align objectives and next steps.')}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-white/10 border border-white/10 flex items-center gap-3">
-                    <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#5173D6]/20 border border-[#5173D6]/30 flex items-center justify-center text-blue-300 font-bold text-sm">3</span>
+                    <span className="flex-shrink-0 w-7 h-7 rounded-full bg-cta/20 border border-cta/30 flex items-center justify-center text-blue-300 font-bold text-sm">3</span>
                     <span>{t(isNfcLead ? 'Production starts after payment and your artwork approval.' : 'You receive a summary of the initial plan and practical instructions.')}</span>
                   </div>
                 </div>
