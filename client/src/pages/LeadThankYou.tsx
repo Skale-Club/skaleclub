@@ -1,11 +1,11 @@
-import { useMemo } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { Sparkles, Home, CalendarCheck } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
-import Lottie from "lottie-react";
-import successAnimation from "../assets/success-animation.json";
 import { useTranslation } from "@/hooks/useTranslation";
+
+const Lottie = lazy(() => import("lottie-react"));
 
 export default function LeadThankYou() {
   const { t, language } = useTranslation();
@@ -13,10 +13,44 @@ export default function LeadThankYou() {
     queryKey: ["/api/company-settings"],
   });
 
+  const [successAnimation, setSuccessAnimation] = useState<object | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    // Warm the lazy chunk now so the library and the JSON download in parallel.
+    void import("lottie-react");
+    void import("../assets/success-animation.json").then((mod) => {
+      if (!cancelled) setSuccessAnimation((mod.default ?? mod) as object);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Thank-you pages should never be indexed or crawled — they're
+  // per-submission confirmations, not content worth surfacing in search.
+  useEffect(() => {
+    let meta = document.querySelector('meta[name="robots"]') as HTMLMetaElement | null;
+    const existed = Boolean(meta);
+    const previousContent = meta?.getAttribute("content") ?? null;
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.setAttribute("name", "robots");
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute("content", "noindex, nofollow");
+    return () => {
+      if (!meta) return;
+      if (existed && previousContent !== null) {
+        meta.setAttribute("content", previousContent);
+      } else {
+        meta.remove();
+      }
+    };
+  }, []);
+
   const companyName = companySettings?.companyName || "Company Name";
   const headline = t(`Thank you for trusting ${companyName}.`);
   const formSlug = useMemo(() => new URLSearchParams(window.location.search).get("form"), []);
   const isNfcLead = formSlug === "nfc-keychain-leads";
+  const isGroupLead = formSlug === "skale-hub-group";
 
   // Xphere visit booking CTA (quick 260906-g80). Open-redirect guard: only
   // accept URLs on Xphere's public booking host.
@@ -53,11 +87,15 @@ export default function LeadThankYou() {
           <div className="bg-white/5 border border-white/10 rounded-3xl p-8 md:p-10 shadow-2xl backdrop-blur">
             <div className="flex items-center gap-4 mb-6">
               <div className="w-16 h-16 flex-shrink-0">
-                <Lottie
-                  animationData={successAnimation}
-                  loop={true}
-                  style={{ width: '100%', height: '100%' }}
-                />
+                <Suspense fallback={<div className="w-16 h-16" />}>
+                  {successAnimation && (
+                    <Lottie
+                      animationData={successAnimation}
+                      loop={true}
+                      style={{ width: '100%', height: '100%' }}
+                    />
+                  )}
+                </Suspense>
               </div>
               <div className="inline-flex items-center px-3 py-1 rounded-full bg-[#5173D6]/10 text-blue-200 text-xs font-semibold border border-[#5173D6]/30">
                 {t('We received your information')}
@@ -65,9 +103,11 @@ export default function LeadThankYou() {
             </div>
             <h1 className="text-3xl md:text-4xl font-bold leading-tight text-white">{headline}</h1>
             <p className="mt-4 text-slate-200 text-lg leading-relaxed">
-              {t(isNfcLead
-                ? 'Your NFC keychain request was submitted successfully. We will review the quantity, artwork, and preferred contact method, then contact you on WhatsApp.'
-                : 'Your form was submitted successfully. A specialist from our team will review the information and contact you shortly for the next step.')}
+              {t(isGroupLead
+                ? 'You are in. We will add you to the Skale Hub WhatsApp group using the number you provided.'
+                : isNfcLead
+                  ? 'Your NFC keychain request was submitted successfully. We will review the quantity, artwork, and preferred contact method, then contact you on WhatsApp.'
+                  : 'Your form was submitted successfully. A specialist from our team will review the information and contact you shortly for the next step.')}
             </p>
             {bookingUrl && (
               <div className="mt-6">
@@ -107,9 +147,11 @@ export default function LeadThankYou() {
               )}
             </div>
             <p className="mt-3 text-sm text-slate-300">
-              {t(isNfcLead
-                ? 'Keep your WhatsApp available. We will use the number you provided in the form.'
-                : 'Keep your preferred contact channel available so our team can reach you.')}
+              {t(isGroupLead
+                ? 'Keep your WhatsApp available. We will use the number you provided.'
+                : isNfcLead
+                  ? 'Keep your WhatsApp available. We will use the number you provided in the form.'
+                  : 'Keep your preferred contact channel available so our team can reach you.')}
             </p>
           </div>
 
@@ -121,15 +163,15 @@ export default function LeadThankYou() {
                 <div className="space-y-3 text-sm text-white/90">
                   <div className="p-3 rounded-xl bg-white/10 border border-white/10 flex items-center gap-3">
                     <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#5173D6]/20 border border-[#5173D6]/30 flex items-center justify-center text-blue-300 font-bold text-sm">1</span>
-                    <span>{t(isNfcLead ? 'We review your quantity, logo, and the link you want the NFC tap to open.' : 'Our team reviews your answers and identifies the best plan.')}</span>
+                    <span>{t(isGroupLead ? 'We check the number you provided.' : isNfcLead ? 'We review your quantity, logo, and the link you want the NFC tap to open.' : 'Our team reviews your answers and identifies the best plan.')}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-white/10 border border-white/10 flex items-center gap-3">
                     <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#5173D6]/20 border border-[#5173D6]/30 flex items-center justify-center text-blue-300 font-bold text-sm">2</span>
-                    <span>{t(isNfcLead ? 'We contact you on WhatsApp to confirm the artwork, total, and production window.' : 'We will contact you to align objectives and next steps.')}</span>
+                    <span>{t(isGroupLead ? 'We add you to the Skale Hub WhatsApp group.' : isNfcLead ? 'We contact you on WhatsApp to confirm the artwork, total, and production window.' : 'We will contact you to align objectives and next steps.')}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-white/10 border border-white/10 flex items-center gap-3">
                     <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#5173D6]/20 border border-[#5173D6]/30 flex items-center justify-center text-blue-300 font-bold text-sm">3</span>
-                    <span>{t(isNfcLead ? 'Production starts after payment and your artwork approval.' : 'You receive a summary of the initial plan and practical instructions.')}</span>
+                    <span>{t(isGroupLead ? 'You get the live announcements straight on WhatsApp.' : isNfcLead ? 'Production starts after payment and your artwork approval.' : 'You receive a summary of the initial plan and practical instructions.')}</span>
                   </div>
                 </div>
               </div>

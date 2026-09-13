@@ -16,6 +16,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useEffect, Suspense, lazy, useMemo, useRef, useState, createContext, useContext } from "react";
 import type { CompanySettings } from "@shared/schema";
 import { buildPagePaths, DEFAULT_PAGE_SLUGS, isRoutePrefixMatch } from "@shared/pageSlugs";
+import { RESERVED_SLUGS } from "@shared/reservedSlugs";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 
 // DEFAULT_PAGE_SLUGS never changes at runtime — compute once instead of on every Router render.
@@ -117,6 +118,21 @@ function SEOProvider({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// First path segments that are never a managed-landing slug — either handled by a
+// dedicated route above the DynamicPage catch-all, or reserved static UI paths.
+const RESERVED_LANDING_SEGMENTS = new Set<string>([
+  "admin",
+  "oauth",
+  "e",
+  "p",
+  "f",
+  "print",
+  "api",
+  "assets",
+  ...Object.values(DEFAULT_PAGE_SLUGS),
+  ...RESERVED_SLUGS,
+]);
+
 function Router() {
   const [location] = useLocation();
   const { isInitialLoad } = useContext(InitialLoadContext);
@@ -124,6 +140,21 @@ function Router() {
     queryKey: ['/api/company-settings'],
   });
   const pagePaths = useMemo(() => buildPagePaths(settings?.pageSlugs), [settings?.pageSlugs]);
+
+  // Prefetch the landing row in parallel with /api/company-settings instead of
+  // waiting for it to resolve before DynamicLanding even mounts — cuts a sequential
+  // round trip on every ad landing. Runs once on mount, off of window.location so it
+  // fires before the settings-driven route matching above even completes.
+  useEffect(() => {
+    const match = window.location.pathname.match(/^\/([a-z0-9-]+)(\/br)?\/?$/);
+    if (!match) return;
+    const [, first, brSuffix] = match;
+    if (RESERVED_LANDING_SEGMENTS.has(first)) return;
+    const slug = brSuffix ? `${first}-br` : first;
+    void queryClient.prefetchQuery({ queryKey: [`/api/pages/slug/${slug}`], retry: false });
+    // Mount-only: this is a one-shot prefetch racing the initial settings fetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const isOAuthRoute = location.startsWith('/oauth/');
   const isAdminRoute = location.startsWith('/admin');
   const isLinksRoute = isRoutePrefixMatch(location, pagePaths.links) || isRoutePrefixMatch(location, LEGACY_PATHS.links);

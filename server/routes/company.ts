@@ -204,7 +204,6 @@ export function registerCompanyRoutes(app: Express) {
         { path: pagePaths.portfolio, changefreq: "weekly", priority: "0.8" },
         { path: pagePaths.privacyPolicy, changefreq: "yearly", priority: "0.5" },
         { path: pagePaths.termsOfService, changefreq: "yearly", priority: "0.5" },
-        { path: pagePaths.thankYou, changefreq: "monthly", priority: "0.6" },
         { path: pagePaths.blog, changefreq: "weekly", priority: "0.8" },
         { path: pagePaths.links, changefreq: "monthly", priority: "0.6" },
       ];

@@ -665,7 +665,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
     if (open) {
       document.body.style.overflow = "hidden";
       ensureSession();
-      trackEvent("form_open", { location: "home" });
+      trackEvent("form_open", { location: window.location.pathname, form: formSlug });
     } else {
       document.body.style.overflow = "";
       syncedOnOpenRef.current = false;
@@ -992,11 +992,16 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
           score: leadScore,
           synced: true,
           booking: Boolean(bookingUrl),
+          transport_type: "beacon",
+          form: formSlug,
         });
-        onClose();
-        window.location.href = bookingUrl
+        const target = bookingUrl
           ? `${pagePaths.thankYou}?form=${encodeURIComponent(formSlug)}&booking=${encodeURIComponent(bookingUrl)}`
           : `${pagePaths.thankYou}?form=${encodeURIComponent(formSlug)}`;
+        onClose();
+        window.setTimeout(() => {
+          window.location.href = target;
+        }, 300);
         return;
       }
 

@@ -1,39 +1,7 @@
 import express, { type Express, type Request, type Response } from "express";
 import fs from "fs";
 import path from "path";
-
-type SeoConfig = {
-  title: string;
-  description: string;
-  locale: "en_US" | "pt_BR";
-};
-
-const landingSeo: Record<string, SeoConfig> = {
-  "/nfc-keychains": {
-    title: "Custom NFC Keychains for Businesses | Skale Club",
-    description:
-      "Turn every tap into a review, follow, booking, or sale with custom NFC keychains designed, programmed, and tested by Skale Club.",
-    locale: "en_US",
-  },
-  "/nfc-keychains/br": {
-    title: "Chaveiros NFC personalizados para empresas | Skale Club",
-    description:
-      "Transforme cada toque em avaliação, seguidor, agendamento ou venda com chaveiros NFC personalizados, programados e testados pela Skale Club.",
-    locale: "pt_BR",
-  },
-  "/nfc-pricing": {
-    title: "NFC Keychain Pricing & Instructions | Skale Club",
-    description:
-      "See custom NFC keychain pricing, setup instructions, delivery details, and answers to common questions before requesting your design.",
-    locale: "en_US",
-  },
-  "/nfc-pricing/br": {
-    title: "Preços e instruções dos chaveiros NFC | Skale Club",
-    description:
-      "Veja preços, instruções de uso, detalhes de entrega e respostas às principais dúvidas antes de solicitar seu chaveiro NFC personalizado.",
-    locale: "pt_BR",
-  },
-};
+import { getLandingSeo, landingPathForSlug, slugForLandingPath } from "#shared/landingSeo.js";
 
 function escapeHtmlAttribute(value: string): string {
   return value
@@ -44,17 +12,12 @@ function escapeHtmlAttribute(value: string): string {
 }
 
 export function injectLandingSeo(html: string, pathname: string): string {
-  const cleanPath = pathname.length > 1 ? pathname.replace(/\/$/, "") : pathname;
-  const normalizedPath = cleanPath === "/nfc-keychains-br"
-    ? "/nfc-keychains/br"
-    : cleanPath === "/nfc-pricing-br"
-      ? "/nfc-pricing/br"
-      : cleanPath;
-  const seo = landingSeo[normalizedPath];
+  const slug = slugForLandingPath(pathname);
+  const seo = getLandingSeo(slug);
   if (!seo) return html;
 
   const canonicalOrigin = (process.env.VITE_CANONICAL_ORIGIN || "https://skale.club").replace(/\/$/, "");
-  const canonical = `${canonicalOrigin}${normalizedPath}`;
+  const canonical = `${canonicalOrigin}${landingPathForSlug(slug)}`;
   const lang = seo.locale === "pt_BR" ? "pt-BR" : "en";
   const replacements: Array<[RegExp, string]> = [
     [/<html lang="[^"]*"/, `<html lang="${lang}"`],
@@ -62,6 +25,7 @@ export function injectLandingSeo(html: string, pathname: string): string {
     [/<meta name="description" content="[^"]*"\s*\/?>/, `<meta name="description" content="${escapeHtmlAttribute(seo.description)}" />`],
     [/<link rel="canonical" href="[^"]*"\s*\/?>/, `<link rel="canonical" href="${canonical}" />`],
     [/<meta property="og:url" content="[^"]*"\s*\/?>/, `<meta property="og:url" content="${canonical}" />`],
+    [/<meta property="og:locale" content="[^"]*"\s*\/?>/, `<meta property="og:locale" content="${seo.locale}" />`],
     [/<meta property="og:title" content="[^"]*"\s*\/?>/, `<meta property="og:title" content="${escapeHtmlAttribute(seo.title)}" />`],
     [/<meta property="og:description" content="[^"]*"\s*\/?>/, `<meta property="og:description" content="${escapeHtmlAttribute(seo.description)}" />`],
     [/<meta name="twitter:title" content="[^"]*"\s*\/?>/, `<meta name="twitter:title" content="${escapeHtmlAttribute(seo.title)}" />`],

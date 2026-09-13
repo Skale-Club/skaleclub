@@ -124,6 +124,13 @@ export const translations = {
     'Our team reviews your answers and identifies the best plan.': 'Nossa equipe analisa suas respostas e identifica o melhor plano.',
     'We will contact you to align objectives and next steps.': 'Entraremos em contato para alinhar objetivos e próximos passos.',
     'You receive a summary of the initial plan and practical instructions.': 'Você recebe um resumo do plano inicial e instruções práticas.',
+    'Keep your preferred contact channel available so our team can reach you.': 'Mantenha seu canal de contato preferido disponível para que nossa equipe possa falar com você.',
+    // Lead Thank You Page — Skale Hub WhatsApp group (/grupo)
+    'You are in. We will add you to the Skale Hub WhatsApp group using the number you provided.': 'Você está dentro. Vamos adicionar você ao grupo do Skale Hub no WhatsApp usando o número informado.',
+    'Keep your WhatsApp available. We will use the number you provided.': 'Mantenha seu WhatsApp disponível. Vamos usar o número que você informou.',
+    'We check the number you provided.': 'Conferimos o número que você informou.',
+    'We add you to the Skale Hub WhatsApp group.': 'Adicionamos você ao grupo do Skale Hub no WhatsApp.',
+    'You get the live announcements straight on WhatsApp.': 'Você recebe os avisos das lives direto no WhatsApp.',
     // Lead Form Modal
     "Let's begin!": 'Vamos começar!', 'Loading form...': 'Carregando formulário...', 'Important': 'Importante',
     "Don't close this window until you complete the form. Your browser doesn't allow local saves.": 'Não feche esta janela até completar o formulário. Seu navegador não permite salvamentos locais.',

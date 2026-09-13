@@ -4,7 +4,7 @@
 // Only the plumbing changed: hardcoded strings became optional props with
 // defaults that preserve the current production look.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { z } from "zod";
 import { ArrowRight, CheckCircle2, Loader2, Radio, Sparkles, Users } from "lucide-react";
@@ -13,6 +13,9 @@ import { Input } from "@/components/ui/input";
 import { PhoneCountrySelect } from "@/components/ui/PhoneCountrySelect";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { trackEvent } from "@/lib/analytics";
+import { getStoredVisitorId } from "@/lib/attribution";
+import { usePagePaths } from "@/lib/pagePaths";
 import {
   detectDefaultPhoneCountry,
   formatPhoneForCountry,
@@ -101,9 +104,11 @@ function readUtmParams() {
 
 export function WhatsAppGroupSection({ props }: { props: WhatsAppGroupProps }) {
   const { toast } = useToast();
+  const pagePaths = usePagePaths();
   const [phone, setPhone] = useState("");
   const [selectedCountry, setSelectedCountry] = useState<PhoneCountry>(() => detectDefaultPhoneCountry());
   const [submitted, setSubmitted] = useState(false);
+  const hasTrackedFormOpenRef = useRef(false);
 
   // Resolved display values — props override defaults, defaults preserve the original look.
   const badgeLabel = props.badgeLabel ?? DEFAULTS.badgeLabel;
@@ -142,10 +147,14 @@ export function WhatsAppGroupSection({ props }: { props: WhatsAppGroupProps }) {
     ? `${phoneInvalidPrefix} ${selectedCountry.name}.`
     : null;
 
-  const payload = useMemo(() => ({
-    phone: getInternationalPhone(phone, selectedCountry),
-    ...readUtmParams(),
-  }), [phone, selectedCountry]);
+  const payload = useMemo(() => {
+    const visitorId = getStoredVisitorId();
+    return {
+      phone: getInternationalPhone(phone, selectedCountry),
+      ...readUtmParams(),
+      ...(visitorId ? { __visitorId: visitorId } : {}),
+    };
+  }, [phone, selectedCountry]);
 
   const submitMutation = useMutation({
     mutationFn: async () => {
@@ -154,15 +163,30 @@ export function WhatsAppGroupSection({ props }: { props: WhatsAppGroupProps }) {
     },
     onSuccess: () => {
       setSubmitted(true);
+      trackEvent("form_completed", {
+        location: "grupo",
+        label: "skale-hub-group",
+        form: "skale-hub-group",
+        transport_type: "beacon",
+      });
       toast({
         title: toastSuccessTitle,
         description: toastSuccessBody,
       });
+      window.setTimeout(() => {
+        window.location.href = `${pagePaths.thankYou}?form=skale-hub-group`;
+      }, 300);
     },
     onError: (err: Error) => {
       toast({ title: toastErrorTitle, description: err.message, variant: "destructive" });
     },
   });
+
+  const handlePhoneFocus = () => {
+    if (hasTrackedFormOpenRef.current) return;
+    hasTrackedFormOpenRef.current = true;
+    trackEvent("form_open", { location: "grupo", label: "skale-hub-group" });
+  };
 
   return (
     <div className="flex-1 bg-[#0a0f0d] text-white">
@@ -290,6 +314,7 @@ export function WhatsAppGroupSection({ props }: { props: WhatsAppGroupProps }) {
                       placeholder={selectedCountry.placeholder}
                       value={phone}
                       onChange={(e) => setPhone(formatPhoneForCountry(e.target.value, selectedCountry))}
+                      onFocus={handlePhoneFocus}
                       className="min-h-14 border-0 bg-transparent text-base text-white placeholder:text-white/50 focus-visible:ring-0"
                       data-testid="input-skale-hub-group-phone"
                     />
