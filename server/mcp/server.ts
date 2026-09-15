@@ -19,7 +19,9 @@ function buildMcpServer(tokenId: string, tokenPrefix: string, ip: string): McpSe
 }
 
 export async function handleMcpRequest(req: Request, res: Response, tokenId: string, tokenPrefix: string) {
-  const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0].trim() ?? req.socket.remoteAddress ?? "";
+  // `req.ip` honours the configured trust-proxy depth; the leftmost
+  // X-Forwarded-For entry is caller-supplied (see server/lib/turnstile.ts).
+  const ip = req.ip ?? req.socket.remoteAddress ?? "";
 
   const mcpServer = buildMcpServer(tokenId, tokenPrefix, ip);
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });

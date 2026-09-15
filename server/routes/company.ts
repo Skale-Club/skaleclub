@@ -118,7 +118,11 @@ export function registerCompanyRoutes(app: Express) {
   // Form Leads
   // ===============================
 
-  app.get('/api/form-leads/:sessionId', async (req, res) => {
+  // requireAdmin: this returned the whole form_leads row — admin notes
+  // (`observacoes`), classification, status, phone and email — to anyone
+  // holding a session UUID. No client code calls it (the admin panel works by
+  // numeric id), so gating it costs nothing.
+  app.get('/api/form-leads/:sessionId', requireAdmin, async (req, res) => {
     const lead = await storage.getFormLeadBySession(req.params.sessionId);
     if (!lead) {
       return res.status(404).json({ message: 'Lead not found' });

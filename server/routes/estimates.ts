@@ -58,12 +58,12 @@ function toPublicEstimate(estimate: any) {
   return { ...publicEstimate, hasAccessCode: Boolean(accessCode) };
 }
 
-// Best-effort client IP extraction (mirrors the pattern already used by the
-// /view endpoint below and server/auth/supabaseAuth.ts's login limiter).
+// `req.ip` only. Reading the leftmost X-Forwarded-For entry let a caller pick
+// their own rate-limit key, which mattered most right here: the access-code
+// check below allows 10 guesses per 5 minutes, and a spoofable key turned that
+// into an unlimited brute force against a plaintext code that unlocks a full
+// estimate with pricing.
 function getRequestIp(req: { headers: Record<string, unknown>; ip?: string }): string {
-  const fwd = req.headers["x-forwarded-for"];
-  if (typeof fwd === "string" && fwd.length > 0) return fwd.split(",")[0]!.trim();
-  if (Array.isArray(fwd) && fwd.length > 0) return String(fwd[0]);
   return req.ip || "unknown";
 }
 
@@ -133,7 +133,7 @@ export function registerEstimatesRoutes(app: Express) {
     try {
       const id = Number(req.params.id);
       const ipAddress = (
-        (req.headers['x-forwarded-for'] as string) || req.ip || ''
+        req.ip || ''
       ).toString() || undefined;
       await storage.recordEstimateView(id, ipAddress);
       res.json({ success: true });

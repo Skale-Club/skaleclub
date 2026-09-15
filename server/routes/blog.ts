@@ -1,12 +1,30 @@
-import type { Express } from "express";
+import type { Express, RequestHandler } from "express";
 import { z } from "zod";
 import { storage } from "../storage.js";
 import { insertBlogPostSchema } from "#shared/schema.js";
+import { eq } from "drizzle-orm";
+import { db } from "../db.js";
+import { users } from "#shared/schema.js";
 import { requireAdmin, setPublicCache } from "./_shared.js";
 import { sanitizeBlogHtml } from "../lib/blogContentValidator.js";
 
 export function registerBlogRoutes(app: Express) {
-  app.get("/api/blog", async (req, res) => {
+  // Listing. `status` used to be passed straight through and omitting it
+  // returned the whole table, so drafts written by the blog automation and
+  // waiting in the admin approval queue were readable by anyone who asked for
+  // `/api/blog?status=draft`. The table happens to be empty today; that is
+  // timing, not a safeguard.
+  //
+  // The admin panel genuinely needs every status (BlogSection lists all posts,
+  // PostApprovalPanel asks for drafts), so rather than splitting the route and
+  // rewriting its callers and their query keys, anything other than
+  // `status=published` now has to get past requireAdmin first.
+  const requireAdminForNonPublished: RequestHandler = (req, res, next) => {
+    if (req.query.status === "published") return next();
+    return requireAdmin(req, res, next);
+  };
+
+  app.get("/api/blog", requireAdminForNonPublished, async (req, res) => {
     try {
       const status = req.query.status as string | undefined;
       const limit = req.query.limit ? Number(req.query.limit) : undefined;
@@ -16,11 +34,15 @@ export function registerBlogRoutes(app: Express) {
         const posts = await storage.getPublishedBlogPosts(limit, offset);
         setPublicCache(res, 300);
         res.json(posts);
-      } else if (status) {
+      } else if (status === "published") {
         const posts = await storage.getBlogPosts(status);
+        setPublicCache(res, 300);
         res.json(posts);
       } else {
-        const posts = await storage.getBlogPosts();
+        // Admin-only past this point.
+        const posts = status
+          ? await storage.getBlogPosts(status)
+          : await storage.getBlogPosts();
         res.json(posts);
       }
     } catch (err) {
@@ -130,6 +152,22 @@ export function registerBlogRoutes(app: Express) {
       if (!post) {
         return res.status(404).json({ message: "Blog post not found" });
       }
+
+      // An unpublished post is only visible to a signed-in admin. Without this,
+      // knowing (or guessing) a draft's id or slug was enough to read it, which
+      // is how the admin preview dialog reaches drafts — so the check is on the
+      // session rather than a separate route.
+      if (post.status !== "published") {
+        const sess = req.session as { userId?: string } | undefined;
+        if (!sess?.userId) {
+          return res.status(404).json({ message: "Blog post not found" });
+        }
+        const [dbUser] = await db.select().from(users).where(eq(users.id, sess.userId));
+        if (!dbUser?.isAdmin) {
+          return res.status(404).json({ message: "Blog post not found" });
+        }
+      }
+
       res.json(post);
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });

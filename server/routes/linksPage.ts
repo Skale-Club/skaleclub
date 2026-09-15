@@ -23,10 +23,10 @@ function pruneClickMemory() {
   }
 }
 
+// `req.ip`, not the raw X-Forwarded-For: the leftmost entry of that header is
+// supplied by the caller, so keying a limiter on it lets anyone mint a new
+// bucket per request. Express resolves the real hop via `trust proxy`.
 function getClientIp(req: Request): string {
-  const fwd = req.headers["x-forwarded-for"];
-  if (typeof fwd === "string") return fwd.split(",")[0]!.trim();
-  if (Array.isArray(fwd) && fwd.length) return fwd[0]!;
   return req.ip ?? "unknown";
 }
 

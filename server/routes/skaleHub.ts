@@ -18,8 +18,9 @@ function parseLiveId(value: string): number | null {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
+// Hashed `req.ip`, not the client-supplied header (see server/lib/turnstile.ts).
 function getRequestIpHash(req: Request): string | null {
-  const rawIp = ((req.headers["x-forwarded-for"] as string) || req.ip || "").toString();
+  const rawIp = (req.ip || "").toString();
   return rawIp ? crypto.createHash("sha256").update(rawIp).digest("hex") : null;
 }
 

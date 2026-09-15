@@ -58,7 +58,8 @@ export function registerPresentationsRoutes(app: Express) {
   // SHA-256 hash IP per ip_hash column intent (STATE.md Phase 15 decision)
   app.post("/api/presentations/:id/view", async (req, res) => {
     try {
-      const rawIp = ((req.headers["x-forwarded-for"] as string) || req.ip || "").toString();
+      // `req.ip`, not the raw header — see server/lib/turnstile.ts.
+      const rawIp = (req.ip || "").toString();
       const ipHash = rawIp
         ? crypto.createHash("sha256").update(rawIp).digest("hex")
         : undefined;
