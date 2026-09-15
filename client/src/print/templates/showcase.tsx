@@ -22,16 +22,16 @@ function Outside({ bleed, brand, settings }: FolderData) {
   return (
     <>
       {/* Back cover — quiet, contact-led */}
-      <div className="w-1/2 h-full flex flex-col" style={{ ...left, backgroundColor: INK.paperTint }}>
-        <Editable as="h2" className="text-[20pt] font-extrabold leading-tight" style={{ color: INK.navy }}>
+      <div className="w-1/2 h-full flex flex-col" style={{ ...left, backgroundColor: INK.navyDeep }}>
+        <Editable as="h2" className="text-[20pt] font-extrabold leading-tight text-white">
           Let's talk.
         </Editable>
         <Rule className="mt-[3mm]" />
-        <Editable className="mt-[3mm] text-[9.5pt] leading-relaxed" style={{ color: INK.body }}>
+        <Editable className="mt-[3mm] text-[9.5pt] leading-relaxed" style={{ color: "#A9B8D8" }}>
           Tell us what slows your team down. We will show you what can run on its own.
         </Editable>
 
-        <div className="mt-[6mm] flex flex-col gap-[2.5mm] text-[10pt]" style={{ color: INK.navy }}>
+        <div className="mt-[6mm] flex flex-col gap-[2.5mm] text-[10pt]" style={{ color: "#DCE4F2" }}>
           {brand.phone && (
             <div className="flex items-center gap-[2.5mm]">
               <Phone style={{ width: "3.6mm", height: "3.6mm", color: INK.cta }} />
@@ -58,15 +58,15 @@ function Outside({ bleed, brand, settings }: FolderData) {
 
         <div className="mt-auto flex items-end justify-between gap-[4mm]">
           <div className="flex flex-col gap-[2mm]">
-            <div className="bg-white p-[1.5mm] rounded-[1.5mm]" style={{ border: `0.3mm solid ${INK.rule}` }}>
+            <div className="bg-white p-[1.5mm] rounded-[1.5mm]">
               <QRCode value={brand.siteUrl} size={64} />
             </div>
             <Editable className="text-[7pt]" style={{ color: INK.muted }}>
               Scan to visit our site
             </Editable>
           </div>
-          {brand.logoOnLight && (
-            <img src={printImage(brand.logoOnLight, 400)} alt={brand.name} className="object-contain" style={{ height: "9mm" }} />
+          {brand.logoOnDark && (
+            <img src={printImage(brand.logoOnDark, 400)} alt={brand.name} className="object-contain" style={{ height: "9mm" }} />
           )}
         </div>
       </div>
@@ -167,8 +167,8 @@ function Inside({ bleed, apps, services, showPrices }: FolderData) {
 export const showcaseTemplate: FolderTemplate = {
   id: "showcase",
   name: "Showcase",
-  description: "Light close, cover photo bled edge to edge, dark spread. Best when the artwork carries the pitch.",
+  description: "All dark, cover photo bled edge to edge. Both panels as picture cards, for when artwork carries the pitch.",
   Outside,
   Inside,
-  sheetBackground: { outside: INK.paperTint, inside: INK.navyDeep },
+  sheetBackground: { outside: INK.navyDeep, inside: INK.navyDeep },
 };

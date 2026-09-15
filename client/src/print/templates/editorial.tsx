@@ -2,7 +2,7 @@ import { Phone, Mail, MapPin, Globe, Check } from "lucide-react";
 import QRCode from "react-qr-code";
 import type { FolderData, FolderTemplate } from "../types";
 import { panelPadding } from "../paper";
-import { AppCard, CardGrid, PanelHeading, ServiceCard } from "../cards";
+import { AppCard, CardGrid, PanelHeading, ServiceListItem } from "../cards";
 import { Editable, ImageFrame, INK, Rule, printImage } from "../primitives";
 
 /**
@@ -54,38 +54,37 @@ function BackPanel({ bleed, brand, settings }: FolderData) {
   return (
     <div
       className="w-1/2 h-full flex flex-col"
-      style={{ ...panelPadding(bleed, "left"), backgroundColor: INK.paper }}
+      style={{ ...panelPadding(bleed, "left"), backgroundColor: INK.navyDeep }}
     >
       <Editable
         className="text-[7.5pt] font-bold uppercase tracking-[0.2em]"
-        style={{ color: INK.cta }}
+        style={{ color: "#8FA9EE" }}
       >
         Next step
       </Editable>
       <Editable
         as="h2"
-        className="mt-[1.5mm] text-[20pt] font-extrabold leading-[1.1]"
-        style={{ color: INK.navy }}
+        className="mt-[1.5mm] text-[20pt] font-extrabold leading-[1.1] text-white"
       >
         {brand.ctaText || "Let's automate your business."}
       </Editable>
       <Rule className="mt-[3mm]" />
-      <Editable className="mt-[3mm] text-[9.5pt] leading-relaxed" style={{ color: INK.body }}>
+      <Editable className="mt-[3mm] text-[9.5pt] leading-relaxed" style={{ color: "#A9B8D8" }}>
         Book a free 20-minute call. Tell us what slows your team down and we will
         map what can run on its own, with no obligation.
       </Editable>
 
       <div className="mt-[6mm] flex flex-col gap-[3mm]">
         {brand.phone && (
-          <ContactRow icon={<Phone style={ICON} />}>{brand.phone}</ContactRow>
+          <ContactRow icon={<Phone style={ICON} />} onDark>{brand.phone}</ContactRow>
         )}
         {brand.email && (
-          <ContactRow icon={<Mail style={ICON} />}>{brand.email}</ContactRow>
+          <ContactRow icon={<Mail style={ICON} />} onDark>{brand.email}</ContactRow>
         )}
         {brand.address && (
-          <ContactRow icon={<MapPin style={ICON} />}>{brand.address}</ContactRow>
+          <ContactRow icon={<MapPin style={ICON} />} onDark>{brand.address}</ContactRow>
         )}
-        <ContactRow icon={<Globe style={ICON} />}>{brand.siteLabel}</ContactRow>
+        <ContactRow icon={<Globe style={ICON} />} onDark>{brand.siteLabel}</ContactRow>
       </div>
 
       {badges.length > 0 && (
@@ -99,11 +98,11 @@ function BackPanel({ bleed, brand, settings }: FolderData) {
                 <Check style={{ width: "2.8mm", height: "2.8mm", color: "#FFFFFF" }} />
               </span>
               <div className="min-w-0">
-                <Editable className="text-[9.5pt] font-bold leading-tight" style={{ color: INK.navy }}>
+                <Editable className="text-[9.5pt] font-bold leading-tight text-white">
                   {badge.title}
                 </Editable>
                 {badge.description && (
-                  <Editable className="text-[8pt] leading-snug mt-[0.4mm]" style={{ color: INK.body }}>
+                  <Editable className="text-[8pt] leading-snug mt-[0.4mm]" style={{ color: "#A9B8D8" }}>
                     {badge.description}
                   </Editable>
                 )}
@@ -115,16 +114,18 @@ function BackPanel({ bleed, brand, settings }: FolderData) {
 
       <div
         className="mt-auto shrink-0 rounded-[3mm] px-[5mm] py-[4.5mm] flex items-center gap-[4.5mm]"
-        style={{ backgroundColor: INK.paperTint }}
+        style={{ backgroundColor: "rgba(255,255,255,0.06)", border: "0.25mm solid rgba(255,255,255,0.12)" }}
       >
-        <div className="bg-white p-[1.5mm] rounded-[1.5mm] shrink-0" style={{ border: `0.3mm solid ${INK.rule}` }}>
+        {/* The QR tile stays white whatever the panel does: a code printed
+            light-on-dark does not scan reliably. */}
+        <div className="bg-white p-[1.5mm] rounded-[1.5mm] shrink-0">
           <QRCode value={brand.siteUrl} size={62} />
         </div>
         <div className="min-w-0">
-          <Editable className="text-[10pt] font-bold leading-tight" style={{ color: INK.navy }}>
+          <Editable className="text-[10pt] font-bold leading-tight text-white">
             See everything we build
           </Editable>
-          <Editable className="mt-[1mm] text-[8.5pt] leading-snug" style={{ color: INK.body }}>
+          <Editable className="mt-[1mm] text-[8.5pt] leading-snug" style={{ color: "#A9B8D8" }}>
             Point your camera at the code to open {brand.siteLabel}, with pricing
             and examples for every item in this folder.
           </Editable>
@@ -141,9 +142,9 @@ function BackPanel({ bleed, brand, settings }: FolderData) {
         </div>
       )}
 
-      {brand.logoOnLight && (
+      {brand.logoOnDark && (
         <img
-          src={printImage(brand.logoOnLight, 400)}
+          src={printImage(brand.logoOnDark, 400)}
           alt={brand.name}
           className="mt-[4mm] shrink-0 object-contain self-start"
           style={{ height: "9mm" }}
@@ -245,14 +246,15 @@ function Inside({ bleed, apps, services, showPrices }: FolderData) {
   // Past six cards a panel can no longer afford feature chips; the photo and the
   // name matter more than a third bullet.
   const denseApps = apps.length > 8;
-  const denseServices = services.length > 8;
+  // Long lists get one line of description each; short ones can afford three.
+  const descriptionLines = services.length > 7 ? 2 : services.length > 5 ? 3 : 4;
 
   return (
     <>
       {/* Panel 2 — every app */}
       <div
         className="w-1/2 h-full flex flex-col"
-        style={{ ...panelPadding(bleed, "left"), backgroundColor: INK.paperTint }}
+        style={{ ...panelPadding(bleed, "left"), backgroundColor: INK.navyDeep }}
       >
         <PanelHeading eyebrow="Ready-made software" title="Our Apps" />
         {apps.length > 0 ? (
@@ -271,17 +273,23 @@ function Inside({ bleed, apps, services, showPrices }: FolderData) {
       {/* Panel 3 — every service */}
       <div
         className="w-1/2 h-full flex flex-col"
-        style={{ ...panelPadding(bleed, "right"), backgroundColor: INK.paperTint }}
+        style={{ ...panelPadding(bleed, "right"), backgroundColor: INK.navyDeep }}
       >
         <PanelHeading eyebrow="Work we do for you" title="Our Services" />
         {services.length > 0 ? (
-          <CardGrid>
-            {services.map((item) => (
-              <ServiceCard key={item.key} item={item} dense={denseServices} />
+          // A list, not a grid: panel 2 is scanned by picture, panel 3 is read.
+          <div className="mt-[3mm] flex-1 min-h-0 flex flex-col">
+            {services.map((item, i) => (
+              <ServiceListItem
+                key={item.key}
+                item={item}
+                descriptionLines={descriptionLines}
+                last={i === services.length - 1}
+              />
             ))}
-          </CardGrid>
+          </div>
         ) : (
-          <p className="mt-[4mm] text-[9pt]" style={{ color: INK.muted }}>
+          <p className="mt-[4mm] text-[9pt]" style={{ color: "#A9B8D8" }}>
             Pick services in the sidebar.
           </p>
         )}
@@ -293,10 +301,10 @@ function Inside({ bleed, apps, services, showPrices }: FolderData) {
 export const editorialTemplate: FolderTemplate = {
   id: "editorial",
   name: "Editorial",
-  description: "Dark cover with your photo, light spread. Apps on one panel, services on the other.",
+  description: "All dark, like the site. Apps as picture cards on one panel, services as a read-through list on the other.",
   Outside,
   Inside,
-  sheetBackground: { outside: INK.paper, inside: INK.paperTint },
+  sheetBackground: { outside: INK.navyDeep, inside: INK.navyDeep },
 };
 
 export { ContactRow };

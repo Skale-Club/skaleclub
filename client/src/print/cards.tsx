@@ -14,7 +14,7 @@ import { Chip, Editable, ImageFrame, INK, Price, printImage } from "./primitives
 export function PanelHeading({
   eyebrow,
   title,
-  onDark = false,
+  onDark = true,
 }: {
   eyebrow?: string;
   title: string;
@@ -54,7 +54,7 @@ export function AppCard({
   item,
   showPrices,
   dense = false,
-  onDark = false,
+  onDark = true,
 }: {
   item: FolderItem;
   showPrices: boolean;
@@ -93,7 +93,7 @@ export function AppCard({
               width: "10mm",
               height: "10mm",
               backgroundColor: INK.paper,
-              border: `0.25mm solid ${INK.rule}`,
+              border: "0.25mm solid rgba(255,255,255,0.25)",
             }}
           >
             <img
@@ -153,7 +153,7 @@ export function AppCard({
 export function ServiceCard({
   item,
   dense = false,
-  onDark = false,
+  onDark = true,
 }: {
   item: FolderItem;
   dense?: boolean;
@@ -216,6 +216,79 @@ export function CardGrid({ children }: { children: React.ReactNode[] }) {
           {child}
         </div>
       ))}
+    </div>
+  );
+}
+
+
+/**
+ * Service row — the list form used on panel 3.
+ *
+ * Deliberately a different shape from the app cards on panel 2: a small square
+ * thumbnail with the copy beside it, stacked one per line. Apps are a product
+ * line-up you scan by picture; services are a list you read, and each one needs
+ * its description, not just a name.
+ */
+export function ServiceListItem({
+  item,
+  descriptionLines = 2,
+  onDark = true,
+  last = false,
+}: {
+  item: FolderItem;
+  /** Lines the description is clamped to, so every row keeps the same height. */
+  descriptionLines?: number;
+  onDark?: boolean;
+  last?: boolean;
+}) {
+  return (
+    <div
+      className="flex gap-[3.2mm] py-[2.6mm] flex-1 min-h-0 items-center"
+      style={{
+        borderBottom: last
+          ? undefined
+          : `0.2mm solid ${onDark ? "rgba(255,255,255,0.12)" : INK.rule}`,
+      }}
+    >
+      <ImageFrame
+        src={item.imageUrl}
+        ratio="1 / 1"
+        radius="1.6mm"
+        tone="cta"
+        className="shrink-0"
+        style={{ width: "14mm" }}
+      />
+      <div className="min-w-0 flex-1">
+        <Editable
+          className="text-[9.5pt] font-bold leading-tight"
+          style={{ color: onDark ? "#FFFFFF" : INK.navy }}
+        >
+          {item.title}
+        </Editable>
+        {item.subtitle && (
+          <Editable
+            className="text-[7pt] leading-snug mt-[0.3mm]"
+            style={{ color: INK.cta }}
+          >
+            {item.subtitle}
+          </Editable>
+        )}
+        {item.description && (
+          // Clamped rather than truncated with an ellipsis mid-word: the rows
+          // have to line up, and admin copy varies a lot in length.
+          <Editable
+            className="text-[7.2pt] leading-[1.35] mt-[0.8mm] overflow-hidden"
+            style={{
+              color: onDark ? "#A9B8D8" : INK.body,
+              display: "-webkit-box",
+              WebkitBoxOrient: "vertical",
+              WebkitLineClamp: descriptionLines,
+            }}
+          >
+            {item.description}
+          </Editable>
+        )}
+      </div>
     </div>
   );
 }
