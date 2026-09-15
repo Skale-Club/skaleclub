@@ -56,12 +56,12 @@ const DEFAULTS = {
 // `text-blue-300`; the `cta` token is never used as a text color (4.3:1, below AA).
 const LIGHT = {
   section:    "bg-zinc-50",
-  eyebrow:    "text-[#1C53A3]",
+  eyebrow:    "text-cta",
   heading:    "text-zinc-900",
   subheading: "text-zinc-600",
   card:       "border-zinc-200 bg-white shadow-sm divide-zinc-200",
   label:      "text-zinc-900",
-  kindChip:   "bg-[#1C53A3]/10 text-[#1C53A3]",
+  kindChip:   "bg-cta/10 text-cta",
   note:       "text-zinc-500",
   price:      "text-zinc-900",
   footnote:   "text-zinc-600",

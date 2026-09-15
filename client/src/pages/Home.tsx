@@ -132,7 +132,7 @@ export default function Home() {
         subtitle={reviewsSubtitle}
       />
       <BlogSection content={homepageContent.blogSection} />
-      <section id="about" className="relative py-[4.25rem] overflow-hidden bg-dark-gradient">
+      <section id="about" className="relative section-y overflow-hidden bg-dark-gradient">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute w-80 h-80 blur-3xl -left-20 top-0 rounded-full bg-primary/5" />
           <div className="absolute w-[420px] h-[420px] blur-3xl right-[-10%] bottom-[-20%] rounded-full bg-cta/10" />
@@ -145,7 +145,7 @@ export default function Home() {
         </div>
       </section>
       {(companySettings?.mapEmbedUrl || areasServedSection?.heading || areasServedSection?.description) && (
-        <section id="areas-served" className="bg-surface-dark py-[4.25rem]">
+        <section id="areas-served" className="bg-surface-dark section-y">
           <AreasServedMap
             mapEmbedUrl={companySettings?.mapEmbedUrl}
             content={areasServedSection}

@@ -25,7 +25,7 @@ export function BlogSection({ content }: BlogSectionProps) {
 
   if (isLoading) {
     return (
-      <section className="py-[4.25rem] bg-surface-dark">
+      <section className="section-y bg-surface-dark">
         <div className="container-custom mx-auto">
           <div className="flex items-center justify-between mb-[2.125rem]">
             <div className="space-y-3">
@@ -62,7 +62,7 @@ export function BlogSection({ content }: BlogSectionProps) {
   };
 
   return (
-    <section className="py-[4.25rem] bg-surface-dark">
+    <section className="section-y bg-surface-dark">
       <div className="container-custom mx-auto">
         <div className="flex items-center justify-between mb-[2.125rem]">
           <div>

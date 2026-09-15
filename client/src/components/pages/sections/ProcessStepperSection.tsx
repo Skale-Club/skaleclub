@@ -78,11 +78,11 @@ const ICONS = [Search, Palette, Code2, Rocket] as const;
 // (it is 4.3:1 on dark, below AA); `text-blue-300` is the dark text accent.
 const LIGHT = {
   section:    "bg-zinc-50",
-  eyebrow:    "text-[#1C53A3]",
+  eyebrow:    "text-cta",
   heading:    "text-zinc-900",
   subheading: "text-zinc-600",
   connector:  "bg-zinc-300",
-  iconCircle: "bg-[#1C53A3] text-white shadow-lg shadow-[#1C53A3]/20",
+  iconCircle: "bg-cta text-white shadow-lg shadow-cta/20",
   stepBadge:  "bg-cta text-white border-2 border-zinc-50",
   stepTitle:  "text-zinc-900",
   stepBody:   "text-zinc-600",
@@ -94,7 +94,7 @@ const DARK = {
   heading:    "text-white",
   subheading: "text-zinc-300",
   connector:  "bg-white/15",
-  iconCircle: "bg-[#1C53A3] text-white shadow-lg shadow-cta/30",
+  iconCircle: "bg-cta text-white shadow-lg shadow-cta/30",
   stepBadge:  "bg-cta text-white border-2 border-[#0f1014]",
   stepTitle:  "text-white",
   stepBody:   "text-zinc-300",

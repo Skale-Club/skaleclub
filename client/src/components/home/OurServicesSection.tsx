@@ -4,6 +4,8 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { PortfolioCard } from '@/components/PortfolioCard';
 import { ServicesCarousel } from '@/components/home/ServicesCarousel';
 import { OurServiceDetailModal } from '@/components/home/OurServiceDetailModal';
+import { SectionHeading } from '@/components/layout/SectionHeading';
+import { LayoutGrid } from 'lucide-react';
 
 type OurServicesSectionData = NonNullable<HomepageContent['ourServicesSection']>;
 type OurServicesCard = NonNullable<OurServicesSectionData['cards']>[number];
@@ -64,18 +66,15 @@ export function OurServicesSection({ section }: { section?: OurServicesSectionDa
     // Gradient (not surface-dark): this section now sits in the homepage's
     // second dark slot — the slot colors stayed put when the sections
     // swapped order.
-    <section id="our-services" className="bg-dark-gradient text-white overflow-hidden pt-[4.25rem] pb-[4.25rem]">
+    <section id="our-services" className="bg-dark-gradient text-white overflow-hidden section-y">
       <div className="space-y-[2.125rem]">
-        {/* Header — mirrors ServicesHeader spacing + type sizes (dark variant) */}
         <div className="container-custom mx-auto">
-          <div className="max-w-4xl space-y-3">
-            <h2 className="text-3xl md:text-4xl font-bold leading-tight text-white">
-              {t(section.title || 'Our Services')}
-            </h2>
-            {section.subtitle && (
-              <p className="text-lg md:text-xl leading-relaxed text-slate-300">{t(section.subtitle)}</p>
-            )}
-          </div>
+          <SectionHeading
+            eyebrow="What we do"
+            icon={LayoutGrid}
+            title={section.title || 'Our Services'}
+            subtitle={section.subtitle}
+          />
         </div>
 
         <ServicesCarousel

@@ -47,7 +47,7 @@ const DEFAULTS = {
 // `theme` undefined renders exactly as before.
 const LIGHT = {
   section:    "bg-white",
-  eyebrow:    "text-[#1C53A3]",
+  eyebrow:    "text-cta",
   heading:    "text-zinc-900",
   subheading: "text-zinc-600",
 } as const;

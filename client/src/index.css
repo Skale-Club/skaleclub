@@ -428,6 +428,18 @@ html.admin-theme.dark {
     }
   }
 
+  /* Vertical rhythm for public sections. 4.25rem was already the most common
+     value on the homepage; this makes it a single knob and gives desktop more
+     air, instead of every section hard-coding its own padding. */
+  .section-y {
+    padding-block: 4.25rem;
+  }
+  @media (min-width: 768px) {
+    .section-y {
+      padding-block: 5.5rem;
+    }
+  }
+
   /* Dark section gradient shared by ServicesSection, OurServicesSection and
      Home's #about section — unified tone (was three near-identical
      gradients hard-coded per section). */

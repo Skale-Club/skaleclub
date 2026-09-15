@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
+import { Star } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { SectionHeading } from "@/components/layout/SectionHeading";
 
 interface ReviewsSectionProps {
   embedUrl?: string;
@@ -85,15 +87,10 @@ export function ReviewsSection({ embedUrl, title, subtitle }: ReviewsSectionProp
   }
 
   return (
-    <section className="pt-[4.25rem] pb-[4.25rem] bg-surface-dark overflow-hidden mb-0 text-white">
+    <section className="section-y bg-surface-dark overflow-hidden mb-0 text-white">
       <div className="w-full space-y-[2.125rem]">
-        <div className="container-custom mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-[0.85rem] text-white">
-            {t(title || '')}
-          </h2>
-          <p className="text-slate-300 max-w-2xl mx-auto text-lg">
-            {t(subtitle || '')}
-          </p>
+        <div className="container-custom mx-auto">
+          <SectionHeading eyebrow="Reviews" icon={Star} title={title || ''} subtitle={subtitle || ''} />
         </div>
         {embedUrl ? (
           // Full-bleed like the services carousels: span the viewport edge to

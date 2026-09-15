@@ -159,7 +159,7 @@ function SectionShell({ sectionId, children, dark = false, background }: { secti
   return (
     <section
       id={sectionId}
-      className={`relative pt-[4.25rem] pb-[4.25rem] overflow-hidden ${background || (dark ? 'bg-dark-gradient' : 'bg-gradient-to-br from-[#f7f9fc] via-white to-[#eaf1ff]')}`}
+      className={`relative section-y overflow-hidden ${background || (dark ? 'bg-dark-gradient' : 'bg-gradient-to-br from-[#f7f9fc] via-white to-[#eaf1ff]')}`}
     >
       <div className="absolute inset-0 pointer-events-none">
         <div className={`absolute w-80 h-80 blur-3xl -left-20 top-0 rounded-full ${dark ? 'bg-primary/10' : 'bg-primary/5'}`} />
