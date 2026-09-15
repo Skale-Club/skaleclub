@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 import { registerServiceWorker, unregisterStaleServiceWorker } from "./lib/pwa";
+import { installChunkReloadHandlers } from "./lib/chunkReload";
 
 Sentry.init({
   dsn: import.meta.env.VITE_SENTRY_DSN,
@@ -17,56 +18,8 @@ Sentry.init({
   replaysOnErrorSampleRate: 1.0,
 });
 
-// ─── Stale-tab recovery for lazy chunks ───────────────────────────────────
-// After a deploy, content-hashed chunks (e.g. /assets/PresentationsSection-XYZ.js)
-// get new hashes. An open tab whose HTML references the OLD hashes will fail to
-// fetch them — the server returns 404 (or the SPA fallback used to return
-// index.html with text/html, which fails strict MIME checking on module scripts).
-// Either way: one hard reload pulls the fresh index.html + the new chunk names.
-// SessionStorage guard prevents infinite reload loops if something else is broken.
-const CHUNK_RELOAD_KEY = "chunkReloadAttempt";
-const CHUNK_ERROR_PATTERNS = [
-  "Failed to fetch dynamically imported module",
-  "Loading chunk",
-  "Loading CSS chunk",
-  "ChunkLoadError",
-  "Failed to load module script",
-  "Expected a JavaScript-or-Wasm module script",
-];
-
-function isChunkLoadError(message: string | undefined | null): boolean {
-  if (!message) return false;
-  return CHUNK_ERROR_PATTERNS.some((p) => message.includes(p));
-}
-
-function maybeReloadForStaleChunk(message: string | undefined | null) {
-  if (!isChunkLoadError(message)) return;
-  try {
-    const last = Number(window.sessionStorage.getItem(CHUNK_RELOAD_KEY) || "0");
-    const now = Date.now();
-    if (now - last < 10_000) return; // already reloaded recently — avoid loop
-    window.sessionStorage.setItem(CHUNK_RELOAD_KEY, String(now));
-  } catch {
-    // sessionStorage unavailable — best-effort reload anyway
-  }
-  window.location.reload();
-}
-
-if (typeof window !== "undefined") {
-  window.addEventListener("error", (event) => {
-    maybeReloadForStaleChunk(event.message);
-  });
-  window.addEventListener("unhandledrejection", (event) => {
-    const reason: unknown = event.reason;
-    const message =
-      typeof reason === "string"
-        ? reason
-        : reason && typeof reason === "object" && "message" in reason
-          ? String((reason as { message?: unknown }).message ?? "")
-          : "";
-    maybeReloadForStaleChunk(message);
-  });
-}
+// Stale-tab / deploy-swap recovery for lazy chunks — see lib/chunkReload.ts.
+installChunkReloadHandlers();
 
 // Xpot was extracted on 2026-05-18 to its own standalone app at xpot.skale.club;
 // the post-login bounce logic that lived here is now handled inside that app.

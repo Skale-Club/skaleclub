@@ -17,6 +17,7 @@ import { useEffect, Suspense, lazy, useMemo, useRef, useState, createContext, us
 import type { CompanySettings } from "@shared/schema";
 import { buildPagePaths, DEFAULT_PAGE_SLUGS, isRoutePrefixMatch } from "@shared/pageSlugs";
 import { ChatWidget } from "@/components/chat/ChatWidget";
+import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
 
 // DEFAULT_PAGE_SLUGS never changes at runtime — compute once instead of on every Router render.
 const LEGACY_PATHS = buildPagePaths(DEFAULT_PAGE_SLUGS);
@@ -313,7 +314,9 @@ function App() {
             <LanguageProvider>
               <SEOProvider>
                 <AnalyticsProvider>
-                  <Router />
+                  <ChunkErrorBoundary>
+                    <Router />
+                  </ChunkErrorBoundary>
                   <TranslationLoadingOverlay />
                 </AnalyticsProvider>
               </SEOProvider>
