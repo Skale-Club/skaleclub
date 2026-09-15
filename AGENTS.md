@@ -42,3 +42,40 @@ shared/schema.ts         # Drizzle tables + Zod schemas
 - Required env vars live in `.env` (see `README.md`): `DATABASE_URL`,
   `SESSION_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH`.
 - Do not commit secrets; use local `.env` files and secret managers for production.
+
+## Reading live site data from a sandboxed session
+
+Agent sessions often run behind an egress proxy that allows very few hosts. When
+`skale.club` and `*.supabase.co` are not on the allowlist, `curl` and the web
+fetch tools both fail with a proxy `403` on CONNECT. Check what is actually
+happening before assuming the network is broken:
+
+```
+curl -sS "$HTTPS_PROXY/__agentproxy/status"
+```
+
+A `connect_rejected` entry naming the host means the egress policy denied it,
+not that the proxy is misconfigured. Do not try to route around it.
+
+Two things still work and are usually enough:
+
+- **The Vercel MCP `web_fetch_vercel_url` tool** fetches through Vercel's own
+  network rather than the session proxy, so it reaches the deployed site and any
+  public API route on it. `https://skale.club/api/company-settings` returns the
+  full live settings row — hero image, homepage content, service cards — which
+  is the fastest way to see production data without database credentials. It
+  only works for URLs Vercel serves: Supabase storage objects are not reachable
+  this way, so images still cannot be inspected.
+- **The GitHub MCP server** covers branches, PRs, commits and file contents.
+
+For anything that needs the database itself (writes, tables with no public API),
+the environment needs `POSTGRES_URL` and the `SUPABASE_*` keys set as
+environment variables, and `skale.club` plus `*.supabase.co` added to the
+network policy. Both are configured per environment at
+https://code.claude.com/docs/en/claude-code-on-the-web — an agent cannot grant
+them to itself.
+
+When rendering a page for review without a database, mock the API with
+Playwright route interception and seed it from the live JSON above. Say so when
+sharing the result: a preview built on placeholder images is not evidence about
+what production looks like.
