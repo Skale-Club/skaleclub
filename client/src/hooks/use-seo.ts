@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 
 interface SeoSettings {
   seoTitle: string | null;
@@ -68,6 +69,38 @@ function createLocalBusinessSchema(settings: SeoSettings): string {
   return JSON.stringify(schema);
 }
 
+/**
+ * The canonical URL for the page being viewed right now.
+ *
+ * `settings.seoCanonicalUrl` is the HOMEPAGE's canonical ("https://skale.club/"
+ * in production). It used to be written onto every route, so after hydration a
+ * blog post, the portfolio, contact and every paid-traffic landing all told
+ * crawlers they were the homepage. The server injects the correct per-page tag
+ * at build/serve time; this hook was overwriting it a few hundred milliseconds
+ * later, and Google renders JS.
+ *
+ * The host comes from the configured canonical (so a visit on an alternate
+ * hostname still points at the canonical one) and the path from the address
+ * bar. Query strings and fragments are dropped: they are never canonical.
+ */
+function canonicalForCurrentPage(settings: SeoSettings): string {
+  let origin = window.location.origin;
+  try {
+    if (settings.seoCanonicalUrl) {
+      origin = new URL(settings.seoCanonicalUrl).origin;
+    }
+  } catch {
+    // Malformed value in settings — the current origin is the better guess.
+  }
+  const path = window.location.pathname.replace(/\/+$/, '');
+  return path ? `${origin}${path}` : `${origin}/`;
+}
+
+/** True only on the site root, which is what the settings row actually describes. */
+function isHomepage(): boolean {
+  return window.location.pathname.replace(/\/+$/, '') === '';
+}
+
 function setJsonLdSchema(settings: SeoSettings) {
   let script = document.querySelector('script[type="application/ld+json"]') as HTMLScriptElement | null;
   if (!script) {
@@ -80,6 +113,9 @@ function setJsonLdSchema(settings: SeoSettings) {
 
 export function useSEO() {
   const skipSeo = false;
+  // Re-runs on client-side navigation, so the canonical follows the route
+  // instead of freezing on whatever page was loaded first.
+  const [location] = useLocation();
   const { data: settings } = useQuery<SeoSettings>({
     queryKey: ['/api/company-settings'],
     staleTime: 1000 * 60 * 5,
@@ -91,26 +127,36 @@ export function useSEO() {
   useEffect(() => {
     if (!settings || skipSeo) return;
 
-    // Update title immediately when data arrives
-    if (settings.seoTitle) {
-      document.title = settings.seoTitle;
+    const onHomepage = isHomepage();
+
+    // Title, description and robots describe the homepage. On any other route
+    // the server has already injected the right ones (or the page sets its own),
+    // so leave them alone rather than replacing them with the homepage's — that
+    // is what made every route self-report as the homepage, and what would
+    // silently flip a `noindex` page to `index, follow`.
+    if (onHomepage) {
+      if (settings.seoTitle) {
+        document.title = settings.seoTitle;
+      }
+      setMetaTag('description', settings.seoDescription);
+      setMetaTag('robots', settings.seoRobotsTag);
     }
 
-    setMetaTag('description', settings.seoDescription);
+    // Site-wide, identical on every page.
     setMetaTag('keywords', settings.seoKeywords);
     setMetaTag('author', settings.seoAuthor);
-    setMetaTag('robots', settings.seoRobotsTag);
 
-    if (settings.seoCanonicalUrl) {
-      setLinkTag('canonical', settings.seoCanonicalUrl);
-    }
+    const canonicalUrl = canonicalForCurrentPage(settings);
+    setLinkTag('canonical', canonicalUrl);
 
     const fullImageUrl = settings.ogImage 
       ? (settings.ogImage.startsWith('http') ? settings.ogImage : `${window.location.origin}${settings.ogImage}`)
       : null;
 
-    setMetaTag('og:title', settings.seoTitle, true);
-    setMetaTag('og:description', settings.seoDescription, true);
+    if (onHomepage) {
+      setMetaTag('og:title', settings.seoTitle, true);
+      setMetaTag('og:description', settings.seoDescription, true);
+    }
     setMetaTag('og:image', fullImageUrl, true);
     if (fullImageUrl) {
       setMetaTag('og:image:width', '1200', true);
@@ -119,11 +165,13 @@ export function useSEO() {
     }
     setMetaTag('og:type', settings.ogType || 'website', true);
     setMetaTag('og:site_name', settings.ogSiteName, true);
-    setMetaTag('og:url', settings.seoCanonicalUrl || window.location.href, true);
+    setMetaTag('og:url', canonicalUrl, true);
 
     setMetaTag('twitter:card', settings.twitterCard || 'summary_large_image');
-    setMetaTag('twitter:title', settings.seoTitle);
-    setMetaTag('twitter:description', settings.seoDescription);
+    if (onHomepage) {
+      setMetaTag('twitter:title', settings.seoTitle);
+      setMetaTag('twitter:description', settings.seoDescription);
+    }
     setMetaTag('twitter:image', fullImageUrl);
     setMetaTag('twitter:site', settings.twitterSite);
     setMetaTag('twitter:creator', settings.twitterCreator);
@@ -141,7 +189,7 @@ export function useSEO() {
 
     setJsonLdSchema(settings);
 
-  }, [settings, skipSeo]);
+  }, [settings, skipSeo, location]);
 
   return settings;
 }

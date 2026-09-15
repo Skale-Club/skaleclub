@@ -69,7 +69,13 @@ export default function DynamicPage({ brVariant = false }: { brVariant?: boolean
   }, [pageLanguage]);
 
   // Inject hreflang alternates for the bilingual pair; remove them on unmount so
-  // they don't leak onto other pages. Canonical stays managed globally by useSEO.
+  // they don't leak onto other pages.
+  //
+  // The comment here used to say canonical was left to useSEO, which the effect
+  // fifty lines below contradicts — it writes its own. Both now derive the same
+  // value from the current path, so whichever effect runs last agrees with the
+  // other; useSEO also re-runs on navigation, so a stale landing canonical no
+  // longer survives onto the next route.
   const slugForSeo = data?.slug;
   const altSlug = data?.alternateSlug;
   useEffect(() => {
