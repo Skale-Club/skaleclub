@@ -7,7 +7,15 @@ import type { FolderItem } from "./items";
  */
 export interface FolderData {
   settings?: CompanySettings;
-  /** Entries chosen in the toolbar, in display order, from either catalog. */
+  /**
+   * The folder is a bi-fold: one sheet, one fold, four panels. Panel 1 is the
+   * cover, panels 2 and 3 are the inside spread, panel 4 is the back.
+   *
+   * Apps and services are kept apart rather than merged into one list, because
+   * the spread gives each its own panel: panel 2 is the app line-up, panel 3 is
+   * the services. Templates that want everything together can concatenate.
+   */
+  apps: FolderItem[];
   services: FolderItem[];
   /** Millimetres of bleed on each side (0 disables crop marks). */
   bleed: number;

@@ -54,7 +54,9 @@ export default function PrintFolder() {
     [services, settings?.homepageContent?.ourServicesSection?.cards],
   );
 
-  // Default: the first 6 entries (what comfortably fits the spread).
+  // Default: everything. The spread devotes a whole panel to the apps and
+  // another to the services, so the folder is meant to show the full line-up;
+  // trimming it is the exception, done here in the sidebar.
   //
   // Wait for BOTH queries to settle before seeding. The two catalogs arrive from
   // separate endpoints, and seeding on whichever resolves first left the folder
@@ -63,15 +65,18 @@ export default function PrintFolder() {
   const catalogsSettled = !settingsQuery.isPending && !servicesQuery.isPending;
   useEffect(() => {
     if (selectedKeys === null && catalogsSettled && catalog.length > 0) {
-      setSelectedKeys(catalog.slice(0, 6).map((item) => item.key));
+      setSelectedKeys(catalog.map((item) => item.key));
     }
   }, [catalog, catalogsSettled, selectedKeys]);
 
-  // Selection order is irrelevant; catalog order is what prints.
-  const chosenServices = useMemo(
+  // Selection order is irrelevant; catalog order is what prints. The two
+  // catalogs stay apart because the inside spread gives each its own panel.
+  const chosen = useMemo(
     () => catalog.filter((item) => (selectedKeys ?? []).includes(item.key)),
     [catalog, selectedKeys],
   );
+  const chosenApps = useMemo(() => chosen.filter((i) => i.source === "product"), [chosen]);
+  const chosenServices = useMemo(() => chosen.filter((i) => i.source === "service"), [chosen]);
 
   // Toolbar groups, so it is obvious which catalog an entry comes from.
   const groups = useMemo(() => {
@@ -91,6 +96,7 @@ export default function PrintFolder() {
       : [];
     return {
       settings,
+      apps: chosenApps,
       services: chosenServices,
       bleed,
       showPrices,
@@ -111,7 +117,7 @@ export default function PrintFolder() {
         socialLinks,
       },
     };
-  }, [settings, chosenServices, bleed, showPrices, siteUrl]);
+  }, [settings, chosenApps, chosenServices, bleed, showPrices, siteUrl]);
 
   // Full page = open sheet + bleed on every side
   const pageW = sheetW + bleed * 2;
@@ -337,7 +343,7 @@ export default function PrintFolder() {
               Serviços no folder
             </label>
             <p className="text-[11px] text-slate-400 mt-1 leading-snug">
-              O primeiro selecionado vira o serviço em destaque.
+              Aplicativos ocupam a página 2, serviços a página 3.
             </p>
             <div className="mt-2 flex flex-col gap-2 max-h-72 overflow-y-auto pr-1">
               {groups.map((group) => (

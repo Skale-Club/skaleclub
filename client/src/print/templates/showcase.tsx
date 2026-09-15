@@ -1,9 +1,9 @@
 import { Phone, Mail, MapPin, Globe } from "lucide-react";
 import QRCode from "react-qr-code";
 import type { FolderData, FolderTemplate } from "../types";
-import type { FolderItem } from "../items";
 import { panelPadding } from "../paper";
-import { Chip, Editable, ImageFrame, INK, Price, Rule, printImage } from "../primitives";
+import { Editable, ImageFrame, INK, Rule, printImage } from "../primitives";
+import { AppCard, CardGrid, PanelHeading, ServiceCard } from "../cards";
 
 /**
  * "Showcase" — image-forward, inverted against Editorial.
@@ -13,52 +13,6 @@ import { Chip, Editable, ImageFrame, INK, Price, Rule, printImage } from "../pri
  * visual rather than price-led. The inside spread is treated as one continuous
  * surface: the grid crosses the fold instead of restarting on each panel.
  */
-
-function GalleryCard({
-  service,
-  showPrices,
-  large = false,
-}: {
-  service: FolderItem;
-  showPrices: boolean;
-  large?: boolean;
-}) {
-  const image = service.imageUrl || service.logoIconUrl;
-  return (
-    <div
-      className="rounded-[2.5mm] overflow-hidden flex flex-col h-full"
-      style={{ backgroundColor: "rgba(255,255,255,0.05)", border: "0.3mm solid rgba(255,255,255,0.10)" }}
-    >
-      <ImageFrame src={image} ratio={large ? "16 / 8" : "16 / 9"} radius="0" tone="cta" fill />
-      <div className="px-[3.5mm] py-[3mm] flex flex-col gap-[1.5mm] flex-1">
-        <div className="flex items-start justify-between gap-[2.5mm]">
-          <div className="min-w-0">
-            <Editable
-              className={`${large ? "text-[12pt]" : "text-[10pt]"} font-extrabold leading-tight text-white`}
-            >
-              {service.title}
-            </Editable>
-            <Editable className="text-[7.5pt] leading-snug mt-[0.4mm]" style={{ color: "#A9B8D8" }}>
-              {service.subtitle}
-            </Editable>
-          </div>
-          {showPrices && service.price && (
-            <Price price={service.price} label={service.priceLabel} color="#8FA9EE" />
-          )}
-        </div>
-        {service.features.length > 0 && (
-          <div className="flex flex-wrap gap-[1.2mm] mt-auto pt-[1mm]">
-            {service.features.slice(0, large ? 4 : 3).map((f, i) => (
-              <Chip key={i} onDark>
-                {f}
-              </Chip>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 function Outside({ bleed, brand, settings }: FolderData) {
   const left = panelPadding(bleed, "left");
@@ -163,94 +117,48 @@ function Outside({ bleed, brand, settings }: FolderData) {
   );
 }
 
-function Inside({ bleed, brand, services, showPrices, settings }: FolderData) {
-  const leftPad = panelPadding(bleed, "left");
-  const rightPad = panelPadding(bleed, "right");
-  const about = (settings?.homepageContent ?? {}).aboutSection ?? {};
-
-  // The header occupies the top-left; the gallery flows from there across both
-  // panels. Left panel holds the header plus 2 cards, right holds the rest.
-  const [hero, ...rest] = services;
-  const leftCards = rest.slice(0, 2);
-  const rightCards = rest.slice(2);
+function Inside({ bleed, apps, services, showPrices }: FolderData) {
+  const denseApps = apps.length > 8;
+  const denseServices = services.length > 8;
 
   return (
     <>
-      <div className="w-1/2 h-full flex flex-col" style={{ ...leftPad, backgroundColor: INK.navyDeep }}>
-        <Editable className="text-[8pt] font-bold uppercase tracking-[0.2em]" style={{ color: "#8FA9EE" }}>
-          {about.label || "Our services"}
-        </Editable>
-        <Editable as="h2" className="mt-[2mm] text-[17pt] font-extrabold leading-[1.12] text-white">
-          Built to take the repetitive work off your team.
-        </Editable>
-        <Editable className="mt-[2.5mm] text-[8.5pt] leading-relaxed" style={{ color: "#A9B8D8" }}>
-          {about.description ||
-            "A portfolio of tools and services made for service businesses: set up fast, priced clearly, and ready to scale with you."}
-        </Editable>
-
-        {hero && (
-          <div className="mt-[4mm] flex-1 min-h-0">
-            <GalleryCard service={hero} showPrices={showPrices} large />
-          </div>
-        )}
-        {leftCards.length > 0 && (
-          <div className="mt-[2.5mm] shrink-0 grid grid-cols-2 gap-[2.5mm]">
-            {leftCards.map((s) => (
-              <GalleryCard key={s.key} service={s} showPrices={showPrices} />
+      {/* Panel 2 — every app */}
+      <div
+        className="w-1/2 h-full flex flex-col"
+        style={{ ...panelPadding(bleed, "left"), backgroundColor: INK.navyDeep }}
+      >
+        <PanelHeading eyebrow="Ready-made software" title="Our Apps" onDark />
+        {apps.length > 0 ? (
+          <CardGrid>
+            {apps.map((item) => (
+              <AppCard key={item.key} item={item} showPrices={showPrices} dense={denseApps} onDark />
             ))}
-          </div>
-        )}
-        {services.length === 0 && (
-          <p className="text-[10pt]" style={{ color: "#A9B8D8" }}>
-            Pick services in the sidebar.
+          </CardGrid>
+        ) : (
+          <p className="mt-[4mm] text-[9pt]" style={{ color: "#A9B8D8" }}>
+            Pick apps in the sidebar.
           </p>
         )}
       </div>
 
-      <div className="w-1/2 h-full flex flex-col" style={{ ...rightPad, backgroundColor: INK.navyDeep }}>
-        {rightCards.length > 0 && (
-          // auto-rows-fr stretches the rows to fill the panel; an odd final card
-          // spans both columns instead of leaving a hole beside itself.
-          <div className="grid grid-cols-2 gap-[2.5mm] flex-1 min-h-0 auto-rows-fr">
-            {rightCards.map((s, i) => (
-              <div
-                key={s.key}
-                className={
-                  i === rightCards.length - 1 && rightCards.length % 2 === 1
-                    ? "col-span-2 min-h-0"
-                    : "min-h-0"
-                }
-              >
-                <GalleryCard service={s} showPrices={showPrices} />
-              </div>
+      {/* Panel 3 — every service */}
+      <div
+        className="w-1/2 h-full flex flex-col"
+        style={{ ...panelPadding(bleed, "right"), backgroundColor: INK.navyDeep }}
+      >
+        <PanelHeading eyebrow="Work we do for you" title="Our Services" onDark />
+        {services.length > 0 ? (
+          <CardGrid>
+            {services.map((item) => (
+              <ServiceCard key={item.key} item={item} dense={denseServices} onDark />
             ))}
-          </div>
+          </CardGrid>
+        ) : (
+          <p className="mt-[4mm] text-[9pt]" style={{ color: "#A9B8D8" }}>
+            Pick services in the sidebar.
+          </p>
         )}
-
-        <div
-          className="mt-[3mm] shrink-0 rounded-[2.5mm] px-[5mm] py-[4.5mm]"
-          style={{ backgroundColor: INK.cta }}
-        >
-          <Editable className="text-[12pt] font-extrabold leading-tight text-white">
-            {brand.ctaText || "Let's automate your business."}
-          </Editable>
-          <Editable className="mt-[1.5mm] text-[8.5pt]" style={{ color: "#E3EAFB" }}>
-            Free 20-minute call. We map what can run on its own.
-          </Editable>
-          <div className="mt-[3mm] flex items-center justify-between gap-[3mm]">
-            <div className="flex flex-col gap-[0.8mm] text-white">
-              {brand.phone && (
-                <Editable className="text-[11pt] font-bold">{brand.phone}</Editable>
-              )}
-              <Editable className="text-[8.5pt]" style={{ color: "#E3EAFB" }}>
-                {brand.siteLabel}
-              </Editable>
-            </div>
-            <div className="bg-white p-[1.2mm] rounded-[1.5mm] shrink-0">
-              <QRCode value={brand.siteUrl} size={52} />
-            </div>
-          </div>
-        </div>
       </div>
     </>
   );
@@ -259,7 +167,7 @@ function Inside({ bleed, brand, services, showPrices, settings }: FolderData) {
 export const showcaseTemplate: FolderTemplate = {
   id: "showcase",
   name: "Showcase",
-  description: "Light cover with a full-bleed photo, dark gallery inside. Best when the products photograph well.",
+  description: "Light close, cover photo bled edge to edge, dark spread. Best when the artwork carries the pitch.",
   Outside,
   Inside,
   sheetBackground: { outside: INK.paperTint, inside: INK.navyDeep },
