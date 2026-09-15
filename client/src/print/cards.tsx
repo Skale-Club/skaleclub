@@ -78,8 +78,38 @@ export function AppCard({
           a row identical by construction; the leftover height falls to the
           bottom of the shorter card, where nobody reads it. */}
       <div className="relative shrink-0">
-        <ImageFrame src={item.imageUrl} ratio="16 / 8" radius="0" tone="cta" />
-        {item.logoIconUrl && (
+        {item.imageUrl ? (
+          <ImageFrame src={item.imageUrl} ratio="16 / 8" radius="0" tone="cta" />
+        ) : (
+          // Not every product has a photo — in production XmartMenu and
+          // Xtimator have an empty `imageUrl`. An empty grey box on a printed
+          // brochure reads as a mistake, so fall back to the product mark on a
+          // brand panel, which reads as a deliberate treatment.
+          <div
+            className="flex items-center justify-center"
+            style={{
+              aspectRatio: "16 / 8",
+              background: "linear-gradient(135deg, #16233E 0%, #0B1526 100%)",
+            }}
+          >
+            {item.logoIconUrl ? (
+              <img
+                src={printImage(item.logoIconUrl, 400)}
+                alt=""
+                className="object-contain"
+                style={{ maxHeight: "60%", maxWidth: "45%" }}
+              />
+            ) : (
+              <Editable
+                className="text-[13pt] font-extrabold tracking-tight"
+                style={{ color: "rgba(255,255,255,0.22)" }}
+              >
+                {item.title}
+              </Editable>
+            )}
+          </div>
+        )}
+        {item.logoIconUrl && item.imageUrl && (
           // The product mark, badged over the photo — this is what makes a card
           // read as "Xkedule" at a glance instead of as a generic stock image.
           <div
@@ -104,7 +134,7 @@ export function AppCard({
 
       <div
         className="flex flex-col px-[3.2mm] pb-[3mm]"
-        style={{ paddingTop: item.logoIconUrl ? "5mm" : "3mm" }}
+        style={{ paddingTop: item.logoIconUrl && item.imageUrl ? "5mm" : "3mm" }}
       >
         <div className="flex items-start justify-between gap-[2mm]">
           <Editable
