@@ -123,6 +123,10 @@ function Outside({ bleed, brand, settings }: FolderData) {
 function Inside({ bleed, apps, services, showPrices }: FolderData) {
   const denseApps = apps.length > 8;
   const denseServices = services.length > 8;
+  // Two cards per row, so the grid is ceil(n / 2) rows deep. Past three rows the
+  // photo has to give up height or the tag below it falls outside the card.
+  const serviceRows = Math.ceil(services.length / 2);
+  const serviceImageRatio = serviceRows >= 4 ? "16 / 6" : serviceRows === 3 ? "16 / 7" : undefined;
 
   return (
     <>
@@ -154,7 +158,13 @@ function Inside({ bleed, apps, services, showPrices }: FolderData) {
         {services.length > 0 ? (
           <CardGrid>
             {services.map((item) => (
-              <ServiceCard key={item.key} item={item} dense={denseServices} onDark />
+              <ServiceCard
+                key={item.key}
+                item={item}
+                dense={denseServices}
+                imageRatio={serviceImageRatio}
+                onDark
+              />
             ))}
           </CardGrid>
         ) : (

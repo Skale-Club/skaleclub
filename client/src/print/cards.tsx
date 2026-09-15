@@ -71,18 +71,14 @@ export function AppCard({
       className="rounded-[2.2mm] overflow-hidden flex flex-col h-full"
       style={surface}
     >
-      {/* The photo takes whatever height the row has left over. With a fixed
-          ratio it pushed the feature chips past the card's overflow and they
-          were silently clipped. */}
-      <div className="relative flex-1 min-h-0 flex">
-        <ImageFrame
-          src={item.imageUrl}
-          radius="0"
-          tone="cta"
-          fill
-          className="w-full"
-          style={{ minHeight: "14mm" }}
-        />
+      {/* A fixed ratio, deliberately. A flexible photo absorbed whatever height
+          the text below happened to need, so a two-line title or a wrapped chip
+          row left one card's photo shorter than its neighbour's and the titles
+          across a row stopped lining up. Pinning the ratio makes every photo in
+          a row identical by construction; the leftover height falls to the
+          bottom of the shorter card, where nobody reads it. */}
+      <div className="relative shrink-0">
+        <ImageFrame src={item.imageUrl} ratio="16 / 8" radius="0" tone="cta" />
         {item.logoIconUrl && (
           // The product mark, badged over the photo — this is what makes a card
           // read as "Xkedule" at a glance instead of as a generic stock image.
@@ -107,7 +103,7 @@ export function AppCard({
       </div>
 
       <div
-        className="flex flex-col shrink-0 px-[3.2mm] pb-[3mm]"
+        className="flex flex-col px-[3.2mm] pb-[3mm]"
         style={{ paddingTop: item.logoIconUrl ? "5mm" : "3mm" }}
       >
         <div className="flex items-start justify-between gap-[2mm]">
@@ -155,10 +151,18 @@ export function ServiceCard({
   item,
   dense = false,
   onDark = true,
+  imageRatio,
 }: {
   item: FolderItem;
   dense?: boolean;
   onDark?: boolean;
+  /**
+   * The photo's aspect ratio. The caller sets it because only the caller knows
+   * how many rows the grid has: at four rows a 16/8 photo plus the text below
+   * overruns the row and the card's overflow clips the tag. Defaults suit a
+   * two- or three-row grid.
+   */
+  imageRatio?: string;
 }) {
   const surface = onDark
     ? { backgroundColor: "rgba(255,255,255,0.06)", border: "0.25mm solid rgba(255,255,255,0.12)" }
@@ -166,30 +170,37 @@ export function ServiceCard({
 
   return (
     <div className="rounded-[2.2mm] overflow-hidden flex flex-col h-full" style={surface}>
+      {/* Fixed ratio for the same reason as AppCard. */}
       <ImageFrame
         src={item.imageUrl}
+        ratio={imageRatio ?? (dense ? "16 / 6" : "16 / 8")}
         radius="0"
         tone="cta"
-        fill
-        className="w-full"
-        style={{ minHeight: "12mm" }}
+        className="shrink-0"
       />
-      <div className="flex flex-col shrink-0 px-[3.2mm] py-[2.6mm]">
+      {/* One tag, not two: service tags are long ("Website customization") and a
+          second one wraps, which adds a line to some cards and not others. */}
+      <div className="flex flex-col px-[3.2mm] py-[2.6mm]">
         <Editable
           className="text-[9pt] font-bold leading-tight"
           style={{ color: onDark ? "#FFFFFF" : INK.navy }}
         >
           {item.title}
         </Editable>
-        <Editable
-          className="mt-[0.5mm] text-[7pt] leading-snug"
-          style={{ color: onDark ? "#A9B8D8" : INK.muted }}
-        >
-          {item.subtitle}
-        </Editable>
+        {item.subtitle && (
+          <Editable
+            className="mt-[0.5mm] text-[7pt] leading-snug"
+            style={{ color: onDark ? "#A9B8D8" : INK.muted }}
+          >
+            {item.subtitle}
+          </Editable>
+        )}
         {!dense && item.features.length > 0 && (
-          <div className="pt-[1.8mm] flex flex-wrap gap-[1.2mm]">
-            {item.features.slice(0, 2).map((f, i) => (
+          // Wrapping is fine because the block above has a pinned height, so a
+          // second chip line does not push the photo and break the row's
+          // alignment. Clipping them mid-word looked like a rendering fault.
+          <div className="pt-[1.8mm] flex gap-[1.2mm]">
+            {item.features.slice(0, 1).map((f, i) => (
               <Chip key={i} onDark={onDark}>
                 {f}
               </Chip>
