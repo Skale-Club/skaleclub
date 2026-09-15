@@ -1,7 +1,7 @@
 import { Phone, Mail, MapPin, Globe } from "lucide-react";
 import QRCode from "react-qr-code";
 import type { FolderData, FolderTemplate } from "../types";
-import { panelPadding } from "../paper";
+import { CONTENT_PAD_MM, panelPadding } from "../paper";
 import { AppCard, CardGrid, PanelHeading, ServiceListItem, TrustPoints } from "../cards";
 import { Editable, ImageFrame, INK, Rule, printImage } from "../primitives";
 
@@ -179,9 +179,9 @@ function CoverPanel({ bleed, brand }: FolderData) {
         <div
           className="mt-[6mm] flex-1 min-h-0 flex flex-col relative"
           style={{
-            marginLeft: "-10mm",
-            marginRight: `-${10 + bleed}mm`,
-            marginBottom: `-${10 + bleed}mm`,
+            marginLeft: `-${CONTENT_PAD_MM}mm`,
+            marginRight: `-${CONTENT_PAD_MM + bleed}mm`,
+            marginBottom: `-${CONTENT_PAD_MM + bleed}mm`,
           }}
         >
           <ImageFrame
@@ -194,7 +194,7 @@ function CoverPanel({ bleed, brand }: FolderData) {
           />
           <div
             className="absolute left-0 right-0 bottom-0 flex items-center justify-between text-[9.5pt]"
-            style={{ padding: `4mm ${10 + bleed}mm ${6 + bleed}mm 10mm`, color: "#C9D6EE" }}
+            style={{ padding: `4mm ${CONTENT_PAD_MM + bleed}mm ${6 + bleed}mm ${CONTENT_PAD_MM}mm`, color: "#C9D6EE" }}
           >
             <Editable>{brand.siteLabel}</Editable>
             {brand.phone && <Editable>{brand.phone}</Editable>}
@@ -220,11 +220,14 @@ function Outside(props: FolderData) {
 }
 
 function Inside({ bleed, apps, services, showPrices }: FolderData) {
-  // Past six cards a panel can no longer afford feature chips; the photo and the
-  // name matter more than a third bullet.
+  // Past eight cards a two-column grid runs out of row height, so the panel
+  // goes to three columns and the cards drop their feature chips.
   const denseApps = apps.length > 8;
-  // Long lists get one line of description each; short ones can afford three.
-  const descriptionLines = services.length > 7 ? 2 : services.length > 5 ? 3 : 4;
+  const appColumns: 2 | 3 = apps.length > 8 ? 3 : 2;
+  // Description lines per row: fewer as the list grows, so every row still fits.
+  const descriptionLines = services.length > 9 ? 1 : services.length > 7 ? 2 : services.length > 5 ? 3 : 4;
+  // A short list should not be spread across the whole panel.
+  const stretchList = services.length >= 5;
 
   return (
     <>
@@ -235,11 +238,13 @@ function Inside({ bleed, apps, services, showPrices }: FolderData) {
       >
         <PanelHeading eyebrow="Ready-made software" title="Our Apps" />
         {apps.length > 0 ? (
-          <CardGrid>
-            {apps.map((item) => (
-              <AppCard key={item.key} item={item} showPrices={showPrices} dense={denseApps} />
-            ))}
-          </CardGrid>
+          <CardGrid
+            items={apps}
+            columns={appColumns}
+            renderItem={(item, { wide, span }) => (
+              <AppCard key={item.key} item={item} showPrices={showPrices} dense={denseApps} span={wide ? span : 1} />
+            )}
+          />
         ) : (
           <p className="mt-[4mm] text-[9pt]" style={{ color: INK.muted }}>
             Pick apps in the sidebar.
@@ -262,6 +267,7 @@ function Inside({ bleed, apps, services, showPrices }: FolderData) {
                 item={item}
                 descriptionLines={descriptionLines}
                 last={i === services.length - 1}
+                stretch={stretchList}
               />
             ))}
           </div>

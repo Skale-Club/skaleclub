@@ -6,12 +6,12 @@ import { Editable, ImageFrame, INK, Rule, printImage } from "../primitives";
 import { AppCard, CardGrid, PanelHeading, ServiceCard, TrustPoints } from "../cards";
 
 /**
- * "Showcase" — image-forward, inverted against Editorial.
+ * "Showcase" — image-forward.
  *
- * The cover is light and quiet; the inside is a dark gallery where every service
- * is a picture card. Use it when the products photograph well and the pitch is
- * visual rather than price-led. The inside spread is treated as one continuous
- * surface: the grid crosses the fold instead of restarting on each panel.
+ * Same four panels as Editorial, but panel 3 is a grid of picture cards rather
+ * than a read-through list. Use it when the service artwork carries the pitch
+ * and the descriptions can live on the website; Editorial is the choice when
+ * the reader needs to know what each service actually is.
  */
 
 function Outside({ bleed, brand, settings }: FolderData) {
@@ -123,9 +123,11 @@ function Outside({ bleed, brand, settings }: FolderData) {
 function Inside({ bleed, apps, services, showPrices }: FolderData) {
   const denseApps = apps.length > 8;
   const denseServices = services.length > 8;
-  // Two cards per row, so the grid is ceil(n / 2) rows deep. Past three rows the
-  // photo has to give up height or the tag below it falls outside the card.
-  const serviceRows = Math.ceil(services.length / 2);
+  const appColumns: 2 | 3 = apps.length > 8 ? 3 : 2;
+  const serviceColumns: 2 | 3 = services.length > 8 ? 3 : 2;
+  // Past three rows the photo has to give up height or the tag below it falls
+  // outside the card.
+  const serviceRows = Math.ceil(services.length / serviceColumns);
   const serviceImageRatio = serviceRows >= 4 ? "16 / 6" : serviceRows === 3 ? "16 / 7" : undefined;
 
   return (
@@ -137,11 +139,13 @@ function Inside({ bleed, apps, services, showPrices }: FolderData) {
       >
         <PanelHeading eyebrow="Ready-made software" title="Our Apps" onDark />
         {apps.length > 0 ? (
-          <CardGrid>
-            {apps.map((item) => (
-              <AppCard key={item.key} item={item} showPrices={showPrices} dense={denseApps} onDark />
-            ))}
-          </CardGrid>
+          <CardGrid
+            items={apps}
+            columns={appColumns}
+            renderItem={(item, { wide, span }) => (
+              <AppCard key={item.key} item={item} showPrices={showPrices} dense={denseApps} span={wide ? span : 1} onDark />
+            )}
+          />
         ) : (
           <p className="mt-[4mm] text-[9pt]" style={{ color: "#A9B8D8" }}>
             Pick apps in the sidebar.
@@ -156,17 +160,20 @@ function Inside({ bleed, apps, services, showPrices }: FolderData) {
       >
         <PanelHeading eyebrow="Work we do for you" title="Our Services" onDark />
         {services.length > 0 ? (
-          <CardGrid>
-            {services.map((item) => (
+          <CardGrid
+            items={services}
+            columns={serviceColumns}
+            renderItem={(item, { wide, span }) => (
               <ServiceCard
                 key={item.key}
                 item={item}
                 dense={denseServices}
                 imageRatio={serviceImageRatio}
+                span={wide ? span : 1}
                 onDark
               />
-            ))}
-          </CardGrid>
+            )}
+          />
         ) : (
           <p className="mt-[4mm] text-[9pt]" style={{ color: "#A9B8D8" }}>
             Pick services in the sidebar.

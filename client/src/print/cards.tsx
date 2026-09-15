@@ -56,12 +56,16 @@ export function AppCard({
   showPrices,
   dense = false,
   onDark = true,
+  span = 1,
 }: {
   item: FolderItem;
   showPrices: boolean;
   dense?: boolean;
   onDark?: boolean;
+  /** Columns this card spans. The photo widens to match so the row keeps its height. */
+  span?: 1 | 2 | 3;
 }) {
+  const photoRatio = `${16 * span} / 8`;
   const surface = onDark
     ? { backgroundColor: "rgba(255,255,255,0.06)", border: "0.25mm solid rgba(255,255,255,0.12)" }
     : { backgroundColor: INK.paper, border: `0.25mm solid ${INK.rule}` };
@@ -79,7 +83,7 @@ export function AppCard({
           bottom of the shorter card, where nobody reads it. */}
       <div className="relative shrink-0">
         {item.imageUrl ? (
-          <ImageFrame src={item.imageUrl} ratio="16 / 8" radius="0" tone="cta" />
+          <ImageFrame src={item.imageUrl} ratio={photoRatio} radius="0" tone="cta" />
         ) : (
           // Not every product has a photo — in production XmartMenu and
           // Xtimator have an empty `imageUrl`. An empty grey box on a printed
@@ -88,7 +92,7 @@ export function AppCard({
           <div
             className="flex items-center justify-center"
             style={{
-              aspectRatio: "16 / 8",
+              aspectRatio: photoRatio,
               background: "linear-gradient(135deg, #16233E 0%, #0B1526 100%)",
             }}
           >
@@ -182,10 +186,13 @@ export function ServiceCard({
   dense = false,
   onDark = true,
   imageRatio,
+  span = 1,
 }: {
   item: FolderItem;
   dense?: boolean;
   onDark?: boolean;
+  /** Columns this card spans; the photo widens to match. */
+  span?: 1 | 2 | 3;
   /**
    * The photo's aspect ratio. The caller sets it because only the caller knows
    * how many rows the grid has: at four rows a 16/8 photo plus the text below
@@ -203,7 +210,7 @@ export function ServiceCard({
       {/* Fixed ratio for the same reason as AppCard. */}
       <ImageFrame
         src={item.imageUrl}
-        ratio={imageRatio ?? (dense ? "16 / 6" : "16 / 8")}
+        ratio={span > 1 ? `${16 * span} / 7` : (imageRatio ?? (dense ? "16 / 6" : "16 / 8"))}
         radius="0"
         tone="cta"
         className="shrink-0"
@@ -226,9 +233,6 @@ export function ServiceCard({
           </Editable>
         )}
         {!dense && item.features.length > 0 && (
-          // Wrapping is fine because the block above has a pinned height, so a
-          // second chip line does not push the photo and break the row's
-          // alignment. Clipping them mid-word looked like a rendering fault.
           <div className="pt-[1.8mm] flex gap-[1.2mm]">
             {item.features.slice(0, 1).map((f, i) => (
               <Chip key={i} onDark={onDark}>
@@ -243,25 +247,56 @@ export function ServiceCard({
 }
 
 /**
- * Two-column grid that fills its panel. `auto-rows-fr` keeps every row the same
- * height, and an odd final card spans the full width instead of leaving a hole.
+ * Grid of cards that fills its panel.
+ *
+ * `columns` is chosen by the template from the item count: two is the default,
+ * three once a panel has to carry more than eight, which is where a two-column
+ * grid runs out of row height and starts clipping the captions.
+ *
+ * Rows are stretched to equal height (`auto-rows-fr`) only from three rows.
+ * Below that a stretched row turns a card into a tower with a hundred
+ * millimetres of empty surface under its caption; natural height, with the
+ * slack at the bottom of the panel, is the honest layout there.
+ *
+ * An odd final card spans the full width rather than leaving a hole beside it.
+ * `renderItem` is told when that happens so it can give the card a wide photo
+ * ratio and keep the row the same height as the others.
  */
-export function CardGrid({ children }: { children: React.ReactNode[] }) {
-  const count = children.length;
+export function CardGrid<T>({
+  items,
+  columns = 2,
+  renderItem,
+}: {
+  items: T[];
+  columns?: 2 | 3;
+  renderItem: (item: T, opts: { wide: boolean; span: 2 | 3 }) => React.ReactNode;
+}) {
+  const count = items.length;
+  const rows = Math.ceil(count / columns);
+  const remainder = count % columns;
+  const cols = columns === 3 ? "grid-cols-3" : "grid-cols-2";
+  // From three rows the grid is genuinely full and equal rows look right; at
+  // one or two, stretching just moves the empty space inside the cards.
+  const stretch = rows >= 3 ? "auto-rows-fr" : "auto-rows-max";
   return (
-    <div className="mt-[3.5mm] flex-1 min-h-0 grid grid-cols-2 gap-[2.5mm] auto-rows-fr">
-      {children.map((child, i) => (
-        <div
-          key={i}
-          className={i === count - 1 && count % 2 === 1 ? "col-span-2 min-h-0" : "min-h-0"}
-        >
-          {child}
-        </div>
-      ))}
+    <div className={`mt-[3.5mm] flex-1 min-h-0 grid ${cols} ${stretch} gap-[2.5mm]`}>
+      {items.map((item, i) => {
+        // Only a lone card in the last row spans; two of three do not.
+        const wide = i === count - 1 && remainder === 1 && count > 1;
+        return (
+          <div
+            key={i}
+            // Literal class names: Tailwind's JIT cannot see a `col-span-${n}`
+            // template and would purge it, and the card would quietly not span.
+            className={wide ? (columns === 3 ? "col-span-3 min-h-0" : "col-span-2 min-h-0") : "min-h-0"}
+          >
+            {renderItem(item, { wide, span: columns })}
+          </div>
+        );
+      })}
     </div>
   );
 }
-
 
 /**
  * Service row — the list form used on panel 3.
@@ -276,16 +311,23 @@ export function ServiceListItem({
   descriptionLines = 2,
   onDark = true,
   last = false,
+  stretch = true,
 }: {
   item: FolderItem;
   /** Lines the description is clamped to, so every row keeps the same height. */
   descriptionLines?: number;
   onDark?: boolean;
   last?: boolean;
+  /**
+   * Share the panel's leftover height with the other rows. The template turns
+   * this off for short lists: three rows spread across a whole panel read as
+   * three orphans, not as a list.
+   */
+  stretch?: boolean;
 }) {
   return (
     <div
-      className="flex gap-[3.2mm] py-[2.6mm] flex-1 min-h-0 items-center"
+      className={`flex gap-[3.2mm] py-[2.6mm] items-center ${stretch ? "flex-1 min-h-0" : ""}`}
       style={{
         borderBottom: last
           ? undefined

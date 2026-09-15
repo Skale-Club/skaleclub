@@ -5,7 +5,7 @@ import type { CompanySettings, PortfolioService } from "@shared/schema";
 
 import { buildCatalog, SOURCE_LABEL, type FolderItemSource } from "@/print/items";
 import { MM_TO_PX, PAPER_PRESETS, type PaperKey } from "@/print/paper";
-import { CropMarks, Guides, INK } from "@/print/primitives";
+import { CropMarks, Guides, INK, isDark } from "@/print/primitives";
 import { DEFAULT_TEMPLATE_ID, FOLDER_TEMPLATES, getTemplate } from "@/print/templates";
 import type { FolderData } from "@/print/types";
 
@@ -130,7 +130,6 @@ export default function PrintFolder() {
         siteLabel: siteUrl.replace(/^https?:\/\//, "").replace(/\/$/, ""),
         coverPhoto,
         logoOnDark: settings?.logoDark || settings?.logoMain || "",
-        logoOnLight: settings?.logoMain || settings?.logoDark || "",
         heroTitle: settings?.heroTitle || "Stop Doing Repetitive Work. Automate It.",
         heroSubtitle:
           settings?.heroSubtitle ||
@@ -445,6 +444,21 @@ export default function PrintFolder() {
             <p className="text-[11px] text-slate-400 mt-1 leading-snug">
               Aplicativos ocupam a página 2, serviços a página 3.
             </p>
+            {(chosenApps.length > 12 || chosenServices.length > 12) && (
+              // Beyond twelve per panel every template starts clipping captions,
+              // and nothing on the printed sheet says so. Say it here instead.
+              <div
+                className="mt-2 flex items-start gap-2 rounded-lg border p-2.5"
+                style={{ borderColor: "#FDBA74", backgroundColor: "#FFF7ED" }}
+                data-testid="warning-capacity"
+              >
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+                <p className="text-[11px] leading-snug text-amber-800">
+                  Acima de 12 itens num painel os cards ficam pequenos demais e o
+                  texto é cortado. Desmarque alguns ou use o template Catalog.
+                </p>
+              </div>
+            )}
             <div className="mt-2 flex flex-col gap-2 max-h-72 overflow-y-auto pr-1">
               {groups.map((group) => (
                 <div key={group.source}>
@@ -550,7 +564,7 @@ export default function PrintFolder() {
               data-testid="sheet-outside"
             >
               <Guides bleed={bleed} show={showGuides} />
-              {showCropMarks && <CropMarks bleed={bleed} />}
+              {showCropMarks && <CropMarks bleed={bleed} onDark={isDark(template.sheetBackground.outside)} />}
               <template.Outside {...folderData} />
             </div>
 
@@ -564,7 +578,7 @@ export default function PrintFolder() {
               data-testid="sheet-inside"
             >
               <Guides bleed={bleed} show={showGuides} />
-              {showCropMarks && <CropMarks bleed={bleed} />}
+              {showCropMarks && <CropMarks bleed={bleed} onDark={isDark(template.sheetBackground.inside)} />}
               <template.Inside {...folderData} />
             </div>
           </div>

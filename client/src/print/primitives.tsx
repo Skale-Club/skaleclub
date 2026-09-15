@@ -17,6 +17,15 @@ export const INK = {
   muted: "#8A94A6",
 } as const;
 
+/** Relative luminance below 0.5 — used to pick crop-mark and fallback colours. */
+export function isDark(hex: string): boolean {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return false;
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 < 0.5;
+}
+
 /** Images destined for paper: generous width, high quality, no upscaling games. */
 export const printImage = (url: string | null | undefined, width = 1200) =>
   getImageUrl(url, { width, quality: 92 });
@@ -50,13 +59,25 @@ export function Editable({
   );
 }
 
-/** Standard prepress trim marks at the 4 corners of the trim box. */
-export function CropMarks({ bleed }: { bleed: number }) {
+/**
+ * Standard prepress trim marks at the 4 corners of the trim box.
+ *
+ * `onDark` flips them to white. They were black regardless of the sheet, and
+ * every template now prints on navy — black on #060E1D is invisible to the
+ * person trimming the sheet, which defeats the only reason the marks exist.
+ * They also carry `z-index` so a positioned panel rendered after them cannot
+ * paint over them.
+ */
+export function CropMarks({ bleed, onDark = false }: { bleed: number; onDark?: boolean }) {
   if (bleed <= 0) return null;
   const len = Math.max(bleed - 1, 2);
   const mm = (v: number) => `${v}mm`;
   const mark = (style: React.CSSProperties, key: string) => (
-    <div key={key} className="absolute bg-black" style={style} />
+    <div
+      key={key}
+      className="absolute z-20"
+      style={{ ...style, backgroundColor: onDark ? "#FFFFFF" : "#000000" }}
+    />
   );
   return (
     <>
@@ -106,6 +127,7 @@ export function ImageFrame({
   radius = "2mm",
   tone = "none",
   fill = false,
+  onDark = true,
   className,
   style,
 }: {
@@ -116,6 +138,8 @@ export function ImageFrame({
   tone?: "none" | "navy" | "cta";
   /** Grow to consume the flex parent's free height instead of holding `ratio`. */
   fill?: boolean;
+  /** Which surface the frame sits on; decides the colour of the no-image fallback. */
+  onDark?: boolean;
   className?: string;
   style?: React.CSSProperties;
 }) {
@@ -125,8 +149,21 @@ export function ImageFrame({
     ? { flex: "1 1 0", minHeight: "28mm", borderRadius: radius, ...style }
     : { aspectRatio: ratio, borderRadius: radius, ...style };
   if (!src) {
-    // No image: a flat tinted block keeps the grid intact instead of collapsing.
-    return <div className={className} style={{ ...box, backgroundColor: INK.paperTint }} />;
+    // No image: a flat block keeps the layout intact instead of collapsing. It
+    // was always paper-tint, which on the dark folder printed as a bright white
+    // square — exactly what a service with no artwork yet (3D Printing before
+    // its image is generated) would have gone to the printer with.
+    return (
+      <div
+        className={className}
+        style={{
+          ...box,
+          background: onDark
+            ? "linear-gradient(135deg, #16233E 0%, #0B1526 100%)"
+            : INK.paperTint,
+        }}
+      />
+    );
   }
 
   const wash =

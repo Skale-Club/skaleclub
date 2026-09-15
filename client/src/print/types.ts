@@ -29,10 +29,8 @@ export interface FolderData {
     address: string;
     siteUrl: string;
     siteLabel: string;
-    /** Logo that reads on a dark surface. */
+    /** Logo that reads on a dark surface — every template prints on navy. */
     logoOnDark: string;
-    /** Logo that reads on a light surface. */
-    logoOnLight: string;
     /**
      * The photo on the cover. Defaults to the site's hero image so the folder
      * shows the same face as the website, but it is chosen explicitly in the
@@ -55,7 +53,7 @@ export interface FolderTemplate {
   description: string;
   /** Sheet 1 — the outside: back cover (left panel) and front cover (right panel). */
   Outside: (props: FolderData) => JSX.Element;
-  /** Sheet 2 — the inside spread, read as one continuous surface. */
+  /** Sheet 2 — the inside spread: panel 2 (apps) on the left, panel 3 (services) on the right. */
   Inside: (props: FolderData) => JSX.Element;
   /**
    * Background of each sheet, so the shell can paint the bleed area to match
