@@ -1,4 +1,5 @@
 import type { FolderItem } from "./items";
+import { Check } from "lucide-react";
 import { Chip, Editable, ImageFrame, INK, Price, printImage } from "./primitives";
 
 /**
@@ -289,6 +290,51 @@ export function ServiceListItem({
           </Editable>
         )}
       </div>
+    </div>
+  );
+}
+
+
+/**
+ * The closing panel's proof points, taken from the homepage trust badges so the
+ * claims in print are the claims on the site.
+ */
+export function TrustPoints({
+  badges,
+  onDark = true,
+}: {
+  badges: { title: string; description?: string }[];
+  onDark?: boolean;
+}) {
+  if (badges.length === 0) return null;
+  return (
+    <div className="mt-[7mm] flex flex-col gap-[3mm]">
+      {badges.slice(0, 3).map((badge, i) => (
+        <div key={i} className="flex items-start gap-[3mm]">
+          <span
+            className="flex items-center justify-center shrink-0 rounded-full"
+            style={{ width: "5mm", height: "5mm", marginTop: "0.6mm", backgroundColor: INK.cta }}
+          >
+            <Check style={{ width: "2.8mm", height: "2.8mm", color: "#FFFFFF" }} />
+          </span>
+          <div className="min-w-0">
+            <Editable
+              className="text-[9.5pt] font-bold leading-tight"
+              style={{ color: onDark ? "#FFFFFF" : INK.navy }}
+            >
+              {badge.title}
+            </Editable>
+            {badge.description && (
+              <Editable
+                className="text-[8pt] leading-snug mt-[0.4mm]"
+                style={{ color: onDark ? "#A9B8D8" : INK.body }}
+              >
+                {badge.description}
+              </Editable>
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

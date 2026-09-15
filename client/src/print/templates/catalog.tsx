@@ -15,7 +15,15 @@ import { Editable, INK, Price, Rule, printImage } from "../primitives";
  * gracefully when services have no image at all.
  */
 
-function CatalogEntry({ item, showPrices }: { item: FolderItem; showPrices: boolean }) {
+function CatalogEntry({
+  item,
+  showPrices,
+  descriptionLines = 2,
+}: {
+  item: FolderItem;
+  showPrices: boolean;
+  descriptionLines?: number;
+}) {
   return (
     <div className="py-[2.8mm]" style={{ borderBottom: "0.2mm solid rgba(255,255,255,0.12)" }}>
       <div className="flex items-start justify-between gap-[3mm]">
@@ -23,18 +31,37 @@ function CatalogEntry({ item, showPrices }: { item: FolderItem; showPrices: bool
           <Editable className="text-[10.5pt] font-bold leading-tight text-white">
             {item.title}
           </Editable>
-          <Editable className="text-[8pt] leading-snug mt-[0.4mm]" style={{ color: INK.muted }}>
-            {item.subtitle}
-          </Editable>
+          {item.subtitle && (
+            <Editable className="text-[8pt] leading-snug mt-[0.4mm]" style={{ color: INK.cta }}>
+              {item.subtitle}
+            </Editable>
+          )}
         </div>
         {showPrices && item.price && (
-          <Price price={item.price} label={item.priceLabel} />
+          <Price price={item.price} label={item.priceLabel} color="#8FA9EE" />
         )}
       </div>
+
+      {item.description && (
+        <Editable
+          className="text-[7.5pt] leading-[1.35] mt-[1mm] overflow-hidden"
+          style={{
+            color: "#A9B8D8",
+            display: "-webkit-box",
+            WebkitBoxOrient: "vertical",
+            WebkitLineClamp: descriptionLines,
+          }}
+        >
+          {item.description}
+        </Editable>
+      )}
+
       {item.features.length > 0 && (
         <div className="mt-[1.4mm] flex flex-wrap gap-x-[3.5mm] gap-y-[0.6mm]">
-          {item.features.map((f, i) => (
-            <span key={i} className="flex items-center gap-[1.2mm] text-[7.5pt]" style={{ color: INK.body }}>
+          {item.features.slice(0, 3).map((f, i) => (
+            // #8FA9EE, not INK.body: the light-surface body colour is close to
+            // unreadable on the navy panel this template now prints on.
+            <span key={i} className="flex items-center gap-[1.2mm] text-[7.5pt]" style={{ color: "#8FA9EE" }}>
               <Check style={{ width: "2.4mm", height: "2.4mm", color: INK.cta }} />
               <Editable>{f}</Editable>
             </span>
@@ -159,7 +186,12 @@ function Inside({ bleed, apps, services, showPrices }: FolderData) {
           style={{ borderTop: "0.3mm solid rgba(255,255,255,0.14)" }}
         >
           {apps.map((item) => (
-            <CatalogEntry key={item.key} item={item} showPrices={showPrices} />
+            <CatalogEntry
+              key={item.key}
+              item={item}
+              showPrices={showPrices}
+              descriptionLines={apps.length > 6 ? 1 : 2}
+            />
           ))}
         </div>
       </div>
@@ -175,7 +207,12 @@ function Inside({ bleed, apps, services, showPrices }: FolderData) {
           style={{ borderTop: "0.3mm solid rgba(255,255,255,0.14)" }}
         >
           {services.map((item) => (
-            <CatalogEntry key={item.key} item={item} showPrices={false} />
+            <CatalogEntry
+              key={item.key}
+              item={item}
+              showPrices={false}
+              descriptionLines={services.length > 7 ? 1 : 2}
+            />
           ))}
         </div>
       </div>

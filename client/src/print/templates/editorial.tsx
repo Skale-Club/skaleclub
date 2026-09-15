@@ -1,8 +1,8 @@
-import { Phone, Mail, MapPin, Globe, Check } from "lucide-react";
+import { Phone, Mail, MapPin, Globe } from "lucide-react";
 import QRCode from "react-qr-code";
 import type { FolderData, FolderTemplate } from "../types";
 import { panelPadding } from "../paper";
-import { AppCard, CardGrid, PanelHeading, ServiceListItem } from "../cards";
+import { AppCard, CardGrid, PanelHeading, ServiceListItem, TrustPoints } from "../cards";
 import { Editable, ImageFrame, INK, Rule, printImage } from "../primitives";
 
 /**
@@ -87,30 +87,7 @@ function BackPanel({ bleed, brand, settings }: FolderData) {
         <ContactRow icon={<Globe style={ICON} />} onDark>{brand.siteLabel}</ContactRow>
       </div>
 
-      {badges.length > 0 && (
-        <div className="mt-[7mm] flex flex-col gap-[3mm]">
-          {badges.map((badge, i) => (
-            <div key={i} className="flex items-start gap-[3mm]">
-              <span
-                className="flex items-center justify-center shrink-0 rounded-full"
-                style={{ width: "5mm", height: "5mm", marginTop: "0.6mm", backgroundColor: INK.cta }}
-              >
-                <Check style={{ width: "2.8mm", height: "2.8mm", color: "#FFFFFF" }} />
-              </span>
-              <div className="min-w-0">
-                <Editable className="text-[9.5pt] font-bold leading-tight text-white">
-                  {badge.title}
-                </Editable>
-                {badge.description && (
-                  <Editable className="text-[8pt] leading-snug mt-[0.4mm]" style={{ color: "#A9B8D8" }}>
-                    {badge.description}
-                  </Editable>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      <TrustPoints badges={badges} />
 
       <div
         className="mt-auto shrink-0 rounded-[3mm] px-[5mm] py-[4.5mm] flex items-center gap-[4.5mm]"

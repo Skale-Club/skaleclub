@@ -3,7 +3,7 @@ import QRCode from "react-qr-code";
 import type { FolderData, FolderTemplate } from "../types";
 import { panelPadding } from "../paper";
 import { Editable, ImageFrame, INK, Rule, printImage } from "../primitives";
-import { AppCard, CardGrid, PanelHeading, ServiceCard } from "../cards";
+import { AppCard, CardGrid, PanelHeading, ServiceCard, TrustPoints } from "../cards";
 
 /**
  * "Showcase" — image-forward, inverted against Editorial.
@@ -14,7 +14,8 @@ import { AppCard, CardGrid, PanelHeading, ServiceCard } from "../cards";
  * surface: the grid crosses the fold instead of restarting on each panel.
  */
 
-function Outside({ bleed, brand }: FolderData) {
+function Outside({ bleed, brand, settings }: FolderData) {
+  const badges = settings?.homepageContent?.trustBadges ?? [];
   const left = panelPadding(bleed, "left");
   const right = panelPadding(bleed, "right");
   const heroImage = brand.coverPhoto;
@@ -55,6 +56,8 @@ function Outside({ bleed, brand }: FolderData) {
             <Editable>{brand.siteLabel}</Editable>
           </div>
         </div>
+
+        <TrustPoints badges={badges} />
 
         <div className="mt-auto flex items-end justify-between gap-[4mm]">
           <div className="flex flex-col gap-[2mm]">
