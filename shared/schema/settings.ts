@@ -53,6 +53,32 @@ export const resendSettings = pgTable("resend_settings", {
 });
 
 // Company Settings (singleton table - only one row)
+/**
+ * A company's social links. Stored as jsonb, so the column can hold whatever a
+ * past write put there; `normalizeSocialLinks` is what every reader should go
+ * through rather than trusting the column's type.
+ */
+export const socialLinksSchema = z.array(
+  z.object({
+    platform: z.string().min(1),
+    url: z.string().min(1),
+  }),
+);
+
+export type SocialLink = z.infer<typeof socialLinksSchema>[number];
+
+/** Coerces any stored value into a usable array, dropping malformed entries. */
+export function normalizeSocialLinks(value: unknown): SocialLink[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    if (!entry || typeof entry !== "object") return [];
+    const { platform, url } = entry as Record<string, unknown>;
+    if (typeof platform !== "string" || typeof url !== "string") return [];
+    if (!platform.trim() || !url.trim()) return [];
+    return [{ platform: platform.trim(), url: url.trim() }];
+  });
+}
+
 export const companySettings = pgTable("company_settings", {
   id: serial("id").primaryKey(),
   companyName: text("company_name").default('Company Name'),
@@ -192,7 +218,10 @@ export const insertCompanySettingsSchema = z.object({
   logoAvatarFull: z.string().default(''),
   logoAvatarMark: z.string().default(''),
   sectionsOrder: z.array(z.string()).nullable().optional(),
-  socialLinks: z.any().default([]),
+  // Was `z.any()`, which accepted anything — production ended up holding `{}`
+  // for this field, and every consumer that guards with `Array.isArray` then
+  // rendered no social links at all, silently. Validate the real shape.
+  socialLinks: socialLinksSchema.default([]),
   mapEmbedUrl: z.string().default('https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d259505.12434421625!2d-71.37915684523166!3d42.296281796774615!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sus!4v1767905922570!5m2!1sen!2sus'),
   heroTitle: z.string().default('Your 5-Star Marketing Company'),
   heroSubtitle: z.string().default('Book your marketing service today and watch your business grow'),

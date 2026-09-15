@@ -3,7 +3,7 @@ import { z } from "zod";
 import { sql } from "drizzle-orm";
 import { db } from "../db.js";
 import { systemHeartbeats } from "#shared/schema.js";
-import { insertCompanySettingsSchema } from "#shared/schema.js";
+import { insertCompanySettingsSchema, normalizeSocialLinks } from "#shared/schema.js";
 import type { LeadClassification, LeadStatus } from "#shared/schema.js";
 import { storage } from "../storage.js";
 import { api } from "#shared/routes.js";
@@ -77,7 +77,13 @@ export function registerCompanyRoutes(app: Express) {
     try {
       const settings = await storage.getCompanySettings();
       setPublicCache(res, 300);
-      res.json(settings);
+      // The column is jsonb and older writes were not shape-checked, so it can
+      // hold `{}`. Normalizing here means every consumer gets an array without
+      // each one having to guard, and without a data migration first.
+      res.json({
+        ...settings,
+        socialLinks: normalizeSocialLinks(settings.socialLinks),
+      });
     } catch (err) {
       res.status(500).json({ message: (err as Error).message });
     }
