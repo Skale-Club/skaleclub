@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Printer, Info, Loader2, Palette, LayoutTemplate } from "lucide-react";
+import { Printer, Info, Loader2, Palette, LayoutTemplate, ImagePlus, AlertTriangle } from "lucide-react";
 import type { CompanySettings, PortfolioService } from "@shared/schema";
 
 import { buildCatalog, SOURCE_LABEL, type FolderItemSource } from "@/print/items";
@@ -45,6 +45,26 @@ export default function PrintFolder() {
   const [showGuides, setShowGuides] = useState(true);
   const [selectedKeys, setSelectedKeys] = useState<string[] | null>(null);
 
+  // Cover photo. `null` means "whatever the site's hero uses"; a string is an
+  // explicit override, either a pasted URL or a local file picked for this
+  // print run. Kept separate from the settings value so the reset button can
+  // always get back to the site's own image.
+  const [coverOverride, setCoverOverride] = useState<string | null>(null);
+  const coverObjectUrl = useRef<string | null>(null);
+  const coverFileRef = useRef<HTMLInputElement>(null);
+
+  // Object URLs outlive the element that used them; release the previous one on
+  // every change and on unmount.
+  const setCoverFile = (file: File) => {
+    if (coverObjectUrl.current) URL.revokeObjectURL(coverObjectUrl.current);
+    const url = URL.createObjectURL(file);
+    coverObjectUrl.current = url;
+    setCoverOverride(url);
+  };
+  useEffect(() => () => {
+    if (coverObjectUrl.current) URL.revokeObjectURL(coverObjectUrl.current);
+  }, []);
+
   const template = getTemplate(templateId);
 
   // Both catalogs, normalised into one list: the X-branded products from
@@ -87,6 +107,8 @@ export default function PrintFolder() {
   }, [catalog]);
 
   const siteUrl = settings?.seoCanonicalUrl || "https://skale.club";
+  const siteCoverPhoto = settings?.heroImageUrl || settings?.aboutImageUrl || "";
+  const coverPhoto = coverOverride ?? siteCoverPhoto;
 
   // One resolved brand object, so every template renders the same strings and
   // no template re-implements the logo/fallback rules.
@@ -107,6 +129,7 @@ export default function PrintFolder() {
         address: settings?.companyAddress || "",
         siteUrl,
         siteLabel: siteUrl.replace(/^https?:\/\//, "").replace(/\/$/, ""),
+        coverPhoto,
         logoOnDark: settings?.logoDark || settings?.logoMain || "",
         logoOnLight: settings?.logoMain || settings?.logoDark || "",
         heroTitle: settings?.heroTitle || "Stop Doing Repetitive Work. Automate It.",
@@ -117,7 +140,7 @@ export default function PrintFolder() {
         socialLinks,
       },
     };
-  }, [settings, chosenApps, chosenServices, bleed, showPrices, siteUrl]);
+  }, [settings, chosenApps, chosenServices, bleed, showPrices, siteUrl, coverPhoto]);
 
   // Full page = open sheet + bleed on every side
   const pageW = sheetW + bleed * 2;
@@ -262,6 +285,84 @@ export default function PrintFolder() {
                 );
               })}
             </div>
+          </div>
+
+          {/* ---- Cover photo ---- */}
+          <div>
+            <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <ImagePlus className="w-3.5 h-3.5" />
+              Foto da capa
+            </label>
+
+            {coverPhoto ? (
+              <div className="mt-2 flex items-start gap-3">
+                <img
+                  src={coverPhoto}
+                  alt="Prévia da foto da capa"
+                  className="w-16 h-16 rounded-lg object-cover border border-slate-200 shrink-0"
+                  data-testid="img-cover-preview"
+                />
+                <p className="text-[11px] leading-snug text-slate-500">
+                  {coverOverride
+                    ? "Foto escolhida para esta impressão."
+                    : "Usando a imagem do hero do site."}
+                </p>
+              </div>
+            ) : (
+              <div
+                className="mt-2 flex items-start gap-2 rounded-lg border p-2.5"
+                style={{ borderColor: "#FDBA74", backgroundColor: "#FFF7ED" }}
+                data-testid="warning-no-cover"
+              >
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+                <p className="text-[11px] leading-snug text-amber-800">
+                  Sem foto de capa. O site não tem imagem de hero definida — escolha
+                  um arquivo abaixo, senão a capa sai sem foto.
+                </p>
+              </div>
+            )}
+
+            <button
+              onClick={() => coverFileRef.current?.click()}
+              className="mt-2 w-full rounded-lg border px-3 py-2 text-sm font-semibold transition-colors hover:bg-slate-50"
+              style={{ borderColor: "#E2E8F0", color: INK.navy }}
+              data-testid="button-choose-cover"
+            >
+              Escolher arquivo…
+            </button>
+            <input
+              ref={coverFileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              data-testid="input-cover-file"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) setCoverFile(file);
+                e.target.value = "";
+              }}
+            />
+            <input
+              type="url"
+              placeholder="ou cole a URL de uma imagem"
+              className="mt-1.5 w-full rounded-lg border px-3 py-2 text-sm placeholder:text-slate-400"
+              style={{ borderColor: "#E2E8F0", backgroundColor: "#fff", color: INK.navy }}
+              data-testid="input-cover-url"
+              onChange={(e) => setCoverOverride(e.target.value.trim() || null)}
+            />
+            {coverOverride && (
+              <button
+                onClick={() => {
+                  if (coverObjectUrl.current) URL.revokeObjectURL(coverObjectUrl.current);
+                  coverObjectUrl.current = null;
+                  setCoverOverride(null);
+                }}
+                className="mt-1.5 text-[11px] underline text-slate-500 hover:text-slate-700"
+                data-testid="button-reset-cover"
+              >
+                Voltar a usar a imagem do site
+              </button>
+            )}
           </div>
 
           <div>

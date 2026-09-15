@@ -14,10 +14,10 @@ import { AppCard, CardGrid, PanelHeading, ServiceCard } from "../cards";
  * surface: the grid crosses the fold instead of restarting on each panel.
  */
 
-function Outside({ bleed, brand, settings }: FolderData) {
+function Outside({ bleed, brand }: FolderData) {
   const left = panelPadding(bleed, "left");
   const right = panelPadding(bleed, "right");
-  const heroImage = settings?.heroImageUrl || settings?.aboutImageUrl || "";
+  const heroImage = brand.coverPhoto;
 
   return (
     <>

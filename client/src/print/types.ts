@@ -33,6 +33,13 @@ export interface FolderData {
     logoOnDark: string;
     /** Logo that reads on a light surface. */
     logoOnLight: string;
+    /**
+     * The photo on the cover. Defaults to the site's hero image so the folder
+     * shows the same face as the website, but it is chosen explicitly in the
+     * toolbar: a brochure must never quietly go to print with whatever happens
+     * to be in a settings field.
+     */
+    coverPhoto: string;
     heroTitle: string;
     heroSubtitle: string;
     ctaText: string;

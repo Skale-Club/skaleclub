@@ -155,8 +155,8 @@ function BackPanel({ bleed, brand, settings }: FolderData) {
 }
 
 /** Panel 1 — the cover. */
-function CoverPanel({ bleed, brand, settings }: FolderData) {
-  const heroImage = settings?.heroImageUrl || settings?.aboutImageUrl || "";
+function CoverPanel({ bleed, brand }: FolderData) {
+  const heroImage = brand.coverPhoto;
   const pad = panelPadding(bleed, "right");
 
   return (
