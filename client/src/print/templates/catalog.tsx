@@ -1,7 +1,7 @@
 import { Phone, Mail, MapPin, Globe, Check } from "lucide-react";
 import QRCode from "react-qr-code";
-import type { PortfolioService } from "@shared/schema";
 import type { FolderData, FolderTemplate } from "../types";
+import type { FolderItem } from "../items";
 import { balanceByWeight, panelPadding, serviceWeight } from "../paper";
 import { Editable, INK, Price, Rule, printImage } from "../primitives";
 
@@ -14,7 +14,7 @@ import { Editable, INK, Price, Rule, printImage } from "../primitives";
  * gracefully when services have no image at all.
  */
 
-function CatalogEntry({ service, showPrices }: { service: PortfolioService; showPrices: boolean }) {
+function CatalogEntry({ service, showPrices }: { service: FolderItem; showPrices: boolean }) {
   return (
     <div className="py-[2.8mm]" style={{ borderBottom: `0.25mm solid ${INK.rule}` }}>
       <div className="flex items-start justify-between gap-[3mm]">
@@ -26,11 +26,13 @@ function CatalogEntry({ service, showPrices }: { service: PortfolioService; show
             {service.subtitle}
           </Editable>
         </div>
-        {showPrices && <Price price={service.price} label={service.priceLabel} />}
+        {showPrices && service.price && (
+          <Price price={service.price} label={service.priceLabel} />
+        )}
       </div>
-      {(service.features ?? []).length > 0 && (
+      {service.features.length > 0 && (
         <div className="mt-[1.4mm] flex flex-wrap gap-x-[3.5mm] gap-y-[0.6mm]">
-          {(service.features ?? []).map((f, i) => (
+          {service.features.map((f, i) => (
             <span key={i} className="flex items-center gap-[1.2mm] text-[7.5pt]" style={{ color: INK.body }}>
               <Check style={{ width: "2.4mm", height: "2.4mm", color: INK.cta }} />
               <Editable>{f}</Editable>
@@ -86,7 +88,7 @@ function Outside({ bleed, brand, services }: FolderData) {
             </Editable>
             <div className="mt-[2mm] flex flex-col gap-[0.8mm]">
               {services.map((s) => (
-                <Editable key={s.id} className="text-[8.5pt]" style={{ color: INK.body }}>
+                <Editable key={s.key} className="text-[8.5pt]" style={{ color: INK.body }}>
                   {s.title} — {s.subtitle}
                 </Editable>
               ))}
@@ -149,7 +151,7 @@ function Inside({ bleed, brand, services, showPrices, settings }: FolderData) {
   const introWeight = 5.5;
   const { left, right } = balanceByWeight(
     services,
-    (s) => serviceWeight((s.features ?? []).length),
+    (s) => serviceWeight(s.features.length),
     introWeight,
   );
 
@@ -175,7 +177,7 @@ function Inside({ bleed, brand, services, showPrices, settings }: FolderData) {
           style={{ borderTop: `0.3mm solid ${INK.rule}` }}
         >
           {left.map((s) => (
-            <CatalogEntry key={s.id} service={s} showPrices={showPrices} />
+            <CatalogEntry key={s.key} service={s} showPrices={showPrices} />
           ))}
         </div>
         {services.length === 0 && (
@@ -191,7 +193,7 @@ function Inside({ bleed, brand, services, showPrices, settings }: FolderData) {
           style={{ borderTop: `0.3mm solid ${INK.rule}` }}
         >
           {right.map((s) => (
-            <CatalogEntry key={s.id} service={s} showPrices={showPrices} />
+            <CatalogEntry key={s.key} service={s} showPrices={showPrices} />
           ))}
         </div>
 

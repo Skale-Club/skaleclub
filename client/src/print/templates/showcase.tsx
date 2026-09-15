@@ -1,7 +1,7 @@
 import { Phone, Mail, MapPin, Globe } from "lucide-react";
 import QRCode from "react-qr-code";
-import type { PortfolioService } from "@shared/schema";
 import type { FolderData, FolderTemplate } from "../types";
+import type { FolderItem } from "../items";
 import { panelPadding } from "../paper";
 import { Chip, Editable, ImageFrame, INK, Price, Rule, printImage } from "../primitives";
 
@@ -19,7 +19,7 @@ function GalleryCard({
   showPrices,
   large = false,
 }: {
-  service: PortfolioService;
+  service: FolderItem;
   showPrices: boolean;
   large?: boolean;
 }) {
@@ -42,13 +42,13 @@ function GalleryCard({
               {service.subtitle}
             </Editable>
           </div>
-          {showPrices && (
+          {showPrices && service.price && (
             <Price price={service.price} label={service.priceLabel} color="#8FA9EE" />
           )}
         </div>
-        {(service.features ?? []).length > 0 && (
+        {service.features.length > 0 && (
           <div className="flex flex-wrap gap-[1.2mm] mt-auto pt-[1mm]">
-            {(service.features ?? []).slice(0, large ? 4 : 3).map((f, i) => (
+            {service.features.slice(0, large ? 4 : 3).map((f, i) => (
               <Chip key={i} onDark>
                 {f}
               </Chip>
@@ -196,7 +196,7 @@ function Inside({ bleed, brand, services, showPrices, settings }: FolderData) {
         {leftCards.length > 0 && (
           <div className="mt-[2.5mm] shrink-0 grid grid-cols-2 gap-[2.5mm]">
             {leftCards.map((s) => (
-              <GalleryCard key={s.id} service={s} showPrices={showPrices} />
+              <GalleryCard key={s.key} service={s} showPrices={showPrices} />
             ))}
           </div>
         )}
@@ -214,7 +214,7 @@ function Inside({ bleed, brand, services, showPrices, settings }: FolderData) {
           <div className="grid grid-cols-2 gap-[2.5mm] flex-1 min-h-0 auto-rows-fr">
             {rightCards.map((s, i) => (
               <div
-                key={s.id}
+                key={s.key}
                 className={
                   i === rightCards.length - 1 && rightCards.length % 2 === 1
                     ? "col-span-2 min-h-0"

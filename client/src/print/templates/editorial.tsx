@@ -1,7 +1,7 @@
 import { Phone, Mail, MapPin, Globe, Check } from "lucide-react";
 import QRCode from "react-qr-code";
-import type { PortfolioService } from "@shared/schema";
 import type { FolderData, FolderTemplate } from "../types";
+import type { FolderItem } from "../items";
 import { balanceByWeight, panelPadding, serviceWeight } from "../paper";
 import { Chip, CropMarks, Editable, ImageFrame, INK, Price, Rule, printImage } from "../primitives";
 
@@ -40,7 +40,7 @@ function AnchorCard({
   showPrices,
   grow = false,
 }: {
-  service: PortfolioService;
+  service: FolderItem;
   showPrices: boolean;
   /** Absorb the panel's leftover height through the image, not through padding. */
   grow?: boolean;
@@ -62,13 +62,13 @@ function AnchorCard({
               {service.subtitle}
             </Editable>
           </div>
-          {showPrices && (
+          {showPrices && service.price && (
             <Price price={service.price} label={service.priceLabel} color="#8FA9EE" />
           )}
         </div>
-        {(service.features ?? []).length > 0 && (
+        {service.features.length > 0 && (
           <div className="flex flex-wrap gap-[1.5mm] mt-[0.5mm]">
-            {(service.features ?? []).map((f, i) => (
+            {service.features.map((f, i) => (
               <Chip key={i} onDark>
                 {f}
               </Chip>
@@ -86,7 +86,7 @@ function ServiceRow({
   showPrices,
   grow = false,
 }: {
-  service: PortfolioService;
+  service: FolderItem;
   showPrices: boolean;
   /** Share the panel's leftover height evenly with its siblings. */
   grow?: boolean;
@@ -95,7 +95,13 @@ function ServiceRow({
   return (
     <div
       className={`flex gap-[3.5mm] rounded-[2.5mm] px-[4mm] py-[3mm] ${grow ? "flex-1 min-h-0 items-center" : ""}`}
-      style={{ backgroundColor: INK.paper, border: `0.3mm solid ${INK.rule}` }}
+      // Capped: without a ceiling a lone row on a panel inflates into one giant
+      // near-empty card. Past the cap the slack becomes a gap before the CTA.
+      style={{
+        backgroundColor: INK.paper,
+        border: `0.3mm solid ${INK.rule}`,
+        ...(grow ? { maxHeight: "32mm" } : null),
+      }}
     >
       {thumb ? (
         <img
@@ -120,13 +126,13 @@ function ServiceRow({
               {service.subtitle}
             </Editable>
           </div>
-          {showPrices && (
+          {showPrices && service.price && (
             <Price price={service.price} label={service.priceLabel} />
           )}
         </div>
-        {(service.features ?? []).length > 0 && (
+        {service.features.length > 0 && (
           <div className="mt-[1.5mm] flex flex-wrap gap-x-[3.5mm] gap-y-[0.8mm]">
-            {(service.features ?? []).map((f, i) => (
+            {service.features.map((f, i) => (
               <span
                 key={i}
                 className="flex items-center gap-[1.2mm] text-[7.5pt]"
@@ -200,7 +206,7 @@ function Outside({ bleed, brand, services, settings }: FolderData) {
             </Editable>
             <div className="mt-[3mm] flex-1 flex flex-col justify-around">
               {services.map((s) => (
-                <div key={s.id} className="flex items-baseline justify-between gap-[3mm]">
+                <div key={s.key} className="flex items-baseline justify-between gap-[3mm]">
                   <Editable className="text-[9.5pt] font-bold" style={{ color: INK.navy }}>
                     {s.title}
                   </Editable>
@@ -307,7 +313,7 @@ function Inside({ bleed, brand, services, showPrices, settings }: FolderData) {
   const anchorWeight = anchor ? serviceWeight((anchor.features ?? []).length, true) : 0;
   const { left: leftRows, right: rightRows } = balanceByWeight(
     rest,
-    (s) => serviceWeight((s.features ?? []).length),
+    (s) => serviceWeight(s.features.length),
     introWeight + anchorWeight,
   );
 
@@ -342,7 +348,7 @@ function Inside({ bleed, brand, services, showPrices, settings }: FolderData) {
         {leftRows.length > 0 && (
           <div className="mt-[2.5mm] flex flex-col gap-[2.5mm]">
             {leftRows.map((s) => (
-              <ServiceRow key={s.id} service={s} showPrices={showPrices} />
+              <ServiceRow key={s.key} service={s} showPrices={showPrices} />
             ))}
           </div>
         )}
@@ -358,7 +364,7 @@ function Inside({ bleed, brand, services, showPrices, settings }: FolderData) {
       <div className="w-1/2 h-full flex flex-col" style={{ ...rightPad, backgroundColor: INK.paperTint }}>
         <div className="flex-1 min-h-0 flex flex-col gap-[2.5mm]">
           {rightRows.map((s) => (
-            <ServiceRow key={s.id} service={s} showPrices={showPrices} grow />
+            <ServiceRow key={s.key} service={s} showPrices={showPrices} grow />
           ))}
         </div>
 

@@ -1,4 +1,5 @@
-import type { CompanySettings, PortfolioService } from "@shared/schema";
+import type { CompanySettings } from "@shared/schema";
+import type { FolderItem } from "./items";
 
 /**
  * Everything a template needs to draw a folder. Templates are pure presentation:
@@ -6,8 +7,8 @@ import type { CompanySettings, PortfolioService } from "@shared/schema";
  */
 export interface FolderData {
   settings?: CompanySettings;
-  /** Services chosen in the toolbar, in display order. */
-  services: PortfolioService[];
+  /** Entries chosen in the toolbar, in display order, from either catalog. */
+  services: FolderItem[];
   /** Millimetres of bleed on each side (0 disables crop marks). */
   bleed: number;
   /** Whether price/priceLabel are printed on the cards. */

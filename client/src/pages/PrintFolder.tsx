@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Printer, Info, Loader2, Palette, LayoutTemplate } from "lucide-react";
 import type { CompanySettings, PortfolioService } from "@shared/schema";
 
+import { buildCatalog, SOURCE_LABEL, type FolderItemSource } from "@/print/items";
 import { MM_TO_PX, PAPER_PRESETS, type PaperKey } from "@/print/paper";
 import { CropMarks, Guides, INK } from "@/print/primitives";
 import { DEFAULT_TEMPLATE_ID, FOLDER_TEMPLATES, getTemplate } from "@/print/templates";
@@ -24,14 +25,16 @@ export default function PrintFolder() {
   // retryOnMount: false — the Router observes the same company-settings query;
   // a mount-triggered refetch while it is errored flips the Router back to its
   // loading state, unmounting this page and re-triggering the refetch forever.
-  const { data: settings } = useQuery<CompanySettings>({
+  const settingsQuery = useQuery<CompanySettings>({
     queryKey: ["/api/company-settings"],
     retryOnMount: false,
   });
-  const { data: services } = useQuery<PortfolioService[]>({
+  const servicesQuery = useQuery<PortfolioService[]>({
     queryKey: ["/api/portfolio-services"],
     retryOnMount: false,
   });
+  const settings = settingsQuery.data;
+  const services = servicesQuery.data;
 
   const [templateId, setTemplateId] = useState<string>(DEFAULT_TEMPLATE_ID);
   const [sheetW, setSheetW] = useState<number>(PAPER_PRESETS.a4.w);
@@ -40,26 +43,43 @@ export default function PrintFolder() {
   const [showCropMarks, setShowCropMarks] = useState(true);
   const [showPrices, setShowPrices] = useState(true);
   const [showGuides, setShowGuides] = useState(true);
-  const [selectedIds, setSelectedIds] = useState<number[] | null>(null);
+  const [selectedKeys, setSelectedKeys] = useState<string[] | null>(null);
 
   const template = getTemplate(templateId);
 
-  const activeServices = useMemo(
-    () => (services ?? []).filter((s) => s.isActive),
-    [services],
+  // Both catalogs, normalised into one list: the X-branded products from
+  // `portfolio_services` and the services we perform from the homepage content.
+  const catalog = useMemo(
+    () => buildCatalog(services, settings?.homepageContent?.ourServicesSection?.cards),
+    [services, settings?.homepageContent?.ourServicesSection?.cards],
   );
 
-  // Default: the first 6 active services (what comfortably fits the spread)
+  // Default: the first 6 entries (what comfortably fits the spread).
+  //
+  // Wait for BOTH queries to settle before seeding. The two catalogs arrive from
+  // separate endpoints, and seeding on whichever resolves first left the folder
+  // opening with only services selected (or only products) depending on network
+  // order, with no sign that anything was missing.
+  const catalogsSettled = !settingsQuery.isPending && !servicesQuery.isPending;
   useEffect(() => {
-    if (selectedIds === null && activeServices.length > 0) {
-      setSelectedIds(activeServices.slice(0, 6).map((s) => s.id));
+    if (selectedKeys === null && catalogsSettled && catalog.length > 0) {
+      setSelectedKeys(catalog.slice(0, 6).map((item) => item.key));
     }
-  }, [activeServices, selectedIds]);
+  }, [catalog, catalogsSettled, selectedKeys]);
 
+  // Selection order is irrelevant; catalog order is what prints.
   const chosenServices = useMemo(
-    () => activeServices.filter((s) => (selectedIds ?? []).includes(s.id)),
-    [activeServices, selectedIds],
+    () => catalog.filter((item) => (selectedKeys ?? []).includes(item.key)),
+    [catalog, selectedKeys],
   );
+
+  // Toolbar groups, so it is obvious which catalog an entry comes from.
+  const groups = useMemo(() => {
+    const order: FolderItemSource[] = ["product", "service"];
+    return order
+      .map((source) => ({ source, items: catalog.filter((i) => i.source === source) }))
+      .filter((g) => g.items.length > 0);
+  }, [catalog]);
 
   const siteUrl = settings?.seoCanonicalUrl || "https://skale.club";
 
@@ -146,12 +166,12 @@ export default function PrintFolder() {
     }
   };
 
-  const toggleService = (id: number) => {
-    setSelectedIds((prev) => {
+  const toggleService = (key: string) => {
+    setSelectedKeys((prev) => {
       const current = prev ?? [];
-      return current.includes(id)
-        ? current.filter((x) => x !== id)
-        : [...current, id];
+      return current.includes(key)
+        ? current.filter((x) => x !== key)
+        : [...current, key];
     });
   };
 
@@ -319,23 +339,33 @@ export default function PrintFolder() {
             <p className="text-[11px] text-slate-400 mt-1 leading-snug">
               O primeiro selecionado vira o serviço em destaque.
             </p>
-            <div className="mt-2 flex flex-col gap-1 max-h-56 overflow-y-auto pr-1">
-              {activeServices.map((s) => (
-                <label
-                  key={s.id}
-                  className="flex items-start gap-2 text-sm cursor-pointer rounded-md px-2 py-1.5 hover:bg-slate-50"
-                >
-                  <input
-                    type="checkbox"
-                    className="mt-0.5 accent-blue-600"
-                    checked={(selectedIds ?? []).includes(s.id)}
-                    onChange={() => toggleService(s.id)}
-                  />
-                  <span className="leading-tight">{s.title}</span>
-                </label>
+            <div className="mt-2 flex flex-col gap-2 max-h-72 overflow-y-auto pr-1">
+              {groups.map((group) => (
+                <div key={group.source}>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 pb-0.5">
+                    {SOURCE_LABEL[group.source]}
+                  </p>
+                  {group.items.map((item) => (
+                    <label
+                      key={item.key}
+                      className="flex items-start gap-2 text-sm cursor-pointer rounded-md px-2 py-1.5 hover:bg-slate-50"
+                    >
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 accent-blue-600"
+                        checked={(selectedKeys ?? []).includes(item.key)}
+                        onChange={() => toggleService(item.key)}
+                      />
+                      <span className="leading-tight">{item.title}</span>
+                    </label>
+                  ))}
+                </div>
               ))}
-              {activeServices.length === 0 && (
+              {!catalogsSettled && (
                 <p className="text-sm text-slate-400">Carregando serviços…</p>
+              )}
+              {catalogsSettled && catalog.length === 0 && (
+                <p className="text-sm text-slate-400">Nenhum serviço ativo encontrado.</p>
               )}
             </div>
           </div>
