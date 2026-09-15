@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import type { BlogPost } from '@shared/schema';
 import { usePagePaths } from '@/lib/pagePaths';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { fetchJson } from '@/lib/queryClient';
 
 const POSTS_PER_PAGE = 9;
 
@@ -27,7 +28,7 @@ export default function Blog() {
     queryKey: ['/api/blog', 'published', POSTS_PER_PAGE],
     initialPageParam: 0,
     queryFn: ({ pageParam = 0 }) =>
-      fetch(`/api/blog?status=published&limit=${POSTS_PER_PAGE}&offset=${pageParam}`).then(r => r.json()),
+      fetchJson<BlogPost[]>(`/api/blog?status=published&limit=${POSTS_PER_PAGE}&offset=${pageParam}`),
     getNextPageParam: (lastPage, allPages) =>
       lastPage.length === POSTS_PER_PAGE ? allPages.length * POSTS_PER_PAGE : undefined,
   });
