@@ -23,6 +23,7 @@ import {
 } from "#shared/blog-prompt.js";
 import { isRunDue } from "#shared/blog-schedule.js";
 import { AiEmptyResponseError, AiTimeoutError, getPlainTextLength, sanitizeBlogHtml, slugifyTitle as slugifyTitleNFD } from "../blog/content-validator.js";
+import { normaliseAspectAndConvertToWebp } from "../blog/image-webp.js";
 
 const STALE_LOCK_MS = 10 * 60 * 1000;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
@@ -37,6 +38,16 @@ const MAX_PLAIN_TEXT_CHARS = 4000;
 
 // Autopost port: how many recent approve/reject signals feed the prompts.
 const FEEDBACK_PROMPT_LIMIT = 10;
+
+// Blog covers render wide everywhere they appear, and the image models return
+// squares unless told otherwise in structured config — so the crop is what
+// actually enforces the shape.
+const BLOG_COVER_ASPECT_W = 16;
+const BLOG_COVER_ASPECT_H = 9;
+// Google's "16:9" bucket is 1344x768 — 1.750 against 1.778, i.e. 1.6% narrow.
+// Trimming 12px off that would cost real pixels to fix a difference nobody can
+// see, so anything within this band is left exactly as the model returned it.
+const BLOG_COVER_ASPECT_TOLERANCE = 0.05;
 
 const generatedPostSchema = z.object({ title: z.string().min(1), content: z.string().min(1), excerpt: z.string().nullable().optional(), metaDescription: z.string().nullable().optional(), focusKeyword: z.string().nullable().optional(), tags: z.union([z.array(z.string().min(1)), z.string().min(1)]) });
 
@@ -434,6 +445,44 @@ function imageExtensionFromMime(mime: string): string {
   return subtype === "jpeg" ? "jpg" : subtype;
 }
 
+
+/**
+ * Autoblog-parity SC-09: covers are rendered wide (listing cards and the post
+ * header), so a square cover is letterboxed or centre-cropped everywhere it
+ * appears — and asking the model for 16:9 in prose is not enough, they return
+ * squares anyway. This crops to 16:9 when the source is outside tolerance and
+ * re-encodes as WebP, which matters because the cover is the largest single
+ * asset on a page whose whole purpose is search ranking.
+ *
+ * Never throws: a failed crop or encode yields the original bytes. A bigger
+ * file is a missed optimisation; a failed post is not.
+ */
+async function normaliseCover(image: GeneratedImage): Promise<GeneratedImage & { extension: string }> {
+  const fallbackExtension = imageExtensionFromMime(image.mime);
+  const result = await normaliseAspectAndConvertToWebp(
+    image.bytes,
+    image.mime,
+    BLOG_COVER_ASPECT_W,
+    BLOG_COVER_ASPECT_H,
+    { tolerance: BLOG_COVER_ASPECT_TOLERANCE },
+  );
+  if (result.cropped) {
+    console.log(
+      `[blog-generator] cover normalised to ${BLOG_COVER_ASPECT_W}:${BLOG_COVER_ASPECT_H}: ` +
+      `${result.cropped.from.width}x${result.cropped.from.height} -> ${result.cropped.to.width}x${result.cropped.to.height}`,
+    );
+  }
+  if (result.skipReason) {
+    console.warn(`[blog-generator] cover crop skipped (${result.skipReason}); original bytes kept`);
+  }
+  // The helper derives its fallback extension from the mime subtype, which
+  // yields "jpeg" where the rest of this pipeline has always written "jpg".
+  // Trust its extension only when it actually re-encoded; otherwise keep ours,
+  // so a degraded conversion does not silently change stored filenames.
+  const extension = result.mime === image.mime ? fallbackExtension : (result.extension || fallbackExtension);
+  return { bytes: result.buffer, mime: result.mime, extension };
+}
+
 async function uploadFeatureImage({ bytes, mime, path }: { bytes: Buffer; mime: string; path: string }): Promise<string> {
   const supabase = getSupabaseAdmin();
   const { error } = await supabase.storage.from("images").upload(path, bytes, { contentType: mime, upsert: false });
@@ -482,8 +531,9 @@ async function runPipeline({ settings, job, manual, rssItem, aiConfig, feedback,
       dImage = Date.now() - tImage;
       if (image?.bytes.length) {
         const tUpload = Date.now();
-        const path = `blog-images/${now.getTime()}-${randomUUID()}.${imageExtensionFromMime(image.mime)}`;
-        featureImageUrl = await deps.uploadImage({ bytes: image.bytes, mime: image.mime, path });
+        const cover = await normaliseCover(image);
+        const path = `blog-images/${now.getTime()}-${randomUUID()}.${cover.extension}`;
+        featureImageUrl = await deps.uploadImage({ bytes: cover.bytes, mime: cover.mime, path });
         dUpload = Date.now() - tUpload;
       } else {
         console.warn("Blog generator image generation returned no bytes; continuing without feature image");
@@ -626,8 +676,11 @@ export async function runPreview(options?: { rssItemId?: number }): Promise<RunP
     try {
       const image = await deps.generateImage({ settings, post: generatedPost, manual: true, aiConfig });
       if (image?.bytes.length) {
-        const path = `blog-images/${deps.now().getTime()}-${randomUUID()}.${imageExtensionFromMime(image.mime)}`;
-        featureImageUrl = await deps.uploadImage({ bytes: image.bytes, mime: image.mime, path });
+        // Same normalisation as the real pipeline, so a preview shows the cover
+        // that would actually be published rather than a differently-shaped one.
+        const cover = await normaliseCover(image);
+        const path = `blog-images/${deps.now().getTime()}-${randomUUID()}.${cover.extension}`;
+        featureImageUrl = await deps.uploadImage({ bytes: cover.bytes, mime: cover.mime, path });
       }
     } catch (imgErr) {
       const m = imgErr instanceof Error ? imgErr.message : String(imgErr);
