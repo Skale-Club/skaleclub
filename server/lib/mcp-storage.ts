@@ -1,9 +1,70 @@
 import crypto from "crypto";
 import { db } from "../db.js";
 import { apiTokens, mcpAuditLogs } from "#shared/schema.js";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, inArray, isNotNull, isNull, lt } from "drizzle-orm";
 
 const TOKEN_PREFIX_LEN = 12; // chars shown in UI (e.g. "mcp_sk_a1b2c3")
+
+// Lifetime of a newly issued MCP token. A leaked bearer token stops working on
+// its own instead of staying valid forever. Rows with a NULL `expiresAt` (every
+// token issued before this existed) are treated as non-expiring so live clients
+// are not cut off.
+const TOKEN_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+
+// Expired rows are swept opportunistically when a token is issued or validated,
+// throttled so a busy MCP endpoint does not run the sweep on every request.
+const CLEANUP_MIN_INTERVAL_MS = 10 * 60_000;
+let lastCleanupAt = 0;
+
+function tokenExpiry(): Date {
+  return new Date(Date.now() + TOKEN_TTL_MS);
+}
+
+export function isApiTokenExpired(token: Pick<ApiToken, "expiresAt">): boolean {
+  return token.expiresAt !== null && token.expiresAt.getTime() <= Date.now();
+}
+
+/**
+ * Delete what can no longer be used:
+ *  - API tokens minted for an authorization code that expired unconsumed (the
+ *    raw token was never handed to anyone; deleting cascades the code row),
+ *  - remaining expired authorization codes, which hold a plaintext bearer token
+ *    until they are consumed,
+ *  - and deactivate API tokens past their expiry.
+ */
+export async function cleanupExpiredTokens(): Promise<void> {
+  const now = new Date();
+
+  const abandoned = await db
+    .select({ tokenId: oauthCodes.tokenId })
+    .from(oauthCodes)
+    .where(and(isNull(oauthCodes.usedAt), isNotNull(oauthCodes.tokenId), lt(oauthCodes.expiresAt, now)));
+
+  const abandonedTokenIds = abandoned
+    .map((row) => row.tokenId)
+    .filter((id): id is string => id !== null);
+
+  if (abandonedTokenIds.length > 0) {
+    await db.delete(apiTokens).where(inArray(apiTokens.id, abandonedTokenIds));
+  }
+
+  await db.delete(oauthCodes).where(lt(oauthCodes.expiresAt, now));
+
+  await db
+    .update(apiTokens)
+    .set({ isActive: false })
+    .where(and(eq(apiTokens.isActive, true), lt(apiTokens.expiresAt, now)));
+}
+
+/** Fire-and-forget, throttled version of {@link cleanupExpiredTokens}. */
+function sweepExpiredTokens(): void {
+  const now = Date.now();
+  if (now - lastCleanupAt < CLEANUP_MIN_INTERVAL_MS) return;
+  lastCleanupAt = now;
+  cleanupExpiredTokens().catch((err) => {
+    console.error("[mcp-storage] Failed to clean up expired tokens:", err);
+  });
+}
 
 function hashToken(raw: string): string {
   return crypto.createHash("sha256").update(raw).digest("hex");
@@ -20,9 +81,10 @@ export async function createApiToken(name: string): Promise<{ token: ApiToken; r
 
   const [token] = await db
     .insert(apiTokens)
-    .values({ name, tokenHash: hash, tokenPrefix: prefix })
+    .values({ name, tokenHash: hash, tokenPrefix: prefix, expiresAt: tokenExpiry() })
     .returning();
 
+  sweepExpiredTokens();
   return { token, rawToken: raw };
 }
 
@@ -36,7 +98,12 @@ export async function getApiTokenByRaw(raw: string) {
     .select()
     .from(apiTokens)
     .where(eq(apiTokens.tokenHash, hash));
-  return token ?? null;
+
+  sweepExpiredTokens();
+
+  if (!token) return null;
+  if (isApiTokenExpired(token)) return null;
+  return token;
 }
 
 export async function rotateApiToken(id: string): Promise<{ token: ApiToken; rawToken: string }> {
@@ -46,7 +113,7 @@ export async function rotateApiToken(id: string): Promise<{ token: ApiToken; raw
 
   const [token] = await db
     .update(apiTokens)
-    .set({ tokenHash: hash, tokenPrefix: prefix, rotatedAt: new Date(), lastUsedAt: null })
+    .set({ tokenHash: hash, tokenPrefix: prefix, rotatedAt: new Date(), lastUsedAt: null, expiresAt: tokenExpiry() })
     .where(eq(apiTokens.id, id))
     .returning();
 

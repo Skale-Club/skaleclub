@@ -10,6 +10,8 @@ export const apiTokens = pgTable("api_tokens", {
   createdAt:   timestamp("created_at", { withTimezone: true }).defaultNow(),
   lastUsedAt:  timestamp("last_used_at", { withTimezone: true }),
   rotatedAt:   timestamp("rotated_at",  { withTimezone: true }),
+  // NULL means "never expires": tokens issued before expiry existed keep working.
+  expiresAt:   timestamp("expires_at",  { withTimezone: true }),
 });
 
 export const mcpAuditLogs = pgTable("mcp_audit_logs", {
