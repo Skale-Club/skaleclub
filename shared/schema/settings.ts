@@ -172,6 +172,54 @@ export const linksPageConfigSchema = z.object({
   theme: linksPageThemeSchema.optional(),
 });
 
+// Business hours — the admin Company Settings form edits a fixed seven-day map of
+// { isOpen, start, end } (client/src/components/admin/shared/types.ts → BusinessHours,
+// defaults in that folder's constants.ts). Every field is optional and unknown keys pass
+// through so rows written before this schema existed keep validating.
+export const dayHoursSchema = z
+  .object({
+    isOpen: z.boolean().optional(),
+    start: z.string().optional(),
+    end: z.string().optional(),
+  })
+  .passthrough();
+
+export const businessHoursSchema = z
+  .object({
+    monday: dayHoursSchema.optional(),
+    tuesday: dayHoursSchema.optional(),
+    wednesday: dayHoursSchema.optional(),
+    thursday: dayHoursSchema.optional(),
+    friday: dayHoursSchema.optional(),
+    saturday: dayHoursSchema.optional(),
+    sunday: dayHoursSchema.optional(),
+  })
+  .passthrough();
+
+// schema.org LocalBusiness JSON-LD overrides. Nothing reads a fixed set of keys
+// (client/src/hooks/use-seo.ts builds the snippet from the other SEO fields), so
+// this stays an open JSON object: the common keys are typed when present and any
+// other schema.org property passes through untouched.
+export const schemaLocalBusinessSchema = z
+  .object({
+    "@context": z.string().optional(),
+    "@type": z.string().optional(),
+    "@id": z.string().optional(),
+    name: z.string().optional(),
+    description: z.string().optional(),
+    url: z.string().optional(),
+    telephone: z.string().optional(),
+    email: z.string().optional(),
+    image: z.string().optional(),
+    priceRange: z.string().optional(),
+    serviceType: z.string().optional(),
+  })
+  .passthrough();
+
+export type DayHours = z.infer<typeof dayHoursSchema>;
+export type BusinessHours = z.infer<typeof businessHoursSchema>;
+export type SchemaLocalBusiness = z.infer<typeof schemaLocalBusinessSchema>;
+
 // Insert schemas
 export const insertIntegrationSettingsSchema = z.object({
   provider: z.string().default("gohighlevel"),
@@ -229,7 +277,7 @@ export const insertCompanySettingsSchema = z.object({
   aboutImageUrl: z.string().default(''),
   ctaText: z.string().default('Book Now'),
   timeFormat: z.string().default('12h'),
-  businessHours: z.any().nullable().optional(),
+  businessHours: businessHoursSchema.nullable().optional(),
   seoTitle: z.string().default('Company Name - Professional Services'),
   seoDescription: z.string().default('Professional marketing services for homes and businesses.'),
   ogImage: z.string().default(''),
@@ -242,7 +290,7 @@ export const insertCompanySettingsSchema = z.object({
   twitterCard: z.string().default('summary_large_image'),
   twitterSite: z.string().default(''),
   twitterCreator: z.string().default(''),
-  schemaLocalBusiness: z.any().default({}),
+  schemaLocalBusiness: schemaLocalBusinessSchema.nullable().default({}),
   gtmContainerId: z.string().default(''),
   ga4MeasurementId: z.string().default(''),
   facebookPixelId: z.string().default(''),
