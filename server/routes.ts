@@ -1,4 +1,4 @@
-import type { Express, Request, Response, NextFunction } from "express";
+import type { Express } from "express";
 import type { Server } from "http";
 import { storage } from "./storage.js";
 import { z } from "zod";
@@ -39,28 +39,9 @@ import { registerNotificationRoutes } from "./routes/notifications.js";
 import { registerMcpRoutes } from "./routes/mcpTokens.js";
 import { registerOAuthRoutes } from "./routes/oauth.js";
 import { registerContactRoutes } from "./routes/contact.js";
-import { db, pool } from "./db.js";
-import { users } from "#shared/schema.js";
-import { eq } from "drizzle-orm";
+import { requireAdmin, setPublicCache } from "./routes/_shared.js";
+import { pool } from "./db.js";
 
-
-
-// Admin authentication middleware
-async function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  const sess = req.session as any;
-  if (!sess?.userId) {
-    return res.status(401).json({ message: 'Authentication required' });
-  }
-  try {
-    const [dbUser] = await db.select().from(users).where(eq(users.id, sess.userId));
-    if (!dbUser?.isAdmin) {
-      return res.status(403).json({ message: 'Admin access required' });
-    }
-    next();
-  } catch (error) {
-    return res.status(500).json({ message: 'Failed to verify admin status' });
-  }
-}
 
 // Chat helpers
 const urlRuleSchema = z.object({
@@ -104,10 +85,6 @@ function isUrlExcluded(url: string, rules: UrlRule[] = []): boolean {
     if (rule.match === 'starts_with') return url.startsWith(pattern);
     return url === pattern;
   });
-}
-
-function setPublicCache(res: Response, seconds: number) {
-  res.set("Cache-Control", `public, max-age=0, s-maxage=${seconds}, stale-while-revalidate=${seconds * 12}`);
 }
 
 
