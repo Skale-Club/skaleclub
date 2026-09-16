@@ -198,8 +198,13 @@ export function registerOAuthRoutes(app: Express) {
       expiresAt,
     });
 
-    const redirectTo = `${redirect_uri}?code=${encodeURIComponent(code)}${state ? `&state=${encodeURIComponent(state)}` : ""}`;
-    return res.json({ redirect_to: redirectTo });
+    // Build the callback with URL/URLSearchParams: appending "?code=..." by hand
+    // produced a second "?" whenever the client's redirect_uri already carried a
+    // query string, which makes the code unparseable for the client.
+    const redirectTo = new URL(redirect_uri);
+    redirectTo.searchParams.set("code", code);
+    if (state) redirectTo.searchParams.set("state", String(state));
+    return res.json({ redirect_to: redirectTo.toString() });
   });
 
   // ── Token endpoint ─────────────────────────────────────────────────────────
