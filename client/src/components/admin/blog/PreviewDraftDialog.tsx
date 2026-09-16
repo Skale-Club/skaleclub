@@ -25,7 +25,7 @@ interface PreviewPayload {
   tags: string[];
   featureImageUrl: string | null;
   rssItemId: number;
-  rssItemTitle: string;
+  sourceTitle: string;
 }
 
 type PreviewResponse =
@@ -125,9 +125,9 @@ export function PreviewDraftDialog({ open, onOpenChange, rssItemId }: Props) {
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("Preview Draft")}</DialogTitle>
-          {preview?.rssItemTitle && (
+          {preview?.sourceTitle && (
             <DialogDescription>
-              {t("Source")}: {preview.rssItemTitle}
+              {t("Source")}: {preview.sourceTitle}
             </DialogDescription>
           )}
         </DialogHeader>

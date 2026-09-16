@@ -37,9 +37,9 @@ both repos end up on the same file shape.
 
 | id | task | ported from | notes |
 |---|---|---|---|
-| **SC-01** | `shared/blog-contract.ts` (MASTER §3) | xkedule | P0 for this repo |
-| **SC-02** | Extract `rssFetcher`, `rssTopicSelector`, `blogContentValidator` and the retry helpers into `server/blog/` with the `SOURCE OF TRUTH` header, matching the file names in MASTER §5 | — | do this **before** Xkedule's P1 port so both copy the same shape |
-| **SC-03** | `auto_approve` → `auto_publish`; `blog_post_feedback.signal` (`positive\|negative`) → `verdict` (`approved\|rejected`); `rss_item_title` → `source_title`; job `error` → `error_message`; add `decided_by`, `post_excerpt`, `source`, `rss_item_id`, `pillar_id` | D-03 | two-step migration + backfill (D-12) |
+| ~~SC-01~~ | ~~`shared/blog-contract.ts`~~ | xkedule | **DONE** — `shared/schema/blog.ts` now imports its enums from it and re-exports them, so `#shared/schema.js` importers are unaffected |
+| ~~SC-02~~ | ~~Extract the shared modules into `server/blog/`~~ | — | **DONE** — Xkedule's P1 ported from these exact files |
+| ~~SC-03~~ | ~~Contract renames + new columns~~ | D-03 | **DONE** — `20260916150000_blog_parity_contract.sql`, step 1 of two: new columns added and backfilled, old ones left in place and made nullable. Also renamed `openrouter_text_model`/`openrouter_image_model` → `text_model`/`image_model`, and added `rss_enabled` (default **true** here — RSS is this repo's only topic source) and `posting_hour` |
 | **SC-04** | Add `rss_enabled`; **make RSS optional** — when it is off, or no pending item clears the threshold, fall back to pillar rotation instead of skipping with `no_rss_items` | D-02 | today the generator cannot produce anything without an RSS item |
 | **SC-05** | Port `shared/blog-prompt.ts`, adapted to this site's own content: pillars, geography (the agency's service regions), catalog (services + portfolio), internal links (site pages + published posts), keyword dedup | xkedule | replaces the hardcoded pt-BR brand-voice block as the only structure |
 | **SC-06** | Port `shared/blog-schedule.ts` + `posting_hour` + site timezone; show "next post at …" in the admin | xkedule | today the cadence drifts |
@@ -60,6 +60,13 @@ both repos end up on the same file shape.
   Coolify VPS owns scheduling, `workflow_dispatch` stays as break-glass. Leave it that way.
 - `DISABLE_INPROCESS_CRON=true` on the Coolify container is what stops double generation.
   Any change to `server/cron.ts` must preserve that gate.
+
+## Follow-up migration (not yet written)
+
+Step 2 of D-12: once this has run in production, drop `auto_approve`,
+`openrouter_text_model`, `openrouter_image_model`, `blog_generation_jobs.error`,
+`blog_post_feedback.signal` and `blog_post_feedback.rss_item_title`. Nothing
+reads them today.
 
 ## Order of work
 

@@ -162,8 +162,8 @@ function resolveEditorialVoice(settings: BlogSettings): string {
 // titles (with the editor's reason) mark angles and mistakes to avoid.
 function buildFeedbackBlock(feedback: BlogPostFeedback[]): string {
   if (feedback.length === 0) return "";
-  const approved = feedback.filter((f) => f.signal === "positive").slice(0, 5);
-  const rejected = feedback.filter((f) => f.signal === "negative").slice(0, 5);
+  const approved = feedback.filter((f) => f.verdict === "approved").slice(0, 5);
+  const rejected = feedback.filter((f) => f.verdict === "rejected").slice(0, 5);
   if (approved.length === 0 && rejected.length === 0) return "";
 
   const lines: string[] = ["HISTÓRICO EDITORIAL (aprenda com as decisões do editor):"];
@@ -277,7 +277,7 @@ async function runPipeline({ settings, job, manual, rssItem, aiConfig, feedback 
 
     // Autopost port: auto-approve publishes immediately; otherwise the draft
     // waits in the approval queue (Blog → Automation) for a human decision.
-    const autoApprove = settings.autoApprove;
+    const autoPublish = settings.autoPublish;
 
     const postInput: InsertBlogPost = {
       title: generatedPost.title,
@@ -288,8 +288,8 @@ async function runPipeline({ settings, job, manual, rssItem, aiConfig, feedback 
       focusKeyword: generatedPost.focusKeyword,
       tags: generatedPost.tags.join(", "),
       featureImageUrl,
-      status: autoApprove ? "published" : "draft",
-      publishedAt: autoApprove ? now : null,
+      status: autoPublish ? "published" : "draft",
+      publishedAt: autoPublish ? now : null,
       authorName: "AI Assistant",
     };
 
@@ -316,7 +316,7 @@ async function runPipeline({ settings, job, manual, rssItem, aiConfig, feedback 
       postId: post.id,
       completedAt: now,
       reason: null,
-      error: null,
+      errorMessage: null,
       durationsMs,
     });
 
@@ -490,7 +490,7 @@ export class BlogGenerator {
       await deps.storage.updateBlogGenerationJob(job.id, {
         status: "failed",
         reason,
-        error: message,
+        errorMessage: message,
         completedAt: deps.now(),
         durationsMs: partialDurationsMs as DurationsMs | undefined,
       });

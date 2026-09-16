@@ -28,9 +28,11 @@ const selectedSettings = selectBlogSettingsSchema.parse({
   enableTrendAnalysis: false,
   promptStyle: "brief",
   systemPrompt: "",
-  autoApprove: false,
-  openrouterTextModel: "",
-  openrouterImageModel: "",
+  autoPublish: false,
+  rssEnabled: true,
+  postingHour: null,
+  textModel: "",
+  imageModel: "",
   lastRunAt: null,
   lockAcquiredAt: null,
   updatedAt: new Date(),
@@ -45,7 +47,7 @@ const insertedJob = insertBlogGenerationJobSchema.parse({
   postId: null,
   startedAt: new Date().toISOString(),
   completedAt: null,
-  error: null,
+  errorMessage: null,
 });
 assert.equal(insertedJob.status, "running");
 assert.equal(insertedJob.postId, null);
@@ -58,7 +60,11 @@ const selectedJob = selectBlogGenerationJobSchema.parse({
   postId: 42,
   startedAt: new Date(),
   completedAt: null,
-  error: null,
+  errorMessage: null,
+  trigger: "manual",
+  source: "rss",
+  rssItemId: 7,
+  pillarId: null,
   durationsMs: null,
 });
 assert.equal(selectedJob.id, 1);

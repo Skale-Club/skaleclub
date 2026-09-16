@@ -19,9 +19,9 @@ const BLOG_SETTINGS_DEFAULTS = {
   enableTrendAnalysis: false,
   promptStyle: "",
   systemPrompt: "",
-  autoApprove: false,
-  openrouterTextModel: "",
-  openrouterImageModel: "",
+  autoPublish: false,
+  textModel: "",
+  imageModel: "",
   lastRunAt: null,
   lockAcquiredAt: null,
 };
@@ -48,8 +48,8 @@ export function registerBlogAutomationRoutes(app: Express) {
     // key exists AND both blog models are picked.
     if (parsed.data.enabled) {
       const missing: string[] = [];
-      if (!parsed.data.openrouterTextModel?.trim()) missing.push("text model");
-      if (!parsed.data.openrouterImageModel?.trim()) missing.push("image model");
+      if (!parsed.data.textModel?.trim()) missing.push("text model");
+      if (!parsed.data.imageModel?.trim()) missing.push("image model");
       if (!(await resolveOpenRouterKey())) missing.push("OpenRouter API key (Integrations)");
       if (missing.length > 0) {
         return res.status(400).json({
@@ -121,8 +121,8 @@ export function registerBlogAutomationRoutes(app: Express) {
   app.get("/api/blog/health", requireAdmin, async (_req, res) => {
     const openrouterKeyConfigured = Boolean(await resolveOpenRouterKey());
     const settings = await storage.getBlogSettings();
-    const textModelConfigured = Boolean(settings?.openrouterTextModel?.trim());
-    const imageModelConfigured = Boolean(settings?.openrouterImageModel?.trim());
+    const textModelConfigured = Boolean(settings?.textModel?.trim());
+    const imageModelConfigured = Boolean(settings?.imageModel?.trim());
     res.json({
       openrouterKeyConfigured,
       textModelConfigured,
@@ -202,7 +202,7 @@ export function registerBlogAutomationRoutes(app: Express) {
   // Phase 37 — Job History + Retry + Cancel (BLOG2-10, BLOG2-11)
   // ========================================================================
 
-  // GET /api/blog/jobs?limit=50 — last N jobs joined with rssItemTitle
+  // GET /api/blog/jobs?limit=50 — last N jobs joined with sourceTitle
   app.get("/api/blog/jobs", requireAdmin, async (req, res) => {
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
     const rows = await storage.listBlogGenerationJobs(limit);
@@ -307,7 +307,7 @@ export function registerBlogAutomationRoutes(app: Express) {
           tags: result.result.tags,
           featureImageUrl: result.result.featureImageUrl,
           rssItemId: result.result.rssItem.id,
-          rssItemTitle: result.result.rssItem.title,
+          sourceTitle: result.result.rssItem.title,
         },
       });
     } catch (err) {
@@ -389,8 +389,8 @@ export function registerBlogAutomationRoutes(app: Express) {
       await storage.createBlogPostFeedback({
         postId: id,
         postTitle: post.title,
-        rssItemTitle: rssItem?.title ?? null,
-        signal: "positive",
+        sourceTitle: rssItem?.title ?? null,
+        verdict: "approved",
         reason: null,
       });
       res.json(updated);
@@ -420,8 +420,8 @@ export function registerBlogAutomationRoutes(app: Express) {
       await storage.createBlogPostFeedback({
         postId: id,
         postTitle: post.title,
-        rssItemTitle: rssItem?.title ?? null,
-        signal: "negative",
+        sourceTitle: rssItem?.title ?? null,
+        verdict: "rejected",
         reason: parsed.data.reason?.trim() || null,
       });
       await storage.deleteBlogPost(id);

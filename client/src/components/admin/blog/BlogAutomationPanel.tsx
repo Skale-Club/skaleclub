@@ -41,9 +41,9 @@ export function BlogAutomationPanel() {
     enableTrendAnalysis: false,
     promptStyle: '',
     systemPrompt: '',
-    autoApprove: false,
-    openrouterTextModel: '',
-    openrouterImageModel: '',
+    autoPublish: false,
+    textModel: '',
+    imageModel: '',
   });
 
   const { data: settings } = useQuery<BlogSettings>({
@@ -72,9 +72,9 @@ export function BlogAutomationPanel() {
         enableTrendAnalysis: settings.enableTrendAnalysis,
         promptStyle: settings.promptStyle ?? '',
         systemPrompt: settings.systemPrompt ?? '',
-        autoApprove: settings.autoApprove ?? false,
-        openrouterTextModel: settings.openrouterTextModel ?? '',
-        openrouterImageModel: settings.openrouterImageModel ?? '',
+        autoPublish: settings.autoPublish ?? false,
+        textModel: settings.textModel ?? '',
+        imageModel: settings.imageModel ?? '',
       });
     }
   }, [settings]);
@@ -102,8 +102,8 @@ export function BlogAutomationPanel() {
   const imageModels = allModels.filter((m) => m.outputModalities?.includes('image'));
   const hasKey = health?.openrouterKeyConfigured ?? false;
   const canEnable = hasKey
-    && formDraft.openrouterTextModel.trim().length > 0
-    && formDraft.openrouterImageModel.trim().length > 0;
+    && formDraft.textModel.trim().length > 0
+    && formDraft.imageModel.trim().length > 0;
 
   return (
     <AdminCard>
@@ -176,8 +176,8 @@ export function BlogAutomationPanel() {
               <div className="space-y-1.5">
                 <Label>Text Model</Label>
                 <OpenRouterModelPicker
-                  value={formDraft.openrouterTextModel}
-                  onChange={(id) => setFormDraft(prev => ({ ...prev, openrouterTextModel: id }))}
+                  value={formDraft.textModel}
+                  onChange={(id) => setFormDraft(prev => ({ ...prev, textModel: id }))}
                   models={allModels}
                   isLoading={isLoadingModels}
                   placeholder="Select a text model..."
@@ -187,8 +187,8 @@ export function BlogAutomationPanel() {
               <div className="space-y-1.5">
                 <Label>Image Model</Label>
                 <OpenRouterModelPicker
-                  value={formDraft.openrouterImageModel}
-                  onChange={(id) => setFormDraft(prev => ({ ...prev, openrouterImageModel: id }))}
+                  value={formDraft.imageModel}
+                  onChange={(id) => setFormDraft(prev => ({ ...prev, imageModel: id }))}
                   models={imageModels.length > 0 ? imageModels : allModels}
                   isLoading={isLoadingModels}
                   placeholder="Select an image model..."
@@ -217,7 +217,7 @@ export function BlogAutomationPanel() {
             />
           </div>
 
-          {/* autoApprove toggle (autopost port) */}
+          {/* autoPublish toggle (autopost port) */}
           <div className="flex items-center justify-between p-3 border rounded-lg bg-card">
             <div className="space-y-0.5">
               <Label className="text-base">Auto-approve posts</Label>
@@ -226,8 +226,8 @@ export function BlogAutomationPanel() {
               </p>
             </div>
             <Switch
-              checked={formDraft.autoApprove}
-              onCheckedChange={(checked) => setFormDraft(prev => ({ ...prev, autoApprove: checked }))}
+              checked={formDraft.autoPublish}
+              onCheckedChange={(checked) => setFormDraft(prev => ({ ...prev, autoPublish: checked }))}
               data-testid="switch-blog-auto-approve"
             />
           </div>

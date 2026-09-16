@@ -18,8 +18,8 @@ interface BlogGenerationJobWithRssItem {
   postId: number | null;
   startedAt: string | null;
   completedAt: string | null;
-  error: string | null;
-  rssItemTitle: string | null;
+  errorMessage: string | null;
+  sourceTitle: string | null;
   rssItemId: number | null;
   // Phase 38 BLOG2-15: per-stage timings. NULL on skipped jobs and on
   // pre-Phase-38 historical rows. Image stage is null when image generation
@@ -213,17 +213,17 @@ export function JobHistoryPanel() {
                         </Badge>
                       )}
                     </div>
-                    {job.rssItemTitle && (
+                    {job.sourceTitle && (
                       <div className="text-sm">
                         <span className="text-muted-foreground">
                           {t("Source item")}:{" "}
                         </span>
-                        {job.rssItemTitle}
+                        {job.sourceTitle}
                       </div>
                     )}
-                    {job.error && (
+                    {job.errorMessage && (
                       <div className="text-xs text-red-500 line-clamp-2">
-                        {job.error}
+                        {job.errorMessage}
                       </div>
                     )}
                   </div>

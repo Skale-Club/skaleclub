@@ -142,7 +142,7 @@ export interface RssItemWithSource extends BlogRssItem {
 // must include `durationsMs: blogGenerationJobs.durationsMs` for the
 // value to actually round-trip on the wire.
 export interface BlogGenerationJobWithRssItem extends BlogGenerationJob {
-  rssItemTitle: string | null;
+  sourceTitle: string | null;
   rssItemId: number | null;
 }
 
@@ -1379,7 +1379,7 @@ export class DatabaseStorage implements IStorage {
     // Join chain: blogGenerationJobs.postId -> blogRssItems.usedPostId
     // (jobs have no direct rssItemId column; the only link is through the
     // post they produced. Skipped/failed jobs that never created a post
-    // will have rssItemTitle=null and rssItemId=null — correct semantics.)
+    // will have sourceTitle=null and rssItemId=null — correct semantics.)
     const rows = await db
       .select({
         id: blogGenerationJobs.id,
@@ -1388,9 +1388,9 @@ export class DatabaseStorage implements IStorage {
         postId: blogGenerationJobs.postId,
         startedAt: blogGenerationJobs.startedAt,
         completedAt: blogGenerationJobs.completedAt,
-        error: blogGenerationJobs.error,
+        errorMessage: blogGenerationJobs.errorMessage,
         durationsMs: blogGenerationJobs.durationsMs,
-        rssItemTitle: blogRssItems.title,
+        sourceTitle: blogRssItems.title,
         rssItemId: blogRssItems.id,
       })
       .from(blogGenerationJobs)
@@ -1426,9 +1426,9 @@ export class DatabaseStorage implements IStorage {
         postId: blogGenerationJobs.postId,
         startedAt: blogGenerationJobs.startedAt,
         completedAt: blogGenerationJobs.completedAt,
-        error: blogGenerationJobs.error,
+        errorMessage: blogGenerationJobs.errorMessage,
         durationsMs: blogGenerationJobs.durationsMs,
-        rssItemTitle: blogRssItems.title,
+        sourceTitle: blogRssItems.title,
         rssItemId: blogRssItems.id,
       })
       .from(blogGenerationJobs)

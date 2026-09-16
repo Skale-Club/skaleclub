@@ -48,8 +48,8 @@ export async function resolveOpenRouterKey(): Promise<string | null> {
  * both blog models are set. Callers skip with reason "not_configured" on null.
  */
 export async function resolveBlogAiConfig(settings: BlogSettings): Promise<BlogAiConfig | null> {
-  const textModel = settings.openrouterTextModel?.trim();
-  const imageModel = settings.openrouterImageModel?.trim();
+  const textModel = settings.textModel?.trim();
+  const imageModel = settings.imageModel?.trim();
   if (!textModel || !imageModel) return null;
   const apiKey = await resolveOpenRouterKey();
   if (!apiKey) return null;
