@@ -5,7 +5,7 @@ export type Language = 'en' | 'pt';
 
 interface LanguageContextType {
   language: Language;
-  setLanguage: (lang: Language) => void;
+  setLanguage: (lang: Language, opts?: { silent?: boolean }) => void;
 }
 
 export const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -26,9 +26,11 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 
   const languageRef = useRef(language);
 
-  const setLanguage = useCallback((lang: Language) => {
-    // Only a real switch may show the translation overlay (capped in useTranslation)
-    if (languageRef.current !== lang) markLanguageSwitch();
+  const setLanguage = useCallback((lang: Language, opts?: { silent?: boolean }) => {
+    // Only a real switch may show the translation overlay (capped in useTranslation).
+    // A silent switch (e.g. a landing page syncing site chrome to its configured
+    // language) must never arm the overlay meant for the manual language toggle.
+    if (languageRef.current !== lang && !opts?.silent) markLanguageSwitch();
     languageRef.current = lang;
     setLanguageState(lang);
     localStorage.setItem('language', lang);

@@ -37,6 +37,15 @@ const DEFAULTS = {
   backgroundImageUrl: "/SkaleClub.webp",
 } as const;
 
+// Intrinsic dimensions for the two known hero images, so the browser can reserve
+// the right aspect ratio before the image loads (avoids CLS). The className below
+// still constrains the rendered size via max-w/object-contain — these only fix
+// aspect-ratio reservation. Unknown/custom assets omit width/height entirely.
+const KNOWN_IMAGE_SIZES: Record<string, { width: number; height: number }> = {
+  "/nfc-keychains-hero.webp": { width: 1199, height: 1312 },
+  "/SkaleClub.webp": { width: 1169, height: 1500 },
+};
+
 export function HeroWebsitesSection({ props }: { props: HeroWebsitesProps }) {
   const { t, language } = useTranslation();
   const headline = props.headline ?? DEFAULTS.headline;
@@ -97,6 +106,11 @@ export function HeroWebsitesSection({ props }: { props: HeroWebsitesProps }) {
                 src={bgUrl}
                 alt={t(bgAlt)}
                 className="w-[70vw] sm:w-[75%] lg:w-full max-w-[260px] sm:max-w-[260px] md:max-w-[300px] lg:max-w-[340px] xl:max-w-[380px] object-contain drop-shadow-2xl origin-bottom"
+                // React 18 does not know the camelCase prop; the lowercase attribute reaches the DOM as-is.
+                {...({ fetchpriority: "high" } as Record<string, string>)}
+                decoding="async"
+                loading="eager"
+                {...(KNOWN_IMAGE_SIZES[bgUrl] ?? {})}
               />
             ) : null}
           </div>

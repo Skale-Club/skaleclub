@@ -314,7 +314,14 @@ export function registerFormRoutes(app: Express) {
     }
   });
 
-  app.post("/api/forms/skale-hub-group/leads", async (req, res) => {
+  app.post(
+    "/api/forms/skale-hub-group/leads",
+    rateLimitMiddleware({
+      limit: 30,
+      windowMs: 10 * 60_000,
+      message: "Too many form requests. Please try again in a few minutes.",
+    }),
+    async (req, res) => {
     try {
       const parsed = skaleHubGroupLeadSchema.parse(req.body);
       const form = await ensureSkaleHubGroupForm();
