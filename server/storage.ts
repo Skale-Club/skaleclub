@@ -1,4 +1,5 @@
 import { db } from "./db.js";
+import { decryptToken, encryptToken, isEncryptedToken } from "./lib/token-crypto.js";
 import { scoreItem } from "./blog/rss-selector.js";
 import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead } from "#shared/form.js";
 import { normalizeLinksPageConfig } from "#shared/links.js";
@@ -511,17 +512,39 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
+  /**
+   * Provider API keys are encrypted at rest (autoblog-parity SC-10 / MASTER
+   * D-06) with the AES-256-GCM envelope in server/lib/token-crypto.ts. Callers
+   * above this layer always see plaintext and never touch the envelope — this
+   * includes the OpenRouter key the blog generator bills against, which was
+   * previously stored in the clear with RLS as its only protection.
+   *
+   * A key written before this landed has no `v1:` prefix; decryptToken returns
+   * it unchanged and the next write re-encrypts it, so no migration and no
+   * downtime. A `v1:` value that fails authentication THROWS rather than
+   * silently becoming garbage, so a rotated TOKEN_ENCRYPTION_KEY surfaces as a
+   * configuration error instead of as integrations that quietly stopped.
+   */
   async getChatIntegration(provider: string): Promise<ChatIntegrations | undefined> {
     const [integration] = await db.select().from(chatIntegrations).where(eq(chatIntegrations.provider, provider));
-    return integration;
+    if (!integration?.apiKey) return integration;
+    return { ...integration, apiKey: decryptToken(integration.apiKey) };
   }
 
   async upsertChatIntegration(settings: InsertChatIntegrations): Promise<ChatIntegrations> {
     const existing = await this.getChatIntegration(settings.provider || "openai");
+
+    // Only touch the field when the caller actually supplied one: a partial
+    // update that omits the key must leave the stored ciphertext alone.
+    const encryptIfPresent = (value: string | null | undefined) =>
+      typeof value === "string" && value
+        ? (isEncryptedToken(value) ? value : encryptToken(value))
+        : value;
+
     if (existing) {
       const payload = {
         ...settings,
-        apiKey: settings.apiKey ?? existing.apiKey,
+        apiKey: encryptIfPresent(settings.apiKey ?? existing.apiKey),
         updatedAt: new Date(),
       };
       const [updated] = await db
@@ -529,11 +552,16 @@ export class DatabaseStorage implements IStorage {
         .set(payload)
         .where(eq(chatIntegrations.id, existing.id))
         .returning();
-      return updated;
+      // Hand back plaintext so a caller reading the result of its own write
+      // sees the same shape getChatIntegration gives it.
+      return updated?.apiKey ? { ...updated, apiKey: decryptToken(updated.apiKey) } : updated;
     }
 
-    const [created] = await db.insert(chatIntegrations).values(settings).returning();
-    return created;
+    const [created] = await db
+      .insert(chatIntegrations)
+      .values({ ...settings, apiKey: encryptIfPresent(settings.apiKey) })
+      .returning();
+    return created?.apiKey ? { ...created, apiKey: decryptToken(created.apiKey) } : created;
   }
 
   async getTwilioSettings(): Promise<TwilioSettings | undefined> {

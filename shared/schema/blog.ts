@@ -1,4 +1,4 @@
-import { boolean, index, integer, jsonb, pgTable, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { boolean, index, integer, jsonb, numeric, pgTable, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { z } from "zod";
 // The parity contract owns these enums now — declaring local copies is exactly
 // how the five products drifted apart in the first place.
@@ -172,6 +172,32 @@ export const selectBlogGenerationJobSchema = z.object({
   pillarId: z.string().nullable(),
   durationsMs: durationsMsSchema.nullable(),
 });
+
+
+// ─── AI usage + cost log (autoblog-parity SC-08, ported from Websites) ──────
+//
+// One row per AI call the blog pipeline makes. Single-site, so no tenant_id.
+// Writing a row must never be able to fail a generation.
+
+export const aiGenerationLogs = pgTable("ai_generation_logs", {
+  id: serial("id").primaryKey(),
+  step: text("step").notNull(),
+  provider: text("provider").notNull(),
+  model: text("model").notNull(),
+  prompt: text("prompt"),
+  inputTokens: integer("input_tokens"),
+  outputTokens: integer("output_tokens"),
+  costUsd: numeric("cost_usd", { precision: 10, scale: 4 }),
+  status: text("status").notNull(),
+  error: text("error"),
+  durationMs: integer("duration_ms"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  createdIdx: index("ai_generation_logs_created_idx").on(table.createdAt),
+}));
+
+export type AiGenerationLog = typeof aiGenerationLogs.$inferSelect;
+export type InsertAiGenerationLog = typeof aiGenerationLogs.$inferInsert;
 
 // ─── RSS Sources & Items (Phase 34 — RSS-01, RSS-02, RSS-03) ───────────────
 

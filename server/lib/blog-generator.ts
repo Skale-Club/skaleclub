@@ -9,6 +9,7 @@ import { getSupabaseAdmin } from "./supabase.js";
 import { generateOpenRouterImage, generateOpenRouterText, resolveBlogAiConfig, type BlogAiConfig } from "./blog-openrouter.js";
 import { withAiRetry } from "../blog/ai-retry.js";
 import { selectNextRssItem } from "../blog/rss-selector.js";
+import { logAiUsage } from "../blog/ai-usage-log.js";
 import {
   assignPillar,
   buildCatalogSection,
@@ -331,6 +332,27 @@ async function buildEditorialContext({ settings, jobSeed, rssItem }: {
   };
 }
 
+
+/**
+ * Record what a text call cost. Fire-and-forget on both paths (SC-08): the post
+ * is what matters, and a bookkeeping write must never be able to undo it.
+ *
+ * Token counts are not available here — generateOpenRouterText returns the text
+ * only — so the row carries the model, the prompt and the duration. That is
+ * still enough to attribute spend per run, which is what was missing.
+ */
+async function withTextUsageLog(model: string, prompt: string, run: () => Promise<string>): Promise<string> {
+  const startedAt = Date.now();
+  try {
+    const response = await run();
+    void logAiUsage({ step: "blog_post", provider: "openrouter", model, prompt, status: "success", durationMs: Date.now() - startedAt });
+    return response;
+  } catch (err) {
+    void logAiUsage({ step: "blog_post", provider: "openrouter", model, prompt, status: "failure", error: (err as Error).message, durationMs: Date.now() - startedAt });
+    throw err;
+  }
+}
+
 async function generateTopicWithAi({ settings, manual, rssItem, aiConfig, feedback, editorial }: { settings: BlogSettings; manual: boolean; rssItem: BlogRssItem | null; aiConfig: BlogAiConfig; feedback: BlogPostFeedback[]; editorial: EditorialContext }): Promise<string> {
   const prompt = [
     rssItem
@@ -342,7 +364,8 @@ async function generateTopicWithAi({ settings, manual, rssItem, aiConfig, feedba
     `Tipo de execução: ${manual ? "manual" : "agendada"}.${buildFeedbackBlock(feedback)}`,
     "Devolva APENAS o título da pauta como texto puro em pt-BR. Sem aspas, sem pontuação final, sem comentários.",
   ].join("\n\n");
-  const response = await withAiRetry("topic", (signal) => generateOpenRouterText({ config: aiConfig, system: editorial.systemMessage, prompt, signal }));
+  const response = await withTextUsageLog(aiConfig.textModel, prompt, () =>
+    withAiRetry("topic", (signal) => generateOpenRouterText({ config: aiConfig, system: editorial.systemMessage, prompt, signal })));
   const topic = response.trim();
   if (!topic) throw new Error("AI provider did not return a blog topic");
   return topic;
@@ -359,7 +382,8 @@ async function generatePostWithAi({ settings, topic, manual, rssItem, aiConfig, 
     'Devolva JSON válido com EXATAMENTE estes campos (todos em pt-BR):\n{"title":"","content":"","excerpt":"","metaDescription":"","focusKeyword":"","tags":[""]}\nO campo "content" deve ser HTML pronto para publicação seguindo as regras abaixo.',
     FORMATTING_RULES_PT_BR,
   ].join("\n\n");
-  const response = await withAiRetry("post", (signal) => generateOpenRouterText({ config: aiConfig, system: editorial.systemMessage, prompt, signal }));
+  const response = await withTextUsageLog(aiConfig.textModel, prompt, () =>
+    withAiRetry("post", (signal) => generateOpenRouterText({ config: aiConfig, system: editorial.systemMessage, prompt, signal })));
   const post = parseGeneratedPostResponse(response);
   // The model is told which links it may use; this is what enforces it. A
   // hallucinated href reaching a live post is worse than losing a real link.
@@ -377,7 +401,32 @@ async function generateImageWithAi({ post, aiConfig }: { settings: BlogSettings;
     "Sem texto, marcas d'água ou logotipos na imagem.",
   ].join("\n");
 
-  return await withAiRetry("image", (signal) => generateOpenRouterImage({ config: aiConfig, prompt, signal }));
+  const startedAt = Date.now();
+  try {
+    const image = await withAiRetry("image", (signal) => generateOpenRouterImage({ config: aiConfig, prompt, signal }));
+    void logAiUsage({
+      step: "blog_image",
+      provider: "openrouter",
+      model: aiConfig.imageModel,
+      // "skipped", not "failure": the call succeeded and was paid for, the
+      // model simply returned nothing. Conflating the two would make the
+      // failure rate in this table meaningless.
+      status: image?.bytes.length ? "success" : "skipped",
+      error: image?.bytes.length ? null : "model returned no image bytes",
+      durationMs: Date.now() - startedAt,
+    });
+    return image;
+  } catch (err) {
+    void logAiUsage({
+      step: "blog_image",
+      provider: "openrouter",
+      model: aiConfig.imageModel,
+      status: "failure",
+      error: (err as Error).message,
+      durationMs: Date.now() - startedAt,
+    });
+    throw err;
+  }
 }
 
 function imageExtensionFromMime(mime: string): string {
