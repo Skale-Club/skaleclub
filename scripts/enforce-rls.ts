@@ -39,10 +39,15 @@ async function enforceRLS() {
     console.log('Successfully secured all public tables with RLS.');
   } catch (error) {
     console.error('Error enforcing RLS:', error);
+    process.exitCode = 1;
   } finally {
     client.release();
     pool.end();
   }
 }
 
-enforceRLS();
+enforceRLS().catch((error) => {
+  // pool.connect() itself can reject before the try block is entered.
+  console.error('Error enforcing RLS:', error);
+  process.exitCode = 1;
+});

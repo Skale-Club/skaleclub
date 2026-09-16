@@ -202,15 +202,6 @@ export async function setupSupabaseAuth(app: Express) {
   app.get("/api/login", (_req: Request, res: Response) => {
     res.redirect("/admin/login");
   });
-
-  // Logout via GET
-  app.get("/api/logout", (req: Request, res: Response) => {
-    req.session.destroy((err) => {
-      if (err) console.error("Session destroy error:", err);
-      res.clearCookie("connect.sid");
-      res.redirect("/admin/login");
-    });
-  });
 }
 
 // Middleware to check if user is authenticated via Supabase session

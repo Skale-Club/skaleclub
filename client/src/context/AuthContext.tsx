@@ -268,7 +268,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLastName(null);
       window.location.href = '/admin/login';
     } else {
-      window.location.href = '/api/logout';
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      window.location.href = '/admin/login';
     }
   };
 
