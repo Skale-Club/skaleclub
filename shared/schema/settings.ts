@@ -210,7 +210,8 @@ export const schemaLocalBusinessSchema = z
     url: z.string().optional(),
     telephone: z.string().optional(),
     email: z.string().optional(),
-    image: z.string().optional(),
+    // schema.org allows a URL, a list of URLs or an ImageObject here.
+    image: z.union([z.string(), z.array(z.string()), z.record(z.unknown())]).optional(),
     priceRange: z.string().optional(),
     serviceType: z.string().optional(),
   })
