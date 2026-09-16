@@ -5,7 +5,7 @@ import { storage } from "../storage.js";
 import { insertFormSchema, updateFormSchema, formLeadProgressSchema } from "#shared/schema.js";
 import { calculateMaxScore, DEFAULT_FORM_CONFIG, validateFormConfig } from "#shared/form.js";
 import type { FormConfig } from "#shared/schema.js";
-import { requireAdmin, setPublicCache } from "./_shared.js";
+import { requireAdmin, sendError, setPublicCache } from "./_shared.js";
 import { runLeadPostProcessing } from "../lib/lead-processing.js";
 import { buildXphereBookingUrl } from "../integrations/xphere.js";
 import { summarizeFormTranscript, transcribeFormAudio } from "../lib/form-audio.js";
@@ -192,7 +192,7 @@ export function registerFormRoutes(app: Express) {
       if ((err as any)?.code === "23505") {
         return res.status(409).json({ message: "A form with that slug already exists" });
       }
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to create form");
     }
   });
 
@@ -235,7 +235,7 @@ export function registerFormRoutes(app: Express) {
       if ((err as any)?.code === "23505") {
         return res.status(409).json({ message: "A form with that slug already exists" });
       }
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to update form");
     }
   });
 
@@ -281,7 +281,7 @@ export function registerFormRoutes(app: Express) {
       await storage.softDeleteForm(id);
       res.status(204).end();
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to delete form");
     }
   });
 
@@ -304,7 +304,7 @@ export function registerFormRoutes(app: Express) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: err.errors });
       }
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to duplicate form");
     }
   });
 
@@ -320,7 +320,7 @@ export function registerFormRoutes(app: Express) {
       const updated = await storage.setDefaultForm(id);
       res.json(updated);
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to set default form");
     }
   });
 
@@ -510,7 +510,7 @@ export function registerFormRoutes(app: Express) {
         if (err instanceof z.ZodError) {
           return res.status(400).json({ message: "Validation error", errors: err.errors });
         }
-        res.status(400).json({ message: err?.message || "Failed to transcribe audio" });
+        sendError(res, err, "Failed to transcribe audio");
       }
     },
   );

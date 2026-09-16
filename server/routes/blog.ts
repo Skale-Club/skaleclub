@@ -5,7 +5,7 @@ import { insertBlogPostSchema } from "#shared/schema.js";
 import { eq } from "drizzle-orm";
 import { db } from "../db.js";
 import { users } from "#shared/schema.js";
-import { requireAdmin, setPublicCache } from "./_shared.js";
+import { requireAdmin, sendError, setPublicCache } from "./_shared.js";
 import { sanitizeBlogHtml } from "../lib/blogContentValidator.js";
 
 export function registerBlogRoutes(app: Express) {
@@ -85,7 +85,7 @@ export function registerBlogRoutes(app: Express) {
       }
       res.json({ success: true, tag: rawTag, updatedCount });
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to delete tag");
     }
   });
 
@@ -136,7 +136,7 @@ export function registerBlogRoutes(app: Express) {
 
       res.json({ success: true, tag: rawTag, renamedTo: nextTag, updatedCount });
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to rename tag");
     }
   });
 
@@ -201,7 +201,7 @@ export function registerBlogRoutes(app: Express) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: err.errors });
       }
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to create post");
     }
   });
 
@@ -217,7 +217,7 @@ export function registerBlogRoutes(app: Express) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: err.errors });
       }
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to update post");
     }
   });
 
@@ -226,7 +226,7 @@ export function registerBlogRoutes(app: Express) {
       await storage.deleteBlogPost(Number(req.params.id));
       res.json({ success: true });
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to delete post");
     }
   });
 }

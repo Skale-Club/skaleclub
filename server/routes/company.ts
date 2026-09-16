@@ -8,7 +8,7 @@ import type { LeadClassification, LeadStatus } from "#shared/schema.js";
 import { storage } from "../storage.js";
 import { api } from "#shared/routes.js";
 import { buildPagePaths, getPageSlugsValidationError, resolvePageSlugs } from "#shared/pageSlugs.js";
-import { requireAdmin, setPublicCache, isAuthorizedCronRequest } from "./_shared.js";
+import { requireAdmin, sendError, setPublicCache, isAuthorizedCronRequest } from "./_shared.js";
 
 export function registerCompanyRoutes(app: Express) {
   // ===============================
@@ -115,7 +115,7 @@ export function registerCompanyRoutes(app: Express) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: 'Validation error', errors: err.errors });
       }
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to update company settings");
     }
   });
 
@@ -146,7 +146,7 @@ export function registerCompanyRoutes(app: Express) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: 'Invalid filters', errors: err.errors });
       }
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to load form leads");
     }
   });
 
