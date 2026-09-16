@@ -1,8 +1,8 @@
-const APP_CACHE = "skaleclub-app-v4";
+const APP_CACHE = "skaleclub-app-v5";
 const RUNTIME_CACHE = "skaleclub-runtime-v2";
 const APP_SHELL = [
   "/",
-  "/login",
+  "/admin/login",
   "/manifest.webmanifest",
   "/manifest-xpot.webmanifest",
   "/favicon.svg",
