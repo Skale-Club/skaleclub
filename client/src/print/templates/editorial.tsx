@@ -112,8 +112,9 @@ function BackPanel({ bleed, brand, settings }: FolderData) {
       {brand.socialLinks.length > 0 && (
         <div className="mt-[3mm] shrink-0 flex flex-wrap gap-x-[4mm] gap-y-[1mm] text-[8pt]" style={{ color: INK.muted }}>
           {brand.socialLinks.map((link, i) => (
-            <span key={i} className="capitalize">
-              {link.platform}: {link.url.replace(/^https?:\/\/(www\.)?/, "")}
+            <span key={i}>
+              <span className="capitalize">{link.platform}</span>:{" "}
+              {link.url.replace(/^https?:\/\/(www\.)?/, "")}
             </span>
           ))}
         </div>
@@ -290,4 +291,4 @@ export const editorialTemplate: FolderTemplate = {
   sheetBackground: { outside: INK.navyDeep, inside: INK.navyDeep },
 };
 
-export { ContactRow };
+export { ContactRow, CoverPanel };

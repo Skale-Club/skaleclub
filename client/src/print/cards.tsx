@@ -136,10 +136,10 @@ export function AppCard({
         )}
       </div>
 
-      <div
-        className="flex flex-col px-[3.2mm] pb-[3mm]"
-        style={{ paddingTop: item.logoIconUrl && item.imageUrl ? "5mm" : "3mm" }}
-      >
+      {/* Always 5mm, badge or not. The badge hangs 3.5mm below the photo, and
+          giving badge-less cards a tighter top pushed their titles 2mm higher
+          than their neighbours' in the same row. */}
+      <div className="flex flex-col px-[3.2mm] pt-[5mm] pb-[3mm]">
         <div className="flex items-start justify-between gap-[2mm]">
           <Editable
             className="text-[10pt] font-extrabold leading-tight"

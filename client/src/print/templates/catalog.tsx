@@ -4,6 +4,7 @@ import type { FolderData, FolderTemplate } from "../types";
 import type { FolderItem } from "../items";
 import { panelPadding } from "../paper";
 import { PanelHeading } from "../cards";
+import { CoverPanel } from "./editorial";
 import { Editable, INK, Price, Rule, printImage } from "../primitives";
 
 /**
@@ -72,10 +73,10 @@ function CatalogEntry({
   );
 }
 
-function Outside({ bleed, brand, apps, services }: FolderData) {
+function Outside(props: FolderData) {
+  const { bleed, brand, apps, services } = props;
   const everything = [...apps, ...services];
   const left = panelPadding(bleed, "left");
-  const right = panelPadding(bleed, "right");
 
   return (
     <>
@@ -118,7 +119,7 @@ function Outside({ bleed, brand, apps, services }: FolderData) {
             <div className="mt-[2mm] flex flex-col gap-[0.8mm]">
               {everything.map((item) => (
                 <Editable key={item.key} className="text-[8.5pt]" style={{ color: "#A9B8D8" }}>
-                  {item.title} — {item.subtitle}
+                  {item.subtitle ? `${item.title} — ${item.subtitle}` : item.title}
                 </Editable>
               ))}
             </div>
@@ -140,34 +141,9 @@ function Outside({ bleed, brand, apps, services }: FolderData) {
         </div>
       </div>
 
-      <div className="w-1/2 h-full flex flex-col relative" style={{ ...right, backgroundColor: INK.navy }}>
-        <div className="absolute top-0 left-0 right-0" style={{ height: `${4 + bleed}mm`, backgroundColor: INK.cta }} />
-        {brand.logoOnDark ? (
-          <img
-            src={printImage(brand.logoOnDark, 400)}
-            alt={brand.name}
-            className="object-contain self-start relative"
-            style={{ height: "11mm", marginTop: "4mm" }}
-          />
-        ) : (
-          <Editable className="text-[15pt] font-extrabold text-white relative" style={{ marginTop: "4mm" }}>
-            {brand.name}
-          </Editable>
-        )}
-        <div className="my-auto relative">
-          <Editable as="h1" className="text-[25pt] font-extrabold leading-[1.1] text-white">
-            {brand.heroTitle}
-          </Editable>
-          <Rule className="mt-[4mm]" width="30mm" />
-          <Editable className="mt-[4mm] text-[10.5pt] leading-relaxed" style={{ color: "#A9B8D8" }}>
-            {brand.heroSubtitle}
-          </Editable>
-        </div>
-        <div className="mt-auto flex items-center justify-between text-[9.5pt]" style={{ color: "#A9B8D8" }}>
-          <Editable>{brand.siteLabel}</Editable>
-          {brand.phone && <Editable>{brand.phone}</Editable>}
-        </div>
-      </div>
+      {/* The cover is the one panel this template does not strip down: the
+          founder photo is the brand, whatever the inside looks like. */}
+      <CoverPanel {...props} />
     </>
   );
 }
