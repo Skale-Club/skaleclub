@@ -39,7 +39,7 @@ import { registerNotificationRoutes } from "./routes/notifications.js";
 import { registerMcpRoutes } from "./routes/mcpTokens.js";
 import { registerOAuthRoutes } from "./routes/oauth.js";
 import { registerContactRoutes } from "./routes/contact.js";
-import { requireAdmin, setPublicCache } from "./routes/_shared.js";
+import { requireAdmin, sendError, setPublicCache } from "./routes/_shared.js";
 import { pool } from "./db.js";
 
 
@@ -776,7 +776,7 @@ export async function registerRoutes(
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: 'Validation error', errors: err.errors });
       }
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to update chat settings");
     }
   });
 
@@ -885,7 +885,14 @@ export async function registerRoutes(
         return res.status(404).json({ message: 'Conversation not found' });
       }
       const messages = await storage.getConversationMessages(req.params.id);
-      res.json({ conversation, messages });
+      // Public endpoint keyed only by a conversation id kept in localStorage —
+      // never echo back the stored visitor identity (name/email/phone/first
+      // page URL). The widget reads `messages` only; the trimmed conversation
+      // stub keeps the response shape stable.
+      res.json({
+        conversation: { id: conversation.id, status: conversation.status, createdAt: conversation.createdAt },
+        messages,
+      });
     } catch (err) {
       console.error('Chat conversation messages error:', err);
       res.status(500).json({ message: 'Failed to load conversation' });
