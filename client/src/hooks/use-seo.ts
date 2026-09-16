@@ -1,10 +1,12 @@
 import { getLandingSeo, landingPathForSlug, slugForLandingPath } from '@shared/landingSeo';
+import { homepageTitle } from '@shared/seoTitle';
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 
 interface SeoSettings {
   seoTitle: string | null;
+  heroTitle?: string | null;
   seoDescription: string | null;
   ogImage: string | null;
   logoIcon: string | null;
@@ -178,9 +180,7 @@ export function useSEO() {
     // is what made every route self-report as the homepage, and what would
     // silently flip a `noindex` page to `index, follow`.
     if (onHomepage) {
-      if (settings.seoTitle) {
-        document.title = settings.seoTitle;
-      }
+      document.title = homepageTitle(settings);
       setMetaTag('description', settings.seoDescription);
       setMetaTag('robots', settings.seoRobotsTag);
     }
@@ -197,7 +197,7 @@ export function useSEO() {
       : null;
 
     if (onHomepage) {
-      setMetaTag('og:title', settings.seoTitle, true);
+      setMetaTag('og:title', homepageTitle(settings), true);
       setMetaTag('og:description', settings.seoDescription, true);
     }
     setMetaTag('og:image', fullImageUrl, true);
@@ -212,7 +212,7 @@ export function useSEO() {
 
     setMetaTag('twitter:card', settings.twitterCard || 'summary_large_image');
     if (onHomepage) {
-      setMetaTag('twitter:title', settings.seoTitle);
+      setMetaTag('twitter:title', homepageTitle(settings));
       setMetaTag('twitter:description', settings.seoDescription);
     }
     setMetaTag('twitter:image', fullImageUrl);
