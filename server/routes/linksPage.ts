@@ -4,12 +4,13 @@
 // Trade-offs (accepted for v1.3):
 //   1. In-memory Map: per-process rate limit. Acceptable because /links traffic is low
 //      and duplicate counts from multi-process edge are tolerable for analytics.
-//   2. Read-modify-write race: two concurrent clicks on the same link could lose one
-//      increment. Accepted for v1.3 (analytics, not billing).
+//   2. Clicks are incremented by a single atomic UPDATE (the links array is rebuilt
+//      in SQL), so concurrent clicks on the same link no longer lose increments.
 //   3. Rate-limited requests return 204 (not 429) so navigator.sendBeacon does not
 //      surface a console error on the client. Server-side log captures the skip if needed.
 import type { Express, Request } from "express";
-import { storage } from "../storage.js";
+import { sql } from "drizzle-orm";
+import { db } from "../db.js";
 
 const CLICK_WINDOW_MS = 60_000;
 const PRUNE_AT_SIZE = 5000;
@@ -45,21 +46,38 @@ export function registerLinksPageRoutes(app: Express) {
         return res.status(204).send();
       }
 
-      const settings = await storage.getCompanySettings();
-      const cfg = settings?.linksPageConfig;
-      if (!cfg || !Array.isArray(cfg.links)) {
-        return res.status(404).json({ message: "Link not found" });
-      }
-      const idx = cfg.links.findIndex((l: any) => l?.id === linkId);
-      if (idx < 0) return res.status(404).json({ message: "Link not found" });
+      // Single atomic statement: rebuild the links array in SQL and bump the
+      // matching link's counter. The previous read-modify-write round-trip
+      // through storage.updateCompanySettings() dropped concurrent clicks.
+      const updated = await db.execute(sql`
+        UPDATE company_settings
+        SET links_page_config = jsonb_set(
+          links_page_config,
+          '{links}',
+          (
+            SELECT COALESCE(
+              jsonb_agg(
+                CASE
+                  WHEN elem->>'id' = ${linkId}
+                    THEN jsonb_set(elem, '{clickCount}', to_jsonb(COALESCE((elem->>'clickCount')::int, 0) + 1))
+                  ELSE elem
+                END
+                ORDER BY ord
+              ),
+              '[]'::jsonb
+            )
+            FROM jsonb_array_elements(links_page_config->'links') WITH ORDINALITY AS t(elem, ord)
+          )
+        )
+        WHERE jsonb_typeof(links_page_config->'links') = 'array'
+          AND EXISTS (
+            SELECT 1
+            FROM jsonb_array_elements(links_page_config->'links') AS e(elem)
+            WHERE elem->>'id' = ${linkId}
+          )
+      `);
 
-      const updatedLinks = cfg.links.map((l: any, i: number) =>
-        i === idx ? { ...l, clickCount: (l.clickCount ?? 0) + 1 } : l
-      );
-
-      await storage.updateCompanySettings({
-        linksPageConfig: { ...cfg, links: updatedLinks },
-      } as any);
+      if (!updated.rowCount) return res.status(404).json({ message: "Link not found" });
 
       clickMemory.set(key, now);
       if (clickMemory.size > PRUNE_AT_SIZE) pruneClickMemory();
