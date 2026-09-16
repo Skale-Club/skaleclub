@@ -18,6 +18,11 @@ import type { HomepageContent, LinksPageConfig } from "../shared/schema";
  *      bare "https://instagram.com/" social entry, both visible publicly.
  *   5. portfolio_services: duplicate `order` values (5,5 and 6,6) made the
  *      product order depend on the database's row order. Renumber 1..n.
+ *   6. Xkedule's logoIconUrl was a 96px file, too small for the 10mm badge on
+ *      the printed folder (needs ~118px at 300dpi). The product's own site
+ *      serves its mark at 512px (https://xkedule.com/icon-512.png); it is
+ *      copied into Supabase Storage so the CMS never depends on a third-party
+ *      host, and the card points at the copy.
  *
  * 3D Printing is handled by scripts/add-3d-printing-service.ts.
  */
@@ -96,6 +101,29 @@ async function main() {
       }
     }
     changes.push(`portfolio_services.order renumbered: ${services.map((s) => `${s.title}=${services.indexOf(s) + 1}`).join(", ")}`);
+  }
+
+  // 6. Xkedule icon at print resolution
+  const XKEDULE_ICON_SRC = "https://xkedule.com/icon-512.png";
+  const XKEDULE_ICON_PATH = "product-icons/xkedule-512.png";
+  const xkedule = services.find((s) => s.slug === "scheduling-system" || s.title.toLowerCase() === "xkedule");
+  if (xkedule && !(xkedule.logoIconUrl || "").includes(XKEDULE_ICON_PATH)) {
+    try {
+      const res = await fetch(XKEDULE_ICON_SRC);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const bytes = Buffer.from(await res.arrayBuffer());
+      const { getSupabaseAdmin } = await import("../server/lib/supabase");
+      const supabase = getSupabaseAdmin();
+      const { error } = await supabase.storage
+        .from("uploads")
+        .upload(XKEDULE_ICON_PATH, bytes, { contentType: "image/png", upsert: true });
+      if (error) throw new Error(error.message);
+      const { data } = supabase.storage.from("uploads").getPublicUrl(XKEDULE_ICON_PATH);
+      await db.update(portfolioServices).set({ logoIconUrl: data.publicUrl }).where(eq(portfolioServices.id, xkedule.id));
+      changes.push(`Xkedule logoIconUrl: 96px file -> ${data.publicUrl} (512px, from the product site)`);
+    } catch (err) {
+      console.warn(`Xkedule icon not updated: ${(err as Error).message}. Re-run when ${XKEDULE_ICON_SRC} and Supabase are reachable.`);
+    }
   }
 
   if (changes.length === 0) {
