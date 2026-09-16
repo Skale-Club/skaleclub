@@ -8,8 +8,8 @@ import {
 } from "#shared/schema.js";
 import { BlogGenerator, runPreview } from "../lib/blog-generator.js";
 import { resolveOpenRouterKey } from "../lib/blog-openrouter.js";
-import { fetchAllRssSources } from "../lib/rssFetcher.js";
-import { slugifyTitle } from "../lib/blogContentValidator.js";
+import { fetchAllRssSources } from "../blog/rss-fetcher.js";
+import { slugifyTitle } from "../blog/content-validator.js";
 import { requireAdmin, isAuthorizedCronRequest } from "./_shared.js";
 
 const BLOG_SETTINGS_DEFAULTS = {

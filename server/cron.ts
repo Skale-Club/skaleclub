@@ -1,5 +1,5 @@
 import { BlogGenerator } from "./lib/blog-generator.js";
-import { fetchAllRssSources } from "./lib/rssFetcher.js";
+import { fetchAllRssSources } from "./blog/rss-fetcher.js";
 
 const HOUR_IN_MS = 60 * 60 * 1000;
 const DAY_IN_MS = 24 * HOUR_IN_MS;

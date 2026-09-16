@@ -6,9 +6,10 @@ import type { BlogPost, BlogPostFeedback, BlogRssItem, InsertBlogPost, BlogGener
 import { blogSettings } from "#shared/schema.js";
 import type { IStorage } from "../storage.js";
 import { getSupabaseAdmin } from "./supabase.js";
-import { BLOG_AI_TIMEOUT_MS, generateOpenRouterImage, generateOpenRouterText, resolveBlogAiConfig, type BlogAiConfig } from "./blog-openrouter.js";
-import { selectNextRssItem } from "./rssTopicSelector.js";
-import { AiEmptyResponseError, AiTimeoutError, getPlainTextLength, sanitizeBlogHtml, slugifyTitle as slugifyTitleNFD } from "./blogContentValidator.js";
+import { generateOpenRouterImage, generateOpenRouterText, resolveBlogAiConfig, type BlogAiConfig } from "./blog-openrouter.js";
+import { withAiRetry } from "../blog/ai-retry.js";
+import { selectNextRssItem } from "../blog/rss-selector.js";
+import { AiEmptyResponseError, AiTimeoutError, getPlainTextLength, sanitizeBlogHtml, slugifyTitle as slugifyTitleNFD } from "../blog/content-validator.js";
 
 const STALE_LOCK_MS = 10 * 60 * 1000;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
@@ -122,64 +123,6 @@ function extractJsonPayload(raw: string): string {
   const lastBrace = raw.lastIndexOf("}");
   if (firstBrace >= 0 && lastBrace > firstBrace) return raw.slice(firstBrace, lastBrace + 1);
   return raw.trim();
-}
-
-// Phase 36 D-07: race the AI call against BLOG_AI_TIMEOUT_MS via Promise.race.
-// The AbortSignal is forwarded to the OpenRouter call so timeouts actually
-// cancel the underlying request.
-async function withAiTimeout<T>(label: string, run: (signal: AbortSignal) => Promise<T>): Promise<T> {
-  const controller = new AbortController();
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => {
-      controller.abort();
-      reject(new AiTimeoutError(`AI ${label} exceeded ${BLOG_AI_TIMEOUT_MS}ms`));
-    }, BLOG_AI_TIMEOUT_MS);
-  });
-  try {
-    return await Promise.race([run(controller.signal), timeoutPromise]);
-  } finally {
-    if (timer) clearTimeout(timer);
-  }
-}
-
-// Phase 38 BLOG2-16: backoff schedule [1s, 5s, 30s] — fixed per spec, no jitter.
-const RETRY_DELAYS_MS: readonly number[] = [1000, 5000, 30000];
-
-function isTransientError(err: unknown): boolean {
-  if (err instanceof AiTimeoutError) return true;
-  if (err instanceof AiEmptyResponseError) return true;
-  // OpenRouter (fetch wrapper) and OpenAI-SDK errors carry a numeric HTTP status.
-  // 5xx = transient; 4xx (auth, quota, malformed) NOT retried.
-  const status = (err as { status?: unknown })?.status;
-  if (typeof status === "number") return status >= 500 && status < 600;
-  // Network errors surfaced by undici/fetch.
-  if (err instanceof Error) {
-    const code = (err as NodeJS.ErrnoException).code;
-    if (code === "ECONNRESET" || code === "ETIMEDOUT" || code === "ENOTFOUND") return true;
-    if (/fetch failed|network|socket hang up/i.test(err.message)) return true;
-  }
-  return false;
-}
-
-// Phase 38 BLOG2-16: composes over withAiTimeout. On transient error, sleeps
-// RETRY_DELAYS_MS[attempt] and retries. After 3 retries (4 total attempts),
-// re-throws the LAST error so upstream typed-error mapping in BlogGenerator.generate
-// catch still classifies the failure.
-async function withAiRetry<T>(label: string, run: (signal: AbortSignal) => Promise<T>): Promise<T> {
-  let lastErr: unknown;
-  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
-    try {
-      return await withAiTimeout(label, run);
-    } catch (err) {
-      lastErr = err;
-      if (!isTransientError(err) || attempt === RETRY_DELAYS_MS.length) throw err;
-      const delayMs = RETRY_DELAYS_MS[attempt];
-      console.warn(`[blog-generator] ${label} attempt ${attempt + 1} failed; retrying in ${delayMs}ms`);
-      await new Promise((r) => setTimeout(r, delayMs));
-    }
-  }
-  throw lastErr;
 }
 
 function parseGeneratedPostResponse(raw: string): GeneratedPost {

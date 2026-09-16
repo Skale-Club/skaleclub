@@ -1,4 +1,8 @@
-// server/lib/blogContentValidator.ts
+// server/blog/content-validator.ts
+//
+// SOURCE OF TRUTH: skaleclub/server/blog/content-validator.ts — sync changes back.
+// Ported to: xkedule, websites, xtimator, xmartmenu (see
+// .planning/initiatives/autoblog-parity/MASTER.md §5).
 //
 // Phase 36 — BLOG2-02, BLOG2-03 (helpers consumed by Plan 36-03)
 //

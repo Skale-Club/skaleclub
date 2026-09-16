@@ -9,17 +9,14 @@
 import type { BlogSettings } from "#shared/schema.js";
 import { getOpenRouterClient } from "./openrouter.js";
 import { getRuntimeOpenRouterKey } from "./ai-provider.js";
-import { AiEmptyResponseError } from "./blogContentValidator.js";
+import { AiEmptyResponseError } from "../blog/content-validator.js";
 
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
 // Timeout consumed by the generator's retry wrapper at every AI call site.
-// BLOG_GEMINI_TIMEOUT_MS is honored for backward compatibility with deploys
-// that already override the old Gemini-era variable.
-export const BLOG_AI_TIMEOUT_MS: number =
-  Number(process.env.BLOG_AI_TIMEOUT_MS) ||
-  Number(process.env.BLOG_GEMINI_TIMEOUT_MS) ||
-  30_000;
+// Defined once in server/blog/ai-retry.ts (the module the other products port);
+// re-exported here so existing importers keep working.
+export { BLOG_AI_TIMEOUT_MS } from "../blog/ai-retry.js";
 
 export interface BlogAiConfig {
   apiKey: string;

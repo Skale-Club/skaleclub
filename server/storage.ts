@@ -1,5 +1,5 @@
 import { db } from "./db.js";
-import { scoreItem } from "./lib/rssTopicSelector.js";
+import { scoreItem } from "./blog/rss-selector.js";
 import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead } from "#shared/form.js";
 import { normalizeLinksPageConfig } from "#shared/links.js";
 import {
