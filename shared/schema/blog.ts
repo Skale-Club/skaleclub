@@ -72,6 +72,10 @@ export const blogSettings = pgTable("blog_settings", {
   rssEnabled: boolean("rss_enabled").notNull().default(true),
   // Anchor hour 0-23 in the site's timezone. NULL keeps the drifting cadence.
   postingHour: integer("posting_hour"),
+  // Which timezone that hour is in. The multi-tenant products read this from
+  // the tenant's company settings; this is a single site, and it has no such
+  // field, so the blog owns it. Default matches where the team publishes from.
+  timezone: text("timezone").notNull().default("America/Sao_Paulo"),
   lastRunAt: timestamp("last_run_at"),
   lockAcquiredAt: timestamp("lock_acquired_at"),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
@@ -112,6 +116,7 @@ export const insertBlogSettingsSchema = z.object({
   imageModel: z.string().default(""),
   rssEnabled: z.boolean().default(true),
   postingHour: z.number().int().min(0).max(23).nullable().optional(),
+  timezone: z.string().min(1).max(100).default("America/Sao_Paulo"),
   lastRunAt: nullableDateInputSchema,
   lockAcquiredAt: nullableDateInputSchema,
 });
@@ -129,6 +134,7 @@ export const selectBlogSettingsSchema = z.object({
   imageModel: z.string(),
   rssEnabled: z.boolean(),
   postingHour: z.number().int().nullable(),
+  timezone: z.string(),
   lastRunAt: z.date().nullable(),
   lockAcquiredAt: z.date().nullable(),
   updatedAt: z.date().nullable(),

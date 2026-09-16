@@ -150,3 +150,9 @@ alter table public.blog_post_feedback
 alter table public.blog_post_feedback
   add constraint blog_post_feedback_decided_by_check
   check (decided_by in ('admin', 'telegram'));
+
+-- The timezone posting_hour is measured in. The multi-tenant products read this
+-- from the tenant's company settings; this is a single site with no such field,
+-- so the blog owns it. Default matches where the team publishes from.
+alter table public.blog_settings
+  add column if not exists timezone text not null default 'America/Sao_Paulo';

@@ -31,6 +31,7 @@ const selectedSettings = selectBlogSettingsSchema.parse({
   autoPublish: false,
   rssEnabled: true,
   postingHour: null,
+  timezone: "America/Sao_Paulo",
   textModel: "",
   imageModel: "",
   lastRunAt: null,

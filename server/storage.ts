@@ -1390,6 +1390,10 @@ export class DatabaseStorage implements IStorage {
         completedAt: blogGenerationJobs.completedAt,
         errorMessage: blogGenerationJobs.errorMessage,
         durationsMs: blogGenerationJobs.durationsMs,
+        trigger: blogGenerationJobs.trigger,
+        source: blogGenerationJobs.source,
+        // The pillar this run used — read back by the next run's rotation.
+        pillarId: blogGenerationJobs.pillarId,
         sourceTitle: blogRssItems.title,
         rssItemId: blogRssItems.id,
       })
@@ -1428,6 +1432,10 @@ export class DatabaseStorage implements IStorage {
         completedAt: blogGenerationJobs.completedAt,
         errorMessage: blogGenerationJobs.errorMessage,
         durationsMs: blogGenerationJobs.durationsMs,
+        trigger: blogGenerationJobs.trigger,
+        source: blogGenerationJobs.source,
+        // The pillar this run used — read back by the next run's rotation.
+        pillarId: blogGenerationJobs.pillarId,
         sourceTitle: blogRssItems.title,
         rssItemId: blogRssItems.id,
       })

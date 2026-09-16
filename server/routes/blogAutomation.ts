@@ -10,6 +10,7 @@ import { BlogGenerator, runPreview } from "../lib/blog-generator.js";
 import { resolveOpenRouterKey } from "../lib/blog-openrouter.js";
 import { fetchAllRssSources } from "../blog/rss-fetcher.js";
 import { slugifyTitle } from "../blog/content-validator.js";
+import { nextScheduledRun } from "#shared/blog-schedule.js";
 import { requireAdmin, isAuthorizedCronRequest } from "./_shared.js";
 
 const BLOG_SETTINGS_DEFAULTS = {
@@ -20,6 +21,9 @@ const BLOG_SETTINGS_DEFAULTS = {
   promptStyle: "",
   systemPrompt: "",
   autoPublish: false,
+  rssEnabled: true,
+  postingHour: null as number | null,
+  timezone: "America/Sao_Paulo",
   textModel: "",
   imageModel: "",
   lastRunAt: null,
@@ -32,7 +36,18 @@ export function registerBlogAutomationRoutes(app: Express) {
   // prompt, which must not be publicly readable.
   app.get("/api/blog/settings", requireAdmin, async (_req, res) => {
     const row = await storage.getBlogSettings();
-    res.json(row ?? BLOG_SETTINGS_DEFAULTS);
+    const settings = row ?? BLOG_SETTINGS_DEFAULTS;
+    // Computed from the SAME helper the cron gate uses (autoblog-parity SC-06),
+    // so the time the panel promises is the time the job will actually fire.
+    // null means no hour is pinned and the cadence still drifts — which is
+    // precisely the state that has no predictable answer.
+    const next = nextScheduledRun({
+      now: new Date(),
+      timeZone: settings.timezone || "UTC",
+      postingHour: settings.postingHour ?? null,
+      postsPerDay: settings.postsPerDay,
+    });
+    res.json({ ...settings, nextScheduledRunAt: next ? next.toISOString() : null });
   });
 
   // BLOG-13: PUT /api/blog/settings — admin-auth, upsert + return saved row
@@ -306,8 +321,9 @@ export function registerBlogAutomationRoutes(app: Express) {
           focusKeyword: result.result.focusKeyword,
           tags: result.result.tags,
           featureImageUrl: result.result.featureImageUrl,
-          rssItemId: result.result.rssItem.id,
-          sourceTitle: result.result.rssItem.title,
+          // null on a preview that ran on the pillar rotation alone (SC-04).
+          rssItemId: result.result.rssItem?.id ?? null,
+          sourceTitle: result.result.rssItem?.title ?? null,
         },
       });
     } catch (err) {

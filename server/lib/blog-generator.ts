@@ -9,6 +9,18 @@ import { getSupabaseAdmin } from "./supabase.js";
 import { generateOpenRouterImage, generateOpenRouterText, resolveBlogAiConfig, type BlogAiConfig } from "./blog-openrouter.js";
 import { withAiRetry } from "../blog/ai-retry.js";
 import { selectNextRssItem } from "../blog/rss-selector.js";
+import {
+  assignPillar,
+  buildCatalogSection,
+  buildInternalLinksSection,
+  buildKeywordDedupSection,
+  buildPillarSection,
+  todaySection,
+  sanitizeGeneratedLinks,
+  type InternalLink,
+  type PillarAssignment,
+} from "#shared/blog-prompt.js";
+import { isRunDue } from "#shared/blog-schedule.js";
 import { AiEmptyResponseError, AiTimeoutError, getPlainTextLength, sanitizeBlogHtml, slugifyTitle as slugifyTitleNFD } from "../blog/content-validator.js";
 
 const STALE_LOCK_MS = 10 * 60 * 1000;
@@ -27,7 +39,25 @@ const FEEDBACK_PROMPT_LIMIT = 10;
 
 const generatedPostSchema = z.object({ title: z.string().min(1), content: z.string().min(1), excerpt: z.string().nullable().optional(), metaDescription: z.string().nullable().optional(), focusKeyword: z.string().nullable().optional(), tags: z.union([z.array(z.string().min(1)), z.string().min(1)]) });
 
-type SkipReason = "no_settings" | "disabled" | "posts_per_day_zero" | "too_soon" | "locked" | "no_rss_items" | "not_configured";
+// "no_rss_items" is gone: RSS stopped being the only topic source (SC-04), so
+// an empty queue is no longer a reason to publish nothing.
+type SkipReason = "no_settings" | "disabled" | "posts_per_day_zero" | "too_soon" | "locked" | "not_configured";
+
+/**
+ * Everything the editorial assignment needs, assembled once per run.
+ *
+ * Until SC-05 this repo had one prompt shape — "refine this RSS item into a
+ * post" — which produced a consistent voice and almost no structural variety.
+ * The pillar decides HOW the post is written; the RSS item, when there is one,
+ * supplies WHAT it is about.
+ */
+type EditorialContext = {
+  assignment: PillarAssignment;
+  /** The full system message: pillar, date, catalogue, links, keyword dedup. */
+  systemMessage: string;
+  /** The only hrefs the generated body may keep. */
+  allowedLinkPaths: string[];
+};
 
 type BlogGeneratorResult =
   | { skipped: true; reason: SkipReason }
@@ -50,7 +80,7 @@ type PipelineSuccess = { jobId: number; postId: number; post: BlogPost };
 type GeneratedPost = { title: string; content: string; excerpt: string | null; metaDescription: string | null; focusKeyword: string | null; tags: string[] };
 type GeneratedImage = { bytes: Buffer; mime: string };
 
-type PipelineContext = { settings: BlogSettings; job: BlogGenerationJob; manual: boolean; rssItem: BlogRssItem; aiConfig: BlogAiConfig; feedback: BlogPostFeedback[] };
+type PipelineContext = { settings: BlogSettings; job: BlogGenerationJob; manual: boolean; rssItem: BlogRssItem | null; aiConfig: BlogAiConfig; feedback: BlogPostFeedback[]; editorial: EditorialContext };
 
 type BlogGeneratorDeps = {
   storage: BlogGeneratorStorage;
@@ -59,14 +89,15 @@ type BlogGeneratorDeps = {
   releaseLock: (settings: BlogSettings) => Promise<void>;
   resolveAiConfig: (settings: BlogSettings) => Promise<BlogAiConfig | null>;
   selectRssItem: (settings: BlogSettings, now: Date) => Promise<BlogRssItem | null>;
+  buildEditorial: (ctx: { settings: BlogSettings; jobSeed: number; rssItem: BlogRssItem | null }) => Promise<EditorialContext>;
   runPipeline: (ctx: PipelineContext) => Promise<PipelineSuccess>;
-  generateTopic: (ctx: { settings: BlogSettings; manual: boolean; rssItem: BlogRssItem; aiConfig: BlogAiConfig; feedback: BlogPostFeedback[] }) => Promise<string>;
-  generatePost: (ctx: { settings: BlogSettings; topic: string; manual: boolean; rssItem: BlogRssItem; aiConfig: BlogAiConfig; feedback: BlogPostFeedback[] }) => Promise<GeneratedPost>;
+  generateTopic: (ctx: { settings: BlogSettings; manual: boolean; rssItem: BlogRssItem | null; aiConfig: BlogAiConfig; feedback: BlogPostFeedback[]; editorial: EditorialContext }) => Promise<string>;
+  generatePost: (ctx: { settings: BlogSettings; topic: string; manual: boolean; rssItem: BlogRssItem | null; aiConfig: BlogAiConfig; feedback: BlogPostFeedback[]; editorial: EditorialContext }) => Promise<GeneratedPost>;
   generateImage: (ctx: { settings: BlogSettings; post: GeneratedPost; manual: boolean; aiConfig: BlogAiConfig }) => Promise<GeneratedImage | null>;
   uploadImage: (ctx: { bytes: Buffer; mime: string; path: string }) => Promise<string>;
 };
 
-const defaultDeps: BlogGeneratorDeps = { storage: defaultStorage, now: () => new Date(), acquireLock: acquireDatabaseLock, releaseLock: releaseDatabaseLock, resolveAiConfig: resolveBlogAiConfig, selectRssItem: selectNextRssItem, runPipeline, generateTopic: generateTopicWithAi, generatePost: generatePostWithAi, generateImage: generateImageWithAi, uploadImage: uploadFeatureImage };
+const defaultDeps: BlogGeneratorDeps = { storage: defaultStorage, now: () => new Date(), acquireLock: acquireDatabaseLock, releaseLock: releaseDatabaseLock, resolveAiConfig: resolveBlogAiConfig, selectRssItem: selectNextRssItem, buildEditorial: buildEditorialContext, runPipeline, generateTopic: generateTopicWithAi, generatePost: generatePostWithAi, generateImage: generateImageWithAi, uploadImage: uploadFeatureImage };
 
 let testDeps: Partial<BlogGeneratorDeps> | null = null;
 
@@ -79,6 +110,12 @@ async function getDb() {
   return module.db;
 }
 
+/** The full storage, for the editorial reads that are outside the narrow dep table. */
+async function getFullStorage(): Promise<IStorage> {
+  const module = await import("../storage.js");
+  return module.storage;
+}
+
 async function getStorage(): Promise<BlogGeneratorStorage> {
   const module = await import("../storage.js");
   return module.storage as BlogGeneratorStorage;
@@ -86,9 +123,35 @@ async function getStorage(): Promise<BlogGeneratorStorage> {
 
 function getCadenceWindowMs(postsPerDay: number): number { return DAY_IN_MS / postsPerDay; }
 
-function shouldSkipTooSoon(settings: BlogSettings, now: Date): boolean {
-  if (!settings.lastRunAt || settings.postsPerDay <= 0) return false;
-  return now.getTime() - settings.lastRunAt.getTime() < getCadenceWindowMs(settings.postsPerDay);
+/**
+ * Autoblog-parity SC-06: a pinned hour beats the elapsed-time cadence.
+ *
+ * The old rule only ever said "at least 24/postsPerDay hours since the last
+ * run", so the time of day DRIFTED forward with every run — an 18:00 post
+ * pushed tomorrow's to 18:00-or-later, a delayed run moved every run after it,
+ * and nothing in the product could answer "when is the next post?".
+ *
+ * With posting_hour set, a run is due when the site's LOCAL clock is in one of
+ * the slots, and only once per slot. Leaving it NULL keeps the old behaviour
+ * exactly, so nothing changes until someone picks an hour.
+ */
+function resolveSkipReason(settings: BlogSettings, now: Date): SkipReason | null {
+  if (settings.postingHour !== null && settings.postingHour !== undefined) {
+    const decision = isRunDue({
+      now,
+      timeZone: settings.timezone || "UTC",
+      postingHour: settings.postingHour,
+      postsPerDay: settings.postsPerDay,
+      lastRunAt: settings.lastRunAt ?? null,
+    });
+    // Both of isRunDue's reasons mean the same thing to a caller: not now.
+    return decision.due ? null : "too_soon";
+  }
+
+  if (!settings.lastRunAt || settings.postsPerDay <= 0) return null;
+  return now.getTime() - settings.lastRunAt.getTime() < getCadenceWindowMs(settings.postsPerDay)
+    ? "too_soon"
+    : null;
 }
 
 async function acquireDatabaseLock(settings: BlogSettings, now: Date): Promise<boolean> {
@@ -180,18 +243,128 @@ function buildFeedbackBlock(feedback: BlogPostFeedback[]): string {
   return `\n\n${lines.join("\n")}`;
 }
 
-async function generateTopicWithAi({ settings, manual, rssItem, aiConfig, feedback }: { settings: BlogSettings; manual: boolean; rssItem: BlogRssItem; aiConfig: BlogAiConfig; feedback: BlogPostFeedback[] }): Promise<string> {
-  const prompt = `Tarefa: refine o item de RSS abaixo em UMA ideia de pauta de blog em pt-BR alinhada às palavras-chave de SEO.\n\nItem de RSS de origem:\n- Título: ${rssItem.title}\n- Resumo: ${rssItem.summary ?? "(sem resumo)"}\n\nPalavras-chave de SEO: ${settings.seoKeywords}.\nEstilo de prompt: ${settings.promptStyle || "claro e prático"}.\nAnálise de tendências habilitada: ${settings.enableTrendAnalysis ? "sim" : "não"}.\nTipo de execução: ${manual ? "manual" : "agendada"}.${buildFeedbackBlock(feedback)}\n\nDevolva APENAS o título da pauta como texto puro em pt-BR. Sem aspas, sem pontuação final, sem comentários.`;
-  const response = await withAiRetry("topic", (signal) => generateOpenRouterText({ config: aiConfig, system: resolveEditorialVoice(settings), prompt, signal }));
+
+/**
+ * Assemble this run's editorial assignment and system message.
+ *
+ * Every read is best-effort: the assignment is what makes the post varied, and
+ * losing the catalogue or the FAQ list should narrow the choice of pillars, not
+ * cost the day's post. A failed read simply means the pillars that require that
+ * data are unavailable this run.
+ */
+async function buildEditorialContext({ settings, jobSeed, rssItem }: {
+  settings: BlogSettings;
+  jobSeed: number;
+  rssItem: BlogRssItem | null;
+}): Promise<EditorialContext> {
+  const storage = await getFullStorage();
+
+  let serviceNames: string[] = [];
+  let faqQuestions: string[] = [];
+  let recentPosts: BlogPost[] = [];
+  let recentPillarIds: string[] = [];
+
+  try { serviceNames = (await storage.getPortfolioServices()).map((s) => s.title).filter(Boolean); } catch { /* narrows pillars */ }
+  try { faqQuestions = (await storage.getFaqs()).map((f) => f.question).filter(Boolean).slice(0, 10); } catch { /* narrows pillars */ }
+  try { recentPosts = (await storage.getBlogPosts()).slice(0, 12); } catch { /* no history yet */ }
+  try {
+    // Newest-first, matching pickNextPillar's contract.
+    recentPillarIds = (await storage.listBlogGenerationJobs(12))
+      .map((j) => j.pillarId)
+      .filter((id): id is string => typeof id === "string" && id.length > 0);
+  } catch { /* rotation starts fresh */ }
+
+  const assignment = assignPillar(
+    recentPillarIds,
+    { hasCatalog: serviceNames.length > 0, hasFaqs: faqQuestions.length > 0, hasRssItem: !!rssItem },
+    jobSeed,
+  );
+
+  // The FAQ pillar works from real customer questions; every other pillar gets
+  // no extras and follows its own guidance.
+  const pillarExtras = assignment.pillar.id === "faq-deep-dive"
+    ? "PERGUNTAS REAIS DE CLIENTES (escolha UMA):\n" + faqQuestions.map((q) => `- ${q}`).join("\n")
+    : undefined;
+
+  const internalLinks: InternalLink[] = [
+    { label: "Nossos serviços", path: "/servicos" },
+    { label: "Fale com a gente", path: "/contato" },
+    ...recentPosts
+      .filter((p) => p.status === "published" && p.slug)
+      .slice(0, 4)
+      .map((p) => ({ label: p.title, path: `/blog/${p.slug}` })),
+  ];
+
+  const sections: string[] = [
+    resolveEditorialVoice(settings),
+    todaySection(new Date(), settings.timezone || "UTC"),
+    buildPillarSection(assignment, pillarExtras),
+  ];
+
+  if (rssItem) {
+    sections.push([
+      "FONTE. O assunto de hoje vem deste item do feed. Use-o como PONTO DE PARTIDA de um post original para os clientes desta agência — reaja a ele, explique o que muda para eles, acrescente o que a agência sabe. NÃO resuma nem parafraseie a fonte, e não se apresente como autor dela.",
+      `- Manchete: ${rssItem.title}`,
+      `- Resumo: ${rssItem.summary ?? "(sem resumo)"}`,
+      `- Origem: ${rssItem.url}`,
+    ].join("\n"));
+  }
+
+  const catalog = buildCatalogSection(serviceNames);
+  if (catalog) sections.push(catalog);
+  sections.push(buildInternalLinksSection(internalLinks));
+
+  const keywordDedup = buildKeywordDedupSection(recentPosts.map((p) => p.focusKeyword || "").filter(Boolean));
+  if (keywordDedup) sections.push(keywordDedup);
+
+  if (recentPosts.length > 0) {
+    sections.push(
+      "POSTS EXISTENTES. NÃO repita nem reformule estes temas:\n" +
+      recentPosts.map((p) => `- "${p.title}"`).join("\n"),
+    );
+  }
+
+  return {
+    assignment,
+    systemMessage: sections.join("\n\n"),
+    allowedLinkPaths: internalLinks.map((l) => l.path),
+  };
+}
+
+async function generateTopicWithAi({ settings, manual, rssItem, aiConfig, feedback, editorial }: { settings: BlogSettings; manual: boolean; rssItem: BlogRssItem | null; aiConfig: BlogAiConfig; feedback: BlogPostFeedback[]; editorial: EditorialContext }): Promise<string> {
+  const prompt = [
+    rssItem
+      ? "Tarefa: transforme a FONTE do system message em UMA ideia de pauta de blog em pt-BR, no formato que a PAUTA DESTE POST determina. A pauta tem que ser sobre o que a fonte significa para os clientes DESTA agência, não um recontar da fonte."
+      : "Tarefa: proponha UMA ideia de pauta de blog em pt-BR que cumpra a PAUTA DESTE POST do system message: seu pilar, seu formato de título, um único assunto.",
+    `Palavras-chave de SEO: ${settings.seoKeywords}.`,
+    `Estilo de prompt: ${settings.promptStyle || "claro e prático"}.`,
+    `Análise de tendências habilitada: ${settings.enableTrendAnalysis ? "sim" : "não"}.`,
+    `Tipo de execução: ${manual ? "manual" : "agendada"}.${buildFeedbackBlock(feedback)}`,
+    "Devolva APENAS o título da pauta como texto puro em pt-BR. Sem aspas, sem pontuação final, sem comentários.",
+  ].join("\n\n");
+  const response = await withAiRetry("topic", (signal) => generateOpenRouterText({ config: aiConfig, system: editorial.systemMessage, prompt, signal }));
   const topic = response.trim();
   if (!topic) throw new Error("AI provider did not return a blog topic");
   return topic;
 }
 
-async function generatePostWithAi({ settings, topic, manual, rssItem, aiConfig, feedback }: { settings: BlogSettings; topic: string; manual: boolean; rssItem: BlogRssItem; aiConfig: BlogAiConfig; feedback: BlogPostFeedback[] }): Promise<GeneratedPost> {
-  const prompt = `Tarefa: escreva um rascunho de post de blog em pt-BR a partir da pauta abaixo.\n\nItem de RSS de origem:\n- Título: ${rssItem.title}\n- Resumo: ${rssItem.summary ?? "(sem resumo)"}\n- URL: ${rssItem.url}\n\nPauta: ${topic}\nPalavras-chave de SEO primárias: ${settings.seoKeywords}.\nEstilo de prompt: ${settings.promptStyle || "claro e prático"}.\nAnálise de tendências habilitada: ${settings.enableTrendAnalysis ? "sim" : "não"}.\nTipo de execução: ${manual ? "manual" : "agendada"}.${buildFeedbackBlock(feedback)}\n\nDevolva JSON válido com EXATAMENTE estes campos (todos em pt-BR):\n{"title":"","content":"","excerpt":"","metaDescription":"","focusKeyword":"","tags":[""]}\nO campo "content" deve ser HTML pronto para publicação seguindo as regras abaixo.\n\n${FORMATTING_RULES_PT_BR}`;
-  const response = await withAiRetry("post", (signal) => generateOpenRouterText({ config: aiConfig, system: resolveEditorialVoice(settings), prompt, signal }));
-  return parseGeneratedPostResponse(response);
+async function generatePostWithAi({ settings, topic, manual, rssItem, aiConfig, feedback, editorial }: { settings: BlogSettings; topic: string; manual: boolean; rssItem: BlogRssItem | null; aiConfig: BlogAiConfig; feedback: BlogPostFeedback[]; editorial: EditorialContext }): Promise<GeneratedPost> {
+  const prompt = [
+    "Tarefa: escreva um rascunho de post de blog em pt-BR a partir da pauta abaixo, cumprindo a PAUTA DESTE POST do system message (pilar, formato do título, tamanho alvo).",
+    `Pauta: ${topic}`,
+    `Palavras-chave de SEO primárias: ${settings.seoKeywords}.`,
+    `Estilo de prompt: ${settings.promptStyle || "claro e prático"}.`,
+    `Análise de tendências habilitada: ${settings.enableTrendAnalysis ? "sim" : "não"}.`,
+    `Tipo de execução: ${manual ? "manual" : "agendada"}.${buildFeedbackBlock(feedback)}`,
+    'Devolva JSON válido com EXATAMENTE estes campos (todos em pt-BR):\n{"title":"","content":"","excerpt":"","metaDescription":"","focusKeyword":"","tags":[""]}\nO campo "content" deve ser HTML pronto para publicação seguindo as regras abaixo.',
+    FORMATTING_RULES_PT_BR,
+  ].join("\n\n");
+  const response = await withAiRetry("post", (signal) => generateOpenRouterText({ config: aiConfig, system: editorial.systemMessage, prompt, signal }));
+  const post = parseGeneratedPostResponse(response);
+  // The model is told which links it may use; this is what enforces it. A
+  // hallucinated href reaching a live post is worse than losing a real link.
+  post.content = sanitizeGeneratedLinks(post.content, editorial.allowedLinkPaths);
+  return post;
 }
 
 async function generateImageWithAi({ post, aiConfig }: { settings: BlogSettings; post: GeneratedPost; manual: boolean; aiConfig: BlogAiConfig }): Promise<GeneratedImage | null> {
@@ -220,7 +393,7 @@ async function uploadFeatureImage({ bytes, mime, path }: { bytes: Buffer; mime: 
   return data.publicUrl;
 }
 
-async function runPipeline({ settings, job, manual, rssItem, aiConfig, feedback }: PipelineContext): Promise<PipelineSuccess> {
+async function runPipeline({ settings, job, manual, rssItem, aiConfig, feedback, editorial }: PipelineContext): Promise<PipelineSuccess> {
   const deps = getDeps();
   const now = deps.now();
   const tStart = Date.now();
@@ -231,11 +404,11 @@ async function runPipeline({ settings, job, manual, rssItem, aiConfig, feedback 
 
   try {
     const tTopic = Date.now();
-    const topic = await deps.generateTopic({ settings, manual, rssItem, aiConfig, feedback });
+    const topic = await deps.generateTopic({ settings, manual, rssItem, aiConfig, feedback, editorial });
     partial.topic = Date.now() - tTopic;
 
     const tContent = Date.now();
-    const generatedPost = await deps.generatePost({ settings, topic, manual, rssItem, aiConfig, feedback });
+    const generatedPost = await deps.generatePost({ settings, topic, manual, rssItem, aiConfig, feedback, editorial });
     partial.content = Date.now() - tContent;
 
     // Phase 36 BLOG2-02/BLOG2-04 (D-05/D-06): sanitize, then length-validate
@@ -295,12 +468,15 @@ async function runPipeline({ settings, job, manual, rssItem, aiConfig, feedback 
 
     const post = await deps.storage.createBlogPost(postInput);
 
-    // RSS-07: mark item used AFTER post insert succeeds (non-fatal on failure)
-    try {
-      await deps.storage.markRssItemUsed(rssItem.id, post.id);
-    } catch (markErr) {
-      const message = markErr instanceof Error ? markErr.message : String(markErr);
-      console.warn(`[blog-generator] markRssItemUsed failed for item ${rssItem.id}: ${message}`);
+    // Mark the item used AFTER the post insert succeeds, and only when this run
+    // actually consumed one — a pillar-only run has nothing to mark.
+    if (rssItem) {
+      try {
+        await deps.storage.markRssItemUsed(rssItem.id, post.id);
+      } catch (markErr) {
+        const message = markErr instanceof Error ? markErr.message : String(markErr);
+        console.warn(`[blog-generator] markRssItemUsed failed for item ${rssItem.id}: ${message}`);
+      }
     }
 
     const durationsMs: DurationsMs = {
@@ -348,7 +524,8 @@ export interface PreviewResult {
   focusKeyword: string | null;
   tags: string[];
   featureImageUrl: string | null;
-  rssItem: BlogRssItem;
+  /** null when this preview ran on the pillar rotation alone. */
+  rssItem: BlogRssItem | null;
 }
 
 export type RunPreviewResponse =
@@ -380,13 +557,14 @@ export async function runPreview(options?: { rssItemId?: number }): Promise<RunP
   } else {
     rssItem = await deps.selectRssItem(settings, deps.now());
   }
-  if (!rssItem) return { skipped: true, reason: "no_rss_items" };
-
   const feedback = await listFeedbackSafe(deps);
+  // A preview needs no job row, so the rotation seed comes from the clock. It
+  // only decides which pillar/title shape this preview demonstrates.
+  const editorial = await deps.buildEditorial({ settings, jobSeed: deps.now().getTime(), rssItem });
 
   try {
-    const topic = await deps.generateTopic({ settings, manual: true, rssItem, aiConfig, feedback });
-    const generatedPost = await deps.generatePost({ settings, topic, manual: true, rssItem, aiConfig, feedback });
+    const topic = await deps.generateTopic({ settings, manual: true, rssItem, aiConfig, feedback, editorial });
+    const generatedPost = await deps.generatePost({ settings, topic, manual: true, rssItem, aiConfig, feedback, editorial });
     const sanitizedContent = sanitizeBlogHtml(generatedPost.content);
     const plainTextLen = getPlainTextLength(sanitizedContent);
     if (plainTextLen < MIN_PLAIN_TEXT_CHARS) {
@@ -440,7 +618,10 @@ export class BlogGenerator {
     if (!settings) return { skipped: true, reason: "no_settings" };
     if (!manual && !settings.enabled) return { skipped: true, reason: "disabled" };
     if (!manual && settings.postsPerDay <= 0) return { skipped: true, reason: "posts_per_day_zero" };
-    if (!manual && shouldSkipTooSoon(settings, now)) return { skipped: true, reason: "too_soon" };
+    if (!manual) {
+      const skipReason = resolveSkipReason(settings, now);
+      if (skipReason) return { skipped: true, reason: skipReason };
+    }
 
     // Autopost port: no OpenRouter key or missing text/image models → skip
     // (belt-and-braces on top of the settings-save validation; the key can be
@@ -457,19 +638,27 @@ export class BlogGenerator {
     } else {
       rssItem = await deps.selectRssItem(settings, now);
     }
-    if (!rssItem) {
-      await deps.storage.createBlogGenerationJob({ status: "skipped", reason: "no_rss_items", startedAt: now, completedAt: now });
-      return { skipped: true, reason: "no_rss_items" };
-    }
+    // SC-04: an empty queue is no longer a reason to publish nothing. RSS is one
+    // topic source; the editorial pillar rotation is the other, and it needs no
+    // input at all. The generator only skips for the reasons above this line.
 
     const lockAcquired = await deps.acquireLock(settings, now);
     if (!lockAcquired) return { skipped: true, reason: "locked" };
 
-    const job = await deps.storage.createBlogGenerationJob({ status: "running", startedAt: now });
+    const job = await deps.storage.createBlogGenerationJob({
+      status: "running",
+      startedAt: now,
+      trigger: manual ? "manual" : "cron",
+      source: rssItem ? "rss" : "pillar",
+      rssItemId: rssItem?.id ?? null,
+    });
     const feedback = await listFeedbackSafe(deps);
+    // The job id seeds the rotation, so consecutive runs vary while a test with
+    // a fixed id is deterministic.
+    const editorial = await deps.buildEditorial({ settings, jobSeed: job.id, rssItem });
 
     try {
-      const result = await deps.runPipeline({ settings, job, manual, rssItem, aiConfig, feedback });
+      const result = await deps.runPipeline({ settings, job, manual, rssItem, aiConfig, feedback, editorial });
       return { skipped: false, reason: null, jobId: result.jobId, postId: result.postId, post: result.post };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
