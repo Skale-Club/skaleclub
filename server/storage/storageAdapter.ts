@@ -51,7 +51,9 @@ export async function registerStorageRoutes(app: Express, requireAdmin: any) {
   // 15 MB decoded — well above any legitimate image here, and it bounds what a
   // single request can push into sharp and on to Supabase.
   const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
-  const allowedExts = Object.keys(mimeFromExt);
+  // Anything sharp can transcode to WebP is accepted too (a macOS photo pick
+  // is often HEIC); it never reaches the bucket in its original format.
+  const allowedExts = Array.from(new Set([...Object.keys(mimeFromExt), ...Array.from(convertibleToWebp)]));
 
   // SVG stays allowed: these routes are admin-only, and existing logos/icons
   // in the CMS are SVGs.
