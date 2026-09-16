@@ -8,8 +8,9 @@ const estimateGuidelinesSchema = z.object({
 });
 
 export function registerEstimateGuidelinesRoutes(app: Express) {
-  // GET /api/estimate-guidelines — public (no auth; MCP tool reads this server-side)
-  app.get("/api/estimate-guidelines", async (_req, res) => {
+  // GET /api/estimate-guidelines — admin-only. The MCP tools read storage directly; the only
+  // HTTP reader is the admin editor, and the content is internal pricing/rules.
+  app.get("/api/estimate-guidelines", requireAdmin, async (_req, res) => {
     const row = await storage.getEstimateGuidelines();
     res.json({ content: row?.content ?? '' });
   });

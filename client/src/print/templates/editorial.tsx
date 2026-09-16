@@ -246,6 +246,7 @@ function Inside({ bleed, apps, services, showPrices }: FolderData) {
         <PanelHeading eyebrow="Ready-made software" title="Our Apps" />
         {apps.length > 0 ? (
           <CardGrid
+            keyOf={(item) => item.key}
             items={apps}
             columns={appColumns}
             renderItem={(item, { wide, span }) => (

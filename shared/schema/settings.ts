@@ -60,8 +60,10 @@ export const resendSettings = pgTable("resend_settings", {
  */
 export const socialLinksSchema = z.array(
   z.object({
-    platform: z.string().min(1),
-    url: z.string().min(1),
+    platform: z.string(),
+    // Blank entries are allowed on write (the admin form auto-saves before a
+    // URL is typed) and dropped by normalizeSocialLinks() on the way in.
+    url: z.string(),
   }),
 );
 
@@ -298,7 +300,14 @@ export const insertCompanySettingsSchema = z.object({
   gtmEnabled: z.boolean().default(false),
   ga4Enabled: z.boolean().default(false),
   facebookPixelEnabled: z.boolean().default(false),
-  homepageContent: z.custom<HomepageContent>().optional().nullable(),
+  // z.custom without a check is a type assertion only: a string or an array
+  // would have been persisted into the jsonb column and broken every consumer.
+  homepageContent: z
+    .custom<HomepageContent>((v) => typeof v === "object" && v !== null && !Array.isArray(v), {
+      message: "homepageContent must be an object",
+    })
+    .optional()
+    .nullable(),
   pageSlugs: z.custom<PageSlugs>().optional().nullable(),
   linksPageConfig: linksPageConfigSchema.optional().nullable(),
 });

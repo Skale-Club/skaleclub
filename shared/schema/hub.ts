@@ -342,6 +342,8 @@ export const hubRegisterRequestSchema = z.object({
 
 export const hubAccessRequestSchema = z.object({
   participantId: z.number().int().positive().nullable().optional(),
+  /** Issued by /register; proves the caller registered as `participantId`. */
+  accessToken: z.string().max(128).optional(),
   phone: optionalTrimmedNullableString,
   email: optionalTrimmedNullableString,
   eventType: z.enum(["join", "replay"]).default("join"),

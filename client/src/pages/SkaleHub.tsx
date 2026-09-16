@@ -41,6 +41,7 @@ type HubRegisterResponse = {
   unlocked: true;
   liveId: number;
   participantId: number;
+  accessToken: string;
   registrationId: number;
   access: {
     streamUrl: string | null;
@@ -129,6 +130,7 @@ export default function SkaleHub() {
       const eventType = unlockData.access.streamUrl ? "join" : "replay";
       const response = await apiRequest("POST", `/api/skale-hub/${unlockData.liveId}/access`, {
         participantId: unlockData.participantId,
+        accessToken: unlockData.accessToken,
         eventType,
         metadata: { source: "public-page" },
       });

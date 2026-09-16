@@ -9,7 +9,7 @@ import {
 import { BlogGenerator, runPreview } from "../lib/blog-generator.js";
 import { resolveOpenRouterKey } from "../lib/blog-openrouter.js";
 import { fetchAllRssSources } from "../lib/rssFetcher.js";
-import { slugifyTitle } from "../lib/blogContentValidator.js";
+import { sanitizeBlogHtml, slugifyTitle } from "../lib/blogContentValidator.js";
 import { requireAdmin, isAuthorizedCronRequest } from "./_shared.js";
 
 const BLOG_SETTINGS_DEFAULTS = {
@@ -342,7 +342,9 @@ export function registerBlogAutomationRoutes(app: Express) {
       const post = await storage.createBlogPost({
         title: data.title,
         slug,
-        content: data.content,
+        // The preview was sanitised, but the client round-trips the string;
+        // every other write path into blog_posts.content sanitises here too.
+        content: sanitizeBlogHtml(data.content),
         excerpt: data.excerpt,
         metaDescription: data.metaDescription,
         focusKeyword: data.focusKeyword,

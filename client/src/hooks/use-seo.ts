@@ -1,3 +1,4 @@
+import { getLandingSeo, landingPathForSlug, slugForLandingPath } from '@shared/landingSeo';
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
@@ -92,7 +93,12 @@ function canonicalForCurrentPage(settings: SeoSettings): string {
   } catch {
     // Malformed value in settings — the current origin is the better guess.
   }
-  const path = window.location.pathname.replace(/\/+$/, '');
+  let path = window.location.pathname.replace(/\/+$/, '');
+  // A landing reached by its legacy `/x-br` URL canonicalises to `/x/br`,
+  // the same string DynamicLanding and the server injection produce; two
+  // writers disagreeing here left the PT landing indexed twice.
+  const landingSlug = slugForLandingPath(path || '/');
+  if (landingSlug && getLandingSeo(landingSlug)) path = landingPathForSlug(landingSlug);
   return path ? `${origin}${path}` : `${origin}/`;
 }
 

@@ -12,6 +12,31 @@ import {
   normalizeHubEmail,
 } from "#shared/schema.js";
 import { requireAdmin, setPublicCache } from "./_shared.js";
+import { rateLimitMiddleware } from "../lib/rateLimit.js";
+
+// Public intake and access are unauthenticated; without a limit a loop could
+// register thousands of participants or probe integer participant ids.
+const hubPublicRateLimit = rateLimitMiddleware({
+  limit: 20,
+  windowMs: 10 * 60_000,
+  message: "Too many requests. Please try again in a few minutes.",
+});
+
+// `participantId` alone proved nothing: ids are sequential, so anyone could
+// claim any registered participant. /register now hands back an HMAC of the
+// id, and /access only trusts the id when that token comes with it.
+function signParticipant(id: number): string {
+  return crypto
+    .createHmac("sha256", process.env.SESSION_SECRET ?? "")
+    .update(`skale-hub-participant:${id}`)
+    .digest("hex");
+}
+function participantTokenValid(id: number, token: unknown): boolean {
+  if (typeof token !== "string") return false;
+  const expected = Buffer.from(signParticipant(id));
+  const given = Buffer.from(token);
+  return expected.length === given.length && crypto.timingSafeEqual(expected, given);
+}
 
 function parseLiveId(value: string): number | null {
   const parsed = Number(value);
@@ -69,7 +94,7 @@ export function registerSkaleHubRoutes(app: Express) {
     }
   });
 
-  app.post("/api/skale-hub/register", async (req, res) => {
+  app.post("/api/skale-hub/register", hubPublicRateLimit, async (req, res) => {
     try {
       const parsed = hubRegisterRequestSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -127,6 +152,7 @@ export function registerSkaleHubRoutes(app: Express) {
         unlocked: true,
         liveId: live.id,
         participantId: participant.id,
+        accessToken: signParticipant(participant.id),
         registrationId: registration.id,
         access: {
           streamUrl: live.streamUrl ?? null,
@@ -139,7 +165,7 @@ export function registerSkaleHubRoutes(app: Express) {
     }
   });
 
-  app.post("/api/skale-hub/:liveId/access", async (req, res) => {
+  app.post("/api/skale-hub/:liveId/access", hubPublicRateLimit, async (req, res) => {
     try {
       const liveId = parseLiveId(req.params.liveId);
       if (!liveId) {
@@ -156,9 +182,11 @@ export function registerSkaleHubRoutes(app: Express) {
         return res.status(404).json({ message: "Live not found" });
       }
 
-      let participant = parsed.data.participantId
-        ? await storage.getHubParticipant(parsed.data.participantId)
-        : undefined;
+      const trustedId =
+        parsed.data.participantId && participantTokenValid(parsed.data.participantId, parsed.data.accessToken)
+          ? parsed.data.participantId
+          : null;
+      let participant = trustedId ? await storage.getHubParticipant(trustedId) : undefined;
       let matchedBy = getMatchedBy({ participantId: participant?.id ?? parsed.data.participantId ?? null });
 
       if (!participant) {

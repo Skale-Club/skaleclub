@@ -39,7 +39,9 @@ export function registerPortfolioRoutes(app: Express) {
       } else {
         service = await storage.getPortfolioServiceBySlug(idOrSlug);
       }
-      if (!service) {
+      // Same rule as the list endpoint: a deactivated service is not public,
+      // whatever its id or slug.
+      if (!service || !service.isActive) {
         return res.status(404).json({ message: "Service not found" });
       }
       setPublicCache(res, 300);

@@ -94,6 +94,9 @@ export function registerCompanyRoutes(app: Express) {
   app.put('/api/company-settings', requireAdmin, async (req, res) => {
     try {
       const validatedData = insertCompanySettingsSchema.partial().parse(req.body);
+      if (validatedData.socialLinks) {
+        validatedData.socialLinks = normalizeSocialLinks(validatedData.socialLinks);
+      }
       if (validatedData.pageSlugs) {
         const currentSettings = await storage.getCompanySettings();
         const mergedPageSlugs = resolvePageSlugs({

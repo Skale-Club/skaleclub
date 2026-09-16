@@ -348,9 +348,16 @@ export default function PrintFolder() {
               data-testid="input-cover-url"
               // Applied on Enter or blur, not per keystroke: a half-typed URL
               // is a broken image on the cover and a request to nowhere.
-              onBlur={(e) => setCoverOverride(e.target.value.trim() || null)}
+              // Only a typed value applies. An empty blur must not clear a
+              // photo just chosen from disk; the reset link below does that.
+              onBlur={(e) => {
+                const value = e.target.value.trim();
+                if (value) setCoverOverride(value);
+              }}
               onKeyDown={(e) => {
-                if (e.key === "Enter") setCoverOverride((e.target as HTMLInputElement).value.trim() || null);
+                if (e.key !== "Enter") return;
+                const value = (e.target as HTMLInputElement).value.trim();
+                if (value) setCoverOverride(value);
               }}
             />
             {coverOverride && (

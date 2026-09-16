@@ -20,7 +20,6 @@ function isLoginRateLimited(ip: string): boolean {
 }
 
 export async function setupSupabaseAuth(app: Express) {
-  app.set("trust proxy", 1);
 
   // Setup session store — reuses the existing pool (already configured with SSL)
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
@@ -112,6 +111,12 @@ export async function setupSupabaseAuth(app: Express) {
           })
           .returning();
       }
+
+      // A fresh session id on every login: reusing the pre-login session lets a
+      // cookie planted before authentication become an admin session after it.
+      await new Promise<void>((resolve, reject) =>
+        req.session.regenerate((err) => (err ? reject(err) : resolve())),
+      );
 
       // Store user info in session
       (req.session as any).userId = dbUser.id;
