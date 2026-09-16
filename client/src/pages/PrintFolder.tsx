@@ -346,7 +346,12 @@ export default function PrintFolder() {
               className="mt-1.5 w-full rounded-lg border px-3 py-2 text-sm placeholder:text-slate-400"
               style={{ borderColor: "#E2E8F0", backgroundColor: "#fff", color: INK.navy }}
               data-testid="input-cover-url"
-              onChange={(e) => setCoverOverride(e.target.value.trim() || null)}
+              // Applied on Enter or blur, not per keystroke: a half-typed URL
+              // is a broken image on the cover and a request to nowhere.
+              onBlur={(e) => setCoverOverride(e.target.value.trim() || null)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") setCoverOverride((e.target as HTMLInputElement).value.trim() || null);
+              }}
             />
             {coverOverride && (
               <button
@@ -424,7 +429,7 @@ export default function PrintFolder() {
                 checked={showPrices}
                 onChange={(e) => setShowPrices(e.target.checked)}
               />
-              Mostrar preços dos serviços
+              Mostrar preços dos apps
             </label>
             <label className="flex items-center gap-2 text-sm cursor-pointer">
               <input

@@ -90,7 +90,7 @@ function BackPanel({ bleed, brand, settings }: FolderData) {
       <TrustPoints badges={badges} />
 
       <div
-        className="mt-auto shrink-0 rounded-[3mm] px-[5mm] py-[4.5mm] flex items-center gap-[4.5mm]"
+        className="mt-[7mm] shrink-0 rounded-[3mm] px-[5mm] py-[4.5mm] flex items-center gap-[4.5mm]"
         style={{ backgroundColor: "rgba(255,255,255,0.06)", border: "0.25mm solid rgba(255,255,255,0.12)" }}
       >
         {/* The QR tile stays white whatever the panel does: a code printed
@@ -109,25 +109,31 @@ function BackPanel({ bleed, brand, settings }: FolderData) {
         </div>
       </div>
 
-      {brand.socialLinks.length > 0 && (
-        <div className="mt-[3mm] shrink-0 flex flex-wrap gap-x-[4mm] gap-y-[1mm] text-[8pt]" style={{ color: INK.muted }}>
-          {brand.socialLinks.map((link, i) => (
-            <span key={i}>
-              <span className="capitalize">{link.platform}</span>:{" "}
-              {link.url.replace(/^https?:\/\/(www\.)?/, "")}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {brand.logoOnDark && (
-        <img
-          src={printImage(brand.logoOnDark, 400)}
-          alt={brand.name}
-          className="mt-[4mm] shrink-0 object-contain self-start"
-          style={{ height: "9mm" }}
-        />
-      )}
+      {/* Footer, pinned to the bottom: whatever height is left over sits between
+          the QR tile and this line, where it reads as margin rather than as a
+          hole in the middle of the panel. */}
+      <div className="mt-auto pt-[5mm] shrink-0 flex items-end justify-between gap-[4mm]">
+        {brand.socialLinks.length > 0 ? (
+          <div className="flex flex-col gap-[1mm] text-[8pt]" style={{ color: INK.muted }}>
+            {brand.socialLinks.map((link, i) => (
+              <span key={i}>
+                <span className="capitalize">{link.platform}</span>:{" "}
+                {link.url.replace(/^https?:\/\/(www\.)?/, "")}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <span />
+        )}
+        {brand.logoOnDark && (
+          <img
+            src={printImage(brand.logoOnDark, 400)}
+            alt={brand.name}
+            className="shrink-0 object-contain"
+            style={{ height: "9mm" }}
+          />
+        )}
+      </div>
     </div>
   );
 }

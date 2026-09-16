@@ -25,6 +25,11 @@ export function getImageUrl(
     ? url.replace('/object/public/', '/render/image/public/')
     : url;
   if (!opts?.width && !opts?.quality) return rendered;
+  // The width/quality/resize params are Supabase Storage's image transform
+  // API. Anything else must be returned untouched: a `blob:` object URL (the
+  // print folder's local cover photo) fails to load with a query string
+  // appended, and a plain file host just ignores it.
+  if (!rendered.includes('/render/image/public/')) return rendered;
   const params = new URLSearchParams();
   if (opts.width) params.set('width', String(opts.width));
   if (opts.quality) params.set('quality', String(opts.quality));
@@ -34,7 +39,7 @@ export function getImageUrl(
   // 160x517, stretching/cropping when object-fit later scales it into a square
   // box. 'contain' scales to fit within width/height while preserving aspect ratio.
   if (opts.width) params.set('resize', 'contain');
-  return `${rendered}?${params.toString()}`;
+  return `${rendered}${rendered.includes('?') ? '&' : '?'}${params.toString()}`;
 }
 
 export function getOriginalImageUrl(url: string | null | undefined): string {
