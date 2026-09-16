@@ -17,7 +17,8 @@ export function registerPageRoutes(app: Express) {
       const { id, createdAt, updatedAt, ...publicRow } = row as any;
       res.json(publicRow);
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[pages] GET /api/pages/slug/:slug failed:", err);
+      res.status(500).json({ message: "Failed to load page" });
     }
   });
 
@@ -27,7 +28,8 @@ export function registerPageRoutes(app: Express) {
       const rows = await storage.listPages();
       res.json(rows);
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[pages] GET /api/pages failed:", err);
+      res.status(500).json({ message: "Failed to load pages" });
     }
   });
 
@@ -38,7 +40,8 @@ export function registerPageRoutes(app: Express) {
       if (!row) return res.status(404).json({ message: "Page not found" });
       res.json(row);
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[pages] GET /api/pages/:id failed:", err);
+      res.status(500).json({ message: "Failed to load page" });
     }
   });
 

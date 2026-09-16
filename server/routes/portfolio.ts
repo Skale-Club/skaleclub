@@ -12,7 +12,8 @@ export function registerPortfolioRoutes(app: Express) {
       setPublicCache(res, 300);
       res.json(services);
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[portfolio] GET /api/portfolio-services failed:", err);
+      res.status(500).json({ message: "Failed to load services" });
     }
   });
 
@@ -24,7 +25,8 @@ export function registerPortfolioRoutes(app: Express) {
       const services = await storage.getPortfolioServices(true);
       res.json(services);
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[portfolio] GET /api/admin/portfolio-services failed:", err);
+      res.status(500).json({ message: "Failed to load services" });
     }
   });
 
@@ -43,7 +45,8 @@ export function registerPortfolioRoutes(app: Express) {
       setPublicCache(res, 300);
       res.json(service);
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[portfolio] GET /api/portfolio-services/:idOrSlug failed:", err);
+      res.status(500).json({ message: "Failed to load service" });
     }
   });
 
@@ -115,7 +118,8 @@ export function registerPortfolioRoutes(app: Express) {
 
       res.json({ message: "Services seeded successfully", count: created.length, services: created });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[portfolio] POST /api/portfolio-services/seed failed:", err);
+      res.status(500).json({ message: "Failed to seed services" });
     }
   });
 }

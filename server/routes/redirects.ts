@@ -11,7 +11,8 @@ export function registerRedirectRoutes(app: Express) {
     try {
       res.json(await storage.getRedirects());
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[redirects] GET /api/redirects failed:", err);
+      res.status(500).json({ message: "Failed to load redirects" });
     }
   });
 

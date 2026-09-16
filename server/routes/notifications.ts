@@ -9,7 +9,8 @@ export function registerNotificationRoutes(app: Express) {
     try {
       return res.json(await storage.getNotificationTemplates());
     } catch (err) {
-      return res.status(500).json({ message: (err as Error).message });
+      console.error("[notifications] GET /api/notifications/templates failed:", err);
+      return res.status(500).json({ message: "Failed to load templates" });
     }
   });
 
@@ -27,7 +28,8 @@ export function registerNotificationRoutes(app: Express) {
       const updated = await storage.upsertNotificationTemplate({ ...parsed.data, id } as Parameters<typeof storage.upsertNotificationTemplate>[0]);
       return res.json(updated);
     } catch (err) {
-      return res.status(500).json({ message: (err as Error).message });
+      console.error("[notifications] PUT /api/notifications/templates/:id failed:", err);
+      return res.status(500).json({ message: "Failed to update template" });
     }
   });
 
@@ -40,7 +42,8 @@ export function registerNotificationRoutes(app: Express) {
       const created = await storage.upsertNotificationTemplate(parsed.data);
       return res.status(201).json(created);
     } catch (err) {
-      return res.status(500).json({ message: (err as Error).message });
+      console.error("[notifications] POST /api/notifications/templates failed:", err);
+      return res.status(500).json({ message: "Failed to create template" });
     }
   });
 
@@ -53,7 +56,8 @@ export function registerNotificationRoutes(app: Express) {
       await storage.deleteNotificationTemplate(id);
       return res.status(204).end();
     } catch (err) {
-      return res.status(500).json({ message: (err as Error).message });
+      console.error("[notifications] DELETE /api/notifications/templates/:id failed:", err);
+      return res.status(500).json({ message: "Failed to delete template" });
     }
   });
 }

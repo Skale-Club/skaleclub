@@ -11,7 +11,8 @@ export function registerFaqRoutes(app: Express) {
       setPublicCache(res, 300);
       res.json(faqList);
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[faqs] GET /api/faqs failed:", err);
+      res.status(500).json({ message: "Failed to load FAQs" });
     }
   });
 

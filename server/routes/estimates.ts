@@ -125,7 +125,8 @@ export function registerEstimatesRoutes(app: Express) {
       // No gate set - full public estimate, minus access_code/thumbnail fields.
       res.json(toPublicEstimate(estimate));
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[estimates] GET /api/estimates/slug/:slug failed:", err);
+      res.status(500).json({ message: "Failed to load estimate" });
     }
   });
 
@@ -138,7 +139,8 @@ export function registerEstimatesRoutes(app: Express) {
       await storage.recordEstimateView(id, ipAddress);
       res.json({ success: true });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[estimates] POST /api/estimates/:id/view failed:", err);
+      res.status(500).json({ message: "Failed to record view" });
     }
   });
 
@@ -163,7 +165,8 @@ export function registerEstimatesRoutes(app: Express) {
       // Correct code — unlock and return the full estimate for rendering.
       res.json({ success: true, ...toPublicEstimate(estimate) });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[estimates] POST /api/estimates/:id/verify-code failed:", err);
+      res.status(500).json({ message: "Failed to verify access code" });
     }
   });
 
@@ -175,7 +178,8 @@ export function registerEstimatesRoutes(app: Express) {
       const result = await storage.listEstimates(limit, offset, search);
       res.json(result);
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[estimates] GET /api/estimates failed:", err);
+      res.status(500).json({ message: "Failed to load estimates" });
     }
   });
 

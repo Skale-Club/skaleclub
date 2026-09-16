@@ -44,6 +44,7 @@ import { users } from "#shared/schema.js";
 import { eq } from "drizzle-orm";
 
 
+
 // Admin authentication middleware
 async function requireAdmin(req: Request, res: Response, next: NextFunction) {
   const sess = req.session as any;
@@ -688,7 +689,8 @@ export async function registerRoutes(
         intakeObjectives: effectiveObjectives,
       });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('Chat config error:', err);
+      res.status(500).json({ message: 'Failed to load chat config' });
     }
   });
 
@@ -700,7 +702,8 @@ export async function registerRoutes(
       const effectiveObjectives = intakeObjectives.length ? intakeObjectives : DEFAULT_INTAKE_OBJECTIVES;
       res.json({ ...settings, intakeObjectives: effectiveObjectives });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('Chat settings error:', err);
+      res.status(500).json({ message: 'Failed to load chat settings' });
     }
   });
 
@@ -759,7 +762,8 @@ export async function registerRoutes(
 
       res.json({ averageSeconds: avgSeconds, formatted, samples });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('Chat response time error:', err);
+      res.status(500).json({ message: 'Failed to load response time' });
     }
   });
 
@@ -853,7 +857,8 @@ export async function registerRoutes(
         messageCount: Number(row.messageCount || 0),
       })));
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('Chat conversations list error:', err);
+      res.status(500).json({ message: 'Failed to load conversations' });
     }
   });
 
@@ -864,7 +869,8 @@ export async function registerRoutes(
       const messages = await storage.getConversationMessages(conversation.id);
       res.json({ conversation, messages });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('Chat conversation fetch error:', err);
+      res.status(500).json({ message: 'Failed to load conversation' });
     }
   });
 
@@ -879,7 +885,8 @@ export async function registerRoutes(
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: 'Validation error', errors: err.errors });
       }
-      res.status(500).json({ message: (err as Error).message });
+      console.error('Chat conversation status error:', err);
+      res.status(500).json({ message: 'Failed to update conversation' });
     }
   });
 
@@ -888,7 +895,8 @@ export async function registerRoutes(
       await storage.deleteConversation(req.params.id);
       res.json({ success: true });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('Chat conversation delete error:', err);
+      res.status(500).json({ message: 'Failed to delete conversation' });
     }
   });
 
@@ -902,7 +910,8 @@ export async function registerRoutes(
       const messages = await storage.getConversationMessages(req.params.id);
       res.json({ conversation, messages });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('Chat conversation messages error:', err);
+      res.status(500).json({ message: 'Failed to load conversation' });
     }
   });
 
@@ -1168,7 +1177,8 @@ You: "Excellent, John! A specialist will contact you within 24 hours to discuss 
         leadCaptured
       });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('Chat message error:', err);
+      res.status(500).json({ message: 'Failed to process chat message' });
     }
   });
 

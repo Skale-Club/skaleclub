@@ -62,9 +62,10 @@ export function registerCompanyRoutes(app: Express) {
         ...(heartbeatWarning ? { heartbeatWarning } : {}),
       });
     } catch (error) {
+      console.error('[company] supabase keepalive failed:', error);
       return res.status(500).json({
         ok: false,
-        message: (error as Error).message,
+        message: 'Health check failed',
       });
     }
   });
@@ -85,7 +86,8 @@ export function registerCompanyRoutes(app: Express) {
         socialLinks: normalizeSocialLinks(settings.socialLinks),
       });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('[company] GET /api/company-settings failed:', err);
+      res.status(500).json({ message: 'Failed to load company settings' });
     }
   });
 
@@ -161,7 +163,8 @@ export function registerCompanyRoutes(app: Express) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: 'Validation error', errors: err.errors });
       }
-      res.status(500).json({ message: (err as Error).message });
+      console.error('[company] PUT /api/form-leads/:id failed:', err);
+      res.status(500).json({ message: 'Failed to update lead' });
     }
   });
 

@@ -46,7 +46,8 @@ export function registerBlogRoutes(app: Express) {
         res.json(posts);
       }
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[blog] GET /api/blog failed:", err);
+      res.status(500).json({ message: "Failed to load blog posts" });
     }
   });
 
@@ -56,7 +57,8 @@ export function registerBlogRoutes(app: Express) {
       setPublicCache(res, 300);
       res.json({ count });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[blog] GET /api/blog/count failed:", err);
+      res.status(500).json({ message: "Failed to count blog posts" });
     }
   });
 
@@ -170,7 +172,8 @@ export function registerBlogRoutes(app: Express) {
 
       res.json(post);
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[blog] GET /api/blog/:idOrSlug failed:", err);
+      res.status(500).json({ message: "Failed to load blog post" });
     }
   });
 
@@ -181,7 +184,8 @@ export function registerBlogRoutes(app: Express) {
       setPublicCache(res, 300);
       res.json(posts);
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[blog] GET /api/blog/:id/related failed:", err);
+      res.status(500).json({ message: "Failed to load related posts" });
     }
   });
 

@@ -72,8 +72,8 @@ export function registerBlogAutomationRoutes(app: Express) {
       }
       res.json({ jobId: result.jobId, postId: result.postId, post: result.post });
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      res.status(500).json({ error: message });
+      console.error("[blog-automation] POST /api/blog/generate failed:", err);
+      res.status(500).json({ error: "Blog generation failed" });
     }
   });
 
@@ -102,8 +102,8 @@ export function registerBlogAutomationRoutes(app: Express) {
       const summary = await fetchAllRssSources();
       res.json(summary);
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      res.status(500).json({ error: message });
+      console.error("[blog-automation] cron fetch-rss failed:", err);
+      res.status(500).json({ error: "RSS fetch failed" });
     }
   };
   app.post("/api/blog/cron/fetch-rss", cronFetchRssHandler);
@@ -237,8 +237,8 @@ export function registerBlogAutomationRoutes(app: Express) {
       }
       res.json({ jobId: result.jobId, postId: result.postId, post: result.post });
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      res.status(500).json({ error: message });
+      console.error("[blog-automation] POST /api/blog/jobs/:id/retry failed:", err);
+      res.status(500).json({ error: "Blog generation failed" });
     }
   });
 
@@ -311,8 +311,8 @@ export function registerBlogAutomationRoutes(app: Express) {
         },
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      res.status(500).json({ error: message });
+      console.error("[blog-automation] POST /api/blog/preview failed:", err);
+      res.status(500).json({ error: "Blog preview failed" });
     }
   });
 
@@ -359,8 +359,8 @@ export function registerBlogAutomationRoutes(app: Express) {
       }
       res.status(201).json(post);
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      res.status(500).json({ error: message });
+      console.error("[blog-automation] POST /api/blog/posts/from-preview failed:", err);
+      res.status(500).json({ error: "Failed to create post" });
     }
   });
 
@@ -395,8 +395,8 @@ export function registerBlogAutomationRoutes(app: Express) {
       });
       res.json(updated);
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      res.status(500).json({ error: message });
+      console.error("[blog-automation] POST /api/blog/posts/:id/approve failed:", err);
+      res.status(500).json({ error: "Failed to approve post" });
     }
   });
 
@@ -427,8 +427,8 @@ export function registerBlogAutomationRoutes(app: Express) {
       await storage.deleteBlogPost(id);
       res.json({ success: true });
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      res.status(500).json({ error: message });
+      console.error("[blog-automation] POST /api/blog/posts/:id/reject failed:", err);
+      res.status(500).json({ error: "Failed to reject post" });
     }
   });
 

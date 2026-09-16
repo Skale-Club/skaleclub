@@ -50,7 +50,8 @@ export function registerPresentationsRoutes(app: Express) {
       const { thumbnailUrl, thumbnailSignature, ...publicPresentation } = presentation as any;
       res.json(publicPresentation);
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[presentations] GET /api/presentations/slug/:slug failed:", err);
+      res.status(500).json({ message: "Failed to load presentation" });
     }
   });
 
@@ -66,7 +67,8 @@ export function registerPresentationsRoutes(app: Express) {
       await storage.recordPresentationView(req.params.id, ipHash);
       res.json({ success: true });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[presentations] POST /api/presentations/:id/view failed:", err);
+      res.status(500).json({ message: "Failed to record view" });
     }
   });
 
@@ -80,7 +82,8 @@ export function registerPresentationsRoutes(app: Express) {
       const result = await storage.listPresentations(limit, offset, search);
       res.json(result);
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[presentations] GET /api/presentations failed:", err);
+      res.status(500).json({ message: "Failed to load presentations" });
     }
   });
 
@@ -137,12 +140,14 @@ export function registerPresentationsRoutes(app: Express) {
       });
       if (!uploadRes.ok) {
         const text = await uploadRes.text();
-        return res.status(502).json({ message: `Storage upload failed: ${text}` });
+        console.error("[presentations] Storage upload failed:", uploadRes.status, text);
+        return res.status(502).json({ message: "Storage upload failed" });
       }
       const url = `${supabaseUrl}/storage/v1/object/public/uploads/${path}`;
       res.json({ url });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[presentations] POST /api/presentations/upload-image failed:", err);
+      res.status(500).json({ message: "Failed to upload image" });
     }
   });
 

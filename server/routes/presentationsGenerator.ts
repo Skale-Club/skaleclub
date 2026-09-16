@@ -211,7 +211,8 @@ export function registerPresentationsGeneratorRoutes(app: Express) {
       const text = (transcription as unknown as string).trim();
       return res.json({ transcription: text });
     } catch (err) {
-      return res.status(500).json({ message: (err as Error).message });
+      console.error("[presentations-generator] POST /api/presentations/transcribe failed:", err);
+      return res.status(500).json({ message: "Transcription failed" });
     }
   });
 
@@ -268,9 +269,10 @@ export function registerPresentationsGeneratorRoutes(app: Express) {
         });
       } catch (sdkErr) {
         // Surface model + status so a stale model identifier is obvious from the error toast.
-        const err = sdkErr as { status?: number; message?: string };
+        console.error("[presentations-generator] Gemini API call failed:", sdkErr);
+        const err = sdkErr as { status?: number };
         return res.status(502).json({
-          message: `Gemini API error (model=${model}, status=${err.status ?? "unknown"}): ${err.message ?? "no message"}`,
+          message: `Gemini API error (model=${model}, status=${err.status ?? "unknown"})`,
         });
       }
 
@@ -301,7 +303,8 @@ export function registerPresentationsGeneratorRoutes(app: Express) {
 
       return res.status(201).json({ id: presentation.id, slug: presentation.slug });
     } catch (err) {
-      return res.status(500).json({ message: (err as Error).message });
+      console.error("[presentations-generator] POST /api/presentations/generate failed:", err);
+      return res.status(500).json({ message: "Failed to generate presentation" });
     }
   });
 }

@@ -64,7 +64,8 @@ export function registerSkaleHubRoutes(app: Express) {
         },
       });
     } catch (err) {
-      return res.status(500).json({ message: (err as Error).message });
+      console.error("[skale-hub] GET /api/skale-hub/active failed", err);
+      return res.status(500).json({ message: "Failed to load the active live" });
     }
   });
 
@@ -133,7 +134,8 @@ export function registerSkaleHubRoutes(app: Express) {
         },
       });
     } catch (err) {
-      return res.status(500).json({ message: (err as Error).message });
+      console.error("[skale-hub] POST /api/skale-hub/register failed", err);
+      return res.status(500).json({ message: "Registration failed" });
     }
   });
 
@@ -248,7 +250,8 @@ export function registerSkaleHubRoutes(app: Express) {
         eventType: parsed.data.eventType,
       });
     } catch (err) {
-      return res.status(500).json({ message: (err as Error).message });
+      console.error("[skale-hub] POST /api/skale-hub/:liveId/access failed", err);
+      return res.status(500).json({ message: "Access check failed" });
     }
   });
 
@@ -256,7 +259,8 @@ export function registerSkaleHubRoutes(app: Express) {
     try {
       return res.json(await storage.getHubDashboardSummary());
     } catch (err) {
-      return res.status(500).json({ message: (err as Error).message });
+      console.error("[skale-hub] GET /api/skale-hub/dashboard failed", err);
+      return res.status(500).json({ message: "Failed to load dashboard" });
     }
   });
 
@@ -265,7 +269,8 @@ export function registerSkaleHubRoutes(app: Express) {
       const search = typeof req.query.search === "string" ? req.query.search : undefined;
       return res.json(await storage.listHubParticipantHistory(search));
     } catch (err) {
-      return res.status(500).json({ message: (err as Error).message });
+      console.error("[skale-hub] GET /api/skale-hub/participants failed", err);
+      return res.status(500).json({ message: "Failed to load participants" });
     }
   });
 
@@ -279,7 +284,8 @@ export function registerSkaleHubRoutes(app: Express) {
 
       return res.json(await storage.listHubLiveSummaries(parsedStatus.data));
     } catch (err) {
-      return res.status(500).json({ message: (err as Error).message });
+      console.error("[skale-hub] GET /api/skale-hub/lives failed", err);
+      return res.status(500).json({ message: "Failed to load lives" });
     }
   });
 
@@ -301,7 +307,8 @@ export function registerSkaleHubRoutes(app: Express) {
         accessEvents: await storage.listHubAccessEvents(liveId, 100),
       });
     } catch (err) {
-      return res.status(500).json({ message: (err as Error).message });
+      console.error("[skale-hub] GET /api/skale-hub/lives/:id failed", err);
+      return res.status(500).json({ message: "Failed to load live" });
     }
   });
 
@@ -319,7 +326,8 @@ export function registerSkaleHubRoutes(app: Express) {
 
       return res.status(201).json(await storage.getHubLiveSummary(created.id));
     } catch (err) {
-      return res.status(500).json({ message: (err as Error).message });
+      console.error("[skale-hub] POST /api/skale-hub/lives failed", err);
+      return res.status(500).json({ message: "Failed to create live" });
     }
   });
 
@@ -347,7 +355,8 @@ export function registerSkaleHubRoutes(app: Express) {
 
       return res.json(await storage.getHubLiveSummary(liveId));
     } catch (err) {
-      return res.status(500).json({ message: (err as Error).message });
+      console.error("[skale-hub] PUT /api/skale-hub/lives/:id failed", err);
+      return res.status(500).json({ message: "Failed to update live" });
     }
   });
 }
