@@ -1,4 +1,5 @@
 import { pgTable, text, serial, integer, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { randomUUID } from "crypto";
@@ -35,7 +36,22 @@ export const telegramSettings = pgTable("telegram_settings", {
   id: serial("id").primaryKey(),
   enabled: boolean("enabled").default(false),
   botToken: text("bot_token"),
+  // Superseded by chatIds (autoblog-parity SC-07). Still written by the
+  // migration's backfill and left in place for one release; nothing reads it.
   chatId: text("chat_id"),
+  // Destinations. An entry is a chat id, optionally with a forum-topic thread:
+  // "-1001234567890" or "-1001234567890:42" (MASTER §6). One column carries
+  // private chats, groups, supergroups and topics.
+  chatIds: text("chat_ids").array().notNull().default(sql`ARRAY[]::text[]`),
+  // Blog approval cards. A SEPARATE bot, because the one carrying a public
+  // webhook should not be the one sending notifications.
+  approvalsEnabled: boolean("approvals_enabled").notNull().default(false),
+  approvalsBotToken: text("approvals_bot_token"),
+  // Empty falls back to chatIds. Separate because chatIds is the notification
+  // list: an editor added there to receive drafts would also get every alert.
+  approvalsChatIds: text("approvals_chat_ids").array().notNull().default(sql`ARRAY[]::text[]`),
+  // Proves a webhook call came from Telegram; a chat_id in the body does not.
+  webhookSecret: text("webhook_secret"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
