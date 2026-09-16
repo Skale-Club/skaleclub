@@ -1,8 +1,10 @@
+import { usePageSeo } from "@/hooks/use-seo";
 import { useTranslation } from "@/hooks/useTranslation";
 import { NotFoundState } from "@/components/NotFoundState";
 
 export default function NotFound() {
   const { t } = useTranslation();
+  usePageSeo({ title: t("Page not found"), noindex: true });
   return (
     <NotFoundState
       layout="screen"

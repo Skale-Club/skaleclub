@@ -215,16 +215,14 @@ export default function VCard() {
               </p>
             )}
             {companySettings?.logoIcon && (
-              <Link href="/">
-                <a className="block mt-2 hover:opacity-100 transition-opacity w-fit">
-                  <img
-                    src={companySettings.logoIcon}
-                    alt={contactData.organization || companySettings.companyName || "Company logo"}
-                    width={32}
-                    height={32}
-                    className="w-8 h-8 object-contain opacity-90"
-                  />
-                </a>
+              <Link href="/" className="block mt-2 hover:opacity-100 transition-opacity w-fit">
+                <img
+                  src={companySettings.logoIcon}
+                  alt={contactData.organization || companySettings.companyName || "Company logo"}
+                  width={32}
+                  height={32}
+                  className="w-8 h-8 object-contain opacity-90"
+                />
               </Link>
             )}
           </div>
@@ -356,8 +354,7 @@ export default function VCard() {
 
         {/* F. Footer Section */}
         <div className="mt-10 mb-6 flex flex-col items-center text-center px-4">
-          <Link href="/">
-            <a className="flex flex-col items-center text-center group transition-all">
+          <Link href="/" className="flex flex-col items-center text-center group transition-all">
               {companySettings?.logoDark || companySettings?.logoMain ? (
                 <img
                   src={companySettings.logoDark || companySettings.logoMain!}
@@ -369,7 +366,6 @@ export default function VCard() {
                   {contactData.organization || "Company"}<span className="text-cta">.</span>
                 </div>
               )}
-            </a>
           </Link>
 
           <p className="text-white/50 text-xs leading-relaxed mb-6 max-w-sm">

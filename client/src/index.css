@@ -342,8 +342,11 @@ html.admin-theme.dark {
     transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
   }
 
+  /* No colour here: headings inherit from their container. Forcing
+     text-foreground made every heading on a white card (FAQ, blog, the lead
+     form question) near-white on white. */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display tracking-tight text-foreground;
+    @apply font-display tracking-tight;
   }
 
   /* Suppress only the native outline; Tailwind focus-visible:ring-* handles

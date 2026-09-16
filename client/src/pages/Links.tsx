@@ -12,6 +12,7 @@ import {
   Github,
   Facebook,
   Send,
+  MessageCircle,
 } from "lucide-react";
 import * as LucideIcons from 'lucide-react';
 import type { LinksPageLink } from '@shared/schema';
@@ -32,6 +33,7 @@ const iconMap: Record<string, React.ReactNode> = {
   github: <Github className="w-6 h-6" />,
   facebook: <Facebook className="w-6 h-6" />,
   telegram: <Send className="w-6 h-6" />,
+  whatsapp: <MessageCircle className="w-6 h-6" />,
   email: <Mail className="w-6 h-6" />,
   website: <Globe className="w-6 h-6" />,
 };

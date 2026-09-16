@@ -1,3 +1,4 @@
+import { usePageSeo } from "@/hooks/use-seo";
 import { Shield, Eye, Lock, Users, Cookie, FileText, Mail, Bell, MessageSquare } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
@@ -6,6 +7,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 
 export default function PrivacyPolicy() {
   const { t } = useTranslation();
+  usePageSeo({ title: t("Privacy Policy") });
   const { data: settings } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
   });

@@ -117,6 +117,43 @@ function setJsonLdSchema(settings: SeoSettings) {
   script.textContent = createLocalBusinessSchema(settings);
 }
 
+// Set by usePageSeo for pages that must not be indexed, read by useSEO so it
+// does not put a canonical back on them. Child effects run before the parent's,
+// so the flag is in place by the time useSEO's effect fires for that route.
+let pageNoindex = false;
+
+/**
+ * Page-level title and description. useSEO only writes the site-wide title
+ * on the homepage, so every inner page carried the homepage title verbatim.
+ */
+export function usePageSeo(opts: { title: string; description?: string; noindex?: boolean }) {
+  const { data: settings } = useQuery<SeoSettings>({ queryKey: ['/api/company-settings'] });
+  const { title, description, noindex } = opts;
+  useEffect(() => {
+    const brand = settings?.ogSiteName || settings?.seoTitle || settings?.companyName || 'Skale Club';
+    const fullTitle = title ? `${title} | ${brand}` : brand;
+    document.title = fullTitle;
+    setMetaTag('og:title', fullTitle, true);
+    setMetaTag('twitter:title', fullTitle);
+    if (description) {
+      setMetaTag('description', description);
+      setMetaTag('og:description', description, true);
+      setMetaTag('twitter:description', description);
+    }
+    if (noindex) {
+      pageNoindex = true;
+      setMetaTag('robots', 'noindex, nofollow');
+      document.querySelector('link[rel="canonical"]')?.remove();
+    }
+    return () => {
+      if (noindex) {
+        pageNoindex = false;
+        setMetaTag('robots', settings?.seoRobotsTag || 'index, follow');
+      }
+    };
+  }, [settings, title, description, noindex]);
+}
+
 export function useSEO() {
   const skipSeo = false;
   // Re-runs on client-side navigation, so the canonical follows the route
@@ -152,7 +189,7 @@ export function useSEO() {
     setMetaTag('keywords', settings.seoKeywords);
     setMetaTag('author', settings.seoAuthor);
 
-    const canonicalUrl = canonicalForCurrentPage(settings);
+    const canonicalUrl = pageNoindex ? null : canonicalForCurrentPage(settings);
     setLinkTag('canonical', canonicalUrl);
 
     const fullImageUrl = settings.ogImage 

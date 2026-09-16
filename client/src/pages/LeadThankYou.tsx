@@ -1,3 +1,4 @@
+import { usePageSeo } from "@/hooks/use-seo";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { Sparkles, Home, CalendarCheck } from "lucide-react";
@@ -9,6 +10,7 @@ const Lottie = lazy(() => import("lottie-react"));
 
 export default function LeadThankYou() {
   const { t, language } = useTranslation();
+  usePageSeo({ title: t("Thank you"), noindex: true });
   const { data: companySettings } = useQuery<CompanySettings>({
     queryKey: ["/api/company-settings"],
   });

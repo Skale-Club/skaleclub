@@ -1,3 +1,4 @@
+import { usePageSeo } from "@/hooks/use-seo";
 import { useQuery } from '@tanstack/react-query';
 import type { Faq } from '@shared/schema';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -7,6 +8,7 @@ import { FaqList } from '@/components/FaqList';
 
 export default function FaqPage() {
   const { t } = useTranslation();
+  usePageSeo({ title: t("FAQ"), description: t("Find answers to common questions about our services.") });
   const { data: faqs, isLoading } = useQuery<Faq[]>({
     queryKey: ['/api/faqs']
   });
@@ -26,7 +28,7 @@ export default function FaqPage() {
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-sm p-6 md:p-8">
+          <div className="max-w-3xl mx-auto bg-white text-slate-900 rounded-2xl shadow-sm p-6 md:p-8">
             <FaqList
               items={(faqs ?? []).map((faq) => ({ question: t(faq.question), answer: t(faq.answer) }))}
               emptyMessage={t('No FAQs available yet. Check back soon!')}

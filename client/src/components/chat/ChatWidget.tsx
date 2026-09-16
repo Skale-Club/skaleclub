@@ -172,7 +172,7 @@ export function ChatWidget() {
 
   useEffect(() => {
     if (!config) return;
-    setAvatarSrc(config.agentAvatarUrl || config.fallbackAvatarUrl || "/favicon.ico");
+    setAvatarSrc(config.agentAvatarUrl || config.fallbackAvatarUrl || "/favicon.png");
   }, [config]);
 
   useEffect(() => {
@@ -231,14 +231,14 @@ export function ChatWidget() {
   }
 
   const displayName = config.agentName || "Assistant";
-  const avatarUrl = avatarSrc || config?.agentAvatarUrl || config?.fallbackAvatarUrl || "/favicon.ico";
-  const headerIcon = config?.fallbackAvatarUrl || "/favicon.ico";
+  const avatarUrl = avatarSrc || config?.agentAvatarUrl || config?.fallbackAvatarUrl || "/favicon.png";
+  const headerIcon = config?.fallbackAvatarUrl || "/favicon.png";
 
   const handleAvatarError = () => {
     if (config?.fallbackAvatarUrl && avatarSrc !== config.fallbackAvatarUrl) {
       setAvatarSrc(config.fallbackAvatarUrl);
     } else {
-      setAvatarSrc("/favicon.ico");
+      setAvatarSrc("/favicon.png");
     }
   };
 
@@ -348,7 +348,7 @@ export function ChatWidget() {
           onClick={toggleOpen}
           className="mb-2 mr-2 flex items-end justify-end gap-2 animate-in fade-in slide-in-from-bottom-1"
         >
-          <div className="relative bg-white shadow-lg border rounded-2xl px-4 py-3 text-sm max-w-[240px] text-left">
+          <div className="relative bg-white text-slate-800 shadow-lg border rounded-2xl px-4 py-3 text-sm max-w-[240px] text-left">
             <p className="leading-snug">{config.welcomeMessage}</p>
             <div className="absolute -right-2 top-4 h-3 w-3 rotate-45 bg-card border-b border-r" />
           </div>

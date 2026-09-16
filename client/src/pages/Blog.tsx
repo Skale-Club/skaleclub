@@ -1,3 +1,4 @@
+import { usePageSeo } from "@/hooks/use-seo";
 import { useEffect, useRef, useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { Link } from 'wouter';
@@ -14,6 +15,7 @@ import { fetchJson } from '@/lib/queryClient';
 const POSTS_PER_PAGE = 9;
 
 export default function Blog() {
+  usePageSeo({ title: "Blog", description: "Tips, guides, and insights about marketing services" });
   const [searchTerm, setSearchTerm] = useState('');
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const pagePaths = usePagePaths();
@@ -79,6 +81,7 @@ export default function Blog() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
+              aria-label="Search articles"
               placeholder="Search articles..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -109,7 +112,7 @@ export default function Blog() {
               {filteredPosts.map(post => (
                 <Link key={post.id} href={pagePaths.blogPost(post.slug)}>
                   <Card 
-                    className="overflow-hidden hover-elevate cursor-pointer h-full flex flex-col border-0"
+                    className="overflow-hidden hover-elevate cursor-pointer h-full flex flex-col border-0 bg-white text-slate-900"
                     data-testid={`card-blog-${post.id}`}
                   >
                     {post.featureImageUrl ? (
@@ -134,7 +137,7 @@ export default function Blog() {
                         </span>
                       </div>
                       <h2 
-                        className="text-lg font-semibold text-foreground mb-2 line-clamp-2"
+                        className="text-lg font-semibold text-slate-900 mb-2 line-clamp-2"
                         data-testid={`text-blog-title-${post.id}`}
                       >
                         {post.title}
