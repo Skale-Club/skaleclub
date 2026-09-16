@@ -11,6 +11,7 @@ export function registerVCardRoutes(app: Express) {
       const allVCards = await db.select().from(vcards).orderBy(vcards.createdAt);
       res.json(allVCards);
     } catch (err) {
+      console.error("Error fetching VCards:", err);
       res.status(500).json({ error: "Failed to fetch VCards" });
     }
   });
@@ -18,7 +19,9 @@ export function registerVCardRoutes(app: Express) {
   app.get("/api/vcards/:username", async (req, res) => {
     try {
       const [vcard] = await db.select().from(vcards).where(eq(vcards.username, req.params.username));
-      if (!vcard) return res.status(404).json({ error: "VCard not found" });
+      // Public route: an archived card must not stay readable. Admin routes
+      // (list / update) still see inactive cards.
+      if (!vcard || !vcard.isActive) return res.status(404).json({ error: "VCard not found" });
 
       // Override organization with global company settings dynamically
       const settings = await storage.getCompanySettings();
@@ -28,6 +31,7 @@ export function registerVCardRoutes(app: Express) {
 
       res.json(vcard);
     } catch (err) {
+      console.error("Error fetching VCard by username:", err);
       res.status(500).json({ error: "Failed to fetch VCard by username" });
     }
   });
@@ -68,6 +72,7 @@ export function registerVCardRoutes(app: Express) {
       await db.delete(vcards).where(eq(vcards.id, id));
       res.json({ success: true });
     } catch (err) {
+      console.error("Error deleting VCard:", err);
       res.status(500).json({ error: "Failed to delete VCard" });
     }
   });
@@ -76,7 +81,7 @@ export function registerVCardRoutes(app: Express) {
   app.post("/api/vcards/:username/view", async (req, res) => {
     try {
       const [vcard] = await db.select().from(vcards).where(eq(vcards.username, req.params.username));
-      if (!vcard) return res.status(404).json({ error: "VCard not found" });
+      if (!vcard || !vcard.isActive) return res.status(404).json({ error: "VCard not found" });
 
       const [updated] = await db
         .update(vcards)
@@ -98,7 +103,7 @@ export function registerVCardRoutes(app: Express) {
   app.post("/api/vcards/:username/download", async (req, res) => {
     try {
       const [vcard] = await db.select().from(vcards).where(eq(vcards.username, req.params.username));
-      if (!vcard) return res.status(404).json({ error: "VCard not found" });
+      if (!vcard || !vcard.isActive) return res.status(404).json({ error: "VCard not found" });
 
       const [updated] = await db
         .update(vcards)

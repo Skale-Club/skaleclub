@@ -13,6 +13,13 @@ import { rateLimitMiddleware } from "../lib/rateLimit.js";
 
 const SKALE_HUB_GROUP_FORM_SLUG = "skale-hub";
 
+// Throttle shared by every public (unauthenticated) lead endpoint.
+const publicLeadRateLimit = rateLimitMiddleware({
+  limit: 120,
+  windowMs: 10 * 60_000,
+  message: "Too many form requests. Please try again in a few minutes.",
+});
+
 const skaleHubGroupLeadSchema = z.object({
   phone: z.string().trim().min(7).max(20),
   name: z.string().trim().min(3).max(100).optional(),
@@ -91,7 +98,8 @@ export function registerFormRoutes(app: Express) {
 
       res.json(enriched);
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[forms]", err);
+      res.status(500).json({ message: "Internal server error" });
     }
   });
 
@@ -110,7 +118,8 @@ export function registerFormRoutes(app: Express) {
       const result = await storage.listLeadsForForm(id, limit, offset);
       res.json(result);
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[forms]", err);
+      res.status(500).json({ message: "Internal server error" });
     }
   });
 
@@ -126,7 +135,8 @@ export function registerFormRoutes(app: Express) {
       const leadCount = await storage.countLeadsForForm(id);
       res.json({ ...form, _leadCount: leadCount });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[forms]", err);
+      res.status(500).json({ message: "Internal server error" });
     }
   });
 
@@ -310,7 +320,8 @@ export function registerFormRoutes(app: Express) {
       setPublicCache(res, 300);
       res.json(config);
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[forms]", err);
+      res.status(500).json({ message: "Internal server error" });
     }
   });
 
@@ -365,7 +376,9 @@ export function registerFormRoutes(app: Express) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors?.[0]?.message || "Validation error" });
       }
-      res.status(400).json({ message: (err as Error).message });
+      // Public endpoint: never echo the internal error back to the caller.
+      console.error("[forms] skale-hub-group lead failed:", err);
+      res.status(400).json({ message: "Could not save your data. Please try again." });
     }
   });
 
@@ -373,11 +386,7 @@ export function registerFormRoutes(app: Express) {
   // the lead with the form resolved from the URL slug.
   app.post(
     "/api/forms/slug/:slug/leads/progress",
-    rateLimitMiddleware({
-      limit: 120,
-      windowMs: 10 * 60_000,
-      message: "Too many form requests. Please try again in a few minutes.",
-    }),
+    publicLeadRateLimit,
     async (req, res) => {
     try {
       const form = await storage.getFormBySlug(req.params.slug);
@@ -439,7 +448,9 @@ export function registerFormRoutes(app: Express) {
           }
         }
       }
-      res.status(400).json({ message: (err as Error).message });
+      // Public endpoint: never echo the internal error back to the caller.
+      console.error("[forms] progressive lead failed:", err);
+      res.status(400).json({ message: "Could not save your data. Please try again." });
     }
     },
   );
