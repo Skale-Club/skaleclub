@@ -21,7 +21,7 @@ import type { HomepageContent, LinksPageConfig } from "../shared/schema";
  *   6. Product artwork: each X app's own site is the source for its mark and
  *      share image. Fills empty imageUrl / logoIconUrl (XmartMenu, Xtimator)
  *      and replaces icons below print resolution (Xkedule's 96px file), with
- *      copies stored in Supabase. Set XMARTMENU_URL for XmartMenu's domain.
+ *      copies stored in Supabase. XmartMenu is at xmartmenu.skale.club.
  *
  * 3D Printing is handled by scripts/add-3d-printing-service.ts.
  */
@@ -179,11 +179,11 @@ async function main() {
   //    into Supabase Storage (so the CMS never hot-links a third-party host)
   //    and written to the card. Only empty or too-small fields are filled;
   //    explicit `icon`/`image` paths win over what the HTML declares.
-  //    XmartMenu's domain is not known to this script: set XMARTMENU_URL.
+  //    XmartMenu lives at xmartmenu.skale.club (XMARTMENU_URL overrides it).
   const PRODUCT_SITES: Record<string, { site?: string; icon?: string; image?: string }> = {
     "scheduling-system": { site: "https://xkedule.com", icon: "/icon-512.png" },
     xtimator: { site: "https://xtimator.com" },
-    "smart-menu": { site: process.env.XMARTMENU_URL },
+    "smart-menu": { site: process.env.XMARTMENU_URL || "https://xmartmenu.skale.club" },
     xareable: { site: "https://xareable.com" },
   };
   const MIN_ICON_PX = 118; // 10mm badge at 300dpi
