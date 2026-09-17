@@ -16,6 +16,7 @@ import { AutomationStatusBanners } from './blog/AutomationStatusBanners';
 import { BlogAutomationPanel } from './blog/BlogAutomationPanel';
 import { PostApprovalPanel } from './blog/PostApprovalPanel';
 import { TelegramApprovalsPanel } from './blog/TelegramApprovalsPanel';
+import { AiCostPanel } from './blog/AiCostPanel';
 import { BlogTagManagerDialog } from './blog/BlogTagManagerDialog';
 import { BlogPostEditorForm, type BlogFormData } from './blog/BlogPostEditorForm';
 import { BlogPostsList } from './blog/BlogPostsList';
@@ -555,6 +556,7 @@ function BlogSectionInner({ resetSignal }: { resetSignal: number }) {
             <AutomationStatusBanners />
             <BlogAutomationPanel />
             <TelegramApprovalsPanel />
+            <AiCostPanel />
             <PostApprovalPanel />
           </div>
         )}

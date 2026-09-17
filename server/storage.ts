@@ -23,6 +23,7 @@ import {
   blogRssSources,
   blogRssItems,
   blogPostFeedback,
+  aiGenerationLogs,
   hubLives,
   hubParticipants,
   hubRegistrations,
@@ -304,6 +305,16 @@ export interface IStorage {
   // Autopost port — approve/reject feedback loop
   createBlogPostFeedback(data: InsertBlogPostFeedback): Promise<BlogPostFeedback>;
   listBlogPostFeedback(limit?: number): Promise<BlogPostFeedback[]>;
+  /** AI spend for the blog, grouped by step and status (autoblog-parity SC-11). */
+  getBlogAiUsageSummary(sinceDays?: number): Promise<Array<{
+    step: string;
+    status: string;
+    calls: number;
+    costUsd: number;
+    inputTokens: number;
+    outputTokens: number;
+    avgDurationMs: number | null;
+  }>>;
   getRssItemByUsedPostId(postId: number): Promise<BlogRssItem | undefined>;
 
   listBlogGenerationJobs(limit: number): Promise<BlogGenerationJobWithRssItem[]>;
@@ -1334,6 +1345,48 @@ export class DatabaseStorage implements IStorage {
   async createBlogPostFeedback(data: InsertBlogPostFeedback): Promise<BlogPostFeedback> {
     const [created] = await db.insert(blogPostFeedback).values(data).returning();
     return created;
+  }
+
+  /**
+   * AI spend for the blog, grouped by step (autoblog-parity SC-11).
+   *
+   * Aggregated in SQL rather than by pulling rows: this table grows by two rows
+   * per generated post forever, and a cost panel that gets slower every month
+   * is a cost panel nobody opens.
+   *
+   * `status` is carried through because 'failure' and 'skipped' rows still cost
+   * money on some providers, and a total that silently drops them is the number
+   * people are surprised by on the invoice.
+   */
+  async getBlogAiUsageSummary(sinceDays = 30): Promise<Array<{
+    step: string;
+    status: string;
+    calls: number;
+    costUsd: number;
+    inputTokens: number;
+    outputTokens: number;
+    avgDurationMs: number | null;
+  }>> {
+    const since = new Date(Date.now() - Math.max(1, sinceDays) * 24 * 60 * 60 * 1000);
+    return db
+      .select({
+        step: aiGenerationLogs.step,
+        status: aiGenerationLogs.status,
+        calls: sql<number>`count(*)::int`,
+        costUsd: sql<number>`coalesce(sum(${aiGenerationLogs.costUsd}), 0)::float8`,
+        inputTokens: sql<number>`coalesce(sum(${aiGenerationLogs.inputTokens}), 0)::int`,
+        outputTokens: sql<number>`coalesce(sum(${aiGenerationLogs.outputTokens}), 0)::int`,
+        avgDurationMs: sql<number | null>`avg(${aiGenerationLogs.durationMs})::int`,
+      })
+      .from(aiGenerationLogs)
+      .where(and(
+        gte(aiGenerationLogs.createdAt, since),
+        // Only the blog steps: the column is deliberately open so other AI
+        // features can share the table, and a blog cost panel that quietly
+        // includes unrelated spend is worse than no panel.
+        inArray(aiGenerationLogs.step, ["blog_post", "blog_image"]),
+      ))
+      .groupBy(aiGenerationLogs.step, aiGenerationLogs.status);
   }
 
   async listBlogPostFeedback(limit = 20): Promise<BlogPostFeedback[]> {

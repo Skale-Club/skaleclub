@@ -706,6 +706,41 @@ export function registerBlogAutomationRoutes(app: Express) {
     },
   );
 
+  // GET /api/blog/ai-usage?days=30 — what the blog has cost (autoblog-parity SC-11).
+  //
+  // Grouped by step AND status: failed and skipped calls still cost money on
+  // some providers, and a total that silently drops them is exactly the number
+  // people are surprised by on the invoice.
+  app.get("/api/blog/ai-usage", requireAdmin, async (req, res) => {
+    const days = Math.min(Math.max(Number(req.query.days) || 30, 1), 365);
+    const rows = await storage.getBlogAiUsageSummary(days);
+
+    const totals = rows.reduce(
+      (acc, row) => ({
+        calls: acc.calls + row.calls,
+        costUsd: acc.costUsd + row.costUsd,
+        inputTokens: acc.inputTokens + row.inputTokens,
+        outputTokens: acc.outputTokens + row.outputTokens,
+      }),
+      { calls: 0, costUsd: 0, inputTokens: 0, outputTokens: 0 },
+    );
+
+    // The spend per PUBLISHED post is what decides whether this feature pays
+    // for itself; total spend alone does not, because it grows with whatever
+    // cadence was configured. null, not 0, when nothing was published — an
+    // honest "no answer yet" beats a division by zero dressed up as a number.
+    const posts = rows
+      .filter((row) => row.step === "blog_post" && row.status === "success")
+      .reduce((sum, row) => sum + row.calls, 0);
+
+    res.json({
+      days,
+      rows,
+      totals,
+      costPerPost: posts > 0 ? totals.costUsd / posts : null,
+    });
+  });
+
   // GET /api/blog/feedback?limit=20 — recent approve/reject signals for the admin UI.
   app.get("/api/blog/feedback", requireAdmin, async (req, res) => {
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
