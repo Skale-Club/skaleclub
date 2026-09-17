@@ -16,6 +16,18 @@ import { PreviewDraftDialog } from './PreviewDraftDialog';
 import { OpenRouterModelPicker, type OpenRouterModelsResponse } from './OpenRouterModelPicker';
 import type { BlogSettings, BlogGenerationJob } from '@shared/schema';
 
+// The zones this install actually publishes from. Deliberately short rather
+// than the full IANA list: a 400-entry dropdown is not a control anyone uses,
+// and an unknown zone degrades to UTC server-side anyway.
+const TIMEZONE_OPTIONS = [
+  'America/Sao_Paulo', 'America/New_York', 'America/Chicago', 'America/Los_Angeles',
+  'Europe/Lisbon', 'Europe/London', 'UTC',
+];
+
+// "No fixed time" is a real choice and has to be representable: it is what the
+// install does today, and the only way back to it once an hour is pinned.
+const DRIFTING = 'drifting';
+
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   completed: { label: 'Completed', className: 'bg-green-500/15 text-green-600 dark:text-green-400' },
   failed:    { label: 'Failed',    className: 'bg-red-500/15 text-red-600 dark:text-red-400' },
@@ -42,11 +54,15 @@ export function BlogAutomationPanel() {
     promptStyle: '',
     systemPrompt: '',
     autoPublish: false,
+    postingHour: null as number | null,
+    timezone: 'America/Sao_Paulo',
     textModel: '',
     imageModel: '',
   });
 
-  const { data: settings } = useQuery<BlogSettings>({
+  // The endpoint returns the stored row PLUS nextScheduledRunAt, computed from
+  // the same helper the cron gate uses — it is not a column.
+  const { data: settings } = useQuery<BlogSettings & { nextScheduledRunAt: string | null }>({
     queryKey: ['/api/blog/settings'],
   });
 
@@ -73,6 +89,8 @@ export function BlogAutomationPanel() {
         promptStyle: settings.promptStyle ?? '',
         systemPrompt: settings.systemPrompt ?? '',
         autoPublish: settings.autoPublish ?? false,
+        postingHour: settings.postingHour ?? null,
+        timezone: settings.timezone || 'America/Sao_Paulo',
         textModel: settings.textModel ?? '',
         imageModel: settings.imageModel ?? '',
       });
@@ -250,6 +268,56 @@ export function BlogAutomationPanel() {
                 <SelectItem value="4">4 posts / day</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Posting hour + timezone (autoblog-parity SC-06).
+              Without a pinned hour the cadence only guarantees "at least N
+              hours since the last run", so the publishing time walks forward
+              with every run and nothing can be promised. */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Publish at</Label>
+              <Select
+                value={formDraft.postingHour === null ? DRIFTING : String(formDraft.postingHour)}
+                onValueChange={(v) =>
+                  setFormDraft(prev => ({ ...prev, postingHour: v === DRIFTING ? null : Number(v) }))
+                }
+              >
+                <SelectTrigger data-testid="select-blog-posting-hour"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={DRIFTING}>No fixed time (spread through the day)</SelectItem>
+                  {Array.from({ length: 24 }, (_, h) => (
+                    <SelectItem key={h} value={String(h)}>{String(h).padStart(2, '0')}:00</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {formDraft.postsPerDay > 1
+                  ? 'The first post of the day. The rest are spread evenly from there.'
+                  : 'The hour the post goes out, every day.'}
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Time zone</Label>
+              <Select
+                value={formDraft.timezone}
+                onValueChange={(v) => setFormDraft(prev => ({ ...prev, timezone: v }))}
+              >
+                <SelectTrigger data-testid="select-blog-timezone"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {TIMEZONE_OPTIONS.map((tz) => (
+                    <SelectItem key={tz} value={tz}>{tz.replace(/_/g, ' ')}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {/* Computed server-side from the same helper the cron gate uses,
+                  so the time shown here is the time the job will actually fire. */}
+              {settings?.nextScheduledRunAt && (
+                <p className="text-xs text-muted-foreground">
+                  Next post: {new Date(settings.nextScheduledRunAt).toLocaleString()}
+                </p>
+              )}
+            </div>
           </div>
 
           {/* systemPrompt textarea (autopost port) */}
