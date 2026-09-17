@@ -11,7 +11,26 @@ import { resolveOpenRouterKey } from "../lib/blog-openrouter.js";
 import { fetchAllRssSources } from "../blog/rss-fetcher.js";
 import { slugifyTitle } from "../blog/content-validator.js";
 import { nextScheduledRun } from "#shared/blog-schedule.js";
+import { parseTelegramTarget } from "#shared/blog-contract.js";
 import { requireAdmin, isAuthorizedCronRequest } from "./_shared.js";
+import { rateLimitMiddleware } from "../lib/rateLimit.js";
+import { approveBlogPost, rejectBlogPost } from "../blog/approval.js";
+import {
+  allowedCallbackChatIds,
+  newWebhookSecret,
+  parseBlogCallbackData,
+  resolveApprovalsBotToken,
+  resolveApprovalsChatIds,
+  webhookSecretMatches,
+  webhookUrl,
+} from "../blog/telegram-approvals.js";
+import {
+  answerCallbackQuery,
+  deleteTelegramWebhook,
+  editMessageReplyMarkup,
+  getTelegramWebhookInfo,
+  setTelegramWebhook,
+} from "../integrations/telegram.js";
 
 const BLOG_SETTINGS_DEFAULTS = {
   enabled: false,
@@ -391,25 +410,15 @@ export function registerBlogAutomationRoutes(app: Express) {
     if (!Number.isFinite(id) || id <= 0) {
       return res.status(400).json({ message: "Invalid post id" });
     }
-    const post = await storage.getBlogPost(id);
-    if (!post) return res.status(404).json({ message: "Post not found" });
-    if (post.status === "published") {
-      return res.status(409).json({ message: "Post is already published" });
-    }
     try {
-      const rssItem = await storage.getRssItemByUsedPostId(id).catch(() => undefined);
-      const updated = await storage.updateBlogPost(id, {
-        status: "published",
-        publishedAt: post.publishedAt ?? new Date(),
-      });
-      await storage.createBlogPostFeedback({
-        postId: id,
-        postTitle: post.title,
-        sourceTitle: rssItem?.title ?? null,
-        verdict: "approved",
-        reason: null,
-      });
-      res.json(updated);
+      // Autoblog-parity SC-07: the SAME decision the Telegram webhook applies.
+      // Two copies is how the panel and the bot drift apart.
+      const result = await approveBlogPost(id);
+      if (!result.ok) return res.status(404).json({ message: "Post not found" });
+      // 409 is kept for the panel: a human who clicked Approve on a stale page
+      // should be told the state moved, not shown a silent success.
+      if (result.alreadyDecided) return res.status(409).json({ message: "Post is already published" });
+      res.json(result.post);
     } catch (err) {
       console.error("[blog-automation] POST /api/blog/posts/:id/approve failed:", err);
       res.status(500).json({ error: "Failed to approve post" });
@@ -429,24 +438,273 @@ export function registerBlogAutomationRoutes(app: Express) {
     if (!parsed.success) {
       return res.status(400).json({ message: parsed.error.errors[0].message });
     }
-    const post = await storage.getBlogPost(id);
-    if (!post) return res.status(404).json({ message: "Post not found" });
     try {
-      const rssItem = await storage.getRssItemByUsedPostId(id).catch(() => undefined);
-      await storage.createBlogPostFeedback({
-        postId: id,
-        postTitle: post.title,
-        sourceTitle: rssItem?.title ?? null,
-        verdict: "rejected",
-        reason: parsed.data.reason?.trim() || null,
-      });
-      await storage.deleteBlogPost(id);
+      // A typed reason DOES ride along from here — unlike the Telegram path,
+      // someone actually wrote it, and the generator reads it as a lesson.
+      const result = await rejectBlogPost(id, parsed.data.reason ?? null);
+      if (!result.ok) return res.status(404).json({ message: "Post not found" });
       res.json({ success: true });
     } catch (err) {
       console.error("[blog-automation] POST /api/blog/posts/:id/reject failed:", err);
       res.status(500).json({ error: "Failed to reject post" });
     }
   });
+
+  // ========================================================================
+  // Telegram blog approvals (autoblog-parity SC-07, MASTER §6)
+  // ========================================================================
+
+  // GET /api/blog/telegram — panel state. Neither token is ever returned: the
+  // panel only needs to know whether one is stored.
+  app.get("/api/blog/telegram", requireAdmin, async (_req, res) => {
+    const settings = await storage.getTelegramSettings();
+    const chatIds = (settings?.chatIds ?? []) as string[];
+    res.json({
+      // Approvals ride on top of the Telegram integration: without a bot and a
+      // chat there is nothing to enable, and the panel has to say so rather
+      // than failing on save.
+      integrationConfigured: Boolean(settings?.botToken && chatIds.length > 0),
+      approvalsEnabled: settings?.approvalsEnabled ?? false,
+      hasApprovalsBotToken: Boolean(settings?.approvalsBotToken),
+      approvalsChatIds: (settings?.approvalsChatIds ?? []) as string[],
+      /** What a card would actually be sent to, after the fallback. */
+      effectiveChatIds: settings ? resolveApprovalsChatIds(settings) : [],
+      webhookConfigured: Boolean(settings?.webhookSecret),
+      webhookUrl: webhookUrl(),
+    });
+  });
+
+  // PUT /api/blog/telegram — turn approvals on or off.
+  app.put("/api/blog/telegram", requireAdmin, async (req, res) => {
+    const bodySchema = z.object({
+      enabled: z.boolean(),
+      // "********" (or omitted) preserves the stored token; "" clears it so the
+      // install falls back to its alert bot.
+      botToken: z.string().max(300).optional(),
+      chatIds: z.array(z.string().max(120)).max(20).optional(),
+    });
+    const parsed = bodySchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0].message });
+    }
+
+    const existing = await storage.getTelegramSettings();
+    if (!existing) {
+      return res.status(400).json({ message: "Configure a integração do Telegram antes de ativar as aprovações." });
+    }
+
+    try {
+      if (!parsed.data.enabled) {
+        const token = resolveApprovalsBotToken(existing);
+        if (existing.approvalsEnabled && token) {
+          const removed = await deleteTelegramWebhook(token);
+          if (!removed.success) {
+            // Not fatal: the secret is dropped below, so the endpoint refuses
+            // every later delivery even if Telegram still holds the URL.
+            console.warn("[blog-automation] could not deregister the Telegram webhook:", removed.message);
+          }
+        }
+        await storage.saveTelegramSettings({
+          ...existing,
+          approvalsEnabled: false,
+          webhookSecret: null,
+        } as never);
+        return res.json({ approvalsEnabled: false, webhookConfigured: false });
+      }
+
+      const chatIds = (parsed.data.chatIds ?? (existing.approvalsChatIds as string[] | undefined) ?? [])
+        .map((id) => id.trim())
+        .filter(Boolean);
+
+      // Rejected here rather than on the first send, where the only symptom is
+      // silence: nobody notices a draft nobody was told about.
+      const invalid = chatIds.filter((id) => !parseTelegramTarget(id));
+      if (invalid.length > 0) {
+        return res.status(400).json({
+          message: `Chat id inválido: ${invalid.join(", ")}. Use o id numérico, opcionalmente com o tópico como "<chat_id>:<thread_id>".`,
+        });
+      }
+
+      const approvalsBotToken = parsed.data.botToken === undefined || parsed.data.botToken === "********"
+        ? (existing.approvalsBotToken ?? null)
+        : (parsed.data.botToken.trim() || null);
+
+      const token = resolveApprovalsBotToken({ botToken: existing.botToken, approvalsBotToken });
+      if (!token) {
+        return res.status(400).json({ message: "Um token de bot é necessário para ativar as aprovações." });
+      }
+      if (resolveApprovalsChatIds({ chatIds: existing.chatIds, approvalsChatIds: chatIds }).length === 0) {
+        return res.status(400).json({ message: "Adicione ao menos um chat antes de ativar as aprovações." });
+      }
+
+      const url = webhookUrl();
+      if (!url) {
+        return res.status(400).json({ message: "SITE_URL não está configurado, então não há URL pública para o webhook." });
+      }
+
+      // Swapping the approvals bot must not leave the PREVIOUS bot holding a
+      // live webhook: it would keep delivering callbacks, and — since the
+      // secret survives a plain re-save — they would still authenticate.
+      const previousToken = resolveApprovalsBotToken(existing);
+      const tokenChanged = Boolean(previousToken) && previousToken !== token;
+      if (existing.approvalsEnabled && tokenChanged && previousToken) {
+        const removed = await deleteTelegramWebhook(previousToken);
+        if (!removed.success) {
+          console.warn("[blog-automation] could not deregister the previous Telegram webhook:", removed.message);
+        }
+      }
+
+      // Rotated on a FRESH enable — a secret that leaked while approvals were
+      // off must not still be valid when they come back on — but kept across a
+      // re-save, so saving the panel is not a silent invalidation.
+      const secret = existing.approvalsEnabled && existing.webhookSecret && !tokenChanged
+        ? existing.webhookSecret
+        : newWebhookSecret();
+
+      // Registration first, persistence second: storing approvalsEnabled for a
+      // webhook Telegram rejected leaves a panel claiming a feature that cannot
+      // fire.
+      const registered = await setTelegramWebhook(token, url, secret);
+      if (!registered.success) {
+        return res.status(400).json({ message: `O Telegram recusou o webhook: ${registered.message}` });
+      }
+
+      await storage.saveTelegramSettings({
+        ...existing,
+        approvalsEnabled: true,
+        approvalsBotToken,
+        approvalsChatIds: chatIds,
+        webhookSecret: secret,
+      } as never);
+
+      res.json({ approvalsEnabled: true, webhookConfigured: true, webhookUrl: url });
+    } catch (err) {
+      console.error("[blog-automation] PUT /api/blog/telegram failed:", err);
+      res.status(500).json({ error: "Failed to save Telegram approvals" });
+    }
+  });
+
+  // POST /api/blog/telegram/reconcile — re-register a webhook that went stale.
+  //
+  // Telegram drops a webhook whose URL stops resolving, and the only symptom is
+  // that approval buttons quietly stop working. Comparing what Telegram thinks
+  // the URL is against what it should be is the difference between noticing in
+  // one click and noticing when someone asks why a draft was never published.
+  app.post("/api/blog/telegram/reconcile", requireAdmin, async (_req, res) => {
+    const settings = await storage.getTelegramSettings();
+    if (!settings?.approvalsEnabled || !settings.webhookSecret) {
+      return res.status(400).json({ message: "As aprovações não estão ativas." });
+    }
+    const token = resolveApprovalsBotToken(settings);
+    const url = webhookUrl();
+    if (!token || !url) {
+      return res.status(400).json({ message: "Configuração incompleta para reconciliar o webhook." });
+    }
+
+    const info = await getTelegramWebhookInfo(token);
+    if (!info.success) {
+      return res.status(502).json({ message: info.message ?? "Não foi possível consultar o Telegram." });
+    }
+    if (info.url === url && !info.lastErrorMessage) {
+      return res.json({ status: "ok", url, reRegistered: false });
+    }
+
+    const registered = await setTelegramWebhook(token, url, settings.webhookSecret);
+    if (!registered.success) {
+      return res.status(502).json({ message: `O Telegram recusou o webhook: ${registered.message}` });
+    }
+    res.json({ status: "ok", url, reRegistered: true, previousUrl: info.url, previousError: info.lastErrorMessage ?? null });
+  });
+
+  // POST /api/blog/telegram/webhook — PUBLIC.
+  //
+  // Telegram POSTs here when someone taps Aprovar/Rejeitar on a draft card.
+  // Unauthenticated by necessity, so it is defended in depth:
+  //   1. approvals must be enabled AND a secret stored, otherwise it 404s;
+  //   2. X-Telegram-Bot-Api-Secret-Token must match that secret in constant
+  //      time — the only real proof the caller is Telegram;
+  //   3. the originating chat must be one the card could have been sent to, so
+  //      a stranger who somehow reaches the bot cannot publish anything.
+  //
+  // After the secret checks out EVERY outcome answers 200: a non-2xx makes
+  // Telegram redeliver the same update for hours, which for an already-applied
+  // decision is pure noise.
+  app.post(
+    "/api/blog/telegram/webhook",
+    // The settings read happens before the secret can be compared, so an
+    // unauthenticated flood would otherwise be free database reads. 60/min is
+    // far above a real install's card volume and far below anything worth
+    // spending queries on.
+    rateLimitMiddleware({ limit: 60, windowMs: 60_000, message: "Too many requests." }),
+    async (req: Request, res: Response) => {
+      let settings;
+      try {
+        settings = await storage.getTelegramSettings();
+      } catch (err) {
+        console.error("[blog-automation] telegram webhook settings read failed:", err);
+        return res.status(500).json({ ok: false });
+      }
+
+      if (!settings?.approvalsEnabled || !settings.webhookSecret) {
+        return res.status(404).json({ ok: false });
+      }
+      if (!webhookSecretMatches(req.get("X-Telegram-Bot-Api-Secret-Token"), settings.webhookSecret)) {
+        console.warn("[blog-automation] telegram webhook delivery with a bad secret");
+        return res.status(401).json({ ok: false });
+      }
+
+      const callbackQuery = (req.body ?? {}).callback_query;
+      if (!callbackQuery) {
+        // allowed_updates is narrowed to callback_query, but a webhook set by
+        // hand could still deliver others. Acknowledge and ignore.
+        return res.json({ ok: true });
+      }
+
+      // The same resolver the sender used, so the bot answering a callback is
+      // always the bot whose card produced it.
+      const botToken = resolveApprovalsBotToken(settings);
+      if (!botToken) return res.status(404).json({ ok: false });
+
+      const callbackId: string | undefined = callbackQuery.id;
+      const chatId = callbackQuery.message?.chat?.id;
+      const messageId: number | undefined = callbackQuery.message?.message_id;
+
+      // The same list the card was sent to: a chat that cannot receive a card
+      // must not be able to act on one either.
+      if (chatId === undefined || !allowedCallbackChatIds(settings).includes(String(chatId))) {
+        console.warn("[blog-automation] telegram callback from an unauthorised chat");
+        if (callbackId) await answerCallbackQuery(botToken, callbackId, "Este chat não está autorizado.");
+        return res.json({ ok: true });
+      }
+
+      const parsed = parseBlogCallbackData(callbackQuery.data);
+      if (!parsed) {
+        if (callbackId) await answerCallbackQuery(botToken, callbackId, "Ação não suportada.");
+        return res.json({ ok: true });
+      }
+
+      try {
+        const result = parsed.action === "approve"
+          ? await approveBlogPost(parsed.postId)
+          // No reason from here, deliberately — see rejectBlogPost's comment.
+          : await rejectBlogPost(parsed.postId, null);
+
+        let toast: string;
+        if (!result.ok) toast = "Esse post não existe mais.";
+        else if (result.alreadyDecided) toast = "Já publicado.";
+        else toast = parsed.action === "approve" ? "Publicado." : "Rejeitado.";
+
+        if (callbackId) await answerCallbackQuery(botToken, callbackId, toast);
+        // Strip the buttons so the card reads as spent, whatever the outcome.
+        if (messageId !== undefined) await editMessageReplyMarkup(botToken, chatId, messageId);
+      } catch (err) {
+        console.error("[blog-automation] telegram blog decision failed:", err);
+        if (callbackId) await answerCallbackQuery(botToken, callbackId, "Algo deu errado. Use o painel.");
+      }
+
+      return res.json({ ok: true });
+    },
+  );
 
   // GET /api/blog/feedback?limit=20 — recent approve/reject signals for the admin UI.
   app.get("/api/blog/feedback", requireAdmin, async (req, res) => {

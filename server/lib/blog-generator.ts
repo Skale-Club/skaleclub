@@ -597,6 +597,43 @@ async function runPipeline({ settings, job, manual, rssItem, aiConfig, feedback,
 
     await deps.storage.upsertBlogSettings(buildRunFinalization({ lastRunAt: now, lockAcquiredAt: null }));
 
+    // Autoblog-parity SC-07. Only for a draft: an auto-published post has
+    // nothing to approve, and a card with live buttons for a post already on
+    // the site is worse than no card at all.
+    //
+    // Fire-and-forget by design — the post is saved and the job is already
+    // marked completed, so a Telegram outage must not turn a successful
+    // generation into a failed one.
+    if (!autoPublish) {
+      void (async () => {
+        try {
+          // Deliberately NOT through the deps table: that is the narrow
+          // surface the pipeline's tests stub, and a notification is not part
+          // of the pipeline's contract. Reaching for the real storage here
+          // keeps the stub honest about what generation actually needs.
+          const { storage } = await import("../storage.js");
+          const telegram = await storage.getTelegramSettings();
+          if (!telegram?.enabled || !telegram.approvalsEnabled) return;
+          const base = (process.env.SITE_URL || process.env.APP_URL || "").trim().replace(/\/+$/, "");
+          const { sendBlogDraftForApproval } = await import("../integrations/telegram.js");
+          await sendBlogDraftForApproval(telegram, {
+            id: post.id,
+            title: post.title,
+            excerpt: post.excerpt,
+            focusKeyword: post.focusKeyword,
+            // Telegram fetches a photo from its OWN servers, so a stored
+            // root-relative URL has to be absolutised first.
+            imageUrl: featureImageUrl && base && featureImageUrl.startsWith("/")
+              ? `${base}${featureImageUrl}`
+              : featureImageUrl,
+          }, { postUrl: base ? `${base}/admin/blog` : null });
+        } catch (notifyErr) {
+          const message = notifyErr instanceof Error ? notifyErr.message : String(notifyErr);
+          console.warn(`[blog-generator] Telegram approval card failed for post ${post.id}: ${message}`);
+        }
+      })();
+    }
+
     return { jobId: job.id, postId: post.id, post };
   } catch (err) {
     // Phase 38 BLOG2-15 (Pitfall 2): attach partial durations so the outer catch
