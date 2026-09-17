@@ -4,6 +4,7 @@ import { createApp, log } from "./app.js";
 import { serveStatic } from "./static.js";
 import { startCron } from "./cron.js";
 import { pool } from "./db.js";
+import { scheduleBootstrapTasks } from "./lib/bootstrapTasks.js";
 
 (async () => {
   const { app, httpServer } = await createApp();
@@ -33,6 +34,7 @@ import { pool } from "./db.js";
     },
   );
   startCron();
+  scheduleBootstrapTasks();
 
   // Node exits on an unhandled rejection; log it instead of taking the site
   // down with no line in the log.

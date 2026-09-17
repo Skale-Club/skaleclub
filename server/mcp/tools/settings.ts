@@ -8,6 +8,7 @@ import {
   normalizeSocialLinks,
 } from "#shared/schema.js";
 import { getPageSlugsValidationError, resolvePageSlugs } from "#shared/pageSlugs.js";
+import { listBootstrapTasks, runBootstrapTasks } from "../../lib/bootstrapTasks.js";
 
 type AuditFn = typeof createAuditLog;
 
@@ -91,6 +92,28 @@ export function registerSettingsTools(server: McpServer, audit: AuditFn, tokenId
       const updated = await storage.updateCompanySettings(data);
       await audit({ tokenId, tokenPrefix, toolName: "company_settings_update", targetType: "company_settings", targetId: String(updated.id), action: "update", result: "success", ipAddress: ip });
       return text({ ok: true, updatedFields: Object.keys(data) });
+    },
+  );
+
+  server.tool(
+    "bootstrap_tasks_status",
+    "State of the self-applying maintenance tasks (content fixes, 3D Printing card, product artwork): completed/pending/failed with notes and last error.",
+    {},
+    async () => {
+      const tasks = await listBootstrapTasks();
+      await audit({ tokenId, tokenPrefix, toolName: "bootstrap_tasks_status", action: "read", result: "success", ipAddress: ip });
+      return text(tasks);
+    },
+  );
+
+  server.tool(
+    "bootstrap_tasks_run",
+    "Run the self-applying maintenance tasks now. Pending/failed tasks always run; pass force=true to re-run completed ones too (every task is idempotent).",
+    { force: z.boolean().optional() },
+    async ({ force }) => {
+      const results = await runBootstrapTasks({ force: force === true });
+      await audit({ tokenId, tokenPrefix, toolName: "bootstrap_tasks_run", action: "update", result: "success", ipAddress: ip });
+      return text(results);
     },
   );
 
