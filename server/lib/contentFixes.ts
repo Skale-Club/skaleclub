@@ -207,7 +207,10 @@ export async function syncProductArtwork(): Promise<TaskResult> {
     const spec = PRODUCT_SITES[svc.slug];
     if (!spec?.site) continue;
     const site = spec.site.replace(/\/$/, "");
-    const needIcon = !svc.logoIconUrl || (await imageWidth(svc.logoIconUrl)) < MIN_ICON_PX;
+    // Replace an icon only when it is missing or measurably too small; an
+    // icon that cannot be fetched right now is not a reason to overwrite it.
+    const iconWidth = svc.logoIconUrl ? await imageWidth(svc.logoIconUrl) : 0;
+    const needIcon = !svc.logoIconUrl || (iconWidth > 0 && iconWidth < MIN_ICON_PX);
     const needImage = !svc.imageUrl;
     if (!needIcon && !needImage) continue;
 
