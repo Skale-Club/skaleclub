@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import { z } from "zod";
 import { sql } from "drizzle-orm";
 import { db } from "../db.js";
@@ -183,6 +183,20 @@ export function registerCompanyRoutes(app: Express) {
   // Sitemap & Robots
   // ===============================
 
+  // The setting is the homepage's canonical ("https://skale.club/"), so its
+  // trailing slash doubled every URL built on it ("https://skale.club//faq").
+  // Reduce it to an origin, the same way use-seo.ts does on the client.
+  function canonicalOrigin(setting: string | null | undefined, req: Request): string {
+    if (setting) {
+      try {
+        return new URL(setting).origin;
+      } catch {
+        // Malformed value in settings — the request's own host is the better guess.
+      }
+    }
+    return `${req.protocol}://${req.hostname || ''}`;
+  }
+
   app.get('/sitemap_index.xml', (req, res) => {
     res.redirect(301, '/sitemap.xml');
   });
@@ -190,10 +204,7 @@ export function registerCompanyRoutes(app: Express) {
   app.get('/robots.txt', async (req, res) => {
     try {
       const settings = await storage.getCompanySettings();
-      const hostname = req.hostname || '';
-      const canonicalUrl =
-        settings?.seoCanonicalUrl ||
-        `${req.protocol}://${hostname}`;
+      const canonicalUrl = canonicalOrigin(settings?.seoCanonicalUrl, req);
 
       const robotsTxt = `User-agent: *\nAllow: /\n\nSitemap: ${canonicalUrl}/sitemap.xml\n`;
       setPublicCache(res, 3600);
@@ -208,10 +219,7 @@ export function registerCompanyRoutes(app: Express) {
       const settings = await storage.getCompanySettings();
       const blogPostsList = await storage.getPublishedBlogPosts(100, 0);
       const pagePaths = buildPagePaths(settings?.pageSlugs);
-      const hostname = req.hostname || '';
-      const canonicalUrl =
-        settings?.seoCanonicalUrl ||
-        `${req.protocol}://${hostname}`;
+      const canonicalUrl = canonicalOrigin(settings?.seoCanonicalUrl, req);
       const lastMod = new Date().toISOString().split('T')[0];
       const publicPages = [
         { path: "/", changefreq: "weekly", priority: "1.0" },
