@@ -1,3 +1,4 @@
+import { usePageSeo } from "@/hooks/use-seo";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { CalendarDays, CheckCircle2, Clock3, ExternalLink, Radio, Sparkles, Users } from "lucide-react";
@@ -41,6 +42,7 @@ type HubRegisterResponse = {
   unlocked: true;
   liveId: number;
   participantId: number;
+  accessToken: string;
   registrationId: number;
   access: {
     streamUrl: string | null;
@@ -77,6 +79,7 @@ function formatLiveTime(value: string | Date, timeZone: string) {
 }
 
 export default function SkaleHub() {
+  usePageSeo({ title: "Skale Hub" });
   const { toast } = useToast();
   const [form, setForm] = useState({ name: "", phone: "", email: "" });
   const [selectedCountry, setSelectedCountry] = useState<PhoneCountry>(() => detectDefaultPhoneCountry());
@@ -129,6 +132,7 @@ export default function SkaleHub() {
       const eventType = unlockData.access.streamUrl ? "join" : "replay";
       const response = await apiRequest("POST", `/api/skale-hub/${unlockData.liveId}/access`, {
         participantId: unlockData.participantId,
+        accessToken: unlockData.accessToken,
         eventType,
         metadata: { source: "public-page" },
       });
@@ -292,6 +296,7 @@ export default function SkaleHub() {
 
                         <div className="mt-4 space-y-3">
                           <Input
+                            aria-label="Your name"
                             placeholder="Your name"
                             value={form.name}
                             onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
@@ -314,6 +319,7 @@ export default function SkaleHub() {
                                 type="tel"
                                 inputMode="tel"
                                 autoComplete="tel"
+                                aria-label="Phone number"
                                 placeholder={selectedCountry.placeholder}
                                 value={form.phone}
                                 onChange={(event) => setForm((current) => ({
@@ -329,6 +335,7 @@ export default function SkaleHub() {
                           </div>
                           <Input
                             type="email"
+                            aria-label="Email"
                             placeholder="Email"
                             value={form.email}
                             onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}

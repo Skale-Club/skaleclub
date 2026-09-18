@@ -3,6 +3,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import type { Request, Response } from "express";
 import { registerEstimateTools } from "./tools/estimates.js";
 import { registerPresentationTools } from "./tools/presentations.js";
+import { registerSettingsTools } from "./tools/settings.js";
 import { createAuditLog } from "../lib/mcp-storage.js";
 
 function buildMcpServer(tokenId: string, tokenPrefix: string, ip: string): McpServer {
@@ -14,6 +15,7 @@ function buildMcpServer(tokenId: string, tokenPrefix: string, ip: string): McpSe
   const audit = createAuditLog;
   registerEstimateTools(server, audit, tokenId, tokenPrefix, ip);
   registerPresentationTools(server, audit, tokenId, tokenPrefix, ip);
+  registerSettingsTools(server, audit, tokenId, tokenPrefix, ip);
 
   return server;
 }

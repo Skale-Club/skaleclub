@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { z } from "zod";
 import { storage } from "../storage.js";
 import { insertFaqSchema } from "#shared/schema.js";
-import { requireAdmin, setPublicCache } from "./_shared.js";
+import { requireAdmin, sendError, setPublicCache } from "./_shared.js";
 
 export function registerFaqRoutes(app: Express) {
   app.get("/api/faqs", async (_req, res) => {
@@ -25,7 +25,7 @@ export function registerFaqRoutes(app: Express) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: err.errors });
       }
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to create FAQ");
     }
   });
 
@@ -38,7 +38,7 @@ export function registerFaqRoutes(app: Express) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: err.errors });
       }
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to update FAQ");
     }
   });
 
@@ -47,7 +47,7 @@ export function registerFaqRoutes(app: Express) {
       await storage.deleteFaq(Number(req.params.id));
       res.json({ success: true });
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to delete FAQ");
     }
   });
 }

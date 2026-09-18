@@ -1,3 +1,4 @@
+import { usePageSeo } from "@/hooks/use-seo";
 import { useQuery } from "@tanstack/react-query";
 import {
   ShieldCheck,
@@ -23,6 +24,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 
 export default function TermsOfService() {
   const { t } = useTranslation();
+  usePageSeo({ title: t("Terms of Service") });
   const { data: settings } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
   });

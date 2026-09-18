@@ -1,5 +1,6 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
+import fs from "node:fs";
 import * as schema from "#shared/schema.js";
 
 const { Pool } = pg;
@@ -37,12 +38,16 @@ export const databaseUrl = shouldUseSsl
 
 export const pool = new Pool({
   connectionString: databaseUrl,
+  // Verification is opt-in until the Supabase CA is shipped with the image:
+  // PG_SSL_REJECT_UNAUTHORIZED=true (plus PG_SSL_CA=/path/to/ca.crt if the
+  // pooler's chain is not in the system store) makes production fail closed.
   ssl: shouldUseSsl
-    ? {
-        rejectUnauthorized: false,
-        // Handle self-signed certificates in Vercel and other serverless environments
-        checkServerIdentity: () => undefined,
-      }
+    ? process.env.PG_SSL_REJECT_UNAUTHORIZED === "true"
+      ? {
+          rejectUnauthorized: true,
+          ...(process.env.PG_SSL_CA ? { ca: fs.readFileSync(process.env.PG_SSL_CA, "utf8") } : {}),
+        }
+      : { rejectUnauthorized: false }
     : false,
   max: isServerless ? 5 : 20,
   idleTimeoutMillis: isServerless ? 30000 : undefined,

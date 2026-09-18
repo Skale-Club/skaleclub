@@ -142,15 +142,19 @@ Configure these GitHub repository secrets:
 Workflow file:
 - `.github/workflows/supabase-keepalive.yml` with schedule `0 0 * * *`
 
-### GitHub Actions Cron (Blog Autopost)
+### External Cron (Blog Autopost)
 
-GitHub Actions is the single scheduler for `/api/blog/cron/generate` and
-`/api/blog/cron/fetch-rss`. The in-process scheduler in `server/cron.ts` is
-disabled in production via `DISABLE_INPROCESS_CRON=true`; enabling both would
-generate every blog post twice.
+`/api/blog/cron/generate` and `/api/blog/cron/fetch-rss` are driven by an
+external scheduler — the `skale-cron` service on the Coolify VPS, which holds
+one crontab for every project in the org. It calls each endpoint over HTTPS with
+`Authorization: Bearer $CRON_SECRET`. The in-process scheduler in
+`server/cron.ts` is disabled in production via `DISABLE_INPROCESS_CRON=true`;
+enabling both would generate every blog post twice.
 
 - Reuses `CRON_SECRET` from above — no new secrets required
-- Workflow file: `.github/workflows/blog-cron.yml` with schedules `0 * * * *` (generate) and `30 * * * *` (fetch-rss)
+- `.github/workflows/blog-cron.yml` has **no schedule**: it is
+  `workflow_dispatch`-only, kept as the manual/emergency trigger for when the
+  VPS is unreachable
 
 ## Troubleshooting
 

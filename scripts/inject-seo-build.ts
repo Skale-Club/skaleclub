@@ -6,6 +6,7 @@
  * Usage: npm run build (automatically runs after Vite build)
  */
 
+import { homepageTitle } from "../shared/seoTitle";
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
 
@@ -35,6 +36,7 @@ async function injectSEOData() {
     const settings = await db.select({
       companyName: companySettings.companyName,
       seoTitle: companySettings.seoTitle,
+      heroTitle: companySettings.heroTitle,
       seoDescription: companySettings.seoDescription,
       ogImage: companySettings.ogImage,
       logoIcon: companySettings.logoIcon,
@@ -88,7 +90,7 @@ async function injectSEOData() {
     html = removeCanonical(html);
 
     // Extract and prepare values with fallbacks
-    const title = seoData.seoTitle || seoData.companyName || "Company Name";
+    const title = homepageTitle(seoData);
     const description = seoData.seoDescription || "";
     const ogImage = seoData.ogImage || "";
     const favicon = seoData.logoIcon || "/favicon.png";

@@ -4,7 +4,7 @@ import { db } from "../db.js";
 import { users } from "#shared/schema.js";
 import { eq } from "drizzle-orm";
 import { getSupabaseAdmin } from "../lib/supabase.js";
-import { createApiToken, createOAuthCode, consumeOAuthCode } from "../lib/mcp-storage.js";
+import { createApiToken, createOAuthCode, consumeOAuthCode, TOKEN_TTL_MS } from "../lib/mcp-storage.js";
 
 const BASE_URL = "https://skale.club";
 const CORS_HEADERS = {
@@ -228,6 +228,9 @@ export function registerOAuthRoutes(app: Express) {
     return res.json({
       access_token: row.rawToken,
       token_type: "Bearer",
+      // Tokens now expire; without this an MCP client caches the bearer for
+      // ever and first hears about it as a 401 in 90 days.
+      expires_in: Math.floor(TOKEN_TTL_MS / 1000),
       scope: row.scope ?? "mcp",
     });
   });

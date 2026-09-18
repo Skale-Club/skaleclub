@@ -69,7 +69,8 @@ export function registerLinksPageRoutes(app: Express) {
             FROM jsonb_array_elements(links_page_config->'links') WITH ORDINALITY AS t(elem, ord)
           )
         )
-        WHERE jsonb_typeof(links_page_config->'links') = 'array'
+        WHERE id = (SELECT min(id) FROM company_settings)
+          AND jsonb_typeof(links_page_config->'links') = 'array'
           AND EXISTS (
             SELECT 1
             FROM jsonb_array_elements(links_page_config->'links') AS e(elem)

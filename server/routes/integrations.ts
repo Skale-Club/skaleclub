@@ -25,7 +25,7 @@ import {
   queueXphereDeliverySweep,
 } from "../integrations/xphere.js";
 import type { XphereSettings } from "#shared/schema.js";
-import { requireAdmin, isAuthorizedCronRequest } from "./_shared.js";
+import { requireAdmin, sendError, isAuthorizedCronRequest } from "./_shared.js";
 import {
   getFormTranscriptionSettings,
   serializeTranscriptionModel,
@@ -564,7 +564,8 @@ export function registerIntegrationRoutes(app: Express) {
       const models = await getOpenRouterModels();
       res.json({ models, count: models.length });
     } catch (err) {
-      res.json({ models: OPENROUTER_MODEL_FALLBACKS, count: OPENROUTER_MODEL_FALLBACKS.length, warning: (err as Error).message });
+      console.error('[integrations] GET /api/integrations/openrouter/models failed', err);
+      res.json({ models: OPENROUTER_MODEL_FALLBACKS, count: OPENROUTER_MODEL_FALLBACKS.length, warning: sanitizeUpstreamMessage(err, 'Failed to load OpenRouter models') });
     }
   });
 
@@ -747,7 +748,7 @@ export function registerIntegrationRoutes(app: Express) {
       const settings = await storage.upsertIntegrationSettings(settingsToSave);
       res.json({ ...settings, apiKey: settings.apiKey ? '********' : '' });
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to save GHL settings");
     }
   });
 
@@ -855,7 +856,7 @@ export function registerIntegrationRoutes(app: Express) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: 'Invalid Twilio settings payload', errors: err.errors });
       }
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to save SMS settings");
     }
   });
 
@@ -931,7 +932,7 @@ export function registerIntegrationRoutes(app: Express) {
       const settings = await storage.upsertIntegrationSettings(settingsToSave);
       res.json({ ...settings, apiKey: settings.apiKey ? '********' : '' });
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to save Google Places settings");
     }
   });
 
@@ -1193,7 +1194,7 @@ export function registerIntegrationRoutes(app: Express) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: 'Invalid Telegram settings payload', errors: err.errors });
       }
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to save Telegram settings");
     }
   });
 
@@ -1289,7 +1290,7 @@ export function registerIntegrationRoutes(app: Express) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: 'Invalid email settings payload', errors: err.errors });
       }
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to save email settings");
     }
   });
 

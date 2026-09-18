@@ -265,10 +265,17 @@ export function ServiceCard({
 export function CardGrid<T>({
   items,
   columns = 2,
+  keyOf,
   renderItem,
 }: {
   items: T[];
   columns?: 2 | 3;
+  /**
+   * Stable identity per item. The cells hold contentEditable text, and React
+   * reuses a cell keyed by index when the list shifts, so an edit typed on
+   * the third card would survive on whatever item lands third next.
+   */
+  keyOf: (item: T) => string;
   renderItem: (item: T, opts: { wide: boolean; span: 2 | 3 }) => React.ReactNode;
 }) {
   const count = items.length;
@@ -285,7 +292,7 @@ export function CardGrid<T>({
         const wide = i === count - 1 && remainder === 1 && count > 1;
         return (
           <div
-            key={i}
+            key={keyOf(item)}
             // Literal class names: Tailwind's JIT cannot see a `col-span-${n}`
             // template and would purge it, and the card would quietly not span.
             className={wide ? (columns === 3 ? "col-span-3 min-h-0" : "col-span-2 min-h-0") : "min-h-0"}

@@ -22,11 +22,9 @@ async function logout(): Promise<void> {
     method: "POST",
     credentials: "include",
   });
-  if (res.ok) {
-    window.location.href = "/";
-    return;
-  }
-  window.location.href = "/api/logout";
+  // The POST above is the only logout route; if it fails there is nothing left
+  // to call, so just send the browser back to the login page.
+  window.location.href = res.ok ? "/" : "/admin/login";
 }
 
 export function useAuth() {

@@ -40,7 +40,8 @@ shared/schema.ts         # Drizzle tables + Zod schemas
 
 ## Security & Configuration
 - Required env vars live in `.env` (see `README.md`): `DATABASE_URL`,
-  `SESSION_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH`.
+  `SESSION_SECRET`, `ADMIN_EMAIL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
+  (admin sign-in is Supabase Auth; there is no local password hash).
 - Do not commit secrets; use local `.env` files and secret managers for production.
 
 ## Reading live site data from a sandboxed session

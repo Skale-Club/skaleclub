@@ -1,3 +1,4 @@
+import { usePageSeo } from "@/hooks/use-seo";
 import { useState, useMemo } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useQuery } from "@tanstack/react-query";
@@ -39,6 +40,7 @@ function getServiceCategory(service: PortfolioService): CategoryFilter {
 
 export default function Portfolio() {
   const { t } = useTranslation();
+  usePageSeo({ title: t("Our Solutions"), description: t("Ready-made apps and the services we perform: AI, automation, websites, marketing and more.") });
   const { data: companySettings } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
   });

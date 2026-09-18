@@ -12,3 +12,4 @@ export * from "./schema/pages.js";
 export * from "./schema/attribution.js";
 export * from "./schema/mcp.js";
 export * from "./schema/integrations.js";
+export * from "./schema/bootstrap.js";

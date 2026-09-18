@@ -57,7 +57,7 @@ function FooterComponent() {
 
   return (
     <footer className="bg-surface-dark text-slate-300 pt-14 pb-8 md:pt-16 md:pb-10">
-      <div className="container-custom mx-auto">
+      <div className="container-custom mx-auto px-4 sm:px-6 tablet:px-0">
         {/* Brand column is wider than the link columns: it carries the logo and
             the tagline, the others are single-word links. */}
         <div className="grid gap-10 md:grid-cols-[1.6fr_1fr_1.4fr]">
@@ -168,7 +168,7 @@ function FooterComponent() {
         </div>
       </div>
 
-      <div className="container-custom mx-auto mt-12 pt-6 border-t border-white/10">
+      <div className="container-custom mx-auto px-4 sm:px-6 tablet:px-0 mt-12 pt-6 border-t border-white/10">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
           <p className="text-gray-400 text-xs md:text-sm">&copy; {new Date().getFullYear()} {companyName}. {t('All rights reserved.')}</p>
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 text-xs md:text-sm md:justify-end">

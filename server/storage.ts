@@ -407,7 +407,7 @@ export class DatabaseStorage implements IStorage {
   async getCompanySettings(): Promise<CompanySettings> {
     await ensureCompanySettingsSchema();
 
-    const [settings] = await db.select().from(companySettings);
+    const [settings] = await db.select().from(companySettings).orderBy(companySettings.id).limit(1);
     if (settings) {
       return {
         ...settings,

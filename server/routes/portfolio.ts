@@ -3,7 +3,7 @@ import { z } from "zod";
 import { DEFAULT_PORTFOLIO_SERVICES } from "#shared/defaults/cms.js";
 import { storage } from "../storage.js";
 import { insertPortfolioServiceSchema } from "#shared/schema.js";
-import { requireAdmin, setPublicCache } from "./_shared.js";
+import { requireAdmin, sendError, setPublicCache } from "./_shared.js";
 
 export function registerPortfolioRoutes(app: Express) {
   app.get("/api/portfolio-services", async (req, res) => {
@@ -39,7 +39,9 @@ export function registerPortfolioRoutes(app: Express) {
       } else {
         service = await storage.getPortfolioServiceBySlug(idOrSlug);
       }
-      if (!service) {
+      // Same rule as the list endpoint: a deactivated service is not public,
+      // whatever its id or slug.
+      if (!service || !service.isActive) {
         return res.status(404).json({ message: "Service not found" });
       }
       setPublicCache(res, 300);
@@ -59,7 +61,7 @@ export function registerPortfolioRoutes(app: Express) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: err.errors });
       }
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to create service");
     }
   });
 
@@ -77,7 +79,7 @@ export function registerPortfolioRoutes(app: Express) {
 
       res.json({ success: true, count: orders.length });
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to reorder services");
     }
   });
 
@@ -90,7 +92,7 @@ export function registerPortfolioRoutes(app: Express) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: err.errors });
       }
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to update service");
     }
   });
 
@@ -99,7 +101,7 @@ export function registerPortfolioRoutes(app: Express) {
       await storage.deletePortfolioService(Number(req.params.id));
       res.json({ success: true });
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to delete service");
     }
   });
 

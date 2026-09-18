@@ -1,9 +1,12 @@
+import { getLandingSeo, landingPathForSlug, slugForLandingPath } from '@shared/landingSeo';
+import { homepageTitle } from '@shared/seoTitle';
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 
 interface SeoSettings {
   seoTitle: string | null;
+  heroTitle?: string | null;
   seoDescription: string | null;
   ogImage: string | null;
   logoIcon: string | null;
@@ -92,7 +95,12 @@ function canonicalForCurrentPage(settings: SeoSettings): string {
   } catch {
     // Malformed value in settings — the current origin is the better guess.
   }
-  const path = window.location.pathname.replace(/\/+$/, '');
+  let path = window.location.pathname.replace(/\/+$/, '');
+  // A landing reached by its legacy `/x-br` URL canonicalises to `/x/br`,
+  // the same string DynamicLanding and the server injection produce; two
+  // writers disagreeing here left the PT landing indexed twice.
+  const landingSlug = slugForLandingPath(path || '/');
+  if (landingSlug && getLandingSeo(landingSlug)) path = landingPathForSlug(landingSlug);
   return path ? `${origin}${path}` : `${origin}/`;
 }
 
@@ -109,6 +117,43 @@ function setJsonLdSchema(settings: SeoSettings) {
     document.head.appendChild(script);
   }
   script.textContent = createLocalBusinessSchema(settings);
+}
+
+// Set by usePageSeo for pages that must not be indexed, read by useSEO so it
+// does not put a canonical back on them. Child effects run before the parent's,
+// so the flag is in place by the time useSEO's effect fires for that route.
+let pageNoindex = false;
+
+/**
+ * Page-level title and description. useSEO only writes the site-wide title
+ * on the homepage, so every inner page carried the homepage title verbatim.
+ */
+export function usePageSeo(opts: { title: string; description?: string; noindex?: boolean }) {
+  const { data: settings } = useQuery<SeoSettings>({ queryKey: ['/api/company-settings'] });
+  const { title, description, noindex } = opts;
+  useEffect(() => {
+    const brand = settings?.ogSiteName || settings?.seoTitle || settings?.companyName || 'Skale Club';
+    const fullTitle = title ? `${title} | ${brand}` : brand;
+    document.title = fullTitle;
+    setMetaTag('og:title', fullTitle, true);
+    setMetaTag('twitter:title', fullTitle);
+    if (description) {
+      setMetaTag('description', description);
+      setMetaTag('og:description', description, true);
+      setMetaTag('twitter:description', description);
+    }
+    if (noindex) {
+      pageNoindex = true;
+      setMetaTag('robots', 'noindex, nofollow');
+      document.querySelector('link[rel="canonical"]')?.remove();
+    }
+    return () => {
+      if (noindex) {
+        pageNoindex = false;
+        setMetaTag('robots', settings?.seoRobotsTag || 'index, follow');
+      }
+    };
+  }, [settings, title, description, noindex]);
 }
 
 export function useSEO() {
@@ -135,9 +180,7 @@ export function useSEO() {
     // is what made every route self-report as the homepage, and what would
     // silently flip a `noindex` page to `index, follow`.
     if (onHomepage) {
-      if (settings.seoTitle) {
-        document.title = settings.seoTitle;
-      }
+      document.title = homepageTitle(settings);
       setMetaTag('description', settings.seoDescription);
       setMetaTag('robots', settings.seoRobotsTag);
     }
@@ -146,7 +189,7 @@ export function useSEO() {
     setMetaTag('keywords', settings.seoKeywords);
     setMetaTag('author', settings.seoAuthor);
 
-    const canonicalUrl = canonicalForCurrentPage(settings);
+    const canonicalUrl = pageNoindex ? null : canonicalForCurrentPage(settings);
     setLinkTag('canonical', canonicalUrl);
 
     const fullImageUrl = settings.ogImage 
@@ -154,7 +197,7 @@ export function useSEO() {
       : null;
 
     if (onHomepage) {
-      setMetaTag('og:title', settings.seoTitle, true);
+      setMetaTag('og:title', homepageTitle(settings), true);
       setMetaTag('og:description', settings.seoDescription, true);
     }
     setMetaTag('og:image', fullImageUrl, true);
@@ -169,7 +212,7 @@ export function useSEO() {
 
     setMetaTag('twitter:card', settings.twitterCard || 'summary_large_image');
     if (onHomepage) {
-      setMetaTag('twitter:title', settings.seoTitle);
+      setMetaTag('twitter:title', homepageTitle(settings));
       setMetaTag('twitter:description', settings.seoDescription);
     }
     setMetaTag('twitter:image', fullImageUrl);

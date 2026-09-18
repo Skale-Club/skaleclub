@@ -37,7 +37,7 @@ export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
 
   return (
     <div className="container-custom mx-auto">
-      <div className="grid grid-cols-1 tablet:grid-cols-2 gap-[2.55rem] items-center">
+      <div className={`grid grid-cols-1 gap-[2.55rem] items-center ${embedUrl ? "tablet:grid-cols-2" : ""}`}>
         <div>
           <SectionHeading
             eyebrow={sectionContent?.label}
@@ -59,8 +59,10 @@ export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
           ) : null}
         </div>
         
-        <div className="h-[450px] rounded-2xl overflow-hidden shadow-2xl border border-white/10 tablet:col-span-1 relative">
-          {embedUrl ? (
+        {/* Only with an embed URL: an empty bordered 450px box read as a
+            broken section on the homepage. */}
+        {embedUrl ? (
+          <div className="h-[450px] rounded-2xl overflow-hidden shadow-2xl border border-white/10 tablet:col-span-1 relative">
             <iframe
               src={embedUrl}
               title="Google Maps"
@@ -71,8 +73,8 @@ export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
             ></iframe>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );

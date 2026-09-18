@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { db } from "../db.js";
 import { apiTokens, mcpAuditLogs } from "#shared/schema.js";
-import { eq, desc, and, inArray, isNotNull, isNull, lt } from "drizzle-orm";
+import { eq, desc, and, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
 
 const TOKEN_PREFIX_LEN = 12; // chars shown in UI (e.g. "mcp_sk_a1b2c3")
 
@@ -9,7 +9,28 @@ const TOKEN_PREFIX_LEN = 12; // chars shown in UI (e.g. "mcp_sk_a1b2c3")
 // its own instead of staying valid forever. Rows with a NULL `expiresAt` (every
 // token issued before this existed) are treated as non-expiring so live clients
 // are not cut off.
-const TOKEN_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+export const TOKEN_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+
+// Nothing in the deploy applies migrations (the Dockerfile only builds and
+// starts the server; `npm run db:push` is a manual step), so a column this
+// module selects must be able to add itself, the way `ensureCompanySettingsSchema`
+// does in storage.ts. Idempotent, runs once per process, retried on failure.
+const mcpSchemaPatches = [
+  sql`ALTER TABLE "api_tokens" ADD COLUMN IF NOT EXISTS "expires_at" timestamptz`,
+  sql`CREATE INDEX IF NOT EXISTS "idx_oauth_codes_expires_at" ON "oauth_codes" ("expires_at")`,
+];
+let mcpSchemaReady: Promise<void> | null = null;
+export function ensureMcpSchema(): Promise<void> {
+  if (!mcpSchemaReady) {
+    mcpSchemaReady = (async () => {
+      for (const statement of mcpSchemaPatches) await db.execute(statement);
+    })().catch((err) => {
+      mcpSchemaReady = null;
+      throw err;
+    });
+  }
+  return mcpSchemaReady;
+}
 
 // Expired rows are swept opportunistically when a token is issued or validated,
 // throttled so a busy MCP endpoint does not run the sweep on every request.
@@ -33,6 +54,7 @@ export function isApiTokenExpired(token: Pick<ApiToken, "expiresAt">): boolean {
  *  - and deactivate API tokens past their expiry.
  */
 export async function cleanupExpiredTokens(): Promise<void> {
+  await ensureMcpSchema();
   const now = new Date();
 
   const abandoned = await db
@@ -75,6 +97,7 @@ export function generateRawToken(): string {
 }
 
 export async function createApiToken(name: string): Promise<{ token: ApiToken; rawToken: string }> {
+  await ensureMcpSchema();
   const raw = generateRawToken();
   const hash = hashToken(raw);
   const prefix = raw.slice(0, TOKEN_PREFIX_LEN);
@@ -89,10 +112,12 @@ export async function createApiToken(name: string): Promise<{ token: ApiToken; r
 }
 
 export async function listApiTokens() {
+  await ensureMcpSchema();
   return db.select().from(apiTokens).orderBy(desc(apiTokens.createdAt));
 }
 
 export async function getApiTokenByRaw(raw: string) {
+  await ensureMcpSchema();
   const hash = hashToken(raw);
   const [token] = await db
     .select()
@@ -107,6 +132,7 @@ export async function getApiTokenByRaw(raw: string) {
 }
 
 export async function rotateApiToken(id: string): Promise<{ token: ApiToken; rawToken: string }> {
+  await ensureMcpSchema();
   const raw = generateRawToken();
   const hash = hashToken(raw);
   const prefix = raw.slice(0, TOKEN_PREFIX_LEN);
@@ -121,14 +147,17 @@ export async function rotateApiToken(id: string): Promise<{ token: ApiToken; raw
 }
 
 export async function deactivateApiToken(id: string) {
+  await ensureMcpSchema();
   await db.update(apiTokens).set({ isActive: false }).where(eq(apiTokens.id, id));
 }
 
 export async function deleteApiToken(id: string) {
+  await ensureMcpSchema();
   await db.delete(apiTokens).where(eq(apiTokens.id, id));
 }
 
 export async function touchApiToken(id: string) {
+  await ensureMcpSchema();
   await db.update(apiTokens).set({ lastUsedAt: new Date() }).where(eq(apiTokens.id, id));
 }
 
@@ -167,11 +196,13 @@ export async function createOAuthCode(params: {
   rawToken:            string;
   expiresAt:           Date;
 }) {
+  await ensureMcpSchema();
   const [row] = await db.insert(oauthCodes).values(params).returning();
   return row;
 }
 
 export async function consumeOAuthCode(code: string, codeVerifier: string, redirectUri: string) {
+  await ensureMcpSchema();
   const [row] = await db.select().from(oauthCodes).where(eq(oauthCodes.code, code));
   if (!row) return null;
   if (row.usedAt) return null;

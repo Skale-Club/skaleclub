@@ -5,7 +5,7 @@ import { storage } from "../storage.js";
 import { insertFormSchema, updateFormSchema, formLeadProgressSchema } from "#shared/schema.js";
 import { calculateMaxScore, DEFAULT_FORM_CONFIG, validateFormConfig } from "#shared/form.js";
 import type { FormConfig } from "#shared/schema.js";
-import { requireAdmin, setPublicCache } from "./_shared.js";
+import { requireAdmin, sendError, setPublicCache } from "./_shared.js";
 import { runLeadPostProcessing } from "../lib/lead-processing.js";
 import { buildXphereBookingUrl } from "../integrations/xphere.js";
 import { summarizeFormTranscript, transcribeFormAudio } from "../lib/form-audio.js";
@@ -14,6 +14,24 @@ import { rateLimitMiddleware } from "../lib/rateLimit.js";
 const SKALE_HUB_GROUP_FORM_SLUG = "skale-hub";
 
 // Throttle shared by every public (unauthenticated) lead endpoint.
+// What a visitor may read back about their own lead. The full row carries
+// admin-only columns (observacoes, status, ghlContactId, contact details) that
+// anyone holding the sessionId must not be able to fetch.
+function publicLeadView(
+  lead: { id: number; sessionId: string | null; formCompleto: boolean | null; ultimaPerguntaRespondida: number | null; classificacao: string | null; scoreTotal: number | null },
+  bookingUrl?: string | null,
+) {
+  return {
+    id: lead.id,
+    sessionId: lead.sessionId,
+    formCompleto: lead.formCompleto,
+    ultimaPerguntaRespondida: lead.ultimaPerguntaRespondida,
+    classificacao: lead.classificacao,
+    scoreTotal: lead.scoreTotal,
+    ...(bookingUrl ? { bookingUrl } : {}),
+  };
+}
+
 const publicLeadRateLimit = rateLimitMiddleware({
   limit: 120,
   windowMs: 10 * 60_000,
@@ -174,7 +192,7 @@ export function registerFormRoutes(app: Express) {
       if ((err as any)?.code === "23505") {
         return res.status(409).json({ message: "A form with that slug already exists" });
       }
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to create form");
     }
   });
 
@@ -217,7 +235,7 @@ export function registerFormRoutes(app: Express) {
       if ((err as any)?.code === "23505") {
         return res.status(409).json({ message: "A form with that slug already exists" });
       }
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to update form");
     }
   });
 
@@ -263,7 +281,7 @@ export function registerFormRoutes(app: Express) {
       await storage.softDeleteForm(id);
       res.status(204).end();
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to delete form");
     }
   });
 
@@ -286,7 +304,7 @@ export function registerFormRoutes(app: Express) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: err.errors });
       }
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to duplicate form");
     }
   });
 
@@ -302,7 +320,7 @@ export function registerFormRoutes(app: Express) {
       const updated = await storage.setDefaultForm(id);
       res.json(updated);
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to set default form");
     }
   });
 
@@ -422,7 +440,7 @@ export function registerFormRoutes(app: Express) {
         typeof req.body?.__visitorId === 'string' ? req.body.__visitorId : undefined,
         form.slug,
       );
-      res.json(bookingUrl ? { ...lead, bookingUrl } : lead);
+      res.json(publicLeadView(lead, bookingUrl));
     } catch (err: any) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors?.[0]?.message || "Validation error" });
@@ -441,10 +459,10 @@ export function registerFormRoutes(app: Express) {
                 const cfg = (form?.config as FormConfig | null) ?? DEFAULT_FORM_CONFIG;
                 const xphere = await storage.getXphereSettings();
                 const bookingUrl = xphere ? buildXphereBookingUrl(existing, cfg, xphere) : null;
-                if (bookingUrl) return res.json({ ...existing, bookingUrl });
+                if (bookingUrl) return res.json(publicLeadView(existing, bookingUrl));
               } catch { /* fall through: respond exactly as before */ }
             }
-            return res.json(existing);
+            return res.json(publicLeadView(existing));
           }
         }
       }
@@ -492,7 +510,7 @@ export function registerFormRoutes(app: Express) {
         if (err instanceof z.ZodError) {
           return res.status(400).json({ message: "Validation error", errors: err.errors });
         }
-        res.status(400).json({ message: err?.message || "Failed to transcribe audio" });
+        sendError(res, err, "Failed to transcribe audio");
       }
     },
   );

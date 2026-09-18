@@ -70,7 +70,9 @@ export function Editable({
  */
 export function CropMarks({ bleed, onDark = false }: { bleed: number; onDark?: boolean }) {
   if (bleed <= 0) return null;
-  const len = Math.max(bleed - 1, 2);
+  // Never longer than the bleed: at 1mm the old floor of 2mm put the mark 1mm
+  // inside the trim line, i.e. on the finished piece.
+  const len = Math.min(Math.max(bleed - 1, 2), bleed);
   const mm = (v: number) => `${v}mm`;
   const mark = (style: React.CSSProperties, key: string) => (
     <div

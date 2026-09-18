@@ -2,7 +2,8 @@ import type { Express } from "express";
 import crypto from "crypto";
 import { storage } from "../storage.js";
 import { insertPresentationSchema } from "#shared/schema.js";
-import { requireAdmin } from "./_shared.js";
+import { requireAdmin, sendError } from "./_shared.js";
+import { rateLimitMiddleware } from "../lib/rateLimit.js";
 import { z } from "zod";
 
 const thumbnailSchema = z.object({
@@ -22,12 +23,24 @@ function slugifyTitle(title: string): string {
 
 async function buildUniquePresentationSlug(title: string): Promise<string> {
   const base = slugifyTitle(title);
-  if (!await storage.getPresentationBySlug(base)) return base;
+  // Always append a short random suffix for newly created presentations so
+  // slugs aren't trivially guessable from the title alone (same rule as
+  // estimates). Existing stored slugs are unaffected.
   for (let i = 0; i < 5; i++) {
     const candidate = `${base}-${crypto.randomBytes(2).toString("hex")}`;
     if (!await storage.getPresentationBySlug(candidate)) return candidate;
   }
   return `${base}-${Date.now()}`;
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Admin list pagination: a missing or non-numeric value falls back to the
+// default rather than reaching SQL as NaN; the cap bounds a single page.
+function parseListParam(raw: unknown, fallback: number, min: number, max: number): number {
+  const value = Number(raw);
+  if (!Number.isInteger(value)) return fallback;
+  return Math.min(Math.max(value, min), max);
 }
 
 function normalizeCustomSlug(slug: string): string {
@@ -57,7 +70,12 @@ export function registerPresentationsRoutes(app: Express) {
 
   // PRES-17: Record view — called from client when viewing presentation
   // SHA-256 hash IP per ip_hash column intent (STATE.md Phase 15 decision)
-  app.post("/api/presentations/:id/view", async (req, res) => {
+  app.post("/api/presentations/:id/view", rateLimitMiddleware({ limit: 10, windowMs: 60_000 }), async (req, res) => {
+    // Presentation ids are uuids — reject anything else before it reaches the
+    // query layer (an invalid uuid literal is a Postgres error, not a 404).
+    if (!UUID_RE.test(req.params.id)) {
+      return res.status(400).json({ message: "Invalid presentation id" });
+    }
     try {
       // `req.ip`, not the raw header — see server/lib/turnstile.ts.
       const rawIp = (req.ip || "").toString();
@@ -76,8 +94,8 @@ export function registerPresentationsRoutes(app: Express) {
   // listPresentations() already performs the LEFT JOIN + JSONB count query
   app.get("/api/presentations", requireAdmin, async (req, res) => {
     try {
-      const limit = req.query.limit ? Number(req.query.limit) : undefined;
-      const offset = req.query.offset ? Number(req.query.offset) : undefined;
+      const limit = parseListParam(req.query.limit, 50, 1, 100);
+      const offset = parseListParam(req.query.offset, 0, 0, Number.MAX_SAFE_INTEGER);
       const search = req.query.search as string | undefined;
       const result = await storage.listPresentations(limit, offset, search);
       res.json(result);
@@ -103,7 +121,7 @@ export function registerPresentationsRoutes(app: Express) {
       const presentation = await storage.createPresentation({ title: parsed.data.title, slides: parsed.data.slides ?? [], slug });
       res.status(201).json({ id: presentation.id, slug: presentation.slug, slides: presentation.slides });
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to create presentation");
     }
   });
 
@@ -178,7 +196,7 @@ export function registerPresentationsRoutes(app: Express) {
       });
       res.json(updated);
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to update presentation");
     }
   });
 
@@ -193,7 +211,7 @@ export function registerPresentationsRoutes(app: Express) {
       const updated = await storage.updatePresentation(req.params.id, parsed.data);
       res.json(updated);
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to update thumbnail");
     }
   });
 
@@ -205,7 +223,7 @@ export function registerPresentationsRoutes(app: Express) {
       await storage.deletePresentation(req.params.id);
       res.json({ success: true });
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to delete presentation");
     }
   });
 }
