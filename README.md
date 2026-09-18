@@ -131,6 +131,19 @@ shared/
 - `integrationSettings` - GoHighLevel credentials
 - `faqs` - FAQ entries
 
+### Project previews and print folder
+
+In Admin → Portfolio, upload the website home and dashboard separately. Homepage
+cards alternate between these previews every 4.5 seconds; one configured preview
+stays static. The print folder uses only `homeImageUrl`. Legacy `imageUrl` covers
+and popup screenshots are never used as a print fallback, since they may depict
+dashboards. Existing projects need their home screenshot explicitly selected.
+
+Before running the updated API against another database, apply the additive
+migration with `npx tsx scripts/migrate-portfolio-previews.ts` (loads `.env`). It
+adds nullable `home_image_url` and `dashboard_image_url` columns without changing
+existing images.
+
 ## Brand Guidelines
 
 - **Primary Navy**: `#0A162E` (dark surfaces, headings)

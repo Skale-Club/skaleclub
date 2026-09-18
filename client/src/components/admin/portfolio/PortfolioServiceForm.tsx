@@ -24,6 +24,7 @@ type PortfolioServiceFormProps = {
 export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }: PortfolioServiceFormProps) {
     const { toast } = useToast();
     const [imageAspectRatio, setImageAspectRatio] = useState("16 / 9");
+    const [previewUploading, setPreviewUploading] = useState(false);
     const [formData, setFormData] = useState<Partial<InsertPortfolioService>>({
         slug: service?.slug || '',
         title: service?.title || '',
@@ -35,6 +36,8 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
         badgeText: service?.badgeText || 'One-time Fee',
         features: service?.features || [],
         imageUrl: service?.imageUrl || '',
+        homeImageUrl: service?.homeImageUrl || '',
+        dashboardImageUrl: service?.dashboardImageUrl || '',
         logoIconUrl: service?.logoIconUrl || '',
         toolUrl: service?.toolUrl || '',
         iconName: service?.iconName || 'Rocket',
@@ -52,6 +55,20 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
     const [urlInput, setUrlInput] = useState('');
     const descriptionWordCount = countWords(formData.description ?? '');
     const descriptionTooLong = descriptionWordCount > PORTFOLIO_DESCRIPTION_MAX_WORDS;
+
+    const uploadPreview = async (field: 'homeImageUrl' | 'dashboardImageUrl', file: File | undefined) => {
+        if (!file) return;
+        setPreviewUploading(true);
+        try {
+            const imagePath = await uploadFileToServer(file);
+            setFormData(prev => ({ ...prev, [field]: imagePath }));
+            toast({ title: field === 'homeImageUrl' ? 'Preview da Home atualizado' : 'Preview do dashboard atualizado' });
+        } catch (error: any) {
+            toast({ title: 'Upload falhou', description: error.message, variant: 'destructive' });
+        } finally {
+            setPreviewUploading(false);
+        }
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -118,7 +135,7 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
                     checked={formData.isActive ?? true}
                     onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
                 />
-                <Button type="submit" disabled={isLoading} size="sm" data-testid="button-save-service">
+                <Button type="submit" disabled={isLoading || previewUploading} size="sm" data-testid="button-save-service">
                     {isLoading && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
                     {service ? 'Update' : 'Create'}
                 </Button>
@@ -135,8 +152,9 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
                 <div className="grid grid-cols-2 gap-4">
                     {/* Image 16:9 */}
                     <div className="space-y-1.5">
-                        <Label>Service Image</Label>
-                        {formData.imageUrl ? (
+                        <Label>Home do site — imagem principal</Label>
+                        <p className="text-xs text-muted-foreground">Primeiro preview do carrossel e única imagem do projeto no folder. Cadastre uma screenshot da home do site.</p>
+                        {formData.homeImageUrl ? (
                             <div className="space-y-1.5">
                                 <label
                                     className="group relative w-full rounded-lg overflow-hidden border bg-[radial-gradient(circle_at_top,_rgba(64,110,241,0.12),_rgba(15,23,42,0.92)_70%)] cursor-pointer block"
@@ -144,7 +162,7 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
                                     title="Click to replace image"
                                 >
                                     <img
-                                        src={getOriginalImageUrl(formData.imageUrl)}
+                                        src={getOriginalImageUrl(formData.homeImageUrl)}
                                         alt="Service"
                                         className="w-full h-full object-cover"
                                         style={{ transform: 'translateZ(0)', WebkitBackfaceVisibility: 'hidden', imageRendering: 'auto' }}
@@ -168,22 +186,18 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
                                         type="file"
                                         className="hidden"
                                         accept="image/*"
-                                        onChange={async (e) => {
+                                        data-testid="input-home-preview-replace"
+                                        disabled={previewUploading}
+                                        onChange={(e) => {
                                             const file = e.target.files?.[0];
-                                            if (file) {
-                                                try {
-                                                    const imagePath = await uploadFileToServer(file);
-                                                    setFormData(prev => ({ ...prev, imageUrl: imagePath }));
-                                                    toast({ title: 'Image replaced successfully' });
-                                                } catch (error: any) {
-                                                    toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
-                                                }
-                                            }
+                                            e.target.value = '';
+                                            void uploadPreview('homeImageUrl', file);
                                         }}
                                     />
                                     <button
                                         type="button"
-                                        onClick={(e) => { e.preventDefault(); setFormData(prev => ({ ...prev, imageUrl: '' })); }}
+                                        disabled={previewUploading}
+                                        onClick={(e) => { e.preventDefault(); setFormData(prev => ({ ...prev, homeImageUrl: null })); }}
                                         className="absolute top-2 right-2 z-10 p-1.5 bg-black/60 hover:bg-red-500/80 text-white rounded-full transition-colors"
                                         title="Remove image"
                                     >
@@ -194,7 +208,7 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
                                     Stored size: <span id={`img-info-${service?.id ?? 'new'}`} className="font-mono">...</span>
                                     {' · '}
                                     <a
-                                        href={getOriginalImageUrl(formData.imageUrl)}
+                                        href={getOriginalImageUrl(formData.homeImageUrl)}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="text-primary hover:underline"
@@ -210,17 +224,12 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
                                     type="file"
                                     className="hidden"
                                     accept="image/*"
-                                    onChange={async (e) => {
+                                    data-testid="input-home-preview"
+                                    disabled={previewUploading}
+                                    onChange={(e) => {
                                         const file = e.target.files?.[0];
-                                        if (file) {
-                                            try {
-                                                const imagePath = await uploadFileToServer(file);
-                                                setFormData(prev => ({ ...prev, imageUrl: imagePath }));
-                                                toast({ title: 'Image uploaded successfully' });
-                                            } catch (error: any) {
-                                                toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
-                                            }
-                                        }
+                                        e.target.value = '';
+                                        void uploadPreview('homeImageUrl', file);
                                     }}
                                 />
                             </label>
@@ -498,6 +507,52 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
                         </div>
                     </div>
 
+                </div>
+
+                <div className="border-t" />
+
+                {/* Explicit previews are independent of the popup gallery order. */}
+                <div className="space-y-3">
+                    <Label htmlFor="dashboard-preview-upload">Dashboard — segundo preview</Label>
+                    <p className="text-xs text-muted-foreground">Alterna com a Home no carrossel do site. Esta imagem não aparece no folder.</p>
+                    {formData.dashboardImageUrl && (
+                        <div className="relative aspect-video max-w-sm overflow-hidden rounded-lg border bg-muted">
+                            <img src={getOriginalImageUrl(formData.dashboardImageUrl)} alt="Preview do dashboard" className="h-full w-full object-cover" />
+                            <Button type="button" variant="destructive" size="sm" className="absolute right-2 top-2" disabled={previewUploading}
+                                data-testid="button-remove-dashboard-preview"
+                                onClick={() => setFormData(prev => ({ ...prev, dashboardImageUrl: null }))}>
+                                <Trash2 className="mr-1 h-4 w-4" /> Remover
+                            </Button>
+                        </div>
+                    )}
+                    <Input id="dashboard-preview-upload" data-testid="input-dashboard-preview" type="file" accept="image/*" disabled={previewUploading}
+                        onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            e.target.value = '';
+                            void uploadPreview('dashboardImageUrl', file);
+                        }} />
+                    {previewUploading && <p className="text-xs text-muted-foreground" role="status">Enviando imagem...</p>}
+                    {(formData.popupSliderImages || []).length > 0 && (
+                        <div className="grid grid-cols-2 gap-3">
+                            {(['homeImageUrl', 'dashboardImageUrl'] as const).map(field => (
+                                <div key={field} className="space-y-1.5">
+                                    <Label htmlFor={`preview-gallery-${field}`}>{field === 'homeImageUrl' ? 'Home: escolher da galeria' : 'Dashboard: escolher da galeria'}</Label>
+                                    <select id={`preview-gallery-${field}`} data-testid={`select-preview-${field}`}
+                                        className="h-10 w-full rounded-md border bg-background px-3 text-sm" disabled={previewUploading}
+                                        value={formData[field] || ''}
+                                        onChange={e => setFormData(prev => ({ ...prev, [field]: e.target.value || null }))}>
+                                        <option value="">Sem imagem</option>
+                                        {formData[field] && !(formData.popupSliderImages || []).includes(formData[field]!) && (
+                                            <option value={formData[field]!}>Imagem cadastrada</option>
+                                        )}
+                                        {(formData.popupSliderImages || []).map((url, index) => (
+                                            <option key={`${url}-${index}`} value={url}>Screenshot {index + 1}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 <div className="border-t" />

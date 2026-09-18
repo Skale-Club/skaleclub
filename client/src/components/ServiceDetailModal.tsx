@@ -1,9 +1,38 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  X,
+  ExternalLink,
+  Sparkles,
+  Globe,
+  Calendar,
+  Utensils,
+  FileSpreadsheet,
+  Users,
+  CreditCard,
+  MessageCircle,
+  Rocket,
+} from "lucide-react";
 import type { PortfolioService } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getOriginalImageUrl } from "@/components/admin/shared/utils";
 import { LaptopMockup } from "./LaptopMockup";
+
+function getServiceFallbackIcon(service: PortfolioService) {
+  const slug = (service.slug || "").toLowerCase();
+  const icon = (service.iconName || "").toLowerCase();
+
+  if (slug.includes("xareable") || slug.includes("astropilot") || icon.includes("sparkle")) return Sparkles;
+  if (slug.includes("site") || slug.includes("web") || icon.includes("globe")) return Globe;
+  if (slug.includes("kedule") || slug.includes("schedul") || icon.includes("calendar")) return Calendar;
+  if (slug.includes("menu") || icon.includes("utensil")) return Utensils;
+  if (slug.includes("timator") || icon.includes("sheet") || icon.includes("calc")) return FileSpreadsheet;
+  if (slug.includes("crm") || slug.includes("phere") || icon.includes("user")) return Users;
+  if (slug.includes("pay") || icon.includes("credit")) return CreditCard;
+  if (slug.includes("chat") || icon.includes("message")) return MessageCircle;
+  return Rocket;
+}
 
 interface ServiceDetailModalProps {
   service: PortfolioService;
@@ -113,6 +142,13 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
   const popupUrls: string[] = (service.popupUrls as string[]) || [];
   const features: string[] = (service.features as string[]) || [];
 
+  // Fallback to primary service image if no slider images are configured
+  const effectiveSliderImages: string[] = sliderImages.length > 0
+    ? sliderImages
+    : service.imageUrl
+      ? [service.imageUrl]
+      : [];
+
   const displayFeatures = features.length > 0 ? features : FALLBACK_FEATURES;
 
   useEffect(() => {
@@ -149,14 +185,14 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
   }
 
   useEffect(() => {
-    if (!isOpen || sliderImages.length <= 1 || isPaused) return;
+    if (!isOpen || effectiveSliderImages.length <= 1 || isPaused) return;
     intervalRef.current = setInterval(() => {
-      setCurrentSlide(prev => (prev + 1) % sliderImages.length);
-    }, 3000);
+      setCurrentSlide(prev => (prev + 1) % effectiveSliderImages.length);
+    }, 3500);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isOpen, sliderImages.length, isPaused]);
+  }, [isOpen, effectiveSliderImages.length, isPaused]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -176,20 +212,25 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
 
   if (!isOpen) return null;
 
-  const renderFavicon = (cqwFn: CqwFn, size: number, radius: number) => (
-    <div
-      className="shrink-0 overflow-hidden flex items-center justify-center"
-      style={{
-        width: capAtFigmaSize(cqwFn, size), height: capAtFigmaSize(cqwFn, size), borderRadius: capAtFigmaSize(cqwFn, radius),
-        background: service.logoIconUrl ? "transparent" : theme.iconBg,
-        border: service.logoIconUrl ? "none" : theme.iconBorder,
-      }}
-    >
-      {service.logoIconUrl && (
-        <img src={getOriginalImageUrl(service.logoIconUrl)} alt={service.title} className="w-full h-full object-contain" />
-      )}
-    </div>
-  );
+  const renderFavicon = (cqwFn: CqwFn, size: number, radius: number) => {
+    const FallbackIcon = getServiceFallbackIcon(service);
+    return (
+      <div
+        className="shrink-0 overflow-hidden flex items-center justify-center"
+        style={{
+          width: capAtFigmaSize(cqwFn, size), height: capAtFigmaSize(cqwFn, size), borderRadius: capAtFigmaSize(cqwFn, radius),
+          background: service.logoIconUrl ? "transparent" : "rgba(59,130,246,0.1)",
+          border: service.logoIconUrl ? "none" : "1px solid rgba(59,130,246,0.25)",
+        }}
+      >
+        {service.logoIconUrl ? (
+          <img src={getOriginalImageUrl(service.logoIconUrl)} alt={service.title} className="w-full h-full object-contain" />
+        ) : (
+          <FallbackIcon className="w-1/2 h-1/2 text-blue-400" />
+        )}
+      </div>
+    );
+  };
 
   const renderTitle = (cqwFn: CqwFn, fontSize: number, lineHeight: number) => (
     <h2
@@ -267,18 +308,31 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
   );
 
   const renderUrls = (cqwFn: CqwFn, fontSize: number, lineHeight: number, maxWidth: string) => (
-    <div className="flex flex-col items-start">
+    <div className="flex flex-col items-start gap-1">
+      {service.toolUrl && (
+        <a
+          href={service.toolUrl.startsWith("http") ? service.toolUrl : `https://${service.toolUrl}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-300 border border-blue-500/30 hover:bg-blue-500/30 transition-colors mb-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <ExternalLink className="w-3.5 h-3.5" />
+          <span>{t("Live Tool")}: {service.toolUrl.replace(/^https?:\/\//, '')}</span>
+        </a>
+      )}
       {popupUrls.map((url, i) => (
         <a
           key={i}
           href={url.startsWith("http") ? url : `https://${url}`}
           target="_blank"
           rel="noopener noreferrer"
-          className={`${theme.urlClass} whitespace-nowrap overflow-hidden text-ellipsis block`}
+          className={`${theme.urlClass} whitespace-nowrap overflow-hidden text-ellipsis inline-flex items-center gap-1.5`}
           style={{ fontSize: capAtFigmaSize(cqwFn, fontSize), lineHeight: capAtFigmaSize(cqwFn, lineHeight), fontWeight: 400, maxWidth }}
           onClick={(e) => e.stopPropagation()}
         >
-          {url}
+          <ExternalLink className="w-3 h-3 opacity-60 shrink-0" />
+          <span>{url.replace(/^https?:\/\//, '').replace(/\/$/, '')}</span>
         </a>
       ))}
     </div>
@@ -290,38 +344,74 @@ export function ServiceDetailModal({ service, isOpen, onClose, onCta, onPrev, on
   const renderCta = (cqwFn: CqwFn, width: string, height: number, fontSize: number) => (
     <button
       onClick={(e) => { e.stopPropagation(); onCta(service.slug); }}
-      className="flex items-center justify-center rounded-full text-white font-bold hover:opacity-90 transition-opacity whitespace-nowrap"
-      style={{ width, height: capAtFigmaSize(cqwFn, height), fontSize: capAtFigmaSize(cqwFn, fontSize), background: "var(--cta)", border: "1px solid var(--cta-hover)", alignSelf: "center" }}
+      className="flex items-center justify-center rounded-full text-white font-bold hover:scale-[1.02] transition-all shadow-[0_0_20px_rgba(64,110,241,0.35)] whitespace-nowrap"
+      style={{
+        width, height: capAtFigmaSize(cqwFn, height), fontSize: capAtFigmaSize(cqwFn, fontSize),
+        background: service.ctaButtonColor || "linear-gradient(135deg, #2563eb, #4f46e5)",
+        border: "1px solid rgba(255,255,255,0.15)",
+        alignSelf: "center"
+      }}
     >
-      {isEnglish ? "Start" : "Começar"}
+      {t(service.ctaText || (isEnglish ? "Get Started" : "Começar"))}
     </button>
   );
 
+  const renderScreen = (cqwFn: CqwFn, emptyFontSize: number) => {
+    if (effectiveSliderImages.length > 0) {
+      return (
+        <div className="w-full h-full relative overflow-hidden bg-slate-950">
+          {effectiveSliderImages.map((src, i) => (
+            <img
+              key={i}
+              src={getOriginalImageUrl(src)}
+              alt={`Screenshot ${i + 1}`}
+              className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500 ease-in-out"
+              style={{ transform: `translateX(${(i - currentSlide) * 100}%)` }}
+            />
+          ))}
+        </div>
+      );
+    }
 
-  const renderScreen = (cqwFn: CqwFn, emptyFontSize: number) => (
-    sliderImages.length > 0 ? (
-      <div className="w-full h-full relative overflow-hidden">
-        {sliderImages.map((src, i) => (
-          <img
-            key={i}
-            src={getOriginalImageUrl(src)}
-            alt={`Screenshot ${i + 1}`}
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-in-out"
-            style={{ transform: `translateX(${(i - currentSlide) * 100}%)` }}
-          />
-        ))}
+    const FallbackIcon = getServiceFallbackIcon(service);
+    return (
+      <div className="w-full h-full relative overflow-hidden flex flex-col items-center justify-center p-4 bg-gradient-to-br from-[#0c1322] via-[#141e34] to-[#0a0f1d] text-center select-none">
+        <div
+          className="absolute inset-0 opacity-15 pointer-events-none"
+          style={{
+            backgroundImage: "radial-gradient(circle at 2px 2px, rgba(255,255,255,0.2) 1px, transparent 0)",
+            backgroundSize: "16px 16px"
+          }}
+        />
+        <div className="relative z-10 flex flex-col items-center gap-2.5">
+          {service.logoIconUrl ? (
+            <img
+              src={getOriginalImageUrl(service.logoIconUrl)}
+              alt={service.title}
+              className="h-14 w-14 object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)]"
+            />
+          ) : (
+            <div className="h-14 w-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-blue-400 shadow-xl">
+              <FallbackIcon className="h-7 w-7" />
+            </div>
+          )}
+          <span className="text-white font-bold text-sm sm:text-base tracking-tight">
+            {service.title}
+          </span>
+          {service.subtitle && (
+            <span className="text-xs text-slate-400 max-w-[200px] truncate">
+              {t(service.subtitle)}
+            </span>
+          )}
+        </div>
       </div>
-    ) : (
-      <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-        <span className="text-gray-500" style={{ fontSize: capAtFigmaSize(cqwFn, emptyFontSize) }}>{t("No screenshots")}</span>
-      </div>
-    )
-  );
+    );
+  };
 
   const renderDots = (cqwFn: CqwFn) => (
-    sliderImages.length > 1 && (
+    effectiveSliderImages.length > 1 && (
       <div className="flex justify-center" style={{ gap: capAtFigmaSize(cqwFn, 14), marginTop: capAtFigmaSize(cqwFn, 16) }}>
-        {sliderImages.map((_, i) => (
+        {effectiveSliderImages.map((_, i) => (
           <button
             key={i}
             onClick={(e) => { e.stopPropagation(); setCurrentSlide(i); }}

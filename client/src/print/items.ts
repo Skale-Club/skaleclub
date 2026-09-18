@@ -42,7 +42,8 @@ export function fromPortfolioService(service: PortfolioService): FolderItem {
     price: service.price,
     priceLabel: service.priceLabel,
     features: service.features ?? [],
-    imageUrl: service.imageUrl,
+    // Print only the website home. Never use dashboard or popup gallery images.
+    imageUrl: service.homeImageUrl,
     logoIconUrl: service.logoIconUrl,
     source: "product",
   };

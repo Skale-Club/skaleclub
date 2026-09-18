@@ -7,6 +7,7 @@ import { ServicesCarousel } from '@/components/home/ServicesCarousel';
 import { StepCard } from '@/components/home/StepCard';
 import type { StepItem } from '@/components/home/StepCard';
 import { ServiceDetailModal } from '@/components/ServiceDetailModal';
+import { ProjectPreviewProvider } from '@/components/home/ProjectPreview';
 
 type Props = {
   section?: HomepageContent['consultingStepsSection'] | HomepageContent['horizontalScrollSection'] | null;
@@ -110,12 +111,14 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick, backg
             subtitle={section?.subtitle}
             dark
           />
-          <ServicesCarousel
-            items={services}
-            paused={isModalOpen}
-            ariaLabel="Services carousel"
-            renderItem={renderServiceItem}
-          />
+          <ProjectPreviewProvider services={services} paused={isModalOpen}>
+            <ServicesCarousel
+              items={services}
+              paused={isModalOpen}
+              ariaLabel="Services carousel"
+              renderItem={renderServiceItem}
+            />
+          </ProjectPreviewProvider>
         </SectionShell>
 
         {selectedService && (

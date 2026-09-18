@@ -112,6 +112,9 @@ export const portfolioServices = pgTable("portfolio_services", {
   badgeText: text("badge_text").notNull().default("One-time Fee"),
   features: jsonb("features").$type<string[]>().default([]),
   imageUrl: text("image_url"),
+  // Explicit home prevents legacy covers (often dashboards) from reaching print.
+  homeImageUrl: text("home_image_url"),
+  dashboardImageUrl: text("dashboard_image_url"),
   logoIconUrl: text("logo_icon_url"),
   toolUrl: text("tool_url"),
   popupSliderImages: jsonb("popup_slider_images").$type<string[]>().default([]),
@@ -144,6 +147,8 @@ export const insertPortfolioServiceSchema = z.object({
   badgeText: z.string().default("One-time Fee"),
   features: z.array(z.string()).nullable().optional().default([]),
   imageUrl: z.string().nullable().optional(),
+  homeImageUrl: z.string().nullable().optional(),
+  dashboardImageUrl: z.string().nullable().optional(),
   logoIconUrl: z.string().nullable().optional(),
   toolUrl: z.string().nullable().optional(),
   popupSliderImages: z.array(z.string()).nullable().optional().default([]),
