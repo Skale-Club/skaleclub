@@ -1,14 +1,14 @@
 import type { FolderItem } from "./items";
-import { Check } from "lucide-react";
+import { CATALOG_CATEGORY_LABEL, siteDomain, type CatalogCategory } from "@shared/catalog";
 import { Chip, Editable, ImageFrame, INK, Price, printImage } from "./primitives";
 
 /**
  * The cards that fill panels 2 and 3 of the folder.
  *
- * Both use the imagery the site already has on each entry: `imageUrl` is the
- * card photo and `logoIconUrl` is the product mark, badged over the photo's
- * corner. The earlier version printed neither on the small cards, which is what
- * made the spread read as a price list rather than a product line-up.
+ * They mirror the website's CatalogCard: same model (CatalogItem), same order
+ * of information (category, title, subtitle, features, price), same cover
+ * treatment and the same fallback when there is no image. `cover` is the card
+ * image and `logo` the product mark, badged over the cover's corner.
  */
 
 /** Section title for a panel: eyebrow, heading, rule. */
@@ -33,7 +33,9 @@ export function PanelHeading({
       )}
       <Editable
         as="h2"
-        className="mt-[1.5mm] text-[16pt] font-extrabold leading-[1.1]"
+        // 16pt read as timid on an A4 panel: the jump from eyebrow to title has
+        // to be as visible on paper as it is on the site.
+        className="mt-[1.8mm] text-[24pt] font-extrabold leading-[1] tracking-[-0.02em]"
         style={{ color: onDark ? "#FFFFFF" : INK.navy }}
       >
         {title}
@@ -65,7 +67,9 @@ export function AppCard({
   /** Columns this card spans. The photo widens to match so the row keeps its height. */
   span?: 1 | 2 | 3;
 }) {
-  const photoRatio = `${16 * span} / 8`;
+  // 16/7 rather than 16/8: the category line above the title costs ~3mm per
+  // card, and at three rows of fixed height that came out of the feature chips.
+  const photoRatio = `${16 * span} / 7`;
   const surface = onDark
     ? { backgroundColor: "rgba(255,255,255,0.06)", border: "0.25mm solid rgba(255,255,255,0.12)" }
     : { backgroundColor: INK.paper, border: `0.25mm solid ${INK.rule}` };
@@ -82,13 +86,12 @@ export function AppCard({
           a row identical by construction; the leftover height falls to the
           bottom of the shorter card, where nobody reads it. */}
       <div className="relative shrink-0">
-        {item.imageUrl ? (
-          <ImageFrame src={item.imageUrl} ratio={photoRatio} radius="0" tone="cta" />
+        {item.cover ? (
+          <PrintCover item={item} ratio={photoRatio} />
         ) : (
-          // Not every product has a photo — in production XmartMenu and
-          // Xtimator have an empty `imageUrl`. An empty grey box on a printed
+          // Not every product has a cover yet. An empty grey box on a printed
           // brochure reads as a mistake, so fall back to the product mark on a
-          // brand panel, which reads as a deliberate treatment.
+          // brand panel, which reads as a deliberate treatment (as on the site).
           <div
             className="flex items-center justify-center"
             style={{
@@ -96,9 +99,9 @@ export function AppCard({
               background: "linear-gradient(135deg, #16233E 0%, #0B1526 100%)",
             }}
           >
-            {item.logoIconUrl ? (
+            {item.logo ? (
               <img
-                src={printImage(item.logoIconUrl, 400)}
+                src={printImage(item.logo, 400)}
                 alt=""
                 className="object-contain"
                 style={{ maxHeight: "60%", maxWidth: "45%" }}
@@ -113,7 +116,7 @@ export function AppCard({
             )}
           </div>
         )}
-        {item.logoIconUrl && item.imageUrl && (
+        {item.logo && item.cover && (
           // The product mark, badged over the photo — this is what makes a card
           // read as "Xkedule" at a glance instead of as a generic stock image.
           <div
@@ -128,7 +131,7 @@ export function AppCard({
             }}
           >
             <img
-              src={printImage(item.logoIconUrl, 320)}
+              src={printImage(item.logo, 320)}
               alt=""
               className="w-full h-full object-contain p-[0.8mm]"
             />
@@ -139,7 +142,8 @@ export function AppCard({
       {/* Always 5mm, badge or not. The badge hangs 3.5mm below the photo, and
           giving badge-less cards a tighter top pushed their titles 2mm higher
           than their neighbours' in the same row. */}
-      <div className="flex flex-col px-[3.2mm] pt-[5mm] pb-[3mm]">
+      <div className="flex flex-col px-[3.2mm] pt-[4.6mm] pb-[3mm]">
+        {!dense && <CategoryEyebrow category={item.category} onDark={onDark} />}
         <div className="flex items-start justify-between gap-[2mm]">
           <Editable
             className="text-[10pt] font-extrabold leading-tight"
@@ -149,8 +153,8 @@ export function AppCard({
           </Editable>
           {showPrices && item.price && (
             <Price
-              price={item.price}
-              label={item.priceLabel}
+              price={item.price.value}
+              label={item.price.label}
               color={onDark ? "#8FA9EE" : INK.cta}
             />
           )}
@@ -209,7 +213,7 @@ export function ServiceCard({
     <div className="rounded-[2.2mm] overflow-hidden flex flex-col h-full" style={surface}>
       {/* Fixed ratio for the same reason as AppCard. */}
       <ImageFrame
-        src={item.imageUrl}
+        src={item.cover}
         ratio={span > 1 ? `${16 * span} / 7` : (imageRatio ?? (dense ? "16 / 6" : "16 / 8"))}
         radius="0"
         tone="cta"
@@ -342,7 +346,7 @@ export function ServiceListItem({
       }}
     >
       <ImageFrame
-        src={item.imageUrl}
+        src={item.cover}
         ratio="1 / 1"
         radius="1.6mm"
         tone="cta"
@@ -400,12 +404,14 @@ export function TrustPoints({
   return (
     <div className="mt-[7mm] flex flex-col gap-[3mm]">
       {badges.slice(0, 3).map((badge, i) => (
-        <div key={i} className="flex items-start gap-[3mm]">
+        <div key={i} className="flex items-start gap-[3.5mm]">
+          {/* Numerals, not check marks: the site's proof band speaks in big
+              numbers, and a column of ticks reads as a feature checklist. */}
           <span
-            className="flex items-center justify-center shrink-0 rounded-full"
-            style={{ width: "5mm", height: "5mm", marginTop: "0.6mm", backgroundColor: INK.cta }}
+            className="shrink-0 font-extrabold leading-none tracking-[-0.03em]"
+            style={{ fontSize: "17pt", width: "9mm", color: onDark ? "#8FA9EE" : INK.cta }}
           >
-            <Check style={{ width: "2.8mm", height: "2.8mm", color: "#FFFFFF" }} />
+            {String(i + 1).padStart(2, "0")}
           </span>
           <div className="min-w-0">
             <Editable
@@ -425,6 +431,72 @@ export function TrustPoints({
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+// The folder is printed in Portuguese; the site passes the same keys through t().
+const CATEGORY_PT: Record<CatalogCategory, string> = {
+  ai: "IA e automação",
+  websites: "Sites",
+  systems: "Sistemas e agendamento",
+  crm: "CRM e vendas",
+  marketing: "Marketing",
+  brand: "Marca",
+};
+
+/** The same category label the website card carries above the title. */
+function CategoryEyebrow({ category, onDark }: { category?: CatalogCategory; onDark: boolean }) {
+  if (!category) return null;
+  return (
+    <Editable
+      className="mb-[1mm] text-[5.8pt] font-bold uppercase tracking-[0.18em] leading-none"
+      style={{ color: onDark ? "#8FA9EE" : INK.cta }}
+    >
+      {CATEGORY_PT[category] ?? CATALOG_CATEGORY_LABEL[category]}
+    </Editable>
+  );
+}
+
+/**
+ * The website's composed cover, in millimetres: the product's real home page
+ * in a browser window on the brand surface. Every product cover comes out of
+ * the same family by construction, on paper as on screen.
+ */
+function PrintCover({ item, ratio }: { item: FolderItem; ratio: string }) {
+  const domain = siteDomain(item.site) ?? siteDomain(item.links[0]);
+  return (
+    <div
+      className="relative overflow-hidden"
+      style={{
+        aspectRatio: ratio,
+        background: "radial-gradient(70% 70% at 50% 110%, rgba(81,115,214,0.45), transparent 70%), #142038",
+      }}
+    >
+      <div
+        className="absolute overflow-hidden"
+        style={{
+          left: "9%",
+          right: "9%",
+          top: "13%",
+          bottom: "-6%",
+          borderRadius: "1.4mm 1.4mm 0 0",
+          border: "0.25mm solid rgba(180,192,216,0.3)",
+          backgroundColor: "#0B0F18",
+        }}
+      >
+        <div className="flex items-center gap-[0.8mm] px-[1.6mm]" style={{ height: "3mm", backgroundColor: "#151B28" }}>
+          {[0, 1, 2].map((d) => (
+            <span key={d} className="rounded-full" style={{ width: "0.9mm", height: "0.9mm", backgroundColor: "rgba(180,192,216,0.35)" }} />
+          ))}
+          {domain && (
+            <span className="ml-[1.2mm] truncate" style={{ fontSize: "4.5pt", color: "#7C8AA6" }}>
+              {domain}
+            </span>
+          )}
+        </div>
+        <img src={printImage(item.cover)} alt="" className="w-full object-cover object-top" style={{ height: "calc(100% - 3mm)" }} />
+      </div>
     </div>
   );
 }

@@ -39,7 +39,7 @@ function CatalogEntry({
           )}
         </div>
         {showPrices && item.price && (
-          <Price price={item.price} label={item.priceLabel} color="#8FA9EE" />
+          <Price price={item.price.value} label={item.price.label} color="#8FA9EE" />
         )}
       </div>
 

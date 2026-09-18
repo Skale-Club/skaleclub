@@ -94,14 +94,14 @@ export default function PrintFolder() {
     () => catalog.filter((item) => (selectedKeys ?? []).includes(item.key)),
     [catalog, selectedKeys],
   );
-  const chosenApps = useMemo(() => chosen.filter((i) => i.source === "product"), [chosen]);
-  const chosenServices = useMemo(() => chosen.filter((i) => i.source === "service"), [chosen]);
+  const chosenApps = useMemo(() => chosen.filter((i) => i.kind === "product"), [chosen]);
+  const chosenServices = useMemo(() => chosen.filter((i) => i.kind === "service"), [chosen]);
 
   // Toolbar groups, so it is obvious which catalog an entry comes from.
   const groups = useMemo(() => {
     const order: FolderItemSource[] = ["product", "service"];
     return order
-      .map((source) => ({ source, items: catalog.filter((i) => i.source === source) }))
+      .map((source) => ({ source, items: catalog.filter((i) => i.kind === source) }))
       .filter((g) => g.items.length > 0);
   }, [catalog]);
 
