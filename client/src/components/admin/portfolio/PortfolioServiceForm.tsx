@@ -1,18 +1,21 @@
-import { useState } from 'react';
-import { Image, Trash2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { DialogClose, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Loader2 } from '@/components/ui/loader';
 import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { uploadFileToServer, getOriginalImageUrl } from '../shared/utils';
+import { uploadFileToServer } from '../shared/utils';
+import { CatalogPreview } from '../catalog/CatalogPreview';
+import { FormNotice, catalogLimitIssues } from '../catalog/CatalogFields';
+import { ServiceMediaFields } from './ServiceMediaFields';
+import { ServiceContentFields } from './ServiceContentFields';
+import { ServicePricingFields } from './ServicePricingFields';
+import { ServiceGalleryFields } from './ServiceGalleryFields';
+import { ServicePopupUrlsField } from './ServicePopupUrlsField';
+import type { PortfolioFormData, PreviewImageField } from './portfolioFormTypes';
 import type { InsertPortfolioService, PortfolioService } from '@shared/schema';
+import { fromPortfolioService } from '@shared/catalog';
 import { PORTFOLIO_DESCRIPTION_MAX_LINES, PORTFOLIO_DESCRIPTION_MAX_WORDS, countWords } from '@shared/portfolio';
-
-const MAX_SLIDER_IMAGES = 10;
 
 type PortfolioServiceFormProps = {
     service: PortfolioService | null;
@@ -21,42 +24,51 @@ type PortfolioServiceFormProps = {
     nextOrder: number;
 };
 
-export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }: PortfolioServiceFormProps) {
-    const { toast } = useToast();
-    const [imageAspectRatio, setImageAspectRatio] = useState("16 / 9");
-    const [previewUploading, setPreviewUploading] = useState(false);
-    const [formData, setFormData] = useState<Partial<InsertPortfolioService>>({
+/**
+ * Only the fields the redesigned catalog reads. The legacy per-item styling
+ * (backgroundColor, textColor, accentColor, ctaButtonColor, iconName) and the
+ * legacy `imageUrl` are no longer edited nor sent: updates leave the stored
+ * values untouched and creates fall back to the schema defaults.
+ */
+function initialFormData(service: PortfolioService | null, nextOrder: number): PortfolioFormData {
+    return {
         slug: service?.slug || '',
         title: service?.title || '',
         subtitle: service?.subtitle || '',
         description: service?.description || '',
+        category: (service?.category as PortfolioFormData['category']) ?? null,
         price: service?.price || '',
         priceLabel: service?.priceLabel || '/month',
         setupPrice: service?.setupPrice || '',
-        badgeText: service?.badgeText || 'One-time Fee',
+        badgeText: service?.badgeText ?? '',
         features: service?.features || [],
-        imageUrl: service?.imageUrl || '',
         homeImageUrl: service?.homeImageUrl || '',
         dashboardImageUrl: service?.dashboardImageUrl || '',
         logoIconUrl: service?.logoIconUrl || '',
         toolUrl: service?.toolUrl || '',
-        iconName: service?.iconName || 'Rocket',
         ctaText: service?.ctaText || 'Get Started',
-        backgroundColor: service?.backgroundColor || 'bg-white',
-        textColor: service?.textColor || 'text-slate-900',
-        accentColor: service?.accentColor || '#5173D6',
         order: service?.order ?? nextOrder,
         isActive: service?.isActive ?? true,
-        popupSliderImages: (service?.popupSliderImages as string[]) || [],
-        popupUrls: (service?.popupUrls as string[]) || [],
-    });
+        popupSliderImages: service?.popupSliderImages || [],
+        popupUrls: service?.popupUrls || [],
+    };
+}
 
-    const [featureInput, setFeatureInput] = useState('');
-    const [urlInput, setUrlInput] = useState('');
-    const descriptionWordCount = countWords(formData.description ?? '');
-    const descriptionTooLong = descriptionWordCount > PORTFOLIO_DESCRIPTION_MAX_WORDS;
+export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }: PortfolioServiceFormProps) {
+    const { toast } = useToast();
+    const [previewUploading, setPreviewUploading] = useState(false);
+    const [formData, setFormData] = useState<PortfolioFormData>(() => initialFormData(service, nextOrder));
 
-    const uploadPreview = async (field: 'homeImageUrl' | 'dashboardImageUrl', file: File | undefined) => {
+    const descriptionTooLong = countWords(formData.description ?? '') > PORTFOLIO_DESCRIPTION_MAX_WORDS;
+    const limitIssues = catalogLimitIssues(formData);
+    const blocked = limitIssues.length > 0 || descriptionTooLong;
+
+    const previewItem = useMemo(
+        () => fromPortfolioService({ ...formData, id: service?.id ?? 0 } as PortfolioService),
+        [formData, service?.id],
+    );
+
+    const uploadPreview = async (field: PreviewImageField, file: File | undefined) => {
         if (!file) return;
         setPreviewUploading(true);
         try {
@@ -80,49 +92,23 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
             });
             return;
         }
+        if (limitIssues.length > 0) {
+            toast({ title: 'Content over the card limits', description: limitIssues.join(' '), variant: 'destructive' });
+            return;
+        }
         let toolUrl = (formData.toolUrl ?? '').trim();
-        if (toolUrl && !/^https?:\/\//i.test(toolUrl)) {
-            toolUrl = `https://${toolUrl}`;
-        }
+        if (toolUrl && !/^https?:\/\//i.test(toolUrl)) toolUrl = `https://${toolUrl}`;
         const setupPrice = (formData.setupPrice ?? '').trim();
-        onSubmit({ ...formData, description: (formData.description ?? '').trim(), toolUrl: toolUrl || null, setupPrice: setupPrice || null });
+        onSubmit({
+            ...formData,
+            badgeText: (formData.badgeText ?? '').trim(),
+            description: (formData.description ?? '').trim(),
+            toolUrl: toolUrl || null,
+            setupPrice: setupPrice || null,
+        });
     };
 
-    const addFeature = () => {
-        if (featureInput.trim()) {
-            setFormData(prev => ({
-                ...prev,
-                features: [...(prev.features || []), featureInput.trim()]
-            }));
-            setFeatureInput('');
-        }
-    };
-
-    const removeFeature = (index: number) => {
-        setFormData(prev => ({
-            ...prev,
-            features: prev.features?.filter((_: string, i: number) => i !== index) || []
-        }));
-    };
-
-    const updateFeature = (index: number, value: string) => {
-        setFormData(prev => ({
-            ...prev,
-            features: prev.features?.map((f: string, i: number) => (i === index ? value : f)) || []
-        }));
-    };
-
-    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        try {
-            const path = await uploadFileToServer(file);
-            setFormData(prev => ({ ...prev, logoIconUrl: path }));
-            toast({ title: 'Logo icon uploaded successfully' });
-        } catch (error: any) {
-            toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
-        }
-    };
+    const sectionProps = { formData, setFormData };
 
     return (
         <form onSubmit={handleSubmit} className="flex flex-col max-h-[90vh]">
@@ -135,570 +121,44 @@ export function PortfolioServiceForm({ service, onSubmit, isLoading, nextOrder }
                     checked={formData.isActive ?? true}
                     onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
                 />
-                <Button type="submit" disabled={isLoading || previewUploading} size="sm" data-testid="button-save-service">
+                <Button type="submit" disabled={isLoading || previewUploading || blocked} size="sm" data-testid="button-save-service"
+                    title={blocked ? 'Fix the highlighted fields to save' : undefined}>
                     {isLoading && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
                     {service ? 'Update' : 'Create'}
                 </Button>
                 <DialogClose asChild>
-                    <button type="button" className="rounded-sm opacity-70 hover:opacity-100 transition-opacity">
+                    <button type="button" className="rounded-sm opacity-70 hover:opacity-100 transition-opacity" aria-label="Close">
                         <span className="text-lg leading-none">✕</span>
                     </button>
                 </DialogClose>
             </div>
 
-            <div className="py-4 px-6 space-y-6 overflow-y-auto flex-1">
-
-                {/* Service Image + Tool URL — 2 columns */}
-                <div className="grid grid-cols-2 gap-4">
-                    {/* Image 16:9 */}
-                    <div className="space-y-1.5">
-                        <Label>Home do site — imagem principal</Label>
-                        <p className="text-xs text-muted-foreground">Primeiro preview do carrossel e única imagem do projeto no folder. Cadastre uma screenshot da home do site.</p>
-                        {formData.homeImageUrl ? (
-                            <div className="space-y-1.5">
-                                <label
-                                    className="group relative w-full rounded-lg overflow-hidden border bg-[radial-gradient(circle_at_top,_rgba(64,110,241,0.12),_rgba(15,23,42,0.92)_70%)] cursor-pointer block"
-                                    style={{ aspectRatio: imageAspectRatio }}
-                                    title="Click to replace image"
-                                >
-                                    <img
-                                        src={getOriginalImageUrl(formData.homeImageUrl)}
-                                        alt="Service"
-                                        className="w-full h-full object-cover"
-                                        style={{ transform: 'translateZ(0)', WebkitBackfaceVisibility: 'hidden', imageRendering: 'auto' }}
-                                        loading="eager"
-                                        decoding="async"
-                                        onLoad={(e) => {
-                                            const img = e.currentTarget;
-                                            if (img.naturalWidth > 0 && img.naturalHeight > 0) {
-                                                setImageAspectRatio(`${img.naturalWidth} / ${img.naturalHeight}`);
-                                            }
-                                            const info = document.getElementById(`img-info-${service?.id ?? 'new'}`);
-                                            if (info) info.textContent = `${img.naturalWidth} × ${img.naturalHeight}px`;
-                                        }}
-                                    />
-                                    {/* Hover overlay — Replace */}
-                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 text-white pointer-events-none">
-                                        <Image className="w-6 h-6" />
-                                        <span className="text-sm font-medium">Click to replace</span>
-                                    </div>
-                                    <input
-                                        type="file"
-                                        className="hidden"
-                                        accept="image/*"
-                                        data-testid="input-home-preview-replace"
-                                        disabled={previewUploading}
-                                        onChange={(e) => {
-                                            const file = e.target.files?.[0];
-                                            e.target.value = '';
-                                            void uploadPreview('homeImageUrl', file);
-                                        }}
-                                    />
-                                    <button
-                                        type="button"
-                                        disabled={previewUploading}
-                                        onClick={(e) => { e.preventDefault(); setFormData(prev => ({ ...prev, homeImageUrl: null })); }}
-                                        className="absolute top-2 right-2 z-10 p-1.5 bg-black/60 hover:bg-red-500/80 text-white rounded-full transition-colors"
-                                        title="Remove image"
-                                    >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                </label>
-                                <p className="text-xs text-muted-foreground">
-                                    Stored size: <span id={`img-info-${service?.id ?? 'new'}`} className="font-mono">...</span>
-                                    {' · '}
-                                    <a
-                                        href={getOriginalImageUrl(formData.homeImageUrl)}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-primary hover:underline"
-                                    >Open original</a>
-                                </p>
-                            </div>
-                        ) : (
-                            <label className="flex flex-col items-center justify-center w-full aspect-video border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-                                <Image className="w-8 h-8 text-muted-foreground" />
-                                <span className="text-sm text-muted-foreground mt-2">Click to upload image</span>
-                                <span className="text-xs text-muted-foreground/60 mt-1">Ideal: 1200 × 720 px · max 200 KB</span>
-                                <input
-                                    type="file"
-                                    className="hidden"
-                                    accept="image/*"
-                                    data-testid="input-home-preview"
-                                    disabled={previewUploading}
-                                    onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        e.target.value = '';
-                                        void uploadPreview('homeImageUrl', file);
-                                    }}
-                                />
-                            </label>
+            <div className="overflow-y-auto flex-1">
+                <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_380px] gap-6 py-4 px-6">
+                    <div className="space-y-6 min-w-0">
+                        {blocked && (
+                            <FormNotice tone="error">
+                                <p className="font-semibold">Fix these before saving:</p>
+                                {limitIssues.map(issue => <p key={issue}>{issue}</p>)}
+                                {descriptionTooLong && <p>Description is longer than {PORTFOLIO_DESCRIPTION_MAX_WORDS} words.</p>}
+                            </FormNotice>
                         )}
+                        <ServiceMediaFields {...sectionProps} previewUploading={previewUploading} uploadPreview={uploadPreview} />
+                        <div className="border-t" />
+                        <ServiceContentFields {...sectionProps} />
+                        <div className="border-t" />
+                        <ServicePricingFields {...sectionProps} />
+                        <div className="border-t" />
+                        <ServiceGalleryFields {...sectionProps} previewUploading={previewUploading} uploadPreview={uploadPreview} />
+                        <div className="border-t" />
+                        <ServicePopupUrlsField {...sectionProps} />
                     </div>
 
-                    {/* Right column: Logo Icon + Tool URL */}
-                    <div className="space-y-4">
-                        {/* Logo Icon — small square shown on the card */}
-                        <div className="space-y-1.5">
-                            <Label>Logo Icon</Label>
-                            {formData.logoIconUrl ? (
-                                <div className="relative w-24 h-24 rounded-lg overflow-hidden border bg-muted">
-                                    <img
-                                        src={getOriginalImageUrl(formData.logoIconUrl)}
-                                        alt="Logo icon"
-                                        className="w-full h-full object-contain p-1"
-                                    />
-                                    <label
-                                        className="absolute inset-0 flex items-center justify-center cursor-pointer bg-black/50 opacity-0 hover:opacity-100 transition-opacity"
-                                        title="Click to replace"
-                                    >
-                                        <span className="text-white text-xs font-medium">Replace</span>
-                                        <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
-                                    </label>
-                                    <button
-                                        type="button"
-                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setFormData(prev => ({ ...prev, logoIconUrl: '' })); }}
-                                        className="absolute top-1 right-1 z-10 p-1 bg-black/60 hover:bg-red-500/80 text-white rounded-full transition-colors"
-                                        title="Remove logo icon"
-                                    >
-                                        <Trash2 className="w-3 h-3" />
-                                    </button>
-                                </div>
-                            ) : (
-                                <label className="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-                                    <Image className="w-5 h-5 text-muted-foreground" />
-                                    <span className="text-[10px] text-muted-foreground mt-1">Upload</span>
-                                    <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
-                                </label>
-                            )}
-                            <p className="text-xs text-muted-foreground">Small square shown on the card. Transparent PNG recommended.</p>
-                        </div>
-
-                        {/* Tool URL */}
-                        <div className="space-y-1.5">
-                            <Label htmlFor="toolUrl">Tool URL (optional)</Label>
-                            <Input
-                                id="toolUrl"
-                                type="text"
-                                value={formData.toolUrl ?? ''}
-                                onChange={(e) => setFormData(prev => ({ ...prev, toolUrl: e.target.value }))}
-                                onBlur={(e) => {
-                                    const val = e.target.value.trim();
-                                    if (val && !/^https?:\/\//i.test(val)) {
-                                        setFormData(prev => ({ ...prev, toolUrl: `https://${val}` }));
-                                    }
-                                }}
-                                placeholder="example.com"
-                            />
-                            <p className="text-xs text-muted-foreground">External URL to open the tool. A link will appear next to the service title.</p>
-                        </div>
-                    </div>
+                    <aside className="xl:sticky xl:top-0 xl:self-start">
+                        <CatalogPreview item={previewItem} />
+                    </aside>
                 </div>
-
-                <div className="border-t" />
-
-                {/* Section: Identity */}
-                <div className="space-y-3">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Identity</p>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                            <Label htmlFor="title">Title</Label>
-                            <Input
-                                id="title"
-                                value={formData.title}
-                                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                                required
-                                placeholder="Service title"
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label htmlFor="slug">Slug (unique ID)</Label>
-                            <Input
-                                id="slug"
-                                value={formData.slug}
-                                onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
-                                required
-                                placeholder="e.g., social-cash"
-                            />
-                        </div>
-                    </div>
-                    <div className="space-y-1.5">
-                        <Label htmlFor="subtitle">Subtitle</Label>
-                        <Input
-                            id="subtitle"
-                            value={formData.subtitle}
-                            onChange={(e) => setFormData(prev => ({ ...prev, subtitle: e.target.value }))}
-                            placeholder="Short subtitle"
-                        />
-                    </div>
-                    <div className="space-y-1.5">
-                        <Label htmlFor="description">Description</Label>
-                        <Textarea
-                            id="description"
-                            value={formData.description}
-                            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                            required
-                            placeholder="Service description"
-                            rows={4}
-                        />
-                        <p className={descriptionTooLong ? 'text-xs text-red-500' : 'text-xs text-muted-foreground'}>
-                            {descriptionWordCount}/{PORTFOLIO_DESCRIPTION_MAX_WORDS} words. Popup descriptions support up to {PORTFOLIO_DESCRIPTION_MAX_LINES} lines.
-                        </p>
-                    </div>
-                </div>
-
-                <div className="border-t" />
-
-                {/* Section: Pricing */}
-                <div className="space-y-3">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Pricing</p>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                            <Label htmlFor="price">Price</Label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                                <Input
-                                    id="price"
-                                    value={formData.price?.replace(/^\$/, '') || ''}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, price: '$' + e.target.value.replace(/^\$/, '') }))}
-                                    required
-                                    placeholder="1,999"
-                                    className="pl-7"
-                                />
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label htmlFor="priceLabel">Price Label</Label>
-                            <select
-                                id="priceLabel"
-                                value={formData.priceLabel}
-                                onChange={(e) => setFormData(prev => ({ ...prev, priceLabel: e.target.value }))}
-                                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
-                            >
-                                <option value="/month">/month</option>
-                                <option value="/year">/year</option>
-                                <option value="one-time">one-time</option>
-                                <option value="starting">starting</option>
-                                <option value="per project">per project</option>
-                                <option value="per seat">/seat</option>
-                            </select>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label htmlFor="setupPrice">Setup Price (optional)</Label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                                <Input
-                                    id="setupPrice"
-                                    value={formData.setupPrice?.replace(/^\$/, '') || ''}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, setupPrice: e.target.value ? '$' + e.target.value.replace(/^\$/, '') : '' }))}
-                                    placeholder="499"
-                                    className="pl-7"
-                                />
-                            </div>
-                            <p className="text-xs text-muted-foreground">Shown smaller, next to the price, as a one-time setup fee. Leave blank to hide.</p>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label htmlFor="badgeText">Badge</Label>
-                            <Input
-                                id="badgeText"
-                                value={formData.badgeText}
-                                onChange={(e) => setFormData(prev => ({ ...prev, badgeText: e.target.value }))}
-                                placeholder="One-time Fee"
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="border-t" />
-
-                {/* Section: Feature Bubbles */}
-                <div className="space-y-3">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Feature Bubbles</p>
-                    {formData.features && formData.features.length > 0 && (
-                        <div className="space-y-2">
-                            {formData.features.map((feature: string, idx: number) => (
-                                <div key={idx} className="flex items-center gap-2">
-                                    <Input
-                                        value={feature}
-                                        onChange={(e) => updateFeature(idx, e.target.value)}
-                                        placeholder="Bubble text"
-                                    />
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="shrink-0 text-red-500"
-                                        onClick={() => removeFeature(idx)}
-                                        aria-label="Delete bubble"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                    <div className="flex gap-2">
-                        <Input
-                            value={featureInput}
-                            onChange={(e) => setFeatureInput(e.target.value)}
-                            placeholder="Add a bubble..."
-                            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addFeature())}
-                        />
-                        <Button type="button" onClick={addFeature} variant="secondary">Add</Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">Shown as bubbles on the card. They sit in a fixed-height area, so adding or removing them won't change the card's height.</p>
-                </div>
-
-                <div className="border-t" />
-
-                {/* Section: Appearance */}
-                <div className="space-y-3">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Appearance</p>
-
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="hidden">
-                            <Label htmlFor="iconName">Icon</Label>
-                            <select
-                                id="iconName"
-                                value={formData.iconName || 'Rocket'}
-                                onChange={(e) => setFormData(prev => ({ ...prev, iconName: e.target.value }))}
-                                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
-                            >
-                                <option value="sparkles">✨ Sparkles</option>
-                                <option value="globe">🌐 Globe</option>
-                                <option value="message-circle">💬 Message Circle</option>
-                                <option value="credit-card">💳 Credit Card</option>
-                                <option value="phone">📞 Phone</option>
-                                <option value="calendar">📅 Calendar</option>
-                                <option value="users">👥 Users</option>
-                                <option value="cpu">🖥️ CPU</option>
-                                <option value="rocket">🚀 Rocket</option>
-                                <option value="bot">🤖 Bot</option>
-                                <option value="zap">⚡ Zap</option>
-                                <option value="star">⭐ Star</option>
-                                <option value="heart">❤️ Heart</option>
-                                <option value="settings">⚙️ Settings</option>
-                                <option value="code">💻 Code</option>
-                                <option value="database">🗄️ Database</option>
-                                <option value="mail">📧 Mail</option>
-                                <option value="bell">🔔 Bell</option>
-                            </select>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label>Accent Color</Label>
-                            <div className="flex items-center gap-2 h-10">
-                                <input
-                                    type="color"
-                                    value={formData.accentColor || '#5173D6'}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, accentColor: e.target.value }))}
-                                    className="w-10 h-10 rounded-md border cursor-pointer shrink-0"
-                                />
-                                <span className="text-sm font-mono text-muted-foreground">{formData.accentColor || '#5173D6'}</span>
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label htmlFor="ctaText">CTA Button Text</Label>
-                            <Input
-                                id="ctaText"
-                                value={formData.ctaText}
-                                onChange={(e) => setFormData(prev => ({ ...prev, ctaText: e.target.value }))}
-                                placeholder="e.g., Get Started"
-                            />
-                        </div>
-                    </div>
-
-                </div>
-
-                <div className="border-t" />
-
-                {/* Explicit previews are independent of the popup gallery order. */}
-                <div className="space-y-3">
-                    <Label htmlFor="dashboard-preview-upload">Dashboard — segundo preview</Label>
-                    <p className="text-xs text-muted-foreground">Alterna com a Home no carrossel do site. Esta imagem não aparece no folder.</p>
-                    {formData.dashboardImageUrl && (
-                        <div className="relative aspect-video max-w-sm overflow-hidden rounded-lg border bg-muted">
-                            <img src={getOriginalImageUrl(formData.dashboardImageUrl)} alt="Preview do dashboard" className="h-full w-full object-cover" />
-                            <Button type="button" variant="destructive" size="sm" className="absolute right-2 top-2" disabled={previewUploading}
-                                data-testid="button-remove-dashboard-preview"
-                                onClick={() => setFormData(prev => ({ ...prev, dashboardImageUrl: null }))}>
-                                <Trash2 className="mr-1 h-4 w-4" /> Remover
-                            </Button>
-                        </div>
-                    )}
-                    <Input id="dashboard-preview-upload" data-testid="input-dashboard-preview" type="file" accept="image/*" disabled={previewUploading}
-                        onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            e.target.value = '';
-                            void uploadPreview('dashboardImageUrl', file);
-                        }} />
-                    {previewUploading && <p className="text-xs text-muted-foreground" role="status">Enviando imagem...</p>}
-                    {(formData.popupSliderImages || []).length > 0 && (
-                        <div className="grid grid-cols-2 gap-3">
-                            {(['homeImageUrl', 'dashboardImageUrl'] as const).map(field => (
-                                <div key={field} className="space-y-1.5">
-                                    <Label htmlFor={`preview-gallery-${field}`}>{field === 'homeImageUrl' ? 'Home: escolher da galeria' : 'Dashboard: escolher da galeria'}</Label>
-                                    <select id={`preview-gallery-${field}`} data-testid={`select-preview-${field}`}
-                                        className="h-10 w-full rounded-md border bg-background px-3 text-sm" disabled={previewUploading}
-                                        value={formData[field] || ''}
-                                        onChange={e => setFormData(prev => ({ ...prev, [field]: e.target.value || null }))}>
-                                        <option value="">Sem imagem</option>
-                                        {formData[field] && !(formData.popupSliderImages || []).includes(formData[field]!) && (
-                                            <option value={formData[field]!}>Imagem cadastrada</option>
-                                        )}
-                                        {(formData.popupSliderImages || []).map((url, index) => (
-                                            <option key={`${url}-${index}`} value={url}>Screenshot {index + 1}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                <div className="border-t" />
-
-                {/* Section: Laptop Slider Images */}
-                <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Popup — Screenshots do Laptop</p>
-                        <span className="text-xs text-muted-foreground">{(formData.popupSliderImages as string[])?.length || 0}/{MAX_SLIDER_IMAGES} imagem(ns)</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">Imagens que passam como slides dentro da tela do laptop no popup. Máximo de {MAX_SLIDER_IMAGES} imagens.</p>
-
-                    {/* Existing slides */}
-                    {(formData.popupSliderImages as string[])?.length > 0 && (
-                        <div className="grid grid-cols-3 gap-2">
-                            {(formData.popupSliderImages as string[]).map((src, idx) => (
-                                <div key={idx} className="relative rounded-lg overflow-hidden border" style={{ aspectRatio: '16/10' }}>
-                                    <img
-                                        src={getOriginalImageUrl(src)}
-                                        alt={`Slide ${idx + 1}`}
-                                        className="w-full h-full object-cover"
-                                    />
-                                    <div className="absolute inset-0 bg-black/0 hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
-                                        <button
-                                            type="button"
-                                            onClick={() => setFormData(prev => ({
-                                                ...prev,
-                                                popupSliderImages: (prev.popupSliderImages as string[]).filter((_, i) => i !== idx)
-                                            }))}
-                                            className="p-1.5 bg-red-500/80 text-white rounded-full"
-                                        >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                    </div>
-                                    <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">{idx + 1}</span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Add slide */}
-                    {(formData.popupSliderImages as string[])?.length >= MAX_SLIDER_IMAGES ? (
-                        <p className="text-xs text-muted-foreground px-4 py-3 border-2 border-dashed rounded-lg text-center">
-                            Limite de {MAX_SLIDER_IMAGES} imagens atingido. Remova uma para adicionar outra.
-                        </p>
-                    ) : (
-                        <label className="flex items-center gap-2 px-4 py-3 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-                            <Image className="w-5 h-5 text-muted-foreground shrink-0" />
-                            <span className="text-sm text-muted-foreground">Adicionar screenshot...</span>
-                            <input type="file" className="hidden" accept="image/*" multiple onChange={async (e) => {
-                                const existing = (formData.popupSliderImages as string[]) || [];
-                                const remaining = MAX_SLIDER_IMAGES - existing.length;
-                                const selected = Array.from(e.target.files || []);
-                                const files = selected.slice(0, remaining);
-                                e.target.value = '';
-                                if (!files.length) return;
-                                if (selected.length > files.length) {
-                                    toast({ title: `Apenas ${files.length} de ${selected.length} imagens foram adicionadas (limite de ${MAX_SLIDER_IMAGES})` });
-                                }
-                                try {
-                                    const paths = await Promise.all(files.map(f => uploadFileToServer(f)));
-                                    setFormData(prev => ({
-                                        ...prev,
-                                        popupSliderImages: [...((prev.popupSliderImages as string[]) || []), ...paths]
-                                    }));
-                                    toast({ title: `${paths.length} imagem(ns) adicionada(s)` });
-                                } catch (err: any) {
-                                    toast({ title: 'Upload falhou', description: err.message, variant: 'destructive' });
-                                }
-                            }} />
-                        </label>
-                    )}
-                </div>
-
-                <div className="border-t" />
-
-                {/* Section: Popup URLs */}
-                <div className="space-y-3">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Popup — URLs / Links</p>
-                    <p className="text-xs text-muted-foreground">Lista de URLs que aparece no canto inferior esquerdo do popup.</p>
-                    {(formData.popupUrls as string[])?.length > 0 && (
-                        <div className="space-y-2">
-                            {(formData.popupUrls as string[]).map((url, idx) => (
-                                <div key={idx} className="flex items-center gap-2">
-                                    <Input
-                                        value={url}
-                                        onChange={(e) => {
-                                            const value = e.target.value;
-                                            setFormData(prev => {
-                                                const updated = [...((prev.popupUrls as string[]) || [])];
-                                                updated[idx] = value;
-                                                return { ...prev, popupUrls: updated };
-                                            });
-                                        }}
-                                        placeholder="exemplo.com"
-                                    />
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="shrink-0 text-red-500"
-                                        onClick={() => setFormData(prev => ({
-                                            ...prev,
-                                            popupUrls: (prev.popupUrls as string[]).filter((_, i) => i !== idx)
-                                        }))}
-                                        aria-label="Remover URL"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                    <div className="flex gap-2">
-                        <Input
-                            value={urlInput}
-                            onChange={(e) => setUrlInput(e.target.value)}
-                            placeholder="Adicionar URL..."
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    if (urlInput.trim()) {
-                                        setFormData(prev => ({ ...prev, popupUrls: [...((prev.popupUrls as string[]) || []), urlInput.trim()] }));
-                                        setUrlInput('');
-                                    }
-                                }
-                            }}
-                        />
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            onClick={() => {
-                                if (urlInput.trim()) {
-                                    setFormData(prev => ({ ...prev, popupUrls: [...((prev.popupUrls as string[]) || []), urlInput.trim()] }));
-                                    setUrlInput('');
-                                }
-                            }}
-                        >
-                            Add
-                        </Button>
-                    </div>
-                </div>
-
             </div>
-
         </form>
     );
 }
-

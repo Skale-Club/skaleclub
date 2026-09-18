@@ -144,9 +144,9 @@ export function PortfolioServiceCard({ service, onEdit, onDelete, onToggleActive
                 className="shrink-0 h-12 w-16 rounded-md overflow-hidden border bg-muted flex items-center justify-center cursor-pointer"
                 onClick={() => onEdit(service)}
             >
-                {service.imageUrl ? (
+                {(service.homeImageUrl || service.imageUrl) ? (
                     <img
-                        src={getImageUrl(service.imageUrl, { width: 160, quality: 70 })}
+                        src={getImageUrl((service.homeImageUrl || service.imageUrl)!, { width: 160, quality: 70 })}
                         alt={service.title}
                         loading="lazy"
                         decoding="async"

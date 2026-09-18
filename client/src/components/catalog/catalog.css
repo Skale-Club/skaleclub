@@ -137,6 +137,9 @@
 .cat-overlay {
   position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 20px;
   background: rgba(5, 7, 12, 0.8); backdrop-filter: blur(6px);
+  /* The Admin opens it as a preview over a modal dialog, which sets
+     pointer-events: none on <body>. */
+  pointer-events: auto;
 }
 .cat-detail {
   position: relative; width: min(1120px, 100%); max-height: calc(100dvh - 40px); container-type: inline-size;
