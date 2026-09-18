@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skale Club — popup de produto (mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ---------- tokens: a marca do Skale Club, e só ela ---------- */
+  :root {
+    --page: #111111;          /* surface-dark, já existe no repo */
+    --card: #0C1424;          /* navy #0A162E, um passo acima da página */
+    --raised: #142038;        /* um passo acima do card: painel de imagem, hover */
+    --ink: #F3F6FB;
+    --ink-2: #B4C0D8;
+    --ink-dim: #7C8AA6;
+    --cta: #5173D6;           /* o azul do código (--cta) */
+    --cta-hover: #3B5BBE;
+    --cta-soft: #8FA9EE;      /* o azul-claro que o folder já usa sobre fundo escuro */
+    --line: rgba(180,192,216,.14);
+    --display: "Outfit", sans-serif;
+    --text: "Inter", sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--page); color: var(--ink); font-family: var(--text);
+    display: grid; grid-template-rows: 1fr auto; overflow: hidden;
+  }
+
+  /* página desfocada atrás, só para dar o contexto de overlay */
+  .backdrop { position: fixed; inset: 0; background:
+    radial-gradient(50% 40% at 20% 10%, rgba(81,115,214,.10), transparent 70%), #0A0A0B; }
+  .overlay { position: relative; display: grid; place-items: center; padding: 20px; min-height: 0; }
+
+  /* ---------- o card: um contêiner, uma unidade ---------- */
+  .card {
+    position: relative; width: min(1120px, 100%); max-height: 100%;
+    container-type: inline-size;
+    background: var(--card); border: 1px solid var(--line); border-radius: 24px;
+    overflow: hidden; box-shadow: 0 40px 120px rgba(0,0,0,.6);
+    display: grid; grid-template-rows: 1fr auto;
+  }
+  .card.phone { width: 390px; border-radius: 28px; }
+  .body { display: grid; grid-template-columns: 1.05fr 1fr; min-height: 0; }
+
+  /* ---------- coluna de conteúdo ---------- */
+  .content {
+    padding: clamp(28px, 4.6cqw, 56px); padding-right: clamp(20px, 3.4cqw, 40px);
+    display: flex; flex-direction: column; gap: clamp(14px, 1.9cqw, 22px); min-width: 0;
+  }
+  .eyebrow {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 12px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--cta-soft);
+  }
+  .eyebrow::before { content: ""; width: 28px; height: 3px; border-radius: 3px; background: var(--cta); }
+  .titlerow { display: flex; align-items: center; gap: clamp(12px, 1.6cqw, 18px); }
+  .logo { width: clamp(44px, 5.4cqw, 64px); aspect-ratio: 1; object-fit: contain; border-radius: 14px; flex: none; }
+  h1 {
+    font-family: var(--display); font-weight: 800; letter-spacing: -.025em; line-height: .95;
+    font-size: clamp(38px, 6.4cqw, 72px);
+  }
+  .lead { font-family: var(--display); font-weight: 500; font-size: clamp(18px, 2.2cqw, 24px); line-height: 1.2; color: var(--ink-2); }
+  .desc { font-size: clamp(14px, 1.45cqw, 16px); line-height: 1.6; color: var(--ink-dim); max-width: 52ch; }
+
+  .features { list-style: none; display: grid; gap: 8px; margin-top: 2px; }
+  .features li { position: relative; padding-left: 26px; font-size: 15px; font-weight: 500; color: var(--ink); }
+  .features li::before { content: ""; position: absolute; left: 0; top: .62em; width: 14px; height: 3px; border-radius: 3px; background: var(--cta); }
+
+  .buy { margin-top: auto; padding-top: clamp(14px, 2cqw, 24px); border-top: 1px solid var(--line);
+         display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+  .price { display: flex; flex-direction: column; gap: 4px; }
+  .price .v { font-family: var(--display); font-weight: 800; font-size: clamp(44px, 6cqw, 68px); line-height: .9; letter-spacing: -.03em; }
+  .price .v small { font-family: var(--text); font-size: 15px; font-weight: 500; letter-spacing: 0; color: var(--ink-2); margin-left: 6px; }
+  .price .setup { font-size: 13px; color: var(--ink-dim); }
+  .cta {
+    font: 600 16px var(--text); color: #fff; background: var(--cta); border: 0; border-radius: 999px;
+    padding: 16px 30px; cursor: pointer; transition: background .2s;
+  }
+  .cta:hover { background: var(--cta-hover); }
+  .cta:focus-visible, .nav button:focus-visible, .close:focus-visible { outline: 2px solid var(--cta-soft); outline-offset: 3px; }
+
+  .live { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-dim); }
+  .live a { color: var(--ink-2); text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px; }
+  .live a:hover { border-color: var(--cta); color: var(--ink); }
+
+  /* ---------- coluna visual: três estados desenhados, nenhum vazio ---------- */
+  .visual { position: relative; margin: 14px 14px 14px 0; border-radius: 16px; overflow: hidden; background: var(--raised); min-height: 420px; }
+  /* `center top`: capas são telas e mockups, e o que importa está em cima.
+     Na implementação isso vira um ponto focal por imagem, editável no Admin. */
+  .visual img.cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+  .visual .wash { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(81,115,214,.10), rgba(12,20,36,.55)); }
+  .badge {
+    position: absolute; left: 16px; top: 16px; font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--ink); background: rgba(12,20,36,.72); border: 1px solid var(--line); border-radius: 999px; padding: 7px 12px;
+    backdrop-filter: blur(6px);
+  }
+  /* sem imagem: a marca do produto vira a arte, em vez de um laptop cinza */
+  .visual.empty {
+    display: grid; place-items: center;
+    background:
+      radial-gradient(55% 45% at 50% 42%, rgba(81,115,214,.30), transparent 70%),
+      repeating-linear-gradient(0deg, transparent 0 22px, rgba(180,192,216,.05) 22px 23px),
+      var(--raised);
+  }
+  .visual.empty .mark { display: grid; justify-items: center; gap: 18px; text-align: center; padding: 24px; }
+  .visual.empty .mark img { width: 168px; aspect-ratio: 1; object-fit: contain; filter: drop-shadow(0 20px 40px rgba(0,0,0,.5)); }
+  .visual.empty .mark span { font-family: var(--display); font-weight: 700; font-size: 20px; color: var(--ink-2); max-width: 18ch; line-height: 1.2; }
+  .segs { position: absolute; left: 16px; right: 16px; bottom: 14px; display: flex; gap: 6px; }
+  .segs i { flex: 1; height: 3px; border-radius: 3px; background: rgba(243,246,251,.25); }
+  .segs i.on { background: var(--ink); }
+
+  /* ---------- rodapé: onde estou, e o que vem ---------- */
+  .nav { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px;
+         padding: 12px clamp(16px, 2.4cqw, 28px); border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-dim); }
+  .nav button { font: 500 13px var(--text); color: var(--ink-2); background: none; border: 0; cursor: pointer; padding: 8px 6px; border-radius: 8px; }
+  .nav button:hover { color: var(--ink); }
+  .nav .next { justify-self: end; }
+  .nav .count { font-family: var(--display); font-weight: 700; color: var(--ink-2); letter-spacing: .04em; }
+  .close { position: absolute; right: 22px; top: 22px; z-index: 3; width: 36px; height: 36px; border-radius: 999px;
+           border: 1px solid var(--line); background: rgba(12,20,36,.72); color: var(--ink); cursor: pointer; font-size: 18px; backdrop-filter: blur(6px); }
+
+  /* ---------- recomposição: o mesmo conteúdo, empilhado ---------- */
+  @container (max-width: 720px) {
+    .body { grid-template-columns: 1fr; overflow-y: auto; }
+    .visual { order: -1; margin: 10px 10px 0; min-height: 0; aspect-ratio: 16 / 10; }
+    .visual.empty .mark img { width: 84px; }
+    .visual.empty .mark span { font-size: 16px; }
+    .content { padding: 22px; gap: 14px; }
+    .buy { position: sticky; bottom: 0; background: var(--card); margin: 0 -22px -22px; padding: 14px 22px 16px; }
+    .nav { font-size: 12px; }
+  }
+
+  /* entrada escalonada */
+  .content > * { opacity: 0; transform: translateY(10px); animation: rise .6s cubic-bezier(.2,.7,.2,1) forwards; }
+  .content > :nth-child(2) { animation-delay: .05s } .content > :nth-child(3) { animation-delay: .10s }
+  .content > :nth-child(4) { animation-delay: .15s } .content > :nth-child(5) { animation-delay: .20s }
+  .content > :nth-child(6) { animation-delay: .25s } .content > :nth-child(7) { animation-delay: .30s }
+  @keyframes rise { to { opacity: 1; transform: none } }
+  @media (prefers-reduced-motion: reduce) { .content > * { animation: none; opacity: 1; transform: none; } }
+
+  .controls { position: relative; display: flex; gap: 8px; justify-content: center; align-items: center; padding: 10px 16px 14px; font-size: 13px; color: #7c8aa6; }
+  .controls button { font: inherit; color: var(--ink); background: #1a1d24; border: 1px solid #2b303b; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+  .controls button:hover { border-color: var(--cta); }
+</style>
+</head>
+<body>
+<div class="backdrop"></div>
+
+<div class="overlay">
+  <div class="card" id="card">
+    <button class="close" aria-label="Fechar">×</button>
+    <div class="body" id="body"></div>
+    <div class="nav">
+      <button class="prev" id="prev"></button>
+      <span class="count" id="count"></span>
+      <button class="next" id="next"></button>
+    </div>
+  </div>
+</div>
+
+<div class="controls">
+  <button id="phone">Ver no celular</button>
+  <span>Mockup · dados reais de /api/portfolio-services · ← → navegam</span>
+</div>
+
+<script>
+  const S = "https://neummispnnqzrhdhnxwa.supabase.co/storage/v1/object/public/uploads/";
+  // Conteúdo real da API em 2026-09-18, traduzido à mão para PT. `category` é o
+  // campo novo que o brief propõe; hoje ele não existe e a aba é adivinhada.
+  const items = [
+    { title: "Xareable", category: "IA e automação", lead: "Criador de conteúdo com IA para redes sociais",
+      desc: "Crie e publique posts com IA a partir de uma ferramenta só. Escreva e poste à mão quando quiser, ou automatize criação e publicação numa agenda recorrente, para o negócio nunca sumir das redes.",
+      features: ["Conteúdo com IA", "Multiplataforma", "Analytics"], price: "$49", label: "/mês", cta: "Começar",
+      badge: "Com IA", logo: S + "1783115396335_55a9999d-09a7-4294-aa1a-7c2e087b9dc9.webp",
+      cover: S + "1776187598644_70c2e35c-23de-4146-8aa3-d020732c6a1b.jpg", links: ["xareable.com"] },
+    { title: "Xsites", category: "Sites", lead: "Do essencial ao sob medida",
+      desc: "Um site limpo e profissional para negócio de serviço, no ar em até 3 dias, a partir de $299 na versão essencial. Acrescente recursos quando o projeto pedir.",
+      features: ["Responsivo", "Otimizado para SEO", "Carregamento rápido"], price: "$299", label: "a partir de", cta: "Iniciar projeto",
+      badge: "Mais pedido", logo: "", cover: S + "1776205482559_f16d3d2f-8e8c-41fc-bae7-e976e58e0efd.webp", links: [] },
+    { title: "Xkedule", category: "Sistemas e agendamento", lead: "Nunca perca um agendamento",
+      desc: "Uma página de agendamento simples com assistentes de IA para mensagens e ligações. A IA responde os leads e marca horários, reuniões ou visitas quando o cliente está pronto.",
+      features: ["Sincroniza com a agenda", "Lembretes", "Agendamento online"], price: "$89", label: "/mês", setup: "$499", cta: "Começar",
+      badge: "", logo: S + "1783107543683_3b8f12bc-6ac2-4519-bf2f-9c6499329738.webp",
+      cover: S + "1776190723222_scheduling_system_1200.jpg",
+      links: ["lunabellebeauty.xkedule.com", "luminous-nails.xkedule.com", "black-ink-studio.xkedule.com", "chiro-network.xkedule.com", "skleanings.com"] },
+    { title: "XmartMenu", category: "Sistemas e agendamento", lead: "Um jeito mais esperto de pedir",
+      desc: "Cardápio digital por QR code ou iPad: fotos dos pratos, fichas detalhadas, carrinho e um assistente de IA que tira dúvidas antes do pedido.",
+      features: ["Acesso por QR code", "Cardápio no iPad", "Assistente de IA"], price: "$29", label: "/mês", cta: "Começar",
+      badge: "", logo: S + "1783205835559_464fce11-1b52-4e45-bdb2-3958d0fadd18.webp", cover: "", links: [] },
+    { title: "Xphere", category: "CRM e vendas", lead: "Seu CRM no Go High Level, configurado",
+      desc: "Configuração completa de CRM com Go High Level. Gerencie leads, automatize follow-ups por e-mail e SMS, e acompanhe o pipeline de vendas numa única plataforma.",
+      features: ["Configuração do GHL", "Pipelines", "Relatórios"], price: "$597", label: "pagamento único", cta: "Começar",
+      badge: "Recomendado", logo: S + "1783115414320_44c114ed-874f-40ab-ba73-317aa8f327d7.webp",
+      cover: S + "1776190723853_crm_setup_1200.jpg", links: [] },
+    { title: "Xtimator", category: "Sistemas e agendamento", lead: "Orçamentos em segundos",
+      desc: "Monte orçamentos ainda no local da visita. Crie sua tabela de preços à mão ou com IA e gere propostas profissionais sem voltar ao escritório nem fazer o cliente esperar.",
+      features: ["Orçamento na hora"], price: "$49", label: "/mês", cta: "Começar",
+      badge: "", logo: S + "1783118997429_00cb9d30-5d74-4ec9-bf0c-a3ac034911c7.webp", cover: "", links: [] },
+  ];
+
+  let i = 4; // abre no Xphere, o da captura de tela
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  function render() {
+    const it = items[i];
+    const logo = it.logo ? `<img class="logo" src="${it.logo}" alt="">` : "";
+    const links = it.links.length
+      ? `<div class="live"><span>No ar em</span>${it.links.slice(0, 3).map((l) => `<a href="https://${l}" target="_blank" rel="noopener noreferrer">${esc(l)} ↗</a>`).join("")}${it.links.length > 3 ? `<span>+${it.links.length - 3}</span>` : ""}</div>`
+      : "";
+    const visual = it.cover
+      ? `<div class="visual"><img class="cover" src="${it.cover}" alt="${esc(it.title)}"><div class="wash"></div>${it.badge ? `<span class="badge">${esc(it.badge)}</span>` : ""}</div>`
+      // sem capa: só a marca do produto. O texto já está todo à esquerda; repetir
+      // aqui seria encher o painel por medo do vazio.
+      : `<div class="visual empty"><div class="mark">${it.logo ? `<img src="${it.logo}" alt="">` : `<span>${esc(it.title)}</span>`}</div></div>`;
+
+    $("body").innerHTML = `
+      <div class="content">
+        <div class="eyebrow">App · ${esc(it.category)}</div>
+        <div class="titlerow">${logo}<h1>${esc(it.title)}</h1></div>
+        <p class="lead">${esc(it.lead)}</p>
+        <p class="desc">${esc(it.desc)}</p>
+        <ul class="features">${it.features.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>
+        ${links}
+        <div class="buy">
+          <div class="price">
+            <div class="v">${esc(it.price)}<small>${esc(it.label)}</small></div>
+            ${it.setup ? `<div class="setup">+ ${esc(it.setup)} de implantação, uma vez</div>` : ""}
+          </div>
+          <button class="cta">${esc(it.cta)}</button>
+        </div>
+      </div>
+      ${visual}`;
+
+    const prev = items[(i - 1 + items.length) % items.length], next = items[(i + 1) % items.length];
+    $("prev").textContent = "← " + prev.title;
+    $("next").textContent = next.title + " →";
+    $("count").textContent = String(i + 1).padStart(2, "0") + " / " + String(items.length).padStart(2, "0");
+  }
+
+  const go = (d) => { i = (i + d + items.length) % items.length; render(); };
+  $("prev").onclick = () => go(-1);
+  $("next").onclick = () => go(1);
+  addEventListener("keydown", (e) => { if (e.key === "ArrowRight") go(1); if (e.key === "ArrowLeft") go(-1); });
+  $("phone").onclick = (e) => {
+    const on = $("card").classList.toggle("phone");
+    e.target.textContent = on ? "Ver no desktop" : "Ver no celular";
+  };
+  render();
+</script>
+</body>
+</html>

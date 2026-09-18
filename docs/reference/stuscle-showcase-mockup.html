@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stuscle Showcase — TV mode mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ---------- tokens ---------- */
+  :root {
+    /* from the live branding: bg #28272C, logo greige #C3BEBA, and the
+       chain link's metallic gradient as the only highlight */
+    --ink: #ECE9E6;          /* headline greige, lifted for distance */
+    --ink-2: #C3BEBA;        /* the logo's exact greige: leads, eyebrows */
+    --ink-dim: #8F8B8A;      /* secondary type */
+    --stage: #28272C;        /* the brand background */
+    --stage-2: #323137;      /* raised panel */
+    /* the accent: a pastel orange. The logo's greige (#C3BEBA) is itself a
+       desaturated orange (hue ~27deg), so this is the logo's own hue with
+       some saturation given back: soft enough to sit beside the greige,
+       light enough (~8:1 on the stage) to read across a market. */
+    --accent: #FFAD7A;
+    --accent-b: #FFDFA3;     /* gradient partner: pastel apricot-yellow */
+    --metal: linear-gradient(100deg, var(--accent) 0%, var(--accent-b) 100%);
+    --line: rgba(195,190,186,.16);
+    --display: "Bricolage Grotesque", "Arial Black", sans-serif;
+    --text: "Instrument Sans", "Segoe UI", sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #19181B; color: var(--ink); font-family: var(--text); }
+  /* the chain link's chrome, as a text fill */
+  .metal { background: var(--metal); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  body { display: grid; grid-template-rows: 1fr auto; overflow: hidden; }
+
+  /* ---------- the stage: a fixed-aspect canvas that letterboxes into whatever screen it gets ---------- */
+  .stage-wrap {
+    display: grid; place-items: center; padding: 16px; min-height: 0;
+  }
+  .stage {
+    position: relative; overflow: hidden;
+    background: var(--stage);
+    aspect-ratio: 16 / 9;
+    width: min(100%, calc((100vh - 96px) * 16 / 9));
+    container-type: size;
+    box-shadow: 0 30px 80px rgba(0,0,0,.6);
+    /* the one unit every size on the slide derives from:
+       1% of stage height in landscape, 1.78% of width in portrait */
+    --u: min(1cqh, 1.7778cqw);
+  }
+  .stage.portrait {
+    aspect-ratio: 9 / 16;
+    width: min(100%, calc((100vh - 96px) * 9 / 16));
+    /* portrait is width-bound: the unit follows the width so a phone reads
+       like a phone, not like a TV squeezed sideways */
+    --u: 1.25cqw;
+  }
+
+  /* FDM layer-lines texture: the one decorative idea, kept nearly invisible */
+  .stage::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent 0, transparent calc(var(--u) * 1.15),
+      rgba(236,233,230,.035) calc(var(--u) * 1.15), rgba(236,233,230,.035) calc(var(--u) * 1.15 + 1px)
+    );
+  }
+  /* a faint cool sheen, so the charcoal is not flat */
+  .stage::after {
+    content: ""; position: absolute; inset: -20%; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(60% 50% at 80% 90%, color-mix(in srgb, var(--accent) 15%, transparent), transparent 70%),
+      radial-gradient(45% 40% at 8% 5%, color-mix(in srgb, var(--accent-b) 9%, transparent), transparent 70%);
+  }
+
+  /* ---------- slides ---------- */
+  .slide {
+    position: absolute; inset: 0; z-index: 2;
+    padding: calc(var(--u) * 11) calc(var(--u) * 7) calc(var(--u) * 10);
+    opacity: 0; transform: translateY(calc(var(--u) * 2)); visibility: hidden;
+    transition: opacity .7s ease, transform .7s ease, visibility 0s .7s;
+  }
+  .slide.active {
+    opacity: 1; transform: none; visibility: visible;
+    transition: opacity .7s ease, transform .7s ease, visibility 0s;
+  }
+
+  .eyebrow {
+    font-family: var(--text); font-weight: 600; letter-spacing: .18em; text-transform: uppercase;
+    font-size: calc(var(--u) * 2.4); color: var(--accent);
+    display: flex; align-items: center; gap: calc(var(--u) * 1.5);
+  }
+  .eyebrow::before { content: ""; width: calc(var(--u) * 4); height: calc(var(--u) * .35); background: var(--metal); }
+
+  h1, h2 {
+    font-family: var(--display); font-weight: 800; line-height: .95; letter-spacing: -.02em;
+    font-variation-settings: "opsz" 96;
+    text-wrap: balance;
+  }
+  h1 { font-size: calc(var(--u) * 13); }
+  h2 { font-size: calc(var(--u) * 9); }
+  .lead { font-size: calc(var(--u) * 4.2); line-height: 1.25; color: var(--ink-2); max-width: 22ch; }
+
+  /* staggered reveal inside an active slide */
+  .slide > * , .slide .col > * { opacity: 0; transform: translateY(calc(var(--u) * 1.5)); }
+  .slide.active > *, .slide.active .col > * {
+    animation: rise .8s cubic-bezier(.2,.7,.2,1) forwards;
+  }
+  .slide.active > :nth-child(1) { animation-delay: .05s }
+  .slide.active > :nth-child(2) { animation-delay: .18s }
+  .slide.active > :nth-child(3) { animation-delay: .31s }
+  .slide.active > :nth-child(4) { animation-delay: .44s }
+  @keyframes rise { to { opacity: 1; transform: none } }
+
+  /* image placeholders: what a photo slot looks like before there are photos */
+  .ph {
+    position: relative; overflow: hidden; background: var(--stage-2);
+    border: 1px solid var(--line);
+  }
+  .ph::before {
+    content: ""; position: absolute; inset: 0;
+    background:
+      radial-gradient(45% 55% at 35% 40%, color-mix(in srgb, var(--accent) 50%, transparent), transparent 70%),
+      radial-gradient(35% 45% at 75% 75%, color-mix(in srgb, var(--accent-b) 38%, transparent), transparent 70%),
+      linear-gradient(160deg, #3A393F, #1E1D21);
+    transform: scale(1);
+  }
+  .active .ph::before { animation: kenburns 9s linear forwards; }
+  @keyframes kenburns { to { transform: scale(1.08) translate(-1.5%, -1%) } }
+  .ph span {
+    position: absolute; inset: auto calc(var(--u)*2) calc(var(--u)*2) auto;
+    font-size: calc(var(--u) * 2); letter-spacing: .12em; text-transform: uppercase;
+    color: rgba(236,233,230,.55); border: 1px dashed rgba(236,233,230,.35); padding: .4em .8em;
+  }
+
+  /* --- cover --- */
+  .k-cover { display: flex; flex-direction: column; justify-content: flex-end; gap: calc(var(--u) * 3); }
+  .k-cover .logo { height: calc(var(--u) * 9); width: auto; margin-bottom: calc(var(--u) * 4); align-self: flex-start; }
+  .k-cover h1 { font-size: calc(var(--u) * 16); max-width: 12ch; }
+  .k-cover h1 em { font-style: normal; }
+  /* the cover carries the real logo, so the corner wordmark steps aside */
+  .stage:has(.k-cover.active) .wordmark { opacity: 0; }
+  .k-cover .lead { max-width: 30ch; }
+
+  /* --- section cover --- */
+  .k-section { display: flex; flex-direction: column; justify-content: center; gap: calc(var(--u) * 3); }
+  .k-section .num {
+    position: absolute; right: calc(var(--u) * 5); top: calc(var(--u) * 2);
+    font-family: var(--display); font-weight: 800; font-size: calc(var(--u) * 46); line-height: 1;
+    color: transparent; -webkit-text-stroke: 1px rgba(236,233,230,.18); letter-spacing: -.05em;
+  }
+  .k-section h1 { font-size: calc(var(--u) * 20); }
+  .chips { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 1.5); }
+  .chip {
+    font-size: calc(var(--u) * 3); padding: .35em .9em; border: 1px solid var(--line);
+    border-radius: 999px; color: var(--ink);
+  }
+
+  /* --- service: split --- */
+  .k-service { display: grid; grid-template-columns: 1.1fr 1fr; gap: calc(var(--u) * 6); align-items: stretch; }
+  .k-service .ph { border-radius: calc(var(--u) * 1); }
+  .k-service .col { display: flex; flex-direction: column; justify-content: center; gap: calc(var(--u) * 3); }
+  .bullets { list-style: none; display: grid; gap: calc(var(--u) * 1.8); }
+  .bullets li {
+    font-size: calc(var(--u) * 4.2); line-height: 1.2; padding-left: calc(var(--u) * 5); position: relative;
+    text-wrap: pretty;
+  }
+  .bullets li::before {
+    content: ""; position: absolute; left: 0; top: .55em; width: calc(var(--u) * 3); height: calc(var(--u) * .35);
+    background: var(--metal);
+  }
+
+  /* --- process: numbered steps --- */
+  .k-process { display: flex; flex-direction: column; justify-content: center; gap: calc(var(--u) * 5); }
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: calc(var(--u) * 3); }
+  .step {
+    border-top: 1px solid var(--line); padding-top: calc(var(--u) * 2.5);
+    display: flex; flex-direction: column; gap: calc(var(--u) * 1.5);
+  }
+  .step b {
+    font-family: var(--display); font-weight: 800; font-size: calc(var(--u) * 12); line-height: 1;
+    letter-spacing: -.04em; width: max-content;
+    background: var(--metal); -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .step strong { font-family: var(--display); font-weight: 800; font-size: calc(var(--u) * 4.6); line-height: 1.05; }
+  .step p { font-size: calc(var(--u) * 3.2); line-height: 1.3; color: var(--ink-dim); }
+
+  /* --- portfolio: full-bleed photo with a scrim --- */
+  .k-portfolio { padding: 0; }
+  .k-portfolio .ph { position: absolute; inset: 0; border: 0; }
+  .k-portfolio .scrim {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(40,39,44,0) 40%, rgba(40,39,44,.94) 100%);
+  }
+  .k-portfolio .cap {
+    position: absolute; left: calc(var(--u) * 7); right: calc(var(--u) * 7); bottom: calc(var(--u) * 10);
+    display: flex; flex-direction: column; gap: calc(var(--u) * 1.5);
+  }
+  .k-portfolio h2 { font-size: calc(var(--u) * 8); max-width: 16ch; }
+  .k-portfolio .lead { font-size: calc(var(--u) * 3.6); }
+
+  /* --- price --- */
+  .k-price { display: grid; grid-template-columns: 1.2fr 1fr; gap: calc(var(--u) * 6); align-items: center; }
+  .k-price .big {
+    font-family: var(--display); font-weight: 800; letter-spacing: -.04em; line-height: .9;
+    font-size: calc(var(--u) * 24);
+  }
+  .k-price .big small { display: block; font-size: calc(var(--u) * 4); letter-spacing: 0; color: var(--ink-dim); font-weight: 500; margin-bottom: calc(var(--u)*1.5); }
+  .tiers { display: grid; gap: calc(var(--u) * 1.2); }
+  .tier {
+    display: flex; justify-content: space-between; align-items: baseline; gap: calc(var(--u) * 3);
+    padding: calc(var(--u) * 1.8) 0; border-bottom: 1px solid var(--line); font-size: calc(var(--u) * 3.8);
+  }
+  .tier span:last-child { font-family: var(--display); font-weight: 800; color: var(--accent); white-space: nowrap; }
+
+  /* --- contact --- */
+  .k-contact { display: grid; grid-template-columns: 1fr auto; gap: calc(var(--u) * 6); align-items: center; }
+  .k-contact .col { display: flex; flex-direction: column; gap: calc(var(--u) * 3); }
+  .k-contact .url { font-family: var(--display); font-weight: 800; font-size: calc(var(--u) * 7); letter-spacing: -.02em; width: max-content; max-width: 100%; }
+  .qr-big {
+    width: calc(var(--u) * 52); aspect-ratio: 1; background: var(--ink); padding: calc(var(--u) * 3);
+    border-radius: calc(var(--u) * 1.5);
+  }
+  .qr-big svg { width: 100%; height: 100%; display: block; }
+
+  /* ---------- persistent chrome: wordmark, small QR, story-style progress ---------- */
+  .chrome { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+  .wordmark {
+    position: absolute; left: calc(var(--u) * 7); top: calc(var(--u) * 3.6);
+    height: calc(var(--u) * 3.6); transition: opacity .5s;
+  }
+  .wordmark img { height: 100%; width: auto; display: block; }
+  .qr-small {
+    position: absolute; right: calc(var(--u) * 7); top: calc(var(--u) * 3.2);
+    display: flex; align-items: center; gap: calc(var(--u) * 1.6);
+    font-size: calc(var(--u) * 2.2); color: var(--ink-dim); text-align: right; line-height: 1.25;
+  }
+  .qr-small .box { width: calc(var(--u) * 9); aspect-ratio: 1; background: var(--ink); padding: calc(var(--u)*.7); border-radius: calc(var(--u)*.5); }
+  .qr-small svg { width: 100%; height: 100%; display: block; }
+  .progress {
+    position: absolute; left: calc(var(--u) * 7); right: calc(var(--u) * 7); bottom: calc(var(--u) * 4);
+    display: flex; gap: calc(var(--u) * .8);
+  }
+  .progress i { flex: 1; height: calc(var(--u) * .45); background: rgba(195,190,186,.18); position: relative; overflow: hidden; }
+  .progress i::after { content: ""; position: absolute; inset: 0; background: var(--ink-2); transform: scaleX(0); transform-origin: left; }
+  .progress i.done::after { transform: scaleX(1); }
+  .progress i.live::after { animation: fill var(--d) linear forwards; }
+  @keyframes fill { to { transform: scaleX(1) } }
+
+  /* ---------- portrait: same content, re-composed ---------- */
+  @container (max-aspect-ratio: 1/1) {
+    .slide { padding: calc(var(--u) * 10) calc(var(--u) * 5) calc(var(--u) * 12); }
+    .k-cover h1 { font-size: calc(var(--u) * 13); }
+    .k-section h1 { font-size: calc(var(--u) * 14); }
+    .k-section .num { font-size: calc(var(--u) * 30); right: calc(var(--u)*3); }
+    .k-service { grid-template-columns: 1fr; grid-template-rows: 0.9fr 1fr; }
+    .steps { grid-template-columns: 1fr 1fr; }
+    .step b { font-size: calc(var(--u) * 9); }
+    .k-price { grid-template-columns: 1fr; }
+    .k-price .big { font-size: calc(var(--u) * 18); }
+    .k-contact { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+    .k-contact .col { align-items: center; }
+    .qr-big { width: calc(var(--u) * 40); }
+    .k-portfolio .cap { bottom: calc(var(--u) * 13); }
+    .wordmark { left: calc(var(--u)*5); }
+    .qr-small { right: calc(var(--u)*5); }
+    .progress { left: calc(var(--u)*5); right: calc(var(--u)*5); }
+  }
+
+  /* ---------- mockup controls (not part of the product) ---------- */
+  .controls {
+    display: flex; gap: 8px; justify-content: center; align-items: center; padding: 10px 16px 14px;
+    font-size: 13px; color: #8F877A;
+  }
+  .controls button {
+    font: inherit; color: var(--ink); background: #1D1B18; border: 1px solid #2E2B26; border-radius: 6px;
+    padding: 6px 12px; cursor: pointer;
+  }
+  .controls button:hover { border-color: var(--ink-2); }
+  .controls .sep { width: 1px; height: 18px; background: #2E2B26; margin: 0 4px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .active .ph::before, .slide.active > * { animation: none; opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage-wrap">
+  <div class="stage" id="stage">
+
+    <!-- 1 cover -->
+    <section class="slide k-cover" data-duration="6">
+      <img class="logo" src="https://media.stuscle.com/Stuscle%20-%20Logo%20White-01M19M7J5R67K4W775FZAG8G8W.svg" alt="Stuscle">
+      <div class="eyebrow">3D printed, made to order</div>
+      <h1 class="fit">Objects made <em class="metal">for the moment.</em></h1>
+      <p class="lead">Custom pieces for birthdays, parties and companies. Designed with you, printed here.</p>
+    </section>
+
+    <!-- 2 section cover -->
+    <section class="slide k-section" data-duration="5">
+      <div class="num">01</div>
+      <div class="eyebrow">Occasion</div>
+      <h1 class="fit">Birthdays</h1>
+      <p class="lead">The cake topper, the name, the thing nobody else has.</p>
+      <div class="chips"><span class="chip">Cake toppers</span><span class="chip">Name signs</span><span class="chip">Party favors</span><span class="chip">Figurines</span></div>
+    </section>
+
+    <!-- 3 service split -->
+    <section class="slide k-service" data-duration="8">
+      <div class="ph"><span>photo · finished piece</span></div>
+      <div class="col">
+        <div class="eyebrow">Birthdays</div>
+        <h2 class="fit">Their name. Their colors. Their thing.</h2>
+        <ul class="bullets">
+          <li>Personalised cake toppers and name signs</li>
+          <li>Favors for the whole table, from 10 pieces</li>
+          <li>Ready in 5 to 10 days</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 4 process -->
+    <section class="slide k-process" data-duration="9">
+      <div class="eyebrow">How it works</div>
+      <h2 class="fit">From an idea to a box on your table.</h2>
+      <div class="steps">
+        <div class="step"><b>01</b><strong>Tell us the idea</strong><p>A sketch, a photo, or just words. Scan the code and send it.</p></div>
+        <div class="step"><b>02</b><strong>We design it</strong><p>You see a render and approve it before anything is printed.</p></div>
+        <div class="step"><b>03</b><strong>We print it</strong><p>Layer by layer, here in Newark. Days, not weeks.</p></div>
+        <div class="step"><b>04</b><strong>Pick up or ship</strong><p>Collect at the market or get it shipped anywhere in the US.</p></div>
+      </div>
+    </section>
+
+    <!-- 5 portfolio full-bleed -->
+    <section class="slide k-portfolio" data-duration="7">
+      <div class="ph"><span>photo · full bleed</span></div>
+      <div class="scrim"></div>
+      <div class="cap">
+        <div class="eyebrow">Recent work · Companies</div>
+        <h2 class="fit">200 NFC keychains for a gym opening</h2>
+        <p class="lead">Tap to follow on Instagram. Printed, programmed and delivered in nine days.</p>
+      </div>
+    </section>
+
+    <!-- 6 price -->
+    <section class="slide k-price" data-duration="8">
+      <div class="big"><small>Custom pieces start at</small><span class="metal">$25</span></div>
+      <div class="tiers">
+        <div class="tier"><span>Cake topper, personalised</span><span>from $25</span></div>
+        <div class="tier"><span>Party favors, set of 10</span><span>from $60</span></div>
+        <div class="tier"><span>Desk figurine, 15 cm</span><span>from $45</span></div>
+        <div class="tier"><span>NFC keychains, 20 pack</span><span>quote</span></div>
+      </div>
+    </section>
+
+    <!-- 7 contact -->
+    <section class="slide k-contact" data-duration="8">
+      <div class="col">
+        <div class="eyebrow">Get a quote</div>
+        <h2 class="fit">Scan, tell us the idea, we reply today.</h2>
+        <div class="url metal">stuscle.com/show</div>
+        <p class="lead">Or come say hi at the booth.</p>
+      </div>
+      <div class="qr-big"><svg viewBox="0 0 21 21" shape-rendering="crispEdges" id="qrbig"></svg></div>
+    </section>
+
+    <!-- persistent chrome -->
+    <div class="chrome">
+      <div class="wordmark"><img src="https://media.stuscle.com/Stuscle%20-%20Logo%20White-01M19M7J5R67K4W775FZAG8G8W.svg" alt="Stuscle"></div>
+      <div class="qr-small"><div>scan for<br>a quote</div><div class="box"><svg viewBox="0 0 21 21" shape-rendering="crispEdges" id="qrsmall"></svg></div></div>
+      <div class="progress" id="progress"></div>
+    </div>
+  </div>
+</div>
+
+<div class="controls">
+  <button id="prev">← Prev</button>
+  <button id="next">Next →</button>
+  <button id="play">Pause</button>
+  <span class="sep"></span>
+  <button id="aspect">Portrait (phone)</button>
+  <span class="sep"></span>
+  <button data-a="#FFAD7A" data-b="#FFDFA3">Pastel orange</button>
+  <button data-a="#FFC09A" data-b="#FFE6C4">Softer (apricot)</button>
+  <button data-a="#F2966B" data-b="#FFC48A">Deeper (terracotta)</button>
+  <button data-a="#FF5A2D" data-b="#F2C94C">Original orange</button>
+</div>
+
+<script>
+  // ---- QR placeholder (a deterministic pattern, not a real code) ----
+  function fakeQr(svg, seed) {
+    let s = seed, out = "";
+    const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    const finder = (x, y) => `<rect x="${x}" y="${y}" width="7" height="7" fill="#28272C"/><rect x="${x+1}" y="${y+1}" width="5" height="5" fill="#ECE9E6"/><rect x="${x+2}" y="${y+2}" width="3" height="3" fill="#28272C"/>`;
+    for (let y = 0; y < 21; y++) for (let x = 0; x < 21; x++) {
+      const inFinder = (x < 8 && y < 8) || (x > 12 && y < 8) || (x < 8 && y > 12);
+      if (!inFinder && rnd() > .55) out += `<rect x="${x}" y="${y}" width="1" height="1" fill="#28272C"/>`;
+    }
+    svg.innerHTML = out + finder(0,0) + finder(14,0) + finder(0,14);
+  }
+  fakeQr(document.getElementById("qrbig"), 42);
+  fakeQr(document.getElementById("qrsmall"), 42);
+
+  // ---- fit-text: a title can never overflow its box, whatever the Admin typed ----
+  function fit(el) {
+    el.style.fontSize = "";
+    const max = parseFloat(getComputedStyle(el).fontSize);
+    let size = max;
+    const box = el.parentElement;
+    const overflows = () => el.scrollWidth > el.clientWidth + 1 || el.getBoundingClientRect().bottom > box.getBoundingClientRect().bottom + 1;
+    while (size > max * 0.6 && overflows()) { size -= max * 0.04; el.style.fontSize = size + "px"; }
+  }
+
+  // ---- player ----
+  const slides = [...document.querySelectorAll(".slide")];
+  const progress = document.getElementById("progress");
+  slides.forEach(() => progress.appendChild(document.createElement("i")));
+  const bars = [...progress.children];
+  let i = 0, timer = null, playing = true;
+
+  function show(n) {
+    i = (n + slides.length) % slides.length;
+    slides.forEach((s, k) => s.classList.toggle("active", k === i));
+    bars.forEach((b, k) => { b.className = k < i ? "done" : ""; b.style.removeProperty("--d"); });
+    const d = +slides[i].dataset.duration || 6;
+    if (playing) { bars[i].style.setProperty("--d", d + "s"); bars[i].className = "live"; }
+    slides[i].querySelectorAll(".fit").forEach(fit);
+    clearTimeout(timer);
+    if (playing) timer = setTimeout(() => show(i + 1), d * 1000);
+  }
+  document.getElementById("next").onclick = () => show(i + 1);
+  document.getElementById("prev").onclick = () => show(i - 1);
+  document.getElementById("play").onclick = (e) => { playing = !playing; e.target.textContent = playing ? "Pause" : "Play"; show(i); };
+  document.getElementById("stage").onclick = () => show(i + 1);
+  document.getElementById("aspect").onclick = (e) => {
+    const st = document.getElementById("stage"); st.classList.toggle("portrait");
+    e.target.textContent = st.classList.contains("portrait") ? "Landscape (TV)" : "Portrait (phone)";
+    show(i);
+  };
+  // mockup only: compare accent candidates on the real slides
+  document.querySelectorAll("[data-a]").forEach((b) => b.onclick = () => {
+    document.documentElement.style.setProperty("--accent", b.dataset.a);
+    document.documentElement.style.setProperty("--accent-b", b.dataset.b);
+  });
+  addEventListener("keydown", (e) => { if (e.key === "ArrowRight" || e.key === " ") show(i + 1); if (e.key === "ArrowLeft") show(i - 1); });
+  addEventListener("resize", () => slides[i].querySelectorAll(".fit").forEach(fit));
+  document.fonts?.ready.then(() => show(0)) ?? show(0);
+</script>
+</body>
+</html>
