@@ -1,5 +1,15 @@
 # Brief — Redesign do Portfólio, Serviços e Folder
 
+> **Status (2026-09-18): executado.** Passos 0–7 da seção 5 implementados:
+> `shared/catalog.ts` (CatalogItem + `category`), `components/catalog/`
+> (CatalogCard, CatalogDetail, Cover), `/portfolio` refeito, home migrada,
+> Admin com limites e preview, folder lendo o mesmo modelo. Decisões tomadas:
+> capa **A** (home real numa janela), faixa de prova só com números tirados do
+> catálogo (o "3 dias" ficou de fora por não ser verificável), popup conforme
+> o mockup. Em aberto: `/print/folder` segue público (seção 6); drop das
+> colunas de estilo por item; capas de Xsites, Xphere e Xtimator (sem site
+> público: sobem pelo Admin em "Website home").
+
 **Data:** 2026-09-18
 **Para:** a próxima conversa que for executar este trabalho. Este documento é o
 ponto de partida; leia inteiro antes de abrir qualquer arquivo.

@@ -119,7 +119,7 @@ function Outside(props: FolderData) {
             <div className="mt-[2mm] flex flex-col gap-[0.8mm]">
               {everything.map((item) => (
                 <Editable key={item.key} className="text-[8.5pt]" style={{ color: "#A9B8D8" }}>
-                  {item.subtitle ? `${item.title} — ${item.subtitle}` : item.title}
+                  {item.subtitle ? `${item.title} | ${item.subtitle}` : item.title}
                 </Editable>
               ))}
             </div>

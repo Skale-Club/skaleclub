@@ -131,18 +131,17 @@ shared/
 - `integrationSettings` - GoHighLevel credentials
 - `faqs` - FAQ entries
 
-### Project previews and print folder
+### Catalog (portfolio, home carousels, print folder)
 
-In Admin → Portfolio, upload the website home and dashboard separately. Homepage
-cards alternate between these previews every 4.5 seconds; one configured preview
-stays static. The print folder uses only `homeImageUrl`. Legacy `imageUrl` covers
-and popup screenshots are never used as a print fallback, since they may depict
-dashboards. Existing projects need their home screenshot explicitly selected.
+Apps (`portfolio_services`) and services (Website → Our Services cards) are
+normalised into one `CatalogItem` (`shared/catalog.ts`), rendered by
+`CatalogCard` and `CatalogDetail` on the site and by `client/src/print/cards.tsx`
+in the folder. Each item has an explicit `category`.
 
-Before running the updated API against another database, apply the additive
-migration with `npx tsx scripts/migrate-portfolio-previews.ts` (loads `.env`). It
-adds nullable `home_image_url` and `dashboard_image_url` columns without changing
-existing images.
+A product's cover is its **website home** (`homeImageUrl`): the card shows it in
+a browser window on the brand surface. Without it, the card falls back to the
+product logo. The dashboard (`dashboardImageUrl`) and the popup slider images
+form the popup gallery. The legacy `imageUrl` is not shown anywhere public.
 
 ## Brand Guidelines
 
