@@ -222,8 +222,10 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused, dark
     };
 
     const handleStart = (e: PointerEvent | TouchEvent) => {
-      // Preview selectors must not initiate the outer carousel's drag gesture.
-      if ((e.target as Element | null)?.closest('[data-preview-controls], button')) return;
+      // Cards are <button>s, so a drag may start on one; pointer capture below
+      // retargets the trailing click to the track, so a drag never opens a card.
+      // Opt-out for inner controls that must keep their own gesture.
+      if ((e.target as Element | null)?.closest('[data-carousel-nodrag]')) return;
       if (momentumFrameRef.current) {
         cancelAnimationFrame(momentumFrameRef.current);
         momentumFrameRef.current = null;

@@ -1,386 +1,243 @@
-import { usePageSeo } from "@/hooks/use-seo";
-import { useState, useMemo } from "react";
-import { useTranslation } from "@/hooks/useTranslation";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings, PortfolioService } from "@shared/schema";
-import {
-  ArrowRight,
-  Sparkles,
-  Zap,
-  Clock,
-  ShieldCheck,
-  Layers,
-  ChevronDown,
-} from "lucide-react";
+import { catalogProducts, catalogServices, type CatalogItem } from "@shared/catalog";
+import { usePageSeo } from "@/hooks/use-seo";
+import { useTranslation } from "@/hooks/useTranslation";
 import { trackCTAClick } from "@/lib/analytics";
 import { LeadFormModal } from "@/components/LeadFormModal";
-import { PortfolioCard } from "@/components/PortfolioCard";
-import { ServiceDetailModal } from "@/components/ServiceDetailModal";
-import { Loader2 } from '@/components/ui/loader';
-import { getImageUrl } from "@/components/admin/shared/utils";
+import { SectionHeading } from "@/components/layout/SectionHeading";
+import { CatalogCard } from "@/components/catalog/CatalogCard";
+import { CatalogDetail } from "@/components/catalog/CatalogDetail";
+import { Loader2 } from "@/components/ui/loader";
 
-type CategoryFilter = 'all' | 'ai' | 'websites' | 'systems' | 'crm';
+type ListKey = "apps" | "services";
 
-function getServiceCategory(service: PortfolioService): CategoryFilter {
-  const slug = (service.slug || "").toLowerCase();
-  const title = (service.title || "").toLowerCase();
-  const badge = (service.badgeText || "").toLowerCase();
-
-  if (slug.includes("xareable") || slug.includes("astropilot") || badge.includes("ai") || title.includes("ai") || slug.includes("chat")) {
-    return 'ai';
-  }
-  if (slug.includes("site") || slug.includes("web")) {
-    return 'websites';
-  }
-  if (slug.includes("crm") || slug.includes("phere") || slug.includes("lead")) {
-    return 'crm';
-  }
-  return 'systems';
+/** Splits "Stop Doing Repetitive Work. Automate It." so the last sentence can
+ *  carry the accent. A one-sentence title is returned whole. */
+function splitLastSentence(title: string): [string, string] {
+  const at = title.trim().lastIndexOf(". ");
+  return at < 0 ? [title, ""] : [title.slice(0, at + 1), title.slice(at + 2)];
 }
+
+/** The lowest monthly plan, for the proof band: "$29" + "/month". */
+function entryPlan(apps: CatalogItem[]) {
+  const monthly = apps
+    .filter((a) => a.price && /mo/i.test(a.price.label ?? ""))
+    .map((a) => ({ item: a, n: Number.parseFloat(a.price!.value.replace(/[^0-9.]/g, "")) }))
+    .filter((x) => Number.isFinite(x.n))
+    .sort((a, b) => a.n - b.n);
+  return monthly[0]?.item;
+}
+
+const pad = (n: number) => String(n).padStart(2, "0");
 
 export default function Portfolio() {
   const { t } = useTranslation();
   usePageSeo({ title: t("Our Solutions"), description: t("Ready-made apps and the services we perform: AI, automation, websites, marketing and more.") });
-  const { data: companySettings } = useQuery<CompanySettings>({
-    queryKey: ['/api/company-settings'],
-  });
 
-  const { data: portfolioServices, isLoading: isLoadingServices } = useQuery<PortfolioService[]>({
-    queryKey: ['/api/portfolio-services'],
+  const { data: companySettings } = useQuery<CompanySettings>({ queryKey: ["/api/company-settings"] });
+  const { data: portfolioServices, isLoading } = useQuery<PortfolioService[]>({
+    queryKey: ["/api/portfolio-services"],
     staleTime: 0,
     refetchOnMount: true,
   });
 
-  const portfolioHero = companySettings?.homepageContent?.portfolioHero;
-  const portfolioCta = companySettings?.homepageContent?.portfolioCtaSection;
-  const showServicesTitle = companySettings?.homepageContent?.portfolioServicesSection?.showTitle ?? true;
+  const content = companySettings?.homepageContent;
+  const apps = useMemo(() => catalogProducts(portfolioServices), [portfolioServices]);
+  const services = useMemo(() => catalogServices(content?.ourServicesSection?.cards), [content?.ourServicesSection?.cards]);
+  const lists: Record<ListKey, CatalogItem[]> = { apps, services };
 
-  const [activeCategory, setActiveCategory] = useState<CategoryFilter>('all');
+  const [open, setOpen] = useState<{ list: ListKey; index: number } | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const isModalOpen = selectedIndex !== null;
-  const selectedService =
-    selectedIndex !== null && portfolioServices ? portfolioServices[selectedIndex] : null;
 
-  const handleCta = (source: string) => {
+  const openItem = (list: ListKey) => (item: CatalogItem) => {
+    const index = lists[list].findIndex((i) => i.key === item.key);
+    if (index >= 0) setOpen({ list, index });
+  };
+  const openForm = (source: string) => {
+    setOpen(null);
     setIsFormOpen(true);
-    setSelectedIndex(null);
-    trackCTAClick('portfolio-' + source, companySettings?.ctaText || 'Book Call');
+    trackCTAClick(`portfolio-${source}`, companySettings?.ctaText || "Book Call");
   };
 
-  const openServiceModal = (service: PortfolioService) => {
-    const idx = portfolioServices?.findIndex((s) => s.id === service.id) ?? -1;
-    if (idx >= 0) setSelectedIndex(idx);
-  };
-
-  const goToPrev = () => {
-    if (selectedIndex === null || !portfolioServices) return;
-    setSelectedIndex((selectedIndex - 1 + portfolioServices.length) % portfolioServices.length);
-  };
-  const goToNext = () => {
-    if (selectedIndex === null || !portfolioServices) return;
-    setSelectedIndex((selectedIndex + 1) % portfolioServices.length);
-  };
-
-  // Filtered services based on active tab
-  const filteredServices = useMemo(() => {
-    if (!portfolioServices) return [];
-    if (activeCategory === 'all') return portfolioServices;
-    return portfolioServices.filter((s) => getServiceCategory(s) === activeCategory);
-  }, [portfolioServices, activeCategory]);
-
-  // Counts for tabs
-  const categoryCounts = useMemo(() => {
-    const counts: Record<CategoryFilter, number> = {
-      all: portfolioServices?.length || 0,
-      ai: 0,
-      websites: 0,
-      systems: 0,
-      crm: 0,
-    };
-    if (portfolioServices) {
-      for (const s of portfolioServices) {
-        const cat = getServiceCategory(s);
-        counts[cat] = (counts[cat] || 0) + 1;
-      }
-    }
-    return counts;
-  }, [portfolioServices]);
-
-  const categories: { key: CategoryFilter; label: string }[] = [
-    { key: 'all', label: t('All') },
-    { key: 'ai', label: t('AI & Automation') },
-    { key: 'websites', label: t('Websites') },
-    { key: 'systems', label: t('Systems & Booking') },
-    { key: 'crm', label: t('CRM & Sales') },
-  ];
-
-  if (isLoadingServices) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#09090b] text-white gap-3">
-        <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
-        <span className="text-sm text-slate-400 font-medium">{t("Loading...")}</span>
+      <div className="min-h-screen w-full flex items-center justify-center bg-surface-dark text-white">
+        <Loader2 className="w-8 h-8 animate-spin text-cta-soft" />
+        <span className="sr-only">{t("Loading...")}</span>
       </div>
     );
   }
 
+  const hero = content?.portfolioHero;
+  const cta = content?.portfolioCtaSection;
+  const [heroLead, heroAccent] = splitLastSentence(t(hero?.title || "Stop Doing Repetitive Work. Automate It."));
+  const buttonText = t(hero?.buttonText || "Book a Strategy Session");
+  const entry = entryPlan(apps);
+  const whatsapp = companySettings?.companyPhone?.replace(/\D/g, "");
+
+  const proof = [
+    apps.length > 0 && { value: pad(apps.length), label: t("ready-made apps in production") },
+    services.length > 0 && { value: pad(services.length), label: t("marketing and technology services") },
+    entry?.price && {
+      value: entry.price.value,
+      unit: entry.price.label ? t(entry.price.label) : undefined,
+      label: `${t("entry plan")} (${entry.title})`,
+    },
+  ].filter(Boolean) as { value: string; unit?: string; label: string }[];
+
+  const grid = (list: ListKey) => {
+    const items = lists[list];
+    // An odd last item in a 3-column grid spans the line instead of sitting
+    // alone and centred (it stays a tile when that would not happen).
+    const rowLast = items.length % 3 === 1 && items.length % 2 === 1 && items.length > 1;
+    return (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+        {items.map((item, i) => {
+          const isRow = rowLast && i === items.length - 1;
+          return (
+            <CatalogCard
+              key={item.key}
+              item={item}
+              variant={isRow ? "row" : "tile"}
+              onOpen={openItem(list)}
+              className={`cat-rise ${isRow ? "md:col-span-2 lg:col-span-3" : ""}`}
+              style={{ animationDelay: `${Math.min(i, 6) * 0.05}s` }}
+            />
+          );
+        })}
+      </div>
+    );
+  };
+
+  const sectionHead = (eyebrow: string, title: string, subtitle: string, count: number) => (
+    <div className="mb-8 lg:mb-12 flex items-end justify-between gap-6">
+      <SectionHeading eyebrow={eyebrow} title={title} subtitle={subtitle} size="display" />
+      <span
+        aria-hidden="true"
+        className="hidden md:block font-display font-extrabold leading-[0.8] tracking-[-0.04em] text-transparent text-[clamp(4rem,8vw,7.5rem)] [-webkit-text-stroke:1px_rgba(180,192,216,0.28)]"
+      >
+        {pad(count)}
+      </span>
+    </div>
+  );
+
   return (
-    <div className="bg-[#09090b] text-white min-h-screen overflow-x-hidden selection:bg-blue-500/30 selection:text-white">
-      {/* ─────────────────────────────────────────────────────────────────
-          HERO SECTION
-          Balanced spacing under floating navbar (~80px height),
-          ambient glowing backdrop, modern gradient typography and CTA.
-      ───────────────────────────────────────────────────────────────── */}
-      <section className="relative pt-32 pb-16 sm:pt-36 sm:pb-20 lg:pt-44 lg:pb-24 flex flex-col items-center justify-center text-center px-4 sm:px-6 overflow-hidden">
-        {/* Background Grid Pattern */}
+    <div className="bg-surface-dark text-white min-h-screen overflow-x-hidden">
+      {/* Hero: the house pattern, left-aligned, one CTA. Atmosphere is one
+          corner glow and an almost invisible line texture, nothing else. */}
+      <section className="relative pt-16 pb-12 sm:pt-24 sm:pb-16 lg:pt-28 lg:pb-20">
         <div
           aria-hidden="true"
-          className="absolute inset-0 z-0 opacity-15 pointer-events-none"
+          className="pointer-events-none absolute inset-x-0 -top-40 bottom-0 [mask-image:linear-gradient(180deg,#000_55%,transparent)]"
           style={{
-            backgroundImage: "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0)",
-            backgroundSize: "32px 32px",
+            background:
+              "radial-gradient(40% 55% at 8% 0%, rgba(81,115,214,.16), transparent 70%), repeating-linear-gradient(0deg, transparent 0 31px, rgba(180,192,216,.035) 31px 32px)",
           }}
         />
+        <div className="container-custom mx-auto relative">
+          <div className="inline-flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.18em] text-cta-soft">
+            <span aria-hidden="true" className="h-[3px] w-7 rounded-full bg-cta" />
+            {t(hero?.badge || "Our Solutions")}
+          </div>
+          <h1 className="mt-5 max-w-[15ch] font-display font-extrabold leading-[0.93] tracking-[-0.035em] text-[clamp(2.75rem,7.4vw,6.5rem)]">
+            {heroLead}
+            {heroAccent && <> <span className="text-cta">{heroAccent}</span></>}
+          </h1>
+          <p className="mt-6 max-w-[46ch] text-lg sm:text-xl leading-relaxed text-[#B4C0D8]">
+            {t(hero?.subtitle || "Explore the tools and services we've built to help businesses grow.")}
+          </p>
+          <div className="mt-9 flex flex-wrap items-center gap-x-7 gap-y-4">
+            <button
+              type="button"
+              onClick={() => openForm("hero")}
+              className="inline-flex items-center gap-2 rounded-full bg-cta px-7 py-4 font-bold text-white transition-colors hover:bg-cta-hover"
+            >
+              {buttonText} <span aria-hidden="true">→</span>
+            </button>
+            {apps.length > 0 && (
+              <a href="#apps" className="font-medium text-[#B4C0D8] transition-colors hover:text-white">
+                {t("See the apps")} ↓
+              </a>
+            )}
+          </div>
+        </div>
+      </section>
 
-        {/* Ambient Gradient Glow Lights */}
-        <div
-          aria-hidden="true"
-          className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] sm:w-[900px] h-[350px] bg-gradient-to-tr from-blue-600/20 via-indigo-600/15 to-purple-600/10 blur-[130px] rounded-full pointer-events-none z-0"
-        />
+      {/* Proof band: numerals from the catalog itself, one colour. */}
+      {proof.length > 0 && (
+        <div className="border-y border-white/10">
+          <div
+            className="container-custom mx-auto grid"
+            style={{ gridTemplateColumns: `repeat(${proof.length}, minmax(0, 1fr))` }}
+          >
+            {proof.map((p, i) => (
+              <div key={p.label} className={`py-6 lg:py-7 ${i > 0 ? "pl-4 sm:pl-6 border-l border-white/10" : ""}`}>
+                <div className="font-display font-extrabold leading-none tracking-[-0.03em] text-[clamp(2.25rem,4.4vw,3.5rem)]">
+                  {p.value}
+                  {p.unit && <small className="ml-1 text-[0.42em] font-semibold tracking-normal text-[#B4C0D8]">{p.unit}</small>}
+                </div>
+                <div className="mt-2 text-sm leading-snug text-[#7C8AA6]">{p.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-        {/* Optional Custom Background Image from Admin Settings */}
-        {portfolioHero?.backgroundImage && (
-          <>
+      {apps.length > 0 && (
+        <section id="apps" className="pt-16 sm:pt-24 lg:pt-28 scroll-mt-24">
+          <div className="container-custom mx-auto">
+            {sectionHead("01 · Apps", "Software ready to use", "Our own products, live today, with a fixed price. Subscribe and start.", apps.length)}
+            {grid("apps")}
+          </div>
+        </section>
+      )}
+
+      {services.length > 0 && (
+        <section id="services" className="pt-16 sm:pt-24 lg:pt-28 scroll-mt-24">
+          <div className="container-custom mx-auto">
+            {sectionHead("02 · Services", "Built by us, for your business", "Tailored marketing and technology, quoted for your case.", services.length)}
+            {grid("services")}
+          </div>
+        </section>
+      )}
+
+      {/* Final CTA: one block, one button, WhatsApp as the secondary link. */}
+      <section className="py-16 sm:py-24 lg:py-28">
+        <div className="container-custom mx-auto">
+          <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-surface-card p-8 sm:p-12 lg:p-20 grid gap-8 lg:grid-cols-[1.3fr_auto] lg:items-end">
             <div
               aria-hidden="true"
-              className="absolute inset-0 z-0 bg-cover bg-center pointer-events-none opacity-25 mix-blend-screen"
-              style={{ backgroundImage: `url(${getImageUrl(portfolioHero.backgroundImage, { width: 1920, quality: 80 })})` }}
+              className="pointer-events-none absolute inset-0"
+              style={{ background: "radial-gradient(45% 80% at 100% 100%, rgba(81,115,214,.22), transparent 70%)" }}
             />
-            <div aria-hidden="true" className="absolute inset-0 z-0 pointer-events-none bg-gradient-to-b from-[#09090b]/80 via-[#09090b]/50 to-[#09090b]" />
-          </>
-        )}
-
-        {/* Hero Content Container */}
-        <div className="relative z-10 max-w-4xl mx-auto flex flex-col items-center">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6 border border-blue-500/25 bg-blue-500/10 backdrop-blur-md shadow-[0_0_20px_rgba(59,130,246,0.15)]">
-            <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-            <span className="text-blue-200 font-semibold tracking-wide uppercase text-xs">
-              {t(portfolioHero?.badge || "Our Solutions")}
-            </span>
-          </div>
-
-          {/* Heading */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.15] mb-5">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-blue-200">
-              {t(portfolioHero?.title || companySettings?.heroTitle || "Scale Your Business")}
-            </span>
-          </h1>
-
-          {/* Subtitle */}
-          <p className="text-base sm:text-lg lg:text-xl text-slate-300/80 max-w-2xl mx-auto leading-relaxed mb-8 font-normal">
-            {t(portfolioHero?.subtitle || "Explore the tools and services we've built to help businesses grow.")}
-          </p>
-
-          {/* Action Button */}
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            <button
-              onClick={() => handleCta('hero')}
-              className="px-8 py-3.5 sm:py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-full text-base sm:text-lg transition-all duration-300 hover:scale-105 shadow-[0_0_30px_rgba(64,110,241,0.4)] hover:shadow-[0_0_45px_rgba(64,110,241,0.6)] inline-flex items-center justify-center gap-2.5"
-            >
-              <span>{t(portfolioHero?.buttonText || "Book a Strategy Session")}</span>
-              <ArrowRight className="w-5 h-5" />
-            </button>
-
-            <a
-              href="#solutions"
-              className="px-6 py-3.5 rounded-full text-sm font-medium text-slate-400 hover:text-white transition-colors inline-flex items-center gap-1.5"
-            >
-              <span>{t("All Solutions")}</span>
-              <ChevronDown className="w-4 h-4" />
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* ─────────────────────────────────────────────────────────────────
-          VALUE PROPOSITION / METRICS STRIP
-          Builds immediate trust with tangible proof points.
-      ───────────────────────────────────────────────────────────────── */}
-      <section className="px-4 sm:px-6 relative z-20 mb-8 sm:mb-12">
-        <div className="max-w-6xl mx-auto rounded-2xl border border-white/10 bg-slate-900/60 backdrop-blur-md p-6 sm:p-8 shadow-2xl">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-            <div className="flex items-start gap-3.5">
-              <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 shrink-0">
-                <Sparkles className="w-5 h-5" />
+            <div className="relative">
+              <div className="inline-flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.18em] text-cta-soft">
+                <span aria-hidden="true" className="h-[3px] w-7 rounded-full bg-cta" />
+                {t("Next step")}
               </div>
-              <div>
-                <h4 className="font-bold text-sm text-white">{t("Proprietary Ecosystem")}</h4>
-                <p className="text-xs text-slate-400 mt-1 leading-relaxed">{t("Built specifically for high performance")}</p>
-              </div>
+              <h2 className="mt-4 max-w-[14ch] font-display font-extrabold leading-[0.95] tracking-[-0.035em] text-[clamp(2.25rem,5.6vw,4.75rem)]">
+                {t(cta?.title || "Ready to Redefine Your Potential?")}
+              </h2>
+              {cta?.subtitle && <p className="mt-5 max-w-[46ch] text-lg text-[#B4C0D8]">{t(cta.subtitle)}</p>}
             </div>
-
-            <div className="flex items-start gap-3.5">
-              <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 shrink-0">
-                <Clock className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="font-bold text-sm text-white">{t("Fast 3-7 Day Deployment")}</h4>
-                <p className="text-xs text-slate-400 mt-1 leading-relaxed">{t("No endless wait to start scaling")}</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3.5">
-              <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shrink-0">
-                <Zap className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="font-bold text-sm text-white">{t("24/7 AI Automation")}</h4>
-                <p className="text-xs text-slate-400 mt-1 leading-relaxed">{t("Never lose a lead or booking")}</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3.5">
-              <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 shrink-0">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="font-bold text-sm text-white">{t("Tailored Integration")}</h4>
-                <p className="text-xs text-slate-400 mt-1 leading-relaxed">{t("Direct sync with WhatsApp, CRM and payments")}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─────────────────────────────────────────────────────────────────
-          SOLUTIONS GRID SECTION
-          Category filter pills + clean responsive 3-column CSS Grid.
-      ───────────────────────────────────────────────────────────────── */}
-      <section id="solutions" className="py-12 sm:py-16 px-4 sm:px-6 relative">
-        <div className="max-w-7xl mx-auto">
-          {/* Section Header & Filter Tabs */}
-          <div className="flex flex-col items-center mb-10 sm:mb-14">
-            {showServicesTitle && (
-              <div className="text-center mb-6">
-                <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-                  {t("Our Solutions")}
-                </h2>
-                <p className="text-sm sm:text-base text-slate-400 mt-2">
-                  {filteredServices.length} {t("Solutions Available")}
-                </p>
-              </div>
-            )}
-
-            {/* Filter Pills */}
-            <div className="flex flex-wrap justify-center items-center gap-2 p-1.5 rounded-2xl bg-slate-900/80 border border-white/10 backdrop-blur-md max-w-full overflow-x-auto">
-              {categories.map((cat) => {
-                const count = categoryCounts[cat.key];
-                if (cat.key !== 'all' && count === 0) return null;
-                const isActive = activeCategory === cat.key;
-                return (
-                  <button
-                    key={cat.key}
-                    onClick={() => setActiveCategory(cat.key)}
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
-                      isActive
-                        ? 'bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)] border border-blue-500'
-                        : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
-                    }`}
-                  >
-                    <span>{cat.label}</span>
-                    <span
-                      className={`px-1.5 py-0.2 rounded-full text-[11px] font-bold ${
-                        isActive ? 'bg-white/20 text-white' : 'bg-white/5 text-slate-400'
-                      }`}
-                    >
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Solutions Responsive Grid */}
-          {filteredServices.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 items-stretch">
-              {filteredServices.map((service) => (
-                <PortfolioCard
-                  key={service.id}
-                  service={service}
-                  description={service.description}
-                  onClick={() => openServiceModal(service)}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-20 bg-slate-900/40 rounded-3xl border border-white/5">
-              <Layers className="w-12 h-12 text-slate-500 mx-auto mb-3" />
-              <p className="text-slate-400 text-base">{t("No solutions found in this category.")}</p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ─────────────────────────────────────────────────────────────────
-          BOTTOM CTA SECTION
-          High-conversion Agency banner with ambient glow and dual CTA.
-      ───────────────────────────────────────────────────────────────── */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6 relative overflow-hidden">
-        <div className="relative max-w-5xl mx-auto rounded-3xl p-8 sm:p-14 text-center overflow-hidden border border-blue-500/20 bg-gradient-to-b from-[#0f172a] via-[#0b1120] to-[#070b14] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)]">
-          {/* Ambient Glows */}
-          <div
-            aria-hidden="true"
-            className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-blue-600/20 blur-3xl pointer-events-none"
-          />
-          <div
-            aria-hidden="true"
-            className="absolute -bottom-24 -right-24 w-72 h-72 rounded-full bg-indigo-600/20 blur-3xl pointer-events-none"
-          />
-
-          {portfolioCta?.backgroundImage && (
-            <>
-              <div
-                aria-hidden="true"
-                className="absolute inset-0 z-0 bg-cover bg-center pointer-events-none opacity-20 mix-blend-screen"
-                style={{ backgroundImage: `url(${getImageUrl(portfolioCta.backgroundImage, { width: 1920, quality: 80 })})` }}
-              />
-              <div aria-hidden="true" className="absolute inset-0 z-0 pointer-events-none bg-black/60" />
-            </>
-          )}
-
-          <div className="relative z-10 max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 border border-blue-500/30 text-blue-400 mb-6 uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>{t("Ready to Redefine Your Potential?")}</span>
-            </div>
-
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-4 tracking-tight leading-tight">
-              {t(portfolioCta?.title || "Ready to Redefine Your Potential?")}
-            </h2>
-
-            <p className="text-base sm:text-lg text-slate-300/90 max-w-2xl mx-auto mb-8 leading-relaxed">
-              {t(portfolioCta?.subtitle || "Join the forward-thinking companies already scaling with Skale Club.")}
-            </p>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="relative flex flex-col items-start gap-4">
               <button
-                onClick={() => handleCta('footer')}
-                className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-full text-base sm:text-lg transition-all duration-300 hover:scale-105 shadow-[0_0_30px_rgba(64,110,241,0.4)] hover:shadow-[0_0_45px_rgba(64,110,241,0.6)] flex items-center justify-center gap-2"
+                type="button"
+                onClick={() => openForm("footer")}
+                className="inline-flex items-center gap-2 rounded-full bg-cta px-7 py-4 font-bold text-white transition-colors hover:bg-cta-hover"
               >
-                <span>{t(portfolioCta?.buttonText || "Book a Strategy Session")}</span>
-                <ArrowRight className="w-5 h-5" />
+                {t(cta?.buttonText || "Book a Strategy Session")} <span aria-hidden="true">→</span>
               </button>
-
-              {companySettings?.companyPhone && (
+              {whatsapp && (
                 <a
-                  href={`https://wa.me/${companySettings.companyPhone.replace(/\D/g, '')}`}
+                  href={`https://wa.me/${whatsapp}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full sm:w-auto px-7 py-4 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 text-white font-semibold text-base transition-colors flex items-center justify-center gap-2"
+                  className="font-medium text-[#B4C0D8] transition-colors hover:text-white"
                 >
-                  <span>{t("Talk on WhatsApp")}</span>
+                  {t("or talk on WhatsApp")} ↗
                 </a>
               )}
             </div>
@@ -388,22 +245,14 @@ export default function Portfolio() {
         </div>
       </section>
 
-      {/* Service Detail Modal */}
-      {selectedService && (
-        <ServiceDetailModal
-          service={selectedService}
-          isOpen={isModalOpen}
-          onClose={() => setSelectedIndex(null)}
-          onCta={handleCta}
-          onPrev={portfolioServices && portfolioServices.length > 1 ? goToPrev : undefined}
-          onNext={portfolioServices && portfolioServices.length > 1 ? goToNext : undefined}
-          variant="dark"
-        />
-      )}
-
-      {/* Lead Form Modal */}
+      <CatalogDetail
+        items={open ? lists[open.list] : []}
+        index={open?.index ?? null}
+        onIndexChange={(index) => setOpen((o) => (o ? { ...o, index } : o))}
+        onClose={() => setOpen(null)}
+        onCta={(item) => openForm(item.slug ?? item.key)}
+      />
       <LeadFormModal open={isFormOpen} onClose={() => setIsFormOpen(false)} formSlug="default" />
     </div>
   );
 }
-

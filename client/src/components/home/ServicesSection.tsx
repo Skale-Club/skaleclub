@@ -1,13 +1,13 @@
 import { startTransition, useCallback, useMemo, useState } from 'react';
 import type { HomepageContent, PortfolioService } from '@shared/schema';
+import { catalogProducts, type CatalogItem } from '@shared/catalog';
 import { useQuery } from '@tanstack/react-query';
-import { PortfolioCard } from '@/components/PortfolioCard';
+import { CatalogCard } from '@/components/catalog/CatalogCard';
+import { CatalogDetail } from '@/components/catalog/CatalogDetail';
 import { ServicesHeader } from '@/components/home/ServicesHeader';
 import { ServicesCarousel } from '@/components/home/ServicesCarousel';
 import { StepCard } from '@/components/home/StepCard';
 import type { StepItem } from '@/components/home/StepCard';
-import { ServiceDetailModal } from '@/components/ServiceDetailModal';
-import { ProjectPreviewProvider } from '@/components/home/ProjectPreview';
 
 type Props = {
   section?: HomepageContent['consultingStepsSection'] | HomepageContent['horizontalScrollSection'] | null;
@@ -41,29 +41,24 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick, backg
       }));
   }, [rawItems]);
 
-  const services = useMemo(() => portfolioServices || [], [portfolioServices]);
+  const services = useMemo(() => catalogProducts(portfolioServices), [portfolioServices]);
 
-  // startTransition lets the tap's frame paint before React mounts the heavy
-  // modal + re-renders the paused carousel — this render used to block the
-  // main thread on tap (INP ~300ms).
-  const openServiceModal = useCallback((service: PortfolioService) => {
-    const idx = services.findIndex((s) => s.id === service.id);
+  // startTransition lets the tap's frame paint before React mounts the popup
+  // + re-renders the paused carousel — this render used to block the main
+  // thread on tap (INP ~300ms).
+  const openServiceModal = useCallback((item: CatalogItem) => {
+    const idx = services.findIndex((s) => s.key === item.key);
     if (idx >= 0) startTransition(() => setSelectedIndex(idx));
   }, [services]);
 
   // Stable renderItem so ServicesCarousel's memoized children survive
   // re-renders of this section (e.g. the paused prop flipping on modal open).
-  const renderServiceItem = useCallback((service: PortfolioService, idx: number) => (
+  const renderServiceItem = useCallback((item: CatalogItem, idx: number) => (
     <div
-      key={`service-${service.id}-${idx}`}
+      key={`${item.key}-${idx}`}
       className="flex-shrink-0 w-[85%] sm:w-[280px] md:w-[260px] tablet:w-[245px]"
     >
-      <PortfolioCard
-        service={service}
-        variant="dark"
-        compact
-        onClick={() => openServiceModal(service)}
-      />
+      <CatalogCard item={item} variant="compact" onOpen={openServiceModal} />
     </div>
   ), [openServiceModal]);
 
@@ -91,17 +86,6 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick, backg
   if (displayMode === 'services') {
     if (services.length === 0) return null;
 
-    const selectedService = selectedIndex !== null ? services[selectedIndex] : null;
-
-    const goToPrev = () => {
-      if (selectedIndex === null) return;
-      setSelectedIndex((selectedIndex - 1 + services.length) % services.length);
-    };
-    const goToNext = () => {
-      if (selectedIndex === null) return;
-      setSelectedIndex((selectedIndex + 1) % services.length);
-    };
-
     return (
       <>
         <SectionShell sectionId={sectionId} dark background={background}>
@@ -111,30 +95,24 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick, backg
             subtitle={section?.subtitle}
             dark
           />
-          <ProjectPreviewProvider services={services} paused={isModalOpen}>
-            <ServicesCarousel
-              items={services}
-              paused={isModalOpen}
-              ariaLabel="Services carousel"
-              renderItem={renderServiceItem}
-            />
-          </ProjectPreviewProvider>
+          <ServicesCarousel
+            items={services}
+            paused={isModalOpen}
+            ariaLabel="Services carousel"
+            renderItem={renderServiceItem}
+          />
         </SectionShell>
 
-        {selectedService && (
-          <ServiceDetailModal
-            service={selectedService}
-            isOpen={isModalOpen}
-            onClose={() => setSelectedIndex(null)}
-            onCta={() => {
-              setSelectedIndex(null);
-              if (onCtaClick) onCtaClick();
-            }}
-            onPrev={services.length > 1 ? goToPrev : undefined}
-            onNext={services.length > 1 ? goToNext : undefined}
-            variant="dark"
-          />
-        )}
+        <CatalogDetail
+          items={services}
+          index={selectedIndex}
+          onIndexChange={setSelectedIndex}
+          onClose={() => setSelectedIndex(null)}
+          onCta={() => {
+            setSelectedIndex(null);
+            if (onCtaClick) onCtaClick();
+          }}
+        />
       </>
     );
   }

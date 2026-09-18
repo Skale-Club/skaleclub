@@ -125,7 +125,13 @@ export default function Home() {
         background="bg-surface-dark"
       />
 
-      <OurServicesSection section={homepageContent.ourServicesSection} />
+      <OurServicesSection
+        section={homepageContent.ourServicesSection}
+        onCtaClick={() => {
+          setIsFormOpen(true);
+          trackCTAClick('our-services', companySettings?.ctaText || '');
+        }}
+      />
       <ReviewsSection
         embedUrl={reviewsEmbedUrl}
         title={reviewsTitle}

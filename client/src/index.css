@@ -13,6 +13,12 @@
   --cta: #5173D6;          /* primary CTA / action blue */
   --cta-hover: #3B5BBE;    /* CTA hover */
   --surface-dark: #111111; /* dark section surface used across the public site */
+  /* Two steps above surface-dark, for the catalog (cards, popup) and the
+     empty image slot / hover. Navy-tinted so the brand navy reads through. */
+  --surface-card: #0C1424;
+  --surface-raised: #142038;
+  /* Light CTA blue for small text on dark: #5173D6 fails contrast there. */
+  --cta-soft: #8FA9EE;
 
   /* Light Mode Colors */
   --background: 0 0% 100%;
