@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { db } from "../db.js";
 import { bootstrapTasks } from "#shared/schema.js";
-import { applyContentFixes, ensure3dPrintingService, syncProductArtwork, type TaskResult } from "./contentFixes.js";
+import { applyContentFixes, assignServiceCategories, ensure3dPrintingService, syncProductArtwork, type TaskResult } from "./contentFixes.js";
 
 /**
  * Maintenance that used to be "run this script against production" now runs
@@ -25,6 +25,8 @@ const TASKS: Task[] = [
   { name: "content-fixes-2026-09", description: "SEO title/keywords, portfolio hero, links-page placeholders, portfolio order", run: applyContentFixes },
   { name: "service-3d-printing", description: "3D Printing card in Our Services, with a generated image", run: ensure3dPrintingService },
   { name: "product-artwork", description: "Product icons and photos copied from each X app's own site", run: syncProductArtwork },
+  // After service-3d-printing, so the card it adds gets a category too.
+  { name: "catalog-categories-2026-09", description: "Explicit catalog category on each Our Services card", run: assignServiceCategories },
 ];
 
 let tableReady: Promise<void> | null = null;

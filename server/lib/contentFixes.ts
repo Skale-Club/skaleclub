@@ -3,6 +3,7 @@ import { db } from "../db.js";
 import { companySettings, portfolioServices } from "#shared/schema.js";
 import type { HomepageContent, LinksPageConfig, OurServicesCard } from "#shared/schema.js";
 import { generateServiceImage, SERVICE_IMAGE_SUBJECTS } from "./serviceImages.js";
+import { isCatalogCategory, type CatalogCategory } from "#shared/catalog.js";
 
 /**
  * Self-applying content fixes. Each function is idempotent: it checks the
@@ -276,6 +277,7 @@ const THREE_D_CARD: Omit<OurServicesCard, "order" | "imageUrl"> = {
     "signage parts, prototypes and replacement parts. We prepare the file from your logo or " +
     "drawing, print it, and test every piece before it ships.",
   features: ["Branded keychains", "Prototypes", "Custom parts"],
+  category: "brand",
 };
 
 /**
@@ -321,4 +323,46 @@ export async function ensure3dPrintingService(): Promise<TaskResult> {
     .where(eq(companySettings.id, row.id));
   if (notes.length === 0) notes.push("Already present with an image.");
   return { done, notes };
+}
+
+// ─── 4. Explicit catalog categories for the service cards ──────────────────
+
+/**
+ * The service cards live in JSON, so the migration that added
+ * portfolio_services.category cannot reach them. Categories are assigned by
+ * title, only where a card has none, so an admin's later choice always wins.
+ */
+const SERVICE_CATEGORIES: Record<string, CatalogCategory> = {
+  "digital marketing consultation": "marketing",
+  "website design & development": "websites",
+  "paid advertising": "marketing",
+  "content creation": "marketing",
+  "branding & graphic design": "brand",
+  "lead generation": "crm",
+  "crm and marketing automation": "crm",
+  "3d printing": "brand",
+};
+
+export async function assignServiceCategories(): Promise<TaskResult> {
+  const row = await settingsRow();
+  if (!row) return { done: false, notes: ["No company_settings row yet."] };
+  const homepage: HomepageContent = { ...(row.homepageContent ?? {}) };
+  const section = homepage.ourServicesSection ?? {};
+  const notes: string[] = [];
+  const cards = (section.cards ?? []).map((card) => {
+    if (isCatalogCategory(card.category)) return card;
+    const category = SERVICE_CATEGORIES[card.title.trim().toLowerCase()];
+    if (!category) return card;
+    notes.push(`${card.title} -> ${category}`);
+    return { ...card, category };
+  });
+  if (notes.length > 0) {
+    await db
+      .update(companySettings)
+      .set({ homepageContent: { ...homepage, ourServicesSection: { ...section, cards } } })
+      .where(eq(companySettings.id, row.id));
+  } else {
+    notes.push("Every known card already has a category.");
+  }
+  return { done: true, notes };
 }

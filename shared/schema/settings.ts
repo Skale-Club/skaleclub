@@ -410,6 +410,8 @@ export interface OurServicesCard {
   subtitle?: string;
   description?: string;
   features?: string[];
+  /** A CatalogCategory key (shared/catalog.ts). */
+  category?: string;
 }
 
 export interface OurServicesSection {
