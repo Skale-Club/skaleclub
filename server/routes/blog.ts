@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../db.js";
 import { users } from "#shared/schema.js";
 import { requireAdmin, sendError, setPublicCache } from "./_shared.js";
-import { sanitizeBlogHtml } from "../lib/blogContentValidator.js";
+import { sanitizeBlogHtml } from "../blog/content-validator.js";
 
 export function registerBlogRoutes(app: Express) {
   // Listing. `status` used to be passed straight through and omitting it

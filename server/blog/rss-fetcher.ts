@@ -1,3 +1,9 @@
+// server/blog/rss-fetcher.ts
+//
+// SOURCE OF TRUTH: skaleclub/server/blog/rss-fetcher.ts — sync changes back.
+// Ported to: xkedule, websites, xtimator, xmartmenu (see
+// .planning/initiatives/autoblog-parity/MASTER.md §5).
+
 /**
  * RSS Fetcher — Phase 35-01 (RSS-05)
  *

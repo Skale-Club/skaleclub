@@ -18,7 +18,8 @@
     "seed": "tsx scripts/seed.ts",
     "gen:service-images": "tsx scripts/generate-service-images.ts",
     "print:db:dev": "cross-env NODE_ENV=development tsx temp_db_url.ts",
-    "secrets:scan": "tsx scripts/run-gitleaks.ts"
+    "secrets:scan": "tsx scripts/run-gitleaks.ts",
+    "db:migrate": "node scripts/apply-migrations.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

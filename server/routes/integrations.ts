@@ -3,6 +3,7 @@ import { z } from "zod";
 import OpenAI from "openai";
 import { storage } from "../storage.js";
 import { insertChatIntegrationsSchema } from "#shared/schema.js";
+import { parseTelegramTarget } from "#shared/blog-contract.js";
 import { getGeminiClient } from "../lib/gemini.js";
 import { getOpenRouterClient } from "../lib/openrouter.js";
 import {
@@ -165,7 +166,10 @@ const twilioSettingsSchema = z.object({
 
 const telegramSettingsSchema = z.object({
   botToken: z.string().trim().optional(),
+  // Legacy single destination. Still accepted so an older client keeps working;
+  // it is folded into chatIds below.
   chatId: z.string().trim().optional(),
+  chatIds: z.array(z.string().trim()).optional(),
   enabled: z.boolean().optional(),
 });
 
@@ -1166,16 +1170,36 @@ export function registerIntegrationRoutes(app: Express) {
         ? parsed.botToken.trim()
         : undefined;
       const botTokenToPersist = tokenFromRequest || existingSettings?.botToken;
-      const chatId = parsed.chatId?.trim() ?? existingSettings?.chatId ?? '';
       const enabled = parsed.enabled ?? existingSettings?.enabled ?? false;
 
-      if (enabled && (!botTokenToPersist || !chatId)) {
-        return res.status(400).json({ message: 'Bot token and chat ID are required to enable Telegram notifications' });
+      // Destinations are a list (SC-07 / MASTER §6). A request may send the
+      // array, the legacy single id, or neither (keep what is stored).
+      const incomingChatIds = parsed.chatIds
+        ?? (parsed.chatId !== undefined ? [parsed.chatId] : undefined);
+      const chatIds = incomingChatIds
+        ? Array.from(new Set(incomingChatIds.map((id) => id.trim()).filter(Boolean)))
+        : (existingSettings?.chatIds?.length
+            ? existingSettings.chatIds
+            : (existingSettings?.chatId ? [existingSettings.chatId] : []));
+
+      // Reject a malformed destination here rather than discovering it on the
+      // first notification, where the only symptom is silence.
+      const invalidChatIds = chatIds.filter((id) => !parseTelegramTarget(id));
+      if (invalidChatIds.length > 0) {
+        return res.status(400).json({
+          message: `Invalid chat id(s): ${invalidChatIds.join(', ')}. Use the numeric chat id, optionally with a forum topic as "<chat_id>:<thread_id>".`,
+        });
+      }
+
+      if (enabled && (!botTokenToPersist || chatIds.length === 0)) {
+        return res.status(400).json({ message: 'Bot token and at least one chat ID are required to enable Telegram notifications' });
       }
 
       const settingsToSave: any = {
         enabled,
-        chatId: chatId || null,
+        chatIds,
+        // Kept in sync for one release so a rollback still has a destination.
+        chatId: chatIds[0] ?? null,
       };
 
       if (tokenFromRequest) {
@@ -1206,19 +1230,34 @@ export function registerIntegrationRoutes(app: Express) {
       const botToken = (parsed.botToken && parsed.botToken !== '********')
         ? parsed.botToken.trim()
         : existingSettings?.botToken;
-      const chatId = parsed.chatId?.trim() || existingSettings?.chatId;
+      const incomingChatIds = parsed.chatIds
+        ?? (parsed.chatId !== undefined ? [parsed.chatId] : undefined);
+      const chatIds = incomingChatIds
+        ? Array.from(new Set(incomingChatIds.map((id) => id.trim()).filter(Boolean)))
+        : (existingSettings?.chatIds?.length
+            ? existingSettings.chatIds
+            : (existingSettings?.chatId ? [existingSettings.chatId] : []));
 
-      if (!botToken || !chatId) {
-        return res.status(400).json({ success: false, message: 'Bot token and chat ID are required to test Telegram connection' });
+      if (!botToken || chatIds.length === 0) {
+        return res.status(400).json({ success: false, message: 'Bot token and at least one chat ID are required to test Telegram connection' });
       }
 
-      const { sendTelegramMessage } = await import('../integrations/telegram.js');
-      const result = await sendTelegramMessage({ botToken, chatId }, 'Test message from Skale Club - Your Telegram integration is working!');
+      const { sendTelegramToAll } = await import('../integrations/telegram.js');
+      const result = await sendTelegramToAll(botToken, chatIds, 'Test message from Skale Club - Your Telegram integration is working!');
 
+      // Partial success is reported as success with the failures named: a group
+      // the bot has not joined is the single most common misconfiguration, and
+      // hiding it behind a generic error is what makes it hard to fix.
       if (!result.success) {
-        return res.status(400).json({ success: false, message: result.message || 'Failed to send test Telegram message' });
+        const detail = result.failures.map((f) => `${f.chatId}: ${f.message}`).join('; ');
+        return res.status(400).json({ success: false, message: detail || 'Failed to send test Telegram message' });
       }
-      res.json({ success: true, message: 'Test Telegram message sent successfully!' });
+      res.json({
+        success: true,
+        message: result.failures.length === 0
+          ? `Test Telegram message sent to ${result.delivered} chat(s)!`
+          : `Sent to ${result.delivered} of ${chatIds.length}. Failed: ${result.failures.map((f) => `${f.chatId} (${f.message})`).join('; ')}`,
+      });
     } catch (err: any) {
       console.error('[integrations] POST /api/integrations/telegram/test failed', err);
       res.status(500).json({ success: false, message: 'Failed to send test Telegram message' });

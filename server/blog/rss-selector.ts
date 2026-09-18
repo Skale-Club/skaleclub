@@ -1,4 +1,8 @@
-// server/lib/rssTopicSelector.ts
+// server/blog/rss-selector.ts
+//
+// SOURCE OF TRUTH: skaleclub/server/blog/rss-selector.ts — sync changes back.
+// Ported to: xkedule, websites, xtimator, xmartmenu (see
+// .planning/initiatives/autoblog-parity/MASTER.md §5).
 //
 // Phase 35 — Plan 35-02 — RSS-07
 // Topic-selection brain for the blog generator.

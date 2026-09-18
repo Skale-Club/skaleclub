@@ -6,9 +6,24 @@ import type { BlogPost, BlogPostFeedback, BlogRssItem, InsertBlogPost, BlogGener
 import { blogSettings } from "#shared/schema.js";
 import type { IStorage } from "../storage.js";
 import { getSupabaseAdmin } from "./supabase.js";
-import { BLOG_AI_TIMEOUT_MS, generateOpenRouterImage, generateOpenRouterText, resolveBlogAiConfig, type BlogAiConfig } from "./blog-openrouter.js";
-import { selectNextRssItem } from "./rssTopicSelector.js";
-import { AiEmptyResponseError, AiTimeoutError, getPlainTextLength, sanitizeBlogHtml, slugifyTitle as slugifyTitleNFD } from "./blogContentValidator.js";
+import { generateOpenRouterImage, generateOpenRouterText, resolveBlogAiConfig, type BlogAiConfig } from "./blog-openrouter.js";
+import { withAiRetry } from "../blog/ai-retry.js";
+import { selectNextRssItem } from "../blog/rss-selector.js";
+import { logAiUsage } from "../blog/ai-usage-log.js";
+import {
+  assignPillar,
+  buildCatalogSection,
+  buildInternalLinksSection,
+  buildKeywordDedupSection,
+  buildPillarSection,
+  todaySection,
+  sanitizeGeneratedLinks,
+  type InternalLink,
+  type PillarAssignment,
+} from "#shared/blog-prompt.js";
+import { isRunDue } from "#shared/blog-schedule.js";
+import { AiEmptyResponseError, AiTimeoutError, getPlainTextLength, sanitizeBlogHtml, slugifyTitle as slugifyTitleNFD } from "../blog/content-validator.js";
+import { normaliseAspectAndConvertToWebp } from "../blog/image-webp.js";
 
 const STALE_LOCK_MS = 10 * 60 * 1000;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
@@ -24,9 +39,37 @@ const MAX_PLAIN_TEXT_CHARS = 4000;
 // Autopost port: how many recent approve/reject signals feed the prompts.
 const FEEDBACK_PROMPT_LIMIT = 10;
 
+// Blog covers render wide everywhere they appear, and the image models return
+// squares unless told otherwise in structured config — so the crop is what
+// actually enforces the shape.
+const BLOG_COVER_ASPECT_W = 16;
+const BLOG_COVER_ASPECT_H = 9;
+// Google's "16:9" bucket is 1344x768 — 1.750 against 1.778, i.e. 1.6% narrow.
+// Trimming 12px off that would cost real pixels to fix a difference nobody can
+// see, so anything within this band is left exactly as the model returned it.
+const BLOG_COVER_ASPECT_TOLERANCE = 0.05;
+
 const generatedPostSchema = z.object({ title: z.string().min(1), content: z.string().min(1), excerpt: z.string().nullable().optional(), metaDescription: z.string().nullable().optional(), focusKeyword: z.string().nullable().optional(), tags: z.union([z.array(z.string().min(1)), z.string().min(1)]) });
 
-type SkipReason = "no_settings" | "disabled" | "posts_per_day_zero" | "too_soon" | "locked" | "no_rss_items" | "not_configured";
+// "no_rss_items" is gone: RSS stopped being the only topic source (SC-04), so
+// an empty queue is no longer a reason to publish nothing.
+type SkipReason = "no_settings" | "disabled" | "posts_per_day_zero" | "too_soon" | "locked" | "not_configured";
+
+/**
+ * Everything the editorial assignment needs, assembled once per run.
+ *
+ * Until SC-05 this repo had one prompt shape — "refine this RSS item into a
+ * post" — which produced a consistent voice and almost no structural variety.
+ * The pillar decides HOW the post is written; the RSS item, when there is one,
+ * supplies WHAT it is about.
+ */
+type EditorialContext = {
+  assignment: PillarAssignment;
+  /** The full system message: pillar, date, catalogue, links, keyword dedup. */
+  systemMessage: string;
+  /** The only hrefs the generated body may keep. */
+  allowedLinkPaths: string[];
+};
 
 type BlogGeneratorResult =
   | { skipped: true; reason: SkipReason }
@@ -49,7 +92,7 @@ type PipelineSuccess = { jobId: number; postId: number; post: BlogPost };
 type GeneratedPost = { title: string; content: string; excerpt: string | null; metaDescription: string | null; focusKeyword: string | null; tags: string[] };
 type GeneratedImage = { bytes: Buffer; mime: string };
 
-type PipelineContext = { settings: BlogSettings; job: BlogGenerationJob; manual: boolean; rssItem: BlogRssItem; aiConfig: BlogAiConfig; feedback: BlogPostFeedback[] };
+type PipelineContext = { settings: BlogSettings; job: BlogGenerationJob; manual: boolean; rssItem: BlogRssItem | null; aiConfig: BlogAiConfig; feedback: BlogPostFeedback[]; editorial: EditorialContext };
 
 type BlogGeneratorDeps = {
   storage: BlogGeneratorStorage;
@@ -58,14 +101,15 @@ type BlogGeneratorDeps = {
   releaseLock: (settings: BlogSettings) => Promise<void>;
   resolveAiConfig: (settings: BlogSettings) => Promise<BlogAiConfig | null>;
   selectRssItem: (settings: BlogSettings, now: Date) => Promise<BlogRssItem | null>;
+  buildEditorial: (ctx: { settings: BlogSettings; jobSeed: number; rssItem: BlogRssItem | null }) => Promise<EditorialContext>;
   runPipeline: (ctx: PipelineContext) => Promise<PipelineSuccess>;
-  generateTopic: (ctx: { settings: BlogSettings; manual: boolean; rssItem: BlogRssItem; aiConfig: BlogAiConfig; feedback: BlogPostFeedback[] }) => Promise<string>;
-  generatePost: (ctx: { settings: BlogSettings; topic: string; manual: boolean; rssItem: BlogRssItem; aiConfig: BlogAiConfig; feedback: BlogPostFeedback[] }) => Promise<GeneratedPost>;
+  generateTopic: (ctx: { settings: BlogSettings; manual: boolean; rssItem: BlogRssItem | null; aiConfig: BlogAiConfig; feedback: BlogPostFeedback[]; editorial: EditorialContext }) => Promise<string>;
+  generatePost: (ctx: { settings: BlogSettings; topic: string; manual: boolean; rssItem: BlogRssItem | null; aiConfig: BlogAiConfig; feedback: BlogPostFeedback[]; editorial: EditorialContext }) => Promise<GeneratedPost>;
   generateImage: (ctx: { settings: BlogSettings; post: GeneratedPost; manual: boolean; aiConfig: BlogAiConfig }) => Promise<GeneratedImage | null>;
   uploadImage: (ctx: { bytes: Buffer; mime: string; path: string }) => Promise<string>;
 };
 
-const defaultDeps: BlogGeneratorDeps = { storage: defaultStorage, now: () => new Date(), acquireLock: acquireDatabaseLock, releaseLock: releaseDatabaseLock, resolveAiConfig: resolveBlogAiConfig, selectRssItem: selectNextRssItem, runPipeline, generateTopic: generateTopicWithAi, generatePost: generatePostWithAi, generateImage: generateImageWithAi, uploadImage: uploadFeatureImage };
+const defaultDeps: BlogGeneratorDeps = { storage: defaultStorage, now: () => new Date(), acquireLock: acquireDatabaseLock, releaseLock: releaseDatabaseLock, resolveAiConfig: resolveBlogAiConfig, selectRssItem: selectNextRssItem, buildEditorial: buildEditorialContext, runPipeline, generateTopic: generateTopicWithAi, generatePost: generatePostWithAi, generateImage: generateImageWithAi, uploadImage: uploadFeatureImage };
 
 let testDeps: Partial<BlogGeneratorDeps> | null = null;
 
@@ -78,6 +122,12 @@ async function getDb() {
   return module.db;
 }
 
+/** The full storage, for the editorial reads that are outside the narrow dep table. */
+async function getFullStorage(): Promise<IStorage> {
+  const module = await import("../storage.js");
+  return module.storage;
+}
+
 async function getStorage(): Promise<BlogGeneratorStorage> {
   const module = await import("../storage.js");
   return module.storage as BlogGeneratorStorage;
@@ -85,9 +135,35 @@ async function getStorage(): Promise<BlogGeneratorStorage> {
 
 function getCadenceWindowMs(postsPerDay: number): number { return DAY_IN_MS / postsPerDay; }
 
-function shouldSkipTooSoon(settings: BlogSettings, now: Date): boolean {
-  if (!settings.lastRunAt || settings.postsPerDay <= 0) return false;
-  return now.getTime() - settings.lastRunAt.getTime() < getCadenceWindowMs(settings.postsPerDay);
+/**
+ * Autoblog-parity SC-06: a pinned hour beats the elapsed-time cadence.
+ *
+ * The old rule only ever said "at least 24/postsPerDay hours since the last
+ * run", so the time of day DRIFTED forward with every run — an 18:00 post
+ * pushed tomorrow's to 18:00-or-later, a delayed run moved every run after it,
+ * and nothing in the product could answer "when is the next post?".
+ *
+ * With posting_hour set, a run is due when the site's LOCAL clock is in one of
+ * the slots, and only once per slot. Leaving it NULL keeps the old behaviour
+ * exactly, so nothing changes until someone picks an hour.
+ */
+function resolveSkipReason(settings: BlogSettings, now: Date): SkipReason | null {
+  if (settings.postingHour !== null && settings.postingHour !== undefined) {
+    const decision = isRunDue({
+      now,
+      timeZone: settings.timezone || "UTC",
+      postingHour: settings.postingHour,
+      postsPerDay: settings.postsPerDay,
+      lastRunAt: settings.lastRunAt ?? null,
+    });
+    // Both of isRunDue's reasons mean the same thing to a caller: not now.
+    return decision.due ? null : "too_soon";
+  }
+
+  if (!settings.lastRunAt || settings.postsPerDay <= 0) return null;
+  return now.getTime() - settings.lastRunAt.getTime() < getCadenceWindowMs(settings.postsPerDay)
+    ? "too_soon"
+    : null;
 }
 
 async function acquireDatabaseLock(settings: BlogSettings, now: Date): Promise<boolean> {
@@ -122,64 +198,6 @@ function extractJsonPayload(raw: string): string {
   const lastBrace = raw.lastIndexOf("}");
   if (firstBrace >= 0 && lastBrace > firstBrace) return raw.slice(firstBrace, lastBrace + 1);
   return raw.trim();
-}
-
-// Phase 36 D-07: race the AI call against BLOG_AI_TIMEOUT_MS via Promise.race.
-// The AbortSignal is forwarded to the OpenRouter call so timeouts actually
-// cancel the underlying request.
-async function withAiTimeout<T>(label: string, run: (signal: AbortSignal) => Promise<T>): Promise<T> {
-  const controller = new AbortController();
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => {
-      controller.abort();
-      reject(new AiTimeoutError(`AI ${label} exceeded ${BLOG_AI_TIMEOUT_MS}ms`));
-    }, BLOG_AI_TIMEOUT_MS);
-  });
-  try {
-    return await Promise.race([run(controller.signal), timeoutPromise]);
-  } finally {
-    if (timer) clearTimeout(timer);
-  }
-}
-
-// Phase 38 BLOG2-16: backoff schedule [1s, 5s, 30s] — fixed per spec, no jitter.
-const RETRY_DELAYS_MS: readonly number[] = [1000, 5000, 30000];
-
-function isTransientError(err: unknown): boolean {
-  if (err instanceof AiTimeoutError) return true;
-  if (err instanceof AiEmptyResponseError) return true;
-  // OpenRouter (fetch wrapper) and OpenAI-SDK errors carry a numeric HTTP status.
-  // 5xx = transient; 4xx (auth, quota, malformed) NOT retried.
-  const status = (err as { status?: unknown })?.status;
-  if (typeof status === "number") return status >= 500 && status < 600;
-  // Network errors surfaced by undici/fetch.
-  if (err instanceof Error) {
-    const code = (err as NodeJS.ErrnoException).code;
-    if (code === "ECONNRESET" || code === "ETIMEDOUT" || code === "ENOTFOUND") return true;
-    if (/fetch failed|network|socket hang up/i.test(err.message)) return true;
-  }
-  return false;
-}
-
-// Phase 38 BLOG2-16: composes over withAiTimeout. On transient error, sleeps
-// RETRY_DELAYS_MS[attempt] and retries. After 3 retries (4 total attempts),
-// re-throws the LAST error so upstream typed-error mapping in BlogGenerator.generate
-// catch still classifies the failure.
-async function withAiRetry<T>(label: string, run: (signal: AbortSignal) => Promise<T>): Promise<T> {
-  let lastErr: unknown;
-  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
-    try {
-      return await withAiTimeout(label, run);
-    } catch (err) {
-      lastErr = err;
-      if (!isTransientError(err) || attempt === RETRY_DELAYS_MS.length) throw err;
-      const delayMs = RETRY_DELAYS_MS[attempt];
-      console.warn(`[blog-generator] ${label} attempt ${attempt + 1} failed; retrying in ${delayMs}ms`);
-      await new Promise((r) => setTimeout(r, delayMs));
-    }
-  }
-  throw lastErr;
 }
 
 function parseGeneratedPostResponse(raw: string): GeneratedPost {
@@ -219,8 +237,8 @@ function resolveEditorialVoice(settings: BlogSettings): string {
 // titles (with the editor's reason) mark angles and mistakes to avoid.
 function buildFeedbackBlock(feedback: BlogPostFeedback[]): string {
   if (feedback.length === 0) return "";
-  const approved = feedback.filter((f) => f.signal === "positive").slice(0, 5);
-  const rejected = feedback.filter((f) => f.signal === "negative").slice(0, 5);
+  const approved = feedback.filter((f) => f.verdict === "approved").slice(0, 5);
+  const rejected = feedback.filter((f) => f.verdict === "rejected").slice(0, 5);
   if (approved.length === 0 && rejected.length === 0) return "";
 
   const lines: string[] = ["HISTÓRICO EDITORIAL (aprenda com as decisões do editor):"];
@@ -237,18 +255,151 @@ function buildFeedbackBlock(feedback: BlogPostFeedback[]): string {
   return `\n\n${lines.join("\n")}`;
 }
 
-async function generateTopicWithAi({ settings, manual, rssItem, aiConfig, feedback }: { settings: BlogSettings; manual: boolean; rssItem: BlogRssItem; aiConfig: BlogAiConfig; feedback: BlogPostFeedback[] }): Promise<string> {
-  const prompt = `Tarefa: refine o item de RSS abaixo em UMA ideia de pauta de blog em pt-BR alinhada às palavras-chave de SEO.\n\nItem de RSS de origem:\n- Título: ${rssItem.title}\n- Resumo: ${rssItem.summary ?? "(sem resumo)"}\n\nPalavras-chave de SEO: ${settings.seoKeywords}.\nEstilo de prompt: ${settings.promptStyle || "claro e prático"}.\nAnálise de tendências habilitada: ${settings.enableTrendAnalysis ? "sim" : "não"}.\nTipo de execução: ${manual ? "manual" : "agendada"}.${buildFeedbackBlock(feedback)}\n\nDevolva APENAS o título da pauta como texto puro em pt-BR. Sem aspas, sem pontuação final, sem comentários.`;
-  const response = await withAiRetry("topic", (signal) => generateOpenRouterText({ config: aiConfig, system: resolveEditorialVoice(settings), prompt, signal }));
+
+/**
+ * Assemble this run's editorial assignment and system message.
+ *
+ * Every read is best-effort: the assignment is what makes the post varied, and
+ * losing the catalogue or the FAQ list should narrow the choice of pillars, not
+ * cost the day's post. A failed read simply means the pillars that require that
+ * data are unavailable this run.
+ */
+async function buildEditorialContext({ settings, jobSeed, rssItem }: {
+  settings: BlogSettings;
+  jobSeed: number;
+  rssItem: BlogRssItem | null;
+}): Promise<EditorialContext> {
+  const storage = await getFullStorage();
+
+  let serviceNames: string[] = [];
+  let faqQuestions: string[] = [];
+  let recentPosts: BlogPost[] = [];
+  let recentPillarIds: string[] = [];
+
+  try { serviceNames = (await storage.getPortfolioServices()).map((s) => s.title).filter(Boolean); } catch { /* narrows pillars */ }
+  try { faqQuestions = (await storage.getFaqs()).map((f) => f.question).filter(Boolean).slice(0, 10); } catch { /* narrows pillars */ }
+  try { recentPosts = (await storage.getBlogPosts()).slice(0, 12); } catch { /* no history yet */ }
+  try {
+    // Newest-first, matching pickNextPillar's contract.
+    recentPillarIds = (await storage.listBlogGenerationJobs(12))
+      .map((j) => j.pillarId)
+      .filter((id): id is string => typeof id === "string" && id.length > 0);
+  } catch { /* rotation starts fresh */ }
+
+  const assignment = assignPillar(
+    recentPillarIds,
+    { hasCatalog: serviceNames.length > 0, hasFaqs: faqQuestions.length > 0, hasRssItem: !!rssItem },
+    jobSeed,
+  );
+
+  // The FAQ pillar works from real customer questions; every other pillar gets
+  // no extras and follows its own guidance.
+  const pillarExtras = assignment.pillar.id === "faq-deep-dive"
+    ? "PERGUNTAS REAIS DE CLIENTES (escolha UMA):\n" + faqQuestions.map((q) => `- ${q}`).join("\n")
+    : undefined;
+
+  const internalLinks: InternalLink[] = [
+    { label: "Nossos serviços", path: "/servicos" },
+    { label: "Fale com a gente", path: "/contato" },
+    ...recentPosts
+      .filter((p) => p.status === "published" && p.slug)
+      .slice(0, 4)
+      .map((p) => ({ label: p.title, path: `/blog/${p.slug}` })),
+  ];
+
+  const sections: string[] = [
+    resolveEditorialVoice(settings),
+    todaySection(new Date(), settings.timezone || "UTC"),
+    buildPillarSection(assignment, pillarExtras),
+  ];
+
+  if (rssItem) {
+    sections.push([
+      "FONTE. O assunto de hoje vem deste item do feed. Use-o como PONTO DE PARTIDA de um post original para os clientes desta agência — reaja a ele, explique o que muda para eles, acrescente o que a agência sabe. NÃO resuma nem parafraseie a fonte, e não se apresente como autor dela.",
+      `- Manchete: ${rssItem.title}`,
+      `- Resumo: ${rssItem.summary ?? "(sem resumo)"}`,
+      `- Origem: ${rssItem.url}`,
+    ].join("\n"));
+  }
+
+  const catalog = buildCatalogSection(serviceNames);
+  if (catalog) sections.push(catalog);
+  sections.push(buildInternalLinksSection(internalLinks));
+
+  const keywordDedup = buildKeywordDedupSection(recentPosts.map((p) => p.focusKeyword || "").filter(Boolean));
+  if (keywordDedup) sections.push(keywordDedup);
+
+  if (recentPosts.length > 0) {
+    sections.push(
+      "POSTS EXISTENTES. NÃO repita nem reformule estes temas:\n" +
+      recentPosts.map((p) => `- "${p.title}"`).join("\n"),
+    );
+  }
+
+  return {
+    assignment,
+    systemMessage: sections.join("\n\n"),
+    allowedLinkPaths: internalLinks.map((l) => l.path),
+  };
+}
+
+
+/**
+ * Record what a text call cost. Fire-and-forget on both paths (SC-08): the post
+ * is what matters, and a bookkeeping write must never be able to undo it.
+ *
+ * Token counts are not available here — generateOpenRouterText returns the text
+ * only — so the row carries the model, the prompt and the duration. That is
+ * still enough to attribute spend per run, which is what was missing.
+ */
+async function withTextUsageLog(model: string, prompt: string, run: () => Promise<string>): Promise<string> {
+  const startedAt = Date.now();
+  try {
+    const response = await run();
+    void logAiUsage({ step: "blog_post", provider: "openrouter", model, prompt, status: "success", durationMs: Date.now() - startedAt });
+    return response;
+  } catch (err) {
+    void logAiUsage({ step: "blog_post", provider: "openrouter", model, prompt, status: "failure", error: (err as Error).message, durationMs: Date.now() - startedAt });
+    throw err;
+  }
+}
+
+async function generateTopicWithAi({ settings, manual, rssItem, aiConfig, feedback, editorial }: { settings: BlogSettings; manual: boolean; rssItem: BlogRssItem | null; aiConfig: BlogAiConfig; feedback: BlogPostFeedback[]; editorial: EditorialContext }): Promise<string> {
+  const prompt = [
+    rssItem
+      ? "Tarefa: transforme a FONTE do system message em UMA ideia de pauta de blog em pt-BR, no formato que a PAUTA DESTE POST determina. A pauta tem que ser sobre o que a fonte significa para os clientes DESTA agência, não um recontar da fonte."
+      : "Tarefa: proponha UMA ideia de pauta de blog em pt-BR que cumpra a PAUTA DESTE POST do system message: seu pilar, seu formato de título, um único assunto.",
+    `Palavras-chave de SEO: ${settings.seoKeywords}.`,
+    `Estilo de prompt: ${settings.promptStyle || "claro e prático"}.`,
+    `Análise de tendências habilitada: ${settings.enableTrendAnalysis ? "sim" : "não"}.`,
+    `Tipo de execução: ${manual ? "manual" : "agendada"}.${buildFeedbackBlock(feedback)}`,
+    "Devolva APENAS o título da pauta como texto puro em pt-BR. Sem aspas, sem pontuação final, sem comentários.",
+  ].join("\n\n");
+  const response = await withTextUsageLog(aiConfig.textModel, prompt, () =>
+    withAiRetry("topic", (signal) => generateOpenRouterText({ config: aiConfig, system: editorial.systemMessage, prompt, signal })));
   const topic = response.trim();
   if (!topic) throw new Error("AI provider did not return a blog topic");
   return topic;
 }
 
-async function generatePostWithAi({ settings, topic, manual, rssItem, aiConfig, feedback }: { settings: BlogSettings; topic: string; manual: boolean; rssItem: BlogRssItem; aiConfig: BlogAiConfig; feedback: BlogPostFeedback[] }): Promise<GeneratedPost> {
-  const prompt = `Tarefa: escreva um rascunho de post de blog em pt-BR a partir da pauta abaixo.\n\nItem de RSS de origem:\n- Título: ${rssItem.title}\n- Resumo: ${rssItem.summary ?? "(sem resumo)"}\n- URL: ${rssItem.url}\n\nPauta: ${topic}\nPalavras-chave de SEO primárias: ${settings.seoKeywords}.\nEstilo de prompt: ${settings.promptStyle || "claro e prático"}.\nAnálise de tendências habilitada: ${settings.enableTrendAnalysis ? "sim" : "não"}.\nTipo de execução: ${manual ? "manual" : "agendada"}.${buildFeedbackBlock(feedback)}\n\nDevolva JSON válido com EXATAMENTE estes campos (todos em pt-BR):\n{"title":"","content":"","excerpt":"","metaDescription":"","focusKeyword":"","tags":[""]}\nO campo "content" deve ser HTML pronto para publicação seguindo as regras abaixo.\n\n${FORMATTING_RULES_PT_BR}`;
-  const response = await withAiRetry("post", (signal) => generateOpenRouterText({ config: aiConfig, system: resolveEditorialVoice(settings), prompt, signal }));
-  return parseGeneratedPostResponse(response);
+async function generatePostWithAi({ settings, topic, manual, rssItem, aiConfig, feedback, editorial }: { settings: BlogSettings; topic: string; manual: boolean; rssItem: BlogRssItem | null; aiConfig: BlogAiConfig; feedback: BlogPostFeedback[]; editorial: EditorialContext }): Promise<GeneratedPost> {
+  const prompt = [
+    "Tarefa: escreva um rascunho de post de blog em pt-BR a partir da pauta abaixo, cumprindo a PAUTA DESTE POST do system message (pilar, formato do título, tamanho alvo).",
+    `Pauta: ${topic}`,
+    `Palavras-chave de SEO primárias: ${settings.seoKeywords}.`,
+    `Estilo de prompt: ${settings.promptStyle || "claro e prático"}.`,
+    `Análise de tendências habilitada: ${settings.enableTrendAnalysis ? "sim" : "não"}.`,
+    `Tipo de execução: ${manual ? "manual" : "agendada"}.${buildFeedbackBlock(feedback)}`,
+    'Devolva JSON válido com EXATAMENTE estes campos (todos em pt-BR):\n{"title":"","content":"","excerpt":"","metaDescription":"","focusKeyword":"","tags":[""]}\nO campo "content" deve ser HTML pronto para publicação seguindo as regras abaixo.',
+    FORMATTING_RULES_PT_BR,
+  ].join("\n\n");
+  const response = await withTextUsageLog(aiConfig.textModel, prompt, () =>
+    withAiRetry("post", (signal) => generateOpenRouterText({ config: aiConfig, system: editorial.systemMessage, prompt, signal })));
+  const post = parseGeneratedPostResponse(response);
+  // The model is told which links it may use; this is what enforces it. A
+  // hallucinated href reaching a live post is worse than losing a real link.
+  post.content = sanitizeGeneratedLinks(post.content, editorial.allowedLinkPaths);
+  return post;
 }
 
 async function generateImageWithAi({ post, aiConfig }: { settings: BlogSettings; post: GeneratedPost; manual: boolean; aiConfig: BlogAiConfig }): Promise<GeneratedImage | null> {
@@ -261,12 +412,75 @@ async function generateImageWithAi({ post, aiConfig }: { settings: BlogSettings;
     "Sem texto, marcas d'água ou logotipos na imagem.",
   ].join("\n");
 
-  return await withAiRetry("image", (signal) => generateOpenRouterImage({ config: aiConfig, prompt, signal }));
+  const startedAt = Date.now();
+  try {
+    const image = await withAiRetry("image", (signal) => generateOpenRouterImage({ config: aiConfig, prompt, signal }));
+    void logAiUsage({
+      step: "blog_image",
+      provider: "openrouter",
+      model: aiConfig.imageModel,
+      // "skipped", not "failure": the call succeeded and was paid for, the
+      // model simply returned nothing. Conflating the two would make the
+      // failure rate in this table meaningless.
+      status: image?.bytes.length ? "success" : "skipped",
+      error: image?.bytes.length ? null : "model returned no image bytes",
+      durationMs: Date.now() - startedAt,
+    });
+    return image;
+  } catch (err) {
+    void logAiUsage({
+      step: "blog_image",
+      provider: "openrouter",
+      model: aiConfig.imageModel,
+      status: "failure",
+      error: (err as Error).message,
+      durationMs: Date.now() - startedAt,
+    });
+    throw err;
+  }
 }
 
 function imageExtensionFromMime(mime: string): string {
   const subtype = mime.split("/")[1] ?? "png";
   return subtype === "jpeg" ? "jpg" : subtype;
+}
+
+
+/**
+ * Autoblog-parity SC-09: covers are rendered wide (listing cards and the post
+ * header), so a square cover is letterboxed or centre-cropped everywhere it
+ * appears — and asking the model for 16:9 in prose is not enough, they return
+ * squares anyway. This crops to 16:9 when the source is outside tolerance and
+ * re-encodes as WebP, which matters because the cover is the largest single
+ * asset on a page whose whole purpose is search ranking.
+ *
+ * Never throws: a failed crop or encode yields the original bytes. A bigger
+ * file is a missed optimisation; a failed post is not.
+ */
+async function normaliseCover(image: GeneratedImage): Promise<GeneratedImage & { extension: string }> {
+  const fallbackExtension = imageExtensionFromMime(image.mime);
+  const result = await normaliseAspectAndConvertToWebp(
+    image.bytes,
+    image.mime,
+    BLOG_COVER_ASPECT_W,
+    BLOG_COVER_ASPECT_H,
+    { tolerance: BLOG_COVER_ASPECT_TOLERANCE },
+  );
+  if (result.cropped) {
+    console.log(
+      `[blog-generator] cover normalised to ${BLOG_COVER_ASPECT_W}:${BLOG_COVER_ASPECT_H}: ` +
+      `${result.cropped.from.width}x${result.cropped.from.height} -> ${result.cropped.to.width}x${result.cropped.to.height}`,
+    );
+  }
+  if (result.skipReason) {
+    console.warn(`[blog-generator] cover crop skipped (${result.skipReason}); original bytes kept`);
+  }
+  // The helper derives its fallback extension from the mime subtype, which
+  // yields "jpeg" where the rest of this pipeline has always written "jpg".
+  // Trust its extension only when it actually re-encoded; otherwise keep ours,
+  // so a degraded conversion does not silently change stored filenames.
+  const extension = result.mime === image.mime ? fallbackExtension : (result.extension || fallbackExtension);
+  return { bytes: result.buffer, mime: result.mime, extension };
 }
 
 async function uploadFeatureImage({ bytes, mime, path }: { bytes: Buffer; mime: string; path: string }): Promise<string> {
@@ -277,7 +491,7 @@ async function uploadFeatureImage({ bytes, mime, path }: { bytes: Buffer; mime: 
   return data.publicUrl;
 }
 
-async function runPipeline({ settings, job, manual, rssItem, aiConfig, feedback }: PipelineContext): Promise<PipelineSuccess> {
+async function runPipeline({ settings, job, manual, rssItem, aiConfig, feedback, editorial }: PipelineContext): Promise<PipelineSuccess> {
   const deps = getDeps();
   const now = deps.now();
   const tStart = Date.now();
@@ -288,11 +502,11 @@ async function runPipeline({ settings, job, manual, rssItem, aiConfig, feedback 
 
   try {
     const tTopic = Date.now();
-    const topic = await deps.generateTopic({ settings, manual, rssItem, aiConfig, feedback });
+    const topic = await deps.generateTopic({ settings, manual, rssItem, aiConfig, feedback, editorial });
     partial.topic = Date.now() - tTopic;
 
     const tContent = Date.now();
-    const generatedPost = await deps.generatePost({ settings, topic, manual, rssItem, aiConfig, feedback });
+    const generatedPost = await deps.generatePost({ settings, topic, manual, rssItem, aiConfig, feedback, editorial });
     partial.content = Date.now() - tContent;
 
     // Phase 36 BLOG2-02/BLOG2-04 (D-05/D-06): sanitize, then length-validate
@@ -317,8 +531,9 @@ async function runPipeline({ settings, job, manual, rssItem, aiConfig, feedback 
       dImage = Date.now() - tImage;
       if (image?.bytes.length) {
         const tUpload = Date.now();
-        const path = `blog-images/${now.getTime()}-${randomUUID()}.${imageExtensionFromMime(image.mime)}`;
-        featureImageUrl = await deps.uploadImage({ bytes: image.bytes, mime: image.mime, path });
+        const cover = await normaliseCover(image);
+        const path = `blog-images/${now.getTime()}-${randomUUID()}.${cover.extension}`;
+        featureImageUrl = await deps.uploadImage({ bytes: cover.bytes, mime: cover.mime, path });
         dUpload = Date.now() - tUpload;
       } else {
         console.warn("Blog generator image generation returned no bytes; continuing without feature image");
@@ -334,7 +549,7 @@ async function runPipeline({ settings, job, manual, rssItem, aiConfig, feedback 
 
     // Autopost port: auto-approve publishes immediately; otherwise the draft
     // waits in the approval queue (Blog → Automation) for a human decision.
-    const autoApprove = settings.autoApprove;
+    const autoPublish = settings.autoPublish;
 
     const postInput: InsertBlogPost = {
       title: generatedPost.title,
@@ -345,19 +560,22 @@ async function runPipeline({ settings, job, manual, rssItem, aiConfig, feedback 
       focusKeyword: generatedPost.focusKeyword,
       tags: generatedPost.tags.join(", "),
       featureImageUrl,
-      status: autoApprove ? "published" : "draft",
-      publishedAt: autoApprove ? now : null,
+      status: autoPublish ? "published" : "draft",
+      publishedAt: autoPublish ? now : null,
       authorName: "AI Assistant",
     };
 
     const post = await deps.storage.createBlogPost(postInput);
 
-    // RSS-07: mark item used AFTER post insert succeeds (non-fatal on failure)
-    try {
-      await deps.storage.markRssItemUsed(rssItem.id, post.id);
-    } catch (markErr) {
-      const message = markErr instanceof Error ? markErr.message : String(markErr);
-      console.warn(`[blog-generator] markRssItemUsed failed for item ${rssItem.id}: ${message}`);
+    // Mark the item used AFTER the post insert succeeds, and only when this run
+    // actually consumed one — a pillar-only run has nothing to mark.
+    if (rssItem) {
+      try {
+        await deps.storage.markRssItemUsed(rssItem.id, post.id);
+      } catch (markErr) {
+        const message = markErr instanceof Error ? markErr.message : String(markErr);
+        console.warn(`[blog-generator] markRssItemUsed failed for item ${rssItem.id}: ${message}`);
+      }
     }
 
     const durationsMs: DurationsMs = {
@@ -373,11 +591,48 @@ async function runPipeline({ settings, job, manual, rssItem, aiConfig, feedback 
       postId: post.id,
       completedAt: now,
       reason: null,
-      error: null,
+      errorMessage: null,
       durationsMs,
     });
 
     await deps.storage.upsertBlogSettings(buildRunFinalization({ lastRunAt: now, lockAcquiredAt: null }));
+
+    // Autoblog-parity SC-07. Only for a draft: an auto-published post has
+    // nothing to approve, and a card with live buttons for a post already on
+    // the site is worse than no card at all.
+    //
+    // Fire-and-forget by design — the post is saved and the job is already
+    // marked completed, so a Telegram outage must not turn a successful
+    // generation into a failed one.
+    if (!autoPublish) {
+      void (async () => {
+        try {
+          // Deliberately NOT through the deps table: that is the narrow
+          // surface the pipeline's tests stub, and a notification is not part
+          // of the pipeline's contract. Reaching for the real storage here
+          // keeps the stub honest about what generation actually needs.
+          const { storage } = await import("../storage.js");
+          const telegram = await storage.getTelegramSettings();
+          if (!telegram?.enabled || !telegram.approvalsEnabled) return;
+          const base = (process.env.SITE_URL || process.env.APP_URL || "").trim().replace(/\/+$/, "");
+          const { sendBlogDraftForApproval } = await import("../integrations/telegram.js");
+          await sendBlogDraftForApproval(telegram, {
+            id: post.id,
+            title: post.title,
+            excerpt: post.excerpt,
+            focusKeyword: post.focusKeyword,
+            // Telegram fetches a photo from its OWN servers, so a stored
+            // root-relative URL has to be absolutised first.
+            imageUrl: featureImageUrl && base && featureImageUrl.startsWith("/")
+              ? `${base}${featureImageUrl}`
+              : featureImageUrl,
+          }, { postUrl: base ? `${base}/admin/blog` : null });
+        } catch (notifyErr) {
+          const message = notifyErr instanceof Error ? notifyErr.message : String(notifyErr);
+          console.warn(`[blog-generator] Telegram approval card failed for post ${post.id}: ${message}`);
+        }
+      })();
+    }
 
     return { jobId: job.id, postId: post.id, post };
   } catch (err) {
@@ -405,7 +660,8 @@ export interface PreviewResult {
   focusKeyword: string | null;
   tags: string[];
   featureImageUrl: string | null;
-  rssItem: BlogRssItem;
+  /** null when this preview ran on the pillar rotation alone. */
+  rssItem: BlogRssItem | null;
 }
 
 export type RunPreviewResponse =
@@ -437,13 +693,14 @@ export async function runPreview(options?: { rssItemId?: number }): Promise<RunP
   } else {
     rssItem = await deps.selectRssItem(settings, deps.now());
   }
-  if (!rssItem) return { skipped: true, reason: "no_rss_items" };
-
   const feedback = await listFeedbackSafe(deps);
+  // A preview needs no job row, so the rotation seed comes from the clock. It
+  // only decides which pillar/title shape this preview demonstrates.
+  const editorial = await deps.buildEditorial({ settings, jobSeed: deps.now().getTime(), rssItem });
 
   try {
-    const topic = await deps.generateTopic({ settings, manual: true, rssItem, aiConfig, feedback });
-    const generatedPost = await deps.generatePost({ settings, topic, manual: true, rssItem, aiConfig, feedback });
+    const topic = await deps.generateTopic({ settings, manual: true, rssItem, aiConfig, feedback, editorial });
+    const generatedPost = await deps.generatePost({ settings, topic, manual: true, rssItem, aiConfig, feedback, editorial });
     const sanitizedContent = sanitizeBlogHtml(generatedPost.content);
     const plainTextLen = getPlainTextLength(sanitizedContent);
     if (plainTextLen < MIN_PLAIN_TEXT_CHARS) {
@@ -456,8 +713,11 @@ export async function runPreview(options?: { rssItemId?: number }): Promise<RunP
     try {
       const image = await deps.generateImage({ settings, post: generatedPost, manual: true, aiConfig });
       if (image?.bytes.length) {
-        const path = `blog-images/${deps.now().getTime()}-${randomUUID()}.${imageExtensionFromMime(image.mime)}`;
-        featureImageUrl = await deps.uploadImage({ bytes: image.bytes, mime: image.mime, path });
+        // Same normalisation as the real pipeline, so a preview shows the cover
+        // that would actually be published rather than a differently-shaped one.
+        const cover = await normaliseCover(image);
+        const path = `blog-images/${deps.now().getTime()}-${randomUUID()}.${cover.extension}`;
+        featureImageUrl = await deps.uploadImage({ bytes: cover.bytes, mime: cover.mime, path });
       }
     } catch (imgErr) {
       const m = imgErr instanceof Error ? imgErr.message : String(imgErr);
@@ -497,7 +757,10 @@ export class BlogGenerator {
     if (!settings) return { skipped: true, reason: "no_settings" };
     if (!manual && !settings.enabled) return { skipped: true, reason: "disabled" };
     if (!manual && settings.postsPerDay <= 0) return { skipped: true, reason: "posts_per_day_zero" };
-    if (!manual && shouldSkipTooSoon(settings, now)) return { skipped: true, reason: "too_soon" };
+    if (!manual) {
+      const skipReason = resolveSkipReason(settings, now);
+      if (skipReason) return { skipped: true, reason: skipReason };
+    }
 
     // Autopost port: no OpenRouter key or missing text/image models → skip
     // (belt-and-braces on top of the settings-save validation; the key can be
@@ -514,19 +777,27 @@ export class BlogGenerator {
     } else {
       rssItem = await deps.selectRssItem(settings, now);
     }
-    if (!rssItem) {
-      await deps.storage.createBlogGenerationJob({ status: "skipped", reason: "no_rss_items", startedAt: now, completedAt: now });
-      return { skipped: true, reason: "no_rss_items" };
-    }
+    // SC-04: an empty queue is no longer a reason to publish nothing. RSS is one
+    // topic source; the editorial pillar rotation is the other, and it needs no
+    // input at all. The generator only skips for the reasons above this line.
 
     const lockAcquired = await deps.acquireLock(settings, now);
     if (!lockAcquired) return { skipped: true, reason: "locked" };
 
-    const job = await deps.storage.createBlogGenerationJob({ status: "running", startedAt: now });
+    const job = await deps.storage.createBlogGenerationJob({
+      status: "running",
+      startedAt: now,
+      trigger: manual ? "manual" : "cron",
+      source: rssItem ? "rss" : "pillar",
+      rssItemId: rssItem?.id ?? null,
+    });
     const feedback = await listFeedbackSafe(deps);
+    // The job id seeds the rotation, so consecutive runs vary while a test with
+    // a fixed id is deterministic.
+    const editorial = await deps.buildEditorial({ settings, jobSeed: job.id, rssItem });
 
     try {
-      const result = await deps.runPipeline({ settings, job, manual, rssItem, aiConfig, feedback });
+      const result = await deps.runPipeline({ settings, job, manual, rssItem, aiConfig, feedback, editorial });
       return { skipped: false, reason: null, jobId: result.jobId, postId: result.postId, post: result.post };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -547,7 +818,7 @@ export class BlogGenerator {
       await deps.storage.updateBlogGenerationJob(job.id, {
         status: "failed",
         reason,
-        error: message,
+        errorMessage: message,
         completedAt: deps.now(),
         durationsMs: partialDurationsMs as DurationsMs | undefined,
       });

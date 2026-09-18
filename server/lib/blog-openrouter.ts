@@ -9,17 +9,14 @@
 import type { BlogSettings } from "#shared/schema.js";
 import { getOpenRouterClient } from "./openrouter.js";
 import { getRuntimeOpenRouterKey } from "./ai-provider.js";
-import { AiEmptyResponseError } from "./blogContentValidator.js";
+import { AiEmptyResponseError } from "../blog/content-validator.js";
 
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
 // Timeout consumed by the generator's retry wrapper at every AI call site.
-// BLOG_GEMINI_TIMEOUT_MS is honored for backward compatibility with deploys
-// that already override the old Gemini-era variable.
-export const BLOG_AI_TIMEOUT_MS: number =
-  Number(process.env.BLOG_AI_TIMEOUT_MS) ||
-  Number(process.env.BLOG_GEMINI_TIMEOUT_MS) ||
-  30_000;
+// Defined once in server/blog/ai-retry.ts (the module the other products port);
+// re-exported here so existing importers keep working.
+export { BLOG_AI_TIMEOUT_MS } from "../blog/ai-retry.js";
 
 export interface BlogAiConfig {
   apiKey: string;
@@ -51,8 +48,8 @@ export async function resolveOpenRouterKey(): Promise<string | null> {
  * both blog models are set. Callers skip with reason "not_configured" on null.
  */
 export async function resolveBlogAiConfig(settings: BlogSettings): Promise<BlogAiConfig | null> {
-  const textModel = settings.openrouterTextModel?.trim();
-  const imageModel = settings.openrouterImageModel?.trim();
+  const textModel = settings.textModel?.trim();
+  const imageModel = settings.imageModel?.trim();
   if (!textModel || !imageModel) return null;
   const apiKey = await resolveOpenRouterKey();
   if (!apiKey) return null;

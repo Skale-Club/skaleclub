@@ -1,5 +1,6 @@
 import { db } from "./db.js";
-import { scoreItem } from "./lib/rssTopicSelector.js";
+import { decryptToken, encryptToken, isEncryptedToken } from "./lib/token-crypto.js";
+import { scoreItem } from "./blog/rss-selector.js";
 import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead } from "#shared/form.js";
 import { normalizeLinksPageConfig } from "#shared/links.js";
 import {
@@ -22,6 +23,7 @@ import {
   blogRssSources,
   blogRssItems,
   blogPostFeedback,
+  aiGenerationLogs,
   hubLives,
   hubParticipants,
   hubRegistrations,
@@ -142,7 +144,7 @@ export interface RssItemWithSource extends BlogRssItem {
 // must include `durationsMs: blogGenerationJobs.durationsMs` for the
 // value to actually round-trip on the wire.
 export interface BlogGenerationJobWithRssItem extends BlogGenerationJob {
-  rssItemTitle: string | null;
+  sourceTitle: string | null;
   rssItemId: number | null;
 }
 
@@ -303,6 +305,16 @@ export interface IStorage {
   // Autopost port — approve/reject feedback loop
   createBlogPostFeedback(data: InsertBlogPostFeedback): Promise<BlogPostFeedback>;
   listBlogPostFeedback(limit?: number): Promise<BlogPostFeedback[]>;
+  /** AI spend for the blog, grouped by step and status (autoblog-parity SC-11). */
+  getBlogAiUsageSummary(sinceDays?: number): Promise<Array<{
+    step: string;
+    status: string;
+    calls: number;
+    costUsd: number;
+    inputTokens: number;
+    outputTokens: number;
+    avgDurationMs: number | null;
+  }>>;
   getRssItemByUsedPostId(postId: number): Promise<BlogRssItem | undefined>;
 
   listBlogGenerationJobs(limit: number): Promise<BlogGenerationJobWithRssItem[]>;
@@ -511,17 +523,39 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
+  /**
+   * Provider API keys are encrypted at rest (autoblog-parity SC-10 / MASTER
+   * D-06) with the AES-256-GCM envelope in server/lib/token-crypto.ts. Callers
+   * above this layer always see plaintext and never touch the envelope — this
+   * includes the OpenRouter key the blog generator bills against, which was
+   * previously stored in the clear with RLS as its only protection.
+   *
+   * A key written before this landed has no `v1:` prefix; decryptToken returns
+   * it unchanged and the next write re-encrypts it, so no migration and no
+   * downtime. A `v1:` value that fails authentication THROWS rather than
+   * silently becoming garbage, so a rotated TOKEN_ENCRYPTION_KEY surfaces as a
+   * configuration error instead of as integrations that quietly stopped.
+   */
   async getChatIntegration(provider: string): Promise<ChatIntegrations | undefined> {
     const [integration] = await db.select().from(chatIntegrations).where(eq(chatIntegrations.provider, provider));
-    return integration;
+    if (!integration?.apiKey) return integration;
+    return { ...integration, apiKey: decryptToken(integration.apiKey) };
   }
 
   async upsertChatIntegration(settings: InsertChatIntegrations): Promise<ChatIntegrations> {
     const existing = await this.getChatIntegration(settings.provider || "openai");
+
+    // Only touch the field when the caller actually supplied one: a partial
+    // update that omits the key must leave the stored ciphertext alone.
+    const encryptIfPresent = (value: string | null | undefined) =>
+      typeof value === "string" && value
+        ? (isEncryptedToken(value) ? value : encryptToken(value))
+        : value;
+
     if (existing) {
       const payload = {
         ...settings,
-        apiKey: settings.apiKey ?? existing.apiKey,
+        apiKey: encryptIfPresent(settings.apiKey ?? existing.apiKey),
         updatedAt: new Date(),
       };
       const [updated] = await db
@@ -529,11 +563,16 @@ export class DatabaseStorage implements IStorage {
         .set(payload)
         .where(eq(chatIntegrations.id, existing.id))
         .returning();
-      return updated;
+      // Hand back plaintext so a caller reading the result of its own write
+      // sees the same shape getChatIntegration gives it.
+      return updated?.apiKey ? { ...updated, apiKey: decryptToken(updated.apiKey) } : updated;
     }
 
-    const [created] = await db.insert(chatIntegrations).values(settings).returning();
-    return created;
+    const [created] = await db
+      .insert(chatIntegrations)
+      .values({ ...settings, apiKey: encryptIfPresent(settings.apiKey) })
+      .returning();
+    return created?.apiKey ? { ...created, apiKey: decryptToken(created.apiKey) } : created;
   }
 
   async getTwilioSettings(): Promise<TwilioSettings | undefined> {
@@ -1308,6 +1347,48 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
+  /**
+   * AI spend for the blog, grouped by step (autoblog-parity SC-11).
+   *
+   * Aggregated in SQL rather than by pulling rows: this table grows by two rows
+   * per generated post forever, and a cost panel that gets slower every month
+   * is a cost panel nobody opens.
+   *
+   * `status` is carried through because 'failure' and 'skipped' rows still cost
+   * money on some providers, and a total that silently drops them is the number
+   * people are surprised by on the invoice.
+   */
+  async getBlogAiUsageSummary(sinceDays = 30): Promise<Array<{
+    step: string;
+    status: string;
+    calls: number;
+    costUsd: number;
+    inputTokens: number;
+    outputTokens: number;
+    avgDurationMs: number | null;
+  }>> {
+    const since = new Date(Date.now() - Math.max(1, sinceDays) * 24 * 60 * 60 * 1000);
+    return db
+      .select({
+        step: aiGenerationLogs.step,
+        status: aiGenerationLogs.status,
+        calls: sql<number>`count(*)::int`,
+        costUsd: sql<number>`coalesce(sum(${aiGenerationLogs.costUsd}), 0)::float8`,
+        inputTokens: sql<number>`coalesce(sum(${aiGenerationLogs.inputTokens}), 0)::int`,
+        outputTokens: sql<number>`coalesce(sum(${aiGenerationLogs.outputTokens}), 0)::int`,
+        avgDurationMs: sql<number | null>`avg(${aiGenerationLogs.durationMs})::int`,
+      })
+      .from(aiGenerationLogs)
+      .where(and(
+        gte(aiGenerationLogs.createdAt, since),
+        // Only the blog steps: the column is deliberately open so other AI
+        // features can share the table, and a blog cost panel that quietly
+        // includes unrelated spend is worse than no panel.
+        inArray(aiGenerationLogs.step, ["blog_post", "blog_image"]),
+      ))
+      .groupBy(aiGenerationLogs.step, aiGenerationLogs.status);
+  }
+
   async listBlogPostFeedback(limit = 20): Promise<BlogPostFeedback[]> {
     return await db
       .select()
@@ -1379,7 +1460,7 @@ export class DatabaseStorage implements IStorage {
     // Join chain: blogGenerationJobs.postId -> blogRssItems.usedPostId
     // (jobs have no direct rssItemId column; the only link is through the
     // post they produced. Skipped/failed jobs that never created a post
-    // will have rssItemTitle=null and rssItemId=null — correct semantics.)
+    // will have sourceTitle=null and rssItemId=null — correct semantics.)
     const rows = await db
       .select({
         id: blogGenerationJobs.id,
@@ -1388,9 +1469,13 @@ export class DatabaseStorage implements IStorage {
         postId: blogGenerationJobs.postId,
         startedAt: blogGenerationJobs.startedAt,
         completedAt: blogGenerationJobs.completedAt,
-        error: blogGenerationJobs.error,
+        errorMessage: blogGenerationJobs.errorMessage,
         durationsMs: blogGenerationJobs.durationsMs,
-        rssItemTitle: blogRssItems.title,
+        trigger: blogGenerationJobs.trigger,
+        source: blogGenerationJobs.source,
+        // The pillar this run used — read back by the next run's rotation.
+        pillarId: blogGenerationJobs.pillarId,
+        sourceTitle: blogRssItems.title,
         rssItemId: blogRssItems.id,
       })
       .from(blogGenerationJobs)
@@ -1426,9 +1511,13 @@ export class DatabaseStorage implements IStorage {
         postId: blogGenerationJobs.postId,
         startedAt: blogGenerationJobs.startedAt,
         completedAt: blogGenerationJobs.completedAt,
-        error: blogGenerationJobs.error,
+        errorMessage: blogGenerationJobs.errorMessage,
         durationsMs: blogGenerationJobs.durationsMs,
-        rssItemTitle: blogRssItems.title,
+        trigger: blogGenerationJobs.trigger,
+        source: blogGenerationJobs.source,
+        // The pillar this run used — read back by the next run's rotation.
+        pillarId: blogGenerationJobs.pillarId,
+        sourceTitle: blogRssItems.title,
         rssItemId: blogRssItems.id,
       })
       .from(blogGenerationJobs)
