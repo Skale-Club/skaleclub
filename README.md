@@ -147,7 +147,7 @@ existing images.
 ## Brand Guidelines
 
 - **Primary Navy**: `#0A162E` (dark surfaces, headings)
-- **Action Blue (CTAs/buttons)**: `#406EF1` (hover `#355CD0`, white bold text)
+- **Action Blue (CTAs/buttons)**: `#5173D6` (hover `#3B5BBE`, white bold text)
 - **Fonts**: Outfit (headings), Inter (body)
 
 ## License

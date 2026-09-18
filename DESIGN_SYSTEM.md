@@ -471,7 +471,7 @@ Large hero image showing professional cleaners in modern home setting with brigh
   - Service type dropdown
   - Location/address input
   - Date/time selector
-  - "Get Instant Quote" CTA button (Action Blue `#406EF1`)
+  - "Get Instant Quote" CTA button (Action Blue `#5173D6`)
 
 #### Services Grid (3 columns desktop, 1 column mobile)
 
@@ -520,7 +520,7 @@ Clean receipt-style summary with booking details, professional assigned (photo +
 ### Frontend Component Specifications
 
 #### Buttons
-- **Primary CTA**: Action Blue (`#406EF1`, hover `#355CD0`) with white bold text, `rounded-full` (pill shape)
+- **Primary CTA**: Action Blue (`#5173D6`, hover `#3B5BBE`) with white bold text, `rounded-full` (pill shape)
 - **Secondary**: Outlined version, `rounded-lg`
 - **Text buttons**: For tertiary actions
 - **Buttons on images**: `backdrop-blur-md bg-white/20 text-white`
@@ -566,7 +566,7 @@ Small `rounded-full` pills with colored backgrounds:
 - Use `admin-*` utility classes for consistency in admin
 - Apply transitions to elements that change with theme
 - Test UI in both themes before committing
-- Use Action Blue (`#406EF1`) for all main CTAs
+- Use Action Blue (`#5173D6`) for all main CTAs
 - Apply `rounded-full` to main CTA buttons
 - Maintain generous spacing (according to defined primitives)
 - Follow typographic hierarchy (Outfit for headings, Inter for body)
@@ -592,7 +592,7 @@ Small `rounded-full` pills with colored backgrounds:
 - [ ] Uses `admin-*` utility classes when applicable
 
 #### Public Frontend
-- [ ] Uses Action Blue (`#406EF1`) for main CTAs
+- [ ] Uses Action Blue (`#5173D6`) for main CTAs
 - [ ] Main buttons with `rounded-full`
 - [ ] Optimized and high-quality images
 - [ ] Follows typographic hierarchy (Outfit/Inter)
@@ -606,7 +606,7 @@ Small `rounded-full` pills with colored backgrounds:
 
 ### Main Colors
 - **Primary Navy**: `#0A162E` (dark surfaces, headings)
-- **Action Blue (CTAs/buttons)**: `#406EF1` (hover `#355CD0`, both modes)
+- **Action Blue (CTAs/buttons)**: `#5173D6` (hover `#3B5BBE`, both modes)
 - **Theme `--primary` token**: `#1C53A3` (light) / `#3B82F6` (dark) — interactive token, intentionally unchanged
 - **Success**: `#059669` (light) / `#10B981` (dark)
 - **Warning**: `#F59E0B` (both modes)
