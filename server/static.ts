@@ -1,6 +1,8 @@
 import express, { type Express, type Request, type Response } from "express";
 import fs from "fs";
 import path from "path";
+import { legacyLanguagePath, splitLanguagePath, withLanguage } from "#shared/languagePath.js";
+import { isCorePagePath } from "#shared/pageSlugs.js";
 
 type SeoConfig = {
   title: string;
@@ -15,7 +17,7 @@ const landingSeo: Record<string, SeoConfig> = {
       "Turn every tap into a review, follow, booking, or sale with custom NFC keychains designed, programmed, and tested by Skale Club.",
     locale: "en_US",
   },
-  "/nfc-keychains/br": {
+  "/br/nfc-keychains": {
     title: "Chaveiros NFC personalizados para empresas | Skale Club",
     description:
       "Transforme cada toque em avaliação, seguidor, agendamento ou venda com chaveiros NFC personalizados, programados e testados pela Skale Club.",
@@ -27,7 +29,7 @@ const landingSeo: Record<string, SeoConfig> = {
       "See custom NFC keychain pricing, setup instructions, delivery details, and answers to common questions before requesting your design.",
     locale: "en_US",
   },
-  "/nfc-pricing/br": {
+  "/br/nfc-pricing": {
     title: "Preços e instruções dos chaveiros NFC | Skale Club",
     description:
       "Veja preços, instruções de uso, detalhes de entrega e respostas às principais dúvidas antes de solicitar seu chaveiro NFC personalizado.",
@@ -45,28 +47,40 @@ function escapeHtmlAttribute(value: string): string {
 
 export function injectLandingSeo(html: string, pathname: string): string {
   const cleanPath = pathname.length > 1 ? pathname.replace(/\/$/, "") : pathname;
-  const normalizedPath = cleanPath === "/nfc-keychains-br"
-    ? "/nfc-keychains/br"
-    : cleanPath === "/nfc-pricing-br"
-      ? "/nfc-pricing/br"
-      : cleanPath;
+  // Legacy PT shapes (`/nfc-keychains/br`, `/nfc-keychains-br`) still render;
+  // they just self-report the new `/br/...` canonical.
+  const normalizedPath = legacyLanguagePath(cleanPath) ?? cleanPath;
   const seo = landingSeo[normalizedPath];
-  if (!seo) return html;
+  const { path: basePath, language } = splitLanguagePath(normalizedPath);
+  const hasAlternates = Boolean(seo) || isCorePagePath(basePath);
+  if (!hasAlternates && language === "en") return html;
 
   const canonicalOrigin = (process.env.VITE_CANONICAL_ORIGIN || "https://skale.club").replace(/\/$/, "");
   const canonical = `${canonicalOrigin}${normalizedPath}`;
-  const lang = seo.locale === "pt_BR" ? "pt-BR" : "en";
-  const replacements: Array<[RegExp, string]> = [
-    [/<html lang="[^"]*"/, `<html lang="${lang}"`],
+  const lang = language === "pt" || seo?.locale === "pt_BR" ? "pt-BR" : "en";
+  const replacements: Array<[RegExp, string]> = [[/<html lang="[^"]*"/, `<html lang="${lang}"`]];
+  if (hasAlternates) {
+    const enHref = `${canonicalOrigin}${basePath}`;
+    const ptHref = `${canonicalOrigin}${withLanguage(basePath, "pt")}`;
+    replacements.push(
+      [/<link rel="canonical" href="[^"]*"\s*\/?>/, `<link rel="canonical" href="${canonical}" />`],
+      [/<meta property="og:url" content="[^"]*"\s*\/?>/, `<meta property="og:url" content="${canonical}" />`],
+      [/<\/head>/, [
+        `<link rel="alternate" hreflang="en" href="${enHref}" data-site-i18n="true" />`,
+        `<link rel="alternate" hreflang="pt-BR" href="${ptHref}" data-site-i18n="true" />`,
+        `<link rel="alternate" hreflang="x-default" href="${enHref}" data-site-i18n="true" />`,
+        "</head>",
+      ].join("\n")],
+    );
+  }
+  if (seo) replacements.push(
     [/<title>[^<]*<\/title>/, `<title>${seo.title}</title>`],
     [/<meta name="description" content="[^"]*"\s*\/?>/, `<meta name="description" content="${escapeHtmlAttribute(seo.description)}" />`],
-    [/<link rel="canonical" href="[^"]*"\s*\/?>/, `<link rel="canonical" href="${canonical}" />`],
-    [/<meta property="og:url" content="[^"]*"\s*\/?>/, `<meta property="og:url" content="${canonical}" />`],
     [/<meta property="og:title" content="[^"]*"\s*\/?>/, `<meta property="og:title" content="${escapeHtmlAttribute(seo.title)}" />`],
     [/<meta property="og:description" content="[^"]*"\s*\/?>/, `<meta property="og:description" content="${escapeHtmlAttribute(seo.description)}" />`],
     [/<meta name="twitter:title" content="[^"]*"\s*\/?>/, `<meta name="twitter:title" content="${escapeHtmlAttribute(seo.title)}" />`],
     [/<meta name="twitter:description" content="[^"]*"\s*\/?>/, `<meta name="twitter:description" content="${escapeHtmlAttribute(seo.description)}" />`],
-  ];
+  );
 
   return replacements.reduce(
     (document, [pattern, replacement]) => document.replace(pattern, replacement),

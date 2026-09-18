@@ -87,6 +87,27 @@ export function buildPagePaths(pageSlugs?: Partial<PageSlugs> | null) {
   };
 }
 
+// Pages that exist in both languages (`/x` and `/x/br`) and get hreflang alternates.
+export function getCorePagePaths(pageSlugs?: Partial<PageSlugs> | null): string[] {
+  const paths = buildPagePaths(pageSlugs);
+  return [
+    paths.home,
+    paths.contact,
+    paths.faq,
+    paths.blog,
+    paths.portfolio,
+    paths.privacyPolicy,
+    paths.termsOfService,
+    paths.hub,
+  ];
+}
+
+export function isCorePagePath(path: string, pageSlugs?: Partial<PageSlugs> | null): boolean {
+  return getCorePagePaths(pageSlugs).some(
+    (corePath) => path === corePath || (corePath !== "/" && path.startsWith(`${corePath}/`)),
+  );
+}
+
 export function isRoutePrefixMatch(location: string, routePath: string) {
   return location === routePath || location.startsWith(`${routePath}/`);
 }

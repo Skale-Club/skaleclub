@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
 import { buildPagePaths } from "@shared/pageSlugs";
 import { trackEvent } from "@/lib/analytics";
+import { languageHref } from "@/lib/languageRouting";
 import {
   SiFacebook,
   SiInstagram,
@@ -50,7 +51,7 @@ export function Navbar() {
         element.scrollIntoView({ behavior: "smooth" });
       }
     } else {
-      window.location.href = `/#${hash}`;
+      window.location.href = languageHref(`/#${hash}`);
     }
   }, [location]);
 

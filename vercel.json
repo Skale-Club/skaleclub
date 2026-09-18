@@ -109,6 +109,46 @@
       "source": "/skale-hub/group",
       "destination": "/grupo",
       "permanent": true
+    },
+    {
+      "source": "/nfc-keychains/br",
+      "destination": "/br/nfc-keychains",
+      "permanent": true
+    },
+    {
+      "source": "/nfc-keychains-br",
+      "destination": "/br/nfc-keychains",
+      "permanent": true
+    },
+    {
+      "source": "/nfc-pricing/br",
+      "destination": "/br/nfc-pricing",
+      "permanent": true
+    },
+    {
+      "source": "/nfc-pricing-br",
+      "destination": "/br/nfc-pricing",
+      "permanent": true
+    },
+    {
+      "source": "/barbershops/br",
+      "destination": "/br/barbershops",
+      "permanent": true
+    },
+    {
+      "source": "/barbershops-br",
+      "destination": "/br/barbershops",
+      "permanent": true
+    },
+    {
+      "source": "/websites/br",
+      "destination": "/br/websites",
+      "permanent": true
+    },
+    {
+      "source": "/websites-br",
+      "destination": "/br/websites",
+      "permanent": true
     }
   ],
   "rewrites": [
@@ -154,6 +194,10 @@
     },
     {
       "source": "/([a-z0-9][a-z0-9-]*)",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/br/(.*)",
       "destination": "/api/index"
     },
     {

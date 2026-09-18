@@ -20,6 +20,7 @@ import {
 } from "@/lib/analytics";
 import { renderMarkdown } from "@/lib/markdown";
 import { Loader2 } from '@/components/ui/loader';
+import { stripLanguage } from "@shared/languagePath";
 
 type UrlRule = {
   pattern: string;
@@ -223,7 +224,7 @@ export function ChatWidget() {
 
   const excluded = useMemo(() => {
     const url = typeof window !== "undefined" ? window.location.pathname : location;
-    return config ? isUrlExcluded(url, config.excludedUrlRules || []) : false;
+    return config ? isUrlExcluded(stripLanguage(url), config.excludedUrlRules || []) : false;
   }, [config, location]);
 
   if (!config?.enabled || excluded) {

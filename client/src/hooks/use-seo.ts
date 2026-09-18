@@ -1,5 +1,8 @@
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { usePathname } from 'wouter/use-browser-location';
+import { splitLanguagePath, withLanguage } from '@shared/languagePath';
+import { isCorePagePath, type PageSlugs } from '@shared/pageSlugs';
 
 interface SeoSettings {
   seoTitle: string | null;
@@ -19,6 +22,7 @@ interface SeoSettings {
   companyEmail: string | null;
   companyPhone: string | null;
   companyAddress: string | null;
+  pageSlugs?: Partial<PageSlugs> | null;
 }
 
 function setMetaTag(property: string, content: string | null | undefined, isProperty = false) {
@@ -142,6 +146,45 @@ export function useSEO() {
     setJsonLdSchema(settings);
 
   }, [settings, skipSeo]);
+
+  // Core pages exist as an en/pt pair (`/x` and `/x/br`): self canonical + hreflang.
+  // Managed landings own their tags in DynamicLanding.
+  const rawPath = usePathname();
+  useEffect(() => {
+    if (!settings) return;
+    const { path, language } = splitLanguagePath(rawPath);
+    if (!isCorePagePath(path, settings.pageSlugs)) return;
+
+    let origin = window.location.origin;
+    try {
+      if (settings.seoCanonicalUrl) origin = new URL(settings.seoCanonicalUrl).origin;
+    } catch {
+      // keep window origin
+    }
+    const enHref = `${origin}${path}`;
+    const ptHref = `${origin}${withLanguage(path, 'pt')}`;
+    const selfHref = language === 'pt' ? ptHref : enHref;
+
+    setLinkTag('canonical', selfHref);
+    setMetaTag('og:url', selfHref, true);
+    document
+      .querySelectorAll('link[rel="alternate"][data-site-i18n], link[rel="alternate"][data-page-i18n]')
+      .forEach((link) => link.remove());
+    const alternates = [['en', enHref], ['pt-BR', ptHref], ['x-default', enHref]].map(([hreflang, href]) => {
+      const link = document.createElement('link');
+      link.rel = 'alternate';
+      link.hreflang = hreflang;
+      link.href = href;
+      link.setAttribute('data-site-i18n', 'true');
+      document.head.appendChild(link);
+      return link;
+    });
+
+    return () => {
+      alternates.forEach((link) => link.remove());
+      if (settings.seoCanonicalUrl) setLinkTag('canonical', settings.seoCanonicalUrl);
+    };
+  }, [settings, rawPath]);
 
   return settings;
 }

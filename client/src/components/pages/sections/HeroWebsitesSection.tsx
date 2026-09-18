@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { useTranslation } from "@/hooks/useTranslation";
+import { languageHref } from "@/lib/languageRouting";
 
 // Hero variant for the /websites landing.
 // Mirrors the visual tone of the Home hero (brand blue + gradient overlay,
@@ -38,7 +39,7 @@ const DEFAULTS = {
 } as const;
 
 export function HeroWebsitesSection({ props }: { props: HeroWebsitesProps }) {
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   const headline = props.headline ?? DEFAULTS.headline;
   const subheadline = props.subheadline ?? DEFAULTS.subheadline;
   const ctaLabel = props.ctaLabel ?? DEFAULTS.ctaLabel;
@@ -83,7 +84,7 @@ export function HeroWebsitesSection({ props }: { props: HeroWebsitesProps }) {
               </button>
               {props.secondaryCtaLabel && props.secondaryCtaHref ? (
                 <a
-                  href={`${props.secondaryCtaHref}${language === "pt" ? "/br" : ""}`}
+                  href={languageHref(props.secondaryCtaHref)}
                   className="w-full sm:w-auto shrink-0 px-6 sm:px-8 py-3 sm:py-4 border border-white/30 hover:bg-white/10 text-white font-bold rounded-full transition-all flex items-center justify-center text-base sm:text-lg whitespace-nowrap"
                 >
                   {t(props.secondaryCtaLabel)}

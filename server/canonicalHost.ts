@@ -1,4 +1,5 @@
 import type { Express, Request, Response, NextFunction } from "express";
+import { legacyLanguagePath } from "#shared/languagePath.js";
 
 /**
  * Host + path redirects that used to live in `vercel.json` → `redirects`.
@@ -21,24 +22,25 @@ export function registerCanonicalHostRedirects(app: Express) {
   const canonicalHost = process.env.CANONICAL_HOST?.trim();
 
   app.use((req: Request, res: Response, next: NextFunction) => {
-    const pathRedirect = PATH_REDIRECTS[req.path];
-    if (pathRedirect) {
-      const query = req.originalUrl.slice(req.path.length);
-      return res.redirect(301, `${pathRedirect}${query}`);
-    }
-
-    if (!canonicalHost) return next();
+    // Old PT URL shapes (`/x/br`, `/x-br`) map to the `/br/x` prefix — page
+    // navigations only. legacyLanguagePath() already exempts reserved slugs.
+    const isNavigation = req.method === "GET" || req.method === "HEAD";
+    const newPath =
+      PATH_REDIRECTS[req.path] || (isNavigation ? legacyLanguagePath(req.path) : null);
 
     // req.hostname strips the port and honours X-Forwarded-Host (trust proxy
     // is set to 1 in supabaseAuth.ts, so this is the client-facing host).
     const host = req.hostname.toLowerCase();
-    const isWww = host === `www.${canonicalHost}`;
-    const isVercelAlias = host.endsWith(".vercel.app");
+    const needsHostRedirect =
+      !!canonicalHost && (host === `www.${canonicalHost}` || host.endsWith(".vercel.app"));
 
-    if (isWww || isVercelAlias) {
-      return res.redirect(301, `https://${canonicalHost}${req.originalUrl}`);
-    }
+    if (!newPath && !needsHostRedirect) return next();
 
-    return next();
+    // Combine both into a single hop: a path rewrite and a host swap never
+    // need two separate 301s.
+    const query = req.originalUrl.slice(req.path.length);
+    const path = newPath ?? req.path;
+    const target = needsHostRedirect ? `https://${canonicalHost}${path}${query}` : `${path}${query}`;
+    return res.redirect(301, target);
   });
 }

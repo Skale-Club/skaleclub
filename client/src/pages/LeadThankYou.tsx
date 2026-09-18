@@ -8,7 +8,7 @@ import successAnimation from "../assets/success-animation.json";
 import { useTranslation } from "@/hooks/useTranslation";
 
 export default function LeadThankYou() {
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   const { data: companySettings } = useQuery<CompanySettings>({
     queryKey: ["/api/company-settings"],
   });
@@ -98,7 +98,7 @@ export default function LeadThankYou() {
                 </button>
               </Link>
               {isNfcLead && (
-                <Link href={language === "pt" ? "/nfc-pricing/br" : "/nfc-pricing"}>
+                <Link href="/nfc-pricing">
                   <button className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 text-white font-semibold py-3 transition-all">
                     <Sparkles className="w-4 h-4" />
                     {t('Review pricing and details')}

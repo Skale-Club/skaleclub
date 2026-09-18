@@ -1,4 +1,5 @@
-import { Switch, Route, Redirect, useLocation } from "wouter";
+import { Switch, Route, Redirect, Router as WouterRouter, useLocation } from "wouter";
+import { usePathname } from "wouter/use-browser-location";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -13,6 +14,7 @@ import { initAnalytics, trackPageView } from "@/lib/analytics";
 import { useAttribution } from "@/hooks/use-attribution";
 import { PageLoader, DotsLoader } from "@/components/ui/spinner";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useLanguageLocation, languageHref } from "@/lib/languageRouting";
 import { useEffect, Suspense, lazy, useMemo, useRef, useState, createContext, useContext } from "react";
 import type { CompanySettings } from "@shared/schema";
 import { buildPagePaths, DEFAULT_PAGE_SLUGS, isRoutePrefixMatch } from "@shared/pageSlugs";
@@ -77,15 +79,14 @@ const EstimateViewer = lazy(() => import("@/pages/EstimateViewer").then(m => ({ 
 const PresentationViewer = lazy(() => import("@/pages/PresentationViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const PrintFolder = lazy(() => import("@/pages/PrintFolder").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const DynamicPage = lazy(() => import("@/pages/DynamicLanding").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-// `/:slug/br` — the PT member of a bilingual pair, resolved to the `<slug>-br` DB row.
-const DynamicPageBr = lazy(() => import("@/pages/DynamicLanding").then(m => ({ default: () => <PageWrapper><m.default brVariant /></PageWrapper> })));
 const OAuthAuthorize = lazy(() => import("@/pages/OAuthAuthorize"));
 
 function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const { data: settings } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
   });
-  const [location] = useLocation();
+  // Raw pathname so `/br` page views are reported under their real URL
+  const pathname = usePathname();
 
   useEffect(() => {
     if (settings) {
@@ -101,8 +102,8 @@ function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   }, [settings]);
 
   useEffect(() => {
-    trackPageView(location);
-  }, [location]);
+    trackPageView(pathname);
+  }, [pathname]);
 
   // Phase 45 — mount the marketing attribution lifecycle alongside GTM/GA4 tracking.
   // The hook has its own /admin guard via isAttributionIgnoredPath, so admin routes
@@ -275,11 +276,10 @@ function Router() {
             {pagePaths.hub !== LEGACY_PATHS.hub && <Route path={`${LEGACY_PATHS.hub}/group`}>{() => <Redirect to="/grupo" />}</Route>}
             <Route path={pagePaths.hub} component={SkaleHub} />
             {pagePaths.hub !== LEGACY_PATHS.hub && <Route path={LEGACY_PATHS.hub} component={SkaleHub} />}
-            {/* Portuguese member of a bilingual landing pair. Resolves the `<slug>-br` row;
-                the legacy one-segment `/<slug>-br` URL below still works and is not redirected. */}
-            <Route path="/:slug/br" component={DynamicPageBr} />
             {/* Catch-all dynamic landing route — MUST be last before the 404 fallback.
-                Wouter matches top-down, so any new known route must be added ABOVE this line. */}
+                Wouter matches top-down, so any new known route must be added ABOVE this line.
+                A `/br` prefix never reaches the routes (useLanguageLocation strips it):
+                `/br/x` matches here as `/x` and DynamicLanding resolves the `x-br` row. */}
             <Route path="/:slug" component={DynamicPage} />
             <Route component={NotFound} />
           </Switch>
@@ -310,14 +310,16 @@ function App() {
       <ThemeProvider>
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
-            <LanguageProvider>
-              <SEOProvider>
-                <AnalyticsProvider>
-                  <Router />
-                  <TranslationLoadingOverlay />
-                </AnalyticsProvider>
-              </SEOProvider>
-            </LanguageProvider>
+            <WouterRouter hook={useLanguageLocation} hrefs={languageHref}>
+              <LanguageProvider>
+                <SEOProvider>
+                  <AnalyticsProvider>
+                    <Router />
+                    <TranslationLoadingOverlay />
+                  </AnalyticsProvider>
+                </SEOProvider>
+              </LanguageProvider>
+            </WouterRouter>
           </TooltipProvider>
         </QueryClientProvider>
       </ThemeProvider>

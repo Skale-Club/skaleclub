@@ -29,6 +29,7 @@ import {
   type PhoneCountry,
 } from "@/lib/phoneCountries";
 import { getStoredVisitorId } from "@/lib/attribution";
+import { languageHref } from "@/lib/languageRouting";
 
 type FormView = "form" | "loading";
 
@@ -994,9 +995,10 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
           booking: Boolean(bookingUrl),
         });
         onClose();
-        window.location.href = bookingUrl
+        // Keep a Portuguese lead on the `/br` thank-you page
+        window.location.href = languageHref(bookingUrl
           ? `${pagePaths.thankYou}?form=${encodeURIComponent(formSlug)}&booking=${encodeURIComponent(bookingUrl)}`
-          : `${pagePaths.thankYou}?form=${encodeURIComponent(formSlug)}`;
+          : `${pagePaths.thankYou}?form=${encodeURIComponent(formSlug)}`);
         return;
       }
 

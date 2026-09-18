@@ -1,9 +1,11 @@
 import { useParams } from "wouter";
+import { usePathname } from "wouter/use-browser-location";
 import { useQuery } from "@tanstack/react-query";
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { AppLoader } from "@/components/ui/spinner";
 import { sectionRegistry } from "@/components/pages/sectionRegistry";
-import { useTranslation } from "@/hooks/useTranslation";
+import { usePageLanguage } from "@/context/LanguageContext";
+import { splitLanguagePath } from "@shared/languagePath";
 
 const NotFound = lazy(() => import("@/pages/not-found"));
 
@@ -36,37 +38,61 @@ const PAGE_SEO: Record<string, { title: string; description: string }> = {
 };
 
 // A managed bilingual pair stores single-segment slugs (`x` and `x-br`), but the PT
-// member's canonical public URL is the two-segment `/x/br` form (quick 260906-qwl).
-// Legacy `/x-br` URLs keep rendering; they simply self-report the `/x/br` canonical.
+// member's canonical public URL is the `/br/x` prefix form (quick 260906-qwl).
+// Legacy `/x-br` and `/x/br` URLs keep rendering; they simply self-report the
+// `/br/x` canonical.
 function landingPath(slug: string): string {
-  return slug.endsWith("-br") ? `/${slug.slice(0, -3)}/br` : `/${slug}`;
+  return slug.endsWith("-br") ? `/br/${slug.slice(0, -3)}` : `/${slug}`;
 }
 
-export default function DynamicPage({ brVariant = false }: { brVariant?: boolean }) {
+export default function DynamicPage() {
   const { slug: routeSlug } = useParams<{ slug: string }>();
-  // `/x/br` resolves the `x-br` row. The DB never stores a slash: shared/schema/pages.ts
-  // slugPattern forbids it, so the two-segment form lives only in the route.
-  const slug =
-    brVariant && routeSlug && !routeSlug.endsWith("-br") ? `${routeSlug}-br` : routeSlug;
-  const { setLanguage } = useTranslation();
+  const urlLanguage = splitLanguagePath(usePathname()).language;
+  const setPageLanguage = usePageLanguage();
+  const [overrideReadyFor, setOverrideReadyFor] = useState<string | null>(null);
+  // `/br/x` resolves the `x-br` row. The DB never stores a slash: shared/schema/pages.ts
+  // slugPattern forbids it, so the prefix form lives only in the URL.
+  const brSlug =
+    urlLanguage === "pt" && routeSlug && !routeSlug.endsWith("-br") ? `${routeSlug}-br` : null;
 
-  const { data, isLoading, error } = useQuery<PageResponse>({
-    queryKey: [`/api/pages/slug/${slug}`],
-    enabled: !!slug,
+  const brQuery = useQuery<PageResponse>({
+    queryKey: [`/api/pages/slug/${brSlug}`],
+    enabled: !!brSlug,
     retry: false,
   });
+  // A page with no `-br` row still renders under `/br/x`: base content, Portuguese chrome.
+  const baseQuery = useQuery<PageResponse>({
+    queryKey: [`/api/pages/slug/${routeSlug}`],
+    enabled: !!routeSlug && (!brSlug || brQuery.isError),
+    retry: false,
+  });
+  const useBrRow = !!brSlug && !brQuery.isError;
+  const data = useBrRow ? brQuery.data : baseQuery.data;
+  const isLoading = useBrRow ? brQuery.isLoading : baseQuery.isLoading;
+  const error = data ? null : baseQuery.error;
 
-  // Drive the site chrome (Navbar/Footer/t()-based sections) from the page's
-  // configured language. A fresh ad visitor lands directly in the right language.
+  // The URL owns the language. A PT-only page (e.g. /grupo) overrides it for its own
+  // path only — nothing is persisted, so it can't leak to the rest of the site.
   const pageLanguage = data?.language;
+  const pageSlug = data?.slug;
+  const pageAltSlug = data?.alternateSlug;
   useEffect(() => {
-    if (pageLanguage === "en" || pageLanguage === "pt") {
-      setLanguage(pageLanguage);
-    }
-    // setLanguage is recreated each render but stable in behavior — re-run only
-    // when the page's language changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageLanguage]);
+    if (!pageSlug) return;
+    // When the `x-br` row is missing and the base `x` row renders as fallback,
+    // the "alternate" is the URL we're already on — report null so the
+    // language toggle falls through to the generic strip/prefix rule instead
+    // of no-op'ing on the current path.
+    const currentPath = window.location.pathname.length > 1
+      ? window.location.pathname.replace(/\/$/, "")
+      : window.location.pathname;
+    const alternatePath = pageAltSlug ? landingPath(pageAltSlug) : null;
+    setPageLanguage({
+      language: urlLanguage === "en" && pageLanguage === "pt" ? "pt" : undefined,
+      alternatePath: alternatePath && alternatePath !== currentPath ? alternatePath : null,
+    });
+    setOverrideReadyFor(pageSlug);
+    return () => setPageLanguage(null);
+  }, [pageSlug, pageLanguage, pageAltSlug, urlLanguage, setPageLanguage]);
 
   // Inject hreflang alternates for the bilingual pair; remove them on unmount so
   // they don't leak onto other pages. Canonical stays managed globally by useSEO.
@@ -80,6 +106,10 @@ export default function DynamicPage({ brVariant = false }: { brVariant?: boolean
     const selfTag = pageLanguage === "en" ? "en" : "pt-BR";
     const altTag = pageLanguage === "en" ? "pt-BR" : "en";
     const xDefaultHref = pageLanguage === "en" ? selfHref : altHref;
+
+    document
+      .querySelectorAll('link[rel="alternate"][data-site-i18n], link[rel="alternate"][data-page-i18n]')
+      .forEach((link) => link.remove());
 
     const created: HTMLLinkElement[] = [];
     const add = (hreflang: string, href: string) => {
@@ -107,7 +137,6 @@ export default function DynamicPage({ brVariant = false }: { brVariant?: boolean
     if (!seo) return;
     const canonical = `${window.location.origin}${landingPath(slugForSeo)}`;
     document.title = seo.title;
-    document.documentElement.lang = pageLanguage === "pt" ? "pt-BR" : "en";
 
     const setMeta = (selector: string, attribute: "name" | "property", key: string, value: string) => {
       let node = document.querySelector<HTMLMetaElement>(selector);
@@ -134,7 +163,9 @@ export default function DynamicPage({ brVariant = false }: { brVariant?: boolean
     canonicalTag.href = canonical;
   }, [pageLanguage, slugForSeo]);
 
-  if (isLoading) return <AppLoader />;
+  // Hold the first paint until the language override is registered; otherwise a PT-only
+  // page renders one frame as English and queues its copy for pt -> en translation.
+  if (isLoading || (data && overrideReadyFor !== data.slug)) return <AppLoader />;
 
   // Inactive pages come back as 404 from the public endpoint (43-02 contract).
   if (error || !data) {

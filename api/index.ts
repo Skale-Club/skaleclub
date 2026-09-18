@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createApp } from "../server/app.js";
+import { injectLandingSeo } from "../server/static.js";
 import type express from "express";
 
 let app: express.Express | null = null;
@@ -23,9 +24,12 @@ async function getApp() {
         // Use process.cwd() (the Vercel function root, /vercel/path0) — this is
         // an ES module, so __dirname is not defined. Matches server/app.ts.
         const indexPath = path.join(process.cwd(), 'dist', 'public', 'index.html');
-        app.use((_req: any, res: any) => {
+        let indexHtml: string | null = null;
+        app.use((req: any, res: any) => {
           if (fs.existsSync(indexPath)) {
-            res.sendFile(indexPath);
+            indexHtml ??= fs.readFileSync(indexPath, 'utf8');
+            // Per-URL lang / canonical / hreflang (`/br` = Portuguese)
+            res.type('html').send(injectLandingSeo(indexHtml, req.originalUrl.split('?', 1)[0]));
           } else {
             res.status(404).send('Not found');
           }
