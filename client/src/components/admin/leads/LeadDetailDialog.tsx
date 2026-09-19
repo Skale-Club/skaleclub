@@ -13,6 +13,7 @@ import {
   ghlBadgeClass,
   questionLabel,
 } from './leadDisplayHelpers';
+import { ORDER_SNAPSHOT_KEYS, OrderSummaryCard, hasOrderSnapshot } from './OrderSummaryCard';
 
 type LeadDetailDialogProps = {
   open: boolean;
@@ -40,8 +41,14 @@ export function LeadDetailDialog({ open, onOpenChange, lead, formsById, hasMulti
   const extraCustomAnswers = useMemo(() => {
     if (!lead) return [] as [string, string][];
     const knownIds = new Set(selectedLeadQuestions.map(q => q.id));
-    return Object.entries(lead.customAnswers || {}).filter(([id]) => !knownIds.has(id)) as [string, string][];
+    return Object.entries(lead.customAnswers || {}).filter(
+      // The order snapshot is rendered by OrderSummaryCard, so it is kept out
+      // of this raw fallback list rather than repeated as loose key/value rows.
+      ([id]) => !knownIds.has(id) && !ORDER_SNAPSHOT_KEYS.has(id),
+    ) as [string, string][];
   }, [selectedLeadQuestions, lead]);
+
+  const isOrder = lead ? hasOrderSnapshot(lead) : false;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -78,18 +85,28 @@ export function LeadDetailDialog({ open, onOpenChange, lead, formsById, hasMulti
               </div>
             </div>
 
+            {isOrder && <OrderSummaryCard lead={lead} />}
+
+            {/* An order form is unscored and asks none of the qualification
+                questions, so those cells would all read '?'. */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <DetailItem label="Email" value={lead.email || '?'} />
               <DetailItem label="Phone" value={lead.telefone || '?'} />
-              <DetailItem label="City/State" value={lead.cidadeEstado || '?'} />
-              <DetailItem label="Business Type" value={lead.tipoNegocio || '?'} />
-              <DetailItem label="Marketing Experience" value={lead.experienciaMarketing || '?'} />
-              <DetailItem label="Ads Budget" value={lead.orcamentoAnuncios || '?'} />
-              <DetailItem label="Main Challenge" value={lead.principalDesafio || '?'} />
-              <DetailItem label="Availability" value={lead.disponibilidade || '?'} />
-              <DetailItem label="Results Expectation" value={lead.expectativaResultado || '?'} />
-              <DetailItem label="Total Score" value={lead.scoreTotal ?? '—'} />
-              <DetailItem label="Rating" value={getLeadClassificationLabel(lead.classificacao, '?')} />
+              {isOrder ? (
+                <DetailItem label="Business" value={lead.customAnswers?.nomeEmpresa || '?'} />
+              ) : (
+                <>
+                  <DetailItem label="City/State" value={lead.cidadeEstado || '?'} />
+                  <DetailItem label="Business Type" value={lead.tipoNegocio || '?'} />
+                  <DetailItem label="Marketing Experience" value={lead.experienciaMarketing || '?'} />
+                  <DetailItem label="Ads Budget" value={lead.orcamentoAnuncios || '?'} />
+                  <DetailItem label="Main Challenge" value={lead.principalDesafio || '?'} />
+                  <DetailItem label="Availability" value={lead.disponibilidade || '?'} />
+                  <DetailItem label="Results Expectation" value={lead.expectativaResultado || '?'} />
+                  <DetailItem label="Total Score" value={lead.scoreTotal ?? '—'} />
+                  <DetailItem label="Rating" value={getLeadClassificationLabel(lead.classificacao, '?')} />
+                </>
+              )}
               <DetailItem label="Last Update" value={formatDate((lead.updatedAt as any) || (lead.createdAt as any))} />
             </div>
 

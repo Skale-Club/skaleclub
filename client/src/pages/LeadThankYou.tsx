@@ -53,6 +53,9 @@ export default function LeadThankYou() {
   const formSlug = useMemo(() => new URLSearchParams(window.location.search).get("form"), []);
   const isNfcLead = formSlug === "nfc-keychain-leads";
   const isGroupLead = formSlug === "skale-hub-group";
+  // An order request, not an enquiry: what follows is a call to confirm it, so
+  // the copy promises that rather than a generic "a specialist will reach out".
+  const isNfcOrder = formSlug === "nfc-keychain-order";
 
   // Xphere visit booking CTA (quick 260906-g80). Open-redirect guard: only
   // accept URLs on Xphere's public booking host.
@@ -107,9 +110,11 @@ export default function LeadThankYou() {
             <p className="mt-4 text-slate-200 text-lg leading-relaxed">
               {t(isGroupLead
                 ? 'You are in. We will add you to the Skale Hub WhatsApp group using the number you provided.'
-                : isNfcLead
-                  ? 'Your NFC keychain request was submitted successfully. We will review the quantity, artwork, and preferred contact method, then contact you on WhatsApp.'
-                  : 'Your form was submitted successfully. A specialist from our team will review the information and contact you shortly for the next step.')}
+                : isNfcOrder
+                  ? 'Your order request was received. We will review the quantity, artwork and shipping address, then call you on WhatsApp to confirm everything before production starts.'
+                  : isNfcLead
+                    ? 'Your NFC keychain request was submitted successfully. We will review the quantity, artwork, and preferred contact method, then contact you on WhatsApp.'
+                    : 'Your form was submitted successfully. A specialist from our team will review the information and contact you shortly for the next step.')}
             </p>
             {bookingUrl && (
               <div className="mt-6">
@@ -139,7 +144,7 @@ export default function LeadThankYou() {
                   {t('Back to website')}
                 </button>
               </Link>
-              {isNfcLead && (
+              {(isNfcLead || isNfcOrder) && (
                 <Link href="/nfc-pricing">
                   <button className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 text-white font-semibold py-3 transition-all">
                     <Sparkles className="w-4 h-4" />
@@ -151,9 +156,11 @@ export default function LeadThankYou() {
             <p className="mt-3 text-sm text-slate-300">
               {t(isGroupLead
                 ? 'Keep your WhatsApp available. We will use the number you provided.'
-                : isNfcLead
-                  ? 'Keep your WhatsApp available. We will use the number you provided in the form.'
-                  : 'Keep your preferred contact channel available so our team can reach you.')}
+                : isNfcOrder
+                  ? 'Keep your WhatsApp handy — we call to confirm before producing anything.'
+                  : isNfcLead
+                    ? 'Keep your WhatsApp available. We will use the number you provided in the form.'
+                    : 'Keep your preferred contact channel available so our team can reach you.')}
             </p>
           </div>
 
@@ -165,15 +172,15 @@ export default function LeadThankYou() {
                 <div className="space-y-3 text-sm text-white/90">
                   <div className="p-3 rounded-xl bg-white/10 border border-white/10 flex items-center gap-3">
                     <span className="flex-shrink-0 w-7 h-7 rounded-full bg-cta/20 border border-cta/30 flex items-center justify-center text-blue-300 font-bold text-sm">1</span>
-                    <span>{t(isGroupLead ? 'We check the number you provided.' : isNfcLead ? 'We review your quantity, logo, and the link you want the NFC tap to open.' : 'Our team reviews your answers and identifies the best plan.')}</span>
+                    <span>{t(isGroupLead ? 'We check the number you provided.' : isNfcOrder ? 'We review your order and check the artwork you sent.' : isNfcLead ? 'We review your quantity, logo, and the link you want the NFC tap to open.' : 'Our team reviews your answers and identifies the best plan.')}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-white/10 border border-white/10 flex items-center gap-3">
                     <span className="flex-shrink-0 w-7 h-7 rounded-full bg-cta/20 border border-cta/30 flex items-center justify-center text-blue-300 font-bold text-sm">2</span>
-                    <span>{t(isGroupLead ? 'We add you to the Skale Hub WhatsApp group.' : isNfcLead ? 'We contact you on WhatsApp to confirm the artwork, total, and production window.' : 'We will contact you to align objectives and next steps.')}</span>
+                    <span>{t(isGroupLead ? 'We add you to the Skale Hub WhatsApp group.' : isNfcOrder ? 'We call you on WhatsApp to confirm quantity, artwork and the final total.' : isNfcLead ? 'We contact you on WhatsApp to confirm the artwork, total, and production window.' : 'We will contact you to align objectives and next steps.')}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-white/10 border border-white/10 flex items-center gap-3">
                     <span className="flex-shrink-0 w-7 h-7 rounded-full bg-cta/20 border border-cta/30 flex items-center justify-center text-blue-300 font-bold text-sm">3</span>
-                    <span>{t(isGroupLead ? 'You get the live announcements straight on WhatsApp.' : isNfcLead ? 'Production starts after payment and your artwork approval.' : 'You receive a summary of the initial plan and practical instructions.')}</span>
+                    <span>{t(isGroupLead ? 'You get the live announcements straight on WhatsApp.' : isNfcOrder ? 'After your approval and payment, production starts.' : isNfcLead ? 'Production starts after payment and your artwork approval.' : 'You receive a summary of the initial plan and practical instructions.')}</span>
                   </div>
                 </div>
               </div>

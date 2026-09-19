@@ -28,6 +28,18 @@ export const LANDING_SEO: Record<string, LandingSeo> = {
       "Chaveiros NFC personalizados e impressos em 3D para abrir avaliações, Instagram, cardápio, cartão digital ou site com um toque.",
     locale: "pt_BR",
   },
+  "nfc-order": {
+    title: "Order Custom NFC Keychains | Skale Club",
+    description:
+      "Order custom 3D-printed NFC keychains: pick your quantity, see the price as you choose, and send your logo. We confirm every detail before production.",
+    locale: "en_US",
+  },
+  "nfc-order-br": {
+    title: "Peça seus Chaveiros NFC Personalizados | Skale Club",
+    description:
+      "Peça chaveiros NFC personalizados e impressos em 3D: escolha a quantidade, veja o preço na hora e envie sua logo. Confirmamos cada detalhe antes de produzir.",
+    locale: "pt_BR",
+  },
   "nfc-pricing": {
     title: "NFC Keychain Pricing and Instructions | Skale Club",
     description:

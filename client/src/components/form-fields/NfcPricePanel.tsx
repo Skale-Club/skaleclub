@@ -28,8 +28,13 @@ export function NfcPricePanel({
 
       <dl className="mt-3 space-y-1.5 border-t border-cta/15 pt-3 text-sm">
         <div className="flex justify-between gap-3">
+          {/* When the tier cap is in play the effective unit price does not
+              divide evenly (90 pieces at $800 is $8.888...), so showing
+              "90 x $8.89" would not add up to the subtotal beside it. Only
+              spell out the multiplication when it actually multiplies. */}
           <dt className="text-slate-600">
-            {quote.quantity} {t("pieces")} × {formatUsdCents(quote.effectiveUnitPriceCents)}
+            {quote.quantity} {t("pieces")}
+            {!quote.upgrade && ` × ${formatUsdCents(quote.effectiveUnitPriceCents)}`}
           </dt>
           <dd className="font-medium text-slate-900 tabular-nums">{formatUsdCents(quote.subtotalCents)}</dd>
         </div>

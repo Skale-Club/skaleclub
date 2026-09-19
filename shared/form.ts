@@ -215,7 +215,10 @@ export function calculateFormScoresWithConfig(answers: FormAnswers, config: Form
   const breakdown: Record<string, number> = {};
   let total = 0;
 
-  for (const question of config.questions) {
+  // Guarded like getSortedQuestions and calculateMaxScore below: this runs
+  // during render in LeadFormModal, so a config without a questions array would
+  // throw and blank the entire page rather than just the form.
+  for (const question of Array.isArray(config?.questions) ? config.questions : []) {
     if (question.type === "select" && question.options) {
       const answer = answers[question.id];
       let points = resolvePoints(question.options, answer);

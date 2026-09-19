@@ -15,6 +15,23 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from '@/components/ui/loader';
 import type { FormOption, FormQuestion } from '@shared/schema';
 
+// `fileUpload` defaults, used when a question carries no limits yet. They match
+// what the public upload route accepts — SVG is excluded on purpose there.
+const DEFAULT_UPLOAD_EXTENSIONS = 'png, jpg, jpeg, webp, pdf';
+const DEFAULT_UPLOAD_MAX_MB = '3';
+
+type NoteMode = 'always' | 'equals' | 'notEquals';
+
+const uploadExtensionsOf = (q: FormQuestion | null) =>
+  q?.upload?.extensions?.join(', ') || DEFAULT_UPLOAD_EXTENSIONS;
+const uploadMaxSizeOf = (q: FormQuestion | null) =>
+  q?.upload?.maxSizeMb ? String(q.upload.maxSizeMb) : DEFAULT_UPLOAD_MAX_MB;
+const noteModeOf = (q: FormQuestion | null): NoteMode => {
+  if (q?.note?.when?.equals !== undefined) return 'equals';
+  if (q?.note?.when?.notEquals !== undefined) return 'notEquals';
+  return 'always';
+};
+
 export function QuestionForm({
   question,
   onSave,
@@ -41,6 +58,12 @@ export function QuestionForm({
   const [conditionalPlaceholder, setConditionalPlaceholder] = useState(question?.conditionalField?.placeholder || '');
   const [conditionalType, setConditionalType] = useState<Exclude<FormQuestion['type'], 'select'>>(question?.conditionalField?.type || 'text');
   const [ghlFieldId, setGhlFieldId] = useState(question?.ghlFieldId || '');
+  const [uploadExtensions, setUploadExtensions] = useState(uploadExtensionsOf(question));
+  const [uploadMaxSizeMb, setUploadMaxSizeMb] = useState(uploadMaxSizeOf(question));
+  const [noteText, setNoteText] = useState(question?.note?.text || '');
+  const [noteMode, setNoteMode] = useState<NoteMode>(noteModeOf(question));
+  const [noteQuestionId, setNoteQuestionId] = useState(question?.note?.when?.questionId || '');
+  const [noteValue, setNoteValue] = useState(question?.note?.when?.equals ?? question?.note?.when?.notEquals ?? '');
 
   const { data: ghlStatus } = useQuery<{ enabled: boolean }>({
     queryKey: ['/api/integrations/ghl/status'],
@@ -68,6 +91,12 @@ export function QuestionForm({
     setConditionalPlaceholder(question?.conditionalField?.placeholder || '');
     setConditionalType(question?.conditionalField?.type || 'text');
     setGhlFieldId(question?.ghlFieldId || '');
+    setUploadExtensions(uploadExtensionsOf(question));
+    setUploadMaxSizeMb(uploadMaxSizeOf(question));
+    setNoteText(question?.note?.text || '');
+    setNoteMode(noteModeOf(question));
+    setNoteQuestionId(question?.note?.when?.questionId || '');
+    setNoteValue(question?.note?.when?.equals ?? question?.note?.when?.notEquals ?? '');
   }, [question, nextOrder]);
 
   const isEditing = !!question;
@@ -99,6 +128,15 @@ export function QuestionForm({
     const validOptions = options.filter(o => o.label && o.value);
     if (type === 'select' && validOptions.length === 0) {
       window.alert('Multiple choice questions need at least one option.');
+      return;
+    }
+
+    const parsedExtensions = uploadExtensions
+      .split(',')
+      .map((ext) => ext.trim().replace(/^\./, '').toLowerCase())
+      .filter(Boolean);
+    if (type === 'fileUpload' && parsedExtensions.length === 0) {
+      window.alert('File upload questions need at least one allowed extension.');
       return;
     }
 
@@ -148,6 +186,16 @@ export function QuestionForm({
         type: conditionalType,
       } : undefined,
       ghlFieldId: ghlFieldId || undefined,
+      upload: type === 'fileUpload'
+        ? { extensions: parsedExtensions, maxSizeMb: Number(uploadMaxSizeMb) || Number(DEFAULT_UPLOAD_MAX_MB) }
+        : undefined,
+      note: noteText.trim() ? {
+        text: noteText.trim(),
+        when: noteMode === 'always' || !noteQuestionId.trim() ? undefined : {
+          questionId: noteQuestionId.trim(),
+          ...(noteMode === 'equals' ? { equals: noteValue } : { notEquals: noteValue }),
+        },
+      } : undefined,
     };
 
     onSave(questionData);
@@ -203,8 +251,18 @@ export function QuestionForm({
                 <SelectItem value="tel">Phone</SelectItem>
                 <SelectItem value="select">Multiple choice</SelectItem>
                 <SelectItem value="voice">Voice note</SelectItem>
+                <SelectItem value="phoneCountry">Phone + country</SelectItem>
+                <SelectItem value="productPicker">Product picker</SelectItem>
+                <SelectItem value="quantitySlider">Quantity slider</SelectItem>
+                <SelectItem value="fileUpload">File upload</SelectItem>
               </SelectContent>
             </Select>
+            {(type === 'productPicker' || type === 'quantitySlider') && (
+              <p className="text-xs text-muted-foreground">
+                Options, range and prices come from the catalogue in code
+                (shared/nfc-pricing.ts), not from this form.
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="question-placeholder">Placeholder</Label>
@@ -220,6 +278,72 @@ export function QuestionForm({
         <div className="flex items-center gap-2">
           <Checkbox id="question-required" checked={required} onCheckedChange={(c) => setRequired(!!c)} />
           <Label htmlFor="question-required" className="text-sm">Required question</Label>
+        </div>
+
+        {type === 'fileUpload' && (
+          <div className="grid grid-cols-2 gap-4 p-3 rounded-lg border bg-muted/40">
+            <div className="space-y-2">
+              <Label htmlFor="upload-extensions">Allowed extensions</Label>
+              <Input
+                id="upload-extensions"
+                value={uploadExtensions}
+                onChange={(e) => setUploadExtensions(e.target.value)}
+                placeholder={DEFAULT_UPLOAD_EXTENSIONS}
+              />
+              <p className="text-xs text-muted-foreground">
+                Comma separated. The upload route enforces this list and never accepts SVG.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="upload-max-size">Max size (MB)</Label>
+              <Input
+                id="upload-max-size"
+                type="number"
+                min={1}
+                max={3}
+                value={uploadMaxSizeMb}
+                onChange={(e) => setUploadMaxSizeMb(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                3 MB is the ceiling — above it the request exceeds the public body limit.
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-2 p-3 rounded-lg border bg-muted/40">
+          <Label htmlFor="question-note">Disclaimer (optional)</Label>
+          <Textarea
+            id="question-note"
+            value={noteText}
+            onChange={(e) => setNoteText(e.target.value)}
+            placeholder="e.g. First order includes a one-time $50 art fee."
+            rows={2}
+          />
+          {noteText.trim() && (
+            <div className="grid grid-cols-3 gap-2">
+              <Select value={noteMode} onValueChange={(v) => setNoteMode(v as NoteMode)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="always">Always show</SelectItem>
+                  <SelectItem value="equals">Show when answer is</SelectItem>
+                  <SelectItem value="notEquals">Show unless answer is</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                value={noteQuestionId}
+                onChange={(e) => setNoteQuestionId(e.target.value)}
+                placeholder="question id"
+                disabled={noteMode === 'always'}
+              />
+              <Input
+                value={noteValue}
+                onChange={(e) => setNoteValue(e.target.value)}
+                placeholder="option value"
+                disabled={noteMode === 'always'}
+              />
+            </div>
+          )}
         </div>
 
         {ghlStatus?.enabled && (

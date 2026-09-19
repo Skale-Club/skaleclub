@@ -97,10 +97,14 @@ function getCountryFlagUrl(country: CountryConfig) {
   return `/flags/nucleo/${country.flagCode}.svg`;
 }
 
-// Build initial answers from config
+// Build initial answers from config.
+// The questions array is guarded the way getSortedQuestions and calculateMaxScore
+// already guard it: a config that arrives without one (a form saved with an
+// empty config, a stubbed response) would otherwise throw here during render
+// and take the whole page down, not just the modal.
 function buildInitialAnswers(config: FormConfig): Answers {
   const answers: Answers = {};
-  for (const q of config.questions) {
+  for (const q of Array.isArray(config?.questions) ? config.questions : []) {
     answers[q.id] = "";
     for (const field of getConditionalFields(q)) {
       answers[field.id] = "";
@@ -848,7 +852,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
         }
       }
       // Phase 44 — phoneCountry field: override telefone payload and stash countryCode in customAnswers
-      const phoneCountryQuestion = config.questions.find((q) => q.type === "phoneCountry");
+      const phoneCountryQuestion = sortedQuestions.find((q) => q.type === "phoneCountry");
       if (phoneCountryQuestion) {
         const raw = (effectiveAnswers[phoneCountryQuestion.id] || "").trim();
         if (raw) {
@@ -907,6 +911,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
     },
     [
       config,
+      sortedQuestions,
       currentStep,
       ensureSession,
       originUrl,
