@@ -1,5 +1,8 @@
 /**
- * Generate "Other Services" card images with Gemini 2.5 Flash Image ("Nano Banana").
+ * Legacy: generate the former 3D "Other Services" card images with Gemini.
+ * Production now uses the curated editorial WebPs in
+ * client/public/service-images/editorial-2026-09/. Keep this script only for
+ * explicit historical/manual generation; bootstrap does not call it.
  *
  * Produces one 16:10 illustration per homepage service (S06) and writes them to
  * client/public/service-images/<slug>.png — directly web-servable at

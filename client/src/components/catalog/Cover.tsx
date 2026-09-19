@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { siteDomain, type CatalogItem } from "@shared/catalog";
 import { getImageUrl } from "@/components/admin/shared/utils";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -67,16 +68,29 @@ function EmptyCover({ item, className, badge }: { item: CatalogItem; className: 
   );
 }
 
-const SLIDE_MS = 4500;
+const SLIDE_MS = 6500;
 
 /**
- * Popup visual. With screens it is a gallery (progress segments, pauses on
- * hover and for reduced motion); without, it is the same Cover as the card.
+ * Popup visual. Extra screens activate the carousel; until then, the existing
+ * top-anchored homepage remains the only visual. The dashboard and additional
+ * screenshots can be added later from the portfolio admin without changing UI.
  */
 export function DetailVisual({ item }: { item: CatalogItem }) {
-  const slides = item.screens.length ? [...(item.cover ? [item.cover] : []), ...item.screens] : [];
+  const { t } = useTranslation();
+  const slides = item.screens.length ? [
+    ...(item.cover ? [{ url: item.cover, label: t("Website home"), kind: "home" as const }] : []),
+    ...item.screens.map((screen, i) => ({
+      url: screen.url,
+      label: screen.kind === "dashboard"
+        ? t("Inside the app")
+        : `${t("Screenshot")} ${item.screens.slice(0, i + 1).filter((entry) => entry.kind === "screenshot").length}`,
+      kind: screen.kind,
+    })),
+  ] : [];
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [tallScreens, setTallScreens] = useState<Record<string, boolean>>({});
+  const step = (delta: number) => setIndex((current) => (current + delta + slides.length) % slides.length);
 
   useEffect(() => setIndex(0), [item.key]);
 
@@ -87,35 +101,85 @@ export function DetailVisual({ item }: { item: CatalogItem }) {
     return () => window.clearInterval(timer);
   }, [slides.length, paused, item.key]);
 
-  if (slides.length === 0) return <Cover item={item} className="cat-detail__visual" width={1200} />;
+  if (slides.length === 0) {
+    if (item.kind === "product" && item.cover) {
+      return (
+        <div className="cat-cover cat-detail__visual cat-detail__frontpage">
+          <img
+            src={getImageUrl(item.cover, { width: 1200, quality: 82 })}
+            alt={`${item.title} | ${t("Website home")}`}
+            loading="eager"
+            decoding="async"
+          />
+          {item.badge && <span className="cat-cover__badge">{t(item.badge)}</span>}
+        </div>
+      );
+    }
+    return <Cover item={item} className="cat-detail__visual" width={1200} />;
+  }
 
   return (
     <div
-      className="cat-cover cat-detail__visual"
+      className="cat-cover cat-detail__visual cat-detail__gallery"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
+      onFocusCapture={() => setPaused(true)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
+          event.preventDefault();
+          event.stopPropagation();
+          step(event.key === "ArrowRight" ? 1 : -1);
+        }
+      }}
+      role="region"
+      aria-label={`${item.title} ${t("screenshots")}`}
     >
-      {slides.map((url, i) => (
+      {slides.map((slide, i) => (
         <img
-          key={url}
-          className="cat-cover__slide"
-          src={getImageUrl(url, { width: 1200, quality: 82 })}
-          alt=""
+          key={slide.url}
+          className={`cat-cover__slide cat-cover__slide--${slide.kind === "home" ? "home" : "screen"}${tallScreens[slide.url] ? " cat-cover__slide--tall" : ""}`}
+          src={getImageUrl(slide.url, { width: 1200, quality: 82 })}
+          alt={i === index ? `${item.title} | ${slide.label}` : ""}
           aria-hidden={i !== index}
+          loading={i === 0 ? "eager" : "lazy"}
+          decoding="async"
+          onLoad={(event) => {
+            const image = event.currentTarget;
+            if (slide.kind !== "home" && image.naturalHeight > image.naturalWidth * 1.3) {
+              setTallScreens((current) => current[slide.url] ? current : { ...current, [slide.url]: true });
+            }
+          }}
           style={{ opacity: i === index ? 1 : 0 }}
         />
       ))}
       {slides.length > 1 && (
-        <div className="cat-cover__segs">
-          {slides.map((url, i) => (
-            <button
-              key={url}
-              type="button"
-              aria-label={`${i + 1} / ${slides.length}`}
-              aria-pressed={i === index}
-              onClick={() => setIndex(i)}
-            />
-          ))}
+        <div className="cat-detail__gallery-controls">
+          <div className="cat-detail__gallery-heading" aria-live="polite">
+            <span>{slides[index]?.label}</span>
+            <span>{String(index + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}</span>
+          </div>
+          <div className="cat-detail__gallery-actions">
+            <button type="button" className="cat-detail__gallery-arrow" onClick={() => step(-1)} aria-label={t("Previous image")}>
+              <ChevronLeft size={18} aria-hidden="true" />
+            </button>
+            <div className="cat-cover__segs" aria-label={t("Choose image")}>
+              {slides.map((slide, i) => (
+                <button
+                  key={slide.url}
+                  type="button"
+                  aria-label={`${slide.label} (${i + 1}/${slides.length})`}
+                  aria-pressed={i === index}
+                  onClick={() => setIndex(i)}
+                />
+              ))}
+            </div>
+            <button type="button" className="cat-detail__gallery-arrow" onClick={() => step(1)} aria-label={t("Next image")}>
+              <ChevronRight size={18} aria-hidden="true" />
+            </button>
+          </div>
         </div>
       )}
     </div>

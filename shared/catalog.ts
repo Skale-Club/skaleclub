@@ -59,8 +59,8 @@ export interface CatalogItem {
   features: string[];
   /** The one cover image: a product's website home, a service's artwork. */
   cover?: string;
-  /** Popup gallery. `[]` is a valid, designed state. */
-  screens: string[];
+  /** Additional popup slides; the homepage cover always comes first. */
+  screens: { url: string; kind: "dashboard" | "screenshot" }[];
   logo?: string;
   /** Absent means no price — never a placeholder. */
   price?: CatalogPrice;
@@ -96,6 +96,12 @@ export const serviceCardKey = (title: string) =>
 
 export function fromPortfolioService(service: PortfolioService): CatalogItem {
   const price = clean(service.price);
+  const cover = clean(service.homeImageUrl);
+  const dashboard = clean(service.dashboardImageUrl);
+  const screenshots = uniq(service.popupSliderImages ?? []);
+  const screens = uniq([dashboard, ...screenshots])
+    .filter((url) => url !== cover)
+    .map((url) => ({ url, kind: url === dashboard ? "dashboard" as const : "screenshot" as const }));
   return {
     key: `product:${service.id}`,
     kind: "product",
@@ -107,8 +113,8 @@ export function fromPortfolioService(service: PortfolioService): CatalogItem {
     features: uniq(service.features ?? []),
     // Only the explicit home. The legacy `imageUrl` is often a dashboard or a
     // stock render, and the cover is what the print folder uses too.
-    cover: clean(service.homeImageUrl),
-    screens: uniq([service.dashboardImageUrl, ...(service.popupSliderImages ?? [])]),
+    cover,
+    screens,
     logo: clean(service.logoIconUrl),
     price: price
       ? { value: price, label: clean(service.priceLabel), setup: clean(service.setupPrice) }

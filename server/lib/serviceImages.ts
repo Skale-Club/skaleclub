@@ -1,9 +1,9 @@
 import { storage } from "../storage.js";
 
 /**
- * Card artwork for the homepage "Our Services" section, generated with Gemini
- * in the same style as the seven existing images (see
- * scripts/generate-service-images.ts, which uses this module).
+ * Legacy Gemini generator for the former 3D service artwork. The production
+ * cards now use the versioned editorial photos in client/public/service-images;
+ * this helper remains only for explicit historical/manual generation.
  */
 export const SERVICE_IMAGE_STYLE =
   "Modern minimal 3D isometric illustration. Dark navy background (#0d1320). " +

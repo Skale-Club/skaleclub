@@ -11,7 +11,7 @@ type Props = PortfolioFieldsProps & {
     uploadPreview: (field: PreviewImageField, file: File | undefined) => Promise<void>;
 };
 
-/** Popup gallery: the dashboard screenshot first, then the laptop slider images. */
+/** Popup gallery: website home, optional dashboard, then extra screenshots. */
 export function ServiceGalleryFields({ formData, setFormData, previewUploading, uploadPreview }: Props) {
     const { toast } = useToast();
     const slides = formData.popupSliderImages ?? [];
@@ -38,8 +38,8 @@ export function ServiceGalleryFields({ formData, setFormData, previewUploading, 
         <>
             {/* Explicit previews are independent of the popup gallery order. */}
             <div className="space-y-3">
-                <Label htmlFor="dashboard-preview-upload">Dashboard | first image of the popup gallery</Label>
-                <p className="text-xs text-muted-foreground">Opens the gallery in the popup. This image does not appear in the print folder.</p>
+                <Label htmlFor="dashboard-preview-upload">Dashboard | segunda imagem do carrossel</Label>
+                <p className="text-xs text-muted-foreground">Opcional. A home aparece primeiro; ao adicionar o dashboard, o carrossel é ativado automaticamente. Esta imagem não aparece na pasta de impressão.</p>
                 {formData.dashboardImageUrl && (
                     <div className="relative aspect-video max-w-sm overflow-hidden rounded-lg border bg-muted">
                         <img src={getOriginalImageUrl(formData.dashboardImageUrl)} alt="Preview do dashboard" className="h-full w-full object-cover" />
@@ -84,10 +84,10 @@ export function ServiceGalleryFields({ formData, setFormData, previewUploading, 
 
             <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                    <p className={SECTION_LABEL}>Popup | Screenshots do Laptop</p>
+                    <p className={SECTION_LABEL}>Popup | telas adicionais</p>
                     <span className="text-xs text-muted-foreground">{slides.length}/{MAX_SLIDER_IMAGES} imagem(ns)</span>
                 </div>
-                <p className="text-xs text-muted-foreground">Imagens que passam como slides na galeria do popup. Máximo de {MAX_SLIDER_IMAGES} imagens.</p>
+                <p className="text-xs text-muted-foreground">Telas reais adicionais da ferramenta, depois da home e do dashboard. Máximo de {MAX_SLIDER_IMAGES} imagens.</p>
 
                 {slides.length > 0 && (
                     <div className="grid grid-cols-3 gap-2">

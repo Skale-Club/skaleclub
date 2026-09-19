@@ -2,7 +2,6 @@ import { asc, eq } from "drizzle-orm";
 import { db } from "../db.js";
 import { companySettings, portfolioServices } from "#shared/schema.js";
 import type { HomepageContent, LinksPageConfig, OurServicesCard } from "#shared/schema.js";
-import { generateServiceImage, SERVICE_IMAGE_SUBJECTS } from "./serviceImages.js";
 import { isCatalogCategory, type CatalogCategory } from "#shared/catalog.js";
 
 /**
@@ -188,18 +187,22 @@ export async function applyContentFixes(): Promise<TaskResult> {
  * Each X app's site is the source of truth for its mark and share image. The
  * page is fetched, og:image and the largest declared icon are read from the
  * HTML, copied into Supabase Storage (never hot-linked) and written to the
- * card. Only empty fields and icons below print resolution are touched;
+ * product home cover. Only empty fields and icons below print resolution are touched;
  * explicit `icon`/`image` paths win over what the HTML declares.
  */
 export const PRODUCT_SITES: Record<string, { site?: string; icon?: string; image?: string }> = {
-  "scheduling-system": { site: "https://xkedule.com", icon: "/icon-512.png" },
+  "scheduling-system": { site: "https://xkedule.com" },
   xtimator: { site: "https://xtimator.com" },
   "smart-menu": { site: process.env.XMARTMENU_URL || "https://xmartmenu.skale.club" },
   xareable: { site: "https://xareable.com" },
+  "crm-setup": { site: "https://xphere.app" },
 };
 const MIN_ICON_PX = 118; // a 10mm badge at 300dpi
 
 export async function syncProductArtwork(): Promise<TaskResult> {
+  if (process.env.NODE_ENV !== "production") {
+    return { done: false, notes: ["Deferred outside production so product assets are never changed from local development."] };
+  }
   const services = await db.select().from(portfolioServices).orderBy(asc(portfolioServices.order));
   const notes: string[] = [];
   let pending = 0;
@@ -212,8 +215,8 @@ export async function syncProductArtwork(): Promise<TaskResult> {
     // icon that cannot be fetched right now is not a reason to overwrite it.
     const iconWidth = svc.logoIconUrl ? await imageWidth(svc.logoIconUrl) : 0;
     const needIcon = !svc.logoIconUrl || (iconWidth > 0 && iconWidth < MIN_ICON_PX);
-    const needImage = !svc.imageUrl;
-    if (!needIcon && !needImage) continue;
+    const needHome = !svc.homeImageUrl;
+    if (!needIcon && !needHome) continue;
 
     let html = "";
     try {
@@ -228,7 +231,7 @@ export async function syncProductArtwork(): Promise<TaskResult> {
 
     const iconHref = spec.icon ?? pickIconFromHtml(html);
     const imageHref = spec.image ?? pickMeta(html, "og:image");
-    const patch: { logoIconUrl?: string; imageUrl?: string; toolUrl?: string } = {};
+    const patch: { logoIconUrl?: string; homeImageUrl?: string; toolUrl?: string } = {};
     if (!svc.toolUrl) patch.toolUrl = site;
 
     if (needIcon) {
@@ -243,16 +246,16 @@ export async function syncProductArtwork(): Promise<TaskResult> {
         notes.push(`${svc.title}: ${site} declares no icon; keeping the current one.`);
       }
     }
-    if (needImage) {
+    if (needHome) {
       if (imageHref) {
         try {
-          patch.imageUrl = await copyToStorage(new URL(imageHref, site).toString(), `product-assets/${svc.slug}-image`);
+          patch.homeImageUrl = await copyToStorage(new URL(imageHref, site).toString(), `product-assets/${svc.slug}-home`);
         } catch (err) {
           notes.push(`${svc.title}: og:image ${imageHref} — ${(err as Error).message}`);
           pending++;
         }
       } else {
-        notes.push(`${svc.title}: ${site} has no og:image; card stays without a photo.`);
+        notes.push(`${svc.title}: ${site} has no og:image; card stays without a home cover.`);
       }
     }
 
@@ -266,10 +269,162 @@ export async function syncProductArtwork(): Promise<TaskResult> {
   return { done: pending === 0, notes };
 }
 
-// ─── 3. The 3D Printing service card ───────────────────────────────────────
+// ─── 3. Curated product logos + real website captures ──────────────────────
 
-const THREE_D_CARD: Omit<OurServicesCard, "order" | "imageUrl"> = {
+interface ProductCatalogArtwork {
+  site: string;
+  home: string;
+  logo: string;
+  dashboard?: string;
+  legacyHome?: string[];
+  legacyLogo?: string[];
+}
+
+const PRODUCT_CATALOG_ARTWORK: Record<string, ProductCatalogArtwork> = {
+  xareable: {
+    site: "https://xareable.com",
+    home: "/product-assets/catalog-2026-09/xareable-home.webp",
+    logo: "/product-assets/catalog-2026-09/xareable-logo.webp",
+    legacyHome: [
+      "https://neummispnnqzrhdhnxwa.supabase.co/storage/v1/object/public/uploads/product-assets/xareable-home-2026-09.jpg",
+    ],
+    legacyLogo: [
+      "https://neummispnnqzrhdhnxwa.supabase.co/storage/v1/object/public/uploads/1783115396335_55a9999d-09a7-4294-aa1a-7c2e087b9dc9.webp",
+    ],
+  },
+  websites: {
+    // Xsites is the Skale Club website platform. Its public platform URL is an
+    // admin login, so the cover intentionally proves the product with a real
+    // customer site built on it instead.
+    site: "https://mvpbuildergroup.com",
+    home: "/product-assets/catalog-2026-09/websites-home.webp",
+    logo: "/product-assets/catalog-2026-09/websites-logo.png",
+    dashboard: "/product-assets/catalog-2026-09/websites-dashboard.webp",
+  },
+  "scheduling-system": {
+    site: "https://xkedule.com",
+    home: "/product-assets/catalog-2026-09/scheduling-system-home.webp",
+    logo: "/product-assets/catalog-2026-09/scheduling-system-logo.png",
+    dashboard: "/product-assets/catalog-2026-09/scheduling-system-dashboard.webp",
+    legacyHome: [
+      "https://neummispnnqzrhdhnxwa.supabase.co/storage/v1/object/public/uploads/product-assets/scheduling-system-home-2026-09.jpg",
+    ],
+    legacyLogo: [
+      "https://neummispnnqzrhdhnxwa.supabase.co/storage/v1/object/public/uploads/product-assets/scheduling-system-icon.png",
+      "https://neummispnnqzrhdhnxwa.supabase.co/storage/v1/object/public/uploads/1783107543683_3b8f12bc-6ac2-4519-bf2f-9c6499329738.webp",
+    ],
+  },
+  "smart-menu": {
+    site: "https://xmartmenu.skale.club",
+    home: "/product-assets/catalog-2026-09/smart-menu-home.webp",
+    logo: "/product-assets/catalog-2026-09/smart-menu-logo.webp",
+    dashboard: "/product-assets/catalog-2026-09/smart-menu-dashboard.webp",
+    legacyHome: [
+      "https://neummispnnqzrhdhnxwa.supabase.co/storage/v1/object/public/uploads/product-assets/smart-menu-home-2026-09.jpg",
+    ],
+    legacyLogo: [
+      "https://neummispnnqzrhdhnxwa.supabase.co/storage/v1/object/public/uploads/1783205835559_464fce11-1b52-4e45-bdb2-3958d0fadd18.webp",
+    ],
+  },
+  "crm-setup": {
+    site: "https://xphere.app",
+    home: "/product-assets/catalog-2026-09/crm-setup-home.webp",
+    logo: "/product-assets/catalog-2026-09/crm-setup-logo.svg",
+    legacyLogo: [
+      "https://neummispnnqzrhdhnxwa.supabase.co/storage/v1/object/public/uploads/1783115414320_44c114ed-874f-40ab-ba73-317aa8f327d7.webp",
+    ],
+  },
+  xtimator: {
+    site: "https://xtimator.com",
+    home: "/product-assets/catalog-2026-09/xtimator-home.webp",
+    logo: "/product-assets/catalog-2026-09/xtimator-logo.png",
+    dashboard: "/product-assets/catalog-2026-09/xtimator-dashboard.webp",
+    legacyLogo: [
+      "https://neummispnnqzrhdhnxwa.supabase.co/storage/v1/object/public/uploads/1783118997429_00cb9d30-5d74-4ec9-bf0c-a3ac034911c7.webp",
+    ],
+  },
+};
+
+function canReplaceProductAsset(current: string | null | undefined, target: string, legacy: string[] = []): boolean {
+  const value = current?.trim();
+  return !value || value === target || legacy.includes(value);
+}
+
+/**
+ * Gives every product the same honest visual contract: its official mark and
+ * a real, date-stamped capture of the live website inside the catalog browser
+ * frame. The files ship with the app so cards never depend on a third-party
+ * screenshot at render time.
+ */
+export async function refreshProductCatalogArtwork(): Promise<TaskResult> {
+  if (process.env.NODE_ENV !== "production") {
+    return { done: false, notes: ["Deferred outside production so product URLs never precede the deployed assets."] };
+  }
+
+  const services = await db.select().from(portfolioServices).orderBy(asc(portfolioServices.order));
+  const notes: string[] = [];
+
+  for (const svc of services) {
+    const spec = PRODUCT_CATALOG_ARTWORK[svc.slug];
+    if (!spec) continue;
+
+    const patch: { toolUrl?: string; homeImageUrl?: string; logoIconUrl?: string; dashboardImageUrl?: string } = {};
+    if (!svc.toolUrl) patch.toolUrl = spec.site;
+    else if (svc.toolUrl !== spec.site) notes.push(`${svc.title}: kept unexpected admin site ${svc.toolUrl}`);
+
+    if (svc.homeImageUrl !== spec.home) {
+      if (canReplaceProductAsset(svc.homeImageUrl, spec.home, spec.legacyHome)) {
+        patch.homeImageUrl = spec.home;
+      } else {
+        notes.push(`${svc.title}: kept unexpected admin home image ${svc.homeImageUrl}`);
+      }
+    }
+
+    if (svc.logoIconUrl !== spec.logo) {
+      if (canReplaceProductAsset(svc.logoIconUrl, spec.logo, spec.legacyLogo)) {
+        patch.logoIconUrl = spec.logo;
+      } else {
+        notes.push(`${svc.title}: kept unexpected admin logo ${svc.logoIconUrl}`);
+      }
+    }
+
+    // Only demos or approved, real product screens are assigned here. An
+    // existing admin-selected dashboard always wins; products without a
+    // verified capture keep their one-image popup.
+    if (spec.dashboard && svc.dashboardImageUrl !== spec.dashboard) {
+      if (canReplaceProductAsset(svc.dashboardImageUrl, spec.dashboard)) {
+        patch.dashboardImageUrl = spec.dashboard;
+      } else {
+        notes.push(`${svc.title}: kept unexpected admin dashboard ${svc.dashboardImageUrl}`);
+      }
+    }
+
+    if (Object.keys(patch).length > 0) {
+      await db.update(portfolioServices).set(patch).where(eq(portfolioServices.id, svc.id));
+      notes.push(`${svc.title}: ${Object.keys(patch).join(", ")}`);
+    }
+  }
+
+  if (notes.length === 0) notes.push("Every product already uses its official logo and real website capture.");
+  return { done: true, notes };
+}
+
+// ─── 4. The 3D Printing service card ───────────────────────────────────────
+
+const SERVICE_IMAGE_PATHS: Record<string, string> = {
+  "digital marketing consultation": "/service-images/editorial-2026-09/digital-marketing-consultation.webp",
+  "website design & development": "/service-images/editorial-2026-09/website-design-development.webp",
+  "paid advertising": "/service-images/editorial-2026-09/paid-advertising.webp",
+  "content creation": "/service-images/editorial-2026-09/content-creation.webp",
+  "branding & graphic design": "/service-images/editorial-2026-09/branding-graphic-design.webp",
+  "lead generation": "/service-images/editorial-2026-09/lead-generation.webp",
+  "crm and marketing automation": "/service-images/editorial-2026-09/crm-marketing-automation.webp",
+  "3d printing": "/service-images/editorial-2026-09/3d-printing.webp",
+};
+
+const THREE_D_CARD: Omit<OurServicesCard, "order"> = {
   enabled: true,
+  imageUrl: SERVICE_IMAGE_PATHS["3d printing"],
   title: "3D Printing",
   subtitle: "Custom parts and branded pieces",
   description:
@@ -282,10 +437,8 @@ const THREE_D_CARD: Omit<OurServicesCard, "order" | "imageUrl"> = {
 
 /**
  * Adds "3D Printing" to the homepage "Our Services" section (the admin-managed
- * cards in company_settings.homepage_content), then generates its card image
- * in the style of the other seven and stores it next to them in Supabase.
- * The card is inserted even when the image cannot be generated yet (no Gemini
- * key); the image step is retried on the next run.
+ * cards in company_settings.homepage_content) with the editorial image bundled
+ * into the site build. The asset is deterministic and never generated at boot.
  */
 export async function ensure3dPrintingService(): Promise<TaskResult> {
   const row = await settingsRow();
@@ -298,23 +451,14 @@ export async function ensure3dPrintingService(): Promise<TaskResult> {
   let index = cards.findIndex((c) => c.title.trim().toLowerCase() === THREE_D_CARD.title.toLowerCase());
   if (index < 0) {
     const nextOrder = cards.reduce((max, c) => Math.max(max, c.order ?? 0), 0) + 1;
-    cards.push({ ...THREE_D_CARD, imageUrl: "", order: nextOrder });
+    cards.push({ ...THREE_D_CARD, order: nextOrder });
     index = cards.length - 1;
     notes.push(`Added "${THREE_D_CARD.title}" card at order ${nextOrder}.`);
   }
 
-  let done = true;
   if (!cards[index].imageUrl) {
-    try {
-      const png = await generateServiceImage(SERVICE_IMAGE_SUBJECTS["3d-printing"]);
-      if (!png) throw new Error("model returned no image");
-      const url = await putInStorage("service-images/3d-printing.png", png, "image/png");
-      cards[index] = { ...cards[index], imageUrl: url };
-      notes.push(`Card image generated and stored at ${url}`);
-    } catch (err) {
-      notes.push(`Card image not generated yet: ${(err as Error).message}`);
-      done = false;
-    }
+    cards[index] = { ...cards[index], imageUrl: THREE_D_CARD.imageUrl };
+    notes.push(`Assigned packaged card image ${THREE_D_CARD.imageUrl}.`);
   }
 
   await db
@@ -322,10 +466,58 @@ export async function ensure3dPrintingService(): Promise<TaskResult> {
     .set({ homepageContent: { ...homepage, ourServicesSection: { ...section, cards } } })
     .where(eq(companySettings.id, row.id));
   if (notes.length === 0) notes.push("Already present with an image.");
-  return { done, notes };
+  return { done: true, notes };
 }
 
-// ─── 4. Explicit catalog categories for the service cards ──────────────────
+// ─── 5. Editorial service card images ───────────────────────────────────────
+
+function isReplaceableServiceImage(current: string | undefined, target: string): boolean {
+  const value = current?.trim();
+  if (!value) return true;
+  if (value === target) return false;
+  const filename = target.split("/").at(-1)?.replace(/\.webp$/i, "") ?? "";
+  return new RegExp(`/service-images/${filename}\\.(?:jpe?g|png|webp)(?:[?#]|$)`, "i").test(value);
+}
+
+/**
+ * Replaces only the known legacy service artwork (or an empty image) with the
+ * versioned editorial set bundled in client/public. An unexpected admin URL is
+ * deliberately preserved, so a later manual choice is never overwritten.
+ */
+export async function refreshServiceImages(): Promise<TaskResult> {
+  if (process.env.NODE_ENV !== "production") {
+    return { done: false, notes: ["Deferred outside production so image URLs never precede the deployed assets."] };
+  }
+  const row = await settingsRow();
+  if (!row) return { done: false, notes: ["No company_settings row yet."] };
+  const homepage: HomepageContent = { ...(row.homepageContent ?? {}) };
+  const section = homepage.ourServicesSection ?? {};
+  const notes: string[] = [];
+  let changed = false;
+  const cards = (section.cards ?? []).map((card) => {
+    const key = card.title.trim().toLowerCase();
+    const target = SERVICE_IMAGE_PATHS[key];
+    if (!target || card.imageUrl === target) return card;
+    if (!isReplaceableServiceImage(card.imageUrl, target)) {
+      notes.push(`${card.title}: kept unexpected admin image ${card.imageUrl}`);
+      return card;
+    }
+    changed = true;
+    notes.push(`${card.title}: ${target}`);
+    return { ...card, imageUrl: target };
+  });
+
+  if (changed) {
+    await db
+      .update(companySettings)
+      .set({ homepageContent: { ...homepage, ourServicesSection: { ...section, cards } } })
+      .where(eq(companySettings.id, row.id));
+  }
+  if (notes.length === 0) notes.push("Every known service already uses the editorial image set.");
+  return { done: true, notes };
+}
+
+// ─── 6. Explicit catalog categories for the service cards ──────────────────
 
 /**
  * The service cards live in JSON, so the migration that added
