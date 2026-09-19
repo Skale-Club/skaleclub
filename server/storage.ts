@@ -262,6 +262,8 @@ export interface IStorage {
   getFormLeadByConversationId(conversationId: string): Promise<FormLead | undefined>;
   listFormLeads(filters?: { status?: LeadStatus; classificacao?: LeadClassification; formCompleto?: boolean; completionStatus?: 'completo' | 'em_progresso' | 'abandonado'; search?: string; formId?: number }): Promise<FormLead[]>;
   updateFormLead(id: number, updates: Partial<Pick<FormLead, "status" | "observacoes" | "notificacaoEnviada" | "ghlContactId" | "ghlSyncStatus">>): Promise<FormLead | undefined>;
+  mergeFormLeadCustomAnswers(id: number, patch: Record<string, string>): Promise<FormLead | undefined>;
+  countCompletedLeadsByPhone(phone: string, excludeLeadId?: number): Promise<number>;
   getFormLeadByEmail(email: string): Promise<FormLead | undefined>;
   deleteFormLead(id: number): Promise<boolean>;
 
@@ -1128,6 +1130,45 @@ export class DatabaseStorage implements IStorage {
       .where(eq(formLeads.id, id))
       .returning();
     return updated;
+  }
+
+  async mergeFormLeadCustomAnswers(id: number, patch: Record<string, string>): Promise<FormLead | undefined> {
+    const [existing] = await db.select().from(formLeads).where(eq(formLeads.id, id));
+    if (!existing) return undefined;
+
+    const merged = Object.fromEntries(
+      Object.entries({ ...(existing.customAnswers || {}), ...patch })
+        .filter(([, value]) => typeof value === "string" && value.trim().length > 0),
+    );
+
+    const [updated] = await db
+      .update(formLeads)
+      .set({ customAnswers: merged, updatedAt: new Date() })
+      .where(eq(formLeads.id, id))
+      .returning();
+    return updated;
+  }
+
+  // Previous COMPLETED leads carrying the same phone number, ignoring formatting
+  // and country prefix (the last 10 digits are compared). Used server-side only,
+  // to flag a repeat customer for the operator — never exposed to the browser.
+  async countCompletedLeadsByPhone(phone: string, excludeLeadId?: number): Promise<number> {
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length < 7) return 0;
+    const suffix = digits.slice(-10);
+
+    const [row] = await db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(formLeads)
+      .where(
+        and(
+          eq(formLeads.formCompleto, true),
+          sql`right(regexp_replace(coalesce(${formLeads.telefone}, ''), '[^0-9]', '', 'g'), 10) = ${suffix}`,
+          excludeLeadId ? sql`${formLeads.id} <> ${excludeLeadId}` : sql`true`,
+        ),
+      );
+
+    return row?.total ?? 0;
   }
 
   async deleteFormLead(id: number): Promise<boolean> {

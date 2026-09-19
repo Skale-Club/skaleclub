@@ -189,12 +189,43 @@ export type LeadStatus = typeof leadStatusEnum.enumValues[number];
 export type FormLeadProgressInput = z.infer<typeof formLeadProgressSchema>;
 
 // Form Configuration Types
-export type FormQuestionType = 'text' | 'textarea' | 'email' | 'tel' | 'select' | 'voice' | 'phoneCountry';
+export type FormQuestionType =
+  | 'text'
+  | 'textarea'
+  | 'email'
+  | 'tel'
+  | 'select'
+  | 'voice'
+  | 'phoneCountry'
+  // Order-form types (NFC keychains). `productPicker` and `quantitySlider` read
+  // their catalogue and range from shared/nfc-pricing.ts, not from `options`,
+  // so pricing stays in one file.
+  | 'productPicker'
+  | 'quantitySlider'
+  | 'fileUpload';
 
 export interface FormOption {
   value: string;
   label: string;
   points: number;
+}
+
+/** A note rendered above a question, optionally only for certain answers. */
+export interface FormQuestionNote {
+  text: string;
+  /** Omit to always show. */
+  when?: {
+    questionId: string;
+    equals?: string;
+    notEquals?: string;
+  };
+}
+
+/** `fileUpload` constraints. Enforced client-side AND on the upload route. */
+export interface FormUploadConfig {
+  /** Lowercase extensions without the dot, e.g. ["png", "jpg"]. */
+  extensions: string[];
+  maxSizeMb: number;
 }
 
 export interface FormConditionalField {
@@ -216,6 +247,10 @@ export interface FormQuestion {
   conditionalField?: FormConditionalField;
   conditionalFields?: FormConditionalField[];
   ghlFieldId?: string;
+  /** Disclaimer shown above the field (e.g. the first-order art fee). */
+  note?: FormQuestionNote;
+  /** Required by `fileUpload`, ignored otherwise. */
+  upload?: FormUploadConfig;
 }
 
 export interface FormConfig {
@@ -226,7 +261,28 @@ export interface FormConfig {
     warm: number;
     cold: number;
   };
+  /**
+   * Opting a form into live pricing. Set it and the modal shows the running
+   * quote, and the server recomputes + freezes that quote onto the lead on
+   * completion. Absent means a plain lead form, exactly as before.
+   */
+  pricing?: {
+    model: 'nfc-keychain';
+    /** Question id holding the chosen type; defaults to `tipoChaveiro`. */
+    typeQuestionId?: string;
+    /** Question id holding the quantity; defaults to `quantidade`. */
+    quantityQuestionId?: string;
+    /** Question id whose answer says whether this is a repeat order. */
+    returningQuestionId?: string;
+    /** Answer value on that question meaning "already a customer". */
+    returningValue?: string;
+  };
 }
+
+// The defaults for `FormConfig["pricing"]` live in shared/nfc-pricing.ts as
+// NFC_PRICING_QUESTION_IDS. They are deliberately NOT re-exported here: this
+// barrel reaches shared/schema/settings.ts, which imports node's `crypto`, so a
+// runtime (non-type) import of it from client code breaks the browser bundle.
 
 // Forms row types (from the forms table defined above)
 export type Form = typeof forms.$inferSelect;

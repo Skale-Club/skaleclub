@@ -18,8 +18,12 @@ import { trackEvent } from "@/lib/analytics";
 import { usePagePaths } from "@/lib/pagePaths";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Loader2 } from '@/components/ui/loader';
-import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead, getConditionalFields, getSortedQuestions, KNOWN_FIELD_IDS } from "@shared/form";
+import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead, getConditionalFields, getSortedQuestions, KNOWN_FIELD_IDS, quoteFromAnswers, resolvePricingQuestionIds, shouldShowQuestionNote } from "@shared/form";
 import type { LeadClassification, FormLead, FormConfig, FormQuestion, FormConditionalField } from "@shared/schema";
+import { QuantitySliderInput } from "@/components/form-fields/QuantitySliderInput";
+import { ProductPickerInput } from "@/components/form-fields/ProductPickerInput";
+import { LogoUploadInput } from "@/components/form-fields/LogoUploadInput";
+import { NfcPricePanel } from "@/components/form-fields/NfcPricePanel";
 import { PhoneCountrySelect } from "@/components/ui/PhoneCountrySelect";
 import {
   detectDefaultPhoneCountry,
@@ -201,8 +205,11 @@ function getFieldError(
 
   // Check if required and empty
   if (question.required && !value) {
-    if (question.type === "select") {
+    if (question.type === "select" || question.type === "productPicker") {
       return "Please select an option";
+    }
+    if (question.type === "fileUpload") {
+      return "Please upload a file";
     }
     return "This field is required";
   }
@@ -594,6 +601,17 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
       : [],
     [answers, currentQuestion]
   );
+
+  // Live quote for priced forms (config.pricing). Null on every other form, so
+  // the panel and its steps simply never render. The authoritative number is
+  // recomputed server-side on submit — this is display only.
+  const quote = useMemo(() => quoteFromAnswers(config, answers), [answers, config]);
+  const pricingIds = useMemo(() => resolvePricingQuestionIds(config), [config]);
+  const isPricedQuestion =
+    Boolean(quote) &&
+    (currentQuestionId === pricingIds.quantityQuestionId || currentQuestionId === pricingIds.typeQuestionId);
+  const questionNote =
+    currentQuestion && shouldShowQuestionNote(currentQuestion, answers) ? currentQuestion.note?.text : undefined;
 
   const handleFieldFocus = (event: React.FocusEvent<HTMLInputElement>) => {
     lastFocusedInputRef.current = event.currentTarget;
@@ -1171,6 +1189,14 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                         transition={{ duration: 0.25, ease: "easeOut" }}
                         className="mt-6 space-y-4"
                       >
+                        {/* Disclaimer tied to an earlier answer (e.g. the first-order art fee) */}
+                        {questionNote && (
+                          <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
+                            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                            <p className="text-sm leading-relaxed">{t(questionNote)}</p>
+                          </div>
+                        )}
+
                         {/* Text input fields */}
                         {(currentQuestion.type === "text" || currentQuestion.type === "email") && (
                           <input
@@ -1406,6 +1432,50 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                           </div>
                         )}
 
+                        {/* Keychain type — catalogue and prices come from shared/nfc-pricing */}
+                        {currentQuestion.type === "productPicker" && (
+                          <ProductPickerInput
+                            value={answers[currentQuestion.id] || ""}
+                            quantity={Number.parseInt(answers[pricingIds.quantityQuestionId] || "", 10) || undefined}
+                            onChange={(typeId) => handleOptionSelect(currentQuestion.id, typeId)}
+                          />
+                        )}
+
+                        {currentQuestion.type === "quantitySlider" && (
+                          <QuantitySliderInput
+                            value={answers[currentQuestion.id] || ""}
+                            onChange={(quantity) => handleAnswerChange(currentQuestion.id, String(quantity))}
+                          />
+                        )}
+
+                        {currentQuestion.type === "fileUpload" && (
+                          <LogoUploadInput
+                            formSlug={formSlug}
+                            questionId={currentQuestion.id}
+                            value={answers[currentQuestion.id] || ""}
+                            filename={answers[`${currentQuestion.id}__filename`]}
+                            upload={currentQuestion.upload}
+                            onUploaded={(url, uploadedName) => {
+                              const patch = {
+                                [currentQuestion.id]: url,
+                                [`${currentQuestion.id}__filename`]: uploadedName,
+                              };
+                              setAnswers((prev) => ({ ...prev, ...patch }));
+                              answersRef.current = { ...answersRef.current, ...patch };
+                              setErrorMessage(null);
+                              void persistProgress(currentStep, { stepToResume: currentStep, overrideAnswers: patch });
+                            }}
+                            onCleared={() => {
+                              const patch = {
+                                [currentQuestion.id]: "",
+                                [`${currentQuestion.id}__filename`]: "",
+                              };
+                              setAnswers((prev) => ({ ...prev, ...patch }));
+                              answersRef.current = { ...answersRef.current, ...patch };
+                            }}
+                          />
+                        )}
+
                         {activeConditionalFields.map((field) => (
                           <ConditionalFieldInput
                             key={`${field.id}:${field.showWhen}`}
@@ -1429,6 +1499,17 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
                             }}
                           />
                         ))}
+
+                        {isPricedQuestion && quote && (
+                          <NfcPricePanel
+                            quote={quote}
+                            onApplyUpgrade={
+                              currentQuestion.type === "quantitySlider"
+                                ? (nextQuantity) => handleAnswerChange(currentQuestion.id, String(nextQuantity))
+                                : undefined
+                            }
+                          />
+                        )}
 
                         {errorMessage && (
                           <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 animate-form-shake">

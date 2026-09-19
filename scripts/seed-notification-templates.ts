@@ -10,6 +10,20 @@ const TG_HOT_LEAD  = "🧲 NEW LEAD | *{{company}}* | *{{name}}* | {{phone}}";
 const SMS_PERF_ALERT = "⚠️ {{company}}: alerta de tempo de resposta\nMédia: {{avgTime}}\nAmostras: {{samples}}";
 const TG_PERF_ALERT  = "⚠️ *{{company}}*: alerta de tempo de resposta\nMédia: {{avgTime}}\nAmostras: {{samples}}";
 
+// Pedido de chaveiro NFC (formulário nfc-keychain-order). Disparado só quando o
+// pedido é finalizado; substitui o hot_lead nesse formulário para o time não
+// receber dois avisos com histórias diferentes do mesmo pedido.
+const TG_NFC_ORDER =
+  "🔑 *NOVO PEDIDO DE CHAVEIRO* — {{company}}\n" +
+  "{{name}} · {{phone}}\n" +
+  "Empresa: {{business}}\n" +
+  "Quantidade: *{{quantity}}* ({{keychainType}})\n" +
+  "Total estimado: *{{total}}* · arte: {{artFee}}\n" +
+  "Cliente: {{customerStatus}}\n" +
+  "Logo: {{logo}}\n" +
+  "Envio: {{address}}\n\n" +
+  "☎️ Ligar agora para confirmar antes de produzir.";
+
 async function seed() {
   const client = await pool.connect();
   try {
@@ -22,9 +36,10 @@ async function seed() {
         ('hot_lead',       'sms',      $3, true),
         ('hot_lead',       'telegram', $4, true),
         ('low_perf_alert', 'sms',      $5, true),
-        ('low_perf_alert', 'telegram', $6, true)
+        ('low_perf_alert', 'telegram', $6, true),
+        ('nfc_order',      'telegram', $7, true)
       ON CONFLICT (event_key, channel) DO NOTHING
-    `, [SMS_NEW_CHAT, TG_NEW_CHAT, SMS_HOT_LEAD, TG_HOT_LEAD, SMS_PERF_ALERT, TG_PERF_ALERT]);
+    `, [SMS_NEW_CHAT, TG_NEW_CHAT, SMS_HOT_LEAD, TG_HOT_LEAD, SMS_PERF_ALERT, TG_PERF_ALERT, TG_NFC_ORDER]);
 
     console.log(`Rows inserted: ${result.rowCount ?? 0} (0 = already seeded, idempotent).`);
   } finally {

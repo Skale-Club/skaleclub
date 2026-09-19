@@ -60,6 +60,11 @@ export async function createApp(): Promise<{ app: express.Express; httpServer: S
   };
   const jsonDefault = express.json({ limit: '1mb', verify: captureRawBody });
   const jsonLarge = express.json({ limit: '25mb', verify: captureRawBody });
+  // The order-form logo upload is public, so it cannot use the 25 MB admin cap.
+  // 4 MB holds a 3 MB file once base64 inflates it by a third, and the route is
+  // rate-limited, which keeps the worst case a long way below jsonLarge.
+  const jsonPublicUpload = express.json({ limit: '4mb', verify: captureRawBody });
+  const PUBLIC_UPLOAD_RE = /^\/api\/forms\/slug\/[^/]+\/upload$/;
 
   // Admin-only routes that accept large base64 bodies.
   // Matches the base64 image endpoints (/api/upload, /api/upload-local,
@@ -72,6 +77,7 @@ export async function createApp(): Promise<{ app: express.Express; httpServer: S
     // requireAdmin has run: buffering 25 MB for an anonymous caller is a
     // memory-exhaustion vector, whatever the handler does afterwards.
     if (LARGE_BODY_RE.test(req.path)) return next();
+    if (PUBLIC_UPLOAD_RE.test(req.path)) return jsonPublicUpload(req, res, next);
     return jsonDefault(req, res, next);
   });
 

@@ -164,6 +164,9 @@ export function FormEditorContent({ formId }: FormEditorContentProps) {
       select: 'Multiple choice',
       voice: 'Voice',
       phoneCountry: 'Phone + Country',
+      productPicker: 'Product picker',
+      quantitySlider: 'Quantity slider',
+      fileUpload: 'File upload',
     };
     return labels[type] || type;
   };

@@ -1,4 +1,7 @@
 import type { LeadClassification, FormConfig, FormQuestion, FormOption as SchemaFormOption, FormConditionalField } from "./schema.js";
+// Value imports from "./schema.js" are avoided on purpose — that barrel reaches
+// node-only modules and would follow this file into the browser bundle.
+import { NFC_PRICING_QUESTION_IDS, quoteNfcOrder, snapQuantity, type NfcQuote } from "./nfc-pricing.js";
 
 // Legacy type for backward compatibility
 export type FormOption = {
@@ -296,6 +299,61 @@ export function getSortedQuestions(config: FormConfig): FormQuestion[] {
   return [...questions].sort((a, b) => a.order - b.order);
 }
 
+// ── Order pricing (forms with config.pricing) ──────────────────────────────
+
+/** Which question ids drive the quote, with the NFC defaults filled in. */
+export function resolvePricingQuestionIds(config: FormConfig) {
+  const pricing = config?.pricing;
+  return {
+    typeQuestionId: pricing?.typeQuestionId ?? NFC_PRICING_QUESTION_IDS.typeQuestionId,
+    quantityQuestionId: pricing?.quantityQuestionId ?? NFC_PRICING_QUESTION_IDS.quantityQuestionId,
+    returningQuestionId: pricing?.returningQuestionId ?? NFC_PRICING_QUESTION_IDS.returningQuestionId,
+    returningValue: pricing?.returningValue ?? NFC_PRICING_QUESTION_IDS.returningValue,
+  };
+}
+
+/**
+ * Price the answers collected so far. Returns null for a form without
+ * `config.pricing` or before a quantity has been chosen, so callers can simply
+ * skip the price panel. Used by the modal to display and by the server to
+ * recompute — same function, so the two can never drift.
+ */
+export function quoteFromAnswers(
+  config: FormConfig,
+  answers: Record<string, string | undefined>,
+): NfcQuote | null {
+  if (config?.pricing?.model !== "nfc-keychain") return null;
+  const ids = resolvePricingQuestionIds(config);
+
+  const rawQuantity = Number.parseInt(answers[ids.quantityQuestionId] ?? "", 10);
+  if (!Number.isFinite(rawQuantity)) return null;
+
+  // "Have you ordered before?" unanswered is treated as a first order, so the
+  // art fee shows up front rather than appearing later as a surprise.
+  const isFirstOrder = (answers[ids.returningQuestionId] ?? "") !== ids.returningValue;
+
+  return quoteNfcOrder({
+    quantity: snapQuantity(rawQuantity),
+    typeId: answers[ids.typeQuestionId],
+    isFirstOrder,
+  });
+}
+
+/** Whether a question's note applies to the answers given so far. */
+export function shouldShowQuestionNote(
+  question: FormQuestion,
+  answers: Record<string, string | undefined>,
+): boolean {
+  const note = question.note;
+  if (!note?.text) return false;
+  const when = note.when;
+  if (!when) return true;
+  const value = answers[when.questionId] ?? "";
+  if (when.equals !== undefined) return value === when.equals;
+  if (when.notEquals !== undefined) return value !== when.notEquals;
+  return true;
+}
+
 export function validateFormConfig(config: FormConfig, opts: { requireQuestions?: boolean } = {}): string[] {
   const errors: string[] = [];
   const questions = Array.isArray(config?.questions) ? config.questions : [];
@@ -361,7 +419,29 @@ export function validateFormConfig(config: FormConfig, opts: { requireQuestions?
         }
       });
     }
+
+    if (question.type === "fileUpload") {
+      const upload = question.upload;
+      if (!upload?.extensions?.length) {
+        errors.push(`Question "${label}" needs at least one allowed file extension.`);
+      }
+      if (!upload || !Number.isFinite(upload.maxSizeMb) || upload.maxSizeMb <= 0) {
+        errors.push(`Question "${label}" needs a positive max file size.`);
+      }
+    }
   });
+
+  // A priced form must be able to find the answers its quote is built from,
+  // otherwise the price panel silently never appears.
+  // The quantity question is what a quote cannot be built without. The type
+  // question is optional — with none, every order prices as the default type,
+  // which is what happens while the catalogue holds a single entry.
+  if (config?.pricing?.model === "nfc-keychain") {
+    const ids = resolvePricingQuestionIds(config);
+    if (!questionIds.has(ids.quantityQuestionId)) {
+      errors.push(`Pricing is enabled but the quantity question "${ids.quantityQuestionId}" does not exist.`);
+    }
+  }
 
   return errors;
 }

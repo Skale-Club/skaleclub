@@ -105,6 +105,33 @@ export class SupabaseStorageService {
     return urlData.publicUrl;
   }
 
+  // Upload a file attached to a public form answer (e.g. an order form's logo),
+  // scoped by form slug and question so the bucket stays browsable.
+  async uploadFormAsset(
+    buffer: Buffer,
+    formSlug: string,
+    questionId: string,
+    filename: string,
+    contentType: string,
+  ): Promise<string> {
+    await ensureBucket();
+    const supabase = getSupabaseAdmin();
+    const ext = (filename.split(".").pop() || "png").toLowerCase();
+    const safe = (value: string) => value.replace(/[^a-z0-9-]/gi, "-").slice(0, 60);
+    const objectId = `form-uploads/${safe(formSlug)}/${safe(questionId)}/${Date.now()}-${randomUUID()}.${ext}`;
+
+    const { error } = await supabase.storage
+      .from(BUCKET_NAME)
+      .upload(objectId, buffer, { contentType, upsert: false });
+
+    if (error) {
+      throw new Error(`Failed to upload form asset: ${error.message}`);
+    }
+
+    const { data: urlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(objectId);
+    return urlData.publicUrl;
+  }
+
   // Delete a links-page asset by its public URL.
   // Extracts the storage path from the URL, then removes the object from the bucket.
   async deleteLinksPageAsset(publicUrl: string): Promise<void> {

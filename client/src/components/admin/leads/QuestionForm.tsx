@@ -127,6 +127,12 @@ export function QuestionForm({
     }
 
     const questionData: FormQuestion = {
+      // Carry over whatever this editor does not expose (`upload` limits, a
+      // `note` disclaimer, the `conditionalFields` array form). Without the
+      // spread, editing a seeded question here would silently strip them — and
+      // a `fileUpload` question with no `upload` config rejects every file.
+      // Keys set below still win, so clearing a field keeps working.
+      ...(question ?? {}),
       id: finalId,
       order: isEditing ? order : nextOrder,
       title,

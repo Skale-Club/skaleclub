@@ -10,8 +10,21 @@ import { runLeadPostProcessing } from "../lib/lead-processing.js";
 import { buildXphereBookingUrl } from "../integrations/xphere.js";
 import { summarizeFormTranscript, transcribeFormAudio } from "../lib/form-audio.js";
 import { rateLimitMiddleware } from "../lib/rateLimit.js";
+import { SupabaseStorageService } from "../storage/supabaseStorage.js";
 
 const SKALE_HUB_GROUP_FORM_SLUG = "skale-hub";
+
+const uploadStorage = new SupabaseStorageService();
+
+// Extension allowlist for public form uploads. SVG is excluded on purpose —
+// see the note on the upload route below.
+const EXT_TO_MIME: Record<string, string> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  webp: "image/webp",
+  pdf: "application/pdf",
+};
 
 // Throttle shared by every public (unauthenticated) lead endpoint.
 // What a visitor may read back about their own lead. The full row carries
@@ -470,6 +483,77 @@ export function registerFormRoutes(app: Express) {
       console.error("[forms] progressive lead failed:", err);
       res.status(400).json({ message: "Could not save your data. Please try again." });
     }
+    },
+  );
+
+  // Public: file attached to a form answer (order-form logo). The question's
+  // own `upload` config is the allowlist — a caller cannot widen it by asking.
+  //
+  // SVG is deliberately absent from EXT_TO_MIME: it is an executable document,
+  // and these files are served from the bucket and opened by whoever reviews
+  // the order.
+  app.post(
+    "/api/forms/slug/:slug/upload",
+    rateLimitMiddleware({
+      limit: 10,
+      windowMs: 10 * 60_000,
+      message: "Too many uploads. Please try again in a few minutes.",
+    }),
+    async (req, res) => {
+      try {
+        const form = await storage.getFormBySlug(req.params.slug);
+        if (!form || !form.isActive) {
+          return res.status(404).json({ message: "Form not found" });
+        }
+
+        const parsed = z
+          .object({
+            questionId: z.string().min(1).max(120),
+            filename: z.string().min(1).max(200),
+            data: z.string().min(1),
+          })
+          .parse(req.body);
+
+        const config = (form.config as FormConfig | null) ?? DEFAULT_FORM_CONFIG;
+        const question = config.questions.find((q) => q.id === parsed.questionId);
+        if (!question || question.type !== "fileUpload") {
+          return res.status(400).json({ message: "This question does not accept files" });
+        }
+
+        const allowed = question.upload?.extensions ?? [];
+        const maxSizeMb = question.upload?.maxSizeMb ?? 3;
+        const ext = (parsed.filename.split(".").pop() || "").toLowerCase();
+        const contentType = EXT_TO_MIME[ext];
+        if (!allowed.includes(ext) || !contentType) {
+          return res.status(415).json({
+            message: `Accepted formats: ${allowed.map((e) => e.toUpperCase()).join(", ")}`,
+          });
+        }
+
+        const base64 = parsed.data.includes(",") ? parsed.data.slice(parsed.data.indexOf(",") + 1) : parsed.data;
+        const buffer = Buffer.from(base64, "base64");
+        if (buffer.length === 0) {
+          return res.status(400).json({ message: "The file appears to be empty" });
+        }
+        if (buffer.length > maxSizeMb * 1024 * 1024) {
+          return res.status(413).json({ message: `Maximum file size: ${maxSizeMb} MB` });
+        }
+
+        const url = await uploadStorage.uploadFormAsset(
+          buffer,
+          form.slug,
+          question.id,
+          parsed.filename,
+          contentType,
+        );
+        res.status(201).json({ url, filename: parsed.filename });
+      } catch (err: any) {
+        if (err instanceof z.ZodError) {
+          return res.status(400).json({ message: "Validation error" });
+        }
+        console.error("[forms] upload failed:", err);
+        res.status(500).json({ message: "Could not upload the file. Please try again." });
+      }
     },
   );
 

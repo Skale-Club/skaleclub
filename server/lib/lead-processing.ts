@@ -11,6 +11,7 @@ import type { FormConfig, FormLead } from "#shared/schema.js";
 import { getOrCreateGHLContact } from "../integrations/ghl.js";
 import { enqueueXphereLead, buildXphereBookingUrl } from "../integrations/xphere.js";
 import { dispatchNotification } from "./notifications.js";
+import { finalizeNfcOrder, isPricedForm } from "./nfc-order.js";
 
 type PostProcessResult = {
   lead: FormLead;
@@ -32,9 +33,15 @@ export async function runLeadPostProcessing(
 ): Promise<PostProcessResult> {
   let lead = initialLead;
 
-  // 1) Twilio SMS notification
+  // 1) Notify the team. A priced order form gets its own alert (quote, keychain
+  // type, repeat-customer flag) instead of the generic hot-lead SMS, so an
+  // order never pings twice with two different stories.
+  if (isPricedForm(formConfig)) {
+    lead = await finalizeNfcOrder(storage, lead, formConfig, companyName);
+  }
+
   const hasPhone = !!lead.telefone?.trim();
-  if (lead.formCompleto && hasPhone && !lead.notificacaoEnviada) {
+  if (!isPricedForm(formConfig) && lead.formCompleto && hasPhone && !lead.notificacaoEnviada) {
     try {
       await dispatchNotification(storage, 'hot_lead', {
         company: companyName,
