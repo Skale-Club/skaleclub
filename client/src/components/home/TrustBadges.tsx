@@ -8,7 +8,7 @@ interface TrustBadgesProps {
   badges: TrustBadge[];
 }
 
-const badgeIconMap: Record<string, React.ComponentType<any>> = {
+export const badgeIconMap: Record<string, React.ComponentType<any>> = {
   star: Star,
   shield: Shield,
   clock: Clock,

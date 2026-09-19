@@ -1,0 +1,725 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portfolio v3 (mockup)</title>
+<!--
+  Everything here is page-only (Portfolio.tsx + a page stylesheet). The shared
+  CatalogCard, home carousels, popup, admin preview and print folder are
+  untouched. Rows and tiles are fed by the same CatalogItem model and open the
+  same CatalogDetail popup.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --font-sans: 'Inter', sans-serif;
+    --font-display: 'Outfit', sans-serif;
+    --cta: #5173D6;
+    --cta-hover: #3B5BBE;
+    --cta-soft: #8FA9EE;
+    --surface-card: #0C1424;
+    --surface-raised: #142038;
+    --ink: #F3F6FB;
+    --ink-2: #B4C0D8;
+    --ink-dim: #7C8AA6;
+    --line: rgba(180, 192, 216, .14);
+    --line-strong: rgba(180, 192, 216, .22);
+    --gutter: clamp(16px, 4vw, 48px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { font-family: var(--font-sans); color: var(--ink); background: #090d17; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+  img { display: block; max-width: 100%; }
+  button { font: inherit; color: inherit; background: none; border: 0; }
+  a { color: inherit; }
+  :is(button, a):focus-visible { outline: 2px solid var(--cta-soft); outline-offset: 4px; border-radius: 6px; }
+
+  /* atmosphere lives on the page root wrapper, never on body, never fixed */
+  .pf-root {
+    position: relative;
+    background-color: #09152d;
+    background-image:
+      radial-gradient(58% 42% at 50% -4%, rgba(100, 135, 215, .30), transparent 64%),
+      radial-gradient(40% 30% at 96% 22%, rgba(81, 115, 214, .12), transparent 62%),
+      linear-gradient(180deg, #09152d 0%, #0a1226 34%, #0a1020 68%, #0b1220 100%);
+  }
+  .wrap { width: min(1240px, 100% - 2 * var(--gutter)); margin-inline: auto; }
+
+  .btn-cta {
+    display: inline-flex; align-items: center; gap: 10px; background: var(--cta); color: #fff;
+    border-radius: 999px; font-weight: 700; font-size: 16px; padding: 16px 28px; cursor: pointer;
+    text-decoration: none; transition: background .2s, transform .2s;
+  }
+  .btn-cta:hover { background: var(--cta-hover); transform: translateY(-1px); }
+  .link2 { color: var(--ink-2); text-decoration: none; font-size: 15px; font-weight: 500; transition: color .2s; }
+  .link2:hover { color: var(--ink); }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 12px; font-size: 12px; font-weight: 600;
+    letter-spacing: .18em; text-transform: uppercase; color: var(--cta-soft);
+  }
+  .eyebrow::before { content: ""; width: 28px; height: 3px; border-radius: 3px; background: var(--cta); flex: none; }
+
+  /* ---------- NAV (page-only stand-in, from v2) ---------- */
+  .prt-navwrap { position: sticky; top: 0; z-index: 50; padding: 14px clamp(16px, 4vw, 32px) 0; }
+  .prt-nav {
+    max-width: 1240px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; padding: 10px 10px 10px 22px; border-radius: 999px; border: 1px solid var(--line);
+    background: rgba(9, 18, 38, .78);
+  }
+  .prt-nav__logo { font-family: var(--font-display); font-weight: 800; font-size: 18px; letter-spacing: -.01em; }
+  .prt-nav__links { display: flex; align-items: center; gap: 26px; font-size: 14px; }
+  .prt-nav__links a { text-decoration: none; color: var(--ink-2); }
+  .prt-nav__links a.here { color: var(--ink); font-weight: 600; }
+  .prt-nav__phone { font-size: 13px; font-weight: 700; color: var(--ink); background: var(--surface-raised); border: 1px solid var(--line-strong); border-radius: 999px; padding: 10px 16px; white-space: nowrap; }
+
+  /* ---------- HERO ---------- */
+  .pf-hero { position: relative; padding: clamp(24px, 3.6vw, 52px) 0 0; text-align: center; overflow-x: clip; }
+  .pf-hero__copy { max-width: 780px; margin: 0 auto; }
+  .pf-hero h1 {
+    font-family: var(--font-display); font-weight: 800; letter-spacing: -.03em; line-height: 1.02;
+    font-size: clamp(2.125rem, 4.2vw, 3.5rem); margin-top: 14px; text-wrap: balance;
+  }
+  .pf-hero h1 em { font-style: normal; color: var(--cta); }
+  .pf-hero__sub { margin: 16px auto 0; font-size: clamp(16px, 1.2vw, 18px); line-height: 1.5; color: var(--ink-2); max-width: 52ch; text-wrap: balance; }
+  .pf-hero__actions { margin-top: 24px; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 16px 30px; }
+
+  /* ---------- HERO REEL: every app, equal size, slow loop ---------- */
+  .pf-reel {
+    position: relative; margin-top: clamp(28px, 4vw, 48px); overflow: hidden;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
+  }
+  .pf-reel__track { display: flex; gap: clamp(14px, 1.8vw, 24px); width: max-content; padding: 6px 0 10px; animation: pf-reel 60s linear infinite; }
+  .pf-reel:hover .pf-reel__track { animation-play-state: paused; }
+  .pf-reel__win {
+    position: relative; flex: none; display: block; width: clamp(230px, 25vw, 350px); aspect-ratio: 16 / 10.6; overflow: hidden;
+    border-radius: 12px; background: #0b0f18; border: 1px solid rgba(180, 192, 216, .22); box-shadow: 0 18px 40px rgba(0, 0, 0, .45);
+  }
+  @keyframes pf-reel { to { transform: translateX(calc(-50% - clamp(7px, .9vw, 12px))); } }
+
+  /* (old fanned stage rules below are unused) */
+  .pf-stage {
+    position: relative; margin: clamp(28px, 4vw, 48px) auto 0;
+    width: min(1080px, 100% - 2 * var(--gutter)); height: clamp(260px, 30vw, 430px);
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 66%, transparent 99%);
+    mask-image: linear-gradient(180deg, #000 0%, #000 66%, transparent 99%);
+  }
+  .pf-stage__glow {
+    position: absolute; left: -12%; right: -12%; bottom: -12%; top: 18%; z-index: 0; pointer-events: none;
+    background: radial-gradient(52% 58% at 50% 88%, rgba(81, 115, 214, .40), transparent 70%);
+  }
+  .pf-stage .cat-cover__win {
+    position: absolute; overflow: hidden; border-radius: 12px 12px 0 0; background: #0b0f18;
+    border: 1px solid rgba(180, 192, 216, .22); box-shadow: 0 34px 80px rgba(0, 0, 0, .6);
+    animation: pf-float 8s ease-in-out infinite;
+  }
+  .cat-cover__bar { height: 26px; display: flex; align-items: center; gap: 5px; padding: 0 10px; background: #151b28; border-bottom: 1px solid rgba(180, 192, 216, .12); }
+  .cat-cover__bar i { width: 7px; height: 7px; border-radius: 50%; background: rgba(180, 192, 216, .28); flex: none; }
+  .cat-cover__bar span { margin-left: 8px; font-size: 10px; color: var(--ink-dim); background: rgba(180, 192, 216, .08); border-radius: 999px; padding: 2px 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cat-cover__win img { width: 100%; height: calc(100% - 26px); object-fit: cover; object-position: center top; }
+
+  .pf-stage__side { top: 10%; width: 44%; height: 68%; z-index: 1; opacity: .5; filter: saturate(.7) brightness(.72); }
+  .pf-stage__side--l { left: 0; transform: scale(.94); animation-delay: -2.4s; }
+  .pf-stage__side--r { right: 0; transform: scale(.94); animation-delay: -5s; }
+  .pf-stage__front { left: 50%; margin-left: -29%; width: 58%; top: 16%; bottom: 0; height: auto; z-index: 3; }
+
+  @keyframes pf-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+  @keyframes pf-float-side { 0%, 100% { transform: scale(.94) translateY(0); } 50% { transform: scale(.94) translateY(-10px); } }
+  .pf-stage__side { animation-name: pf-float-side; }
+
+  /* ---------- TRUST LINE: hairlines only, no band ---------- */
+  .pf-trust { padding: clamp(44px, 6vw, 80px) 0 0; }
+  .pf-trust__row { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .pf-trust__item { display: flex; align-items: flex-start; gap: 16px; padding: 4px 30px; border-left: 1px solid var(--line); }
+  .pf-trust__item:first-child { border-left: 0; padding-left: 0; }
+  .pf-trust__item svg { width: 24px; height: 24px; flex: none; color: var(--cta-soft); margin-top: 2px; }
+  .pf-trust__title { font-weight: 700; font-size: 16px; }
+  .pf-trust__desc { margin-top: 5px; font-size: 14px; color: var(--ink-dim); line-height: 1.45; }
+
+  /* ---------- SECTION HEADS ---------- */
+  .pf-section { padding: clamp(64px, 10vw, 140px) 0 0; }
+  .pf-head h2 {
+    font-family: var(--font-display); font-weight: 800; letter-spacing: -.035em; line-height: .98;
+    font-size: clamp(2rem, 4.6vw, 3.75rem); margin-top: 16px; max-width: 18ch;
+  }
+  .pf-head p { margin-top: 14px; font-size: 17px; color: var(--ink-2); max-width: 52ch; line-height: 1.5; }
+
+  /* ---------- APPS: full-width showcase rows ---------- */
+  .pf-shows { margin-top: clamp(32px, 4vw, 56px); display: flex; flex-direction: column; gap: clamp(20px, 2.4vw, 32px); }
+  .pf-show {
+    display: grid; grid-template-columns: 58fr 42fr; align-items: center; gap: clamp(28px, 4vw, 60px);
+    padding: clamp(14px, 1.6vw, 22px); border-radius: 30px; border: 1px solid var(--line);
+    background: rgba(12, 20, 36, .62); transition: border-color .25s, background .25s;
+    width: 100%; text-align: left; cursor: pointer; appearance: none; color: inherit; font: inherit;
+  }
+  .pf-show:hover, .pf-show:focus-visible { border-color: rgba(81, 115, 214, .55); background: rgba(12, 20, 36, .85); }
+  .pf-show--flip { grid-template-columns: 42fr 58fr; }
+  .pf-show__text { padding: 8px clamp(8px, 2vw, 36px); }
+  .pf-show__panel::after { display: none; }
+  .pf-show--flip .pf-show__media { order: 2; }
+  /* spans are used inside the <button>; give them block layout */
+  .pf-show__media, .pf-show__text, .pf-show__panel, .pf-show__index,
+  .pf-show__pitch, .pf-show__feats,
+  .pf-tile__body, .pf-tile__cat, .pf-tile__title, .pf-tile__desc,
+  .pf-show__win, .pf-show__dash, .pf-stage .cat-cover__win { display: block; }
+  .pf-show__media { position: relative; }
+  .pf-show__panel {
+    position: relative; border-radius: 22px; padding: clamp(18px, 2.6vw, 38px) clamp(18px, 2.6vw, 38px) 0;
+    background:
+      radial-gradient(70% 66% at 50% 112%, rgba(81, 115, 214, .40), transparent 72%),
+      linear-gradient(170deg, rgba(20, 32, 56, .92), rgba(12, 20, 36, .72));
+    overflow: hidden;
+  }
+  .pf-show__panel::after {
+    content: ""; position: absolute; inset: 0; border-radius: 22px; pointer-events: none;
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .pf-show__win {
+    position: relative; aspect-ratio: 16 / 10; margin-bottom: -6%;
+    transition: transform .35s cubic-bezier(.2, .7, .2, 1), box-shadow .35s;
+  }
+  .pf-show:hover .pf-show__win, .pf-show:focus-visible .pf-show__win { transform: translateY(-6px); box-shadow: 0 40px 80px rgba(0, 0, 0, .6); }
+  .pf-show__win.cat-cover__win { position: relative; inset: auto; }
+  .pf-show__dash {
+    position: absolute; right: -4%; bottom: 6%; width: 42%; aspect-ratio: 16 / 11; z-index: 4;
+    transition: transform .35s cubic-bezier(.2, .7, .2, 1);
+  }
+  .pf-show__dash.cat-cover__win { position: absolute; }
+  .pf-show:hover .pf-show__dash, .pf-show:focus-visible .pf-show__dash { transform: translateY(-10px); }
+  .pf-show__badge {
+    position: absolute; right: clamp(14px, 2vw, 26px); top: clamp(14px, 2vw, 26px); z-index: 6;
+    font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--ink);
+    background: rgba(9, 18, 38, .82); border: 1px solid var(--line-strong); border-radius: 999px; padding: 7px 13px;
+  }
+
+  .pf-show__index { font-size: 12px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--cta-soft); }
+  .pf-show__name { display: flex; align-items: center; gap: 14px; margin-top: 14px; }
+  .pf-show__logo { width: 44px; height: 44px; border-radius: 12px; flex: none; object-fit: contain; background: rgba(180, 192, 216, .07); border: 1px solid var(--line); padding: 5px; }
+  .pf-show__name h3 { font-family: var(--font-display); font-weight: 800; letter-spacing: -.03em; line-height: 1; font-size: clamp(1.875rem, 2.6vw, 2.5rem); }
+  .pf-show__pitch { margin-top: 14px; font-size: clamp(17px, 1.3vw, 19px); line-height: 1.45; color: var(--ink); max-width: 30ch; }
+  .pf-show__feats { margin-top: 8px; font-size: 14.5px; color: var(--ink-dim); line-height: 1.5; }
+  .pf-show__foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--line); max-width: 420px; }
+  .pf-show__price { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.75rem, 2.2vw, 2.25rem); letter-spacing: -.03em; line-height: 1; }
+  .pf-show__price small { font-family: var(--font-sans); font-size: 13.5px; font-weight: 500; color: var(--ink-2); letter-spacing: 0; margin-left: 7px; }
+  .pf-show__go {
+    display: inline-flex; align-items: center; gap: 9px; border-radius: 999px;
+    border: 1px solid var(--line-strong); color: var(--ink); font-size: 15px; font-weight: 700; padding: 12px 24px;
+    transition: background .22s, border-color .22s, color .22s;
+  }
+  .pf-show:hover .pf-show__go, .pf-show:focus-visible .pf-show__go { background: var(--cta); border-color: var(--cta); color: #fff; }
+
+  /* ---------- SERVICES: image-led tiles ---------- */
+  .pf-tiles { margin-top: clamp(40px, 5vw, 64px); display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(14px, 1.6vw, 22px); }
+  .pf-tile {
+    position: relative; display: block; width: 100%; aspect-ratio: 4 / 5; overflow: hidden; border-radius: 20px;
+    cursor: pointer; text-align: left; appearance: none; color: inherit; font: inherit; background: var(--surface-raised);
+  }
+  .pf-tile img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .5s cubic-bezier(.2, .7, .2, 1); }
+  .pf-tile:hover img, .pf-tile:focus-visible img { transform: scale(1.05); }
+  .pf-tile__scrim {
+    position: absolute; inset: 0; transition: background .3s;
+    background: linear-gradient(180deg, rgba(9, 18, 38, .05) 34%, rgba(7, 13, 28, .78) 76%, rgba(6, 11, 24, .94) 100%);
+  }
+  .pf-tile:hover .pf-tile__scrim, .pf-tile:focus-visible .pf-tile__scrim {
+    background: linear-gradient(180deg, rgba(9, 18, 38, .30) 14%, rgba(7, 13, 28, .88) 62%, rgba(6, 11, 24, .97) 100%);
+  }
+  .pf-tile__body { position: absolute; left: 0; right: 0; bottom: 0; padding: 20px 20px 22px; }
+  .pf-tile__cat { font-size: 10.5px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--cta-soft); }
+  .pf-tile__title { font-family: var(--font-display); font-weight: 700; font-size: 20px; line-height: 1.15; letter-spacing: -.02em; margin-top: 8px; }
+  .pf-tile__reveal {
+    max-height: 0; opacity: 0; overflow: hidden;
+    transition: max-height .35s cubic-bezier(.2, .7, .2, 1), opacity .3s, margin-top .35s;
+  }
+  .pf-tile:hover .pf-tile__reveal, .pf-tile:focus-visible .pf-tile__reveal { max-height: 140px; opacity: 1; margin-top: 10px; }
+  .pf-tile__desc { font-size: 13.5px; line-height: 1.45; color: var(--ink-2); }
+  .pf-tile__go { display: inline-block; margin-top: 10px; font-size: 13.5px; font-weight: 700; color: var(--cta-soft); }
+
+  /* ---------- FINAL CTA (reused from v2, larger) ---------- */
+  .prt-final { padding: clamp(72px, 11vw, 150px) 0 clamp(48px, 6vw, 88px); }
+  .prt-final__box {
+    position: relative; overflow: hidden; border-radius: 30px; border: 1px solid var(--line); background: var(--surface-card);
+    padding: clamp(36px, 6vw, 88px) clamp(24px, 5vw, 72px); text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 30px;
+  }
+  .prt-final__box::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(60% 90% at 50% 120%, rgba(81, 115, 214, .30), transparent 70%);
+  }
+  .prt-final h2 { position: relative; font-family: var(--font-display); font-weight: 800; letter-spacing: -.035em; line-height: .96; font-size: clamp(2.25rem, 5.4vw, 4.25rem); margin-top: 18px; max-width: 16ch; }
+  .prt-final__actions { position: relative; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .prt-foot { border-top: 1px solid var(--line); padding: 24px 0 34px; font-size: 13px; color: var(--ink-dim); }
+
+  /* ---------- RESPONSIVE ---------- */
+  @media (max-width: 1080px) {
+    .pf-tiles { grid-template-columns: repeat(2, 1fr); }
+    .pf-tile__reveal { max-height: none; opacity: 1; overflow: visible; margin-top: 10px; }
+    .pf-tile__desc { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .pf-tile__go { display: none; }
+  }
+  @media (max-width: 900px) {
+    .pf-show { grid-template-columns: 1fr; gap: 20px; border-radius: 24px; }
+    .pf-show__text { padding: 4px 8px 12px; }
+    .pf-show__panel { border-radius: 16px; }
+    .pf-show--flip .pf-show__media { order: 0; }
+    .pf-show__pitch { max-width: none; }
+    .pf-trust__row { grid-template-columns: 1fr; }
+    .pf-trust__item { border-left: 0; padding: 20px 0; border-top: 1px solid var(--line); }
+    .pf-trust__item:first-child { border-top: 0; padding-top: 0; }
+    .pf-stage { height: clamp(260px, 52vw, 380px); }
+    .pf-stage__front { width: 72%; margin-left: -36%; }
+    .pf-stage__side { width: 34%; top: 14%; height: 58%; }
+    .pf-stage__side--l { left: -8%; }
+    .pf-stage__side--r { right: -8%; }
+  }
+  @media (max-width: 700px) {
+    .prt-nav__links a:not(.prt-nav__phone) { display: none; }
+    .pf-hero__actions { gap: 14px 20px; }
+    .pf-show__dash { width: 46%; right: -2%; }
+  }
+  @media (max-width: 420px) {
+    .pf-tiles { grid-template-columns: 1fr; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pf-stage .cat-cover__win { animation: none; }
+    .pf-reel__track { animation: none; }
+    .pf-show__win, .pf-show__dash, .pf-tile img, .pf-tile__reveal { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="pf-root">
+
+<!-- ============ NAV (page-only stand-in) ============ -->
+<div class="prt-navwrap">
+  <nav class="prt-nav">
+    <span class="prt-nav__logo">Skale Club</span>
+    <div class="prt-nav__links">
+      <a href="#apps" class="here">Portfolio</a>
+      <a class="prt-nav__phone" href="tel:+15085001095">(508) 500-1095</a>
+    </div>
+  </nav>
+</div>
+
+<main>
+  <!-- ============ HERO ============ -->
+  <section class="pf-hero">
+    <div class="pf-hero__copy wrap">
+      <div class="eyebrow">Our Solutions</div>
+      <h1>Apps and Services Built to Scale Your Business</h1>
+      <p class="pf-hero__sub">Six ready-made apps with a fixed price, and eight services quoted for your business.</p>
+      <div class="pf-hero__actions">
+        <a class="btn-cta" href="#cta">Book a Strategy Session <span aria-hidden="true">&rarr;</span></a>
+      </div>
+    </div>
+
+    <!-- reel: all six apps, same size, same weight. The track is duplicated for a seamless loop. -->
+    <div class="pf-reel" aria-hidden="true">
+      <div class="pf-reel__track">
+        <div class="cat-cover__win pf-reel__win">
+          <div class="cat-cover__bar"><i></i><i></i><i></i><span>xareable.com</span></div>
+          <img src="../../client/public/product-assets/catalog-2026-09/xareable-home.webp" alt="">
+        </div>
+        <div class="cat-cover__win pf-reel__win">
+          <div class="cat-cover__bar"><i></i><i></i><i></i><span>skale.club</span></div>
+          <img src="../../client/public/product-assets/catalog-2026-09/websites-home.webp" alt="">
+        </div>
+        <div class="cat-cover__win pf-reel__win">
+          <div class="cat-cover__bar"><i></i><i></i><i></i><span>xkedule.com</span></div>
+          <img src="../../client/public/product-assets/catalog-2026-09/scheduling-system-home.webp" alt="">
+        </div>
+        <div class="cat-cover__win pf-reel__win">
+          <div class="cat-cover__bar"><i></i><i></i><i></i><span>xmartmenu.skale.club</span></div>
+          <img src="../../client/public/product-assets/catalog-2026-09/smart-menu-home.webp" alt="">
+        </div>
+        <div class="cat-cover__win pf-reel__win">
+          <div class="cat-cover__bar"><i></i><i></i><i></i><span>xphere.app</span></div>
+          <img src="../../client/public/product-assets/catalog-2026-09/crm-setup-home.webp" alt="">
+        </div>
+        <div class="cat-cover__win pf-reel__win">
+          <div class="cat-cover__bar"><i></i><i></i><i></i><span>xtimator.com</span></div>
+          <img src="../../client/public/product-assets/catalog-2026-09/xtimator-home.webp" alt="">
+        </div>
+        <div class="cat-cover__win pf-reel__win">
+          <div class="cat-cover__bar"><i></i><i></i><i></i><span>xareable.com</span></div>
+          <img src="../../client/public/product-assets/catalog-2026-09/xareable-home.webp" alt="">
+        </div>
+        <div class="cat-cover__win pf-reel__win">
+          <div class="cat-cover__bar"><i></i><i></i><i></i><span>skale.club</span></div>
+          <img src="../../client/public/product-assets/catalog-2026-09/websites-home.webp" alt="">
+        </div>
+        <div class="cat-cover__win pf-reel__win">
+          <div class="cat-cover__bar"><i></i><i></i><i></i><span>xkedule.com</span></div>
+          <img src="../../client/public/product-assets/catalog-2026-09/scheduling-system-home.webp" alt="">
+        </div>
+        <div class="cat-cover__win pf-reel__win">
+          <div class="cat-cover__bar"><i></i><i></i><i></i><span>xmartmenu.skale.club</span></div>
+          <img src="../../client/public/product-assets/catalog-2026-09/smart-menu-home.webp" alt="">
+        </div>
+        <div class="cat-cover__win pf-reel__win">
+          <div class="cat-cover__bar"><i></i><i></i><i></i><span>xphere.app</span></div>
+          <img src="../../client/public/product-assets/catalog-2026-09/crm-setup-home.webp" alt="">
+        </div>
+        <div class="cat-cover__win pf-reel__win">
+          <div class="cat-cover__bar"><i></i><i></i><i></i><span>xtimator.com</span></div>
+          <img src="../../client/public/product-assets/catalog-2026-09/xtimator-home.webp" alt="">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TRUST LINE ============ -->
+  <div class="pf-trust">
+    <div class="wrap pf-trust__row">
+      <div class="pf-trust__item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="13,2 4,14 10,14 9,22 20,9 13,9"></polygon></svg>
+        <div>
+          <div class="pf-trust__title">Fast Implementation</div>
+          <div class="pf-trust__desc">Solutions deployed in weeks, not months.</div>
+        </div>
+      </div>
+      <div class="pf-trust__item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5.2 3.4 9.4 8 11 4.6-1.6 8-5.8 8-11V5z"></path><path d="M8.5 12l2.3 2.3L16 9.5"></path></svg>
+        <div>
+          <div class="pf-trust__title">Enterprise Security</div>
+          <div class="pf-trust__desc">Bank-level security standards.</div>
+        </div>
+      </div>
+      <div class="pf-trust__item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,17 9,11 13,15 21,7"></polyline><polyline points="15,7 21,7 21,13"></polyline></svg>
+        <div>
+          <div class="pf-trust__title">Proven Results</div>
+          <div class="pf-trust__desc">50+ successful implementations.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ APPS ============ -->
+  <section class="pf-section" id="apps">
+    <div class="wrap">
+      <div class="pf-head">
+        <div class="eyebrow">01 &middot; Apps</div>
+        <h2>Software ready to use</h2>
+        <p>Our own products, live today, with a fixed price. Subscribe and start.</p>
+      </div>
+
+      <div class="pf-shows">
+
+        <!-- 01 Xareable -->
+        <button class="pf-show" type="button">
+          <span class="pf-show__media">
+            <span class="pf-show__panel">
+              <span class="pf-show__badge">AI Powered</span>
+              <span class="cat-cover__win pf-show__win">
+                <span class="cat-cover__bar"><i></i><i></i><i></i><span>xareable.com</span></span>
+                <img src="../../client/public/product-assets/catalog-2026-09/xareable-home.webp" alt="Xareable home page">
+              </span>
+            </span>
+          </span>
+          <span class="pf-show__text">
+            <span class="pf-show__index">AI &amp; Automation</span>
+            <span class="pf-show__name">
+              <img class="pf-show__logo" src="../../client/public/product-assets/catalog-2026-09/xareable-logo.webp" alt="Xareable logo">
+              <h3>Xareable</h3>
+            </span>
+            <span class="pf-show__pitch">Social Media AI Creator</span>
+            <span class="pf-show__feats">AI Content &middot; Multi-Platform &middot; Analytics</span>
+            <span class="pf-show__foot">
+              <span class="pf-show__price">$49<small>/month</small></span>
+              <span class="pf-show__go">See details <span aria-hidden="true">&rarr;</span></span>
+            </span>
+          </span>
+        </button>
+
+        <!-- 02 Xsites -->
+        <button class="pf-show pf-show--flip" type="button">
+          <span class="pf-show__media">
+            <span class="pf-show__panel">
+              <span class="pf-show__badge">Popular</span>
+              <span class="cat-cover__win pf-show__win">
+                <span class="cat-cover__bar"><i></i><i></i><i></i><span>skale.club</span></span>
+                <img src="../../client/public/product-assets/catalog-2026-09/websites-home.webp" alt="Xsites website home page">
+              </span>
+              <span class="cat-cover__win pf-show__dash">
+                <span class="cat-cover__bar"><i></i><i></i><i></i><span>dashboard</span></span>
+                <img src="../../client/public/product-assets/catalog-2026-09/websites-dashboard.webp" alt="Xsites dashboard">
+              </span>
+            </span>
+          </span>
+          <span class="pf-show__text">
+            <span class="pf-show__index">Websites</span>
+            <span class="pf-show__name">
+              <img class="pf-show__logo" src="../../client/public/product-assets/catalog-2026-09/websites-logo.png" alt="Xsites logo">
+              <h3>Xsites</h3>
+            </span>
+            <span class="pf-show__pitch">Basic &amp; Custom Solutions</span>
+            <span class="pf-show__feats">Responsive &middot; SEO Optimized &middot; Fast Loading</span>
+            <span class="pf-show__foot">
+              <span class="pf-show__price">$299<small>starting</small></span>
+              <span class="pf-show__go">See details <span aria-hidden="true">&rarr;</span></span>
+            </span>
+          </span>
+        </button>
+
+        <!-- 03 Xkedule -->
+        <button class="pf-show" type="button">
+          <span class="pf-show__media">
+            <span class="pf-show__panel">
+              <span class="cat-cover__win pf-show__win">
+                <span class="cat-cover__bar"><i></i><i></i><i></i><span>xkedule.com</span></span>
+                <img src="../../client/public/product-assets/catalog-2026-09/scheduling-system-home.webp" alt="Xkedule home page">
+              </span>
+              <span class="cat-cover__win pf-show__dash">
+                <span class="cat-cover__bar"><i></i><i></i><i></i><span>dashboard</span></span>
+                <img src="../../client/public/product-assets/catalog-2026-09/scheduling-system-dashboard.webp" alt="Xkedule booking dashboard">
+              </span>
+            </span>
+          </span>
+          <span class="pf-show__text">
+            <span class="pf-show__index">Systems &amp; Booking</span>
+            <span class="pf-show__name">
+              <img class="pf-show__logo" src="../../client/public/product-assets/catalog-2026-09/scheduling-system-logo.png" alt="Xkedule logo">
+              <h3>Xkedule</h3>
+            </span>
+            <span class="pf-show__pitch">Never Miss a Booking</span>
+            <span class="pf-show__feats">Calendar Sync &middot; Reminders &middot; Online Booking</span>
+            <span class="pf-show__foot">
+              <span class="pf-show__price">$89<small>/month</small></span>
+              <span class="pf-show__go">See details <span aria-hidden="true">&rarr;</span></span>
+            </span>
+          </span>
+        </button>
+
+        <!-- 04 XmartMenu -->
+        <button class="pf-show pf-show--flip" type="button">
+          <span class="pf-show__media">
+            <span class="pf-show__panel">
+              <span class="cat-cover__win pf-show__win">
+                <span class="cat-cover__bar"><i></i><i></i><i></i><span>xmartmenu.skale.club</span></span>
+                <img src="../../client/public/product-assets/catalog-2026-09/smart-menu-home.webp" alt="XmartMenu home page">
+              </span>
+              <span class="cat-cover__win pf-show__dash">
+                <span class="cat-cover__bar"><i></i><i></i><i></i><span>dashboard</span></span>
+                <img src="../../client/public/product-assets/catalog-2026-09/smart-menu-dashboard.webp" alt="XmartMenu dashboard">
+              </span>
+            </span>
+          </span>
+          <span class="pf-show__text">
+            <span class="pf-show__index">Systems &amp; Booking</span>
+            <span class="pf-show__name">
+              <img class="pf-show__logo" src="../../client/public/product-assets/catalog-2026-09/smart-menu-logo.webp" alt="XmartMenu logo">
+              <h3>XmartMenu</h3>
+            </span>
+            <span class="pf-show__pitch">A smarter ordering experience</span>
+            <span class="pf-show__feats">QR code access &middot; iPad menu &middot; AI assistant</span>
+            <span class="pf-show__foot">
+              <span class="pf-show__price">$29<small>/month</small></span>
+              <span class="pf-show__go">See details <span aria-hidden="true">&rarr;</span></span>
+            </span>
+          </span>
+        </button>
+
+        <!-- 05 Xphere -->
+        <button class="pf-show" type="button">
+          <span class="pf-show__media">
+            <span class="pf-show__panel">
+              <span class="pf-show__badge">Recommended</span>
+              <span class="cat-cover__win pf-show__win">
+                <span class="cat-cover__bar"><i></i><i></i><i></i><span>xphere.app</span></span>
+                <img src="../../client/public/product-assets/catalog-2026-09/crm-setup-home.webp" alt="Xphere home page">
+              </span>
+            </span>
+          </span>
+          <span class="pf-show__text">
+            <span class="pf-show__index">CRM &amp; Sales</span>
+            <span class="pf-show__name">
+              <img class="pf-show__logo" src="../../client/public/product-assets/catalog-2026-09/crm-setup-logo.svg" alt="Xphere logo">
+              <h3>Xphere</h3>
+            </span>
+            <span class="pf-show__pitch">Your CRM and sales pipeline, set up for you</span>
+            <span class="pf-show__feats">CRM Setup &middot; Pipelines &middot; Reporting</span>
+            <span class="pf-show__foot">
+              <span class="pf-show__price">$597<small>one-time</small></span>
+              <span class="pf-show__go">See details <span aria-hidden="true">&rarr;</span></span>
+            </span>
+          </span>
+        </button>
+
+        <!-- 06 Xtimator -->
+        <button class="pf-show pf-show--flip" type="button">
+          <span class="pf-show__media">
+            <span class="pf-show__panel">
+              <span class="cat-cover__win pf-show__win">
+                <span class="cat-cover__bar"><i></i><i></i><i></i><span>xtimator.com</span></span>
+                <img src="../../client/public/product-assets/catalog-2026-09/xtimator-home.webp" alt="Xtimator home page">
+              </span>
+              <span class="cat-cover__win pf-show__dash">
+                <span class="cat-cover__bar"><i></i><i></i><i></i><span>dashboard</span></span>
+                <img src="../../client/public/product-assets/catalog-2026-09/xtimator-dashboard.webp" alt="Xtimator estimates dashboard">
+              </span>
+            </span>
+          </span>
+          <span class="pf-show__text">
+            <span class="pf-show__index">Systems &amp; Booking</span>
+            <span class="pf-show__name">
+              <img class="pf-show__logo" src="../../client/public/product-assets/catalog-2026-09/xtimator-logo.png" alt="Xtimator logo">
+              <h3>Xtimator</h3>
+            </span>
+            <span class="pf-show__pitch">Generate estimates in seconds</span>
+            <span class="pf-show__feats">Fast estimates</span>
+            <span class="pf-show__foot">
+              <span class="pf-show__price">$49<small>/month</small></span>
+              <span class="pf-show__go">See details <span aria-hidden="true">&rarr;</span></span>
+            </span>
+          </span>
+        </button>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SERVICES ============ -->
+  <section class="pf-section" id="services">
+    <div class="wrap">
+      <div class="pf-head">
+        <div class="eyebrow">02 &middot; Services</div>
+        <h2>Built by us, for your business</h2>
+        <p>Tailored marketing and technology work, always on a custom quote.</p>
+      </div>
+
+      <div class="pf-tiles">
+
+        <button class="pf-tile" type="button">
+          <img src="../../client/public/service-images/editorial-2026-09/digital-marketing-consultation.webp" alt="Digital Marketing Consultation artwork">
+          <span class="pf-tile__scrim"></span>
+          <span class="pf-tile__body">
+            <span class="pf-tile__cat">Marketing</span>
+            <span class="pf-tile__title">Digital Marketing Consultation</span>
+            <span class="pf-tile__reveal">
+              <span class="pf-tile__desc">One-on-one sessions that map out where your marketing budget should actually go.</span>
+              <span class="pf-tile__go">See details &rarr;</span>
+            </span>
+          </span>
+        </button>
+
+        <button class="pf-tile" type="button">
+          <img src="../../client/public/service-images/editorial-2026-09/website-design-development.webp" alt="Website Design and Development artwork">
+          <span class="pf-tile__scrim"></span>
+          <span class="pf-tile__body">
+            <span class="pf-tile__cat">Websites</span>
+            <span class="pf-tile__title">Website Design &amp; Development</span>
+            <span class="pf-tile__reveal">
+              <span class="pf-tile__desc">Sites, landing pages and stores designed, built and kept running by us.</span>
+              <span class="pf-tile__go">See details &rarr;</span>
+            </span>
+          </span>
+        </button>
+
+        <button class="pf-tile" type="button">
+          <img src="../../client/public/service-images/editorial-2026-09/paid-advertising.webp" alt="Paid Advertising artwork">
+          <span class="pf-tile__scrim"></span>
+          <span class="pf-tile__body">
+            <span class="pf-tile__cat">Marketing</span>
+            <span class="pf-tile__title">Paid Advertising</span>
+            <span class="pf-tile__reveal">
+              <span class="pf-tile__desc">Google, Meta and TikTok campaigns built, tracked and optimised every week.</span>
+              <span class="pf-tile__go">See details &rarr;</span>
+            </span>
+          </span>
+        </button>
+
+        <button class="pf-tile" type="button">
+          <img src="../../client/public/service-images/editorial-2026-09/content-creation.webp" alt="Content Creation artwork">
+          <span class="pf-tile__scrim"></span>
+          <span class="pf-tile__body">
+            <span class="pf-tile__cat">Marketing</span>
+            <span class="pf-tile__title">Content Creation</span>
+            <span class="pf-tile__reveal">
+              <span class="pf-tile__desc">Photo, video, copy and ad creative produced on a steady monthly rhythm.</span>
+              <span class="pf-tile__go">See details &rarr;</span>
+            </span>
+          </span>
+        </button>
+
+        <button class="pf-tile" type="button">
+          <img src="../../client/public/service-images/editorial-2026-09/branding-graphic-design.webp" alt="Branding and Graphic Design artwork">
+          <span class="pf-tile__scrim"></span>
+          <span class="pf-tile__body">
+            <span class="pf-tile__cat">Branding</span>
+            <span class="pf-tile__title">Branding &amp; Graphic Design</span>
+            <span class="pf-tile__reveal">
+              <span class="pf-tile__desc">Logo, identity and every template your team needs to stay on brand.</span>
+              <span class="pf-tile__go">See details &rarr;</span>
+            </span>
+          </span>
+        </button>
+
+        <button class="pf-tile" type="button">
+          <img src="../../client/public/service-images/editorial-2026-09/lead-generation.webp" alt="Lead Generation artwork">
+          <span class="pf-tile__scrim"></span>
+          <span class="pf-tile__body">
+            <span class="pf-tile__cat">CRM &amp; Sales</span>
+            <span class="pf-tile__title">Lead Generation</span>
+            <span class="pf-tile__reveal">
+              <span class="pf-tile__desc">Funnels, forms and prospecting that put qualified conversations on your calendar.</span>
+              <span class="pf-tile__go">See details &rarr;</span>
+            </span>
+          </span>
+        </button>
+
+        <button class="pf-tile" type="button">
+          <img src="../../client/public/service-images/editorial-2026-09/crm-marketing-automation.webp" alt="CRM and Marketing Automation artwork">
+          <span class="pf-tile__scrim"></span>
+          <span class="pf-tile__body">
+            <span class="pf-tile__cat">CRM &amp; Sales</span>
+            <span class="pf-tile__title">CRM and Marketing Automation</span>
+            <span class="pf-tile__reveal">
+              <span class="pf-tile__desc">Pipelines and automated follow-ups so no lead goes quiet by accident.</span>
+              <span class="pf-tile__go">See details &rarr;</span>
+            </span>
+          </span>
+        </button>
+
+        <button class="pf-tile" type="button">
+          <img src="../../client/public/service-images/editorial-2026-09/3d-printing.webp" alt="3D Printing artwork">
+          <span class="pf-tile__scrim"></span>
+          <span class="pf-tile__body">
+            <span class="pf-tile__cat">Branding</span>
+            <span class="pf-tile__title">3D Printing</span>
+            <span class="pf-tile__reveal">
+              <span class="pf-tile__desc">Prototypes, product mockups and physical branding pieces printed on demand.</span>
+              <span class="pf-tile__go">See details &rarr;</span>
+            </span>
+          </span>
+        </button>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FINAL CTA (from v2) ============ -->
+  <section class="prt-final" id="cta">
+    <div class="wrap">
+      <div class="prt-final__box">
+        <div>
+          <div class="eyebrow">Next step</div>
+          <h2>Ready to Redefine Your Potential?</h2>
+        </div>
+        <div class="prt-final__actions">
+          <a class="btn-cta" href="#">Book a Strategy Session <span aria-hidden="true">&rarr;</span></a>
+          <a class="link2" href="#">or talk on WhatsApp &nearr;</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="prt-foot"><div class="wrap">&copy; 2026 Skale Club</div></footer>
+</main>
+</div>
+</body>
+</html>

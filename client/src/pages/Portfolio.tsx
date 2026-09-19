@@ -1,36 +1,45 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings, PortfolioService } from "@shared/schema";
-import { catalogProducts, catalogServices, type CatalogItem } from "@shared/catalog";
+import { CATALOG_CATEGORY_LABEL, catalogProducts, catalogServices, siteDomain, type CatalogItem } from "@shared/catalog";
 import { usePageSeo } from "@/hooks/use-seo";
 import { useTranslation } from "@/hooks/useTranslation";
 import { trackCTAClick } from "@/lib/analytics";
 import { LeadFormModal } from "@/components/LeadFormModal";
 import { SectionHeading } from "@/components/layout/SectionHeading";
-import { CatalogCard } from "@/components/catalog/CatalogCard";
+import { Cover } from "@/components/catalog/Cover";
 import { CatalogDetail } from "@/components/catalog/CatalogDetail";
+import { badgeIconMap } from "@/components/home/TrustBadges";
 import { Loader2 } from "@/components/ui/loader";
+import { getImageUrl } from "@/components/admin/shared/utils";
+import "./portfolio.css";
 
 type ListKey = "apps" | "services";
 
-/** Splits "Stop Doing Repetitive Work. Automate It." so the last sentence can
- *  carry the accent. A one-sentence title is returned whole. */
-function splitLastSentence(title: string): [string, string] {
-  const at = title.trim().lastIndexOf(". ");
-  return at < 0 ? [title, ""] : [title.slice(0, at + 1), title.slice(at + 2)];
+/** The browser-window frame shared by the hero reel and the app showcase rows. */
+function PfWindow({
+  label,
+  src,
+  alt,
+  loading = "lazy",
+  className = "",
+}: {
+  label?: string;
+  src: string;
+  alt: string;
+  loading?: "eager" | "lazy";
+  className?: string;
+}) {
+  return (
+    <span className={`pf-win ${className}`}>
+      <span className="pf-win__bar" aria-hidden="true">
+        <i /><i /><i />
+        {label && <span>{label}</span>}
+      </span>
+      <img src={src} alt={alt} loading={loading} decoding="async" />
+    </span>
+  );
 }
-
-/** The lowest monthly plan, for the proof band: "$29" + "/month". */
-function entryPlan(apps: CatalogItem[]) {
-  const monthly = apps
-    .filter((a) => a.price && /mo/i.test(a.price.label ?? ""))
-    .map((a) => ({ item: a, n: Number.parseFloat(a.price!.value.replace(/[^0-9.]/g, "")) }))
-    .filter((x) => Number.isFinite(x.n))
-    .sort((a, b) => a.n - b.n);
-  return monthly[0]?.item;
-}
-
-const pad = (n: number) => String(n).padStart(2, "0");
 
 export default function Portfolio() {
   const { t } = useTranslation();
@@ -47,6 +56,7 @@ export default function Portfolio() {
   const apps = useMemo(() => catalogProducts(portfolioServices), [portfolioServices]);
   const services = useMemo(() => catalogServices(content?.ourServicesSection?.cards), [content?.ourServicesSection?.cards]);
   const lists: Record<ListKey, CatalogItem[]> = { apps, services };
+  const trustBadges = content?.trustBadges ?? [];
 
   const [open, setOpen] = useState<{ list: ListKey; index: number } | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -72,83 +82,25 @@ export default function Portfolio() {
 
   const hero = content?.portfolioHero;
   const cta = content?.portfolioCtaSection;
-  const [heroLead, heroAccent] = splitLastSentence(t(hero?.title || "Stop Doing Repetitive Work. Automate It."));
+  const heroTitle = t(hero?.title || "Stop Doing Repetitive Work. Automate It.");
   const buttonText = t(hero?.buttonText || "Book a Strategy Session");
-  const entry = entryPlan(apps);
   const whatsapp = companySettings?.companyPhone?.replace(/\D/g, "");
 
-  const proof = [
-    apps.length > 0 && { value: pad(apps.length), label: t("ready-made apps in production") },
-    services.length > 0 && { value: pad(services.length), label: t("marketing and technology services") },
-    entry?.price && {
-      value: entry.price.value,
-      unit: entry.price.label ? t(entry.price.label) : undefined,
-      label: `${t("entry plan")} (${entry.title})`,
-    },
-  ].filter(Boolean) as { value: string; unit?: string; label: string }[];
-
-  const grid = (list: ListKey) => {
-    const items = lists[list];
-    // An odd last item in a 3-column grid spans the line instead of sitting
-    // alone and centred (it stays a tile when that would not happen).
-    const rowLast = items.length % 3 === 1 && items.length % 2 === 1 && items.length > 1;
-    return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-        {items.map((item, i) => {
-          const isRow = rowLast && i === items.length - 1;
-          return (
-            <CatalogCard
-              key={item.key}
-              item={item}
-              variant={isRow ? "row" : "tile"}
-              onOpen={openItem(list)}
-              className={`cat-rise ${isRow ? "md:col-span-2 lg:col-span-3" : ""}`}
-              style={{ animationDelay: `${Math.min(i, 6) * 0.05}s` }}
-            />
-          );
-        })}
-      </div>
-    );
-  };
-
-  const sectionHead = (eyebrow: string, title: string, subtitle: string, count: number) => (
-    <div className="mb-8 lg:mb-12 flex items-end justify-between gap-6">
-      <SectionHeading eyebrow={eyebrow} title={title} subtitle={subtitle} size="display" />
-      <span
-        aria-hidden="true"
-        className="hidden md:block font-display font-extrabold leading-[0.8] tracking-[-0.04em] text-transparent text-[clamp(4rem,8vw,7.5rem)] [-webkit-text-stroke:1px_rgba(180,192,216,0.28)]"
-      >
-        {pad(count)}
-      </span>
-    </div>
-  );
+  const reelApps = apps.filter((a) => a.cover);
+  const reelItems = reelApps.length >= 3 ? [...reelApps, ...reelApps] : [];
 
   return (
-    <div className="bg-surface-dark text-white min-h-screen overflow-x-hidden">
-      {/* Hero: the house pattern, left-aligned, one CTA. Atmosphere is one
-          corner glow and an almost invisible line texture, nothing else. */}
-      <section className="relative page-top pb-12 sm:pb-16 lg:pb-20">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 -top-40 bottom-0 [mask-image:linear-gradient(180deg,#000_55%,transparent)]"
-          style={{
-            background:
-              "radial-gradient(40% 55% at 8% 0%, rgba(81,115,214,.16), transparent 70%), repeating-linear-gradient(0deg, transparent 0 31px, rgba(180,192,216,.035) 31px 32px)",
-          }}
-        />
-        <div className="container-custom container-page mx-auto relative">
-          <div className="inline-flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.18em] text-cta-soft">
+    <div className="pf-page text-white min-h-screen overflow-x-hidden">
+      {/* ============ HERO ============ */}
+      <section className="pf-hero page-top">
+        <div className="pf-hero__copy container-custom container-page mx-auto">
+          <div className="inline-flex items-center justify-center gap-3 text-xs font-semibold uppercase tracking-[0.18em] text-cta-soft">
             <span aria-hidden="true" className="h-[3px] w-7 rounded-full bg-cta" />
             {t(hero?.badge || "Our Solutions")}
           </div>
-          <h1 className="mt-5 max-w-[15ch] font-display font-extrabold leading-[0.93] tracking-[-0.035em] text-[clamp(2.75rem,7.4vw,6.5rem)]">
-            {heroLead}
-            {heroAccent && <> <span className="text-cta">{heroAccent}</span></>}
-          </h1>
-          <p className="mt-6 max-w-[46ch] text-lg sm:text-xl leading-relaxed text-[#B4C0D8]">
-            {t(hero?.subtitle || "Explore the tools and services we've built to help businesses grow.")}
-          </p>
-          <div className="mt-9 flex flex-wrap items-center gap-x-7 gap-y-4">
+          <h1 className="pf-hero__title">{heroTitle}</h1>
+          <p className="pf-hero__sub">{t(hero?.subtitle || "Explore the tools and services we've built to help businesses grow.")}</p>
+          <div className="pf-hero__actions">
             <button
               type="button"
               onClick={() => openForm("hero")}
@@ -156,76 +108,164 @@ export default function Portfolio() {
             >
               {buttonText} <span aria-hidden="true">→</span>
             </button>
-            {apps.length > 0 && (
-              <a href="#apps" className="font-medium text-[#B4C0D8] transition-colors hover:text-white">
-                {t("See the apps")} ↓
-              </a>
-            )}
           </div>
         </div>
+
+        {/* All apps with a cover, equal size, looped. Decorative — the same
+            apps are the real, keyboard-reachable buttons in the section below. */}
+        {reelItems.length > 0 && (
+          <div className="pf-reel" aria-hidden="true">
+            <div className="pf-reel__track">
+              {reelItems.map((item, i) => (
+                <PfWindow
+                  key={`${item.key}-${i}`}
+                  className="pf-reel__win"
+                  label={siteDomain(item.site) ?? siteDomain(item.links[0])}
+                  src={getImageUrl(item.cover, { width: 720, quality: 80 })}
+                  alt=""
+                  loading={i < 3 ? "eager" : "lazy"}
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
-      {/* Proof band: numerals from the catalog itself, one colour. */}
-      {proof.length > 0 && (
-        <div className="border-y border-white/10">
-          <div
-            className="container-custom container-page mx-auto grid"
-            style={{ gridTemplateColumns: `repeat(${proof.length}, minmax(0, 1fr))` }}
-          >
-            {proof.map((p, i) => (
-              <div key={p.label} className={`min-w-0 py-6 lg:py-7 ${i > 0 ? "pl-4 sm:pl-6 border-l border-white/10" : ""}`}>
-                {/* flex-wrap: on narrow columns (mobile, 3-up) the unit wraps
-                    onto its own line instead of overflowing the column and
-                    getting clipped by the page's overflow-x: clip. */}
-                <div className="flex flex-wrap items-baseline gap-x-1 font-display font-extrabold leading-none tracking-[-0.03em] text-[clamp(2.25rem,4.4vw,3.5rem)]">
-                  <span>{p.value}</span>
-                  {p.unit && <small className="text-[0.42em] font-semibold tracking-normal text-[#B4C0D8]">{p.unit}</small>}
+      {/* ============ TRUST LINE ============ */}
+      {trustBadges.length > 0 && (
+        <div className="pf-trust">
+          <div className="container-custom container-page mx-auto pf-trust__row">
+            {trustBadges.map((badge, i) => {
+              const Icon = badgeIconMap[(badge.icon || "").toLowerCase()] || badgeIconMap.star;
+              return (
+                <div key={i} className="pf-trust__item">
+                  <Icon aria-hidden="true" />
+                  <div>
+                    <div className="pf-trust__title">{t(badge.title)}</div>
+                    <div className="pf-trust__desc">{t(badge.description)}</div>
+                  </div>
                 </div>
-                <div className="mt-2 text-sm leading-snug text-[#7C8AA6]">{p.label}</div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
 
+      {/* ============ APPS ============ */}
       {apps.length > 0 && (
         <section id="apps" className="pt-16 sm:pt-24 lg:pt-28 scroll-mt-24">
           <div className="container-custom container-page mx-auto">
-            {sectionHead("01 · Apps", "Software ready to use", "Our own products, live today, with a fixed price. Subscribe and start.", apps.length)}
-            {grid("apps")}
+            <SectionHeading
+              eyebrow="01 · Apps"
+              title="Software ready to use"
+              subtitle="Our own products, live today, with a fixed price. Subscribe and start."
+              size="display"
+            />
+
+            <div className="pf-shows">
+              {apps.map((item, i) => {
+                const flipped = i % 2 === 1;
+                const domain = siteDomain(item.site) ?? siteDomain(item.links[0]);
+                const eyebrow = item.category ? t(CATALOG_CATEGORY_LABEL[item.category]) : undefined;
+                const features = item.features.slice(0, 3);
+                const dashboard = item.screens.find((s) => s.kind === "dashboard");
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    className={`pf-show ${flipped ? "pf-show--flip" : ""}`}
+                    onClick={() => openItem("apps")(item)}
+                  >
+                    <span className="pf-show__media">
+                      <span className="pf-show__panel">
+                        {item.badge && item.cover && <span className="pf-show__badge">{t(item.badge)}</span>}
+                        {item.cover ? (
+                          <PfWindow className="pf-show__win" label={domain} src={getImageUrl(item.cover, { width: 1200, quality: 80 })} alt={item.title} />
+                        ) : (
+                          <Cover item={item} className="pf-show__win" width={1200} />
+                        )}
+                        {item.cover && dashboard && (
+                          <PfWindow className="pf-show__dash" label={t("dashboard")} src={getImageUrl(dashboard.url, { width: 600, quality: 80 })} alt="" />
+                        )}
+                      </span>
+                    </span>
+                    <span className="pf-show__text">
+                      {eyebrow && <span className="pf-show__index">{eyebrow}</span>}
+                      <span className="pf-show__name">
+                        {item.logo && <img className="pf-show__logo" src={getImageUrl(item.logo, { width: 96, quality: 90 })} alt="" />}
+                        <h3>{item.title}</h3>
+                      </span>
+                      {item.subtitle && <span className="pf-show__pitch">{t(item.subtitle)}</span>}
+                      {features.length > 0 && <span className="pf-show__feats">{features.map((f) => t(f)).join(" · ")}</span>}
+                      <span className="pf-show__foot">
+                        {item.price ? (
+                          <span className="pf-show__price">{item.price.value}{item.price.label && <small>{t(item.price.label)}</small>}</span>
+                        ) : (
+                          <span className="pf-show__price pf-show__price--quote">{t("Custom quote")}</span>
+                        )}
+                        <span className="pf-show__go">{t("See details")} <span aria-hidden="true">→</span></span>
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </section>
       )}
 
+      {/* ============ SERVICES ============ */}
       {services.length > 0 && (
         <section id="services" className="pt-16 sm:pt-24 lg:pt-28 scroll-mt-24">
           <div className="container-custom container-page mx-auto">
-            {sectionHead("02 · Services", "Built by us, for your business", "Tailored marketing and technology, quoted for your case.", services.length)}
-            {grid("services")}
+            <SectionHeading
+              eyebrow="02 · Services"
+              title="Built by us, for your business"
+              subtitle="Tailored marketing and technology, quoted for your case."
+              size="display"
+            />
+
+            <div className="pf-tiles">
+              {services.map((item) => {
+                const eyebrow = item.category ? t(CATALOG_CATEGORY_LABEL[item.category]) : undefined;
+                const description = item.subtitle ?? item.description;
+                return (
+                  <button key={item.key} type="button" className="pf-tile" onClick={() => openItem("services")(item)}>
+                    {item.cover ? (
+                      <img src={getImageUrl(item.cover, { width: 720, quality: 80 })} alt="" loading="lazy" decoding="async" />
+                    ) : (
+                      <span className="pf-tile__word">{t(item.title)}</span>
+                    )}
+                    <span className="pf-tile__scrim" />
+                    <span className="pf-tile__body">
+                      {eyebrow && <span className="pf-tile__cat">{eyebrow}</span>}
+                      <span className="pf-tile__title">{t(item.title)}</span>
+                      <span className="pf-tile__reveal">
+                        {description && <span className="pf-tile__desc">{t(description)}</span>}
+                        <span className="pf-tile__go">{t("See details")} →</span>
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </section>
       )}
 
-      {/* Final CTA: one block, one button, WhatsApp as the secondary link. */}
-      <section className="py-16 sm:py-24 lg:py-28">
+      {/* ============ FINAL CTA ============ */}
+      <section className="pf-final" id="cta">
         <div className="container-custom container-page mx-auto">
-          <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-surface-card p-8 sm:p-12 lg:p-20 grid gap-8 lg:grid-cols-[1.3fr_auto] lg:items-end">
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0"
-              style={{ background: "radial-gradient(45% 80% at 100% 100%, rgba(81,115,214,.22), transparent 70%)" }}
-            />
-            <div className="relative">
-              <div className="inline-flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.18em] text-cta-soft">
+          <div className="pf-final__box">
+            <div>
+              <div className="inline-flex items-center justify-center gap-3 text-xs font-semibold uppercase tracking-[0.18em] text-cta-soft">
                 <span aria-hidden="true" className="h-[3px] w-7 rounded-full bg-cta" />
                 {t("Next step")}
               </div>
-              <h2 className="mt-4 max-w-[14ch] font-display font-extrabold leading-[0.95] tracking-[-0.035em] text-[clamp(2.25rem,5.6vw,4.75rem)]">
-                {t(cta?.title || "Ready to Redefine Your Potential?")}
-              </h2>
-              {cta?.subtitle && <p className="mt-5 max-w-[46ch] text-lg text-[#B4C0D8]">{t(cta.subtitle)}</p>}
+              <h2 className="pf-final__title">{t(cta?.title || "Ready to Redefine Your Potential?")}</h2>
+              {cta?.subtitle && <p className="pf-final__sub">{t(cta.subtitle)}</p>}
             </div>
-            <div className="relative flex flex-col items-start gap-4">
+            <div className="pf-final__actions">
               <button
                 type="button"
                 onClick={() => openForm("footer")}

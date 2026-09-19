@@ -547,6 +547,8 @@ export const translations = {
     '01 · Apps': '01 · Apps', '02 · Services': '02 · Serviços',
     'Software ready to use': 'Software pronto para usar', 'Our own products, live today, with a fixed price. Subscribe and start.': 'Produtos nossos, já no ar, com preço fechado. Você assina e começa.',
     'Built by us, for your business': 'Feito por nós, para o seu negócio', 'Tailored marketing and technology, quoted for your case.': 'Marketing e tecnologia sob medida, com orçamento para o seu caso.',
+    // Catalog: /portfolio showroom redesign (v3, 2026-09)
+    'dashboard': 'painel',
   }
 } as const;
 export type TranslationKey = keyof typeof translations.pt;
