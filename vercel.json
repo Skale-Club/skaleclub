@@ -201,6 +201,10 @@
       "destination": "/api/index"
     },
     {
+      "source": "/([a-z0-9][a-z0-9-]*)/br",
+      "destination": "/api/index"
+    },
+    {
       "source": "/((?!assets/).*)",
       "destination": "/index.html"
     }

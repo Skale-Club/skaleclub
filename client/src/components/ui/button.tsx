@@ -21,6 +21,8 @@ const buttonVariants = cva(
         secondary: "border bg-secondary text-secondary-foreground border border-secondary-border ",
         // Add a transparent border so that when someone toggles a border on later, it doesn't shift layout/size.
         ghost: "border border-transparent",
+        // Public-site primary CTA: brand blue, pill-shaped, bold white text.
+        cta: "bg-cta text-white hover:bg-cta-hover border border-transparent rounded-full font-bold focus-visible:ring-2 focus-visible:ring-cta/40 focus-visible:ring-offset-2",
       },
       // Heights are set as "min" heights, because sometimes Ai will place large amount of content
       // inside buttons. With a min-height they will look appropriate with small amounts of content,
@@ -30,6 +32,8 @@ const buttonVariants = cva(
         sm: "min-h-8 rounded-md px-3 text-sm font-medium",
         lg: "min-h-10 rounded-md px-8",
         icon: "h-9 w-9",
+        // Marketing CTA sizing (pairs with variant="cta").
+        pill: "min-h-12 rounded-full px-8 py-3 text-base",
       },
     },
     defaultVariants: {

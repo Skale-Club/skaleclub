@@ -17,11 +17,12 @@ type TelegramSettings = {
   enabled: boolean;
   botToken: string;
   chatId: string;
+  chatIds: string[];
 };
 
 export function TelegramSection() {
   const { toast } = useToast();
-  const [settings, setSettings] = useState<TelegramSettings>({ enabled: false, botToken: '', chatId: '' });
+  const [settings, setSettings] = useState<TelegramSettings>({ enabled: false, botToken: '', chatId: '', chatIds: [] });
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<'idle' | 'success' | 'error'>('idle');
@@ -35,6 +36,9 @@ export function TelegramSection() {
         enabled: data.enabled,
         botToken: data.botToken || '',
         chatId: data.chatId || '',
+        // The server is the source of truth for the list; a legacy row that only
+        // has the single id still renders as one destination.
+        chatIds: data.chatIds?.length ? data.chatIds : (data.chatId ? [data.chatId] : []),
       });
     }
   }, [data]);
@@ -45,7 +49,7 @@ export function TelegramSection() {
       await apiRequest('PUT', '/api/integrations/telegram', {
         enabled: settings.enabled,
         botToken: settings.botToken !== MASKED_TOKEN ? settings.botToken : undefined,
-        chatId: settings.chatId,
+        chatIds: settings.chatIds,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/integrations/telegram'] });
       toast({ title: 'Telegram settings saved' });
@@ -66,7 +70,7 @@ export function TelegramSection() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           botToken: settings.botToken !== MASKED_TOKEN ? settings.botToken : undefined,
-          chatId: settings.chatId,
+          chatIds: settings.chatIds,
           enabled: settings.enabled,
         }),
         credentials: 'include',
@@ -88,7 +92,7 @@ export function TelegramSection() {
   };
 
   const hasToken = settings.botToken && settings.botToken !== '';
-  const hasChatId = settings.chatId && settings.chatId !== '';
+  const hasChatId = settings.chatIds.length > 0;
   const canSave = hasToken && hasChatId;
 
   return (
@@ -126,14 +130,21 @@ export function TelegramSection() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="telegram-chatid">Chat ID</Label>
+              <Label htmlFor="telegram-chatid">Chat IDs</Label>
               <Input
                 id="telegram-chatid"
-                placeholder="-1001234567890 or @channelname"
-                value={settings.chatId}
-                onChange={(e) => setSettings(s => ({ ...s, chatId: e.target.value }))}
+                placeholder="-1001234567890, 987654321, -1001234567890:42"
+                value={settings.chatIds.join(', ')}
+                onChange={(e) => setSettings(s => ({
+                  ...s,
+                  chatIds: e.target.value.split(',').map(id => id.trim()).filter(Boolean),
+                }))}
               />
-              <p className="text-xs text-muted-foreground">Use @userinfobot to find your chat ID</p>
+              <p className="text-xs text-muted-foreground">
+                One or more, comma-separated. A group or supergroup id works here — the bot
+                has to be a member of it. For a forum topic, append the thread:{' '}
+                <code>-1001234567890:42</code>. Use @userinfobot to find a chat ID.
+              </p>
             </div>
 
             {testResult !== 'idle' && testMessage && (

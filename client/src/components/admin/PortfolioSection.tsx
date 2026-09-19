@@ -218,7 +218,7 @@ export function PortfolioSection() {
                                 </Button>
                             </DialogTrigger>
                             <DialogContent
-                                className="max-w-3xl max-h-[90vh] overflow-hidden p-0 [&>button:last-child]:hidden"
+                                className="max-w-3xl xl:max-w-6xl max-h-[90vh] overflow-hidden p-0 [&>button:last-child]:hidden"
                                 onCloseAutoFocus={(e) => e.preventDefault()}
                             >
                                 <PortfolioServiceForm

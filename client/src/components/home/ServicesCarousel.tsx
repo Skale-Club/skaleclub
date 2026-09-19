@@ -44,6 +44,7 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused, dark
   const [isDragging, setIsDragging] = useState(false);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const isPausedRef = useRef(isPaused);
+  const interactionRef = useRef({ hovered: false, focused: false });
   const resumeTimerRef = useRef<number | null>(null);
   const dragStateRef = useRef<{ isDown: boolean; startX: number; startScroll: number }>({
     isDown: false,
@@ -58,7 +59,8 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused, dark
 
   useEffect(() => {
     if (isMobile) return;
-    isPausedRef.current = isPaused || (paused ?? false);
+    isPausedRef.current = isPaused || (paused ?? false)
+      || interactionRef.current.hovered || interactionRef.current.focused;
     if (paused && momentumFrameRef.current !== null) {
       cancelAnimationFrame(momentumFrameRef.current);
       momentumFrameRef.current = null;
@@ -220,6 +222,10 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused, dark
     };
 
     const handleStart = (e: PointerEvent | TouchEvent) => {
+      // Cards are <button>s, so a drag may start on one; pointer capture below
+      // retargets the trailing click to the track, so a drag never opens a card.
+      // Opt-out for inner controls that must keep their own gesture.
+      if ((e.target as Element | null)?.closest('[data-carousel-nodrag]')) return;
       if (momentumFrameRef.current) {
         cancelAnimationFrame(momentumFrameRef.current);
         momentumFrameRef.current = null;
@@ -366,12 +372,25 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused, dark
       : 'border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50'
   }`;
 
+  const setInteractionPause = (kind: 'hovered' | 'focused', active: boolean) => {
+    interactionRef.current[kind] = active;
+    isPausedRef.current = (paused ?? false)
+      || interactionRef.current.hovered || interactionRef.current.focused;
+    setIsPaused(active);
+  };
+
   return (
     <div
       className="relative w-screen left-1/2 -translate-x-1/2"
-      onMouseEnter={isMobile ? undefined : () => setIsPaused(true)}
-      onMouseLeave={isMobile ? undefined : () => setIsPaused(false)}
+      onMouseEnter={isMobile ? undefined : () => setInteractionPause('hovered', true)}
+      onMouseLeave={isMobile ? undefined : () => setInteractionPause('hovered', false)}
       aria-label={ariaLabel}
+      onFocusCapture={() => setInteractionPause('focused', true)}
+      onBlurCapture={event => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          setInteractionPause('focused', false);
+        }
+      }}
     >
       <div className="relative">
         <div

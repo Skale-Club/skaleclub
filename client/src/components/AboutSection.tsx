@@ -1,6 +1,7 @@
 import { User, CheckCircle } from "lucide-react";
 import type { HomepageContent } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
+import { SectionHeading } from "@/components/layout/SectionHeading";
 
 interface AboutSectionProps {
   content?: HomepageContent['aboutSection'] | null;
@@ -17,17 +18,13 @@ export function AboutSection({ content, aboutImageUrl }: AboutSectionProps) {
     <div className="container-custom mx-auto">
       <div className="grid grid-cols-1 tablet:grid-cols-2 gap-[2.55rem] items-center">
         <div className="order-2 tablet:order-1">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-blue-300 text-sm font-medium mb-[2.125rem]">
-            <User className="w-4 h-4" />
-            {t(sectionContent?.label || '')}
-          </div>
-          <h2 className="text-3xl md:text-5xl font-bold mb-[2.125rem] text-white">
-            {t(sectionContent?.heading || "")}
-          </h2>
-
-          <p className="text-slate-300 text-lg mb-[2.125rem] leading-relaxed">
-            {t(sectionContent?.description || '')}
-          </p>
+          <SectionHeading
+            eyebrow={sectionContent?.label}
+            icon={User}
+            title={sectionContent?.heading || ''}
+            subtitle={sectionContent?.description}
+            className="mb-[2.125rem]"
+          />
 
           {highlights.length > 0 && (
             <div className="space-y-[0.85rem] mb-[1.7rem]">

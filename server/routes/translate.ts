@@ -16,12 +16,30 @@ import { rateLimitMiddleware } from "../lib/rateLimit.js";
 // force unbounded AI provider calls (or an unbounded prompt) through this
 // endpoint. Cache hits still short-circuit before any AI call is made.
 const MAX_TEXTS_PER_REQUEST = 100;
+const MAX_TEXT_LENGTH = 5_000;
 const MAX_TOTAL_TEXT_LENGTH = 50_000;
 const AI_TRANSLATE_TIMEOUT_MS = 20_000;
 
+// The UI only ever ships English and Brazilian Portuguese
+// (client/src/context/LanguageContext.tsx → `Language`). Anything else would be
+// free text handed to the AI provider and cached under an arbitrary key.
+const SUPPORTED_LANGUAGES = ["en", "pt"] as const;
+const languageSchema = z.enum(SUPPORTED_LANGUAGES);
+const UNSUPPORTED_LANGUAGE_MESSAGE = `Unsupported language. Supported: ${SUPPORTED_LANGUAGES.join(", ")}.`;
+
+const translateRequestSchema = z.object({
+  texts: z.array(z.string()),
+  targetLanguage: languageSchema.default("pt"),
+  sourceLanguage: languageSchema.default("en"),
+});
+
 export function registerTranslateRoutes(app: Express) {
   app.get("/api/translations/preload", async (req, res) => {
-    const lang = (req.query.lang as string) || "pt";
+    const parsedLang = languageSchema.safeParse(req.query.lang || "pt");
+    if (!parsedLang.success) {
+      return res.status(400).json({ message: UNSUPPORTED_LANGUAGE_MESSAGE });
+    }
+    const lang = parsedLang.data;
     const cached = await db
       .select({ sourceText: translations.sourceText, translatedText: translations.translatedText })
       .from(translations)
@@ -41,17 +59,24 @@ export function registerTranslateRoutes(app: Express) {
     }),
     async (req, res) => {
       try {
-        const { texts, targetLanguage = "pt", sourceLanguage = "en" } = z
-          .object({
-            texts: z.array(z.string()),
-            targetLanguage: z.string().default("pt"),
-            sourceLanguage: z.string().default("en"),
-          })
-          .parse(req.body);
+        const parsedBody = translateRequestSchema.safeParse(req.body);
+        if (!parsedBody.success) {
+          return res.status(400).json({
+            message: "Invalid translation request.",
+            errors: parsedBody.error.errors,
+          });
+        }
+        const { texts, targetLanguage, sourceLanguage } = parsedBody.data;
 
         if (texts.length > MAX_TEXTS_PER_REQUEST) {
           return res.status(400).json({
             message: `Too many texts in one request (max ${MAX_TEXTS_PER_REQUEST}).`,
+          });
+        }
+
+        if (texts.some((text) => text.length > MAX_TEXT_LENGTH)) {
+          return res.status(400).json({
+            message: `Text too long (max ${MAX_TEXT_LENGTH} characters per string).`,
           });
         }
 
@@ -102,7 +127,7 @@ export function registerTranslateRoutes(app: Express) {
         }
 
         const sourceLangLabel = sourceLanguage === "pt" ? "Brazilian Portuguese (pt-BR)" : "English";
-        const targetLangLabel = targetLanguage === "pt" ? "Brazilian Portuguese (pt-BR)" : targetLanguage === "en" ? "English" : targetLanguage;
+        const targetLangLabel = targetLanguage === "pt" ? "Brazilian Portuguese (pt-BR)" : "English";
         // The source label is a hint, not a guarantee: English page copy has been sent
         // labelled as Portuguese, and the AI "translated" it into Portuguese.
         const prompt = `Translate the following texts from ${sourceLangLabel} to ${targetLangLabel}.

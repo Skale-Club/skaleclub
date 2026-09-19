@@ -3,6 +3,7 @@ import { z } from "zod";
 import OpenAI from "openai";
 import { storage } from "../storage.js";
 import { insertChatIntegrationsSchema } from "#shared/schema.js";
+import { parseTelegramTarget } from "#shared/blog-contract.js";
 import { getGeminiClient } from "../lib/gemini.js";
 import { getOpenRouterClient } from "../lib/openrouter.js";
 import {
@@ -25,7 +26,7 @@ import {
   queueXphereDeliverySweep,
 } from "../integrations/xphere.js";
 import type { XphereSettings } from "#shared/schema.js";
-import { requireAdmin, isAuthorizedCronRequest } from "./_shared.js";
+import { requireAdmin, sendError, isAuthorizedCronRequest } from "./_shared.js";
 import {
   getFormTranscriptionSettings,
   serializeTranscriptionModel,
@@ -165,7 +166,10 @@ const twilioSettingsSchema = z.object({
 
 const telegramSettingsSchema = z.object({
   botToken: z.string().trim().optional(),
+  // Legacy single destination. Still accepted so an older client keeps working;
+  // it is folded into chatIds below.
   chatId: z.string().trim().optional(),
+  chatIds: z.array(z.string().trim()).optional(),
   enabled: z.boolean().optional(),
 });
 
@@ -195,6 +199,25 @@ const XPHERE_MASK = '********';
 function sanitizeXphereMessage(err: unknown): string {
   const message = err instanceof Error ? err.message : String(err);
   return message.replace(/xph_[a-zA-Z0-9]+/g, '[REDACTED]').slice(0, 300);
+}
+
+/**
+ * Connection-test endpoints intentionally surface the upstream provider's
+ * message so an admin can act on it ("invalid api key", "quota exceeded").
+ * Keep only the first line and strip URLs, absolute paths and key-shaped
+ * tokens so a stack trace, internal hostname or credential can never ride along.
+ */
+function sanitizeUpstreamMessage(err: unknown, fallback: string): string {
+  const raw = err instanceof Error ? err.message : typeof err === 'string' ? err : '';
+  const firstLine = (raw.split('\n')[0] || '').trim();
+  if (!firstLine) return fallback;
+  const cleaned = firstLine
+    .replace(/https?:\/\/\S+/gi, '[url]')
+    .replace(/(?:\/[\w.@-]+){2,}\/?/g, '[path]')
+    .replace(/\b[A-Za-z]{2,6}[-_][A-Za-z0-9_-]{16,}\b/g, '[REDACTED]')
+    .slice(0, 200)
+    .trim();
+  return cleaned || fallback;
 }
 
 function toXphereResponse(s: XphereSettings | undefined) {
@@ -246,7 +269,8 @@ export function registerIntegrationRoutes(app: Express) {
         hasKey: !!(getRuntimeOpenAiKey() || process.env.OPENAI_API_KEY || integration?.apiKey),
       });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('[integrations] GET /api/integrations/openai failed', err);
+      res.status(500).json({ message: 'Failed to load OpenAI settings' });
     }
   });
 
@@ -279,7 +303,8 @@ export function registerIntegrationRoutes(app: Express) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: 'Validation error', errors: err.errors });
       }
-      res.status(500).json({ message: (err as Error).message });
+      console.error('[integrations] PUT /api/integrations/openai failed', err);
+      res.status(500).json({ message: 'Failed to save OpenAI settings' });
     }
   });
 
@@ -305,7 +330,8 @@ export function registerIntegrationRoutes(app: Express) {
           max_tokens: 5,
         });
       } catch (err: any) {
-        const message = err?.message || 'Failed to test OpenAI connection';
+        console.error('[integrations] OpenAI connection test failed', err);
+        const message = sanitizeUpstreamMessage(err, 'Failed to test OpenAI connection');
         const status = err?.status || err?.response?.status;
         return res.status(500).json({ success: false, message: status ? `OpenAI error (${status}): ${message}` : message });
       }
@@ -320,7 +346,8 @@ export function registerIntegrationRoutes(app: Express) {
 
       res.json({ success: true, message: 'Connection successful' });
     } catch (err: any) {
-      res.status(500).json({ success: false, message: err?.message || 'Failed to test OpenAI connection' });
+      console.error('[integrations] POST /api/integrations/openai/test failed', err);
+      res.status(500).json({ success: false, message: 'Failed to test OpenAI connection' });
     }
   });
 
@@ -340,7 +367,8 @@ export function registerIntegrationRoutes(app: Express) {
         hasKey: !!(getRuntimeGeminiKey() || process.env.GEMINI_API_KEY || integration?.apiKey),
       });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('[integrations] GET /api/integrations/gemini failed', err);
+      res.status(500).json({ message: 'Failed to load Gemini settings' });
     }
   });
 
@@ -383,7 +411,8 @@ export function registerIntegrationRoutes(app: Express) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: 'Validation error', errors: err.errors });
       }
-      res.status(500).json({ message: (err as Error).message });
+      console.error('[integrations] PUT /api/integrations/gemini failed', err);
+      res.status(500).json({ message: 'Failed to save Gemini settings' });
     }
   });
 
@@ -409,7 +438,8 @@ export function registerIntegrationRoutes(app: Express) {
           max_tokens: 5,
         });
       } catch (err: any) {
-        const message = err?.message || 'Failed to test Gemini connection';
+        console.error('[integrations] Gemini connection test failed', err);
+        const message = sanitizeUpstreamMessage(err, 'Failed to test Gemini connection');
         const status = err?.status || err?.response?.status;
         return res.status(500).json({ success: false, message: status ? `Gemini error (${status}): ${message}` : message });
       }
@@ -424,7 +454,8 @@ export function registerIntegrationRoutes(app: Express) {
 
       res.json({ success: true, message: 'Connection successful' });
     } catch (err: any) {
-      res.status(500).json({ success: false, message: err?.message || 'Failed to test Gemini connection' });
+      console.error('[integrations] POST /api/integrations/gemini/test failed', err);
+      res.status(500).json({ success: false, message: 'Failed to test Gemini connection' });
     }
   });
 
@@ -442,7 +473,8 @@ export function registerIntegrationRoutes(app: Express) {
         hasKey: !!(getRuntimeOpenRouterKey() || process.env.OPENROUTER_API_KEY || integration?.apiKey),
       });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('[integrations] GET /api/integrations/openrouter failed', err);
+      res.status(500).json({ message: 'Failed to load OpenRouter settings' });
     }
   });
 
@@ -483,7 +515,8 @@ export function registerIntegrationRoutes(app: Express) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: 'Validation error', errors: err.errors });
       }
-      res.status(500).json({ message: (err as Error).message });
+      console.error('[integrations] PUT /api/integrations/openrouter failed', err);
+      res.status(500).json({ message: 'Failed to save OpenRouter settings' });
     }
   });
 
@@ -509,7 +542,8 @@ export function registerIntegrationRoutes(app: Express) {
           max_tokens: 5,
         });
       } catch (err: any) {
-        const message = err?.message || 'Failed to test OpenRouter connection';
+        console.error('[integrations] OpenRouter connection test failed', err);
+        const message = sanitizeUpstreamMessage(err, 'Failed to test OpenRouter connection');
         const status = err?.status || err?.response?.status;
         return res.status(500).json({ success: false, message: status ? `OpenRouter error (${status}): ${message}` : message });
       }
@@ -524,7 +558,8 @@ export function registerIntegrationRoutes(app: Express) {
 
       res.json({ success: true, message: 'Connection successful' });
     } catch (err: any) {
-      res.status(500).json({ success: false, message: err?.message || 'Failed to test OpenRouter connection' });
+      console.error('[integrations] POST /api/integrations/openrouter/test failed', err);
+      res.status(500).json({ success: false, message: 'Failed to test OpenRouter connection' });
     }
   });
 
@@ -533,7 +568,8 @@ export function registerIntegrationRoutes(app: Express) {
       const models = await getOpenRouterModels();
       res.json({ models, count: models.length });
     } catch (err) {
-      res.json({ models: OPENROUTER_MODEL_FALLBACKS, count: OPENROUTER_MODEL_FALLBACKS.length, warning: (err as Error).message });
+      console.error('[integrations] GET /api/integrations/openrouter/models failed', err);
+      res.json({ models: OPENROUTER_MODEL_FALLBACKS, count: OPENROUTER_MODEL_FALLBACKS.length, warning: sanitizeUpstreamMessage(err, 'Failed to load OpenRouter models') });
     }
   });
 
@@ -551,7 +587,8 @@ export function registerIntegrationRoutes(app: Express) {
         hasKey: !!(getRuntimeGroqKey() || integration?.apiKey),
       });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('[integrations] GET /api/integrations/groq failed', err);
+      res.status(500).json({ message: 'Failed to load Groq settings' });
     }
   });
 
@@ -582,7 +619,8 @@ export function registerIntegrationRoutes(app: Express) {
 
       res.json({ ...updated, hasKey: !!keyToPersist, apiKey: undefined });
     } catch (err: any) {
-      res.status(500).json({ message: err?.message || 'Failed to save Groq settings' });
+      console.error('[integrations] PUT /api/integrations/groq failed', err);
+      res.status(500).json({ message: 'Failed to save Groq settings' });
     }
   });
 
@@ -606,7 +644,8 @@ export function registerIntegrationRoutes(app: Express) {
           max_tokens: 1,
         });
       } catch (err: any) {
-        const msg = err?.message || 'Failed to connect to Groq';
+        console.error('[integrations] Groq connection test failed', err);
+        const msg = sanitizeUpstreamMessage(err, 'Failed to connect to Groq');
         const status = err?.status || err?.response?.status;
         return res.status(500).json({ success: false, message: status ? `Groq error (${status}): ${msg}` : msg });
       }
@@ -621,7 +660,8 @@ export function registerIntegrationRoutes(app: Express) {
 
       res.json({ success: true, message: 'Connection successful' });
     } catch (err: any) {
-      res.status(500).json({ success: false, message: err?.message || 'Failed to test Groq connection' });
+      console.error('[integrations] POST /api/integrations/groq/test failed', err);
+      res.status(500).json({ success: false, message: 'Failed to test Groq connection' });
     }
   });
 
@@ -630,7 +670,8 @@ export function registerIntegrationRoutes(app: Express) {
       const settings = await getFormTranscriptionSettings();
       res.json(settings);
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('[integrations] GET /api/integrations/form-transcription failed', err);
+      res.status(500).json({ message: 'Failed to load transcription settings' });
     }
   });
 
@@ -668,7 +709,8 @@ export function registerIntegrationRoutes(app: Express) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: 'Validation error', errors: err.errors });
       }
-      res.status(500).json({ message: err?.message || 'Failed to save transcription settings' });
+      console.error('[integrations] PUT /api/integrations/form-transcription failed', err);
+      res.status(500).json({ message: 'Failed to save transcription settings' });
     }
   });
 
@@ -684,7 +726,8 @@ export function registerIntegrationRoutes(app: Express) {
       }
       res.json({ ...settings, apiKey: settings.apiKey ? '********' : '' });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('[integrations] GET /api/integrations/ghl failed', err);
+      res.status(500).json({ message: 'Failed to load GoHighLevel settings' });
     }
   });
 
@@ -709,7 +752,7 @@ export function registerIntegrationRoutes(app: Express) {
       const settings = await storage.upsertIntegrationSettings(settingsToSave);
       res.json({ ...settings, apiKey: settings.apiKey ? '********' : '' });
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to save GHL settings");
     }
   });
 
@@ -729,7 +772,8 @@ export function registerIntegrationRoutes(app: Express) {
       const result = await testGHLConnection(keyToTest, locationId);
       res.json(result);
     } catch (err) {
-      res.status(500).json({ success: false, message: (err as Error).message });
+      console.error('[integrations] POST /api/integrations/ghl/test failed', err);
+      res.status(500).json({ success: false, message: 'Failed to test GoHighLevel connection' });
     }
   });
 
@@ -751,7 +795,8 @@ export function registerIntegrationRoutes(app: Express) {
       const result = await getGHLCustomFields(settings.apiKey, settings.locationId);
       res.json(result);
     } catch (err: any) {
-      res.status(500).json({ success: false, message: err.message || 'Erro ao buscar custom fields' });
+      console.error('[integrations] GET /api/integrations/ghl/custom-fields failed', err);
+      res.status(500).json({ success: false, message: 'Erro ao buscar custom fields' });
     }
   });
 
@@ -773,7 +818,8 @@ export function registerIntegrationRoutes(app: Express) {
         authToken: settings.authToken ? '********' : '',
       });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('[integrations] GET /api/integrations/sms failed', err);
+      res.status(500).json({ message: 'Failed to load SMS settings' });
     }
   });
 
@@ -814,7 +860,7 @@ export function registerIntegrationRoutes(app: Express) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: 'Invalid Twilio settings payload', errors: err.errors });
       }
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to save SMS settings");
     }
   });
 
@@ -853,7 +899,8 @@ export function registerIntegrationRoutes(app: Express) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ success: false, message: 'Invalid Twilio test payload', errors: err.errors });
       }
-      res.status(500).json({ success: false, message: err?.message || 'Failed to send test SMS' });
+      console.error('[integrations] POST /api/integrations/sms/test failed', err);
+      res.status(500).json({ success: false, message: 'Failed to send test SMS' });
     }
   });
 
@@ -869,7 +916,8 @@ export function registerIntegrationRoutes(app: Express) {
       }
       res.json({ ...settings, apiKey: settings.apiKey ? '********' : '', hasKey: !!settings.apiKey });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('[integrations] GET /api/integrations/google-places failed', err);
+      res.status(500).json({ message: 'Failed to load Google Places settings' });
     }
   });
 
@@ -888,7 +936,7 @@ export function registerIntegrationRoutes(app: Express) {
       const settings = await storage.upsertIntegrationSettings(settingsToSave);
       res.json({ ...settings, apiKey: settings.apiKey ? '********' : '' });
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to save Google Places settings");
     }
   });
 
@@ -913,7 +961,8 @@ export function registerIntegrationRoutes(app: Express) {
 
       if (!response.ok) {
         const errorText = await response.text();
-        return res.status(response.status).json({ success: false, message: `Google Places API error: ${response.status} - ${errorText}` });
+        console.error('[integrations] Google Places connection test failed', response.status, errorText);
+        return res.status(response.status).json({ success: false, message: `Google Places API error: ${response.status}` });
       }
 
       try {
@@ -925,12 +974,14 @@ export function registerIntegrationRoutes(app: Express) {
           ...(existingSettings?.calendarId ? { calendarId: existingSettings.calendarId } : {}),
         });
       } catch (saveErr) {
-        return res.status(500).json({ success: false, message: `API key is valid but failed to save: ${(saveErr as Error).message}` });
+        console.error('[integrations] Google Places key save failed', saveErr);
+        return res.status(500).json({ success: false, message: 'API key is valid but failed to save' });
       }
 
       res.json({ success: true, message: 'Google Places API connection successful' });
     } catch (err) {
-      res.status(500).json({ success: false, message: (err as Error).message });
+      console.error('[integrations] POST /api/integrations/google-places/test failed', err);
+      res.status(500).json({ success: false, message: 'Failed to test Google Places connection' });
     }
   });
 
@@ -942,7 +993,8 @@ export function registerIntegrationRoutes(app: Express) {
     try {
       res.json(toXphereResponse(await storage.getXphereSettings()));
     } catch (err) {
-      res.status(500).json({ message: sanitizeXphereMessage(err) });
+      console.error('[integrations] GET /api/integrations/xphere failed', err);
+      res.status(500).json({ message: 'Failed to load Xphere settings' });
     }
   });
 
@@ -1057,7 +1109,8 @@ export function registerIntegrationRoutes(app: Express) {
       // payload carries lead PII — keep it out of the admin list.
       res.json(rows.map(({ payload: _payload, ...rest }) => rest));
     } catch (err) {
-      res.status(500).json({ message: sanitizeXphereMessage(err) });
+      console.error('[integrations] GET /api/integrations/xphere/deliveries failed', err);
+      res.status(500).json({ message: 'Failed to load Xphere deliveries' });
     }
   });
 
@@ -1082,7 +1135,8 @@ export function registerIntegrationRoutes(app: Express) {
       queueXphereDeliverySweep();
       res.json({ ok: true });
     } catch (err) {
-      res.status(500).json({ message: sanitizeXphereMessage(err) });
+      console.error('[integrations] POST /api/integrations/xphere/sweep failed', err);
+      res.status(500).json({ message: 'Failed to run Xphere sweep' });
     }
   });
 
@@ -1102,7 +1156,8 @@ export function registerIntegrationRoutes(app: Express) {
         chatId: settings.chatId ?? '',
       });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('[integrations] GET /api/integrations/telegram failed', err);
+      res.status(500).json({ message: 'Failed to load Telegram settings' });
     }
   });
 
@@ -1115,16 +1170,36 @@ export function registerIntegrationRoutes(app: Express) {
         ? parsed.botToken.trim()
         : undefined;
       const botTokenToPersist = tokenFromRequest || existingSettings?.botToken;
-      const chatId = parsed.chatId?.trim() ?? existingSettings?.chatId ?? '';
       const enabled = parsed.enabled ?? existingSettings?.enabled ?? false;
 
-      if (enabled && (!botTokenToPersist || !chatId)) {
-        return res.status(400).json({ message: 'Bot token and chat ID are required to enable Telegram notifications' });
+      // Destinations are a list (SC-07 / MASTER §6). A request may send the
+      // array, the legacy single id, or neither (keep what is stored).
+      const incomingChatIds = parsed.chatIds
+        ?? (parsed.chatId !== undefined ? [parsed.chatId] : undefined);
+      const chatIds = incomingChatIds
+        ? Array.from(new Set(incomingChatIds.map((id) => id.trim()).filter(Boolean)))
+        : (existingSettings?.chatIds?.length
+            ? existingSettings.chatIds
+            : (existingSettings?.chatId ? [existingSettings.chatId] : []));
+
+      // Reject a malformed destination here rather than discovering it on the
+      // first notification, where the only symptom is silence.
+      const invalidChatIds = chatIds.filter((id) => !parseTelegramTarget(id));
+      if (invalidChatIds.length > 0) {
+        return res.status(400).json({
+          message: `Invalid chat id(s): ${invalidChatIds.join(', ')}. Use the numeric chat id, optionally with a forum topic as "<chat_id>:<thread_id>".`,
+        });
+      }
+
+      if (enabled && (!botTokenToPersist || chatIds.length === 0)) {
+        return res.status(400).json({ message: 'Bot token and at least one chat ID are required to enable Telegram notifications' });
       }
 
       const settingsToSave: any = {
         enabled,
-        chatId: chatId || null,
+        chatIds,
+        // Kept in sync for one release so a rollback still has a destination.
+        chatId: chatIds[0] ?? null,
       };
 
       if (tokenFromRequest) {
@@ -1143,7 +1218,7 @@ export function registerIntegrationRoutes(app: Express) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: 'Invalid Telegram settings payload', errors: err.errors });
       }
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to save Telegram settings");
     }
   });
 
@@ -1155,21 +1230,37 @@ export function registerIntegrationRoutes(app: Express) {
       const botToken = (parsed.botToken && parsed.botToken !== '********')
         ? parsed.botToken.trim()
         : existingSettings?.botToken;
-      const chatId = parsed.chatId?.trim() || existingSettings?.chatId;
+      const incomingChatIds = parsed.chatIds
+        ?? (parsed.chatId !== undefined ? [parsed.chatId] : undefined);
+      const chatIds = incomingChatIds
+        ? Array.from(new Set(incomingChatIds.map((id) => id.trim()).filter(Boolean)))
+        : (existingSettings?.chatIds?.length
+            ? existingSettings.chatIds
+            : (existingSettings?.chatId ? [existingSettings.chatId] : []));
 
-      if (!botToken || !chatId) {
-        return res.status(400).json({ success: false, message: 'Bot token and chat ID are required to test Telegram connection' });
+      if (!botToken || chatIds.length === 0) {
+        return res.status(400).json({ success: false, message: 'Bot token and at least one chat ID are required to test Telegram connection' });
       }
 
-      const { sendTelegramMessage } = await import('../integrations/telegram.js');
-      const result = await sendTelegramMessage({ botToken, chatId }, 'Test message from Skale Club - Your Telegram integration is working!');
+      const { sendTelegramToAll } = await import('../integrations/telegram.js');
+      const result = await sendTelegramToAll(botToken, chatIds, 'Test message from Skale Club - Your Telegram integration is working!');
 
+      // Partial success is reported as success with the failures named: a group
+      // the bot has not joined is the single most common misconfiguration, and
+      // hiding it behind a generic error is what makes it hard to fix.
       if (!result.success) {
-        return res.status(400).json({ success: false, message: result.message || 'Failed to send test Telegram message' });
+        const detail = result.failures.map((f) => `${f.chatId}: ${f.message}`).join('; ');
+        return res.status(400).json({ success: false, message: detail || 'Failed to send test Telegram message' });
       }
-      res.json({ success: true, message: 'Test Telegram message sent successfully!' });
+      res.json({
+        success: true,
+        message: result.failures.length === 0
+          ? `Test Telegram message sent to ${result.delivered} chat(s)!`
+          : `Sent to ${result.delivered} of ${chatIds.length}. Failed: ${result.failures.map((f) => `${f.chatId} (${f.message})`).join('; ')}`,
+      });
     } catch (err: any) {
-      res.status(500).json({ success: false, message: (err as Error).message });
+      console.error('[integrations] POST /api/integrations/telegram/test failed', err);
+      res.status(500).json({ success: false, message: 'Failed to send test Telegram message' });
     }
   });
 
@@ -1191,7 +1282,8 @@ export function registerIntegrationRoutes(app: Express) {
         toEmails: (settings.toEmails as string[] | null) ?? [],
       });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('[integrations] GET /api/integrations/email failed', err);
+      res.status(500).json({ message: 'Failed to load email settings' });
     }
   });
 
@@ -1237,7 +1329,7 @@ export function registerIntegrationRoutes(app: Express) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: 'Invalid email settings payload', errors: err.errors });
       }
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to save email settings");
     }
   });
 
@@ -1270,7 +1362,8 @@ export function registerIntegrationRoutes(app: Express) {
       }
       res.json({ success: true, message: 'Test email sent successfully!' });
     } catch (err: any) {
-      res.status(500).json({ success: false, message: (err as Error).message });
+      console.error('[integrations] POST /api/integrations/email/test failed', err);
+      res.status(500).json({ success: false, message: 'Failed to send test email' });
     }
   });
 }

@@ -131,10 +131,22 @@ shared/
 - `integrationSettings` - GoHighLevel credentials
 - `faqs` - FAQ entries
 
+### Catalog (portfolio, home carousels, print folder)
+
+Apps (`portfolio_services`) and services (Website → Our Services cards) are
+normalised into one `CatalogItem` (`shared/catalog.ts`), rendered by
+`CatalogCard` and `CatalogDetail` on the site and by `client/src/print/cards.tsx`
+in the folder. Each item has an explicit `category`.
+
+A product's cover is its **website home** (`homeImageUrl`): the card shows it in
+a browser window on the brand surface. Without it, the card falls back to the
+product logo. The dashboard (`dashboardImageUrl`) and the popup slider images
+form the popup gallery. The legacy `imageUrl` is not shown anywhere public.
+
 ## Brand Guidelines
 
 - **Primary Navy**: `#0A162E` (dark surfaces, headings)
-- **Action Blue (CTAs/buttons)**: `#406EF1` (hover `#355CD0`, white bold text)
+- **Action Blue (CTAs/buttons)**: `#5173D6` (hover `#3B5BBE`, white bold text)
 - **Fonts**: Outfit (headings), Inter (body)
 
 ## License

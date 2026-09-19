@@ -29,6 +29,11 @@ export function log(message: string, source = "express") {
 export async function createApp(): Promise<{ app: express.Express; httpServer: Server }> {
   const app = express();
 
+  // One hop (Traefik) by default. Behind a second proxy such as Cloudflare
+  // set TRUST_PROXY_HOPS=2, or req.ip — and every rate limit and Turnstile
+  // check keyed on it — becomes the edge's address.
+  app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS ?? 1));
+
   app.use(helmet({
     contentSecurityPolicy: false, // managed per-route via meta tags in the SPA
     crossOriginEmbedderPolicy: false, // needed for embedded iframes (maps, etc.)
@@ -63,7 +68,10 @@ export async function createApp(): Promise<{ app: express.Express; httpServer: S
     /^\/api\/(upload(s|-local)?(\/|$)|update-favicon(\/|$)|presentations\/(transcribe|upload-image)|presentations\/[^/]+\/thumbnail|estimates\/[^/]+\/thumbnail)/;
 
   app.use((req, res, next) => {
-    if (LARGE_BODY_RE.test(req.path)) return jsonLarge(req, res, next);
+    // Large-body routes are parsed further down, once the session exists and
+    // requireAdmin has run: buffering 25 MB for an anonymous caller is a
+    // memory-exhaustion vector, whatever the handler does afterwards.
+    if (LARGE_BODY_RE.test(req.path)) return next();
     return jsonDefault(req, res, next);
   });
 
@@ -86,6 +94,12 @@ export async function createApp(): Promise<{ app: express.Express; httpServer: S
 
   const { setupSupabaseAuth } = await import("./auth/supabaseAuth.js");
   await setupSupabaseAuth(app);
+
+  const { requireAdmin } = await import("./routes/_shared.js");
+  app.use((req, res, next) => {
+    if (!LARGE_BODY_RE.test(req.path)) return next();
+    return requireAdmin(req, res, () => jsonLarge(req, res, next));
+  });
 
   const httpServer = createServer(app);
   await registerRoutes(httpServer, app);

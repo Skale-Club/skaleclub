@@ -3,39 +3,7 @@ import fs from "fs";
 import path from "path";
 import { legacyLanguagePath, splitLanguagePath, withLanguage } from "#shared/languagePath.js";
 import { isCorePagePath } from "#shared/pageSlugs.js";
-
-type SeoConfig = {
-  title: string;
-  description: string;
-  locale: "en_US" | "pt_BR";
-};
-
-const landingSeo: Record<string, SeoConfig> = {
-  "/nfc-keychains": {
-    title: "Custom NFC Keychains for Businesses | Skale Club",
-    description:
-      "Turn every tap into a review, follow, booking, or sale with custom NFC keychains designed, programmed, and tested by Skale Club.",
-    locale: "en_US",
-  },
-  "/br/nfc-keychains": {
-    title: "Chaveiros NFC personalizados para empresas | Skale Club",
-    description:
-      "Transforme cada toque em avaliação, seguidor, agendamento ou venda com chaveiros NFC personalizados, programados e testados pela Skale Club.",
-    locale: "pt_BR",
-  },
-  "/nfc-pricing": {
-    title: "NFC Keychain Pricing & Instructions | Skale Club",
-    description:
-      "See custom NFC keychain pricing, setup instructions, delivery details, and answers to common questions before requesting your design.",
-    locale: "en_US",
-  },
-  "/br/nfc-pricing": {
-    title: "Preços e instruções dos chaveiros NFC | Skale Club",
-    description:
-      "Veja preços, instruções de uso, detalhes de entrega e respostas às principais dúvidas antes de solicitar seu chaveiro NFC personalizado.",
-    locale: "pt_BR",
-  },
-};
+import { getLandingSeo, landingPathForSlug, slugForLandingPath } from "#shared/landingSeo.js";
 
 function escapeHtmlAttribute(value: string): string {
   return value
@@ -50,21 +18,38 @@ export function injectLandingSeo(html: string, pathname: string): string {
   // Legacy PT shapes (`/nfc-keychains/br`, `/nfc-keychains-br`) still render;
   // they just self-report the new `/br/...` canonical.
   const normalizedPath = legacyLanguagePath(cleanPath) ?? cleanPath;
-  const seo = landingSeo[normalizedPath];
+  const slug = slugForLandingPath(normalizedPath);
+  const seo = slug ? getLandingSeo(slug) : undefined;
   const { path: basePath, language } = splitLanguagePath(normalizedPath);
-  const hasAlternates = Boolean(seo) || isCorePagePath(basePath);
-  if (!hasAlternates && language === "en") return html;
+  const isCorePage = isCorePagePath(basePath);
+  // A canonical/og:url is owed to every landing with curated SEO, every core
+  // page, and any non-exempt `/br/...` URL (splitLanguagePath already forces
+  // exempt remainders back to language "en", so this never fires for those).
+  const hasSelfCanonical = Boolean(seo) || isCorePage || language === "pt";
+  if (!hasSelfCanonical) return html;
 
   const canonicalOrigin = (process.env.VITE_CANONICAL_ORIGIN || "https://skale.club").replace(/\/$/, "");
   const canonical = `${canonicalOrigin}${normalizedPath}`;
   const lang = language === "pt" || seo?.locale === "pt_BR" ? "pt-BR" : "en";
-  const replacements: Array<[RegExp, string]> = [[/<html lang="[^"]*"/, `<html lang="${lang}"`]];
-  if (hasAlternates) {
-    const enHref = `${canonicalOrigin}${basePath}`;
-    const ptHref = `${canonicalOrigin}${withLanguage(basePath, "pt")}`;
+  const replacements: Array<[RegExp, string]> = [
+    [/<html lang="[^"]*"/, `<html lang="${lang}"`],
+    [/<link rel="canonical" href="[^"]*"\s*\/?>/, `<link rel="canonical" href="${canonical}" />`],
+    [/<meta property="og:url" content="[^"]*"\s*\/?>/, `<meta property="og:url" content="${canonical}" />`],
+  ];
+
+  // An hreflang triplet is only accurate when the en/pt pair actually exists:
+  // a core page, or a managed landing whose base and `-br` slugs both carry
+  // SEO entries. A PT-only landing (e.g. "grupo", no "grupo-br" row) gets a
+  // self canonical above but no triplet.
+  const baseSlug = slug.endsWith("-br") ? slug.slice(0, -3) : slug;
+  const hasHreflangPair =
+    isCorePage || (baseSlug !== "" && Boolean(getLandingSeo(baseSlug)) && Boolean(getLandingSeo(`${baseSlug}-br`)));
+  if (hasHreflangPair) {
+    const enHref = isCorePage ? `${canonicalOrigin}${basePath}` : `${canonicalOrigin}${landingPathForSlug(baseSlug)}`;
+    const ptHref = isCorePage
+      ? `${canonicalOrigin}${withLanguage(basePath, "pt")}`
+      : `${canonicalOrigin}${landingPathForSlug(`${baseSlug}-br`)}`;
     replacements.push(
-      [/<link rel="canonical" href="[^"]*"\s*\/?>/, `<link rel="canonical" href="${canonical}" />`],
-      [/<meta property="og:url" content="[^"]*"\s*\/?>/, `<meta property="og:url" content="${canonical}" />`],
       [/<\/head>/, [
         `<link rel="alternate" hreflang="en" href="${enHref}" data-site-i18n="true" />`,
         `<link rel="alternate" hreflang="pt-BR" href="${ptHref}" data-site-i18n="true" />`,
@@ -76,6 +61,7 @@ export function injectLandingSeo(html: string, pathname: string): string {
   if (seo) replacements.push(
     [/<title>[^<]*<\/title>/, `<title>${seo.title}</title>`],
     [/<meta name="description" content="[^"]*"\s*\/?>/, `<meta name="description" content="${escapeHtmlAttribute(seo.description)}" />`],
+    [/<meta property="og:locale" content="[^"]*"\s*\/?>/, `<meta property="og:locale" content="${seo.locale}" />`],
     [/<meta property="og:title" content="[^"]*"\s*\/?>/, `<meta property="og:title" content="${escapeHtmlAttribute(seo.title)}" />`],
     [/<meta property="og:description" content="[^"]*"\s*\/?>/, `<meta property="og:description" content="${escapeHtmlAttribute(seo.description)}" />`],
     [/<meta name="twitter:title" content="[^"]*"\s*\/?>/, `<meta name="twitter:title" content="${escapeHtmlAttribute(seo.title)}" />`],

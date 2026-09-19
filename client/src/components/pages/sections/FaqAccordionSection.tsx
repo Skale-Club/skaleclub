@@ -6,12 +6,7 @@
 
 import { z } from "zod";
 import { useTranslation } from "@/hooks/useTranslation";
-import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from "@/components/ui/accordion";
+import { FaqList } from "@/components/FaqList";
 import { sectionThemeSchema } from "./sectionTheme";
 
 const faqItemSchema = z.object({
@@ -52,22 +47,16 @@ const DEFAULTS = {
 // `theme` undefined renders exactly as before.
 const LIGHT = {
   section:    "bg-white",
-  eyebrow:    "text-[#1C53A3]",
+  eyebrow:    "text-cta",
   heading:    "text-zinc-900",
   subheading: "text-zinc-600",
-  item:       "border-zinc-200",
-  question:   "text-zinc-900",
-  answer:     "text-zinc-600",
 } as const;
 
 const DARK = {
-  section:    "bg-[#111111]",
+  section:    "bg-surface-dark",
   eyebrow:    "text-blue-300",
   heading:    "text-white",
   subheading: "text-zinc-300",
-  item:       "border-white/10",
-  question:   "text-white",
-  answer:     "text-zinc-300",
 } as const;
 
 export function FaqAccordionSection({ props }: { props: FaqAccordionProps }) {
@@ -80,7 +69,7 @@ export function FaqAccordionSection({ props }: { props: FaqAccordionProps }) {
 
   return (
     <section
-      className={`${c.section} py-20 sm:py-24`}
+      className={`${c.section} py-16 md:py-24`}
       data-testid="section-faq-accordion"
     >
       <div className="container-custom mx-auto px-6">
@@ -97,23 +86,10 @@ export function FaqAccordionSection({ props }: { props: FaqAccordionProps }) {
         </div>
 
         <div className="max-w-3xl mx-auto">
-          <Accordion type="single" collapsible className="w-full">
-            {items.map((item, idx) => (
-              <AccordionItem
-                key={idx}
-                value={`faq-${idx}`}
-                className={c.item}
-                data-testid={`faq-item-${idx + 1}`}
-              >
-                <AccordionTrigger className={`text-left text-base sm:text-lg font-semibold ${c.question} hover:no-underline py-5`}>
-                  {t(item.question)}
-                </AccordionTrigger>
-                <AccordionContent className={`text-base ${c.answer} leading-relaxed pb-5`}>
-                  {t(item.answer)}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+          <FaqList
+            dark={props.theme === "dark"}
+            items={items.map((item) => ({ question: t(item.question), answer: t(item.answer) }))}
+          />
         </div>
       </div>
     </section>

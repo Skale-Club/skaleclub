@@ -42,7 +42,16 @@ function alignmentStyle(alignment?: 'left' | 'center' | 'right'): React.CSSPrope
 
 // ─── SlideContent ──────────────────────────────────────────────────────────────
 
-export function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string }) {
+export function SlideContent({
+  slide,
+  lang,
+  brandName = 'Skale Club',
+}: {
+  slide: SlideBlock;
+  lang: string;
+  /** Brand mark shown on the cover/closing slides. Defaults to the Skale Club name. */
+  brandName?: string;
+}) {
   const heading = resolveField(slide.heading, slide.headingPt, lang);
   const body = resolveField(slide.body, slide.bodyPt, lang);
   const bullets =
@@ -54,8 +63,8 @@ export function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string 
     case 'cover':
       return (
         <div className="text-center">
-          <p className="text-white/40 text-sm md:text-base lg:text-lg uppercase tracking-widest mb-4">Skale Club</p>
-          <h1 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-5xl md:text-6xl lg:text-7xl font-semibold text-white leading-tight">{heading}</h1>
+          <p className="text-white/40 text-sm md:text-base lg:text-lg uppercase tracking-widest mb-4">{brandName}</p>
+          <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-semibold text-white leading-tight">{heading}</h1>
           {body && <p className="text-white/80 text-base md:text-lg lg:text-xl mt-6 max-w-2xl mx-auto">{body}</p>}
         </div>
       );
@@ -63,7 +72,7 @@ export function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string 
     case 'section-break':
       return (
         <div className="text-center">
-          <p className="text-white text-2xl md:text-3xl lg:text-4xl font-semibold" style={{ fontFamily: "'Outfit', sans-serif" }}>{heading}</p>
+          <p className="font-display text-white text-2xl md:text-3xl lg:text-4xl font-semibold">{heading}</p>
           {body && <p className="text-lg md:text-xl lg:text-2xl text-white/80 leading-relaxed mt-6">{body}</p>}
         </div>
       );
@@ -71,7 +80,7 @@ export function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string 
     case 'title-body':
       return (
         <div>
-          <h2 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight">{heading}</h2>
+          <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight">{heading}</h2>
           {body && <p className="text-lg md:text-xl lg:text-2xl text-white/80 leading-relaxed">{body}</p>}
         </div>
       );
@@ -79,7 +88,7 @@ export function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string 
     case 'bullets':
       return (
         <div>
-          <h2 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-8 leading-tight">{heading}</h2>
+          <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-8 leading-tight">{heading}</h2>
           {bullets.length > 0 && (
             <ul className="space-y-4">
               {bullets.map((bullet, i) => (
@@ -96,7 +105,7 @@ export function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string 
     case 'stats':
       return (
         <div>
-          {heading && <h2 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-12 leading-tight">{heading}</h2>}
+          {heading && <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-12 leading-tight">{heading}</h2>}
           {slide.stats && slide.stats.length > 0 && (
             <dl className="grid grid-cols-1 sm:grid-cols-2 gap-8 md:gap-12 lg:gap-16">
               {slide.stats.map((stat, i) => (
@@ -116,7 +125,7 @@ export function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string 
       return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 w-full">
           <div>
-            <h2 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white leading-tight">{heading}</h2>
+            <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-semibold text-white leading-tight">{heading}</h2>
           </div>
           <div>
             {body && <p className="text-lg md:text-xl lg:text-2xl text-white/80 leading-relaxed">{body}</p>}
@@ -135,8 +144,8 @@ export function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string 
             <div className="max-w-2xl" style={alignmentStyle(slide.style?.alignment)}>
               {heading && (
                 <h2
-                  style={{ fontFamily: "'Outfit', sans-serif", ...(slide.style?.headingColor ? { color: slide.style.headingColor } : {}) }}
-                  className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight"
+                  style={slide.style?.headingColor ? { color: slide.style.headingColor } : undefined}
+                  className="font-display text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight"
                 >{heading}</h2>
               )}
               {body && <p className="text-lg md:text-xl lg:text-2xl text-white/80 leading-relaxed">{body}</p>}
@@ -148,8 +157,8 @@ export function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string 
     case 'closing':
       return (
         <div className="text-center">
-          <p className="text-white/40 text-sm md:text-base lg:text-lg uppercase tracking-widest mb-4 lg:mb-6">Skale Club</p>
-          <h2 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight">{heading}</h2>
+          <p className="text-white/40 text-sm md:text-base lg:text-lg uppercase tracking-widest mb-4 lg:mb-6">{brandName}</p>
+          <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight">{heading}</h2>
           {body && <p className="text-base md:text-lg lg:text-xl text-white/80 mt-4 max-w-2xl mx-auto">{body}</p>}
         </div>
       );
@@ -165,8 +174,8 @@ export function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string 
             <div className="max-w-2xl" style={alignmentStyle(slide.style?.alignment)}>
               {heading && (
                 <h2
-                  style={{ fontFamily: "'Outfit', sans-serif", ...(slide.style?.headingColor ? { color: slide.style.headingColor } : {}) }}
-                  className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight"
+                  style={slide.style?.headingColor ? { color: slide.style.headingColor } : undefined}
+                  className="font-display text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight"
                 >{heading}</h2>
               )}
               {body && <p className="text-lg md:text-xl lg:text-2xl text-white/80 leading-relaxed">{body}</p>}
@@ -182,8 +191,8 @@ export function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string 
             <div className="max-w-2xl" style={alignmentStyle(slide.style?.alignment)}>
               {heading && (
                 <h2
-                  style={{ fontFamily: "'Outfit', sans-serif", ...(slide.style?.headingColor ? { color: slide.style.headingColor } : {}) }}
-                  className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight"
+                  style={slide.style?.headingColor ? { color: slide.style.headingColor } : undefined}
+                  className="font-display text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight"
                 >{heading}</h2>
               )}
               {body && <p className="text-lg md:text-xl lg:text-2xl text-white/80 leading-relaxed">{body}</p>}
@@ -204,8 +213,8 @@ export function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string 
             <div className="text-center max-w-4xl" style={alignmentStyle(slide.style?.alignment)}>
               {heading && (
                 <h2
-                  style={{ fontFamily: "'Outfit', sans-serif", ...(slide.style?.headingColor ? { color: slide.style.headingColor } : {}) }}
-                  className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight drop-shadow-lg"
+                  style={slide.style?.headingColor ? { color: slide.style.headingColor } : undefined}
+                  className="font-display text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight drop-shadow-lg"
                 >{heading}</h2>
               )}
               {body && <p className="text-base md:text-lg lg:text-xl text-white/90 max-w-2xl mx-auto leading-relaxed drop-shadow">{body}</p>}
@@ -219,8 +228,8 @@ export function SlideContent({ slide, lang }: { slide: SlideBlock; lang: string 
       return (
         <div className="text-center max-w-3xl mx-auto" style={alignmentStyle(slide.style?.alignment)}>
           <p
-            style={{ fontFamily: "'Outfit', sans-serif", ...(slide.style?.headingColor ? { color: slide.style.headingColor } : {}) }}
-            className="text-3xl md:text-4xl lg:text-5xl font-semibold text-white leading-snug mb-8"
+            style={slide.style?.headingColor ? { color: slide.style.headingColor } : undefined}
+            className="font-display text-3xl md:text-4xl lg:text-5xl font-semibold text-white leading-snug mb-8"
           >
             &ldquo;{heading}&rdquo;
           </p>
@@ -247,11 +256,13 @@ export function SlidePreview({
   lang = 'en',
   scale = 0.38,
   className,
+  brandName,
 }: {
   slide: SlideBlock;
   lang?: string;
   scale?: number;
   className?: string;
+  brandName?: string;
 }) {
   const outerW = Math.round(SLIDE_W * scale);
   const outerH = Math.round(SLIDE_H * scale);
@@ -281,7 +292,7 @@ export function SlidePreview({
           userSelect: 'none',
         }}
       >
-        <SlideContent slide={slide} lang={lang} />
+        <SlideContent slide={slide} lang={lang} brandName={brandName} />
       </div>
     </div>
   );

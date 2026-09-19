@@ -5,7 +5,8 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { AppLoader } from "@/components/ui/spinner";
 import { sectionRegistry } from "@/components/pages/sectionRegistry";
 import { usePageLanguage } from "@/context/LanguageContext";
-import { splitLanguagePath } from "@shared/languagePath";
+import { splitLanguagePath, withLanguage } from "@shared/languagePath";
+import { getLandingSeo, landingPathForSlug } from "@shared/landingSeo";
 
 const NotFound = lazy(() => import("@/pages/not-found"));
 
@@ -16,33 +17,6 @@ interface PageResponse {
   isActive: boolean;
   language: "en" | "pt";
   alternateSlug?: string | null;
-}
-
-const PAGE_SEO: Record<string, { title: string; description: string }> = {
-  "nfc-keychains": {
-    title: "Custom NFC Keychains for Businesses | Skale Club",
-    description: "Custom 3D-printed NFC keychains that open your reviews, Instagram, menu, digital card, or website with one tap.",
-  },
-  "nfc-keychains-br": {
-    title: "Chaveiros NFC Personalizados para Empresas | Skale Club",
-    description: "Chaveiros NFC personalizados e impressos em 3D para abrir avaliações, Instagram, cardápio, cartão digital ou site com um toque.",
-  },
-  "nfc-pricing": {
-    title: "NFC Keychain Pricing and Instructions | Skale Club",
-    description: "See NFC keychain pricing, minimum order, setup process, compatible phones, and answers to common questions.",
-  },
-  "nfc-pricing-br": {
-    title: "Preços e Instruções dos Chaveiros NFC | Skale Club",
-    description: "Veja preços, pedido mínimo, processo de produção, celulares compatíveis e respostas sobre os chaveiros NFC.",
-  },
-};
-
-// A managed bilingual pair stores single-segment slugs (`x` and `x-br`), but the PT
-// member's canonical public URL is the `/br/x` prefix form (quick 260906-qwl).
-// Legacy `/x-br` and `/x/br` URLs keep rendering; they simply self-report the
-// `/br/x` canonical.
-function landingPath(slug: string): string {
-  return slug.endsWith("-br") ? `/br/${slug.slice(0, -3)}` : `/${slug}`;
 }
 
 export default function DynamicPage() {
@@ -85,7 +59,7 @@ export default function DynamicPage() {
     const currentPath = window.location.pathname.length > 1
       ? window.location.pathname.replace(/\/$/, "")
       : window.location.pathname;
-    const alternatePath = pageAltSlug ? landingPath(pageAltSlug) : null;
+    const alternatePath = pageAltSlug ? landingPathForSlug(pageAltSlug) : null;
     setPageLanguage({
       language: urlLanguage === "en" && pageLanguage === "pt" ? "pt" : undefined,
       alternatePath: alternatePath && alternatePath !== currentPath ? alternatePath : null,
@@ -95,21 +69,29 @@ export default function DynamicPage() {
   }, [pageSlug, pageLanguage, pageAltSlug, urlLanguage, setPageLanguage]);
 
   // Inject hreflang alternates for the bilingual pair; remove them on unmount so
-  // they don't leak onto other pages. Canonical stays managed globally by useSEO.
+  // they don't leak onto other pages.
+  //
+  // The comment here used to say canonical was left to useSEO, which the effect
+  // fifty lines below contradicts — it writes its own. Both now derive the same
+  // value from the current path, so whichever effect runs last agrees with the
+  // other; useSEO also re-runs on navigation, so a stale landing canonical no
+  // longer survives onto the next route.
   const slugForSeo = data?.slug;
   const altSlug = data?.alternateSlug;
   useEffect(() => {
-    if (!slugForSeo || !altSlug) return;
-    const origin = window.location.origin;
-    const selfHref = `${origin}${landingPath(slugForSeo)}`;
-    const altHref = `${origin}${landingPath(altSlug)}`;
-    const selfTag = pageLanguage === "en" ? "en" : "pt-BR";
-    const altTag = pageLanguage === "en" ? "pt-BR" : "en";
-    const xDefaultHref = pageLanguage === "en" ? selfHref : altHref;
-
+    // Always clear any pre-existing hreflang tags first (server-injected or
+    // left by a previous page) — a page with no pair still needs them gone.
     document
       .querySelectorAll('link[rel="alternate"][data-site-i18n], link[rel="alternate"][data-page-i18n]')
       .forEach((link) => link.remove());
+    if (!slugForSeo || !altSlug) return;
+
+    const origin = window.location.origin;
+    const selfHref = `${origin}${landingPathForSlug(slugForSeo)}`;
+    const altHref = `${origin}${landingPathForSlug(altSlug)}`;
+    const selfTag = pageLanguage === "en" ? "en" : "pt-BR";
+    const altTag = pageLanguage === "en" ? "pt-BR" : "en";
+    const xDefaultHref = pageLanguage === "en" ? selfHref : altHref;
 
     const created: HTMLLinkElement[] = [];
     const add = (hreflang: string, href: string) => {
@@ -130,38 +112,74 @@ export default function DynamicPage() {
 
   // Managed landing pages need their own search/social metadata; the global
   // site metadata points at the homepage and would otherwise create duplicate
-  // canonicals for every campaign page.
+  // canonicals for every campaign page. Canonical/og:url must be correct for
+  // EVERY landing (even ones without curated copy below); title/description
+  // only get overridden when this slug has curated SEO copy.
   useEffect(() => {
     if (!slugForSeo) return;
-    const seo = PAGE_SEO[slugForSeo];
-    if (!seo) return;
-    const canonical = `${window.location.origin}${landingPath(slugForSeo)}`;
-    document.title = seo.title;
+    // `/br/<slug>` with no `-br` row renders the base row as a fallback: the
+    // rendered slug doesn't carry "-br", but the URL is still Portuguese, so
+    // the canonical must keep the `/br` prefix to match the address bar (and
+    // what use-seo.ts's canonicalForCurrentPage computes for the same URL).
+    const isBrFallback = urlLanguage === "pt" && !slugForSeo.endsWith("-br");
+    const canonicalPath = isBrFallback
+      ? withLanguage(landingPathForSlug(slugForSeo), "pt")
+      : landingPathForSlug(slugForSeo);
+    const canonical = `${window.location.origin}${canonicalPath}`;
+    const previousTitle = document.title;
 
+    // Every node this effect touches is recorded so the cleanup can put the
+    // global (homepage) values back on client-side navigation to a non-landing
+    // route — useSEO only re-runs when the settings object changes, so it would
+    // otherwise leave this landing's canonical/og:url on the next page.
+    const restores: Array<() => void> = [];
     const setMeta = (selector: string, attribute: "name" | "property", key: string, value: string) => {
       let node = document.querySelector<HTMLMetaElement>(selector);
       if (!node) {
-        node = document.createElement("meta");
-        node.setAttribute(attribute, key);
-        document.head.appendChild(node);
+        const created = document.createElement("meta");
+        created.setAttribute(attribute, key);
+        document.head.appendChild(created);
+        restores.push(() => created.remove());
+        node = created;
+      } else {
+        const existing = node;
+        const previous = existing.content;
+        restores.push(() => { existing.content = previous; });
       }
       node.content = value;
     };
-    setMeta('meta[name="description"]', "name", "description", seo.description);
-    setMeta('meta[property="og:title"]', "property", "og:title", seo.title);
-    setMeta('meta[property="og:description"]', "property", "og:description", seo.description);
-    setMeta('meta[property="og:url"]', "property", "og:url", canonical);
-    setMeta('meta[name="twitter:title"]', "name", "twitter:title", seo.title);
-    setMeta('meta[name="twitter:description"]', "name", "twitter:description", seo.description);
 
     let canonicalTag = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
     if (!canonicalTag) {
-      canonicalTag = document.createElement("link");
-      canonicalTag.rel = "canonical";
-      document.head.appendChild(canonicalTag);
+      const created = document.createElement("link");
+      created.rel = "canonical";
+      document.head.appendChild(created);
+      restores.push(() => created.remove());
+      canonicalTag = created;
+    } else {
+      const existing = canonicalTag;
+      const previous = existing.href;
+      restores.push(() => { existing.href = previous; });
     }
     canonicalTag.href = canonical;
-  }, [pageLanguage, slugForSeo]);
+    setMeta('meta[property="og:url"]', "property", "og:url", canonical);
+
+    const seo = getLandingSeo(slugForSeo);
+    if (seo) {
+      document.title = seo.title;
+      setMeta('meta[name="description"]', "name", "description", seo.description);
+      setMeta('meta[property="og:title"]', "property", "og:title", seo.title);
+      setMeta('meta[property="og:description"]', "property", "og:description", seo.description);
+      setMeta('meta[property="og:locale"]', "property", "og:locale", seo.locale);
+      setMeta('meta[name="twitter:title"]', "name", "twitter:title", seo.title);
+      setMeta('meta[name="twitter:description"]', "name", "twitter:description", seo.description);
+    }
+
+    return () => {
+      restores.reverse().forEach((restore) => restore());
+      document.title = previousTitle;
+    };
+  }, [pageLanguage, slugForSeo, urlLanguage]);
 
   // Hold the first paint until the language override is registered; otherwise a PT-only
   // page renders one frame as English and queues its copy for pt -> en translation.

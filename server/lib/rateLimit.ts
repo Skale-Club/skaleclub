@@ -71,8 +71,8 @@ export interface RateLimitMiddlewareOptions extends RateLimitOptions {
 
 /**
  * Express middleware factory wrapping {@link rateLimit}. Keys by client IP
- * (same first-hop `x-forwarded-for` / `req.ip` logic as `getClientIp` in
- * `./turnstile.js`) unless a custom `keyFn` is supplied. Responds with
+ * (`getClientIp` in `./turnstile.js`, which resolves `req.ip` through the
+ * configured trust-proxy depth) unless a custom `keyFn` is supplied. Responds with
  * `429 { message }` when the limit is exceeded, otherwise calls `next()`.
  */
 export function rateLimitMiddleware(opts: RateLimitMiddlewareOptions): RequestHandler {

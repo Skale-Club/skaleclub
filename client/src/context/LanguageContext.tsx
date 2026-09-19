@@ -7,7 +7,7 @@ export type Language = 'en' | 'pt';
 
 interface LanguageContextType {
   language: Language;
-  setLanguage: (lang: Language) => void;
+  setLanguage: (lang: Language, opts?: { silent?: boolean }) => void;
 }
 
 export const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -49,11 +49,15 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     setPageInfo(info ? { ...info, path: window.location.pathname } : null);
   }, []);
 
-  const setLanguage = useCallback((lang: Language) => {
+  // `opts.silent` exists for callers that widen the signature elsewhere in the
+  // codebase (e.g. a component syncing site chrome without a user-initiated
+  // switch); it only suppresses the translation overlay below, since language
+  // here is always derived from the URL — there's nothing else to make "silent".
+  const setLanguage = useCallback((lang: Language, opts?: { silent?: boolean }) => {
     const pathname = window.location.pathname;
     if (languageRef.current === lang || isLanguageExemptPath(pathname)) return;
     // Only a real switch may show the translation overlay (capped in useTranslation)
-    markLanguageSwitch();
+    if (!opts?.silent) markLanguageSwitch();
 
     const suffix = window.location.search + window.location.hash;
     const page = pageInfoRef.current?.path === pathname ? pageInfoRef.current : null;

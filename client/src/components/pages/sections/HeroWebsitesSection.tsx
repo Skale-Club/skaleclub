@@ -4,7 +4,7 @@ import { languageHref } from "@/lib/languageRouting";
 
 // Hero variant for the /websites landing.
 // Mirrors the visual tone of the Home hero (brand blue + gradient overlay,
-// white gradient headline) and ships a brand-blue (#5173D6) pill CTA per the
+// white gradient headline) and ships a brand-blue (`cta` token) pill CTA per the
 // CLAUDE.md Brand Guidelines. Copy defaults are English (the t() source
 // language); PT is served via translations.ts when language is 'pt'.
 // Tolerant optional URL: treats null and "" as "absent" so a removed asset
@@ -37,6 +37,15 @@ const DEFAULTS = {
   // Served from client/public — language-neutral brand illustration.
   backgroundImageUrl: "/SkaleClub.webp",
 } as const;
+
+// Intrinsic dimensions for the two known hero images, so the browser can reserve
+// the right aspect ratio before the image loads (avoids CLS). The className below
+// still constrains the rendered size via max-w/object-contain — these only fix
+// aspect-ratio reservation. Unknown/custom assets omit width/height entirely.
+const KNOWN_IMAGE_SIZES: Record<string, { width: number; height: number }> = {
+  "/nfc-keychains-hero.webp": { width: 1199, height: 1312 },
+  "/SkaleClub.webp": { width: 1169, height: 1500 },
+};
 
 export function HeroWebsitesSection({ props }: { props: HeroWebsitesProps }) {
   const { t } = useTranslation();
@@ -78,7 +87,7 @@ export function HeroWebsitesSection({ props }: { props: HeroWebsitesProps }) {
                 type="button"
                 onClick={handleCtaClick}
                 data-testid="button-hero-websites-cta"
-                className="w-full sm:w-auto shrink-0 px-6 sm:px-8 py-3 sm:py-4 bg-[#5173D6] hover:bg-[#3B5BBE] hover:scale-105 text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
+                className="w-full sm:w-auto shrink-0 px-6 sm:px-8 py-3 sm:py-4 bg-cta hover:bg-cta-hover hover:scale-105 text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
               >
                 {t(ctaLabel)}
               </button>
@@ -98,6 +107,11 @@ export function HeroWebsitesSection({ props }: { props: HeroWebsitesProps }) {
                 src={bgUrl}
                 alt={t(bgAlt)}
                 className="w-[70vw] sm:w-[75%] lg:w-full max-w-[260px] sm:max-w-[260px] md:max-w-[300px] lg:max-w-[340px] xl:max-w-[380px] object-contain drop-shadow-2xl origin-bottom"
+                // React 18 does not know the camelCase prop; the lowercase attribute reaches the DOM as-is.
+                {...({ fetchpriority: "high" } as Record<string, string>)}
+                decoding="async"
+                loading="eager"
+                {...(KNOWN_IMAGE_SIZES[bgUrl] ?? {})}
               />
             ) : null}
           </div>

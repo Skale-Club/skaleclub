@@ -106,6 +106,14 @@ const SERVICES: Service[] = [
       'A marketing automation scene: a connected workflow diagram of nodes with gears, a sales ' +
       'pipeline board, an email icon, an SMS bubble, and a friendly chatbot robot icon.',
   },
+  {
+    slug: '3d-printing',
+    title: '3D Printing',
+    subject:
+      'A 3D printing scene: an FDM printer mid-build with a glowing filament nozzle laying down ' +
+      'layers, a finished branded keychain and a custom logo piece resting on the print bed, and ' +
+      'a filament spool beside it.',
+  },
 ];
 
 function extractImage(response: any): Buffer | null {

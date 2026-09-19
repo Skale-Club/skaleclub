@@ -11,6 +11,7 @@ import { LanguageSwitch, type LanguageSwitchValue } from '@/components/ui/Langua
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { DottedSurface } from '@/components/ui/dotted-surface';
 import { GradientBackground } from '@/components/ui/gradient-background-4';
+import { NotFoundState } from '@/components/NotFoundState';
 import type { CompanySettings, EstimateServiceItem } from '@shared/schema';
 
 interface PublicEstimate {
@@ -48,21 +49,25 @@ function hasFullEstimateData(d: EstimateSlugResponse): d is PublicEstimate {
 
 function LoadingScreen() {
   return (
-    <div className="h-screen bg-zinc-950 flex items-center justify-center">
+    <div className="min-h-[100dvh] bg-zinc-950 flex items-center justify-center">
       <Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
     </div>
   );
 }
 
-function NotFoundScreen() {
+function NotFoundScreen({ siteSettings }: { siteSettings?: CompanySettings | null }) {
+  const logoUrl = siteSettings?.logoAvatarFull || siteSettings?.logoDark || siteSettings?.logoMain || null;
+  const companyName = siteSettings?.companyName || 'Skale Club';
   return (
-    <div className="h-screen bg-zinc-950 flex items-center justify-center">
-      <div className="flex flex-col items-center gap-4 text-center px-6">
-        <p className="text-zinc-400 text-sm uppercase tracking-widest">Proposal not found</p>
-        <h1 className="text-white text-3xl font-semibold">This link may have expired or been removed.</h1>
-        <p className="text-zinc-400 text-sm">Contact Skale Club for a new proposal link.</p>
-      </div>
-    </div>
+    <NotFoundState
+      layout="screen"
+      logoUrl={logoUrl}
+      logoAlt={companyName}
+      title="This link may have expired or been removed."
+      description={`Contact ${companyName} for a new proposal link.`}
+      actionLabel="Visit website"
+      actionHref="/"
+    />
   );
 }
 
@@ -122,7 +127,7 @@ function AccessCodeGate({
   });
 
   return (
-    <div className="h-screen bg-zinc-950 flex items-center justify-center relative overflow-hidden">
+    <div className="min-h-[100dvh] bg-zinc-950 flex items-center justify-center relative overflow-hidden">
       {/* Animated dotted-surface background — bottom band, kept clear of the button */}
       <DottedSurface heightVh={30} />
       <div className="fixed top-4 right-4 z-50">
@@ -152,11 +157,15 @@ function AccessCodeGate({
         )}
         <h1 className="text-white text-2xl md:text-3xl font-semibold text-center">{t.title}</h1>
         <Input
+          id="estimate-access-code"
           type="text"
           value={code}
           onChange={(e) => { setCode(e.target.value); setError(''); }}
           className="bg-zinc-900 border-zinc-700 text-white text-center w-full"
           onKeyDown={(e) => e.key === 'Enter' && code && !isPending && verify()}
+          aria-label={t.title}
+          aria-invalid={error ? true : undefined}
+          autoComplete="one-time-code"
         />
         {error && <p className="text-destructive text-sm">{error}</p>}
         <Button
@@ -217,7 +226,7 @@ function SectionContent({ index, data, lang, siteSettings }: { index: number; da
         {gradientOverlay}
         <div className="text-center px-6 sm:px-8 md:px-12 lg:px-16 max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto w-full">
           <p className="text-zinc-400 text-sm md:text-base lg:text-lg uppercase tracking-widest mb-6 lg:mb-8">{t.proposalFor}</p>
-          <h1 style={{ fontFamily: "'Outfit', sans-serif" }} className="text-5xl md:text-6xl lg:text-7xl font-semibold text-white leading-tight">
+          <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-semibold text-white leading-tight">
             {headline}
           </h1>
           {subtitle && (
@@ -479,6 +488,15 @@ export default function EstimateViewer() {
   const wheelLocked = useRef(false);
   useEffect(() => {
     function onWheel(e: WheelEvent) {
+      // If the pointer is over the slide's own scroll container and that
+      // container can still scroll in the wheel direction, let the browser
+      // scroll it natively instead of swallowing the event and navigating.
+      const el = scrollContainerRef.current;
+      if (el && e.target instanceof Node && el.contains(e.target)) {
+        const canScrollUp = el.scrollTop > 1;
+        const canScrollDown = el.scrollTop + el.clientHeight < el.scrollHeight - 1;
+        if ((e.deltaY < 0 && canScrollUp) || (e.deltaY > 0 && canScrollDown)) return;
+      }
       e.preventDefault();
       if (wheelLocked.current) return;
       wheelLocked.current = true;
@@ -537,7 +555,7 @@ export default function EstimateViewer() {
   }, [next, prev]);
 
   if (isLoading) return <LoadingScreen />;
-  if (!data) return <NotFoundScreen />;
+  if (!data) return <NotFoundScreen siteSettings={siteSettings} />;
   if (data.hasAccessCode && !isUnlocked) {
     return (
       <AccessCodeGate
@@ -559,7 +577,35 @@ export default function EstimateViewer() {
   if (!content) return <LoadingScreen />;
 
   return (
-    <div className="h-screen bg-zinc-950 text-white overflow-hidden relative flex items-center justify-center">
+    <div className="h-[100dvh] bg-zinc-950 text-white overflow-hidden relative flex items-center justify-center estimate-viewer-root">
+      {/* Print: drop the fixed chrome and let the slide wrapper grow so the
+          proposal prints as a document rather than a single clipped screen. */}
+      <style>{`
+        @media print {
+          .estimate-viewer-root {
+            height: auto !important;
+            overflow: visible !important;
+            display: block !important;
+            /* slides are light-on-dark: keep their colours or the text prints invisible */
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .estimate-viewer-root .fixed { display: none !important; }
+          .estimate-slide-area {
+            position: static !important;
+            height: auto !important;
+            overflow: visible !important;
+            display: block !important;
+          }
+          .estimate-slide {
+            position: static !important;
+            height: auto !important;
+            overflow: visible !important;
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+        }
+      `}</style>
       {/* Cover slide: animated dotted surface. Internal slides: subtle indigo gradient. */}
       {activeIndex === 0 ? (
         <DottedSurface heightVh={40} />
@@ -582,7 +628,7 @@ export default function EstimateViewer() {
             key={i}
             onClick={() => goTo(i)}
             aria-label={`Go to section ${i + 1}`}
-            className="min-w-[32px] min-h-[32px] md:min-w-[44px] md:min-h-[44px] flex items-center justify-center"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
             <span className={cn(
               'rounded-full transition-all duration-200',
@@ -625,7 +671,7 @@ export default function EstimateViewer() {
           onClick={prev}
           disabled={activeIndex === 0}
           aria-label="Previous section"
-          className="w-9 h-9 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30"
+          className="min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
@@ -636,7 +682,7 @@ export default function EstimateViewer() {
           onClick={next}
           disabled={activeIndex === total - 1}
           aria-label="Next section"
-          className="w-9 h-9 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30"
+          className="min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
@@ -644,7 +690,7 @@ export default function EstimateViewer() {
 
       {/* Slide area — outer keeps overflow-hidden so motion.div animations stay clipped;
           the inner scroll container handles overflow per slide when content is too tall. */}
-      <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+      <div className="absolute inset-0 flex items-center justify-center overflow-hidden estimate-slide-area">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={activeIndex}
@@ -654,11 +700,11 @@ export default function EstimateViewer() {
             animate="center"
             exit="exit"
             transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
-            className="relative z-10 w-full h-full"
+            className="relative z-10 w-full h-full estimate-slide"
           >
             <div
               ref={scrollContainerRef}
-              className="h-full w-full overflow-y-auto overscroll-contain"
+              className="h-full w-full overflow-y-auto overscroll-contain estimate-slide"
             >
               <div className="min-h-full flex items-center justify-center py-12 md:py-16 pb-24 md:pb-16">
                 <SectionContent index={activeIndex} data={content} lang={lang} siteSettings={siteSettings} />

@@ -2,7 +2,8 @@ import type { Express } from "express";
 import crypto from "crypto";
 import { storage } from "../storage.js";
 import { insertEstimateSchema } from "#shared/schema.js";
-import { requireAdmin } from "./_shared.js";
+import { requireAdmin, sendError } from "./_shared.js";
+import { rateLimitMiddleware } from "../lib/rateLimit.js";
 import { z } from "zod";
 
 const thumbnailSchema = z.object({
@@ -40,6 +41,21 @@ async function buildUniqueEstimateSlug(data: {
   return `${base}-${Date.now()}`;
 }
 
+// Estimate ids are `serial` — reject anything that isn't a positive integer
+// before it reaches the query layer as NaN.
+function parseEstimateId(raw: string): number | null {
+  const id = Number(raw);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+// Admin list pagination: a missing or non-numeric value falls back to the
+// default rather than reaching SQL as NaN; the cap bounds a single page.
+function parseListParam(raw: unknown, fallback: number, min: number, max: number): number {
+  const value = Number(raw);
+  if (!Number.isInteger(value)) return fallback;
+  return Math.min(Math.max(value, min), max);
+}
+
 function normalizeCustomSlug(slug: string): string {
   return slug
     .toLowerCase()
@@ -58,12 +74,12 @@ function toPublicEstimate(estimate: any) {
   return { ...publicEstimate, hasAccessCode: Boolean(accessCode) };
 }
 
-// Best-effort client IP extraction (mirrors the pattern already used by the
-// /view endpoint below and server/auth/supabaseAuth.ts's login limiter).
+// `req.ip` only. Reading the leftmost X-Forwarded-For entry let a caller pick
+// their own rate-limit key, which mattered most right here: the access-code
+// check below allows 10 guesses per 5 minutes, and a spoofable key turned that
+// into an unlimited brute force against a plaintext code that unlocks a full
+// estimate with pricing.
 function getRequestIp(req: { headers: Record<string, unknown>; ip?: string }): string {
-  const fwd = req.headers["x-forwarded-for"];
-  if (typeof fwd === "string" && fwd.length > 0) return fwd.split(",")[0]!.trim();
-  if (Array.isArray(fwd) && fwd.length > 0) return String(fwd[0]);
   return req.ip || "unknown";
 }
 
@@ -125,30 +141,34 @@ export function registerEstimatesRoutes(app: Express) {
       // No gate set - full public estimate, minus access_code/thumbnail fields.
       res.json(toPublicEstimate(estimate));
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[estimates] GET /api/estimates/slug/:slug failed:", err);
+      res.status(500).json({ message: "Failed to load estimate" });
     }
   });
 
-  app.post("/api/estimates/:id/view", async (req, res) => {
+  app.post("/api/estimates/:id/view", rateLimitMiddleware({ limit: 10, windowMs: 60_000 }), async (req, res) => {
+    const id = parseEstimateId(req.params.id);
+    if (id === null) return res.status(400).json({ message: "Invalid estimate id" });
     try {
-      const id = Number(req.params.id);
       const ipAddress = (
-        (req.headers['x-forwarded-for'] as string) || req.ip || ''
+        req.ip || ''
       ).toString() || undefined;
       await storage.recordEstimateView(id, ipAddress);
       res.json({ success: true });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[estimates] POST /api/estimates/:id/view failed:", err);
+      res.status(500).json({ message: "Failed to record view" });
     }
   });
 
   app.post("/api/estimates/:id/verify-code", async (req, res) => {
+    const id = parseEstimateId(req.params.id);
+    if (id === null) return res.status(400).json({ message: "Invalid estimate id" });
     try {
       const ip = getRequestIp(req);
       if (isVerifyCodeRateLimited(ip)) {
         return res.status(429).json({ message: "Too many attempts. Please try again later." });
       }
-      const id = Number(req.params.id);
       const { code } = req.body as { code?: unknown };
       const estimate = await storage.getEstimate(id);
       if (!estimate) return res.status(404).json({ message: "Estimate not found" });
@@ -163,19 +183,21 @@ export function registerEstimatesRoutes(app: Express) {
       // Correct code — unlock and return the full estimate for rendering.
       res.json({ success: true, ...toPublicEstimate(estimate) });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[estimates] POST /api/estimates/:id/verify-code failed:", err);
+      res.status(500).json({ message: "Failed to verify access code" });
     }
   });
 
   app.get("/api/estimates", requireAdmin, async (req, res) => {
     try {
-      const limit = req.query.limit ? Number(req.query.limit) : undefined;
-      const offset = req.query.offset ? Number(req.query.offset) : undefined;
+      const limit = parseListParam(req.query.limit, 50, 1, 100);
+      const offset = parseListParam(req.query.offset, 0, 0, Number.MAX_SAFE_INTEGER);
       const search = req.query.search as string | undefined;
       const result = await storage.listEstimates(limit, offset, search);
       res.json(result);
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[estimates] GET /api/estimates failed:", err);
+      res.status(500).json({ message: "Failed to load estimates" });
     }
   });
 
@@ -190,7 +212,7 @@ export function registerEstimatesRoutes(app: Express) {
       const estimate = await storage.createEstimate({ ...parsed.data, slug });
       res.status(201).json(estimate);
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to create estimate");
     }
   });
 
@@ -215,7 +237,7 @@ export function registerEstimatesRoutes(app: Express) {
       const estimate = await storage.updateEstimate(Number(req.params.id), updateData);
       res.json(estimate);
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to update estimate");
     }
   });
 
@@ -230,7 +252,7 @@ export function registerEstimatesRoutes(app: Express) {
       const estimate = await storage.updateEstimate(Number(req.params.id), parsed.data);
       res.json(estimate);
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to update thumbnail");
     }
   });
 
@@ -239,7 +261,7 @@ export function registerEstimatesRoutes(app: Express) {
       await storage.deleteEstimate(Number(req.params.id));
       res.json({ success: true });
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to delete estimate");
     }
   });
 }

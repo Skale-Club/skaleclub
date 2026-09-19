@@ -64,7 +64,8 @@ export function registerUploadRoutes(app: Express) {
       const result = await storageService.getSignedUploadUrlForPageMedia(parsed.data.filename);
       return res.json(result);
     } catch (err: any) {
-      return res.status(500).json({ message: err?.message ?? "Failed to create upload URL" });
+      console.error("[uploads] POST /api/uploads/page-media/sign failed:", err);
+      return res.status(500).json({ message: "Failed to create upload URL" });
     }
   });
 
@@ -90,7 +91,7 @@ export function registerUploadRoutes(app: Express) {
       return res.json({ ok: true });
     } catch (err: any) {
       console.error("Links-page delete error:", err);
-      return res.status(500).json({ message: err?.message ?? "Delete failed" });
+      return res.status(500).json({ message: "Delete failed" });
     }
   });
 

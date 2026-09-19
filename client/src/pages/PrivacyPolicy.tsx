@@ -1,10 +1,13 @@
+import { usePageSeo } from "@/hooks/use-seo";
 import { Shield, Eye, Lock, Users, Cookie, FileText, Mail, Bell, MessageSquare } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 export default function PrivacyPolicy() {
   const { t } = useTranslation();
+  usePageSeo({ title: t("Privacy Policy") });
   const { data: settings } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
   });
@@ -16,20 +19,17 @@ export default function PrivacyPolicy() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Header */}
-      <div className="bg-primary text-white pt-28 pb-16">
-        <div className="container-custom">
-          <div className="flex items-center gap-3 mb-4">
-            <Shield className="w-10 h-10" />
-            <h1 className="text-4xl font-bold font-heading text-white">{t('Privacy Policy')}</h1>
-          </div>
-          <p className="text-primary-foreground/80 text-lg max-w-2xl">
-            {t(`Your privacy is important to us. This policy explains how ${companyName} collects, uses, and protects your personal information.`)}
-          </p>
-          <p className="text-primary-foreground/60 mt-4 text-sm">
-            {t('Last updated: January 10, 2026')}
-          </p>
-        </div>
+      <div className="pt-24">
+        <PageHeader
+          title={t('Privacy Policy')}
+          subtitle={
+            <>
+              {t(`Your privacy is important to us. This policy explains how ${companyName} collects, uses, and protects your personal information.`)}
+              <br />
+              <span className="text-white/50 text-sm">{t('Last updated: January 10, 2026')}</span>
+            </>
+          }
+        />
       </div>
 
       {/* Content */}

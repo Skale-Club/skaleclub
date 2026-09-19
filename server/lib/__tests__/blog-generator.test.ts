@@ -51,9 +51,9 @@ function createSettings(overrides: Partial<BlogSettings> = {}): BlogSettings {
     enableTrendAnalysis: true,
     promptStyle: "confident but practical",
     systemPrompt: "",
-    autoApprove: false,
-    openrouterTextModel: TEST_AI_CONFIG.textModel,
-    openrouterImageModel: TEST_AI_CONFIG.imageModel,
+    autoPublish: false,
+    textModel: TEST_AI_CONFIG.textModel,
+    imageModel: TEST_AI_CONFIG.imageModel,
     lastRunAt: null,
     lockAcquiredAt: null,
     updatedAt: new Date("2026-04-22T00:00:00Z"),
@@ -293,7 +293,7 @@ async function expectSuccessfulGeneration() {
   assert.ok(createdPostInput, "successful runs create a draft post");
 
   const createdPost = createdPostInput as InsertBlogPost;
-  assert.equal(createdPost.status, "draft", "created post is saved as a draft when autoApprove is off");
+  assert.equal(createdPost.status, "draft", "created post is saved as a draft when autoPublish is off");
   assert.equal(createdPost.publishedAt, null, "draft posts carry no publishedAt");
   assert.equal(createdPost.authorName, "AI Assistant", "created post is attributed to AI Assistant");
   assert.equal(createdPost.tags, "SEO, Local Marketing, AI Content", "tags are serialized before insertion");
@@ -313,7 +313,7 @@ async function expectSuccessfulGeneration() {
   assert.equal(completedUpdate.status, "completed", "job status becomes completed after post creation");
   assert.equal(completedUpdate.postId, 77, "job stores the created post id after the post exists");
   assert.equal(completedUpdate.reason, null, "successful runs clear any prior reason");
-  assert.equal(completedUpdate.error, null, "successful runs clear any prior error");
+  assert.equal(completedUpdate.errorMessage, null, "successful runs clear any prior error");
 
   assert.ok(finalizedSettings, "successful runs finalize the singleton settings row");
   const successSettings = finalizedSettings as InsertBlogSettings;
@@ -349,7 +349,7 @@ async function expectAutoApprovePublishes() {
   let createdPostInput: InsertBlogPost | null = null;
 
   __setBlogGeneratorTestDeps({
-    storage: createStorageStub(createSettings({ autoApprove: true }), {
+    storage: createStorageStub(createSettings({ autoPublish: true }), {
       onCreatePost: (data) => {
         createdPostInput = data;
       },
@@ -378,8 +378,8 @@ async function expectAutoApprovePublishes() {
   assert.equal(result.skipped, false, "auto-approve runs still succeed");
   const createdPost = createdPostInput as unknown as InsertBlogPost;
   assert.ok(createdPost, "auto-approve runs create a post");
-  assert.equal(createdPost.status, "published", "autoApprove=true publishes immediately");
-  assert.ok(createdPost.publishedAt instanceof Date, "autoApprove=true stamps publishedAt");
+  assert.equal(createdPost.status, "published", "autoPublish=true publishes immediately");
+  assert.ok(createdPost.publishedAt instanceof Date, "autoPublish=true stamps publishedAt");
   __resetBlogGeneratorTestDeps();
 }
 
@@ -464,7 +464,7 @@ async function expectFailureCleanup() {
   const failureUpdate = failedUpdate as Partial<InsertBlogGenerationJob>;
   assert.equal(failureUpdate.status, "failed", "failed runs mark the job as failed");
   assert.ok(failureUpdate.completedAt instanceof Date, "failed runs stamp completedAt");
-  assert.equal(failureUpdate.error, "topic generation exploded", "failed runs persist the error message");
+  assert.equal(failureUpdate.errorMessage, "topic generation exploded", "failed runs persist the error message");
   assert.equal(failureUpdate.postId, undefined, "failed runs do not assign a post id");
 
   assert.ok(finalizedSettings, "failed runs still finalize singleton settings");

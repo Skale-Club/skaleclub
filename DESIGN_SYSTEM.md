@@ -30,19 +30,25 @@ Skale Club is a professional marketing service platform that emphasizes trust, q
 
 ### Brand Colors
 
-> The brand is a **two-color palette**: Primary navy `#0A162E` and Action Blue `#406EF1`. There is **no brand yellow** (legacy, fully removed). The amber `warning` color below is a functional UI state, not a brand color.
+> The brand is a **two-color palette**: Primary navy `#0A162E` and the CTA blue `#5173D6`. There is **no brand yellow** (legacy, fully removed). The amber `warning` color below is a functional UI state, not a brand color.
 
 #### Primary Navy - `#0A162E`
-- **Usage**: Dark surfaces, hero backgrounds, headings when convenient
+- **Usage**: Print materials (`PrintFolder`), brand guidelines, headings when convenient
 - **Meaning**: Trust, depth, premium
 
-#### Action Blue - `#406EF1`
-- **Usage**: CTAs and buttons, links, interactive accents
-- **Required**: All primary CTA buttons (pill-shaped `rounded-full`, white bold text)
-- **Hover**: `#355CD0` (slightly darker blue)
+#### CTA Blue - `#5173D6` (token `cta` / `--cta`)
+- **Usage**: All primary CTAs and buttons, links, interactive accents
+- **Required**: Primary CTA buttons are pill-shaped (`rounded-full`) with white bold text — use `<Button variant="cta" size="pill">` or the `bg-cta hover:bg-cta-hover rounded-full` utilities
+- **Hover**: `#3B5BBE` (token `cta-hover` / `--cta-hover`)
 - **Same color** in dark mode
 
-> Note: the theme `--primary` token is still `#1C53A3` (HSL `215 71% 37%`) and was intentionally left untouched — it remains the interactive token used across the admin/theme. Brand-level CTAs use Action Blue `#406EF1`.
+#### Dark Surface - `#111111` (token `surface-dark` / `--surface-dark`)
+- **Usage**: Dark section backgrounds on the public site (trust bar, services, reviews, blog, areas served)
+- Never hard-code the hex; use `bg-surface-dark`.
+
+> Note: the theme `--primary` token is still `#1C53A3` (HSL `215 71% 37%`) and was intentionally left untouched — it remains the interactive token used across the admin/theme. Public-site CTAs use the `cta` token, not `primary`.
+
+> Tokens live in two places by design: `client/src/index.css` (`--cta`, `--cta-hover`, `--surface-dark`, for CSS) and `tailwind.config.ts` (`cta`, `cta-hover`, `surface-dark`, as hex so `bg-cta/20` alpha modifiers work). Keep both in sync.
 
 #### Text Colors
 - **Primary**: `#1D1D1D` (light mode) / `#F1F5F9` (dark mode)
@@ -138,11 +144,11 @@ Tailwind units: 4, 6, 8, 12, 16, 24
 
 #### Public Frontend
 - **Component padding**: `p-6` or `p-8`
-- **Section spacing**: `py-16 md:py-24`
+- **Section spacing**: `py-16 md:py-24` (marketing sections); `py-[4.25rem]` is the homepage's tighter rhythm between adjacent dark sections
 - **Card gaps**: `gap-6` or `gap-8`
 
 ### Container Widths
-- **Marketing sections**: `max-w-7xl`
+- **Marketing sections**: `.container-custom` — `max-w-7xl` below 770px, then 90% of the viewport (max 1600px) from 770px and 80% from 1367px. Always use the class, never a raw `max-w-*`
 - **Booking forms**: `max-w-2xl`
 - **Admin content**: `max-w-full` with sidebar
 
@@ -465,7 +471,7 @@ Large hero image showing professional cleaners in modern home setting with brigh
   - Service type dropdown
   - Location/address input
   - Date/time selector
-  - "Get Instant Quote" CTA button (Action Blue `#406EF1`)
+  - "Get Instant Quote" CTA button (Action Blue `#5173D6`)
 
 #### Services Grid (3 columns desktop, 1 column mobile)
 
@@ -514,7 +520,7 @@ Clean receipt-style summary with booking details, professional assigned (photo +
 ### Frontend Component Specifications
 
 #### Buttons
-- **Primary CTA**: Action Blue (`#406EF1`, hover `#355CD0`) with white bold text, `rounded-full` (pill shape)
+- **Primary CTA**: Action Blue (`#5173D6`, hover `#3B5BBE`) with white bold text, `rounded-full` (pill shape)
 - **Secondary**: Outlined version, `rounded-lg`
 - **Text buttons**: For tertiary actions
 - **Buttons on images**: `backdrop-blur-md bg-white/20 text-white`
@@ -560,7 +566,7 @@ Small `rounded-full` pills with colored backgrounds:
 - Use `admin-*` utility classes for consistency in admin
 - Apply transitions to elements that change with theme
 - Test UI in both themes before committing
-- Use Action Blue (`#406EF1`) for all main CTAs
+- Use Action Blue (`#5173D6`) for all main CTAs
 - Apply `rounded-full` to main CTA buttons
 - Maintain generous spacing (according to defined primitives)
 - Follow typographic hierarchy (Outfit for headings, Inter for body)
@@ -586,7 +592,7 @@ Small `rounded-full` pills with colored backgrounds:
 - [ ] Uses `admin-*` utility classes when applicable
 
 #### Public Frontend
-- [ ] Uses Action Blue (`#406EF1`) for main CTAs
+- [ ] Uses Action Blue (`#5173D6`) for main CTAs
 - [ ] Main buttons with `rounded-full`
 - [ ] Optimized and high-quality images
 - [ ] Follows typographic hierarchy (Outfit/Inter)
@@ -600,7 +606,7 @@ Small `rounded-full` pills with colored backgrounds:
 
 ### Main Colors
 - **Primary Navy**: `#0A162E` (dark surfaces, headings)
-- **Action Blue (CTAs/buttons)**: `#406EF1` (hover `#355CD0`, both modes)
+- **Action Blue (CTAs/buttons)**: `#5173D6` (hover `#3B5BBE`, both modes)
 - **Theme `--primary` token**: `#1C53A3` (light) / `#3B82F6` (dark) — interactive token, intentionally unchanged
 - **Success**: `#059669` (light) / `#10B981` (dark)
 - **Warning**: `#F59E0B` (both modes)
@@ -612,7 +618,7 @@ Small `rounded-full` pills with colored backgrounds:
 
 ### Spacing
 - Cards: `p-6`
-- Sections (public): `py-16 md:py-24`
+- Sections (public): `py-16 md:py-24`; CTAs: `<Button variant="cta" size="pill">`
 - Form spacing: `space-y-4`
 - Grid gaps: `gap-4` (admin) / `gap-6` (public)
 

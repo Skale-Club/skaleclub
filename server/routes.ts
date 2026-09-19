@@ -1,4 +1,4 @@
-import type { Express, Request, Response, NextFunction } from "express";
+import type { Express } from "express";
 import type { Server } from "http";
 import { storage } from "./storage.js";
 import { z } from "zod";
@@ -14,6 +14,7 @@ import { dispatchNotification } from "./lib/notifications.js";
 import { registerStorageRoutes } from "./storage/storageAdapter.js";
 import { registerPortfolioRoutes } from "./routes/portfolio.js";
 import { registerFaqRoutes } from "./routes/faqs.js";
+import { registerBootstrapRoutes } from "./routes/bootstrap.js";
 import { registerRedirectRoutes, registerPublicRedirectResolver } from "./routes/redirects.js";
 import { registerVCardRoutes } from "./routes/vcards.js";
 import { registerBlogRoutes } from "./routes/blog.js";
@@ -39,27 +40,9 @@ import { registerNotificationRoutes } from "./routes/notifications.js";
 import { registerMcpRoutes } from "./routes/mcpTokens.js";
 import { registerOAuthRoutes } from "./routes/oauth.js";
 import { registerContactRoutes } from "./routes/contact.js";
-import { db, pool } from "./db.js";
-import { users } from "#shared/schema.js";
-import { eq } from "drizzle-orm";
+import { requireAdmin, sendError, setPublicCache } from "./routes/_shared.js";
+import { pool } from "./db.js";
 
-
-// Admin authentication middleware
-async function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  const sess = req.session as any;
-  if (!sess?.userId) {
-    return res.status(401).json({ message: 'Authentication required' });
-  }
-  try {
-    const [dbUser] = await db.select().from(users).where(eq(users.id, sess.userId));
-    if (!dbUser?.isAdmin) {
-      return res.status(403).json({ message: 'Admin access required' });
-    }
-    next();
-  } catch (error) {
-    return res.status(500).json({ message: 'Failed to verify admin status' });
-  }
-}
 
 // Chat helpers
 const urlRuleSchema = z.object({
@@ -105,10 +88,6 @@ function isUrlExcluded(url: string, rules: UrlRule[] = []): boolean {
   });
 }
 
-function setPublicCache(res: Response, seconds: number) {
-  res.set("Cache-Control", `public, max-age=0, s-maxage=${seconds}, stale-while-revalidate=${seconds * 12}`);
-}
-
 
 type IntakeObjective = {
   id: 'zipcode' | 'name' | 'phone' | 'serviceType' | 'serviceDetails' | 'date' | 'address';
@@ -134,6 +113,7 @@ export async function registerRoutes(
   // Xpot was extracted to a standalone project at C:\Users\Vanildo\Dev\xpot on 2026-05-18.
   registerPortfolioRoutes(app);
   registerFaqRoutes(app);
+  registerBootstrapRoutes(app);
   registerRedirectRoutes(app);
   registerVCardRoutes(app);
   registerBlogAutomationRoutes(app);
@@ -688,7 +668,8 @@ export async function registerRoutes(
         intakeObjectives: effectiveObjectives,
       });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('Chat config error:', err);
+      res.status(500).json({ message: 'Failed to load chat config' });
     }
   });
 
@@ -700,7 +681,8 @@ export async function registerRoutes(
       const effectiveObjectives = intakeObjectives.length ? intakeObjectives : DEFAULT_INTAKE_OBJECTIVES;
       res.json({ ...settings, intakeObjectives: effectiveObjectives });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('Chat settings error:', err);
+      res.status(500).json({ message: 'Failed to load chat settings' });
     }
   });
 
@@ -759,7 +741,8 @@ export async function registerRoutes(
 
       res.json({ averageSeconds: avgSeconds, formatted, samples });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('Chat response time error:', err);
+      res.status(500).json({ message: 'Failed to load response time' });
     }
   });
 
@@ -795,7 +778,7 @@ export async function registerRoutes(
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: 'Validation error', errors: err.errors });
       }
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to update chat settings");
     }
   });
 
@@ -853,7 +836,8 @@ export async function registerRoutes(
         messageCount: Number(row.messageCount || 0),
       })));
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('Chat conversations list error:', err);
+      res.status(500).json({ message: 'Failed to load conversations' });
     }
   });
 
@@ -864,7 +848,8 @@ export async function registerRoutes(
       const messages = await storage.getConversationMessages(conversation.id);
       res.json({ conversation, messages });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('Chat conversation fetch error:', err);
+      res.status(500).json({ message: 'Failed to load conversation' });
     }
   });
 
@@ -879,7 +864,8 @@ export async function registerRoutes(
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: 'Validation error', errors: err.errors });
       }
-      res.status(500).json({ message: (err as Error).message });
+      console.error('Chat conversation status error:', err);
+      res.status(500).json({ message: 'Failed to update conversation' });
     }
   });
 
@@ -888,7 +874,8 @@ export async function registerRoutes(
       await storage.deleteConversation(req.params.id);
       res.json({ success: true });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('Chat conversation delete error:', err);
+      res.status(500).json({ message: 'Failed to delete conversation' });
     }
   });
 
@@ -900,9 +887,17 @@ export async function registerRoutes(
         return res.status(404).json({ message: 'Conversation not found' });
       }
       const messages = await storage.getConversationMessages(req.params.id);
-      res.json({ conversation, messages });
+      // Public endpoint keyed only by a conversation id kept in localStorage —
+      // never echo back the stored visitor identity (name/email/phone/first
+      // page URL). The widget reads `messages` only; the trimmed conversation
+      // stub keeps the response shape stable.
+      res.json({
+        conversation: { id: conversation.id, status: conversation.status, createdAt: conversation.createdAt },
+        messages,
+      });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('Chat conversation messages error:', err);
+      res.status(500).json({ message: 'Failed to load conversation' });
     }
   });
 
@@ -1168,7 +1163,8 @@ You: "Excellent, John! A specialist will contact you within 24 hours to discuss 
         leadCaptured
       });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error('Chat message error:', err);
+      res.status(500).json({ message: 'Failed to process chat message' });
     }
   });
 

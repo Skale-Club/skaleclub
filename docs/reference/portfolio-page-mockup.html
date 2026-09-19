@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portfólio Skale Club (mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ---------- tokens: os mesmos do mockup do popup ---------- */
+  :root {
+    --page: #111111;          /* surface-dark, já existe */
+    --card: #0C1424;          /* token novo 1: cards e popup */
+    --raised: #142038;        /* token novo 2: encaixe de imagem, hover */
+    --ink: #F3F6FB;
+    --ink-2: #B4C0D8;
+    --ink-dim: #7C8AA6;
+    --cta: #5173D6;
+    --cta-hover: #3B5BBE;
+    --cta-soft: #8FA9EE;      /* azul-claro para rótulos pequenos sobre escuro */
+    --line: rgba(180,192,216,.14);
+    --display: "Outfit", sans-serif;
+    --text: "Inter", sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0A0A0B; color: var(--ink); font-family: var(--text); -webkit-font-smoothing: antialiased; }
+  button { font: inherit; color: inherit; }
+  img { display: block; }
+
+  /* ---------- barra de decisões (não faz parte do site) ---------- */
+  .toolbar {
+    position: sticky; top: 0; z-index: 50; display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center;
+    padding: 10px 16px; background: #16181d; border-bottom: 1px solid #2b303b; font-size: 12px; color: #9aa3b5;
+  }
+  .toolbar b { color: #d6dbe6; font-weight: 600; margin-right: 6px; }
+  .seg { display: inline-flex; border: 1px solid #2b303b; border-radius: 8px; overflow: hidden; }
+  .seg button { background: none; border: 0; padding: 6px 11px; cursor: pointer; color: #9aa3b5; font-size: 12px; }
+  .seg button + button { border-left: 1px solid #2b303b; }
+  .seg button.on { background: var(--cta); color: #fff; }
+  .toolbar .hint { margin-left: auto; }
+
+  .stage { display: flex; justify-content: center; }
+  .stage.phone { padding: 24px 0 60px; }
+
+  /* ---------- o site: um contêiner, tudo responde a ele ---------- */
+  .site {
+    width: 100%; container-type: inline-size; background: var(--page); position: relative; overflow: hidden;
+  }
+  .stage.phone .site { width: 390px; border-radius: 28px; border: 1px solid #2b303b; }
+  .wrap { width: min(1200px, 100% - 2 * clamp(16px, 4cqw, 48px)); margin-inline: auto; }
+
+  /* cromo */
+  .nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; }
+  .nav img { height: 36px; }
+  .nav .links { display: flex; align-items: center; gap: 28px; font-size: 14px; color: var(--ink-2); }
+  .nav .links a { color: inherit; text-decoration: none; }
+  .nav .links a.here { color: var(--ink); }
+
+  /* botões: um CTA só, o da marca */
+  .cta {
+    display: inline-flex; align-items: center; gap: 10px; background: var(--cta); color: #fff; border: 0; border-radius: 999px;
+    font-weight: 700; font-size: 16px; padding: 16px 28px; cursor: pointer; text-decoration: none; transition: background .2s;
+  }
+  .cta:hover { background: var(--cta-hover); }
+  .cta.sm { font-size: 14px; padding: 10px 18px; }
+  .link2 { color: var(--ink-2); text-decoration: none; font-size: 15px; font-weight: 500; }
+  .link2:hover { color: var(--ink); }
+  :is(button, a):focus-visible { outline: 2px solid var(--cta-soft); outline-offset: 3px; }
+
+  /* rótulo + régua: o padrão da casa (SectionHeading) */
+  .eyebrow {
+    display: flex; align-items: center; gap: 12px; font-size: 12px; font-weight: 600; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--cta-soft);
+  }
+  .eyebrow::before { content: ""; width: 28px; height: 3px; border-radius: 3px; background: var(--cta); flex: none; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; padding: clamp(40px, 8cqw, 110px) 0 clamp(40px, 6cqw, 80px); }
+  .hero::before { /* atmosfera: um brilho de canto + uma textura quase invisível. Só isso. */
+    content: ""; position: absolute; inset: -200px 0 0 0; pointer-events: none;
+    background:
+      radial-gradient(40% 55% at 8% 0%, rgba(81,115,214,.16), transparent 70%),
+      repeating-linear-gradient(0deg, transparent 0 31px, rgba(180,192,216,.035) 31px 32px);
+    mask-image: linear-gradient(180deg, #000 55%, transparent);
+  }
+  .hero .wrap { position: relative; }
+  .hero h1 {
+    font-family: var(--display); font-weight: 800; letter-spacing: -.035em; line-height: .93;
+    font-size: clamp(44px, 7.4cqw, 104px); margin-top: 22px; max-width: 15ch;
+  }
+  .hero h1 em { font-style: normal; color: var(--cta); }
+  .hero p { margin-top: 26px; font-size: clamp(17px, 1.6cqw, 21px); line-height: 1.5; color: var(--ink-2); max-width: 46ch; }
+  .hero .actions { margin-top: 36px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px 26px; }
+
+  /* faixa de prova: numerais, uma cor */
+  .proof { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .proof .wrap { display: grid; grid-template-columns: repeat(4, 1fr); }
+  .proof .n { padding: 28px 0 26px; padding-left: 24px; border-left: 1px solid var(--line); }
+  .proof .n:first-child { border-left: 0; padding-left: 0; }
+  .proof .v { font-family: var(--display); font-weight: 800; font-size: clamp(36px, 4.4cqw, 56px); letter-spacing: -.03em; line-height: 1; }
+  .proof .v small { font-size: .42em; font-weight: 600; color: var(--ink-2); letter-spacing: 0; margin-left: 4px; }
+  .proof .l { margin-top: 8px; font-size: 14px; color: var(--ink-dim); line-height: 1.4; }
+  .site.no-proof .proof { display: none; }
+
+  /* ---------- seções ---------- */
+  section.block { padding: clamp(56px, 8cqw, 112px) 0 0; }
+  .head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: clamp(28px, 4cqw, 48px); }
+  .head h2 {
+    font-family: var(--display); font-weight: 800; letter-spacing: -.03em; line-height: .98;
+    font-size: clamp(34px, 5cqw, 64px); margin-top: 16px; max-width: 22ch;
+  }
+  .head p { margin-top: 14px; font-size: 17px; color: var(--ink-2); max-width: 50ch; line-height: 1.5; }
+  .head .count { font-family: var(--display); font-weight: 800; font-size: clamp(56px, 8cqw, 120px); line-height: .8; color: transparent;
+                 -webkit-text-stroke: 1px rgba(180,192,216,.28); letter-spacing: -.04em; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(14px, 1.8cqw, 24px); }
+
+  /* ---------- CatalogCard / tile ---------- */
+  .tile {
+    all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column;
+    background: var(--card); border: 1px solid var(--line); border-radius: 20px; overflow: hidden;
+    transition: border-color .25s, transform .25s;
+  }
+  .tile:hover { border-color: rgba(81,115,214,.55); transform: translateY(-3px); }
+  .tile:focus-visible { outline: 2px solid var(--cta-soft); outline-offset: 3px; }
+  .tile .tb { padding: 22px 24px 22px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .tile .eyebrow { font-size: 11px; gap: 10px; }
+  .tile .eyebrow::before { width: 18px; }
+  .tile h3 { font-family: var(--display); font-weight: 800; font-size: clamp(24px, 2.2cqw, 28px); letter-spacing: -.02em; line-height: 1.05; }
+  .tile .sub { font-size: 15px; color: var(--ink-2); line-height: 1.45; }
+  .feat { list-style: none; display: grid; gap: 7px; margin-top: 4px; }
+  .feat li { position: relative; padding-left: 22px; font-size: 14px; color: var(--ink); font-weight: 500; }
+  .feat li::before { content: ""; position: absolute; left: 0; top: .6em; width: 12px; height: 2px; border-radius: 2px; background: var(--cta); }
+  .tfoot { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--line); display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+  .tfoot .price { font-family: var(--display); font-weight: 800; font-size: 30px; letter-spacing: -.02em; line-height: 1; }
+  .tfoot .price small { font-family: var(--text); font-size: 13px; font-weight: 500; color: var(--ink-2); letter-spacing: 0; margin-left: 4px; }
+  .tfoot .quote { font-size: 14px; color: var(--ink-dim); }
+  .tfoot .more { font-size: 14px; font-weight: 600; color: var(--cta-soft); white-space: nowrap; }
+  .tile:hover .more { color: var(--ink); }
+  .tile .tb > * { min-width: 0; }
+
+  /* ---------- Cover: proporção fixa, três estados desenhados ---------- */
+  .cover { position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: var(--raised); }
+  .cover .badge {
+    position: absolute; right: 12px; top: 12px; z-index: 3; font-size: 10.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--ink); background: rgba(12,20,36,.78); border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px;
+  }
+  /* A · composta: screenshot real numa janela, sobre a superfície da marca */
+  .cover.composed {
+    background:
+      radial-gradient(70% 70% at 50% 110%, rgba(81,115,214,.40), transparent 70%),
+      repeating-linear-gradient(90deg, transparent 0 23px, rgba(180,192,216,.05) 23px 24px),
+      var(--raised);
+  }
+  .cover .win {
+    position: absolute; left: 9%; right: 9%; top: 15%; bottom: -8%; border-radius: 10px 10px 0 0; overflow: hidden;
+    background: #0b0f18; border: 1px solid rgba(180,192,216,.22); box-shadow: 0 24px 60px rgba(0,0,0,.55);
+    transition: transform .35s cubic-bezier(.2,.7,.2,1);
+  }
+  .tile:hover .cover .win { transform: translateY(-4px); }
+  .cover .win .bar { height: 22px; display: flex; align-items: center; gap: 5px; padding: 0 9px; background: #151b28; border-bottom: 1px solid rgba(180,192,216,.12); }
+  .cover .win .bar i { width: 7px; height: 7px; border-radius: 50%; background: rgba(180,192,216,.28); }
+  .cover .win .bar span { margin-left: 8px; font-size: 9.5px; color: var(--ink-dim); background: rgba(180,192,216,.08); border-radius: 999px; padding: 2px 10px; }
+  .cover .win img { width: 100%; height: calc(100% - 22px); object-fit: cover; object-position: center top; }
+  .cover .mark { /* logo do produto no canto: a assinatura */
+    position: absolute; left: 12px; top: 12px; z-index: 3; width: 34px; height: 34px; border-radius: 10px; overflow: hidden;
+    background: rgba(12,20,36,.78); border: 1px solid var(--line); display: grid; place-items: center;
+  }
+  .cover .mark img { width: 100%; height: 100%; object-fit: contain; }
+  /* Atual + wash: o upload de hoje, unificado só pelo tratamento */
+  .cover.photo img.ph { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+  .cover.photo .wash { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(81,115,214,.14), rgba(12,20,36,.55)); }
+  /* sem imagem: a marca vira a arte (mesmo tratamento do popup) */
+  .cover.empty {
+    display: grid; place-items: center;
+    background:
+      radial-gradient(55% 55% at 50% 50%, rgba(81,115,214,.30), transparent 70%),
+      repeating-linear-gradient(0deg, transparent 0 22px, rgba(180,192,216,.05) 22px 23px),
+      var(--raised);
+  }
+  .cover.empty img.logo { width: 32%; aspect-ratio: 1; object-fit: contain; filter: drop-shadow(0 18px 36px rgba(0,0,0,.5)); }
+  .cover.empty .word { font-family: var(--display); font-weight: 800; font-size: clamp(30px, 3.4cqw, 44px); letter-spacing: -.03em; color: var(--ink); }
+  .missing {
+    position: absolute; left: 12px; bottom: 12px; z-index: 3; font-size: 10.5px; color: #ffd28a; background: rgba(40,28,8,.8);
+    border: 1px dashed rgba(255,210,138,.5); border-radius: 6px; padding: 4px 8px;
+  }
+  .site.clean .missing { display: none; }
+
+  /* serviço ímpar no fim: ocupa a linha inteira, em linha */
+  .tile.row { grid-column: 1 / -1; flex-direction: row; }
+  .tile.row .cover { flex: 0 0 44%; aspect-ratio: auto; min-height: 280px; }
+  .tile.row .tb { padding: 32px 36px; justify-content: center; }
+  .tile.row h3 { font-size: clamp(28px, 3cqw, 40px); }
+  .tile.row .sub { font-size: 17px; max-width: 46ch; }
+  .tile.row .tfoot { margin-top: 18px; }
+
+  /* ---------- CTA final ---------- */
+  .final { padding: clamp(64px, 9cqw, 120px) 0 clamp(56px, 7cqw, 96px); }
+  .final .box {
+    position: relative; overflow: hidden; border-radius: 28px; border: 1px solid var(--line); background: var(--card);
+    padding: clamp(32px, 6cqw, 80px); display: grid; grid-template-columns: 1.3fr auto; align-items: end; gap: 32px;
+  }
+  .final .box::before { content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(45% 80% at 100% 100%, rgba(81,115,214,.22), transparent 70%); }
+  .final h2 { position: relative; font-family: var(--display); font-weight: 800; letter-spacing: -.035em; line-height: .95; font-size: clamp(36px, 5.6cqw, 76px); margin-top: 18px; max-width: 14ch; }
+  .final .actions { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+  .foot { border-top: 1px solid var(--line); padding: 22px 0 28px; font-size: 13px; color: var(--ink-dim); }
+
+  /* ---------- recomposição no celular ---------- */
+  @container (max-width: 900px) {
+    .grid { grid-template-columns: repeat(2, 1fr); }
+    .proof .wrap { grid-template-columns: repeat(2, 1fr); }
+    .proof .n:nth-child(3) { border-left: 0; padding-left: 0; }
+    .proof .n:nth-child(n+3) { border-top: 1px solid var(--line); }
+  }
+  @container (max-width: 620px) {
+    .nav .links a:not(.cta) { display: none; }
+    .nav img { height: 30px; }
+    .grid { grid-template-columns: 1fr; }
+    .tile.row { flex-direction: column; }
+    .tile.row .cover { flex: none; aspect-ratio: 16 / 10; min-height: 0; }
+    .tile.row .tb { padding: 22px 24px; }
+    .head { flex-direction: column; align-items: flex-start; }
+    .head .count { display: none; }
+    .final .box { grid-template-columns: 1fr; }
+    .proof .n { padding: 20px 0 18px 16px; }
+  }
+
+  /* ---------- popup (CatalogDetail), o do mockup aprovado para revisão ---------- */
+  .overlay { position: fixed; inset: 0; z-index: 60; display: none; place-items: center; padding: 20px; background: rgba(5,7,12,.78); backdrop-filter: blur(6px); }
+  .overlay.open { display: grid; }
+  .pcard {
+    position: relative; width: min(1120px, 100%); max-height: calc(100vh - 40px); container-type: inline-size;
+    background: var(--card); border: 1px solid var(--line); border-radius: 24px; overflow: hidden;
+    box-shadow: 0 40px 120px rgba(0,0,0,.6); display: grid; grid-template-rows: 1fr auto;
+  }
+  .stage.phone ~ .overlay .pcard { width: 390px; }
+  .pbody { display: grid; grid-template-columns: 1.05fr 1fr; min-height: 0; overflow: auto; }
+  .pcontent { padding: clamp(28px, 4.6cqw, 56px); display: flex; flex-direction: column; gap: clamp(14px, 1.9cqw, 22px); min-width: 0; }
+  .ptitle { display: flex; align-items: center; gap: 16px; }
+  .ptitle img { width: clamp(44px, 5.4cqw, 64px); aspect-ratio: 1; object-fit: contain; border-radius: 14px; }
+  .pcontent h2 { font-family: var(--display); font-weight: 800; letter-spacing: -.025em; line-height: .95; font-size: clamp(38px, 6.4cqw, 72px); }
+  .plead { font-family: var(--display); font-weight: 500; font-size: clamp(18px, 2.2cqw, 24px); line-height: 1.2; color: var(--ink-2); }
+  .pdesc { font-size: 15px; line-height: 1.6; color: var(--ink-dim); max-width: 52ch; }
+  .pcontent .feat li { font-size: 15px; }
+  .pbuy { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--line); display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+  .pbuy .v { font-family: var(--display); font-weight: 800; font-size: clamp(44px, 6cqw, 68px); line-height: .9; letter-spacing: -.03em; }
+  .pbuy .v small { font-family: var(--text); font-size: 15px; font-weight: 500; color: var(--ink-2); letter-spacing: 0; margin-left: 6px; }
+  .pbuy .setup { font-size: 13px; color: var(--ink-dim); margin-top: 6px; }
+  .pbuy .quote { font-size: 15px; color: var(--ink-2); max-width: 26ch; line-height: 1.4; }
+  .pvisual .badge { right: auto; left: 16px; top: 16px; }
+  .pvisual { margin: 14px 14px 14px 0; border-radius: 16px; min-height: 440px; aspect-ratio: auto; }
+  .pnav { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 12px 24px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-dim); }
+  .pnav button { background: none; border: 0; cursor: pointer; color: var(--ink-2); padding: 8px 6px; justify-self: start; }
+  .pnav button:last-child { justify-self: end; }
+  .pnav button:hover { color: var(--ink); }
+  .pnav .count { font-family: var(--display); font-weight: 700; color: var(--ink-2); letter-spacing: .04em; }
+  .pclose { position: absolute; right: 22px; top: 22px; z-index: 5; width: 36px; height: 36px; border-radius: 999px; border: 1px solid var(--line);
+            background: rgba(12,20,36,.78); color: var(--ink); cursor: pointer; font-size: 18px; }
+  @container (max-width: 720px) {
+    .pbody { grid-template-columns: 1fr; }
+    .pvisual { order: -1; margin: 10px 10px 0; min-height: 0; aspect-ratio: 16 / 10; }
+    .pcontent { padding: 22px; gap: 14px; }
+    .pbuy { position: sticky; bottom: 0; background: var(--card); margin: 0 -22px -22px; padding: 14px 22px 16px; }
+  }
+
+  /* movimento: só opacity/transform, escalonado, e desligável */
+  .rise { opacity: 0; transform: translateY(14px); animation: rise .7s cubic-bezier(.2,.7,.2,1) forwards; }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .rise { animation: none; opacity: 1; transform: none; } .tile, .cover .win { transition: none; } }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span><b>Capa dos apps</b><span class="seg" id="segCover">
+    <button data-v="composed" class="on">A · composta</button><button data-v="photo">Atual + wash</button></span></span>
+  <span><b>Faixa de prova</b><span class="seg" id="segProof">
+    <button data-v="on" class="on">Com</button><button data-v="off">Sem</button></span></span>
+  <span><b>Tela</b><span class="seg" id="segView">
+    <button data-v="desk" class="on">Desktop</button><button data-v="phone">Celular</button></span></span>
+  <span><b>Marcar o que falta</b><span class="seg" id="segMissing">
+    <button data-v="on" class="on">Sim</button><button data-v="off">Não</button></span></span>
+  <span class="hint">Mockup · dados reais de skale.club em 18/09 · clique num card</span>
+</div>
+
+<div class="stage" id="stage">
+  <div class="site" id="site">
+    <header class="wrap nav">
+      <img src="https://neummispnnqzrhdhnxwa.supabase.co/storage/v1/object/public/uploads/1770480584291_26668da5-abc2-4103-87df-777d497cee8c.png" alt="Skale Club">
+      <nav class="links"><a href="#apps" class="here">Portfólio</a><a href="#">Blog</a><a href="#">Contato</a><a class="cta sm" href="#">(508) 500-1095</a></nav>
+    </header>
+
+    <section class="hero">
+      <div class="wrap">
+        <div class="eyebrow rise">Nossas soluções</div>
+        <h1 class="rise" style="animation-delay:.06s">Pare de fazer trabalho repetitivo. <em>Automatize.</em></h1>
+        <p class="rise" style="animation-delay:.12s">Explore as ferramentas e os serviços que desenvolvemos para ajudar empresas a crescer.</p>
+        <div class="actions rise" style="animation-delay:.18s">
+          <a class="cta" href="#">Agende uma sessão de estratégia <span aria-hidden="true">→</span></a>
+          <a class="link2" href="#apps">Ver os apps ↓</a>
+        </div>
+      </div>
+    </section>
+
+    <div class="proof">
+      <div class="wrap">
+        <div class="n"><div class="v">06</div><div class="l">apps próprios<br>em produção</div></div>
+        <div class="n"><div class="v">07</div><div class="l">serviços de marketing<br>e tecnologia</div></div>
+        <div class="n"><div class="v">3<small>dias</small></div><div class="l">para um site essencial<br>ir ao ar</div></div>
+        <div class="n"><div class="v">$29<small>/mês</small></div><div class="l">o plano de entrada<br>(XmartMenu)</div></div>
+      </div>
+    </div>
+
+    <section class="block" id="apps">
+      <div class="wrap">
+        <div class="head">
+          <div>
+            <div class="eyebrow">01 · Apps</div>
+            <h2>Software pronto para usar</h2>
+            <p>Produtos nossos, já no ar, com preço fechado. Você assina e começa.</p>
+          </div>
+          <div class="count" aria-hidden="true">06</div>
+        </div>
+        <div class="grid" id="gridApps"></div>
+      </div>
+    </section>
+
+    <section class="block" id="servicos">
+      <div class="wrap">
+        <div class="head">
+          <div>
+            <div class="eyebrow">02 · Serviços</div>
+            <h2>Feito por nós, para o seu negócio</h2>
+            <p>Marketing e tecnologia sob medida, com orçamento para o seu caso.</p>
+          </div>
+          <div class="count" aria-hidden="true">07</div>
+        </div>
+        <div class="grid" id="gridServices"></div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap">
+        <div class="box">
+          <div>
+            <div class="eyebrow">Próximo passo</div>
+            <h2>Pronto para redefinir o seu potencial?</h2>
+          </div>
+          <div class="actions">
+            <a class="cta" href="#">Agende uma sessão de estratégia <span aria-hidden="true">→</span></a>
+            <a class="link2" href="#">ou fale no WhatsApp ↗</a>
+          </div>
+        </div>
+      </div>
+    </section>
+    <footer class="foot"><div class="wrap">© 2026 Skale Club</div></footer>
+  </div>
+</div>
+
+<div class="overlay" id="overlay" role="dialog" aria-modal="true">
+  <div class="pcard">
+    <button class="pclose" id="pclose" aria-label="Fechar">×</button>
+    <div class="pbody" id="pbody"></div>
+    <div class="pnav"><button id="pprev"></button><span class="count" id="pcount"></span><button id="pnext"></button></div>
+  </div>
+</div>
+
+<script>
+  const S = "https://neummispnnqzrhdhnxwa.supabase.co/storage/v1/object/public/uploads/";
+  const L = "portfolio-page/"; // screenshots reais das homes, capturados em 18/09
+
+  // Apps: conteúdo real de /api/portfolio-services, em PT. `home` é o campo
+  // homeImageUrl (hoje vazio no banco; aqui preenchido com a captura da home real).
+  const apps = [
+    { title: "Xareable", cat: "IA e automação", sub: "Criador de conteúdo com IA para redes sociais",
+      desc: "Crie e publique posts com IA a partir de uma ferramenta só. Escreva e poste à mão quando quiser, ou automatize criação e publicação numa agenda recorrente, para o negócio nunca sumir das redes.",
+      features: ["Conteúdo com IA", "Multiplataforma", "Analytics"], price: "$49", label: "/mês", cta: "Começar",
+      logo: S + "1783115396335_55a9999d-09a7-4294-aa1a-7c2e087b9dc9.webp", home: L + "xareable-home.jpg", domain: "xareable.com",
+      photo: S + "1776187598644_70c2e35c-23de-4146-8aa3-d020732c6a1b.jpg" },
+    { title: "Xsites", cat: "Sites", sub: "Do essencial ao sob medida", badge: "Mais pedido",
+      desc: "Um site limpo e profissional para negócio de serviço, no ar em até 3 dias, a partir de $299 na versão essencial. Acrescente recursos quando o projeto pedir.",
+      features: ["Responsivo", "Otimizado para SEO", "Carregamento rápido"], price: "$299", label: "a partir de", cta: "Iniciar projeto",
+      logo: "", home: "", domain: "", photo: S + "1776205482559_f16d3d2f-8e8c-41fc-bae7-e976e58e0efd.webp",
+      missing: "falta: logo e site de exemplo" },
+    { title: "Xkedule", cat: "Sistemas e agendamento", sub: "Nunca perca um agendamento",
+      desc: "Uma página de agendamento simples com assistentes de IA para mensagens e ligações. A IA responde os leads e marca horários, reuniões ou visitas quando o cliente está pronto.",
+      features: ["Sincroniza com a agenda", "Lembretes", "Agendamento online"], price: "$89", label: "/mês", setup: "$499", cta: "Começar",
+      logo: S + "1783107543683_3b8f12bc-6ac2-4519-bf2f-9c6499329738.webp", home: L + "xkedule-home.jpg", domain: "xkedule.com",
+      photo: S + "1776190723222_scheduling_system_1200.jpg",
+      links: ["lunabellebeauty.xkedule.com", "luminous-nails.xkedule.com", "black-ink-studio.xkedule.com", "chiro-network.xkedule.com", "skleanings.com"] },
+    { title: "XmartMenu", cat: "Sistemas e agendamento", sub: "Um jeito mais esperto de pedir",
+      desc: "Cardápio digital por QR code ou iPad: fotos dos pratos, fichas detalhadas, carrinho e um assistente de IA que tira dúvidas antes do pedido.",
+      features: ["Acesso por QR code", "Cardápio no iPad", "Assistente de IA"], price: "$29", label: "/mês", cta: "Começar",
+      logo: S + "1783205835559_464fce11-1b52-4e45-bdb2-3958d0fadd18.webp", home: L + "xmartmenu-home.jpg", domain: "xmartmenu.skale.club", photo: "" },
+    { title: "Xphere", cat: "CRM e vendas", sub: "Seu CRM no Go High Level, configurado", badge: "Recomendado",
+      desc: "Configuração completa de CRM com Go High Level. Gerencie leads, automatize follow-ups por e-mail e SMS, e acompanhe o pipeline de vendas numa única plataforma.",
+      features: ["Configuração do GHL", "Pipelines", "Relatórios"], price: "$597", label: "pagamento único", cta: "Começar",
+      logo: S + "1783115414320_44c114ed-874f-40ab-ba73-317aa8f327d7.webp", home: "", domain: "",
+      photo: S + "1776190723853_crm_setup_1200.jpg", missing: "falta: screenshot do painel" },
+    { title: "Xtimator", cat: "Sistemas e agendamento", sub: "Orçamentos em segundos",
+      desc: "Monte orçamentos ainda no local da visita. Crie sua tabela de preços à mão ou com IA e gere propostas profissionais sem voltar ao escritório nem fazer o cliente esperar.",
+      features: ["Orçamento na hora"], price: "$49", label: "/mês", cta: "Começar",
+      logo: S + "1783118997429_00cb9d30-5d74-4ec9-bf0c-a3ac034911c7.webp", home: "", domain: "", photo: "",
+      missing: "falta: screenshot do app" },
+  ];
+
+  // Serviços: company_settings.homepageContent.ourServicesSection.cards, em PT.
+  // Features cortadas para 3, que é o limite proposto no brief (4.5).
+  const SI = S + "service-images/";
+  const services = [
+    { title: "Consultoria de marketing digital", cat: "Marketing", sub: "Consultorias individuais para você aprender a operar o seu negócio.",
+      features: ["Auditoria de marketing", "Análise de concorrentes", "Planejamento de campanhas"], photo: SI + "digital-marketing-consultation.jpg" },
+    { title: "Criação de sites", cat: "Sites", sub: "Sites, landing pages, páginas de agendamento e e-commerce, com manutenção e redesign.",
+      features: ["Sites sob medida", "Landing pages", "E-commerce"], photo: SI + "website-design-development.jpg" },
+    { title: "Tráfego pago", cat: "Marketing", sub: "Google Ads, Facebook e Instagram Ads, TikTok Ads, remarketing e otimização de campanhas.",
+      features: ["Google Ads", "Meta e TikTok Ads", "Remarketing"], photo: SI + "paid-advertising.jpg" },
+    { title: "Criação de conteúdo", cat: "Marketing", sub: "Posts, vídeos, blog, textos para site, criativos de anúncio e fotos de produto.",
+      features: ["Conteúdo para redes", "Produção de vídeo", "Artigos para blog"], photo: SI + "content-creation.jpg" },
+    { title: "Branding e design gráfico", cat: "Marca", sub: "Logo, identidade visual, cartões, templates para redes, banners e materiais de marketing.",
+      features: ["Logo", "Identidade visual", "Materiais de marketing"], photo: SI + "branding-graphic-design.jpg" },
+    { title: "Geração de leads", cat: "CRM e vendas", sub: "Páginas de captura, formulários, funis de venda, agendamentos e prospecção B2B.",
+      features: ["Páginas de captura", "Funis de venda", "Prospecção B2B"], photo: SI + "lead-generation.jpg" },
+    { title: "CRM e automação de marketing", cat: "CRM e vendas", sub: "Organização de leads, mensagens automáticas, lembretes, pipelines, chatbots e atendentes de IA por telefone.",
+      features: ["Mensagens automáticas", "Pipelines de venda", "Atendentes de IA"], photo: SI + "crm-marketing-automation.jpg" },
+  ];
+  services.forEach((s) => { s.kind = "service"; s.desc = s.sub; s.cta = "Falar com a gente"; });
+  apps.forEach((a) => { a.kind = "app"; });
+
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  let coverMode = "composed";
+
+  // Um componente de capa para os dois catálogos e para o popup.
+  function cover(it, extra = "") {
+    const badge = it.badge ? `<span class="badge">${esc(it.badge)}</span>` : "";
+    const missing = it.missing && coverMode === "composed" ? `<span class="missing">${esc(it.missing)}</span>` : "";
+    const empty = () => `<div class="cover empty ${extra}">${badge}${it.logo ? `<img class="logo" src="${it.logo}" alt="">` : `<span class="word">${esc(it.title)}</span>`}${missing}</div>`;
+    if (it.kind === "service") {
+      return `<div class="cover photo ${extra}"><img class="ph" src="${it.photo}" alt=""></div>`;
+    }
+    if (coverMode === "composed") {
+      if (!it.home) return empty();
+      const mark = it.logo ? `<span class="mark"><img src="${it.logo}" alt=""></span>` : "";
+      return `<div class="cover composed ${extra}">${mark}${badge}<div class="win"><div class="bar"><i></i><i></i><i></i><span>${esc(it.domain)}</span></div><img src="${it.home}" alt="Tela real de ${esc(it.title)}"></div></div>`;
+    }
+    if (!it.photo) return empty();
+    return `<div class="cover photo ${extra}">${badge}<img class="ph" src="${it.photo}" alt=""><div class="wash"></div></div>`;
+  }
+
+  function tile(it, idx, list, row = false) {
+    const foot = it.kind === "app"
+      ? `<div class="price">${esc(it.price)}<small>${esc(it.label)}</small></div><span class="more">Ver detalhes →</span>`
+      : `<span class="quote">Orçamento sob medida</span><span class="more">Ver detalhes →</span>`;
+    return `<button class="tile rise ${row ? "row" : ""}" style="animation-delay:${idx * 0.05}s" data-list="${list}" data-i="${idx}">
+      ${cover(it)}
+      <div class="tb">
+        <div class="eyebrow">${it.kind === "app" ? "App" : "Serviço"} · ${esc(it.cat)}</div>
+        <h3>${esc(it.title)}</h3>
+        <p class="sub">${esc(it.sub)}</p>
+        <ul class="feat">${it.features.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>
+        <div class="tfoot">${foot}</div>
+      </div></button>`;
+  }
+
+  function renderGrids() {
+    document.getElementById("gridApps").innerHTML = apps.map((a, i) => tile(a, i, "apps")).join("");
+    // 7 serviços em 3 colunas: o último ocupa a linha, sem órfão centralizado.
+    document.getElementById("gridServices").innerHTML = services.map((s, i) => tile(s, i, "services", i === services.length - 1 && services.length % 3 === 1)).join("");
+  }
+
+  // ---------- popup ----------
+  let cur = null, curList = null;
+  const lists = { apps, services };
+  function openDetail(list, i) { curList = list; cur = i; renderDetail(); document.getElementById("overlay").classList.add("open"); document.body.style.overflow = "hidden"; }
+  function closeDetail() { document.getElementById("overlay").classList.remove("open"); document.body.style.overflow = ""; }
+  function renderDetail() {
+    const L2 = lists[curList], it = L2[cur];
+    const links = it.links?.length
+      ? `<div class="feat" style="display:flex;flex-wrap:wrap;gap:8px;font-size:13px;color:var(--ink-dim);align-items:center">No ar em ${it.links.slice(0, 3).map((l) => `<a href="https://${l}" target="_blank" rel="noopener" style="color:var(--ink-2);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:5px 11px">${esc(l)} ↗</a>`).join("")}${it.links.length > 3 ? ` +${it.links.length - 3}` : ""}</div>` : "";
+    const buy = it.kind === "app"
+      ? `<div><div class="v">${esc(it.price)}<small>${esc(it.label)}</small></div>${it.setup ? `<div class="setup">+ ${esc(it.setup)} de implantação, uma vez</div>` : ""}</div>`
+      : `<div class="quote">Orçamento sob medida, depois de uma conversa rápida.</div>`;
+    document.getElementById("pbody").innerHTML = `
+      <div class="pcontent">
+        <div class="eyebrow">${it.kind === "app" ? "App" : "Serviço"} · ${esc(it.cat)}</div>
+        <div class="ptitle">${it.logo ? `<img src="${it.logo}" alt="">` : ""}<h2>${esc(it.title)}</h2></div>
+        ${it.kind === "app" ? `<p class="plead">${esc(it.sub)}</p>` : ""}
+        <p class="pdesc">${esc(it.desc)}</p>
+        <ul class="feat">${it.features.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>
+        ${links}
+        <div class="pbuy">${buy}<button class="cta">${esc(it.cta)}</button></div>
+      </div>
+      ${cover(it, "pvisual")}`;
+    const p = L2[(cur - 1 + L2.length) % L2.length], n = L2[(cur + 1) % L2.length];
+    document.getElementById("pprev").textContent = "← " + p.title;
+    document.getElementById("pnext").textContent = n.title + " →";
+    document.getElementById("pcount").textContent = String(cur + 1).padStart(2, "0") + " / " + String(L2.length).padStart(2, "0");
+  }
+  const step = (d) => { const L2 = lists[curList]; cur = (cur + d + L2.length) % L2.length; renderDetail(); };
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest(".tile"); if (t) openDetail(t.dataset.list, +t.dataset.i);
+    if (e.target.id === "overlay" || e.target.id === "pclose") closeDetail();
+  });
+  document.getElementById("pprev").onclick = () => step(-1);
+  document.getElementById("pnext").onclick = () => step(1);
+  addEventListener("keydown", (e) => {
+    if (!document.getElementById("overlay").classList.contains("open")) return;
+    if (e.key === "Escape") closeDetail(); if (e.key === "ArrowRight") step(1); if (e.key === "ArrowLeft") step(-1);
+  });
+
+  // ---------- barra de decisões ----------
+  function seg(id, fn) {
+    const el = document.getElementById(id);
+    el.addEventListener("click", (e) => {
+      const b = e.target.closest("button"); if (!b) return;
+      el.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); fn(b.dataset.v);
+    });
+  }
+  seg("segCover", (v) => { coverMode = v; renderGrids(); if (cur !== null && document.getElementById("overlay").classList.contains("open")) renderDetail(); });
+  seg("segProof", (v) => document.getElementById("site").classList.toggle("no-proof", v === "off"));
+  seg("segView", (v) => document.getElementById("stage").classList.toggle("phone", v === "phone"));
+  seg("segMissing", (v) => document.getElementById("site").classList.toggle("clean", v === "off"));
+  renderGrids();
+</script>
+</body>
+</html>

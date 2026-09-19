@@ -14,7 +14,7 @@
 
 import type { IStorage } from "../storage.js";
 import { validateConfig, sendSms } from "../integrations/twilio.js";
-import { sendTelegramMessage } from "../integrations/telegram.js";
+import { sendTelegramToAll } from "../integrations/telegram.js";
 import { sendEmail } from "../integrations/resend.js";
 
 function substituteVariables(
@@ -74,12 +74,21 @@ export async function dispatchNotification(
         const telegramSettings = await storage.getTelegramSettings();
         if (!telegramSettings) continue;
         if (!telegramSettings.enabled) continue;
-        if (!telegramSettings.botToken || !telegramSettings.chatId) continue;
+        // chat_ids is the destination list now (SC-07). chat_id is read only as
+        // a fallback for a row the backfill has not reached, and goes away with
+        // the follow-up migration.
+        const chatIds = telegramSettings.chatIds?.length
+          ? telegramSettings.chatIds
+          : (telegramSettings.chatId ? [telegramSettings.chatId] : []);
+        if (!telegramSettings.botToken || chatIds.length === 0) continue;
         const body = substituteVariables(template.body, variables, escapeTelegramMarkdownValue);
-        await sendTelegramMessage(
-          { botToken: telegramSettings.botToken, chatId: telegramSettings.chatId },
-          body
-        );
+        const fanout = await sendTelegramToAll(telegramSettings.botToken, chatIds, body);
+        if (fanout.failures.length > 0) {
+          console.error(
+            `[telegram] ${fanout.delivered}/${chatIds.length} delivered; failures: ` +
+            fanout.failures.map((f) => `${f.chatId}: ${f.message}`).join("; "),
+          );
+        }
       } else if (template.channel === "email") {
         const resendSettings = await storage.getResendSettings();
         if (!resendSettings || !resendSettings.enabled) continue;

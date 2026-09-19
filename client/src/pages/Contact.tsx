@@ -1,17 +1,22 @@
+import { usePageSeo } from "@/hooks/use-seo";
 import { useState } from "react";
 import { Mail, Phone, MapPin, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
 import { trackEvent } from "@/lib/analytics";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Link } from "wouter";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 export default function Contact() {
   const { t } = useTranslation();
+  usePageSeo({ title: t("Contact"), description: t("Get in touch with Skale Club. Call, email or send us a message and we will get back to you.") });
   const { toast } = useToast();
   const { data: companySettings } = useQuery<CompanySettings>({
     queryKey: ["/api/company-settings"],
@@ -73,45 +78,43 @@ export default function Contact() {
 
   return (
     <div className="pt-24 pb-20">
-      <div className="container-custom mx-auto">
-        <div className="max-w-3xl mb-16">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 text-foreground">
-            {t("Contact Us")}
-          </h1>
-          <p className="text-xl text-muted-foreground leading-relaxed">
-            {t(
-              "Have questions about our services or need a custom quote? We're here to help. Reach out to us today.",
-            )}
-          </p>
-        </div>
+      <PageHeader
+        title={t("Contact Us")}
+        subtitle={t(
+          "Have questions about our services or need a custom quote? We're here to help. Reach out to us today.",
+        )}
+      />
 
+      <div className="container-custom mx-auto px-4 sm:px-6 tablet:px-0 pt-16">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           {/* Form */}
           <div className="lg:col-span-2">
             <form
               onSubmit={handleSubmit}
-              className="space-y-6 bg-card border rounded-3xl p-8 shadow-sm"
+              className="space-y-6 bg-card border rounded-2xl p-8 shadow-sm"
             >
               {/* Name + Email */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">
+                  <label htmlFor="contact-name" className="text-sm font-medium text-foreground">
                     {t("Full Name")}
                   </label>
                   <Input
-                    value={name}
+                    id="contact-name"
+                  value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="John Doe"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">
+                  <label htmlFor="contact-email" className="text-sm font-medium text-foreground">
                     {t("Email Address")}
                   </label>
                   <Input
                     type="email"
-                    value={formEmail}
+                    id="contact-email"
+                  value={formEmail}
                     onChange={(e) => setFormEmail(e.target.value)}
                     placeholder="john@example.com"
                     required
@@ -121,11 +124,12 @@ export default function Contact() {
 
               {/* Phone */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">
+                <label htmlFor="contact-phone" className="text-sm font-medium text-foreground">
                   {t("Phone Number")}
                 </label>
                 <Input
                   type="tel"
+                  id="contact-phone"
                   value={formPhone}
                   onChange={(e) => setFormPhone(e.target.value)}
                   placeholder="(555) 123-4567"
@@ -135,10 +139,11 @@ export default function Contact() {
 
               {/* Subject */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">
+                <label htmlFor="contact-subject" className="text-sm font-medium text-foreground">
                   {t("Subject")}
                 </label>
                 <Input
+                  id="contact-subject"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                   placeholder={t("How can we help?")}
@@ -148,10 +153,11 @@ export default function Contact() {
 
               {/* Message */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">
+                <label htmlFor="contact-message" className="text-sm font-medium text-foreground">
                   {t("Message")}
                 </label>
                 <Textarea
+                  id="contact-message"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder={t("Tell us more about your needs...")}
@@ -161,40 +167,48 @@ export default function Contact() {
               </div>
 
               {/* SMS Consent — Transactional */}
-              <label className="flex items-start gap-3 p-4 border rounded-xl cursor-pointer hover:bg-muted/40 transition-colors">
-                <input
-                  type="checkbox"
+              <Label
+                htmlFor="sms-consent"
+                className="flex items-start gap-3 p-4 border rounded-xl cursor-pointer hover:bg-muted/40 transition-colors font-normal"
+              >
+                <Checkbox
+                  id="sms-consent"
                   checked={smsConsent}
-                  onChange={(e) => setSmsConsent(e.target.checked)}
-                  className="mt-1 h-4 w-4 shrink-0 accent-primary cursor-pointer"
+                  onCheckedChange={(checked) => setSmsConsent(checked === true)}
+                  className="mt-1 shrink-0"
                 />
                 <span className="text-sm text-muted-foreground leading-relaxed">
                   {t(
                     "By checking this box, I consent to receive transactional messages related to my account, orders, or services I have requested. These messages may include appointment reminders, order confirmations, and account notifications, among others. Message frequency may vary. Message & data rates may apply. Reply HELP for help or STOP to opt out.",
                   )}
                 </span>
-              </label>
+              </Label>
 
               {/* SMS Consent — Marketing */}
-              <label className="flex items-start gap-3 p-4 border rounded-xl cursor-pointer hover:bg-muted/40 transition-colors">
-                <input
-                  type="checkbox"
+              <Label
+                htmlFor="marketing-consent"
+                className="flex items-start gap-3 p-4 border rounded-xl cursor-pointer hover:bg-muted/40 transition-colors font-normal"
+              >
+                <Checkbox
+                  id="marketing-consent"
                   checked={marketingConsent}
-                  onChange={(e) => setMarketingConsent(e.target.checked)}
-                  className="mt-1 h-4 w-4 shrink-0 accent-primary cursor-pointer"
+                  onCheckedChange={(checked) => setMarketingConsent(checked === true)}
+                  className="mt-1 shrink-0"
                 />
                 <span className="text-sm text-muted-foreground leading-relaxed">
                   {t(
                     "By checking this box, I consent to receive marketing and promotional messages, including special offers, discounts, and new product updates, among others. Message frequency may vary. Message & data rates may apply. Reply HELP for help or STOP to opt out.",
                   )}
                 </span>
-              </label>
+              </Label>
 
               {/* Submit */}
               <Button
                 type="submit"
                 disabled={submitting}
-                className="w-full md:w-auto px-8 py-6 rounded-full text-lg bg-[#5173D6] hover:bg-[#3B5BBE] text-white font-bold"
+                variant="cta"
+                size="pill"
+                className="w-full md:w-auto text-lg"
               >
                 <Send className="w-5 h-5 mr-2" />
                 {submitting ? t("Sending...") : t("Send Message")}
@@ -229,7 +243,7 @@ export default function Contact() {
 
           {/* Sidebar */}
           <div className="space-y-8">
-            <div className="p-8 bg-primary/5 border rounded-3xl">
+            <div className="p-8 bg-primary/5 border rounded-2xl">
               <h3 className="text-xl font-bold mb-6 text-foreground">
                 {t("Get in Touch")}
               </h3>

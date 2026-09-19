@@ -1,4 +1,5 @@
 import { pgTable, text, serial, integer, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { randomUUID } from "crypto";
@@ -35,7 +36,22 @@ export const telegramSettings = pgTable("telegram_settings", {
   id: serial("id").primaryKey(),
   enabled: boolean("enabled").default(false),
   botToken: text("bot_token"),
+  // Superseded by chatIds (autoblog-parity SC-07). Still written by the
+  // migration's backfill and left in place for one release; nothing reads it.
   chatId: text("chat_id"),
+  // Destinations. An entry is a chat id, optionally with a forum-topic thread:
+  // "-1001234567890" or "-1001234567890:42" (MASTER §6). One column carries
+  // private chats, groups, supergroups and topics.
+  chatIds: text("chat_ids").array().notNull().default(sql`ARRAY[]::text[]`),
+  // Blog approval cards. A SEPARATE bot, because the one carrying a public
+  // webhook should not be the one sending notifications.
+  approvalsEnabled: boolean("approvals_enabled").notNull().default(false),
+  approvalsBotToken: text("approvals_bot_token"),
+  // Empty falls back to chatIds. Separate because chatIds is the notification
+  // list: an editor added there to receive drafts would also get every alert.
+  approvalsChatIds: text("approvals_chat_ids").array().notNull().default(sql`ARRAY[]::text[]`),
+  // Proves a webhook call came from Telegram; a chat_id in the body does not.
+  webhookSecret: text("webhook_secret"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -53,6 +69,34 @@ export const resendSettings = pgTable("resend_settings", {
 });
 
 // Company Settings (singleton table - only one row)
+/**
+ * A company's social links. Stored as jsonb, so the column can hold whatever a
+ * past write put there; `normalizeSocialLinks` is what every reader should go
+ * through rather than trusting the column's type.
+ */
+export const socialLinksSchema = z.array(
+  z.object({
+    platform: z.string(),
+    // Blank entries are allowed on write (the admin form auto-saves before a
+    // URL is typed) and dropped by normalizeSocialLinks() on the way in.
+    url: z.string(),
+  }),
+);
+
+export type SocialLink = z.infer<typeof socialLinksSchema>[number];
+
+/** Coerces any stored value into a usable array, dropping malformed entries. */
+export function normalizeSocialLinks(value: unknown): SocialLink[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    if (!entry || typeof entry !== "object") return [];
+    const { platform, url } = entry as Record<string, unknown>;
+    if (typeof platform !== "string" || typeof url !== "string") return [];
+    if (!platform.trim() || !url.trim()) return [];
+    return [{ platform: platform.trim(), url: url.trim() }];
+  });
+}
+
 export const companySettings = pgTable("company_settings", {
   id: serial("id").primaryKey(),
   companyName: text("company_name").default('Company Name'),
@@ -146,6 +190,55 @@ export const linksPageConfigSchema = z.object({
   theme: linksPageThemeSchema.optional(),
 });
 
+// Business hours — the admin Company Settings form edits a fixed seven-day map of
+// { isOpen, start, end } (client/src/components/admin/shared/types.ts → BusinessHours,
+// defaults in that folder's constants.ts). Every field is optional and unknown keys pass
+// through so rows written before this schema existed keep validating.
+export const dayHoursSchema = z
+  .object({
+    isOpen: z.boolean().optional(),
+    start: z.string().optional(),
+    end: z.string().optional(),
+  })
+  .passthrough();
+
+export const businessHoursSchema = z
+  .object({
+    monday: dayHoursSchema.optional(),
+    tuesday: dayHoursSchema.optional(),
+    wednesday: dayHoursSchema.optional(),
+    thursday: dayHoursSchema.optional(),
+    friday: dayHoursSchema.optional(),
+    saturday: dayHoursSchema.optional(),
+    sunday: dayHoursSchema.optional(),
+  })
+  .passthrough();
+
+// schema.org LocalBusiness JSON-LD overrides. Nothing reads a fixed set of keys
+// (client/src/hooks/use-seo.ts builds the snippet from the other SEO fields), so
+// this stays an open JSON object: the common keys are typed when present and any
+// other schema.org property passes through untouched.
+export const schemaLocalBusinessSchema = z
+  .object({
+    "@context": z.string().optional(),
+    "@type": z.string().optional(),
+    "@id": z.string().optional(),
+    name: z.string().optional(),
+    description: z.string().optional(),
+    url: z.string().optional(),
+    telephone: z.string().optional(),
+    email: z.string().optional(),
+    // schema.org allows a URL, a list of URLs or an ImageObject here.
+    image: z.union([z.string(), z.array(z.string()), z.record(z.unknown())]).optional(),
+    priceRange: z.string().optional(),
+    serviceType: z.string().optional(),
+  })
+  .passthrough();
+
+export type DayHours = z.infer<typeof dayHoursSchema>;
+export type BusinessHours = z.infer<typeof businessHoursSchema>;
+export type SchemaLocalBusiness = z.infer<typeof schemaLocalBusinessSchema>;
+
 // Insert schemas
 export const insertIntegrationSettingsSchema = z.object({
   provider: z.string().default("gohighlevel"),
@@ -192,7 +285,10 @@ export const insertCompanySettingsSchema = z.object({
   logoAvatarFull: z.string().default(''),
   logoAvatarMark: z.string().default(''),
   sectionsOrder: z.array(z.string()).nullable().optional(),
-  socialLinks: z.any().default([]),
+  // Was `z.any()`, which accepted anything — production ended up holding `{}`
+  // for this field, and every consumer that guards with `Array.isArray` then
+  // rendered no social links at all, silently. Validate the real shape.
+  socialLinks: socialLinksSchema.default([]),
   mapEmbedUrl: z.string().default('https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d259505.12434421625!2d-71.37915684523166!3d42.296281796774615!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sus!4v1767905922570!5m2!1sen!2sus'),
   heroTitle: z.string().default('Your 5-Star Marketing Company'),
   heroSubtitle: z.string().default('Book your marketing service today and watch your business grow'),
@@ -200,7 +296,7 @@ export const insertCompanySettingsSchema = z.object({
   aboutImageUrl: z.string().default(''),
   ctaText: z.string().default('Book Now'),
   timeFormat: z.string().default('12h'),
-  businessHours: z.any().nullable().optional(),
+  businessHours: businessHoursSchema.nullable().optional(),
   seoTitle: z.string().default('Company Name - Professional Services'),
   seoDescription: z.string().default('Professional marketing services for homes and businesses.'),
   ogImage: z.string().default(''),
@@ -213,14 +309,21 @@ export const insertCompanySettingsSchema = z.object({
   twitterCard: z.string().default('summary_large_image'),
   twitterSite: z.string().default(''),
   twitterCreator: z.string().default(''),
-  schemaLocalBusiness: z.any().default({}),
+  schemaLocalBusiness: schemaLocalBusinessSchema.nullable().default({}),
   gtmContainerId: z.string().default(''),
   ga4MeasurementId: z.string().default(''),
   facebookPixelId: z.string().default(''),
   gtmEnabled: z.boolean().default(false),
   ga4Enabled: z.boolean().default(false),
   facebookPixelEnabled: z.boolean().default(false),
-  homepageContent: z.custom<HomepageContent>().optional().nullable(),
+  // z.custom without a check is a type assertion only: a string or an array
+  // would have been persisted into the jsonb column and broken every consumer.
+  homepageContent: z
+    .custom<HomepageContent>((v) => typeof v === "object" && v !== null && !Array.isArray(v), {
+      message: "homepageContent must be an object",
+    })
+    .optional()
+    .nullable(),
   pageSlugs: z.custom<PageSlugs>().optional().nullable(),
   linksPageConfig: linksPageConfigSchema.optional().nullable(),
 });
@@ -307,6 +410,8 @@ export interface OurServicesCard {
   subtitle?: string;
   description?: string;
   features?: string[];
+  /** A CatalogCategory key (shared/catalog.ts). */
+  category?: string;
 }
 
 export interface OurServicesSection {

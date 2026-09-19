@@ -36,7 +36,7 @@ export function LeadFormCtaAdapter({ props }: { props: z.infer<typeof leadFormCt
   const c = props.theme === "dark" ? DARK : LIGHT;
 
   return (
-    <section className={`${c.section} py-20 text-center`}>
+    <section className={`${c.section} py-16 md:py-24 text-center`}>
       <div className="container-custom mx-auto max-w-2xl px-6">
         {heading ? (
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">{t(heading)}</h2>
@@ -48,7 +48,7 @@ export function LeadFormCtaAdapter({ props }: { props: z.infer<typeof leadFormCt
           type="button"
           data-landing-lead-cta
           onClick={() => setIsOpen(true)}
-          className="inline-flex items-center justify-center rounded-full bg-[#5173D6] px-8 py-4 text-base font-bold text-white hover:bg-[#3B5BBE] hover:scale-105 transition-all"
+          className="inline-flex items-center justify-center rounded-full bg-cta px-8 py-4 text-base font-bold text-white hover:bg-cta-hover hover:scale-105 transition-all"
         >
           {t(ctaLabel)}
         </button>

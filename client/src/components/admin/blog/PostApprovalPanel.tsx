@@ -164,7 +164,7 @@ export function PostApprovalPanel() {
             <ul className="space-y-1.5">
               {feedback!.slice(0, 8).map((item) => (
                 <li key={item.id} className="flex items-start gap-2 text-xs text-muted-foreground">
-                  {item.signal === 'positive' ? (
+                  {item.verdict === 'approved' ? (
                     <ThumbsUp className="w-3.5 h-3.5 mt-0.5 text-green-500 shrink-0" />
                   ) : (
                     <ThumbsDown className="w-3.5 h-3.5 mt-0.5 text-red-500 shrink-0" />

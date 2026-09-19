@@ -74,16 +74,16 @@ const DEFAULTS = {
 const ICONS = [Search, Palette, Code2, Rocket] as const;
 
 // Quick 260906-qwl — LIGHT is copied verbatim from the pre-task classNames, so
-// `theme` undefined renders exactly as before. `#5173D6` stays a FILL only
+// `theme` undefined renders exactly as before. The `cta` token stays a FILL only
 // (it is 4.3:1 on dark, below AA); `text-blue-300` is the dark text accent.
 const LIGHT = {
   section:    "bg-zinc-50",
-  eyebrow:    "text-[#1C53A3]",
+  eyebrow:    "text-cta",
   heading:    "text-zinc-900",
   subheading: "text-zinc-600",
   connector:  "bg-zinc-300",
-  iconCircle: "bg-[#1C53A3] text-white shadow-lg shadow-[#1C53A3]/20",
-  stepBadge:  "bg-[#5173D6] text-white border-2 border-zinc-50",
+  iconCircle: "bg-cta text-white shadow-lg shadow-cta/20",
+  stepBadge:  "bg-cta text-white border-2 border-zinc-50",
   stepTitle:  "text-zinc-900",
   stepBody:   "text-zinc-600",
 } as const;
@@ -94,8 +94,8 @@ const DARK = {
   heading:    "text-white",
   subheading: "text-zinc-300",
   connector:  "bg-white/15",
-  iconCircle: "bg-[#1C53A3] text-white shadow-lg shadow-[#5173D6]/30",
-  stepBadge:  "bg-[#5173D6] text-white border-2 border-[#0f1014]",
+  iconCircle: "bg-cta text-white shadow-lg shadow-cta/30",
+  stepBadge:  "bg-cta text-white border-2 border-[#0f1014]",
   stepTitle:  "text-white",
   stepBody:   "text-zinc-300",
 } as const;
@@ -111,7 +111,7 @@ export function ProcessStepperSection({ props }: { props: ProcessStepperProps })
 
   return (
     <section
-      className={`${c.section} py-20 sm:py-24`}
+      className={`${c.section} py-16 md:py-24`}
       data-testid="section-process-stepper"
     >
       <div className="container-custom mx-auto px-6">

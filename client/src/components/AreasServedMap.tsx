@@ -2,6 +2,7 @@ import { MapPin, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
 import type { HomepageContent } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
+import { SectionHeading } from "@/components/layout/SectionHeading";
 import { usePagePaths } from "@/lib/pagePaths";
 
 interface AreasServedMapProps {
@@ -36,24 +37,20 @@ export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
 
   return (
     <div className="container-custom mx-auto">
-      <div className="grid grid-cols-1 tablet:grid-cols-2 gap-[2.55rem] items-center">
+      <div className={`grid grid-cols-1 gap-[2.55rem] items-center ${embedUrl ? "tablet:grid-cols-2" : ""}`}>
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-blue-300 text-sm font-medium mb-[2.125rem]">
-            <MapPin className="w-4 h-4" />
-            {t(sectionContent?.label || "")}
-          </div>
-          <h2 className="text-3xl md:text-5xl font-bold mb-[2.125rem] text-white">
-            {t(sectionContent?.heading || "")}
-          </h2>
-
-          <p className="text-slate-300 text-lg mb-[2.125rem] leading-relaxed">
-            {t(sectionContent?.description || "")}
-          </p>
+          <SectionHeading
+            eyebrow={sectionContent?.label}
+            icon={MapPin}
+            title={sectionContent?.heading || ''}
+            subtitle={sectionContent?.description}
+            className="mb-[2.125rem]"
+          />
 
           {sectionContent?.ctaText ? (
             <div className="mb-[0.85rem]">
               <Link href={pagePaths.contact}>
-                <button className="px-4 py-2 bg-[#5173D6] hover:bg-[#3B5BBE] text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5">
+                <button className="px-4 py-2 bg-cta hover:bg-cta-hover text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cta/40 focus-visible:ring-offset-2">
                   {t(sectionContent.ctaText)}
                   <ArrowRight className="w-4 h-4" />
                 </button>
@@ -62,8 +59,10 @@ export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
           ) : null}
         </div>
         
-        <div className="h-[450px] rounded-2xl overflow-hidden shadow-2xl border border-white/10 tablet:col-span-1 relative">
-          {embedUrl ? (
+        {/* Only with an embed URL: an empty bordered 450px box read as a
+            broken section on the homepage. */}
+        {embedUrl ? (
+          <div className="h-[450px] rounded-2xl overflow-hidden shadow-2xl border border-white/10 tablet:col-span-1 relative">
             <iframe
               src={embedUrl}
               title="Google Maps"
@@ -74,8 +73,8 @@ export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
             ></iframe>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );

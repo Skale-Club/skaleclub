@@ -3,7 +3,7 @@ import { z } from "zod";
 import { storage } from "../storage.js";
 import { insertRedirectSchema } from "#shared/schema.js";
 import { isReservedSlug } from "#shared/reservedSlugs.js";
-import { requireAdmin } from "./_shared.js";
+import { requireAdmin, sendError } from "./_shared.js";
 
 export function registerRedirectRoutes(app: Express) {
   // Admin CRUD
@@ -11,7 +11,8 @@ export function registerRedirectRoutes(app: Express) {
     try {
       res.json(await storage.getRedirects());
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[redirects] GET /api/redirects failed:", err);
+      res.status(500).json({ message: "Failed to load redirects" });
     }
   });
 
@@ -24,7 +25,7 @@ export function registerRedirectRoutes(app: Express) {
       res.status(201).json(await storage.createRedirect(data));
     } catch (err) {
       if (err instanceof z.ZodError) return res.status(400).json({ message: "Validation error", errors: err.errors });
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to create redirect");
     }
   });
 
@@ -37,7 +38,7 @@ export function registerRedirectRoutes(app: Express) {
       res.json(await storage.updateRedirect(Number(req.params.id), data));
     } catch (err) {
       if (err instanceof z.ZodError) return res.status(400).json({ message: "Validation error", errors: err.errors });
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to update redirect");
     }
   });
 
@@ -46,7 +47,7 @@ export function registerRedirectRoutes(app: Express) {
       await storage.deleteRedirect(Number(req.params.id));
       res.json({ success: true });
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to delete redirect");
     }
   });
 }

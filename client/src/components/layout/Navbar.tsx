@@ -116,7 +116,7 @@ export function Navbar() {
               <a
                 href={`tel:${telPhone}`}
                 onClick={() => trackEvent("click_call", { location: "navbar", label: displayPhone })}
-                className="px-4 py-2 bg-[#5173D6] hover:bg-[#3B5BBE] text-white font-bold rounded-full hover-elevate transition-all text-sm flex items-center gap-2"
+                className="px-4 py-2 bg-cta hover:bg-cta-hover text-white font-bold rounded-full hover-elevate transition-all text-sm flex items-center gap-2"
               >
                 <Phone className="w-4 h-4 fill-current" />
                 {displayPhone}
@@ -215,7 +215,7 @@ export function Navbar() {
                   trackEvent("click_call", { location: "navbar_mobile", label: displayPhone });
                   setIsMenuOpen(false);
                 }}
-                className="inline-flex w-fit items-center gap-2 px-5 py-3 bg-[#5173D6] hover:bg-[#3B5BBE] text-white font-bold rounded-full transition-all text-base"
+                className="inline-flex w-fit items-center gap-2 px-5 py-3 bg-cta hover:bg-cta-hover text-white font-bold rounded-full transition-all text-base"
               >
                 <Phone className="w-4 h-4 fill-current" />
                 {displayPhone}

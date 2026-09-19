@@ -208,10 +208,10 @@ export function registerPresentationsChatRoutes(app: Express) {
           tool_choice: { type: "function", function: { name: "update_slides" } },
         });
       } catch (sdkErr) {
-        const err = sdkErr as { status?: number; message?: string };
+        console.error("[presentationsChat] Gemini completion failed", sdkErr);
         res.write(`data: ${JSON.stringify({
           type: "error",
-          message: `Gemini API error (model=${model}, status=${err.status ?? "unknown"}): ${err.message ?? "no message"}`,
+          message: "The AI provider could not be reached. Please try again.",
         })}\n\n`);
         res.end();
         return;
@@ -247,7 +247,8 @@ export function registerPresentationsChatRoutes(app: Express) {
       res.write(`data: ${JSON.stringify({ type: "done", slides: validation.data })}\n\n`);
       res.end();
     } catch (err) {
-      res.write(`data: ${JSON.stringify({ type: "error", message: (err as Error).message })}\n\n`);
+      console.error("[presentationsChat] POST /api/presentations/:id/chat failed", err);
+      res.write(`data: ${JSON.stringify({ type: "error", message: "Failed to update slides. Please try again." })}\n\n`);
       res.end();
     }
   });

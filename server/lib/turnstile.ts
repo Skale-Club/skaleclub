@@ -71,20 +71,23 @@ export async function verifyTurnstileToken(
 }
 
 /**
- * Best-effort client IP extraction from an Express request. Honors common proxy
- * headers (X-Forwarded-For first hop, X-Real-IP). Falls back to req.ip.
+ * Client IP for rate limiting, from Express.
+ *
+ * This used to read `x-forwarded-for` and take the LEFTMOST entry. Behind
+ * Traefik the proxy APPENDS the real client IP, so the leftmost entry is
+ * whatever the caller put there — any client could rotate a fake
+ * `X-Forwarded-For` per request and get a fresh rate-limit bucket every time,
+ * which made every limiter keyed on this function decorative. The access-code
+ * check on gated estimates was the worst of them: 10 guesses per 5 minutes
+ * became unlimited.
+ *
+ * `app.set("trust proxy", 1)` is configured (see server/auth/supabaseAuth.ts),
+ * so `req.ip` already resolves the correct hop and cannot be spoofed past the
+ * configured trust depth. Use it, and never parse the header by hand again.
  */
 export function getClientIp(req: {
   headers: Record<string, string | string[] | undefined>;
   ip?: string;
 }): string | undefined {
-  const xff = req.headers["x-forwarded-for"];
-  if (typeof xff === "string" && xff.length > 0) {
-    return xff.split(",")[0]?.trim();
-  }
-  const realIp = req.headers["x-real-ip"];
-  if (typeof realIp === "string" && realIp.length > 0) {
-    return realIp;
-  }
   return req.ip;
 }

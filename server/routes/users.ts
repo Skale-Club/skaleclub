@@ -40,7 +40,7 @@ export function registerUserRoutes(app: Express) {
       res.json(mergedUsers);
     } catch (err) {
       console.error("Error in /api/users:", err);
-      res.status(500).json({ message: (err as Error).message });
+      res.status(500).json({ message: "Failed to fetch users" });
     }
   });
 
@@ -121,7 +121,7 @@ export function registerUserRoutes(app: Express) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: err.errors });
       }
-      res.status(500).json({ message: (err as Error).message });
+      res.status(500).json({ message: "Failed to update user" });
     }
   });
 
@@ -143,7 +143,8 @@ export function registerUserRoutes(app: Express) {
 
       res.json({ success: true, message: "User deleted successfully" });
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("Error deleting user:", err);
+      res.status(500).json({ message: "Failed to delete user" });
     }
   });
 
@@ -173,7 +174,7 @@ export function registerUserRoutes(app: Express) {
 
       if (error) {
         console.error("Error creating user in Supabase:", error);
-        return res.status(500).json({ message: error.message });
+        return res.status(500).json({ message: "Failed to create user in Supabase" });
       }
 
       if (!authUser?.user) {
@@ -196,7 +197,8 @@ export function registerUserRoutes(app: Express) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: err.errors });
       }
-      res.status(500).json({ message: (err as Error).message });
+      console.error("Error creating user:", err);
+      res.status(500).json({ message: "Failed to create user" });
     }
   });
 }

@@ -124,6 +124,13 @@ export const translations = {
     'Our team reviews your answers and identifies the best plan.': 'Nossa equipe analisa suas respostas e identifica o melhor plano.',
     'We will contact you to align objectives and next steps.': 'Entraremos em contato para alinhar objetivos e próximos passos.',
     'You receive a summary of the initial plan and practical instructions.': 'Você recebe um resumo do plano inicial e instruções práticas.',
+    'Keep your preferred contact channel available so our team can reach you.': 'Mantenha seu canal de contato preferido disponível para que nossa equipe possa falar com você.',
+    // Lead Thank You Page — Skale Hub WhatsApp group (/grupo)
+    'You are in. We will add you to the Skale Hub WhatsApp group using the number you provided.': 'Você está dentro. Vamos adicionar você ao grupo do Skale Hub no WhatsApp usando o número informado.',
+    'Keep your WhatsApp available. We will use the number you provided.': 'Mantenha seu WhatsApp disponível. Vamos usar o número que você informou.',
+    'We check the number you provided.': 'Conferimos o número que você informou.',
+    'We add you to the Skale Hub WhatsApp group.': 'Adicionamos você ao grupo do Skale Hub no WhatsApp.',
+    'You get the live announcements straight on WhatsApp.': 'Você recebe os avisos das lives direto no WhatsApp.',
     // Lead Form Modal
     "Let's begin!": 'Vamos começar!', 'Loading form...': 'Carregando formulário...', 'Important': 'Importante',
     "Don't close this window until you complete the form. Your browser doesn't allow local saves.": 'Não feche esta janela até completar o formulário. Seu navegador não permite salvamentos locais.',
@@ -518,6 +525,26 @@ export const translations = {
     'We publish with your own domain, analytics integration, and forms connected to your CRM. Post-launch support included.': 'Publicamos com domínio próprio, integração de analytics e formulários conectados ao seu CRM. Suporte pós-lançamento incluso.',
     "Let's talk about your website": 'Vamos conversar sobre seu site',
     "Tell us about your project in 1 minute. We'll reply within 24 hours with a proposal.": 'Conte sobre o seu projeto em 1 minuto. Respondemos em até 24 horas com uma proposta.',
+    // Chunk load failure (ChunkErrorBoundary)
+    'This page failed to load': 'Esta página não carregou',
+    'Part of the site failed to load, usually because a new version was just published.': 'Parte do site não carregou, geralmente porque uma nova versão acabou de ser publicada.',
+    'Trying again automatically in a moment.': 'Tentando novamente em instantes.',
+    'Reload page': 'Recarregar página',
+    // Catalog: /portfolio, CatalogCard, CatalogDetail (portfolio redesign, 2026-09)
+    'Our Solutions': 'Nossas Soluções', 'Talk on WhatsApp': 'Falar no WhatsApp', 'or talk on WhatsApp': 'ou fale no WhatsApp',
+    "Explore the tools and services we've built to help businesses grow.": 'Conheça as ferramentas e os serviços que criamos para ajudar empresas a crescer.',
+    'Ready-made apps and the services we perform: AI, automation, websites, marketing and more.': 'Apps prontos e os serviços que prestamos: IA, automação, sites, marketing e mais.',
+    'AI & Automation': 'IA e automação', 'Systems & Booking': 'Sistemas e agendamento', 'CRM & Sales': 'CRM e vendas',
+    'Websites': 'Sites', 'Marketing': 'Marketing', 'Branding': 'Marca', 'App': 'App', 'Service': 'Serviço',
+    'starting': 'a partir de', 'one-time': 'pagamento único', 'One-time': 'Pagamento único', 'One-time Fee': 'Pagamento único',
+    'Popular': 'Mais pedido', 'AI Powered': 'Com IA', 'Recommended': 'Recomendado',
+    'See details': 'Ver detalhes', 'Custom quote': 'Orçamento sob medida', 'Live at': 'No ar em', 'Browse': 'Navegar',
+    'one-time setup': 'de implantação, uma vez', 'Custom quote after a quick conversation.': 'Orçamento sob medida, depois de uma conversa rápida.',
+    'Website home': 'Home do site', 'Talk to us': 'Falar com a gente', 'See the apps': 'Ver os apps', 'Next step': 'Próximo passo',
+    'ready-made apps in production': 'apps próprios em produção', 'marketing and technology services': 'serviços de marketing e tecnologia', 'entry plan': 'plano de entrada',
+    '01 · Apps': '01 · Apps', '02 · Services': '02 · Serviços',
+    'Software ready to use': 'Software pronto para usar', 'Our own products, live today, with a fixed price. Subscribe and start.': 'Produtos nossos, já no ar, com preço fechado. Você assina e começa.',
+    'Built by us, for your business': 'Feito por nós, para o seu negócio', 'Tailored marketing and technology, quoted for your case.': 'Marketing e tecnologia sob medida, com orçamento para o seu caso.',
   }
 } as const;
 export type TranslationKey = keyof typeof translations.pt;

@@ -72,67 +72,76 @@ export default function Home() {
 
   return (
     <div className="pb-0">
-      <HeroSection
-        companySettings={companySettings}
-        homepageContent={homepageContent}
-        onCtaClick={() => setIsFormOpen(true)}
-        showTrustBadges={false}
-      />
+      <div className="trust-bar-bleed">
+        <HeroSection
+          companySettings={companySettings}
+          homepageContent={homepageContent}
+          onCtaClick={() => setIsFormOpen(true)}
+          showTrustBadges={false}
+        />
 
-      {trustBadges.length > 0 && (
-        // ── Trust-bar bleed contract ──────────────────────────────────────
-        // These `mt` values must exactly match:
-        //   1. HeroSection's `bottomPadding` (showTrustBadges=false branch) —
-        //      keeps the hero photo glued to the card's top edge, no gap.
-        //   2. The fill `<div>`'s `top-[…]` below — keeps the dark fill
-        //      starting exactly at the hero's true bottom edge, so only the
-        //      rounded card (not a full-width bar) shows over the hero.
-        // If you change one, change all three, at every breakpoint.
-        <section className="relative z-20 mt-[-3.4rem] md:mt-[-6.0625rem] lg:mt-[-4.0625rem]">
-          {/*
-            Bleeds up into the hero by roughly half the card's height (tuned per
-            breakpoint, since TrustBadges' own grid — and thus its height —
-            changes at md/lg) so the split reads ~50/50 across the hero/services
-            boundary. Real flow (not absolute/zero-height): the card's bottom
-            half pushes the What We Do section down naturally. No extra trailing
-            padding here — that section's own pt-[4.25rem] (the standard
-            section-to-section rhythm used across this page) is what creates
-            the gap before its heading, so it matches every other transition.
+        {trustBadges.length > 0 && (
+          // ── Trust-bar bleed contract ────────────────────────────────────
+          // Source of truth: the `--trust-bleed` var set per breakpoint by
+          // `.trust-bar-bleed` in index.css (on the wrapper above). This
+          // section's `mt` and the fill `<div>`'s `top-[…]` below both read
+          // that var, and so does HeroSection's `bottomPadding`
+          // (showTrustBadges=false branch) — keeping the hero photo glued to
+          // the card's top edge and the dark fill starting exactly at the
+          // hero's true bottom edge, so only the rounded card (not a
+          // full-width bar) shows over the hero. Change the var once in
+          // index.css to change all three.
+          <section className="relative z-20 mt-[calc(var(--trust-bleed)*-1)]">
+            {/*
+              Bleeds up into the hero by roughly half the card's height (tuned per
+              breakpoint, since TrustBadges' own grid — and thus its height —
+              changes at md/lg) so the split reads ~50/50 across the hero/services
+              boundary. Real flow (not absolute/zero-height): the card's bottom
+              half pushes the What We Do section down naturally. No extra trailing
+              padding here — that section's own pt-[4.25rem] (the standard
+              section-to-section rhythm used across this page) is what creates
+              the gap before its heading, so it matches every other transition.
 
-            The fill below only starts at `top: <bleed>` — i.e. right where this
-            section crosses back below the hero's true bottom edge — so only the
-            rounded card (not a full-width bar) shows above that line, over the
-            hero's own background/photo.
-          */}
-          <div className="absolute inset-x-0 bottom-0 top-[3.4rem] md:top-[6.0625rem] lg:top-[4.0625rem] bg-[#111111]" aria-hidden />
-          <div className="container-custom mx-auto relative">
-            <TrustBadges badges={trustBadges} />
-          </div>
-        </section>
-      )}
+              The fill below only starts at `top: <bleed>` — i.e. right where this
+              section crosses back below the hero's true bottom edge — so only the
+              rounded card (not a full-width bar) shows above that line, over the
+              hero's own background/photo.
+            */}
+            <div className="absolute inset-x-0 bottom-0 top-[var(--trust-bleed)] bg-surface-dark" aria-hidden />
+            <div className="container-custom mx-auto relative">
+              <TrustBadges badges={trustBadges} />
+            </div>
+          </section>
+        )}
+      </div>
 
       {/* Sections swapped (What We Do first), but each SLOT keeps its original
-          background: slot 1 stays flat #111111 so it still merges seamlessly
+          background: slot 1 stays flat surface-dark so it still merges seamlessly
           with the trust-bar fill above; slot 2 keeps the dark gradient (now on
           OurServicesSection itself). */}
       <ServicesSection
         section={horizontalScrollSection}
         onCtaClick={handleConsultingCta}
-        background="bg-[#111111]"
+        background="bg-surface-dark"
       />
 
-      <OurServicesSection section={homepageContent.ourServicesSection} />
-      <div className="h-0 bg-[#111111]"></div>
+      <OurServicesSection
+        section={homepageContent.ourServicesSection}
+        onCtaClick={() => {
+          setIsFormOpen(true);
+          trackCTAClick('our-services', companySettings?.ctaText || '');
+        }}
+      />
       <ReviewsSection
         embedUrl={reviewsEmbedUrl}
         title={reviewsTitle}
         subtitle={reviewsSubtitle}
       />
       <BlogSection content={homepageContent.blogSection} />
-      <section id="about" className="relative py-[4.25rem] overflow-hidden bg-gradient-to-b from-[#10151f] to-[#0a0c11]">
+      <section id="about" className="relative section-y overflow-hidden bg-dark-gradient">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute w-80 h-80 blur-3xl -left-20 top-0 rounded-full bg-primary/5" />
-          <div className="absolute w-[420px] h-[420px] blur-3xl right-[-10%] bottom-[-20%] rounded-full bg-indigo-500/10" />
+          <div className="absolute w-[420px] h-[420px] blur-3xl right-[-10%] bottom-[-20%] rounded-full bg-cta/10" />
         </div>
         <div className="relative z-10">
           <AboutSection
@@ -142,7 +151,7 @@ export default function Home() {
         </div>
       </section>
       {(companySettings?.mapEmbedUrl || areasServedSection?.heading || areasServedSection?.description) && (
-        <section id="areas-served" className="bg-[#111111] py-[4.25rem]">
+        <section id="areas-served" className="bg-surface-dark section-y">
           <AreasServedMap
             mapEmbedUrl={companySettings?.mapEmbedUrl}
             content={areasServedSection}

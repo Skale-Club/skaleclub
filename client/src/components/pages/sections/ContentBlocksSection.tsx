@@ -59,17 +59,17 @@ const DEFAULTS = {
 // `theme` undefined renders exactly as before.
 const LIGHT = {
   section:      "bg-white",
-  eyebrow:      "text-[#1C53A3]",
+  eyebrow:      "text-cta",
   heading:      "text-zinc-900",
   subheading:   "text-zinc-600",
   blockHeading: "text-zinc-900",
   paragraph:    "text-zinc-600",
-  bulletIcon:   "text-[#1C53A3]",
+  bulletIcon:   "text-cta",
   bulletText:   "text-zinc-700",
 } as const;
 
 const DARK = {
-  section:      "bg-[#111111]",
+  section:      "bg-surface-dark",
   eyebrow:      "text-blue-300",
   heading:      "text-white",
   subheading:   "text-zinc-300",
@@ -90,7 +90,7 @@ export function ContentBlocksSection({ props }: { props: ContentBlocksProps }) {
 
   return (
     <section
-      className={`${c.section} py-20 sm:py-24`}
+      className={`${c.section} py-16 md:py-24`}
       data-testid="section-content-blocks"
     >
       <div className="container-custom mx-auto px-6">

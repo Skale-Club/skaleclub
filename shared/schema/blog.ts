@@ -1,5 +1,21 @@
-import { boolean, index, integer, jsonb, pgTable, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { boolean, index, integer, jsonb, numeric, pgTable, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { z } from "zod";
+// The parity contract owns these enums now — declaring local copies is exactly
+// how the five products drifted apart in the first place.
+import {
+  blogFeedbackChannelSchema,
+  blogFeedbackVerdictSchema,
+  blogJobSourceSchema,
+  blogJobStatusSchema,
+  blogJobTriggerSchema,
+  blogRssItemStatusSchema,
+  durationsMsSchema,
+  type BlogFeedbackChannel,
+  type BlogFeedbackVerdict,
+  type BlogJobSource,
+  type BlogJobTrigger,
+  type DurationsMs,
+} from "../blog-contract.js";
 
 const nullableDateInputSchema = z.union([z.string(), z.date(), z.null()]).optional().transform((value) => {
   if (value === undefined) {
@@ -29,16 +45,10 @@ const dateInputSchema = z.union([z.string(), z.date()]).optional().transform((va
   return new Date(value);
 });
 
-// Phase 38 BLOG2-15: per-stage timing shape on blog_generation_jobs.
-// Single source of truth — Drizzle's $type<> generic uses z.infer<> below.
-export const durationsMsSchema = z.object({
-  topic: z.number().int().nonnegative(),
-  content: z.number().int().nonnegative(),
-  image: z.number().int().nonnegative().nullable(),
-  upload: z.number().int().nonnegative(),
-  total: z.number().int().nonnegative(),
-});
-export type DurationsMs = z.infer<typeof durationsMsSchema>;
+// durationsMs / status enums come from shared/blog-contract.ts (see imports),
+// re-exported here so `#shared/schema.js` importers are unaffected.
+export { durationsMsSchema } from "../blog-contract.js";
+export type { DurationsMs } from "../blog-contract.js";
 
 export const blogSettings = pgTable("blog_settings", {
   id: serial("id").primaryKey(),
@@ -50,11 +60,22 @@ export const blogSettings = pgTable("blog_settings", {
   // Autopost port (Xkedule): editorial guide injected into every generation.
   systemPrompt: text("system_prompt").notNull().default(""),
   // true → generator publishes immediately; false → drafts wait in the approval queue.
-  autoApprove: boolean("auto_approve").notNull().default(false),
+  // (Named auto_approve until the parity work; auto_publish is what it controls.)
+  autoPublish: boolean("auto_publish").notNull().default(false),
   // OpenRouter model ids picked in the admin panel. Automation cannot be
   // enabled until both are set AND an OpenRouter API key is configured.
-  openrouterTextModel: text("openrouter_text_model").notNull().default(""),
-  openrouterImageModel: text("openrouter_image_model").notNull().default(""),
+  textModel: text("text_model").notNull().default(""),
+  imageModel: text("image_model").notNull().default(""),
+  // RSS is this repo's only topic source today, so unlike the other products
+  // this defaults TRUE — turning it off here would stop generation until the
+  // editorial pillar rotation lands (SC-05).
+  rssEnabled: boolean("rss_enabled").notNull().default(true),
+  // Anchor hour 0-23 in the site's timezone. NULL keeps the drifting cadence.
+  postingHour: integer("posting_hour"),
+  // Which timezone that hour is in. The multi-tenant products read this from
+  // the tenant's company settings; this is a single site, and it has no such
+  // field, so the blog owns it. Default matches where the team publishes from.
+  timezone: text("timezone").notNull().default("America/Sao_Paulo"),
   lastRunAt: timestamp("last_run_at"),
   lockAcquiredAt: timestamp("lock_acquired_at"),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
@@ -67,7 +88,12 @@ export const blogGenerationJobs = pgTable("blog_generation_jobs", {
   postId: integer("post_id"),
   startedAt: timestamp("started_at").notNull().defaultNow(),
   completedAt: timestamp("completed_at"),
-  error: text("error"),
+  errorMessage: text("error_message"),
+  // Contract columns (MASTER §3.2). NULL on rows written before they existed.
+  trigger: text("trigger").$type<BlogJobTrigger>(),
+  source: text("source").$type<BlogJobSource>(),
+  rssItemId: integer("rss_item_id"),
+  pillarId: text("pillar_id"),
   // Phase 38 BLOG2-15: per-stage timing breakdown. NULL on skipped jobs.
   // Failed jobs populate stages that completed before failure.
   durationsMs: jsonb("durations_ms").$type<DurationsMs>(),
@@ -85,9 +111,12 @@ export const insertBlogSettingsSchema = z.object({
   enableTrendAnalysis: z.boolean().default(false),
   promptStyle: z.string().default(""),
   systemPrompt: z.string().default(""),
-  autoApprove: z.boolean().default(false),
-  openrouterTextModel: z.string().default(""),
-  openrouterImageModel: z.string().default(""),
+  autoPublish: z.boolean().default(false),
+  textModel: z.string().default(""),
+  imageModel: z.string().default(""),
+  rssEnabled: z.boolean().default(true),
+  postingHour: z.number().int().min(0).max(23).nullable().optional(),
+  timezone: z.string().min(1).max(100).default("America/Sao_Paulo"),
   lastRunAt: nullableDateInputSchema,
   lockAcquiredAt: nullableDateInputSchema,
 });
@@ -100,15 +129,20 @@ export const selectBlogSettingsSchema = z.object({
   enableTrendAnalysis: z.boolean(),
   promptStyle: z.string(),
   systemPrompt: z.string(),
-  autoApprove: z.boolean(),
-  openrouterTextModel: z.string(),
-  openrouterImageModel: z.string(),
+  autoPublish: z.boolean(),
+  textModel: z.string(),
+  imageModel: z.string(),
+  rssEnabled: z.boolean(),
+  postingHour: z.number().int().nullable(),
+  timezone: z.string(),
   lastRunAt: z.date().nullable(),
   lockAcquiredAt: z.date().nullable(),
   updatedAt: z.date().nullable(),
 });
 
-export const blogGenerationJobStatusSchema = z.enum(["pending", "running", "completed", "failed", "skipped"]);
+// Kept as a named export because callers import it; the values themselves are
+// the contract's (blogJobStatusSchema).
+export const blogGenerationJobStatusSchema = blogJobStatusSchema;
 
 export const insertBlogGenerationJobSchema = z.object({
   status: blogGenerationJobStatusSchema,
@@ -116,7 +150,11 @@ export const insertBlogGenerationJobSchema = z.object({
   postId: z.number().int().nullable().optional(),
   startedAt: dateInputSchema,
   completedAt: nullableDateInputSchema,
-  error: z.string().nullable().optional(),
+  errorMessage: z.string().nullable().optional(),
+  trigger: blogJobTriggerSchema.nullable().optional(),
+  source: blogJobSourceSchema.nullable().optional(),
+  rssItemId: z.number().int().nullable().optional(),
+  pillarId: z.string().nullable().optional(),
   durationsMs: durationsMsSchema.nullable().optional(),
 });
 
@@ -127,9 +165,39 @@ export const selectBlogGenerationJobSchema = z.object({
   postId: z.number().int().nullable(),
   startedAt: z.date().nullable(),
   completedAt: z.date().nullable(),
-  error: z.string().nullable(),
+  errorMessage: z.string().nullable(),
+  trigger: blogJobTriggerSchema.nullable(),
+  source: blogJobSourceSchema.nullable(),
+  rssItemId: z.number().int().nullable(),
+  pillarId: z.string().nullable(),
   durationsMs: durationsMsSchema.nullable(),
 });
+
+
+// ─── AI usage + cost log (autoblog-parity SC-08, ported from Websites) ──────
+//
+// One row per AI call the blog pipeline makes. Single-site, so no tenant_id.
+// Writing a row must never be able to fail a generation.
+
+export const aiGenerationLogs = pgTable("ai_generation_logs", {
+  id: serial("id").primaryKey(),
+  step: text("step").notNull(),
+  provider: text("provider").notNull(),
+  model: text("model").notNull(),
+  prompt: text("prompt"),
+  inputTokens: integer("input_tokens"),
+  outputTokens: integer("output_tokens"),
+  costUsd: numeric("cost_usd", { precision: 10, scale: 4 }),
+  status: text("status").notNull(),
+  error: text("error"),
+  durationMs: integer("duration_ms"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  createdIdx: index("ai_generation_logs_created_idx").on(table.createdAt),
+}));
+
+export type AiGenerationLog = typeof aiGenerationLogs.$inferSelect;
+export type InsertAiGenerationLog = typeof aiGenerationLogs.$inferInsert;
 
 // ─── RSS Sources & Items (Phase 34 — RSS-01, RSS-02, RSS-03) ───────────────
 
@@ -170,9 +238,11 @@ export type InsertBlogRssSource = typeof blogRssSources.$inferInsert;
 export type BlogRssItem = typeof blogRssItems.$inferSelect;
 export type InsertBlogRssItem = typeof blogRssItems.$inferInsert;
 
-// D-05: status is text + Zod enum at app layer (not pgEnum)
-export const blogRssItemStatusSchema = z.enum(["pending", "used", "skipped"]);
-export type BlogRssItemStatus = z.infer<typeof blogRssItemStatusSchema>;
+// status stays text + a Zod enum at the app layer (not pgEnum); the enum itself
+// now lives in the shared contract and is re-exported so existing importers of
+// `#shared/schema.js` keep working.
+export { blogRssItemStatusSchema } from "../blog-contract.js";
+export type { BlogRssItemStatus } from "../blog-contract.js";
 
 // Manual Zod (project convention for nullable/defaulted fields — STATE.md Phase 21)
 export const insertBlogRssSourceSchema = z.object({
@@ -236,34 +306,39 @@ export const blogPostFeedback = pgTable("blog_post_feedback", {
   // No FK on purpose: rejected posts are deleted but their feedback must survive.
   postId: integer("post_id"),
   postTitle: text("post_title").notNull(),
-  rssItemTitle: text("rss_item_title"),
-  signal: text("signal").notNull(),
+  postExcerpt: text("post_excerpt"),
+  // Was rss_item_title: the origin of a topic stops being always-an-RSS-item
+  // once the pillar rotation lands.
+  sourceTitle: text("source_title"),
+  verdict: text("verdict").$type<BlogFeedbackVerdict>().notNull(),
   reason: text("reason"),
+  decidedBy: text("decided_by").$type<BlogFeedbackChannel>().notNull().default("admin"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
-  signalCreatedIdx: index("blog_post_feedback_signal_created_idx").on(table.signal, table.createdAt),
+  verdictCreatedIdx: index("blog_post_feedback_signal_created_idx").on(table.verdict, table.createdAt),
 }));
 
 export type BlogPostFeedback = typeof blogPostFeedback.$inferSelect;
 export type InsertBlogPostFeedback = typeof blogPostFeedback.$inferInsert;
 
-export const blogFeedbackSignalSchema = z.enum(["positive", "negative"]);
-export type BlogFeedbackSignal = z.infer<typeof blogFeedbackSignalSchema>;
-
 export const insertBlogPostFeedbackSchema = z.object({
   postId: z.number().int().nullable().optional(),
   postTitle: z.string().min(1).max(500),
-  rssItemTitle: z.string().nullable().optional(),
-  signal: blogFeedbackSignalSchema,
+  postExcerpt: z.string().nullable().optional(),
+  sourceTitle: z.string().nullable().optional(),
+  verdict: blogFeedbackVerdictSchema,
   reason: z.string().max(1000).nullable().optional(),
+  decidedBy: blogFeedbackChannelSchema.optional(),
 });
 
 export const selectBlogPostFeedbackSchema = z.object({
   id: z.number().int(),
   postId: z.number().int().nullable(),
   postTitle: z.string(),
-  rssItemTitle: z.string().nullable(),
-  signal: blogFeedbackSignalSchema,
+  postExcerpt: z.string().nullable(),
+  sourceTitle: z.string().nullable(),
+  verdict: blogFeedbackVerdictSchema,
   reason: z.string().nullable(),
+  decidedBy: blogFeedbackChannelSchema,
   createdAt: z.date(),
 });

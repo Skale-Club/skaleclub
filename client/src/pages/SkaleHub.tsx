@@ -1,3 +1,4 @@
+import { usePageSeo } from "@/hooks/use-seo";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { CalendarDays, CheckCircle2, Clock3, ExternalLink, Radio, Sparkles, Users } from "lucide-react";
@@ -41,6 +42,7 @@ type HubRegisterResponse = {
   unlocked: true;
   liveId: number;
   participantId: number;
+  accessToken: string;
   registrationId: number;
   access: {
     streamUrl: string | null;
@@ -77,6 +79,7 @@ function formatLiveTime(value: string | Date, timeZone: string) {
 }
 
 export default function SkaleHub() {
+  usePageSeo({ title: "Skale Hub" });
   const { toast } = useToast();
   const [form, setForm] = useState({ name: "", phone: "", email: "" });
   const [selectedCountry, setSelectedCountry] = useState<PhoneCountry>(() => detectDefaultPhoneCountry());
@@ -129,6 +132,7 @@ export default function SkaleHub() {
       const eventType = unlockData.access.streamUrl ? "join" : "replay";
       const response = await apiRequest("POST", `/api/skale-hub/${unlockData.liveId}/access`, {
         participantId: unlockData.participantId,
+        accessToken: unlockData.accessToken,
         eventType,
         metadata: { source: "public-page" },
       });
@@ -167,13 +171,20 @@ export default function SkaleHub() {
   const accessLabel = unlockData?.access.streamUrl ? "Access weekly live" : "Watch replay";
 
   return (
-    <div className="bg-[linear-gradient(180deg,#f7f9fc_0%,#eef4ff_48%,#ffffff_100%)]">
+    <div className="bg-gradient-to-b from-[#f7f9fc] via-[#eef4ff] to-white">
       <section className="relative overflow-hidden px-4 pb-20 pt-32 sm:px-6 lg:px-8">
-        <div className="absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(circle_at_top_left,rgba(64,110,241,0.18),transparent_58%),radial-gradient(circle_at_top_right,rgba(28,30,36,0.08),transparent_42%)]" />
+        <div
+          aria-hidden
+          className="absolute inset-x-0 top-0 h-[420px]"
+          style={{
+            backgroundImage:
+              'radial-gradient(circle at top left, color-mix(in srgb, var(--cta) 18%, transparent), transparent 58%), radial-gradient(circle at top right, rgba(28,30,36,0.08), transparent 42%)',
+          }}
+        />
         <div className="relative mx-auto max-w-6xl">
           <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
             <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#5173D6]/15 bg-white/80 px-4 py-2 text-sm font-semibold text-[#3B5BBE] shadow-sm backdrop-blur">
+              <div className="inline-flex items-center gap-2 rounded-full border border-cta/15 bg-white/80 px-4 py-2 text-sm font-semibold text-cta-hover shadow-sm backdrop-blur">
                 <Sparkles className="h-4 w-4" />
                 Skale Hub by Skale Club
               </div>
@@ -191,27 +202,27 @@ export default function SkaleHub() {
               </div>
 
               <div className="mt-10 grid gap-4 sm:grid-cols-3">
-                <Card className="border-white/70 bg-white/80 shadow-lg shadow-[#5173D6]/5">
+                <Card className="border-white/70 bg-white/80 shadow-lg shadow-cta/5">
                   <CardContent className="flex items-center gap-3 p-5">
-                    <Radio className="h-5 w-5 text-[#5173D6]" />
+                    <Radio className="h-5 w-5 text-cta" />
                     <div>
                       <p className="text-sm font-semibold text-slate-900">Live every week</p>
                       <p className="text-xs text-slate-500">Fresh tactical sessions</p>
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="border-white/70 bg-white/80 shadow-lg shadow-[#5173D6]/5">
+                <Card className="border-white/70 bg-white/80 shadow-lg shadow-cta/5">
                   <CardContent className="flex items-center gap-3 p-5">
-                    <Users className="h-5 w-5 text-[#5173D6]" />
+                    <Users className="h-5 w-5 text-cta" />
                     <div>
                       <p className="text-sm font-semibold text-slate-900">Business focused</p>
                       <p className="text-xs text-slate-500">Built for growth-minded owners</p>
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="border-white/70 bg-white/80 shadow-lg shadow-[#5173D6]/5">
+                <Card className="border-white/70 bg-white/80 shadow-lg shadow-cta/5">
                   <CardContent className="flex items-center gap-3 p-5">
-                    <CheckCircle2 className="h-5 w-5 text-[#5173D6]" />
+                    <CheckCircle2 className="h-5 w-5 text-cta" />
                     <div>
                       <p className="text-sm font-semibold text-slate-900">Fast unlock</p>
                       <p className="text-xs text-slate-500">No account or password</p>
@@ -222,7 +233,7 @@ export default function SkaleHub() {
             </div>
 
             <div className="space-y-6">
-              <Card className="border-slate-200/80 bg-white/90 shadow-xl shadow-[#5173D6]/10">
+              <Card className="border-slate-200/80 bg-white/90 shadow-xl shadow-cta/10">
                 <CardHeader>
                   <CardTitle className="text-2xl text-slate-950">This week&apos;s live</CardTitle>
                   <CardDescription>
@@ -232,7 +243,23 @@ export default function SkaleHub() {
                 <CardContent>
                   {activeQuery.isLoading ? (
                     <div className="flex min-h-[220px] items-center justify-center">
-                      <Loader2 className="h-7 w-7 animate-spin text-[#5173D6]" />
+                      <Loader2 className="h-7 w-7 animate-spin text-cta" />
+                    </div>
+                  ) : activeQuery.isError ? (
+                    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+                      <p className="text-lg font-semibold text-slate-900">We couldn&apos;t load this week&apos;s live.</p>
+                      <p className="mt-2 text-sm text-slate-500">
+                        Something went wrong on our side. Please try again in a moment.
+                      </p>
+                      <Button
+                        variant="outline"
+                        className="mt-4"
+                        disabled={activeQuery.isFetching}
+                        onClick={() => activeQuery.refetch()}
+                      >
+                        {activeQuery.isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                        Tentar novamente
+                      </Button>
                     </div>
                   ) : !live ? (
                     <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
@@ -243,7 +270,7 @@ export default function SkaleHub() {
                     </div>
                   ) : (
                     <div className="space-y-5">
-                      <div className="rounded-2xl bg-[#18191f] p-6 text-white shadow-lg">
+                      <div className="rounded-2xl bg-surface-dark p-6 text-white shadow-lg">
                         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/60">Skale Hub Weekly Live</p>
                         <h2 className="mt-3 text-2xl font-semibold leading-tight">{live.title}</h2>
                         <p className="mt-3 text-sm leading-6 text-white/72">
@@ -269,6 +296,7 @@ export default function SkaleHub() {
 
                         <div className="mt-4 space-y-3">
                           <Input
+                            aria-label="Your name"
                             placeholder="Your name"
                             value={form.name}
                             onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
@@ -291,6 +319,7 @@ export default function SkaleHub() {
                                 type="tel"
                                 inputMode="tel"
                                 autoComplete="tel"
+                                aria-label="Phone number"
                                 placeholder={selectedCountry.placeholder}
                                 value={form.phone}
                                 onChange={(event) => setForm((current) => ({
@@ -306,6 +335,7 @@ export default function SkaleHub() {
                           </div>
                           <Input
                             type="email"
+                            aria-label="Email"
                             placeholder="Email"
                             value={form.email}
                             onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
@@ -313,7 +343,9 @@ export default function SkaleHub() {
                         </div>
 
                         <Button
-                          className="mt-5 w-full bg-[#5173D6] hover:bg-[#3B5BBE]"
+                          variant="cta"
+                          size="pill"
+                          className="mt-5 w-full"
                           disabled={!canSubmit || registerMutation.isPending}
                           onClick={() => registerMutation.mutate()}
                         >

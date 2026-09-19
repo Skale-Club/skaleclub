@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
+import { useLocation } from 'wouter';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -54,6 +55,7 @@ function isAuthPage(): boolean {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [location] = useLocation();
   const [theme, setThemeState] = useState<Theme>(() => getStoredTheme());
   const [isAdminArea, setIsAdminArea] = useState(() => isInAdminThemeArea());
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() => {
@@ -108,39 +110,22 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setTheme(newTheme);
   }, [resolvedTheme, setTheme]);
 
-  // Check for admin area on route changes
+  // Check for admin area on route changes. `location` comes from the router,
+  // which already covers pushState links and back/forward navigation, so this
+  // effect is the single owner of the theme class on <html> — no DOM observer
+  // re-applying it on unrelated mutations.
   useEffect(() => {
-    const checkAdminArea = () => {
-      const inAdmin = isInAdminThemeArea();
-      setIsAdminArea(inAdmin);
+    const inAdmin = isInAdminThemeArea();
+    setIsAdminArea(inAdmin);
 
-      if (inAdmin) {
-        const resolved = theme === 'system' ? getSystemTheme() : theme;
-        applyTheme(resolved, true);
-      } else {
-        // Site-wide default: dark everywhere outside admin themeable area.
-        applyTheme('dark', false);
-      }
-    };
-
-    // Initial check
-    checkAdminArea();
-
-    // Listen for popstate (back/forward navigation)
-    window.addEventListener('popstate', checkAdminArea);
-
-    // Use MutationObserver to detect SPA navigation
-    const observer = new MutationObserver(() => {
-      checkAdminArea();
-    });
-
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    return () => {
-      window.removeEventListener('popstate', checkAdminArea);
-      observer.disconnect();
-    };
-  }, [theme, applyTheme]);
+    if (inAdmin) {
+      const resolved = theme === 'system' ? getSystemTheme() : theme;
+      applyTheme(resolved, true);
+    } else {
+      // Site-wide default: dark everywhere outside admin themeable area.
+      applyTheme('dark', false);
+    }
+  }, [location, theme, applyTheme]);
 
   // Handle system theme changes (only in admin)
   useEffect(() => {

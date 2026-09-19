@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from "express";
 import sharp from "sharp";
+import { z } from "zod";
 
 // Register storage routes using Supabase Storage
 export async function registerStorageRoutes(app: Express, requireAdmin: any) {
@@ -47,13 +48,41 @@ export async function registerStorageRoutes(app: Express, requireAdmin: any) {
     avif: "image/avif",
   };
 
+  // 15 MB decoded — well above any legitimate image here, and it bounds what a
+  // single request can push into sharp and on to Supabase.
+  const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
+  // Anything sharp can transcode to WebP is accepted too (a macOS photo pick
+  // is often HEIC); it never reaches the bucket in its original format.
+  const allowedExts = Array.from(new Set([...Object.keys(mimeFromExt), ...Array.from(convertibleToWebp)]));
+
+  // SVG stays allowed: these routes are admin-only, and existing logos/icons
+  // in the CMS are SVGs.
+  const uploadBodySchema = z.object({
+    filename: z
+      .string()
+      .min(1)
+      .max(200)
+      .refine(
+        (name) => allowedExts.includes((name.split('.').pop() || '').toLowerCase()),
+        { message: `Unsupported file type (allowed: ${allowedExts.join(', ')})` },
+      ),
+    data: z.string().min(1),
+  });
+
   const handleUpload = async (req: Request, res: Response) => {
     try {
-      const { filename, data } = req.body;
-      if (!filename || !data) {
-        return res.status(400).json({ error: "Missing filename or data" });
+      const parsed = uploadBodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors[0]?.message || "Invalid upload payload" });
       }
+      const { filename, data } = parsed.data;
       const buffer = Buffer.from(data, 'base64');
+      if (buffer.length === 0) {
+        return res.status(400).json({ error: "Invalid base64 data" });
+      }
+      if (buffer.length > MAX_UPLOAD_BYTES) {
+        return res.status(413).json({ error: "File too large (max 15 MB)" });
+      }
       const ext = (filename.split('.').pop() || '').toLowerCase();
       const contentType = mimeFromExt[ext] || "application/octet-stream";
 

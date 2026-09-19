@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { storage } from "../storage.js";
 import { insertPageSchema, updatePageSchema } from "#shared/schema.js";
 import { isReservedSlug } from "#shared/reservedSlugs.js";
-import { requireAdmin } from "./_shared.js";
+import { requireAdmin, sendError } from "./_shared.js";
 
 export function registerPageRoutes(app: Express) {
   // PUBLIC — literal /slug/ segment registered FIRST to avoid colliding with /:id
@@ -17,7 +17,8 @@ export function registerPageRoutes(app: Express) {
       const { id, createdAt, updatedAt, ...publicRow } = row as any;
       res.json(publicRow);
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[pages] GET /api/pages/slug/:slug failed:", err);
+      res.status(500).json({ message: "Failed to load page" });
     }
   });
 
@@ -27,7 +28,8 @@ export function registerPageRoutes(app: Express) {
       const rows = await storage.listPages();
       res.json(rows);
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[pages] GET /api/pages failed:", err);
+      res.status(500).json({ message: "Failed to load pages" });
     }
   });
 
@@ -38,7 +40,8 @@ export function registerPageRoutes(app: Express) {
       if (!row) return res.status(404).json({ message: "Page not found" });
       res.json(row);
     } catch (err) {
-      res.status(500).json({ message: (err as Error).message });
+      console.error("[pages] GET /api/pages/:id failed:", err);
+      res.status(500).json({ message: "Failed to load page" });
     }
   });
 
@@ -59,7 +62,7 @@ export function registerPageRoutes(app: Express) {
       const row = await storage.createPage({ ...parsed.data, slug });
       res.status(201).json(row);
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to create page");
     }
   });
 
@@ -89,7 +92,7 @@ export function registerPageRoutes(app: Express) {
       const updated = await storage.updatePage(req.params.id, updateData);
       res.json(updated);
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to update page");
     }
   });
 
@@ -101,7 +104,7 @@ export function registerPageRoutes(app: Express) {
       await storage.deletePage(req.params.id);
       res.json({ success: true });
     } catch (err) {
-      res.status(400).json({ message: (err as Error).message });
+      sendError(res, err, "Failed to delete page");
     }
   });
 }

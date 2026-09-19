@@ -6,11 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Calendar, 
-  User, 
-  FileText, 
-  ArrowLeft, 
-  Facebook, 
+  Calendar,
+  User,
+  FileText,
+  Facebook,
   Twitter, 
   Linkedin,
   Share2
@@ -18,6 +17,8 @@ import {
 import { format } from 'date-fns';
 import type { BlogPost, CompanySettings } from '@shared/schema';
 import { usePagePaths } from '@/lib/pagePaths';
+import { NotFoundState } from '@/components/NotFoundState';
+import { fetchJson } from '@/lib/queryClient';
 
 export default function BlogPostPage() {
   const params = useParams<{ slug: string }>();
@@ -33,7 +34,7 @@ export default function BlogPostPage() {
 
   const { data: relatedPosts } = useQuery<BlogPost[]>({
     queryKey: ['/api/blog', post?.id, 'related'],
-    queryFn: () => fetch(`/api/blog/${post?.id}/related?limit=2`).then(r => r.json()),
+    queryFn: () => fetchJson<BlogPost[]>(`/api/blog/${post?.id}/related?limit=2`),
     enabled: !!post?.id,
   });
 
@@ -92,19 +93,13 @@ export default function BlogPostPage() {
 
   if (error || !post) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-foreground mb-2">Post Not Found</h1>
-          <p className="text-muted-foreground mb-4">The blog post you're looking for doesn't exist.</p>
-          <Link href={pagePaths.blog}>
-            <Button>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Blog
-            </Button>
-          </Link>
-        </div>
-      </div>
+      <NotFoundState
+        layout="section"
+        title="Post Not Found"
+        description="The blog post you're looking for doesn't exist."
+        actionLabel="Back to Blog"
+        actionHref={pagePaths.blog}
+      />
     );
   }
 

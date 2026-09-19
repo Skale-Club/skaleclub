@@ -15,5 +15,10 @@ export function OurServicesAdapter(_props: { props: z.infer<typeof ourServicesPr
 
   if (!settings) return null;
 
-  return <OurServicesSection section={settings.homepageContent?.ourServicesSection} />;
+  return (
+    <OurServicesSection
+      section={settings.homepageContent?.ourServicesSection}
+      onCtaClick={() => document.querySelector<HTMLElement>('[data-landing-lead-cta]')?.click()}
+    />
+  );
 }

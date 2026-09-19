@@ -20,14 +20,16 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
   const heroImageUrl = (companySettings?.heroImageUrl || '').trim();
   const trustBadges = homepageContent.trustBadges || [];
   // ── Trust-bar bleed contract ──────────────────────────────────────────
-  // Must exactly match Home.tsx's trust-bar `mt-[…]` bleed values (and its
-  // fill div's `top-[…]`) at every breakpoint. Equal (not larger) so the
-  // photo's bottom edge sits flush against the card's top edge — glued, not
-  // floating with a gap, and not clipped by overlap either. If you change
-  // one, change all three.
+  // Source of truth: the `--trust-bleed` var set per breakpoint by
+  // `.trust-bar-bleed` in index.css, applied on the wrapper around this
+  // section + the trust bar in Home.tsx. Home.tsx's trust-bar `mt-[…]`
+  // bleed and its fill div's `top-[…]` read the same var. Equal (not
+  // larger) so the photo's bottom edge sits flush against the card's top
+  // edge — glued, not floating with a gap, and not clipped by overlap
+  // either. Change the var once in index.css to change all three.
   const bottomPadding = showTrustBadges
     ? 'pb-[1.275rem] sm:pb-[1.7rem] lg:pb-[1.275rem]'
-    : 'pb-[3.4rem] md:pb-[6.0625rem] lg:pb-[4.0625rem]';
+    : 'pb-[var(--trust-bleed)]';
 
   // From tablet up the text column is vertically centered in the hero's
   // *visible* band: the section pt matches the overlaying header's height and
@@ -76,7 +78,7 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
               {companySettings?.ctaText ? (
                 <button
                   data-form-trigger="lead-form"
-                  className="w-full sm:w-auto shrink-0 px-6 sm:px-8 py-3 sm:py-4 bg-[#5173D6] hover:bg-[#3B5BBE] hover:scale-105 text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap"
+                  className="w-full sm:w-auto shrink-0 px-6 sm:px-8 py-3 sm:py-4 bg-cta hover:bg-cta-hover hover:scale-105 text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cta/40 focus-visible:ring-offset-2"
                   onClick={() => {
                     onCtaClick();
                     trackCTAClick('hero', companySettings?.ctaText || '');
@@ -93,6 +95,8 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
               <img
                 src={heroImageUrl}
                 alt={companySettings?.companyName || ""}
+                width={560}
+                height={560}
                 // React 18's DOM only forwards the lowercase attribute (camelCase
                 // triggers an unknown-prop warning), but the TS types only know
                 // the camelCase spelling — hence the spread.

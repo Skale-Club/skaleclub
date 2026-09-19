@@ -2,6 +2,7 @@ import { pgTable, text, serial, integer, timestamp, boolean, jsonb } from "drizz
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { PORTFOLIO_DESCRIPTION_MAX_WORDS, countWords } from "../portfolio.js";
+import { CATALOG_CATEGORIES } from "../catalog.js";
 
 // Translations Table (AI-powered dynamic translations)
 export const translations = pgTable("translations", {
@@ -109,9 +110,15 @@ export const portfolioServices = pgTable("portfolio_services", {
   price: text("price").notNull(),
   priceLabel: text("price_label").notNull().default("One-time"),
   setupPrice: text("setup_price"),
-  badgeText: text("badge_text").notNull().default("One-time Fee"),
+  // No default: a wrong badge ("One-time Fee" on monthly plans) is worse than none.
+  badgeText: text("badge_text").notNull().default(""),
+  // Explicit catalog category (see shared/catalog.ts). Null = no label.
+  category: text("category"),
   features: jsonb("features").$type<string[]>().default([]),
   imageUrl: text("image_url"),
+  // Explicit home prevents legacy covers (often dashboards) from reaching print.
+  homeImageUrl: text("home_image_url"),
+  dashboardImageUrl: text("dashboard_image_url"),
   logoIconUrl: text("logo_icon_url"),
   toolUrl: text("tool_url"),
   popupSliderImages: jsonb("popup_slider_images").$type<string[]>().default([]),
@@ -141,9 +148,12 @@ export const insertPortfolioServiceSchema = z.object({
   price: z.string().min(1),
   priceLabel: z.string().default("One-time"),
   setupPrice: z.string().nullable().optional(),
-  badgeText: z.string().default("One-time Fee"),
+  badgeText: z.string().default(""),
+  category: z.enum(CATALOG_CATEGORIES).nullable().optional(),
   features: z.array(z.string()).nullable().optional().default([]),
   imageUrl: z.string().nullable().optional(),
+  homeImageUrl: z.string().nullable().optional(),
+  dashboardImageUrl: z.string().nullable().optional(),
   logoIconUrl: z.string().nullable().optional(),
   toolUrl: z.string().nullable().optional(),
   popupSliderImages: z.array(z.string()).nullable().optional().default([]),

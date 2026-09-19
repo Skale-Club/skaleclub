@@ -12,14 +12,40 @@ import {
   normalizeHubEmail,
 } from "#shared/schema.js";
 import { requireAdmin, setPublicCache } from "./_shared.js";
+import { rateLimitMiddleware } from "../lib/rateLimit.js";
+
+// Public intake and access are unauthenticated; without a limit a loop could
+// register thousands of participants or probe integer participant ids.
+const hubPublicRateLimit = rateLimitMiddleware({
+  limit: 20,
+  windowMs: 10 * 60_000,
+  message: "Too many requests. Please try again in a few minutes.",
+});
+
+// `participantId` alone proved nothing: ids are sequential, so anyone could
+// claim any registered participant. /register now hands back an HMAC of the
+// id, and /access only trusts the id when that token comes with it.
+function signParticipant(id: number): string {
+  return crypto
+    .createHmac("sha256", process.env.SESSION_SECRET ?? "")
+    .update(`skale-hub-participant:${id}`)
+    .digest("hex");
+}
+function participantTokenValid(id: number, token: unknown): boolean {
+  if (typeof token !== "string") return false;
+  const expected = Buffer.from(signParticipant(id));
+  const given = Buffer.from(token);
+  return expected.length === given.length && crypto.timingSafeEqual(expected, given);
+}
 
 function parseLiveId(value: string): number | null {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
+// Hashed `req.ip`, not the client-supplied header (see server/lib/turnstile.ts).
 function getRequestIpHash(req: Request): string | null {
-  const rawIp = ((req.headers["x-forwarded-for"] as string) || req.ip || "").toString();
+  const rawIp = (req.ip || "").toString();
   return rawIp ? crypto.createHash("sha256").update(rawIp).digest("hex") : null;
 }
 
@@ -63,11 +89,12 @@ export function registerSkaleHubRoutes(app: Express) {
         },
       });
     } catch (err) {
-      return res.status(500).json({ message: (err as Error).message });
+      console.error("[skale-hub] GET /api/skale-hub/active failed", err);
+      return res.status(500).json({ message: "Failed to load the active live" });
     }
   });
 
-  app.post("/api/skale-hub/register", async (req, res) => {
+  app.post("/api/skale-hub/register", hubPublicRateLimit, async (req, res) => {
     try {
       const parsed = hubRegisterRequestSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -125,6 +152,7 @@ export function registerSkaleHubRoutes(app: Express) {
         unlocked: true,
         liveId: live.id,
         participantId: participant.id,
+        accessToken: signParticipant(participant.id),
         registrationId: registration.id,
         access: {
           streamUrl: live.streamUrl ?? null,
@@ -132,11 +160,12 @@ export function registerSkaleHubRoutes(app: Express) {
         },
       });
     } catch (err) {
-      return res.status(500).json({ message: (err as Error).message });
+      console.error("[skale-hub] POST /api/skale-hub/register failed", err);
+      return res.status(500).json({ message: "Registration failed" });
     }
   });
 
-  app.post("/api/skale-hub/:liveId/access", async (req, res) => {
+  app.post("/api/skale-hub/:liveId/access", hubPublicRateLimit, async (req, res) => {
     try {
       const liveId = parseLiveId(req.params.liveId);
       if (!liveId) {
@@ -153,9 +182,11 @@ export function registerSkaleHubRoutes(app: Express) {
         return res.status(404).json({ message: "Live not found" });
       }
 
-      let participant = parsed.data.participantId
-        ? await storage.getHubParticipant(parsed.data.participantId)
-        : undefined;
+      const trustedId =
+        parsed.data.participantId && participantTokenValid(parsed.data.participantId, parsed.data.accessToken)
+          ? parsed.data.participantId
+          : null;
+      let participant = trustedId ? await storage.getHubParticipant(trustedId) : undefined;
       let matchedBy = getMatchedBy({ participantId: participant?.id ?? parsed.data.participantId ?? null });
 
       if (!participant) {
@@ -247,7 +278,8 @@ export function registerSkaleHubRoutes(app: Express) {
         eventType: parsed.data.eventType,
       });
     } catch (err) {
-      return res.status(500).json({ message: (err as Error).message });
+      console.error("[skale-hub] POST /api/skale-hub/:liveId/access failed", err);
+      return res.status(500).json({ message: "Access check failed" });
     }
   });
 
@@ -255,7 +287,8 @@ export function registerSkaleHubRoutes(app: Express) {
     try {
       return res.json(await storage.getHubDashboardSummary());
     } catch (err) {
-      return res.status(500).json({ message: (err as Error).message });
+      console.error("[skale-hub] GET /api/skale-hub/dashboard failed", err);
+      return res.status(500).json({ message: "Failed to load dashboard" });
     }
   });
 
@@ -264,7 +297,8 @@ export function registerSkaleHubRoutes(app: Express) {
       const search = typeof req.query.search === "string" ? req.query.search : undefined;
       return res.json(await storage.listHubParticipantHistory(search));
     } catch (err) {
-      return res.status(500).json({ message: (err as Error).message });
+      console.error("[skale-hub] GET /api/skale-hub/participants failed", err);
+      return res.status(500).json({ message: "Failed to load participants" });
     }
   });
 
@@ -278,7 +312,8 @@ export function registerSkaleHubRoutes(app: Express) {
 
       return res.json(await storage.listHubLiveSummaries(parsedStatus.data));
     } catch (err) {
-      return res.status(500).json({ message: (err as Error).message });
+      console.error("[skale-hub] GET /api/skale-hub/lives failed", err);
+      return res.status(500).json({ message: "Failed to load lives" });
     }
   });
 
@@ -300,7 +335,8 @@ export function registerSkaleHubRoutes(app: Express) {
         accessEvents: await storage.listHubAccessEvents(liveId, 100),
       });
     } catch (err) {
-      return res.status(500).json({ message: (err as Error).message });
+      console.error("[skale-hub] GET /api/skale-hub/lives/:id failed", err);
+      return res.status(500).json({ message: "Failed to load live" });
     }
   });
 
@@ -318,7 +354,8 @@ export function registerSkaleHubRoutes(app: Express) {
 
       return res.status(201).json(await storage.getHubLiveSummary(created.id));
     } catch (err) {
-      return res.status(500).json({ message: (err as Error).message });
+      console.error("[skale-hub] POST /api/skale-hub/lives failed", err);
+      return res.status(500).json({ message: "Failed to create live" });
     }
   });
 
@@ -346,7 +383,8 @@ export function registerSkaleHubRoutes(app: Express) {
 
       return res.json(await storage.getHubLiveSummary(liveId));
     } catch (err) {
-      return res.status(500).json({ message: (err as Error).message });
+      console.error("[skale-hub] PUT /api/skale-hub/lives/:id failed", err);
+      return res.status(500).json({ message: "Failed to update live" });
     }
   });
 }

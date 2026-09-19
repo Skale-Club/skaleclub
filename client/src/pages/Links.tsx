@@ -12,6 +12,7 @@ import {
   Github,
   Facebook,
   Send,
+  MessageCircle,
 } from "lucide-react";
 import * as LucideIcons from 'lucide-react';
 import type { LinksPageLink } from '@shared/schema';
@@ -20,7 +21,7 @@ import type { CSSProperties } from 'react';
 import { useTranslation } from "@/hooks/useTranslation";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettingsData } from "@/components/admin/shared/types";
-import { Loader2 } from '@/components/ui/loader';
+import { Skeleton } from '@/components/ui/skeleton';
 import { buildPagePaths } from "@shared/pageSlugs";
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -32,6 +33,7 @@ const iconMap: Record<string, React.ReactNode> = {
   github: <Github className="w-6 h-6" />,
   facebook: <Facebook className="w-6 h-6" />,
   telegram: <Send className="w-6 h-6" />,
+  whatsapp: <MessageCircle className="w-6 h-6" />,
   email: <Mail className="w-6 h-6" />,
   website: <Globe className="w-6 h-6" />,
 };
@@ -103,13 +105,23 @@ export default function Links() {
   if (isLoading) {
     return (
       <div
-        className="min-h-screen flex items-center justify-center"
+        className="min-h-screen flex flex-col items-center py-16 px-4 sm:px-6"
         style={{
           background: DEFAULT_LINKS_PAGE_THEME.backgroundColor,
           colorScheme: 'dark',
         }}
+        aria-busy="true"
       >
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div className="w-full max-w-md flex flex-col items-center">
+          <Skeleton className="w-28 h-28 rounded-full bg-white/10 mb-4" />
+          <Skeleton className="h-7 w-44 rounded-lg bg-white/10 mb-3" />
+          <Skeleton className="h-4 w-64 max-w-full rounded-lg bg-white/10 mb-10" />
+          <div className="w-full space-y-4">
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-[60px] w-full rounded-2xl bg-white/10" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -133,13 +145,16 @@ export default function Links() {
     ]
   };
 
+  const visibleLinks = config.links.filter((l) => l.visible !== false);
   const theme = { ...DEFAULT_LINKS_PAGE_THEME, ...(config.theme ?? {}) };
   const rootStyle: CSSProperties = {
     background: theme.backgroundGradient || theme.backgroundColor,
     backgroundColor: theme.backgroundColor,
     colorScheme: 'dark',
-    // primaryColor as CSS var — consumed by ambient glow via bg-[var(--links-primary)]/20
+    // primaryColor as CSS vars — consumed by the ambient glow and by the
+    // link/social hover states (pure CSS, no style mutation on mouse events).
     ['--links-primary' as any]: theme.primaryColor,
+    ['--link-color' as any]: theme.primaryColor,
   };
 
   return (
@@ -161,7 +176,7 @@ export default function Links() {
         className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full blur-[120px] pointer-events-none z-[1]"
         style={{ backgroundColor: theme.primaryColor, opacity: 0.2 }}
       />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none z-[1]" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-cta/10 rounded-full blur-[120px] pointer-events-none z-[1]" />
 
       <motion.div 
         className="w-full max-w-md z-10 flex flex-col items-center"
@@ -182,9 +197,13 @@ export default function Links() {
         </p>
 
         <div className="w-full space-y-4 mb-12">
-          {[...config.links]
+          {visibleLinks.length === 0 && (
+            <p className="text-gray-500 text-sm text-center py-8">
+              {t('No links available yet.')}
+            </p>
+          )}
+          {[...visibleLinks]
             .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-            .filter((l) => l.visible !== false)
             .map((link, index) => (
               <motion.a
                 key={link.id ?? index}
@@ -192,24 +211,14 @@ export default function Links() {
                 target={link.url.startsWith('http') ? "_blank" : "_self"}
                 rel="noopener noreferrer"
                 onClick={() => trackLinkClick(link.id)}
-                className="block w-full"
+                className="block w-full rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--link-color)]"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.4, delay: 0.1 + index * 0.1 }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <div
-                  className="p-4 bg-white/5 border border-white/10 transition-all cursor-pointer flex items-center justify-between group rounded-xl"
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.borderColor = theme.primaryColor;
-                    (e.currentTarget as HTMLElement).style.backgroundColor = `${theme.primaryColor}18`;
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.borderColor = '';
-                    (e.currentTarget as HTMLElement).style.backgroundColor = '';
-                  }}
-                >
+                <div className="p-4 bg-white/5 border border-white/10 transition-all cursor-pointer flex items-center justify-between group rounded-2xl hover:border-[var(--link-color)] hover:bg-[color-mix(in_srgb,var(--link-color)_10%,transparent)] active:scale-[0.98]">
                   <div className="flex items-center text-gray-100 group-hover:text-white transition-colors">
                     {renderLinkIcon(link)}
                     <span className="font-medium text-lg">{t(link.title)}</span>
@@ -232,9 +241,7 @@ export default function Links() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={social.platform}
-              className="text-gray-400 transition-colors hover:scale-110 transform duration-200"
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = theme.primaryColor; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = ''; }}
+              className="w-11 h-11 flex items-center justify-center rounded-full text-gray-400 transition-colors hover:scale-110 transform duration-200 hover:text-[var(--link-color)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--link-color)]"
             >
               {getSocialIcon(social.platform)}
             </a>

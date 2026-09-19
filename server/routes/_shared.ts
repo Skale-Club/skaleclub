@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import crypto from "crypto";
+import { z } from "zod";
 import { db } from "../db.js";
 import { users } from "#shared/schema.js";
 import { eq } from "drizzle-orm";
@@ -22,6 +23,21 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
   } catch (error) {
     return res.status(500).json({ message: "Failed to verify admin status" });
   }
+}
+
+/**
+ * Translate a thrown error into a client-safe JSON response.
+ * Validation and known Postgres constraint violations get a specific status;
+ * anything else is logged server-side and answered with a generic 500 so raw
+ * driver/provider messages never reach the client.
+ */
+export function sendError(res: Response, err: unknown, fallback = "Request failed") {
+  if (err instanceof z.ZodError) return res.status(400).json({ message: "Validation error", errors: err.errors });
+  const code = (err as { code?: string })?.code;
+  if (code === "23505") return res.status(409).json({ message: "Already exists" });
+  if (code === "23503") return res.status(409).json({ message: "Referenced record missing" });
+  console.error(err);
+  return res.status(500).json({ message: fallback });
 }
 
 /**
