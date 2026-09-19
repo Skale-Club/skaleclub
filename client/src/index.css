@@ -20,6 +20,11 @@
   /* Light CTA blue for small text on dark: #5173D6 fails contrast there. */
   --cta-soft: #8FA9EE;
 
+  /* Fixed navbar top-4 (16px) + 66px pill = 82px. Single source of truth for
+     any element that needs to clear the overlaying header, at every
+     breakpoint. Do NOT redefine this in a theme block. */
+  --nav-offset: 5.125rem;
+
   /* Light Mode Colors */
   --background: 0 0% 100%;
   --foreground: 0 0% 11%;
@@ -449,6 +454,48 @@ html.admin-theme.dark {
     }
   }
 
+  /* Standard clearance for the first block of any inner page: enough space
+     below the overlaying fixed navbar (--nav-offset) plus a bit of breathing
+     room, more generous from tablet up. */
+  .page-top {
+    padding-top: calc(var(--nav-offset) + 2.5rem);
+  }
+  @media (min-width: 768px) {
+    .page-top {
+      padding-top: calc(var(--nav-offset) + 3.5rem);
+    }
+  }
+
+  /* For heroes that vertically center their own content in the band visible
+     below the navbar — just the offset, no extra breathing room. */
+  .pt-nav {
+    padding-top: var(--nav-offset);
+  }
+
+  /* Same column as .container-custom, plus the lateral gutter it deliberately
+     omits below 770px (carousels go full-bleed there). Meant to be combined
+     with .container-custom, e.g. `container-custom container-page`, on pages
+     that need a mobile gutter but still want the shared column width. Rules
+     placed after .container-custom's so the cascade (same layer, later wins)
+     applies the gutter, then lets container-custom's own 770px+ rule zero it
+     out again once the width-based gutter takes over. */
+  .container-page {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  @media (min-width: 640px) {
+    .container-page {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+  @media (min-width: 770px) {
+    .container-page {
+      padding-left: 0;
+      padding-right: 0;
+    }
+  }
+
   /* Dark section gradient shared by ServicesSection, OurServicesSection and
      Home's #about section — unified tone (was three near-identical
      gradients hard-coded per section). */
@@ -466,7 +513,7 @@ html.admin-theme.dark {
   .trust-bar-bleed {
     --trust-bleed: 3.4rem;
   }
-  @media (min-width: 768px) {
+  @media (min-width: 770px) {
     .trust-bar-bleed {
       --trust-bleed: 6.0625rem;
     }

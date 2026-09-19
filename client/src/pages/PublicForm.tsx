@@ -59,6 +59,7 @@ export default function PublicForm() {
     return (
       <NotFoundState
         layout="section"
+        underNav
         title={t('Form not found')}
         description={t("The form you're looking for is unavailable. Please double-check the link or go back to the homepage.")}
         actionLabel={t('Back to homepage')}

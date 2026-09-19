@@ -77,7 +77,7 @@ export default function BlogPostPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="container max-w-6xl mx-auto px-4 py-8">
+        <div className="container max-w-6xl mx-auto px-4 page-top pb-8">
           <Skeleton className="h-8 w-64 mb-4" />
           <Skeleton className="h-12 w-3/4 mb-4" />
           <Skeleton className="aspect-video max-w-4xl mb-8" />
@@ -95,6 +95,7 @@ export default function BlogPostPage() {
     return (
       <NotFoundState
         layout="section"
+        underNav
         title="Post Not Found"
         description="The blog post you're looking for doesn't exist."
         actionLabel="Back to Blog"
@@ -106,24 +107,24 @@ export default function BlogPostPage() {
   return (
     <div className="min-h-screen bg-background">
       <article>
-        <div className="bg-primary/5 py-8 md:py-12">
-          <div className="container-custom">
-            <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-4" data-testid="nav-post-breadcrumb">
-              <Link href="/" className="hover:text-primary">Home</Link>
+        <div className="bg-surface-dark text-white page-top pb-8 md:pb-12">
+          <div className="container-custom container-page">
+            <nav className="flex items-center gap-2 text-sm text-white/60 mb-4" data-testid="nav-post-breadcrumb">
+              <Link href="/" className="hover:text-white">Home</Link>
               <span>/</span>
-              <Link href={pagePaths.blog} className="hover:text-primary">Blog</Link>
+              <Link href={pagePaths.blog} className="hover:text-white">Blog</Link>
               <span>/</span>
-              <span className="text-foreground truncate max-w-[200px]">{post.title}</span>
+              <span className="text-white truncate max-w-[200px]">{post.title}</span>
             </nav>
 
-            <h1 
-              className="text-3xl md:text-4xl font-bold text-foreground mb-4 max-w-4xl"
+            <h1
+              className="text-3xl md:text-4xl font-bold text-white mb-4 max-w-4xl"
               data-testid="text-post-title"
             >
               {post.title}
             </h1>
 
-            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-4 text-sm text-white/70">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 <time dateTime={post.publishedAt ? String(post.publishedAt) : ''} data-testid="text-post-date">
@@ -145,7 +146,7 @@ export default function BlogPostPage() {
           </div>
         </div>
 
-        <div className="container-custom py-8 md:py-12">
+        <div className="container-custom container-page py-8 md:py-12">
           <div className="flex flex-col lg:flex-row gap-8">
             <div className="lg:w-[70%]">
               {post.featureImageUrl && (

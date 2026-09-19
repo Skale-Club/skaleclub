@@ -65,16 +65,14 @@ export default function Blog() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="pt-24">
-        <PageHeader
-          title="Our Blog"
-          subtitle="Tips, guides, and insights about marketing services"
-          breadcrumb={[
-            { label: 'Home', href: '/' },
-            { label: 'Blog', href: pagePaths.blog },
-          ]}
-        />
-      </div>
+      <PageHeader
+        title="Our Blog"
+        subtitle="Tips, guides, and insights about marketing services"
+        breadcrumb={[
+          { label: 'Home', href: '/' },
+          { label: 'Blog', href: pagePaths.blog },
+        ]}
+      />
 
       <div className="container-custom px-4 sm:px-6 tablet:px-0 pt-8">
         <div className="w-full max-w-md md:max-w-sm md:ml-auto">

@@ -15,12 +15,10 @@ export default function FaqPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
-      <div className="pt-24">
-        <PageHeader
-          title={t('Frequently Asked Questions')}
-          subtitle={t('Find answers to common questions about our services.')}
-        />
-      </div>
+      <PageHeader
+        title={t('Frequently Asked Questions')}
+        subtitle={t('Find answers to common questions about our services.')}
+      />
 
       <div className="container-custom mx-auto px-4 sm:px-6 tablet:px-0 py-16 md:py-24">
         {isLoading ? (

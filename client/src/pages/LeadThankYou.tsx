@@ -84,7 +84,7 @@ export default function LeadThankYou() {
 
   return (
     <div
-      className="w-full text-white overflow-hidden flex items-center pt-16"
+      className="w-full text-white overflow-hidden flex items-center pt-nav"
       style={{ background: heroGradient, minHeight: 'calc(100vh - 120px)' }}
     >
       <div className="container-custom px-4 sm:px-6 tablet:px-0 py-8">

@@ -36,20 +36,18 @@ export default function TermsOfService() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      <div className="pt-24">
-        <PageHeader
-          title={t('Terms of Service')}
-          subtitle={
-            <>
-              {t(`These terms govern your use of ${companyName}'s website and services. Please read them carefully before using our platform.`)}
-              <br />
-              <span className="text-white/50 text-sm">{t('Last updated: January 10, 2026')}</span>
-            </>
-          }
-        />
-      </div>
+      <PageHeader
+        title={t('Terms of Service')}
+        subtitle={
+          <>
+            {t(`These terms govern your use of ${companyName}'s website and services. Please read them carefully before using our platform.`)}
+            <br />
+            <span className="text-white/50 text-sm">{t('Last updated: January 10, 2026')}</span>
+          </>
+        }
+      />
 
-      <div className="container-custom py-12">
+      <div className="container-custom container-page py-12">
         <div className="space-y-12">
           <Section icon={<ShieldCheck className="w-6 h-6" />} title={t('1. Acceptance of Terms')}>
             <p>{t(`By accessing the site, creating an account, or requesting services with ${companyName}, you agree to these Terms of Service and our Privacy Policy. If you do not agree, do not use our services.`)}</p>

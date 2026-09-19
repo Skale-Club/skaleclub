@@ -127,7 +127,7 @@ export default function Portfolio() {
     <div className="bg-surface-dark text-white min-h-screen overflow-x-hidden">
       {/* Hero: the house pattern, left-aligned, one CTA. Atmosphere is one
           corner glow and an almost invisible line texture, nothing else. */}
-      <section className="relative pt-16 pb-12 sm:pt-24 sm:pb-16 lg:pt-28 lg:pb-20">
+      <section className="relative page-top pb-12 sm:pb-16 lg:pb-20">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-x-0 -top-40 bottom-0 [mask-image:linear-gradient(180deg,#000_55%,transparent)]"
@@ -136,7 +136,7 @@ export default function Portfolio() {
               "radial-gradient(40% 55% at 8% 0%, rgba(81,115,214,.16), transparent 70%), repeating-linear-gradient(0deg, transparent 0 31px, rgba(180,192,216,.035) 31px 32px)",
           }}
         />
-        <div className="container-custom mx-auto relative">
+        <div className="container-custom container-page mx-auto relative">
           <div className="inline-flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.18em] text-cta-soft">
             <span aria-hidden="true" className="h-[3px] w-7 rounded-full bg-cta" />
             {t(hero?.badge || "Our Solutions")}
@@ -169,14 +169,17 @@ export default function Portfolio() {
       {proof.length > 0 && (
         <div className="border-y border-white/10">
           <div
-            className="container-custom mx-auto grid"
+            className="container-custom container-page mx-auto grid"
             style={{ gridTemplateColumns: `repeat(${proof.length}, minmax(0, 1fr))` }}
           >
             {proof.map((p, i) => (
-              <div key={p.label} className={`py-6 lg:py-7 ${i > 0 ? "pl-4 sm:pl-6 border-l border-white/10" : ""}`}>
-                <div className="font-display font-extrabold leading-none tracking-[-0.03em] text-[clamp(2.25rem,4.4vw,3.5rem)]">
-                  {p.value}
-                  {p.unit && <small className="ml-1 text-[0.42em] font-semibold tracking-normal text-[#B4C0D8]">{p.unit}</small>}
+              <div key={p.label} className={`min-w-0 py-6 lg:py-7 ${i > 0 ? "pl-4 sm:pl-6 border-l border-white/10" : ""}`}>
+                {/* flex-wrap: on narrow columns (mobile, 3-up) the unit wraps
+                    onto its own line instead of overflowing the column and
+                    getting clipped by the page's overflow-x: clip. */}
+                <div className="flex flex-wrap items-baseline gap-x-1 font-display font-extrabold leading-none tracking-[-0.03em] text-[clamp(2.25rem,4.4vw,3.5rem)]">
+                  <span>{p.value}</span>
+                  {p.unit && <small className="text-[0.42em] font-semibold tracking-normal text-[#B4C0D8]">{p.unit}</small>}
                 </div>
                 <div className="mt-2 text-sm leading-snug text-[#7C8AA6]">{p.label}</div>
               </div>
@@ -187,7 +190,7 @@ export default function Portfolio() {
 
       {apps.length > 0 && (
         <section id="apps" className="pt-16 sm:pt-24 lg:pt-28 scroll-mt-24">
-          <div className="container-custom mx-auto">
+          <div className="container-custom container-page mx-auto">
             {sectionHead("01 · Apps", "Software ready to use", "Our own products, live today, with a fixed price. Subscribe and start.", apps.length)}
             {grid("apps")}
           </div>
@@ -196,7 +199,7 @@ export default function Portfolio() {
 
       {services.length > 0 && (
         <section id="services" className="pt-16 sm:pt-24 lg:pt-28 scroll-mt-24">
-          <div className="container-custom mx-auto">
+          <div className="container-custom container-page mx-auto">
             {sectionHead("02 · Services", "Built by us, for your business", "Tailored marketing and technology, quoted for your case.", services.length)}
             {grid("services")}
           </div>
@@ -205,7 +208,7 @@ export default function Portfolio() {
 
       {/* Final CTA: one block, one button, WhatsApp as the secondary link. */}
       <section className="py-16 sm:py-24 lg:py-28">
-        <div className="container-custom mx-auto">
+        <div className="container-custom container-page mx-auto">
           <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-surface-card p-8 sm:p-12 lg:p-20 grid gap-8 lg:grid-cols-[1.3fr_auto] lg:items-end">
             <div
               aria-hidden="true"

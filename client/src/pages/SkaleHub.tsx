@@ -172,7 +172,7 @@ export default function SkaleHub() {
 
   return (
     <div className="bg-gradient-to-b from-[#f7f9fc] via-[#eef4ff] to-white">
-      <section className="relative overflow-hidden px-4 pb-20 pt-32 sm:px-6 lg:px-8">
+      <section className="relative overflow-hidden pb-20 page-top">
         <div
           aria-hidden
           className="absolute inset-x-0 top-0 h-[420px]"
@@ -181,7 +181,7 @@ export default function SkaleHub() {
               'radial-gradient(circle at top left, color-mix(in srgb, var(--cta) 18%, transparent), transparent 58%), radial-gradient(circle at top right, rgba(28,30,36,0.08), transparent 42%)',
           }}
         />
-        <div className="relative mx-auto max-w-6xl">
+        <div className="container-custom container-page relative">
           <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
             <div className="max-w-2xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-cta/15 bg-white/80 px-4 py-2 text-sm font-semibold text-cta-hover shadow-sm backdrop-blur">

@@ -67,13 +67,25 @@ export function HeroWebsitesSection({ props }: { props: HeroWebsitesProps }) {
   };
 
   return (
+    // pt-nav clears the fixed navbar; below lg the text column adds its own
+    // pt for a comfortable gap under it (mirrors HeroSection.tsx). From lg
+    // the section stretches full height (items-stretch) so the text column
+    // can vertically center itself (self-center) in the visible band, same
+    // approach as the home hero, while the image stays glued to the bottom.
     <section
-      className="relative flex items-end pt-28 sm:pt-24 lg:pt-16 pb-36 sm:pb-48 lg:pb-4 overflow-hidden bg-[#1C53A3] min-h-[70vh] sm:min-h-[55vh] lg:min-h-[550px]"
+      className="relative flex items-end lg:items-stretch pt-nav pb-36 sm:pb-48 lg:pb-4 overflow-hidden bg-[#1C53A3] min-h-[70vh] sm:min-h-[55vh] lg:min-h-[550px]"
       data-testid="section-hero-websites"
     >
-      <div className="container-custom mx-auto relative z-10 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-1 sm:gap-6 lg:gap-12 items-end">
-          <div className="order-1 lg:order-2 text-white pt-6 sm:pt-8 lg:pt-16 pb-16 sm:pb-24 lg:pb-24 relative z-20">
+      {/* No `lg:h-full` here: the section sizes itself with min-height, so a
+          percentage height would resolve to auto AND suppress the flex
+          stretch, leaving the column short of the band. Letting
+          align-items: stretch do the work gives it a definite height, which
+          the grid's own h-full can then resolve against. */}
+      <div className="container-custom mx-auto relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-1 sm:gap-6 lg:gap-12 items-end lg:h-full">
+          {/* container-custom has no lateral padding below 770px, so the text
+              column carries its own — the image stays full-bleed. */}
+          <div className="order-1 lg:order-2 text-white px-4 sm:px-6 tablet:px-0 pt-9 sm:pt-10 pb-16 sm:pb-24 lg:self-center lg:pt-0 lg:pb-0 relative z-20">
             <h1 className="text-[9vw] sm:text-5xl md:text-6xl lg:text-4xl xl:text-5xl font-bold mb-3 lg:mb-6 font-display leading-[1.05] sm:leading-[1.1]">
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">
                 {t(headline)}

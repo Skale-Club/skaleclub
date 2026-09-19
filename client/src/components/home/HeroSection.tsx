@@ -32,11 +32,12 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
     : 'pb-[var(--trust-bleed)]';
 
   // From tablet up the text column is vertically centered in the hero's
-  // *visible* band: the section pt matches the overlaying header's height and
-  // the pb variants match the trust-bar bleed, so the flex centering inside
-  // splits only the space the user actually sees.
+  // *visible* band: the section pt matches the overlaying header's height
+  // (--nav-offset, defined in index.css) and the pb variants match the
+  // trust-bar bleed, so the flex centering inside splits only the space the
+  // user actually sees.
   return (
-    <section className={`relative flex flex-col justify-end pt-[5.95rem] sm:pt-[5.1rem] ${bottomPadding} overflow-hidden bg-[#1C53A3] min-h-[min(100dvh,620px)] sm:min-h-[min(100dvh,540px)] tablet:min-h-[min(100dvh,620px)]`}>
+    <section className={`relative flex flex-col justify-end pt-[calc(var(--nav-offset)+0.825rem)] sm:pt-[var(--nav-offset)] ${bottomPadding} overflow-hidden bg-[#1C53A3] min-h-[min(100dvh,620px)] sm:min-h-[min(100dvh,540px)] tablet:min-h-[min(100dvh,620px)]`}>
       <div className="container-custom mx-auto relative z-10 sm:flex-1 sm:flex sm:flex-col">
         {/* Below tablet (770px): stacked, image full-width beneath the text
             (grid-cols-1). From tablet up: the photo is pinned at its full,

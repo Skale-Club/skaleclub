@@ -19,21 +19,19 @@ export default function PrivacyPolicy() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      <div className="pt-24">
-        <PageHeader
-          title={t('Privacy Policy')}
-          subtitle={
-            <>
-              {t(`Your privacy is important to us. This policy explains how ${companyName} collects, uses, and protects your personal information.`)}
-              <br />
-              <span className="text-white/50 text-sm">{t('Last updated: January 10, 2026')}</span>
-            </>
-          }
-        />
-      </div>
+      <PageHeader
+        title={t('Privacy Policy')}
+        subtitle={
+          <>
+            {t(`Your privacy is important to us. This policy explains how ${companyName} collects, uses, and protects your personal information.`)}
+            <br />
+            <span className="text-white/50 text-sm">{t('Last updated: January 10, 2026')}</span>
+          </>
+        }
+      />
 
       {/* Content */}
-      <div className="container-custom py-12">
+      <div className="container-custom container-page py-12">
         <div className="space-y-12">
 
           {/* Introduction */}

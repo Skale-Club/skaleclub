@@ -20,8 +20,8 @@ interface PageHeaderProps {
  */
 export function PageHeader({ title, subtitle, breadcrumb, compact = false }: PageHeaderProps) {
   return (
-    <section className={`${compact ? "py-12" : "py-12 md:py-16"} bg-surface-dark text-white`}>
-      <div className="container-custom px-4 sm:px-6 tablet:px-0">
+    <section className={`${compact ? "page-top pb-12" : "page-top pb-12 md:pb-16"} bg-surface-dark text-white`}>
+      <div className="container-custom container-page">
         {breadcrumb && breadcrumb.length > 0 && (
           <nav className="flex items-center gap-2 text-sm text-white/60 mb-4" data-testid="nav-page-breadcrumb">
             {breadcrumb.map((crumb, idx) => (

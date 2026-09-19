@@ -15,6 +15,10 @@ interface NotFoundStateProps {
   logoAlt?: string;
   /** `screen` fills the viewport (standalone routes); `section` sits inside a page layout. */
   layout?: "screen" | "section";
+  /** True when this always renders under the fixed public navbar (never on a
+   * navbar-less standalone route) — adds clearance so the content isn't
+   * hidden behind it. */
+  underNav?: boolean;
   children?: ReactNode;
 }
 
@@ -32,13 +36,18 @@ export function NotFoundState({
   logoUrl,
   logoAlt = "",
   layout = "section",
+  underNav = false,
   children,
 }: NotFoundStateProps) {
   const heightClass = layout === "screen" ? "min-h-[100dvh]" : "min-h-[60vh]";
+  // `py-16` would be overridden by a `pt-*` utility applied alongside it (same
+  // Tailwind utilities layer, last one in source wins) — so when clearing the
+  // navbar, replace it outright instead of adding a second top-padding class.
+  const verticalPadding = underNav ? "pb-16 pt-[calc(var(--nav-offset)+4rem)]" : "py-16";
 
   return (
     <div
-      className={`${heightClass} w-full flex items-center justify-center bg-background text-foreground px-4 py-16 relative overflow-hidden`}
+      className={`${heightClass} w-full flex items-center justify-center bg-background text-foreground px-4 ${verticalPadding} relative overflow-hidden`}
       data-testid="not-found-state"
     >
       <div

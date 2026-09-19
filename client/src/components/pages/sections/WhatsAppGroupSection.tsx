@@ -189,7 +189,10 @@ export function WhatsAppGroupSection({ props }: { props: WhatsAppGroupProps }) {
       {/* Top gradient blob */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[500px] bg-[radial-gradient(ellipse_70%_60%_at_60%_-5%,rgba(37,211,102,0.12),transparent)]" />
 
-      <section className="relative mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-9 px-4 pt-[calc(5rem+36px)] pb-9 sm:px-6 lg:grid-cols-[1fr_437px] lg:px-8">
+      {/* No `w-full` here: it is a Tailwind utility and would beat
+          .container-custom's own 90%/80% width from the components layer,
+          making the column full-bleed from 770px up. */}
+      <section className="container-custom container-page page-top relative grid grid-cols-1 items-center gap-9 pb-9 lg:grid-cols-[1fr_437px]">
 
         {/* ── Left column ── */}
         <div className="text-center lg:text-left">

@@ -77,7 +77,7 @@ export default function Contact() {
   };
 
   return (
-    <div className="pt-24 pb-20">
+    <div className="pb-20">
       <PageHeader
         title={t("Contact Us")}
         subtitle={t(
