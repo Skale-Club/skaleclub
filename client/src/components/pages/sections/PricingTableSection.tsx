@@ -8,13 +8,17 @@
 import { z } from "zod";
 import { useTranslation } from "@/hooks/useTranslation";
 import { sectionThemeSchema } from "./sectionTheme";
+import { buildPriceLines, type PriceLine } from "@shared/nfc-price-lines";
 
+// `satisfies` makes this fail to compile the moment this shape stops matching
+// the `PriceLine` type in shared/nfc-price-lines.ts — one type, checked in two
+// places, instead of two definitions that can quietly diverge.
 const priceLineSchema = z.object({
   label: z.string(),
   price: z.string(),
   note:  z.string().optional(),
   kind:  z.enum(["one-time", "per-unit", "minimum"]),
-});
+}) satisfies z.ZodType<PriceLine>;
 
 export const pricingTablePropsSchema = z.object({
   eyebrow:    z.string().optional(),
@@ -26,7 +30,6 @@ export const pricingTablePropsSchema = z.object({
 });
 export type PricingTableProps = z.infer<typeof pricingTablePropsSchema>;
 
-type PriceLine     = z.infer<typeof priceLineSchema>;
 type PriceLineKind = PriceLine["kind"];
 
 const KIND_LABELS: Record<PriceLineKind, string> = {
@@ -35,13 +38,10 @@ const KIND_LABELS: Record<PriceLineKind, string> = {
   "minimum":  "Minimum order",
 };
 
-// Typed against the schema (not `as const`) so every entry carries the
-// optional `note` slot and `line.note` type-checks across the union.
-const DEFAULT_LINES: PriceLine[] = [
-  { label: "Per keychain",     price: "$10",  kind: "per-unit" },
-  { label: "Minimum order",    price: "$200", note: "20 pieces × $10", kind: "minimum" },
-  { label: "Art / design fee", price: "$50",  note: "First order only — waived from your second order onward", kind: "one-time" },
-];
+// Same generator the NFC page seeds use (shared/nfc-price-lines.ts), derived
+// from shared/nfc-pricing.ts, so the fallback rendered by a bare `props: {}`
+// can never quote a price the order form does not charge either.
+const DEFAULT_LINES: PriceLine[] = buildPriceLines();
 
 const DEFAULTS = {
   eyebrow:    "Pricing",

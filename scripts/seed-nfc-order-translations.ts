@@ -225,7 +225,9 @@ const PT_TRANSLATIONS: TranslationPair[] = [
   { source: "We review your order and check the artwork you sent.", translated: "Revisamos o seu pedido e conferimos a arte que você enviou." },
   { source: "We call you on WhatsApp to confirm quantity, artwork and the final total.", translated: "Ligamos no WhatsApp para confirmar quantidade, arte e o total final." },
   { source: "After your approval and payment, production starts.", translated: "Depois da sua aprovação e do pagamento, a produção começa." },
-  { source: "Review pricing and details", translated: "Ver preços e detalhes" },
+  // "Review pricing and details" is NOT repeated here — it is already seeded
+  // by scripts/seed-nfc-keychains-translations.ts ("Ver preços e detalhes"),
+  // same convention as the note at the top of this file.
 
   // ── Generated price ladder ──────────────────────────────────────────────
   // Mirrors what seed-nfc-order-page.ts derives from NFC_VOLUME_TIERS today

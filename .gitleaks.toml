@@ -34,3 +34,9 @@ regexes = [
     '''\[project-ref\]''',
     '''example\.hash\.here''',
 ]
+
+[[allowlists]]
+description = "token-crypto.test.ts round-trips a fake OpenRouter-shaped key ('sk-or-v1-abcdef0123456789') as plaintext input to encryptToken/decryptToken — a made-up fixture, never a real credential."
+paths = [
+    '''server/blog/__tests__/token-crypto\.test\.ts''',
+]

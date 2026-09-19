@@ -28,51 +28,9 @@ import { pathToFileURL } from "node:url";
 import { eq } from "drizzle-orm";
 import { pool, db } from "../server/db.js";
 import { pages, type PageSection } from "../shared/schema/pages.js";
-import {
-  NFC_ART_FEE_CENTS,
-  NFC_QUANTITY,
-  NFC_VOLUME_TIERS,
-  formatUsdCents,
-  tierUnitPriceCents,
-} from "../shared/nfc-pricing.js";
+import { buildPriceLines } from "../shared/nfc-price-lines.js";
 
 const ORDER_FORM_SLUG = "nfc-keychain-order";
-
-// ── Price ladder, derived ──────────────────────────────────────────────────
-
-type PriceLine = { label: string; price: string; note?: string; kind: "one-time" | "per-unit" | "minimum" };
-
-function buildPriceLines(): PriceLine[] {
-  const reachable = NFC_VOLUME_TIERS.filter((tier) => tier.minQuantity <= NFC_QUANTITY.max);
-
-  const tierLines: PriceLine[] = reachable.map((tier, index) => {
-    const next = reachable[index + 1];
-    const upper = next ? next.minQuantity - 1 : NFC_QUANTITY.max;
-    return {
-      label: `${tier.minQuantity}-${upper} pieces`,
-      price: `${formatUsdCents(tier.unitPriceCents)} each`,
-      kind: "per-unit",
-    };
-  });
-
-  const minimumTotal = tierUnitPriceCents(NFC_QUANTITY.min) * NFC_QUANTITY.min;
-
-  return [
-    ...tierLines,
-    {
-      label: "Minimum order",
-      price: formatUsdCents(minimumTotal),
-      note: `${NFC_QUANTITY.min} pieces`,
-      kind: "minimum",
-    },
-    {
-      label: "Art / design fee",
-      price: formatUsdCents(NFC_ART_FEE_CENTS),
-      note: "First order only — waived from your second order onward",
-      kind: "one-time",
-    },
-  ];
-}
 
 // ── Sections ───────────────────────────────────────────────────────────────
 

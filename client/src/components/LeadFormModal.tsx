@@ -1056,6 +1056,12 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
           booking: Boolean(bookingUrl),
           transport_type: "beacon",
           form: formSlug,
+          // This is the total the customer SAW in the form, not a server-confirmed
+          // charge: the server may waive the $50 art fee for a returning customer
+          // matched by phone, so the frozen total can end up lower. Deliberately
+          // not read back from the server here to avoid a round trip before the
+          // redirect below.
+          ...(quote && { value: quote.totalCents / 100, currency: quote.currency }),
         });
         // Keep a Portuguese lead on the `/br` thank-you page
         const target = languageHref(bookingUrl
