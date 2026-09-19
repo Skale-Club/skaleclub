@@ -123,7 +123,7 @@ export default function Portfolio() {
                   label={siteDomain(item.site) ?? siteDomain(item.links[0])}
                   src={getImageUrl(item.cover, { width: 720, quality: 80 })}
                   alt=""
-                  loading={i < 3 ? "eager" : "lazy"}
+                  loading="eager"
                 />
               ))}
             </div>
