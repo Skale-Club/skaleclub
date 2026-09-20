@@ -37,7 +37,7 @@
   background: var(--surface-card); border: 1px solid var(--cat-line); border-radius: 20px; overflow: hidden;
   transition: border-color 0.25s, transform 0.25s;
 }
-.cat-card:hover { border-color: rgba(81, 115, 214, 0.55); transform: translateY(-3px); }
+.cat-card:hover { border-color: rgba(180, 192, 216, 0.28); transform: translateY(-3px); }
 .cat-card:focus-visible { outline: 2px solid var(--cta-soft); outline-offset: 3px; }
 .cat-card__body { padding: 22px 24px; display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 0; }
 .cat-card__title {

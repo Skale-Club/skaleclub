@@ -57,7 +57,7 @@ export function Navbar() {
 
   return (
     <nav className="fixed top-4 left-0 right-0 z-50 px-4 tablet:px-0">
-      <div className="container-nav bg-[#0B1E3D]/60 backdrop-blur-md border border-white/5 rounded-full shadow-md shadow-black/10 px-4">
+      <div className="container-nav bg-[#171B21]/85 backdrop-blur-md border border-white/5 rounded-full shadow-md shadow-black/10 px-4">
         <div className="flex justify-between items-center h-16">
           <Link href="/" className="flex items-center gap-2 min-h-[40px] min-w-[54px] pl-3 pr-4">
             {companySettings?.logoMain ? (
@@ -140,7 +140,7 @@ export function Navbar() {
       </div>
 
       {isMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-[60] bg-[#0B1E3D] flex flex-col animate-in fade-in duration-200">
+        <div className="md:hidden fixed inset-0 z-[60] bg-[#171B21] flex flex-col animate-in fade-in duration-200">
           {/* Top: logo + close */}
           <div className="flex items-center justify-between h-20 px-6 shrink-0">
             <Link

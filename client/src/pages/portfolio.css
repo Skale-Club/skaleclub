@@ -77,7 +77,7 @@
   background: rgba(12, 20, 36, .62); transition: border-color .25s, background .25s;
   width: 100%; text-align: left; cursor: pointer; appearance: none; color: var(--pf-ink); font: inherit;
 }
-.pf-show:hover, .pf-show:focus-visible { border-color: rgba(81, 115, 214, .55); background: rgba(12, 20, 36, .85); }
+.pf-show:hover, .pf-show:focus-visible { border-color: rgba(180, 192, 216, .28); background: rgba(12, 20, 36, .85); }
 .pf-show--flip { grid-template-columns: 42fr 58fr; }
 .pf-show__text { padding: 8px clamp(8px, 2vw, 36px); }
 .pf-show--flip .pf-show__media { order: 2; }
