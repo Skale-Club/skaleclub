@@ -96,7 +96,7 @@ export function ServiceMediaFields({ formData, setFormData, previewUploading, up
                     <label className="flex flex-col items-center justify-center w-full aspect-video border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
                         <Image className="w-8 h-8 text-muted-foreground" />
                         <span className="text-sm text-muted-foreground mt-2">Click to upload image</span>
-                        <span className="text-xs text-muted-foreground/60 mt-1">Ideal: 1200 × 720 px · max 200 KB</span>
+                        <span className="text-xs text-muted-foreground/60 mt-1">At least 1200 px wide · the card shows the top of this image</span>
                         <input type="file" className="hidden" accept="image/*" data-testid="input-home-preview"
                             disabled={previewUploading} onChange={onHomeFile} />
                     </label>
@@ -138,7 +138,7 @@ export function ServiceMediaFields({ formData, setFormData, previewUploading, up
                             <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
                         </label>
                     )}
-                    <p className="text-xs text-muted-foreground">Small square shown on the cover. Transparent PNG recommended.</p>
+                    <p className="text-xs text-muted-foreground">Shown beside the product name in the detail view; used on the card if there is no home image.</p>
                 </div>
 
                 <div className="space-y-1.5">
@@ -154,7 +154,7 @@ export function ServiceMediaFields({ formData, setFormData, previewUploading, up
                         }}
                         placeholder="example.com"
                     />
-                    <p className="text-xs text-muted-foreground">The product's own site. Its domain labels the browser window on the cover.</p>
+                    <p className="text-xs text-muted-foreground">The product's own site, linked from its details.</p>
                 </div>
             </div>
         </div>

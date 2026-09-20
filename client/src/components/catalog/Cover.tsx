@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { siteDomain, type CatalogItem } from "@shared/catalog";
+import { type CatalogItem } from "@shared/catalog";
 import { getImageUrl } from "@/components/admin/shared/utils";
 import { useTranslation } from "@/hooks/useTranslation";
 import "./catalog.css";
@@ -8,9 +8,7 @@ import "./catalog.css";
 /**
  * The cover slot: fixed ratio, one of three designed states, never an empty box.
  *
- * - composed: a product's real website home inside a browser window, on the
- *   brand surface. Every product cover comes out of the same family by
- *   construction, whatever the screenshot looks like.
+ * - product: the website screenshot itself, filling the cover from its top edge.
  * - photo: a service's artwork, under one shared wash.
  * - empty: no image at all, so the product's mark (or its name) becomes the art.
  */
@@ -30,27 +28,16 @@ export function Cover({ item, className = "", width = 800 }: { item: CatalogItem
   }
 
   if (!item.cover) return <EmptyCover item={item} className={className} badge={badge} />;
-  const domain = siteDomain(item.site) ?? siteDomain(item.links[0]);
   return (
-    <div className={`cat-cover cat-cover--composed ${className}`}>
-      {item.logo && (
-        <span className="cat-cover__mark">
-          <img src={getImageUrl(item.logo, { width: 96, quality: 90 })} alt="" loading="lazy" />
-        </span>
-      )}
+    <div className={`cat-cover cat-cover--product ${className}`}>
+      <img
+        className="cat-cover__product-image"
+        src={getImageUrl(item.cover, { width, quality: 80 })}
+        alt={`${item.title} | ${t("Website home")}`}
+        loading="lazy"
+        decoding="async"
+      />
       {badge}
-      <div className="cat-cover__win">
-        <div className="cat-cover__bar" aria-hidden="true">
-          <i /><i /><i />
-          {domain && <span>{domain}</span>}
-        </div>
-        <img
-          src={getImageUrl(item.cover, { width, quality: 80 })}
-          alt={`${item.title} | ${t("Website home")}`}
-          loading="lazy"
-          decoding="async"
-        />
-      </div>
     </div>
   );
 }

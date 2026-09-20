@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings, PortfolioService } from "@shared/schema";
-import { CATALOG_CATEGORY_LABEL, catalogProducts, catalogServices, siteDomain, type CatalogItem } from "@shared/catalog";
+import { CATALOG_CATEGORY_LABEL, catalogProducts, catalogServices, type CatalogItem } from "@shared/catalog";
 import { usePageSeo } from "@/hooks/use-seo";
 import { useTranslation } from "@/hooks/useTranslation";
 import { trackCTAClick } from "@/lib/analytics";
@@ -16,26 +16,20 @@ import "./portfolio.css";
 
 type ListKey = "apps" | "services";
 
-/** The browser-window frame shared by the hero reel and the app showcase rows. */
-function PfWindow({
-  label,
+/** A direct, top-aligned crop of a product screenshot. */
+function PfScreenshot({
   src,
   alt,
   loading = "lazy",
   className = "",
 }: {
-  label?: string;
   src: string;
   alt: string;
   loading?: "eager" | "lazy";
   className?: string;
 }) {
   return (
-    <span className={`pf-win ${className}`}>
-      <span className="pf-win__bar" aria-hidden="true">
-        <i /><i /><i />
-        {label && <span>{label}</span>}
-      </span>
+    <span className={`pf-shot ${className}`}>
       <img src={src} alt={alt} loading={loading} decoding="async" />
     </span>
   );
@@ -117,10 +111,9 @@ export default function Portfolio() {
           <div className="pf-reel" aria-hidden="true">
             <div className="pf-reel__track">
               {reelItems.map((item, i) => (
-                <PfWindow
+                <PfScreenshot
                   key={`${item.key}-${i}`}
-                  className="pf-reel__win"
-                  label={siteDomain(item.site) ?? siteDomain(item.links[0])}
+                  className="pf-reel__shot"
                   src={getImageUrl(item.cover, { width: 720, quality: 80 })}
                   alt=""
                   loading="eager"
@@ -165,7 +158,6 @@ export default function Portfolio() {
             <div className="pf-shows">
               {apps.map((item, i) => {
                 const flipped = i % 2 === 1;
-                const domain = siteDomain(item.site) ?? siteDomain(item.links[0]);
                 const eyebrow = item.category ? t(CATALOG_CATEGORY_LABEL[item.category]) : undefined;
                 const features = item.features.slice(0, 3);
                 const dashboard = item.screens.find((s) => s.kind === "dashboard");
@@ -180,12 +172,12 @@ export default function Portfolio() {
                       <span className="pf-show__panel">
                         {item.badge && item.cover && <span className="pf-show__badge">{t(item.badge)}</span>}
                         {item.cover ? (
-                          <PfWindow className="pf-show__win" label={domain} src={getImageUrl(item.cover, { width: 1200, quality: 80 })} alt={item.title} />
+                          <PfScreenshot className="pf-show__shot" src={getImageUrl(item.cover, { width: 1200, quality: 80 })} alt={item.title} />
                         ) : (
-                          <Cover item={item} className="pf-show__win" width={1200} />
+                          <Cover item={item} className="pf-show__shot" width={1200} />
                         )}
                         {item.cover && dashboard && (
-                          <PfWindow className="pf-show__dash" label={t("dashboard")} src={getImageUrl(dashboard.url, { width: 600, quality: 80 })} alt="" />
+                          <PfScreenshot className="pf-show__dash" src={getImageUrl(dashboard.url, { width: 600, quality: 80 })} alt="" />
                         )}
                       </span>
                     </span>
