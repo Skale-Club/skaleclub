@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Handshake, Magnet, Target } from "lucide-react";
 import type { CompanySettings, PortfolioService } from "@shared/schema";
 import { CATALOG_CATEGORY_LABEL, catalogProducts, catalogServices, type CatalogItem } from "@shared/catalog";
 import { usePageSeo } from "@/hooks/use-seo";
@@ -7,12 +8,14 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { trackCTAClick } from "@/lib/analytics";
 import { LeadFormModal } from "@/components/LeadFormModal";
 import { SectionHeading } from "@/components/layout/SectionHeading";
-import { Cover } from "@/components/catalog/Cover";
 import { CatalogDetail } from "@/components/catalog/CatalogDetail";
-import { Handshake, Magnet, Target } from "lucide-react";
+import { AppBlocks } from "@/components/portfolio/AppBlocks";
+import { AppStrip } from "@/components/portfolio/AppStrip";
+import { FinalCta } from "@/components/portfolio/FinalCta";
 import { Loader2 } from "@/components/ui/loader";
 import { getImageUrl } from "@/components/admin/shared/utils";
 import "./portfolio.css";
+import "./portfolio-sections.css";
 
 type ListKey = "apps" | "services";
 
@@ -22,25 +25,6 @@ const PILLARS = [
   { icon: Magnet, title: "Attract", desc: "Get found online and stay active where customers look" },
   { icon: Handshake, title: "Convert", desc: "Follow up, book and quote before the lead goes cold" },
 ] as const;
-
-/** A direct, top-aligned crop of a product screenshot. */
-function PfScreenshot({
-  src,
-  alt,
-  loading = "lazy",
-  className = "",
-}: {
-  src: string;
-  alt: string;
-  loading?: "eager" | "lazy";
-  className?: string;
-}) {
-  return (
-    <span className={`pf-shot ${className}`}>
-      <img src={src} alt={alt} loading={loading} decoding="async" />
-    </span>
-  );
-}
 
 export default function Portfolio() {
   const { t } = useTranslation();
@@ -86,8 +70,8 @@ export default function Portfolio() {
   const buttonText = t(hero?.buttonText || "Book a Strategy Session");
   const whatsapp = companySettings?.companyPhone?.replace(/\D/g, "");
 
-  const reelApps = apps.filter((a) => a.cover);
-  const reelItems = reelApps.length >= 3 ? [...reelApps, ...reelApps] : [];
+  const covers = apps.map((a) => a.cover).filter((c): c is string => !!c);
+  const reelItems = covers.length >= 3 ? [...covers, ...covers] : [];
 
   return (
     <div className="pf-page text-white min-h-screen overflow-x-hidden">
@@ -108,29 +92,27 @@ export default function Portfolio() {
             >
               {buttonText} <span aria-hidden="true">→</span>
             </button>
+            <a href="#apps" className="pf-hero__ghost">{t("See the apps")} <span aria-hidden="true">↓</span></a>
           </div>
         </div>
 
-        {/* All apps with a cover, equal size, looped. Decorative — the same
-            apps are the real, keyboard-reachable buttons in the section below. */}
+        {/* Every app home, equal size, looped. Decorative: the strip below and
+            the blocks further down are the real, keyboard-reachable entries. */}
         {reelItems.length > 0 && (
           <div className="pf-reel" aria-hidden="true">
             <div className="pf-reel__track">
-              {reelItems.map((item, i) => (
-                <PfScreenshot
-                  key={`${item.key}-${i}`}
-                  className="pf-reel__shot"
-                  src={getImageUrl(item.cover, { width: 720, quality: 80 })}
-                  alt=""
-                  loading="eager"
-                />
+              {reelItems.map((src, i) => (
+                <span key={`${src}-${i}`} className="pf-reel__shot">
+                  <img src={getImageUrl(src, { width: 720, quality: 80 })} alt="" loading="eager" decoding="async" />
+                </span>
               ))}
             </div>
           </div>
         )}
       </section>
 
-      {/* ============ PILLARS: what we solve, no order ============ */}
+      {/* ============ APP STRIP + PILLARS ============ */}
+      <AppStrip apps={apps} onOpen={openItem("apps")} />
       <div className="pf-trust">
         <div className="container-custom container-page mx-auto pf-trust__row">
           {PILLARS.map(({ icon: Icon, title, desc }) => (
@@ -155,54 +137,7 @@ export default function Portfolio() {
               subtitle="Our own products, live today, with a fixed price. Subscribe and start."
               size="display"
             />
-
-            <div className="pf-shows">
-              {apps.map((item, i) => {
-                const flipped = i % 2 === 1;
-                const eyebrow = item.category ? t(CATALOG_CATEGORY_LABEL[item.category]) : undefined;
-                const features = item.features.slice(0, 3);
-                const dashboard = item.screens.find((s) => s.kind === "dashboard");
-                return (
-                  <button
-                    key={item.key}
-                    type="button"
-                    className={`pf-show ${flipped ? "pf-show--flip" : ""}`}
-                    onClick={() => openItem("apps")(item)}
-                  >
-                    <span className="pf-show__media">
-                      <span className="pf-show__panel">
-                        {item.badge && item.cover && <span className="pf-show__badge">{t(item.badge)}</span>}
-                        {item.cover ? (
-                          <PfScreenshot className="pf-show__shot" src={getImageUrl(item.cover, { width: 1200, quality: 80 })} alt={item.title} />
-                        ) : (
-                          <Cover item={item} className="pf-show__shot" width={1200} />
-                        )}
-                        {item.cover && dashboard && (
-                          <PfScreenshot className="pf-show__dash" src={getImageUrl(dashboard.url, { width: 600, quality: 80 })} alt="" />
-                        )}
-                      </span>
-                    </span>
-                    <span className="pf-show__text">
-                      {eyebrow && <span className="pf-show__index">{eyebrow}</span>}
-                      <span className="pf-show__name">
-                        {item.logo && <img className="pf-show__logo" src={getImageUrl(item.logo, { width: 96, quality: 90 })} alt="" />}
-                        <h3>{item.title}</h3>
-                      </span>
-                      {item.subtitle && <span className="pf-show__pitch">{t(item.subtitle)}</span>}
-                      {features.length > 0 && <span className="pf-show__feats">{features.map((f) => t(f)).join(" · ")}</span>}
-                      <span className="pf-show__foot">
-                        {item.price ? (
-                          <span className="pf-show__price">{item.price.value}{item.price.label && <small>{t(item.price.label)}</small>}</span>
-                        ) : (
-                          <span className="pf-show__price">{t("Start here")}</span>
-                        )}
-                        <span className="pf-show__go">{t("See details")} <span aria-hidden="true">→</span></span>
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            <AppBlocks apps={apps} onOpen={openItem("apps")} />
           </div>
         </section>
       )}
@@ -247,39 +182,14 @@ export default function Portfolio() {
       )}
 
       {/* ============ FINAL CTA ============ */}
-      <section className="pf-final" id="cta">
-        <div className="container-custom container-page mx-auto">
-          <div className="pf-final__box">
-            <div>
-              <div className="inline-flex items-center justify-center gap-3 text-xs font-semibold uppercase tracking-[0.18em] text-cta-soft">
-                <span aria-hidden="true" className="h-[3px] w-7 rounded-full bg-cta" />
-                {t("Next step")}
-              </div>
-              <h2 className="pf-final__title">{t(cta?.title || "Ready to Redefine Your Potential?")}</h2>
-              {cta?.subtitle && <p className="pf-final__sub">{t(cta.subtitle)}</p>}
-            </div>
-            <div className="pf-final__actions">
-              <button
-                type="button"
-                onClick={() => openForm("footer")}
-                className="inline-flex items-center gap-2 rounded-full bg-cta px-7 py-4 font-bold text-white transition-colors hover:bg-cta-hover"
-              >
-                {t(cta?.buttonText || "Book a Strategy Session")} <span aria-hidden="true">→</span>
-              </button>
-              {whatsapp && (
-                <a
-                  href={`https://wa.me/${whatsapp}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium text-[#B4C0D8] transition-colors hover:text-white"
-                >
-                  {t("or talk on WhatsApp")} ↗
-                </a>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
+      <FinalCta
+        title={t(cta?.title || "Ready to Redefine Your Potential?")}
+        subtitle={cta?.subtitle ? t(cta.subtitle) : undefined}
+        buttonText={t(cta?.buttonText || "Book a Strategy Session")}
+        whatsapp={whatsapp}
+        screens={covers}
+        onCta={() => openForm("footer")}
+      />
 
       <CatalogDetail
         items={open ? lists[open.list] : []}

@@ -10,11 +10,11 @@ hairline borders, Outfit/Inter. Take the *structure* from Salesforge, not the lo
 
 | # | Step | Status |
 |---|------|--------|
-| 1 | Pillars row | approved (not deployed) |
-| 2 | Catalog: `headline` field + Xcraper + Xpot | DB applied 2026-09-22; code in review (not deployed) |
-| 3 | App blocks | todo |
-| 4 | Hero polish + app logo strip with hover card | todo |
-| 5 | Final CTA | todo |
+| 1 | Pillars row | done, deployed |
+| 2 | Catalog: `headline` field + Xcraper + Xpot | done, deployed |
+| 3 | App blocks | done, deployed; awaiting review |
+| 4 | Hero polish + app logo strip with hover card | done, deployed; awaiting review |
+| 5 | Final CTA | done, deployed; awaiting review |
 
 ## 1. Pillars row
 
@@ -49,7 +49,7 @@ No order, no arrows, no numbers, no app names. Same row format (line icon, title
 - Writes to prod DB need explicit approval.
 - Catalog order by importance: Xkedule, Xtimator, Xphere, Xareable, Xsites, Xcraper, Xpot, XmartMenu.
 - Applied via `supabase/migrations/20260922120000_portfolio_headline_xcraper_xpot.sql`.
-- Existing descriptions kept (already ~2 sentences); headlines render from step 3 on.
+- Descriptions shortened to 2 sentences in `20260922130000_portfolio_short_descriptions.sql` (old text kept there for rollback).
 
 ## 3. App blocks (the part that bothers most)
 
@@ -74,3 +74,12 @@ No order, no arrows, no numbers, no app names. Same row format (line icon, title
 ## Out of scope (decided)
 
 Case studies, AI lead magnet, "human vs agent" hero, demo proposal, cropped UI fragments (for now).
+
+## Built (2026-09-22, autonomous run)
+
+- Components: `client/src/components/portfolio/{AppBlocks,AppStrip,FinalCta,AppParts}.tsx`;
+  styles: `client/src/pages/portfolio-sections.css` (strip, blocks, CTA) + `portfolio.css` (hero, reel, pillars, tiles).
+- Hero: added a secondary ghost button "See the apps ↓" next to the main CTA (easy to drop if unwanted).
+- Strip label: "Apps we build and run" / "Apps que criamos e operamos".
+- Final CTA screens: the first 3 app homes by catalog order.
+- Open for review: footer still switches to neutral #111 below the navy CTA band.
