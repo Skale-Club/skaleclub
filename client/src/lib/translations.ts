@@ -549,6 +549,15 @@ export const translations = {
     'Built by us, for your business': 'Feito por nós, para o seu negócio', 'Tailored marketing and technology, quoted for your case.': 'Marketing e tecnologia sob medida, com orçamento para o seu caso.',
     // Catalog: /portfolio showroom redesign (v3, 2026-09)
     'dashboard': 'painel',
+    'Start here': 'Comece aqui',
+    'Your social media **on autopilot**': 'Suas redes sociais **no piloto automático**', 'A professional website **live in 3 days**': 'Um site profissional **no ar em 3 dias**',
+    '**Never miss** a booking': '**Nunca perca** um agendamento', "Your menu **on the customer's phone**": 'Seu cardápio **no celular do cliente**',
+    'Every lead **followed up automatically**': 'Todo lead **com follow-up automático**', 'Send the estimate **before you leave the site**': 'Envie o orçamento **antes de sair da obra**',
+    'Thousands of leads **from Google Maps**': 'Milhares de leads **do Google Maps**', 'Every field visit **logged and synced**': 'Cada visita em campo **registrada e sincronizada**',
+    'Prospect': 'Prospectar', 'Attract': 'Atrair', 'Convert': 'Converter',
+    'Find the right businesses and reach them first': 'Encontre as empresas certas e chegue nelas primeiro',
+    'Get found online and stay active where customers look': 'Seja encontrado online e esteja ativo onde o cliente procura',
+    'Follow up, book and quote before the lead goes cold': 'Faça o follow-up, agende e orce antes do lead esfriar',
   }
 } as const;
 export type TranslationKey = keyof typeof translations.pt;

@@ -34,6 +34,7 @@ export const isCatalogCategory = (value: unknown): value is CatalogCategory =>
 export const CATALOG_LIMITS = {
   title: 24,
   subtitle: 48,
+  headline: 56,
   features: 3,
   feature: 22,
 } as const;
@@ -55,6 +56,8 @@ export interface CatalogItem {
   slug?: string;
   title: string;
   subtitle?: string;
+  /** Benefit title; **double asterisks** mark the highlighted part. */
+  headline?: string;
   description?: string;
   features: string[];
   /** The one cover image: a product's website home, a service's artwork. */
@@ -95,7 +98,8 @@ export const serviceCardKey = (title: string) =>
   `service:${title.trim().toLowerCase().replace(/\s+/g, "-")}`;
 
 export function fromPortfolioService(service: PortfolioService): CatalogItem {
-  const price = clean(service.price);
+  // "$" alone is what the admin price input leaves when cleared.
+  const price = clean(service.price === "$" ? "" : service.price);
   const cover = clean(service.homeImageUrl);
   const dashboard = clean(service.dashboardImageUrl);
   const screenshots = uniq(service.popupSliderImages ?? []);
@@ -109,6 +113,7 @@ export function fromPortfolioService(service: PortfolioService): CatalogItem {
     slug: service.slug,
     title: service.title,
     subtitle: clean(service.subtitle),
+    headline: clean(service.headline),
     description: clean(service.description),
     features: uniq(service.features ?? []),
     // Only the explicit home. The legacy `imageUrl` is often a dashboard or a
@@ -164,4 +169,15 @@ export function buildCatalog(
   cards: OurServicesCard[] | undefined,
 ): CatalogItem[] {
   return [...catalogProducts(services), ...catalogServices(cards)];
+}
+
+/** Visible length of a headline, without the `**` highlight markers. */
+export const headlineLength = (headline: string) => headline.replace(/\*\*/g, "").length;
+
+/** Splits "Your social media **on autopilot**" into plain/highlighted parts. */
+export function headlineParts(headline: string): { text: string; highlight: boolean }[] {
+  return headline
+    .split(/\*\*/)
+    .map((text, i) => ({ text, highlight: i % 2 === 1 }))
+    .filter((part) => part.text.length > 0);
 }

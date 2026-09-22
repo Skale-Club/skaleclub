@@ -70,7 +70,7 @@ export const CatalogCard = memo(function CatalogCard({
           </ul>
         )}
         <div className="cat-card__foot">
-          {item.price ? <PriceTag item={item} /> : <span className="cat-card__quote">{t("Custom quote")}</span>}
+          {item.price ? <PriceTag item={item} /> : <span className="cat-card__quote">{t(item.kind === "product" ? "Start here" : "Custom quote")}</span>}
           <span className="cat-card__more" aria-hidden="true">{t("See details")} →</span>
         </div>
       </div>

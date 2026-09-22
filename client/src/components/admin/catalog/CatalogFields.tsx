@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { CATALOG_CATEGORIES, CATALOG_CATEGORY_LABEL, CATALOG_LIMITS, isCatalogCategory, type CatalogCategory } from '@shared/catalog';
+import { CATALOG_CATEGORIES, CATALOG_CATEGORY_LABEL, CATALOG_LIMITS, headlineLength, isCatalogCategory, type CatalogCategory } from '@shared/catalog';
 
 /**
  * Admin editing primitives shared by the two catalogs (Portfolio apps and
@@ -12,11 +12,12 @@ import { CATALOG_CATEGORIES, CATALOG_CATEGORY_LABEL, CATALOG_LIMITS, isCatalogCa
  * existing rows may exceed them and must still load, so the schema stays lax.
  */
 
-type LimitedContent = { title?: string | null; subtitle?: string | null; features?: string[] | null };
+type LimitedContent = { title?: string | null; subtitle?: string | null; headline?: string | null; features?: string[] | null };
 
 /** Human-readable problems that must be fixed before saving. Empty = OK. */
-export function catalogLimitIssues({ title, subtitle, features }: LimitedContent): string[] {
+export function catalogLimitIssues({ title, subtitle, headline, features }: LimitedContent): string[] {
     const issues: string[] = [];
+    if (headlineLength(headline ?? '') > CATALOG_LIMITS.headline) issues.push(`Headline is longer than ${CATALOG_LIMITS.headline} characters.`);
     if ((title ?? '').length > CATALOG_LIMITS.title) issues.push(`Title is longer than ${CATALOG_LIMITS.title} characters.`);
     if ((subtitle ?? '').length > CATALOG_LIMITS.subtitle) issues.push(`Subtitle is longer than ${CATALOG_LIMITS.subtitle} characters.`);
     const list = features ?? [];

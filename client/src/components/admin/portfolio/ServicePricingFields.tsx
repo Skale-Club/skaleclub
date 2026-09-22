@@ -24,9 +24,11 @@ export function ServicePricingFields({ formData, setFormData }: PortfolioFieldsP
                         <Input
                             id="price"
                             value={formData.price?.replace(/^\$/, '') || ''}
-                            onChange={(e) => setFormData(prev => ({ ...prev, price: '$' + e.target.value.replace(/^\$/, '') }))}
-                            required
-                            placeholder="1,999"
+                            onChange={(e) => {
+                                const value = e.target.value.replace(/^\$/, '').trim();
+                                setFormData(prev => ({ ...prev, price: value ? '$' + value : '' }));
+                            }}
+                            placeholder="Empty = Start here"
                             className="pl-7"
                         />
                     </div>

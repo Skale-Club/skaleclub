@@ -106,7 +106,10 @@ export const portfolioServices = pgTable("portfolio_services", {
   slug: text("slug").notNull().unique(),
   title: text("title").notNull(),
   subtitle: text("subtitle").notNull(),
+  // Benefit title for the portfolio block; **double asterisks** mark the highlight.
+  headline: text("headline"),
   description: text("description").notNull(),
+  // Empty = no price; apps show "Start here" instead.
   price: text("price").notNull(),
   priceLabel: text("price_label").notNull().default("One-time"),
   setupPrice: text("setup_price"),
@@ -139,13 +142,14 @@ export const insertPortfolioServiceSchema = z.object({
   slug: z.string().min(1),
   title: z.string().min(1),
   subtitle: z.string().min(1),
+  headline: z.string().nullable().optional(),
   description: z.string()
     .min(1)
     .refine(
       (value) => countWords(value) <= PORTFOLIO_DESCRIPTION_MAX_WORDS,
       `Description must be ${PORTFOLIO_DESCRIPTION_MAX_WORDS} words or fewer`,
     ),
-  price: z.string().min(1),
+  price: z.string(),
   priceLabel: z.string().default("One-time"),
   setupPrice: z.string().nullable().optional(),
   badgeText: z.string().default(""),

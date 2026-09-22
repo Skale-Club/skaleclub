@@ -35,6 +35,7 @@ function initialFormData(service: PortfolioService | null, nextOrder: number): P
         slug: service?.slug || '',
         title: service?.title || '',
         subtitle: service?.subtitle || '',
+        headline: service?.headline || '',
         description: service?.description || '',
         category: (service?.category as PortfolioFormData['category']) ?? null,
         price: service?.price || '',

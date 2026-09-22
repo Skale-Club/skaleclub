@@ -144,7 +144,7 @@ function DetailDialog({
                   )}
                 </div>
               ) : (
-                <div className="cat-detail__quote">{t("Custom quote after a quick conversation.")}</div>
+                <div className="cat-detail__quote">{t(item.kind === "product" ? "Start here" : "Custom quote after a quick conversation.")}</div>
               )}
               {onCta && (
                 <button type="button" className="cat-detail__cta" onClick={() => onCta(item)}>

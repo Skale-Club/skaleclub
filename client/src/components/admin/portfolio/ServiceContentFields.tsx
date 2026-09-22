@@ -1,9 +1,9 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { CATALOG_LIMITS } from '@shared/catalog';
+import { CATALOG_LIMITS, headlineLength } from '@shared/catalog';
 import { PORTFOLIO_DESCRIPTION_MAX_LINES, PORTFOLIO_DESCRIPTION_MAX_WORDS, countWords } from '@shared/portfolio';
-import { CategorySelect, FeatureListEditor, LimitedInput } from '../catalog/CatalogFields';
+import { CategorySelect, FeatureListEditor, LimitCounter, LimitedInput } from '../catalog/CatalogFields';
 import { SECTION_LABEL, type PortfolioFieldsProps } from './portfolioFormTypes';
 
 /** Title, slug, subtitle, category, description and features. */
@@ -43,6 +43,19 @@ export function ServiceContentFields({ formData, setFormData }: PortfolioFieldsP
                 onChange={subtitle => setFormData(prev => ({ ...prev, subtitle }))}
                 placeholder="Short subtitle"
             />
+            <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                    <Label htmlFor="headline">Headline</Label>
+                    <LimitCounter value={headlineLength(formData.headline ?? '')} max={CATALOG_LIMITS.headline} />
+                </div>
+                <Input
+                    id="headline"
+                    value={formData.headline ?? ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, headline: e.target.value }))}
+                    placeholder="Your social media **on autopilot**"
+                />
+                <p className="text-xs text-muted-foreground">Benefit title on the portfolio page. Wrap the highlighted part in **double asterisks**.</p>
+            </div>
             <CategorySelect
                 id="category"
                 value={formData.category}

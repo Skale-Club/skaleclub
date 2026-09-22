@@ -9,12 +9,19 @@ import { LeadFormModal } from "@/components/LeadFormModal";
 import { SectionHeading } from "@/components/layout/SectionHeading";
 import { Cover } from "@/components/catalog/Cover";
 import { CatalogDetail } from "@/components/catalog/CatalogDetail";
-import { badgeIconMap } from "@/components/home/TrustBadges";
+import { Handshake, Magnet, Target } from "lucide-react";
 import { Loader2 } from "@/components/ui/loader";
 import { getImageUrl } from "@/components/admin/shared/utils";
 import "./portfolio.css";
 
 type ListKey = "apps" | "services";
+
+/** The three things we solve. Page copy, not the home's trust badges. */
+const PILLARS = [
+  { icon: Target, title: "Prospect", desc: "Find the right businesses and reach them first" },
+  { icon: Magnet, title: "Attract", desc: "Get found online and stay active where customers look" },
+  { icon: Handshake, title: "Convert", desc: "Follow up, book and quote before the lead goes cold" },
+] as const;
 
 /** A direct, top-aligned crop of a product screenshot. */
 function PfScreenshot({
@@ -50,7 +57,6 @@ export default function Portfolio() {
   const apps = useMemo(() => catalogProducts(portfolioServices), [portfolioServices]);
   const services = useMemo(() => catalogServices(content?.ourServicesSection?.cards), [content?.ourServicesSection?.cards]);
   const lists: Record<ListKey, CatalogItem[]> = { apps, services };
-  const trustBadges = content?.trustBadges ?? [];
 
   const [open, setOpen] = useState<{ list: ListKey; index: number } | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -124,25 +130,20 @@ export default function Portfolio() {
         )}
       </section>
 
-      {/* ============ TRUST LINE ============ */}
-      {trustBadges.length > 0 && (
-        <div className="pf-trust">
-          <div className="container-custom container-page mx-auto pf-trust__row">
-            {trustBadges.map((badge, i) => {
-              const Icon = badgeIconMap[(badge.icon || "").toLowerCase()] || badgeIconMap.star;
-              return (
-                <div key={i} className="pf-trust__item">
-                  <Icon aria-hidden="true" />
-                  <div>
-                    <div className="pf-trust__title">{t(badge.title)}</div>
-                    <div className="pf-trust__desc">{t(badge.description)}</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      {/* ============ PILLARS: what we solve, no order ============ */}
+      <div className="pf-trust">
+        <div className="container-custom container-page mx-auto pf-trust__row">
+          {PILLARS.map(({ icon: Icon, title, desc }) => (
+            <div key={title} className="pf-trust__item">
+              <Icon aria-hidden="true" />
+              <div>
+                <div className="pf-trust__title">{t(title)}</div>
+                <div className="pf-trust__desc">{t(desc)}</div>
+              </div>
+            </div>
+          ))}
         </div>
-      )}
+      </div>
 
       {/* ============ APPS ============ */}
       {apps.length > 0 && (
@@ -193,7 +194,7 @@ export default function Portfolio() {
                         {item.price ? (
                           <span className="pf-show__price">{item.price.value}{item.price.label && <small>{t(item.price.label)}</small>}</span>
                         ) : (
-                          <span className="pf-show__price pf-show__price--quote">{t("Custom quote")}</span>
+                          <span className="pf-show__price">{t("Start here")}</span>
                         )}
                         <span className="pf-show__go">{t("See details")} <span aria-hidden="true">→</span></span>
                       </span>
