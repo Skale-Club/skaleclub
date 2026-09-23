@@ -76,3 +76,16 @@ export const NFC_WHATSAPP_CTA = {
   label: "Talk to us on WhatsApp",
   messages: NFC_WHATSAPP_MESSAGES,
 };
+
+/** Slug of the NFC order form that the landing and order pages open. */
+export const NFC_ORDER_FORM_SLUG = "nfc-keychain-order";
+
+/**
+ * WhatsApp CTA a lead-form section gets when its stored props carry none:
+ * any section that opens the NFC order form offers NFC WhatsApp too. Lets the
+ * button reach the live pages without re-running the page seeds; an explicit
+ * `whatsapp` prop (set by the seeds) always wins.
+ */
+export function defaultWhatsappCtaForForm(formSlug: string | undefined) {
+  return formSlug === NFC_ORDER_FORM_SLUG ? NFC_WHATSAPP_CTA : undefined;
+}

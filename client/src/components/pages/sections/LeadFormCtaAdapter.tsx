@@ -4,6 +4,7 @@ import { LeadFormModal } from "@/components/LeadFormModal";
 import { useTranslation } from "@/hooks/useTranslation";
 import { DARK_HAIRLINE, sectionThemeSchema } from "./sectionTheme";
 import { WhatsappCtaLink, whatsappCtaSchema } from "./whatsappCta";
+import { defaultWhatsappCtaForForm } from "@shared/nfc-whatsapp";
 
 export const leadFormCtaPropsSchema = z.object({
   formSlug: z.string().min(1),
@@ -70,6 +71,7 @@ function DarkCta({ props, onOpen, children }: VariantProps) {
   const heading = props.heading ?? DEFAULTS.heading;
   const ctaLabel = props.ctaLabel ?? DEFAULTS.ctaLabel;
   const hasImage = !!props.imageUrl;
+  const whatsapp = props.whatsapp ?? defaultWhatsappCtaForForm(props.formSlug);
 
   return (
     <section
@@ -107,9 +109,7 @@ function DarkCta({ props, onOpen, children }: VariantProps) {
               >
                 {t(ctaLabel)} <span aria-hidden="true">→</span>
               </button>
-              {props.whatsapp && (
-                <WhatsappCtaLink cta={props.whatsapp} location="lead_form_cta" variant="button" />
-              )}
+              {whatsapp && <WhatsappCtaLink cta={whatsapp} location="lead_form_cta" variant="button" />}
             </div>
             {props.note && <span className="text-sm font-medium text-[#B4C0D8]">{t(props.note)}</span>}
           </div>

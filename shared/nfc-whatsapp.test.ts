@@ -9,6 +9,8 @@ import {
   NFC_WHATSAPP_CTA,
   NFC_WHATSAPP_MESSAGES,
   NFC_WHATSAPP_NUMBER,
+  NFC_ORDER_FORM_SLUG,
+  defaultWhatsappCtaForForm,
   nfcAgentKeywordsIn,
   nfcWhatsappHref,
 } from "./nfc-whatsapp";
@@ -45,4 +47,10 @@ test("links are wa.me with the language's message URL-encoded", () => {
 test("the section prop carries both languages", () => {
   assert.deepEqual(Object.keys(NFC_WHATSAPP_CTA.messages).sort(), ["en", "pt"]);
   assert.match(NFC_WHATSAPP_CTA.number, /^\d{11}$/);
+});
+
+test("sections opening the NFC order form get the NFC WhatsApp CTA by default", () => {
+  assert.equal(defaultWhatsappCtaForForm(NFC_ORDER_FORM_SLUG), NFC_WHATSAPP_CTA);
+  assert.equal(defaultWhatsappCtaForForm("websites-lead"), undefined);
+  assert.equal(defaultWhatsappCtaForForm(undefined), undefined);
 });
