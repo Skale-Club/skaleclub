@@ -32,6 +32,7 @@ import { pool } from "../server/db.js";
 import { seedEnglishIdentityRows, upsertTranslations, type TranslationPair } from "./lib/seed-translations.js";
 
 const PT_TRANSLATIONS: TranslationPair[] = [
+  { source: "Talk to us on WhatsApp", translated: "Fale com a gente no WhatsApp" },
   // ── Order form: questions new to this form ──────────────────────────────
   { source: "Have you ordered from us before?", translated: "Você já fez algum pedido conosco?" },
   { source: "Yes, I'm already a customer", translated: "Sim, já sou cliente" },

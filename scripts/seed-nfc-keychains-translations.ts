@@ -74,6 +74,7 @@ const TARGET_LANGUAGE = "pt";
 // 100% antecipado. No turnaround time is stated.
 
 const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
+  { source: "Talk to us on WhatsApp", translated: "Fale com a gente no WhatsApp" },
   // ── Contact questions ───────────────────────────────────────────────────
   { source: "What's your name?", translated: "Qual é o seu nome?" },
   { source: "Your full name", translated: "Seu nome completo" },
