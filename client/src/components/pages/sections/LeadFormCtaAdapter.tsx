@@ -3,6 +3,7 @@ import { z } from "zod";
 import { LeadFormModal } from "@/components/LeadFormModal";
 import { useTranslation } from "@/hooks/useTranslation";
 import { DARK_HAIRLINE, sectionThemeSchema } from "./sectionTheme";
+import { WhatsappCtaLink, whatsappCtaSchema } from "./whatsappCta";
 
 export const leadFormCtaPropsSchema = z.object({
   formSlug: z.string().min(1),
@@ -15,6 +16,8 @@ export const leadFormCtaPropsSchema = z.object({
   note: z.string().optional(),
   imageUrl: z.string().regex(/^\//).optional(),
   imageAlt: z.string().optional(),
+  // Dark only: a "Talk to us on WhatsApp" button beside the form button.
+  whatsapp: whatsappCtaSchema,
   theme: sectionThemeSchema,
 });
 type LeadFormCtaProps = z.infer<typeof leadFormCtaPropsSchema>;
@@ -95,14 +98,19 @@ function DarkCta({ props, onOpen, children }: VariantProps) {
             </p>
           )}
           <div className={`mt-8 flex flex-col gap-3 ${hasImage ? "items-start" : "items-center"}`}>
-            <button
-              type="button"
-              data-landing-lead-cta
-              onClick={onOpen}
-              className="inline-flex w-full sm:w-auto items-center justify-center gap-2 whitespace-nowrap rounded-full bg-cta px-8 py-4 text-base font-bold text-white transition-colors hover:bg-cta-hover"
-            >
-              {t(ctaLabel)} <span aria-hidden="true">→</span>
-            </button>
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+              <button
+                type="button"
+                data-landing-lead-cta
+                onClick={onOpen}
+                className="inline-flex w-full sm:w-auto items-center justify-center gap-2 whitespace-nowrap rounded-full bg-cta px-8 py-4 text-base font-bold text-white transition-colors hover:bg-cta-hover"
+              >
+                {t(ctaLabel)} <span aria-hidden="true">→</span>
+              </button>
+              {props.whatsapp && (
+                <WhatsappCtaLink cta={props.whatsapp} location="lead_form_cta" variant="button" />
+              )}
+            </div>
             {props.note && <span className="text-sm font-medium text-[#B4C0D8]">{t(props.note)}</span>}
           </div>
         </div>

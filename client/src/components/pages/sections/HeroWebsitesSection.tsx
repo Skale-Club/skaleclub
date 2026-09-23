@@ -2,6 +2,7 @@ import { z } from "zod";
 import { useTranslation } from "@/hooks/useTranslation";
 import { languageHref } from "@/lib/languageRouting";
 import { DARK_HAIRLINE, sectionThemeSchema } from "./sectionTheme";
+import { WhatsappCtaLink, whatsappCtaSchema } from "./whatsappCta";
 
 // Hero variant for the /websites landing.
 // Mirrors the visual tone of the Home hero (brand blue + gradient overlay,
@@ -30,6 +31,8 @@ export const heroWebsitesPropsSchema = z.object({
   backgroundImageUrl: optionalUrl,
   backgroundImageAlt: z.string().optional(),
   bgVideoUrl: optionalUrl,
+  // Dark hero only: a quiet "Talk to us on WhatsApp" link under the buttons.
+  whatsapp: whatsappCtaSchema,
   // "dark" = the NFC product hero (copy left, product right, navy). Absent =
   // the /websites hero, unchanged.
   theme: sectionThemeSchema,
@@ -120,6 +123,11 @@ function DarkProductHero({ props }: { props: HeroWebsitesProps }) {
               </a>
             ) : null}
           </div>
+          {props.whatsapp && (
+            <div className="mt-5">
+              <WhatsappCtaLink cta={props.whatsapp} location="hero" variant="link" />
+            </div>
+          )}
         </div>
 
         {bgUrl ? (

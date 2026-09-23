@@ -25,6 +25,7 @@ import { pathToFileURL } from "node:url";
 import { eq } from "drizzle-orm";
 import { pool, db } from "../server/db.js";
 import { pages, type PageSection } from "../shared/schema/pages.js";
+import { NFC_WHATSAPP_CTA } from "../shared/nfc-whatsapp.js";
 
 const ORDER_FORM_SLUG = "nfc-keychain-order";
 
@@ -43,6 +44,9 @@ export const SECTIONS: PageSection[] = [
       secondaryCtaHref: "/nfc-keychains",
       backgroundImageUrl: "/nfc-keychains-hero.webp",
       backgroundImageAlt: "Custom 3D-printed NFC keychains in different designs",
+      // Pre-filled message per page language carries the Xphere agent's keyword
+      // ("keychains" EN / "chaveiros" PT) — see shared/nfc-whatsapp.ts.
+      whatsapp: NFC_WHATSAPP_CTA,
     },
   },
   // No price table (2026-09-22): the form below shows the exact price as a
@@ -151,6 +155,7 @@ export const SECTIONS: PageSection[] = [
       heading: "Ready to order?",
       subheading: "About a minute to fill in. We confirm everything with you on WhatsApp before producing anything.",
       ctaLabel: "Start my order",
+      whatsapp: NFC_WHATSAPP_CTA,
     },
   },
 ];

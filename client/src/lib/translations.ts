@@ -542,7 +542,7 @@ export const translations = {
     'one-time setup': 'de implantação, uma vez', 'Custom quote after a quick conversation.': 'Orçamento sob medida, depois de uma conversa rápida.',
     'Website home': 'Home do site', 'Inside the app': 'Por dentro do app', 'Screenshot': 'Tela', 'screenshots': 'imagens',
     'Previous image': 'Imagem anterior', 'Next image': 'Próxima imagem', 'Choose image': 'Escolher imagem',
-    'Talk to us': 'Falar com a gente', 'See the apps': 'Ver os apps', 'Next step': 'Próximo passo',
+    'Talk to us': 'Falar com a gente', 'Talk to us on WhatsApp': 'Fale com a gente no WhatsApp', 'See the apps': 'Ver os apps', 'Next step': 'Próximo passo',
     'ready-made apps in production': 'apps próprios em produção', 'marketing and technology services': 'serviços de marketing e tecnologia', 'entry plan': 'plano de entrada',
     '01 · Apps': '01 · Apps', '02 · Services': '02 · Serviços',
     'Software ready to use': 'Software pronto para usar', 'Our own products, live today, with a fixed price. Subscribe and start.': 'Produtos nossos, já no ar, com preço fechado. Você assina e começa.',
