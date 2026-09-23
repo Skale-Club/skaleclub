@@ -46,6 +46,10 @@ import "dotenv/config";
 import { pool, db } from "../server/db.js";
 import { translations } from "../shared/schema/cms.js";
 import { and, eq } from "drizzle-orm";
+import { nfcPriceCopy } from "../shared/nfc-price-lines.js";
+
+// Entry-price lines, built from shared/nfc-pricing.ts (same helper as the landing seed).
+const PRICE_COPY = nfcPriceCopy();
 
 // ── Config ────────────────────────────────────────────────────────────────
 
@@ -370,6 +374,41 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
   { source: "We review your quantity, logo, and the link you want the NFC tap to open.", translated: "Revisamos a quantidade, a sua logo e o link que você quer abrir com o toque NFC." },
   { source: "We contact you on WhatsApp to confirm the artwork, total, and production window.", translated: "Falamos com você pelo WhatsApp para confirmar a arte, o total e o prazo de produção." },
   { source: "Production starts after payment and your artwork approval.", translated: "A produção começa depois do pagamento e da aprovação da sua arte." },
+
+  // ── Landing redesign (2026-09-22): featureGrid x2, dark hero, new FAQ/CTA ──
+  { source: "Custom NFC keychains", translated: "Chaveiros NFC personalizados" },
+  { source: "See how it works", translated: "Veja como funciona" },
+  { source: "What the tap opens", translated: "O que o toque abre" },
+  { source: "You choose where every tap goes", translated: "Você escolhe para onde cada toque leva" },
+  { source: "One link per keychain. Point it at a page you control and you can change it anytime.", translated: "Um link por chaveiro. Aponte para uma página que você controla e troque quando quiser." },
+  { source: "Google reviews", translated: "Avaliações no Google" },
+  { source: "Customers leave a review right at the counter, while the visit is still fresh.", translated: "O cliente avalia ali mesmo no balcão, com o atendimento ainda fresco na memória." },
+  { source: "New followers in one tap, no searching for your profile.", translated: "Novos seguidores em um toque, sem precisar procurar o seu perfil." },
+  { source: "Digital business card", translated: "Cartão de visita digital" },
+  { source: "Your contact saved straight to their phone.", translated: "Seu contato salvo direto no celular do cliente." },
+  { source: "Always up to date, with no reprinting.", translated: "Sempre atualizado, sem precisar reimprimir." },
+  { source: "WhatsApp", translated: "WhatsApp" },
+  { source: "A chat with your business opens in one tap.", translated: "Uma conversa com a sua empresa abre em um toque." },
+  { source: "Website or booking page", translated: "Site ou página de agendamento" },
+  { source: "Send people straight to where they book or buy.", translated: "Leve o cliente direto para onde ele agenda ou compra." },
+  { source: "Where to use it", translated: "Onde usar" },
+  { source: "Wherever your customers are within reach", translated: "Onde o seu cliente estiver ao alcance da mão" },
+  { source: "Put one at every point of contact.", translated: "Deixe um em cada ponto de contato." },
+  { source: "At the counter", translated: "No balcão" },
+  { source: "Next to the register, where every customer passes.", translated: "Ao lado do caixa, por onde todo cliente passa." },
+  { source: "At reception", translated: "Na recepção" },
+  { source: "On the front desk or in the waiting area.", translated: "No balcão de atendimento ou na sala de espera." },
+  { source: "In your vehicle", translated: "No seu veículo" },
+  { source: "In the car or truck, if you offer mobile services.", translated: "No carro ou na caminhonete, se você atende na casa do cliente." },
+  { source: "On your keyring", translated: "No seu chaveiro" },
+  { source: "Always one on hand to give away.", translated: "Sempre um à mão para entregar." },
+  { source: "Can you make a keychain in the shape of an object?", translated: "Dá para fazer o chaveiro no formato de um objeto?" },
+  { source: "Yes. Besides the flat keychain with your logo, we make them with raised relief and in custom shapes, like your product, a tool from your trade or your logo cut out. You pick the style in the order form, and we confirm the details with you on WhatsApp.", translated: "Sim. Além do chaveiro chapado com a sua logo, fazemos chaveiros com relevo e com shape customizado, no formato do seu produto, de uma ferramenta do seu ramo ou da sua logo recortada. Você escolhe o estilo no formulário e confirmamos os detalhes com você pelo WhatsApp." },
+  { source: "How much does it cost?", translated: "Quanto custa?" },
+  { source: PRICE_COPY.faqAnswer.en, translated: PRICE_COPY.faqAnswer.pt },
+  { source: "Upload the best version you have. A clear photo or a screenshot usually works, and we prepare it for 3D printing. If you have no logo at all, we create the artwork for you.", translated: "Envie a melhor versão que você tiver. Uma foto nítida ou um print geralmente funciona, e nós preparamos para a impressão 3D. Se você não tem logo nenhuma, criamos a arte para você." },
+  { source: "About a minute to fill in. You see the price as you choose the quantity, and we confirm everything with you on WhatsApp before producing anything. Sending the form costs nothing.", translated: "Leva cerca de um minuto. Você vê o preço conforme escolhe a quantidade, e confirmamos tudo com você no WhatsApp antes de produzir qualquer coisa. Enviar o formulário não custa nada." },
+  { source: PRICE_COPY.ctaNote.en, translated: PRICE_COPY.ctaNote.pt },
 ];
 
 // ── Seed runner ───────────────────────────────────────────────────────────

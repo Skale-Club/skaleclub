@@ -9,26 +9,22 @@
 //   pages WHERE slug = 'nfc-order-br' (PT, language='pt')  -> /br/nfc-order
 //
 // This page is for someone who has already decided and wants to ORDER. It is
-// not the ad landing (/nfc-keychains, which sells the idea) nor the pricing
-// explainer (/nfc-pricing, which answers objections). The pitch is short, the
-// price ladder is high on the page, and the form is one click away — the hero
-// CTA clicks the leadFormCta button, so both buttons open the same modal.
+// not the landing (/nfc-keychains, which sells the idea and answers the
+// questions). The pitch is short and the form is one click away: the hero CTA
+// clicks the leadFormCta button, so both buttons open the same modal.
 //
 // Both rows share SECTIONS; only language and alternateSlug differ (reciprocal
 // alternateSlug drives hreflang). Copy is authored in ENGLISH, the t() source
 // language, and served in Portuguese from the `translations` rows written by
 // the companion script above.
 //
-// The price ladder is GENERATED from shared/nfc-pricing.ts rather than typed
-// out, so the page cannot quote a price the form does not charge. Editing the
-// tiers and re-running this script is what keeps them in step — until then the
-// stored row holds the numbers from the last run.
+// No price table (2026-09-22): the price lives in the order form (a live
+// preview computed from shared/nfc-pricing.ts) and is confirmed on WhatsApp.
 import "dotenv/config";
 import { pathToFileURL } from "node:url";
 import { eq } from "drizzle-orm";
 import { pool, db } from "../server/db.js";
 import { pages, type PageSection } from "../shared/schema/pages.js";
-import { buildPriceLines } from "../shared/nfc-price-lines.js";
 
 const ORDER_FORM_SLUG = "nfc-keychain-order";
 
@@ -38,27 +34,19 @@ export const SECTIONS: PageSection[] = [
   {
     type: "heroWebsites",
     props: {
+      theme: "dark",
       headline: "Order your NFC keychains",
       subheadline:
         "Choose how many you need, send us your logo, and we confirm every detail with you before anything is produced.",
       ctaLabel: "Start my order",
       secondaryCtaLabel: "See how they work",
-      secondaryCtaHref: "/nfc-pricing",
+      secondaryCtaHref: "/nfc-keychains",
       backgroundImageUrl: "/nfc-keychains-hero.webp",
       backgroundImageAlt: "Custom 3D-printed NFC keychains in different designs",
     },
   },
-  {
-    type: "pricingTable",
-    props: {
-      theme: "dark",
-      eyebrow: "Pricing",
-      heading: "The more you order, the less each one costs",
-      subheading: "The form adds this up for you as you choose the quantity.",
-      lines: buildPriceLines(),
-      footnote: "100% payment upfront, after we confirm your order. Production starts once payment clears.",
-    },
-  },
+  // No price table (2026-09-22): the form below shows the exact price as a
+  // preview and the final total is confirmed on WhatsApp.
   {
     type: "processStepper",
     props: {
@@ -212,10 +200,6 @@ async function upsertPage(spec: PageSpec) {
 async function seed() {
   console.log("Seeding NFC order pages...");
   for (const spec of SPECS) await upsertPage(spec);
-  console.log("\nPrice ladder written to the page:");
-  for (const line of buildPriceLines()) {
-    console.log(`  ${line.label.padEnd(22)} ${line.price}${line.note ? `  (${line.note})` : ""}`);
-  }
 }
 
 // Only seed when run directly. Importing this file (to check SECTIONS against

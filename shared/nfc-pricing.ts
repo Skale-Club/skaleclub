@@ -11,7 +11,7 @@
 
 // Stamped on every saved order so a later price change never rewrites what was
 // quoted yesterday. Bump it whenever the constants below change.
-export const NFC_PRICING_VERSION = "2026-09-19.1";
+export const NFC_PRICING_VERSION = "2026-09-22.1";
 
 export const NFC_CURRENCY = "USD";
 
@@ -25,31 +25,47 @@ export const NFC_QUANTITY = {
 } as const;
 
 // ── Keychain types ─────────────────────────────────────────────────────────
-// PLACEHOLDER — the real catalogue is still to be defined. Today everything is
-// priced as the standard piece (1.0x). To add a type, append a row here: the
-// picker, the price panel, the order summary and the Telegram alert all read
-// this list, so nothing else needs to change.
+// The picker, the price panel, the order summary and the Telegram alert all
+// read this list, so adding or editing a type needs no change anywhere else.
 //
 // `priceMultiplier` multiplies the per-unit tier price (1.2 = 20% dearer).
+// `quoteOnRequest` types have no list price: each piece is priced by hand and
+// the total goes to the customer on WhatsApp. The form shows no number for
+// them, and no order value reaches the ad platforms.
 export type NfcKeychainType = {
   id: string;
   label: string;
   description: string;
   priceMultiplier: number;
+  quoteOnRequest?: boolean;
   active: boolean;
 };
 
 export const NFC_KEYCHAIN_TYPES: NfcKeychainType[] = [
+  // id stays "standard": leads already saved reference it.
   {
     id: "standard",
-    label: "Standard",
-    description: "3D-printed in a single color with your logo.",
+    label: "Flat",
+    description: "Your logo printed flat on the keychain.",
     priceMultiplier: 1,
     active: true,
   },
-  // Examples, disabled until the catalogue and the real multipliers are set:
-  // { id: "two-tone",     label: "Two-tone",     description: "...", priceMultiplier: 1.2, active: false },
-  // { id: "custom-shape", label: "Custom shape", description: "...", priceMultiplier: 1.4, active: false },
+  {
+    id: "relief",
+    label: "Raised relief",
+    description: "Your logo raised off the surface, so it stands out to the touch.",
+    priceMultiplier: 1,
+    quoteOnRequest: true,
+    active: true,
+  },
+  {
+    id: "custom-shape",
+    label: "Custom shape",
+    description: "Shaped like your product, a tool from your trade or your logo cut out.",
+    priceMultiplier: 1,
+    quoteOnRequest: true,
+    active: true,
+  },
 ];
 
 export const NFC_DEFAULT_TYPE_ID = "standard";
@@ -160,6 +176,8 @@ export type NfcQuote = {
   quantity: number;
   typeId: string;
   typeLabel: string;
+  /** No list price: the money fields below are placeholders, never shown. */
+  quoteOnRequest: boolean;
   /** Table price per unit for this quantity and type. */
   unitPriceCents: number;
   /** What each unit actually costs after the monotonic cap below. */
@@ -213,6 +231,7 @@ export function quoteNfcOrder(input: {
     quantity,
     typeId: type.id,
     typeLabel: type.label,
+    quoteOnRequest: Boolean(type.quoteOnRequest),
     unitPriceCents: unitPriceCentsFor(quantity, type),
     effectiveUnitPriceCents: Math.round(bestSubtotal / quantity),
     subtotalCents: bestSubtotal,
@@ -246,17 +265,23 @@ export const NFC_SNAPSHOT_KEYS = [
   "nfcArtFee",
   "nfcTotal",
   "nfcPricingVersion",
+  "nfcQuoteOnRequest",
 ] as const;
 
+/** What the snapshot, the admin card and the Telegram alert say instead of a price. */
+export const NFC_ON_REQUEST_LABEL = "On request (WhatsApp)";
+
 export function buildNfcQuoteSnapshot(quote: NfcQuote): Record<string, string> {
+  const money = (cents: number) => (quote.quoteOnRequest ? NFC_ON_REQUEST_LABEL : formatUsdCents(cents));
   return {
     nfcQuantity: String(quote.quantity),
     nfcTypeId: quote.typeId,
     nfcTypeLabel: quote.typeLabel,
-    nfcUnitPrice: formatUsdCents(quote.effectiveUnitPriceCents),
-    nfcSubtotal: formatUsdCents(quote.subtotalCents),
+    nfcUnitPrice: money(quote.effectiveUnitPriceCents),
+    nfcSubtotal: money(quote.subtotalCents),
     nfcArtFee: formatUsdCents(quote.artFeeCents),
-    nfcTotal: formatUsdCents(quote.totalCents),
+    nfcTotal: money(quote.totalCents),
     nfcPricingVersion: quote.pricingVersion,
+    nfcQuoteOnRequest: quote.quoteOnRequest ? "yes" : "no",
   };
 }

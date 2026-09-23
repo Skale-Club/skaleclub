@@ -7,7 +7,7 @@
 
 import { z } from "zod";
 import { useTranslation } from "@/hooks/useTranslation";
-import { sectionThemeSchema } from "./sectionTheme";
+import { DARK_SURFACE, sectionThemeSchema } from "./sectionTheme";
 import { buildPriceLines, type PriceLine } from "@shared/nfc-price-lines";
 
 // `satisfies` makes this fail to compile the moment this shape stops matching
@@ -68,7 +68,7 @@ const LIGHT = {
 } as const;
 
 const DARK = {
-  section:    "bg-[#0f1014]",
+  section:    DARK_SURFACE,
   eyebrow:    "text-blue-300",
   heading:    "text-white",
   subheading: "text-zinc-300",

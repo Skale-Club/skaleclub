@@ -14,7 +14,7 @@
 import type { IStorage } from "../storage.js";
 import type { FormConfig, FormLead } from "#shared/schema.js";
 import { quoteFromAnswers, resolvePricingQuestionIds } from "#shared/form.js";
-import { buildNfcQuoteSnapshot, formatUsdCents } from "#shared/nfc-pricing.js";
+import { NFC_ON_REQUEST_LABEL, buildNfcQuoteSnapshot, formatUsdCents } from "#shared/nfc-pricing.js";
 import { dispatchNotification } from "./notifications.js";
 
 /** Flattens a lead back into the answer map the shared quote helper expects. */
@@ -93,7 +93,7 @@ export async function finalizeNfcOrder(
       business: (custom.nomeEmpresa || current.tipoNegocio || "").trim(),
       quantity: String(quote.quantity),
       keychainType: quote.typeLabel,
-      total: formatUsdCents(quote.totalCents),
+      total: quote.quoteOnRequest ? NFC_ON_REQUEST_LABEL : formatUsdCents(quote.totalCents),
       artFee: quote.artFeeApplies ? formatUsdCents(quote.artFeeCents) : "waived",
       customerStatus: isFirstOrder
         ? "New customer"

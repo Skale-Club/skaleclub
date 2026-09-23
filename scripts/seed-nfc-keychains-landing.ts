@@ -7,8 +7,11 @@
 //   1. forms   WHERE slug = 'nfc-keychain-leads'
 //   2. pages   WHERE slug = 'nfc-keychains'    (landing,   EN, language='en')
 //   3. pages   WHERE slug = 'nfc-keychains-br' (landing,   PT, language='pt')
-//   4. pages   WHERE slug = 'nfc-pricing'      (explainer, EN, language='en')
-//   5. pages   WHERE slug = 'nfc-pricing-br'   (explainer, PT, language='pt')
+//   4. pages   WHERE slug = 'nfc-pricing'      (explainer, EN) -> DEACTIVATED
+//   5. pages   WHERE slug = 'nfc-pricing-br'   (explainer, PT) -> DEACTIVATED
+//      Since 2026-09-22 the explainer lives inside the landing and its URLs
+//      301 to /nfc-keychains (server/canonicalHost.ts). PRICING_SECTIONS below
+//      is kept for reference only; nothing writes it any more.
 //
 // The PT slugs stay single-segment (the DB forbids a slash), but their public
 // URLs are the two-segment /nfc-keychains/br and /nfc-pricing/br served by the
@@ -16,7 +19,7 @@
 // /nfc-keychains-br and /nfc-pricing-br URLs keep working too.
 //
 // The landing pair shares LANDING_SECTIONS [heroWebsites, trustBadges,
-// processStepper, reviews, leadFormCta]. The explainer pair shares
+// featureGrid x2, processStepper, faqAccordion, leadFormCta], all dark. The explainer pair shares
 // PRICING_SECTIONS [contentBlocks, pricingTable, processStepper, faqAccordion,
 // leadFormCta]. Copy is t()-based so the pages.language column drives EN vs
 // PT; each pair carries a reciprocal alternateSlug for hreflang.
@@ -35,12 +38,13 @@
 // scripts/seed-nfc-order-form.ts) rather than the unpriced form this file
 // seeds — see the note above ORDER_FORM_SLUG.
 import "dotenv/config";
+import { pathToFileURL } from "node:url";
 import { eq } from "drizzle-orm";
 import { pool, db } from "../server/db.js";
 import { pages, type PageSection } from "../shared/schema/pages.js";
 import { forms } from "../shared/schema/forms.js";
 import type { FormConfig, FormQuestion } from "../shared/schema/forms.js";
-import { buildPriceLines } from "../shared/nfc-price-lines.js";
+import { buildPriceLines, nfcPriceCopy } from "../shared/nfc-price-lines.js";
 
 // ── Config ────────────────────────────────────────────────────────────────
 
@@ -262,24 +266,28 @@ const NFC_STEPPER_PROPS = {
 // (NFC-keychain-specific messaging). No pricing in the hero: the ad landing
 // captures the lead; the pricing page (sent by WhatsApp automation) closes.
 // No bgVideoUrl: the /websites video asset is specific to that page.
-const LANDING_SECTIONS: PageSection[] = [
+// Landing redesign (2026-09-22): one selling page. No price table anywhere on
+// it: the order form shows the exact price as a preview and the final total is
+// confirmed on WhatsApp. The only number is the entry price in the FAQ and
+// under the closing button, read from shared/nfc-pricing.ts via nfcPriceCopy().
+// The Google reviews section is gone: every review is about websites.
+const PRICE_COPY = nfcPriceCopy();
+
+export const LANDING_SECTIONS: PageSection[] = [
   {
     type: "heroWebsites",
     props: {
+      theme: "dark",
+      eyebrow: "Custom NFC keychains",
       headline: "One tap. Your customers land exactly where you want them.",
       subheadline: "Custom 3D-printed NFC keychains with your logo. A customer taps their phone and opens your Google review page, Instagram, digital business card, menu, or website. No app needed.",
       ctaLabel: "I want my keychains",
-      secondaryCtaLabel: "See pricing and details",
-      secondaryCtaHref: "/nfc-pricing",
+      secondaryCtaLabel: "See how it works",
+      secondaryCtaHref: "#how-it-works",
       backgroundImageUrl: "/nfc-keychains-hero.webp",
       backgroundImageAlt: "Custom 3D-printed NFC keychains in different designs",
     },
   },
-  // `theme: "dark"` is the opt-in dark treatment for the NFC pages only (quick
-  // 260906-qwl). heroWebsites already sits on solid #1C53A3 and `reviews` wraps
-  // an already-dark section, so neither needs the prop. NFC_STEPPER_PROPS is
-  // spread (never mutated) because /websites and /barbershops share nothing
-  // with it but the shape — the const itself must stay theme-free.
   {
     type: "trustBadges",
     props: {
@@ -291,8 +299,80 @@ const LANDING_SECTIONS: PageSection[] = [
       ],
     },
   },
-  { type: "processStepper", props: { ...NFC_STEPPER_PROPS, theme: "dark" } }, // custom steps + icons for this product
-  { type: "reviews",        props: {} },                                      // adapter — real reviews only, from /api/company-settings
+  {
+    type: "featureGrid",
+    props: {
+      theme: "dark",
+      eyebrow: "What the tap opens",
+      heading: "You choose where every tap goes",
+      subheading: "One link per keychain. Point it at a page you control and you can change it anytime.",
+      items: [
+        { icon: "Star", title: "Google reviews", description: "Customers leave a review right at the counter, while the visit is still fresh." },
+        { icon: "Instagram", title: "Instagram", description: "New followers in one tap, no searching for your profile." },
+        { icon: "IdCard", title: "Digital business card", description: "Your contact saved straight to their phone." },
+        { icon: "UtensilsCrossed", title: "Menu", description: "Always up to date, with no reprinting." },
+        { icon: "MessageCircle", title: "WhatsApp", description: "A chat with your business opens in one tap." },
+        { icon: "Globe", title: "Website or booking page", description: "Send people straight to where they book or buy." },
+      ],
+    },
+  },
+  {
+    type: "featureGrid",
+    props: {
+      theme: "dark",
+      eyebrow: "Where to use it",
+      heading: "Wherever your customers are within reach",
+      subheading: "Put one at every point of contact.",
+      items: [
+        { icon: "Store", title: "At the counter", description: "Next to the register, where every customer passes." },
+        { icon: "ConciergeBell", title: "At reception", description: "On the front desk or in the waiting area." },
+        { icon: "Car", title: "In your vehicle", description: "In the car or truck, if you offer mobile services." },
+        { icon: "KeyRound", title: "On your keyring", description: "Always one on hand to give away." },
+      ],
+    },
+  },
+  { type: "processStepper", props: { ...NFC_STEPPER_PROPS, theme: "dark", anchorId: "how-it-works" } },
+  {
+    type: "faqAccordion",
+    props: {
+      theme:      "dark",
+      eyebrow:    "FAQ",
+      heading:    "Questions people ask before ordering",
+      subheading: "Everything you need to decide, without waiting for a reply.",
+      items: [
+        {
+          question: "What exactly is an NFC keychain?",
+          answer:   "A 3D-printed keychain with your logo and a small NFC tag inside. When a customer taps their phone on it, the phone opens the link you chose: your Google review page, Instagram, digital business card, menu, or website.",
+        },
+        {
+          question: "Do my customers need to install an app?",
+          answer:   "No. Modern iPhones and Android phones read NFC tags natively, the same way they handle tap-to-pay. The customer just holds the phone close to the keychain and a notification opens the link.",
+        },
+        {
+          question: "Can you make a keychain in the shape of an object?",
+          answer:   "Yes. Besides the flat keychain with your logo, we make them with raised relief and in custom shapes, like your product, a tool from your trade or your logo cut out. You pick the style in the order form, and we confirm the details with you on WhatsApp.",
+        },
+        { question: "How much does it cost?", answer: PRICE_COPY.faqAnswer.en },
+        {
+          question: "Can I change the link later?",
+          answer:   "Yes. We recommend pointing the tag to a link you control, like a short link or a page on your website, so you can redirect it whenever you want without touching the keychain. If you need the tag itself reprogrammed, message us and we will walk you through the options.",
+        },
+        {
+          question: "Why is payment 100% upfront?",
+          answer:   "Every order is custom-made with your logo, so it cannot be resold or reused for another business. Paying in full before production covers the materials and the work, and it lets us start right away. You still approve the design before anything is printed.",
+        },
+        {
+          // Deliberate omission: NO number here (see the file header).
+          question: "How long does it take?",
+          answer:   "Production starts as soon as your payment clears and the artwork is approved. The exact production and delivery window is confirmed in writing when your order is approved, so you know what to expect before you commit.",
+        },
+        {
+          question: "What if I do not have a logo?",
+          answer:   "Upload the best version you have. A clear photo or a screenshot usually works, and we prepare it for 3D printing. If you have no logo at all, we create the artwork for you.",
+        },
+      ],
+    },
+  },
   {
     type: "leadFormCta",
     props: {
@@ -300,8 +380,11 @@ const LANDING_SECTIONS: PageSection[] = [
       formSlug: ORDER_FORM_SLUG,
       heading: "Ready to get your keychains?",
       subheading:
-        "About a minute to fill in. It shows the price as you choose the quantity, you send your logo, and we confirm everything with you on WhatsApp before producing anything. Sending the form does not charge you anything.",
+        "About a minute to fill in. You see the price as you choose the quantity, and we confirm everything with you on WhatsApp before producing anything. Sending the form costs nothing.",
       ctaLabel: "I want my keychains",
+      note: PRICE_COPY.ctaNote.en,
+      imageUrl: "/nfc-keychains-hero.webp",
+      imageAlt: "Custom 3D-printed NFC keychains in different designs",
     },
   },
 ];
@@ -523,6 +606,17 @@ async function upsertLanding(spec: LandingSpec) {
   }
 }
 
+async function deactivatePricingPages() {
+  for (const spec of [PRICING_EN, PRICING_PT]) {
+    const rows = await db
+      .update(pages)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(pages.slug, spec.slug))
+      .returning({ id: pages.id });
+    console.log(`  Pricing page '${spec.slug}': ${rows.length ? "deactivated" : "not found"}.`);
+  }
+}
+
 // One-time cleanup for the 260906-qwl slug rename (chaveiros-nfc -> nfc-keychains-br,
 // precos-chaveiros -> nfc-pricing-br). upsertLanding() keys on `slug`, so the renamed
 // specs INSERT new rows and orphan the originals. Delete exactly these two slugs and
@@ -553,20 +647,27 @@ async function main() {
   if (!orderForm) throw new Error(`Form '${ORDER_FORM_SLUG}' is missing. Run scripts/seed-nfc-order-form.ts first.`);
   await upsertLanding(LANDING_EN);
   await upsertLanding(LANDING_PT);
-  await upsertLanding(PRICING_EN);
-  await upsertLanding(PRICING_PT);
+  // The pricing explainer was folded into the landing (2026-09-22). Its rows
+  // are switched off, not deleted; server/canonicalHost.ts 301s the URLs.
+  await deactivatePricingPages();
   console.log("Cleaning up slugs renamed by quick 260906-qwl:");
   await deleteRenamedLegacyPages();
   console.log("Done.");
   await pool.end();
 }
 
-main().catch(async (err) => {
-  console.error("Seed failed:", err);
-  try {
-    await pool.end();
-  } catch {
-    /* noop */
-  }
-  process.exit(1);
-});
+// Only seed when run directly: importing LANDING_SECTIONS (a preview script,
+// a schema check) must not open a connection or write anything.
+const runDirectly = process.argv[1] ? import.meta.url === pathToFileURL(process.argv[1]).href : false;
+
+if (runDirectly) {
+  main().catch(async (err) => {
+    console.error("Seed failed:", err);
+    try {
+      await pool.end();
+    } catch {
+      /* noop */
+    }
+    process.exit(1);
+  });
+}

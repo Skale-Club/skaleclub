@@ -15,6 +15,7 @@ import { ProcessStepperSection, processStepperPropsSchema } from "./sections/Pro
 import { PricingTableSection, pricingTablePropsSchema } from "./sections/PricingTableSection";
 import { FaqAccordionSection, faqAccordionPropsSchema } from "./sections/FaqAccordionSection";
 import { ContentBlocksSection, contentBlocksPropsSchema } from "./sections/ContentBlocksSection";
+import { FeatureGridSection, featureGridPropsSchema } from "./sections/FeatureGridSection";
 
 export interface SectionEntry {
   component: ComponentType<{ props: any }>;
@@ -44,6 +45,7 @@ export const sectionRegistry: Record<string, SectionEntry> = {
   pricingTable:   { component: PricingTableSection,   propsSchema: pricingTablePropsSchema },
   faqAccordion:   { component: FaqAccordionSection,   propsSchema: faqAccordionPropsSchema },
   contentBlocks:  { component: ContentBlocksSection,  propsSchema: contentBlocksPropsSchema },
+  featureGrid:    { component: FeatureGridSection,    propsSchema: featureGridPropsSchema },
 };
 
 export const registeredSectionTypes = Object.keys(sectionRegistry);

@@ -89,11 +89,15 @@ function TypeCard({
       <div className="min-w-0">
         <p className="font-semibold text-slate-900">{t(type.label)}</p>
         <p className="mt-0.5 text-sm text-slate-500">{t(type.description)}</p>
-        <p className="mt-1.5 text-sm font-medium text-slate-700 tabular-nums">
-          {!knownQuantity && `${t("from")} `}
-          {formatUsdCents(quote.effectiveUnitPriceCents)}
-          <span className="font-normal text-slate-500">{` / ${t("piece")}`}</span>
-        </p>
+        {quote.quoteOnRequest ? (
+          <p className="mt-1.5 text-sm font-medium text-slate-700">{t("Price confirmed on WhatsApp")}</p>
+        ) : (
+          <p className="mt-1.5 text-sm font-medium text-slate-700 tabular-nums">
+            {!knownQuantity && `${t("from")} `}
+            {formatUsdCents(quote.effectiveUnitPriceCents)}
+            <span className="font-normal text-slate-500">{` / ${t("piece")}`}</span>
+          </p>
+        )}
       </div>
       {selected && (
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cta text-white">

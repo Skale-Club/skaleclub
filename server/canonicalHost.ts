@@ -16,6 +16,10 @@ import { legacyLanguagePath } from "#shared/languagePath.js";
 const PATH_REDIRECTS: Record<string, string> = {
   "/skale-hub/grupo": "/grupo",
   "/skale-hub/group": "/grupo",
+  // The NFC pricing explainer was folded into the landing (2026-09-22): the
+  // price now lives only in the order form and the WhatsApp confirmation.
+  "/nfc-pricing": "/nfc-keychains",
+  "/br/nfc-pricing": "/br/nfc-keychains",
 };
 
 export function registerCanonicalHostRedirects(app: Express) {
@@ -25,8 +29,12 @@ export function registerCanonicalHostRedirects(app: Express) {
     // Old PT URL shapes (`/x/br`, `/x-br`) map to the `/br/x` prefix — page
     // navigations only. legacyLanguagePath() already exempts reserved slugs.
     const isNavigation = req.method === "GET" || req.method === "HEAD";
+    // A legacy PT shape of a redirected path (`/nfc-pricing-br`) resolves in
+    // one hop: legacy rewrite first, then the path table.
+    const legacyPath = isNavigation ? legacyLanguagePath(req.path) : null;
     const newPath =
-      PATH_REDIRECTS[req.path] || (isNavigation ? legacyLanguagePath(req.path) : null);
+      PATH_REDIRECTS[req.path] ||
+      (legacyPath ? PATH_REDIRECTS[legacyPath] || legacyPath : null);
 
     // req.hostname strips the port and honours X-Forwarded-Host (trust proxy
     // is set to 1 in supabaseAuth.ts, so this is the client-facing host).

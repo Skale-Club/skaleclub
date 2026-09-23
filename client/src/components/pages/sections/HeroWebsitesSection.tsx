@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { useTranslation } from "@/hooks/useTranslation";
 import { languageHref } from "@/lib/languageRouting";
+import { DARK_HAIRLINE, sectionThemeSchema } from "./sectionTheme";
 
 // Hero variant for the /websites landing.
 // Mirrors the visual tone of the Home hero (brand blue + gradient overlay,
@@ -23,10 +24,15 @@ export const heroWebsitesPropsSchema = z.object({
   subheadline: z.string().optional(),
   ctaLabel: z.string().optional(),
   secondaryCtaLabel: z.string().optional(),
-  secondaryCtaHref: z.string().regex(/^\/[a-z0-9/-]*$/).optional(),
+  // A site path ("/nfc-order") or an in-page anchor ("#how-it-works").
+  secondaryCtaHref: z.string().regex(/^(\/[a-z0-9/-]*|#[a-z][a-z0-9-]*)$/).optional(),
+  eyebrow: z.string().optional(),
   backgroundImageUrl: optionalUrl,
   backgroundImageAlt: z.string().optional(),
   bgVideoUrl: optionalUrl,
+  // "dark" = the NFC product hero (copy left, product right, navy). Absent =
+  // the /websites hero, unchanged.
+  theme: sectionThemeSchema,
 });
 export type HeroWebsitesProps = z.infer<typeof heroWebsitesPropsSchema>;
 
@@ -47,7 +53,95 @@ const KNOWN_IMAGE_SIZES: Record<string, { width: number; height: number }> = {
   "/SkaleClub.webp": { width: 1169, height: 1500 },
 };
 
+const scrollToLeadCta = () => {
+  const trigger = document.querySelector<HTMLElement>('[data-landing-lead-cta]');
+  if (trigger) trigger.click();
+  else window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+};
+
 export function HeroWebsitesSection({ props }: { props: HeroWebsitesProps }) {
+  if (props.theme === "dark") return <DarkProductHero props={props} />;
+  return <WebsitesHero props={props} />;
+}
+
+/**
+ * NFC product hero: navy with a blue glow rising from the base, copy on the
+ * left and the product on the right. Below lg the product sits above the copy,
+ * compact, so a phone sees what is being sold without scrolling past it.
+ */
+function DarkProductHero({ props }: { props: HeroWebsitesProps }) {
+  const { t } = useTranslation();
+  const headline = props.headline ?? DEFAULTS.headline;
+  const bgUrl = props.backgroundImageUrl;
+  const secondaryHref = props.secondaryCtaHref;
+
+  return (
+    <section
+      className={`relative overflow-hidden pt-nav bg-[#09152d] border-b ${DARK_HAIRLINE}`}
+      style={{
+        backgroundImage: [
+          "radial-gradient(46% 60% at 30% 108%, rgba(81,115,214,.45), transparent 72%)",
+          "radial-gradient(40% 55% at 85% 20%, rgba(100,135,215,.22), transparent 70%)",
+          "linear-gradient(180deg, #09152d 0%, #0a1428 100%)",
+        ].join(","),
+      }}
+      data-testid="section-hero-websites"
+    >
+      <div className="container-custom container-page mx-auto grid items-center gap-6 lg:gap-12 py-8 sm:py-12 lg:py-20 lg:grid-cols-[1.05fr_.95fr] lg:min-h-[600px]">
+        <div className="order-2 lg:order-1">
+          {props.eyebrow && (
+            <span className="inline-flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.18em] text-blue-300">
+              <span aria-hidden="true" className="h-[3px] w-7 rounded-full bg-cta" />
+              {t(props.eyebrow)}
+            </span>
+          )}
+          <h1 className="mt-4 font-display text-[2.4rem] sm:text-5xl xl:text-6xl font-extrabold leading-[1.02] tracking-tight text-white text-balance">
+            {t(headline)}
+          </h1>
+          {props.subheadline && (
+            <p className="mt-5 max-w-xl text-base sm:text-lg leading-relaxed text-[#B4C0D8]">{t(props.subheadline)}</p>
+          )}
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={scrollToLeadCta}
+              data-testid="button-hero-websites-cta"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-cta px-8 py-4 text-base sm:text-lg font-bold text-white transition-colors hover:bg-cta-hover"
+            >
+              {t(props.ctaLabel ?? DEFAULTS.ctaLabel)} <span aria-hidden="true">→</span>
+            </button>
+            {props.secondaryCtaLabel && secondaryHref ? (
+              <a
+                href={secondaryHref.startsWith("#") ? secondaryHref : languageHref(secondaryHref)}
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/[0.04] px-8 py-4 text-base sm:text-lg font-bold text-white transition-colors hover:bg-white/10"
+              >
+                {t(props.secondaryCtaLabel)}
+                {secondaryHref.startsWith("#") && <span aria-hidden="true">↓</span>}
+              </a>
+            ) : null}
+          </div>
+        </div>
+
+        {bgUrl ? (
+          <div className="order-1 lg:order-2 relative mx-auto w-full max-w-[220px] sm:max-w-[300px] lg:max-w-[460px]">
+            <div aria-hidden="true" className="absolute inset-[14%] rounded-full bg-cta/45 blur-3xl" />
+            <img
+              src={bgUrl}
+              alt={t(props.backgroundImageAlt ?? "")}
+              className="relative w-full object-contain drop-shadow-2xl"
+              {...({ fetchpriority: "high" } as Record<string, string>)}
+              decoding="async"
+              loading="eager"
+              {...(KNOWN_IMAGE_SIZES[bgUrl] ?? {})}
+            />
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+function WebsitesHero({ props }: { props: HeroWebsitesProps }) {
   const { t } = useTranslation();
   const headline = props.headline ?? DEFAULTS.headline;
   const subheadline = props.subheadline ?? DEFAULTS.subheadline;
@@ -56,15 +150,7 @@ export function HeroWebsitesSection({ props }: { props: HeroWebsitesProps }) {
   const bgAlt = props.backgroundImageAlt ?? "";
   const bgVideoUrl = props.bgVideoUrl;
 
-  const handleCtaClick = () => {
-    const trigger = document.querySelector<HTMLElement>('[data-landing-lead-cta]');
-    if (trigger) {
-      trigger.click();
-    } else {
-      // Fallback: scroll to bottom (where leadFormCta typically lives)
-      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-    }
-  };
+  const handleCtaClick = scrollToLeadCta;
 
   return (
     // pt-nav clears the fixed navbar; below lg the text column adds its own

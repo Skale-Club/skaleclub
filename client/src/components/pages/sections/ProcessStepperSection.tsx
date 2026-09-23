@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
-import { sectionThemeSchema } from "./sectionTheme";
+import { DARK_SURFACE, sectionThemeSchema } from "./sectionTheme";
 
 const stepSchema = z.object({
   title:       z.string(),
@@ -43,6 +43,8 @@ export const processStepperPropsSchema = z.object({
   subheading:  z.string().optional(),
   steps:       z.array(stepSchema).length(4).optional(),
   icons:       z.array(z.enum(processStepperIconNames)).length(4).optional(),
+  // In-page anchor (e.g. "how-it-works") so a hero button can scroll here.
+  anchorId:    z.string().regex(/^[a-z][a-z0-9-]*$/).optional(),
   theme:       sectionThemeSchema,
 });
 export type ProcessStepperProps = z.infer<typeof processStepperPropsSchema>;
@@ -89,13 +91,13 @@ const LIGHT = {
 } as const;
 
 const DARK = {
-  section:    "bg-[#0f1014]",
+  section:    DARK_SURFACE,
   eyebrow:    "text-blue-300",
   heading:    "text-white",
   subheading: "text-zinc-300",
   connector:  "bg-white/15",
   iconCircle: "bg-cta text-white shadow-lg shadow-cta/30",
-  stepBadge:  "bg-cta text-white border-2 border-[#0f1014]",
+  stepBadge:  "bg-cta text-white border-2 border-[#0a1428]",
   stepTitle:  "text-white",
   stepBody:   "text-zinc-300",
 } as const;
@@ -111,7 +113,8 @@ export function ProcessStepperSection({ props }: { props: ProcessStepperProps })
 
   return (
     <section
-      className={`${c.section} py-16 md:py-24`}
+      id={props.anchorId}
+      className={`${c.section} py-16 md:py-24 scroll-mt-24`}
       data-testid="section-process-stepper"
     >
       <div className="container-custom mx-auto px-6">

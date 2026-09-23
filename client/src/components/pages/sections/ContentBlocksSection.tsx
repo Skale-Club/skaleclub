@@ -8,7 +8,7 @@
 import { z } from "zod";
 import { Check } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
-import { sectionThemeSchema } from "./sectionTheme";
+import { DARK_SURFACE, sectionThemeSchema } from "./sectionTheme";
 
 const contentBlockSchema = z.object({
   heading:    z.string(),
@@ -69,7 +69,7 @@ const LIGHT = {
 } as const;
 
 const DARK = {
-  section:      "bg-surface-dark",
+  section:      DARK_SURFACE,
   eyebrow:      "text-blue-300",
   heading:      "text-white",
   subheading:   "text-zinc-300",

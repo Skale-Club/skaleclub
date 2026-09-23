@@ -246,6 +246,16 @@ const PT_TRANSLATIONS: TranslationPair[] = [
   // badges are already seeded by seed-nfc-keychains-translations.ts for
   // /nfc-pricing. One row per source string serves both pages, so repeating
   // them here would only let the two seeds overwrite each other.
+
+  // ── Keychain styles + quote-on-request panel (2026-09-22) ──
+  { source: "Flat", translated: "Chapado" },
+  { source: "Your logo printed flat on the keychain.", translated: "Sua logo impressa chapada no chaveiro." },
+  { source: "Raised relief", translated: "Com relevo" },
+  { source: "Your logo raised off the surface, so it stands out to the touch.", translated: "Sua logo em alto-relevo, que dá para sentir no toque." },
+  { source: "Custom shape", translated: "Shape customizado" },
+  { source: "Shaped like your product, a tool from your trade or your logo cut out.", translated: "No formato do seu produto, de uma ferramenta do seu ramo ou da sua logo recortada." },
+  { source: "Price confirmed on WhatsApp", translated: "Preço confirmado no WhatsApp" },
+  { source: "Custom pieces are priced one by one. After you send the form, we reply on WhatsApp with the total before anything is produced.", translated: "Peças personalizadas têm preço calculado uma a uma. Depois que você envia o formulário, respondemos no WhatsApp com o total antes de produzir qualquer coisa." },
 ];
 
 async function main() {

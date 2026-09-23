@@ -17,6 +17,26 @@ export function NfcPricePanel({
 }) {
   const { t } = useTranslation();
 
+  // Relief and custom shapes are priced by hand: no number, just what happens next.
+  if (quote.quoteOnRequest) {
+    return (
+      <div className="rounded-2xl border border-cta/20 bg-cta/5 p-4" data-testid="nfc-price-panel">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="text-sm font-medium text-slate-600">{t(quote.typeLabel)}</span>
+          <span className="text-sm font-medium text-slate-900 tabular-nums">
+            {quote.quantity} {t("pieces")}
+          </span>
+        </div>
+        <p className="mt-3 border-t border-cta/15 pt-3 text-base font-semibold text-slate-900" data-testid="nfc-price-total">
+          {t("Price confirmed on WhatsApp")}
+        </p>
+        <p className="mt-1 text-sm leading-relaxed text-slate-600">
+          {t("Custom pieces are priced one by one. After you send the form, we reply on WhatsApp with the total before anything is produced.")}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-2xl border border-cta/20 bg-cta/5 p-4" data-testid="nfc-price-panel">
       <div className="flex items-baseline justify-between gap-3">

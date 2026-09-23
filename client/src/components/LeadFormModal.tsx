@@ -1061,7 +1061,8 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
           // matched by phone, so the frozen total can end up lower. Deliberately
           // not read back from the server here to avoid a round trip before the
           // redirect below.
-          ...(quote && { value: quote.totalCents / 100, currency: quote.currency }),
+          // A quote-on-request type has no real total, so it sends no value.
+          ...(quote && !quote.quoteOnRequest && { value: quote.totalCents / 100, currency: quote.currency }),
         });
         // Keep a Portuguese lead on the `/br` thank-you page
         const target = languageHref(bookingUrl
