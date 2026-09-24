@@ -17,6 +17,8 @@ import {
 } from "#shared/schema.js";
 import { xphereLeadEnvelopeSchema, type XphereLeadEnvelope } from "#shared/xphere-contract.js";
 import { getConditionalFields } from "#shared/form.js";
+import { NFC_SNAPSHOT_KEYS } from "#shared/nfc-pricing.js";
+import { deriveLeadLanguage } from "#shared/lead-language.js";
 import { storage } from "../storage.js";
 
 const XPHERE_API_BASE = "https://xphere.app/api/v1";
@@ -37,6 +39,19 @@ const LEAD_CLASSIFICATIONS = new Set(["HOT", "WARM", "COLD", "DISQUALIFIED"]);
 const FALLBACK_ANSWER_IDS = [
   "cidadeEstado", "tipoNegocio", "tipoNegocioOutro", "tempoNegocio", "experienciaMarketing",
   "orcamentoAnuncios", "principalDesafio", "disponibilidade", "expectativaResultado",
+];
+// Values the server writes onto custom_answers AFTER the form was answered, so
+// they have no question id and configuredAnswerIds() cannot see them. Without
+// this list Xphere receives the order but not the price it was quoted at —
+// which is exactly what the callback robot has to read back to the customer.
+// NFC_SNAPSHOT_KEYS is imported rather than retyped so it cannot drift from
+// buildNfcQuoteSnapshot().
+const PASSTHROUGH_ANSWER_IDS = [
+  ...NFC_SNAPSHOT_KEYS,
+  "nfcPreviousOrders",
+  "nfcDeclaredReturning",
+  "countryCode",
+  "logo__filename",
 ];
 
 export type XphereInfo = {
@@ -97,12 +112,20 @@ export function serializeLeadForXphere(
 ): XphereLeadEnvelope {
   const configuredIds = configuredAnswerIds(formConfig);
   const answerIds = configuredIds.length
-    ? configuredIds
+    ? [...configuredIds, ...PASSTHROUGH_ANSWER_IDS]
     : [...FALLBACK_ANSWER_IDS, ...Object.keys(lead.customAnswers ?? {})];
   const answers = Object.fromEntries(answerIds.flatMap((id) => {
     const value = leadValue(lead, id);
     return value ? [[id, value]] : [];
   }));
+  // Derived once here rather than re-guessed on the Xphere side, where the
+  // page URL, the picked country and the dial prefix would each have to be
+  // read out of `answers` again by a workflow condition.
+  answers.lang = deriveLeadLanguage({
+    pageUrl: lead.urlOrigem,
+    countryCode: lead.customAnswers?.countryCode,
+    phone: lead.telefone,
+  });
   let siteDomain = DEFAULT_SITE_DOMAIN;
   try { if (lead.urlOrigem) siteDomain = new URL(lead.urlOrigem).hostname || DEFAULT_SITE_DOMAIN; } catch { /* keep fallback */ }
   const unscored = isUnscoredForm(formConfig);
