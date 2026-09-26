@@ -14,7 +14,9 @@ Sentry.init({
     Sentry.replayIntegration({ maskAllText: false, blockAllMedia: false }),
   ],
   tracesSampleRate: 0.1,
-  replaysSessionSampleRate: 0.05,
+  // Only record replays when an error happens: session replays of normal traffic
+  // burned the org-wide Sentry replay quota. Errors still get a full replay.
+  replaysSessionSampleRate: 0,
   replaysOnErrorSampleRate: 1.0,
 });
 
