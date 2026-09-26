@@ -36,7 +36,18 @@ regexes = [
 ]
 
 [[allowlists]]
-description = "token-crypto.test.ts round-trips a fake OpenRouter-shaped key ('sk-or-v1-abcdef0123456789') as plaintext input to encryptToken/decryptToken — a made-up fixture, never a real credential."
+description = "token-crypto.test.ts round-trips a fake OpenRouter-shaped key as plaintext input to encryptToken/decryptToken — a made-up fixture, never a real credential."
+# Deliberately narrow: ONLY the exact fixture value, ONLY for the
+# generic-api-key rule, ONLY in this test file (condition = AND). Any other
+# secret added to this file — or this value anywhere else — is still flagged.
+# Matching on the value (not a .gitleaksignore fingerprint) keeps working if
+# the line moves and in non-git scans (gitleaks dir / protect --staged).
+condition = "AND"
+targetRules = ["generic-api-key"]
 paths = [
-    '''server/blog/__tests__/token-crypto\.test\.ts''',
+    '''(^|/)server/blog/__tests__/token-crypto\.test\.ts$''',
+]
+regexTarget = "secret"
+regexes = [
+    '''^sk-or-v1-abcdef0123456789$''',
 ]
