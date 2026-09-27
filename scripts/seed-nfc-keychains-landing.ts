@@ -45,6 +45,7 @@ import { pages, type PageSection } from "../shared/schema/pages.js";
 import { forms } from "../shared/schema/forms.js";
 import type { FormConfig, FormQuestion } from "../shared/schema/forms.js";
 import { buildPriceLines, nfcPriceCopy } from "../shared/nfc-price-lines.js";
+import { NFC_WHATSAPP_CTA } from "../shared/nfc-whatsapp.js";
 
 // ── Config ────────────────────────────────────────────────────────────────
 
@@ -286,6 +287,9 @@ export const LANDING_SECTIONS: PageSection[] = [
       secondaryCtaHref: "#how-it-works",
       backgroundImageUrl: "/nfc-keychains-hero.webp",
       backgroundImageAlt: "Custom 3D-printed NFC keychains in different designs",
+      // Pre-filled message per page language carries the Xphere agent's keyword
+      // ("keychains" EN / "chaveiros" PT) — see shared/nfc-whatsapp.ts.
+      whatsapp: NFC_WHATSAPP_CTA,
     },
   },
   {
@@ -385,6 +389,7 @@ export const LANDING_SECTIONS: PageSection[] = [
       note: PRICE_COPY.ctaNote.en,
       imageUrl: "/nfc-keychains-hero.webp",
       imageAlt: "Custom 3D-printed NFC keychains in different designs",
+      whatsapp: NFC_WHATSAPP_CTA,
     },
   },
 ];
