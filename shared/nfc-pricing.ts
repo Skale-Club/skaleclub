@@ -61,7 +61,7 @@ export const NFC_KEYCHAIN_TYPES: NfcKeychainType[] = [
   {
     id: "custom-shape",
     label: "Custom shape",
-    description: "Shaped like your product, a tool from your trade or your logo cut out.",
+    description: "Shaped like a product, tool, mascot, animal, character, doll or custom logo outline.",
     priceMultiplier: 1,
     quoteOnRequest: true,
     active: true,

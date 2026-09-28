@@ -173,6 +173,7 @@ export default function DynamicPage() {
       setMeta('meta[property="og:locale"]', "property", "og:locale", seo.locale);
       setMeta('meta[name="twitter:title"]', "name", "twitter:title", seo.title);
       setMeta('meta[name="twitter:description"]', "name", "twitter:description", seo.description);
+      if (seo.robots) setMeta('meta[name="robots"]', "name", "robots", seo.robots);
     }
 
     return () => {

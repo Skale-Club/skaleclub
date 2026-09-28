@@ -145,10 +145,10 @@ export default function LeadThankYou() {
                 </button>
               </Link>
               {(isNfcLead || isNfcOrder) && (
-                <Link href="/nfc-pricing">
+                <Link href="/nfc-guide">
                   <button className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 text-white font-semibold py-3 transition-all">
                     <Sparkles className="w-4 h-4" />
-                    {t('Review pricing and details')}
+                    {t('Review the keychain guide')}
                   </button>
                 </Link>
               )}

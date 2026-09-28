@@ -1,4 +1,8 @@
-// Seed the NFC keychain ORDER pages (EN + PT).
+// DEPRECATED: the order experience is now a dedicated full-screen client route.
+// The explanatory guide and order form are now explicit React routes and need
+// no page seed. Keep this file only as historical reference; do not run it.
+//
+// Seed the former NFC keychain ORDER pages (EN + PT).
 // Idempotent: re-running updates both rows in place (same ids preserved).
 //
 // Run: npx tsx --env-file=.env scripts/seed-nfc-order-page.ts

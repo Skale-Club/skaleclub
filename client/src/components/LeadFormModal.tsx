@@ -275,6 +275,7 @@ type LeadFormModalProps = {
   open: boolean;
   onClose: () => void;
   formSlug: string;
+  mode?: "modal" | "page";
 };
 
 function blobToDataUrl(blob: Blob): Promise<string> {
@@ -531,7 +532,7 @@ function ConditionalFieldInput({
   );
 }
 
-export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
+export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadFormModalProps) {
   const pagePaths = usePagePaths();
   const { t } = useTranslation();
 
@@ -694,8 +695,11 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
   }, []);
 
   useEffect(() => {
-    if (open) {
+    if (open && mode === "modal") {
       document.body.style.overflow = "hidden";
+      ensureSession();
+      trackEvent("form_open", { location: window.location.pathname, form: formSlug });
+    } else if (open) {
       ensureSession();
       trackEvent("form_open", { location: window.location.pathname, form: formSlug });
     } else {
@@ -705,7 +709,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
     return () => {
       document.body.style.overflow = "";
     };
-  }, [open, ensureSession]);
+  }, [open, ensureSession, formSlug, mode]);
 
   useEffect(() => {
     lastFocusedInputRef.current = null;
@@ -715,7 +719,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
   // nodes. Skipped while the country dropdown is open — it renders in a portal
   // outside the container and needs to stay reachable.
   const handleContainerKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== "Tab" || isCountryDropdownOpen) return;
+    if (mode !== "modal" || event.key !== "Tab" || isCountryDropdownOpen) return;
     const container = containerRef.current;
     if (!container) return;
     const focusable = Array.from(
@@ -734,7 +738,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
       event.preventDefault();
       first.focus();
     }
-  }, [isCountryDropdownOpen]);
+  }, [isCountryDropdownOpen, mode]);
 
   const handleClose = useCallback(() => {
     if (view === "form") {
@@ -770,7 +774,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (open && e.key === "Escape") {
+      if (mode === "modal" && open && e.key === "Escape") {
         e.preventDefault();
         e.stopPropagation();
         handleClose();
@@ -778,7 +782,7 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [handleClose, open]);
+  }, [handleClose, mode, open]);
 
   const updateStoredState = useCallback(
     (stepToResume: number, answeredStep: number, pending = pendingSync) => {
@@ -1099,63 +1103,85 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
 
   // Show loading while config is loading
   if (isConfigLoading) {
-    return createPortal(
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-        <div className="bg-white rounded-2xl p-8 flex flex-col items-center gap-4">
+    const loading = (
+      <div className={clsx(
+        "flex items-center justify-center",
+        mode === "modal"
+          ? "fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
+          : "min-h-[60vh] w-full",
+      )}>
+        <div className="flex flex-col items-center gap-4 rounded-2xl bg-white p-8 shadow-xl">
           <Loader2 className="h-8 w-8 animate-spin text-cta" />
           <p className="text-slate-600">{t('Loading form...')}</p>
         </div>
-      </div>,
-      document.body
+      </div>
     );
+    return mode === "modal" ? createPortal(loading, document.body) : loading;
   }
 
   if (totalQuestions === 0) {
-    return createPortal(
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+    const unavailable = (
+      <div className={clsx(
+        "flex items-center justify-center px-4",
+        mode === "modal" ? "fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" : "min-h-[60vh] w-full",
+      )}>
         <div className="w-full max-w-md rounded-2xl bg-white p-6 text-center text-slate-900 shadow-2xl">
           <p className="text-lg font-semibold">{t('Form unavailable')}</p>
           <p className="mt-2 text-sm text-slate-500">{t('This form is not ready yet.')}</p>
-          <button type="button" className="mt-4 rounded-xl bg-cta px-4 py-2 font-semibold text-white" onClick={handleClose}>
-            {t('Close')}
-          </button>
+          {mode === "modal" && (
+            <button type="button" className="mt-4 rounded-xl bg-cta px-4 py-2 font-semibold text-white" onClick={handleClose}>
+              {t('Close')}
+            </button>
+          )}
         </div>
-      </div>,
-      document.body
+      </div>
     );
+    return mode === "modal" ? createPortal(unavailable, document.body) : unavailable;
   }
 
   const isLastStep = currentStep === totalQuestions;
   const canProceed = !getFieldError(currentQuestion, answers, selectedCountry, phoneCountrySelected);
 
-  return createPortal(
+  const experience = (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 py-6 sm:py-10"
-        role="dialog"
-        aria-modal="true"
+        className={clsx(
+          "flex items-center justify-center",
+          mode === "modal"
+            ? "fixed inset-0 z-50 bg-black/70 px-4 py-6 backdrop-blur-sm sm:py-10"
+            : "w-full py-4 sm:py-8",
+        )}
+        role={mode === "modal" ? "dialog" : undefined}
+        aria-modal={mode === "modal" ? "true" : undefined}
         aria-labelledby="lead-form-question"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={(e) => {
-          if (e.target === e.currentTarget) handleClose();
+          if (mode === "modal" && e.target === e.currentTarget) handleClose();
         }}
       >
-        <div className="w-full max-w-[640px]">
+        <div className={clsx("w-full", mode === "modal" ? "max-w-[640px]" : "max-w-[760px]")}>
           <div
-            className="relative bg-white text-slate-900 h-full sm:h-auto rounded-none sm:rounded-3xl shadow-2xl overflow-hidden"
+            className={clsx(
+              "relative overflow-hidden bg-white text-slate-900",
+              mode === "modal"
+                ? "h-full rounded-none shadow-2xl sm:h-auto sm:rounded-3xl"
+                : "min-h-[620px] rounded-[28px] border border-white/15 shadow-[0_32px_90px_rgba(0,0,0,0.28)]",
+            )}
             ref={containerRef}
             onKeyDown={handleContainerKeyDown}
           >
-            <button
-              className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
-              aria-label={t("Close form")}
-              type="button"
-              onClick={handleClose}
-            >
-              <X className="h-5 w-5" />
-          </button>
+            {mode === "modal" && (
+              <button
+                className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                aria-label={t("Close form")}
+                type="button"
+                onClick={handleClose}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            )}
 
           <div className="flex flex-col h-full">
             <div
@@ -1171,7 +1197,10 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
               />
             </div>
 
-            <div className="px-6 pb-6 pt-14 sm:pt-12 sm:px-10 space-y-4 overflow-y-auto max-h-[85vh]">
+            <div className={clsx(
+              "space-y-4 px-6 pb-6 pt-14 sm:px-10 sm:pt-12",
+              mode === "modal" ? "max-h-[85vh] overflow-y-auto" : "pb-10 sm:px-14 sm:pb-14",
+            )}>
                 {storageAvailable ? null : (
                   <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm flex items-start gap-2">
                     <AlertCircle className="h-4 w-4 mt-0.5" />
@@ -1571,7 +1600,8 @@ export function LeadFormModal({ open, onClose, formSlug }: LeadFormModalProps) {
           </div>
         </div>
       </motion.div>
-    </AnimatePresence>,
-    document.body
+    </AnimatePresence>
   );
+
+  return mode === "modal" ? createPortal(experience, document.body) : experience;
 }

@@ -283,8 +283,8 @@ export const LANDING_SECTIONS: PageSection[] = [
       headline: "One tap. Your customers land exactly where you want them.",
       subheadline: "Custom 3D-printed NFC keychains with your logo. A customer taps their phone and opens your Google review page, Instagram, digital business card, menu, or website. No app needed.",
       ctaLabel: "I want my keychains",
-      secondaryCtaLabel: "See how it works",
-      secondaryCtaHref: "#how-it-works",
+      secondaryCtaLabel: "Read the keychain guide",
+      secondaryCtaHref: "/nfc-guide",
       backgroundImageUrl: "/nfc-keychains-hero.webp",
       backgroundImageAlt: "Custom 3D-printed NFC keychains in different designs",
       // Pre-filled message per page language carries the Xphere agent's keyword

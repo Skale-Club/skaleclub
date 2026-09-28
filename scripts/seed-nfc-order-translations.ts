@@ -249,12 +249,15 @@ const PT_TRANSLATIONS: TranslationPair[] = [
   // them here would only let the two seeds overwrite each other.
 
   // ── Keychain styles + quote-on-request panel (2026-09-22) ──
-  { source: "Flat", translated: "Chapado" },
+  { source: "Flat", translated: "Flat" },
   { source: "Your logo printed flat on the keychain.", translated: "Sua logo impressa chapada no chaveiro." },
-  { source: "Raised relief", translated: "Com relevo" },
+  { source: "Raised relief", translated: "Alto-relevo" },
   { source: "Your logo raised off the surface, so it stands out to the touch.", translated: "Sua logo em alto-relevo, que dá para sentir no toque." },
-  { source: "Custom shape", translated: "Shape customizado" },
-  { source: "Shaped like your product, a tool from your trade or your logo cut out.", translated: "No formato do seu produto, de uma ferramenta do seu ramo ou da sua logo recortada." },
+  { source: "Custom shape", translated: "Formato personalizado" },
+  {
+    source: "Shaped like a product, tool, mascot, animal, character, doll or custom logo outline.",
+    translated: "No formato de um produto, ferramenta, mascote, bichinho, personagem, bonequinho ou contorno personalizado da logo.",
+  },
   { source: "Price confirmed on WhatsApp", translated: "Preço confirmado no WhatsApp" },
   { source: "Custom pieces are priced one by one. After you send the form, we reply on WhatsApp with the total before anything is produced.", translated: "Peças personalizadas têm preço calculado uma a uma. Depois que você envia o formulário, respondemos no WhatsApp com o total antes de produzir qualquer coisa." },
 ];

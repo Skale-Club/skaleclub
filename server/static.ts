@@ -67,6 +67,14 @@ export function injectLandingSeo(html: string, pathname: string): string {
     [/<meta name="twitter:title" content="[^"]*"\s*\/?>/, `<meta name="twitter:title" content="${escapeHtmlAttribute(seo.title)}" />`],
     [/<meta name="twitter:description" content="[^"]*"\s*\/?>/, `<meta name="twitter:description" content="${escapeHtmlAttribute(seo.description)}" />`],
   );
+  if (seo?.robots) {
+    const robotsTag = `<meta name="robots" content="${seo.robots}" />`;
+    if (/<meta name="robots" content="[^"]*"\s*\/?>/.test(html)) {
+      replacements.push([/<meta name="robots" content="[^"]*"\s*\/?>/, robotsTag]);
+    } else {
+      replacements.push([/<\/head>/, `${robotsTag}\n</head>`]);
+    }
+  }
 
   return replacements.reduce(
     (document, [pattern, replacement]) => document.replace(pattern, replacement),

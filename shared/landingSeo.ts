@@ -13,6 +13,7 @@ export interface LandingSeo {
   title: string;
   description: string;
   locale: LandingLocale;
+  robots?: "index, follow" | "noindex, follow";
 }
 
 export const LANDING_SEO: Record<string, LandingSeo> = {
@@ -29,27 +30,29 @@ export const LANDING_SEO: Record<string, LandingSeo> = {
     locale: "pt_BR",
   },
   "nfc-order": {
-    title: "Order Custom NFC Keychains | Skale Club",
+    title: "Complete Your NFC Keychain Order | Skale Club",
     description:
-      "Order custom 3D-printed NFC keychains: pick your quantity, see the price as you choose, and send your logo. We confirm every detail before production.",
+      "Send the details for your custom NFC keychain order. No payment is collected and every design and final price is confirmed before production.",
     locale: "en_US",
+    robots: "noindex, follow",
   },
   "nfc-order-br": {
-    title: "Peça seus Chaveiros NFC Personalizados | Skale Club",
+    title: "Complete seu Pedido de Chaveiros NFC | Skale Club",
     description:
-      "Peça chaveiros NFC personalizados e impressos em 3D: escolha a quantidade, veja o preço na hora e envie sua logo. Confirmamos cada detalhe antes de produzir.",
+      "Envie os dados do seu pedido de chaveiros NFC personalizados. Nenhum pagamento é feito no formulário e confirmamos o design e o valor final antes da produção.",
     locale: "pt_BR",
+    robots: "noindex, follow",
   },
-  "nfc-pricing": {
-    title: "NFC Keychain Pricing and Instructions | Skale Club",
+  "nfc-guide": {
+    title: "NFC Keychain Guide: Models, Pricing and FAQs | Skale Club",
     description:
-      "See NFC keychain pricing, minimum order, setup process, compatible phones, and answers to common questions.",
+      "Understand flat, raised-relief and custom-shaped NFC keychains, what changes the price, phone compatibility, artwork and the complete order process.",
     locale: "en_US",
   },
-  "nfc-pricing-br": {
-    title: "Preços e Instruções dos Chaveiros NFC | Skale Club",
+  "nfc-guide-br": {
+    title: "Guia de Chaveiros NFC: Modelos, Preços e Dúvidas | Skale Club",
     description:
-      "Veja preços, pedido mínimo, processo de produção, celulares compatíveis e respostas sobre os chaveiros NFC.",
+      "Entenda os chaveiros NFC flat, com alto-relevo e em formatos personalizados, o que altera o preço, compatibilidade, arte e processo do pedido.",
     locale: "pt_BR",
   },
   websites: {

@@ -64,6 +64,8 @@ function PageWrapper({ children }: { children: React.ReactNode }) {
 const NotFound = lazy(() => import("@/pages/not-found").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Home = lazy(() => import("@/pages/Home").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const PublicForm = lazy(() => import("@/pages/PublicForm").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const NfcOrderForm = lazy(() => import("@/pages/NfcOrderForm").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const NfcGuide = lazy(() => import("@/pages/NfcGuide").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const LeadThankYou = lazy(() => import("@/pages/LeadThankYou").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Admin = lazy(() => import("@/pages/Admin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const AdminLogin = lazy(() => import("@/pages/AdminLogin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
@@ -132,6 +134,8 @@ const RESERVED_LANDING_SEGMENTS = new Set<string>([
   "print",
   "api",
   "assets",
+  "nfc-order",
+  "nfc-guide",
   ...Object.values(DEFAULT_PAGE_SLUGS),
   ...RESERVED_SLUGS,
 ]);
@@ -166,6 +170,7 @@ function Router() {
   const isEstimateRoute = location.startsWith('/e/');
   const isPresentationRoute = location.startsWith('/p/');
   const isPrintRoute = location.startsWith('/print/');
+  const isNfcOrderRoute = location === '/nfc-order';
   const prevLocation = useRef(location);
 
   // Xpot was extracted to a standalone app on xpot.skale.club.
@@ -280,6 +285,17 @@ function Router() {
     );
   }
 
+  if (isNfcOrderRoute) {
+    return (
+      <Suspense fallback={fallback}>
+        <Switch>
+          <Route path="/nfc-order" component={NfcOrderForm} />
+          <Route component={NotFound} />
+        </Switch>
+      </Suspense>
+    );
+  }
+
   // Hide everything during initial load to prevent footer flash
   // The initial-loader in index.html covers the screen until content is ready
   return (
@@ -290,6 +306,7 @@ function Router() {
           <Switch>
             <Route path="/" component={Home} />
             <Route path="/f/:slug" component={PublicForm} />
+            <Route path="/nfc-guide" component={NfcGuide} />
             <Route path={pagePaths.thankYou} component={LeadThankYou} />
             {pagePaths.thankYou !== LEGACY_PATHS.thankYou && <Route path={LEGACY_PATHS.thankYou} component={LeadThankYou} />}
             <Route path={pagePaths.privacyPolicy} component={PrivacyPolicy} />

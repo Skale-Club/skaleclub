@@ -16,10 +16,10 @@ import { legacyLanguagePath } from "#shared/languagePath.js";
 const PATH_REDIRECTS: Record<string, string> = {
   "/skale-hub/grupo": "/grupo",
   "/skale-hub/group": "/grupo",
-  // The NFC pricing explainer was folded into the landing (2026-09-22): the
-  // price now lives only in the order form and the WhatsApp confirmation.
-  "/nfc-pricing": "/nfc-keychains",
-  "/br/nfc-pricing": "/br/nfc-keychains",
+  // The old route name described only one part of the content. The replacement
+  // is a complete product guide covering models, pricing, NFC and production.
+  "/nfc-pricing": "/nfc-guide",
+  "/br/nfc-pricing": "/br/nfc-guide",
 };
 
 export function registerCanonicalHostRedirects(app: Express) {
