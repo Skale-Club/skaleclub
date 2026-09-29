@@ -17,8 +17,8 @@ interface FaqListProps {
 }
 
 /**
- * Shared FAQ accordion used by the standalone FAQ page and the
- * `faqAccordion` landing section, so both read as one component.
+ * FAQ accordion for the standalone FAQ page. The `faqAccordion` landing
+ * section has its own editorial markup and no longer shares this component.
  */
 export function FaqList({ items, emptyMessage, dark = false }: FaqListProps) {
   if (!items || items.length === 0) {

@@ -10,4 +10,3 @@ export type SectionTheme = z.infer<typeof sectionThemeSchema>;
 // Editorial-kit tokens (tailwind.config.ts). Sections sit on the same navy
 // surface and are told apart by spacing and hairlines.
 export const DARK_SURFACE = "bg-navy-950";
-export const DARK_HAIRLINE = "border-white/10";
