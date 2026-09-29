@@ -9,7 +9,7 @@ import { EditorialCard, PillButton } from "@/components/editorial";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/useTranslation";
 
-const fieldClass = "rounded-none border-ink-700/15 bg-white text-ink focus-visible:ring-cta-ink/30";
+const fieldClass = "rounded-none border-ink-700/15 bg-white text-ink placeholder:text-ink-400 focus-visible:ring-2 focus-visible:ring-cta-ink/30 focus-visible:border-cta-ink";
 const labelClass = "text-xs font-bold uppercase tracking-[0.16em] text-ink-500";
 const consentClass =
   "flex cursor-pointer items-start gap-3 border border-ink-700/10 p-4 font-normal transition-colors hover:bg-paper";
@@ -139,7 +139,7 @@ export function ContactForm({ companyName }: { companyName: string }) {
             id="sms-consent"
             checked={smsConsent}
             onCheckedChange={(checked) => setSmsConsent(checked === true)}
-            className="mt-1 shrink-0 rounded-none"
+            className="mt-1 shrink-0 rounded-none border-ink-500 data-[state=checked]:border-cta-ink data-[state=checked]:bg-cta-ink data-[state=checked]:text-white"
           />
           <span className="text-sm leading-relaxed text-ink-500">
             {t(
@@ -153,7 +153,7 @@ export function ContactForm({ companyName }: { companyName: string }) {
             id="marketing-consent"
             checked={marketingConsent}
             onCheckedChange={(checked) => setMarketingConsent(checked === true)}
-            className="mt-1 shrink-0 rounded-none"
+            className="mt-1 shrink-0 rounded-none border-ink-500 data-[state=checked]:border-cta-ink data-[state=checked]:bg-cta-ink data-[state=checked]:text-white"
           />
           <span className="text-sm leading-relaxed text-ink-500">
             {t(
@@ -162,12 +162,12 @@ export function ContactForm({ companyName }: { companyName: string }) {
           </span>
         </Label>
 
-        <PillButton type="submit" variant="primary" disabled={submitting} className="w-full disabled:opacity-60 sm:w-auto">
+        <PillButton type="submit" variant="primary" disabled={submitting} className="w-full disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto">
           <Send className="h-5 w-5" />
           {submitting ? t("Sending...") : t("Send Message")}
         </PillButton>
 
-        <p className="pt-2 text-xs leading-relaxed text-ink-400">
+        <p className="pt-2 text-xs leading-relaxed text-ink-500">
           {t("By submitting this form you agree to be contacted by")} <strong>{companyName}</strong>{" "}
           {t(
             "by phone, text, or email about your inquiry. Consent is not a condition of any purchase. Message and data rates may apply; message frequency varies. Reply STOP to unsubscribe. See our",
