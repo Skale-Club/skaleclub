@@ -5,19 +5,58 @@ import "./index.css";
 import { registerServiceWorker, unregisterStaleServiceWorker } from "./lib/pwa";
 import { installChunkReloadHandlers } from "./lib/chunkReload";
 
+function sentryEnvironment(): string {
+  const host = window.location.hostname;
+  if (host === "skale.club" || host === "www.skale.club") return "production";
+  if (host.startsWith("skaleclub-stage.")) return "staging";
+  return "development";
+}
+
+// Session Replay is ~50 KB: load it only after the first error is captured, so
+// visitors who never hit one never download it. That first error itself has no
+// replay; every later one does (replaysOnErrorSampleRate below).
+let replayRequested = false;
+function loadReplayOnce() {
+  if (replayRequested) return;
+  replayRequested = true;
+  Sentry.lazyLoadIntegration("replayIntegration")
+    .then((replayIntegration) => {
+      Sentry.addIntegration(replayIntegration({ maskAllText: true, blockAllMedia: false }));
+    })
+    .catch(() => {
+      // CDN blocked (ad blocker, CSP): replays are best-effort.
+    });
+}
+
 Sentry.init({
   dsn: import.meta.env.VITE_SENTRY_DSN,
-  environment: import.meta.env.MODE,
+  environment: sentryEnvironment(),
+  release: import.meta.env.VITE_RELEASE || undefined,
   enabled: !!import.meta.env.VITE_SENTRY_DSN && import.meta.env.PROD,
-  integrations: [
-    Sentry.browserTracingIntegration(),
-    Sentry.replayIntegration({ maskAllText: false, blockAllMedia: false }),
-  ],
+  integrations: [Sentry.browserTracingIntegration()],
+  // TODO: enable once the server exposes the Sentry tunnel route (avoids ad-blocker loss):
+  // tunnel: "/api/monitoring",
   tracesSampleRate: 0.1,
   // Only record replays when an error happens: session replays of normal traffic
   // burned the org-wide Sentry replay quota. Errors still get a full replay.
   replaysSessionSampleRate: 0,
   replaysOnErrorSampleRate: 1.0,
+  ignoreErrors: [
+    "ResizeObserver loop",
+    // Handled by lib/chunkReload.ts (reload + fallback UI).
+    "Failed to fetch dynamically imported module",
+  ],
+  denyUrls: [
+    /extensions\//i,
+    /^chrome:\/\//i,
+    /^chrome-extension:\/\//i,
+    /^moz-extension:\/\//i,
+    /^safari-(web-)?extension:\/\//i,
+  ],
+  beforeSend(event) {
+    loadReplayOnce();
+    return event;
+  },
 });
 
 // Stale-tab / deploy-swap recovery for lazy chunks — see lib/chunkReload.ts.

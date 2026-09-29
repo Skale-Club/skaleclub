@@ -58,7 +58,7 @@ export default function VCard() {
       return res.json();
     },
     onSuccess: () => {
-      console.log('VCard view tracked');
+      if (import.meta.env.DEV) console.log('VCard view tracked');
     },
     onError: (err) => {
       console.error('Failed to track view:', err);
@@ -73,7 +73,7 @@ export default function VCard() {
       return res.json();
     },
     onSuccess: () => {
-      console.log('VCard download tracked');
+      if (import.meta.env.DEV) console.log('VCard download tracked');
     },
     onError: (err) => {
       console.error('Failed to track download:', err);

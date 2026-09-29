@@ -5,6 +5,7 @@ import { Sparkles, Home, CalendarCheck } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
+import { trackEvent } from "@/lib/analytics";
 
 const Lottie = lazy(() => import("lottie-react"));
 
@@ -17,13 +18,27 @@ export default function LeadThankYou() {
 
   const [successAnimation, setSuccessAnimation] = useState<object | null>(null);
   useEffect(() => {
-    let cancelled = false;
-    // Warm the lazy chunk now so the library and the JSON download in parallel.
-    void import("lottie-react");
-    void import("../assets/success-animation.json").then((mod) => {
-      if (!cancelled) setSuccessAnimation((mod.default ?? mod) as object);
+    // Conversion first: the form's own `form_completed` can be lost when it
+    // navigates here right after firing, so this page confirms it. It is queued
+    // by trackEvent if analytics is still initialising.
+    trackEvent("thank_you_view", {
+      location: window.location.pathname,
+      label: new URLSearchParams(window.location.search).get("form") ?? undefined,
     });
-    return () => { cancelled = true; };
+
+    let cancelled = false;
+    // Only then warm the lazy Lottie chunk and its JSON (in parallel), so the
+    // animation never delays the tracking call.
+    const timer = window.setTimeout(() => {
+      void import("lottie-react");
+      void import("../assets/success-animation.json").then((mod) => {
+        if (!cancelled) setSuccessAnimation((mod.default ?? mod) as object);
+      });
+    }, 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, []);
 
   // Thank-you pages should never be indexed or crawled — they're

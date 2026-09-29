@@ -19,10 +19,25 @@ let isInitialized = false;
 let config: AnalyticsConfig = {};
 let initializedProviders = { gtm: false, ga4: false, fbq: false };
 
+// Events fired before initAnalytics() (settings still loading) wait here and
+// are flushed once, so the first page view is not lost.
+const MAX_QUEUED_EVENTS = 50;
+let pendingEvents: Array<{ name: AnalyticsEventName; payload: AnalyticsEventPayload }> = [];
+
+/**
+ * One pipeline: GTM owns delivery when enabled (dataLayer only, the container
+ * forwards to GA4); otherwise GA4 direct via gtag.
+ */
+function usesGtm() {
+  return !!(config.gtmEnabled && config.gtmContainerId);
+}
+function usesGa4Direct() {
+  return !usesGtm() && !!(config.ga4Enabled && config.ga4MeasurementId);
+}
+
 export function initAnalytics(settings: AnalyticsConfig) {
   // Only initialize analytics in production
   if (import.meta.env.DEV) {
-    console.log('[Analytics] Initialization skipped in development mode');
     return;
   }
 
@@ -33,7 +48,7 @@ export function initAnalytics(settings: AnalyticsConfig) {
     initializedProviders.gtm = true;
   }
 
-  if (settings.ga4Enabled && settings.ga4MeasurementId && !initializedProviders.ga4) {
+  if (usesGa4Direct() && settings.ga4MeasurementId && !initializedProviders.ga4) {
     injectGA4(settings.ga4MeasurementId);
     initializedProviders.ga4 = true;
   }
@@ -44,6 +59,10 @@ export function initAnalytics(settings: AnalyticsConfig) {
   }
 
   isInitialized = true;
+
+  const queued = pendingEvents;
+  pendingEvents = [];
+  queued.forEach((event) => trackEvent(event.name, event.payload));
 }
 
 function isGtagAvailable(): boolean {
@@ -88,7 +107,8 @@ function injectGA4(measurementId: string) {
     window.dataLayer.push(arguments);
   };
   window.gtag('js', new Date());
-  window.gtag('config', measurementId);
+  // Page views are sent explicitly by trackPageView (SPA navigation).
+  window.gtag('config', measurementId, { send_page_view: false });
 }
 
 function injectFacebookPixel(pixelId: string) {
@@ -132,6 +152,7 @@ export type AnalyticsEventName =
   | 'click_email'
   | 'click_whatsapp'
   | 'click_social'
+  | 'thank_you_view'
   | 'form_abandoned'
   | 'form_result_action'
   | 'form_closed_draft';
@@ -156,21 +177,26 @@ export interface AnalyticsEventPayload {
 export function trackEvent(eventName: AnalyticsEventName, payload: AnalyticsEventPayload = {}) {
   // Skip analytics tracking in development mode
   if (import.meta.env.DEV) {
-    console.log('[Analytics]', eventName, payload);
     return;
   }
 
-  if (config.gtmEnabled) {
+  if (!isInitialized) {
+    if (pendingEvents.length < MAX_QUEUED_EVENTS) pendingEvents.push({ name: eventName, payload });
+    return;
+  }
+
+  if (usesGtm()) {
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({
       event: eventName,
       ...payload
     });
-  }
-
-  if (config.ga4Enabled && config.ga4MeasurementId && isGtagAvailable()) {
+  } else if (usesGa4Direct() && isGtagAvailable()) {
     window.gtag('event', eventName, payload);
   }
+
+  // The Pixel already fires PageView from its init snippet; never mirror page_view.
+  if (eventName === 'page_view') return;
 
   if (config.facebookPixelEnabled && config.facebookPixelId && isFbqAvailable()) {
     const fbEventMap: Record<string, string> = {
@@ -225,6 +251,14 @@ export function trackPurchase(
       quantity: item.quantity || 1
     }))
   });
+}
+
+export function trackClickWhatsapp(location: string) {
+  trackEvent('click_whatsapp', { location });
+}
+
+export function trackClickCall(location: string) {
+  trackEvent('click_call', { location });
 }
 
 export function trackCTAClick(location: string, label: string) {

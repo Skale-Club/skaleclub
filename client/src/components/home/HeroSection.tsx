@@ -61,6 +61,8 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
                 <img
                   src={homepageContent.heroBadgeImageUrl}
                   alt={homepageContent.heroBadgeAlt || ''}
+                  width={96}
+                  height={24}
                   className="h-5 sm:h-6 w-auto object-contain"
                 />
               </div>

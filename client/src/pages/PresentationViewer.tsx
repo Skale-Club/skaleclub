@@ -9,7 +9,7 @@ import { LanguageSwitch, type LanguageSwitchValue } from '@/components/ui/Langua
 import type { CompanySettings, SlideBlock } from '@shared/schema';
 import { SlideContent, buildSlideStyle } from '@/components/SlideRenderer';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { DottedSurface } from '@/components/ui/dotted-surface';
+import { LazyDottedSurface as DottedSurface } from '@/components/ui/LazyDottedSurface';
 import { GradientBackground } from '@/components/ui/gradient-background-4';
 
 interface PublicPresentation {

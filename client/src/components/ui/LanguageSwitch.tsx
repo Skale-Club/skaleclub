@@ -61,6 +61,8 @@ export function LanguageSwitch({
             <img
               src={isPortuguese ? '/flags/nucleo/br.svg' : '/flags/nucleo/us.svg'}
               alt={isPortuguese ? 'Brazil' : 'USA'}
+              width={28}
+              height={28}
               className="w-full h-full rounded-full object-cover scale-[1.4]"
             />
           </span>

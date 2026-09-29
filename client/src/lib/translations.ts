@@ -702,6 +702,10 @@ export const translations = {
     'Estimate only. We confirm the final total with you before anything is produced.': 'Apenas uma estimativa. Confirmamos o total final com você antes de produzir qualquer coisa.',
     'Keep your WhatsApp handy. We call to confirm before producing anything.': 'Deixe o WhatsApp por perto. Ligamos para confirmar antes de produzir qualquer coisa.',
     'App home screen': 'Tela inicial do aplicativo', 'What we solve': 'O que resolvemos', 'Three problems, one partner': 'Três problemas, um só parceiro',
+    // Audit B
+    'Something went wrong on our side': 'Algo deu errado do nosso lado',
+    'An unexpected error stopped this page. Reloading usually fixes it.': 'Um erro inesperado interrompeu esta página. Recarregar costuma resolver.',
+    'Reload': 'Recarregar', 'Skip to content': 'Pular para o conteúdo',
   }
 } as const;
 export type TranslationKey = keyof typeof translations.pt;

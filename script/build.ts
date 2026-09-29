@@ -1,6 +1,6 @@
 import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
-import { rm, readFile } from "fs/promises";
+import { rm, readFile, writeFile } from "fs/promises";
 import { spawn } from "child_process";
 
 // server deps to bundle to reduce openat(2) syscalls
@@ -57,11 +57,27 @@ async function injectSEO() {
   });
 }
 
+// Give every build its own service-worker cache names (the placeholder lives in
+// client/public/sw.js) so a deploy invalidates the previous build's caches.
+async function stampServiceWorker() {
+  const swPath = "dist/public/sw.js";
+  const hash = (process.env.GITHUB_SHA || process.env.SOURCE_COMMIT || Date.now().toString(36)).slice(0, 12);
+  try {
+    const source = await readFile(swPath, "utf-8");
+    await writeFile(swPath, source.replaceAll("__BUILD_HASH__", hash));
+    console.log(`service worker stamped with build ${hash}`);
+  } catch (err) {
+    console.warn("⚠️  Could not stamp service worker:", (err as Error).message);
+  }
+}
+
 async function buildAll() {
   await rm("dist", { recursive: true, force: true });
 
   console.log("building client...");
   await viteBuild();
+
+  await stampServiceWorker();
 
   // Inject SEO data after client build
   await injectSEO();

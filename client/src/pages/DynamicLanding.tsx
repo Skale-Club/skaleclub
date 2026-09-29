@@ -8,6 +8,8 @@ import { usePageLanguage } from "@/context/LanguageContext";
 import { splitLanguagePath, withLanguage } from "@shared/languagePath";
 import { getLandingSeo, landingPathForSlug } from "@shared/landingSeo";
 
+import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
+
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 interface PageResponse {
@@ -228,7 +230,11 @@ export default function DynamicPage() {
           return null;
         }
         const Component = entry.component;
-        return <Component key={idx} props={parsed.data} />;
+        return (
+          <SectionErrorBoundary key={idx} section={section.type}>
+            <Component props={parsed.data} />
+          </SectionErrorBoundary>
+        );
       })}
     </>
   );

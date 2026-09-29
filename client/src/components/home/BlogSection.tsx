@@ -86,6 +86,10 @@ export function BlogSection({ content }: BlogSectionProps) {
                   <img
                     src={post.featureImageUrl}
                     alt={post.title}
+                    width={640}
+                    height={400}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
                     data-testid={`img-blog-home-${post.id}`}
                   />
