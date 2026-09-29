@@ -7,8 +7,8 @@ import { injectSeo } from "./seo/inject.js";
 import { resolveRoute } from "./seo/routes.js";
 import { getSeoSettings } from "./seo/data.js";
 
-// Kept for api/index.ts (the Vercel rollback entry): no database, so no 404s and
-// no settings-driven JSON-LD, but the same per-page head for known routes.
+// Database-free variant: no 404s and no settings-driven JSON-LD, but the same
+// per-page head for known routes.
 export function injectLandingSeo(html: string, pathname: string): string {
   return injectSeo(html, pathname, {
     settings: null,
@@ -56,6 +56,9 @@ export function serveStatic(app: Express) {
   // public/nfc-guide/ images vs the /nfc-guide page) must not 301 the page to a
   // trailing-slash URL. index: false: "/" goes through the SPA handler below so
   // the homepage gets its per-page head like every other route.
+  // The raw shell has no per-page head: send crawlers to the real homepage.
+  app.get("/index.html", (_req: Request, res: Response) => res.redirect(301, "/"));
+
   app.use(
     express.static(distPath, {
       redirect: false,

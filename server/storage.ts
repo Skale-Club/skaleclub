@@ -1,5 +1,6 @@
 import { db } from "./db.js";
 import { recordRevision } from "./storage/revisions.js";
+import { invalidateSeoCache } from "./seo/caches.js";
 import { decryptToken, encryptToken, isEncryptedToken } from "./lib/token-crypto.js";
 import { scoreItem } from "./blog/rss-selector.js";
 import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead } from "#shared/form.js";
@@ -464,6 +465,7 @@ export class DatabaseStorage implements IStorage {
     const existing = await this.getCompanySettings();
     await recordRevision("company_settings", existing.id, existing, "admin");
     const [updated] = await db.update(companySettings).set(settings).where(eq(companySettings.id, existing.id)).returning();
+    invalidateSeoCache();
     return updated;
   }
 
@@ -1260,6 +1262,7 @@ export class DatabaseStorage implements IStorage {
 
   async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
     const [newPost] = await db.insert(blogPosts).values(post).returning();
+    invalidateSeoCache();
     return newPost;
   }
 
@@ -1268,11 +1271,13 @@ export class DatabaseStorage implements IStorage {
       .set({ ...post, updatedAt: new Date() })
       .where(eq(blogPosts.id, id))
       .returning();
+    invalidateSeoCache();
     return updated;
   }
 
   async deleteBlogPost(id: number): Promise<void> {
     await db.delete(blogPosts).where(eq(blogPosts.id, id));
+    invalidateSeoCache();
   }
 
   async countPublishedBlogPosts(): Promise<number> {
@@ -2425,6 +2430,7 @@ export class DatabaseStorage implements IStorage {
 
   async createPage(data: InsertPageInput): Promise<Page> {
     const [row] = await db.insert(pages).values(data).returning();
+    invalidateSeoCache();
     return row;
   }
 
@@ -2435,11 +2441,13 @@ export class DatabaseStorage implements IStorage {
       .set({ ...data, updatedAt: new Date() })
       .where(eq(pages.id, id))
       .returning();
+    invalidateSeoCache();
     return row;
   }
 
   async deletePage(id: string): Promise<void> {
     await db.delete(pages).where(eq(pages.id, id));
+    invalidateSeoCache();
   }
 
   // Brand Guidelines (Phase 17 implements full upsert; Phase 15 adds typed stubs)

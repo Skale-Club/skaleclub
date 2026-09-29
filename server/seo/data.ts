@@ -1,6 +1,5 @@
 import { storage } from "../storage.js";
 import type { CompanySettings, Page } from "#shared/schema.js";
-import { TtlCache } from "./cache.js";
 
 // Cached (5 min) reads the SEO layer needs on every page request.
 
@@ -19,9 +18,9 @@ export interface BlogRow {
   featureImageUrl: string | null;
 }
 
-const settingsCache = new TtlCache<CompanySettings>();
-const landingCache = new TtlCache<LandingRow | null>();
-const blogCache = new TtlCache<BlogRow | null>();
+import { blogCache, landingCache, settingsCache } from "./caches.js";
+
+export { invalidateSeoCache } from "./caches.js";
 
 export function getSeoSettings(): Promise<CompanySettings> {
   return settingsCache.get("settings", () => storage.getCompanySettings());

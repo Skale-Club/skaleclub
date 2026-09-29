@@ -16,6 +16,8 @@ import { legacyLanguagePath } from "#shared/languagePath.js";
 const PATH_REDIRECTS: Record<string, string> = {
   "/skale-hub/grupo": "/grupo",
   "/skale-hub/group": "/grupo",
+  "/br/skale-hub/grupo": "/grupo",
+  "/br/skale-hub/group": "/grupo",
   // The old route name described only one part of the content. The replacement
   // is a complete product guide covering models, pricing, NFC and production.
   "/nfc-pricing": "/nfc-guide",

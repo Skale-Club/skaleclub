@@ -95,6 +95,9 @@ export function injectSeo(html: string, pathname: string, ctx: InjectContext): s
     const enPath = corePathForKey(coreKey, pageSlugs);
     canonicalPath = language === "pt" && !NO_LANGUAGE_PAIR.has(coreKey) ? withLanguage(enPath, "pt") : enPath;
     if (!NO_LANGUAGE_PAIR.has(coreKey)) alternates = { en: enPath, pt: withLanguage(enPath, "pt") };
+  } else if (basePath.startsWith("/f/")) {
+    // Public forms are single-language: `/br/f/x` canonicalises to `/f/x`.
+    canonicalPath = basePath;
   } else if (blog) {
     // Post bodies are single-language: `/br/blog/x` reuses the English post, so
     // it canonicalises to the English URL and advertises no language pair.

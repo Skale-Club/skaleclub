@@ -63,9 +63,14 @@ export function collectSitemapUrls(
   }
   pair("/nfc-guide", CORE_PAGES_LASTMOD);
 
-  const active = new Map(input.pages.filter((page) => page.isActive).map((page) => [page.slug, page]));
+  // Only active, indexable rows count, both as entries and as pair partners: an
+  // hreflang pair pointing at a noindex or inactive page would be invalid.
+  const active = new Map(
+    input.pages
+      .filter((page) => page.isActive && isIndexableLandingSlug(page.slug, pageSlugs))
+      .map((page) => [page.slug, page]),
+  );
   for (const page of Array.from(active.values())) {
-    if (!isIndexableLandingSlug(page.slug, pageSlugs)) continue;
     const lastmod = day(page.updatedAt, CORE_PAGES_LASTMOD);
     if (page.slug.endsWith("-br")) {
       const base = active.get(page.slug.slice(0, -3));

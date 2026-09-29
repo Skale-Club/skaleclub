@@ -6,6 +6,8 @@
 // resolver fails open, so a database blip never turns valid pages into 404s).
 
 export const SEO_CACHE_TTL_MS = 5 * 60 * 1000;
+// A "not found" is cached briefly: a page published a moment ago must appear fast.
+export const SEO_NEGATIVE_TTL_MS = 30 * 1000;
 const MAX_ENTRIES = 1000;
 
 type Entry<T> = { expires: number; value: Promise<T> };
@@ -13,7 +15,10 @@ type Entry<T> = { expires: number; value: Promise<T> };
 export class TtlCache<T> {
   private entries = new Map<string, Entry<T>>();
 
-  constructor(private readonly ttlMs: number = SEO_CACHE_TTL_MS) {}
+  constructor(
+    private readonly ttlMs: number = SEO_CACHE_TTL_MS,
+    private readonly negativeTtlMs: number = SEO_NEGATIVE_TTL_MS,
+  ) {}
 
   get(key: string, loader: () => Promise<T>): Promise<T> {
     const now = Date.now();
@@ -27,6 +32,10 @@ export class TtlCache<T> {
       const oldest = this.entries.keys().next().value;
       if (oldest !== undefined) this.entries.delete(oldest);
     }
+    const entry = this.entries.get(key);
+    value.then((resolved) => {
+      if (resolved == null && entry) entry.expires = Date.now() + this.negativeTtlMs;
+    }, () => undefined);
     value.catch(() => {
       if (this.entries.get(key)?.value === value) this.entries.delete(key);
     });
