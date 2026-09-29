@@ -232,8 +232,8 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
           backgroundSize: "40px 40px",
         }}
       >
-        <div className="mx-auto max-w-[1240px] px-5 pb-16 pt-14 sm:px-8 sm:pb-24 sm:pt-20 lg:px-12">
-          <div className="grid items-end gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="mx-auto max-w-[1240px] page-top px-5 pb-16 sm:px-8 sm:pb-24 lg:px-12">
+          <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-[#69a8ff]/25 bg-[#11223a]/80 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[#8fc0ff] shadow-[0_10px_35px_rgba(0,0,0,.18)] backdrop-blur">
                 <Radio className="h-4 w-4" />
@@ -274,7 +274,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
         </div>
       </div>
 
-      <div className="sticky top-0 z-20 border-b border-white/10 bg-[#07111f]/95 shadow-[0_12px_35px_rgba(0,0,0,.22)] backdrop-blur-md">
+      <div className="sticky top-[var(--nav-offset)] z-20 border-b border-white/10 bg-[#07111f]/95 shadow-[0_12px_35px_rgba(0,0,0,.22)] backdrop-blur-md">
         <nav className="mx-auto flex max-w-[1240px] gap-2 overflow-x-auto px-5 py-3 sm:px-8 lg:px-12" aria-label={t("Guide sections")}>
           {navigation.map(([label, id]) => (
             <a
@@ -288,7 +288,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
         </nav>
       </div>
 
-        <section id="models" className="scroll-mt-20 bg-[#f5f3ed] py-20 text-[#172238] sm:py-28">
+        <section id="models" className="scroll-mt-[calc(var(--nav-offset)+4.5rem)] bg-[#f5f3ed] py-20 text-[#172238] sm:py-28">
           <div className="mx-auto max-w-[1240px] px-5 sm:px-8 lg:px-12">
             <SectionHeading
               eyebrow="Choose the construction"
@@ -336,7 +336,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
           </div>
         </section>
 
-        <section id="price" className="scroll-mt-20 py-20 sm:py-28">
+        <section id="price" className="scroll-mt-[calc(var(--nav-offset)+4.5rem)] py-20 sm:py-28">
           <div className="mx-auto max-w-[1240px] px-5 sm:px-8 lg:px-12">
             <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_420px] lg:gap-20">
               <div>
@@ -395,7 +395,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
           </div>
         </section>
 
-        <section id="nfc" className="scroll-mt-20 bg-white py-20 text-[#172238] sm:py-28">
+        <section id="nfc" className="scroll-mt-[calc(var(--nav-offset)+4.5rem)] bg-white py-20 text-[#172238] sm:py-28">
           <div className="mx-auto max-w-[1240px] px-5 sm:px-8 lg:px-12">
             <SectionHeading
               eyebrow="The technology inside"
@@ -434,7 +434,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
           </div>
         </section>
 
-        <section id="artwork" className="scroll-mt-20 py-20 sm:py-28">
+        <section id="artwork" className="scroll-mt-[calc(var(--nav-offset)+4.5rem)] py-20 sm:py-28">
           <div className="mx-auto max-w-[1240px] px-5 sm:px-8 lg:px-12">
             <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
               <div>
@@ -473,7 +473,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
           </div>
         </section>
 
-        <section id="process" className="scroll-mt-20 bg-[#eef3f9] py-20 text-[#172238] sm:py-28">
+        <section id="process" className="scroll-mt-[calc(var(--nav-offset)+4.5rem)] bg-[#eef3f9] py-20 text-[#172238] sm:py-28">
           <div className="mx-auto max-w-[1240px] px-5 sm:px-8 lg:px-12">
             <SectionHeading
               eyebrow="What happens after the form"
@@ -505,7 +505,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
           </div>
         </section>
 
-        <section id="faq" className="scroll-mt-20 py-20 sm:py-28">
+        <section id="faq" className="scroll-mt-[calc(var(--nav-offset)+4.5rem)] py-20 sm:py-28">
           <div className="mx-auto max-w-[1240px] px-5 sm:px-8 lg:px-12">
             <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_280px] lg:gap-16">
               <SectionHeading
