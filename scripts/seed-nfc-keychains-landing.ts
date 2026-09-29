@@ -1,7 +1,9 @@
 // Seed the nfc-keychain-leads form + the NFC keychain landing / pricing pages.
 // Idempotent: re-running updates all rows in place (same row ids preserved).
+// DRY-RUN by default: prints a diff. Add --apply to write (old rows are
+// snapshotted into content_revisions first).
 //
-// Run: npx tsx --env-file=.env scripts/seed-nfc-keychains-landing.ts
+// Run: npx tsx --env-file=.env scripts/seed-nfc-keychains-landing.ts [--apply]
 //
 // Creates / updates (5 rows):
 //   1. forms   WHERE slug = 'nfc-keychain-leads'
@@ -40,7 +42,9 @@
 import "dotenv/config";
 import { pathToFileURL } from "node:url";
 import { eq } from "drizzle-orm";
-import { pool, db } from "../server/db.js";
+import { db } from "../server/db.js";
+import { recordRevision } from "../server/storage/revisions.js";
+import { seedForm, seedPage, withSeedGuard } from "./lib/seed-utils.js";
 import { pages, type PageSection } from "../shared/schema/pages.js";
 import { forms } from "../shared/schema/forms.js";
 import type { FormConfig, FormQuestion } from "../shared/schema/forms.js";
@@ -536,129 +540,62 @@ const PRICING_PT: LandingSpec = { slug: "nfc-pricing-br",   name: "NFC Pricing (
 
 // ── Seed runner ───────────────────────────────────────────────────────────
 
-async function upsertForm() {
-  console.log(`Seeding form: slug='${FORM_SLUG}'`);
-  const existing = await db.select().from(forms).where(eq(forms.slug, FORM_SLUG));
-
-  if (existing.length > 0) {
-    const [row] = await db
-      .update(forms)
-      .set({
-        name:        FORM_NAME,
-        description: FORM_DESCRIPTION,
-        config:      NFC_KEYCHAIN_LEADS_CONFIG,
-        isActive:    true,
-        isDefault:   false,
-        updatedAt:   new Date(),
-      })
-      .where(eq(forms.slug, FORM_SLUG))
-      .returning();
-    console.log(`  Updated existing form (id=${row.id}).`);
-    return row;
-  } else {
-    const [row] = await db
-      .insert(forms)
-      .values({
-        slug:        FORM_SLUG,
-        name:        FORM_NAME,
-        description: FORM_DESCRIPTION,
-        config:      NFC_KEYCHAIN_LEADS_CONFIG,
-        isActive:    true,
-        isDefault:   false,
-      })
-      .returning();
-    console.log(`  Inserted new form (id=${row.id}).`);
-    return row;
-  }
-}
-
-async function upsertLanding(spec: LandingSpec) {
-  console.log(`Seeding landing: slug='${spec.slug}' (${spec.language})`);
-  const existing = await db
-    .select()
-    .from(pages)
-    .where(eq(pages.slug, spec.slug));
-
-  if (existing.length > 0) {
-    const [row] = await db
-      .update(pages)
-      .set({
-        name:          spec.name,
-        sections:      spec.sections,
-        isActive:      true,
-        language:      spec.language,
-        alternateSlug: spec.alternateSlug,
-        updatedAt:     new Date(),
-      })
-      .where(eq(pages.slug, spec.slug))
-      .returning();
-    console.log(`  Updated existing landing (id=${row.id}).`);
-    return row;
-  } else {
-    const [row] = await db
-      .insert(pages)
-      .values({
-        slug:          spec.slug,
-        name:          spec.name,
-        sections:      spec.sections,
-        isActive:      true,
-        language:      spec.language,
-        alternateSlug: spec.alternateSlug,
-      })
-      .returning();
-    console.log(`  Inserted new landing (id=${row.id}).`);
-    return row;
-  }
-}
-
-async function deactivatePricingPages() {
+async function deactivatePricingPages(apply: boolean) {
   for (const spec of [PRICING_EN, PRICING_PT]) {
-    const rows = await db
-      .update(pages)
-      .set({ isActive: false, updatedAt: new Date() })
-      .where(eq(pages.slug, spec.slug))
-      .returning({ id: pages.id });
-    console.log(`  Pricing page '${spec.slug}': ${rows.length ? "deactivated" : "not found"}.`);
+    const [row] = await db.select().from(pages).where(eq(pages.slug, spec.slug));
+    if (!row) {
+      console.log(`  Pricing page '${spec.slug}': not found.`);
+      continue;
+    }
+    if (!row.isActive) {
+      console.log(`  Pricing page '${spec.slug}': already inactive.`);
+      continue;
+    }
+    console.log(`  Pricing page '${spec.slug}': ${apply ? "deactivating" : "would deactivate"}.`);
+    if (!apply) continue;
+    await recordRevision("page", row.id, row, "seed", "seed script deactivation");
+    await db.update(pages).set({ isActive: false, updatedAt: new Date() }).where(eq(pages.slug, spec.slug));
   }
 }
 
 // One-time cleanup for the 260906-qwl slug rename (chaveiros-nfc -> nfc-keychains-br,
-// precos-chaveiros -> nfc-pricing-br). upsertLanding() keys on `slug`, so the renamed
-// specs INSERT new rows and orphan the originals. Delete exactly these two slugs and
-// nothing else. Idempotent: once they are gone this deletes zero rows and logs a no-op.
+// precos-chaveiros -> nfc-pricing-br). Delete exactly these two slugs and
+// nothing else. Idempotent: once they are gone this is a no-op. The row is
+// snapshotted into content_revisions before deletion.
 const RENAMED_LEGACY_SLUGS = ["chaveiros-nfc", "precos-chaveiros"] as const;
 
-async function deleteRenamedLegacyPages() {
+async function deleteRenamedLegacyPages(apply: boolean) {
   for (const slug of RENAMED_LEGACY_SLUGS) {
-    const deleted = await db
-      .delete(pages)
-      .where(eq(pages.slug, slug))
-      .returning({ id: pages.id, slug: pages.slug });
-    if (deleted.length > 0) {
-      console.log(`  Deleted orphaned legacy page slug='${slug}' (id=${deleted[0].id}).`);
-    } else {
-      console.log(`  No page with slug='${slug}' — nothing to delete.`);
+    const [row] = await db.select().from(pages).where(eq(pages.slug, slug));
+    if (!row) {
+      console.log(`  No page with slug='${slug}' - nothing to delete.`);
+      continue;
     }
+    console.log(`  ${apply ? "Deleting" : "Would delete"} orphaned legacy page slug='${slug}' (id=${row.id}).`);
+    if (!apply) continue;
+    await recordRevision("page", row.id, row, "seed", "seed script legacy delete");
+    await db.delete(pages).where(eq(pages.slug, slug));
   }
 }
 
-async function main() {
-  await upsertForm();
+async function main(apply: boolean) {
+  await seedForm(
+    { slug: FORM_SLUG, name: FORM_NAME, description: FORM_DESCRIPTION, config: NFC_KEYCHAIN_LEADS_CONFIG, isActive: true, isDefault: false },
+    apply,
+  );
   // Both leadFormCta sections point at ORDER_FORM_SLUG (a form this script does
   // NOT seed), so fail loudly here instead of letting the pages go live with a
-  // dangling formSlug — LeadFormModal would silently fall back to the default
-  // form and leads would 404 against the wrong form.
+  // dangling formSlug.
   const [orderForm] = await db.select({ id: forms.id }).from(forms).where(eq(forms.slug, ORDER_FORM_SLUG));
-  if (!orderForm) throw new Error(`Form '${ORDER_FORM_SLUG}' is missing. Run scripts/seed-nfc-order-form.ts first.`);
-  await upsertLanding(LANDING_EN);
-  await upsertLanding(LANDING_PT);
+  if (!orderForm) throw new Error(`Form '${ORDER_FORM_SLUG}' is missing. Run scripts/seed-nfc-order-form.ts --apply first.`);
+  for (const spec of [LANDING_EN, LANDING_PT]) {
+    await seedPage({ slug: spec.slug, name: spec.name, sections: spec.sections, language: spec.language, alternateSlug: spec.alternateSlug }, apply);
+  }
   // The pricing explainer was folded into the landing (2026-09-22). Its rows
   // are switched off, not deleted; server/canonicalHost.ts 301s the URLs.
-  await deactivatePricingPages();
+  await deactivatePricingPages(apply);
   console.log("Cleaning up slugs renamed by quick 260906-qwl:");
-  await deleteRenamedLegacyPages();
-  console.log("Done.");
-  await pool.end();
+  await deleteRenamedLegacyPages(apply);
 }
 
 // Only seed when run directly: importing LANDING_SECTIONS (a preview script,
@@ -666,13 +603,5 @@ async function main() {
 const runDirectly = process.argv[1] ? import.meta.url === pathToFileURL(process.argv[1]).href : false;
 
 if (runDirectly) {
-  main().catch(async (err) => {
-    console.error("Seed failed:", err);
-    try {
-      await pool.end();
-    } catch {
-      /* noop */
-    }
-    process.exit(1);
-  });
+  void withSeedGuard(main);
 }

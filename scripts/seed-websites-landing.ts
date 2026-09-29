@@ -1,7 +1,9 @@
 // Seed the website-leads form + the /websites managed landing.
 // Idempotent: re-running updates both rows in place (same row ids preserved).
+// DRY-RUN by default: prints a diff. Add --apply to write (old rows are
+// snapshotted into content_revisions first).
 //
-// Run: npx tsx --env-file=.env scripts/seed-websites-landing.ts
+// Run: npx tsx --env-file=.env scripts/seed-websites-landing.ts [--apply]
 //
 // Creates / updates:
 //   1. forms          WHERE slug = 'website-leads'
@@ -13,8 +15,7 @@
 // column drives EN vs PT. After running, /websites renders in English and
 // /websites-br in Portuguese.
 import "dotenv/config";
-import { eq } from "drizzle-orm";
-import { pool, db } from "../server/db.js";
+import { seedForm, seedPage, withSeedGuard } from "./lib/seed-utils.js";
 import { pages, type PageSection } from "../shared/schema/pages.js";
 import { forms } from "../shared/schema/forms.js";
 import type { FormConfig, FormQuestion } from "../shared/schema/forms.js";
@@ -151,97 +152,14 @@ const LANDING_SECTIONS: PageSection[] = [
 
 // ── Seed runner ───────────────────────────────────────────────────────────
 
-async function upsertForm() {
-  console.log(`Seeding form: slug='${FORM_SLUG}'`);
-  const existing = await db.select().from(forms).where(eq(forms.slug, FORM_SLUG));
-
-  if (existing.length > 0) {
-    const [row] = await db
-      .update(forms)
-      .set({
-        name:        FORM_NAME,
-        description: FORM_DESCRIPTION,
-        config:      WEBSITE_LEADS_CONFIG,
-        isActive:    true,
-        isDefault:   false,
-        updatedAt:   new Date(),
-      })
-      .where(eq(forms.slug, FORM_SLUG))
-      .returning();
-    console.log(`  Updated existing form (id=${row.id}).`);
-    return row;
-  } else {
-    const [row] = await db
-      .insert(forms)
-      .values({
-        slug:        FORM_SLUG,
-        name:        FORM_NAME,
-        description: FORM_DESCRIPTION,
-        config:      WEBSITE_LEADS_CONFIG,
-        isActive:    true,
-        isDefault:   false,
-      })
-      .returning();
-    console.log(`  Inserted new form (id=${row.id}).`);
-    return row;
+async function main(apply: boolean) {
+  await seedForm(
+    { slug: FORM_SLUG, name: FORM_NAME, description: FORM_DESCRIPTION, config: WEBSITE_LEADS_CONFIG, isActive: true, isDefault: false },
+    apply,
+  );
+  for (const spec of [LANDING_EN, LANDING_PT]) {
+    await seedPage({ ...spec, sections: LANDING_SECTIONS }, apply);
   }
 }
 
-type LandingSpec = { slug: string; name: string; language: "en" | "pt"; alternateSlug: string };
-
-async function upsertLanding(spec: LandingSpec) {
-  console.log(`Seeding landing: slug='${spec.slug}' (${spec.language})`);
-  const existing = await db
-    .select()
-    .from(pages)
-    .where(eq(pages.slug, spec.slug));
-
-  if (existing.length > 0) {
-    const [row] = await db
-      .update(pages)
-      .set({
-        name:          spec.name,
-        sections:      LANDING_SECTIONS,
-        isActive:      true,
-        language:      spec.language,
-        alternateSlug: spec.alternateSlug,
-        updatedAt:     new Date(),
-      })
-      .where(eq(pages.slug, spec.slug))
-      .returning();
-    console.log(`  Updated existing landing (id=${row.id}).`);
-    return row;
-  } else {
-    const [row] = await db
-      .insert(pages)
-      .values({
-        slug:          spec.slug,
-        name:          spec.name,
-        sections:      LANDING_SECTIONS,
-        isActive:      true,
-        language:      spec.language,
-        alternateSlug: spec.alternateSlug,
-      })
-      .returning();
-    console.log(`  Inserted new landing (id=${row.id}).`);
-    return row;
-  }
-}
-
-async function main() {
-  await upsertForm();
-  await upsertLanding(LANDING_EN);
-  await upsertLanding(LANDING_PT);
-  console.log("Done.");
-  await pool.end();
-}
-
-main().catch(async (err) => {
-  console.error("Seed failed:", err);
-  try {
-    await pool.end();
-  } catch {
-    /* noop */
-  }
-  process.exit(1);
-});
+void withSeedGuard(main);

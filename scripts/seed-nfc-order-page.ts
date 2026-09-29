@@ -5,7 +5,8 @@
 // Seed the former NFC keychain ORDER pages (EN + PT).
 // Idempotent: re-running updates both rows in place (same ids preserved).
 //
-// Run: npx tsx --env-file=.env scripts/seed-nfc-order-page.ts
+// DRY-RUN by default: prints a diff. Add --apply to write.
+// Run: npx tsx --env-file=.env scripts/seed-nfc-order-page.ts [--apply]
 // Then: npx tsx --env-file=.env scripts/seed-nfc-order-translations.ts
 //
 // Creates / updates (2 rows):
@@ -26,9 +27,8 @@
 // preview computed from shared/nfc-pricing.ts) and is confirmed on WhatsApp.
 import "dotenv/config";
 import { pathToFileURL } from "node:url";
-import { eq } from "drizzle-orm";
-import { pool, db } from "../server/db.js";
-import { pages, type PageSection } from "../shared/schema/pages.js";
+import type { PageSection } from "../shared/schema/pages.js";
+import { seedForm, seedPage, withSeedGuard } from "./lib/seed-utils.js";
 import { NFC_WHATSAPP_CTA } from "../shared/nfc-whatsapp.js";
 
 const ORDER_FORM_SLUG = "nfc-keychain-order";
@@ -173,42 +173,9 @@ const SPECS: PageSpec[] = [
   { slug: "nfc-order-br", name: "NFC Order (PT)", language: "pt", alternateSlug: "nfc-order" },
 ];
 
-async function upsertPage(spec: PageSpec) {
-  const existing = await db.select().from(pages).where(eq(pages.slug, spec.slug));
-
-  if (existing.length > 0) {
-    const [row] = await db
-      .update(pages)
-      .set({
-        name: spec.name,
-        sections: SECTIONS,
-        language: spec.language,
-        alternateSlug: spec.alternateSlug,
-        isActive: true,
-      })
-      .where(eq(pages.slug, spec.slug))
-      .returning();
-    console.log(`  updated page '${row.slug}' (${SECTIONS.length} sections)`);
-    return;
-  }
-
-  const [row] = await db
-    .insert(pages)
-    .values({
-      slug: spec.slug,
-      name: spec.name,
-      sections: SECTIONS,
-      language: spec.language,
-      alternateSlug: spec.alternateSlug,
-      isActive: true,
-    })
-    .returning();
-  console.log(`  created page '${row.slug}' (${SECTIONS.length} sections)`);
-}
-
-async function seed() {
+async function seed(apply: boolean) {
   console.log("Seeding NFC order pages...");
-  for (const spec of SPECS) await upsertPage(spec);
+  for (const spec of SPECS) await seedPage({ ...spec, sections: SECTIONS }, apply);
 }
 
 // Only seed when run directly. Importing this file (to check SECTIONS against
@@ -216,11 +183,5 @@ async function seed() {
 const runDirectly = process.argv[1] ? import.meta.url === pathToFileURL(process.argv[1]).href : false;
 
 if (runDirectly) {
-  seed()
-    .then(() => console.log("\nDone. Live at /nfc-order and /br/nfc-order."))
-    .catch((err) => {
-      console.error("Seed failed:", err);
-      process.exitCode = 1;
-    })
-    .finally(() => pool.end());
+  void withSeedGuard(seed);
 }
