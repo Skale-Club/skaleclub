@@ -48,7 +48,7 @@ export function PillLink({ href, variant, size, tone, className, children, ...re
     );
   }
   return (
-    <a href={href} className={classes} {...rest}>
+    <a href={href} className={classes} {...rest} rel={rest.rel ?? (rest.target === "_blank" ? "noopener noreferrer" : undefined)}>
       {children}
     </a>
   );

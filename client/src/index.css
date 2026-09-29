@@ -611,11 +611,11 @@ html.admin-theme.dark {
 
   /* Editorial kit (client/src/components/editorial). Flat grid backgrounds and
      layout helpers. Never use a radial glow as a section background. */
-  .bg-grid-dark {
+  .pattern-grid-dark {
     background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
     background-size: 40px 40px;
   }
-  .bg-grid-light {
+  .pattern-grid-light {
     background-image: linear-gradient(rgba(23,34,56,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(23,34,56,.045) 1px, transparent 1px);
     background-size: 40px 40px;
   }

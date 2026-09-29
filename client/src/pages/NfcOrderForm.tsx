@@ -35,7 +35,7 @@ export default function NfcOrderForm() {
   }, [t]);
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-navy-900 bg-grid-dark text-fog-200">
+    <main className="relative min-h-screen overflow-hidden bg-navy-900 pattern-grid-dark text-fog-200">
       <div className="container-editorial relative flex min-h-screen flex-col py-5 sm:py-8">
         <header className="flex items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-3">
@@ -50,7 +50,7 @@ export default function NfcOrderForm() {
           </Link>
           <Link
             href="/nfc-guide"
-            className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-navy-800/85 px-4 py-2 text-sm font-semibold text-fog-300 transition hover:border-cta-soft/60 hover:bg-navy-600 hover:text-white"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-navy-800/85 px-4 py-2 text-sm font-semibold text-fog-300 transition hover:border-cta-soft/60 hover:bg-navy-600 hover:text-white"
           >
             <ArrowLeft className="h-4 w-4" />
             <span className="hidden sm:inline">{t("Read the keychain guide")}</span>

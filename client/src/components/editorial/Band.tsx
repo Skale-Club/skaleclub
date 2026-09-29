@@ -12,13 +12,14 @@ const TONE_CLASSES: Record<BandTone, string> = {
   cta: "bg-navy-850 text-white border-t border-cta-soft/20 py-14 sm:py-16",
 };
 
+// Must not start with "bg-": tailwind-merge (cn) would treat it as a background color and strip the tone bg.
 const PATTERN_CLASSES: Record<BandTone, string> = {
-  dark: "bg-grid-dark",
-  hero: "bg-grid-dark",
-  cream: "bg-grid-light",
-  ice: "bg-grid-light",
-  white: "bg-grid-light",
-  cta: "bg-grid-dark",
+  dark: "pattern-grid-dark",
+  hero: "pattern-grid-dark",
+  cream: "pattern-grid-light",
+  ice: "pattern-grid-light",
+  white: "pattern-grid-light",
+  cta: "pattern-grid-dark",
 };
 
 export interface BandProps {

@@ -19,6 +19,8 @@ export interface FigureProps {
   /** Small icon shown before the caption. */
   icon?: LucideIcon;
   className?: string;
+  /** Extra figcaption classes. */
+  captionClassName?: string;
   /** Extra image classes, e.g. `sm:aspect-[2/1]` to change ratio by breakpoint. */
   imgClassName?: string;
 }
@@ -27,7 +29,7 @@ export interface FigureProps {
  * Sharp-cornered framed image with an optional caption strip.
  * Alt text and caption are translated through `t()`.
  */
-export function Figure({ src, alt, caption, tone, aspect = "16/9", eager, icon: Icon, className, imgClassName }: FigureProps) {
+export function Figure({ src, alt, caption, tone, aspect = "16/9", eager, icon: Icon, className, captionClassName, imgClassName }: FigureProps) {
   const { t } = useTranslation();
   const dark = tone === "dark";
   return (
@@ -53,6 +55,7 @@ export function Figure({ src, alt, caption, tone, aspect = "16/9", eager, icon: 
             "border-t px-5 py-3 text-xs leading-5",
             dark ? "border-white/10 text-fog-400" : "border-ink-700/10 text-ink-500",
             Icon && "flex items-start gap-3",
+            captionClassName,
           )}
         >
           {Icon && <Icon className="mt-0.5 h-4 w-4 shrink-0 text-cta-soft" />}

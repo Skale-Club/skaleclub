@@ -235,7 +235,8 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
           caption="Illustrative concepts. Your final design is reviewed and approved before production."
           icon={Sparkles}
           imgClassName="sm:aspect-[2/1]"
-          className="mt-12 sm:mt-16"
+          className="mt-12 border-transparent sm:mt-16"
+          captionClassName="py-4 sm:px-6"
         />
       </Band>
 
@@ -247,7 +248,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
               href={`#${id}`}
               variant="ghost"
               size="sm"
-              className="shrink-0 border-white/12 bg-navy-800/85 text-fog-300 hover:border-cta-soft/60 hover:bg-navy-600 hover:text-white"
+              className="shrink-0 border-white/10 bg-navy-800/85 text-fog-300 hover:border-cta-soft/60 hover:bg-navy-600 hover:text-white"
             >
               {t(label)}
             </PillLink>
@@ -331,7 +332,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
           </div>
 
           <aside>
-            <EditorialCard tone="dark" className="bg-navy-700 p-7 text-white shadow-[0_26px_70px_rgba(0,0,0,.28)] sm:p-9">
+            <EditorialCard tone="dark" className="h-full border-transparent bg-navy-700 p-7 text-white shadow-[0_26px_70px_rgba(0,0,0,.28)] sm:p-9">
               <Eyebrow className="tracking-[0.22em] text-cta-softer">{t("Flat model reference")}</Eyebrow>
               <h3 className="mt-4 font-display text-3xl font-semibold">{t("Published unit pricing")}</h3>
               <p className="mt-3 text-sm leading-6 text-fog-300">

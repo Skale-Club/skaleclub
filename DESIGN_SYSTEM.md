@@ -109,7 +109,7 @@ Skale Club is a professional marketing service platform that emphasizes trust, q
 ## Typography
 
 ### Fonts
-- **Display/Headings**: `Outfit` (sans-serif) - Modern look with tight tracking
+- **Display/Headings**: `Inter` (sans-serif) - Modern look with tight tracking
 - **Body**: `Inter` (sans-serif) - Maximum readability for UI and body text
 
 ### Typographic Scale
@@ -569,7 +569,7 @@ Small `rounded-full` pills with colored backgrounds:
 - Use Action Blue (`#5173D6`) for all main CTAs
 - Apply `rounded-full` to main CTA buttons
 - Maintain generous spacing (according to defined primitives)
-- Follow typographic hierarchy (Outfit for headings, Inter for body)
+- Follow typographic hierarchy (Inter for headings and body)
 
 ### ❌ Avoid
 - Hardcoded colors (`bg-white`, `bg-slate-100`, etc.) in admin
@@ -595,7 +595,7 @@ Small `rounded-full` pills with colored backgrounds:
 - [ ] Uses Action Blue (`#5173D6`) for main CTAs
 - [ ] Main buttons with `rounded-full`
 - [ ] Optimized and high-quality images
-- [ ] Follows typographic hierarchy (Outfit/Inter)
+- [ ] Follows typographic hierarchy (Inter)
 - [ ] Generous spacing according to guidelines
 - [ ] Responsive and tested on multiple devices
 - [ ] Smooth animations and transitions
@@ -613,7 +613,7 @@ Small `rounded-full` pills with colored backgrounds:
 - **Destructive**: `#DC2626` (light) / `#EF4444` (dark)
 
 ### Fonts
-- **Headings**: Outfit
+- **Headings**: Inter
 - **Body**: Inter
 
 ### Spacing
