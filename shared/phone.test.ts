@@ -25,6 +25,17 @@ test("junk yields empty / placeholder hrefs", () => {
   assert.equal(whatsappHref(""), "#");
 });
 
+test("ambiguous numbers without country code are rejected", () => {
+  assert.equal(toE164("(11) 91234-5678"), "");
+  assert.equal(telHref("(11) 91234-5678"), "#");
+});
+
+test("extensions are stripped", () => {
+  assert.equal(toE164("(508) 500-1095 ext 2"), "+15085001095");
+  assert.equal(toE164("508-500-1095 x12"), "+15085001095");
+  assert.equal(toE164("ext 2"), "");
+});
+
 test("hrefs", () => {
   assert.equal(telHref("(508) 500-1095"), "tel:+15085001095");
   assert.equal(whatsappHref("(508) 500-1095"), "https://wa.me/15085001095");

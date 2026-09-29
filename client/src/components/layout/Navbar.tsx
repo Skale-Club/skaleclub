@@ -215,7 +215,7 @@ export function Navbar() {
               <a
                 href={telHref(displayPhone)}
                 onClick={() => {
-                  trackEvent("click_call", { location: "navbar" });
+                  trackEvent("click_call", { location: "navbar_mobile" });
                   setIsMenuOpen(false);
                 }}
                 className="inline-flex w-fit items-center gap-2 px-5 py-3 bg-cta hover:bg-cta-hover text-white font-bold rounded-full transition-all text-base"

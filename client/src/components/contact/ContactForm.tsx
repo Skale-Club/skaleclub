@@ -15,12 +15,12 @@ const consentClass =
   "flex cursor-pointer items-start gap-3 border border-ink-700/10 p-4 font-normal transition-colors hover:bg-paper";
 
 // The EN wording is US A2P/TCPA text (HELP/STOP keywords). PT visitors get a
-// neutral version that does not reference US SMS keywords.
-const PT_SUBMIT_CONSENT = "Ao enviar, você concorda em receber contato por WhatsApp, e-mail ou telefone sobre sua solicitação. Veja nossa";
+// neutral version (EN keys, PT entries in translations.ts) without US SMS keywords.
+const PT_SUBMIT_CONSENT = "By submitting, you agree to be contacted by WhatsApp, email or phone about your request. See our";
 const PT_TRANSACTIONAL_CONSENT =
-  "Concordo em receber mensagens sobre minha solicitação, como confirmações e atualizações de pedidos ou serviços, por WhatsApp, e-mail ou telefone.";
+  "I agree to receive messages about my request, such as order and service confirmations and updates, by WhatsApp, email or phone.";
 const PT_MARKETING_CONSENT =
-  "Concordo em receber ofertas, novidades e conteúdos promocionais por WhatsApp ou e-mail. Posso cancelar quando quiser.";
+  "I agree to receive offers, news and promotional content by WhatsApp or email. I can opt out any time.";
 
 export function ContactForm({ companyName }: { companyName: string }) {
   const { t, language } = useTranslation();
@@ -167,7 +167,7 @@ export function ContactForm({ companyName }: { companyName: string }) {
           />
           <span className="text-sm leading-relaxed text-ink-500">
             {pt
-              ? PT_TRANSACTIONAL_CONSENT
+              ? t(PT_TRANSACTIONAL_CONSENT)
               : t(
                   "By checking this box, I consent to receive transactional messages related to my account, orders, or services I have requested. These messages may include appointment reminders, order confirmations, and account notifications, among others. Message frequency may vary. Message & data rates may apply. Reply HELP for help or STOP to opt out.",
                 )}
@@ -183,7 +183,7 @@ export function ContactForm({ companyName }: { companyName: string }) {
           />
           <span className="text-sm leading-relaxed text-ink-500">
             {pt
-              ? PT_MARKETING_CONSENT
+              ? t(PT_MARKETING_CONSENT)
               : t(
                   "By checking this box, I consent to receive marketing and promotional messages, including special offers, discounts, and new product updates, among others. Message frequency may vary. Message & data rates may apply. Reply HELP for help or STOP to opt out.",
                 )}
@@ -197,7 +197,7 @@ export function ContactForm({ companyName }: { companyName: string }) {
 
         <p className="pt-2 text-xs leading-relaxed text-ink-500">
           {pt ? (
-            <>{PT_SUBMIT_CONSENT} </>
+            <>{t(PT_SUBMIT_CONSENT)} </>
           ) : (
             <>
               {t("By submitting this form you agree to be contacted by")} <strong>{companyName}</strong>{" "}
