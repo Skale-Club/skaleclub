@@ -1,6 +1,6 @@
 import { ArrowUpRight } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
-import { formatUsdCents, type NfcQuote } from "@shared/nfc-pricing";
+import { formatUsdCentsFor, type NfcQuote } from "@shared/nfc-pricing";
 
 /**
  * The running quote shown under the type and quantity steps.
@@ -15,7 +15,8 @@ export function NfcPricePanel({
   quote: NfcQuote;
   onApplyUpgrade?: (quantity: number) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const formatUsdCents = formatUsdCentsFor(language);
 
   // Relief and custom shapes are priced by hand: no number, just what happens next.
   if (quote.quoteOnRequest) {

@@ -1,21 +1,23 @@
 import { ArrowRight, MessageCircle } from "lucide-react";
 import { Band, Eyebrow, PillButton, PillLink } from "@/components/editorial";
 import { useTranslation } from "@/hooks/useTranslation";
+import { trackEvent } from "@/lib/analytics";
+import { defaultWhatsappMessage, whatsappHref } from "@shared/phone";
 
 export function PortfolioCta({
   title,
   subtitle,
   buttonText,
-  whatsapp,
+  phone,
   onCta,
 }: {
   title: string;
   subtitle?: string;
   buttonText: string;
-  whatsapp?: string;
+  phone?: string;
   onCta: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   return (
     <Band tone="cta" id="cta">
       <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto]">
@@ -29,8 +31,13 @@ export function PortfolioCta({
             {buttonText}
             <ArrowRight className="h-4 w-4" />
           </PillButton>
-          {whatsapp && (
-            <PillLink href={`https://wa.me/${whatsapp}`} target="_blank" variant="ghost">
+          {phone && (
+            <PillLink
+              href={whatsappHref(phone, defaultWhatsappMessage(language))}
+              target="_blank"
+              variant="ghost"
+              onClick={() => trackEvent("click_whatsapp", { location: "portfolio-cta" })}
+            >
               <MessageCircle className="h-4 w-4" />
               {t("Talk on WhatsApp")}
             </PillLink>

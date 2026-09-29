@@ -9,6 +9,8 @@ import type { CompanySettings } from "@shared/schema";
 import { buildPagePaths } from "@shared/pageSlugs";
 import { trackEvent } from "@/lib/analytics";
 import { languageHref } from "@/lib/languageRouting";
+import { formatPhoneDisplay, telHref } from "@shared/phone";
+import { MobileActionBar } from "./MobileActionBar";
 import {
   SiFacebook,
   SiInstagram,
@@ -38,7 +40,7 @@ export function Navbar() {
   const pagePaths = useMemo(() => buildPagePaths(companySettings?.pageSlugs), [companySettings?.pageSlugs]);
 
   const displayPhone = companySettings?.companyPhone || "";
-  const telPhone = displayPhone.replace(/\D/g, "");
+  const phoneLabel = formatPhoneDisplay(displayPhone);
 
   const navLinks = [
     { href: pagePaths.portfolio, label: t("Portfolio") },
@@ -56,6 +58,7 @@ export function Navbar() {
   }, [location]);
 
   return (
+    <>
     <nav className="fixed top-4 left-0 right-0 z-50 px-4 tablet:px-0">
       <div className="container-nav bg-navy-800/85 backdrop-blur-md border border-white/10 rounded-full shadow-[0_12px_35px_rgba(0,0,0,.22)] px-4">
         <div className="flex justify-between items-center h-16">
@@ -114,12 +117,12 @@ export function Navbar() {
 
             {displayPhone && (
               <a
-                href={`tel:${telPhone}`}
-                onClick={() => trackEvent("click_call", { location: "navbar", label: displayPhone })}
+                href={telHref(displayPhone)}
+                onClick={() => trackEvent("click_call", { location: "navbar" })}
                 className="px-4 py-2 bg-cta hover:bg-cta-hover text-white font-bold rounded-full hover-elevate transition-all text-sm flex items-center gap-2"
               >
                 <Phone className="w-4 h-4 fill-current" />
-                {displayPhone}
+                {phoneLabel}
               </a>
             )}
           </div>
@@ -210,15 +213,15 @@ export function Navbar() {
 
             {displayPhone && (
               <a
-                href={`tel:${telPhone}`}
+                href={telHref(displayPhone)}
                 onClick={() => {
-                  trackEvent("click_call", { location: "navbar_mobile", label: displayPhone });
+                  trackEvent("click_call", { location: "navbar" });
                   setIsMenuOpen(false);
                 }}
                 className="inline-flex w-fit items-center gap-2 px-5 py-3 bg-cta hover:bg-cta-hover text-white font-bold rounded-full transition-all text-base"
               >
                 <Phone className="w-4 h-4 fill-current" />
-                {displayPhone}
+                {phoneLabel}
               </a>
             )}
           </div>
@@ -246,5 +249,7 @@ export function Navbar() {
         </div>
       )}
     </nav>
+    <MobileActionBar />
+    </>
   );
 }

@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { CATALOG_CATEGORY_LABEL, type CatalogItem } from "@shared/catalog";
 import { useTranslation } from "@/hooks/useTranslation";
+import { priceParts } from "@/lib/format";
 import { Cover } from "./Cover";
 import "./catalog.css";
 
@@ -17,12 +18,14 @@ export function useEyebrow(item: CatalogItem, short = false) {
 }
 
 export function PriceTag({ item }: { item: CatalogItem }) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   if (!item.price) return null;
+  const { value, prefix, suffix, tight } = priceParts(item.price, language, t);
   return (
     <div className="cat-price">
-      {item.price.value}
-      {item.price.label && <small>{t(item.price.label)}</small>}
+      {prefix && <small style={{ marginLeft: 0, marginRight: 4 }}>{prefix}</small>}
+      {value}
+      {suffix && <small style={tight ? { marginLeft: 0 } : undefined}>{suffix}</small>}
     </div>
   );
 }

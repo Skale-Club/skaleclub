@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { ArrowRight, Calendar, FileText } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { formatDate } from "@/lib/format";
 import type { BlogPost, HomepageContent } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
 import { usePagePaths } from "@/lib/pagePaths";
@@ -15,7 +15,7 @@ interface BlogSectionProps {
 }
 
 export function BlogSection({ content }: BlogSectionProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const pagePaths = usePagePaths();
   const sectionContent = {
     ...(content || {}),
@@ -99,7 +99,7 @@ export function BlogSection({ content }: BlogSectionProps) {
                 <Eyebrow tone="light" className="flex items-center gap-2 mb-3">
                   <Calendar className="w-4 h-4" />
                   <span data-testid={`text-blog-home-date-${post.id}`}>
-                    {post.publishedAt ? format(new Date(post.publishedAt), 'MMMM d, yyyy') : ''}
+                    {post.publishedAt ? formatDate(post.publishedAt, language) : ''}
                   </span>
                 </Eyebrow>
                 <h3 className="font-display text-xl font-semibold text-ink mb-2 line-clamp-2" data-testid={`text-blog-home-title-${post.id}`}>

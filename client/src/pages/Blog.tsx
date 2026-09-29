@@ -6,7 +6,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FileText, Calendar, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { format } from 'date-fns';
+import { formatDate } from '@/lib/format';
+import { useTranslation } from '@/hooks/useTranslation';
 import type { BlogPost } from '@shared/schema';
 import { usePagePaths } from '@/lib/pagePaths';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -19,6 +20,7 @@ export default function Blog() {
   const [searchTerm, setSearchTerm] = useState('');
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const pagePaths = usePagePaths();
+  const { t, language } = useTranslation();
 
   const {
     data,
@@ -131,7 +133,7 @@ export default function Blog() {
                       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                         <Calendar className="w-4 h-4" />
                         <span data-testid={`text-blog-date-${post.id}`}>
-                          {post.publishedAt ? format(new Date(post.publishedAt), 'MMMM d, yyyy') : 'Draft'}
+                          {post.publishedAt ? formatDate(post.publishedAt, language) : t("Draft")}
                         </span>
                       </div>
                       <h2 

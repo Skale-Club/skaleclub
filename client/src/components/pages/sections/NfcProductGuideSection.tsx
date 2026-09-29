@@ -25,6 +25,7 @@ import {
   NFC_QUANTITY,
   NFC_VOLUME_TIERS,
   formatUsdCents,
+  formatUsdCentsFor,
 } from "@shared/nfc-pricing";
 import { nfcWhatsappHref } from "@shared/nfc-whatsapp";
 
@@ -342,7 +343,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
                 {visibleTiers.map((tier) => (
                   <div key={tier.minQuantity} className="flex items-center justify-between py-4">
                     <span className="text-sm text-fog-300">{tier.minQuantity}+ {t("pieces")}</span>
-                    <strong className="text-lg tabular-nums">{formatUsdCents(tier.unitPriceCents)} <span className="text-xs font-normal text-fog-400">/ {t("each")}</span></strong>
+                    <strong className="text-lg tabular-nums">{formatUsdCentsFor(language)(tier.unitPriceCents)} <span className="text-xs font-normal text-fog-400">/ {t("each")}</span></strong>
                   </div>
                 ))}
               </div>
