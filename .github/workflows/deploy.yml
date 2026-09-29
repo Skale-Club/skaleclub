@@ -35,16 +35,37 @@ permissions:
 
 jobs:
   deploy:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
       COOLIFY_BASE: https://coolify.skale.club
       APP_UUID: ybjopew5r0gziq1i9y39tr93
       HEALTH_URL: https://skale.club/api/health
+      VERSION_URL: https://skale.club/api/version
     steps:
+      - name: Skip if main moved past the CI-validated commit
+        id: guard
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          CI_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          main_sha=$(git ls-remote "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" refs/heads/main | cut -f1)
+          if [ -z "${main_sha}" ]; then
+            echo "::error::Could not read refs/heads/main"; exit 1
+          fi
+          if [ -n "${CI_SHA}" ] && [ "${CI_SHA}" != "${main_sha}" ]; then
+            echo "::notice::Skipping deploy: CI validated ${CI_SHA} but main is now ${main_sha}. The newer push has its own CI run and deploy."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+          echo "sha=${main_sha}" >> "$GITHUB_OUTPUT"
+
       - name: Trigger Coolify deployment
         id: trigger
+        if: steps.guard.outputs.skip != 'true'
         env:
           COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
         run: |
@@ -65,6 +86,7 @@ jobs:
           echo "deployment_uuid=${deployment_uuid}" >> "$GITHUB_OUTPUT"
 
       - name: Wait for Coolify deployment to finish
+        if: steps.guard.outputs.skip != 'true'
         env:
           COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
           DEPLOYMENT_UUID: ${{ steps.trigger.outputs.deployment_uuid }}
@@ -85,6 +107,7 @@ jobs:
           exit 1
 
       - name: Verify production health
+        if: steps.guard.outputs.skip != 'true'
         run: |
           # Traefik can take a few seconds to switch over to the new container.
           for i in $(seq 1 12); do
@@ -94,4 +117,24 @@ jobs:
             sleep 10
           done
           echo "::error::${HEALTH_URL} did not return 200 after deploy"
+          exit 1
+
+      - name: Verify the deployed commit
+        if: steps.guard.outputs.skip != 'true'
+        env:
+          EXPECTED_SHA: ${{ steps.guard.outputs.sha }}
+        run: |
+          # /api/version reports SOURCE_COMMIT (injected by Coolify). When the app
+          # does not expose it (null) there is nothing to compare, so only warn.
+          for i in $(seq 1 12); do
+            commit=$(curl -sS --max-time 10 "${VERSION_URL}" | jq -r '.commit // empty' || true)
+            echo "[${i}/12] deployed commit: ${commit:-<unavailable>} (expected ${EXPECTED_SHA})"
+            if [ -z "${commit}" ]; then
+              echo "::warning::SOURCE_COMMIT is not available; skipping commit comparison"
+              exit 0
+            fi
+            if [ "${commit}" = "${EXPECTED_SHA}" ]; then exit 0; fi
+            sleep 10
+          done
+          echo "::error::Deployed commit does not match ${EXPECTED_SHA}"
           exit 1

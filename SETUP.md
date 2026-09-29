@@ -148,8 +148,8 @@ Workflow file:
 external scheduler — the `skale-cron` service on the Coolify VPS, which holds
 one crontab for every project in the org. It calls each endpoint over HTTPS with
 `Authorization: Bearer $CRON_SECRET`. The in-process scheduler in
-`server/cron.ts` is disabled in production via `DISABLE_INPROCESS_CRON=true`;
-enabling both would generate every blog post twice.
+`server/cron.ts` is off unless `ENABLE_INPROCESS_CRON=true` (it is not set in
+production); enabling both would generate every blog post twice.
 
 - Reuses `CRON_SECRET` from above — no new secrets required
 - `.github/workflows/blog-cron.yml` has **no schedule**: it is
@@ -218,8 +218,9 @@ split into build-time and runtime:
   is also a runtime variable.
 - **Runtime** (`is_runtime=true`): everything else — `SUPABASE_*`,
   `SESSION_SECRET`, `ADMIN_EMAIL`, `CRON_SECRET`, `SENTRY_DSN`, plus the
-  container-specific `NODE_ENV`, `PORT`, `CANONICAL_HOST` and
-  `DISABLE_INPROCESS_CRON`.
+  container-specific `NODE_ENV`, `PORT` and `CANONICAL_HOST`. Leave
+  `ENABLE_INPROCESS_CRON` unset (external scheduler); bootstrap tasks run by
+  default in production.
 
 Note the Coolify API field is `is_buildtime` (no underscore); the wrong name is
 silently ignored and everything defaults to build-time, which bakes runtime

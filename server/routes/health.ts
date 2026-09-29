@@ -48,6 +48,13 @@ export function registerHealthRoutes(app: Express) {
     }
   });
 
+  // Commit currently running (Coolify injects SOURCE_COMMIT); lets the deploy
+  // workflow confirm the new build is the one answering.
+  app.get("/api/version", (_req, res) => {
+    res.set("Cache-Control", "no-store");
+    res.json({ commit: process.env.SOURCE_COMMIT ?? null });
+  });
+
   app.get("/api/health/jobs", async (_req, res) => {
     res.set("Cache-Control", "no-store");
     try {

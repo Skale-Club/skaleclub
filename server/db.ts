@@ -14,7 +14,6 @@ if (!rawDatabaseUrl) {
   );
 }
 
-const isServerless = !!process.env.VERCEL;
 const sslExplicitlyDisabled =
   rawDatabaseUrl.includes('sslmode=disable') ||
   process.env.PGSSLMODE === "disable";
@@ -26,8 +25,7 @@ export const shouldUseSsl =
   !sslExplicitlyDisabled &&
   (isCloudDb ||
   process.env.PGSSLMODE === "require" ||
-  process.env.POSTGRES_SSL === "true" ||
-  Boolean(process.env.VERCEL || process.env.VERCEL_ENV));
+  process.env.POSTGRES_SSL === "true");
 
 // Strip sslmode from URL so pg doesn't override our ssl config
 export const databaseUrl = shouldUseSsl
@@ -50,7 +48,7 @@ export const pool = new Pool({
         }
       : { rejectUnauthorized: false }
     : false,
-  max: isServerless ? 5 : 20,
+  max: 20,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 10_000,
   // Client-side timeout. A server-side `-c statement_timeout` startup option can be

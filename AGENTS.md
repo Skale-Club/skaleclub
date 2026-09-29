@@ -91,7 +91,8 @@ worth reading before inferring anything from config files in the repo root:
 
 - **Host: Coolify on Hetzner**, as a Docker container built from `Dockerfile`.
   Environment variables live in the Coolify app, split build-time / runtime.
-- `.github/workflows/deploy.yml` only pings the Coolify deploy API on a push to
-  `main`; Coolify does the build.
+- `.github/workflows/deploy.yml` runs after the CI workflow succeeds on `main`,
+  pings the Coolify deploy API, waits for the deployment and checks
+  `/api/health` and `/api/version`; Coolify does the build.
 - `vercel.json`, `api/`, `wrangler.jsonc` and `cloudflare/` were removed after
   the Vercel wind-down; the container is the only deploy target.

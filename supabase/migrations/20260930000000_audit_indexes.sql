@@ -6,6 +6,31 @@
 CREATE INDEX IF NOT EXISTS blog_posts_status_published_at_idx
   ON blog_posts (status, published_at DESC);
 
+-- 1b. Drop redundant slug indexes, but only where the UNIQUE constraint on the
+--     same column exists (that constraint's index already serves every lookup).
+DO $$
+BEGIN
+  IF to_regclass('public.hub_lives') IS NOT NULL AND EXISTS (
+    SELECT 1
+    FROM pg_constraint c
+    JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
+    WHERE c.conrelid = 'public.hub_lives'::regclass
+      AND c.contype = 'u' AND array_length(c.conkey, 1) = 1 AND a.attname = 'slug'
+  ) THEN
+    DROP INDEX IF EXISTS public.hub_lives_slug_idx;
+  END IF;
+
+  IF to_regclass('public.pages') IS NOT NULL AND EXISTS (
+    SELECT 1
+    FROM pg_constraint c
+    JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
+    WHERE c.conrelid = 'public.pages'::regclass
+      AND c.contype = 'u' AND array_length(c.conkey, 1) = 1 AND a.attname = 'slug'
+  ) THEN
+    DROP INDEX IF EXISTS public.pages_slug_idx;
+  END IF;
+END $$;
+
 -- 2. Deleting a conversation removes its messages (no orphans, no FK error).
 DO $$
 DECLARE
@@ -40,7 +65,10 @@ BEGIN
   ) THEN
     ALTER TABLE public.conversation_messages
       ADD CONSTRAINT conversation_messages_conversation_id_fkey
-      FOREIGN KEY (conversation_id) REFERENCES public.conversations (id) ON DELETE CASCADE;
+      FOREIGN KEY (conversation_id) REFERENCES public.conversations (id) ON DELETE CASCADE
+      NOT VALID;
+    ALTER TABLE public.conversation_messages
+      VALIDATE CONSTRAINT conversation_messages_conversation_id_fkey;
   END IF;
 END $$;
 
@@ -77,7 +105,10 @@ BEGIN
   ) THEN
     ALTER TABLE public.form_leads
       ADD CONSTRAINT form_leads_form_id_fkey
-      FOREIGN KEY (form_id) REFERENCES public.forms (id) ON DELETE SET NULL;
+      FOREIGN KEY (form_id) REFERENCES public.forms (id) ON DELETE SET NULL
+      NOT VALID;
+    ALTER TABLE public.form_leads
+      VALIDATE CONSTRAINT form_leads_form_id_fkey;
   END IF;
 END $$;
 
