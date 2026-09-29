@@ -34,8 +34,8 @@ Sentry.init({
   release: import.meta.env.VITE_RELEASE || undefined,
   enabled: !!import.meta.env.VITE_SENTRY_DSN && import.meta.env.PROD,
   integrations: [Sentry.browserTracingIntegration()],
-  // TODO: enable once the server exposes the Sentry tunnel route (avoids ad-blocker loss):
-  // tunnel: "/api/monitoring",
+  // Same-origin relay (server/routes/monitoring.ts) so ad blockers do not drop events.
+  tunnel: "/api/monitoring",
   tracesSampleRate: 0.1,
   // Only record replays when an error happens: session replays of normal traffic
   // burned the org-wide Sentry replay quota. Errors still get a full replay.
