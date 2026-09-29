@@ -425,8 +425,19 @@ function encSecret<T extends string | null | undefined>(value: T): T {
     ? (isEncryptedToken(value) ? value : encryptToken(value))
     : value) as T;
 }
+let decryptFailureLogged = false;
 function decSecret<T extends string | null | undefined>(value: T): T {
-  return (typeof value === "string" && value ? decryptToken(value) : value) as T;
+  if (typeof value !== "string" || !value) return value;
+  try {
+    return decryptToken(value) as T;
+  } catch (err) {
+    // Never 500 the settings routes over an undecryptable secret (rotated key).
+    if (!decryptFailureLogged) {
+      decryptFailureLogged = true;
+      console.error("[storage] Failed to decrypt a stored secret; treating it as unset:", (err as Error).message);
+    }
+    return null as T;
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -508,7 +519,7 @@ export class DatabaseStorage implements IStorage {
     if (existing) {
       const [updated] = await db
         .update(integrationSettings)
-        .set({ ...settings, apiKey: encSecret(settings.apiKey ?? existing.apiKey), updatedAt: new Date() })
+        .set({ ...settings, apiKey: encSecret(settings.apiKey !== undefined ? settings.apiKey : existing.apiKey), updatedAt: new Date() })
         .where(eq(integrationSettings.id, existing.id))
         .returning();
       return { ...updated, apiKey: decSecret(updated.apiKey) };

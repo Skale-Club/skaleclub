@@ -3,7 +3,8 @@ import crypto from "crypto";
 import { storage } from "../storage.js";
 import { insertEstimateSchema } from "#shared/schema.js";
 import { requireAdmin, sendError } from "./_shared.js";
-import { rateLimitMiddleware } from "../lib/rateLimit.js";
+import { rateLimit, rateLimitMiddleware, normalizeIpKey } from "../lib/rateLimit.js";
+import { randomSlugSuffix } from "../lib/slug.js";
 import { z } from "zod";
 
 const thumbnailSchema = z.object({
@@ -19,10 +20,6 @@ function slugifyName(name: string): string {
     .replace(/[̀-ͯ]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "") || "estimate";
-}
-
-function randomSlugSuffix(): string {
-  return BigInt("0x" + crypto.randomBytes(8).toString("hex")).toString(36);
 }
 
 async function buildUniqueEstimateSlug(data: {
@@ -92,30 +89,9 @@ function isValidAccessCode(stored: string, provided: string): boolean {
   return crypto.timingSafeEqual(storedBuf, providedBuf);
 }
 
-// Per-IP rate limit for verify-code guesses (SEC-01) - mirrors the in-memory
-// Map + purge style used in server/auth/supabaseAuth.ts and server/routes/linksPage.ts.
-const VERIFY_CODE_WINDOW_MS = 5 * 60_000;
-const VERIFY_CODE_MAX_ATTEMPTS = 10;
-const VERIFY_CODE_PRUNE_AT_SIZE = 5000;
-const verifyCodeAttempts = new Map<string, { count: number; resetAt: number }>();
-
-function pruneVerifyCodeAttempts() {
-  const now = Date.now();
-  for (const [key, entry] of Array.from(verifyCodeAttempts.entries())) {
-    if (now > entry.resetAt) verifyCodeAttempts.delete(key);
-  }
-}
-
+// Per-IP rate limit for verify-code guesses (SEC-01): 10 per 5 minutes.
 function isVerifyCodeRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const entry = verifyCodeAttempts.get(ip);
-  if (!entry || now > entry.resetAt) {
-    verifyCodeAttempts.set(ip, { count: 1, resetAt: now + VERIFY_CODE_WINDOW_MS });
-    if (verifyCodeAttempts.size > VERIFY_CODE_PRUNE_AT_SIZE) pruneVerifyCodeAttempts();
-    return false;
-  }
-  entry.count += 1;
-  return entry.count > VERIFY_CODE_MAX_ATTEMPTS;
+  return rateLimit(`verify:${normalizeIpKey(ip)}`, { limit: 10, windowMs: 5 * 60_000 });
 }
 
 export function registerEstimatesRoutes(app: Express) {
@@ -129,7 +105,6 @@ export function registerEstimatesRoutes(app: Express) {
       // no services, pricing, notes, or other financial/line-item data.
       if (estimate.accessCode) {
         return res.json({
-          id: estimate.id,
           slug: estimate.slug,
           clientName: estimate.clientName,
           companyName: estimate.companyName,

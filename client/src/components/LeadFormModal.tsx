@@ -560,6 +560,11 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [startedAt, setStartedAt] = useState<Date | null>(null);
   const honeypotRef = useRef<HTMLInputElement>(null);
+  // Client-measured form start; reset whenever the form opens.
+  const formOpenedAtRef = useRef(Date.now());
+  useEffect(() => {
+    if (open) formOpenedAtRef.current = Date.now();
+  }, [open]);
   const [view, setView] = useState<FormView>("form");
   const [pendingSync, setPendingSync] = useState(false);
   const [storageAvailable, setStorageAvailable] = useState(true);
@@ -823,7 +828,8 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
           .map(([key, value]) => [key, (value as string).trim()])
       );
       const payload: any = {
-        website: honeypotRef.current?.value || "",
+        hp_extra: honeypotRef.current?.value || "",
+        elapsedMs: Date.now() - formOpenedAtRef.current,
         sessionId: session,
         questionNumber,
         startedAt: (startedAt || new Date()).toISOString(),
@@ -1218,9 +1224,9 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
                     <input
                       ref={honeypotRef}
                       type="text"
-                      name="website"
+                      name="hp_extra"
                       tabIndex={-1}
-                      autoComplete="off"
+                      autoComplete="new-password"
                       aria-hidden="true"
                       defaultValue=""
                       style={{ position: "absolute", left: "-10000px", width: 1, height: 1, opacity: 0 }}

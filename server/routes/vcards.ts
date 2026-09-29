@@ -1,5 +1,5 @@
 import type { Express } from "express";
-import { rateLimitMiddleware } from "../lib/rateLimit.js";
+import { publicCounterLimits } from "../lib/rateLimit.js";
 import { and, eq, ne, sql } from "drizzle-orm";
 import { db } from "../db.js";
 import { vcards, insertVCardSchema } from "#shared/schema.js";
@@ -79,7 +79,7 @@ export function registerVCardRoutes(app: Express) {
   });
 
   // Track VCard view — increments viewCount and updates lastViewedAt
-  app.post("/api/vcards/:username/view", rateLimitMiddleware({ limit: 60, windowMs: 10 * 60_000 }), async (req, res) => {
+  app.post("/api/vcards/:username/view", ...publicCounterLimits((req) => `view:${req.params.username}`), async (req, res) => {
     try {
       const [vcard] = await db.select().from(vcards).where(eq(vcards.username, req.params.username));
       if (!vcard || !vcard.isActive) return res.status(404).json({ error: "VCard not found" });
@@ -101,7 +101,7 @@ export function registerVCardRoutes(app: Express) {
   });
 
   // Track VCard download — increments downloadCount
-  app.post("/api/vcards/:username/download", rateLimitMiddleware({ limit: 60, windowMs: 10 * 60_000 }), async (req, res) => {
+  app.post("/api/vcards/:username/download", ...publicCounterLimits((req) => `dl:${req.params.username}`), async (req, res) => {
     try {
       const [vcard] = await db.select().from(vcards).where(eq(vcards.username, req.params.username));
       if (!vcard || !vcard.isActive) return res.status(404).json({ error: "VCard not found" });

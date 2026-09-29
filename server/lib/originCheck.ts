@@ -8,7 +8,7 @@ const ALLOWED_ORIGINS = new Set([
 
 // Routes that legitimately receive cross-origin or server-to-server writes.
 const EXEMPT_PATH_RES = [
-  /^\/api\/oauth(\/|$)/,
+  /^\/api\/oauth\/(register|token)\/?$/,
   /^\/mcp(\/|$)/,
   /^\/api\/blog\/telegram\/webhook(\/|$)/,
   /^\/api\/integrations\/[^/]+\/webhook(\/|$)/,
@@ -25,12 +25,6 @@ function isLocalOrigin(origin: string): boolean {
   }
 }
 
-function hasCronBearer(req: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  const auth = req.headers.authorization;
-  return Boolean(secret && auth && auth === `Bearer ${secret}`);
-}
-
 /**
  * CSRF defense-in-depth for the cookie-authenticated API: state-changing
  * requests must come from our own origin. Callers that send neither Origin
@@ -40,7 +34,6 @@ export function originCheck(req: Request, res: Response, next: NextFunction) {
   if (SAFE_METHODS.has(req.method)) return next();
   if (!req.path.startsWith("/api/") && !req.path.startsWith("/mcp")) return next();
   if (EXEMPT_PATH_RES.some((re) => re.test(req.path))) return next();
-  if (hasCronBearer(req)) return next();
 
   const origin = req.headers.origin;
   const fetchSite = req.headers["sec-fetch-site"];

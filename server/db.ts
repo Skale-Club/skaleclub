@@ -53,7 +53,10 @@ export const pool = new Pool({
   max: isServerless ? 5 : 20,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 10_000,
-  ...(isServerless ? {} : { options: "-c statement_timeout=15000" }),
+  // Client-side timeout. A server-side `-c statement_timeout` startup option can be
+  // refused by the Supabase transaction pooler (port 6543), so prefer setting it at the
+  // database: ALTER ROLE <app_role> SET statement_timeout = '15s';
+  query_timeout: 15_000,
 });
 pool.on("error", (err) => {
   console.error("[pg] idle client error", err);
