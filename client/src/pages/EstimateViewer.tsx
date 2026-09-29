@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { Loader2 } from '@/components/ui/loader';
 import { LanguageSwitch, type LanguageSwitchValue } from '@/components/ui/LanguageSwitch';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { usePageSeo } from '@/hooks/use-seo';
 import { DottedSurface } from '@/components/ui/dotted-surface';
 import { GradientBackground } from '@/components/ui/gradient-background-4';
 import { NotFoundState } from '@/components/NotFoundState';
@@ -347,6 +348,8 @@ function SectionContent({ index, data, lang, siteSettings }: { index: number; da
 }
 
 export default function EstimateViewer() {
+  // Private proposal: keep it out of search indexes (title is set below).
+  usePageSeo({ title: '', noindex: true });
   // Tint iOS Safari URL bar + status bar to match the slide background (#09090B = zinc-950).
   // Prevents the white Safari chrome from clashing with the dark full-bleed slides on mobile.
   useThemeColor('#09090B');

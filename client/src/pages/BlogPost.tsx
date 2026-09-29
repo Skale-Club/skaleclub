@@ -51,15 +51,19 @@ export default function BlogPostPage() {
         metaDesc.setAttribute('content', post.metaDescription || post.excerpt || '');
       }
 
-      const ogTitle = document.querySelector('meta[property="og:title"]');
-      if (ogTitle) ogTitle.setAttribute('content', post.title);
-      
-      const ogDesc = document.querySelector('meta[property="og:description"]');
-      if (ogDesc) ogDesc.setAttribute('content', post.metaDescription || post.excerpt || '');
-      
-      const ogImage = document.querySelector('meta[property="og:image"]');
-      if (ogImage && post.featureImageUrl) {
-        ogImage.setAttribute('content', post.featureImageUrl);
+      const description = post.metaDescription || post.excerpt || '';
+      const setContent = (selector: string, value: string) =>
+        document.querySelector(selector)?.setAttribute('content', value);
+
+      // Same values the server injects into the first response.
+      setContent('meta[property="og:title"]', post.title);
+      setContent('meta[name="twitter:title"]', post.title);
+      setContent('meta[property="og:description"]', description);
+      setContent('meta[name="twitter:description"]', description);
+      setContent('meta[property="og:type"]', 'article');
+      if (post.featureImageUrl) {
+        setContent('meta[property="og:image"]', post.featureImageUrl);
+        setContent('meta[name="twitter:image"]', post.featureImageUrl);
       }
     }
   }, [post, settings]);

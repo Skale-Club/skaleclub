@@ -5,6 +5,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import helmet from "helmet";
 import { registerRoutes } from "./routes.js";
 import { registerHealthRoutes } from "./routes/health.js";
+import { registerMonitoringRoute } from "./routes/monitoring.js";
 import { registerCanonicalHostRedirects } from "./canonicalHost.js";
 import path from "path";
 import { createServer, type Server } from "http";
@@ -46,6 +47,9 @@ export async function createApp(): Promise<{ app: express.Express; httpServer: S
 
   // Liveness probe — before auth/session setup so it stays dependency-free.
   registerHealthRoutes(app);
+
+  // Sentry tunnel: needs the raw request body, so it sits before the parsers.
+  registerMonitoringRoute(app);
 
   // Serve attached_assets as static files
   app.use('/attached_assets', express.static(path.join(process.cwd(), 'attached_assets')));

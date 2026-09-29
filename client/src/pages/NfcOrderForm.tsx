@@ -6,31 +6,21 @@ import { Link } from "wouter";
 import { EditorialCard } from "@/components/editorial";
 import { LeadFormModal } from "@/components/LeadFormModal";
 import { useTranslation } from "@/hooks/useTranslation";
+import { usePageSeo } from "@/hooks/use-seo";
 
 const FORM_SLUG = "nfc-keychain-order";
 
 export default function NfcOrderForm() {
   const { t } = useTranslation();
   const { data: settings } = useQuery<CompanySettings>({ queryKey: ["/api/company-settings"] });
+  // Order form: never indexed (the server sends the same noindex header and meta).
+  usePageSeo({ title: "", noindex: true });
 
   useEffect(() => {
     const previousTitle = document.title;
     document.title = t("Complete your NFC keychain order | Skale Club");
-
-    let robots = document.querySelector<HTMLMetaElement>('meta[name="robots"]');
-    const created = !robots;
-    const previousRobots = robots?.content;
-    if (!robots) {
-      robots = document.createElement("meta");
-      robots.name = "robots";
-      document.head.appendChild(robots);
-    }
-    robots.content = "noindex, follow";
-
     return () => {
       document.title = previousTitle;
-      if (created) robots?.remove();
-      else if (robots && previousRobots !== undefined) robots.content = previousRobots;
     };
   }, [t]);
 

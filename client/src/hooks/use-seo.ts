@@ -1,10 +1,11 @@
 import { getLandingSeo, landingPathForSlug, slugForLandingPath } from '@shared/landingSeo';
 import { homepageTitle } from '@shared/seoTitle';
+import { CORE_SEO, coreKeyForPath, isNoindexPath } from '@shared/coreSeo';
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { usePathname } from 'wouter/use-browser-location';
 import { splitLanguagePath, withLanguage } from '@shared/languagePath';
-import { isCorePagePath, type PageSlugs } from '@shared/pageSlugs';
+import type { PageSlugs } from '@shared/pageSlugs';
 
 interface SeoSettings {
   seoTitle: string | null;
@@ -51,30 +52,6 @@ function setLinkTag(rel: string, href: string | null | undefined) {
   link.href = href;
 }
 
-function createLocalBusinessSchema(settings: SeoSettings): string {
-  const schema = {
-    "@context": "https://schema.org",
-    "@type": "LocalBusiness",
-    "name": settings.companyName || settings.ogSiteName || "Service Business",
-    "description": settings.seoDescription || "",
-    "@id": settings.seoCanonicalUrl || window.location.origin,
-    "url": settings.seoCanonicalUrl || window.location.origin,
-    ...(settings.companyPhone && { "telephone": settings.companyPhone }),
-    ...(settings.companyEmail && { "email": settings.companyEmail }),
-    ...(settings.companyAddress && {
-      "address": {
-        "@type": "PostalAddress",
-        "streetAddress": settings.companyAddress
-      }
-    }),
-    ...(settings.ogImage && { "image": settings.ogImage }),
-    "priceRange": "$$",
-    "serviceType": "Marketing Service"
-  };
-  
-  return JSON.stringify(schema);
-}
-
 /**
  * The canonical URL for the page being viewed right now.
  *
@@ -114,14 +91,8 @@ function isHomepage(): boolean {
   return path === '' || path === '/br';
 }
 
-function setJsonLdSchema(settings: SeoSettings) {
-  let script = document.querySelector('script[type="application/ld+json"]') as HTMLScriptElement | null;
-  if (!script) {
-    script = document.createElement('script');
-    script.type = 'application/ld+json';
-    document.head.appendChild(script);
-  }
-  script.textContent = createLocalBusinessSchema(settings);
+function isPortugueseHome(): boolean {
+  return window.location.pathname.replace(/\/+$/, '') === '/br';
 }
 
 // Set by usePageSeo for pages that must not be indexed, read by useSEO so it
@@ -138,10 +109,14 @@ export function usePageSeo(opts: { title: string; description?: string; noindex?
   const { title, description, noindex } = opts;
   useEffect(() => {
     const brand = settings?.ogSiteName || settings?.seoTitle || settings?.companyName || 'Skale Club';
-    const fullTitle = title ? `${title} | ${brand}` : brand;
-    document.title = fullTitle;
-    setMetaTag('og:title', fullTitle, true);
-    setMetaTag('twitter:title', fullTitle);
+    // An empty title leaves the document title to the page (or the server-side
+    // injection); the page only wants the noindex side effects below.
+    if (title) {
+      const fullTitle = `${title} | ${brand}`;
+      document.title = fullTitle;
+      setMetaTag('og:title', fullTitle, true);
+      setMetaTag('twitter:title', fullTitle);
+    }
     if (description) {
       setMetaTag('description', description);
       setMetaTag('og:description', description, true);
@@ -186,9 +161,14 @@ export function useSEO() {
     // so leave them alone rather than replacing them with the homepage's — that
     // is what made every route self-report as the homepage, and what would
     // silently flip a `noindex` page to `index, follow`.
+    // The Portuguese home (`/br`) has its own copy (shared/coreSeo.ts); the
+    // settings row is English.
+    const homeCopy = isPortugueseHome() ? CORE_SEO.home.pt : null;
+    const homeTitle = homeCopy?.title ?? homepageTitle(settings);
+    const homeDescription = homeCopy?.description ?? settings.seoDescription;
     if (onHomepage) {
-      document.title = homepageTitle(settings);
-      setMetaTag('description', settings.seoDescription);
+      document.title = homeTitle;
+      setMetaTag('description', homeDescription);
       setMetaTag('robots', settings.seoRobotsTag);
     }
 
@@ -196,33 +176,40 @@ export function useSEO() {
     setMetaTag('keywords', settings.seoKeywords);
     setMetaTag('author', settings.seoAuthor);
 
-    const canonicalUrl = pageNoindex ? null : canonicalForCurrentPage(settings);
+    // Private / noindex routes carry no canonical (the server omits it too).
+    const canonicalUrl = pageNoindex || isNoindexPath(window.location.pathname, settings.pageSlugs)
+      ? null
+      : canonicalForCurrentPage(settings);
     setLinkTag('canonical', canonicalUrl);
 
-    const fullImageUrl = settings.ogImage 
+    const fullImageUrl = settings.ogImage
       ? (settings.ogImage.startsWith('http') ? settings.ogImage : `${window.location.origin}${settings.ogImage}`)
       : null;
 
     if (onHomepage) {
-      setMetaTag('og:title', homepageTitle(settings), true);
-      setMetaTag('og:description', settings.seoDescription, true);
+      setMetaTag('og:title', homeTitle, true);
+      setMetaTag('og:description', homeDescription, true);
     }
-    setMetaTag('og:image', fullImageUrl, true);
-    if (fullImageUrl) {
-      setMetaTag('og:image:width', '1200', true);
-      setMetaTag('og:image:height', '630', true);
-      setMetaTag('og:image:alt', settings.seoTitle || settings.ogSiteName || 'Company image', true);
+    // The server injects the per-page share image (and its dimensions) into
+    // the first response; the site-wide image only fills in when it is absent.
+    if (!document.querySelector('meta[property="og:image"]')) {
+      setMetaTag('og:image', fullImageUrl, true);
+      if (fullImageUrl) {
+        setMetaTag('og:image:width', '1200', true);
+        setMetaTag('og:image:height', '630', true);
+        setMetaTag('og:image:alt', settings.seoTitle || settings.ogSiteName || 'Company image', true);
+      }
     }
     setMetaTag('og:type', settings.ogType || 'website', true);
     setMetaTag('og:site_name', settings.ogSiteName, true);
-    setMetaTag('og:url', canonicalUrl, true);
+    if (canonicalUrl) setMetaTag('og:url', canonicalUrl, true);
 
     setMetaTag('twitter:card', settings.twitterCard || 'summary_large_image');
     if (onHomepage) {
-      setMetaTag('twitter:title', homepageTitle(settings));
-      setMetaTag('twitter:description', settings.seoDescription);
+      setMetaTag('twitter:title', homeTitle);
+      setMetaTag('twitter:description', homeDescription);
     }
-    setMetaTag('twitter:image', fullImageUrl);
+    if (!document.querySelector('meta[name="twitter:image"]')) setMetaTag('twitter:image', fullImageUrl);
     setMetaTag('twitter:site', settings.twitterSite);
     setMetaTag('twitter:creator', settings.twitterCreator);
 
@@ -237,8 +224,6 @@ export function useSEO() {
       favicon.href = settings.logoIcon;
     }
 
-    setJsonLdSchema(settings);
-
   }, [settings, skipSeo, rawPath]);
 
   // Core pages exist as an en/pt pair (`/x` and `/br/x`): hreflang alternates.
@@ -249,7 +234,9 @@ export function useSEO() {
   useEffect(() => {
     if (!settings) return;
     const { path } = splitLanguagePath(rawPath);
-    if (!isCorePagePath(path, settings.pageSlugs)) return;
+    // Exact core pages only (blog posts are single-language, no pair).
+    const coreKey = coreKeyForPath(path, settings.pageSlugs);
+    if (!coreKey || coreKey === 'links') return;
 
     let origin = window.location.origin;
     try {
