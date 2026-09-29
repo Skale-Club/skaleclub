@@ -22,6 +22,7 @@ let initializedProviders = { gtm: false, ga4: false, fbq: false };
 // Events fired before initAnalytics() (settings still loading) wait here and
 // are flushed once, so the first page view is not lost.
 const MAX_QUEUED_EVENTS = 50;
+let pageViewSeen = false;
 let pendingEvents: Array<{ name: AnalyticsEventName; payload: AnalyticsEventPayload }> = [];
 
 /**
@@ -152,7 +153,7 @@ export type AnalyticsEventName =
   | 'click_email'
   | 'click_whatsapp'
   | 'click_social'
-  | 'thank_you_view'
+  | 'generate_lead'
   | 'form_abandoned'
   | 'form_result_action'
   | 'form_closed_draft';
@@ -195,8 +196,18 @@ export function trackEvent(eventName: AnalyticsEventName, payload: AnalyticsEven
     window.gtag('event', eventName, payload);
   }
 
-  // The Pixel already fires PageView from its init snippet; never mirror page_view.
-  if (eventName === 'page_view') return;
+  if (eventName === 'page_view') {
+    // The Pixel's init snippet already sent PageView for the first page; every
+    // later SPA navigation needs an explicit one.
+    if (pageViewSeen && config.facebookPixelEnabled && config.facebookPixelId && isFbqAvailable()) {
+      window.fbq('track', 'PageView');
+    }
+    pageViewSeen = true;
+    return;
+  }
+
+  // Meta receives `Lead` from form_completed; generate_lead is for GA4/GTM only.
+  if (eventName === 'generate_lead') return;
 
   if (config.facebookPixelEnabled && config.facebookPixelId && isFbqAvailable()) {
     const fbEventMap: Record<string, string> = {
@@ -251,14 +262,6 @@ export function trackPurchase(
       quantity: item.quantity || 1
     }))
   });
-}
-
-export function trackClickWhatsapp(location: string) {
-  trackEvent('click_whatsapp', { location });
-}
-
-export function trackClickCall(location: string) {
-  trackEvent('click_call', { location });
 }
 
 export function trackCTAClick(location: string, label: string) {

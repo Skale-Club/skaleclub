@@ -50,7 +50,7 @@ function ChunkErrorFallback({ reload }: { reload: ChunkReloadStatus | null }) {
   if (imminent) return <PageLoader />;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0f1014] px-6 text-center text-white">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950 px-6 text-center text-white">
       <div className="flex max-w-sm flex-col items-center gap-4">
         <h1 className="text-xl font-semibold">{t("This page failed to load")}</h1>
         <p className="text-sm text-white/70">

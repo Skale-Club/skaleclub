@@ -45,6 +45,8 @@ Sentry.init({
     "ResizeObserver loop",
     // Handled by lib/chunkReload.ts (reload + fallback UI).
     "Failed to fetch dynamically imported module",
+    "error loading dynamically imported module", // Firefox
+    "Importing a module script failed", // Safari
   ],
   denyUrls: [
     /extensions\//i,

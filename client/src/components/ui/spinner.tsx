@@ -71,7 +71,7 @@ export function InlineLoader({
  */
 export function PageLoader() {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0f1014]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950">
       <DotsLoader size="lg" tone="brand" />
     </div>
   );

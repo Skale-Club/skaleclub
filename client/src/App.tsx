@@ -284,7 +284,7 @@ function Router() {
         {t("Skip to content")}
       </a>
       <Navbar />
-      <main id="main" className="flex flex-col flex-grow">
+      <main id="main" tabIndex={-1} className="flex flex-col flex-grow focus:outline-none">
         <Suspense fallback={fallback}>
           <Switch>
             <Route path="/" component={Home} />
@@ -333,7 +333,7 @@ function TranslationLoadingOverlay() {
   const { isTranslating } = useTranslation();
   if (!isTranslating) return null;
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#0f1014]/80 backdrop-blur-sm transition-opacity duration-200">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-navy-950/80 backdrop-blur-sm transition-opacity duration-200">
       <DotsLoader size="lg" />
     </div>
   );

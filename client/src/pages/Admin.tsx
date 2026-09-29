@@ -4,7 +4,7 @@ import { lazy, startTransition, Suspense, useCallback, useEffect, useMemo, useSt
 import { useAdminAuth } from '@/context/AuthContext';
 import { useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
-import { queryClient, apiRequest, useAdminQueryDefaults } from '@/lib/queryClient';
+import { queryClient, apiRequest, applyAdminQueryDefaults } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
@@ -258,8 +258,11 @@ function AdminContent() {
   );
 }
 
+// Admin-only queries go stale after 30s and refetch on focus (public keys untouched).
+applyAdminQueryDefaults();
+
 export default function Admin() {
-  useAdminQueryDefaults();
+
   const sidebarStyle = {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "3rem",

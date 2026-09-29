@@ -21,10 +21,21 @@ export default function LeadThankYou() {
     // Conversion first: the form's own `form_completed` can be lost when it
     // navigates here right after firing, so this page confirms it. It is queued
     // by trackEvent if analytics is still initialising.
-    trackEvent("thank_you_view", {
-      location: window.location.pathname,
-      label: new URLSearchParams(window.location.search).get("form") ?? undefined,
-    });
+    // Once per lead: the thank-you URL has no lead id, so dedupe by form slug for
+    // 30 minutes in this browser session (a reload must not double count).
+    const formLabel = new URLSearchParams(window.location.search).get("form") ?? "unknown";
+    const dedupeKey = `generate_lead:${formLabel}`;
+    let alreadyCounted = false;
+    try {
+      const last = Number(window.sessionStorage.getItem(dedupeKey));
+      alreadyCounted = Number.isFinite(last) && last > 0 && Date.now() - last < 30 * 60 * 1000;
+      if (!alreadyCounted) window.sessionStorage.setItem(dedupeKey, String(Date.now()));
+    } catch {
+      // Storage blocked: fire anyway.
+    }
+    if (!alreadyCounted) {
+      trackEvent("generate_lead", { location: window.location.pathname, label: formLabel });
+    }
 
     let cancelled = false;
     // Only then warm the lazy Lottie chunk and its JSON (in parallel), so the

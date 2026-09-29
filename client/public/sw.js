@@ -79,19 +79,29 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (request.mode === "navigate") {
-    event.respondWith(handleNavigationRequest(request));
+    event.respondWith(handleNavigationRequest(event, request));
     return;
   }
 
-  event.respondWith(handleAssetRequest(request, url));
+  event.respondWith(handleAssetRequest(event, request, url));
 });
 
-async function handleNavigationRequest(request) {
+// Store a response, then trim the runtime cache; kept alive past respondWith.
+function putAndPrune(event, request, response) {
+  event.waitUntil(
+    caches
+      .open(RUNTIME_CACHE)
+      .then((cache) => cache.put(request, response))
+      .then(pruneRuntimeCache)
+      .catch(() => {}),
+  );
+}
+
+async function handleNavigationRequest(event, request) {
   try {
     const response = await fetch(request);
     if (response.ok) {
-      const cache = await caches.open(RUNTIME_CACHE);
-      cache.put(request, response.clone());
+      putAndPrune(event, request, response.clone());
     }
     return response;
   } catch {
@@ -99,12 +109,12 @@ async function handleNavigationRequest(request) {
   }
 }
 
-async function handleAssetRequest(request, url) {
+async function handleAssetRequest(event, request, url) {
   const cachedResponse = await caches.match(request);
 
   if (cachedResponse) {
     if (!IMMUTABLE_ASSET.test(url.pathname)) {
-      void refreshAsset(request);
+      event.waitUntil(refreshAsset(event, request));
     }
     return cachedResponse;
   }
@@ -112,8 +122,7 @@ async function handleAssetRequest(request, url) {
   try {
     const response = await fetch(request);
     if (response.ok) {
-      const cache = await caches.open(RUNTIME_CACHE);
-      cache.put(request, response.clone());
+      putAndPrune(event, request, response.clone());
     }
     return response;
   } catch {
@@ -129,12 +138,11 @@ async function handleAssetRequest(request, url) {
   }
 }
 
-async function refreshAsset(request) {
+async function refreshAsset(event, request) {
   try {
     const response = await fetch(request);
     if (response.ok) {
-      const cache = await caches.open(RUNTIME_CACHE);
-      cache.put(request, response);
+      putAndPrune(event, request, response);
     }
   } catch {
     // Ignore refresh failures and keep serving the cached version.
