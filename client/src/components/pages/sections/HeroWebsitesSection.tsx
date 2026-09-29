@@ -161,7 +161,7 @@ function WebsitesHero({ props }: { props: HeroWebsitesProps }) {
         tone="hero"
         pattern
         className="relative isolate flex min-h-[70vh] items-end overflow-hidden sm:min-h-[55vh] lg:min-h-[550px] lg:items-stretch"
-        containerClassName="relative z-10 pt-nav lg:pb-4"
+        containerClassName="relative z-10 pt-nav"
       >
         {/* Video background: a flat scrim keeps the copy readable over it. */}
         {bgVideoUrl && (
@@ -185,12 +185,14 @@ function WebsitesHero({ props }: { props: HeroWebsitesProps }) {
             <p className={`max-w-xl text-base leading-7 sm:text-xl ${bgVideoUrl ? "text-fog-300" : "text-fog-400"}`}>{t(subheadline)}</p>
             <HeroCtas props={props} ctaLabel={props.ctaLabel ?? DEFAULTS.ctaLabel} />
           </div>
+          {/* The character stands on the band's bottom edge: no padding below
+              the image column and the img is a block so no baseline gap. */}
           <div className="relative z-10 order-2 flex w-full items-end justify-center self-end lg:order-1 lg:min-h-[400px] lg:justify-end">
             {bgUrl ? (
               <img
                 src={bgUrl}
                 alt={t(bgAlt)}
-                className="w-[70vw] max-w-[260px] origin-bottom object-contain drop-shadow-2xl sm:w-[75%] md:max-w-[300px] lg:w-full lg:max-w-[340px] xl:max-w-[380px]"
+                className="block w-[70vw] max-w-[260px] origin-bottom object-contain object-bottom drop-shadow-2xl sm:w-[75%] md:max-w-[300px] lg:w-full lg:max-w-[340px] xl:max-w-[380px]"
                 // React 18 does not know the camelCase prop; the lowercase attribute reaches the DOM as-is.
                 {...({ fetchpriority: "high" } as Record<string, string>)}
                 decoding="async"

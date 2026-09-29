@@ -27,18 +27,17 @@ export function TrustBadgesAdapter({ props }: { props: z.infer<typeof trustBadge
   const badges = props.badges ?? settings?.homepageContent?.trustBadges ?? [];
   if (badges.length === 0) return null;
 
-  return <BadgeBand badges={badges} dark={props.theme === "dark"} />;
+  // Every landing opens with the navy hero, so the badge band is always the
+  // dark hairline strip right under it; a cream band there read as a seam.
+  return <BadgeBand badges={badges} dark />;
 }
 
-/**
- * A slim full-bleed band (navy or cream) with hairlines between items. The
- * light variant is used by the /websites and /barbershops landings.
- */
+/** A slim full-bleed navy band with hairlines between items. */
 function BadgeBand({ badges, dark }: { badges: Badge[]; dark: boolean }) {
   const { t } = useTranslation();
   return (
     <div data-testid="section-trust-badges">
-      <Band tone={dark ? "dark" : "cream"} className="py-8 sm:py-10">
+      <Band tone="dark" className="border-b border-white/10 py-8 sm:py-10">
         <ul
           className={`grid grid-cols-1 divide-y md:grid-cols-3 md:divide-x md:divide-y-0 ${
             dark ? "divide-white/10" : "divide-ink-700/10"
