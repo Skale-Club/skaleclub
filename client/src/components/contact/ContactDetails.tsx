@@ -16,7 +16,7 @@ function Row({ icon: Icon, label, children }: { icon: LucideIcon; label: string;
     <div className="flex items-start gap-4">
       <Icon className="mt-0.5 h-5 w-5 shrink-0 text-cta-ink" aria-hidden="true" />
       <div className="min-w-0">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-ink-400">{label}</p>
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-ink-500">{label}</p>
         <div className="mt-1 font-medium text-ink">{children}</div>
       </div>
     </div>

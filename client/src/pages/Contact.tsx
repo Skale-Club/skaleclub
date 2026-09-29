@@ -25,14 +25,16 @@ export default function Contact() {
         </p>
       </Band>
 
-      <Band tone="cream" pattern>
+      <Band tone="cream">
         <div className="grid items-start gap-8 lg:grid-cols-[360px_minmax(0,1fr)] lg:gap-14">
-          <ContactDetails
-            phone={companySettings?.companyPhone || ""}
-            email={companySettings?.companyEmail || ""}
-            address={companySettings?.companyAddress || ""}
-          />
           <ContactForm companyName={companySettings?.companyName || "Skale Club"} />
+          <div className="lg:order-first">
+            <ContactDetails
+              phone={companySettings?.companyPhone || ""}
+              email={companySettings?.companyEmail || ""}
+              address={companySettings?.companyAddress || ""}
+            />
+          </div>
         </div>
       </Band>
     </div>
