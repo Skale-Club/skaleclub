@@ -42,7 +42,15 @@ export default function Portfolio() {
   const openForm = (source: string) => {
     setOpen(null);
     setIsFormOpen(true);
-    trackCTAClick(`portfolio-${source}`, companySettings?.ctaText || "Book Call");
+    // LeadFormModal has no hidden-answer support yet, so the product a lead
+    // asked about is parked in sessionStorage for it (or the backend) to read.
+    try {
+      if (source === "hero" || source === "footer") sessionStorage.removeItem("leadContext");
+      else sessionStorage.setItem("leadContext", source);
+    } catch {
+      /* storage unavailable */
+    }
+    trackCTAClick(`portfolio-${source}`, source);
   };
 
   if (isLoading) {
@@ -58,7 +66,7 @@ export default function Portfolio() {
   const cta = content?.portfolioCtaSection;
   const heroTitle = t(hero?.title || "Stop Doing Repetitive Work. Automate It.");
   const buttonText = t(hero?.buttonText || "Book a Strategy Session");
-  const whatsapp = companySettings?.companyPhone?.replace(/\D/g, "");
+  const phone = companySettings?.companyPhone?.trim() || undefined;
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-navy-950 text-fog-200 [color-scheme:dark]">
@@ -76,7 +84,7 @@ export default function Portfolio() {
         title={t(cta?.title || "Ready to Redefine Your Potential?")}
         subtitle={cta?.subtitle ? t(cta.subtitle) : undefined}
         buttonText={t(cta?.buttonText || "Book a Strategy Session")}
-        whatsapp={whatsapp}
+        phone={phone}
         onCta={() => openForm("footer")}
       />
 

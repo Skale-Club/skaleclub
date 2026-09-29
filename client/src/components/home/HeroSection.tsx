@@ -1,8 +1,9 @@
 import type { CompanySettings, HomepageContent } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
-import { trackCTAClick } from "@/lib/analytics";
+import { trackCTAClick, trackEvent } from "@/lib/analytics";
+import { defaultWhatsappMessage, whatsappHref } from "@shared/phone";
 import { TrustBadges } from "@/components/home/TrustBadges";
-import { Band, PillButton } from "@/components/editorial";
+import { Band, PillButton, PillLink } from "@/components/editorial";
 
 interface HeroSectionProps {
   companySettings?: CompanySettings;
@@ -17,7 +18,7 @@ interface HeroSectionProps {
 }
 
 export function HeroSection({ companySettings, homepageContent, onCtaClick, showTrustBadges = true }: HeroSectionProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const heroImageUrl = (companySettings?.heroImageUrl || '').trim();
   const trustBadges = homepageContent.trustBadges || [];
   // ── Trust-bar bleed contract ──────────────────────────────────────────
@@ -93,6 +94,17 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
                 >
                   {t(companySettings.ctaText)}
                 </PillButton>
+              ) : null}
+              {companySettings?.companyPhone?.trim() ? (
+                <PillLink
+                  href={whatsappHref(companySettings.companyPhone, defaultWhatsappMessage(language))}
+                  target="_blank"
+                  variant="ghost"
+                  className="w-full sm:w-auto shrink-0 whitespace-nowrap px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg"
+                  onClick={() => trackEvent('click_whatsapp', { location: 'hero' })}
+                >
+                  {t("Talk on WhatsApp")}
+                </PillLink>
               ) : null}
             </div>
           </div>

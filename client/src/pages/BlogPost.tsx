@@ -14,7 +14,8 @@ import {
   Linkedin,
   Share2
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatDate } from '@/lib/format';
+import { useTranslation } from '@/hooks/useTranslation';
 import type { BlogPost, CompanySettings } from '@shared/schema';
 import { usePagePaths } from '@/lib/pagePaths';
 import { NotFoundState } from '@/components/NotFoundState';
@@ -23,6 +24,7 @@ import { fetchJson } from '@/lib/queryClient';
 export default function BlogPostPage() {
   const params = useParams<{ slug: string }>();
   const pagePaths = usePagePaths();
+  const { t, language } = useTranslation();
 
   const { data: post, isLoading, error } = useQuery<BlogPost>({
     queryKey: ['/api/blog', params.slug],
@@ -128,7 +130,7 @@ export default function BlogPostPage() {
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 <time dateTime={post.publishedAt ? String(post.publishedAt) : ''} data-testid="text-post-date">
-                  {post.publishedAt ? format(new Date(post.publishedAt), 'MMMM d, yyyy') : 'Draft'}
+                  {post.publishedAt ? formatDate(post.publishedAt, language) : t("Draft")}
                 </time>
               </div>
               {post.authorName && (
@@ -251,7 +253,7 @@ export default function BlogPostPage() {
                                 {relatedPost.title}
                               </h4>
                               <p className="text-xs text-muted-foreground mt-1">
-                                {relatedPost.publishedAt && format(new Date(relatedPost.publishedAt), 'MMM d, yyyy')}
+                                {relatedPost.publishedAt && formatDate(relatedPost.publishedAt, language)}
                               </p>
                             </div>
                           </div>

@@ -5,7 +5,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import {
   NFC_KEYCHAIN_TYPES,
   NFC_QUANTITY,
-  formatUsdCents,
+  formatUsdCentsFor,
   quoteNfcOrder,
   type NfcKeychainType,
 } from "@shared/nfc-pricing";
@@ -28,7 +28,7 @@ export function ProductPickerInput({
   quantity?: number;
   onChange: (typeId: string) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const types = NFC_KEYCHAIN_TYPES.filter((type) => type.active);
   const onlyType = types.length === 1 ? types[0] : null;
 
@@ -47,6 +47,7 @@ export function ProductPickerInput({
           soleOption={Boolean(onlyType)}
           onSelect={() => onChange(type.id)}
           priceLabel={t}
+          formatPrice={formatUsdCentsFor(language)}
         />
       ))}
     </div>
@@ -60,6 +61,7 @@ function TypeCard({
   soleOption,
   onSelect,
   priceLabel: t,
+  formatPrice: formatUsdCents,
 }: {
   type: NfcKeychainType;
   quantity?: number;
@@ -67,6 +69,7 @@ function TypeCard({
   soleOption: boolean;
   onSelect: () => void;
   priceLabel: (key: string) => string;
+  formatPrice: (cents: number) => string;
 }) {
   // Before a quantity exists the card quotes the entry price, hence "from".
   const knownQuantity = typeof quantity === "number" && Number.isFinite(quantity);
