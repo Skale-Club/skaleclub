@@ -90,7 +90,10 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  // redirect: false — a public/ asset folder sharing a route's name (e.g.
+  // public/nfc-guide/ images vs the /nfc-guide page) must not 301 the page to
+  // a trailing-slash URL; the request falls through to the SPA handler instead.
+  app.use(express.static(distPath, { redirect: false }));
 
   // Missing hashed assets (e.g. a stale tab requests an old chunk after deploy)
   // must 404 cleanly — otherwise the SPA fallback below would return index.html
