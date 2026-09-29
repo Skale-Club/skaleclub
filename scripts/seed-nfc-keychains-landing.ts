@@ -306,7 +306,7 @@ export const LANDING_SECTIONS: PageSection[] = [
   {
     type: "featureGrid",
     props: {
-      theme: "dark",
+      theme: "light",
       eyebrow: "What the tap opens",
       heading: "You choose where every tap goes",
       subheading: "One link per keychain. Point it at a page you control and you can change it anytime.",
@@ -335,7 +335,7 @@ export const LANDING_SECTIONS: PageSection[] = [
       ],
     },
   },
-  { type: "processStepper", props: { ...NFC_STEPPER_PROPS, theme: "dark", anchorId: "how-it-works" } },
+  { type: "processStepper", props: { ...NFC_STEPPER_PROPS, theme: "light", anchorId: "how-it-works" } },
   {
     type: "faqAccordion",
     props: {

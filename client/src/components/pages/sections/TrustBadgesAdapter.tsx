@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import type { CompanySettings } from "@shared/schema";
-import { TrustBadges, badgeIconMap } from "@/components/home/TrustBadges";
+import { badgeIconMap } from "@/components/home/TrustBadges";
+import { Band } from "@/components/editorial";
 import { useTranslation } from "@/hooks/useTranslation";
-import { DARK_HAIRLINE, DARK_SURFACE, sectionThemeSchema } from "./sectionTheme";
+import { sectionThemeSchema } from "./sectionTheme";
 
 const badgeSchema = z.object({
   title: z.string(),
@@ -26,43 +27,42 @@ export function TrustBadgesAdapter({ props }: { props: z.infer<typeof trustBadge
   const badges = props.badges ?? settings?.homepageContent?.trustBadges ?? [];
   if (badges.length === 0) return null;
 
-  if (props.theme === "dark") return <DarkBadgeBand badges={badges} />;
-
-  // Light (the /websites and /barbershops landings): the homepage card, as before.
-  return (
-    <div className="container-custom mx-auto px-4 sm:px-6 py-6">
-      <TrustBadges badges={badges} />
-    </div>
-  );
+  return <BadgeBand badges={badges} dark={props.theme === "dark"} />;
 }
 
 /**
- * Dark: a full-bleed band on the page's navy surface, hairlines top and bottom
- * and between items. The homepage card is not used here: its own #111 fill
- * inside a container-width wrapper left visible steps at the band's edges.
+ * A slim full-bleed band (navy or cream) with hairlines between items. The
+ * light variant is used by the /websites and /barbershops landings.
  */
-function DarkBadgeBand({ badges }: { badges: Badge[] }) {
+function BadgeBand({ badges, dark }: { badges: Badge[]; dark: boolean }) {
   const { t } = useTranslation();
   return (
-    <div className={`${DARK_SURFACE} border-y ${DARK_HAIRLINE}`} data-testid="section-trust-badges">
-      <div className="container-custom container-page mx-auto">
-        <ul className={`grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x ${DARK_HAIRLINE} [&>li]:border-[rgba(180,192,216,0.14)]`}>
+    <div data-testid="section-trust-badges">
+      <Band tone={dark ? "dark" : "cream"} className="py-8 sm:py-10">
+        <ul
+          className={`grid grid-cols-1 divide-y md:grid-cols-3 md:divide-x md:divide-y-0 ${
+            dark ? "divide-white/10" : "divide-ink-700/10"
+          }`}
+        >
           {badges.map((badge, i) => {
             const Icon = badgeIconMap[(badge.icon || "").toLowerCase()] || badgeIconMap.star;
             return (
-              <li key={i} className="flex items-start gap-4 py-6 md:py-8 md:px-8 first:md:pl-0 last:md:pr-0">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cta/15 text-blue-300">
-                  <Icon className="h-5 w-5" aria-hidden="true" />
-                </span>
+              <li key={i} className="flex items-start gap-4 py-5 first:pt-0 last:pb-0 md:px-8 md:py-0 md:first:pl-0 md:last:pr-0">
+                <Icon
+                  className={`mt-0.5 h-6 w-6 shrink-0 ${dark ? "text-cta-soft" : "text-cta-ink"}`}
+                  aria-hidden="true"
+                />
                 <span>
-                  <span className="block font-semibold text-white">{t(badge.title)}</span>
-                  <span className="mt-1 block text-sm leading-relaxed text-[#B4C0D8]">{t(badge.description)}</span>
+                  <span className={`block font-semibold ${dark ? "text-fog-50" : "text-ink"}`}>{t(badge.title)}</span>
+                  <span className={`mt-1 block text-sm leading-6 ${dark ? "text-fog-400" : "text-ink-500"}`}>
+                    {t(badge.description)}
+                  </span>
                 </span>
               </li>
             );
           })}
         </ul>
-      </div>
+      </Band>
     </div>
   );
 }
