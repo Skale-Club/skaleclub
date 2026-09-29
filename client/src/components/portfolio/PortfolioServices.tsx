@@ -21,33 +21,37 @@ export function PortfolioServices({ services, onOpen }: { services: CatalogItem[
           const eyebrow = item.category ? t(CATALOG_CATEGORY_LABEL[item.category]) : undefined;
           const description = item.subtitle ?? item.description;
           return (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => onOpen(item)}
-              className="group block text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cta-soft"
+            <article key={item.key} className="group relative">
+            <EditorialCard
+              tone="dark"
+              className="flex h-full flex-col overflow-hidden p-0 transition group-hover:-translate-y-1 group-hover:border-cta-soft/40 sm:p-0"
             >
-              <EditorialCard tone="dark" className="flex h-full flex-col overflow-hidden !p-0 transition group-hover:-translate-y-1 group-hover:border-cta-soft/40">
-                {item.cover && (
-                  <img
-                    src={getImageUrl(item.cover, { width: 720, quality: 80 })}
-                    alt=""
-                    className="aspect-[16/9] w-full object-cover"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                )}
-                <div className="flex flex-1 flex-col p-6">
-                  {eyebrow && <Eyebrow className="mb-3 tracking-[0.2em]">{eyebrow}</Eyebrow>}
-                  <h3 className="font-display text-2xl font-semibold text-fog-50">{t(item.title)}</h3>
-                  {description && <p className="mt-3 line-clamp-2 text-sm leading-6 text-fog-400">{t(description)}</p>}
-                  <span className="mt-auto inline-flex items-center gap-2 pt-6 text-sm font-semibold text-cta-soft">
-                    {t("See details")}
-                    <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" aria-hidden="true" />
-                  </span>
-                </div>
-              </EditorialCard>
-            </button>
+              {item.cover && (
+                <img
+                  src={getImageUrl(item.cover, { width: 720, quality: 80 })}
+                  alt=""
+                  className="aspect-[16/9] w-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
+              )}
+              <div className="flex flex-1 flex-col p-6">
+                {eyebrow && <Eyebrow className="mb-3 tracking-[0.2em]">{eyebrow}</Eyebrow>}
+                <h3 className="font-display text-2xl font-semibold text-fog-50">{t(item.title)}</h3>
+                {description && <p className="mt-3 line-clamp-2 text-sm leading-6 text-fog-400">{t(description)}</p>}
+                <span className="mt-auto inline-flex items-center gap-2 pt-6 text-sm font-semibold text-cta-soft" aria-hidden="true">
+                  {t("See details")}
+                  <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                </span>
+              </div>
+              <button
+                type="button"
+                aria-label={t(item.title)}
+                onClick={() => onOpen(item)}
+                className="absolute inset-0 z-10 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-cta-soft"
+              />
+            </EditorialCard>
+            </article>
           );
         })}
       </div>

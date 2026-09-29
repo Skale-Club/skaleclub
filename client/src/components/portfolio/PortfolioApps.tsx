@@ -10,7 +10,7 @@ function AppRow({ item, flip, onOpen }: { item: CatalogItem; flip: boolean; onOp
   const { t } = useTranslation();
   const eyebrow = item.category ? t(CATALOG_CATEGORY_LABEL[item.category]) : undefined;
   const source = item.headline ?? item.subtitle;
-  const siteUrl = item.site ?? item.links[0];
+  const siteUrl = item.site;
   const siteHref = siteUrl ? (/^https?:\/\//i.test(siteUrl) ? siteUrl : `https://${siteUrl}`) : undefined;
 
   return (
@@ -20,8 +20,8 @@ function AppRow({ item, flip, onOpen }: { item: CatalogItem; flip: boolean; onOp
           <Figure
             tone="dark"
             src={getImageUrl(item.cover, { width: 1200, quality: 80 })}
-            alt={item.title}
-            caption={item.subtitle}
+            alt="App home screen"
+            caption={item.headline ? item.subtitle : undefined}
             imgClassName="aspect-[16/10] object-top"
           />
         ) : (
@@ -62,17 +62,21 @@ function AppRow({ item, flip, onOpen }: { item: CatalogItem; flip: boolean; onOp
           <PillButton variant="ghost" onClick={() => onOpen(item)}>
             {t("See details")}
           </PillButton>
-          {siteHref && (
+          {siteHref && siteDomain(siteUrl) && (
             <PillLink href={siteHref} target="_blank" variant="ghost" className="border-transparent text-cta-soft hover:bg-white/5">
               {siteDomain(siteUrl)} <span aria-hidden="true">↗</span>
             </PillLink>
           )}
-          {item.price && (
-            <span className="ml-auto font-display text-xl font-semibold text-fog-50">
-              {item.price.value}
-              {item.price.label && <small className="ml-1 text-sm font-normal text-fog-400">{t(item.price.label)}</small>}
-            </span>
-          )}
+          <span className="ml-auto font-display text-xl font-semibold text-fog-50">
+            {item.price ? (
+              <>
+                {item.price.value}
+                {item.price.label && <small className="ml-1 text-sm font-normal text-fog-400">{t(item.price.label)}</small>}
+              </>
+            ) : (
+              t("Start here")
+            )}
+          </span>
         </div>
       </div>
     </article>

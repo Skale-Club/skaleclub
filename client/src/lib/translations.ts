@@ -662,7 +662,7 @@ export const translations = {
     'Trying again automatically in a moment.': 'Tentando novamente em instantes.',
     'Reload page': 'Recarregar página',
     // Catalog: /portfolio, CatalogCard, CatalogDetail (portfolio redesign, 2026-09)
-    'Our Solutions': 'Nossas Soluções', 'Talk on WhatsApp': 'Falar no WhatsApp', 'or talk on WhatsApp': 'ou fale no WhatsApp',
+    'Our Solutions': 'Nossas Soluções', 'Talk on WhatsApp': 'Falar no WhatsApp',
     "Explore the tools and services we've built to help businesses grow.": 'Conheça as ferramentas e os serviços que criamos para ajudar empresas a crescer.',
     'Ready-made apps and the services we perform: AI, automation, websites, marketing and more.': 'Apps prontos e os serviços que prestamos: IA, automação, sites, marketing e mais.',
     'AI & Automation': 'IA e automação', 'Systems & Booking': 'Sistemas e agendamento', 'CRM & Sales': 'CRM e vendas',
@@ -676,7 +676,7 @@ export const translations = {
     'Talk to us': 'Falar com a gente', 'Talk to us on WhatsApp': 'Fale com a gente no WhatsApp', 'See the apps': 'Ver os apps', 'Next step': 'Próximo passo',
     'ready-made apps in production': 'apps próprios em produção', 'marketing and technology services': 'serviços de marketing e tecnologia', 'entry plan': 'plano de entrada',
     '01 · Apps': '01 · Apps', '02 · Services': '02 · Serviços',
-    'Software ready to use': 'Software pronto para usar', 'Our own products, live today, with a fixed price. Subscribe and start.': 'Produtos nossos, já no ar, com preço fechado. Você assina e começa.',
+    'Our own products, live today, with a fixed price. Subscribe and start.': 'Produtos nossos, já no ar, com preço fechado. Você assina e começa.',
     'Built by us, for your business': 'Feito por nós, para o seu negócio', 'Tailored marketing and technology, quoted for your case.': 'Marketing e tecnologia sob medida, com orçamento para o seu caso.',
     // Catalog: /portfolio showroom redesign (v3, 2026-09)
     'dashboard': 'painel',
@@ -699,7 +699,7 @@ export const translations = {
     'Get found online and stay active where customers look': 'Seja encontrado online e esteja ativo onde o cliente procura',
     'Follow up, book and quote before the lead goes cold': 'Faça o follow-up, agende e orce antes do lead esfriar',
     // Redesign Phase 3
-    'What we solve': 'O que resolvemos', 'Three problems, one system': 'Três problemas, um só sistema',
+    'App home screen': 'Tela inicial do aplicativo', 'What we solve': 'O que resolvemos', 'Three problems, one system': 'Três problemas, um só sistema',
   }
 } as const;
 export type TranslationKey = keyof typeof translations.pt;
