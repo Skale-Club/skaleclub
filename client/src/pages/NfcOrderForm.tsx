@@ -35,7 +35,7 @@ export default function NfcOrderForm() {
 
   return (
     <main
-      className="relative min-h-screen overflow-hidden bg-[#10151e] text-[#e3e7ee] [color-scheme:dark]"
+      className="relative min-h-screen overflow-hidden bg-[#10151e] text-[#e3e7ee]"
       style={{
         backgroundImage:
           "linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px)",
