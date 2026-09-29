@@ -86,18 +86,26 @@ function AppRow({ item, flip, onOpen }: { item: CatalogItem; flip: boolean; onOp
 export function PortfolioApps({ apps, onOpen }: { apps: CatalogItem[]; onOpen: (item: CatalogItem) => void }) {
   if (apps.length === 0) return null;
   return (
-    <Band tone="dark" id="apps" className="scroll-mt-[calc(var(--nav-offset)+1rem)]">
-      <SectionHeading
-        variant="editorial"
-        eyebrow="01 · Apps"
-        title="Apps we build and run"
-        subtitle="Our own products, live today, with a fixed price. Subscribe and start."
-      />
-      <div className="mt-14 space-y-16 sm:space-y-24">
-        {apps.map((item, i) => (
-          <AppRow key={item.key} item={item} flip={i % 2 === 1} onOpen={onOpen} />
-        ))}
-      </div>
-    </Band>
+    <>
+      <Band tone="dark" id="apps" className="scroll-mt-[calc(var(--nav-offset)+1rem)] pb-10 sm:pb-14">
+        <SectionHeading
+          variant="editorial"
+          eyebrow="01 · Apps"
+          title="Apps we build and run"
+          subtitle="Our own products, live today, with a fixed price. Subscribe and start."
+        />
+      </Band>
+      {/* Each app is its own full-bleed band; alternating navy steps plus a
+          hairline keep the rows readable as separate products. */}
+      {apps.map((item, i) => (
+        <Band
+          key={item.key}
+          tone="dark"
+          className={cn("border-t border-white/10 py-16 sm:py-20", i % 2 === 0 && "bg-navy-900")}
+        >
+          <AppRow item={item} flip={i % 2 === 1} onOpen={onOpen} />
+        </Band>
+      ))}
+    </>
   );
 }
