@@ -205,11 +205,11 @@ function SectionHeading({
   const isLight = tone === "light";
   return (
     <div className="max-w-3xl">
-      <p className={`text-xs font-bold uppercase tracking-[0.24em] ${isLight ? "text-[#245dc8]" : "text-[#69a8ff]"}`}>{t(eyebrow)}</p>
-      <h2 className={`mt-4 font-serif text-4xl font-semibold leading-[1.04] tracking-[-0.025em] sm:text-5xl ${isLight ? "text-[#101b31]" : "text-[#f4f8ff]"}`}>
+      <p className={`text-xs font-bold uppercase tracking-[0.24em] ${isLight ? "text-[#245dc8]" : "text-[#8fa9ee]"}`}>{t(eyebrow)}</p>
+      <h2 className={`mt-4 font-serif text-4xl font-semibold leading-[1.04] tracking-[-0.025em] sm:text-5xl ${isLight ? "text-[#101b31]" : "text-[#f3f5f8]"}`}>
         {t(title)}
       </h2>
-      {description ? <p className={`mt-5 max-w-2xl text-base leading-7 sm:text-lg ${isLight ? "text-[#596276]" : "text-[#aebbd0]"}`}>{t(description)}</p> : null}
+      {description ? <p className={`mt-5 max-w-2xl text-base leading-7 sm:text-lg ${isLight ? "text-[#596276]" : "text-[#a7afbc]"}`}>{t(description)}</p> : null}
     </div>
   );
 }
@@ -223,42 +223,42 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
   );
 
   return (
-    <article className="bg-[#07111f] text-[#dbe7f7] [color-scheme:dark]" data-testid="section-nfc-product-guide">
+    <article className="bg-[#0d121a] text-[#e3e7ee] [color-scheme:dark]" data-testid="section-nfc-product-guide">
       <div
-        className="border-b border-white/10 bg-[#0a1628]"
+        className="border-b border-white/10 bg-[#10151e]"
         style={{
           backgroundImage:
-            "radial-gradient(circle at 78% 14%, rgba(39,107,217,.16), transparent 32%), linear-gradient(rgba(143,180,232,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(143,180,232,.055) 1px, transparent 1px)",
+            "linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px)",
           backgroundSize: "40px 40px",
         }}
       >
         <div className="mx-auto max-w-[1240px] page-top px-5 pb-16 sm:px-8 sm:pb-24 lg:px-12">
           <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#69a8ff]/25 bg-[#11223a]/80 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[#8fc0ff] shadow-[0_10px_35px_rgba(0,0,0,.18)] backdrop-blur">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#8fa9ee]/25 bg-[#171e2a]/80 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[#a9bcef] shadow-[0_10px_35px_rgba(0,0,0,.18)] backdrop-blur">
                 <Radio className="h-4 w-4" />
                 {t("NFC keychain guide")}
               </div>
-              <h1 className="mt-8 max-w-4xl font-serif text-5xl font-semibold leading-[0.98] tracking-[-0.04em] text-[#f7faff] sm:text-6xl lg:text-7xl">
+              <h1 className="mt-8 max-w-4xl font-serif text-5xl font-semibold leading-[0.98] tracking-[-0.04em] text-[#f3f5f8] sm:text-6xl lg:text-7xl">
                 {t("Understand the options before you place an order.")}
               </h1>
-              <p className="mt-7 max-w-2xl text-lg leading-8 text-[#b4c1d5] sm:text-xl">
-                {t("Models, prices, NFC technology, artwork and production — explained clearly, without turning this page into a sales pitch.")}
+              <p className="mt-7 max-w-2xl text-lg leading-8 text-[#a7afbc] sm:text-xl">
+                {t("Models, prices, NFC technology, artwork and production, explained clearly and without turning this page into a sales pitch.")}
               </p>
             </div>
 
-            <div className="border-l-2 border-[#69a8ff] bg-[#101f34]/90 p-6 shadow-[0_22px_60px_rgba(0,0,0,.28)] backdrop-blur">
-              <Sparkles className="h-6 w-6 text-[#69a8ff]" />
-              <p className="mt-5 font-serif text-2xl font-semibold leading-tight text-[#f4f8ff]">
+            <div className="border-l-2 border-[#8fa9ee] bg-[#161d28]/90 p-6 shadow-[0_22px_60px_rgba(0,0,0,.28)] backdrop-blur">
+              <Sparkles className="h-6 w-6 text-[#8fa9ee]" />
+              <p className="mt-5 font-serif text-2xl font-semibold leading-tight text-[#f3f5f8]">
                 {t("Almost anything is possible. Every choice affects the price.")}
               </p>
-              <p className="mt-4 text-sm leading-6 text-[#aebbd0]">
+              <p className="mt-4 text-sm leading-6 text-[#a7afbc]">
                 {t("A simple flat logo has predictable pricing. Relief, custom shapes, characters and detailed pieces are reviewed and quoted individually.")}
               </p>
             </div>
           </div>
 
-          <figure className="mt-12 overflow-hidden border border-white/12 bg-[#0d1b2e] shadow-[0_28px_80px_rgba(0,0,0,.38)] sm:mt-16">
+          <figure className="mt-12 overflow-hidden border border-white/12 bg-[#151b25] shadow-[0_28px_80px_rgba(0,0,0,.38)] sm:mt-16">
             <img
               src="/nfc-guide/hero.webp"
               alt={t("AI-generated visual examples of flat, raised-relief and custom-shaped NFC keychains")}
@@ -266,21 +266,21 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
               loading="eager"
               decoding="async"
             />
-            <figcaption className="flex items-start gap-3 border-t border-white/10 bg-[#0d1b2e] px-5 py-4 text-xs leading-5 text-[#aab7ca] sm:px-6">
-              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#69a8ff]" />
+            <figcaption className="flex items-start gap-3 border-t border-white/10 bg-[#151b25] px-5 py-4 text-xs leading-5 text-[#a7afbc] sm:px-6">
+              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#8fa9ee]" />
               {t("Illustrative concepts. Your final design is reviewed and approved before production.")}
             </figcaption>
           </figure>
         </div>
       </div>
 
-      <div className="sticky top-[var(--nav-offset)] z-20 border-b border-white/10 bg-[#07111f]/95 shadow-[0_12px_35px_rgba(0,0,0,.22)] backdrop-blur-md">
+      <div className="sticky top-[var(--nav-offset)] z-20 border-b border-white/10 bg-[#0d121a]/95 shadow-[0_12px_35px_rgba(0,0,0,.22)] backdrop-blur-md">
         <nav className="mx-auto flex max-w-[1240px] gap-2 overflow-x-auto px-5 py-3 sm:px-8 lg:px-12" aria-label={t("Guide sections")}>
           {navigation.map(([label, id]) => (
             <a
               key={id}
               href={`#${id}`}
-              className="shrink-0 rounded-full border border-white/12 bg-[#10213a]/85 px-4 py-2 text-sm font-semibold text-[#d7e3f4] transition hover:border-[#69a8ff]/60 hover:bg-[#17305a] hover:text-white"
+              className="shrink-0 rounded-full border border-white/12 bg-[#171e2a]/85 px-4 py-2 text-sm font-semibold text-[#cdd3dc] transition hover:border-[#8fa9ee]/60 hover:bg-[#222b3a] hover:text-white"
             >
               {t(label)}
             </a>
@@ -345,7 +345,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
                   title="The price follows the work required."
                   description="We do not pretend that a simple flat logo and a detailed character cost the same to design and produce."
                 />
-                <figure className="mt-9 overflow-hidden border border-white/10 bg-[#0c192b] shadow-[0_20px_55px_rgba(0,0,0,.2)]">
+                <figure className="mt-9 overflow-hidden border border-white/10 bg-[#151b25] shadow-[0_20px_55px_rgba(0,0,0,.2)]">
                   <img
                     src="/nfc-guide/price-factors.webp"
                     alt={t("Three illustrative keychains showing increasing design and production complexity")}
@@ -353,23 +353,23 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
                     loading="lazy"
                     decoding="async"
                   />
-                  <figcaption className="border-t border-white/10 px-5 py-3 text-xs leading-5 text-[#aab7ca]">
+                  <figcaption className="border-t border-white/10 px-5 py-3 text-xs leading-5 text-[#a7afbc]">
                     {t("A flat surface, raised layers and a detailed custom contour require different amounts of work.")}
                   </figcaption>
                 </figure>
                 <div className="mt-10 grid gap-x-8 gap-y-7 sm:grid-cols-2">
                   {priceFactors.map(({ icon: Icon, title, text }) => (
                     <div key={title} className="border-t border-white/15 pt-5">
-                      <Icon className="h-5 w-5 text-[#69a8ff]" />
-                      <h3 className="mt-4 font-semibold text-[#edf4ff]">{t(title)}</h3>
-                      <p className="mt-2 text-sm leading-6 text-[#aab7ca]">{t(text)}</p>
+                      <Icon className="h-5 w-5 text-[#8fa9ee]" />
+                      <h3 className="mt-4 font-semibold text-[#f3f5f8]">{t(title)}</h3>
+                      <p className="mt-2 text-sm leading-6 text-[#a7afbc]">{t(text)}</p>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <aside className="border border-[#69a8ff]/18 bg-[#0c2547] p-7 text-white shadow-[0_26px_70px_rgba(0,0,0,.28)] sm:p-9">
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#8db2ff]">{t("Flat model reference")}</p>
+              <aside className="border border-[#8fa9ee]/18 bg-[#182132] p-7 text-white shadow-[0_26px_70px_rgba(0,0,0,.28)] sm:p-9">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#a9bcef]">{t("Flat model reference")}</p>
                 <h3 className="mt-4 font-serif text-3xl font-semibold">{t("Published unit pricing")}</h3>
                 <p className="mt-3 text-sm leading-6 text-slate-300">
                   {t("A flat face with your logo printed on the surface.")}
@@ -383,11 +383,11 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
                   ))}
                 </div>
                 <div className="mt-6 flex gap-3 text-sm leading-6 text-slate-300">
-                  <CircleDollarSign className="mt-0.5 h-5 w-5 shrink-0 text-[#8db2ff]" />
+                  <CircleDollarSign className="mt-0.5 h-5 w-5 shrink-0 text-[#a9bcef]" />
                   <p>{t(`First orders add a one-time ${formatUsdCents(NFC_ART_FEE_CENTS)} art and setup fee. Repeat orders using the approved artwork normally do not.`)}</p>
                 </div>
                 <div className="mt-5 flex gap-3 text-sm leading-6 text-slate-300">
-                  <MessageCircle className="mt-0.5 h-5 w-5 shrink-0 text-[#8db2ff]" />
+                  <MessageCircle className="mt-0.5 h-5 w-5 shrink-0 text-[#a9bcef]" />
                   <p>{t("Raised relief and custom shapes receive a written quote after we review the actual design.")}</p>
                 </div>
               </aside>
@@ -412,7 +412,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
                 decoding="async"
               />
               <figcaption className="border-t border-[#172238]/10 px-5 py-3 text-xs leading-5 text-[#626b7b]">
-                {t("Bring the back of the phone close to the keychain and open the notification — no app required.")}
+                {t("Bring the back of the phone close to the keychain and open the notification. No app required.")}
               </figcaption>
             </figure>
             <div className="mt-12 grid gap-5 md:grid-cols-3">
@@ -443,21 +443,21 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
                 title="Send what you have. We turn it into something that can be made."
                 description="A vector logo is ideal, but it is not mandatory. A clear image, product photo, sketch or character reference gives us a place to start."
                 />
-                <div className="mt-9 border border-white/10 bg-[#0c192b] p-7 shadow-[0_18px_50px_rgba(0,0,0,.18)] sm:p-9">
+                <div className="mt-9 border border-white/10 bg-[#151b25] p-7 shadow-[0_18px_50px_rgba(0,0,0,.18)] sm:p-9">
                 {[
                   "We check whether fine details need to be simplified.",
                   "We choose a safe position for the NFC tag and keyring hole.",
                   "We confirm colors, layers, contour and overall proportions.",
                   "You approve the adapted design before production.",
                 ].map((item) => (
-                  <p key={item} className="flex gap-3 border-b border-white/10 py-4 text-sm leading-6 text-[#c7d3e4] last:border-0">
-                    <Check className="mt-0.5 h-5 w-5 shrink-0 text-[#69a8ff]" />
+                  <p key={item} className="flex gap-3 border-b border-white/10 py-4 text-sm leading-6 text-[#cdd3dc] last:border-0">
+                    <Check className="mt-0.5 h-5 w-5 shrink-0 text-[#8fa9ee]" />
                     {t(item)}
                   </p>
                 ))}
                 </div>
               </div>
-              <figure className="overflow-hidden border border-white/10 bg-[#0c192b] shadow-[0_28px_70px_rgba(0,0,0,.28)]">
+              <figure className="overflow-hidden border border-white/10 bg-[#151b25] shadow-[0_28px_70px_rgba(0,0,0,.28)]">
                 <img
                   src="/nfc-guide/artwork.webp"
                   alt={t("Illustrative design desk showing sketch, digital layers, color samples and finished keychain")}
@@ -465,7 +465,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
                   loading="lazy"
                   decoding="async"
                 />
-                <figcaption className="border-t border-white/10 px-5 py-3 text-xs leading-5 text-[#aab7ca]">
+                <figcaption className="border-t border-white/10 px-5 py-3 text-xs leading-5 text-[#a7afbc]">
                   {t("We adapt the reference, confirm the colors and layers, and send the design for approval.")}
                 </figcaption>
               </figure>
@@ -524,17 +524,17 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
             <div className="mt-12 grid gap-x-12 gap-y-12 lg:grid-cols-2">
               {faqGroups.map((group) => (
                 <div key={group.title}>
-                  <h3 className="border-b-2 border-[#8fc0ff]/70 pb-4 text-sm font-bold uppercase tracking-[0.16em] text-[#e8f1ff]">
+                  <h3 className="border-b-2 border-[#a9bcef]/70 pb-4 text-sm font-bold uppercase tracking-[0.16em] text-[#f3f5f8]">
                     {t(group.title)}
                   </h3>
                   <div className="divide-y divide-white/10">
                     {group.items.map(([question, answer]) => (
                       <details key={question} className="group py-1">
-                        <summary className="flex cursor-pointer list-none items-start justify-between gap-5 py-5 font-semibold leading-6 text-[#dbe7f7] transition hover:text-white marker:hidden">
+                        <summary className="flex cursor-pointer list-none items-start justify-between gap-5 py-5 font-semibold leading-6 text-[#e3e7ee] transition hover:text-white marker:hidden">
                           {t(question)}
-                          <ChevronDown className="mt-0.5 h-5 w-5 shrink-0 text-[#69a8ff] transition-transform group-open:rotate-180" />
+                          <ChevronDown className="mt-0.5 h-5 w-5 shrink-0 text-[#8fa9ee] transition-transform group-open:rotate-180" />
                         </summary>
-                        <p className="pb-6 pr-8 text-sm leading-7 text-[#aab7ca]">{t(answer)}</p>
+                        <p className="pb-6 pr-8 text-sm leading-7 text-[#a7afbc]">{t(answer)}</p>
                       </details>
                     ))}
                   </div>
@@ -544,10 +544,10 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
           </div>
         </section>
 
-      <section className="border-t border-[#69a8ff]/20 bg-[#0b2444] text-white">
+      <section className="border-t border-[#8fa9ee]/20 bg-[#141b27] text-white">
         <div className="mx-auto grid max-w-[1240px] items-center gap-8 px-5 py-14 sm:px-8 sm:py-16 lg:grid-cols-[1fr_auto] lg:px-12">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#8db2ff]">{t("Ready when you are")}</p>
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#a9bcef]">{t("Ready when you are")}</p>
             <h2 className="mt-4 max-w-2xl font-serif text-4xl font-semibold leading-tight sm:text-5xl">
               {t("Send the details. We will turn the idea into a clear quote.")}
             </h2>
@@ -556,7 +556,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
-            <Link href={orderLink} className="inline-flex items-center justify-center gap-2 rounded-full bg-[#eaf3ff] px-6 py-3.5 font-bold text-[#0b2444] shadow-[0_12px_35px_rgba(0,0,0,.2)] transition hover:bg-white hover:shadow-[0_16px_45px_rgba(68,137,238,.2)]">
+            <Link href={orderLink} className="inline-flex items-center justify-center gap-2 rounded-full bg-[#f3f5f8] px-6 py-3.5 font-bold text-[#141b27] shadow-[0_12px_35px_rgba(0,0,0,.2)] transition hover:bg-white hover:shadow-[0_16px_45px_rgba(143,169,238,.15)]">
               {t("Complete order details")}
               <ArrowRight className="h-4 w-4" />
             </Link>

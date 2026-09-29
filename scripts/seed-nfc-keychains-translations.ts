@@ -274,8 +274,8 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
   { source: "20 pieces × $10", translated: "20 peças × US$ 10" },
   { source: "Art / design fee", translated: "Taxa de arte / design" },
   {
-    source: "First order only — waived from your second order onward",
-    translated: "Só no primeiro pedido — a partir do segundo, não é cobrada",
+    source: "First order only. Waived from your second order onward",
+    translated: "Só no primeiro pedido. A partir do segundo, não é cobrada",
   },
   {
     source: "100% payment upfront. Production starts after payment clears.",

@@ -42,7 +42,7 @@ export function buildPriceLines(): PriceLine[] {
     {
       label: "Art / design fee",
       price: formatUsdCents(NFC_ART_FEE_CENTS),
-      note: "First order only — waived from your second order onward",
+      note: "First order only. Waived from your second order onward",
       kind: "one-time",
     },
   ];

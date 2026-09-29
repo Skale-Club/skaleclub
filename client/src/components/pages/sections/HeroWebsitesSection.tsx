@@ -41,7 +41,7 @@ export type HeroWebsitesProps = z.infer<typeof heroWebsitesPropsSchema>;
 
 const DEFAULTS = {
   headline: "Is your website still stuck in the Stone Age?",
-  subheadline: "We build fast, Google-optimized websites for service businesses — deployed in days, not months.",
+  subheadline: "We build fast, Google-optimized websites for service businesses, deployed in days, not months.",
   ctaLabel: "I want my website",
   // Served from client/public — language-neutral brand illustration.
   backgroundImageUrl: "/SkaleClub.webp",
