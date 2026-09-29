@@ -1,13 +1,15 @@
-// Quick 260906-fu3 — `faqAccordion` section type.
-// A single-open, collapsible FAQ list built on the shared Radix accordion
-// primitives. All copy is prop-driven with English defaults (the t() source
-// language) so a bare `props: {}` still renders; PT is served via t() when
-// the page language is 'pt'.
+// `faqAccordion` section type.
+// A single-open, collapsible FAQ list built on the Radix accordion. All copy
+// is prop-driven with English defaults (the t() source language) so a bare
+// `props: {}` still renders; PT is served via t() when the page language is 'pt'.
 
 import { z } from "zod";
+import * as AccordionPrimitive from "@radix-ui/react-accordion";
+import { ChevronDown } from "lucide-react";
+import { Band } from "@/components/editorial";
+import { SectionHeading } from "@/components/layout/SectionHeading";
 import { useTranslation } from "@/hooks/useTranslation";
-import { FaqList } from "@/components/FaqList";
-import { DARK_SURFACE, sectionThemeSchema } from "./sectionTheme";
+import { sectionThemeSchema } from "./sectionTheme";
 
 const faqItemSchema = z.object({
   question: z.string(),
@@ -43,55 +45,60 @@ const DEFAULTS = {
   ],
 } as const;
 
-// Quick 260906-qwl — LIGHT is copied verbatim from the pre-task classNames, so
-// `theme` undefined renders exactly as before.
 const LIGHT = {
-  section:    "bg-white",
-  eyebrow:    "text-cta",
-  heading:    "text-zinc-900",
-  subheading: "text-zinc-600",
+  list:     "divide-ink-700/10 border-ink-700/10",
+  question: "text-ink hover:text-ink-700",
+  answer:   "text-ink-500",
+  chevron:  "text-cta-ink",
 } as const;
 
 const DARK = {
-  section:    DARK_SURFACE,
-  eyebrow:    "text-blue-300",
-  heading:    "text-white",
-  subheading: "text-zinc-300",
+  list:     "divide-white/10 border-white/10",
+  question: "text-fog-200 hover:text-white",
+  answer:   "text-fog-400",
+  chevron:  "text-cta-soft",
 } as const;
 
 export function FaqAccordionSection({ props }: { props: FaqAccordionProps }) {
   const { t } = useTranslation();
-  const eyebrow    = props.eyebrow    ?? DEFAULTS.eyebrow;
-  const heading    = props.heading    ?? DEFAULTS.heading;
-  const subheading = props.subheading ?? DEFAULTS.subheading;
-  const items      = props.items      ?? DEFAULTS.items;
-  const c          = props.theme === "dark" ? DARK : LIGHT;
+  const dark  = props.theme === "dark";
+  const items = props.items ?? DEFAULTS.items;
+  const c     = dark ? DARK : LIGHT;
 
   return (
-    <section
-      className={`${c.section} py-16 md:py-24`}
-      data-testid="section-faq-accordion"
-    >
-      <div className="container-custom mx-auto px-6">
-        <div className="max-w-3xl mx-auto text-center mb-12 sm:mb-16">
-          <p className={`text-sm font-semibold uppercase tracking-widest ${c.eyebrow} mb-3`}>
-            {t(eyebrow)}
-          </p>
-          <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-bold font-display ${c.heading} leading-tight mb-4`}>
-            {t(heading)}
-          </h2>
-          <p className={`text-base sm:text-lg ${c.subheading} leading-relaxed`}>
-            {t(subheading)}
-          </p>
-        </div>
+    <div data-testid="section-faq-accordion">
+      <Band tone={dark ? "dark" : "cream"}>
+        <SectionHeading
+          variant="editorial"
+          tone={dark ? "dark" : "light"}
+          eyebrow={props.eyebrow ?? DEFAULTS.eyebrow}
+          title={props.heading ?? DEFAULTS.heading}
+          subtitle={props.subheading ?? DEFAULTS.subheading}
+        />
 
-        <div className="max-w-3xl mx-auto">
-          <FaqList
-            dark={props.theme === "dark"}
-            items={items.map((item) => ({ question: t(item.question), answer: t(item.answer) }))}
-          />
-        </div>
-      </div>
-    </section>
+        <AccordionPrimitive.Root
+          type="single"
+          collapsible
+          className={`mt-12 max-w-3xl divide-y border-y ${c.list}`}
+        >
+          {items.map((item, idx) => (
+            <AccordionPrimitive.Item key={idx} value={`faq-${idx}`} data-testid={`faq-item-${idx + 1}`}>
+              <AccordionPrimitive.Header className="flex">
+                <AccordionPrimitive.Trigger
+                  data-testid={`faq-trigger-${idx + 1}`}
+                  className={`flex flex-1 items-start justify-between gap-5 py-5 text-left font-semibold leading-6 transition [&[data-state=open]>svg]:rotate-180 ${c.question}`}
+                >
+                  {t(item.question)}
+                  <ChevronDown className={`mt-0.5 h-5 w-5 shrink-0 transition-transform duration-200 ${c.chevron}`} aria-hidden="true" />
+                </AccordionPrimitive.Trigger>
+              </AccordionPrimitive.Header>
+              <AccordionPrimitive.Content className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+                <p className={`whitespace-pre-wrap pb-6 pr-8 text-sm leading-7 ${c.answer}`}>{t(item.answer)}</p>
+              </AccordionPrimitive.Content>
+            </AccordionPrimitive.Item>
+          ))}
+        </AccordionPrimitive.Root>
+      </Band>
+    </div>
   );
 }

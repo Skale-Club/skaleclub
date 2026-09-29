@@ -1,5 +1,5 @@
-// Phase 44 — `processStepper` section type.
-// A reusable 4-step "how we work" stepper. All copy is prop-driven with
+// `processStepper` section type.
+// A reusable 4-step "how we work" grid. All copy is prop-driven with
 // English defaults (the t() source language) so the /websites seed can pass
 // `props: {}`; PT is served via translations.ts when language is 'pt'.
 
@@ -11,17 +11,19 @@ import {
   CreditCard, Package, Link2, Check,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { Band } from "@/components/editorial";
+import { SectionHeading } from "@/components/layout/SectionHeading";
 import { useTranslation } from "@/hooks/useTranslation";
-import { DARK_SURFACE, sectionThemeSchema } from "./sectionTheme";
+import { sectionThemeSchema } from "./sectionTheme";
 
 const stepSchema = z.object({
   title:       z.string(),
   description: z.string(),
 });
 
-// Optional per-step icon override (quick 260906-fu3). A closed enum allowlist
-// keyed to a lucide component map — NOT free-form strings — so seeded props
-// can never reference an icon that does not exist in the bundle.
+// Optional per-step icon override. A closed enum allowlist keyed to a lucide
+// component map (not free-form strings) so seeded props can never reference
+// an icon that does not exist in the bundle.
 export const processStepperIconNames = [
   "Search", "Palette", "Code2", "Rocket",
   "MessageCircle", "PenTool", "Factory", "Truck",
@@ -75,94 +77,68 @@ const DEFAULTS = {
 
 const ICONS = [Search, Palette, Code2, Rocket] as const;
 
-// Quick 260906-qwl — LIGHT is copied verbatim from the pre-task classNames, so
-// `theme` undefined renders exactly as before. The `cta` token stays a FILL only
-// (it is 4.3:1 on dark, below AA); `text-blue-300` is the dark text accent.
+// `cta-ink` is the accent on light surfaces, `cta-soft` on dark ones.
 const LIGHT = {
-  section:    "bg-zinc-50",
-  eyebrow:    "text-cta",
-  heading:    "text-zinc-900",
-  subheading: "text-zinc-600",
-  connector:  "bg-zinc-300",
-  iconCircle: "bg-cta text-white shadow-lg shadow-cta/20",
-  stepBadge:  "bg-cta text-white border-2 border-zinc-50",
-  stepTitle:  "text-zinc-900",
-  stepBody:   "text-zinc-600",
+  band:     "ice",
+  grid:     "border-ink-700/10 bg-ink-700/10",
+  cell:     "bg-white hover:bg-paper-ice/60",
+  number:   "text-cta-ink",
+  icon:     "text-ink-400",
+  title:    "text-ink",
+  body:     "text-ink-500",
 } as const;
 
 const DARK = {
-  section:    DARK_SURFACE,
-  eyebrow:    "text-blue-300",
-  heading:    "text-white",
-  subheading: "text-zinc-300",
-  connector:  "bg-white/15",
-  iconCircle: "bg-cta text-white shadow-lg shadow-cta/30",
-  stepBadge:  "bg-cta text-white border-2 border-[#0a1428]",
-  stepTitle:  "text-white",
-  stepBody:   "text-zinc-300",
+  band:     "dark",
+  grid:     "border-white/10 bg-white/10",
+  cell:     "bg-navy-800 hover:bg-navy-700",
+  number:   "text-cta-soft",
+  icon:     "text-fog-400",
+  title:    "text-fog-50",
+  body:     "text-fog-400",
 } as const;
 
 export function ProcessStepperSection({ props }: { props: ProcessStepperProps }) {
   const { t } = useTranslation();
-  const eyebrow    = props.eyebrow    ?? DEFAULTS.eyebrow;
-  const heading    = props.heading    ?? DEFAULTS.heading;
-  const subheading = props.subheading ?? DEFAULTS.subheading;
-  const steps      = props.steps      ?? DEFAULTS.steps;
+  const dark       = props.theme === "dark";
+  const steps      = props.steps ?? DEFAULTS.steps;
   const icons      = props.icons ? props.icons.map((n) => ICON_MAP[n]) : ICONS;
-  const c          = props.theme === "dark" ? DARK : LIGHT;
+  const c          = dark ? DARK : LIGHT;
 
   return (
-    <section
-      id={props.anchorId}
-      className={`${c.section} py-16 md:py-24 scroll-mt-24`}
-      data-testid="section-process-stepper"
-    >
-      <div className="container-custom mx-auto px-6">
-        <div className="max-w-3xl mx-auto text-center mb-12 sm:mb-16">
-          <p className={`text-sm font-semibold uppercase tracking-widest ${c.eyebrow} mb-3`}>
-            {t(eyebrow)}
-          </p>
-          <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-bold font-display ${c.heading} leading-tight mb-4`}>
-            {t(heading)}
-          </h2>
-          <p className={`text-base sm:text-lg ${c.subheading} leading-relaxed`}>
-            {t(subheading)}
-          </p>
-        </div>
+    <div data-testid="section-process-stepper">
+      <Band tone={c.band} id={props.anchorId} className="scroll-mt-24">
+        <SectionHeading
+          variant="editorial"
+          tone={dark ? "dark" : "light"}
+          eyebrow={props.eyebrow ?? DEFAULTS.eyebrow}
+          title={props.heading ?? DEFAULTS.heading}
+          subtitle={props.subheading ?? DEFAULTS.subheading}
+        />
 
-        <ol className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-6">
-          {/* Connecting line — only on lg, sits behind the numbered circles */}
-          <div
-            aria-hidden="true"
-            className={`hidden lg:block absolute top-8 left-[12.5%] right-[12.5%] h-px ${c.connector}`}
-          />
-
+        <ol className={`mt-12 grid gap-px overflow-hidden border md:grid-cols-2 lg:grid-cols-4 ${c.grid}`}>
           {steps.map((step, idx) => {
             const Icon = icons[idx];
             const stepNumber = idx + 1;
             return (
               <li
                 key={idx}
-                className="relative flex flex-col items-center text-center"
+                className={`p-6 transition sm:p-7 ${c.cell}`}
                 data-testid={`step-process-${stepNumber}`}
               >
-                <div className={`relative z-10 flex h-16 w-16 items-center justify-center rounded-full ${c.iconCircle} mb-5`}>
-                  <Icon className="h-7 w-7" />
-                  <span className={`absolute -top-2 -right-2 flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${c.stepBadge}`}>
-                    {stepNumber}
-                  </span>
+                <div className="flex items-center justify-between">
+                  <span className={`text-sm tabular-nums ${c.number}`}>{String(stepNumber).padStart(2, "0")}</span>
+                  <Icon className={`h-5 w-5 ${c.icon}`} aria-hidden="true" />
                 </div>
-                <h3 className={`text-lg sm:text-xl font-bold font-display ${c.stepTitle} mb-2`}>
+                <h3 className={`mt-8 font-display text-2xl font-semibold leading-tight ${c.title}`}>
                   {t(step.title)}
                 </h3>
-                <p className={`text-sm sm:text-base ${c.stepBody} leading-relaxed max-w-xs`}>
-                  {t(step.description)}
-                </p>
+                <p className={`mt-4 text-sm leading-6 ${c.body}`}>{t(step.description)}</p>
               </li>
             );
           })}
         </ol>
-      </div>
-    </section>
+      </Band>
+    </div>
   );
 }
