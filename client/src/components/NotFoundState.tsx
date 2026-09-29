@@ -47,23 +47,19 @@ export function NotFoundState({
 
   return (
     <div
-      className={`${heightClass} w-full flex items-center justify-center bg-background text-foreground px-4 ${verticalPadding} relative overflow-hidden`}
+      className={`${heightClass} w-full flex items-center justify-center bg-navy-950 pattern-grid-dark text-fog-50 px-4 ${verticalPadding} relative overflow-hidden`}
       data-testid="not-found-state"
     >
-      <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] max-w-full h-[520px] bg-cta/10 rounded-full blur-[100px] pointer-events-none"
-        aria-hidden
-      />
       <div className="relative z-10 w-full max-w-lg flex flex-col items-center text-center gap-4">
         {logoUrl ? (
           <img src={logoUrl} alt={logoAlt} width={56} height={56} className="h-14 w-14 object-contain mb-2" />
         ) : null}
         {code ? (
-          <span className="font-display text-7xl font-bold tracking-tighter text-cta/80 leading-none">{code}</span>
+          <span className="font-display text-7xl font-bold tracking-tighter text-cta-soft leading-none">{code}</span>
         ) : null}
         <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight">{title}</h1>
         {description ? (
-          <p className="text-base text-muted-foreground max-w-sm leading-relaxed text-balance">{description}</p>
+          <p className="text-base text-fog-400 max-w-sm leading-relaxed text-balance">{description}</p>
         ) : null}
         {children}
         {actionLabel ? (
