@@ -12,13 +12,10 @@ export function AboutAdapter({ props: _ }: { props: z.infer<typeof aboutPropsSch
 
   if (!settings) return null;
 
-  // Mirror the section wrapper used by Home.tsx (bg-white py-20 + id anchor).
   return (
-    <section id="about" className="bg-white py-20">
-      <AboutSection
-        aboutImageUrl={settings.aboutImageUrl}
-        content={settings.homepageContent?.aboutSection}
-      />
-    </section>
+    <AboutSection
+      aboutImageUrl={settings.aboutImageUrl}
+      content={settings.homepageContent?.aboutSection}
+    />
   );
 }

@@ -1,8 +1,8 @@
 import { MapPin, ArrowRight } from "lucide-react";
-import { Link } from "wouter";
 import type { HomepageContent } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
 import { SectionHeading } from "@/components/layout/SectionHeading";
+import { Band, PillLink } from "@/components/editorial";
 import { usePagePaths } from "@/lib/pagePaths";
 
 interface AreasServedMapProps {
@@ -36,10 +36,11 @@ export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
   const embedUrl = normalizeEmbedUrl(mapEmbedUrl || "");
 
   return (
-    <div className="container-custom mx-auto">
+    <Band tone="dark" id="areas-served">
       <div className={`grid grid-cols-1 gap-[2.55rem] items-center ${embedUrl ? "tablet:grid-cols-2" : ""}`}>
         <div>
           <SectionHeading
+            variant="editorial"
             eyebrow={sectionContent?.label}
             icon={MapPin}
             title={sectionContent?.heading || ''}
@@ -49,12 +50,10 @@ export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
 
           {sectionContent?.ctaText ? (
             <div className="mb-[0.85rem]">
-              <Link href={pagePaths.contact}>
-                <button className="px-4 py-2 bg-cta hover:bg-cta-hover text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cta/40 focus-visible:ring-offset-2">
-                  {t(sectionContent.ctaText)}
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </Link>
+              <PillLink href={pagePaths.contact} className="text-sm">
+                {t(sectionContent.ctaText)}
+                <ArrowRight className="w-4 h-4" />
+              </PillLink>
             </div>
           ) : null}
         </div>
@@ -62,7 +61,7 @@ export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
         {/* Only with an embed URL: an empty bordered 450px box read as a
             broken section on the homepage. */}
         {embedUrl ? (
-          <div className="h-[450px] rounded-2xl overflow-hidden shadow-2xl border border-white/10 tablet:col-span-1 relative">
+          <div className="h-[450px] overflow-hidden border border-white/10 tablet:col-span-1 relative">
             <iframe
               src={embedUrl}
               title="Google Maps"
@@ -76,6 +75,6 @@ export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
           </div>
         ) : null}
       </div>
-    </div>
+    </Band>
   );
 }

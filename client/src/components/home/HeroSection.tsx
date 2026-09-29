@@ -2,6 +2,7 @@ import type { CompanySettings, HomepageContent } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
 import { trackCTAClick } from "@/lib/analytics";
 import { TrustBadges } from "@/components/home/TrustBadges";
+import { Band, PillButton } from "@/components/editorial";
 
 interface HeroSectionProps {
   companySettings?: CompanySettings;
@@ -37,8 +38,12 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
   // trust-bar bleed, so the flex centering inside splits only the space the
   // user actually sees.
   return (
-    <section className={`relative flex flex-col justify-end pt-[calc(var(--nav-offset)+0.825rem)] sm:pt-[var(--nav-offset)] ${bottomPadding} overflow-hidden bg-[#1C53A3] min-h-[min(100dvh,620px)] sm:min-h-[min(100dvh,540px)] tablet:min-h-[min(100dvh,620px)]`}>
-      <div className="container-custom mx-auto relative z-10 sm:flex-1 sm:flex sm:flex-col">
+    <Band
+      tone="hero"
+      pattern
+      className={`relative flex flex-col justify-end overflow-hidden border-b-0 ${bottomPadding} min-h-[min(100dvh,620px)] sm:min-h-[min(100dvh,540px)] tablet:min-h-[min(100dvh,620px)]`}
+      containerClassName="relative z-10 pt-[calc(var(--nav-offset)+0.825rem)] sm:pt-[var(--nav-offset)] sm:flex-1 sm:flex sm:flex-col"
+    >
         {/* Below tablet (770px): stacked, image full-width beneath the text
             (grid-cols-1). From tablet up: the photo is pinned at its full,
             frozen 560px — never shrunk — as an absolutely-positioned panel
@@ -50,7 +55,7 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
         <div className="grid grid-cols-1 sm:flex sm:items-center sm:flex-1 relative gap-1 sm:gap-[1.275rem] lg:gap-[1.7rem] items-end">
           {/* container-custom has no lateral padding below 770px (carousels go
               full-bleed there), so the text column carries its own. */}
-          <div className="order-1 lg:order-1 text-white px-4 sm:px-6 tablet:px-0 pt-[1.275rem] sm:pt-0 pb-[1.7rem] sm:pb-0 tablet:translate-y-0 sm:self-center sm:max-w-[420px] min-[963px]:max-w-[640px] relative z-20">
+          <div className="order-1 lg:order-1 text-white pt-[1.275rem] sm:pt-0 pb-[1.7rem] sm:pb-0 tablet:translate-y-0 sm:self-center sm:max-w-[420px] min-[963px]:max-w-[640px] relative z-20">
             {homepageContent.heroBadgeImageUrl ? (
               <div className="mt-[0.85rem] sm:mt-0 mb-3 tablet:mb-[1.275rem]">
                 <img
@@ -64,22 +69,22 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
                 34px or blows past 54px), fixed 48px from sm, 56px on wide
                 desktops — where the column also widens so the title keeps
                 breaking into two lines, not three. */}
-            <h1 className="text-[clamp(2.125rem,9vw,3.375rem)] sm:text-[2.7rem] tablet:text-5xl min-[963px]:text-[3.5rem] font-bold mb-3 tablet:mb-[1.275rem] font-display leading-[1.05] sm:leading-[1.1]">
+            <h1 className="text-[clamp(2.125rem,9vw,3.375rem)] sm:text-[2.7rem] tablet:text-5xl min-[963px]:text-[3.5rem] font-display font-semibold tracking-[-0.04em] leading-[0.98] text-fog-50 mb-3 tablet:mb-[1.275rem]">
               {companySettings?.heroTitle ? (
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">{t(companySettings.heroTitle)}</span>
+                t(companySettings.heroTitle)
               ) : null}
             </h1>
             {/* text-balance distributes the copy evenly across however many
                 lines it ends up on, instead of greedily filling each line and
                 leaving a short orphan on the last one. */}
-            <p className="text-base sm:text-lg tablet:text-xl text-blue-50/80 mb-[0.85rem] tablet:mb-[1.7rem] leading-relaxed max-w-xl text-balance">
+            <p className="text-base sm:text-lg tablet:text-xl text-fog-400 mb-[0.85rem] tablet:mb-[1.7rem] leading-relaxed max-w-xl text-balance">
               {companySettings?.heroSubtitle ? t(companySettings.heroSubtitle) : ""}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 tablet:gap-[1.0625rem] flex-wrap">
               {companySettings?.ctaText ? (
-                <button
+                <PillButton
                   data-form-trigger="lead-form"
-                  className="w-full sm:w-auto shrink-0 px-6 sm:px-8 py-3 sm:py-4 bg-cta hover:bg-cta-hover hover:scale-105 text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cta/40 focus-visible:ring-offset-2"
+                  className="w-full sm:w-auto shrink-0 whitespace-nowrap px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg"
                   onClick={() => {
                     onCtaClick();
                     trackCTAClick('hero', companySettings?.ctaText || '');
@@ -87,7 +92,7 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
                   data-testid="button-hero-form"
                 >
                   {t(companySettings.ctaText)}
-                </button>
+                </PillButton>
               ) : null}
             </div>
           </div>
@@ -120,32 +125,6 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
             <TrustBadges badges={trustBadges} />
           </div>
         )}
-      </div>
-
-      <div
-        className="absolute inset-0"
-        style={{
-          background: `
-            radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.35) 80%, rgba(0, 0, 0, 0.85) 100%),
-            radial-gradient(circle at 65% 10%, rgba(100, 135, 215, 0.30) 0%, transparent 60%),
-            linear-gradient(
-              to right bottom,
-              #09152d,
-              #0b152a,
-              #0d1427,
-              #0f1424,
-              #101421,
-              #121622,
-              #151723,
-              #171924,
-              #1c1c29,
-              #21202e,
-              #262332,
-              #2c2637
-            )
-          `
-        }}
-      ></div>
-    </section>
+    </Band>
   );
 }

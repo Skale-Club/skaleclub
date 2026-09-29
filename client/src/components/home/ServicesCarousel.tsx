@@ -369,7 +369,7 @@ export function ServicesCarousel<T>({ items, renderItem, ariaLabel, paused, dark
   const arrowButtonClass = `absolute top-1/2 -translate-y-1/2 -mt-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${
     dark
       ? 'border-white/20 bg-white/10 text-white hover:bg-white/20'
-      : 'border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50'
+      : 'border-ink-700/15 bg-white text-ink hover:bg-ink/5'
   }`;
 
   const setInteractionPause = (kind: 'hovered' | 'focused', active: boolean) => {

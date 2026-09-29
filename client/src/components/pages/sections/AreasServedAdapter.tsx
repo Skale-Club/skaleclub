@@ -21,11 +21,9 @@ export function AreasServedAdapter({ props: _ }: { props: z.infer<typeof areasSe
   if (!hasContent) return null;
 
   return (
-    <section id="areas-served" className="bg-white py-20">
-      <AreasServedMap
-        mapEmbedUrl={settings.mapEmbedUrl}
-        content={areasServedSection}
-      />
-    </section>
+    <AreasServedMap
+      mapEmbedUrl={settings.mapEmbedUrl}
+      content={areasServedSection}
+    />
   );
 }
