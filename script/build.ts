@@ -62,13 +62,13 @@ async function injectSEO() {
 async function stampServiceWorker() {
   const swPath = "dist/public/sw.js";
   const hash = (process.env.GITHUB_SHA || process.env.SOURCE_COMMIT || Date.now().toString(36)).slice(0, 12);
-  try {
-    const source = await readFile(swPath, "utf-8");
-    await writeFile(swPath, source.replaceAll("__BUILD_HASH__", hash));
-    console.log(`service worker stamped with build ${hash}`);
-  } catch (err) {
-    console.warn("⚠️  Could not stamp service worker:", (err as Error).message);
+  const source = await readFile(swPath, "utf-8");
+  const stamped = source.replaceAll("__BUILD_HASH__", hash);
+  if (stamped.includes("__BUILD_HASH__")) {
+    throw new Error("service worker still contains __BUILD_HASH__ after stamping");
   }
+  await writeFile(swPath, stamped);
+  console.log(`service worker stamped with build ${hash}`);
 }
 
 async function buildAll() {

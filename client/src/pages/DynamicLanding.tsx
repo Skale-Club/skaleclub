@@ -231,7 +231,7 @@ export default function DynamicPage() {
         }
         const Component = entry.component;
         return (
-          <SectionErrorBoundary key={idx} section={section.type}>
+          <SectionErrorBoundary key={`${data.slug}:${idx}:${section.type}`} section={section.type}>
             <Component props={parsed.data} />
           </SectionErrorBoundary>
         );

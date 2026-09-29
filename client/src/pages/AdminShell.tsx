@@ -6,7 +6,10 @@ import { lazyPage } from "@/lib/initialLoad";
 
 // Everything that needs Supabase (AuthProvider, admin pages, OAuth consent) lives
 // behind this lazy shell so `@supabase/*` stays out of the public entry chunk.
-const Admin = lazyPage(() => import("@/pages/Admin"));
+const loadAdmin = () => import("@/pages/Admin");
+const Admin = lazyPage(loadAdmin);
+// Start the (large) admin chunk now instead of after the shell renders.
+if (window.location.pathname.startsWith("/admin")) void loadAdmin();
 const AdminLogin = lazyPage(() => import("@/pages/AdminLogin"));
 const AdminSignup = lazyPage(() => import("@/pages/AdminSignup"));
 const NotFound = lazyPage(() => import("@/pages/not-found"));

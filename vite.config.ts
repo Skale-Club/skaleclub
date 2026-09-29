@@ -21,6 +21,7 @@ export default defineConfig({
             org: "skale-club",
             project: "skaleclub-frontend",
             authToken: process.env.SENTRY_AUTH_TOKEN,
+            ...(release ? { release: { name: release } } : {}),
             sourcemaps: { filesToDeleteAfterUpload: ["dist/public/assets/*.js.map"] },
           }),
         ]

@@ -1,5 +1,4 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
-import { useEffect, useRef } from "react";
 
 export class HttpError extends Error {
   status: number;
@@ -113,32 +112,6 @@ export const adminQueryOptions = {
   refetchOnWindowFocus: true,
 } as const;
 
-/**
- * Applies `adminQueryOptions` as the shared client's defaults while the calling
- * admin screen is mounted, then restores the public defaults. Applied during the
- * first render because child queries resolve their defaults when they are created,
- * before any effect of this component would run.
- */
-export function useAdminQueryDefaults() {
-  const applied = useRef(false);
-  if (!applied.current) {
-    applied.current = true;
-    applyAdminDefaults();
-  }
-  useEffect(() => {
-    // Re-apply (StrictMode runs effect, cleanup, effect) and restore on unmount.
-    applyAdminDefaults();
-    return () => queryClient.setDefaultOptions(publicDefaults);
-  }, []);
-}
-
-function applyAdminDefaults() {
-  queryClient.setDefaultOptions({
-    ...publicDefaults,
-    queries: { ...publicDefaults.queries, ...adminQueryOptions },
-  });
-}
-
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -160,5 +133,30 @@ export const queryClient = new QueryClient({
   },
 });
 
-// Snapshot of the public defaults, restored when leaving the admin.
-const publicDefaults = queryClient.getDefaultOptions();
+// Query keys only the admin uses. Keys that the public site shares (company-settings,
+// blog, faqs, pages, portfolio, /slug/ lookups, chat config) are deliberately absent.
+// Keys have no common prefix, so each is registered exactly (partial matching compares
+// whole array elements, so ["/api/forms"] does not touch ["/api/forms/slug/x"]).
+const ADMIN_ONLY_QUERY_KEYS = [
+  "/api/forms", "/api/form-leads", "/api/estimates", "/api/presentations", "/api/vcards",
+  "/api/integrations/groq", "/api/integrations/openai", "/api/integrations/openrouter",
+  "/api/integrations/openrouter/models", "/api/integrations/gemini", "/api/integrations/sms",
+  "/api/integrations/google-places", "/api/integrations/ghl", "/api/integrations/ghl/status",
+  "/api/integrations/ghl/custom-fields", "/api/integrations/email", "/api/integrations/telegram",
+  "/api/integrations/form-transcription",
+  "/api/notifications/templates", "/api/mcp/tokens",
+  "/api/chat/settings", "/api/chat/conversations", "/api/chat/response-time",
+  "/api/blog/settings", "/api/blog/health", "/api/blog/jobs", "/api/blog/jobs/latest",
+  "/api/blog/rss-items", "/api/blog/feedback", "/api/blog/ai-usage", "/api/blog/telegram",
+  "/api/skale-hub/dashboard", "/api/skale-hub/participants",
+  "/api/admin/portfolio-services", "/api/admin/marketing/sources", "/api/admin/marketing/overview",
+  "/api/admin/marketing/journey", "/api/admin/marketing/conversions", "/api/admin/marketing/campaigns",
+  "/api/brand-guidelines", "/api/redirects",
+];
+
+/** Called when the admin chunk loads: gives admin-only queries the admin freshness rules. */
+export function applyAdminQueryDefaults() {
+  for (const key of ADMIN_ONLY_QUERY_KEYS) {
+    queryClient.setQueryDefaults([key], adminQueryOptions);
+  }
+}
