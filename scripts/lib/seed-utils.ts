@@ -13,7 +13,8 @@ import type { FormConfig } from "../../shared/schema/forms.js";
 import { pages } from "../../shared/schema/pages.js";
 import type { PageSection } from "../../shared/schema/pages.js";
 import { validateFormConfig } from "../../shared/form.js";
-import { recordRevision } from "../../server/storage/revisions.js";
+import { recordRevisionOrThrow } from "../../server/storage/revisions.js";
+import { applyPtCopy } from "./pt-copy.js";
 
 export function parseSeedArgs(argv: string[] = process.argv.slice(2)): { apply: boolean } {
   return { apply: argv.includes("--apply") };
@@ -88,9 +89,12 @@ const pageShape = (r: Record<string, any>) => ({
 
 /** Diff + (with apply) upsert a page keyed by slug, snapshotting the old row first. */
 export async function seedPage(spec: PageSeed, apply: boolean): Promise<void> {
+  // Pages in Portuguese always get the approved pt-BR copy, so re-running a
+  // landing seed never writes English into a `-br` row.
+  const sections = spec.language === "pt" ? applyPtCopy(spec.sections).sections : spec.sections;
   const desired = {
     name: spec.name,
-    sections: spec.sections,
+    sections,
     isActive: spec.isActive ?? true,
     language: spec.language ?? "pt",
     alternateSlug: spec.alternateSlug ?? null,
@@ -99,7 +103,7 @@ export async function seedPage(spec: PageSeed, apply: boolean): Promise<void> {
   const changed = logPlannedChange(`page '${spec.slug}'`, existing ? pageShape(existing) : undefined, desired, apply);
   if (!apply || !changed) return;
   if (existing) {
-    await recordRevision("page", existing.id, existing, "seed", "seed script overwrite");
+    await recordRevisionOrThrow("page", existing.id, existing, "seed", "seed script overwrite");
     await db.update(pages).set({ ...desired, updatedAt: new Date() }).where(eq(pages.slug, spec.slug));
   } else {
     await db.insert(pages).values({ slug: spec.slug, ...desired });
@@ -128,7 +132,7 @@ export async function seedForm(spec: FormSeed, apply: boolean): Promise<void> {
   const changed = logPlannedChange(`form '${spec.slug}'`, existing ? shape(existing) : undefined, desired, apply);
   if (!apply || !changed) return;
   if (existing) {
-    await recordRevision("form", existing.id, existing, "seed", "seed script overwrite");
+    await recordRevisionOrThrow("form", existing.id, existing, "seed", "seed script overwrite");
     await db.update(forms).set({ ...desired, updatedAt: new Date() }).where(eq(forms.slug, spec.slug));
   } else {
     await db.insert(forms).values({ slug: spec.slug, ...desired, isDefault: spec.isDefault ?? false });

@@ -43,7 +43,7 @@ import "dotenv/config";
 import { pathToFileURL } from "node:url";
 import { eq } from "drizzle-orm";
 import { db } from "../server/db.js";
-import { recordRevision } from "../server/storage/revisions.js";
+import { recordRevisionOrThrow } from "../server/storage/revisions.js";
 import { seedForm, seedPage, withSeedGuard } from "./lib/seed-utils.js";
 import { pages, type PageSection } from "../shared/schema/pages.js";
 import { forms } from "../shared/schema/forms.js";
@@ -553,7 +553,7 @@ async function deactivatePricingPages(apply: boolean) {
     }
     console.log(`  Pricing page '${spec.slug}': ${apply ? "deactivating" : "would deactivate"}.`);
     if (!apply) continue;
-    await recordRevision("page", row.id, row, "seed", "seed script deactivation");
+    await recordRevisionOrThrow("page", row.id, row, "seed", "seed script deactivation");
     await db.update(pages).set({ isActive: false, updatedAt: new Date() }).where(eq(pages.slug, spec.slug));
   }
 }
@@ -573,7 +573,7 @@ async function deleteRenamedLegacyPages(apply: boolean) {
     }
     console.log(`  ${apply ? "Deleting" : "Would delete"} orphaned legacy page slug='${slug}' (id=${row.id}).`);
     if (!apply) continue;
-    await recordRevision("page", row.id, row, "seed", "seed script legacy delete");
+    await recordRevisionOrThrow("page", row.id, row, "seed", "seed script legacy delete");
     await db.delete(pages).where(eq(pages.slug, slug));
   }
 }
@@ -604,4 +604,6 @@ const runDirectly = process.argv[1] ? import.meta.url === pathToFileURL(process.
 
 if (runDirectly) {
   void withSeedGuard(main);
+} else {
+  console.log("[seed-nfc-keychains-landing] imported, not run directly: nothing executed");
 }

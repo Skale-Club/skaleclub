@@ -97,21 +97,25 @@ export function startCron(): void {
       });
   }, 5 * 60_000);
 
-  // Data retention: daily. Honours either flag name (DISABLE_INPROCESS_CRON=true
-  // legacy, or ENABLE_INPROCESS_CRON!=true once frente A2 inverts it). The
-  // gates above already return early when disabled; this re-check keeps the
-  // registration safe if they change.
-  const cronEnabled =
+  // Data retention: daily. Only in production and only when the enable flag
+  // is on (ENABLE_INPROCESS_CRON=true, or the legacy DISABLE_INPROCESS_CRON not
+  // set to true). Elsewhere the GitHub workflow calls POST /api/cron/retention.
+  const flagOn =
     process.env.ENABLE_INPROCESS_CRON !== undefined
       ? process.env.ENABLE_INPROCESS_CRON === "true"
       : process.env.DISABLE_INPROCESS_CRON !== "true";
-  if (cronEnabled) {
-    console.log("[retention] cron starting — runs every 24 hours");
-    setInterval(() => {
-      void import("./storage/retention.js")
-        .then((m) => m.runRetention())
-        .then((r) => console.log("[retention] cron tick:", JSON.stringify(r)))
-        .catch((err) => console.error("[retention] cron error:", err));
-    }, DAY_IN_MS);
+  if (process.env.NODE_ENV === "production" && flagOn) {
+    void import("./storage/retention.js")
+      .then((m) => {
+        m.getRetentionSalt(); // throws when no hashing secret is configured
+        console.log("[retention] cron starting, runs every 24 hours");
+        setInterval(() => {
+          void m
+            .runRetention()
+            .then((r) => console.log("[retention] cron tick:", JSON.stringify(r)))
+            .catch((err) => console.error("[retention] cron error:", err));
+        }, DAY_IN_MS);
+      })
+      .catch((err) => console.error("[retention] job NOT scheduled:", (err as Error).message));
   }
 }

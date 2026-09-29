@@ -24,49 +24,12 @@ import { eq } from "drizzle-orm";
 import { db } from "../server/db.js";
 import { pages } from "../shared/schema/pages.js";
 import type { PageSection } from "../shared/schema/pages.js";
-import { recordRevision } from "../server/storage/revisions.js";
+import { recordRevisionOrThrow } from "../server/storage/revisions.js";
 import { logPlannedChange, withSeedGuard } from "./lib/seed-utils.js";
 import { upsertTranslations } from "./lib/seed-translations.js";
-import { LANDING_PT_COPY } from "./data/landing-pt-copy.js";
+import { applyPtCopy, collectPtValues } from "./lib/pt-copy.js";
 
 const SLUGS = ["nfc-keychains-br", "barbershops-br", "nfc-order-br"] as const;
-
-// Prop keys whose string values are identifiers / URLs / enums, never copy.
-const SKIP_KEYS = new Set([
-  "type", "id", "anchorId", "theme", "formSlug", "icons", "icon", "kind", "href", "url", "src",
-  "image", "imageUrl", "backgroundImageUrl", "secondaryCtaHref", "logo", "video", "poster",
-  "number", "align", "variant", "layout", "messages",
-]);
-
-const cleanEmDash = (s: string) => s.replace(/ — /g, " | ").replace(/—/g, "|");
-
-// Lookup tolerant of the em-dash cleanup having already run on the stored EN.
-const LOOKUP = new Map<string, string>();
-for (const [en, pt] of Object.entries(LANDING_PT_COPY)) {
-  LOOKUP.set(en, pt);
-  LOOKUP.set(cleanEmDash(en), pt);
-}
-
-function translateProps(value: unknown, key: string, used: Set<string>, unmatched: Set<string>): unknown {
-  if (typeof value === "string") {
-    if (SKIP_KEYS.has(key)) return value;
-    const pt = LOOKUP.get(value);
-    if (pt !== undefined) {
-      used.add(pt);
-      return pt;
-    }
-    if (/\s/.test(value) && !/^https?:/.test(value)) unmatched.add(value);
-    return value;
-  }
-  if (Array.isArray(value)) return value.map((v) => translateProps(v, key, used, unmatched));
-  if (value && typeof value === "object") {
-    if (SKIP_KEYS.has(key)) return value;
-    const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(value as Record<string, unknown>)) out[k] = translateProps(v, k, used, unmatched);
-    return out;
-  }
-  return value;
-}
 
 async function main(apply: boolean) {
   const identityPairs = new Map<string, string>();
@@ -77,22 +40,22 @@ async function main(apply: boolean) {
       console.warn(`  [skip] page '${slug}' not found`);
       continue;
     }
-    const used = new Set<string>();
-    const unmatched = new Set<string>();
-    const nextSections = (row.sections as PageSection[]).map((s) => ({
-      ...s,
-      props: translateProps(s.props, "props", used, unmatched) as Record<string, unknown>,
-    }));
+    if (row.language !== "pt") {
+      throw new Error(`page '${slug}' has language='${row.language}', expected 'pt'. Refusing to patch.`);
+    }
+    const { sections: nextSections, unmatched } = applyPtCopy(row.sections as PageSection[]);
 
     const changed = logPlannedChange(`page '${slug}' sections`, row.sections, nextSections, apply, 400);
     if (unmatched.size > 0) {
       console.log(`  ${unmatched.size} string(s) left as-is (no PT entry or already edited):`);
       for (const u of Array.from(unmatched)) console.log(`      ${JSON.stringify(u.length > 100 ? `${u.slice(0, 97)}...` : u)}`);
     }
-    for (const pt of Array.from(used)) identityPairs.set(pt, pt);
+    // Identity rows cover every stored value that is approved PT copy, not only
+    // the strings changed in this run (a re-run must still produce them).
+    for (const pt of Array.from(collectPtValues(nextSections))) identityPairs.set(pt, pt);
     if (!apply || !changed) continue;
 
-    await recordRevision("page", row.id, row, "script", "patch-landing-pt-copy");
+    await recordRevisionOrThrow("page", row.id, row, "script", "patch-landing-pt-copy");
     await db.update(pages).set({ sections: nextSections, updatedAt: new Date() }).where(eq(pages.slug, slug));
   }
 

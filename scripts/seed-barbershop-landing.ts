@@ -253,3 +253,4 @@ async function main(apply: boolean) {
 // not open a connection or write anything.
 const runDirectly = process.argv[1] ? import.meta.url === pathToFileURL(process.argv[1]).href : false;
 if (runDirectly) void withSeedGuard(main);
+else console.log("[seed-barbershop-landing] imported, not run directly: nothing executed");
