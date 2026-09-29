@@ -4,7 +4,6 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { Navbar } from "@/components/layout/Navbar";
@@ -16,49 +15,18 @@ import { PageLoader, DotsLoader } from "@/components/ui/spinner";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLanguageLocation, languageHref } from "@/lib/languageRouting";
 import { splitLanguagePath } from "@shared/languagePath";
-import { useEffect, Suspense, lazy, useMemo, useRef, useState, createContext, useContext } from "react";
+import { useEffect, Suspense, lazy, useMemo, useRef, useState, useContext } from "react";
 import type { CompanySettings } from "@shared/schema";
 import { buildPagePaths, DEFAULT_PAGE_SLUGS, isRoutePrefixMatch } from "@shared/pageSlugs";
 import { RESERVED_SLUGS } from "@shared/reservedSlugs";
-import { ChatWidget } from "@/components/chat/ChatWidget";
+import * as Sentry from "@sentry/react";
+import { MotionConfig } from "framer-motion";
+import { AppErrorFallback } from "@/components/AppErrorFallback";
+import { InitialLoadContext, PageWrapper } from "@/lib/initialLoad";
 import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
 
 // DEFAULT_PAGE_SLUGS never changes at runtime — compute once instead of on every Router render.
 const LEGACY_PATHS = buildPagePaths(DEFAULT_PAGE_SLUGS);
-
-// Context to track initial app load state
-const InitialLoadContext = createContext<{ isInitialLoad: boolean; markLoaded: () => void }>({
-  isInitialLoad: true,
-  markLoaded: () => { },
-});
-
-// Hook to hide initial loader after first page renders
-function useHideInitialLoader() {
-  const { isInitialLoad, markLoaded } = useContext(InitialLoadContext);
-  const hasRun = useRef(false);
-
-  useEffect(() => {
-    if (isInitialLoad && !hasRun.current) {
-      hasRun.current = true;
-      const loader = document.getElementById("initial-loader");
-      if (loader) {
-        loader.classList.add("loader-fade-out");
-        setTimeout(() => {
-          loader.remove();
-          markLoaded();
-        }, 150);
-      } else {
-        markLoaded();
-      }
-    }
-  }, [isInitialLoad, markLoaded]);
-}
-
-// Wrapper to call the hook when a lazy component mounts
-function PageWrapper({ children }: { children: React.ReactNode }) {
-  useHideInitialLoader();
-  return <>{children}</>;
-}
 
 // Lazy load page components for route transitions
 const NotFound = lazy(() => import("@/pages/not-found").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
@@ -67,9 +35,6 @@ const PublicForm = lazy(() => import("@/pages/PublicForm").then(m => ({ default:
 const NfcOrderForm = lazy(() => import("@/pages/NfcOrderForm").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const NfcGuide = lazy(() => import("@/pages/NfcGuide").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const LeadThankYou = lazy(() => import("@/pages/LeadThankYou").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const Admin = lazy(() => import("@/pages/Admin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const AdminLogin = lazy(() => import("@/pages/AdminLogin").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const AdminSignup = lazy(() => import("@/pages/AdminSignup").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const TermsOfService = lazy(() => import("@/pages/TermsOfService").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Contact = lazy(() => import("@/pages/Contact").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
@@ -84,7 +49,36 @@ const EstimateViewer = lazy(() => import("@/pages/EstimateViewer").then(m => ({ 
 const PresentationViewer = lazy(() => import("@/pages/PresentationViewer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const PrintFolder = lazy(() => import("@/pages/PrintFolder").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const DynamicPage = lazy(() => import("@/pages/DynamicLanding").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
-const OAuthAuthorize = lazy(() => import("@/pages/OAuthAuthorize"));
+// Admin + OAuth live in one lazy shell so AuthProvider and @supabase/* leave the entry chunk.
+const AdminShell = lazy(() => import("@/pages/AdminShell"));
+
+// Chat is never needed for first paint: mount it once the browser is idle.
+const ChatWidget = lazy(() =>
+  import("@/components/chat/ChatWidget")
+    .then((m) => ({ default: m.ChatWidget }))
+    .catch(() => ({ default: () => null })),
+);
+
+function DeferredChatWidget() {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const w = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    if (w.requestIdleCallback && w.cancelIdleCallback) {
+      const id = w.requestIdleCallback(() => setReady(true), { timeout: 4000 });
+      return () => w.cancelIdleCallback?.(id);
+    }
+    const id = window.setTimeout(() => setReady(true), 2000);
+    return () => window.clearTimeout(id);
+  }, []);
+  return ready ? (
+    <Suspense fallback={null}>
+      <ChatWidget />
+    </Suspense>
+  ) : null;
+}
 
 function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const { data: settings } = useQuery<CompanySettings>({
@@ -141,6 +135,7 @@ const RESERVED_LANDING_SEGMENTS = new Set<string>([
 ]);
 
 function Router() {
+  const { t } = useTranslation();
   const [location] = useLocation();
   const { isInitialLoad } = useContext(InitialLoadContext);
   const { data: settings, isLoading, errorUpdateCount } = useQuery<CompanySettings>({
@@ -175,7 +170,7 @@ function Router() {
 
   // Xpot was extracted to a standalone app on xpot.skale.club.
   // Any leftover /xpot/* request hitting this app falls through to the catch-all 404,
-  // or is redirected by vercel.json (preferred for SEO).
+  // or is redirected at the proxy layer (preferred for SEO).
 
   // Scroll to top when navigating to a new page (not hash links)
   useEffect(() => {
@@ -192,29 +187,11 @@ function Router() {
   // During initial load, show PageLoader for route transitions
   const fallback = isInitialLoad ? null : <PageLoader />;
 
-  if (isOAuthRoute) {
+  if (isOAuthRoute || isAdminRoute) {
     return (
       <Suspense fallback={fallback}>
-        <Switch>
-          <Route path="/oauth/authorize" component={OAuthAuthorize} />
-          <Route component={NotFound} />
-        </Switch>
+        <AdminShell kind={isOAuthRoute ? "oauth" : "admin"} showLoader={!isInitialLoad} />
       </Suspense>
-    );
-  }
-
-  if (isAdminRoute) {
-    return (
-      <AuthProvider>
-        <Suspense fallback={fallback}>
-          <Switch>
-            <Route path="/admin/login" component={AdminLogin} />
-            <Route path="/admin/signup" component={AdminSignup} />
-            <Route path="/admin/*?" component={Admin} />
-            <Route component={NotFound} />
-          </Switch>
-        </Suspense>
-      </AuthProvider>
     );
   }
 
@@ -300,8 +277,14 @@ function Router() {
   // The initial-loader in index.html covers the screen until content is ready
   return (
     <div className={`flex flex-col min-h-screen ${isInitialLoad ? 'invisible' : ''}`}>
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-cta focus:px-5 focus:py-3 focus:font-bold focus:text-white"
+      >
+        {t("Skip to content")}
+      </a>
       <Navbar />
-      <main className="flex flex-col flex-grow">
+      <main id="main" tabIndex={-1} className="flex flex-col flex-grow focus:outline-none">
         <Suspense fallback={fallback}>
           <Switch>
             <Route path="/" component={Home} />
@@ -324,7 +307,7 @@ function Router() {
             <Route path={pagePaths.portfolio} component={Portfolio} />
             {pagePaths.portfolio !== LEGACY_PATHS.portfolio && <Route path={LEGACY_PATHS.portfolio} component={Portfolio} />}
             {/* Legacy Skale Hub group URLs — 301 to managed landing /grupo (43-05).
-                Production redirects live in vercel.json; these handle local dev parity. */}
+                Production redirects run in server/canonicalHost.ts; these are the client-side fallback. */}
             <Route path={`${pagePaths.hub}/grupo`}>{() => <Redirect to="/grupo" />}</Route>
             <Route path={`${pagePaths.hub}/group`}>{() => <Redirect to="/grupo" />}</Route>
             {pagePaths.hub !== LEGACY_PATHS.hub && <Route path={`${LEGACY_PATHS.hub}/grupo`}>{() => <Redirect to="/grupo" />}</Route>}
@@ -341,7 +324,7 @@ function Router() {
         </Suspense>
       </main>
       <Footer />
-      <ChatWidget />
+      <DeferredChatWidget />
     </div>
   );
 }
@@ -350,7 +333,7 @@ function TranslationLoadingOverlay() {
   const { isTranslating } = useTranslation();
   if (!isTranslating) return null;
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#0f1014]/80 backdrop-blur-sm transition-opacity duration-200">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-navy-950/80 backdrop-blur-sm transition-opacity duration-200">
       <DotsLoader size="lg" />
     </div>
   );
@@ -362,6 +345,7 @@ function App() {
 
   return (
     <InitialLoadContext.Provider value={{ isInitialLoad, markLoaded }}>
+      <MotionConfig reducedMotion="user">
       <ThemeProvider>
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
@@ -369,9 +353,11 @@ function App() {
               <LanguageProvider>
                 <SEOProvider>
                   <AnalyticsProvider>
-                    <ChunkErrorBoundary>
-                      <Router />
-                    </ChunkErrorBoundary>
+                    <Sentry.ErrorBoundary fallback={<AppErrorFallback />}>
+                      <ChunkErrorBoundary>
+                        <Router />
+                      </ChunkErrorBoundary>
+                    </Sentry.ErrorBoundary>
                     <TranslationLoadingOverlay />
                   </AnalyticsProvider>
                 </SEOProvider>
@@ -380,6 +366,7 @@ function App() {
           </TooltipProvider>
         </QueryClientProvider>
       </ThemeProvider>
+      </MotionConfig>
       <Toaster />
     </InitialLoadContext.Provider>
   );

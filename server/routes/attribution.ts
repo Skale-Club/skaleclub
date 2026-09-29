@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import { publicCounterLimits } from "../lib/rateLimit.js";
 import { z } from "zod";
 import { storage } from "../storage.js";
 import { db } from "../db.js";
@@ -48,7 +49,7 @@ export function registerAttributionRoutes(app: Express): void {
   // POST /api/attribution/session
   // Upserts a visitor session row. First-touch columns are immutable after the initial INSERT
   // (enforced by upsertVisitorSession's ON CONFLICT logic in storage.ts).
-  app.post('/api/attribution/session', async (req, res) => {
+  app.post('/api/attribution/session', ...publicCounterLimits((req) => String(req.body?.visitorId ?? '')), async (req, res) => {
     try {
       const payload = sessionUpsertSchema.parse(req.body);
       await storage.upsertVisitorSession(payload as any);
@@ -68,7 +69,7 @@ export function registerAttributionRoutes(app: Express): void {
   // Returns 200 {} silently when the visitor session does not exist (D-06).
   // Denormalizes ft_*/lt_* from the visitor_sessions row at insert time so
   // dashboard/journey queries can GROUP BY source/campaign without a join.
-  app.post('/api/attribution/conversion', async (req, res) => {
+  app.post('/api/attribution/conversion', ...publicCounterLimits((req) => String(req.body?.visitorId ?? '')), async (req, res) => {
     try {
       const payload = conversionSchema.parse(req.body);
 

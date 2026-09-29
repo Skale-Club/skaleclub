@@ -3,6 +3,7 @@ import { z } from "zod";
 import { storage } from "../storage.js";
 import { sendEmail } from "../integrations/resend.js";
 import { rateLimitMiddleware } from "../lib/rateLimit.js";
+import { isBotSubmission } from "../lib/botTrap.js";
 
 const contactSchema = z.object({
   name: z.string().trim().min(2).max(200),
@@ -12,6 +13,9 @@ const contactSchema = z.object({
   message: z.string().trim().min(5).max(5000),
   smsConsent: z.boolean(),
   marketingConsent: z.boolean(),
+  // Bot traps: `hp_extra` is a hidden honeypot, `elapsedMs` the client-measured fill time.
+  hp_extra: z.string().max(500).optional(),
+  elapsedMs: z.number().optional(),
 });
 
 export function registerContactRoutes(app: Express) {
@@ -29,6 +33,11 @@ export function registerContactRoutes(app: Express) {
       }
 
       const { name, email, phone, subject, message, smsConsent, marketingConsent } = parsed.data;
+
+      // Silent success for bots: filled honeypot or a submit faster than a human can type.
+      if (isBotSubmission(parsed.data, { source: "contact" })) {
+        return res.json({ ok: true });
+      }
 
       try {
         const [resendSettings, companySettings] = await Promise.all([

@@ -43,10 +43,9 @@ export const pages = pgTable("pages", {
   language:  text("language").$type<PageLanguage>().notNull().default("pt"),
   // Slug of the same page in the other language — powers hreflang alternates.
   alternateSlug: text("alternate_slug"),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
 }, (table) => ({
-  slugIdx:     uniqueIndex("pages_slug_idx").on(table.slug),
   isActiveIdx: index("pages_is_active_idx").on(table.isActive),
 }));
 

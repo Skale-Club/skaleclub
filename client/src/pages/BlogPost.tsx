@@ -14,7 +14,8 @@ import {
   Linkedin,
   Share2
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatDate } from '@/lib/format';
+import { useTranslation } from '@/hooks/useTranslation';
 import type { BlogPost, CompanySettings } from '@shared/schema';
 import { usePagePaths } from '@/lib/pagePaths';
 import { NotFoundState } from '@/components/NotFoundState';
@@ -23,6 +24,7 @@ import { fetchJson } from '@/lib/queryClient';
 export default function BlogPostPage() {
   const params = useParams<{ slug: string }>();
   const pagePaths = usePagePaths();
+  const { t, language } = useTranslation();
 
   const { data: post, isLoading, error } = useQuery<BlogPost>({
     queryKey: ['/api/blog', params.slug],
@@ -51,15 +53,19 @@ export default function BlogPostPage() {
         metaDesc.setAttribute('content', post.metaDescription || post.excerpt || '');
       }
 
-      const ogTitle = document.querySelector('meta[property="og:title"]');
-      if (ogTitle) ogTitle.setAttribute('content', post.title);
-      
-      const ogDesc = document.querySelector('meta[property="og:description"]');
-      if (ogDesc) ogDesc.setAttribute('content', post.metaDescription || post.excerpt || '');
-      
-      const ogImage = document.querySelector('meta[property="og:image"]');
-      if (ogImage && post.featureImageUrl) {
-        ogImage.setAttribute('content', post.featureImageUrl);
+      const description = post.metaDescription || post.excerpt || '';
+      const setContent = (selector: string, value: string) =>
+        document.querySelector(selector)?.setAttribute('content', value);
+
+      // Same values the server injects into the first response.
+      setContent('meta[property="og:title"]', post.title);
+      setContent('meta[name="twitter:title"]', post.title);
+      setContent('meta[property="og:description"]', description);
+      setContent('meta[name="twitter:description"]', description);
+      setContent('meta[property="og:type"]', 'article');
+      if (post.featureImageUrl) {
+        setContent('meta[property="og:image"]', post.featureImageUrl);
+        setContent('meta[name="twitter:image"]', post.featureImageUrl);
       }
     }
   }, [post, settings]);
@@ -128,7 +134,7 @@ export default function BlogPostPage() {
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 <time dateTime={post.publishedAt ? String(post.publishedAt) : ''} data-testid="text-post-date">
-                  {post.publishedAt ? format(new Date(post.publishedAt), 'MMMM d, yyyy') : 'Draft'}
+                  {post.publishedAt ? formatDate(post.publishedAt, language) : t("Draft")}
                 </time>
               </div>
               {post.authorName && (
@@ -251,7 +257,7 @@ export default function BlogPostPage() {
                                 {relatedPost.title}
                               </h4>
                               <p className="text-xs text-muted-foreground mt-1">
-                                {relatedPost.publishedAt && format(new Date(relatedPost.publishedAt), 'MMM d, yyyy')}
+                                {relatedPost.publishedAt && formatDate(relatedPost.publishedAt, language)}
                               </p>
                             </div>
                           </div>

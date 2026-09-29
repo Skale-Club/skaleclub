@@ -13,7 +13,7 @@ export const notificationTemplates = pgTable("notification_templates", {
   subject: text("subject"),         // used by the email channel only
   body: text("body").notNull().default(""),
   active: boolean("active").notNull().default(true),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
 }, (table) => ({
   eventKeyIdx: index("notification_templates_event_key_idx").on(table.eventKey),

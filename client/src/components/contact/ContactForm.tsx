@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Send } from "lucide-react";
 import { Link } from "wouter";
 import { Input } from "@/components/ui/input";
@@ -14,8 +14,16 @@ const labelClass = "text-xs font-bold uppercase tracking-[0.16em] text-ink-500";
 const consentClass =
   "flex cursor-pointer items-start gap-3 border border-ink-700/10 p-4 font-normal transition-colors hover:bg-paper";
 
+// The EN wording is US A2P/TCPA text (HELP/STOP keywords). PT visitors get a
+// neutral version (EN keys, PT entries in translations.ts) without US SMS keywords.
+const PT_SUBMIT_CONSENT = "By submitting, you agree to be contacted by WhatsApp, email or phone about your request. See our";
+const PT_TRANSACTIONAL_CONSENT =
+  "I agree to receive messages about my request, such as order and service confirmations and updates, by WhatsApp, email or phone.";
+const PT_MARKETING_CONSENT =
+  "I agree to receive offers, news and promotional content by WhatsApp or email. I can opt out any time.";
+
 export function ContactForm({ companyName }: { companyName: string }) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { toast } = useToast();
   const [name, setName] = useState("");
   const [formEmail, setFormEmail] = useState("");
@@ -25,6 +33,8 @@ export function ContactForm({ companyName }: { companyName: string }) {
   const [smsConsent, setSmsConsent] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const startedAtRef = useRef(Date.now());
+  const honeypotRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +51,8 @@ export function ContactForm({ companyName }: { companyName: string }) {
           message,
           smsConsent,
           marketingConsent,
+          hp_extra: honeypotRef.current?.value || "",
+          elapsedMs: Date.now() - startedAtRef.current,
         }),
       });
       if (!res.ok) throw new Error("Request failed");
@@ -67,10 +79,22 @@ export function ContactForm({ companyName }: { companyName: string }) {
   };
 
   const linkClass = "underline hover:text-ink transition-colors";
+  const pt = language === "pt";
 
   return (
+    <div>
     <EditorialCard tone="light">
       <form onSubmit={handleSubmit} className="space-y-6">
+        <input
+          ref={honeypotRef}
+          type="text"
+          name="hp_extra"
+          tabIndex={-1}
+          autoComplete="new-password"
+          aria-hidden="true"
+          defaultValue=""
+          style={{ position: "absolute", left: "-10000px", width: 1, height: 1, opacity: 0 }}
+        />
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div className="space-y-2">
             <label htmlFor="contact-name" className={labelClass}>{t("Full Name")}</label>
@@ -142,9 +166,11 @@ export function ContactForm({ companyName }: { companyName: string }) {
             className="mt-1 shrink-0 rounded-none border-ink-500 data-[state=checked]:border-cta-ink data-[state=checked]:bg-cta-ink data-[state=checked]:text-white"
           />
           <span className="text-sm leading-relaxed text-ink-500">
-            {t(
-              "By checking this box, I consent to receive transactional messages related to my account, orders, or services I have requested. These messages may include appointment reminders, order confirmations, and account notifications, among others. Message frequency may vary. Message & data rates may apply. Reply HELP for help or STOP to opt out.",
-            )}
+            {pt
+              ? t(PT_TRANSACTIONAL_CONSENT)
+              : t(
+                  "By checking this box, I consent to receive transactional messages related to my account, orders, or services I have requested. These messages may include appointment reminders, order confirmations, and account notifications, among others. Message frequency may vary. Message & data rates may apply. Reply HELP for help or STOP to opt out.",
+                )}
           </span>
         </Label>
 
@@ -156,9 +182,11 @@ export function ContactForm({ companyName }: { companyName: string }) {
             className="mt-1 shrink-0 rounded-none border-ink-500 data-[state=checked]:border-cta-ink data-[state=checked]:bg-cta-ink data-[state=checked]:text-white"
           />
           <span className="text-sm leading-relaxed text-ink-500">
-            {t(
-              "By checking this box, I consent to receive marketing and promotional messages, including special offers, discounts, and new product updates, among others. Message frequency may vary. Message & data rates may apply. Reply HELP for help or STOP to opt out.",
-            )}
+            {pt
+              ? t(PT_MARKETING_CONSENT)
+              : t(
+                  "By checking this box, I consent to receive marketing and promotional messages, including special offers, discounts, and new product updates, among others. Message frequency may vary. Message & data rates may apply. Reply HELP for help or STOP to opt out.",
+                )}
           </span>
         </Label>
 
@@ -168,14 +196,22 @@ export function ContactForm({ companyName }: { companyName: string }) {
         </PillButton>
 
         <p className="pt-2 text-xs leading-relaxed text-ink-500">
-          {t("By submitting this form you agree to be contacted by")} <strong>{companyName}</strong>{" "}
-          {t(
-            "by phone, text, or email about your inquiry. Consent is not a condition of any purchase. Message and data rates may apply; message frequency varies. Reply STOP to unsubscribe. See our",
-          )}{" "}
+          {pt ? (
+            <>{t(PT_SUBMIT_CONSENT)} </>
+          ) : (
+            <>
+              {t("By submitting this form you agree to be contacted by")} <strong>{companyName}</strong>{" "}
+              {t(
+                "by phone, text, or email about your inquiry. Consent is not a condition of any purchase. Message and data rates may apply; message frequency varies. Reply STOP to unsubscribe. See our",
+              )}{" "}
+            </>
+          )}
           <Link href="/privacy-policy" className={linkClass}>{t("Privacy Policy")}</Link> {t("and")}{" "}
           <Link href="/terms-of-service" className={linkClass}>{t("Terms of Service")}</Link>.
         </p>
       </form>
     </EditorialCard>
+    <p className="mt-4 text-sm text-ink-500" data-testid="text-contact-reply-time">{t("We reply within one business day")}</p>
+    </div>
   );
 }

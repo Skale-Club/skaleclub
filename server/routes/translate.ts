@@ -1,10 +1,13 @@
 import type { Express } from "express";
 import { z } from "zod";
-import { and, eq, inArray } from "drizzle-orm";
+import crypto from "crypto";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../db.js";
 import { translations } from "#shared/schema.js";
 import { getActiveAIClient } from "../lib/ai-provider.js";
 import { rateLimitMiddleware } from "../lib/rateLimit.js";
+import { requireAdmin } from "./_shared.js";
+import { translations as staticDictionary } from "#shared/i18n/pt.js";
 
 /**
  * Dynamic AI-powered translation endpoint.
@@ -19,6 +22,27 @@ const MAX_TEXTS_PER_REQUEST = 100;
 const MAX_TEXT_LENGTH = 5_000;
 const MAX_TOTAL_TEXT_LENGTH = 50_000;
 const AI_TRANSLATE_TIMEOUT_MS = 20_000;
+
+// Anonymous callers get a much tighter budget than the admin panel.
+const ANON_MAX_TEXTS = 20;
+const ANON_MAX_TEXT_LENGTH = 600;
+
+// Global daily ceiling on AI provider calls (in-memory, per instance).
+const DAILY_CAP = Number(process.env.TRANSLATE_DAILY_CAP) > 0 ? Number(process.env.TRANSLATE_DAILY_CAP) : 2000;
+let dailyDay = "";
+let dailyCount = 0;
+function consumeDailyBudget(): boolean {
+  const day = new Date().toISOString().slice(0, 10);
+  if (day !== dailyDay) {
+    dailyDay = day;
+    dailyCount = 0;
+  }
+  if (dailyCount >= DAILY_CAP) return false;
+  dailyCount += 1;
+  return true;
+}
+
+const staticPt = staticDictionary.pt as Record<string, string>;
 
 // The UI only ever ships English and Brazilian Portuguese
 // (client/src/context/LanguageContext.tsx → `Language`). Anything else would be
@@ -39,15 +63,56 @@ export function registerTranslateRoutes(app: Express) {
     if (!parsedLang.success) {
       return res.status(400).json({ message: UNSUPPORTED_LANGUAGE_MESSAGE });
     }
-    const lang = parsedLang.data;
-    const cached = await db
-      .select({ sourceText: translations.sourceText, translatedText: translations.translatedText })
-      .from(translations)
-      .where(and(eq(translations.sourceLanguage, "en"), eq(translations.targetLanguage, lang)));
+    try {
+      const lang = parsedLang.data;
+      const cached = await db
+        .select({ sourceText: translations.sourceText, translatedText: translations.translatedText })
+        .from(translations)
+        .where(and(eq(translations.sourceLanguage, "en"), eq(translations.targetLanguage, lang)));
 
-    const result: Record<string, string> = {};
-    cached.forEach((row) => { result[row.sourceText] = row.translatedText; });
-    res.json({ translations: result });
+      const result: Record<string, string> = {};
+      cached.forEach((row) => {
+        // Static dictionary ships with the client bundle; do not resend it.
+        if (lang === "pt" && Object.prototype.hasOwnProperty.call(staticPt, row.sourceText)) return;
+        result[row.sourceText] = row.translatedText;
+      });
+      const body = JSON.stringify({ translations: result });
+      const etag = `"${crypto.createHash("sha1").update(body).digest("base64url")}"`;
+      res.setHeader("Cache-Control", "public, max-age=300");
+      res.setHeader("ETag", etag);
+      if (req.headers["if-none-match"] === etag) return res.status(304).end();
+      res.type("application/json").send(body);
+    } catch (err) {
+      console.error("[translate] GET /api/translations/preload failed:", err);
+      res.status(500).json({ message: "Failed to load translations" });
+    }
+  });
+
+  app.delete("/api/translations/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ message: "Invalid translation id" });
+    try {
+      const deleted = await db.delete(translations).where(eq(translations.id, id)).returning({ id: translations.id });
+      if (deleted.length === 0) return res.status(404).json({ message: "Translation not found" });
+      res.json({ success: true });
+    } catch (err) {
+      console.error("[translate] DELETE /api/translations/:id failed:", err);
+      res.status(500).json({ message: "Failed to delete translation" });
+    }
+  });
+
+  app.post("/api/translations/purge-em-dashes", requireAdmin, async (_req, res) => {
+    try {
+      const updated = await db
+        .update(translations)
+        .set({ translatedText: sql`replace(${translations.translatedText}, chr(8212), '|')`, updatedAt: new Date() })
+        .where(sql`${translations.translatedText} like '%'||chr(8212)||'%'`)
+        .returning({ id: translations.id });
+      res.json({ count: updated.length });
+    } catch (err) {
+      console.error("[translate] purge-em-dashes failed:", err);
+      res.status(500).json({ message: "Failed to purge em-dashes" });
+    }
   });
 
   app.post(
@@ -66,7 +131,22 @@ export function registerTranslateRoutes(app: Express) {
             errors: parsedBody.error.errors,
           });
         }
-        const { texts, targetLanguage, sourceLanguage } = parsedBody.data;
+        const { targetLanguage, sourceLanguage } = parsedBody.data;
+        let texts = parsedBody.data.texts;
+        const isAnonymous = !(req.session as any)?.userId;
+
+        // Anonymous callers: at most 20 texts per request, and over-long texts are
+        // handed back unchanged instead of failing the whole batch.
+        const passthrough: Record<string, string> = {};
+        if (isAnonymous) {
+          if (texts.length > ANON_MAX_TEXTS) {
+            return res.status(400).json({ message: `Too many texts in one request (max ${ANON_MAX_TEXTS}).` });
+          }
+          for (const text of texts) {
+            if (text.length > ANON_MAX_TEXT_LENGTH) passthrough[text] = text;
+          }
+          texts = texts.filter((text) => !(text in passthrough));
+        }
 
         if (texts.length > MAX_TEXTS_PER_REQUEST) {
           return res.status(400).json({
@@ -87,8 +167,17 @@ export function registerTranslateRoutes(app: Express) {
           });
         }
 
+        // Texts already in the static dictionary never need the DB or the AI.
+        const staticResult: Record<string, string> = { ...passthrough };
+        if (sourceLanguage === "en" && targetLanguage === "pt") {
+          for (const text of texts) {
+            if (Object.prototype.hasOwnProperty.call(staticPt, text)) staticResult[text] = staticPt[text];
+          }
+          texts = texts.filter((text) => !(text in staticResult));
+        }
+
         if (texts.length === 0) {
-          return res.json({ translations: {} });
+          return res.json({ translations: staticResult });
         }
 
         // Check cache for existing translations
@@ -108,9 +197,17 @@ export function registerTranslateRoutes(app: Express) {
 
         // If all translations are cached, return immediately
         if (untranslated.length === 0) {
-          const result: Record<string, string> = {};
+          const result: Record<string, string> = { ...staticResult };
           texts.forEach((text) => {
             result[text] = cacheMap.get(text)!;
+          });
+          return res.json({ translations: result });
+        }
+
+        if (!consumeDailyBudget()) {
+          const result: Record<string, string> = { ...staticResult };
+          texts.forEach((text) => {
+            result[text] = cacheMap.get(text) || text;
           });
           return res.json({ translations: result });
         }
@@ -119,7 +216,7 @@ export function registerTranslateRoutes(app: Express) {
         const aiClient = await getActiveAIClient();
         if (!aiClient || !aiClient.client) {
           // Fallback: return original texts
-          const result: Record<string, string> = {};
+          const result: Record<string, string> = { ...staticResult };
           texts.forEach((text) => {
             result[text] = cacheMap.get(text) || text;
           });
@@ -134,6 +231,7 @@ export function registerTranslateRoutes(app: Express) {
 Some texts may already be written in ${targetLangLabel}; return those exactly unchanged. Never answer in any language other than ${targetLangLabel}.
 Return ONLY a JSON object where keys are the original texts and values are the translations.
 Do not add any explanations or markdown formatting. Just pure JSON.
+Never use em-dashes; use a comma, period or | instead.
 
 Texts to translate:
 ${untranslated.map((t, i) => `${i + 1}. ${t}`).join("\n")}`;
@@ -176,7 +274,7 @@ ${untranslated.map((t, i) => `${i + 1}. ${t}`).join("\n")}`;
         }
 
         // Combine cached and new translations
-        const result: Record<string, string> = {};
+        const result: Record<string, string> = { ...staticResult };
         texts.forEach((text) => {
           result[text] = cacheMap.get(text) || translationsFromAI[text] || text;
         });

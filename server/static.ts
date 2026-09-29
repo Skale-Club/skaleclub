@@ -1,86 +1,26 @@
 import express, { type Express, type Request, type Response } from "express";
+import compression from "compression";
 import fs from "fs";
 import path from "path";
-import { legacyLanguagePath, splitLanguagePath, withLanguage } from "#shared/languagePath.js";
-import { isCorePagePath } from "#shared/pageSlugs.js";
-import { getLandingSeo, landingPathForSlug, slugForLandingPath } from "#shared/landingSeo.js";
+import { isNoindexPath } from "#shared/coreSeo.js";
+import { injectSeo } from "./seo/inject.js";
+import { resolveRoute } from "./seo/routes.js";
+import { getSeoSettings } from "./seo/data.js";
 
-function escapeHtmlAttribute(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
-}
-
+// Database-free variant: no 404s and no settings-driven JSON-LD, but the same
+// per-page head for known routes.
 export function injectLandingSeo(html: string, pathname: string): string {
-  const cleanPath = pathname.length > 1 ? pathname.replace(/\/$/, "") : pathname;
-  // Legacy PT shapes (`/nfc-keychains/br`, `/nfc-keychains-br`) still render;
-  // they just self-report the new `/br/...` canonical.
-  const normalizedPath = legacyLanguagePath(cleanPath) ?? cleanPath;
-  const slug = slugForLandingPath(normalizedPath);
-  const seo = slug ? getLandingSeo(slug) : undefined;
-  const { path: basePath, language } = splitLanguagePath(normalizedPath);
-  const isCorePage = isCorePagePath(basePath);
-  // A canonical/og:url is owed to every landing with curated SEO, every core
-  // page, and any non-exempt `/br/...` URL (splitLanguagePath already forces
-  // exempt remainders back to language "en", so this never fires for those).
-  const hasSelfCanonical = Boolean(seo) || isCorePage || language === "pt";
-  if (!hasSelfCanonical) return html;
-
-  const canonicalOrigin = (process.env.VITE_CANONICAL_ORIGIN || "https://skale.club").replace(/\/$/, "");
-  const canonical = `${canonicalOrigin}${normalizedPath}`;
-  const lang = language === "pt" || seo?.locale === "pt_BR" ? "pt-BR" : "en";
-  const replacements: Array<[RegExp, string]> = [
-    [/<html lang="[^"]*"/, `<html lang="${lang}"`],
-    [/<link rel="canonical" href="[^"]*"\s*\/?>/, `<link rel="canonical" href="${canonical}" />`],
-    [/<meta property="og:url" content="[^"]*"\s*\/?>/, `<meta property="og:url" content="${canonical}" />`],
-  ];
-
-  // An hreflang triplet is only accurate when the en/pt pair actually exists:
-  // a core page, or a managed landing whose base and `-br` slugs both carry
-  // SEO entries. A PT-only landing (e.g. "grupo", no "grupo-br" row) gets a
-  // self canonical above but no triplet.
-  const baseSlug = slug.endsWith("-br") ? slug.slice(0, -3) : slug;
-  const hasHreflangPair =
-    isCorePage || (baseSlug !== "" && Boolean(getLandingSeo(baseSlug)) && Boolean(getLandingSeo(`${baseSlug}-br`)));
-  if (hasHreflangPair) {
-    const enHref = isCorePage ? `${canonicalOrigin}${basePath}` : `${canonicalOrigin}${landingPathForSlug(baseSlug)}`;
-    const ptHref = isCorePage
-      ? `${canonicalOrigin}${withLanguage(basePath, "pt")}`
-      : `${canonicalOrigin}${landingPathForSlug(`${baseSlug}-br`)}`;
-    replacements.push(
-      [/<\/head>/, [
-        `<link rel="alternate" hreflang="en" href="${enHref}" data-site-i18n="true" />`,
-        `<link rel="alternate" hreflang="pt-BR" href="${ptHref}" data-site-i18n="true" />`,
-        `<link rel="alternate" hreflang="x-default" href="${enHref}" data-site-i18n="true" />`,
-        "</head>",
-      ].join("\n")],
-    );
-  }
-  if (seo) replacements.push(
-    [/<title>[^<]*<\/title>/, `<title>${seo.title}</title>`],
-    [/<meta name="description" content="[^"]*"\s*\/?>/, `<meta name="description" content="${escapeHtmlAttribute(seo.description)}" />`],
-    [/<meta property="og:locale" content="[^"]*"\s*\/?>/, `<meta property="og:locale" content="${seo.locale}" />`],
-    [/<meta property="og:title" content="[^"]*"\s*\/?>/, `<meta property="og:title" content="${escapeHtmlAttribute(seo.title)}" />`],
-    [/<meta property="og:description" content="[^"]*"\s*\/?>/, `<meta property="og:description" content="${escapeHtmlAttribute(seo.description)}" />`],
-    [/<meta name="twitter:title" content="[^"]*"\s*\/?>/, `<meta name="twitter:title" content="${escapeHtmlAttribute(seo.title)}" />`],
-    [/<meta name="twitter:description" content="[^"]*"\s*\/?>/, `<meta name="twitter:description" content="${escapeHtmlAttribute(seo.description)}" />`],
-  );
-  if (seo?.robots) {
-    const robotsTag = `<meta name="robots" content="${seo.robots}" />`;
-    if (/<meta name="robots" content="[^"]*"\s*\/?>/.test(html)) {
-      replacements.push([/<meta name="robots" content="[^"]*"\s*\/?>/, robotsTag]);
-    } else {
-      replacements.push([/<\/head>/, `${robotsTag}\n</head>`]);
-    }
-  }
-
-  return replacements.reduce(
-    (document, [pattern, replacement]) => document.replace(pattern, replacement),
-    html,
-  );
+  return injectSeo(html, pathname, {
+    settings: null,
+    route: { status: 200, noindex: isNoindexPath(pathname), landing: null, alternate: null, blog: null },
+  });
 }
+
+const COMPRESSIBLE = /text\/|javascript|json|xml|svg/i;
+
+// Files that must always be revalidated: the service worker and manifest change
+// without a new hash in their name, and index.html points at the hashed assets.
+const NO_CACHE_FILE = /(^|[\\/])(sw\.js|index\.html)$|\.webmanifest$/i;
 
 export function serveStatic(app: Express) {
   const distPath = path.resolve(__dirname, "public");
@@ -90,27 +30,74 @@ export function serveStatic(app: Express) {
     );
   }
 
-  // redirect: false — a public/ asset folder sharing a route's name (e.g.
-  // public/nfc-guide/ images vs the /nfc-guide page) must not 301 the page to
-  // a trailing-slash URL; the request falls through to the SPA handler instead.
-  app.use(express.static(distPath, { redirect: false }));
+  app.use(
+    compression({
+      filter: (_req, res) => COMPRESSIBLE.test(String(res.getHeader("Content-Type") ?? "")),
+    }),
+  );
 
-  // Missing hashed assets (e.g. a stale tab requests an old chunk after deploy)
-  // must 404 cleanly — otherwise the SPA fallback below would return index.html
-  // with text/html, and the browser would reject the module script with
-  // "Expected a JavaScript-or-Wasm module script but the server responded with
-  // a MIME type of text/html". The client catches the 404 and reloads.
-  app.use("/assets/", (_req: Request, res: Response) => {
-    res.status(404).type("text/plain").send("asset not found");
+  // Hashed build output never changes under the same name: cache it for a year.
+  // fallthrough:false makes a missing file an error here instead of a fall
+  // through to the SPA handler; the error handler below answers it as text.
+  // Otherwise a stale tab requesting an old chunk after a deploy would get
+  // index.html as text/html and the browser would reject the module script
+  // ("Expected a JavaScript-or-Wasm module script but the server responded
+  // with a MIME type of text/html"). The client catches the 404 and reloads.
+  app.use(
+    "/assets",
+    express.static(path.join(distPath, "assets"), { immutable: true, maxAge: "1y", fallthrough: false }),
+    (err: { status?: number }, _req: Request, res: Response, next: express.NextFunction) => {
+      if (err?.status === 404) return res.status(404).type("text/plain").send("asset not found");
+      return next(err);
+    },
+  );
+
+  // redirect: false: a public/ asset folder sharing a route's name (e.g.
+  // public/nfc-guide/ images vs the /nfc-guide page) must not 301 the page to a
+  // trailing-slash URL. index: false: "/" goes through the SPA handler below so
+  // the homepage gets its per-page head like every other route.
+  // The raw shell has no per-page head: send crawlers to the real homepage.
+  app.get("/index.html", (_req: Request, res: Response) => res.redirect(301, "/"));
+
+  app.use(
+    express.static(distPath, {
+      redirect: false,
+      index: false,
+      maxAge: 0,
+      setHeaders: (res, filePath) => {
+        if (NO_CACHE_FILE.test(filePath)) res.setHeader("Cache-Control", "no-cache");
+      },
+    }),
+  );
+
+  // Unknown API routes answer JSON, never the SPA shell.
+  app.use("/api", (_req: Request, res: Response) => {
+    res.status(404).json({ message: "Not found" });
   });
 
   const indexHtml = fs.readFileSync(path.resolve(distPath, "index.html"), "utf8");
 
-  // Fall through to index.html for actual SPA routes (no extension / known UI paths).
-  app.use("*", (req: Request, res: Response) => {
+  // Fall through to index.html for SPA routes. Unknown URLs still get the shell
+  // (so the client's 404 page renders) but with a real 404 status and noindex.
+  app.use("*", async (req: Request, res: Response) => {
     // app.use("*") may trim req.url to "/" while handling the wildcard;
-    // originalUrl keeps the actual landing path requested by the crawler.
+    // originalUrl keeps the actual path requested by the crawler.
     const pathname = req.originalUrl.split("?", 1)[0];
-    res.type("html").send(injectLandingSeo(indexHtml, pathname));
+
+    let settings = null;
+    try {
+      settings = await getSeoSettings();
+    } catch (err) {
+      console.error("[seo] company settings unavailable:", (err as Error).message);
+    }
+    const route = await resolveRoute(pathname, settings?.pageSlugs);
+
+    if (route.noindex || route.status === 404) {
+      const existing = String(res.getHeader("X-Robots-Tag") ?? "");
+      if (!/noindex/i.test(existing)) res.setHeader("X-Robots-Tag", "noindex, nofollow");
+    }
+    // The shell embeds per-page tags: let browsers and CDNs revalidate it.
+    res.setHeader("Cache-Control", "no-cache");
+    res.status(route.status).type("html").send(injectSeo(indexHtml, pathname, { settings, route }));
   });
 }

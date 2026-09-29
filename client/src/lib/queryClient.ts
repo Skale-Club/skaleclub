@@ -103,6 +103,15 @@ export const getQueryFn: <T>(options: {
     return await res.json();
   };
 
+/**
+ * The public site never refetches (staleTime Infinity). Admin data is edited from
+ * several places, so it goes stale after 30s and refetches when the tab regains focus.
+ */
+export const adminQueryOptions = {
+  staleTime: 30_000,
+  refetchOnWindowFocus: true,
+} as const;
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -123,3 +132,31 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+// Query keys only the admin uses. Keys that the public site shares (company-settings,
+// blog, faqs, pages, portfolio, /slug/ lookups, chat config) are deliberately absent.
+// Keys have no common prefix, so each is registered exactly (partial matching compares
+// whole array elements, so ["/api/forms"] does not touch ["/api/forms/slug/x"]).
+const ADMIN_ONLY_QUERY_KEYS = [
+  "/api/forms", "/api/form-leads", "/api/estimates", "/api/presentations", "/api/vcards",
+  "/api/integrations/groq", "/api/integrations/openai", "/api/integrations/openrouter",
+  "/api/integrations/openrouter/models", "/api/integrations/gemini", "/api/integrations/sms",
+  "/api/integrations/google-places", "/api/integrations/ghl", "/api/integrations/ghl/status",
+  "/api/integrations/ghl/custom-fields", "/api/integrations/email", "/api/integrations/telegram",
+  "/api/integrations/form-transcription",
+  "/api/notifications/templates", "/api/mcp/tokens",
+  "/api/chat/settings", "/api/chat/conversations", "/api/chat/response-time",
+  "/api/blog/settings", "/api/blog/health", "/api/blog/jobs", "/api/blog/jobs/latest",
+  "/api/blog/rss-items", "/api/blog/feedback", "/api/blog/ai-usage", "/api/blog/telegram",
+  "/api/skale-hub/dashboard", "/api/skale-hub/participants",
+  "/api/admin/portfolio-services", "/api/admin/marketing/sources", "/api/admin/marketing/overview",
+  "/api/admin/marketing/journey", "/api/admin/marketing/conversions", "/api/admin/marketing/campaigns",
+  "/api/brand-guidelines", "/api/redirects",
+];
+
+/** Called when the admin chunk loads: gives admin-only queries the admin freshness rules. */
+export function applyAdminQueryDefaults() {
+  for (const key of ADMIN_ONLY_QUERY_KEYS) {
+    queryClient.setQueryDefaults([key], adminQueryOptions);
+  }
+}

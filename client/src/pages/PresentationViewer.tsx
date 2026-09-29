@@ -9,7 +9,8 @@ import { LanguageSwitch, type LanguageSwitchValue } from '@/components/ui/Langua
 import type { CompanySettings, SlideBlock } from '@shared/schema';
 import { SlideContent, buildSlideStyle } from '@/components/SlideRenderer';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { DottedSurface } from '@/components/ui/dotted-surface';
+import { LazyDottedSurface as DottedSurface } from '@/components/ui/LazyDottedSurface';
+import { usePageSeo } from '@/hooks/use-seo';
 import { GradientBackground } from '@/components/ui/gradient-background-4';
 
 interface PublicPresentation {
@@ -62,6 +63,8 @@ const slideVariants = {
 };
 
 export default function PresentationViewer() {
+  // Private deck: keep it out of search indexes (title is set below).
+  usePageSeo({ title: '', noindex: true });
   const { slug } = useParams<{ slug: string }>();
 
   const [lang, setLang] = useState<'en' | 'pt-BR'>(() => {

@@ -16,10 +16,15 @@ import { legacyLanguagePath } from "#shared/languagePath.js";
 const PATH_REDIRECTS: Record<string, string> = {
   "/skale-hub/grupo": "/grupo",
   "/skale-hub/group": "/grupo",
+  "/br/skale-hub/grupo": "/grupo",
+  "/br/skale-hub/group": "/grupo",
   // The old route name described only one part of the content. The replacement
   // is a complete product guide covering models, pricing, NFC and production.
   "/nfc-pricing": "/nfc-guide",
   "/br/nfc-pricing": "/br/nfc-guide",
+  // /grupo is a Portuguese-only page: its /br twin is the same page, so it
+  // canonicalises to the bare path (also what the sitemap lists).
+  "/br/grupo": "/grupo",
 };
 
 export function registerCanonicalHostRedirects(app: Express) {
@@ -39,6 +44,11 @@ export function registerCanonicalHostRedirects(app: Express) {
     // req.hostname strips the port and honours X-Forwarded-Host (trust proxy
     // is set to 1 in supabaseAuth.ts, so this is the client-facing host).
     const host = req.hostname.toLowerCase();
+    // Any host other than the canonical one (staging FQDN, raw IP, preview)
+    // serves the same site: keep every response there out of search indexes.
+    if (canonicalHost && host !== canonicalHost.toLowerCase()) {
+      res.setHeader("X-Robots-Tag", "noindex");
+    }
     const needsHostRedirect =
       !!canonicalHost && (host === `www.${canonicalHost}` || host.endsWith(".vercel.app"));
 

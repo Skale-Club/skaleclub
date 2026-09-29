@@ -55,6 +55,17 @@ export default function Home() {
     }
   }, []);
 
+  // The mobile action bar asks the page to open its own lead form so two
+  // modals never coexist; preventDefault tells the bar it was handled.
+  useEffect(() => {
+    const openHandler = (event: Event) => {
+      event.preventDefault();
+      setIsFormOpen(true);
+    };
+    document.addEventListener('lead-form:open', openHandler);
+    return () => document.removeEventListener('lead-form:open', openHandler);
+  }, []);
+
   useEffect(() => {
     const clickHandler = (event: Event) => {
       const target = event.target as HTMLElement | null;

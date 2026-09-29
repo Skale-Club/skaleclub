@@ -1,3 +1,4 @@
+process.env.TZ = "UTC"
 /**
  * Aplica as migrações SQL pendentes de supabase/migrations à base de dados.
  *

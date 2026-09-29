@@ -12,11 +12,6 @@ import { join } from "path";
 
 async function injectSEOData() {
   try {
-    if (process.env.VERCEL || process.env.VERCEL_ENV) {
-      // Allow self-signed certs for build-time DB access on Vercel.
-      process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-    }
-
     if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL) {
       console.warn(
         "DATABASE_URL or POSTGRES_URL not set. Skipping SEO injection and using default tags.",

@@ -2,6 +2,7 @@ import type { Express } from "express";
 import crypto from "crypto";
 import { z } from "zod";
 import { storage } from "../storage.js";
+import { randomSlugSuffix } from "../lib/slug.js";
 import { slideBlockSchema } from "#shared/schema.js";
 import { requireAdmin } from "./_shared.js";
 import { getGeminiClient } from "../lib/gemini.js";
@@ -20,9 +21,8 @@ function slugifyTitle(title: string): string {
 
 async function buildUniquePresentationSlug(title: string): Promise<string> {
   const base = slugifyTitle(title);
-  if (!await storage.getPresentationBySlug(base)) return base;
   for (let i = 0; i < 5; i++) {
-    const candidate = `${base}-${crypto.randomBytes(2).toString("hex")}`;
+    const candidate = `${base}-${randomSlugSuffix()}`;
     if (!await storage.getPresentationBySlug(candidate)) return candidate;
   }
   return `${base}-${Date.now()}`;

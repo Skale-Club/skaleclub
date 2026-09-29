@@ -7,7 +7,8 @@ import { insertCompanySettingsSchema, normalizeSocialLinks } from "#shared/schem
 import type { LeadClassification, LeadStatus } from "#shared/schema.js";
 import { storage } from "../storage.js";
 import { api } from "#shared/routes.js";
-import { buildPagePaths, getPageSlugsValidationError, resolvePageSlugs } from "#shared/pageSlugs.js";
+import { getPageSlugsValidationError, resolvePageSlugs } from "#shared/pageSlugs.js";
+import { buildSitemapXml, collectSitemapUrls } from "../seo/sitemap.js";
 import { requireAdmin, sendError, setPublicCache, isAuthorizedCronRequest } from "./_shared.js";
 
 export function registerCompanyRoutes(app: Express) {
@@ -201,62 +202,37 @@ export function registerCompanyRoutes(app: Express) {
     res.redirect(301, '/sitemap.xml');
   });
 
+
+  // /e/ and /p/ stay crawlable on purpose: crawlers have to fetch them to read
+  // their noindex header and meta tag instead of listing them from links alone.
   app.get('/robots.txt', async (req, res) => {
+    const disallow = ['/admin', '/oauth', '/print', '/api/admin'].map((path) => `Disallow: ${path}`).join('\n');
     try {
       const settings = await storage.getCompanySettings();
       const canonicalUrl = canonicalOrigin(settings?.seoCanonicalUrl, req);
 
-      const robotsTxt = `User-agent: *\nAllow: /\n\nSitemap: ${canonicalUrl}/sitemap.xml\n`;
+      const robotsTxt = `User-agent: *\nAllow: /\n${disallow}\n\nSitemap: ${canonicalUrl}/sitemap.xml\n`;
       setPublicCache(res, 3600);
       res.type('text/plain').send(robotsTxt);
     } catch (err) {
-      res.type('text/plain').send('User-agent: *\nAllow: /');
+      res.type('text/plain').send(`User-agent: *\nAllow: /\n${disallow}\n\nSitemap: ${req.protocol}://${req.hostname}/sitemap.xml\n`);
     }
   });
 
   app.get('/sitemap.xml', async (req, res) => {
     try {
-      const settings = await storage.getCompanySettings();
-      const blogPostsList = await storage.getPublishedBlogPosts(100, 0);
-      const pagePaths = buildPagePaths(settings?.pageSlugs);
-      const canonicalUrl = canonicalOrigin(settings?.seoCanonicalUrl, req);
-      const lastMod = new Date().toISOString().split('T')[0];
-      const publicPages = [
-        { path: "/", changefreq: "weekly", priority: "1.0" },
-        { path: pagePaths.contact, changefreq: "monthly", priority: "0.8" },
-        { path: pagePaths.faq, changefreq: "monthly", priority: "0.7" },
-        { path: pagePaths.portfolio, changefreq: "weekly", priority: "0.8" },
-        { path: pagePaths.privacyPolicy, changefreq: "yearly", priority: "0.5" },
-        { path: pagePaths.termsOfService, changefreq: "yearly", priority: "0.5" },
-        { path: pagePaths.blog, changefreq: "weekly", priority: "0.8" },
-        { path: pagePaths.links, changefreq: "monthly", priority: "0.6" },
-      ];
-
-      let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${publicPages.map((page) => `  <url>
-    <loc>${canonicalUrl}${page.path}</loc>
-    <lastmod>${lastMod}</lastmod>
-    <changefreq>${page.changefreq}</changefreq>
-    <priority>${page.priority}</priority>
-  </url>`).join('\n')}`;
-
-      for (const post of blogPostsList) {
-        const postDate = post.updatedAt ? new Date(post.updatedAt).toISOString().split('T')[0] : lastMod;
-        sitemap += `
-  <url>
-    <loc>${canonicalUrl}${pagePaths.blogPost(post.slug)}</loc>
-    <lastmod>${postDate}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>`;
-      }
-
-      sitemap += `\n</urlset>`;
+      const [settings, pages, posts] = await Promise.all([
+        storage.getCompanySettings(),
+        storage.listPages(),
+        storage.getPublishedBlogPosts(1000, 0),
+      ]);
+      const urls = collectSitemapUrls({ pageSlugs: settings?.pageSlugs, pages, posts });
+      const sitemap = buildSitemapXml(canonicalOrigin(settings?.seoCanonicalUrl, req), urls);
 
       setPublicCache(res, 3600);
       res.type('application/xml').send(sitemap);
     } catch (err) {
+      console.error('[company] sitemap generation failed:', err);
       res.status(500).send('Error generating sitemap');
     }
   });

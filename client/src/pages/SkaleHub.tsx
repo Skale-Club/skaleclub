@@ -10,6 +10,8 @@ import { Loader2 } from "@/components/ui/loader";
 import { PhoneCountrySelect } from "@/components/ui/PhoneCountrySelect";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { formatDate } from "@/lib/format";
+import { useTranslation } from "@/hooks/useTranslation";
 import {
   detectDefaultPhoneCountry,
   formatPhoneForCountry,
@@ -59,18 +61,10 @@ type HubAccessResponse = {
   eventType: "join" | "replay";
 };
 
-function formatLiveDate(value: string | Date) {
-  const date = value instanceof Date ? value : new Date(value);
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
-}
 
-function formatLiveTime(value: string | Date, timeZone: string) {
+function formatLiveTime(value: string | Date, timeZone: string, lang: string) {
   const date = value instanceof Date ? value : new Date(value);
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat(lang === "pt" ? "pt-BR" : "en-US", {
     hour: "numeric",
     minute: "2-digit",
     timeZone,
@@ -80,6 +74,7 @@ function formatLiveTime(value: string | Date, timeZone: string) {
 
 export default function SkaleHub() {
   usePageSeo({ title: "Skale Hub" });
+  const { language } = useTranslation();
   const { toast } = useToast();
   const [form, setForm] = useState({ name: "", phone: "", email: "" });
   const [selectedCountry, setSelectedCountry] = useState<PhoneCountry>(() => detectDefaultPhoneCountry());
@@ -157,10 +152,10 @@ export default function SkaleHub() {
     }
 
     return {
-      date: formatLiveDate(live.startsAt),
-      time: formatLiveTime(live.startsAt, live.timezone),
+      date: formatDate(live.startsAt, language, live.timezone),
+      time: formatLiveTime(live.startsAt, live.timezone, language),
     };
-  }, [live]);
+  }, [live, language]);
 
   const phoneHasValue = form.phone.trim().length > 0;
   const phoneIsValid = !phoneHasValue || isValidPhoneForCountry(form.phone, selectedCountry);

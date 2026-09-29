@@ -5,9 +5,12 @@ import { SectionHeading } from "@/components/layout/SectionHeading";
 import { getImageUrl } from "@/components/admin/shared/utils";
 import { useTranslation } from "@/hooks/useTranslation";
 import { cn } from "@/lib/utils";
+import { trackCTAClick } from "@/lib/analytics";
+import { priceParts } from "@/lib/format";
 
 function AppRow({ item, flip, onOpen }: { item: CatalogItem; flip: boolean; onOpen: (item: CatalogItem) => void }) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const price = item.price ? priceParts(item.price, language, t) : undefined;
   const eyebrow = item.category ? t(CATALOG_CATEGORY_LABEL[item.category]) : undefined;
   const source = item.headline ?? item.subtitle;
   const siteUrl = item.site;
@@ -59,19 +62,28 @@ function AppRow({ item, flip, onOpen }: { item: CatalogItem; flip: boolean; onOp
           </ul>
         )}
         <div className="mt-8 flex flex-wrap items-center gap-3">
+          {/* Self-serve apps (those with a tool URL) lead with Start; the lead
+              form stays one click away inside the details popup. */}
+          {siteHref && (
+            <PillLink
+              href={siteHref}
+              target="_blank"
+              variant="primary"
+              aria-label={siteDomain(siteUrl) ? `${t("Start")} ${siteDomain(siteUrl)}` : undefined}
+              onClick={() => trackCTAClick(`portfolio-start-${item.slug ?? item.key}`, item.slug ?? item.key)}
+            >
+              {t("Start")} <span aria-hidden="true">↗</span>
+            </PillLink>
+          )}
           <PillButton variant="ghost" onClick={() => onOpen(item)}>
             {t("See details")}
           </PillButton>
-          {siteHref && siteDomain(siteUrl) && (
-            <PillLink href={siteHref} target="_blank" variant="ghost" className="border-transparent text-cta-soft hover:bg-white/5">
-              {siteDomain(siteUrl)} <span aria-hidden="true">↗</span>
-            </PillLink>
-          )}
           <span className="ml-auto font-display text-xl font-semibold text-fog-50">
-            {item.price ? (
+            {price ? (
               <>
-                {item.price.value}
-                {item.price.label && <small className="ml-1 text-sm font-normal text-fog-400">{t(item.price.label)}</small>}
+                {price.prefix && <small className="mr-1 text-sm font-normal text-fog-400">{price.prefix}</small>}
+                {price.value}
+                {price.suffix && <small className={cn("text-sm font-normal text-fog-400", price.tight ? "ml-0" : "ml-1")}>{price.suffix}</small>}
               </>
             ) : (
               t("Start here")

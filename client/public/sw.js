@@ -1,10 +1,11 @@
-const APP_CACHE = "skaleclub-app-v5";
-const RUNTIME_CACHE = "skaleclub-runtime-v2";
+// __BUILD_HASH__ is replaced at build time (script/build.ts) so every deploy gets
+// fresh cache names and the activate step drops the previous build's caches.
+const APP_CACHE = "skaleclub-app-__BUILD_HASH__";
+const RUNTIME_CACHE = "skaleclub-runtime-__BUILD_HASH__";
+const RUNTIME_MAX_ENTRIES = 60;
 const APP_SHELL = [
   "/",
-  "/admin/login",
   "/manifest.webmanifest",
-  "/manifest-xpot.webmanifest",
   "/favicon.svg",
   "/favicon-rounded.png",
   "/apple-touch-icon.png",
@@ -15,7 +16,15 @@ const NETWORK_ONLY_PATHS = [
   /^\/api\//,
   /^\/robots\.txt$/,
   /^\/sitemap(?:_index)?\.xml$/,
+  // Private, per-client or authenticated surfaces: never cache.
+  /^\/e\//,
+  /^\/p\//,
+  /^\/admin(?:\/|$)/,
+  /^\/print(?:\/|$)/,
+  /\.wasm$/,
 ];
+// Fingerprinted build output: immutable, so serve from cache without revalidating.
+const IMMUTABLE_ASSET = /^\/assets\//;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -37,9 +46,20 @@ self.addEventListener("activate", (event) => {
             .map((key) => caches.delete(key)),
         ),
       )
+      .then(() => pruneRuntimeCache())
       .then(() => self.clients.claim()),
   );
 });
+
+// Keep only the newest entries; Cache.keys() returns them in insertion order.
+async function pruneRuntimeCache() {
+  const cache = await caches.open(RUNTIME_CACHE);
+  const keys = await cache.keys();
+  const excess = keys.length - RUNTIME_MAX_ENTRIES;
+  for (let i = 0; i < excess; i++) {
+    await cache.delete(keys[i]);
+  }
+}
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
@@ -59,19 +79,29 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (request.mode === "navigate") {
-    event.respondWith(handleNavigationRequest(request));
+    event.respondWith(handleNavigationRequest(event, request));
     return;
   }
 
-  event.respondWith(handleAssetRequest(request));
+  event.respondWith(handleAssetRequest(event, request, url));
 });
 
-async function handleNavigationRequest(request) {
+// Store a response, then trim the runtime cache; kept alive past respondWith.
+function putAndPrune(event, request, response) {
+  event.waitUntil(
+    caches
+      .open(RUNTIME_CACHE)
+      .then((cache) => cache.put(request, response))
+      .then(pruneRuntimeCache)
+      .catch(() => {}),
+  );
+}
+
+async function handleNavigationRequest(event, request) {
   try {
     const response = await fetch(request);
     if (response.ok) {
-      const cache = await caches.open(RUNTIME_CACHE);
-      cache.put(request, response.clone());
+      putAndPrune(event, request, response.clone());
     }
     return response;
   } catch {
@@ -79,19 +109,20 @@ async function handleNavigationRequest(request) {
   }
 }
 
-async function handleAssetRequest(request) {
+async function handleAssetRequest(event, request, url) {
   const cachedResponse = await caches.match(request);
 
   if (cachedResponse) {
-    void refreshAsset(request);
+    if (!IMMUTABLE_ASSET.test(url.pathname)) {
+      event.waitUntil(refreshAsset(event, request));
+    }
     return cachedResponse;
   }
 
   try {
     const response = await fetch(request);
     if (response.ok) {
-      const cache = await caches.open(RUNTIME_CACHE);
-      cache.put(request, response.clone());
+      putAndPrune(event, request, response.clone());
     }
     return response;
   } catch {
@@ -107,12 +138,11 @@ async function handleAssetRequest(request) {
   }
 }
 
-async function refreshAsset(request) {
+async function refreshAsset(event, request) {
   try {
     const response = await fetch(request);
     if (response.ok) {
-      const cache = await caches.open(RUNTIME_CACHE);
-      cache.put(request, response);
+      putAndPrune(event, request, response);
     }
   } catch {
     // Ignore refresh failures and keep serving the cached version.

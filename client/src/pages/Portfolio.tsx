@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings, PortfolioService } from "@shared/schema";
 import { catalogProducts, catalogServices, type CatalogItem } from "@shared/catalog";
@@ -42,8 +42,28 @@ export default function Portfolio() {
   const openForm = (source: string) => {
     setOpen(null);
     setIsFormOpen(true);
-    trackCTAClick(`portfolio-${source}`, companySettings?.ctaText || "Book Call");
+    // LeadFormModal has no hidden-answer support yet, so the product a lead
+    // asked about is parked in sessionStorage for it (or the backend) to read.
+    try {
+      if (source === "hero" || source === "footer" || source === "mobile-bar") sessionStorage.removeItem("leadContext");
+      else sessionStorage.setItem("leadContext", source);
+    } catch {
+      /* storage unavailable */
+    }
+    trackCTAClick(`portfolio-${source}`, source);
   };
+
+  // The mobile action bar defers to this page's modal instead of mounting a second one.
+  useEffect(() => {
+    const onLeadFormOpen = (event: Event) => {
+      event.preventDefault();
+      openForm("mobile-bar");
+    };
+    document.addEventListener("lead-form:open", onLeadFormOpen);
+    return () => document.removeEventListener("lead-form:open", onLeadFormOpen);
+    // openForm only touches stable state setters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (isLoading) {
     return (
@@ -58,7 +78,7 @@ export default function Portfolio() {
   const cta = content?.portfolioCtaSection;
   const heroTitle = t(hero?.title || "Stop Doing Repetitive Work. Automate It.");
   const buttonText = t(hero?.buttonText || "Book a Strategy Session");
-  const whatsapp = companySettings?.companyPhone?.replace(/\D/g, "");
+  const phone = companySettings?.companyPhone?.trim() || undefined;
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-navy-950 text-fog-200 [color-scheme:dark]">
@@ -76,7 +96,7 @@ export default function Portfolio() {
         title={t(cta?.title || "Ready to Redefine Your Potential?")}
         subtitle={cta?.subtitle ? t(cta.subtitle) : undefined}
         buttonText={t(cta?.buttonText || "Book a Strategy Session")}
-        whatsapp={whatsapp}
+        phone={phone}
         onCta={() => openForm("footer")}
       />
 

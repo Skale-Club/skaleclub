@@ -9,11 +9,23 @@ import { splitLanguagePath, withLanguage } from "./languagePath.js";
 
 export type LandingLocale = "en_US" | "pt_BR";
 
+// Social-share image. Served from client/public so Express sends the right
+// content type (image/webp). Dimensions are the files' real pixel sizes.
+export interface SeoImage {
+  path: string;
+  width: number;
+  height: number;
+}
+
+export const CORE_OG_IMAGE: SeoImage = { path: "/SkaleClub.webp", width: 1169, height: 1500 };
+export const NFC_OG_IMAGE: SeoImage = { path: "/nfc-keychains-hero.webp", width: 1199, height: 1312 };
+
 export interface LandingSeo {
   title: string;
   description: string;
   locale: LandingLocale;
   robots?: "index, follow" | "noindex, follow";
+  ogImage?: SeoImage;
 }
 
 export const LANDING_SEO: Record<string, LandingSeo> = {
@@ -22,12 +34,14 @@ export const LANDING_SEO: Record<string, LandingSeo> = {
     description:
       "Custom 3D-printed NFC keychains that open your reviews, Instagram, menu, digital card, or website with one tap.",
     locale: "en_US",
+    ogImage: NFC_OG_IMAGE,
   },
   "nfc-keychains-br": {
     title: "Chaveiros NFC Personalizados para Empresas | Skale Club",
     description:
       "Chaveiros NFC personalizados e impressos em 3D para abrir avaliações, Instagram, cardápio, cartão digital ou site com um toque.",
     locale: "pt_BR",
+    ogImage: NFC_OG_IMAGE,
   },
   "nfc-order": {
     title: "Complete Your NFC Keychain Order | Skale Club",
@@ -48,12 +62,14 @@ export const LANDING_SEO: Record<string, LandingSeo> = {
     description:
       "Understand flat, raised-relief and custom-shaped NFC keychains, what changes the price, phone compatibility, artwork and the complete order process.",
     locale: "en_US",
+    ogImage: NFC_OG_IMAGE,
   },
   "nfc-guide-br": {
     title: "Guia de Chaveiros NFC: Modelos, Preços e Dúvidas | Skale Club",
     description:
       "Entenda os chaveiros NFC flat, com alto-relevo e em formatos personalizados, o que altera o preço, compatibilidade, arte e processo do pedido.",
     locale: "pt_BR",
+    ogImage: NFC_OG_IMAGE,
   },
   websites: {
     title: "Websites for Service Businesses | Skale Club",

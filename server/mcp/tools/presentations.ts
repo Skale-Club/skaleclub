@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { storage } from "../../storage.js";
+import { randomSlugSuffix } from "../../lib/slug.js";
 import type { createAuditLog } from "../../lib/mcp-storage.js";
 
 type AuditFn = typeof createAuditLog;
@@ -43,7 +44,7 @@ export function registerPresentationTools(server: McpServer, audit: AuditFn, tok
     { title: z.string().min(1).max(200) },
     async ({ title }) => {
       try {
-        const slug = title.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") + "-" + Date.now();
+        const slug = title.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") + "-" + randomSlugSuffix();
         const presentation = await storage.createPresentation({ title, slug, slides: [] });
         await audit({ tokenId, tokenPrefix, toolName: "presentations_create", targetType: "presentation", targetId: presentation.id, action: "create", result: "success", ipAddress: ip });
         return { content: [{ type: "text" as const, text: JSON.stringify({ id: presentation.id, slug: presentation.slug, title: presentation.title }) }] };

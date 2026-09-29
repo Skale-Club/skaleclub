@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "../db.js";
+import { bootstrapTasksEnabled } from "./runtimeFlags.js";
 import { bootstrapTasks } from "#shared/schema.js";
 import { applyContentFixes, assignServiceCategories, ensure3dPrintingService, refreshProductCatalogArtwork, refreshServiceImages, syncProductArtwork, type TaskResult } from "./contentFixes.js";
 
@@ -124,7 +125,8 @@ export async function listBootstrapTasks() {
 
 /** Called once from server/index.ts after listen; never blocks startup. */
 export function scheduleBootstrapTasks(): void {
-  if (process.env.VERCEL || process.env.DISABLE_BOOTSTRAP_TASKS === "true") return;
+  // Opt-in: ENABLE_BOOTSTRAP_TASKS=true (a dev server on the prod DB must not self-apply fixes).
+  if (!bootstrapTasksEnabled()) return;
   setTimeout(() => {
     runBootstrapTasks().catch((err) => console.error("[bootstrap] run failed:", err));
   }, 5_000).unref();

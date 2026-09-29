@@ -58,6 +58,9 @@ function resolveKey(): Buffer {
   if (!sessionSecret) {
     throw new Error("Token encryption requires TOKEN_ENCRYPTION_KEY or SESSION_SECRET to be set.");
   }
+  console.warn(
+    "[token-crypto] TOKEN_ENCRYPTION_KEY is not set; secrets at rest are keyed from SESSION_SECRET. Set TOKEN_ENCRYPTION_KEY (32 bytes, hex or base64) so rotating SESSION_SECRET does not invalidate stored secrets.",
+  );
   cachedKey = scryptSync(sessionSecret, KEY_DERIVATION_SALT, 32);
   return cachedKey;
 }

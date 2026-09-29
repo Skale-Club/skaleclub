@@ -91,9 +91,8 @@ worth reading before inferring anything from config files in the repo root:
 
 - **Host: Coolify on Hetzner**, as a Docker container built from `Dockerfile`.
   Environment variables live in the Coolify app, split build-time / runtime.
-- `.github/workflows/deploy.yml` only pings the Coolify deploy API on a push to
-  `main`; Coolify does the build.
-- `wrangler.jsonc` is scoped to one Cloudflare Worker that proxies
-  `xpot.skale.club`. It does not host the site.
-- `vercel.json` is leftover and not part of the current deploy path. Its
-  presence has already misled at least one agent into reporting the wrong host.
+- `.github/workflows/deploy.yml` runs after the CI workflow succeeds on `main`,
+  pings the Coolify deploy API, waits for the deployment and checks
+  `/api/health` and `/api/version`; Coolify does the build.
+- `vercel.json`, `api/`, `wrangler.jsonc` and `cloudflare/` were removed after
+  the Vercel wind-down; the container is the only deploy target.

@@ -25,8 +25,10 @@ import {
   NFC_QUANTITY,
   NFC_VOLUME_TIERS,
   formatUsdCents,
+  formatUsdCentsFor,
 } from "@shared/nfc-pricing";
 import { nfcWhatsappHref } from "@shared/nfc-whatsapp";
+import { NFC_GUIDE_FAQ_EN } from "@shared/nfcGuideFaq";
 
 export type NfcProductGuideProps = {
   orderHref?: string;
@@ -104,92 +106,7 @@ const processSteps = [
   ["04", "We produce and test", "Every tag is programmed and tested before the finished keychains are shipped."],
 ] as const;
 
-const faqGroups = [
-  {
-    title: "Models and customization",
-    items: [
-      [
-        "Can you make any shape?",
-        "We can create almost any feasible shape: mascots, animals, characters, dolls, products, tools and custom logo outlines. We first check whether the design can be produced reliably and whether there is enough room for the NFC tag. The more complex the contour and detail, the higher the quote may be.",
-      ],
-      [
-        "What is the difference between flat and raised relief?",
-        "The flat model has a smooth face with the artwork on the surface. Raised relief adds physical height to selected parts of the design, making it more tactile and dimensional. Because relief needs extra modeling and production work, it is quoted individually.",
-      ],
-      [
-        "Can the keychain use more than one color?",
-        "Yes, when the artwork and production method allow it. More colors, small color separations and layered finishes can add complexity, so we confirm feasibility and price after reviewing the design.",
-      ],
-      [
-        "Can you copy a product, mascot or character?",
-        "Yes, as long as the reference can be adapted into a durable keychain and you have permission to use the artwork. We simplify fragile or extremely fine details when needed and show you the design before production.",
-      ],
-    ],
-  },
-  {
-    title: "Price and quantity",
-    items: [
-      [
-        "Why do special models not have a fixed price?",
-        "A raised or custom-shaped keychain can vary greatly in size, contour, number of layers, colors and modeling time. A single fixed number would be misleading, so we review the actual idea and confirm a precise quote before you commit.",
-      ],
-      [
-        "What is the minimum order?",
-        `The minimum order is ${NFC_QUANTITY.min} pieces. Each order requires artwork preparation, machine setup, programming and testing, so production is organized as a batch.`,
-      ],
-      [
-        "What is the art fee?",
-        `The ${formatUsdCents(NFC_ART_FEE_CENTS)} art and setup fee applies to the first order. It covers preparing the design for production. On a repeat order using the approved artwork, this fee is normally waived.`,
-      ],
-      [
-        "Do I pay when I submit the form?",
-        "No. The form collects the information needed to review your order. We confirm the design, final price and next steps with you before production begins.",
-      ],
-    ],
-  },
-  {
-    title: "NFC technology",
-    items: [
-      [
-        "Does the customer need an app?",
-        "No. Modern iPhones and Android phones read NFC tags natively. The customer holds the phone close to the keychain and taps the notification that appears.",
-      ],
-      [
-        "What can the NFC tap open?",
-        "It can open a Google review page, Instagram, WhatsApp, a digital business card, menu, booking page, website or another web link you choose.",
-      ],
-      [
-        "Can I change the destination later?",
-        "Yes. The easiest approach is to use a link you control and redirect it whenever needed. If the tag itself must be reprogrammed, talk to us and we will explain the available option for your order.",
-      ],
-      [
-        "Is every keychain tested?",
-        "Yes. We program and test the NFC tag before shipping so the approved destination opens correctly.",
-      ],
-    ],
-  },
-  {
-    title: "Artwork, production and delivery",
-    items: [
-      [
-        "Which artwork file should I send?",
-        "A vector file is ideal, but a clear PNG, JPG, WEBP or PDF can also work. If you only have a photo or screenshot, send the best version available and we will tell you what can be done.",
-      ],
-      [
-        "Will I see the design before production?",
-        "Yes. You approve the adapted design before production begins. This is also when we resolve any necessary simplification or NFC placement detail.",
-      ],
-      [
-        "How long does production take?",
-        "The timeline depends on the model, complexity, quantity and delivery destination. We confirm the production and delivery window in writing with the final quote, before you commit.",
-      ],
-      [
-        "What if I am not sure which model to choose?",
-        "Send your idea or reference through the form or WhatsApp. We will recommend the simplest model that preserves the look you want and explain the price difference before moving forward.",
-      ],
-    ],
-  },
-] as const;
+const faqGroups = NFC_GUIDE_FAQ_EN;
 
 export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps }) {
   const { t, language } = useTranslation();
@@ -230,7 +147,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
         <Figure
           tone="dark"
           eager
-          src="/nfc-guide/hero.webp"
+          src="/nfc-guide/hero.webp" width={1400} height={933}
           alt="AI-generated visual examples of flat, raised-relief and custom-shaped NFC keychains"
           caption="Illustrative concepts. Your final design is reviewed and approved before production."
           icon={Sparkles}
@@ -315,7 +232,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
             />
             <Figure
               tone="dark"
-              src="/nfc-guide/price-factors.webp"
+              src="/nfc-guide/price-factors.webp" width={1400} height={933}
               alt="Three illustrative keychains showing increasing design and production complexity"
               caption="A flat surface, raised layers and a detailed custom contour require different amounts of work."
               className="mt-9"
@@ -342,7 +259,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
                 {visibleTiers.map((tier) => (
                   <div key={tier.minQuantity} className="flex items-center justify-between py-4">
                     <span className="text-sm text-fog-300">{tier.minQuantity}+ {t("pieces")}</span>
-                    <strong className="text-lg tabular-nums">{formatUsdCents(tier.unitPriceCents)} <span className="text-xs font-normal text-fog-400">/ {t("each")}</span></strong>
+                    <strong className="text-lg tabular-nums">{formatUsdCentsFor(language)(tier.unitPriceCents)} <span className="text-xs font-normal text-fog-400">/ {t("each")}</span></strong>
                   </div>
                 ))}
               </div>
@@ -369,7 +286,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
         />
         <Figure
           tone="light"
-          src="/nfc-guide/tap.webp"
+          src="/nfc-guide/tap.webp" width={1400} height={933}
           alt="Smartphone reading an NFC keychain at a business counter"
           caption="Bring the back of the phone close to the keychain and open the notification. No app required."
           imgClassName="sm:aspect-[2/1]"
@@ -419,7 +336,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
           <Figure
             tone="dark"
             aspect="4/3"
-            src="/nfc-guide/artwork.webp"
+            src="/nfc-guide/artwork.webp" width={1400} height={933}
             alt="Illustrative design desk showing sketch, digital layers, color samples and finished keychain"
             caption="We adapt the reference, confirm the colors and layers, and send the design for approval."
           />
@@ -436,7 +353,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
         />
         <Figure
           tone="light"
-          src="/nfc-guide/production.webp"
+          src="/nfc-guide/production.webp" width={1400} height={933}
           alt="Illustrative batch of NFC keychains being tested and prepared for shipping"
           caption="After approval, the batch is produced, every NFC tag is tested and the order is prepared for delivery."
           imgClassName="sm:aspect-[2/1]"
@@ -463,6 +380,8 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
           />
           <img
             src="/nfc-guide/custom-shape.webp"
+            width={800}
+            height={841}
             alt={t("Illustrative dog-mascot keychain showing the possibilities of a custom shape")}
             className="mx-auto hidden h-64 w-64 object-contain lg:block"
             loading="lazy"

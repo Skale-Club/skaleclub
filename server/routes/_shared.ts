@@ -36,6 +36,8 @@ export function sendError(res: Response, err: unknown, fallback = "Request faile
   const code = (err as { code?: string })?.code;
   if (code === "23505") return res.status(409).json({ message: "Already exists" });
   if (code === "23503") return res.status(409).json({ message: "Referenced record missing" });
+  // Logged (and reported to Sentry) by the console-capture integration in
+  // server/instrument.ts; an explicit captureException here would double it.
   console.error(err);
   return res.status(500).json({ message: fallback });
 }

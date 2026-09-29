@@ -251,6 +251,13 @@ export function formatUsdCents(cents: number): string {
   return `$${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.${fraction}`;
 }
 
+/** Locale-aware variant: PT renders "US$ 1.234,50", EN keeps "$1,234.50". */
+export function formatUsdCentsFor(lang: string): (cents: number) => string {
+  if (lang !== "pt") return formatUsdCents;
+  const fmt = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "USD" });
+  return (cents: number) => fmt.format(Math.round(cents) / 100);
+}
+
 // ── Order snapshot ─────────────────────────────────────────────────────────
 // form_leads.custom_answers is Record<string, string>, so the quote is frozen
 // onto the lead as flat strings. Keys are prefixed `nfc` to stay clear of form

@@ -559,6 +559,12 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
   const [lastAnsweredStep, setLastAnsweredStep] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [startedAt, setStartedAt] = useState<Date | null>(null);
+  const honeypotRef = useRef<HTMLInputElement>(null);
+  // Client-measured form start; reset whenever the form opens.
+  const formOpenedAtRef = useRef(Date.now());
+  useEffect(() => {
+    if (open) formOpenedAtRef.current = Date.now();
+  }, [open]);
   const [view, setView] = useState<FormView>("form");
   const [pendingSync, setPendingSync] = useState(false);
   const [storageAvailable, setStorageAvailable] = useState(true);
@@ -821,7 +827,15 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
           .filter(([key, value]) => !KNOWN_FIELD_IDS.includes(key) && typeof value === "string" && value.trim())
           .map(([key, value]) => [key, (value as string).trim()])
       );
+      try {
+        const leadContext = window.sessionStorage.getItem("leadContext");
+        if (leadContext) customAnswers.leadContext = leadContext;
+      } catch {
+        /* sessionStorage unavailable */
+      }
       const payload: any = {
+        hp_extra: honeypotRef.current?.value || "",
+        elapsedMs: Date.now() - formOpenedAtRef.current,
         sessionId: session,
         questionNumber,
         startedAt: (startedAt || new Date()).toISOString(),
@@ -1047,6 +1061,7 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
       setLastAnsweredStep(totalQuestions);
       if (lead) {
         clearStoredState(formSlug);
+        try { window.sessionStorage.removeItem("leadContext"); } catch { /* ignore */ }
         const leadClassification = lead.classificacao || classification;
         const leadScore = lead.scoreTotal ?? score.total;
         // Xphere visit booking (quick 260906-g80): the progress route appends
@@ -1213,6 +1228,16 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
 
                 {view === "form" && currentQuestion && (
                   <form onSubmit={handleSubmit}>
+                    <input
+                      ref={honeypotRef}
+                      type="text"
+                      name="hp_extra"
+                      tabIndex={-1}
+                      autoComplete="new-password"
+                      aria-hidden="true"
+                      defaultValue=""
+                      style={{ position: "absolute", left: "-10000px", width: 1, height: 1, opacity: 0 }}
+                    />
                     <div className="flex items-start justify-between">
                       <div>
                         <p className="text-sm font-semibold text-cta uppercase tracking-wide">{`${t("Step")} ${currentStep}/${totalQuestions}`}</p>

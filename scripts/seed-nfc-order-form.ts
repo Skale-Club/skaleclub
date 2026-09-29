@@ -1,7 +1,10 @@
 // Seed the NFC keychain ORDER form (slug `nfc-keychain-order`).
 // Idempotent: re-running updates the row in place (same id, same leads).
 //
-// Run: npx tsx --env-file=.env scripts/seed-nfc-order-form.ts
+// DRY-RUN by default: prints a diff. Add --apply to write (the old row is
+// snapshotted into content_revisions first; config runs validateFormConfig).
+//
+// Run: npx tsx --env-file=.env scripts/seed-nfc-order-form.ts [--apply]
 //
 // This is NOT the ad-landing lead form (`nfc-keychain-leads`, seeded by
 // scripts/seed-nfc-keychains-landing.ts). That one captures interest; this one
@@ -33,9 +36,7 @@
 // range, the volume tiers, the keychain catalogue and the $50 art fee are all
 // read from there at render time, so tuning price never means reseeding.
 import "dotenv/config";
-import { eq } from "drizzle-orm";
-import { pool, db } from "../server/db.js";
-import { forms } from "../shared/schema/forms.js";
+import { seedForm, seedPage, withSeedGuard } from "./lib/seed-utils.js";
 import type { FormConfig, FormQuestion } from "../shared/schema/forms.js";
 
 const FORM_SLUG = "nfc-keychain-order";
@@ -163,40 +164,15 @@ const CONFIG: FormConfig = {
   },
 };
 
-async function seed() {
+async function seed(apply: boolean) {
   console.log(`Seeding form: slug='${FORM_SLUG}'`);
-  const existing = await db.select().from(forms).where(eq(forms.slug, FORM_SLUG));
-
-  if (existing.length > 0) {
-    const [row] = await db
-      .update(forms)
-      .set({ name: FORM_NAME, description: FORM_DESCRIPTION, config: CONFIG, isActive: true })
-      .where(eq(forms.slug, FORM_SLUG))
-      .returning();
-    console.log(`  updated form id=${row.id} (${QUESTIONS.length} questions)`);
-    return;
-  }
-
-  const [row] = await db
-    .insert(forms)
-    .values({
-      slug: FORM_SLUG,
-      name: FORM_NAME,
-      description: FORM_DESCRIPTION,
-      // Never the default form: the default is what unslugged lead capture
-      // falls back to, and an order form is the wrong thing to land there.
-      isDefault: false,
-      isActive: true,
-      config: CONFIG,
-    })
-    .returning();
-  console.log(`  created form id=${row.id} (${QUESTIONS.length} questions)`);
+  // Never the default form: the default is what unslugged lead capture
+  // falls back to, and an order form is the wrong thing to land there.
+  await seedForm(
+    { slug: FORM_SLUG, name: FORM_NAME, description: FORM_DESCRIPTION, config: CONFIG, isActive: true, isDefault: false },
+    apply,
+  );
+  if (apply) console.log(`The form is live at /f/${FORM_SLUG}`);
 }
 
-seed()
-  .then(() => console.log(`Done. The form is live at /f/${FORM_SLUG}`))
-  .catch((err) => {
-    console.error("Seed failed:", err);
-    process.exitCode = 1;
-  })
-  .finally(() => pool.end());
+void withSeedGuard(seed);

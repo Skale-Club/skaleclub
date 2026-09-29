@@ -1,8 +1,9 @@
 import type { CompanySettings, HomepageContent } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
-import { trackCTAClick } from "@/lib/analytics";
+import { trackCTAClick, trackEvent } from "@/lib/analytics";
+import { whatsappHref } from "@shared/phone";
 import { TrustBadges } from "@/components/home/TrustBadges";
-import { Band, PillButton } from "@/components/editorial";
+import { Band, PillButton, PillLink } from "@/components/editorial";
 
 interface HeroSectionProps {
   companySettings?: CompanySettings;
@@ -61,6 +62,8 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
                 <img
                   src={homepageContent.heroBadgeImageUrl}
                   alt={homepageContent.heroBadgeAlt || ''}
+                  width={96}
+                  height={24}
                   className="h-5 sm:h-6 w-auto object-contain"
                 />
               </div>
@@ -93,6 +96,17 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
                 >
                   {t(companySettings.ctaText)}
                 </PillButton>
+              ) : null}
+              {companySettings?.companyPhone?.trim() ? (
+                <PillLink
+                  href={whatsappHref(companySettings.companyPhone, t("Hi! I found you on the Skale Club website and would like to talk about my project."))}
+                  target="_blank"
+                  variant="ghost"
+                  className="w-full sm:w-auto shrink-0 whitespace-nowrap px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg"
+                  onClick={() => trackEvent('click_whatsapp', { location: 'hero' })}
+                >
+                  {t("Talk on WhatsApp")}
+                </PillLink>
               ) : null}
             </div>
           </div>

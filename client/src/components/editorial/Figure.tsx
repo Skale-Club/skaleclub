@@ -23,13 +23,16 @@ export interface FigureProps {
   captionClassName?: string;
   /** Extra image classes, e.g. `sm:aspect-[2/1]` to change ratio by breakpoint. */
   imgClassName?: string;
+  /** Intrinsic pixel size of the file, so the browser reserves space before it loads. */
+  width?: number;
+  height?: number;
 }
 
 /**
  * Sharp-cornered framed image with an optional caption strip.
  * Alt text and caption are translated through `t()`.
  */
-export function Figure({ src, alt, caption, tone, aspect = "16/9", eager, icon: Icon, className, captionClassName, imgClassName }: FigureProps) {
+export function Figure({ src, alt, caption, tone, aspect = "16/9", eager, icon: Icon, className, captionClassName, imgClassName, width, height }: FigureProps) {
   const { t } = useTranslation();
   const dark = tone === "dark";
   return (
@@ -45,6 +48,8 @@ export function Figure({ src, alt, caption, tone, aspect = "16/9", eager, icon: 
       <img
         src={src}
         alt={t(alt)}
+        width={width}
+        height={height}
         className={cn("w-full object-cover", ASPECT[aspect], imgClassName)}
         loading={eager ? "eager" : "lazy"}
         decoding="async"

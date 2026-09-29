@@ -9,7 +9,8 @@ import { cn } from '@/lib/utils';
 import { Loader2 } from '@/components/ui/loader';
 import { LanguageSwitch, type LanguageSwitchValue } from '@/components/ui/LanguageSwitch';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { DottedSurface } from '@/components/ui/dotted-surface';
+import { LazyDottedSurface as DottedSurface } from '@/components/ui/LazyDottedSurface';
+import { usePageSeo } from '@/hooks/use-seo';
 import { GradientBackground } from '@/components/ui/gradient-background-4';
 import { NotFoundState } from '@/components/NotFoundState';
 import type { CompanySettings, EstimateServiceItem } from '@shared/schema';
@@ -87,7 +88,7 @@ const accessGateCopy = {
 };
 
 function AccessCodeGate({
-  estimateId,
+  slug,
   lang,
   onLanguageChange,
   onUnlock,
@@ -95,7 +96,7 @@ function AccessCodeGate({
   clientName,
   siteSettings,
 }: {
-  estimateId: number;
+  slug: string;
   lang: 'en' | 'pt-BR';
   onLanguageChange: (value: LanguageSwitchValue) => void;
   onUnlock: (estimate: PublicEstimate) => void;
@@ -109,7 +110,7 @@ function AccessCodeGate({
 
   const { mutate: verify, isPending } = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`/api/estimates/${estimateId}/verify-code`, {
+      const res = await fetch(`/api/estimates/slug/${encodeURIComponent(slug)}/verify-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code }),
@@ -347,6 +348,8 @@ function SectionContent({ index, data, lang, siteSettings }: { index: number; da
 }
 
 export default function EstimateViewer() {
+  // Private proposal: keep it out of search indexes (title is set below).
+  usePageSeo({ title: '', noindex: true });
   // Tint iOS Safari URL bar + status bar to match the slide background (#09090B = zinc-950).
   // Prevents the white Safari chrome from clashing with the dark full-bleed slides on mobile.
   useThemeColor('#09090B');
@@ -408,7 +411,7 @@ export default function EstimateViewer() {
 
   const { mutate: trackView } = useMutation({
     mutationFn: async () => {
-      await fetch(`/api/estimates/${data!.id}/view`, { method: 'POST' });
+      await fetch(`/api/estimates/slug/${encodeURIComponent(data!.slug)}/view`, { method: 'POST' });
     },
   });
 
@@ -559,7 +562,7 @@ export default function EstimateViewer() {
   if (data.hasAccessCode && !isUnlocked) {
     return (
       <AccessCodeGate
-        estimateId={data.id}
+        slug={data.slug}
         lang={lang}
         onLanguageChange={switchViewerLang}
         onUnlock={(estimate) => {

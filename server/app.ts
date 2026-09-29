@@ -4,9 +4,10 @@ import { ZodError } from "zod";
 import express, { type Request, Response, NextFunction } from "express";
 import helmet from "helmet";
 import { registerRoutes } from "./routes.js";
+import { originCheck } from "./lib/originCheck.js";
 import { registerHealthRoutes } from "./routes/health.js";
+import { registerMonitoringRoute } from "./routes/monitoring.js";
 import { registerCanonicalHostRedirects } from "./canonicalHost.js";
-import path from "path";
 import { createServer, type Server } from "http";
 
 declare module "http" {
@@ -47,8 +48,8 @@ export async function createApp(): Promise<{ app: express.Express; httpServer: S
   // Liveness probe — before auth/session setup so it stays dependency-free.
   registerHealthRoutes(app);
 
-  // Serve attached_assets as static files
-  app.use('/attached_assets', express.static(path.join(process.cwd(), 'attached_assets')));
+  // Sentry tunnel: needs the raw request body, so it sits before the parsers.
+  registerMonitoringRoute(app);
 
   // Body-size limits. A small default protects public/unauthenticated
   // endpoints (forms, chat, attribution) from memory-pressure DoS. A handful
@@ -81,7 +82,11 @@ export async function createApp(): Promise<{ app: express.Express; httpServer: S
     return jsonDefault(req, res, next);
   });
 
+  // Kept: /api/oauth/token receives application/x-www-form-urlencoded from MCP/OAuth clients.
   app.use(express.urlencoded({ extended: false, limit: '1mb' }));
+
+  // Reject cross-site state-changing API calls before any session/auth work.
+  app.use(originCheck);
 
   // Logging middleware
   app.use((req, res, next) => {

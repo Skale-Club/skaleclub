@@ -1,5 +1,9 @@
+// Stored timestamps are UTC; keep the process (and Date parsing) on UTC too.
+process.env.TZ = "UTC";
 import 'dotenv/config';
-import "./instrument.js";
+// Sentry is preloaded via `--require ./dist/instrument.cjs` (production) or
+// `--import ./server/instrument.ts` (dev), so it is not imported here.
+import "./lib/pg-types.js";
 import { createApp, log } from "./app.js";
 import { serveStatic } from "./static.js";
 import { startCron } from "./cron.js";
@@ -24,10 +28,13 @@ import { scheduleBootstrapTasks } from "./lib/bootstrapTasks.js";
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || "1000", 10);
+  // Development binds loopback only (the dev server talks to the real DB and
+  // must not be reachable from the LAN); the container needs 0.0.0.0.
+  const host = process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1";
   httpServer.listen(
     {
       port,
-      host: "0.0.0.0",
+      host,
     },
     () => {
       log(`serving on port ${port}`);
@@ -49,6 +56,10 @@ import { scheduleBootstrapTasks } from "./lib/bootstrapTasks.js";
     httpServer.close(() => {
       pool.end().catch(() => undefined).finally(() => process.exit(0));
     });
+    // Keep-alive sockets would otherwise hold close() open until they time out.
+    httpServer.closeIdleConnections();
+    // Cron timers are unref-free setInterval/setTimeout handles; process.exit
+    // below (on close or after the 10s cap) tears them down.
     setTimeout(() => process.exit(1), 10_000).unref();
   };
   process.on("SIGTERM", () => shutdown("SIGTERM"));

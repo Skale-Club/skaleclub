@@ -5,6 +5,7 @@ import { Sparkles, Home, CalendarCheck } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
+import { trackEvent } from "@/lib/analytics";
 
 const Lottie = lazy(() => import("lottie-react"));
 
@@ -17,13 +18,38 @@ export default function LeadThankYou() {
 
   const [successAnimation, setSuccessAnimation] = useState<object | null>(null);
   useEffect(() => {
+    // Conversion first: the form's own `form_completed` can be lost when it
+    // navigates here right after firing, so this page confirms it. It is queued
+    // by trackEvent if analytics is still initialising.
+    // Once per lead: the thank-you URL has no lead id, so dedupe by form slug for
+    // 30 minutes in this browser session (a reload must not double count).
+    const formLabel = new URLSearchParams(window.location.search).get("form") ?? "unknown";
+    const dedupeKey = `generate_lead:${formLabel}`;
+    let alreadyCounted = false;
+    try {
+      const last = Number(window.sessionStorage.getItem(dedupeKey));
+      alreadyCounted = Number.isFinite(last) && last > 0 && Date.now() - last < 30 * 60 * 1000;
+      if (!alreadyCounted) window.sessionStorage.setItem(dedupeKey, String(Date.now()));
+    } catch {
+      // Storage blocked: fire anyway.
+    }
+    if (!alreadyCounted) {
+      trackEvent("generate_lead", { location: window.location.pathname, label: formLabel });
+    }
+
     let cancelled = false;
-    // Warm the lazy chunk now so the library and the JSON download in parallel.
-    void import("lottie-react");
-    void import("../assets/success-animation.json").then((mod) => {
-      if (!cancelled) setSuccessAnimation((mod.default ?? mod) as object);
-    });
-    return () => { cancelled = true; };
+    // Only then warm the lazy Lottie chunk and its JSON (in parallel), so the
+    // animation never delays the tracking call.
+    const timer = window.setTimeout(() => {
+      void import("lottie-react");
+      void import("../assets/success-animation.json").then((mod) => {
+        if (!cancelled) setSuccessAnimation((mod.default ?? mod) as object);
+      });
+    }, 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, []);
 
   // Thank-you pages should never be indexed or crawled — they're

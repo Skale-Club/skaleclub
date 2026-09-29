@@ -1,9 +1,17 @@
 import type { Express } from "express";
 import { z } from "zod";
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { db } from "../db.js";
 import { users } from "#shared/schema.js";
 import { requireAdmin } from "./_shared.js";
+
+async function countOtherAdmins(excludeUserId: string): Promise<number> {
+  const rows = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.isAdmin, true), ne(users.id, excludeUserId)));
+  return rows.length;
+}
 
 export function registerUserRoutes(app: Express) {
   // Get all users from Supabase Auth and local DB
@@ -57,6 +65,10 @@ export function registerUserRoutes(app: Express) {
       const userId = req.params.id;
 
       const [existingUser] = await db.select().from(users).where(eq(users.id, userId));
+
+      if (updates.isAdmin === false && existingUser?.isAdmin && (await countOtherAdmins(userId)) === 0) {
+        return res.status(409).json({ message: "Cannot demote the last remaining admin" });
+      }
 
       let localUser;
       if (existingUser) {
@@ -129,6 +141,14 @@ export function registerUserRoutes(app: Express) {
   app.delete("/api/users/:id", requireAdmin, async (req, res) => {
     try {
       const userId = req.params.id;
+
+      if ((req.session as any)?.userId === userId) {
+        return res.status(409).json({ message: "You cannot delete your own account" });
+      }
+      const [target] = await db.select().from(users).where(eq(users.id, userId));
+      if (target?.isAdmin && (await countOtherAdmins(userId)) === 0) {
+        return res.status(409).json({ message: "Cannot delete the last remaining admin" });
+      }
 
       const { getSupabaseAdmin } = await import("../lib/supabase.js");
       const supabaseAdmin = getSupabaseAdmin();

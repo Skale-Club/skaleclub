@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { storage } from "../../storage.js";
+import { randomSlugSuffix } from "../../lib/slug.js";
 import type { createAuditLog } from "../../lib/mcp-storage.js";
 import { estimateServiceItemSchema } from "#shared/schema.js";
 import type { EstimateServiceItem } from "#shared/schema.js";
@@ -145,7 +146,7 @@ export function registerEstimateTools(server: McpServer, audit: AuditFn, tokenId
       accessCode:  z.string().optional(),
     },
     async (args) => {
-      const slug = args.slug ? normalizeSlug(args.slug) : normalizeSlug(args.clientName) + "-" + Date.now();
+      const slug = args.slug ? normalizeSlug(args.slug) : normalizeSlug(args.clientName) + "-" + randomSlugSuffix();
       try {
         const estimate = await storage.createEstimate({ ...args, slug, services: [] });
         await audit({ tokenId, tokenPrefix, toolName: "estimates_create", targetType: "estimate", targetId: String(estimate.id), action: "create", result: "success", ipAddress: ip });

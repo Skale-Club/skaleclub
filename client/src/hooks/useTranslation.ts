@@ -79,7 +79,10 @@ async function runBatch(texts: string[], targetLanguage: string, sourceLanguage:
     detail: { blocking: Date.now() < overlayDeadline },
   }));
 
-  await fetchTranslations(texts, targetLanguage, sourceLanguage);
+  // The server caps anonymous requests at 20 texts, so send the batch in chunks.
+  const chunks: string[][] = [];
+  for (let i = 0; i < texts.length; i += 20) chunks.push(texts.slice(i, i + 20));
+  await Promise.all(chunks.map((chunk) => fetchTranslations(chunk, targetLanguage, sourceLanguage)));
 
   texts.forEach(t => {
     const cacheKey = `${targetLanguage}:${t}`;
@@ -201,16 +204,16 @@ export function useTranslation() {
 
     // When Portuguese is the UI language (existing logic)
 
-    // 1. Return from runtime cache if available
-    if (translationCache.has(cacheKey)) {
-      return translationCache.get(cacheKey)!;
-    }
-
-    // 2. Check static dictionary (instant, no API call)
+    // 1. Check static dictionary first (instant, no API call, wins over any stale runtime cache)
     const staticValue = staticTranslations.pt[text as TranslationKey];
     if (staticValue) {
       translationCache.set(cacheKey, staticValue);
       return staticValue;
+    }
+
+    // 2. Return from runtime cache if available
+    if (translationCache.has(cacheKey)) {
+      return translationCache.get(cacheKey)!;
     }
 
     // 3. Schedule batch translation via API

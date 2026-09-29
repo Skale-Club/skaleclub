@@ -5,7 +5,8 @@ import type { CompanySettings } from "@shared/schema";
 import { buildPagePaths } from "@shared/pageSlugs";
 import { useTranslation } from "@/hooks/useTranslation";
 import { trackEvent } from "@/lib/analytics";
-import { Phone, Mail, MapPin } from "lucide-react";
+import { Phone, Mail, MapPin, MessageCircle } from "lucide-react";
+import { formatPhoneDisplay, telHref, whatsappHref } from "@shared/phone";
 import {
   SiFacebook,
   SiInstagram,
@@ -30,6 +31,10 @@ function FooterComponent() {
   const { data: companySettings } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
   });
+  const { data: blogCount } = useQuery<{ count: number }>({
+    queryKey: ['/api/blog/count'],
+    staleTime: 5 * 60 * 1000,
+  });
   const pagePaths = useMemo(() => buildPagePaths(companySettings?.pageSlugs), [companySettings?.pageSlugs]);
 
   const companyName = companySettings?.companyName?.trim() || "";
@@ -46,7 +51,8 @@ function FooterComponent() {
   // in the admin keeps the footer in step with the navbar.
   const navLinks = [
     { href: pagePaths.portfolio, label: "Portfolio" },
-    { href: pagePaths.blog, label: "Blog" },
+    // Unknown count (loading or failed) keeps the link; a confirmed empty blog hides it.
+    ...(blogCount?.count === 0 ? [] : [{ href: pagePaths.blog, label: "Blog" }]),
     { href: pagePaths.faq, label: "FAQ" },
     { href: pagePaths.contact, label: "Contact" },
   ];
@@ -56,7 +62,7 @@ function FooterComponent() {
     : [];
 
   return (
-    <footer className="bg-navy-950 text-fog-300 border-t border-white/10 pt-14 pb-8 md:pt-16 md:pb-10">
+    <footer className="bg-navy-950 text-fog-300 border-t border-white/10 pt-14 pb-28 md:pt-16 md:pb-10">
       <div className="container-custom mx-auto px-4 sm:px-6 tablet:px-0">
         {/* Brand column is wider than the link columns: it carries the logo and
             the tagline, the others are single-word links. */}
@@ -69,6 +75,7 @@ function FooterComponent() {
                   alt={companyName}
                   width={54}
                   height={54}
+                  loading="lazy"
                   className="h-auto w-[54px] object-contain p-1.5"
                 />
               ) : companySettings?.logoIcon ? (
@@ -77,6 +84,7 @@ function FooterComponent() {
                   alt={companyName}
                   width={54}
                   height={54}
+                  loading="lazy"
                   className="h-auto w-[54px] object-contain p-1.5 brightness-0 invert"
                 />
               ) : (
@@ -136,12 +144,26 @@ function FooterComponent() {
               {phone && (
                 <li>
                   <a
-                    href={`tel:${phone.replace(/[^+\d]/g, '')}`}
+                    href={telHref(phone)}
                     onClick={() => trackEvent('click_call', { location: 'footer' })}
                     className="flex items-start gap-3 text-fog-300 transition-colors hover:text-fog-50"
                   >
                     <Phone className="w-4 h-4 mt-0.5 shrink-0 text-cta-soft" aria-hidden="true" />
-                    <span>{phone}</span>
+                    <span>{formatPhoneDisplay(phone)}</span>
+                  </a>
+                </li>
+              )}
+              {phone && (
+                <li>
+                  <a
+                    href={whatsappHref(phone, t("Hi! I found you on the Skale Club website and would like to talk about my project."))}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => trackEvent('click_whatsapp', { location: 'footer' })}
+                    className="flex items-start gap-3 text-fog-300 transition-colors hover:text-fog-50"
+                  >
+                    <MessageCircle className="w-4 h-4 mt-0.5 shrink-0 text-cta-soft" aria-hidden="true" />
+                    <span>WhatsApp</span>
                   </a>
                 </li>
               )}

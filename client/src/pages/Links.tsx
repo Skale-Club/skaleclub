@@ -14,7 +14,7 @@ import {
   Send,
   MessageCircle,
 } from "lucide-react";
-import * as LucideIcons from 'lucide-react';
+import { getLinkIcon as getCuratedIcon } from '@/components/links/linkIcons';
 import type { LinksPageLink } from '@shared/schema';
 import { DEFAULT_LINKS_PAGE_THEME } from '@shared/links';
 import type { CSSProperties } from 'react';
@@ -51,7 +51,7 @@ const getLinkIcon = (url: string) => {
 
 const renderLinkIcon = (link: LinksPageLink) => {
   if (link.iconType === 'lucide' && link.iconValue) {
-    const Icon = (LucideIcons as any)[link.iconValue];
+    const Icon = getCuratedIcon(link.iconValue);
     if (Icon) return <Icon className="w-5 h-5 mr-3" />;
   }
   if (link.iconType === 'upload' && link.iconValue) {

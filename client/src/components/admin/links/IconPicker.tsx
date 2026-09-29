@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import * as LucideIcons from 'lucide-react';
+import { LINK_ICONS, getLinkIcon } from '@/components/links/linkIcons';
 import { Link as LinkIcon, Search } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -24,7 +24,7 @@ function renderCurrentIcon(
   sizeClass: string,
 ) {
   if (iconType === 'lucide' && iconValue) {
-    const Cmp: any = (LucideIcons as any)[iconValue];
+    const Cmp: any = getLinkIcon(iconValue);
     if (Cmp) return <Cmp className={sizeClass} />;
   }
   if (iconType === 'upload' && iconValue) {
@@ -44,18 +44,8 @@ export function IconPicker({ iconType, iconValue, onChange, className }: IconPic
     return () => clearTimeout(h);
   }, [query]);
 
-  // Build the lucide icon list once. lucide-react exports canonical PascalCase icons
-  // (e.g. `Mail`, `Globe`) AND `*Icon` aliases (e.g. `MailIcon`). Keep the canonical
-  // form only so the grid doesn't show duplicates.
-  const lucideEntries = useMemo<LucideEntry[]>(() => {
-    return Object.entries(LucideIcons).filter(([name, v]) => {
-      if (!/^[A-Z][a-zA-Z0-9]+$/.test(name)) return false;
-      if (typeof v !== 'object') return false;
-      if (name === 'Icon' || name === 'LucideIcon') return false;
-      if (name.endsWith('Icon')) return false;
-      return true;
-    }) as LucideEntry[];
-  }, []);
+  // The curated /links icon set (the public page renders the same map).
+  const lucideEntries = useMemo<LucideEntry[]>(() => Object.entries(LINK_ICONS) as LucideEntry[], []);
 
   const filtered = useMemo<LucideEntry[]>(() => {
     const q = debouncedQuery.trim().toLowerCase();

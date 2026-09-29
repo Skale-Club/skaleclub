@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import crypto from "crypto";
 import { storage } from "../storage.js";
+import { randomSlugSuffix } from "../lib/slug.js";
 import { insertPresentationSchema } from "#shared/schema.js";
 import { requireAdmin, sendError } from "./_shared.js";
 import { rateLimitMiddleware } from "../lib/rateLimit.js";
@@ -27,7 +28,7 @@ async function buildUniquePresentationSlug(title: string): Promise<string> {
   // slugs aren't trivially guessable from the title alone (same rule as
   // estimates). Existing stored slugs are unaffected.
   for (let i = 0; i < 5; i++) {
-    const candidate = `${base}-${crypto.randomBytes(2).toString("hex")}`;
+    const candidate = `${base}-${randomSlugSuffix()}`;
     if (!await storage.getPresentationBySlug(candidate)) return candidate;
   }
   return `${base}-${Date.now()}`;

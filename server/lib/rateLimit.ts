@@ -36,6 +36,31 @@ const purgeTimer: ReturnType<typeof setInterval> = setInterval(() => {
 }, PURGE_INTERVAL_MS);
 purgeTimer.unref?.();
 
+/**
+ * Normalise a client IP into a rate-limit key: IPv4-mapped IPv6 collapses to
+ * the IPv4 address, and IPv6 addresses collapse to their /64 prefix so a
+ * single host with a whole /64 cannot mint unlimited keys.
+ */
+export function normalizeIpKey(ip: string | undefined | null): string {
+  if (!ip) return "unknown";
+  let value = ip.trim().toLowerCase();
+  const mapped = value.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+  if (mapped) return mapped[1];
+  if (!value.includes(":")) return value;
+  value = value.replace(/%.*$/, "");
+  let groups: string[];
+  if (value.includes("::")) {
+    const [head, tail] = value.split("::");
+    const h = head ? head.split(":") : [];
+    const t = tail ? tail.split(":") : [];
+    groups = [...h, ...Array(Math.max(0, 8 - h.length - t.length)).fill("0"), ...t];
+  } else {
+    groups = value.split(":");
+  }
+  if (groups.length !== 8) return value;
+  return groups.slice(0, 4).map((g) => g.replace(/^0+(?=.)/, "")).join(":") + "::/64";
+}
+
 export interface RateLimitOptions {
   /** Max requests allowed per window. */
   limit: number;
@@ -67,6 +92,8 @@ export interface RateLimitMiddlewareOptions extends RateLimitOptions {
   keyFn?: (req: Request) => string;
   /** Custom JSON message body on 429. */
   message?: string;
+  /** Respond 204 with no body instead of 429 (for navigator.sendBeacon callers). */
+  silentNoContent?: boolean;
 }
 
 /**
@@ -75,17 +102,47 @@ export interface RateLimitMiddlewareOptions extends RateLimitOptions {
  * configured trust-proxy depth) unless a custom `keyFn` is supplied. Responds with
  * `429 { message }` when the limit is exceeded, otherwise calls `next()`.
  */
+let middlewareSeq = 0;
+
 export function rateLimitMiddleware(opts: RateLimitMiddlewareOptions): RequestHandler {
-  const { limit, windowMs, keyFn, message } = opts;
+  const { limit, windowMs, keyFn, message, silentNoContent } = opts;
+  // Scope each middleware instance so two endpoints never share one bucket.
+  const scope = `mw${++middlewareSeq}:`;
 
   return (req: Request, res: Response, next: NextFunction) => {
-    const key = keyFn ? keyFn(req) : getClientIp(req) ?? "unknown";
+    const key = scope + (keyFn ? keyFn(req) : normalizeIpKey(getClientIp(req)));
 
     if (rateLimit(key, { limit, windowMs })) {
+      if (silentNoContent) {
+        res.status(204).end();
+        return;
+      }
       res.status(429).json({ message: message ?? "Too many requests. Please try again later." });
       return;
     }
 
     next();
   };
+}
+
+/**
+ * Limits for public analytics counters: a per-IP backstop plus a per-IP and
+ * resource-id bucket, so one busy page never starves another. Rate-limited
+ * calls get 204 (these endpoints are fire-and-forget beacons).
+ */
+export function publicCounterLimits(resourceId: (req: Request) => string): RequestHandler[] {
+  return [
+    rateLimitMiddleware({
+      limit: 1000,
+      windowMs: 10 * 60_000,
+      silentNoContent: true,
+      keyFn: (req) => normalizeIpKey(getClientIp(req)),
+    }),
+    rateLimitMiddleware({
+      limit: 300,
+      windowMs: 10 * 60_000,
+      silentNoContent: true,
+      keyFn: (req) => `${normalizeIpKey(getClientIp(req))}:${resourceId(req)}`,
+    }),
+  ];
 }
