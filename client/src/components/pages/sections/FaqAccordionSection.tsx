@@ -47,14 +47,14 @@ const DEFAULTS = {
 
 const LIGHT = {
   list:     "divide-ink-700/10 border-ink-700/10",
-  question: "text-ink hover:text-ink-700",
+  question: "text-ink hover:text-ink-700 focus-visible:outline-cta-ink",
   answer:   "text-ink-500",
   chevron:  "text-cta-ink",
 } as const;
 
 const DARK = {
   list:     "divide-white/10 border-white/10",
-  question: "text-fog-200 hover:text-white",
+  question: "text-fog-200 hover:text-white focus-visible:outline-cta-soft",
   answer:   "text-fog-400",
   chevron:  "text-cta-soft",
 } as const;
@@ -86,7 +86,7 @@ export function FaqAccordionSection({ props }: { props: FaqAccordionProps }) {
               <AccordionPrimitive.Header className="flex">
                 <AccordionPrimitive.Trigger
                   data-testid={`faq-trigger-${idx + 1}`}
-                  className={`flex flex-1 items-start justify-between gap-5 py-5 text-left font-semibold leading-6 transition [&[data-state=open]>svg]:rotate-180 ${c.question}`}
+                  className={`flex flex-1 items-start justify-between gap-5 py-5 text-left font-semibold leading-6 transition focus-visible:outline-2 focus-visible:outline-offset-2 [&[data-state=open]>svg]:rotate-180 ${c.question}`}
                 >
                   {t(item.question)}
                   <ChevronDown className={`mt-0.5 h-5 w-5 shrink-0 transition-transform duration-200 ${c.chevron}`} aria-hidden="true" />

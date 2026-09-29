@@ -42,13 +42,13 @@ const DEFAULTS = {
   headline: "Is your website still stuck in the Stone Age?",
   subheadline: "We build fast, Google-optimized websites for service businesses, deployed in days, not months.",
   ctaLabel: "I want my website",
-  // Served from client/public — language-neutral brand illustration.
+  // Served from client/public: language-neutral brand illustration.
   backgroundImageUrl: "/SkaleClub.webp",
 } as const;
 
 // Intrinsic dimensions for the two known hero images, so the browser can reserve
 // the right aspect ratio before the image loads (avoids CLS). The className below
-// still constrains the rendered size via max-w/object-contain — these only fix
+// still constrains the rendered size via max-w/object-contain: these only fix
 // aspect-ratio reservation. Unknown/custom assets omit width/height entirely.
 const KNOWN_IMAGE_SIZES: Record<string, { width: number; height: number }> = {
   "/nfc-keychains-hero.webp": { width: 1199, height: 1312 },
@@ -182,7 +182,7 @@ function WebsitesHero({ props }: { props: HeroWebsitesProps }) {
             <h1 className="mb-3 font-display text-[9vw] font-semibold leading-[1.02] tracking-[-0.04em] text-fog-50 text-balance sm:text-5xl md:text-6xl lg:mb-6 lg:text-4xl xl:text-5xl">
               {t(headline)}
             </h1>
-            <p className="max-w-xl text-base leading-7 text-fog-400 sm:text-xl">{t(subheadline)}</p>
+            <p className={`max-w-xl text-base leading-7 sm:text-xl ${bgVideoUrl ? "text-fog-300" : "text-fog-400"}`}>{t(subheadline)}</p>
             <HeroCtas props={props} ctaLabel={props.ctaLabel ?? DEFAULTS.ctaLabel} />
           </div>
           <div className="relative z-10 order-2 flex w-full items-end justify-center self-end lg:order-1 lg:min-h-[400px] lg:justify-end">
