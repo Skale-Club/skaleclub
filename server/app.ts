@@ -6,6 +6,7 @@ import helmet from "helmet";
 import { registerRoutes } from "./routes.js";
 import { originCheck } from "./lib/originCheck.js";
 import { registerHealthRoutes } from "./routes/health.js";
+import { registerMonitoringRoute } from "./routes/monitoring.js";
 import { registerCanonicalHostRedirects } from "./canonicalHost.js";
 import { createServer, type Server } from "http";
 
@@ -46,6 +47,9 @@ export async function createApp(): Promise<{ app: express.Express; httpServer: S
 
   // Liveness probe — before auth/session setup so it stays dependency-free.
   registerHealthRoutes(app);
+
+  // Sentry tunnel: needs the raw request body, so it sits before the parsers.
+  registerMonitoringRoute(app);
 
   // Body-size limits. A small default protects public/unauthenticated
   // endpoints (forms, chat, attribution) from memory-pressure DoS. A handful
