@@ -37,7 +37,21 @@ export default {
           DEFAULT: "#5173D6",
           hover: "#3B5BBE",
           soft: "#8FA9EE",
+          softer: "#A9BCEF", // small text on dark, one step lighter than soft
+          ink: "#245dc8", // accent on light surfaces
         },
+        // Editorial palette, from the NFC guide (client/src/components/editorial).
+        navy: {
+          950: "#0d121a",
+          900: "#10151e",
+          850: "#141b27",
+          800: "#161d28",
+          700: "#182132",
+          600: "#222b3a",
+        },
+        paper: { DEFAULT: "#f5f3ed", ice: "#eef3f9" },
+        fog: { 50: "#f3f5f8", 200: "#e3e7ee", 300: "#cdd3dc", 400: "#a7afbc" },
+        ink: { DEFAULT: "#101b31", 700: "#172238", 500: "#596276", 400: "#727b8d" },
         "surface-dark": "#111111",
         "surface-card": "#0C1424",
         "surface-raised": "#142038",
@@ -125,7 +139,6 @@ export default {
       },
       fontFamily: {
         sans: ["var(--font-sans)"],
-        serif: ["var(--font-serif)"],
         mono: ["var(--font-mono)"],
         display: ["var(--font-display)"],
       },
