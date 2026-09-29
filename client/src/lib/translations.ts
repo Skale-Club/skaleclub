@@ -698,6 +698,8 @@ export const translations = {
     'Find the right businesses and reach them first': 'Encontre as empresas certas e chegue nelas primeiro',
     'Get found online and stay active where customers look': 'Seja encontrado online e esteja ativo onde o cliente procura',
     'Follow up, book and quote before the lead goes cold': 'Faça o follow-up, agende e orce antes do lead esfriar',
+    // Redesign Phase 3
+    'What we solve': 'O que resolvemos', 'Three problems, one system': 'Três problemas, um só sistema',
   }
 } as const;
 export type TranslationKey = keyof typeof translations.pt;
