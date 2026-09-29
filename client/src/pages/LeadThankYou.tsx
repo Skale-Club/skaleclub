@@ -157,7 +157,7 @@ export default function LeadThankYou() {
               {t(isGroupLead
                 ? 'Keep your WhatsApp available. We will use the number you provided.'
                 : isNfcOrder
-                  ? 'Keep your WhatsApp handy — we call to confirm before producing anything.'
+                  ? 'Keep your WhatsApp handy. We call to confirm before producing anything.'
                   : isNfcLead
                     ? 'Keep your WhatsApp available. We will use the number you provided in the form.'
                     : 'Keep your preferred contact channel available so our team can reach you.')}

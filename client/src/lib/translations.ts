@@ -699,6 +699,8 @@ export const translations = {
     'Get found online and stay active where customers look': 'Seja encontrado online e esteja ativo onde o cliente procura',
     'Follow up, book and quote before the lead goes cold': 'Faça o follow-up, agende e orce antes do lead esfriar',
     // Redesign Phase 3
+    'Estimate only. We confirm the final total with you before anything is produced.': 'Apenas uma estimativa. Confirmamos o total final com você antes de produzir qualquer coisa.',
+    'Keep your WhatsApp handy. We call to confirm before producing anything.': 'Deixe o WhatsApp por perto. Ligamos para confirmar antes de produzir qualquer coisa.',
     'App home screen': 'Tela inicial do aplicativo', 'What we solve': 'O que resolvemos', 'Three problems, one system': 'Três problemas, um só sistema',
   }
 } as const;
