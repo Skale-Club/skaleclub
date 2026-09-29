@@ -1,4 +1,5 @@
 import { db } from "./db.js";
+import { recordRevision } from "./storage/revisions.js";
 import { decryptToken, encryptToken, isEncryptedToken } from "./lib/token-crypto.js";
 import { scoreItem } from "./blog/rss-selector.js";
 import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead } from "#shared/form.js";
@@ -450,6 +451,7 @@ export class DatabaseStorage implements IStorage {
 
   async updateCompanySettings(settings: Partial<CompanySettings>): Promise<CompanySettings> {
     const existing = await this.getCompanySettings();
+    await recordRevision("company_settings", existing.id, existing, "admin");
     const [updated] = await db.update(companySettings).set(settings).where(eq(companySettings.id, existing.id)).returning();
     return updated;
   }
@@ -833,6 +835,7 @@ export class DatabaseStorage implements IStorage {
     if (updates.isDefault === true) {
       await db.update(forms).set({ isDefault: false }).where(and(eq(forms.isDefault, true), ne(forms.id, id)));
     }
+    await recordRevision("form", id, await this.getForm(id), "admin");
     const [updated] = await db.update(forms).set({
       ...(updates.slug !== undefined && { slug: updates.slug }),
       ...(updates.name !== undefined && { name: updates.name }),
@@ -2415,6 +2418,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updatePage(id: string, data: Partial<InsertPageInput>): Promise<Page> {
+    await recordRevision("page", id, await this.getPage(id), "admin");
     const [row] = await db
       .update(pages)
       .set({ ...data, updatedAt: new Date() })

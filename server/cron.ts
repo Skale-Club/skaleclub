@@ -90,4 +90,22 @@ export function startCron(): void {
       .then((m) => m.queueXphereDeliverySweep())
       .catch((err) => console.error("[xphere] sweep cron error:", err));
   }, 5 * 60_000);
+
+  // Data retention: daily. Honours either flag name (DISABLE_INPROCESS_CRON=true
+  // legacy, or ENABLE_INPROCESS_CRON!=true once frente A2 inverts it). The
+  // gates above already return early when disabled; this re-check keeps the
+  // registration safe if they change.
+  const cronEnabled =
+    process.env.ENABLE_INPROCESS_CRON !== undefined
+      ? process.env.ENABLE_INPROCESS_CRON === "true"
+      : process.env.DISABLE_INPROCESS_CRON !== "true";
+  if (cronEnabled) {
+    console.log("[retention] cron starting — runs every 24 hours");
+    setInterval(() => {
+      void import("./storage/retention.js")
+        .then((m) => m.runRetention())
+        .then((r) => console.log("[retention] cron tick:", JSON.stringify(r)))
+        .catch((err) => console.error("[retention] cron error:", err));
+    }, DAY_IN_MS);
+  }
 }

@@ -41,6 +41,8 @@ import { registerNotificationRoutes } from "./routes/notifications.js";
 import { registerMcpRoutes } from "./routes/mcpTokens.js";
 import { registerOAuthRoutes } from "./routes/oauth.js";
 import { registerContactRoutes } from "./routes/contact.js";
+import { registerRevisionRoutes } from "./routes/revisions.js";
+import { registerRetentionRoutes } from "./routes/retention.js";
 import { requireAdmin, sendError, setPublicCache } from "./routes/_shared.js";
 import { pool } from "./db.js";
 
@@ -128,6 +130,8 @@ export async function registerRoutes(
   registerOAuthRoutes(app);
   registerPresentationsRoutes(app);
   registerPageRoutes(app);
+  registerRevisionRoutes(app);
+  registerRetentionRoutes(app);
   registerBrandGuidelinesRoutes(app);
   registerEstimateGuidelinesRoutes(app);
   registerPresentationsChatRoutes(app);
