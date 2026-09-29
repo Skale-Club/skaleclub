@@ -25,7 +25,7 @@ export default function PrivacyPolicy() {
           <>
             {t(`Your privacy is important to us. This policy explains how ${companyName} collects, uses, and protects your personal information.`)}
             <br />
-            <span className="text-white/50 text-sm">{t('Last updated: January 10, 2026')}</span>
+            <span className="text-fog-400/80 text-sm">{t('Last updated: January 10, 2026')}</span>
           </>
         }
       />

@@ -26,16 +26,17 @@ export function PageHeader({ title, subtitle, breadcrumb, compact = false, eyebr
     <Band
       tone="hero"
       pattern
-      containerClassName={`page-top ${compact ? "pb-12" : "pb-12 md:pb-16"} max-w-none px-0 sm:px-0 lg:px-0`}
+      bare
+      containerClassName={compact ? "page-top pb-12" : "page-top pb-12 md:pb-16"}
     >
       <div className="container-custom container-page">
         {breadcrumb && breadcrumb.length > 0 && (
-          <nav className="mb-4 flex items-center gap-2 text-sm text-fog-400" data-testid="nav-page-breadcrumb">
+          <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-2 text-sm text-fog-400" data-testid="nav-page-breadcrumb">
             {breadcrumb.map((crumb, idx) => (
               <span key={crumb.href} className="flex items-center gap-2">
-                {idx > 0 && <span>/</span>}
+                {idx > 0 && <span aria-hidden="true">/</span>}
                 {idx === breadcrumb.length - 1 ? (
-                  <span className="text-fog-50">{crumb.label}</span>
+                  <span aria-current="page" className="text-fog-50">{crumb.label}</span>
                 ) : (
                   <Link href={crumb.href} className="transition-colors hover:text-fog-50">
                     {crumb.label}
@@ -46,7 +47,7 @@ export function PageHeader({ title, subtitle, breadcrumb, compact = false, eyebr
           </nav>
         )}
         {eyebrow && <Eyebrow className="mb-4">{eyebrow}</Eyebrow>}
-        <h1 className="font-display text-5xl font-semibold leading-[0.98] tracking-[-0.04em] text-fog-50 text-balance sm:text-6xl">
+        <h1 className="font-display text-4xl font-semibold leading-[0.98] tracking-[-0.04em] text-fog-50 text-balance sm:text-5xl lg:text-6xl">
           {title}
         </h1>
         {subtitle && <p className="mt-6 max-w-2xl text-lg leading-8 text-fog-400">{subtitle}</p>}

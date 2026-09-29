@@ -33,19 +33,21 @@ export interface BandProps {
   subnav?: boolean;
   /** Adds the flat grid background matching the tone. */
   pattern?: boolean;
+  /** Skip the 1240px editorial column; the caller supplies its own container. */
+  bare?: boolean;
 }
 
 /**
  * Full-bleed section wrapper for editorial pages: tone background, standard
  * vertical rhythm and the 1240px container. One Band per page section.
  */
-export function Band({ tone, id, className, containerClassName, children, subnav, pattern }: BandProps) {
+export function Band({ tone, id, className, containerClassName, children, subnav, pattern, bare }: BandProps) {
   return (
     <section
       id={id}
       className={cn(TONE_CLASSES[tone], pattern && PATTERN_CLASSES[tone], subnav && "scroll-mt-subnav", className)}
     >
-      <div className={cn("container-editorial", containerClassName)}>{children}</div>
+      <div className={cn(!bare && "container-editorial", containerClassName)}>{children}</div>
     </section>
   );
 }
