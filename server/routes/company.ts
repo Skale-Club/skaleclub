@@ -206,7 +206,7 @@ export function registerCompanyRoutes(app: Express) {
   // /e/ and /p/ stay crawlable on purpose: crawlers have to fetch them to read
   // their noindex header and meta tag instead of listing them from links alone.
   app.get('/robots.txt', async (req, res) => {
-    const disallow = ['/admin', '/oauth', '/print', '/api'].map((path) => `Disallow: ${path}`).join('\n');
+    const disallow = ['/admin', '/oauth', '/print', '/api/admin'].map((path) => `Disallow: ${path}`).join('\n');
     try {
       const settings = await storage.getCompanySettings();
       const canonicalUrl = canonicalOrigin(settings?.seoCanonicalUrl, req);

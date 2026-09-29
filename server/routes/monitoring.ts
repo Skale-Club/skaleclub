@@ -1,4 +1,5 @@
 import express, { type Express, type Request, type Response } from "express";
+import { rateLimitMiddleware } from "../lib/rateLimit.js";
 
 // Sentry tunnel. Browsers block requests to *.sentry.io whenever an ad blocker
 // or strict privacy setting is on; the client instead POSTs its envelopes here
@@ -38,6 +39,7 @@ export function registerMonitoringRoute(app: Express) {
   // sent as text/plain, which the JSON parser would ignore anyway.
   app.post(
     "/api/monitoring",
+    rateLimitMiddleware({ limit: 60, windowMs: 60_000 }),
     express.raw({ type: () => true, limit: MAX_BODY_BYTES }),
     async (req: Request, res: Response) => {
       const dsn = configuredDsn();
@@ -66,7 +68,11 @@ export function registerMonitoringRoute(app: Express) {
       try {
         const upstream = await fetch(`https://${dsn.host}/api/${dsn.projectId}/envelope/`, {
           method: "POST",
-          headers: { "Content-Type": "application/x-sentry-envelope" },
+          headers: {
+            "Content-Type": "application/x-sentry-envelope",
+            // Lets Sentry attribute the event to the visitor, not this server.
+            ...(req.ip ? { "X-Forwarded-For": req.ip } : {}),
+          },
           body,
           signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
         });

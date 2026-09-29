@@ -129,7 +129,7 @@ export const NFC_GUIDE_FAQ_PT: readonly NfcFaqGroup[] = [
       ],
       [
         "O que é a taxa de arte?",
-        `A taxa de US$ ${formatUsdCents(NFC_ART_FEE_CENTS).replace("$", "").replace(".", ",")} de arte e preparação se aplica ao primeiro pedido. Ela cobre a adaptação do design para produção. Em um novo pedido usando a arte já aprovada, essa taxa normalmente não é cobrada.`
+        `A taxa de US$ ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "USD" }).format(NFC_ART_FEE_CENTS / 100).replace(/^US\$\s*/, "")} de arte e preparação se aplica ao primeiro pedido. Ela cobre a adaptação do design para produção. Em um novo pedido usando a arte já aprovada, essa taxa normalmente não é cobrada.`
       ],
       [
         "Eu pago ao enviar o formulário?",
