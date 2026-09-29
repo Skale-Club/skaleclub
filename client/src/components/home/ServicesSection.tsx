@@ -56,7 +56,7 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
       key={`${item.key}-${idx}`}
       className="flex-shrink-0 w-[85%] sm:w-[280px] md:w-[260px] tablet:w-[245px]"
     >
-      <CatalogCard item={item} variant="compact" onOpen={openServiceModal} />
+      <CatalogCard item={item} variant="compact" className="cat--light" onOpen={openServiceModal} />
     </div>
   ), [openServiceModal]);
 

@@ -15,6 +15,18 @@
   --cat-line: rgba(180, 192, 216, 0.14);
   --cat-display: var(--font-display);
 }
+/* Light bands (the home "what we do" carousel sits on cream): paper card,
+   ink text, hairline in ink. Same markup, only the variables change. */
+.cat--light {
+  --cat-ink: #101b31;
+  --cat-ink-2: #596276;
+  --cat-ink-dim: #727b8d;
+  --cat-line: rgba(23, 34, 56, 0.12);
+  --surface-card: #ffffff;
+  --surface-raised: #eef3f9;
+  /* cta-soft is tuned for dark; on paper the eyebrow and link use the ink accent. */
+  --cta-soft: #245dc8;
+}
 
 /* ---------- eyebrow: label + rule, the house pattern ---------- */
 .cat-eyebrow {
