@@ -2,7 +2,6 @@ node_modules
 dist
 .git
 .github
-.vercel
 .planning
 .paul
 .kilo
@@ -12,7 +11,6 @@ attached_assets
 docs
 plan
 supabase
-cloudflare
 *.log
 tsc-errors*.txt
 cookies.txt

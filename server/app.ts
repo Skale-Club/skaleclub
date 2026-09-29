@@ -7,7 +7,6 @@ import { registerRoutes } from "./routes.js";
 import { originCheck } from "./lib/originCheck.js";
 import { registerHealthRoutes } from "./routes/health.js";
 import { registerCanonicalHostRedirects } from "./canonicalHost.js";
-import path from "path";
 import { createServer, type Server } from "http";
 
 declare module "http" {
@@ -47,9 +46,6 @@ export async function createApp(): Promise<{ app: express.Express; httpServer: S
 
   // Liveness probe — before auth/session setup so it stays dependency-free.
   registerHealthRoutes(app);
-
-  // Serve attached_assets as static files
-  app.use('/attached_assets', express.static(path.join(process.cwd(), 'attached_assets')));
 
   // Body-size limits. A small default protects public/unauthenticated
   // endpoints (forms, chat, attribution) from memory-pressure DoS. A handful

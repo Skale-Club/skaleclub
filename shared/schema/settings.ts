@@ -13,7 +13,7 @@ export const integrationSettings = pgTable("integration_settings", {
   locationId: text("location_id"),
   calendarId: text("calendar_id").default("2irhr47AR6K0AQkFqEQl"),
   isEnabled: boolean("is_enabled").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
@@ -27,7 +27,7 @@ export const twilioSettings = pgTable("twilio_settings", {
   toPhoneNumber: text("to_phone_number"),
   toPhoneNumbers: jsonb("to_phone_numbers").$type<string[]>().default([]),
   notifyOnNewChat: boolean("notify_on_new_chat").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
@@ -52,7 +52,7 @@ export const telegramSettings = pgTable("telegram_settings", {
   approvalsChatIds: text("approvals_chat_ids").array().notNull().default(sql`ARRAY[]::text[]`),
   // Proves a webhook call came from Telegram; a chat_id in the body does not.
   webhookSecret: text("webhook_secret"),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
@@ -64,7 +64,7 @@ export const resendSettings = pgTable("resend_settings", {
   fromName: text("from_name"),
   fromEmail: text("from_email"),
   toEmails: jsonb("to_emails").$type<string[]>().default([]),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 

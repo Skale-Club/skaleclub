@@ -22,7 +22,7 @@ export const users = pgTable("users", {
   lastName: text("last_name"),
   profileImageUrl: text("profile_image_url"),
   isAdmin: boolean("is_admin").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
@@ -34,7 +34,7 @@ export const systemHeartbeats = pgTable("system_heartbeats", {
   id: serial("id").primaryKey(),
   source: text("source").notNull().default("vercel-cron"),
   note: text("note").default(""),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const insertSystemHeartbeatSchema = z.object({

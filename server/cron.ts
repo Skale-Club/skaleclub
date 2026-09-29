@@ -1,5 +1,7 @@
 import { BlogGenerator } from "./lib/blog-generator.js";
 import { fetchAllRssSources } from "./blog/rss-fetcher.js";
+import { recordJobHeartbeat } from "./lib/jobHeartbeat.js";
+import { inprocessCronEnabled } from "./lib/runtimeFlags.js";
 
 const HOUR_IN_MS = 60 * 60 * 1000;
 const DAY_IN_MS = 24 * HOUR_IN_MS;
@@ -30,16 +32,20 @@ async function blogTick(): Promise<void> {
     // so a future re-enable is observed without restart).
     if (!settings || settings.postsPerDay <= 0) {
       console.log("[cron] blog generation skipped: posts_per_day_zero (poll mode)");
+      await recordJobHeartbeat("blog-generate", "skipped:posts_per_day_zero");
       return;
     }
     const result = await BlogGenerator.generate({ manual: false });
     if (result.skipped) {
       console.log(`[cron] blog generation skipped: ${result.reason}`);
+      await recordJobHeartbeat("blog-generate", `skipped:${result.reason}`);
     } else {
       console.log(`[cron] blog generation completed: postId=${result.postId}`);
+      await recordJobHeartbeat("blog-generate", `ok:post=${result.postId}`);
     }
   } catch (err) {
     console.error("[cron] blog generation error:", err);
+    await recordJobHeartbeat("blog-generate", `error:${(err as Error).message}`);
   } finally {
     const nextMs = await getBlogIntervalMs();
     console.log(`[cron] blog next tick in ${Math.round(nextMs / 60_000)}min`);
@@ -48,17 +54,11 @@ async function blogTick(): Promise<void> {
 }
 
 export function startCron(): void {
-  if (process.env.VERCEL) {
-    // Vercel is serverless — no persistent process; cron is triggered via POST /api/blog/cron/generate
-    // and POST /api/blog/cron/fetch-rss (configured in vercel.json).
-    return;
-  }
-
-  if (process.env.DISABLE_INPROCESS_CRON === "true") {
-    // Long-running host (Coolify container) where scheduling is owned by
-    // GitHub Actions (.github/workflows/blog-cron.yml) instead. Without this
-    // gate both would fire and blog posts would be generated twice.
-    console.log("[cron] in-process scheduler disabled (DISABLE_INPROCESS_CRON=true)");
+  if (!inprocessCronEnabled()) {
+    // Opt-in (ENABLE_INPROCESS_CRON=true): a dev server pointing at the
+    // production database must not start crons, and on the container the
+    // schedule is owned by the external cron (skale-cron / blog-cron.yml).
+    console.log("[cron] in-process scheduler off (set ENABLE_INPROCESS_CRON=true to enable)");
     return;
   }
 
@@ -78,8 +78,10 @@ export function startCron(): void {
       console.log(
         `[rss-fetcher] cron tick: sources=${summary.sourcesProcessed} upserted=${summary.itemsUpserted} errors=${summary.errors.length}`,
       );
+      await recordJobHeartbeat("rss-sync", `ok:sources=${summary.sourcesProcessed} errors=${summary.errors.length}`);
     } catch (err) {
       console.error("[rss-fetcher] cron error:", err);
+      await recordJobHeartbeat("rss-sync", `error:${(err as Error).message}`);
     }
   }, HOUR_IN_MS);
 
@@ -88,7 +90,11 @@ export function startCron(): void {
   setInterval(() => {
     void import("./integrations/xphere.js")
       .then((m) => m.queueXphereDeliverySweep())
-      .catch((err) => console.error("[xphere] sweep cron error:", err));
+      .then(() => recordJobHeartbeat("xphere-sweep", "ok"))
+      .catch((err) => {
+        console.error("[xphere] sweep cron error:", err);
+        return recordJobHeartbeat("xphere-sweep", `error:${(err as Error).message}`);
+      });
   }, 5 * 60_000);
 
   // Data retention: daily. Honours either flag name (DISABLE_INPROCESS_CRON=true

@@ -1,5 +1,7 @@
 import { pgTable, text, serial, integer, timestamp, boolean, jsonb, uuid, pgEnum, uniqueIndex, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
+import { visitorSessions } from "./attribution.js";
 import { z } from "zod";
 
 // Enums
@@ -27,7 +29,7 @@ export const forms = pgTable("forms", {
   isDefault: boolean("is_default").notNull().default(false),
   isActive: boolean("is_active").notNull().default(true),
   config: jsonb("config").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
 }, (table) => ({
   slugIdx: uniqueIndex("forms_slug_idx").on(table.slug),
@@ -40,9 +42,10 @@ export const formLeads = pgTable("form_leads", {
   id: serial("id").primaryKey(),
   tenantId: integer("tenant_id").notNull().default(1),
   sessionId: uuid("session_id").notNull(),
-  formId: integer("form_id").references(() => forms.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
+  // Deleting a form must keep its leads (they are the business record): SET NULL.
+  formId: integer("form_id").references(() => forms.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
   nome: text("nome").notNull(),
   email: text("email"),
   telefone: text("telefone"),
@@ -81,7 +84,8 @@ export const formLeads = pgTable("form_leads", {
   ghlSyncStatus: text("ghl_sync_status").default("pending"),
   source: text("source").default("form"),
   conversationId: text("conversation_id"),
-  visitorId: integer("visitor_id"),  // Phase 45 — Marketing Attribution FK to visitor_sessions(id); FK enforced in migration SQL (avoids circular import with attribution.ts)
+  // Phase 45 — Marketing Attribution FK to visitor_sessions(id) (form_leads_visitor_id_fkey). Lazy reference: attribution.ts also imports this file.
+  visitorId: integer("visitor_id").references((): AnyPgColumn => visitorSessions.id, { onDelete: "set null" }),
 }, (table) => ({
   emailIdx: index("form_leads_email_idx").on(table.email),
   classificacaoIdx: index("form_leads_classificacao_idx").on(table.classificacao),

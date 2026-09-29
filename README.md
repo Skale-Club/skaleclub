@@ -87,9 +87,15 @@ The app will be available at `http://localhost:1000`.
 Runs hourly from GitHub Actions, which is the **single** scheduler for the blog.
 
 `server/cron.ts` also has an in-process scheduler (`startCron()`), which would
-otherwise wake up on a long-running host like the Coolify container and generate
-every post twice. It is switched off there by the `DISABLE_INPROCESS_CRON=true`
-environment variable — don't unset it without disabling this workflow first.
+generate every post twice next to an external scheduler. It is **off by default**
+and only starts when `ENABLE_INPROCESS_CRON=true` (`DISABLE_INPROCESS_CRON=true`
+still forces it off). Likewise the self-applying maintenance tasks only run at
+boot when `ENABLE_BOOTSTRAP_TASKS=true`. Never enable the in-process cron on a
+host whose schedule is already owned externally.
+
+Each job run writes a `system_heartbeats` row (`blog-generate`, `rss-sync`,
+`xphere-sweep`); `GET /api/health/jobs` reports their age and flags stale jobs
+(blog > 26h, xphere > 2h). `GET /api/ready` is a DB-backed readiness probe.
 
 - Cron routes: `GET /api/blog/cron/generate`, `GET /api/blog/cron/fetch-rss`
 - Schedule: hourly (`0 * * * *` and `30 * * * *`) via `.github/workflows/blog-cron.yml`

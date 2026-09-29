@@ -3,8 +3,10 @@ import { build as viteBuild } from "vite";
 import { rm, readFile, writeFile } from "fs/promises";
 import { spawn } from "child_process";
 
-// server deps to bundle to reduce openat(2) syscalls
-// which helps cold start times
+// server deps to bundle to reduce syscalls, which helps cold start times.
+// express, pg and express-session are deliberately NOT here: Sentry's
+// auto-instrumentation patches them at require time, which only works when
+// they are real runtime modules loaded after dist/instrument.cjs.
 const allowlist = [
   "@google/generative-ai",
   "axios",
@@ -13,21 +15,14 @@ const allowlist = [
   "date-fns",
   "drizzle-orm",
   "drizzle-zod",
-  "express",
   "express-rate-limit",
-  "express-session",
   "jsonwebtoken",
-  "memorystore",
   "multer",
   "nanoid",
   "nodemailer",
   "openai",
-  "passport",
-  "passport-local",
-  "pg",
   "stripe",
   "uuid",
-  "ws",
   "xlsx",
   "zod",
   "zod-validation-error",
@@ -96,6 +91,22 @@ async function buildAll() {
     bundle: true,
     format: "cjs",
     outfile: "dist/index.cjs",
+    define: {
+      "process.env.NODE_ENV": '"production"',
+    },
+    minify: true,
+    external: externals,
+    logLevel: "info",
+  });
+
+  // Preloaded with `node --require ./dist/instrument.cjs dist/index.cjs` so
+  // Sentry initialises (and patches express/pg) before the app is required.
+  await esbuild({
+    entryPoints: ["server/instrument.ts"],
+    platform: "node",
+    bundle: true,
+    format: "cjs",
+    outfile: "dist/instrument.cjs",
     define: {
       "process.env.NODE_ENV": '"production"',
     },
