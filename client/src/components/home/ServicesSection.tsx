@@ -4,7 +4,8 @@ import { catalogProducts, type CatalogItem } from '@shared/catalog';
 import { useQuery } from '@tanstack/react-query';
 import { CatalogCard } from '@/components/catalog/CatalogCard';
 import { CatalogDetail } from '@/components/catalog/CatalogDetail';
-import { ServicesHeader } from '@/components/home/ServicesHeader';
+import { Band } from '@/components/editorial';
+import { SectionHeading } from '@/components/layout/SectionHeading';
 import { ServicesCarousel } from '@/components/home/ServicesCarousel';
 import { StepCard } from '@/components/home/StepCard';
 import type { StepItem } from '@/components/home/StepCard';
@@ -13,12 +14,9 @@ type Props = {
   section?: HomepageContent['consultingStepsSection'] | HomepageContent['horizontalScrollSection'] | null;
   mode?: 'steps' | 'services';
   onCtaClick?: () => void;
-  /** Overrides the SectionShell background classes — lets the homepage keep
-   *  each slot's original color when sections are reordered. */
-  background?: string;
 };
 
-export function ServicesSection({ section, mode: explicitMode, onCtaClick, background }: Props) {
+export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Props) {
   const displayMode = explicitMode || (section as any)?.mode || 'steps';
 
   const { data: portfolioServices } = useQuery<PortfolioService[]>({
@@ -58,7 +56,7 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick, backg
       key={`${item.key}-${idx}`}
       className="flex-shrink-0 w-[85%] sm:w-[280px] md:w-[260px] tablet:w-[245px]"
     >
-      <CatalogCard item={item} variant="compact" onOpen={openServiceModal} />
+      <CatalogCard item={item} variant="compact" onOpen={openServiceModal} className="!rounded-none" />
     </div>
   ), [openServiceModal]);
 
@@ -88,15 +86,17 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick, backg
 
     return (
       <>
-        <SectionShell sectionId={sectionId} dark background={background}>
-          <ServicesHeader
-            tagLabel={tagLabel}
+        <SectionShell sectionId={sectionId}>
+          <SectionHeading
+            variant="editorial"
+            tone="light"
+            eyebrow={tagLabel}
             title={section?.title || ''}
             subtitle={section?.subtitle}
-            dark
           />
           <ServicesCarousel
             items={services}
+            dark={false}
             paused={isModalOpen}
             ariaLabel="Services carousel"
             renderItem={renderServiceItem}
@@ -120,9 +120,11 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick, backg
   if (sortedSteps.length === 0) return null;
 
   return (
-    <SectionShell sectionId={sectionId} background={background}>
-      <ServicesHeader
-        tagLabel={tagLabel}
+    <SectionShell sectionId={sectionId}>
+      <SectionHeading
+        variant="editorial"
+        tone="light"
+        eyebrow={tagLabel}
         title={section?.title || ''}
         subtitle={section?.subtitle}
       />
@@ -136,19 +138,10 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick, backg
   );
 }
 
-function SectionShell({ sectionId, children, dark = false, background }: { sectionId: string; children: React.ReactNode; dark?: boolean; background?: string }) {
+function SectionShell({ sectionId, children }: { sectionId: string; children: React.ReactNode }) {
   return (
-    <section
-      id={sectionId}
-      className={`relative section-y overflow-hidden ${background || (dark ? 'bg-dark-gradient' : 'bg-gradient-to-br from-[#f7f9fc] via-white to-[#eaf1ff]')}`}
-    >
-      <div className="absolute inset-0 pointer-events-none">
-        <div className={`absolute w-80 h-80 blur-3xl -left-20 top-0 rounded-full ${dark ? 'bg-primary/10' : 'bg-primary/5'}`} />
-        <div className={`absolute w-[420px] h-[420px] blur-3xl right-[-10%] bottom-[-20%] rounded-full ${dark ? 'bg-cta/20' : 'bg-cta/20'}`} />
-      </div>
-      <div className="relative z-10 space-y-[2.125rem]">
-        {children}
-      </div>
-    </section>
+    <Band tone="cream" id={sectionId} className="overflow-hidden" containerClassName="space-y-[2.125rem]">
+      {children}
+    </Band>
   );
 }

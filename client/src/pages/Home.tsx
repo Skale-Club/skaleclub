@@ -104,25 +104,20 @@ export default function Home() {
 
               The fill below only starts at `top: <bleed>` — i.e. right where this
               section crosses back below the hero's true bottom edge — so only the
-              rounded card (not a full-width bar) shows above that line, over the
+              card (not a full-width bar) shows above that line, over the
               hero's own background/photo.
             */}
-            <div className="absolute inset-x-0 bottom-0 top-[var(--trust-bleed)] bg-surface-dark" aria-hidden />
-            <div className="container-custom mx-auto relative">
+            <div className="absolute inset-x-0 bottom-0 top-[var(--trust-bleed)] bg-navy-900" aria-hidden />
+            <div className="container-editorial relative">
               <TrustBadges badges={trustBadges} />
             </div>
           </section>
         )}
       </div>
 
-      {/* Sections swapped (What We Do first), but each SLOT keeps its original
-          background: slot 1 stays flat surface-dark so it still merges seamlessly
-          with the trust-bar fill above; slot 2 keeps the dark gradient (now on
-          OurServicesSection itself). */}
       <ServicesSection
         section={horizontalScrollSection}
         onCtaClick={handleConsultingCta}
-        background="bg-surface-dark"
       />
 
       <OurServicesSection
@@ -138,25 +133,15 @@ export default function Home() {
         subtitle={reviewsSubtitle}
       />
       <BlogSection content={homepageContent.blogSection} />
-      <section id="about" className="relative section-y overflow-hidden bg-dark-gradient">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute w-80 h-80 blur-3xl -left-20 top-0 rounded-full bg-primary/5" />
-          <div className="absolute w-[420px] h-[420px] blur-3xl right-[-10%] bottom-[-20%] rounded-full bg-cta/10" />
-        </div>
-        <div className="relative z-10">
-          <AboutSection
-            aboutImageUrl={companySettings?.aboutImageUrl}
-            content={homepageContent.aboutSection}
-          />
-        </div>
-      </section>
+      <AboutSection
+        aboutImageUrl={companySettings?.aboutImageUrl}
+        content={homepageContent.aboutSection}
+      />
       {(companySettings?.mapEmbedUrl || areasServedSection?.heading || areasServedSection?.description) && (
-        <section id="areas-served" className="bg-surface-dark section-y">
-          <AreasServedMap
-            mapEmbedUrl={companySettings?.mapEmbedUrl}
-            content={areasServedSection}
-          />
-        </section>
+        <AreasServedMap
+          mapEmbedUrl={companySettings?.mapEmbedUrl}
+          content={areasServedSection}
+        />
       )}
       <LeadFormModal open={isFormOpen} onClose={() => setIsFormOpen(false)} formSlug="default" />
     </div>

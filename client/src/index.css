@@ -497,13 +497,6 @@ html.admin-theme.dark {
     }
   }
 
-  /* Dark section gradient shared by ServicesSection, OurServicesSection and
-     Home's #about section — unified tone (was three near-identical
-     gradients hard-coded per section). */
-  .bg-dark-gradient {
-    background: linear-gradient(to bottom, #10151f, #0a0c11);
-  }
-
   /* ── Trust-bar bleed contract ──────────────────────────────────────────
      Single source of truth for the trust-bar bleed amount, consumed by
      Home.tsx (mt-[calc(var(--trust-bleed)*-1)] on the bleed section, and
@@ -639,7 +632,7 @@ html.admin-theme.dark {
 /* Reviews widget should keep square edges */
 .lc_reviews_widget {
   border-radius: 0 !important;
-  background: var(--surface-dark) !important;
+  background: #0d121a !important;
 }
 
 /* If the widget injects its own markup, keep all corners square */
