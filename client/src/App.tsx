@@ -175,7 +175,7 @@ function Router() {
 
   // Xpot was extracted to a standalone app on xpot.skale.club.
   // Any leftover /xpot/* request hitting this app falls through to the catch-all 404,
-  // or is redirected by vercel.json (preferred for SEO).
+  // or is redirected at the proxy layer (preferred for SEO).
 
   // Scroll to top when navigating to a new page (not hash links)
   useEffect(() => {
@@ -324,7 +324,7 @@ function Router() {
             <Route path={pagePaths.portfolio} component={Portfolio} />
             {pagePaths.portfolio !== LEGACY_PATHS.portfolio && <Route path={LEGACY_PATHS.portfolio} component={Portfolio} />}
             {/* Legacy Skale Hub group URLs — 301 to managed landing /grupo (43-05).
-                Production redirects live in vercel.json; these handle local dev parity. */}
+                Production redirects run in server/canonicalHost.ts; these are the client-side fallback. */}
             <Route path={`${pagePaths.hub}/grupo`}>{() => <Redirect to="/grupo" />}</Route>
             <Route path={`${pagePaths.hub}/group`}>{() => <Redirect to="/grupo" />}</Route>
             {pagePaths.hub !== LEGACY_PATHS.hub && <Route path={`${LEGACY_PATHS.hub}/grupo`}>{() => <Redirect to="/grupo" />}</Route>}

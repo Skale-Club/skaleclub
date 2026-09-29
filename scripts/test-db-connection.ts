@@ -16,7 +16,6 @@ async function testConnection() {
 
     console.log(`Using connection string (masked): ${rawDatabaseUrl.replace(/:[^:@]*@/, ':****@')}`);
 
-    const isServerless = !!process.env.VERCEL;
     const sslExplicitlyDisabled =
         rawDatabaseUrl.includes('sslmode=disable') ||
         process.env.PGSSLMODE === "disable";
@@ -29,8 +28,7 @@ async function testConnection() {
         !sslExplicitlyDisabled &&
         (isCloudDb ||
             process.env.PGSSLMODE === "require" ||
-            process.env.POSTGRES_SSL === "true" ||
-            Boolean(process.env.VERCEL || process.env.VERCEL_ENV));
+            process.env.POSTGRES_SSL === "true");
 
     console.log(`SSL Enabled: ${shouldUseSsl}`);
 

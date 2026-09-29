@@ -37,10 +37,18 @@ export async function recordJobHeartbeat(source: JobSource, note = "ok"): Promis
 
 export interface JobHealth {
   source: JobSource;
+  /** Coarse outcome of the last run; the raw note text is never exposed. */
+  status: "ok" | "skipped" | "error" | null;
   lastRunAt: string | null;
   ageSeconds: number | null;
-  lastNote: string | null;
   stale: boolean;
+}
+
+function statusFromNote(note: string | null | undefined): JobHealth["status"] {
+  if (!note) return null;
+  if (note.startsWith("error")) return "error";
+  if (note.startsWith("skipped")) return "skipped";
+  return "ok";
 }
 
 export async function getJobsHealth(now = Date.now()): Promise<JobHealth[]> {
@@ -57,9 +65,9 @@ export async function getJobsHealth(now = Date.now()): Promise<JobHealth[]> {
     const limit = JOB_STALE_AFTER_SECONDS[source];
     out.push({
       source,
+      status: statusFromNote(row?.note),
       lastRunAt: last ? last.toISOString() : null,
       ageSeconds,
-      lastNote: row?.note ?? null,
       // A job that never ran only counts as stale where a limit is defined.
       stale: limit !== null && (ageSeconds === null || ageSeconds > limit),
     });

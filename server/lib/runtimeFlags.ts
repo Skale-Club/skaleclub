@@ -1,20 +1,20 @@
 /**
- * Opt-in switches for background work that touches the database on its own.
+ * Switches for background work that touches the database on its own.
  *
- * Both default to OFF so `npm run dev` (which usually points at the production
- * database) never starts crons or self-applying maintenance by accident.
- * Production sets the ENABLE_* variables in Coolify. The legacy DISABLE_*=true
- * variables still win, so an old deployment config keeps its off switch.
+ * - In-process crons are opt-in everywhere (ENABLE_INPROCESS_CRON=true), so a
+ *   dev server on the production database never starts them.
+ * - Bootstrap tasks default ON in production (they must self-apply after a
+ *   deploy) and OFF in development unless ENABLE_BOOTSTRAP_TASKS=true.
+ *
+ * The legacy DISABLE_*=true variables always win.
  */
-function enabled(enableVar: string, disableVar: string): boolean {
-  if (process.env[disableVar] === "true") return false;
-  return process.env[enableVar] === "true";
-}
-
 export function inprocessCronEnabled(): boolean {
-  return enabled("ENABLE_INPROCESS_CRON", "DISABLE_INPROCESS_CRON");
+  if (process.env.DISABLE_INPROCESS_CRON === "true") return false;
+  return process.env.ENABLE_INPROCESS_CRON === "true";
 }
 
 export function bootstrapTasksEnabled(): boolean {
-  return enabled("ENABLE_BOOTSTRAP_TASKS", "DISABLE_BOOTSTRAP_TASKS");
+  if (process.env.DISABLE_BOOTSTRAP_TASKS === "true") return false;
+  if (process.env.ENABLE_BOOTSTRAP_TASKS === "true") return true;
+  return process.env.NODE_ENV === "production";
 }

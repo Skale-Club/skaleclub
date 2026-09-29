@@ -52,7 +52,16 @@ const BLOG_SETTINGS_DEFAULTS = {
 
 // Skip reasons that mean "the run failed" rather than "nothing to do": the cron
 // endpoint answers 503 for these so the scheduler and alerting notice.
-const CRON_FAILURE_REASONS = new Set<string>(["ai_timeout", "ai_empty_response", "not_configured", "invalid_html"]);
+// Callers MUST NOT retry a 503 from /api/blog/cron/generate: the run already
+// spent an AI call, and a retry would generate and bill a second attempt. The
+// next scheduled tick is the retry.
+const CRON_FAILURE_REASONS = new Set<string>([
+  "ai_timeout",
+  "ai_empty_response",
+  "not_configured",
+  "invalid_html",
+  "content_length_out_of_bounds",
+]);
 
 export function registerBlogAutomationRoutes(app: Express) {
   // BLOG-13: GET /api/blog/settings — safe defaults when no DB row.

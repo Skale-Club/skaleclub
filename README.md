@@ -84,13 +84,14 @@ The app will be available at `http://localhost:1000`.
 
 ## Blog Autopost Cron (GitHub Actions)
 
-Runs hourly from GitHub Actions, which is the **single** scheduler for the blog.
+Runs hourly from an external scheduler (the `skale-cron` service on the Coolify VPS; `.github/workflows/blog-cron.yml` is the manual/emergency trigger), which is the **single** scheduler for the blog.
 
 `server/cron.ts` also has an in-process scheduler (`startCron()`), which would
 generate every post twice next to an external scheduler. It is **off by default**
 and only starts when `ENABLE_INPROCESS_CRON=true` (`DISABLE_INPROCESS_CRON=true`
-still forces it off). Likewise the self-applying maintenance tasks only run at
-boot when `ENABLE_BOOTSTRAP_TASKS=true`. Never enable the in-process cron on a
+still forces it off). The self-applying maintenance tasks run at boot in
+production by default and in development only with `ENABLE_BOOTSTRAP_TASKS=true`
+(`DISABLE_BOOTSTRAP_TASKS=true` forces them off). Never enable the in-process cron on a
 host whose schedule is already owned externally.
 
 Each job run writes a `system_heartbeats` row (`blog-generate`, `rss-sync`,
