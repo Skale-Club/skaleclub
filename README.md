@@ -147,7 +147,7 @@ form the popup gallery. The legacy `imageUrl` is not shown anywhere public.
 
 - **Primary Navy**: `#0A162E` (dark surfaces, headings)
 - **Action Blue (CTAs/buttons)**: `#5173D6` (hover `#3B5BBE`, white bold text)
-- **Fonts**: Outfit (headings), Inter (body)
+- **Fonts**: Inter (headings and body)
 
 ## License
 

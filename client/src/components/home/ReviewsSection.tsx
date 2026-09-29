@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Star } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { SectionHeading } from "@/components/layout/SectionHeading";
+import { Band } from "@/components/editorial";
 
 interface ReviewsSectionProps {
   embedUrl?: string;
@@ -48,7 +49,7 @@ function EmbedRenderer({ code }: { code: string }) {
         src={code}
         frameBorder="0"
         scrolling="no"
-        style={{ minWidth: '100%', width: '100%', height: '488px', border: 'none', display: 'block', borderRadius: '0', background: 'var(--surface-dark)' }}
+        style={{ minWidth: '100%', width: '100%', height: '488px', border: 'none', display: 'block', borderRadius: '0', background: '#0d121a' }}
         onLoad={() => {
           const script = document.createElement('script');
           script.type = 'text/javascript';
@@ -87,22 +88,18 @@ export function ReviewsSection({ embedUrl, title, subtitle }: ReviewsSectionProp
   }
 
   return (
-    <section className="section-y bg-surface-dark overflow-hidden mb-0 text-white">
-      <div className="w-full space-y-[2.125rem]">
-        <div className="container-custom mx-auto">
-          <SectionHeading eyebrow="Reviews" icon={Star} title={title || ''} subtitle={subtitle || ''} />
-        </div>
-        {embedUrl ? (
-          // Full-bleed like the services carousels: span the viewport edge to
-          // edge at every breakpoint; the section's overflow-hidden clips the
-          // scrollbar-width excess of w-screen.
-          <div className="relative w-screen left-1/2 -translate-x-1/2">
-            <div className="bg-surface-dark">
-              <EmbedRenderer code={embedUrl.trim()} />
-            </div>
+    <Band tone="dark" className="overflow-hidden mb-0 border-t border-white/10" containerClassName="space-y-[2.125rem]">
+      <SectionHeading variant="editorial" eyebrow="Reviews" icon={Star} title={title || ''} subtitle={subtitle || ''} />
+      {embedUrl ? (
+        // Full-bleed like the services carousels: span the viewport edge to
+        // edge at every breakpoint; the band's overflow-hidden clips the
+        // scrollbar-width excess of w-screen.
+        <div className="relative w-screen left-1/2 -translate-x-1/2">
+          <div className="bg-navy-950">
+            <EmbedRenderer code={embedUrl.trim()} />
           </div>
-        ) : null}
-      </div>
-    </section>
+        </div>
+      ) : null}
+    </Band>
   );
 }

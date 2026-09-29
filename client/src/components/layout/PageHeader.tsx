@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "wouter";
+import { Band } from "@/components/editorial/Band";
+import { Eyebrow } from "@/components/editorial/Eyebrow";
 
 interface Breadcrumb {
   label: string;
@@ -11,26 +13,32 @@ interface PageHeaderProps {
   subtitle?: ReactNode;
   breadcrumb?: Breadcrumb[];
   compact?: boolean;
+  eyebrow?: string;
 }
 
 /**
- * Shared dark header band for public-site content pages (Blog, Contact,
- * About, FAQ, Privacy, Terms). Keeps title/subtitle/breadcrumb treatment
- * consistent across pages that aren't full marketing landing sections.
+ * Shared editorial hero band for public-site content pages (Blog, FAQ,
+ * Privacy, Terms). The Band's own container is neutralised so the inner
+ * `container-custom container-page` keeps the column width those pages use.
  */
-export function PageHeader({ title, subtitle, breadcrumb, compact = false }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, breadcrumb, compact = false, eyebrow }: PageHeaderProps) {
   return (
-    <section className={`${compact ? "page-top pb-12" : "page-top pb-12 md:pb-16"} bg-surface-dark text-white`}>
+    <Band
+      tone="hero"
+      pattern
+      bare
+      containerClassName={compact ? "page-top pb-12" : "page-top pb-12 md:pb-16"}
+    >
       <div className="container-custom container-page">
         {breadcrumb && breadcrumb.length > 0 && (
-          <nav className="flex items-center gap-2 text-sm text-white/60 mb-4" data-testid="nav-page-breadcrumb">
+          <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-2 text-sm text-fog-400" data-testid="nav-page-breadcrumb">
             {breadcrumb.map((crumb, idx) => (
               <span key={crumb.href} className="flex items-center gap-2">
-                {idx > 0 && <span>/</span>}
+                {idx > 0 && <span aria-hidden="true">/</span>}
                 {idx === breadcrumb.length - 1 ? (
-                  <span className="text-white">{crumb.label}</span>
+                  <span aria-current="page" className="text-fog-50">{crumb.label}</span>
                 ) : (
-                  <Link href={crumb.href} className="hover:text-white transition-colors">
+                  <Link href={crumb.href} className="transition-colors hover:text-fog-50">
                     {crumb.label}
                   </Link>
                 )}
@@ -38,14 +46,13 @@ export function PageHeader({ title, subtitle, breadcrumb, compact = false }: Pag
             ))}
           </nav>
         )}
-        <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight text-balance">
+        {eyebrow && <Eyebrow className="mb-4">{eyebrow}</Eyebrow>}
+        <h1 className="font-display text-4xl font-semibold leading-[0.98] tracking-[-0.04em] text-fog-50 text-balance sm:text-5xl lg:text-6xl">
           {title}
         </h1>
-        {subtitle && (
-          <p className="mt-4 text-lg text-white/70 max-w-2xl">{subtitle}</p>
-        )}
+        {subtitle && <p className="mt-6 max-w-2xl text-lg leading-8 text-fog-400">{subtitle}</p>}
       </div>
-    </section>
+    </Band>
   );
 }
 

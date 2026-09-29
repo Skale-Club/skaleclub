@@ -26,6 +26,11 @@ export interface SectionHeadingProps {
   /** `display` is the big editorial title (portfolio sections): the jump from
    *  eyebrow to title has to read from across the room. */
   size?: 'default' | 'display';
+  /** `classic` is the original look; `editorial` is the NFC-guide look
+   *  (tokens from the editorial kit, no rule bar). */
+  variant?: 'classic' | 'editorial';
+  /** Heading element to render. */
+  as?: 'h1' | 'h2' | 'h3';
   /** Width cap for the text column. */
   className?: string;
 }
@@ -38,10 +43,46 @@ export function SectionHeading({
   tone = 'dark',
   align = 'left',
   size = 'default',
+  variant = 'classic',
+  as: Heading = 'h2',
   className,
 }: SectionHeadingProps) {
   const { t } = useTranslation();
   const centered = align === 'center';
+
+  if (variant === 'editorial') {
+    const light = tone === 'light';
+    return (
+      <div className={`max-w-3xl ${centered ? 'mx-auto text-center' : ''} ${className ?? ''}`}>
+        {eyebrow && (
+          <p
+            className={`text-xs font-bold uppercase tracking-[0.24em] ${
+              Icon ? 'inline-flex items-center gap-2' : ''
+            } ${light ? 'text-cta-ink' : 'text-cta-soft'}`}
+          >
+            {Icon && <Icon className="h-3.5 w-3.5" aria-hidden="true" />}
+            <span>{t(eyebrow)}</span>
+          </p>
+        )}
+        <Heading
+          className={`${eyebrow ? 'mt-4' : ''} font-display text-4xl font-semibold leading-[1.04] tracking-[-0.025em] sm:text-5xl ${
+            light ? 'text-ink' : 'text-fog-50'
+          }`}
+        >
+          {t(title)}
+        </Heading>
+        {subtitle && (
+          <p
+            className={`mt-5 max-w-2xl text-base leading-7 sm:text-lg ${centered ? 'mx-auto' : ''} ${
+              light ? 'text-ink-500' : 'text-fog-400'
+            }`}
+          >
+            {t(subtitle)}
+          </p>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -56,7 +97,7 @@ export function SectionHeading({
         </div>
       )}
 
-      <h2
+      <Heading
         className={`font-display ${
           size === 'display'
             ? 'text-[clamp(2.25rem,5vw,4rem)] font-extrabold leading-[0.98] tracking-[-0.03em]'
@@ -66,7 +107,7 @@ export function SectionHeading({
         } ${tone === 'dark' ? 'text-white' : 'text-foreground'}`}
       >
         {t(title)}
-      </h2>
+      </Heading>
 
       {/* Short rule under every title: the cheapest way to make a stack of
           sections read as one family. */}

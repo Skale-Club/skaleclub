@@ -75,7 +75,7 @@ function drawBackground(ctx: CanvasRenderingContext2D) {
 }
 
 function setFont(ctx: CanvasRenderingContext2D, size: number, weight = 400) {
-  ctx.font = `${weight} ${size}px Outfit, Inter, Arial, sans-serif`;
+  ctx.font = `${weight} ${size}px Inter, Arial, sans-serif`;
 }
 
 function wrapLines(

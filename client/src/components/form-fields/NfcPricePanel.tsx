@@ -83,7 +83,7 @@ export function NfcPricePanel({
       )}
 
       <p className="mt-3 text-xs leading-relaxed text-slate-500">
-        {t("Estimate only — we confirm the final total with you before anything is produced.")}
+        {t("Estimate only. We confirm the final total with you before anything is produced.")}
       </p>
     </div>
   );

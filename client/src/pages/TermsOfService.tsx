@@ -42,7 +42,7 @@ export default function TermsOfService() {
           <>
             {t(`These terms govern your use of ${companyName}'s website and services. Please read them carefully before using our platform.`)}
             <br />
-            <span className="text-white/50 text-sm">{t('Last updated: January 10, 2026')}</span>
+            <span className="text-fog-400/80 text-sm">{t('Last updated: January 10, 2026')}</span>
           </>
         }
       />

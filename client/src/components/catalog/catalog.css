@@ -56,7 +56,7 @@
 .cat-card:hover .cat-card__more { color: var(--cat-ink); }
 
 /* compact: carousels. No features, two-line subtitle. */
-.cat-card--compact { border-radius: 18px; }
+.cat-card--compact { border-radius: 0; }
 .cat-card--compact .cat-card__body { padding: 16px 18px 18px; gap: 8px; }
 .cat-card--compact .cat-card__title { font-size: 22px; }
 .cat-card--compact .cat-card__sub {
