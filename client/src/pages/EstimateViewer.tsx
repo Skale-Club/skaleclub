@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { Loader2 } from '@/components/ui/loader';
 import { LanguageSwitch, type LanguageSwitchValue } from '@/components/ui/LanguageSwitch';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { DottedSurface } from '@/components/ui/dotted-surface';
+import { LazyDottedSurface as DottedSurface } from '@/components/ui/LazyDottedSurface';
 import { GradientBackground } from '@/components/ui/gradient-background-4';
 import { NotFoundState } from '@/components/NotFoundState';
 import type { CompanySettings, EstimateServiceItem } from '@shared/schema';

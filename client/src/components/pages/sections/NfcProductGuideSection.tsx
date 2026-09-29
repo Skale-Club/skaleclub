@@ -231,7 +231,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
         <Figure
           tone="dark"
           eager
-          src="/nfc-guide/hero.webp"
+          src="/nfc-guide/hero.webp" width={1400} height={933}
           alt="AI-generated visual examples of flat, raised-relief and custom-shaped NFC keychains"
           caption="Illustrative concepts. Your final design is reviewed and approved before production."
           icon={Sparkles}
@@ -316,7 +316,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
             />
             <Figure
               tone="dark"
-              src="/nfc-guide/price-factors.webp"
+              src="/nfc-guide/price-factors.webp" width={1400} height={933}
               alt="Three illustrative keychains showing increasing design and production complexity"
               caption="A flat surface, raised layers and a detailed custom contour require different amounts of work."
               className="mt-9"
@@ -370,7 +370,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
         />
         <Figure
           tone="light"
-          src="/nfc-guide/tap.webp"
+          src="/nfc-guide/tap.webp" width={1400} height={933}
           alt="Smartphone reading an NFC keychain at a business counter"
           caption="Bring the back of the phone close to the keychain and open the notification. No app required."
           imgClassName="sm:aspect-[2/1]"
@@ -420,7 +420,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
           <Figure
             tone="dark"
             aspect="4/3"
-            src="/nfc-guide/artwork.webp"
+            src="/nfc-guide/artwork.webp" width={1400} height={933}
             alt="Illustrative design desk showing sketch, digital layers, color samples and finished keychain"
             caption="We adapt the reference, confirm the colors and layers, and send the design for approval."
           />
@@ -437,7 +437,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
         />
         <Figure
           tone="light"
-          src="/nfc-guide/production.webp"
+          src="/nfc-guide/production.webp" width={1400} height={933}
           alt="Illustrative batch of NFC keychains being tested and prepared for shipping"
           caption="After approval, the batch is produced, every NFC tag is tested and the order is prepared for delivery."
           imgClassName="sm:aspect-[2/1]"
@@ -464,6 +464,8 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
           />
           <img
             src="/nfc-guide/custom-shape.webp"
+            width={800}
+            height={841}
             alt={t("Illustrative dog-mascot keychain showing the possibilities of a custom shape")}
             className="mx-auto hidden h-64 w-64 object-contain lg:block"
             loading="lazy"

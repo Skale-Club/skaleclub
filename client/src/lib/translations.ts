@@ -705,6 +705,10 @@ export const translations = {
     // Audit D
     'Start': 'Começar', 'Draft': 'Rascunho', 'Call': 'Ligar', 'Quote': 'Orçamento',
     'We reply within one business day': 'Respondemos em até um dia útil',
+    // Audit B
+    'Something went wrong on our side': 'Algo deu errado do nosso lado',
+    'An unexpected error stopped this page. Reloading usually fixes it.': 'Um erro inesperado interrompeu esta página. Recarregar costuma resolver.',
+    'Reload': 'Recarregar', 'Skip to content': 'Pular para o conteúdo',
   }
 } as const;
 export type TranslationKey = keyof typeof translations.pt;

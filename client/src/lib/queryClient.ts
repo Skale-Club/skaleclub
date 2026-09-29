@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 
 export class HttpError extends Error {
   status: number;
@@ -103,6 +104,41 @@ export const getQueryFn: <T>(options: {
     return await res.json();
   };
 
+/**
+ * The public site never refetches (staleTime Infinity). Admin data is edited from
+ * several places, so it goes stale after 30s and refetches when the tab regains focus.
+ */
+export const adminQueryOptions = {
+  staleTime: 30_000,
+  refetchOnWindowFocus: true,
+} as const;
+
+/**
+ * Applies `adminQueryOptions` as the shared client's defaults while the calling
+ * admin screen is mounted, then restores the public defaults. Applied during the
+ * first render because child queries resolve their defaults when they are created,
+ * before any effect of this component would run.
+ */
+export function useAdminQueryDefaults() {
+  const applied = useRef(false);
+  if (!applied.current) {
+    applied.current = true;
+    applyAdminDefaults();
+  }
+  useEffect(() => {
+    // Re-apply (StrictMode runs effect, cleanup, effect) and restore on unmount.
+    applyAdminDefaults();
+    return () => queryClient.setDefaultOptions(publicDefaults);
+  }, []);
+}
+
+function applyAdminDefaults() {
+  queryClient.setDefaultOptions({
+    ...publicDefaults,
+    queries: { ...publicDefaults.queries, ...adminQueryOptions },
+  });
+}
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -123,3 +159,6 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+// Snapshot of the public defaults, restored when leaving the admin.
+const publicDefaults = queryClient.getDefaultOptions();

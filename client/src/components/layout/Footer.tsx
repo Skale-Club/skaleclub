@@ -75,6 +75,7 @@ function FooterComponent() {
                   alt={companyName}
                   width={54}
                   height={54}
+                  loading="lazy"
                   className="h-auto w-[54px] object-contain p-1.5"
                 />
               ) : companySettings?.logoIcon ? (
@@ -83,6 +84,7 @@ function FooterComponent() {
                   alt={companyName}
                   width={54}
                   height={54}
+                  loading="lazy"
                   className="h-auto w-[54px] object-contain p-1.5 brightness-0 invert"
                 />
               ) : (
