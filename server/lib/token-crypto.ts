@@ -58,6 +58,9 @@ function resolveKey(): Buffer {
   if (!sessionSecret) {
     throw new Error("Token encryption requires TOKEN_ENCRYPTION_KEY or SESSION_SECRET to be set.");
   }
+  console.warn(
+    "[token-crypto] TOKEN_ENCRYPTION_KEY is not set; secrets at rest are keyed from SESSION_SECRET. Set TOKEN_ENCRYPTION_KEY (32 bytes, hex or base64) so rotating SESSION_SECRET does not invalidate stored secrets.",
+  );
   cachedKey = scryptSync(sessionSecret, KEY_DERIVATION_SALT, 32);
   return cachedKey;
 }
@@ -90,10 +93,4 @@ export function decryptToken(value: string): string {
   decipher.setAuthTag(tag);
   const pt = Buffer.concat([decipher.update(ct), decipher.final()]); // throws on auth-tag mismatch
   return pt.toString("utf8");
-}
-
-if (!process.env.TOKEN_ENCRYPTION_KEY?.trim()) {
-  console.warn(
-    "[token-crypto] TOKEN_ENCRYPTION_KEY is not set; secrets at rest are keyed from SESSION_SECRET. Set TOKEN_ENCRYPTION_KEY (32 bytes, hex or base64) so rotating SESSION_SECRET does not invalidate stored secrets.",
-  );
 }

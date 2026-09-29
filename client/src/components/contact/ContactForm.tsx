@@ -43,8 +43,8 @@ export function ContactForm({ companyName }: { companyName: string }) {
           message,
           smsConsent,
           marketingConsent,
-          website: honeypotRef.current?.value || "",
-          startedAt: startedAtRef.current,
+          hp_extra: honeypotRef.current?.value || "",
+          elapsedMs: Date.now() - startedAtRef.current,
         }),
       });
       if (!res.ok) throw new Error("Request failed");
@@ -78,9 +78,9 @@ export function ContactForm({ companyName }: { companyName: string }) {
         <input
           ref={honeypotRef}
           type="text"
-          name="website"
+          name="hp_extra"
           tabIndex={-1}
-          autoComplete="off"
+          autoComplete="new-password"
           aria-hidden="true"
           defaultValue=""
           style={{ position: "absolute", left: "-10000px", width: 1, height: 1, opacity: 0 }}

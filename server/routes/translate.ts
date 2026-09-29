@@ -7,7 +7,7 @@ import { translations } from "#shared/schema.js";
 import { getActiveAIClient } from "../lib/ai-provider.js";
 import { rateLimitMiddleware } from "../lib/rateLimit.js";
 import { requireAdmin } from "./_shared.js";
-import { translations as staticDictionary } from "../../client/src/lib/translations.js";
+import { translations as staticDictionary } from "#shared/i18n/pt.js";
 
 /**
  * Dynamic AI-powered translation endpoint.
@@ -63,24 +63,29 @@ export function registerTranslateRoutes(app: Express) {
     if (!parsedLang.success) {
       return res.status(400).json({ message: UNSUPPORTED_LANGUAGE_MESSAGE });
     }
-    const lang = parsedLang.data;
-    const cached = await db
-      .select({ sourceText: translations.sourceText, translatedText: translations.translatedText })
-      .from(translations)
-      .where(and(eq(translations.sourceLanguage, "en"), eq(translations.targetLanguage, lang)));
+    try {
+      const lang = parsedLang.data;
+      const cached = await db
+        .select({ sourceText: translations.sourceText, translatedText: translations.translatedText })
+        .from(translations)
+        .where(and(eq(translations.sourceLanguage, "en"), eq(translations.targetLanguage, lang)));
 
-    const result: Record<string, string> = {};
-    cached.forEach((row) => {
-      // Static dictionary ships with the client bundle; do not resend it.
-      if (lang === "pt" && Object.prototype.hasOwnProperty.call(staticPt, row.sourceText)) return;
-      result[row.sourceText] = row.translatedText;
-    });
-    const body = JSON.stringify({ translations: result });
-    const etag = `"${crypto.createHash("sha1").update(body).digest("base64url")}"`;
-    res.setHeader("Cache-Control", "public, max-age=300");
-    res.setHeader("ETag", etag);
-    if (req.headers["if-none-match"] === etag) return res.status(304).end();
-    res.type("application/json").send(body);
+      const result: Record<string, string> = {};
+      cached.forEach((row) => {
+        // Static dictionary ships with the client bundle; do not resend it.
+        if (lang === "pt" && Object.prototype.hasOwnProperty.call(staticPt, row.sourceText)) return;
+        result[row.sourceText] = row.translatedText;
+      });
+      const body = JSON.stringify({ translations: result });
+      const etag = `"${crypto.createHash("sha1").update(body).digest("base64url")}"`;
+      res.setHeader("Cache-Control", "public, max-age=300");
+      res.setHeader("ETag", etag);
+      if (req.headers["if-none-match"] === etag) return res.status(304).end();
+      res.type("application/json").send(body);
+    } catch (err) {
+      console.error("[translate] GET /api/translations/preload failed:", err);
+      res.status(500).json({ message: "Failed to load translations" });
+    }
   });
 
   app.delete("/api/translations/:id", requireAdmin, async (req, res) => {
@@ -100,8 +105,8 @@ export function registerTranslateRoutes(app: Express) {
     try {
       const updated = await db
         .update(translations)
-        .set({ translatedText: sql`replace(${translations.translatedText}, '—', '|')`, updatedAt: new Date() })
-        .where(sql`${translations.translatedText} like '%—%'`)
+        .set({ translatedText: sql`replace(${translations.translatedText}, chr(8212), '|')`, updatedAt: new Date() })
+        .where(sql`${translations.translatedText} like '%'||chr(8212)||'%'`)
         .returning({ id: translations.id });
       res.json({ count: updated.length });
     } catch (err) {
@@ -130,13 +135,17 @@ export function registerTranslateRoutes(app: Express) {
         let texts = parsedBody.data.texts;
         const isAnonymous = !(req.session as any)?.userId;
 
+        // Anonymous callers: at most 20 texts per request, and over-long texts are
+        // handed back unchanged instead of failing the whole batch.
+        const passthrough: Record<string, string> = {};
         if (isAnonymous) {
           if (texts.length > ANON_MAX_TEXTS) {
             return res.status(400).json({ message: `Too many texts in one request (max ${ANON_MAX_TEXTS}).` });
           }
-          if (texts.some((text) => text.length > ANON_MAX_TEXT_LENGTH)) {
-            return res.status(400).json({ message: `Text too long (max ${ANON_MAX_TEXT_LENGTH} characters per string).` });
+          for (const text of texts) {
+            if (text.length > ANON_MAX_TEXT_LENGTH) passthrough[text] = text;
           }
+          texts = texts.filter((text) => !(text in passthrough));
         }
 
         if (texts.length > MAX_TEXTS_PER_REQUEST) {
@@ -159,7 +168,7 @@ export function registerTranslateRoutes(app: Express) {
         }
 
         // Texts already in the static dictionary never need the DB or the AI.
-        const staticResult: Record<string, string> = {};
+        const staticResult: Record<string, string> = { ...passthrough };
         if (sourceLanguage === "en" && targetLanguage === "pt") {
           for (const text of texts) {
             if (Object.prototype.hasOwnProperty.call(staticPt, text)) staticResult[text] = staticPt[text];

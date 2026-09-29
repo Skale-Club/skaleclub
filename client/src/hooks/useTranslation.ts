@@ -79,7 +79,10 @@ async function runBatch(texts: string[], targetLanguage: string, sourceLanguage:
     detail: { blocking: Date.now() < overlayDeadline },
   }));
 
-  await fetchTranslations(texts, targetLanguage, sourceLanguage);
+  // The server caps anonymous requests at 20 texts, so send the batch in chunks.
+  const chunks: string[][] = [];
+  for (let i = 0; i < texts.length; i += 20) chunks.push(texts.slice(i, i + 20));
+  await Promise.all(chunks.map((chunk) => fetchTranslations(chunk, targetLanguage, sourceLanguage)));
 
   texts.forEach(t => {
     const cacheKey = `${targetLanguage}:${t}`;
