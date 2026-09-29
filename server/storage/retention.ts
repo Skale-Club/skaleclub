@@ -24,9 +24,16 @@ function rowCount(res: unknown): number {
   return Number((res as { rowCount?: number | null })?.rowCount ?? 0);
 }
 
+/** Secret used to salt hashed IPs. No fallback: an unsalted or hardcoded-salt hash is reversible. */
+export function getRetentionSalt(): string {
+  const salt = process.env.RETENTION_HASH_SECRET || process.env.SESSION_SECRET || process.env.CRON_SECRET;
+  if (!salt) throw new Error("Retention needs RETENTION_HASH_SECRET, SESSION_SECRET or CRON_SECRET to hash IP addresses");
+  return salt;
+}
+
 export async function runRetention(): Promise<RetentionResult> {
   // Salt so a hashed IPv4 cannot be reversed by brute force without the secret.
-  const salt = process.env.SESSION_SECRET || process.env.CRON_SECRET || "skale-retention";
+  const salt = getRetentionSalt();
 
   const views = await db.execute(sql`
     UPDATE estimate_views
@@ -44,11 +51,15 @@ export async function runRetention(): Promise<RetentionResult> {
   `);
 
   // status enum has no 'abandoned'; an incomplete lead is form_completo = false
-  // that nobody has worked (status still 'novo').
+  // that nobody has worked (status still 'novo'). Rows that carry any contact
+  // detail or a CRM contact are real leads and are never deleted here.
   const leads = await db.execute(sql`
     DELETE FROM form_leads
      WHERE form_completo = false
        AND status = 'novo'
+       AND coalesce(telefone, '') = ''
+       AND coalesce(email, '') = ''
+       AND ghl_contact_id IS NULL
        AND created_at < now() - interval '90 days'
   `);
 

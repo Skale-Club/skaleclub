@@ -7,7 +7,7 @@ import "dotenv/config";
 import { db } from "../server/db.js";
 import { companySettings } from "../shared/schema.js";
 import { DEFAULT_COMPANY_SETTINGS_SEED } from "../shared/defaults/cms.js";
-import { recordRevision } from "../server/storage/revisions.js";
+import { recordRevisionOrThrow } from "../server/storage/revisions.js";
 import { diffJson, logPlannedChange, withSeedGuard } from "./lib/seed-utils.js";
 
 async function seedTechContent(apply: boolean) {
@@ -28,7 +28,7 @@ async function seedTechContent(apply: boolean) {
   logPlannedChange("company_settings", before, DEFAULT_COMPANY_SETTINGS_SEED, apply);
   if (!apply || !changed) return;
 
-  await recordRevision("company_settings", existing.id, existing, "seed", "seed-tech-content overwrite");
+  await recordRevisionOrThrow("company_settings", existing.id, existing, "seed", "seed-tech-content overwrite");
   await db.update(companySettings).set(DEFAULT_COMPANY_SETTINGS_SEED);
 }
 

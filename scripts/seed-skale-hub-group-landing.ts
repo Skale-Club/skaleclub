@@ -8,7 +8,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../server/db.js";
 import { pages, type PageSection } from "../shared/schema/pages.js";
 import { logPlannedChange, withSeedGuard } from "./lib/seed-utils.js";
-import { recordRevision } from "../server/storage/revisions.js";
+import { recordRevisionOrThrow } from "../server/storage/revisions.js";
 
 const SLUG = "grupo";
 const NAME = "Skale Hub WhatsApp Group";
@@ -26,7 +26,7 @@ async function seed(apply: boolean) {
   if (!apply || !changed) return;
 
   if (existing) {
-    await recordRevision("page", existing.id, existing, "seed", "seed script overwrite");
+    await recordRevisionOrThrow("page", existing.id, existing, "seed", "seed script overwrite");
     await db.update(pages).set({ ...desired, updatedAt: new Date() }).where(eq(pages.slug, SLUG));
   } else {
     await db.insert(pages).values({ slug: SLUG, ...desired });
