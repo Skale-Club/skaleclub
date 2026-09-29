@@ -331,7 +331,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
           </div>
 
           <aside>
-            <EditorialCard tone="dark" className="border-cta-soft/18 bg-navy-700 p-7 text-white shadow-[0_26px_70px_rgba(0,0,0,.28)] sm:p-9">
+            <EditorialCard tone="dark" className="bg-navy-700 p-7 text-white shadow-[0_26px_70px_rgba(0,0,0,.28)] sm:p-9">
               <Eyebrow className="tracking-[0.22em] text-cta-softer">{t("Flat model reference")}</Eyebrow>
               <h3 className="mt-4 font-display text-3xl font-semibold">{t("Published unit pricing")}</h3>
               <p className="mt-3 text-sm leading-6 text-fog-300">
