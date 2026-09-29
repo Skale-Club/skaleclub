@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, jsonb, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, jsonb, integer, index } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
 // Service item Zod schemas (defined before the table for reference)
@@ -58,7 +58,7 @@ export const estimates = pgTable("estimates", {
   services: jsonb("services").$type<EstimateServiceItem[]>().notNull().default([]),
   thumbnailUrl: text("thumbnail_url"),
   thumbnailSignature: text("thumbnail_signature"),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
   accessCode: text("access_code"),
 });
@@ -68,7 +68,11 @@ export const estimateViews = pgTable("estimate_views", {
   estimateId: integer("estimate_id").references(() => estimates.id, { onDelete: "cascade" }).notNull(),
   viewedAt: timestamp("viewed_at").defaultNow().notNull(),
   ipAddress: text("ip_address"),
-});
+}, (table) => ({
+  // Mirrors migration 0032.
+  estimateIdIdx: index("estimate_views_estimate_id_idx").on(table.estimateId),
+  viewedAtIdx: index("estimate_views_viewed_at_idx").on(table.viewedAt.desc()),
+}));
 
 export type EstimateView = typeof estimateViews.$inferSelect;
 

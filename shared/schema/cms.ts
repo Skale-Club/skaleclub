@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean, jsonb, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { PORTFOLIO_DESCRIPTION_MAX_WORDS, countWords } from "../portfolio.js";
@@ -11,9 +11,13 @@ export const translations = pgTable("translations", {
   sourceLanguage: text("source_language").notNull().default("en"),
   targetLanguage: text("target_language").notNull(),
   translatedText: text("translated_text").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  // Mirrors migrations/0019: the runtime upserts on this triple.
+  uniqueIdx: uniqueIndex("idx_translations_unique").on(table.sourceText, table.sourceLanguage, table.targetLanguage),
+  lookupIdx: index("idx_translations_lookup").on(table.sourceLanguage, table.targetLanguage),
+}));
 
 export const insertTranslationSchema = z.object({
   sourceText: z.string().min(1),
@@ -48,7 +52,7 @@ export const redirects = pgTable("redirects", {
   slug: text("slug").notNull().unique(),
   destinationUrl: text("destination_url").notNull(),
   isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
@@ -74,10 +78,13 @@ export const blogPosts = pgTable("blog_posts", {
   featureImageUrl: text("feature_image_url"),
   status: text("status").notNull().default("draft"),
   authorName: text("author_name").default("Admin"),
-  publishedAt: timestamp("published_at"),
-  createdAt: timestamp("created_at").defaultNow(),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  // Public blog list: WHERE status = 'published' ORDER BY published_at DESC.
+  statusPublishedAtIdx: index("blog_posts_status_published_at_idx").on(table.status, table.publishedAt.desc()),
+}));
 
 export const insertBlogPostSchema = z.object({
   title: z.string().min(1),
@@ -134,7 +141,7 @@ export const portfolioServices = pgTable("portfolio_services", {
   accentColor: text("accent_color").default("blue"),
   order: integer("order").default(0),
   isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
@@ -195,7 +202,7 @@ export const vcards = pgTable("vcards", {
   viewCount: integer("view_count").default(0),
   downloadCount: integer("download_count").default(0),
   lastViewedAt: timestamp("last_viewed_at"),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 

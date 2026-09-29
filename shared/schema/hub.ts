@@ -52,18 +52,17 @@ export const hubLives = pgTable("hub_lives", {
   description: text("description"),
   hostName: text("host_name").notNull().default("Skale Club"),
   timezone: text("timezone").notNull().default("America/New_York"),
-  startsAt: timestamp("starts_at").notNull(),
-  endsAt: timestamp("ends_at"),
-  registrationOpensAt: timestamp("registration_opens_at"),
-  registrationClosesAt: timestamp("registration_closes_at"),
+  startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+  endsAt: timestamp("ends_at", { withTimezone: true }),
+  registrationOpensAt: timestamp("registration_opens_at", { withTimezone: true }),
+  registrationClosesAt: timestamp("registration_closes_at", { withTimezone: true }),
   streamUrl: text("stream_url"),
   replayUrl: text("replay_url"),
   status: text("status").notNull().default("draft"),
   capacity: integer("capacity"),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
 }, (table) => ({
-  slugIdx: index("hub_lives_slug_idx").on(table.slug),
   statusStartsAtIdx: index("hub_lives_status_starts_at_idx").on(table.status, table.startsAt),
 }));
 
@@ -80,7 +79,7 @@ export const hubParticipants = pgTable("hub_participants", {
   ghlSyncStatus: text("ghl_sync_status").notNull().default("pending"),
   ghlLastSyncedAt: timestamp("ghl_last_synced_at"),
   ghlSyncError: text("ghl_sync_error"),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
 }, (table) => ({
   phoneNormalizedIdx: index("hub_participants_phone_normalized_idx").on(table.phoneNormalized),
@@ -99,7 +98,7 @@ export const hubRegistrations = pgTable("hub_registrations", {
   cancelledAt: timestamp("cancelled_at"),
   attendedAt: timestamp("attended_at"),
   lastAccessAt: timestamp("last_access_at"),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
 }, (table) => ({
   liveIdIdx: index("hub_registrations_live_id_idx").on(table.liveId),

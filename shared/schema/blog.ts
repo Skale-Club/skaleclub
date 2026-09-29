@@ -191,7 +191,7 @@ export const aiGenerationLogs = pgTable("ai_generation_logs", {
   status: text("status").notNull(),
   error: text("error"),
   durationMs: integer("duration_ms"),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   createdIdx: index("ai_generation_logs_created_idx").on(table.createdAt),
 }));

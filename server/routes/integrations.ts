@@ -27,6 +27,7 @@ import {
 } from "../integrations/xphere.js";
 import type { XphereSettings } from "#shared/schema.js";
 import { requireAdmin, sendError, isAuthorizedCronRequest } from "./_shared.js";
+import { recordJobHeartbeat } from "../lib/jobHeartbeat.js";
 import {
   getFormTranscriptionSettings,
   serializeTranscriptionModel,
@@ -1125,7 +1126,7 @@ export function registerIntegrationRoutes(app: Express) {
   });
 
   // Cron-guarded (Bearer CRON_SECRET), not admin: reconciles missed completed
-  // leads and drains due deliveries. Used when DISABLE_INPROCESS_CRON=true.
+  // leads and drains due deliveries. Used when the in-process cron is off.
   app.post('/api/integrations/xphere/sweep', async (req, res) => {
     if (!isAuthorizedCronRequest(req)) {
       return res.status(401).json({ message: 'Unauthorized' });
@@ -1133,8 +1134,10 @@ export function registerIntegrationRoutes(app: Express) {
     try {
       await reconcileMissingXphereDeliveries();
       queueXphereDeliverySweep();
+      await recordJobHeartbeat('xphere-sweep', 'ok:external');
       res.json({ ok: true });
     } catch (err) {
+      await recordJobHeartbeat('xphere-sweep', `error:${(err as Error).message}`);
       console.error('[integrations] POST /api/integrations/xphere/sweep failed', err);
       res.status(500).json({ message: 'Failed to run Xphere sweep' });
     }

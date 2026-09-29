@@ -1,34 +1,27 @@
 name: Deploy to Coolify
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CANONICAL AUTO-DEPLOY WORKFLOW — copy this into every app repo as
-# `.github/workflows/deploy.yml`. One line to change per app: APP_UUID.
+# Deploys only after the CI workflow succeeded on main (type check, tests,
+# build). Coolify still does the actual Docker build + run; this workflow
+# triggers it, waits for the deployment to finish and then probes the public
+# health endpoint, so a failed rollout turns the job red.
 #
-# What it does: on every push to `main`, ping the Coolify deploy API. Coolify
-# then pulls the new commit and rebuilds/runs the app — Coolify still does the
-# actual Docker build + run; this workflow is ONLY the push→deploy trigger.
-#
-# Why a CI trigger instead of Coolify's native "Automatic Deployment":
-#   Coolify v4.1.1 does NOT expose the auto-deploy toggle in its public API, so
-#   we can't enable it from code/scripts. A tiny GitHub Actions trigger is the
-#   portable, version-controlled, observable (Actions tab) standard across apps.
-#
-# Prerequisites (per repo — see ../RUNBOOK.md → "Auto-deploy on push"):
-#   1. Repo secret  COOLIFY_TOKEN  = the Coolify API token.
-#      (set once:  gh secret set COOLIFY_TOKEN -R Skale-Club/<repo>  < token)
-#   2. APP_UUID below = the app's Coolify resource uuid (see the registry in
-#      ../RUNBOOK.md or `python scripts/coolify_api.py GET /applications`).
+# Prerequisites:
+#   1. Repo secret COOLIFY_TOKEN = the Coolify API token.
+#   2. APP_UUID below = the app's Coolify resource uuid.
 #
 # GOTCHAS:
-#   • COOLIFY_BASE MUST be the HTTPS domain, NOT http://<ip>:8000. The Hetzner
-#     firewall closes 8000 to the public; GitHub runners only reach 443.
-#   • If COOLIFY_TOKEN is rotated, update the secret in EVERY repo using it.
-#   • Do NOT also turn on Coolify's UI "Automatic Deployment" for the app, or
-#     each push deploys twice.
+#   - COOLIFY_BASE MUST be the HTTPS domain, NOT http://<ip>:8000 (the Hetzner
+#     firewall closes 8000 to the public; GitHub runners only reach 443).
+#   - Do NOT also turn on Coolify's UI "Automatic Deployment", or each push
+#     deploys twice.
+#   - workflow_dispatch deploys without waiting for CI: use it for emergencies.
 # ─────────────────────────────────────────────────────────────────────────────
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches: [main]
   workflow_dispatch: {}
 
@@ -42,27 +35,63 @@ permissions:
 
 jobs:
   deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       COOLIFY_BASE: https://coolify.skale.club
       APP_UUID: ybjopew5r0gziq1i9y39tr93
+      HEALTH_URL: https://skale.club/api/health
     steps:
       - name: Trigger Coolify deployment
+        id: trigger
         env:
           COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
         run: |
           if [ -z "${COOLIFY_TOKEN}" ]; then
             echo "::error::COOLIFY_TOKEN secret is not set"; exit 1
           fi
-          echo "Triggering deploy for app ${APP_UUID}…"
-          # -X POST is required: Coolify moved this endpoint off GET, and a GET
-          # now returns 405 {"message":"This endpoint has changed to a POST
-          # request."} - which the retry loop faithfully repeated four times
-          # before failing. This pipeline was broken from that server upgrade
-          # until the next push happened to surface it.
-          curl --fail-with-body -sS --retry 3 --retry-all-errors \
+          echo "Triggering deploy for app ${APP_UUID}"
+          # -X POST is required: Coolify moved this endpoint off GET.
+          response=$(curl --fail-with-body -sS --retry 3 --retry-all-errors \
             -X POST \
             "${COOLIFY_BASE}/api/v1/deploy?uuid=${APP_UUID}" \
-            -H "Authorization: Bearer ${COOLIFY_TOKEN}"
-          echo
-          echo "Deploy queued on Coolify. Track the build in the Coolify dashboard."
+            -H "Authorization: Bearer ${COOLIFY_TOKEN}")
+          echo "${response}"
+          deployment_uuid=$(echo "${response}" | jq -r '.deployments[0].deployment_uuid // empty')
+          if [ -z "${deployment_uuid}" ]; then
+            echo "::error::Coolify did not return a deployment_uuid"; exit 1
+          fi
+          echo "deployment_uuid=${deployment_uuid}" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for Coolify deployment to finish
+        env:
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          DEPLOYMENT_UUID: ${{ steps.trigger.outputs.deployment_uuid }}
+        run: |
+          # Poll every 10s, up to 10 minutes.
+          for i in $(seq 1 60); do
+            status=$(curl -sS --retry 3 --retry-all-errors \
+              "${COOLIFY_BASE}/api/v1/deployments/${DEPLOYMENT_UUID}" \
+              -H "Authorization: Bearer ${COOLIFY_TOKEN}" | jq -r '.status // "unknown"')
+            echo "[${i}/60] deployment ${DEPLOYMENT_UUID}: ${status}"
+            case "${status}" in
+              finished) exit 0 ;;
+              failed|cancelled*|error) echo "::error::Coolify deployment ended as '${status}'"; exit 1 ;;
+            esac
+            sleep 10
+          done
+          echo "::error::Coolify deployment did not finish within 10 minutes"
+          exit 1
+
+      - name: Verify production health
+        run: |
+          # Traefik can take a few seconds to switch over to the new container.
+          for i in $(seq 1 12); do
+            code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 10 "${HEALTH_URL}" || echo 000)
+            echo "[${i}/12] ${HEALTH_URL} -> ${code}"
+            if [ "${code}" = "200" ]; then exit 0; fi
+            sleep 10
+          done
+          echo "::error::${HEALTH_URL} did not return 200 after deploy"
+          exit 1

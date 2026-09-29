@@ -39,7 +39,7 @@ export const chatIntegrations = pgTable("chat_integrations", {
   // for the gemini provider today). Falls back to `model` when null.
   presentationModel: text("presentation_model"),
   apiKey: text("api_key"),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
@@ -47,7 +47,7 @@ export const chatIntegrations = pgTable("chat_integrations", {
 export const conversations = pgTable("conversations", {
   id: uuid("id").primaryKey(),
   status: text("status").notNull().default("open"),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow(),
   lastMessageAt: timestamp("last_message_at"),
   firstPageUrl: text("first_page_url"),
@@ -59,10 +59,10 @@ export const conversations = pgTable("conversations", {
 // Conversation Messages
 export const conversationMessages = pgTable("conversation_messages", {
   id: uuid("id").primaryKey(),
-  conversationId: uuid("conversation_id").references(() => conversations.id).notNull(),
+  conversationId: uuid("conversation_id").references(() => conversations.id, { onDelete: "cascade" }).notNull(),
   role: text("role").notNull(),
   content: text("content").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   metadata: jsonb("metadata"),
 }, (table) => ({
   conversationIdIdx: index("conversation_messages_conversation_idx").on(table.conversationId),

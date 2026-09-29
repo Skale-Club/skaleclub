@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, serial, integer, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, serial, integer, jsonb, timestamp, index } from "drizzle-orm/pg-core";
 // slug column changed from uuid → text so human-readable slugs (e.g. "acme-corp") can be stored
 import { z } from "zod";
 
@@ -62,7 +62,7 @@ export const presentations = pgTable("presentations", {
   thumbnailUrl:        text("thumbnail_url"),
   thumbnailSignature:  text("thumbnail_signature"),
   version:             integer("version").notNull().default(1),
-  createdAt:           timestamp("created_at").defaultNow(),
+  createdAt:           timestamp("created_at").defaultNow().notNull(),
   updatedAt:           timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
 });
 
@@ -75,7 +75,11 @@ export const presentationViews = pgTable("presentation_views", {
                      .notNull(),
   viewedAt:        timestamp("viewed_at").defaultNow().notNull(),
   ipHash:          text("ip_hash"),
-});
+}, (table) => ({
+  // Mirrors migration 0033.
+  presentationIdIdx: index("presentation_views_presentation_id_idx").on(table.presentationId),
+  viewedAtIdx:       index("presentation_views_viewed_at_idx").on(table.viewedAt.desc()),
+}));
 
 // brand_guidelines singleton table (PRES-03)
 // Serial PK — one row per tenant; upsert pattern used in Phase 17

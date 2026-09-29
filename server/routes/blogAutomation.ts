@@ -14,6 +14,7 @@ import { nextScheduledRun } from "#shared/blog-schedule.js";
 import { parseTelegramTarget } from "#shared/blog-contract.js";
 import { requireAdmin, isAuthorizedCronRequest } from "./_shared.js";
 import { rateLimitMiddleware } from "../lib/rateLimit.js";
+import { recordJobHeartbeat } from "../lib/jobHeartbeat.js";
 import { approveBlogPost, rejectBlogPost } from "../blog/approval.js";
 import {
   allowedCallbackChatIds,
@@ -48,6 +49,10 @@ const BLOG_SETTINGS_DEFAULTS = {
   lastRunAt: null,
   lockAcquiredAt: null,
 };
+
+// Skip reasons that mean "the run failed" rather than "nothing to do": the cron
+// endpoint answers 503 for these so the scheduler and alerting notice.
+const CRON_FAILURE_REASONS = new Set<string>(["ai_timeout", "ai_empty_response", "not_configured", "invalid_html"]);
 
 export function registerBlogAutomationRoutes(app: Express) {
   // BLOG-13: GET /api/blog/settings — safe defaults when no DB row.
@@ -117,11 +122,25 @@ export function registerBlogAutomationRoutes(app: Express) {
     if (!isAuthorizedCronRequest(req)) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const result = await BlogGenerator.generate({ manual: false });
-    if (result.skipped) {
-      return res.json({ skipped: result.skipped, reason: result.reason });
+    try {
+      const result = await BlogGenerator.generate({ manual: false });
+      if (result.skipped) {
+        // Real failures must be visible to the scheduler (and to alerting), so
+        // they are 503; deliberate no-ops (disabled, locked, ...) stay 200.
+        if (CRON_FAILURE_REASONS.has(result.reason)) {
+          await recordJobHeartbeat("blog-generate", `error:${result.reason}`);
+          return res.status(503).json({ skipped: result.skipped, reason: result.reason });
+        }
+        await recordJobHeartbeat("blog-generate", `skipped:${result.reason}`);
+        return res.json({ skipped: result.skipped, reason: result.reason });
+      }
+      await recordJobHeartbeat("blog-generate", `ok:post=${result.postId}`);
+      res.json({ jobId: result.jobId, postId: result.postId });
+    } catch (err) {
+      console.error("[blog-automation] cron generate failed:", err);
+      await recordJobHeartbeat("blog-generate", `error:${(err as Error).message}`);
+      res.status(500).json({ error: "Blog generation failed" });
     }
-    res.json({ jobId: result.jobId, postId: result.postId });
   };
   app.post("/api/blog/cron/generate", cronGenerateHandler);
   app.get("/api/blog/cron/generate", cronGenerateHandler);
@@ -134,9 +153,11 @@ export function registerBlogAutomationRoutes(app: Express) {
     }
     try {
       const summary = await fetchAllRssSources();
+      await recordJobHeartbeat("rss-sync", `ok:sources=${summary.sourcesProcessed} errors=${summary.errors.length}`);
       res.json(summary);
     } catch (err) {
       console.error("[blog-automation] cron fetch-rss failed:", err);
+      await recordJobHeartbeat("rss-sync", `error:${(err as Error).message}`);
       res.status(500).json({ error: "RSS fetch failed" });
     }
   };

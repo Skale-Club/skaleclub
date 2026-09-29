@@ -1,3 +1,4 @@
+import "dotenv/config";
 import * as Sentry from "@sentry/node";
 
 Sentry.init({
@@ -5,4 +6,6 @@ Sentry.init({
   environment: process.env.NODE_ENV ?? "development",
   enabled: !!process.env.SENTRY_DSN,
   tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
+  // Most handlers log with console.error and answer 500 without throwing.
+  integrations: [Sentry.captureConsoleIntegration({ levels: ["error"] })],
 });
