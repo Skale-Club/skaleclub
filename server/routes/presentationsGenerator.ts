@@ -22,7 +22,7 @@ async function buildUniquePresentationSlug(title: string): Promise<string> {
   const base = slugifyTitle(title);
   if (!await storage.getPresentationBySlug(base)) return base;
   for (let i = 0; i < 5; i++) {
-    const candidate = `${base}-${crypto.randomBytes(2).toString("hex")}`;
+    const candidate = `${base}-${BigInt("0x" + crypto.randomBytes(8).toString("hex")).toString(36)}`;
     if (!await storage.getPresentationBySlug(candidate)) return candidate;
   }
   return `${base}-${Date.now()}`;

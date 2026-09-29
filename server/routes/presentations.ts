@@ -27,7 +27,7 @@ async function buildUniquePresentationSlug(title: string): Promise<string> {
   // slugs aren't trivially guessable from the title alone (same rule as
   // estimates). Existing stored slugs are unaffected.
   for (let i = 0; i < 5; i++) {
-    const candidate = `${base}-${crypto.randomBytes(2).toString("hex")}`;
+    const candidate = `${base}-${BigInt("0x" + crypto.randomBytes(8).toString("hex")).toString(36)}`;
     if (!await storage.getPresentationBySlug(candidate)) return candidate;
   }
   return `${base}-${Date.now()}`;

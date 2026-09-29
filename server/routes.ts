@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import { rateLimit, normalizeIpKey } from "./lib/rateLimit.js";
 import type { Server } from "http";
 import { storage } from "./storage.js";
 import { z } from "zod";
@@ -64,18 +65,10 @@ const chatMessageSchema = z.object({
 
 type UrlRule = z.infer<typeof urlRuleSchema>;
 
-const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
 let lastLowPerformanceAlertAt: number | null = null;
 
 function isRateLimited(key: string, limit = 8, windowMs = 60_000): boolean {
-  const now = Date.now();
-  const entry = rateLimitStore.get(key);
-  if (!entry || now > entry.resetAt) {
-    rateLimitStore.set(key, { count: 1, resetAt: now + windowMs });
-    return false;
-  }
-  entry.count += 1;
-  return entry.count > limit;
+  return rateLimit(`chat:${normalizeIpKey(key)}`, { limit, windowMs });
 }
 
 function isUrlExcluded(url: string, rules: UrlRule[] = []): boolean {

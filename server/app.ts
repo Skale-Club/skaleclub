@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 import express, { type Request, Response, NextFunction } from "express";
 import helmet from "helmet";
 import { registerRoutes } from "./routes.js";
+import { originCheck } from "./lib/originCheck.js";
 import { registerHealthRoutes } from "./routes/health.js";
 import { registerCanonicalHostRedirects } from "./canonicalHost.js";
 import path from "path";
@@ -81,7 +82,11 @@ export async function createApp(): Promise<{ app: express.Express; httpServer: S
     return jsonDefault(req, res, next);
   });
 
+  // Kept: /api/oauth/token receives application/x-www-form-urlencoded from MCP/OAuth clients.
   app.use(express.urlencoded({ extended: false, limit: '1mb' }));
+
+  // Reject cross-site state-changing API calls before any session/auth work.
+  app.use(originCheck);
 
   // Logging middleware
   app.use((req, res, next) => {

@@ -559,6 +559,7 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
   const [lastAnsweredStep, setLastAnsweredStep] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [startedAt, setStartedAt] = useState<Date | null>(null);
+  const honeypotRef = useRef<HTMLInputElement>(null);
   const [view, setView] = useState<FormView>("form");
   const [pendingSync, setPendingSync] = useState(false);
   const [storageAvailable, setStorageAvailable] = useState(true);
@@ -822,6 +823,7 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
           .map(([key, value]) => [key, (value as string).trim()])
       );
       const payload: any = {
+        website: honeypotRef.current?.value || "",
         sessionId: session,
         questionNumber,
         startedAt: (startedAt || new Date()).toISOString(),
@@ -1213,6 +1215,16 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
 
                 {view === "form" && currentQuestion && (
                   <form onSubmit={handleSubmit}>
+                    <input
+                      ref={honeypotRef}
+                      type="text"
+                      name="website"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      aria-hidden="true"
+                      defaultValue=""
+                      style={{ position: "absolute", left: "-10000px", width: 1, height: 1, opacity: 0 }}
+                    />
                     <div className="flex items-start justify-between">
                       <div>
                         <p className="text-sm font-semibold text-cta uppercase tracking-wide">{`${t("Step")} ${currentStep}/${totalQuestions}`}</p>

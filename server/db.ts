@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import fs from "node:fs";
+import * as Sentry from "@sentry/node";
 import * as schema from "#shared/schema.js";
 
 const { Pool } = pg;
@@ -50,7 +51,12 @@ export const pool = new Pool({
       : { rejectUnauthorized: false }
     : false,
   max: isServerless ? 5 : 20,
-  idleTimeoutMillis: isServerless ? 30000 : undefined,
-  connectionTimeoutMillis: isServerless ? 10000 : undefined,
+  idleTimeoutMillis: 30_000,
+  connectionTimeoutMillis: 10_000,
+  ...(isServerless ? {} : { options: "-c statement_timeout=15000" }),
+});
+pool.on("error", (err) => {
+  console.error("[pg] idle client error", err);
+  Sentry.captureException(err);
 });
 export const db = drizzle(pool, { schema });

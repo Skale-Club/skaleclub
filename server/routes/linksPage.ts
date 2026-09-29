@@ -9,6 +9,7 @@
 //   3. Rate-limited requests return 204 (not 429) so navigator.sendBeacon does not
 //      surface a console error on the client. Server-side log captures the skip if needed.
 import type { Express, Request } from "express";
+import { rateLimitMiddleware } from "../lib/rateLimit.js";
 import { sql } from "drizzle-orm";
 import { db } from "../db.js";
 
@@ -32,7 +33,7 @@ function getClientIp(req: Request): string {
 }
 
 export function registerLinksPageRoutes(app: Express) {
-  app.post("/api/links-page/click/:linkId", async (req, res) => {
+  app.post("/api/links-page/click/:linkId", rateLimitMiddleware({ limit: 60, windowMs: 10 * 60_000 }), async (req, res) => {
     try {
       const linkId = String(req.params.linkId ?? "");
       if (!linkId) return res.status(404).json({ message: "Link not found" });

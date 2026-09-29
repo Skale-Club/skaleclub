@@ -21,6 +21,10 @@ function slugifyName(name: string): string {
     .replace(/^-+|-+$/g, "") || "estimate";
 }
 
+function randomSlugSuffix(): string {
+  return BigInt("0x" + crypto.randomBytes(8).toString("hex")).toString(36);
+}
+
 async function buildUniqueEstimateSlug(data: {
   companyName?: string | null;
   contactName?: string | null;
@@ -34,7 +38,7 @@ async function buildUniqueEstimateSlug(data: {
   // defense-in-depth). Existing stored slugs are unaffected — this only
   // changes what's generated going forward.
   for (let i = 0; i < 5; i++) {
-    const candidate = `${base}-${crypto.randomBytes(2).toString("hex")}`;
+    const candidate = `${base}-${randomSlugSuffix()}`;
     if (!await storage.getEstimateBySlug(candidate)) return candidate;
   }
 
@@ -43,11 +47,6 @@ async function buildUniqueEstimateSlug(data: {
 
 // Estimate ids are `serial` — reject anything that isn't a positive integer
 // before it reaches the query layer as NaN.
-function parseEstimateId(raw: string): number | null {
-  const id = Number(raw);
-  return Number.isInteger(id) && id > 0 ? id : null;
-}
-
 // Admin list pagination: a missing or non-numeric value falls back to the
 // default rather than reaching SQL as NaN; the cap bounds a single page.
 function parseListParam(raw: unknown, fallback: number, min: number, max: number): number {
@@ -146,44 +145,39 @@ export function registerEstimatesRoutes(app: Express) {
     }
   });
 
-  app.post("/api/estimates/:id/view", rateLimitMiddleware({ limit: 10, windowMs: 60_000 }), async (req, res) => {
-    const id = parseEstimateId(req.params.id);
-    if (id === null) return res.status(400).json({ message: "Invalid estimate id" });
+  app.post("/api/estimates/slug/:slug/view", rateLimitMiddleware({ limit: 10, windowMs: 60_000 }), async (req, res) => {
     try {
-      const ipAddress = (
-        req.ip || ''
-      ).toString() || undefined;
-      await storage.recordEstimateView(id, ipAddress);
+      const estimate = await storage.getEstimateBySlug(req.params.slug);
+      if (!estimate) return res.status(404).json({ message: "Estimate not found" });
+      const ipAddress = (req.ip || '').toString() || undefined;
+      await storage.recordEstimateView(estimate.id, ipAddress);
       res.json({ success: true });
     } catch (err) {
-      console.error("[estimates] POST /api/estimates/:id/view failed:", err);
+      console.error("[estimates] POST /api/estimates/slug/:slug/view failed:", err);
       res.status(500).json({ message: "Failed to record view" });
     }
   });
 
-  app.post("/api/estimates/:id/verify-code", async (req, res) => {
-    const id = parseEstimateId(req.params.id);
-    if (id === null) return res.status(400).json({ message: "Invalid estimate id" });
+  app.post("/api/estimates/slug/:slug/verify-code", async (req, res) => {
     try {
       const ip = getRequestIp(req);
       if (isVerifyCodeRateLimited(ip)) {
         return res.status(429).json({ message: "Too many attempts. Please try again later." });
       }
       const { code } = req.body as { code?: unknown };
-      const estimate = await storage.getEstimate(id);
+      const estimate = await storage.getEstimateBySlug(req.params.slug);
       if (!estimate) return res.status(404).json({ message: "Estimate not found" });
-      // No gate set — treat as unlocked, return the full estimate so the client
-      // can render it (same shape as the public slug endpoint).
+      // No gate set: the slug route is the only way in, same shape as the
+      // public slug endpoint.
       if (!estimate.accessCode) return res.json({ success: true, ...toPublicEstimate(estimate) });
-      // Constant-time comparison — D-07 (NOT bcrypt — codes must be readable for GHL automation)
+      // Constant-time comparison (NOT bcrypt: codes must be readable for GHL automation)
       const provided = typeof code === "string" ? code : "";
       if (!isValidAccessCode(estimate.accessCode, provided)) {
         return res.status(401).json({ message: "Incorrect code" });
       }
-      // Correct code — unlock and return the full estimate for rendering.
       res.json({ success: true, ...toPublicEstimate(estimate) });
     } catch (err) {
-      console.error("[estimates] POST /api/estimates/:id/verify-code failed:", err);
+      console.error("[estimates] POST /api/estimates/slug/:slug/verify-code failed:", err);
       res.status(500).json({ message: "Failed to verify access code" });
     }
   });

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Send } from "lucide-react";
 import { Link } from "wouter";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,8 @@ export function ContactForm({ companyName }: { companyName: string }) {
   const [smsConsent, setSmsConsent] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const startedAtRef = useRef(Date.now());
+  const honeypotRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +43,8 @@ export function ContactForm({ companyName }: { companyName: string }) {
           message,
           smsConsent,
           marketingConsent,
+          website: honeypotRef.current?.value || "",
+          startedAt: startedAtRef.current,
         }),
       });
       if (!res.ok) throw new Error("Request failed");
@@ -71,6 +75,16 @@ export function ContactForm({ companyName }: { companyName: string }) {
   return (
     <EditorialCard tone="light">
       <form onSubmit={handleSubmit} className="space-y-6">
+        <input
+          ref={honeypotRef}
+          type="text"
+          name="website"
+          tabIndex={-1}
+          autoComplete="off"
+          aria-hidden="true"
+          defaultValue=""
+          style={{ position: "absolute", left: "-10000px", width: 1, height: 1, opacity: 0 }}
+        />
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div className="space-y-2">
             <label htmlFor="contact-name" className={labelClass}>{t("Full Name")}</label>

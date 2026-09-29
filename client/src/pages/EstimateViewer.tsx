@@ -87,7 +87,7 @@ const accessGateCopy = {
 };
 
 function AccessCodeGate({
-  estimateId,
+  slug,
   lang,
   onLanguageChange,
   onUnlock,
@@ -95,7 +95,7 @@ function AccessCodeGate({
   clientName,
   siteSettings,
 }: {
-  estimateId: number;
+  slug: string;
   lang: 'en' | 'pt-BR';
   onLanguageChange: (value: LanguageSwitchValue) => void;
   onUnlock: (estimate: PublicEstimate) => void;
@@ -109,7 +109,7 @@ function AccessCodeGate({
 
   const { mutate: verify, isPending } = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`/api/estimates/${estimateId}/verify-code`, {
+      const res = await fetch(`/api/estimates/slug/${encodeURIComponent(slug)}/verify-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code }),
@@ -408,7 +408,7 @@ export default function EstimateViewer() {
 
   const { mutate: trackView } = useMutation({
     mutationFn: async () => {
-      await fetch(`/api/estimates/${data!.id}/view`, { method: 'POST' });
+      await fetch(`/api/estimates/slug/${encodeURIComponent(data!.slug)}/view`, { method: 'POST' });
     },
   });
 
@@ -559,7 +559,7 @@ export default function EstimateViewer() {
   if (data.hasAccessCode && !isUnlocked) {
     return (
       <AccessCodeGate
-        estimateId={data.id}
+        slug={data.slug}
         lang={lang}
         onLanguageChange={switchViewerLang}
         onUnlock={(estimate) => {

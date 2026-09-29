@@ -425,6 +425,17 @@ export function registerFormRoutes(app: Express) {
         return res.status(404).json({ message: "Form not found" });
       }
 
+      // Bot traps (silent success, nothing revealed): a filled honeypot, or a
+      // completed submit less than 3s after the session started.
+      const honeypot = req.body?.website;
+      const startedMs = typeof req.body?.startedAt === "string" ? Date.parse(req.body.startedAt) : NaN;
+      if (
+        (typeof honeypot === "string" && honeypot.trim()) ||
+        (req.body?.formCompleto === true && Number.isFinite(startedMs) && Date.now() - startedMs < 3000)
+      ) {
+        return res.json({ ok: true });
+      }
+
       const parsed = formLeadProgressSchema.parse(req.body);
       const formConfig = (form.config as FormConfig | null) ?? DEFAULT_FORM_CONFIG;
       const settings = await storage.getCompanySettings();

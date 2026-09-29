@@ -201,16 +201,16 @@ export function useTranslation() {
 
     // When Portuguese is the UI language (existing logic)
 
-    // 1. Return from runtime cache if available
-    if (translationCache.has(cacheKey)) {
-      return translationCache.get(cacheKey)!;
-    }
-
-    // 2. Check static dictionary (instant, no API call)
+    // 1. Check static dictionary first (instant, no API call, wins over any stale runtime cache)
     const staticValue = staticTranslations.pt[text as TranslationKey];
     if (staticValue) {
       translationCache.set(cacheKey, staticValue);
       return staticValue;
+    }
+
+    // 2. Return from runtime cache if available
+    if (translationCache.has(cacheKey)) {
+      return translationCache.get(cacheKey)!;
     }
 
     // 3. Schedule batch translation via API

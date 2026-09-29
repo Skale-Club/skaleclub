@@ -417,6 +417,17 @@ export interface IStorage {
   getVisitorJourney(visitorId: string): Promise<VisitorJourney | undefined>;
 }
 
+// Secrets at rest (audit A1): same lazy-backfill pattern as chat_integrations.
+// Reads decrypt (legacy plaintext passes through unchanged), writes encrypt.
+function encSecret<T extends string | null | undefined>(value: T): T {
+  return (typeof value === "string" && value
+    ? (isEncryptedToken(value) ? value : encryptToken(value))
+    : value) as T;
+}
+function decSecret<T extends string | null | undefined>(value: T): T {
+  return (typeof value === "string" && value ? decryptToken(value) : value) as T;
+}
+
 export class DatabaseStorage implements IStorage {
   async getCompanySettings(): Promise<CompanySettings> {
     await ensureCompanySettingsSchema();
@@ -486,7 +497,7 @@ export class DatabaseStorage implements IStorage {
 
   async getIntegrationSettings(provider: string): Promise<IntegrationSettings | undefined> {
     const [settings] = await db.select().from(integrationSettings).where(eq(integrationSettings.provider, provider));
-    return settings;
+    return settings ? { ...settings, apiKey: decSecret(settings.apiKey) } : settings;
   }
 
   async upsertIntegrationSettings(settings: InsertIntegrationSettings): Promise<IntegrationSettings> {
@@ -495,13 +506,13 @@ export class DatabaseStorage implements IStorage {
     if (existing) {
       const [updated] = await db
         .update(integrationSettings)
-        .set({ ...settings, updatedAt: new Date() })
+        .set({ ...settings, apiKey: encSecret(settings.apiKey ?? existing.apiKey), updatedAt: new Date() })
         .where(eq(integrationSettings.id, existing.id))
         .returning();
-      return updated;
+      return { ...updated, apiKey: decSecret(updated.apiKey) };
     } else {
-      const [created] = await db.insert(integrationSettings).values(settings).returning();
-      return created;
+      const [created] = await db.insert(integrationSettings).values({ ...settings, apiKey: encSecret(settings.apiKey) }).returning();
+      return { ...created, apiKey: decSecret(created.apiKey) };
     }
   }
 
@@ -579,7 +590,7 @@ export class DatabaseStorage implements IStorage {
 
   async getTwilioSettings(): Promise<TwilioSettings | undefined> {
     const [settings] = await db.select().from(twilioSettings).orderBy(asc(twilioSettings.id)).limit(1);
-    if (settings) return settings;
+    if (settings) return { ...settings, authToken: decSecret(settings.authToken) };
 
     // Keep Twilio settings as a singleton row to simplify reads/updates.
     const [created] = await db.insert(twilioSettings).values({}).returning();
@@ -598,7 +609,7 @@ export class DatabaseStorage implements IStorage {
       const payload = {
         ...settings,
         toPhoneNumbers,
-        authToken: settings.authToken ?? existing.authToken,
+        authToken: encSecret(settings.authToken ?? existing.authToken),
         updatedAt: new Date(),
       };
       const [updated] = await db
@@ -606,19 +617,20 @@ export class DatabaseStorage implements IStorage {
         .set(payload)
         .where(eq(twilioSettings.id, existing.id))
         .returning();
-      return updated;
+      return { ...updated, authToken: decSecret(updated.authToken) };
     }
 
     const [created] = await db.insert(twilioSettings).values({
       ...settings,
+      authToken: encSecret(settings.authToken),
       toPhoneNumbers,
     }).returning();
-    return created;
+    return { ...created, authToken: decSecret(created.authToken) };
   }
 
   async getTelegramSettings(): Promise<TelegramSettings | undefined> {
     const [settings] = await db.select().from(telegramSettings).orderBy(asc(telegramSettings.id)).limit(1);
-    if (settings) return settings;
+    if (settings) return { ...settings, botToken: decSecret(settings.botToken), webhookSecret: decSecret(settings.webhookSecret) };
 
     // Singleton auto-create — same pattern as getTwilioSettings
     const [created] = await db.insert(telegramSettings).values({}).returning();
@@ -631,19 +643,28 @@ export class DatabaseStorage implements IStorage {
     if (existing) {
       const [updated] = await db
         .update(telegramSettings)
-        .set({ ...settings, updatedAt: new Date() })
+        .set({
+          ...settings,
+          ...(settings.botToken !== undefined ? { botToken: encSecret(settings.botToken) } : {}),
+          ...(settings.webhookSecret !== undefined ? { webhookSecret: encSecret(settings.webhookSecret) } : {}),
+          updatedAt: new Date(),
+        })
         .where(eq(telegramSettings.id, existing.id))
         .returning();
-      return updated;
+      return { ...updated, botToken: decSecret(updated.botToken), webhookSecret: decSecret(updated.webhookSecret) };
     }
 
-    const [created] = await db.insert(telegramSettings).values(settings).returning();
-    return created;
+    const [created] = await db.insert(telegramSettings).values({
+      ...settings,
+      botToken: encSecret(settings.botToken),
+      webhookSecret: encSecret(settings.webhookSecret),
+    }).returning();
+    return { ...created, botToken: decSecret(created.botToken), webhookSecret: decSecret(created.webhookSecret) };
   }
 
   async getResendSettings(): Promise<ResendSettings | undefined> {
     const [settings] = await db.select().from(resendSettings).orderBy(asc(resendSettings.id)).limit(1);
-    if (settings) return settings;
+    if (settings) return { ...settings, apiKey: decSecret(settings.apiKey) };
 
     // Singleton auto-create — same pattern as getTwilioSettings/getTelegramSettings
     const [created] = await db.insert(resendSettings).values({}).returning();
@@ -656,19 +677,23 @@ export class DatabaseStorage implements IStorage {
     if (existing) {
       const [updated] = await db
         .update(resendSettings)
-        .set({ ...settings, updatedAt: new Date() })
+        .set({
+          ...settings,
+          ...(settings.apiKey !== undefined ? { apiKey: encSecret(settings.apiKey) } : {}),
+          updatedAt: new Date(),
+        })
         .where(eq(resendSettings.id, existing.id))
         .returning();
-      return updated;
+      return { ...updated, apiKey: decSecret(updated.apiKey) };
     }
 
-    const [created] = await db.insert(resendSettings).values(settings).returning();
-    return created;
+    const [created] = await db.insert(resendSettings).values({ ...settings, apiKey: encSecret(settings.apiKey) }).returning();
+    return { ...created, apiKey: decSecret(created.apiKey) };
   }
 
   async getXphereSettings(): Promise<XphereSettings | undefined> {
     const [settings] = await db.select().from(xphereSettings).orderBy(asc(xphereSettings.id)).limit(1);
-    if (settings) return settings;
+    if (settings) return { ...settings, apiKey: decSecret(settings.apiKey) };
 
     // Singleton auto-create — same pattern as getTelegramSettings
     const [created] = await db.insert(xphereSettings).values({}).returning();
@@ -681,14 +706,18 @@ export class DatabaseStorage implements IStorage {
     if (existing) {
       const [updated] = await db
         .update(xphereSettings)
-        .set({ ...settings, updatedAt: new Date() })
+        .set({
+          ...settings,
+          ...(settings.apiKey !== undefined ? { apiKey: encSecret(settings.apiKey) } : {}),
+          updatedAt: new Date(),
+        })
         .where(eq(xphereSettings.id, existing.id))
         .returning();
-      return updated;
+      return { ...updated, apiKey: decSecret(updated.apiKey) };
     }
 
-    const [created] = await db.insert(xphereSettings).values(settings).returning();
-    return created;
+    const [created] = await db.insert(xphereSettings).values({ ...settings, apiKey: encSecret(settings.apiKey) }).returning();
+    return { ...created, apiKey: decSecret(created.apiKey) };
   }
 
   async listConversations(): Promise<Conversation[]> {

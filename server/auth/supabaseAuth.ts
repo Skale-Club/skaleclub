@@ -5,18 +5,12 @@ import { getSupabaseAdmin } from "../lib/supabase.js";
 import { db, pool } from "../db.js";
 import { users } from "#shared/schema.js";
 import { eq } from "drizzle-orm";
+import { rateLimit, normalizeIpKey } from "../lib/rateLimit.js";
 import { verifyTurnstileToken, getClientIp } from "../lib/turnstile.js";
 
-const loginAttempts = new Map<string, { count: number; resetAt: number }>();
 function isLoginRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const entry = loginAttempts.get(ip);
-  if (!entry || now > entry.resetAt) {
-    loginAttempts.set(ip, { count: 1, resetAt: now + 15 * 60_000 });
-    return false;
-  }
-  entry.count += 1;
-  return entry.count > 10; // 10 attempts per 15 minutes
+  // 10 attempts per 15 minutes
+  return rateLimit(`login:${normalizeIpKey(ip)}`, { limit: 10, windowMs: 15 * 60_000 });
 }
 
 export async function setupSupabaseAuth(app: Express) {
