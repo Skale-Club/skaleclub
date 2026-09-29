@@ -53,9 +53,9 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
             about either element's size changes across this range — only
             whether they happen to overlap. */}
         <div className="grid grid-cols-1 sm:flex sm:items-center sm:flex-1 relative gap-1 sm:gap-[1.275rem] lg:gap-[1.7rem] items-end">
-          {/* container-custom has no lateral padding below 770px (carousels go
-              full-bleed there), so the text column carries its own. */}
-          <div className="order-1 lg:order-1 text-white pt-[1.275rem] sm:pt-0 pb-[1.7rem] sm:pb-0 tablet:translate-y-0 sm:self-center sm:max-w-[420px] min-[963px]:max-w-[640px] relative z-20">
+          {/* container-editorial pads 20px on phones, so the photo column below
+              pulls out with -mx-5 to stay full-bleed there. */}
+          <div className="order-1 lg:order-1 text-white pt-[1.275rem] sm:pt-0 pb-[1.7rem] sm:pb-0 tablet:translate-y-0 sm:self-center sm:max-w-[420px] min-[963px]:max-w-[540px] xl:max-w-[600px] relative z-20">
             {homepageContent.heroBadgeImageUrl ? (
               <div className="mt-[0.85rem] sm:mt-0 mb-3 tablet:mb-[1.275rem]">
                 <img
@@ -96,7 +96,7 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
               ) : null}
             </div>
           </div>
-          <div className="order-2 lg:order-2 relative flex h-full items-end justify-center self-end w-full z-10 sm:absolute sm:inset-y-0 sm:right-[-2.5rem] tablet:right-[max(0px,calc((100%-900px)/2))] min-[963px]:right-[max(2.5rem,calc((100%-1200px)/2))] sm:w-[460px] tablet:w-[480px] min-[963px]:w-[560px]">
+          <div className="order-2 lg:order-2 -mx-5 sm:mx-0 relative flex h-full items-end justify-center self-end w-full z-10 sm:absolute sm:inset-y-0 sm:right-[-2.5rem] tablet:right-[max(0px,calc((100%-900px)/2))] min-[963px]:right-0 sm:w-[460px] tablet:w-[480px] min-[963px]:w-[560px]">
             {heroImageUrl ? (
               <img
                 src={heroImageUrl}

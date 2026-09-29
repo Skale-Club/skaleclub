@@ -35,7 +35,7 @@ export function OurServicesSection({ section, onCtaClick }: {
   // re-renders of this section (e.g. the paused prop flipping on popup open).
   const renderCardItem = useCallback((item: CatalogItem, idx: number) => (
     <div key={`${item.key}-${idx}`} className="flex-shrink-0 w-[85%] sm:w-[280px] md:w-[260px] tablet:w-[245px]">
-      <CatalogCard item={item} variant="compact" onOpen={openCard} className="!rounded-none" />
+      <CatalogCard item={item} variant="compact" onOpen={openCard} />
     </div>
   ), [openCard]);
 

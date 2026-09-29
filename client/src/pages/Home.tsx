@@ -88,7 +88,7 @@ export default function Home() {
           // that var, and so does HeroSection's `bottomPadding`
           // (showTrustBadges=false branch) — keeping the hero photo glued to
           // the card's top edge and the dark fill starting exactly at the
-          // hero's true bottom edge, so only the rounded card (not a
+          // hero's true bottom edge, so only the card (not a
           // full-width bar) shows over the hero. Change the var once in
           // index.css to change all three.
           <section className="relative z-20 mt-[calc(var(--trust-bleed)*-1)]">
@@ -98,7 +98,7 @@ export default function Home() {
               changes at md/lg) so the split reads ~50/50 across the hero/services
               boundary. Real flow (not absolute/zero-height): the card's bottom
               half pushes the What We Do section down naturally. No extra trailing
-              padding here — that section's own pt-[4.25rem] (the standard
+              padding here — that section's own py-20 sm:py-28 (the standard
               section-to-section rhythm used across this page) is what creates
               the gap before its heading, so it matches every other transition.
 
@@ -107,7 +107,7 @@ export default function Home() {
               card (not a full-width bar) shows above that line, over the
               hero's own background/photo.
             */}
-            <div className="absolute inset-x-0 bottom-0 top-[var(--trust-bleed)] bg-navy-900" aria-hidden />
+            <div className="absolute inset-x-0 bottom-0 top-[var(--trust-bleed)] bg-navy-900 pattern-grid-dark" aria-hidden />
             <div className="container-editorial relative">
               <TrustBadges badges={trustBadges} />
             </div>

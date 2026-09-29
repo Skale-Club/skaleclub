@@ -88,7 +88,7 @@ export function ReviewsSection({ embedUrl, title, subtitle }: ReviewsSectionProp
   }
 
   return (
-    <Band tone="dark" className="overflow-hidden mb-0" containerClassName="space-y-[2.125rem]">
+    <Band tone="dark" className="overflow-hidden mb-0 border-t border-white/10" containerClassName="space-y-[2.125rem]">
       <SectionHeading variant="editorial" eyebrow="Reviews" icon={Star} title={title || ''} subtitle={subtitle || ''} />
       {embedUrl ? (
         // Full-bleed like the services carousels: span the viewport edge to

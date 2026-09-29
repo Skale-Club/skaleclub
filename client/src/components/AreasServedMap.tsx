@@ -36,7 +36,7 @@ export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
   const embedUrl = normalizeEmbedUrl(mapEmbedUrl || "");
 
   return (
-    <Band tone="dark" id="areas-served">
+    <Band tone="dark" id="areas-served" className="border-t border-white/10">
       <div className={`grid grid-cols-1 gap-[2.55rem] items-center ${embedUrl ? "tablet:grid-cols-2" : ""}`}>
         <div>
           <SectionHeading
@@ -50,7 +50,7 @@ export function AreasServedMap({ mapEmbedUrl, content }: AreasServedMapProps) {
 
           {sectionContent?.ctaText ? (
             <div className="mb-[0.85rem]">
-              <PillLink href={pagePaths.contact} className="text-sm">
+              <PillLink href={pagePaths.contact} size="sm">
                 {t(sectionContent.ctaText)}
                 <ArrowRight className="w-4 h-4" />
               </PillLink>
