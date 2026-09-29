@@ -134,6 +134,7 @@ export default function Home() {
       />
       <BlogSection content={homepageContent.blogSection} />
       <AboutSection
+        tone="light"
         aboutImageUrl={companySettings?.aboutImageUrl}
         content={homepageContent.aboutSection}
       />

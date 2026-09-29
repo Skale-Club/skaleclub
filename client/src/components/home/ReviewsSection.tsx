@@ -49,7 +49,7 @@ function EmbedRenderer({ code }: { code: string }) {
         src={code}
         frameBorder="0"
         scrolling="no"
-        style={{ minWidth: '100%', width: '100%', height: '488px', border: 'none', display: 'block', borderRadius: '0', background: '#0d121a' }}
+        style={{ minWidth: '100%', width: '100%', height: '488px', border: 'none', display: 'block', borderRadius: '0', background: '#10151e' }}
         onLoad={() => {
           const script = document.createElement('script');
           script.type = 'text/javascript';
@@ -88,7 +88,7 @@ export function ReviewsSection({ embedUrl, title, subtitle }: ReviewsSectionProp
   }
 
   return (
-    <Band tone="dark" className="overflow-hidden mb-0 border-t border-white/10" containerClassName="space-y-[2.125rem]">
+    <Band tone="dark" className="overflow-hidden mb-0 border-t border-white/10 bg-navy-900" containerClassName="space-y-[2.125rem]">
       <SectionHeading variant="editorial" eyebrow="Reviews" icon={Star} title={title || ''} subtitle={subtitle || ''} />
       {embedUrl ? (
         // Full-bleed like the services carousels: span the viewport edge to

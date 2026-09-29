@@ -632,7 +632,7 @@ html.admin-theme.dark {
 /* Reviews widget should keep square edges */
 .lc_reviews_widget {
   border-radius: 0 !important;
-  background: #0d121a !important;
+  background: #10151e !important;
 }
 
 /* If the widget injects its own markup, keep all corners square */
