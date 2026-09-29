@@ -604,6 +604,6 @@ const runDirectly = process.argv[1] ? import.meta.url === pathToFileURL(process.
 
 if (runDirectly) {
   void withSeedGuard(main);
- else {
+} else {
   console.log("[seed-nfc-keychains-landing] imported, not run directly: nothing executed");
 }
