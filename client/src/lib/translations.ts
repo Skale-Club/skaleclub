@@ -705,6 +705,10 @@ export const translations = {
     // Audit D
     'Start': 'Começar', 'Draft': 'Rascunho', 'Call': 'Ligar', 'Quote': 'Orçamento',
     'We reply within one business day': 'Respondemos em até um dia útil',
+    'Hi! I found you on the Skale Club website and would like to talk about my project.': 'Olá! Vim pelo site da Skale Club e gostaria de conversar sobre meu projeto.',
+    'By submitting, you agree to be contacted by WhatsApp, email or phone about your request. See our': 'Ao enviar, você concorda em receber contato por WhatsApp, e-mail ou telefone sobre sua solicitação. Veja nossa',
+    'I agree to receive messages about my request, such as order and service confirmations and updates, by WhatsApp, email or phone.': 'Concordo em receber mensagens sobre minha solicitação, como confirmações e atualizações de pedidos ou serviços, por WhatsApp, e-mail ou telefone.',
+    'I agree to receive offers, news and promotional content by WhatsApp or email. I can opt out any time.': 'Concordo em receber ofertas, novidades e conteúdos promocionais por WhatsApp ou e-mail. Posso cancelar quando quiser.',
   }
 } as const;
 export type TranslationKey = keyof typeof translations.pt;

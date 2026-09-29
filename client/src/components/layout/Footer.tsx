@@ -6,7 +6,7 @@ import { buildPagePaths } from "@shared/pageSlugs";
 import { useTranslation } from "@/hooks/useTranslation";
 import { trackEvent } from "@/lib/analytics";
 import { Phone, Mail, MapPin, MessageCircle } from "lucide-react";
-import { defaultWhatsappMessage, formatPhoneDisplay, telHref, whatsappHref } from "@shared/phone";
+import { formatPhoneDisplay, telHref, whatsappHref } from "@shared/phone";
 import {
   SiFacebook,
   SiInstagram,
@@ -27,7 +27,7 @@ const platformIcons: Record<string, any> = {
 };
 
 function FooterComponent() {
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   const { data: companySettings } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
   });
@@ -154,7 +154,7 @@ function FooterComponent() {
               {phone && (
                 <li>
                   <a
-                    href={whatsappHref(phone, defaultWhatsappMessage(language))}
+                    href={whatsappHref(phone, t("Hi! I found you on the Skale Club website and would like to talk about my project."))}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => trackEvent('click_whatsapp', { location: 'footer' })}

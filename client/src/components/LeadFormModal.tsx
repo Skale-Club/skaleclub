@@ -821,6 +821,12 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
           .filter(([key, value]) => !KNOWN_FIELD_IDS.includes(key) && typeof value === "string" && value.trim())
           .map(([key, value]) => [key, (value as string).trim()])
       );
+      try {
+        const leadContext = window.sessionStorage.getItem("leadContext");
+        if (leadContext) customAnswers.leadContext = leadContext;
+      } catch {
+        /* sessionStorage unavailable */
+      }
       const payload: any = {
         sessionId: session,
         questionNumber,
@@ -1047,6 +1053,7 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
       setLastAnsweredStep(totalQuestions);
       if (lead) {
         clearStoredState(formSlug);
+        try { window.sessionStorage.removeItem("leadContext"); } catch { /* ignore */ }
         const leadClassification = lead.classificacao || classification;
         const leadScore = lead.scoreTotal ?? score.total;
         // Xphere visit booking (quick 260906-g80): the progress route appends

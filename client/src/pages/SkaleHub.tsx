@@ -152,7 +152,7 @@ export default function SkaleHub() {
     }
 
     return {
-      date: formatDate(live.startsAt, language),
+      date: formatDate(live.startsAt, language, live.timezone),
       time: formatLiveTime(live.startsAt, live.timezone, language),
     };
   }, [live, language]);

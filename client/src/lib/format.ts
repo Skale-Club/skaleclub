@@ -3,11 +3,15 @@ import type { Language } from "@/context/LanguageContext";
 const locale = (lang: string) => (lang === "pt" ? "pt-BR" : "en-US");
 
 /** "September 29, 2026" / "29 de setembro de 2026". Empty string for missing or invalid input. */
-export function formatDate(date: string | number | Date | null | undefined, lang: Language | string = "en"): string {
+export function formatDate(
+  date: string | number | Date | null | undefined,
+  lang: Language | string = "en",
+  timeZone?: string,
+): string {
   if (date === null || date === undefined || date === "") return "";
   const value = date instanceof Date ? date : new Date(date);
   if (Number.isNaN(value.getTime())) return "";
-  return new Intl.DateTimeFormat(locale(lang), { dateStyle: "long" }).format(value);
+  return new Intl.DateTimeFormat(locale(lang), { dateStyle: "long", ...(timeZone ? { timeZone } : {}) }).format(value);
 }
 
 /** USD from cents; PT renders "US$ 10,00". */
@@ -17,6 +21,8 @@ export function formatMoneyUsd(cents: number, lang: Language | string = "en"): s
 
 /** Labels that read before the value ("from $299"); anything else trails it ("$49 / month"). */
 const PREFIX_LABEL = /^(from|starting(\s+at)?|a partir de)$/i;
+
+const PER_MONTH_LABEL = /^(\/\s*mo(nth)?|per\s+month|monthly|\/\s*m[eê]s|por\s+m[eê]s)$/i;
 
 export interface PriceParts {
   value: string;
@@ -42,5 +48,7 @@ export function priceParts(
   if (!price.label) return { value };
   const label = translate(price.label);
   if (PREFIX_LABEL.test(price.label.trim()) || PREFIX_LABEL.test(label.trim())) return { value, prefix: label };
-  return { value, suffix: label, tight: label.trimStart().startsWith("/") };
+  // Per-month labels read "US$ 49/mês" in PT; EN keeps the space ("$49 /mo").
+  if (lang === "pt" && PER_MONTH_LABEL.test(price.label.trim())) return { value, suffix: "/mês", tight: true };
+  return { value, suffix: label };
 }
