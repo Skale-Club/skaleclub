@@ -57,7 +57,7 @@ export function Navbar() {
 
   return (
     <nav className="fixed top-4 left-0 right-0 z-50 px-4 tablet:px-0">
-      <div className="container-nav bg-[#171B21]/85 backdrop-blur-md border border-white/5 rounded-full shadow-md shadow-black/10 px-4">
+      <div className="container-nav bg-navy-800/85 backdrop-blur-md border border-white/10 rounded-full shadow-[0_12px_35px_rgba(0,0,0,.22)] px-4">
         <div className="flex justify-between items-center h-16">
           <Link href="/" className="flex items-center gap-2 min-h-[40px] min-w-[54px] pl-3 pr-4">
             {companySettings?.logoMain ? (
@@ -70,7 +70,7 @@ export function Navbar() {
               />
             ) : (
               companySettings?.companyName ? (
-                <span className="text-white font-semibold">{companySettings.companyName}</span>
+                <span className="text-fog-50 font-semibold">{companySettings.companyName}</span>
               ) : null
             )}
           </Link>
@@ -88,7 +88,7 @@ export function Navbar() {
                     onClick={() => handleHashNavigation(hash)}
                     className={clsx(
                       "text-sm font-semibold transition-colors",
-                      isActive ? "text-white" : "text-white/70 hover:text-white"
+                      isActive ? "text-fog-50" : "text-fog-300 hover:text-fog-50"
                     )}
                   >
                     {link.label}
@@ -102,7 +102,7 @@ export function Navbar() {
                   href={link.href}
                   className={clsx(
                     "text-sm font-semibold transition-colors",
-                    isActive ? "text-white" : "text-white/70 hover:text-white"
+                    isActive ? "text-fog-50" : "text-fog-300 hover:text-fog-50"
                   )}
                 >
                   {link.label}
@@ -129,7 +129,7 @@ export function Navbar() {
               <LanguageToggle />
             </div>
             <button
-              className="p-2 -mr-2 text-white"
+              className="p-2 -mr-2 text-fog-50"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               aria-label={isMenuOpen ? "Close menu" : "Open menu"}
             >
@@ -140,7 +140,7 @@ export function Navbar() {
       </div>
 
       {isMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-[60] bg-[#171B21] flex flex-col animate-in fade-in duration-200">
+        <div className="md:hidden fixed inset-0 z-[60] bg-navy-950 flex flex-col animate-in fade-in duration-200">
           {/* Top: logo + close */}
           <div className="flex items-center justify-between h-20 px-6 shrink-0">
             <Link
@@ -157,11 +157,11 @@ export function Navbar() {
                   className="h-auto w-[54px] object-contain p-1.5"
                 />
               ) : companySettings?.companyName ? (
-                <span className="text-white font-semibold text-lg">{companySettings.companyName}</span>
+                <span className="text-fog-50 font-semibold text-lg">{companySettings.companyName}</span>
               ) : null}
             </Link>
             <button
-              className="p-2 -mr-2 text-white"
+              className="p-2 -mr-2 text-fog-50"
               onClick={() => setIsMenuOpen(false)}
               aria-label="Close menu"
             >
@@ -180,7 +180,7 @@ export function Navbar() {
                   return (
                     <button
                       key={link.href}
-                      className="text-left text-3xl font-semibold text-white/90 hover:text-white transition-colors"
+                      className="text-left text-3xl font-semibold text-fog-200 hover:text-fog-50 transition-colors"
                       onClick={() => {
                         setIsMenuOpen(false);
                         handleHashNavigation(hash);
@@ -195,7 +195,7 @@ export function Navbar() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="text-3xl font-semibold text-white/90 hover:text-white transition-colors"
+                    className="text-3xl font-semibold text-fog-200 hover:text-fog-50 transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     {link.label}
@@ -235,7 +235,7 @@ export function Navbar() {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => trackEvent("click_social", { location: "navbar_mobile", label: link.platform })}
-                    className="text-white/70 hover:text-white transition-colors"
+                    className="text-fog-300 hover:text-fog-50 transition-colors"
                   >
                     <Icon className="w-6 h-6" />
                   </a>

@@ -56,7 +56,7 @@ function FooterComponent() {
     : [];
 
   return (
-    <footer className="bg-surface-dark text-slate-300 pt-14 pb-8 md:pt-16 md:pb-10">
+    <footer className="bg-navy-950 text-fog-300 border-t border-white/10 pt-14 pb-8 md:pt-16 md:pb-10">
       <div className="container-custom mx-auto px-4 sm:px-6 tablet:px-0">
         {/* Brand column is wider than the link columns: it carries the logo and
             the tagline, the others are single-word links. */}
@@ -80,12 +80,12 @@ function FooterComponent() {
                   className="h-auto w-[54px] object-contain p-1.5 brightness-0 invert"
                 />
               ) : (
-                companyName ? <span className="text-white font-semibold text-lg">{companyName}</span> : null
+                companyName ? <span className="text-fog-50 font-semibold text-lg">{companyName}</span> : null
               )}
             </Link>
 
             {tagline ? (
-              <p className="text-gray-400 max-w-sm text-sm leading-relaxed">{t(tagline)}</p>
+              <p className="text-fog-300 max-w-sm text-sm leading-relaxed">{t(tagline)}</p>
             ) : null}
 
             {socialLinks.length > 0 && (
@@ -100,7 +100,7 @@ function FooterComponent() {
                       rel="noopener noreferrer"
                       aria-label={link.platform}
                       onClick={() => trackEvent('click_social', { location: 'footer', label: link.platform })}
-                      className="flex items-center justify-center w-9 h-9 rounded-full bg-white/5 border border-white/10 text-gray-400 transition-colors hover:text-white hover:bg-cta hover:border-cta"
+                      className="flex items-center justify-center w-9 h-9 rounded-full bg-white/5 border border-white/10 text-fog-300 transition-colors hover:text-fog-50 hover:bg-cta hover:border-cta"
                     >
                       <Icon className="w-4 h-4" />
                     </a>
@@ -111,7 +111,7 @@ function FooterComponent() {
           </div>
 
           <nav aria-label={t('Footer')}>
-            <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-cta">
+            <h2 className="text-xs font-bold uppercase tracking-[0.24em] text-cta-soft">
               {t('Explore')}
             </h2>
             <ul className="mt-4 space-y-2.5">
@@ -119,7 +119,7 @@ function FooterComponent() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-sm text-gray-400 transition-colors hover:text-white"
+                    className="text-sm text-fog-300 transition-colors hover:text-fog-50"
                   >
                     {t(link.label)}
                   </Link>
@@ -129,7 +129,7 @@ function FooterComponent() {
           </nav>
 
           <div>
-            <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-cta">
+            <h2 className="text-xs font-bold uppercase tracking-[0.24em] text-cta-soft">
               {t('Get in touch')}
             </h2>
             <ul className="mt-4 space-y-3 text-sm">
@@ -138,9 +138,9 @@ function FooterComponent() {
                   <a
                     href={`tel:${phone.replace(/[^+\d]/g, '')}`}
                     onClick={() => trackEvent('click_call', { location: 'footer' })}
-                    className="flex items-start gap-3 text-gray-400 transition-colors hover:text-white"
+                    className="flex items-start gap-3 text-fog-300 transition-colors hover:text-fog-50"
                   >
-                    <Phone className="w-4 h-4 mt-0.5 shrink-0 text-cta" aria-hidden="true" />
+                    <Phone className="w-4 h-4 mt-0.5 shrink-0 text-cta-soft" aria-hidden="true" />
                     <span>{phone}</span>
                   </a>
                 </li>
@@ -150,16 +150,16 @@ function FooterComponent() {
                   <a
                     href={`mailto:${email}`}
                     onClick={() => trackEvent('click_email', { location: 'footer' })}
-                    className="flex items-start gap-3 text-gray-400 transition-colors hover:text-white break-all"
+                    className="flex items-start gap-3 text-fog-300 transition-colors hover:text-fog-50 break-all"
                   >
-                    <Mail className="w-4 h-4 mt-0.5 shrink-0 text-cta" aria-hidden="true" />
+                    <Mail className="w-4 h-4 mt-0.5 shrink-0 text-cta-soft" aria-hidden="true" />
                     <span>{email}</span>
                   </a>
                 </li>
               )}
               {address && (
-                <li className="flex items-start gap-3 text-gray-400">
-                  <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-cta" aria-hidden="true" />
+                <li className="flex items-start gap-3 text-fog-300">
+                  <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-cta-soft" aria-hidden="true" />
                   <span>{address}</span>
                 </li>
               )}
@@ -170,10 +170,10 @@ function FooterComponent() {
 
       <div className="container-custom mx-auto px-4 sm:px-6 tablet:px-0 mt-12 pt-6 border-t border-white/10">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
-          <p className="text-gray-400 text-xs md:text-sm">&copy; {new Date().getFullYear()} {companyName}. {t('All rights reserved.')}</p>
+          <p className="text-fog-400 text-xs md:text-sm">&copy; {new Date().getFullYear()} {companyName}. {t('All rights reserved.')}</p>
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 text-xs md:text-sm md:justify-end">
-            <Link href={pagePaths.privacyPolicy} className="text-gray-400 hover:text-gray-200 transition-colors">{t('Privacy Policy')}</Link>
-            <Link href={pagePaths.termsOfService} className="text-gray-400 hover:text-gray-200 transition-colors">{t('Terms of Service')}</Link>
+            <Link href={pagePaths.privacyPolicy} className="text-fog-400 hover:text-fog-50 transition-colors">{t('Privacy Policy')}</Link>
+            <Link href={pagePaths.termsOfService} className="text-fog-400 hover:text-fog-50 transition-colors">{t('Terms of Service')}</Link>
           </div>
         </div>
       </div>
