@@ -106,7 +106,7 @@ const MADE_FOR_SECTION: PageSection = {
   type: "featureGrid",
   props: {
     eyebrow: "Made for",
-    heading: "Any counter",
+    heading: "Works anywhere customers pause",
     subheading: "Works anywhere a customer stops for a moment.",
     items: [
       { icon: "IdCard", title: "Barbershops", description: "At the chair or the front desk." },
@@ -145,7 +145,7 @@ const PRODUCTS_SECTIONS: PageSection[] = [
           icon: "KeyRound",
           title: "NFC keychains",
           description: "Custom keychains with your branding, plus a display to sell them at your counter.",
-          href: "/products/nfc-custom-keychains",
+          href: "/products/nfc-keychains",
         },
       ],
     },
@@ -175,15 +175,17 @@ const NFC_REVIEW_PLAQUE_SECTIONS: PageSection[] = [
     },
   },
   {
-    type: "featureGrid",
+    type: "contentBlocks",
     props: {
       eyebrow: "How it works",
-      heading: "Tap. Opens. Done.",
-      subheading: "No app, nothing to type.",
-      items: [
-        { icon: "Smartphone", title: "Tap", description: "A customer holds their phone near the plaque." },
-        { icon: "Globe", title: "Opens", description: "Their phone opens your Google review page right away." },
-        { icon: "Star", title: "Done", description: "They leave the review while the visit is still fresh." },
+      heading: "What happens when someone taps it",
+      blocks: [
+        {
+          heading: "No app, nothing to type",
+          paragraphs: [
+            "A customer holds their phone near the plaque. It opens your Google review page right away, while the visit is still fresh in their mind.",
+          ],
+        },
       ],
     },
   },
@@ -195,9 +197,8 @@ const NFC_REVIEW_PLAQUE_SECTIONS: PageSection[] = [
       heading: "Made your way",
       blocks: [
         {
-          heading: "Your logo, your colors, your words",
+          heading: "What we print",
           paragraphs: ["We print it with your logo and colors, and the text you want on it."],
-          bullets: ["Your logo", "Your colors", "Your own text"],
         },
       ],
     },
@@ -207,7 +208,7 @@ const NFC_REVIEW_PLAQUE_SECTIONS: PageSection[] = [
     props: {
       formSlug: PLAQUE_FORM_SLUG,
       heading: "Ask for a quote",
-      subheading: "Tell us about your business in a minute. There's no set price — we quote based on what you need.",
+      subheading: "Tell us about your business in a minute. There's no set price. We quote based on what you need.",
       ctaLabel: "Ask for a quote",
     },
   },
@@ -229,15 +230,17 @@ const NFC_KEYCHAINS_SECTIONS: PageSection[] = [
     },
   },
   {
-    type: "featureGrid",
+    type: "contentBlocks",
     props: {
       eyebrow: "How it works",
-      heading: "Tap. Opens. Done.",
-      subheading: "No app, nothing to type.",
-      items: [
-        { icon: "Smartphone", title: "Tap", description: "A customer holds their phone near the keychain." },
-        { icon: "Globe", title: "Opens", description: "Their phone opens the link you picked: your booking page, Instagram, or reviews." },
-        { icon: "Star", title: "Done", description: "They land right where you want them." },
+      heading: "What happens when someone taps it",
+      blocks: [
+        {
+          heading: "No app, nothing to type",
+          paragraphs: [
+            "A customer holds their phone near the keychain. It opens the link you picked, your booking page, Instagram, or your reviews.",
+          ],
+        },
       ],
     },
   },
@@ -249,9 +252,8 @@ const NFC_KEYCHAINS_SECTIONS: PageSection[] = [
       heading: "Made your way",
       blocks: [
         {
-          heading: "Your logo, your link",
+          heading: "What we print",
           paragraphs: ["We print the keychain with your branding and program the tag with the link you pick."],
-          bullets: ["Your logo", "Your colors", "Your link"],
         },
       ],
     },
@@ -260,14 +262,14 @@ const NFC_KEYCHAINS_SECTIONS: PageSection[] = [
     type: "contentBlocks",
     props: {
       eyebrow: "Extra revenue",
-      heading: "Sell them at the counter",
+      heading: "A display for your counter",
       theme: "dark",
       blocks: [
         {
-          heading: "A display for your counter",
+          heading: "Sell them yourself",
           paragraphs: [
             "We also make a display for your counter so you can sell the keychains yourself.",
-            "Extra money for the shop, no extra work for you.",
+            "It brings in a bit of extra money for the shop.",
           ],
         },
       ],
@@ -278,7 +280,7 @@ const NFC_KEYCHAINS_SECTIONS: PageSection[] = [
     props: {
       formSlug: KEYCHAINS_FORM_SLUG,
       heading: "Ask for a quote",
-      subheading: "Tell us about your business in a minute. There's no set price — we quote based on what you need.",
+      subheading: "Tell us about your business in a minute. There's no set price. We quote based on what you need.",
       ctaLabel: "Ask for a quote",
     },
   },
