@@ -22,8 +22,6 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Leia o guia dos chaveiros",
   "Custom 3D-printed NFC keychains in different designs":
     "Chaveiros NFC personalizados e impressos em 3D em diferentes modelos",
-  "Talk to us on WhatsApp":
-    "Fale com a gente no WhatsApp",
   "Programmed and tested":
     "Programados e testados",
   "Every NFC tag is checked before shipping":
@@ -130,8 +128,6 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Sim. Além do chaveiro chapado com a sua logo, fazemos chaveiros com relevo e com shape customizado, no formato do seu produto, de uma ferramenta do seu ramo ou da sua logo recortada. Você escolhe o estilo no formulário e confirmamos os detalhes com você pelo WhatsApp.",
   "How much does it cost?":
     "Quanto custa?",
-  "Flat keychains start at $10 each, with a 20-piece minimum, and the form shows the price as you choose the quantity. Raised relief and custom shapes are priced one by one. For every style, we confirm the final total with you on WhatsApp before anything is produced.":
-    "O chaveiro chapado sai a partir de US$ 10 cada, com pedido mínimo de 20 peças, e o formulário mostra o preço conforme você escolhe a quantidade. Os modelos com relevo e com shape customizado têm preço calculado peça a peça. Em todos os casos, confirmamos o valor final com você no WhatsApp antes de produzir qualquer coisa.",
   "Can I change the link later?":
     "Posso mudar o link depois?",
   "Yes. We recommend pointing the tag to a link you control, like a short link or a page on your website, so you can redirect it whenever you want without touching the keychain. If you need the tag itself reprogrammed, message us and we will walk you through the options.":
@@ -152,8 +148,6 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Pronto para ter os seus chaveiros?",
   "About a minute to fill in. You see the price as you choose the quantity, and we confirm everything with you on WhatsApp before producing anything. Sending the form costs nothing.":
     "Leva cerca de um minuto. Você vê o preço conforme escolhe a quantidade, e confirmamos tudo com você no WhatsApp antes de produzir qualquer coisa. Enviar o formulário não custa nada.",
-  "From $10 per keychain | 20-piece minimum":
-    "A partir de US$ 10 por chaveiro | mínimo de 20 peças",
   "More time in your day. More money in your pocket.":
     "Mais tempo no seu dia. Mais dinheiro no seu bolso.",
   "We work with barbershops.":
@@ -238,36 +232,18 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Seu site que agenda para você.",
   "A booking page with AI that answers messages and calls. It books the appointment when the customer is ready.":
     "Uma página de agendamento com IA que responde mensagens e ligações. Ela agenda o horário quando o cliente está pronto.",
-  "Calendar Sync":
-    "Sincronização de agenda",
-  "Reminders":
-    "Lembretes",
-  "Online Booking":
-    "Agendamento online",
   "Xsites: $299 starting":
     "Xsites: a partir de US$ 299",
   "A professional website for your shop.":
     "Um site profissional para a sua barbearia.",
   "A clean site built for service businesses. Start with the essentials and add pages and features as you grow.":
     "Um site limpo, feito para negócios de serviço. Comece com o essencial e vá adicionando páginas e recursos conforme cresce.",
-  "Responsive":
-    "Responsivo",
-  "SEO Optimized":
-    "Otimizado para SEO",
-  "Fast Loading":
-    "Carregamento rápido",
   "Xareable: $49 a month":
     "Xareable: US$ 49 por mês",
   "We post for you.":
     "A gente posta para você.",
   "Create and publish posts with AI from one place. Post by hand or put it on a schedule and stay active every week.":
     "Crie e publique posts com IA em um só lugar. Publique na hora ou deixe agendado e fique ativo toda semana.",
-  "AI Content":
-    "Conteúdo com IA",
-  "Multi-Platform":
-    "Várias plataformas",
-  "Analytics":
-    "Estatísticas",
   "Ads that fill the calendar: talk to us":
     "Anúncios que enchem a agenda: fale com a gente",
   "Google Ads, Facebook and Instagram Ads, TikTok Ads, retargeting campaigns, and campaign optimization.":
@@ -428,8 +404,8 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "O que a gente imprime",
   "We print it with your logo and colors, and the text you want on it.":
     "A gente imprime com a sua logo, as suas cores e o texto que você quiser.",
-  "There's no set price. We quote based on what you need.":
-    "Não tem preço fixo. A gente cobra de acordo com o que você precisa.",
+  "Tell us about your business in a minute. There's no set price. We quote based on what you need.":
+    "Conte sobre o seu negócio em um minuto. Não tem preço fixo. A gente cobra de acordo com o que você precisa.",
   "Custom keychains with your branding. The tap opens the link you choose.":
     "Chaveiros personalizados com a sua marca. O toque abre o link que você escolher.",
   "Custom 3D-printed NFC keychains with a business logo":

@@ -64,6 +64,7 @@
 // No pricing anywhere on these three pages: both products are quoted per
 // order ("Ask for a quote"), matching the brief.
 import "dotenv/config";
+import { pathToFileURL } from "node:url";
 import { seedForm, seedPage, withSeedGuard } from "./lib/seed-utils.js";
 import { type PageSection } from "../shared/schema/pages.js";
 import type { FormConfig, FormQuestion } from "../shared/schema/forms.js";
@@ -126,7 +127,7 @@ const MADE_FOR_SECTION: PageSection = {
 
 // ── /products (group page) ──────────────────────────────────────────────
 
-const PRODUCTS_SECTIONS: PageSection[] = [
+export const PRODUCTS_SECTIONS: PageSection[] = [
   {
     type: "heroWebsites",
     props: {
@@ -170,7 +171,7 @@ const PRODUCTS_SECTIONS: PageSection[] = [
 
 // ── /products/nfc-review-plaque ────────────────────────────────────────────
 
-const NFC_REVIEW_PLAQUE_SECTIONS: PageSection[] = [
+export const NFC_REVIEW_PLAQUE_SECTIONS: PageSection[] = [
   {
     type: "heroWebsites",
     props: {
@@ -225,7 +226,7 @@ const NFC_REVIEW_PLAQUE_SECTIONS: PageSection[] = [
 // Public path /products/nfc-keychains; DB slug is "nfc-custom-keychains" —
 // see the file header for why it can't be "nfc-keychains".
 
-const NFC_KEYCHAINS_SECTIONS: PageSection[] = [
+export const NFC_KEYCHAINS_SECTIONS: PageSection[] = [
   {
     type: "heroWebsites",
     props: {
@@ -322,4 +323,8 @@ async function main(apply: boolean) {
   for (const spec of PAGES) await seedPage(spec, apply);
 }
 
-void withSeedGuard(main);
+// Only seed when run directly: importing the section arrays (patch scripts,
+// a pt-copy coverage check) must not open a connection or write anything.
+const runDirectly = process.argv[1] ? import.meta.url === pathToFileURL(process.argv[1]).href : false;
+if (runDirectly) void withSeedGuard(main);
+else console.log("[seed-products-landing] imported, not run directly: nothing executed");
