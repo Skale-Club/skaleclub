@@ -1,7 +1,9 @@
 // Seed hand-written pt-BR translations for the /barbershops-br landing.
 // Idempotent: re-running updates every row in place (no duplicates, same ids).
+// DRY-RUN by default: prints what would change. Add --apply to write, same
+// convention as every other seed script (scripts/lib/seed-utils.ts).
 //
-// Run: npx tsx --env-file=.env scripts/seed-barbershop-translations.ts
+// Run: npx tsx --env-file=.env scripts/seed-barbershop-translations.ts [--apply]
 //
 // Touches ONLY the `translations` table, and only rows matching
 // (source_language = 'en', target_language = 'pt'). The `forms` and `pages`
@@ -11,6 +13,19 @@
 //   t() consults the `translations` table BEFORE calling POST /api/translate.
 //   A cached row is therefore authoritative and keeps winning even after the
 //   provider is fixed, so this hand-written marketing copy is what ships.
+//
+// Scope, on purpose: the `translations` table has NO per-page column — a row
+// here answers t() for EVERY page that ever renders the same exact English
+// string, not just /barbershops-br (e.g. a generic tag like "Reminders" or
+// "Analytics" would silently start translating on any other page that
+// happens to use that exact word). This list is therefore kept to strings
+// that are either specific enough to this landing's copy to be unambiguous
+// everywhere (headlines, full sentences), or identity rows for short reused
+// tokens ("Google Ads") where translating to itself cannot break anything.
+// Generic single-word feature tags that used to live here (Reminders,
+// Calendar Sync, Responsive, SEO Optimized, Analytics, ...) were deliberately
+// dropped along with the three-item bullet lists that used them — see
+// scripts/seed-barbershop-landing.ts.
 //
 // NOTE: the form slug `barbershop-leads` is deliberately EXCLUDED from this
 // list. It is the `formSlug` prop on the `leadFormCta` section — a lookup key,
@@ -32,6 +47,7 @@ import "dotenv/config";
 import { pool, db } from "../server/db.js";
 import { translations } from "../shared/schema/cms.js";
 import { and, eq } from "drizzle-orm";
+import { parseSeedArgs } from "./lib/seed-utils.js";
 
 // ── Config ────────────────────────────────────────────────────────────────
 
@@ -123,7 +139,8 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
 
   // ── Landing hero + CTA copy (2026-09-30 content: hero phone demo, the
   // "more money / more time" feature grids, the NFC block and the pricing
-  // block copied from the live catalog) ───────────────────────────────────
+  // block copied from the live catalog; revised 2026-09-30 to drop ad-cliché
+  // phrasing and three-item lists per review) ─────────────────────────────
   {
     source: "More time in your day. More money in your pocket.",
     translated: "Mais tempo no seu dia. Mais dinheiro no seu bolso.",
@@ -147,10 +164,7 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
   // ── "More money" feature grid ────────────────────────────────────────────
   { source: "More money", translated: "Mais dinheiro" },
   { source: "More money in your pocket", translated: "Mais dinheiro no seu bolso" },
-  {
-    source: "Your own website, ads that bring people in, and tools you can sell at the counter.",
-    translated: "Seu próprio site, anúncios que trazem gente nova e itens que você pode vender no balcão.",
-  },
+  { source: "Where the extra money actually comes from.", translated: "De onde vem o dinheiro extra." },
   { source: "Your own website", translated: "Seu próprio site" },
   {
     source: "It takes bookings and the clients stay yours, not a marketplace's.",
@@ -165,21 +179,18 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
   // ── "More time" feature grid ─────────────────────────────────────────────
   { source: "More time", translated: "Mais tempo" },
   { source: "More time in your day", translated: "Mais tempo no seu dia" },
+  { source: "Where the extra time in your day comes from.", translated: "De onde vem o tempo extra no seu dia." },
+  { source: "Calls and texts get answered", translated: "Ligações e mensagens são atendidas" },
   {
-    source: "The phone gets answered, no-shows drop, and your feed doesn't go quiet.",
-    translated: "O telefone é atendido, as faltas caem e o seu perfil não fica parado.",
-  },
-  { source: "The phone gets answered", translated: "O telefone é atendido" },
-  {
-    source: "An AI answers calls and texts 24/7 and books the appointment.",
-    translated: "Uma IA atende ligações e mensagens 24 horas por dia e agenda o horário.",
+    source: "An AI answers calls and texts any time of day and books the appointment.",
+    translated: "Uma IA atende ligações e mensagens a qualquer hora do dia e agenda o horário.",
   },
   { source: "Fewer no-shows", translated: "Menos faltas" },
   {
     source: "Reminders go out on their own and cut down on no-shows.",
     translated: "Os lembretes são enviados automaticamente e reduzem as faltas.",
   },
-  { source: "Social posts, handled", translated: "Postagens, resolvidas" },
+  { source: "Social media", translated: "Redes sociais" },
   {
     source: "Posts get made and scheduled for you every week.",
     translated: "As postagens são feitas e agendadas para você toda semana.",
@@ -187,7 +198,7 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
 
   // ── "NFC for your shop" feature grid ─────────────────────────────────────
   { source: "NFC for your shop", translated: "NFC para a sua barbearia" },
-  { source: "Small tags, real use at the counter", translated: "Peças pequenas, uso real no balcão" },
+  { source: "For your counter", translated: "Para o seu balcão" },
   {
     source: "Three things we 3D print for barbershops, made to order.",
     translated: "Três itens que imprimimos em 3D para barbearias, feitos sob encomenda.",
@@ -199,8 +210,8 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
   },
   { source: "Custom keychains", translated: "Chaveiros personalizados" },
   {
-    source: "NFC keychains with your barbershop's own branding, for your shop to use or give away.",
-    translated: "Chaveiros NFC com a marca da sua barbearia, para você usar ou dar de brinde.",
+    source: "NFC keychains with your barbershop's own branding. The tap opens the link you choose.",
+    translated: "Chaveiros NFC com a marca da sua barbearia. O toque abre o link que você escolher.",
   },
   { source: "Keychain display", translated: "Display de chaveiros" },
   {
@@ -208,10 +219,14 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
     translated: "Um display para o balcão para você mesmo vender os chaveiros. Uma renda extra para a barbearia.",
   },
 
-  // ── Pricing block (copied from the live catalog — see seed-barbershop-landing.ts) ─
+  // ── Pricing block (copied from the live catalog — see seed-barbershop-landing.ts).
+  // Only the strings the page still shows after the review's "remove the
+  // three-item bullet lists" note: the Xkedule/Xsites/Xareable feature tags
+  // (Calendar Sync, Reminders, Responsive, Analytics, ...) were cut from the
+  // page along with their bullets and are deliberately NOT seeded here. ───
   { source: "Pricing", translated: "Preços" },
   { source: "What you can get", translated: "O que você pode ter" },
-  { source: "Real prices. No surprises.", translated: "Preço real. Sem surpresa." },
+  { source: "Same prices we charge everyone.", translated: "Os mesmos preços que cobramos de todo mundo." },
 
   { source: "Xkedule: $89 a month", translated: "Xkedule: US$ 89 por mês" },
   { source: "Your site that books for you.", translated: "Seu site que agenda para você." },
@@ -219,9 +234,6 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
     source: "A booking page with AI that answers messages and calls. It books the appointment when the customer is ready.",
     translated: "Uma página de agendamento com IA que responde mensagens e ligações. Ela agenda o horário quando o cliente está pronto.",
   },
-  { source: "Calendar Sync", translated: "Sincronização de agenda" },
-  { source: "Reminders", translated: "Lembretes" },
-  { source: "Online Booking", translated: "Agendamento online" },
 
   { source: "Xsites: $299 starting", translated: "Xsites: a partir de US$ 299" },
   { source: "A professional website for your shop.", translated: "Um site profissional para a sua barbearia." },
@@ -229,19 +241,13 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
     source: "A clean site built for service businesses. Start with the essentials and add pages and features as you grow.",
     translated: "Um site limpo, feito para negócios de serviço. Comece com o essencial e vá adicionando páginas e recursos conforme cresce.",
   },
-  { source: "Responsive", translated: "Responsivo" },
-  { source: "SEO Optimized", translated: "Otimizado para SEO" },
-  { source: "Fast Loading", translated: "Carregamento rápido" },
 
   { source: "Xareable: $49 a month", translated: "Xareable: US$ 49 por mês" },
-  { source: "Your social media, handled.", translated: "Suas redes sociais, resolvidas." },
+  { source: "We post for you.", translated: "A gente posta para você." },
   {
     source: "Create and publish posts with AI from one place. Post by hand or put it on a schedule and stay active every week.",
     translated: "Crie e publique posts com IA em um só lugar. Publique na hora ou deixe agendado e fique ativo toda semana.",
   },
-  { source: "AI Content", translated: "Conteúdo com IA" },
-  { source: "Multi-Platform", translated: "Várias plataformas" },
-  { source: "Analytics", translated: "Estatísticas" },
 
   { source: "Ads that fill the calendar: talk to us", translated: "Anúncios que enchem a agenda: fale com a gente" },
   {
@@ -253,6 +259,14 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
   { source: "Meta & TikTok Ads", translated: "Anúncios no Meta e TikTok" },
   { source: "Retargeting campaigns", translated: "Campanhas de retargeting" },
   { source: "Campaign optimization", translated: "Otimização de campanha" },
+
+  // ── Reviews section (props.title/subtitle — see seed-barbershop-landing.ts
+  // for why these are no longer left as `props: {}`) ──────────────────────
+  { source: "What people say", translated: "O que as pessoas dizem" },
+  {
+    source: "Real reviews from businesses we've worked with.",
+    translated: "Avaliações reais de negócios com quem já trabalhamos.",
+  },
 ];
 
 // ── Seed runner ───────────────────────────────────────────────────────────
@@ -275,15 +289,17 @@ async function hasUniqueTranslationIndex(): Promise<boolean> {
   return rows[0]?.present === true;
 }
 
-async function main() {
+async function main(apply: boolean) {
   console.log(
-    `Seeding ${PT_TRANSLATIONS.length} ${SOURCE_LANGUAGE} → ${TARGET_LANGUAGE} translations...`,
+    apply
+      ? `Writing ${PT_TRANSLATIONS.length} ${SOURCE_LANGUAGE} → ${TARGET_LANGUAGE} translations...`
+      : `DRY RUN: would write ${PT_TRANSLATIONS.length} ${SOURCE_LANGUAGE} → ${TARGET_LANGUAGE} translations. Re-run with --apply to write.`,
   );
 
-  // Snapshot the existing source_text values so we can report inserted vs
-  // updated. The write itself is a single upsert either way.
+  // Snapshot the existing rows (source_text + current translated_text) so a
+  // dry run can report inserted/updated/unchanged without writing anything.
   const existingRows = await db
-    .select({ sourceText: translations.sourceText })
+    .select({ sourceText: translations.sourceText, translatedText: translations.translatedText })
     .from(translations)
     .where(
       and(
@@ -291,20 +307,39 @@ async function main() {
         eq(translations.targetLanguage, TARGET_LANGUAGE),
       ),
     );
-  const existing = new Set(existingRows.map((row) => row.sourceText));
+  const existing = new Map(existingRows.map((row) => [row.sourceText, row.translatedText]));
 
-  const canUpsert = await hasUniqueTranslationIndex();
-  console.log(
-    canUpsert
-      ? "  Unique index present - using ON CONFLICT DO UPDATE."
-      : "  Unique index absent - falling back to explicit update-or-insert.",
-  );
+  const canUpsert = apply ? await hasUniqueTranslationIndex() : false;
+  if (apply) {
+    console.log(
+      canUpsert
+        ? "  Unique index present - using ON CONFLICT DO UPDATE."
+        : "  Unique index absent - falling back to explicit update-or-insert.",
+    );
+  }
 
   let inserted = 0;
   let updated = 0;
+  let unchanged = 0;
 
   for (const pair of PT_TRANSLATIONS) {
-    const isNew = !existing.has(pair.source);
+    const previous = existing.get(pair.source);
+    const isNew = previous === undefined;
+    const isUnchanged = !isNew && previous === pair.translated;
+
+    if (!apply) {
+      if (isNew) console.log(`  [would insert] "${pair.source}"`);
+      else if (!isUnchanged) console.log(`  [would update] "${pair.source}": "${previous}" -> "${pair.translated}"`);
+      if (isNew) inserted++;
+      else if (isUnchanged) unchanged++;
+      else updated++;
+      continue;
+    }
+
+    if (isUnchanged) {
+      unchanged++;
+      continue;
+    }
 
     if (canUpsert) {
       await db
@@ -348,20 +383,17 @@ async function main() {
         );
     }
 
-    if (isNew) {
-      inserted++;
-    } else {
-      updated++;
-    }
+    if (isNew) inserted++;
+    else updated++;
   }
 
   console.log(
-    `Done. ${PT_TRANSLATIONS.length} rows processed - ${inserted} inserted, ${updated} updated.`,
+    `${apply ? "Done" : "Dry run complete"}. ${PT_TRANSLATIONS.length} rows - ${inserted} ${apply ? "inserted" : "to insert"}, ${updated} ${apply ? "updated" : "to update"}, ${unchanged} unchanged.`,
   );
   await pool.end();
 }
 
-main().catch(async (err) => {
+main(parseSeedArgs().apply).catch(async (err) => {
   console.error("Seed failed:", err);
   try {
     await pool.end();
