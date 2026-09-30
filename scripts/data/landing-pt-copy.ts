@@ -414,4 +414,10 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "A gente também faz um display para o seu balcão, para você mesmo vender os chaveiros.",
   "It brings in a bit of extra money for the shop.":
     "Isso traz um dinheiro extra para o negócio.",
+  "Nothing to install. It works with the phone your customer already has.":
+    "Nada para instalar. Funciona com o celular que o seu cliente já tem.",
+  "Printed with your branding, one piece at a time.":
+    "Impresso com a sua marca, uma peça de cada vez.",
+  "Keychains your customers can buy on the spot.":
+    "Chaveiros que os seus clientes podem comprar na hora.",
 };

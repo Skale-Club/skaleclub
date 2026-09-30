@@ -186,6 +186,7 @@ export const NFC_REVIEW_PLAQUE_SECTIONS: PageSection[] = [
     props: {
       eyebrow: "How it works",
       heading: "What happens when someone taps it",
+      subheading: "Nothing to install. It works with the phone your customer already has.",
       blocks: [
         {
           heading: "No app, nothing to type",
@@ -202,6 +203,7 @@ export const NFC_REVIEW_PLAQUE_SECTIONS: PageSection[] = [
     props: {
       eyebrow: "Customization",
       heading: "Made to order",
+      subheading: "Printed with your branding, one piece at a time.",
       blocks: [
         {
           heading: "What we print",
@@ -241,6 +243,7 @@ export const NFC_KEYCHAINS_SECTIONS: PageSection[] = [
     props: {
       eyebrow: "How it works",
       heading: "What happens when someone taps it",
+      subheading: "Nothing to install. It works with the phone your customer already has.",
       blocks: [
         {
           heading: "No app, nothing to type",
@@ -257,6 +260,7 @@ export const NFC_KEYCHAINS_SECTIONS: PageSection[] = [
     props: {
       eyebrow: "Customization",
       heading: "Made to order",
+      subheading: "Printed with your branding, one piece at a time.",
       blocks: [
         {
           heading: "What we print",
@@ -270,6 +274,7 @@ export const NFC_KEYCHAINS_SECTIONS: PageSection[] = [
     props: {
       eyebrow: "Extra revenue",
       heading: "A display for your counter",
+      subheading: "Keychains your customers can buy on the spot.",
       theme: "dark",
       blocks: [
         {
