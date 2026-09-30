@@ -2,6 +2,7 @@ import { legacyLanguagePath, splitLanguagePath } from "#shared/languagePath.js";
 import { isNoindexPath } from "#shared/coreSeo.js";
 import { buildPagePaths, DEFAULT_PAGE_SLUGS, type PageSlugs } from "#shared/pageSlugs.js";
 import { isReservedSlug } from "#shared/reservedSlugs.js";
+import { productDbSlugForUrlSlug } from "#shared/landingSeo.js";
 import { getLandingRow, getPublishedBlogRow, type BlogRow, type LandingRow } from "./data.js";
 
 // Decides, for a request that reached the SPA fallback, whether the URL is a
@@ -110,6 +111,20 @@ export async function resolveRoute(
     const segments = path.slice(1).split("/");
     if (segments.length === 1 && segments[0] && !isReservedLandingSegment(segments[0])) {
       const landing = await findLanding(segments[0], language);
+      if (!landing) return { ...NOT_FOUND };
+      const alternate = landing.alternateSlug ? await getLandingRow(landing.alternateSlug) : null;
+      return ok({ landing, alternate });
+    }
+    // /products/<slug> — mirrors client/src/App.tsx's dedicated route. The URL
+    // segment resolves to a DB slug through shared/landingSeo.ts's
+    // PRODUCT_ROUTES (the single source of truth, also used by the client);
+    // an unmapped segment (any product slug we didn't seed) is a real 404,
+    // not a silent fallback to some other row.
+    if (segments.length === 2 && segments[0] === "products") {
+      const dbSlug = productDbSlugForUrlSlug(segments[1]);
+      if (!dbSlug) return { ...NOT_FOUND };
+      // Products are English-only for now: no "-br" pairing via findLanding().
+      const landing = await getLandingRow(dbSlug);
       if (!landing) return { ...NOT_FOUND };
       const alternate = landing.alternateSlug ? await getLandingRow(landing.alternateSlug) : null;
       return ok({ landing, alternate });

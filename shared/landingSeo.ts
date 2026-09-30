@@ -117,7 +117,7 @@ export const LANDING_SEO: Record<string, LandingSeo> = {
   // distinct from the existing "nfc-keychains" slug (the ads landing / pricing
   // page at the top-level /nfc-keychains), which is a different page with
   // different content. Reusing that slug here would make this product page
-  // render that page's content instead. See PRODUCT_NAMESPACE_SLUGS below.
+  // render that page's content instead. See PRODUCT_ROUTES below.
   "nfc-custom-keychains": {
     title: "NFC Keychains | Skale Club",
     description:
@@ -126,29 +126,57 @@ export const LANDING_SEO: Record<string, LandingSeo> = {
   },
 };
 
-// Slugs seeded under scripts/seed-products-landing.ts that live at
-// /products/<slug> instead of at the site root. Everything else keeps the
-// flat /<slug> (or /br/<slug>) mapping below.
-const PRODUCT_NAMESPACE_SLUGS = new Set(["nfc-review-plaque", "nfc-custom-keychains"]);
+// Explicit map: public URL segment under /products/<segment> -> DB slug
+// (scripts/seed-products-landing.ts). This is the ONLY source of truth for
+// that mapping, consumed by the client (DynamicLanding.tsx, to translate the
+// URL segment before querying `/api/pages/slug/<dbSlug>`) AND the server
+// (server/seo/routes.ts's resolveRoute, for the same lookup; server/seo/
+// sitemap.ts and inject.ts go through landingPathForSlug/slugForLandingPath
+// below instead of this map directly).
+//
+// The URL segment and DB slug are the SAME string except for "nfc-keychains":
+// that segment maps to DB slug "nfc-custom-keychains", not "nfc-keychains" —
+// "nfc-keychains" is already the DB slug of the existing, unrelated ads
+// landing / pricing page served at the top-level /nfc-keychains. Reusing it
+// here would make /products/nfc-keychains render THAT page's content.
+// Do not add an entry whose URL segment collides with an existing top-level
+// slug in LANDING_SEO unless you intend exactly that.
+export const PRODUCT_ROUTES: Record<string, string> = {
+  "nfc-review-plaque": "nfc-review-plaque",
+  "nfc-keychains": "nfc-custom-keychains",
+};
+
+const PRODUCT_ROUTES_BY_DB_SLUG = new Map(
+  Object.entries(PRODUCT_ROUTES).map(([urlSlug, dbSlug]) => [dbSlug, urlSlug]),
+);
+
+/** DB slug (as stored in `pages.slug`) for a /products/<urlSlug> URL segment, or undefined if unknown. */
+export function productDbSlugForUrlSlug(urlSlug: string): string | undefined {
+  return PRODUCT_ROUTES[urlSlug];
+}
 
 // A managed bilingual pair stores single-segment slugs (`x` and `x-br`), but the PT
 // member's canonical public URL is the `/br/x` prefix form. Legacy `/x-br` and
 // `/x/br` URLs keep rendering; they simply self-report the `/br/x` canonical.
+// A product's DB slug (e.g. "nfc-custom-keychains") reports its /products/<urlSlug>
+// public path via PRODUCT_ROUTES_BY_DB_SLUG.
 export function landingPathForSlug(slug: string): string {
   if (slug.endsWith("-br")) return withLanguage(`/${slug.slice(0, -3)}`, "pt");
-  if (PRODUCT_NAMESPACE_SLUGS.has(slug)) return `/products/${slug}`;
+  const productUrlSlug = PRODUCT_ROUTES_BY_DB_SLUG.get(slug);
+  if (productUrlSlug) return `/products/${productUrlSlug}`;
   return `/${slug}`;
 }
 
 // Inverse of landingPathForSlug. Returns "" for "/" (in either language) or any
-// path that isn't a single managed-landing segment (or a /products/<slug> one).
+// path that isn't a single managed-landing segment (or a /products/<slug> one
+// that resolves through PRODUCT_ROUTES).
 export function slugForLandingPath(pathname: string): string {
   const { path, language } = splitLanguagePath(pathname);
   if (path === "/" || path === "") return "";
 
   const segments = path.slice(1).split("/");
-  if (segments.length === 2 && segments[0] === "products" && PRODUCT_NAMESPACE_SLUGS.has(segments[1])) {
-    return segments[1]; // products are English-only for now — no "-br" form
+  if (segments.length === 2 && segments[0] === "products") {
+    return productDbSlugForUrlSlug(segments[1]) ?? ""; // unmapped -> not a landing (404 elsewhere)
   }
   if (segments.length !== 1) return "";
   return language === "pt" ? `${segments[0]}-br` : segments[0];

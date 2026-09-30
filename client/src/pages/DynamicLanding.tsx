@@ -6,7 +6,7 @@ import { AppLoader } from "@/components/ui/spinner";
 import { sectionRegistry } from "@/components/pages/sectionRegistry";
 import { usePageLanguage } from "@/context/LanguageContext";
 import { splitLanguagePath, withLanguage } from "@shared/languagePath";
-import { getLandingSeo, landingPathForSlug } from "@shared/landingSeo";
+import { getLandingSeo, landingPathForSlug, productDbSlugForUrlSlug } from "@shared/landingSeo";
 
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 
@@ -23,13 +23,22 @@ interface PageResponse {
 
 export default function DynamicPage() {
   const { slug: routeSlug } = useParams<{ slug: string }>();
-  const urlLanguage = splitLanguagePath(usePathname()).language;
+  const { path: langlessPath, language: urlLanguage } = splitLanguagePath(usePathname());
+  // /products/<urlSlug> resolves through shared/landingSeo.ts's PRODUCT_ROUTES —
+  // the same map server/seo/routes.ts uses — instead of querying the URL
+  // segment as a DB slug directly. Two DIFFERENT pages can share a bare-slug
+  // catch-all vs. a /products/ URL (e.g. "nfc-keychains"), so the segment is
+  // never trusted as-is under this prefix: an unmapped one is a real 404, not
+  // a lookup against some other row.
+  const isProductRoute = langlessPath.startsWith("/products/");
+  const dbSlug = isProductRoute ? (routeSlug ? productDbSlugForUrlSlug(routeSlug) : undefined) : routeSlug;
+  const productRouteUnknown = isProductRoute && !dbSlug;
   const setPageLanguage = usePageLanguage();
   const [overrideReadyFor, setOverrideReadyFor] = useState<string | null>(null);
   // `/br/x` resolves the `x-br` row. The DB never stores a slash: shared/schema/pages.ts
   // slugPattern forbids it, so the prefix form lives only in the URL.
   const brSlug =
-    urlLanguage === "pt" && routeSlug && !routeSlug.endsWith("-br") ? `${routeSlug}-br` : null;
+    urlLanguage === "pt" && dbSlug && !dbSlug.endsWith("-br") ? `${dbSlug}-br` : null;
 
   const brQuery = useQuery<PageResponse>({
     queryKey: [`/api/pages/slug/${brSlug}`],
@@ -38,14 +47,14 @@ export default function DynamicPage() {
   });
   // A page with no `-br` row still renders under `/br/x`: base content, Portuguese chrome.
   const baseQuery = useQuery<PageResponse>({
-    queryKey: [`/api/pages/slug/${routeSlug}`],
-    enabled: !!routeSlug && (!brSlug || brQuery.isError),
+    queryKey: [`/api/pages/slug/${dbSlug}`],
+    enabled: !!dbSlug && !productRouteUnknown && (!brSlug || brQuery.isError),
     retry: false,
   });
   const useBrRow = !!brSlug && !brQuery.isError;
   const data = useBrRow ? brQuery.data : baseQuery.data;
-  const isLoading = useBrRow ? brQuery.isLoading : baseQuery.isLoading;
-  const error = data ? null : baseQuery.error;
+  const isLoading = !productRouteUnknown && (useBrRow ? brQuery.isLoading : baseQuery.isLoading);
+  const error = productRouteUnknown ? new Error("Unknown /products/ slug") : data ? null : baseQuery.error;
 
   // The URL owns the language. A PT-only page (e.g. /grupo) overrides it for its own
   // path only — nothing is persisted, so it can't leak to the rest of the site.

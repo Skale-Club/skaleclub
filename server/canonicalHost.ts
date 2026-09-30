@@ -25,6 +25,14 @@ const PATH_REDIRECTS: Record<string, string> = {
   // /grupo is a Portuguese-only page: its /br twin is the same page, so it
   // canonicalises to the bare path (also what the sitemap lists).
   "/br/grupo": "/grupo",
+  // The review-plaque product (scripts/seed-products-landing.ts) lives at
+  // /products/nfc-review-plaque; its DB slug happens to equal that URL
+  // segment, so the bare /:slug catch-all in App.tsx would ALSO resolve it
+  // and serve a live, un-redirected duplicate at /nfc-review-plaque. 301 it
+  // to the canonical /products/ URL. Not done for "nfc-keychains": that bare
+  // segment already belongs to a different, existing page (the ads landing
+  // at the top-level /nfc-keychains) and must keep serving it untouched.
+  "/nfc-review-plaque": "/products/nfc-review-plaque",
 };
 
 export function registerCanonicalHostRedirects(app: Express) {

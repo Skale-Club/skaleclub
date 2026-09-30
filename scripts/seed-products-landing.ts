@@ -7,7 +7,7 @@
 //
 // Run: npx tsx --env-file=.env scripts/seed-products-landing.ts [--apply]
 //
-// Creates / updates (5 rows):
+// Creates / updates (6 rows):
 //   1. forms  WHERE slug = 'products-leads'              (generic — group page)
 //   2. forms  WHERE slug = 'nfc-review-plaque-leads'
 //   3. forms  WHERE slug = 'nfc-custom-keychains-leads'
@@ -33,15 +33,22 @@
 //
 // Nested URL note: DynamicLanding's catch-all route is single-segment
 // ("/:slug"), so /products/<slug> needed one more route in client/src/App.tsx
-// ("/products/:slug", added right above the catch-all) plus a small path-
-// mapping addition in shared/landingSeo.ts (PRODUCT_NAMESPACE_SLUGS) so the
+// ("/products/:slug", added right above the catch-all), a matching branch in
+// server/seo/routes.ts's resolveRoute (same lookup, server-side), and an
+// explicit URL-segment -> DB-slug map, shared/landingSeo.ts's PRODUCT_ROUTES,
+// that BOTH of those read instead of trusting the URL segment as the DB slug.
+// PRODUCT_ROUTES also drives landingPathForSlug/slugForLandingPath, so the
 // canonical URL, sitemap and crawler meta injection all say "/products/<slug>"
-// instead of "/<slug>". The keychains product page's slug is
-// "nfc-custom-keychains", not "nfc-keychains" — that slug is already the
-// existing NFC keychains ad-landing / pricing page at the TOP-LEVEL
+// instead of "/<slug>", and an unmapped /products/<anything-else> is a real
+// 404 (never a lookup against some other row). The keychains product's DB
+// slug is "nfc-custom-keychains", not "nfc-keychains" — that slug is already
+// the existing NFC keychains ad-landing / pricing page at the TOP-LEVEL
 // /nfc-keychains, a different page with different content; reusing it here
 // would make DynamicLanding render that page's content under /products
-// instead of this one.
+// instead of this one. Its bare URL segment ("nfc-review-plaque", whose DB
+// slug happens to equal it) also 301s away from the un-namespaced
+// /nfc-review-plaque — see server/canonicalHost.ts and the matching
+// client-side Route in App.tsx.
 //
 // English only for now — not requested in Portuguese, and these pages have no
 // "-br" counterpart or translations table entry. Cheap to add later the same

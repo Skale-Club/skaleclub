@@ -317,9 +317,16 @@ function Router() {
             {/* /products/<slug> managed landings (scripts/seed-products-landing.ts).
                 Bare "/products" needs no entry here — it's a single segment, so
                 the catch-all "/:slug" below already resolves it. Must stay ABOVE
-                that catch-all. See PRODUCT_NAMESPACE_SLUGS in shared/landingSeo.ts
-                for the canonical-path mapping these pages need on top of it. */}
+                that catch-all. See PRODUCT_ROUTES in shared/landingSeo.ts for the
+                URL-segment -> DB-slug mapping these pages need on top of it. */}
             <Route path="/products/:slug" component={DynamicPage} />
+            {/* The review-plaque product's DB slug equals its own URL segment, so
+                the bare "/:slug" catch-all below would also resolve it directly.
+                301 it to the /products/ URL (server/canonicalHost.ts does this
+                for a real navigation; this is the client-side fallback, same
+                pattern as the Skale Hub group redirects above). Not needed for
+                "nfc-keychains": that bare segment is a different, existing page. */}
+            <Route path="/nfc-review-plaque">{() => <Redirect to="/products/nfc-review-plaque" />}</Route>
             {/* Catch-all dynamic landing route — MUST be last before the 404 fallback.
                 Wouter matches top-down, so any new known route must be added ABOVE this line.
                 A `/br` prefix never reaches the routes (useLanguageLocation strips it):
