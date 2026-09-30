@@ -10,10 +10,28 @@
 //   2. pages   WHERE slug = 'barbershops'    (EN mother, language='en')
 //   3. pages   WHERE slug = 'barbershops-br' (PT,        language='pt')
 //
-// Both landings share the SAME sections [heroWebsites, trustBadges,
-// processStepper, reviews, leadFormCta]; copy is t()-based so the language
-// column drives EN vs PT. After running, /barbershops renders in English and
-// /barbershops-br in Portuguese.
+// Both landings share the SAME sections [heroWebsites, featureGrid x3,
+// contentBlocks, reviews, leadFormCta]; copy is t()-based so the language
+// column drives EN vs PT. seedPage() bakes the curated pt-BR copy from
+// scripts/data/landing-pt-copy.ts straight into the '-br' row automatically
+// (see scripts/lib/pt-copy.ts) — no extra script to run for that. Also run
+// scripts/seed-barbershop-translations.ts once; it writes the SAME hand-
+// written pairs into the `translations` table so t() never falls back to a
+// live AI round-trip for this copy anywhere else it might be reused. After
+// running, /barbershops renders in English and /barbershops-br in Portuguese.
+//
+// Content brief (2026-09-30): one page, one ask (call the demo number or send
+// the lead form), built entirely from registered section types — no new page
+// component. Pricing for Xkedule/Xsites/Xareable and the "Paid Advertising"
+// service card is copied verbatim from the live /api/portfolio-services and
+// /api/company-settings responses (title/subtitle/description/price/
+// priceLabel/features) so it never invents a number the real catalog
+// doesn't charge. The NFC block covers the three real 3D-printed products
+// (review plaque, custom keychains, keychain display) — not a generic "NFC
+// tag" — and is deliberately its own section rather than a dedicated page.
+// Per the site owner: never say "tech", "technology", "small company", or
+// claim to be local — the copy below sells time/money/a full chair, not a
+// technology category.
 import "dotenv/config";
 import { pathToFileURL } from "node:url";
 import { seedForm, seedPage, withSeedGuard } from "./lib/seed-utils.js";
@@ -210,29 +228,152 @@ const BARBERSHOP_LEADS_CONFIG: FormConfig = {
 // ── Landing sections (in render order) ─────────────────────────────────────
 
 // Sections are IDENTICAL for both languages — the pages.language column drives
-// EN vs PT through t(). Unlike the /websites seed, the hero and CTA carry
-// explicit English copy props here (barbershop-specific messaging) rather than
-// falling back to the shared component defaults.
-// No bgVideoUrl: the /websites video asset is specific to that page.
+// EN vs PT through t(). Copy here is barbershop-specific (not the shared
+// component defaults). No bgVideoUrl: the /websites video asset is specific
+// to that page.
+//
+// Pricing block copy (Xkedule, Xsites, Xareable, Paid Advertising) was copied
+// verbatim on 2026-09-30 from the live public catalog:
+//   curl https://skale.club/api/portfolio-services   (Xkedule/Xsites/Xareable)
+//   curl https://skale.club/api/company-settings      ("Paid Advertising" card
+//                                                       under homepageContent
+//                                                       .ourServicesSection.cards)
+// If those prices change in admin, re-copy them here and re-run this script —
+// this page is a snapshot, not a live read, same as every other managed
+// landing on the site.
 export const LANDING_SECTIONS: PageSection[] = [
   {
     type: "heroWebsites",
     props: {
-      headline: "Your barbershop deserves a full chair, every day.",
-      subheadline: "We bring new clients into your shop with ads and booking that actually work — set up in days, not months.",
-      ctaLabel: "I want more clients",
+      headline: "More time in your day. More money in your pocket.",
+      subheadline: "We work with barbershops.",
+      ctaLabel: "Get more clients",
+      secondaryCtaLabel: "Hear it working: (224) 551-6131",
+      secondaryCtaHref: "tel:+12245516131",
+      secondaryCtaNote: "An AI answers that line for a barbershop. It gives prices and hours and books the cut.",
     },
   },
-  { type: "trustBadges",    props: {} }, // adapter — reads /api/company-settings (t()-based)
-  { type: "processStepper", props: {} }, // copy via t() (ProcessStepperSection defaults)
-  { type: "reviews",        props: {} }, // adapter — reads /api/company-settings (t()-based)
+  {
+    type: "featureGrid",
+    props: {
+      eyebrow: "More money",
+      heading: "More money in your pocket",
+      subheading: "Your own website, ads that bring people in, and tools you can sell at the counter.",
+      items: [
+        {
+          icon: "Globe",
+          title: "Your own website",
+          description: "It takes bookings and the clients stay yours, not a marketplace's.",
+        },
+        {
+          icon: "Instagram",
+          title: "Ads that bring people in",
+          description: "Google and Instagram ads that fill your calendar with new clients.",
+        },
+      ],
+    },
+  },
+  {
+    type: "featureGrid",
+    props: {
+      eyebrow: "More time",
+      heading: "More time in your day",
+      subheading: "The phone gets answered, no-shows drop, and your feed doesn't go quiet.",
+      items: [
+        {
+          icon: "Smartphone",
+          title: "The phone gets answered",
+          description: "An AI answers calls and texts 24/7 and books the appointment.",
+        },
+        {
+          icon: "MessageCircle",
+          title: "Fewer no-shows",
+          description: "Reminders go out on their own and cut down on no-shows.",
+        },
+        {
+          icon: "ConciergeBell",
+          title: "Social posts, handled",
+          description: "Posts get made and scheduled for you every week.",
+        },
+      ],
+      theme: "dark",
+    },
+  },
+  {
+    type: "featureGrid",
+    props: {
+      eyebrow: "NFC for your shop",
+      heading: "Small tags, real use at the counter",
+      subheading: "Three things we 3D print for barbershops, made to order.",
+      items: [
+        {
+          icon: "Nfc",
+          title: "Review plaque",
+          description: "A plaque for your counter. Tap a phone on it and it opens your Google review page.",
+        },
+        {
+          icon: "KeyRound",
+          title: "Custom keychains",
+          description: "NFC keychains with your barbershop's own branding, for your shop to use or give away.",
+        },
+        {
+          icon: "Store",
+          title: "Keychain display",
+          description: "A display for your counter so you can sell the keychains yourself. Extra money for the shop.",
+        },
+      ],
+    },
+  },
+  {
+    type: "contentBlocks",
+    props: {
+      eyebrow: "Pricing",
+      heading: "What you can get",
+      subheading: "Real prices. No surprises.",
+      theme: "dark",
+      blocks: [
+        {
+          heading: "Xkedule: $89 a month",
+          paragraphs: [
+            "Your site that books for you.",
+            "A booking page with AI that answers messages and calls. It books the appointment when the customer is ready.",
+          ],
+          bullets: ["Calendar Sync", "Reminders", "Online Booking"],
+        },
+        {
+          heading: "Xsites: $299 starting",
+          paragraphs: [
+            "A professional website for your shop.",
+            "A clean site built for service businesses. Start with the essentials and add pages and features as you grow.",
+          ],
+          bullets: ["Responsive", "SEO Optimized", "Fast Loading"],
+        },
+        {
+          heading: "Xareable: $49 a month",
+          paragraphs: [
+            "Your social media, handled.",
+            "Create and publish posts with AI from one place. Post by hand or put it on a schedule and stay active every week.",
+          ],
+          bullets: ["AI Content", "Multi-Platform", "Analytics"],
+        },
+        {
+          heading: "Ads that fill the calendar: talk to us",
+          paragraphs: [
+            "Google Ads, Facebook and Instagram Ads, TikTok Ads, retargeting campaigns, and campaign optimization.",
+          ],
+          bullets: ["Google Ads", "Meta & TikTok Ads", "Retargeting campaigns", "Campaign optimization"],
+        },
+      ],
+    },
+  },
+  { type: "reviews", props: {} }, // adapter — reads /api/company-settings (t()-based)
   {
     type: "leadFormCta",
     props: {
       formSlug: FORM_SLUG,
       heading: "Let's fill your chairs",
-      subheading: "Tell us about your barbershop in 1 minute. We'll reply within 24 hours.",
-      ctaLabel: "I want more clients",
+      subheading: "Tell us about your shop in a minute. Or call (224) 551-6131 first to hear the AI answer the phone.",
+      ctaLabel: "Get more clients",
     },
   },
 ];

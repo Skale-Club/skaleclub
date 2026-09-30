@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ArrowDown, ArrowRight } from "lucide-react";
+import { ArrowDown, ArrowRight, Phone } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { languageHref } from "@/lib/languageRouting";
 import { Band, Eyebrow, PillButton, PillLink } from "@/components/editorial";
@@ -24,8 +24,13 @@ export const heroWebsitesPropsSchema = z.object({
   subheadline: z.string().optional(),
   ctaLabel: z.string().optional(),
   secondaryCtaLabel: z.string().optional(),
-  // A site path ("/nfc-order") or an in-page anchor ("#how-it-works").
-  secondaryCtaHref: z.string().regex(/^(\/[a-z0-9/-]*|#[a-z][a-z0-9-]*)$/).optional(),
+  // A site path ("/nfc-order"), an in-page anchor ("#how-it-works"), or a
+  // "tel:" link ("tel:+12245516131") for a landing whose secondary CTA is a
+  // phone number to call rather than a page to visit.
+  secondaryCtaHref: z.string().regex(/^(\/[a-z0-9/-]*|#[a-z][a-z0-9-]*|tel:\+?[0-9]{7,15})$/).optional(),
+  // Short line under the CTA row, shown only when secondaryCtaHref is a "tel:"
+  // link (e.g. explaining what happens when you call it).
+  secondaryCtaNote: z.string().optional(),
   eyebrow: z.string().optional(),
   backgroundImageUrl: optionalUrl,
   backgroundImageAlt: z.string().optional(),
@@ -70,26 +75,33 @@ function HeroCtas({ props, ctaLabel }: { props: HeroWebsitesProps; ctaLabel: str
   const { t } = useTranslation();
   const secondaryHref = props.secondaryCtaHref;
   const isAnchor = !!secondaryHref?.startsWith("#");
+  const isTel = !!secondaryHref?.startsWith("tel:");
   return (
-    <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-      <PillButton
-        variant="primary"
-        onClick={scrollToLeadCta}
-        data-testid="button-hero-websites-cta"
-        className="w-full whitespace-nowrap sm:w-auto"
-      >
-        {t(ctaLabel)} <ArrowRight aria-hidden="true" className="h-4 w-4" />
-      </PillButton>
-      {props.secondaryCtaLabel && secondaryHref ? (
-        <PillLink
-          href={isAnchor ? secondaryHref : languageHref(secondaryHref)}
-          variant="ghost"
+    <div>
+      <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+        <PillButton
+          variant="primary"
+          onClick={scrollToLeadCta}
+          data-testid="button-hero-websites-cta"
           className="w-full whitespace-nowrap sm:w-auto"
         >
-          {t(props.secondaryCtaLabel)}
-          {isAnchor && <ArrowDown aria-hidden="true" className="h-4 w-4" />}
-        </PillLink>
-      ) : null}
+          {t(ctaLabel)} <ArrowRight aria-hidden="true" className="h-4 w-4" />
+        </PillButton>
+        {props.secondaryCtaLabel && secondaryHref ? (
+          <PillLink
+            href={isAnchor ? secondaryHref : languageHref(secondaryHref)}
+            variant="ghost"
+            className="w-full whitespace-nowrap sm:w-auto"
+          >
+            {isTel && <Phone aria-hidden="true" className="h-4 w-4" />}
+            {t(props.secondaryCtaLabel)}
+            {isAnchor && <ArrowDown aria-hidden="true" className="h-4 w-4" />}
+          </PillLink>
+        ) : null}
+      </div>
+      {props.secondaryCtaNote && (
+        <p className="mt-3 max-w-md text-sm leading-6 text-fog-400">{t(props.secondaryCtaNote)}</p>
+      )}
     </div>
   );
 }

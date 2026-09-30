@@ -84,15 +84,15 @@ export const LANDING_SEO: Record<string, LandingSeo> = {
     locale: "pt_BR",
   },
   barbershops: {
-    title: "Marketing for Barbershops | Skale Club",
+    title: "More Clients for Your Barbershop | Skale Club",
     description:
-      "Get more clients for your barbershop with websites, Google reviews, and booking systems built by Skale Club.",
+      "A site that books for you, ads that fill your calendar, and a phone that always gets answered. See it working, or send us your shop's details.",
     locale: "en_US",
   },
   "barbershops-br": {
-    title: "Marketing para Barbearias | Skale Club",
+    title: "Mais Clientes para a Sua Barbearia | Skale Club",
     description:
-      "Mais clientes para sua barbearia com site, avaliações no Google e sistema de agendamento feitos pela Skale Club.",
+      "Um site que agenda para você, anúncios que enchem sua agenda e um telefone que é sempre atendido. Ouça funcionando ou conte sobre a sua barbearia.",
     locale: "pt_BR",
   },
   grupo: {

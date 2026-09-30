@@ -121,23 +121,138 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
   { source: "Anything else we should know?", translated: "Mais alguma coisa que a gente deva saber?" },
   { source: "Optional", translated: "Opcional" },
 
-  // ── Landing hero + CTA copy ─────────────────────────────────────────────
-  { source: "I want more clients", translated: "Quero mais clientes" },
+  // ── Landing hero + CTA copy (2026-09-30 content: hero phone demo, the
+  // "more money / more time" feature grids, the NFC block and the pricing
+  // block copied from the live catalog) ───────────────────────────────────
   {
-    source: "Your barbershop deserves a full chair, every day.",
-    translated: "Sua barbearia merece cadeira cheia todos os dias.",
+    source: "More time in your day. More money in your pocket.",
+    translated: "Mais tempo no seu dia. Mais dinheiro no seu bolso.",
+  },
+  { source: "We work with barbershops.", translated: "Trabalhamos com barbearias." },
+  { source: "Get more clients", translated: "Quero mais clientes" },
+  {
+    source: "Hear it working: (224) 551-6131",
+    translated: "Ouça funcionando: (224) 551-6131",
   },
   {
-    source:
-      "We bring new clients into your shop with ads and booking that actually work — set up in days, not months.",
-    translated:
-      "Levamos clientes novos até a sua barbearia com anúncios e agendamento que realmente funcionam — no ar em dias, não em meses.",
+    source: "An AI answers that line for a barbershop. It gives prices and hours and books the cut.",
+    translated: "Uma IA atende esse número para uma barbearia. Ela informa preço e horário e agenda o corte.",
   },
   { source: "Let's fill your chairs", translated: "Vamos encher suas cadeiras" },
   {
-    source: "Tell us about your barbershop in 1 minute. We'll reply within 24 hours.",
-    translated: "Conte sobre a sua barbearia em 1 minuto. Respondemos em até 24 horas.",
+    source: "Tell us about your shop in a minute. Or call (224) 551-6131 first to hear the AI answer the phone.",
+    translated: "Conte sobre a sua barbearia em um minuto. Ou ligue primeiro para (224) 551-6131 para ouvir a IA atendendo o telefone.",
   },
+
+  // ── "More money" feature grid ────────────────────────────────────────────
+  { source: "More money", translated: "Mais dinheiro" },
+  { source: "More money in your pocket", translated: "Mais dinheiro no seu bolso" },
+  {
+    source: "Your own website, ads that bring people in, and tools you can sell at the counter.",
+    translated: "Seu próprio site, anúncios que trazem gente nova e itens que você pode vender no balcão.",
+  },
+  { source: "Your own website", translated: "Seu próprio site" },
+  {
+    source: "It takes bookings and the clients stay yours, not a marketplace's.",
+    translated: "Ele recebe agendamentos e os clientes ficam seus, não de uma plataforma de terceiros.",
+  },
+  { source: "Ads that bring people in", translated: "Anúncios que trazem gente nova" },
+  {
+    source: "Google and Instagram ads that fill your calendar with new clients.",
+    translated: "Anúncios no Google e no Instagram que enchem sua agenda com clientes novos.",
+  },
+
+  // ── "More time" feature grid ─────────────────────────────────────────────
+  { source: "More time", translated: "Mais tempo" },
+  { source: "More time in your day", translated: "Mais tempo no seu dia" },
+  {
+    source: "The phone gets answered, no-shows drop, and your feed doesn't go quiet.",
+    translated: "O telefone é atendido, as faltas caem e o seu perfil não fica parado.",
+  },
+  { source: "The phone gets answered", translated: "O telefone é atendido" },
+  {
+    source: "An AI answers calls and texts 24/7 and books the appointment.",
+    translated: "Uma IA atende ligações e mensagens 24 horas por dia e agenda o horário.",
+  },
+  { source: "Fewer no-shows", translated: "Menos faltas" },
+  {
+    source: "Reminders go out on their own and cut down on no-shows.",
+    translated: "Os lembretes são enviados automaticamente e reduzem as faltas.",
+  },
+  { source: "Social posts, handled", translated: "Postagens, resolvidas" },
+  {
+    source: "Posts get made and scheduled for you every week.",
+    translated: "As postagens são feitas e agendadas para você toda semana.",
+  },
+
+  // ── "NFC for your shop" feature grid ─────────────────────────────────────
+  { source: "NFC for your shop", translated: "NFC para a sua barbearia" },
+  { source: "Small tags, real use at the counter", translated: "Peças pequenas, uso real no balcão" },
+  {
+    source: "Three things we 3D print for barbershops, made to order.",
+    translated: "Três itens que imprimimos em 3D para barbearias, feitos sob encomenda.",
+  },
+  { source: "Review plaque", translated: "Placa de avaliação" },
+  {
+    source: "A plaque for your counter. Tap a phone on it and it opens your Google review page.",
+    translated: "Uma placa para o seu balcão. O cliente encosta o celular e ela abre a página de avaliação no Google.",
+  },
+  { source: "Custom keychains", translated: "Chaveiros personalizados" },
+  {
+    source: "NFC keychains with your barbershop's own branding, for your shop to use or give away.",
+    translated: "Chaveiros NFC com a marca da sua barbearia, para você usar ou dar de brinde.",
+  },
+  { source: "Keychain display", translated: "Display de chaveiros" },
+  {
+    source: "A display for your counter so you can sell the keychains yourself. Extra money for the shop.",
+    translated: "Um display para o balcão para você mesmo vender os chaveiros. Uma renda extra para a barbearia.",
+  },
+
+  // ── Pricing block (copied from the live catalog — see seed-barbershop-landing.ts) ─
+  { source: "Pricing", translated: "Preços" },
+  { source: "What you can get", translated: "O que você pode ter" },
+  { source: "Real prices. No surprises.", translated: "Preço real. Sem surpresa." },
+
+  { source: "Xkedule: $89 a month", translated: "Xkedule: US$ 89 por mês" },
+  { source: "Your site that books for you.", translated: "Seu site que agenda para você." },
+  {
+    source: "A booking page with AI that answers messages and calls. It books the appointment when the customer is ready.",
+    translated: "Uma página de agendamento com IA que responde mensagens e ligações. Ela agenda o horário quando o cliente está pronto.",
+  },
+  { source: "Calendar Sync", translated: "Sincronização de agenda" },
+  { source: "Reminders", translated: "Lembretes" },
+  { source: "Online Booking", translated: "Agendamento online" },
+
+  { source: "Xsites: $299 starting", translated: "Xsites: a partir de US$ 299" },
+  { source: "A professional website for your shop.", translated: "Um site profissional para a sua barbearia." },
+  {
+    source: "A clean site built for service businesses. Start with the essentials and add pages and features as you grow.",
+    translated: "Um site limpo, feito para negócios de serviço. Comece com o essencial e vá adicionando páginas e recursos conforme cresce.",
+  },
+  { source: "Responsive", translated: "Responsivo" },
+  { source: "SEO Optimized", translated: "Otimizado para SEO" },
+  { source: "Fast Loading", translated: "Carregamento rápido" },
+
+  { source: "Xareable: $49 a month", translated: "Xareable: US$ 49 por mês" },
+  { source: "Your social media, handled.", translated: "Suas redes sociais, resolvidas." },
+  {
+    source: "Create and publish posts with AI from one place. Post by hand or put it on a schedule and stay active every week.",
+    translated: "Crie e publique posts com IA em um só lugar. Publique na hora ou deixe agendado e fique ativo toda semana.",
+  },
+  { source: "AI Content", translated: "Conteúdo com IA" },
+  { source: "Multi-Platform", translated: "Várias plataformas" },
+  { source: "Analytics", translated: "Estatísticas" },
+
+  { source: "Ads that fill the calendar: talk to us", translated: "Anúncios que enchem a agenda: fale com a gente" },
+  {
+    source: "Google Ads, Facebook and Instagram Ads, TikTok Ads, retargeting campaigns, and campaign optimization.",
+    translated: "Google Ads, anúncios no Facebook e Instagram, anúncios no TikTok, campanhas de retargeting e otimização de campanha.",
+  },
+  // Identity row — see the note above the "(555) 123-4567" entry.
+  { source: "Google Ads", translated: "Google Ads" },
+  { source: "Meta & TikTok Ads", translated: "Anúncios no Meta e TikTok" },
+  { source: "Retargeting campaigns", translated: "Campanhas de retargeting" },
+  { source: "Campaign optimization", translated: "Otimização de campanha" },
 ];
 
 // ── Seed runner ───────────────────────────────────────────────────────────

@@ -154,16 +154,132 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Leva cerca de um minuto. Você vê o preço conforme escolhe a quantidade, e confirmamos tudo com você no WhatsApp antes de produzir qualquer coisa. Enviar o formulário não custa nada.",
   "From $10 per keychain | 20-piece minimum":
     "A partir de US$ 10 por chaveiro | mínimo de 20 peças",
-  "Your barbershop deserves a full chair, every day.":
-    "Sua barbearia merece cadeira cheia todos os dias.",
-  "We bring new clients into your shop with ads and booking that actually work — set up in days, not months.":
-    "Levamos clientes novos até a sua barbearia com anúncios e agendamento que realmente funcionam. Tudo no ar em dias, não em meses.",
-  "I want more clients":
+  "More time in your day. More money in your pocket.":
+    "Mais tempo no seu dia. Mais dinheiro no seu bolso.",
+  "We work with barbershops.":
+    "Trabalhamos com barbearias.",
+  "Get more clients":
     "Quero mais clientes",
+  "Hear it working: (224) 551-6131":
+    "Ouça funcionando: (224) 551-6131",
+  "An AI answers that line for a barbershop. It gives prices and hours and books the cut.":
+    "Uma IA atende esse número para uma barbearia. Ela informa preço e horário e agenda o corte.",
   "Let's fill your chairs":
     "Vamos encher suas cadeiras",
-  "Tell us about your barbershop in 1 minute. We'll reply within 24 hours.":
-    "Conte sobre a sua barbearia em 1 minuto. Respondemos em até 24 horas.",
+  "Tell us about your shop in a minute. Or call (224) 551-6131 first to hear the AI answer the phone.":
+    "Conte sobre a sua barbearia em um minuto. Ou ligue primeiro para (224) 551-6131 para ouvir a IA atendendo o telefone.",
+
+  // ── /barbershops "More money" feature grid ───────────────────────────────
+  "More money":
+    "Mais dinheiro",
+  "More money in your pocket":
+    "Mais dinheiro no seu bolso",
+  "Your own website, ads that bring people in, and tools you can sell at the counter.":
+    "Seu próprio site, anúncios que trazem gente nova e itens que você pode vender no balcão.",
+  "Your own website":
+    "Seu próprio site",
+  "It takes bookings and the clients stay yours, not a marketplace's.":
+    "Ele recebe agendamentos e os clientes ficam seus, não de uma plataforma de terceiros.",
+  "Ads that bring people in":
+    "Anúncios que trazem gente nova",
+  "Google and Instagram ads that fill your calendar with new clients.":
+    "Anúncios no Google e no Instagram que enchem sua agenda com clientes novos.",
+
+  // ── /barbershops "More time" feature grid ────────────────────────────────
+  "More time":
+    "Mais tempo",
+  "More time in your day":
+    "Mais tempo no seu dia",
+  "The phone gets answered, no-shows drop, and your feed doesn't go quiet.":
+    "O telefone é atendido, as faltas caem e o seu perfil não fica parado.",
+  "The phone gets answered":
+    "O telefone é atendido",
+  "An AI answers calls and texts 24/7 and books the appointment.":
+    "Uma IA atende ligações e mensagens 24 horas por dia e agenda o horário.",
+  "Fewer no-shows":
+    "Menos faltas",
+  "Reminders go out on their own and cut down on no-shows.":
+    "Os lembretes são enviados automaticamente e reduzem as faltas.",
+  "Social posts, handled":
+    "Postagens, resolvidas",
+  "Posts get made and scheduled for you every week.":
+    "As postagens são feitas e agendadas para você toda semana.",
+
+  // ── /barbershops "NFC for your shop" feature grid ────────────────────────
+  "NFC for your shop":
+    "NFC para a sua barbearia",
+  "Small tags, real use at the counter":
+    "Peças pequenas, uso real no balcão",
+  "Three things we 3D print for barbershops, made to order.":
+    "Três itens que imprimimos em 3D para barbearias, feitos sob encomenda.",
+  "Review plaque":
+    "Placa de avaliação",
+  "A plaque for your counter. Tap a phone on it and it opens your Google review page.":
+    "Uma placa para o seu balcão. O cliente encosta o celular e ela abre a página de avaliação no Google.",
+  "Custom keychains":
+    "Chaveiros personalizados",
+  "NFC keychains with your barbershop's own branding, for your shop to use or give away.":
+    "Chaveiros NFC com a marca da sua barbearia, para você usar ou dar de brinde.",
+  "Keychain display":
+    "Display de chaveiros",
+  "A display for your counter so you can sell the keychains yourself. Extra money for the shop.":
+    "Um display para o balcão para você mesmo vender os chaveiros. Uma renda extra para a barbearia.",
+
+  // ── /barbershops pricing block (copied from the live catalog) ───────────
+  "Pricing":
+    "Preços",
+  "What you can get":
+    "O que você pode ter",
+  "Real prices. No surprises.":
+    "Preço real. Sem surpresa.",
+  "Xkedule: $89 a month":
+    "Xkedule: US$ 89 por mês",
+  "Your site that books for you.":
+    "Seu site que agenda para você.",
+  "A booking page with AI that answers messages and calls. It books the appointment when the customer is ready.":
+    "Uma página de agendamento com IA que responde mensagens e ligações. Ela agenda o horário quando o cliente está pronto.",
+  "Calendar Sync":
+    "Sincronização de agenda",
+  "Reminders":
+    "Lembretes",
+  "Online Booking":
+    "Agendamento online",
+  "Xsites: $299 starting":
+    "Xsites: a partir de US$ 299",
+  "A professional website for your shop.":
+    "Um site profissional para a sua barbearia.",
+  "A clean site built for service businesses. Start with the essentials and add pages and features as you grow.":
+    "Um site limpo, feito para negócios de serviço. Comece com o essencial e vá adicionando páginas e recursos conforme cresce.",
+  "Responsive":
+    "Responsivo",
+  "SEO Optimized":
+    "Otimizado para SEO",
+  "Fast Loading":
+    "Carregamento rápido",
+  "Xareable: $49 a month":
+    "Xareable: US$ 49 por mês",
+  "Your social media, handled.":
+    "Suas redes sociais, resolvidas.",
+  "Create and publish posts with AI from one place. Post by hand or put it on a schedule and stay active every week.":
+    "Crie e publique posts com IA em um só lugar. Publique na hora ou deixe agendado e fique ativo toda semana.",
+  "AI Content":
+    "Conteúdo com IA",
+  "Multi-Platform":
+    "Várias plataformas",
+  "Analytics":
+    "Estatísticas",
+  "Ads that fill the calendar: talk to us":
+    "Anúncios que enchem a agenda: fale com a gente",
+  "Google Ads, Facebook and Instagram Ads, TikTok Ads, retargeting campaigns, and campaign optimization.":
+    "Google Ads, anúncios no Facebook e Instagram, anúncios no TikTok, campanhas de retargeting e otimização de campanha.",
+  "Google Ads":
+    "Google Ads",
+  "Meta & TikTok Ads":
+    "Anúncios no Meta e TikTok",
+  "Retargeting campaigns":
+    "Campanhas de retargeting",
+  "Campaign optimization":
+    "Otimização de campanha",
   "Order your NFC keychains":
     "Peça os seus chaveiros NFC",
   "Choose how many you need, send us your logo, and we confirm every detail with you before anything is produced.":
