@@ -362,4 +362,90 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Pronto para pedir?",
   "About a minute to fill in. We confirm everything with you on WhatsApp before producing anything.":
     "Cerca de um minuto para preencher. Confirmamos tudo com você no WhatsApp antes de produzir qualquer coisa.",
+
+  // ── /products, /products/nfc-review-plaque, /products/nfc-keychains ─────
+  "Products":
+    "Produtos",
+  "Things we make for your counter.":
+    "Coisas que a gente faz para o seu balcão.",
+  "Ask about a product":
+    "Perguntar sobre um produto",
+  "Made in-house":
+    "Feito por nós",
+  "What we make":
+    "O que a gente faz",
+  "Two things, each with its own page.":
+    "Duas coisas, cada uma com a sua própria página.",
+  "NFC review plaque":
+    "Placa de avaliação NFC",
+  "A plaque for your counter that opens your Google review page in one tap.":
+    "Uma placa para o seu balcão que abre a sua página de avaliação no Google com um toque.",
+  "NFC keychains":
+    "Chaveiros NFC",
+  "Custom keychains with your branding, plus a display to sell them at your counter.":
+    "Chaveiros personalizados com a sua marca, mais um display para você vender no balcão.",
+  "Not sure which one you need?":
+    "Não sabe qual você precisa?",
+  "Tell us about your business in a minute and we'll point you to the right one.":
+    "Conte sobre o seu negócio em um minuto e a gente te indica o certo.",
+  // "A plaque for your counter. Tap a phone on it and it opens your Google
+  // review page." already has an entry above (the /barbershops NFC block).
+  "Ask for a quote":
+    "Pedir um orçamento",
+  "What happens when someone taps it":
+    "O que acontece quando alguém encosta o celular",
+  "No app, nothing to type":
+    "Sem aplicativo, sem digitar nada",
+  "A customer holds their phone near the plaque. It opens your Google review page right away, while the visit is still fresh in their mind.":
+    "O cliente encosta o celular na placa. Ela abre a sua página de avaliação no Google na hora, enquanto o atendimento ainda está fresco na memória dele.",
+  "Made for":
+    "Feito para",
+  "Works anywhere customers pause":
+    "Funciona em qualquer lugar onde o cliente para",
+  "Works anywhere a customer stops for a moment.":
+    "Funciona em qualquer lugar onde o cliente para por um instante.",
+  "Barbershops":
+    "Barbearias",
+  "At the chair or the front desk.":
+    "Na cadeira ou na recepção.",
+  "Salons":
+    "Salões",
+  "At reception or at the styling station.":
+    "Na recepção ou na estação de trabalho.",
+  "Restaurants":
+    "Restaurantes",
+  "On the table or by the register.":
+    "Na mesa ou perto do caixa.",
+  "Any counter":
+    "Qualquer balcão",
+  "Anywhere a customer pauses for a few seconds.":
+    "Em qualquer lugar onde o cliente pare por alguns segundos.",
+  "Make it yours":
+    "Do seu jeito",
+  "Made your way":
+    "Feito do seu jeito",
+  "What we print":
+    "O que a gente imprime",
+  "We print it with your logo and colors, and the text you want on it.":
+    "A gente imprime com a sua logo, as suas cores e o texto que você quiser.",
+  "There's no set price. We quote based on what you need.":
+    "Não tem preço fixo. A gente cobra de acordo com o que você precisa.",
+  "Custom keychains with your branding. The tap opens the link you choose.":
+    "Chaveiros personalizados com a sua marca. O toque abre o link que você escolher.",
+  "Custom 3D-printed NFC keychains with a business logo":
+    "Chaveiros NFC personalizados e impressos em 3D com a logo de um negócio",
+  "A customer holds their phone near the keychain. It opens the link you picked, your booking page, Instagram, or your reviews.":
+    "O cliente encosta o celular no chaveiro. Ele abre o link que você escolheu: a sua página de agendamento, o Instagram ou as suas avaliações.",
+  "We print the keychain with your branding and program the tag with the link you pick.":
+    "A gente imprime o chaveiro com a sua marca e programa a tag com o link que você escolher.",
+  "Extra revenue":
+    "Renda extra",
+  "A display for your counter":
+    "Um display para o seu balcão",
+  "Sell them yourself":
+    "Venda você mesmo",
+  "We also make a display for your counter so you can sell the keychains yourself.":
+    "A gente também faz um display para o seu balcão, para você mesmo vender os chaveiros.",
+  "It brings in a bit of extra money for the shop.":
+    "Isso traz um dinheiro extra para o negócio.",
 };

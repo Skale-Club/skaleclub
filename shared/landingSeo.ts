@@ -107,11 +107,23 @@ export const LANDING_SEO: Record<string, LandingSeo> = {
       "Things we 3D print for your counter: an NFC review plaque and custom NFC keychains.",
     locale: "en_US",
   },
+  "products-br": {
+    title: "Produtos | Skale Club",
+    description:
+      "O que a gente imprime em 3D para o seu balcão: uma placa de avaliação NFC e chaveiros NFC personalizados.",
+    locale: "pt_BR",
+  },
   "nfc-review-plaque": {
     title: "NFC Review Plaque | Skale Club",
     description:
       "A 3D-printed plaque for your counter. Tap a phone on it and it opens your Google review page. Made to order.",
     locale: "en_US",
+  },
+  "nfc-review-plaque-br": {
+    title: "Placa de Avaliação NFC | Skale Club",
+    description:
+      "Uma placa impressa em 3D para o seu balcão. O cliente encosta o celular e ela abre a sua página de avaliação no Google. Feita sob encomenda.",
+    locale: "pt_BR",
   },
   // DB slug for the product at public path /products/nfc-keychains — kept
   // distinct from the existing "nfc-keychains" slug (the ads landing / pricing
@@ -123,6 +135,12 @@ export const LANDING_SEO: Record<string, LandingSeo> = {
     description:
       "Custom 3D-printed NFC keychains with your branding. The tap opens the link you choose. Made to order.",
     locale: "en_US",
+  },
+  "nfc-custom-keychains-br": {
+    title: "Chaveiros NFC | Skale Club",
+    description:
+      "Chaveiros NFC personalizados e impressos em 3D com a sua marca. O toque abre o link que você escolher. Feitos sob encomenda.",
+    locale: "pt_BR",
   },
 };
 
@@ -158,13 +176,17 @@ export function productDbSlugForUrlSlug(urlSlug: string): string | undefined {
 // A managed bilingual pair stores single-segment slugs (`x` and `x-br`), but the PT
 // member's canonical public URL is the `/br/x` prefix form. Legacy `/x-br` and
 // `/x/br` URLs keep rendering; they simply self-report the `/br/x` canonical.
-// A product's DB slug (e.g. "nfc-custom-keychains") reports its /products/<urlSlug>
-// public path via PRODUCT_ROUTES_BY_DB_SLUG.
+// A product's DB slug (e.g. "nfc-custom-keychains", or its "-br" pair) reports
+// its /products/<urlSlug> (or /br/products/<urlSlug>) public path via
+// PRODUCT_ROUTES_BY_DB_SLUG — "-br" is stripped from the DB slug FIRST, so the
+// product-namespace lookup always sees the bare (English) DB slug, then the
+// pt-BR path prefix is applied last.
 export function landingPathForSlug(slug: string): string {
-  if (slug.endsWith("-br")) return withLanguage(`/${slug.slice(0, -3)}`, "pt");
-  const productUrlSlug = PRODUCT_ROUTES_BY_DB_SLUG.get(slug);
-  if (productUrlSlug) return `/products/${productUrlSlug}`;
-  return `/${slug}`;
+  const isPt = slug.endsWith("-br");
+  const baseSlug = isPt ? slug.slice(0, -3) : slug;
+  const productUrlSlug = PRODUCT_ROUTES_BY_DB_SLUG.get(baseSlug);
+  const path = productUrlSlug ? `/products/${productUrlSlug}` : `/${baseSlug}`;
+  return isPt ? withLanguage(path, "pt") : path;
 }
 
 // Inverse of landingPathForSlug. Returns "" for "/" (in either language) or any
@@ -176,7 +198,9 @@ export function slugForLandingPath(pathname: string): string {
 
   const segments = path.slice(1).split("/");
   if (segments.length === 2 && segments[0] === "products") {
-    return productDbSlugForUrlSlug(segments[1]) ?? ""; // unmapped -> not a landing (404 elsewhere)
+    const dbSlug = productDbSlugForUrlSlug(segments[1]);
+    if (!dbSlug) return ""; // unmapped -> not a landing (404 elsewhere)
+    return language === "pt" ? `${dbSlug}-br` : dbSlug;
   }
   if (segments.length !== 1) return "";
   return language === "pt" ? `${segments[0]}-br` : segments[0];

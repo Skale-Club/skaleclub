@@ -713,5 +713,12 @@ export const translations = {
     'Something went wrong on our side': 'Algo deu errado do nosso lado',
     'An unexpected error stopped this page. Reloading usually fixes it.': 'Um erro inesperado interrompeu esta página. Recarregar costuma resolver.',
     'Reload': 'Recarregar', 'Skip to content': 'Pular para o conteúdo',
+    // /products lead forms (scripts/seed-products-landing.ts) — question
+    // strings, not page copy, so they live here rather than in
+    // scripts/data/landing-pt-copy.ts (which only covers `pages.sections`).
+    // "What's the name of your business?" / "Your business name" /
+    // "you@yourbusiness.com" already have entries above (line ~281-283).
+    'What kind of business is it?': 'Que tipo de negócio é?',
+    'Barbershop': 'Barbearia', 'Salon': 'Salão', 'Restaurant': 'Restaurante',
   }
 } as const;

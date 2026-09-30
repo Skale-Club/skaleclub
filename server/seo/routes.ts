@@ -119,12 +119,13 @@ export async function resolveRoute(
     // segment resolves to a DB slug through shared/landingSeo.ts's
     // PRODUCT_ROUTES (the single source of truth, also used by the client);
     // an unmapped segment (any product slug we didn't seed) is a real 404,
-    // not a silent fallback to some other row.
+    // not a silent fallback to some other row. findLanding() gives the same
+    // "-br" preference + English fallback as the single-segment branch above,
+    // so /br/products/<slug> resolves the PT row when one exists.
     if (segments.length === 2 && segments[0] === "products") {
       const dbSlug = productDbSlugForUrlSlug(segments[1]);
       if (!dbSlug) return { ...NOT_FOUND };
-      // Products are English-only for now: no "-br" pairing via findLanding().
-      const landing = await getLandingRow(dbSlug);
+      const landing = await findLanding(dbSlug, language);
       if (!landing) return { ...NOT_FOUND };
       const alternate = landing.alternateSlug ? await getLandingRow(landing.alternateSlug) : null;
       return ok({ landing, alternate });

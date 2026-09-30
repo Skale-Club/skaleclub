@@ -7,13 +7,16 @@
 //
 // Run: npx tsx --env-file=.env scripts/seed-products-landing.ts [--apply]
 //
-// Creates / updates (6 rows):
-//   1. forms  WHERE slug = 'products-leads'              (generic — group page)
+// Creates / updates (9 rows):
+//   1. forms  WHERE slug = 'products-leads'                  (generic — group page)
 //   2. forms  WHERE slug = 'nfc-review-plaque-leads'
 //   3. forms  WHERE slug = 'nfc-custom-keychains-leads'
-//   4. pages  WHERE slug = 'products'                     -> served at /products
-//   5. pages  WHERE slug = 'nfc-review-plaque'            -> served at /products/nfc-review-plaque
-//   6. pages  WHERE slug = 'nfc-custom-keychains'         -> served at /products/nfc-custom-keychains
+//   4. pages  WHERE slug = 'products'                        -> served at /products (EN)
+//   5. pages  WHERE slug = 'products-br'                     -> served at /br/products (PT)
+//   6. pages  WHERE slug = 'nfc-review-plaque'                -> served at /products/nfc-review-plaque (EN)
+//   7. pages  WHERE slug = 'nfc-review-plaque-br'              -> served at /br/products/nfc-review-plaque (PT)
+//   8. pages  WHERE slug = 'nfc-custom-keychains'              -> served at /products/nfc-keychains (EN)
+//   9. pages  WHERE slug = 'nfc-custom-keychains-br'           -> served at /br/products/nfc-keychains (PT)
 //
 // All three pages are built ONLY from already-registered section types
 // (heroWebsites, featureGrid, contentBlocks, leadFormCta) — the same building
@@ -50,9 +53,13 @@
 // /nfc-review-plaque — see server/canonicalHost.ts and the matching
 // client-side Route in App.tsx.
 //
-// English only for now — not requested in Portuguese, and these pages have no
-// "-br" counterpart or translations table entry. Cheap to add later the same
-// way scripts/seed-barbershop-translations.ts does it for /barbershops.
+// Bilingual, same as /barbershops: each page is an EN/PT pair sharing the
+// SAME sections array (copy is t()-based, driven by the pages.language
+// column). seedPage() bakes the curated pt-BR copy from
+// scripts/data/landing-pt-copy.ts straight into every "-br" row automatically
+// (scripts/lib/pt-copy.ts) — no separate translations-table seed for these
+// pages, on purpose (see O4 in scripts/seed-barbershop-translations.ts for
+// why that table is scoped tightly and not the default choice here).
 //
 // No pricing anywhere on these three pages: both products are quoted per
 // order ("Ask for a quote"), matching the brief.
@@ -302,9 +309,17 @@ async function main(apply: boolean) {
     apply,
   );
 
-  await seedPage({ slug: "products", name: "Products", language: "en", sections: PRODUCTS_SECTIONS }, apply);
-  await seedPage({ slug: "nfc-review-plaque", name: "NFC Review Plaque", language: "en", sections: NFC_REVIEW_PLAQUE_SECTIONS }, apply);
-  await seedPage({ slug: "nfc-custom-keychains", name: "NFC Keychains (product)", language: "en", sections: NFC_KEYCHAINS_SECTIONS }, apply);
+  // Each pair shares the SAME sections array; seedPage() bakes the pt-BR copy
+  // into the "-br" row (scripts/data/landing-pt-copy.ts) when language is "pt".
+  const PAGES: Array<{ slug: string; name: string; language: "en" | "pt"; alternateSlug: string; sections: PageSection[] }> = [
+    { slug: "products", name: "Products (EN)", language: "en", alternateSlug: "products-br", sections: PRODUCTS_SECTIONS },
+    { slug: "products-br", name: "Products (PT)", language: "pt", alternateSlug: "products", sections: PRODUCTS_SECTIONS },
+    { slug: "nfc-review-plaque", name: "NFC Review Plaque (EN)", language: "en", alternateSlug: "nfc-review-plaque-br", sections: NFC_REVIEW_PLAQUE_SECTIONS },
+    { slug: "nfc-review-plaque-br", name: "NFC Review Plaque (PT)", language: "pt", alternateSlug: "nfc-review-plaque", sections: NFC_REVIEW_PLAQUE_SECTIONS },
+    { slug: "nfc-custom-keychains", name: "NFC Keychains product (EN)", language: "en", alternateSlug: "nfc-custom-keychains-br", sections: NFC_KEYCHAINS_SECTIONS },
+    { slug: "nfc-custom-keychains-br", name: "NFC Keychains product (PT)", language: "pt", alternateSlug: "nfc-custom-keychains", sections: NFC_KEYCHAINS_SECTIONS },
+  ];
+  for (const spec of PAGES) await seedPage(spec, apply);
 }
 
 void withSeedGuard(main);
