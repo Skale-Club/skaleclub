@@ -99,7 +99,7 @@ function HeroCtas({ props, ctaLabel }: { props: HeroWebsitesProps; ctaLabel: str
           </PillLink>
         ) : null}
       </div>
-      {props.secondaryCtaNote && (
+      {isTel && props.secondaryCtaNote && (
         <p className="mt-3 max-w-md text-sm leading-6 text-fog-400">{t(props.secondaryCtaNote)}</p>
       )}
     </div>
