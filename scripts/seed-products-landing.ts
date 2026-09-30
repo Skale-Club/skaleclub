@@ -115,12 +115,11 @@ const MADE_FOR_SECTION: PageSection = {
   props: {
     eyebrow: "Made for",
     heading: "Works anywhere customers pause",
-    subheading: "Works anywhere a customer stops for a moment.",
     items: [
       { icon: "IdCard", title: "Barbershops", description: "At the chair or the front desk." },
       { icon: "ConciergeBell", title: "Salons", description: "At reception or at the styling station." },
       { icon: "UtensilsCrossed", title: "Restaurants", description: "On the table or by the register." },
-      { icon: "Store", title: "Any counter", description: "Anywhere a customer pauses for a few seconds." },
+      { icon: "Store", title: "Any counter", description: "Front desk, register, waiting area." },
     ],
   },
 };
@@ -201,12 +200,12 @@ export const NFC_REVIEW_PLAQUE_SECTIONS: PageSection[] = [
   {
     type: "contentBlocks",
     props: {
-      eyebrow: "Make it yours",
-      heading: "Made your way",
+      eyebrow: "Customization",
+      heading: "Made to order",
       blocks: [
         {
           heading: "What we print",
-          paragraphs: ["We print it with your logo and colors, and the text you want on it."],
+          paragraphs: ["We print it with your logo and colors. You choose the words on it."],
         },
       ],
     },
@@ -246,7 +245,7 @@ export const NFC_KEYCHAINS_SECTIONS: PageSection[] = [
         {
           heading: "No app, nothing to type",
           paragraphs: [
-            "A customer holds their phone near the keychain. It opens the link you picked, your booking page, Instagram, or your reviews.",
+            "A customer holds their phone near the keychain. It opens the link you picked. Most shops use their booking page or their Google reviews.",
           ],
         },
       ],
@@ -256,8 +255,8 @@ export const NFC_KEYCHAINS_SECTIONS: PageSection[] = [
   {
     type: "contentBlocks",
     props: {
-      eyebrow: "Make it yours",
-      heading: "Made your way",
+      eyebrow: "Customization",
+      heading: "Made to order",
       blocks: [
         {
           heading: "What we print",

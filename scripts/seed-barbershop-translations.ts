@@ -152,8 +152,8 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
     translated: "Ouça funcionando: (224) 551-6131",
   },
   {
-    source: "An AI answers that line for a barbershop. It gives prices and hours and books the cut.",
-    translated: "Uma IA atende esse número para uma barbearia. Ela informa preço e horário e agenda o corte.",
+    source: "An AI answers that line for a barbershop. It gives prices and hours. Then it books the cut.",
+    translated: "Uma IA atende esse número para uma barbearia. Ela informa preço e horário. Depois agenda o corte.",
   },
   { source: "Let's fill your chairs", translated: "Vamos encher suas cadeiras" },
   {
@@ -254,11 +254,10 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
     source: "Google Ads, Facebook and Instagram Ads, TikTok Ads, retargeting campaigns, and campaign optimization.",
     translated: "Google Ads, anúncios no Facebook e Instagram, anúncios no TikTok, campanhas de retargeting e otimização de campanha.",
   },
-  // Identity row — see the note above the "(555) 123-4567" entry.
-  { source: "Google Ads", translated: "Google Ads" },
-  { source: "Meta & TikTok Ads", translated: "Anúncios no Meta e TikTok" },
-  { source: "Retargeting campaigns", translated: "Campanhas de retargeting" },
-  { source: "Campaign optimization", translated: "Otimização de campanha" },
+  // The bullets that used to repeat these same four terms ("Google Ads",
+  // "Meta & TikTok Ads", "Retargeting campaigns", "Campaign optimization")
+  // were removed from the page (the paragraph above already says all of
+  // it) — dropped here too, same reasoning as the other dead rows above.
 
   // ── Reviews section (props.title/subtitle — see seed-barbershop-landing.ts
   // for why these are no longer left as `props: {}`) ──────────────────────

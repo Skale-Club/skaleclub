@@ -22,11 +22,12 @@
 //
 // Content brief (2026-09-30): one page, one ask (call the demo number or send
 // the lead form), built entirely from registered section types — no new page
-// component. The price, priceLabel, description and feature bullets for
-// Xkedule/Xsites/Xareable and the "Paid Advertising" service card are copied
-// VERBATIM from the live /api/portfolio-services and /api/company-settings
-// responses, so it never invents a number the real catalog doesn't charge —
-// see the note above LANDING_SECTIONS for exactly which fields. The NFC block
+// component. The price, priceLabel and description for Xkedule/Xsites/
+// Xareable, and the paragraph for the "Paid Advertising" service card, are
+// copied VERBATIM from the live /api/portfolio-services and
+// /api/company-settings responses, so it never invents a number the real
+// catalog doesn't charge — see the note above LANDING_SECTIONS for exactly
+// which fields. The NFC block
 // covers the three real 3D-printed products (review plaque, custom
 // keychains, keychain display), each linking to its own page under
 // /products/ (scripts/seed-products-landing.ts) — not a generic "NFC tag" —
@@ -240,8 +241,8 @@ const BARBERSHOP_LEADS_CONFIG: FormConfig = {
 // to that page.
 //
 // Pricing block: the price, priceLabel and description of Xkedule/Xsites/
-// Xareable, and the Ads card's whole paragraph + feature bullets, are copied
-// VERBATIM on 2026-09-30 from the live public catalog:
+// Xareable, and the Ads card's whole paragraph, are copied VERBATIM on
+// 2026-09-30 from the live public catalog:
 //   curl https://skale.club/api/portfolio-services   (Xkedule/Xsites/Xareable)
 //   curl https://skale.club/api/company-settings      ("Paid Advertising" card
 //                                                       under homepageContent
@@ -261,7 +262,7 @@ export const LANDING_SECTIONS: PageSection[] = [
       ctaLabel: "Get more clients",
       secondaryCtaLabel: "Hear it working: (224) 551-6131",
       secondaryCtaHref: "tel:+12245516131",
-      secondaryCtaNote: "An AI answers that line for a barbershop. It gives prices and hours and books the cut.",
+      secondaryCtaNote: "An AI answers that line for a barbershop. It gives prices and hours. Then it books the cut.",
     },
   },
   {
@@ -372,7 +373,6 @@ export const LANDING_SECTIONS: PageSection[] = [
           paragraphs: [
             "Google Ads, Facebook and Instagram Ads, TikTok Ads, retargeting campaigns, and campaign optimization.",
           ],
-          bullets: ["Google Ads", "Meta & TikTok Ads", "Retargeting campaigns", "Campaign optimization"],
         },
       ],
     },

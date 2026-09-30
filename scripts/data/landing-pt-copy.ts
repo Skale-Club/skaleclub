@@ -156,8 +156,8 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Quero mais clientes",
   "Hear it working: (224) 551-6131":
     "Ouça funcionando: (224) 551-6131",
-  "An AI answers that line for a barbershop. It gives prices and hours and books the cut.":
-    "Uma IA atende esse número para uma barbearia. Ela informa preço e horário e agenda o corte.",
+  "An AI answers that line for a barbershop. It gives prices and hours. Then it books the cut.":
+    "Uma IA atende esse número para uma barbearia. Ela informa preço e horário. Depois agenda o corte.",
   "Let's fill your chairs":
     "Vamos encher suas cadeiras",
   "Tell us about your shop in a minute. Or call (224) 551-6131 first to hear the AI answer the phone.":
@@ -248,14 +248,6 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Anúncios que enchem a agenda: fale com a gente",
   "Google Ads, Facebook and Instagram Ads, TikTok Ads, retargeting campaigns, and campaign optimization.":
     "Google Ads, anúncios no Facebook e Instagram, anúncios no TikTok, campanhas de retargeting e otimização de campanha.",
-  "Google Ads":
-    "Google Ads",
-  "Meta & TikTok Ads":
-    "Anúncios no Meta e TikTok",
-  "Retargeting campaigns":
-    "Campanhas de retargeting",
-  "Campaign optimization":
-    "Otimização de campanha",
   "What people say":
     "O que as pessoas dizem",
   "Real reviews from businesses we've worked with.":
@@ -378,8 +370,6 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Feito para",
   "Works anywhere customers pause":
     "Funciona em qualquer lugar onde o cliente para",
-  "Works anywhere a customer stops for a moment.":
-    "Funciona em qualquer lugar onde o cliente para por um instante.",
   "Barbershops":
     "Barbearias",
   "At the chair or the front desk.":
@@ -394,24 +384,24 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Na mesa ou perto do caixa.",
   "Any counter":
     "Qualquer balcão",
-  "Anywhere a customer pauses for a few seconds.":
-    "Em qualquer lugar onde o cliente pare por alguns segundos.",
-  "Make it yours":
-    "Do seu jeito",
-  "Made your way":
-    "Feito do seu jeito",
+  "Front desk, register, waiting area.":
+    "Recepção, caixa, sala de espera.",
+  "Customization":
+    "Personalização",
+  "Made to order":
+    "Feito sob encomenda",
   "What we print":
     "O que a gente imprime",
-  "We print it with your logo and colors, and the text you want on it.":
-    "A gente imprime com a sua logo, as suas cores e o texto que você quiser.",
+  "We print it with your logo and colors. You choose the words on it.":
+    "A gente imprime com a sua logo e as suas cores. Você escolhe as palavras.",
   "Tell us about your business in a minute. There's no set price. We quote based on what you need.":
     "Conte sobre o seu negócio em um minuto. Não tem preço fixo. A gente cobra de acordo com o que você precisa.",
   "Custom keychains with your branding. The tap opens the link you choose.":
     "Chaveiros personalizados com a sua marca. O toque abre o link que você escolher.",
   "Custom 3D-printed NFC keychains with a business logo":
     "Chaveiros NFC personalizados e impressos em 3D com a logo de um negócio",
-  "A customer holds their phone near the keychain. It opens the link you picked, your booking page, Instagram, or your reviews.":
-    "O cliente encosta o celular no chaveiro. Ele abre o link que você escolheu: a sua página de agendamento, o Instagram ou as suas avaliações.",
+  "A customer holds their phone near the keychain. It opens the link you picked. Most shops use their booking page or their Google reviews.":
+    "O cliente encosta o celular no chaveiro. Ele abre o link que você escolheu. A maioria dos negócios usa a página de agendamento ou as avaliações no Google.",
   "We print the keychain with your branding and program the tag with the link you pick.":
     "A gente imprime o chaveiro com a sua marca e programa a tag com o link que você escolher.",
   "Extra revenue":
