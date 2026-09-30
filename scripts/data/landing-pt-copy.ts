@@ -174,8 +174,8 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Mais dinheiro",
   "More money in your pocket":
     "Mais dinheiro no seu bolso",
-  "Your own website, ads that bring people in, and tools you can sell at the counter.":
-    "Seu próprio site, anúncios que trazem gente nova e itens que você pode vender no balcão.",
+  "Where the extra money actually comes from.":
+    "De onde vem o dinheiro extra.",
   "Your own website":
     "Seu próprio site",
   "It takes bookings and the clients stay yours, not a marketplace's.":
@@ -190,26 +190,26 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Mais tempo",
   "More time in your day":
     "Mais tempo no seu dia",
-  "The phone gets answered, no-shows drop, and your feed doesn't go quiet.":
-    "O telefone é atendido, as faltas caem e o seu perfil não fica parado.",
-  "The phone gets answered":
-    "O telefone é atendido",
-  "An AI answers calls and texts 24/7 and books the appointment.":
-    "Uma IA atende ligações e mensagens 24 horas por dia e agenda o horário.",
+  "Where the extra time in your day comes from.":
+    "De onde vem o tempo extra no seu dia.",
+  "Calls and texts get answered":
+    "Ligações e mensagens são atendidas",
+  "An AI answers calls and texts any time of day and books the appointment.":
+    "Uma IA atende ligações e mensagens a qualquer hora do dia e agenda o horário.",
   "Fewer no-shows":
     "Menos faltas",
   "Reminders go out on their own and cut down on no-shows.":
     "Os lembretes são enviados automaticamente e reduzem as faltas.",
-  "Social posts, handled":
-    "Postagens, resolvidas",
+  "Social media":
+    "Redes sociais",
   "Posts get made and scheduled for you every week.":
     "As postagens são feitas e agendadas para você toda semana.",
 
   // ── /barbershops "NFC for your shop" feature grid ────────────────────────
   "NFC for your shop":
     "NFC para a sua barbearia",
-  "Small tags, real use at the counter":
-    "Peças pequenas, uso real no balcão",
+  "For your counter":
+    "Para o seu balcão",
   "Three things we 3D print for barbershops, made to order.":
     "Três itens que imprimimos em 3D para barbearias, feitos sob encomenda.",
   "Review plaque":
@@ -218,8 +218,8 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Uma placa para o seu balcão. O cliente encosta o celular e ela abre a página de avaliação no Google.",
   "Custom keychains":
     "Chaveiros personalizados",
-  "NFC keychains with your barbershop's own branding, for your shop to use or give away.":
-    "Chaveiros NFC com a marca da sua barbearia, para você usar ou dar de brinde.",
+  "NFC keychains with your barbershop's own branding. The tap opens the link you choose.":
+    "Chaveiros NFC com a marca da sua barbearia. O toque abre o link que você escolher.",
   "Keychain display":
     "Display de chaveiros",
   "A display for your counter so you can sell the keychains yourself. Extra money for the shop.":
@@ -230,8 +230,8 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Preços",
   "What you can get":
     "O que você pode ter",
-  "Real prices. No surprises.":
-    "Preço real. Sem surpresa.",
+  "Same prices we charge everyone.":
+    "Os mesmos preços que cobramos de todo mundo.",
   "Xkedule: $89 a month":
     "Xkedule: US$ 89 por mês",
   "Your site that books for you.":
@@ -258,8 +258,8 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Carregamento rápido",
   "Xareable: $49 a month":
     "Xareable: US$ 49 por mês",
-  "Your social media, handled.":
-    "Suas redes sociais, resolvidas.",
+  "We post for you.":
+    "A gente posta para você.",
   "Create and publish posts with AI from one place. Post by hand or put it on a schedule and stay active every week.":
     "Crie e publique posts com IA em um só lugar. Publique na hora ou deixe agendado e fique ativo toda semana.",
   "AI Content":
@@ -280,6 +280,10 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Campanhas de retargeting",
   "Campaign optimization":
     "Otimização de campanha",
+  "What people say":
+    "O que as pessoas dizem",
+  "Real reviews from businesses we've worked with.":
+    "Avaliações reais de negócios com quem já trabalhamos.",
   "Order your NFC keychains":
     "Peça os seus chaveiros NFC",
   "Choose how many you need, send us your logo, and we confirm every detail with you before anything is produced.":

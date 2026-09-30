@@ -22,16 +22,23 @@
 //
 // Content brief (2026-09-30): one page, one ask (call the demo number or send
 // the lead form), built entirely from registered section types — no new page
-// component. Pricing for Xkedule/Xsites/Xareable and the "Paid Advertising"
-// service card is copied verbatim from the live /api/portfolio-services and
-// /api/company-settings responses (title/subtitle/description/price/
-// priceLabel/features) so it never invents a number the real catalog
-// doesn't charge. The NFC block covers the three real 3D-printed products
-// (review plaque, custom keychains, keychain display) — not a generic "NFC
-// tag" — and is deliberately its own section rather than a dedicated page.
+// component. The price, priceLabel, description and feature bullets for
+// Xkedule/Xsites/Xareable and the "Paid Advertising" service card are copied
+// VERBATIM from the live /api/portfolio-services and /api/company-settings
+// responses, so it never invents a number the real catalog doesn't charge —
+// see the note above LANDING_SECTIONS for exactly which fields. The NFC block
+// covers the three real 3D-printed products (review plaque, custom
+// keychains, keychain display), each linking to its own page under
+// /products/ (scripts/seed-products-landing.ts) — not a generic "NFC tag" —
+// and is deliberately its own section rather than a dedicated page.
 // Per the site owner: never say "tech", "technology", "small company", or
 // claim to be local — the copy below sells time/money/a full chair, not a
-// technology category.
+// technology category. The `reviews` section is given its own title/subtitle
+// props for exactly that reason: left as `props: {}` it falls back to
+// company-settings' homepage copy, which mentions "technology".
+// Text rule: no em dash, no "frase de efeito" (ad-cliché taglines), no
+// three-parallel-items sentences, no three-item bullet lists — write like a
+// business owner, not a copywriter.
 import "dotenv/config";
 import { pathToFileURL } from "node:url";
 import { seedForm, seedPage, withSeedGuard } from "./lib/seed-utils.js";
@@ -232,15 +239,19 @@ const BARBERSHOP_LEADS_CONFIG: FormConfig = {
 // component defaults). No bgVideoUrl: the /websites video asset is specific
 // to that page.
 //
-// Pricing block copy (Xkedule, Xsites, Xareable, Paid Advertising) was copied
-// verbatim on 2026-09-30 from the live public catalog:
+// Pricing block: the price, priceLabel and description of Xkedule/Xsites/
+// Xareable, and the Ads card's whole paragraph + feature bullets, are copied
+// VERBATIM on 2026-09-30 from the live public catalog:
 //   curl https://skale.club/api/portfolio-services   (Xkedule/Xsites/Xareable)
 //   curl https://skale.club/api/company-settings      ("Paid Advertising" card
 //                                                       under homepageContent
 //                                                       .ourServicesSection.cards)
-// If those prices change in admin, re-copy them here and re-run this script —
-// this page is a snapshot, not a live read, same as every other managed
-// landing on the site.
+// The short tagline on each of the three product blocks ("Your site that
+// books for you.", etc.) is NOT from the API — it is page-specific copy
+// written to fit this landing, not the product's own subtitle field.
+// If the verbatim numbers change in admin, re-copy them here and re-run this
+// script — this page is a snapshot, not a live read, same as every other
+// managed landing on the site.
 export const LANDING_SECTIONS: PageSection[] = [
   {
     type: "heroWebsites",
@@ -258,7 +269,7 @@ export const LANDING_SECTIONS: PageSection[] = [
     props: {
       eyebrow: "More money",
       heading: "More money in your pocket",
-      subheading: "Your own website, ads that bring people in, and tools you can sell at the counter.",
+      subheading: "Where the extra money actually comes from.",
       items: [
         {
           icon: "Globe",
@@ -278,12 +289,12 @@ export const LANDING_SECTIONS: PageSection[] = [
     props: {
       eyebrow: "More time",
       heading: "More time in your day",
-      subheading: "The phone gets answered, no-shows drop, and your feed doesn't go quiet.",
+      subheading: "Where the extra time in your day comes from.",
       items: [
         {
           icon: "Smartphone",
-          title: "The phone gets answered",
-          description: "An AI answers calls and texts 24/7 and books the appointment.",
+          title: "Calls and texts get answered",
+          description: "An AI answers calls and texts any time of day and books the appointment.",
         },
         {
           icon: "MessageCircle",
@@ -292,7 +303,7 @@ export const LANDING_SECTIONS: PageSection[] = [
         },
         {
           icon: "ConciergeBell",
-          title: "Social posts, handled",
+          title: "Social media",
           description: "Posts get made and scheduled for you every week.",
         },
       ],
@@ -303,23 +314,26 @@ export const LANDING_SECTIONS: PageSection[] = [
     type: "featureGrid",
     props: {
       eyebrow: "NFC for your shop",
-      heading: "Small tags, real use at the counter",
+      heading: "For your counter",
       subheading: "Three things we 3D print for barbershops, made to order.",
       items: [
         {
           icon: "Nfc",
           title: "Review plaque",
           description: "A plaque for your counter. Tap a phone on it and it opens your Google review page.",
+          href: "/products/nfc-review-plaque",
         },
         {
           icon: "KeyRound",
           title: "Custom keychains",
-          description: "NFC keychains with your barbershop's own branding, for your shop to use or give away.",
+          description: "NFC keychains with your barbershop's own branding. The tap opens the link you choose.",
+          href: "/products/nfc-keychains",
         },
         {
           icon: "Store",
           title: "Keychain display",
           description: "A display for your counter so you can sell the keychains yourself. Extra money for the shop.",
+          href: "/products/nfc-keychains",
         },
       ],
     },
@@ -329,7 +343,7 @@ export const LANDING_SECTIONS: PageSection[] = [
     props: {
       eyebrow: "Pricing",
       heading: "What you can get",
-      subheading: "Real prices. No surprises.",
+      subheading: "Same prices we charge everyone.",
       theme: "dark",
       blocks: [
         {
@@ -338,7 +352,6 @@ export const LANDING_SECTIONS: PageSection[] = [
             "Your site that books for you.",
             "A booking page with AI that answers messages and calls. It books the appointment when the customer is ready.",
           ],
-          bullets: ["Calendar Sync", "Reminders", "Online Booking"],
         },
         {
           heading: "Xsites: $299 starting",
@@ -346,15 +359,13 @@ export const LANDING_SECTIONS: PageSection[] = [
             "A professional website for your shop.",
             "A clean site built for service businesses. Start with the essentials and add pages and features as you grow.",
           ],
-          bullets: ["Responsive", "SEO Optimized", "Fast Loading"],
         },
         {
           heading: "Xareable: $49 a month",
           paragraphs: [
-            "Your social media, handled.",
+            "We post for you.",
             "Create and publish posts with AI from one place. Post by hand or put it on a schedule and stay active every week.",
           ],
-          bullets: ["AI Content", "Multi-Platform", "Analytics"],
         },
         {
           heading: "Ads that fill the calendar: talk to us",
@@ -366,7 +377,13 @@ export const LANDING_SECTIONS: PageSection[] = [
       ],
     },
   },
-  { type: "reviews", props: {} }, // adapter — reads /api/company-settings (t()-based)
+  {
+    type: "reviews",
+    props: {
+      title: "What people say",
+      subtitle: "Real reviews from businesses we've worked with.",
+    },
+  },
   {
     type: "leadFormCta",
     props: {
