@@ -38,7 +38,6 @@ Get your PostgreSQL connection string from:
 - Local PostgreSQL installation
 - Supabase (https://supabase.com)
 - Neon (https://neon.tech)
-- Vercel Postgres
 - Any PostgreSQL hosting provider
 
 #### Session Secret (REQUIRED)
