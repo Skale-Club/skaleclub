@@ -33,6 +33,7 @@ const PATH_REDIRECTS: Record<string, string> = {
   // segment already belongs to a different, existing page (the ads landing
   // at the top-level /nfc-keychains) and must keep serving it untouched.
   "/nfc-review-plaque": "/products/nfc-review-plaque",
+  "/br/nfc-review-plaque": "/br/products/nfc-review-plaque",
 };
 
 export function registerCanonicalHostRedirects(app: Express) {

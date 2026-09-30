@@ -170,7 +170,12 @@ const PRODUCT_ROUTES_BY_DB_SLUG = new Map(
 
 /** DB slug (as stored in `pages.slug`) for a /products/<urlSlug> URL segment, or undefined if unknown. */
 export function productDbSlugForUrlSlug(urlSlug: string): string | undefined {
-  return PRODUCT_ROUTES[urlSlug];
+  // A plain `PRODUCT_ROUTES[urlSlug]` lookup inherits Object.prototype: a
+  // request for "/products/constructor" or "/products/__proto__" would
+  // return a function/object instead of undefined, 500ing the server
+  // resolver (the catch-all "fail open" path would then serve it as an
+  // indexable 200) and breaking the client render the same way.
+  return Object.hasOwn(PRODUCT_ROUTES, urlSlug) ? PRODUCT_ROUTES[urlSlug] : undefined;
 }
 
 // A managed bilingual pair stores single-segment slugs (`x` and `x-br`), but the PT
