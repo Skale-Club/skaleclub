@@ -32,9 +32,11 @@ const itemSchema = z.object({
   description: z.string(),
   // Optional: makes the card a link to a site path (e.g. a group page's cards
   // pointing at each item's own page). Root-relative only, same convention as
-  // leadFormCta's imageUrl. Absent = the plain, non-interactive card (every
-  // existing use of this section).
-  href:        z.string().regex(/^\//).optional(),
+  // leadFormCta's imageUrl, but tighter: `/^\/` alone also passed "//evil.com"
+  // (protocol-relative, i.e. an external URL). The negative lookahead blocks
+  // a second leading slash (or backslash, which browsers treat the same way).
+  // Absent = the plain, non-interactive card (every existing use of this section).
+  href:        z.string().regex(/^\/(?![\/\\])[a-z0-9/-]*$/).optional(),
 });
 
 export const featureGridPropsSchema = z.object({
