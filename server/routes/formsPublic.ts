@@ -132,7 +132,7 @@ export function registerFormPublicRoutes(app: Express) {
     }),
     async (req, res) => {
     try {
-      if (isBotSubmission(req.body, { source: "forms/skale-hub-group" })) {
+      if (isBotSubmission(req.body, { source: "forms/skale-hub-group", ip: req.ip, userAgent: req.get("user-agent") })) {
         return res.status(201).json({ success: true });
       }
       const parsed = skaleHubGroupLeadSchema.parse(req.body);
@@ -197,7 +197,7 @@ export function registerFormPublicRoutes(app: Express) {
 
       // Bot traps (silent success, nothing revealed): a filled honeypot, or a
       // completed submit under 3s after the form opened (client-measured).
-      if (isBotSubmission(req.body, { source: "forms/progress", checkElapsed: req.body?.formCompleto === true })) {
+      if (isBotSubmission(req.body, { source: "forms/progress", checkElapsed: req.body?.formCompleto === true, ip: req.ip, userAgent: req.get("user-agent") })) {
         return res.json({ ok: true });
       }
 

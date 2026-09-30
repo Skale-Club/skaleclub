@@ -13,6 +13,7 @@ import {
 } from "#shared/schema.js";
 import { requireAdmin, setPublicCache } from "./_shared.js";
 import { rateLimitMiddleware } from "../lib/rateLimit.js";
+import { isBotSubmission } from "../lib/botTrap.js";
 
 // Public intake and access are unauthenticated; without a limit a loop could
 // register thousands of participants or probe integer participant ids.
@@ -96,6 +97,11 @@ export function registerSkaleHubRoutes(app: Express) {
 
   app.post("/api/skale-hub/register", hubPublicRateLimit, async (req, res) => {
     try {
+      // Bot trap: a filled honeypot gets an ordinary "no live" answer — no
+      // participant row, no GHL sync, no access token.
+      if (isBotSubmission(req.body, { source: "skale-hub/register", checkElapsed: false, ip: req.ip, userAgent: req.get("user-agent") })) {
+        return res.status(409).json({ message: "No active live right now." });
+      }
       const parsed = hubRegisterRequestSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ message: parsed.error.errors[0].message });

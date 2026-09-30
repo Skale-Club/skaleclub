@@ -9,6 +9,7 @@ import { registerHealthRoutes } from "./routes/health.js";
 import { registerMonitoringRoute } from "./routes/monitoring.js";
 import { registerCanonicalHostRedirects } from "./canonicalHost.js";
 import { createServer, type Server } from "http";
+import { botDefenseMiddleware, clientIpMiddleware } from "./lib/botDefenseMiddleware.js";
 
 declare module "http" {
   interface IncomingMessage {
@@ -30,10 +31,16 @@ export function log(message: string, source = "express") {
 export async function createApp(): Promise<{ app: express.Express; httpServer: Server }> {
   const app = express();
 
-  // One hop (Traefik) by default. Behind a second proxy such as Cloudflare
-  // set TRUST_PROXY_HOPS=2, or req.ip — and every rate limit and Turnstile
-  // check keyed on it — becomes the edge's address.
+  // One hop (Traefik) by default; still used for req.protocol / req.hostname.
+  // req.ip itself is resolved by clientIpMiddleware below, which handles both
+  // Cloudflare-proxied and direct hosts, so TRUST_PROXY_HOPS no longer decides
+  // which address every rate limit and Turnstile check is keyed on.
   app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS ?? 1));
+
+  // Real visitor IP, then bot defense (bans + scanner trap paths) — before
+  // anything else touches the request. See server/lib/botDefenseMiddleware.ts.
+  app.use(clientIpMiddleware);
+  app.use(botDefenseMiddleware);
 
   app.use(helmet({
     contentSecurityPolicy: false, // managed per-route via meta tags in the SPA
