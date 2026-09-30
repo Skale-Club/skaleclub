@@ -44,6 +44,7 @@ export function Navbar() {
 
   const navLinks = [
     { href: pagePaths.portfolio, label: t("Portfolio") },
+    { href: "/products", label: t("Products") },
   ];
 
   const handleHashNavigation = useCallback((hash: string) => {

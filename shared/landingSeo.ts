@@ -101,22 +101,55 @@ export const LANDING_SEO: Record<string, LandingSeo> = {
       "Receba os avisos das lives semanais do Skale Hub no seu WhatsApp: aquisição de clientes nos EUA, Google Ads, Meta Ads, CRM, automação e IA.",
     locale: "pt_BR",
   },
+  products: {
+    title: "Products | Skale Club",
+    description:
+      "Things we 3D print for your counter: an NFC review plaque and custom NFC keychains.",
+    locale: "en_US",
+  },
+  "nfc-review-plaque": {
+    title: "NFC Review Plaque | Skale Club",
+    description:
+      "A 3D-printed plaque for your counter. Tap a phone on it and it opens your Google review page. Made to order.",
+    locale: "en_US",
+  },
+  // DB slug for the product at public path /products/nfc-keychains — kept
+  // distinct from the existing "nfc-keychains" slug (the ads landing / pricing
+  // page at the top-level /nfc-keychains), which is a different page with
+  // different content. Reusing that slug here would make this product page
+  // render that page's content instead. See PRODUCT_NAMESPACE_SLUGS below.
+  "nfc-custom-keychains": {
+    title: "NFC Keychains | Skale Club",
+    description:
+      "Custom 3D-printed NFC keychains with your branding. The tap opens the link you choose. Made to order.",
+    locale: "en_US",
+  },
 };
+
+// Slugs seeded under scripts/seed-products-landing.ts that live at
+// /products/<slug> instead of at the site root. Everything else keeps the
+// flat /<slug> (or /br/<slug>) mapping below.
+const PRODUCT_NAMESPACE_SLUGS = new Set(["nfc-review-plaque", "nfc-custom-keychains"]);
 
 // A managed bilingual pair stores single-segment slugs (`x` and `x-br`), but the PT
 // member's canonical public URL is the `/br/x` prefix form. Legacy `/x-br` and
 // `/x/br` URLs keep rendering; they simply self-report the `/br/x` canonical.
 export function landingPathForSlug(slug: string): string {
-  return slug.endsWith("-br") ? withLanguage(`/${slug.slice(0, -3)}`, "pt") : `/${slug}`;
+  if (slug.endsWith("-br")) return withLanguage(`/${slug.slice(0, -3)}`, "pt");
+  if (PRODUCT_NAMESPACE_SLUGS.has(slug)) return `/products/${slug}`;
+  return `/${slug}`;
 }
 
 // Inverse of landingPathForSlug. Returns "" for "/" (in either language) or any
-// path that isn't a single managed-landing segment.
+// path that isn't a single managed-landing segment (or a /products/<slug> one).
 export function slugForLandingPath(pathname: string): string {
   const { path, language } = splitLanguagePath(pathname);
   if (path === "/" || path === "") return "";
 
   const segments = path.slice(1).split("/");
+  if (segments.length === 2 && segments[0] === "products" && PRODUCT_NAMESPACE_SLUGS.has(segments[1])) {
+    return segments[1]; // products are English-only for now — no "-br" form
+  }
   if (segments.length !== 1) return "";
   return language === "pt" ? `${segments[0]}-br` : segments[0];
 }

@@ -314,6 +314,12 @@ function Router() {
             {pagePaths.hub !== LEGACY_PATHS.hub && <Route path={`${LEGACY_PATHS.hub}/group`}>{() => <Redirect to="/grupo" />}</Route>}
             <Route path={pagePaths.hub} component={SkaleHub} />
             {pagePaths.hub !== LEGACY_PATHS.hub && <Route path={LEGACY_PATHS.hub} component={SkaleHub} />}
+            {/* /products/<slug> managed landings (scripts/seed-products-landing.ts).
+                Bare "/products" needs no entry here — it's a single segment, so
+                the catch-all "/:slug" below already resolves it. Must stay ABOVE
+                that catch-all. See PRODUCT_NAMESPACE_SLUGS in shared/landingSeo.ts
+                for the canonical-path mapping these pages need on top of it. */}
+            <Route path="/products/:slug" component={DynamicPage} />
             {/* Catch-all dynamic landing route — MUST be last before the 404 fallback.
                 Wouter matches top-down, so any new known route must be added ABOVE this line.
                 A `/br` prefix never reaches the routes (useLanguageLocation strips it):

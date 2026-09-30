@@ -319,7 +319,7 @@ export const translations = {
     'We will respond to your inquiry within 30 days.': 'Responderemos à sua solicitação dentro de 30 dias.',
     'We aim to respond to inquiries within 30 days.': 'Pretendemos responder às solicitações dentro de 30 dias.',
     // Portfolio Page
-    'Portfolio': 'Portfólio', 'Our Services': 'Nossos Serviços', 'Scale Your Business': 'Escale Seu Negócio',
+    'Portfolio': 'Portfólio', 'Products': 'Produtos', 'Our Services': 'Nossos Serviços', 'Scale Your Business': 'Escale Seu Negócio',
     'Stop Doing Repetitive Work. Automate It.': 'Pare de Fazer Trabalho Repetitivo. Automatize.',
     'From AI chatbots to custom dashboards, we build the tech your business actually needs': 'De chatbots com IA a dashboards sob medida, construímos a tecnologia que seu negócio realmente precisa',
     "What's included": 'O que está incluído',
