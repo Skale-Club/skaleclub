@@ -409,7 +409,7 @@ export function VectorizerSection() {
                     <span className="text-muted-foreground">{l.areaMm2.toFixed(0)} mm²</span>
                     <span className="text-muted-foreground">z {l.zMin.toFixed(1)}–{l.zMax.toFixed(1)}</span>
                     <span className="w-14 text-right tabular-nums">{(l.volumeMm3 * PLA_DENSITY).toFixed(2)} g</span>
-                    {l.thinAreaMm2 > 0.05 ? (
+                    {l.thinAreaMm2 > 0.05 && l.thinAreaMm2 > l.areaMm2 * 0.003 ? (
                       <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" aria-label="Has thin details" />
                     ) : (
                       <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-600" aria-label="Printable" />

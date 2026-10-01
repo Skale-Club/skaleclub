@@ -346,7 +346,7 @@ export function vectorize(src: RasterImage, opts: VectorizeOptions, onProgress?:
     }
   }
   if (islandsRemoved > 0) {
-    warnings.push({ level: 'info', message: `${islandsRemoved} speck${islandsRemoved === 1 ? '' : 's'} smaller than ${opts.minIslandMm2} mm² merged into the surrounding colour.` });
+    warnings.push({ level: 'info', message: `Cleaned up ${islandsRemoved} stray speck${islandsRemoved === 1 ? '' : 's'} under ${opts.minIslandMm2} mm² (merged into the surrounding color).` });
   }
   if (thinFixed > 0) {
     warnings.push({ level: 'info', message: `Fine details thickened to the ${opts.minFeatureMm} mm minimum.` });
