@@ -53,7 +53,12 @@ function itemsFromAnalysis(a: ImageAnalysis): PaletteItem[] {
   return a.colors.map((c, i) => ({ id: i, sources: [c.rgb], color: c.hex, name: c.name, share: c.share }));
 }
 
-export function VectorizerSection() {
+interface VectorizerSectionProps {
+  /** Public page: the page supplies its own title, so only the toolbar shows. */
+  embedded?: boolean;
+}
+
+export function VectorizerSection({ embedded = false }: VectorizerSectionProps = {}) {
   const { toast } = useToast();
   const { state: vzState, load, analyze, vectorize, meshes: fetchMeshes, exportFile, svgText } = useVectorizerWorker();
   const fileInput = useRef<HTMLInputElement | null>(null);
@@ -272,7 +277,7 @@ export function VectorizerSection() {
   if (!image || !analysis) {
     return (
       <div className="space-y-6">
-        <Header />
+        {!embedded && <Header />}
         <div
           onDragOver={(e) => {
             e.preventDefault();
@@ -339,17 +344,25 @@ export function VectorizerSection() {
 
   return (
     <div className="space-y-6">
-      <Header
-        action={
+      {embedded ? (
+        <div className="flex justify-end">
           <Button variant="outline" className="gap-2" onClick={reset}>
             <RotateCcw className="h-4 w-4" /> New image
           </Button>
-        }
-      />
+        </div>
+      ) : (
+        <Header
+          action={
+            <Button variant="outline" className="gap-2" onClick={reset}>
+              <RotateCcw className="h-4 w-4" /> New image
+            </Button>
+          }
+        />
+      )}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(360px,1fr)]">
         {/* Left: preview + report */}
-        <div className="space-y-4 xl:sticky xl:top-0 xl:self-start">
+        <div className={cn('space-y-4 xl:sticky xl:self-start', embedded ? 'xl:top-28' : 'xl:top-0')}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="inline-flex rounded-lg bg-muted p-1 text-sm">
               {([

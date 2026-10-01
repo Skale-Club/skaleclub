@@ -62,6 +62,7 @@ export function collectSitemapUrls(
     pair(corePathForKey(key, pageSlugs), CORE_PAGES_LASTMOD);
   }
   pair("/nfc-guide", CORE_PAGES_LASTMOD);
+  pair("/svg", CORE_PAGES_LASTMOD);
 
   // Only active, indexable rows count, both as entries and as pair partners: an
   // hreflang pair pointing at a noindex or inactive page would be invalid.

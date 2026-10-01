@@ -22,6 +22,7 @@ export const RESERVED_SLUGS: readonly string[] = [
   "assets",
   "skale-hub",  // existing hub root
   "br",         // /br — Portuguese home (URL language suffix)
+  "svg",        // /svg — public logo vectorizer
 ];
 
 export function isReservedSlug(slug: string): boolean {

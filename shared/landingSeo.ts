@@ -57,6 +57,18 @@ export const LANDING_SEO: Record<string, LandingSeo> = {
     locale: "pt_BR",
     robots: "noindex, follow",
   },
+  svg: {
+    title: "Free Logo to SVG Converter (PNG, JPG) | Skale Club",
+    description:
+      "Convert a PNG or JPG logo into a clean, editable SVG for Figma, Illustrator and Fusion 360 — exact colors, real corners, no gaps. Free, runs in your browser.",
+    locale: "en_US",
+  },
+  "svg-br": {
+    title: "Conversor de Logo para SVG Grátis (PNG, JPG) | Skale Club",
+    description:
+      "Converta um logo PNG ou JPG em SVG limpo e editável para Figma, Illustrator e Fusion 360 — cores exatas, cantos reais, sem frestas. Grátis, roda no seu navegador.",
+    locale: "pt_BR",
+  },
   "nfc-guide": {
     title: "NFC Keychain Guide: Models, Pricing and FAQs | Skale Club",
     description:
