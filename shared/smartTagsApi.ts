@@ -15,6 +15,7 @@ export interface SmartTagListItem {
   serialNumber: number | null;
   productType: string;
   status: string;
+  nfcStatus: string;
   label: string | null;
   destinationType: string | null;
   destinationUrl: string | null;
@@ -120,4 +121,49 @@ export interface SmartTagBatchItem {
   inventoryCount: number;
   assignedCount: number;
   activeCount: number;
+  nfcVerifiedCount: number;
+}
+
+// ─── NFC provisioning (desktop provisioner) ──────────────────────────────────
+
+export interface ProvisionerDeviceItem {
+  id: string;
+  deviceName: string;
+  platform: string | null;
+  appVersion: string | null;
+  status: string; // pairing | active | revoked
+  tokenPrefix: string | null;
+  pairingExpiresAt: string | null;
+  lastSeenAt: string | null;
+  pairedAt: string | null;
+  createdAt: string;
+  revokedAt: string | null;
+}
+
+export interface ProvisioningJobItem {
+  id: string;
+  status: string;
+  expectedUrl: string;
+  readbackUrl: string | null;
+  tagType: string | null;
+  errorCode: string | null;
+  errorMessage: string | null;
+  deviceName: string | null;
+  createdAt: string;
+  claimedAt: string | null;
+  completedAt: string | null;
+  expiresAt: string;
+  events: Array<{ id: number; type: string; detail: Record<string, unknown> | null; createdAt: string }>;
+}
+
+export interface TagProvisioningState {
+  status: string; // not_programmed | programmed | verified | locked | failed
+  programmedAt: string | null;
+  verifiedAt: string | null;
+  lockedAt: string | null;
+  deviceName: string | null;
+  /** First real NFC tap / QR scan on this tag after the chip was verified (final QA). */
+  tapTestAt: string | null;
+  qrTestAt: string | null;
+  jobs: ProvisioningJobItem[];
 }

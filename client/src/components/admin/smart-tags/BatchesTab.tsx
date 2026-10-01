@@ -106,6 +106,7 @@ export function BatchesTab({ onOpenBatch }: { onOpenBatch: (id: string) => void 
                     <span>{b.quantity} pcs</span>
                     <span>{b.inventoryCount} inventory</span>
                     <span>{b.assignedCount} assigned ({b.activeCount} active)</span>
+                    <span>{b.nfcVerifiedCount} chips verified</span>
                   </div>
                 </button>
               </li>
@@ -151,6 +152,7 @@ export function BatchDetail({ id, onBack, onOpenTag }: { id: string; onBack: () 
   const total = batch.tags.length;
   const inventory = batch.tags.filter((t) => t.status === 'inventory').length;
   const active = batch.tags.filter((t) => t.status === 'active').length;
+  const chipsVerified = batch.tags.filter((t) => t.nfcStatus === 'verified' || t.nfcStatus === 'locked').length;
   const exportBase = `/api/admin/smart-tag-batches/${batch.id}`;
 
   return (
@@ -176,7 +178,7 @@ export function BatchDetail({ id, onBack, onOpenTag }: { id: string; onBack: () 
           <MetricCard label="Tags" value={total} helper={`${batch.quantity} ordered`} />
           <MetricCard label="Inventory" value={inventory} />
           <MetricCard label="Assigned / live" value={total - inventory} helper={`${percent(total - inventory, total)} of batch`} />
-          <MetricCard label="Active" value={active} />
+          <MetricCard label="Active" value={active} helper={`${chipsVerified} chip(s) verified`} />
         </div>
         <div className="rounded-xl border border-dashed border-border p-4">
           <p className="mb-1 flex items-center gap-2 text-sm font-semibold"><Factory className="h-4 w-4" />Manufacturing package</p>

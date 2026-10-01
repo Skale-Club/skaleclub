@@ -44,6 +44,7 @@ import { registerContactRoutes } from "./routes/contact.js";
 import { registerRevisionRoutes } from "./routes/revisions.js";
 import { registerRetentionRoutes } from "./routes/retention.js";
 import { registerSmartTagAdminRoutes, registerSmartTagPublicRoutes } from "./routes/smartTags.js";
+import { registerSmartTagProvisioningRoutes } from "./routes/smartTagProvisioning.js";
 import { requireAdmin, sendError, setPublicCache } from "./routes/_shared.js";
 import { pool } from "./db.js";
 
@@ -113,6 +114,7 @@ export async function registerRoutes(
   registerRedirectRoutes(app);
   registerSmartTagPublicRoutes(app);  // /q/:code + /n/:code — physical QR/NFC redirects
   registerSmartTagAdminRoutes(app);
+  registerSmartTagProvisioningRoutes(app); // desktop NFC provisioner (device token) + admin pairing/jobs
   registerVCardRoutes(app);
   registerBlogAutomationRoutes(app);
   registerBlogRoutes(app);

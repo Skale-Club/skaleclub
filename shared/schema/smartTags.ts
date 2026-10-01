@@ -57,6 +57,12 @@ export const smartTags = pgTable("smart_tags", {
   assignedAt: timestamp("assigned_at", { withTimezone: true }),
   activatedAt: timestamp("activated_at", { withTimezone: true }),
   disabledAt: timestamp("disabled_at", { withTimezone: true }),
+  // Physical NFC chip state, written by the desktop provisioner flow.
+  nfcProvisioningStatus: text("nfc_provisioning_status").notNull().default("not_programmed"),
+  nfcProgrammedAt: timestamp("nfc_programmed_at", { withTimezone: true }),
+  nfcVerifiedAt: timestamp("nfc_verified_at", { withTimezone: true }),
+  nfcLockedAt: timestamp("nfc_locked_at", { withTimezone: true }),
+  nfcProvisioningDeviceId: uuid("nfc_provisioning_device_id").references(() => smartTagProvisioningDevices.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
@@ -107,6 +113,62 @@ export const smartTagEvents = pgTable("smart_tag_events", {
   occurredIdx: index("smart_tag_events_occurred_idx").on(table.occurredAt),
   customerOccurredIdx: index("smart_tag_events_customer_occurred_idx").on(table.customerId, table.occurredAt),
 }));
+
+// ─── NFC provisioning (desktop "Skale NFC Provisioner") ──────────────────────
+// SQL: supabase/migrations/20261001130000_smart_tag_provisioning.sql
+
+export const smartTagProvisioningDevices = pgTable("smart_tag_provisioning_devices", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  deviceName: text("device_name").notNull(),
+  platform: text("platform"),
+  appVersion: text("app_version"),
+  status: text("status").notNull().default("pairing"),
+  pairingCodeHash: text("pairing_code_hash"),
+  pairingExpiresAt: timestamp("pairing_expires_at", { withTimezone: true }),
+  tokenHash: text("token_hash"),
+  tokenPrefix: text("token_prefix"),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
+  pairedAt: timestamp("paired_at", { withTimezone: true }),
+  createdByUserId: text("created_by_user_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+});
+
+export const smartTagProvisioningJobs = pgTable("smart_tag_provisioning_jobs", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tagId: uuid("tag_id").notNull().references(() => smartTags.id, { onDelete: "cascade" }),
+  expectedUrl: text("expected_url").notNull(),
+  status: text("status").notNull().default("pending"),
+  requestedByUserId: text("requested_by_user_id"),
+  targetDeviceId: uuid("target_device_id").references(() => smartTagProvisioningDevices.id, { onDelete: "set null" }),
+  claimedByDeviceId: uuid("claimed_by_device_id").references(() => smartTagProvisioningDevices.id, { onDelete: "set null" }),
+  readbackUrl: text("readback_url"),
+  tagType: text("tag_type"),
+  errorCode: text("error_code"),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  claimedAt: timestamp("claimed_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  tagIdx: index("smart_tag_provisioning_jobs_tag_idx").on(table.tagId, table.createdAt.desc()),
+}));
+
+export const smartTagProvisioningEvents = pgTable("smart_tag_provisioning_events", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  jobId: uuid("job_id").references(() => smartTagProvisioningJobs.id, { onDelete: "cascade" }),
+  tagId: uuid("tag_id").references(() => smartTags.id, { onDelete: "cascade" }),
+  deviceId: uuid("device_id").references(() => smartTagProvisioningDevices.id, { onDelete: "set null" }),
+  eventType: text("event_type").notNull(),
+  detail: jsonb("detail").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  jobIdx: index("smart_tag_provisioning_events_job_idx").on(table.jobId, table.createdAt),
+}));
+
+export type SmartTagProvisioningDevice = typeof smartTagProvisioningDevices.$inferSelect;
+export type SmartTagProvisioningJob = typeof smartTagProvisioningJobs.$inferSelect;
 
 export type SmartTagCustomer = typeof smartTagCustomers.$inferSelect;
 export type SmartTagBatch = typeof smartTagBatches.$inferSelect;

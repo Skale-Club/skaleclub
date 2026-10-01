@@ -13,6 +13,7 @@ import type { SmartTagDetail } from '@shared/smartTagsApi';
 import { copyText, errorMessage, formatDateTime, getJson, invalidateSmartTags, sendJson, SMART_TAGS_KEY, STALE_MS } from './api';
 import { AnalyticsPanel, DESTINATION_OPTIONS, destinationLabel, FilterSelect, productLabel, RangePicker, StatusBadge, type AnalyticsRange } from './shared';
 import { useSmartTagCustomers } from './TagsTab';
+import { NfcProvisioningCard } from './NfcProvisioningCard';
 
 const URL_HINTS: Record<string, string> = {
   google_review: 'The customer\'s official Google review link (Google Business Profile → "Ask for reviews").',
@@ -323,6 +324,8 @@ export function TagDetail({ id, onBack }: { id: string; onBack: () => void }) {
           </dl>
         </AdminCard>
       </div>
+
+      <NfcProvisioningCard tagId={tag.id} publicCode={tag.publicCode} nfcUrl={tag.nfcUrl} retired={tag.status === 'retired'} />
 
       <AdminCard padding="compact">
         <p className="mb-3 text-sm font-semibold">Destination history</p>

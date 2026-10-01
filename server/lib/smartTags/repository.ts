@@ -96,6 +96,7 @@ type TagRow = {
   serial_number: number | null;
   product_type: string;
   status: string;
+  nfc_provisioning_status: string;
   label: string | null;
   destination_type: string | null;
   destination_url: string | null;
@@ -117,6 +118,7 @@ function toListItem(r: TagRow): SmartTagListItem {
     serialNumber: r.serial_number,
     productType: r.product_type,
     status: r.status,
+    nfcStatus: r.nfc_provisioning_status,
     label: r.label,
     destinationType: r.destination_type,
     destinationUrl: r.destination_url,
@@ -134,7 +136,7 @@ function toListItem(r: TagRow): SmartTagListItem {
 
 function tagListQuery(where: SQL, limit: number): SQL {
   return sql`
-    SELECT t.id, t.public_code, t.serial_number, t.product_type, t.status, t.label,
+    SELECT t.id, t.public_code, t.serial_number, t.product_type, t.status, t.nfc_provisioning_status, t.label,
            t.destination_type, t.destination_url, t.customer_id, c.business_name AS customer_name,
            t.batch_id, b.batch_code, t.activated_at, t.created_at,
            COALESCE(s.qr, 0)::int AS qr, COALESCE(s.nfc, 0)::int AS nfc, s.last_interaction_at
@@ -530,13 +532,14 @@ export async function listBatches(): Promise<SmartTagBatchItem[]> {
   const list = await rows<{
     id: string; batch_code: string; name: string; product_type: string; vendor: string | null; quantity: number;
     status: string; notes: string | null; created_at: Date; tag_count: number; inventory_count: number;
-    assigned_count: number; active_count: number;
+    assigned_count: number; active_count: number; nfc_verified_count: number;
   }>(sql`
     SELECT b.id, b.batch_code, b.name, b.product_type, b.vendor, b.quantity, b.status, b.notes, b.created_at,
       count(t.id)::int AS tag_count,
       count(t.id) FILTER (WHERE t.status = 'inventory')::int AS inventory_count,
       count(t.id) FILTER (WHERE t.status IN ('assigned', 'active', 'disabled'))::int AS assigned_count,
-      count(t.id) FILTER (WHERE t.status = 'active')::int AS active_count
+      count(t.id) FILTER (WHERE t.status = 'active')::int AS active_count,
+      count(t.id) FILTER (WHERE t.nfc_provisioning_status IN ('verified', 'locked'))::int AS nfc_verified_count
     FROM smart_tag_batches b
     LEFT JOIN smart_tags t ON t.batch_id = b.id
     GROUP BY b.id
@@ -556,6 +559,7 @@ export async function listBatches(): Promise<SmartTagBatchItem[]> {
     inventoryCount: Number(b.inventory_count),
     assignedCount: Number(b.assigned_count),
     activeCount: Number(b.active_count),
+    nfcVerifiedCount: Number(b.nfc_verified_count),
   }));
 }
 

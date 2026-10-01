@@ -2,6 +2,14 @@ import type { SmartTagListItem } from '@shared/smartTagsApi';
 import { formatDateTime } from './api';
 import { destinationLabel, productLabel, StatusBadge } from './shared';
 
+const NFC_SHORT: Record<string, string> = {
+  not_programmed: '—',
+  programmed: 'Written',
+  verified: 'Verified',
+  locked: 'Locked',
+  failed: 'Failed',
+};
+
 /** Tag list: a table on desktop, tappable cards on phones. */
 export function TagTable({
   tags,
@@ -38,7 +46,7 @@ export function TagTable({
                 {showBatch && t.batchCode ? ` · ${t.batchCode}` : ''}
               </div>
               <div className="mt-1 text-xs tabular-nums text-muted-foreground">
-                QR {t.qrInteractions} · NFC {t.nfcInteractions} · last {formatDateTime(t.lastInteractionAt)}
+                QR {t.qrInteractions} · NFC {t.nfcInteractions} · chip {NFC_SHORT[t.nfcStatus] ?? t.nfcStatus} · last {formatDateTime(t.lastInteractionAt)}
               </div>
             </button>
           </li>
@@ -54,6 +62,7 @@ export function TagTable({
               <th className="py-2 pr-3">Status</th>
               {showCustomer ? <th className="py-2 pr-3">Customer</th> : null}
               <th className="py-2 pr-3">Destination</th>
+              <th className="py-2 pr-3">Chip</th>
               <th className="py-2 pr-3 text-right">QR</th>
               <th className="py-2 pr-3 text-right">NFC</th>
               <th className="py-2 pr-3">Last interaction</th>
@@ -76,6 +85,9 @@ export function TagTable({
                 <td className="py-2 pr-3"><StatusBadge status={t.status} /></td>
                 {showCustomer ? <td className="py-2 pr-3">{t.customerName ?? '—'}</td> : null}
                 <td className="py-2 pr-3">{destinationLabel(t.destinationType)}</td>
+                <td className={`py-2 pr-3 text-xs ${t.nfcStatus === 'failed' ? 'text-destructive' : t.nfcStatus === 'verified' ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
+                  {NFC_SHORT[t.nfcStatus] ?? t.nfcStatus}
+                </td>
                 <td className="py-2 pr-3 text-right tabular-nums">{t.qrInteractions}</td>
                 <td className="py-2 pr-3 text-right tabular-nums">{t.nfcInteractions}</td>
                 <td className="py-2 pr-3 whitespace-nowrap">{formatDateTime(t.lastInteractionAt)}</td>

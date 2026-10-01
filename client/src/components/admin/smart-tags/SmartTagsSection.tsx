@@ -14,6 +14,7 @@ import { TagDetail } from './TagDetail';
 import { CustomersTab, CustomerDetail } from './CustomersTab';
 import { BatchesTab, BatchDetail } from './BatchesTab';
 import { AnalyticsTab } from './AnalyticsTab';
+import { ProvisionersTab } from './ProvisionersTab';
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
@@ -21,6 +22,7 @@ const TABS = [
   { id: 'customers', label: 'Customers' },
   { id: 'batches', label: 'Batches' },
   { id: 'analytics', label: 'Analytics' },
+  { id: 'provisioners', label: 'Provisioners' },
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
 
@@ -84,6 +86,7 @@ export function SmartTagsSection() {
   else if (tab === 'customers') body = <CustomersTab onOpenCustomer={(cid) => go(`/customers/${cid}`)} />;
   else if (tab === 'batches') body = <BatchesTab onOpenBatch={(bid) => go(`/batches/${bid}`)} />;
   else if (tab === 'analytics') body = <AnalyticsTab onOpenTag={openTag} />;
+  else if (tab === 'provisioners') body = <ProvisionersTab />;
   else body = <OverviewTab onOpenTag={openTag} />;
 
   return (
