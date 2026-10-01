@@ -171,4 +171,12 @@ export interface VectorizeResult {
   overlay: { width: number; height: number; data: Uint8ClampedArray } | null;
   /** Placement of the overlay / preview inside the SVG (mm). */
   viewBox: { x: number; y: number; width: number; height: number };
+  /**
+   * Where the artwork sits: `mm` inside the SVG, `source` as fractions of the
+   * input image. Lets a preview line the original up under the vectors.
+   */
+  art: {
+    mm: { x: number; y: number; width: number; height: number };
+    source: { x: number; y: number; width: number; height: number };
+  };
 }

@@ -382,6 +382,15 @@ export function vectorize(src: RasterImage, opts: VectorizeOptions, onProgress?:
     },
     overlay: buildOverlay(overlaySrc, TW, TH, 900),
     viewBox: { x: 0, y: 0, width: widthMm, height: heightMm },
+    art: {
+      mm: { x: comp.art.x * mmPerPx, y: comp.art.y * mmPerPx, width: comp.art.width * mmPerPx, height: comp.art.height * mmPerPx },
+      source: {
+        x: (comp.offsetX + comp.art.x) / W,
+        y: (comp.offsetY + comp.art.y) / H,
+        width: comp.art.width / W,
+        height: comp.art.height / H,
+      },
+    },
   };
 
   const svgHeader = (title: string) =>
@@ -545,6 +554,7 @@ function emptyDocument(warnings: Warning[], timings: Record<string, number>, W: 
     },
     overlay: null,
     viewBox: { x: 0, y: 0, width: 1, height: 1 },
+    art: { mm: { x: 0, y: 0, width: 1, height: 1 }, source: { x: 0, y: 0, width: 1, height: 1 } },
   };
   const blank = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"/>\n';
   return {
