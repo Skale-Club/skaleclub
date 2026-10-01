@@ -244,6 +244,34 @@ test("vectorize: layers, exact base, watertight coloured parts and a valid 3MF",
   assert.ok(!text.includes('<metadata key="extruder" value="5"/>'), "base top band reuses the base slot");
 });
 
+test("SVG export: real size at 96 dpi for CAD, source pixels for design tools", () => {
+  const img = logo();
+  const a = analyzeImage(buildColorModel(img));
+  const doc = vectorize(img, options(a, {
+    printChecks: false,
+    model: { ...options(a).model, mode: "extrude", baseShape: "none", keyring: { enabled: false, position: "top", holeDiameterMm: 4, ringWidthMm: 2 } },
+  }));
+  const vb = (svg: string) => /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(svg)!.slice(1).map(Number);
+
+  const mm = doc.svg();
+  const widthMm = Number(/width="([\d.]+)mm"/.exec(mm)![1]);
+  // Fusion 360 reads user units as 96 dpi pixels: viewBox must match the mm size.
+  assert.ok(Math.abs(vb(mm)[0] - (widthMm * 96) / 25.4) < 0.01, `${vb(mm)[0]} vs ${widthMm}`);
+  assert.ok(Math.abs(doc.result.widthMm - 60) < 0.5);
+
+  // The artwork spans x = 18..140 of the 160 px source.
+  const px = doc.svg({ units: "px" });
+  assert.match(px, /width="[\d.]+" height="[\d.]+"/);
+  assert.ok(Math.abs(vb(px)[0] - 122) < 2, `px width ${vb(px)[0]}`);
+
+  // Red is a ring with the yellow disc in its hole: one shape, outer + hole.
+  const groups = (svg: string) => svg.match(/<g [^>]*>.*?<\/g>/g) ?? [];
+  assert.equal(groups(mm).length, 3);
+  const compound = doc.svg({ separateShapes: false });
+  for (const g of groups(compound)) assert.equal((g.match(/<path /g) ?? []).length, 1);
+  assert.ok(!doc.result.overlay, "no print overlay when print checks are off");
+});
+
 test("relief mode stacks colours on the base and uses per-colour heights", () => {
   const img = logo();
   const a = analyzeImage(buildColorModel(img));

@@ -50,6 +50,6 @@ export const SIDEBAR_MENU_ITEMS: SidebarMenuItem[] = [
   { id: 'pages', title: 'Pages', description: 'Build managed pages at any /slug — composable sections, no code.', icon: LayoutPanelLeft },
   { id: 'notifications', title: 'Notifications', description: 'Configure notification templates for SMS and Telegram alerts.', icon: Bell },
   { id: 'traffic', title: 'Traffic', description: 'Analytics for visits, sources, campaigns, and conversions.', icon: TrendingUp },
-  { id: 'vectorizer', title: '3D Vectorizer', description: 'Turn logos into print-ready SVG layers and multi-color 3MF models.', icon: Shapes },
+  { id: 'vectorizer', title: 'Logo Vectorizer', description: 'Convert PNG / JPEG logos into clean SVG (Figma, Illustrator, Fusion 360) and 3MF.', icon: Shapes },
   // { id: 'redirects', title: 'Redirects', description: 'Short vanity links — /meet → your Meet URL, etc.', icon: Link2 },
 ];

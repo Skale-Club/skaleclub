@@ -4,7 +4,7 @@
 
 import { fitWithin, type RasterImage } from '@shared/vectorizer/image';
 import { analyzeImage, buildColorModel, type ColorModel } from '@shared/vectorizer/palette';
-import { vectorize, type VectorDocument } from '@shared/vectorizer/pipeline';
+import { vectorize, type SvgOptions, type VectorDocument } from '@shared/vectorizer/pipeline';
 import type { ExportFormat, WorkerRequest, WorkerResponse } from './protocol';
 
 declare const self: DedicatedWorkerGlobalScope;
@@ -59,7 +59,7 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
       }
       case 'export': {
         if (!doc) throw new Error('Nothing vectorized yet');
-        const out = runExport(doc, msg.format, msg.name);
+        const out = runExport(doc, msg.format, msg.name, msg.svg ?? {});
         const transfer = typeof out.data === 'string' ? [] : [out.data.buffer as ArrayBuffer];
         post({ type: 'export', id: msg.id, ...out }, transfer);
         break;
@@ -70,16 +70,17 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
   }
 };
 
-function runExport(d: VectorDocument, format: ExportFormat, name: string): { data: string | Uint8Array; mime: string; filename: string } {
+function runExport(d: VectorDocument, format: ExportFormat, name: string, o: SvgOptions): { data: string | Uint8Array; mime: string; filename: string } {
+  const suffix = o.units === 'px' ? '-px' : '';
   switch (format) {
     case 'svg':
-      return { data: d.svg(), mime: 'image/svg+xml', filename: `${name}.svg` };
+      return { data: d.svg(o), mime: 'image/svg+xml', filename: `${name}${suffix}.svg` };
     case 'svg-base':
-      return { data: d.svg({ includeBase: true }), mime: 'image/svg+xml', filename: `${name}-with-base.svg` };
+      return { data: d.svg({ ...o, includeBase: true }), mime: 'image/svg+xml', filename: `${name}-with-base.svg` };
     case 'svg-stacked':
-      return { data: d.stackedSvg(), mime: 'image/svg+xml', filename: `${name}-stacked.svg` };
+      return { data: d.stackedSvg(o), mime: 'image/svg+xml', filename: `${name}-stacked${suffix}.svg` };
     case 'layers-zip':
-      return { data: d.exportLayersZip(), mime: 'application/zip', filename: `${name}-layers.zip` };
+      return { data: d.exportLayersZip(o), mime: 'application/zip', filename: `${name}-layers${suffix}.zip` };
     case '3mf':
       return { data: d.export3mf(name), mime: 'model/3mf', filename: `${name}.3mf` };
     case 'stl-zip':

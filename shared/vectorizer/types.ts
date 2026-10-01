@@ -86,6 +86,11 @@ export interface VectorizeOptions {
   cornerAngle: number;
   /** Fit perfect circles where a closed outline is round. */
   detectShapes: boolean;
+  /**
+   * Thin-detail analysis and warnings for 3D printing (default on). Off for
+   * plain SVG conversion, where nozzle limits do not apply.
+   */
+  printChecks?: boolean;
   model: Model3DOptions;
 }
 

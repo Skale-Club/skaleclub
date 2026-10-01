@@ -2,7 +2,9 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type
 import {
   AlertTriangle,
   Box,
+  Check,
   CheckCircle2,
+  Copy,
   Download,
   FileArchive,
   FileImage,
@@ -14,6 +16,7 @@ import {
   Shapes,
   Upload,
 } from 'lucide-react';
+import type { SvgUnits } from '@shared/vectorizer/pipeline';
 import type { BackgroundMode, BaseShape, DetailLevel, ImageAnalysis, KeyringPosition, MeshPart, Model3DOptions, ModelMode, VectorizeOptions } from '@shared/vectorizer/types';
 import { AdminCard, SectionHeader } from '@/components/admin/shared';
 import { Button } from '@/components/ui/button';
@@ -52,7 +55,7 @@ function itemsFromAnalysis(a: ImageAnalysis): PaletteItem[] {
 
 export function VectorizerSection() {
   const { toast } = useToast();
-  const { state: vzState, load, analyze, vectorize, meshes: fetchMeshes, exportFile } = useVectorizerWorker();
+  const { state: vzState, load, analyze, vectorize, meshes: fetchMeshes, exportFile, svgText } = useVectorizerWorker();
   const fileInput = useRef<HTMLInputElement | null>(null);
 
   const [image, setImage] = useState<DecodedImage | null>(null);
@@ -80,6 +83,11 @@ export function VectorizerSection() {
   const [baseColorId, setBaseColorId] = useState<number | -1>(-1);
   const [heights, setHeights] = useState<Record<number, number>>({});
 
+  const [print3d, setPrint3d] = useState(false);
+  const [svgUnits, setSvgUnits] = useState<SvgUnits>('mm');
+  const [separateShapes, setSeparateShapes] = useState(true);
+  const [copied, setCopied] = useState(false);
+
   const [tab, setTab] = useState<Tab>('compare');
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const [meshes, setMeshes] = useState<MeshPart[] | null>(null);
@@ -88,7 +96,7 @@ export function VectorizerSection() {
 
   const printer = PRINTERS.find((p) => p.id === printerId) ?? PRINTERS[0];
   const result = vzState.result;
-  const hasBase = model.mode !== 'extrude' && model.baseShape !== 'none';
+  const hasBase = print3d && model.mode !== 'extrude' && model.baseShape !== 'none';
 
   // ── Loading ──────────────────────────────────────────────────────────────
   const loadFile = useCallback(
@@ -180,14 +188,22 @@ export function VectorizerSection() {
       nozzleMm,
       minFeatureMm,
       minIslandMm2,
-      thickenThin,
+      thickenThin: print3d && thickenThin,
       detail,
       accuracy,
       cornerAngle,
       detectShapes,
-      model: { ...model, basePaletteIndex: baseIndex, heightsMm: items.map((it) => heights[it.id] ?? 1) },
+      printChecks: print3d,
+      // Without 3D printing the model is just the artwork: no base, no keyring.
+      model: print3d
+        ? { ...model, basePaletteIndex: baseIndex, heightsMm: items.map((it) => heights[it.id] ?? 1) }
+        : { ...DEFAULT_MODEL, heightsMm: items.map(() => 1) },
     };
-  }, [analysis, items, backgroundId, backgroundMode, widthMm, nozzleMm, minFeatureMm, minIslandMm2, thickenThin, detail, accuracy, cornerAngle, detectShapes, model, baseColorId, heights]);
+  }, [analysis, items, backgroundId, backgroundMode, widthMm, nozzleMm, minFeatureMm, minIslandMm2, thickenThin, detail, accuracy, cornerAngle, detectShapes, print3d, model, baseColorId, heights]);
+
+  useEffect(() => {
+    if (!print3d && (tab === 'check' || tab === '3d')) setTab('compare');
+  }, [print3d, tab]);
 
   useEffect(() => {
     if (!options) return;
@@ -211,7 +227,7 @@ export function VectorizerSection() {
   const doExport = async (format: ExportFormat) => {
     setExporting(format);
     try {
-      const name = await exportFile(format, fileName || 'logo');
+      const name = await exportFile(format, fileName || 'logo', { units: svgUnits, separateShapes });
       toast({ title: 'Downloaded', description: name });
     } catch (err) {
       toast({ title: 'Export failed', description: err instanceof Error ? err.message : String(err), variant: 'destructive' });
@@ -219,6 +235,23 @@ export function VectorizerSection() {
       setExporting(null);
     }
   };
+
+  const copySvg = async () => {
+    try {
+      const text = await svgText({ units: svgUnits, separateShapes });
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2500);
+    } catch (err) {
+      toast({ title: 'Could not copy', description: err instanceof Error ? err.message : String(err), variant: 'destructive' });
+    }
+  };
+
+  // Pixel size of the artwork in the source image (for the px export).
+  const pxSize =
+    result && image
+      ? { w: Math.round(result.art.source.width * image.width), h: Math.round(result.art.source.height * image.height) }
+      : null;
 
   const toggleLayer = (key: string) =>
     setHidden((prev) => {
@@ -280,11 +313,11 @@ export function VectorizerSection() {
           <Feature icon={<Shapes className="h-5 w-5" />} title="Counts the real colors">
             Learns the palette only from flat areas, so anti-aliased edges never add phantom shades.
           </Feature>
-          <Feature icon={<ScanLine className="h-5 w-5" />} title="Zero gaps between colors">
-            Neighbouring colors share one exact border — no slivers, overlaps or slicer gap-closing needed.
+          <Feature icon={<ScanLine className="h-5 w-5" />} title="Clean, editable curves">
+            Real corners, straight lines and perfect circles with few nodes. Neighbouring colors share one exact border — no gaps, no overlaps.
           </Feature>
-          <Feature icon={<Box className="h-5 w-5" />} title="Print-ready 3MF">
-            Checks thin details, removes specks, adds a base or keyring, and exports one part per filament.
+          <Feature icon={<FileImage className="h-5 w-5" />} title="Opens right everywhere">
+            SVG at real size for Fusion 360, Illustrator and Inkscape, or pixel size for Figma. 3D printing (3MF / STL) is one switch away.
           </Feature>
         </div>
       </div>
@@ -323,8 +356,12 @@ export function VectorizerSection() {
                 ['compare', 'Compare'],
                 ['vector', 'Vector'],
                 ['outline', 'Nodes'],
-                ['check', 'Print check'],
-                ['3d', '3D'],
+                ...(print3d
+                  ? ([
+                      ['check', 'Print check'],
+                      ['3d', '3D'],
+                    ] as Array<[Tab, string]>)
+                  : []),
               ] as Array<[Tab, string]>).map(([id, label]) => (
                 <button
                   key={id}
@@ -386,13 +423,21 @@ export function VectorizerSection() {
           {result && result.layers.length > 0 && (
             <AdminCard padding="compact" className="space-y-3">
               <div className="flex items-center gap-2 text-sm font-semibold">
-                <Layers className="h-4 w-4" /> Layers & print report
+                <Layers className="h-4 w-4" /> {print3d ? 'Layers & print report' : 'Vector summary'}
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
                 <Stat label="Artwork" value={`${result.widthMm.toFixed(1)} × ${result.heightMm.toFixed(1)} mm`} />
-                <Stat label="Model" value={`${result.modelWidthMm.toFixed(1)} × ${result.modelHeightMm.toFixed(1)} × ${result.modelDepthMm.toFixed(1)} mm`} />
-                <Stat label="Paths" value={`${result.stats.regionCount} shapes · ${result.stats.segmentCount} segments`} />
-                <Stat label="Filament (solid)" value={`≈ ${totalGrams.toFixed(1)} g PLA`} />
+                {print3d ? (
+                  <Stat label="Model" value={`${result.modelWidthMm.toFixed(1)} × ${result.modelHeightMm.toFixed(1)} × ${result.modelDepthMm.toFixed(1)} mm`} />
+                ) : (
+                  <Stat label="Colors" value={`${result.layers.length}`} />
+                )}
+                <Stat label="Shapes" value={`${result.stats.regionCount}`} />
+                {print3d ? (
+                  <Stat label="Filament (solid)" value={`≈ ${totalGrams.toFixed(1)} g PLA`} />
+                ) : (
+                  <Stat label="Nodes" value={`${result.stats.segmentCount} (${result.stats.lineCount} lines, ${result.stats.circleCount} circles)`} />
+                )}
               </div>
               <ul className="divide-y rounded-lg border">
                 {printedLayers.map((l) => (
@@ -406,13 +451,17 @@ export function VectorizerSection() {
                     />
                     <span className={cn('min-w-0 flex-1 truncate font-medium', hidden.has(l.key) && 'text-muted-foreground line-through')}>{l.name}</span>
                     <span className="hidden text-muted-foreground sm:inline">{l.regionCount} {l.regionCount === 1 ? 'shape' : 'shapes'}</span>
-                    <span className="text-muted-foreground">{l.areaMm2.toFixed(0)} mm²</span>
-                    <span className="text-muted-foreground">z {l.zMin.toFixed(1)}–{l.zMax.toFixed(1)}</span>
-                    <span className="w-14 text-right tabular-nums">{(l.volumeMm3 * PLA_DENSITY).toFixed(2)} g</span>
-                    {l.thinAreaMm2 > 0.05 && l.thinAreaMm2 > l.areaMm2 * 0.003 ? (
-                      <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" aria-label="Has thin details" />
-                    ) : (
-                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-600" aria-label="Printable" />
+                    <span className="font-mono uppercase text-muted-foreground">{l.color}</span>
+                    {print3d && (
+                      <>
+                        <span className="text-muted-foreground">z {l.zMin.toFixed(1)}–{l.zMax.toFixed(1)}</span>
+                        <span className="w-14 text-right tabular-nums">{(l.volumeMm3 * PLA_DENSITY).toFixed(2)} g</span>
+                        {l.thinAreaMm2 > 0.05 && l.thinAreaMm2 > l.areaMm2 * 0.003 ? (
+                          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" aria-label="Has thin details" />
+                        ) : (
+                          <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-600" aria-label="Printable" />
+                        )}
+                      </>
                     )}
                   </li>
                 ))}
@@ -454,170 +503,52 @@ export function VectorizerSection() {
             />
           </Panel>
 
-          <Panel title="2. What are you printing?" icon={<Box className="h-4 w-4" />}>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {PROJECTS.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => applyProject(p.id)}
-                  className={cn('rounded-lg border p-3 text-left transition-colors', projectId === p.id ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:bg-muted/50')}
-                  data-testid={`vectorizer-project-${p.id}`}
-                >
-                  <p className="text-sm font-medium">{p.label}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{p.description}</p>
-                </button>
-              ))}
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Artwork width (mm)">
-                <Input type="number" min={5} max={500} step={1} value={widthMm} onChange={(e) => setWidthMm(Number(e.target.value))} data-testid="vectorizer-width" />
-              </Field>
-              <Field label="Printer">
-                <Select value={printerId} onValueChange={applyPrinter}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PRINTERS.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-            </div>
-          </Panel>
-
-          <Panel title="3. 3D model" icon={<Layers className="h-4 w-4" />}>
-            <Field label="Style">
-              <Segmented<ModelMode>
-                value={model.mode}
-                onChange={(mode) => setModel((m) => ({ ...m, mode }))}
+          <Panel title="2. SVG" icon={<FileImage className="h-4 w-4" />}>
+            <Field label="Size and units">
+              <Segmented<SvgUnits>
+                value={svgUnits}
+                onChange={setSvgUnits}
                 options={[
-                  ['extrude', 'Colors only'],
-                  ['flat', 'Flat inlay'],
-                  ['relief', 'Raised relief'],
+                  ['mm', 'Real size (mm)'],
+                  ['px', 'Pixels'],
                 ]}
               />
             </Field>
-            {model.mode !== 'extrude' && (
-              <>
-                <Field label="Base shape">
-                  <Segmented<BaseShape>
-                    value={model.baseShape}
-                    onChange={(baseShape) => setModel((m) => ({ ...m, baseShape }))}
-                    options={[
-                      ['none', 'None'],
-                      ['contour', 'Outline'],
-                      ['rounded', 'Rounded'],
-                      ['rect', 'Rectangle'],
-                      ['circle', 'Circle'],
-                    ]}
-                  />
+            {svgUnits === 'mm' ? (
+              <div className="grid grid-cols-2 items-end gap-3">
+                <Field label="Artwork width (mm)">
+                  <Input type="number" min={5} max={2000} step={1} value={widthMm} onChange={(e) => setWidthMm(Number(e.target.value))} data-testid="vectorizer-width" />
                 </Field>
-                {hasBase && (
-                  <>
-                    <div className="grid grid-cols-3 gap-3">
-                      <Field label="Margin (mm)">
-                        <NumberInput value={model.baseMarginMm} min={0} max={50} step={0.5} onChange={(v) => setModel((m) => ({ ...m, baseMarginMm: v }))} />
-                      </Field>
-                      <Field label="Thickness (mm)">
-                        <NumberInput value={model.baseThicknessMm} min={0.4} max={20} step={0.2} onChange={(v) => setModel((m) => ({ ...m, baseThicknessMm: v }))} />
-                      </Field>
-                      {model.mode === 'flat' ? (
-                        <Field label="Inlay depth (mm)">
-                          <NumberInput value={model.inlayDepthMm} min={0.2} max={model.baseThicknessMm} step={0.2} onChange={(v) => setModel((m) => ({ ...m, inlayDepthMm: v }))} />
-                        </Field>
-                      ) : model.baseShape === 'rounded' ? (
-                        <Field label="Corner radius (mm)">
-                          <NumberInput value={model.cornerRadiusMm} min={0} max={50} step={0.5} onChange={(v) => setModel((m) => ({ ...m, cornerRadiusMm: v }))} />
-                        </Field>
-                      ) : (
-                        <div />
-                      )}
-                    </div>
-                    <Field label="Base color">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {items.map((it) => (
-                          <button
-                            key={it.id}
-                            type="button"
-                            title={it.name}
-                            onClick={() => setBaseColorId(it.id)}
-                            className={cn('h-7 w-7 rounded-md border shadow-inner', baseColorId === it.id && 'ring-2 ring-primary ring-offset-2 ring-offset-background')}
-                            style={{ background: it.color }}
-                          />
-                        ))}
-                        <label
-                          className={cn('relative h-7 w-14 cursor-pointer overflow-hidden rounded-md border text-[10px] leading-7 text-center', baseColorId === -1 && 'ring-2 ring-primary ring-offset-2 ring-offset-background')}
-                          style={{ background: model.baseCustomColor }}
-                          title="Other filament color"
-                          onClick={() => setBaseColorId(-1)}
-                        >
-                          <span className="rounded bg-background/80 px-1">other</span>
-                          <input
-                            type="color"
-                            value={model.baseCustomColor}
-                            onChange={(e) => setModel((m) => ({ ...m, baseCustomColor: e.target.value }))}
-                            className="absolute inset-0 cursor-pointer opacity-0"
-                          />
-                        </label>
-                      </div>
-                    </Field>
-                    <div className="space-y-3 rounded-lg border p-3">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="vz-keyring" className="text-sm">Keyring hole</Label>
-                        <Switch id="vz-keyring" checked={model.keyring.enabled} onCheckedChange={(enabled) => setModel((m) => ({ ...m, keyring: { ...m.keyring, enabled } }))} />
-                      </div>
-                      {model.keyring.enabled && (
-                        <div className="grid grid-cols-3 gap-3">
-                          <Field label="Position">
-                            <Select value={model.keyring.position} onValueChange={(position) => setModel((m) => ({ ...m, keyring: { ...m.keyring, position: position as KeyringPosition } }))}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {(['top-left', 'top', 'top-right', 'left', 'right', 'bottom'] as KeyringPosition[]).map((p) => (
-                                  <SelectItem key={p} value={p}>
-                                    {p.replace('-', ' ')}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </Field>
-                          <Field label="Hole Ø (mm)">
-                            <NumberInput value={model.keyring.holeDiameterMm} min={1.5} max={15} step={0.5} onChange={(v) => setModel((m) => ({ ...m, keyring: { ...m.keyring, holeDiameterMm: v } }))} />
-                          </Field>
-                          <Field label="Ring (mm)">
-                            <NumberInput value={model.keyring.ringWidthMm} min={1} max={10} step={0.5} onChange={(v) => setModel((m) => ({ ...m, keyring: { ...m.keyring, ringWidthMm: v } }))} />
-                          </Field>
-                        </div>
-                      )}
-                    </div>
-                  </>
-                )}
-              </>
+                <p className="pb-2 text-xs text-muted-foreground">
+                  Height {result ? `${result.heightMm.toFixed(1)} mm` : '—'}. Opens at this exact size in Fusion 360, Illustrator, Inkscape and laser / CNC software.
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Same pixel size as your image{pxSize ? ` (${pxSize.w} × ${pxSize.h} px)` : ''}, for Figma and the web. Vectors scale to any size without losing quality.
+              </p>
             )}
-            {model.mode !== 'flat' && (
-              <Field label={model.mode === 'relief' ? 'Height above the base, per color (mm)' : 'Height per color (mm)'}>
-                <div className="grid grid-cols-2 gap-2">
-                  {items
-                    .filter((it) => it.id !== backgroundId || backgroundMode === 'keep')
-                    .map((it) => (
-                      <div key={it.id} className="flex items-center gap-2">
-                        <span className="h-5 w-5 shrink-0 rounded border" style={{ background: it.color }} />
-                        <span className="min-w-0 flex-1 truncate text-xs">{it.name}</span>
-                        <NumberInput className="h-8 w-20" value={heights[it.id] ?? 1} min={0.2} max={20} step={0.2} onChange={(v) => setHeights((h) => ({ ...h, [it.id]: v }))} />
-                      </div>
-                    ))}
-                </div>
-              </Field>
-            )}
+            <ToggleRow
+              id="vz-separate"
+              label="One path per shape"
+              hint="Each letter / shape is its own path, grouped by color — easy to edit. Off: one compound path per color."
+              checked={separateShapes}
+              onChange={setSeparateShapes}
+            />
+            <Field label="File name">
+              <Input value={fileName} onChange={(e) => setFileName(e.target.value.replace(/[^\w-]+/g, '-'))} />
+            </Field>
+            <div className="grid gap-2">
+              <ExportButton icon={<Download className="h-4 w-4" />} title="Download SVG" hint="One group per color, colors never overlap or leave gaps." primary onClick={() => doExport('svg')} busy={exporting === 'svg'} disabled={!result || vzState.busy} />
+              <ExportButton icon={copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />} title={copied ? 'Copied — paste into Figma or Illustrator' : 'Copy SVG code'} hint="Paste straight onto a Figma or Illustrator canvas." onClick={copySvg} busy={false} disabled={!result || vzState.busy} />
+              <div className="grid grid-cols-2 gap-2">
+                <ExportButton small icon={<FileArchive className="h-4 w-4" />} title="One SVG per color (ZIP)" onClick={() => doExport('layers-zip')} busy={exporting === 'layers-zip'} disabled={!result || vzState.busy} />
+                <ExportButton small icon={<Layers className="h-4 w-4" />} title="Stacked layers SVG" onClick={() => doExport('svg-stacked')} busy={exporting === 'svg-stacked'} disabled={!result || vzState.busy} />
+              </div>
+            </div>
           </Panel>
 
-          <Panel title="4. Quality & printability" icon={<ScanLine className="h-4 w-4" />}>
+          <Panel title="3. Tracing quality" icon={<ScanLine className="h-4 w-4" />}>
             <Field label="Detail level">
               <Segmented<DetailLevel>
                 value={detail}
@@ -631,35 +562,198 @@ export function VectorizerSection() {
             </Field>
             <RangeField label="Curves" left="Smoother" right="Closer to pixels" value={accuracy} min={0} max={1} step={0.05} onChange={setAccuracy} />
             <RangeField label="Corners" left="More corners" right="Rounder" value={cornerAngle} min={20} max={90} step={5} onChange={setCornerAngle} display={`${cornerAngle}°`} />
-            <div className="grid grid-cols-3 gap-3">
-              <Field label="Nozzle (mm)">
-                <NumberInput value={nozzleMm} min={0.1} max={1.2} step={0.05} onChange={setNozzleMm} />
-              </Field>
-              <Field label="Min. detail (mm)">
-                <NumberInput value={minFeatureMm} min={0.1} max={3} step={0.05} onChange={setMinFeatureMm} />
-              </Field>
-              <Field label="Min. speck (mm²)">
+            <div className="grid grid-cols-2 items-end gap-3">
+              <Field label="Ignore specks under (mm²)">
                 <NumberInput value={minIslandMm2} min={0} max={10} step={0.05} onChange={setMinIslandMm2} />
               </Field>
+              <p className="pb-2 text-xs text-muted-foreground">Dust, JPEG noise and stray pixels merge into the surrounding color.</p>
             </div>
-            <ToggleRow id="vz-thicken" label="Thicken fine details" hint="Grows lines thinner than the minimum into the background so they print." checked={thickenThin} onChange={setThickenThin} />
             <ToggleRow id="vz-shapes" label="Perfect circles" hint="Replace round outlines with exact circles." checked={detectShapes} onChange={setDetectShapes} />
           </Panel>
 
-          <Panel title="5. Export" icon={<Download className="h-4 w-4" />}>
-            <Field label="File name">
-              <Input value={fileName} onChange={(e) => setFileName(e.target.value.replace(/[^\w-]+/g, '-'))} />
-            </Field>
-            <div className="grid gap-2">
-              <ExportButton icon={<Box className="h-4 w-4" />} title="3MF — multi-color, ready to slice" hint="One part per filament with colors assigned (Bambu Studio, OrcaSlicer, PrusaSlicer)." primary onClick={() => doExport('3mf')} busy={exporting === '3mf'} disabled={!result || vzState.busy} />
-              <ExportButton icon={<FileImage className="h-4 w-4" />} title="SVG — cut-out layers" hint="Colors never overlap. For 'Add part → SVG' in slicers, Inkscape or Illustrator." onClick={() => doExport('svg')} busy={exporting === 'svg'} disabled={!result || vzState.busy} />
-              <div className="grid grid-cols-2 gap-2">
-                <ExportButton small icon={<FileImage className="h-4 w-4" />} title="SVG with base" onClick={() => doExport('svg-base')} busy={exporting === 'svg-base'} disabled={!result || vzState.busy || !hasBase} />
-                <ExportButton small icon={<Layers className="h-4 w-4" />} title="SVG stacked" onClick={() => doExport('svg-stacked')} busy={exporting === 'svg-stacked'} disabled={!result || vzState.busy} />
-                <ExportButton small icon={<FileArchive className="h-4 w-4" />} title="SVG per color (ZIP)" onClick={() => doExport('layers-zip')} busy={exporting === 'layers-zip'} disabled={!result || vzState.busy} />
-                <ExportButton small icon={<FileArchive className="h-4 w-4" />} title="STL per color (ZIP)" onClick={() => doExport('stl-zip')} busy={exporting === 'stl-zip'} disabled={!result || vzState.busy} />
-              </div>
-            </div>
+          <Panel
+            title="4. 3D printing (optional)"
+            icon={<Box className="h-4 w-4" />}
+            action={<Switch checked={print3d} onCheckedChange={setPrint3d} aria-label="3D printing" data-testid="vectorizer-3d-toggle" />}
+          >
+            {!print3d ? (
+              <p className="text-xs text-muted-foreground">
+                Turn on to add a base or keyring, check details against your nozzle and export a multi-color 3MF / STL.
+              </p>
+            ) : (
+              <>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {PROJECTS.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => applyProject(p.id)}
+                      className={cn('rounded-lg border p-3 text-left transition-colors', projectId === p.id ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:bg-muted/50')}
+                      data-testid={`vectorizer-project-${p.id}`}
+                    >
+                      <p className="text-sm font-medium">{p.label}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{p.description}</p>
+                    </button>
+                  ))}
+                </div>
+                <div className="grid gap-3">
+                  <Field label="Printer">
+                    <Select value={printerId} onValueChange={applyPrinter}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PRINTERS.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                </div>
+                <Field label="Style">
+                  <Segmented<ModelMode>
+                    value={model.mode}
+                    onChange={(mode) => setModel((m) => ({ ...m, mode }))}
+                    options={[
+                      ['extrude', 'Colors only'],
+                      ['flat', 'Flat inlay'],
+                      ['relief', 'Raised relief'],
+                    ]}
+                  />
+                </Field>
+                {model.mode !== 'extrude' && (
+                  <>
+                    <Field label="Base shape">
+                      <Segmented<BaseShape>
+                        value={model.baseShape}
+                        onChange={(baseShape) => setModel((m) => ({ ...m, baseShape }))}
+                        options={[
+                          ['none', 'None'],
+                          ['contour', 'Outline'],
+                          ['rounded', 'Rounded'],
+                          ['rect', 'Rectangle'],
+                          ['circle', 'Circle'],
+                        ]}
+                      />
+                    </Field>
+                    {hasBase && (
+                      <>
+                        <div className="grid grid-cols-3 gap-3">
+                          <Field label="Margin (mm)">
+                            <NumberInput value={model.baseMarginMm} min={0} max={50} step={0.5} onChange={(v) => setModel((m) => ({ ...m, baseMarginMm: v }))} />
+                          </Field>
+                          <Field label="Thickness (mm)">
+                            <NumberInput value={model.baseThicknessMm} min={0.4} max={20} step={0.2} onChange={(v) => setModel((m) => ({ ...m, baseThicknessMm: v }))} />
+                          </Field>
+                          {model.mode === 'flat' ? (
+                            <Field label="Inlay depth (mm)">
+                              <NumberInput value={model.inlayDepthMm} min={0.2} max={model.baseThicknessMm} step={0.2} onChange={(v) => setModel((m) => ({ ...m, inlayDepthMm: v }))} />
+                            </Field>
+                          ) : model.baseShape === 'rounded' ? (
+                            <Field label="Corner radius (mm)">
+                              <NumberInput value={model.cornerRadiusMm} min={0} max={50} step={0.5} onChange={(v) => setModel((m) => ({ ...m, cornerRadiusMm: v }))} />
+                            </Field>
+                          ) : (
+                            <div />
+                          )}
+                        </div>
+                        <Field label="Base color">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {items.map((it) => (
+                              <button
+                                key={it.id}
+                                type="button"
+                                title={it.name}
+                                onClick={() => setBaseColorId(it.id)}
+                                className={cn('h-7 w-7 rounded-md border shadow-inner', baseColorId === it.id && 'ring-2 ring-primary ring-offset-2 ring-offset-background')}
+                                style={{ background: it.color }}
+                              />
+                            ))}
+                            <label
+                              className={cn('relative h-7 w-14 cursor-pointer overflow-hidden rounded-md border text-[10px] leading-7 text-center', baseColorId === -1 && 'ring-2 ring-primary ring-offset-2 ring-offset-background')}
+                              style={{ background: model.baseCustomColor }}
+                              title="Other filament color"
+                              onClick={() => setBaseColorId(-1)}
+                            >
+                              <span className="rounded bg-background/80 px-1">other</span>
+                              <input
+                                type="color"
+                                value={model.baseCustomColor}
+                                onChange={(e) => setModel((m) => ({ ...m, baseCustomColor: e.target.value }))}
+                                className="absolute inset-0 cursor-pointer opacity-0"
+                              />
+                            </label>
+                          </div>
+                        </Field>
+                        <div className="space-y-3 rounded-lg border p-3">
+                          <div className="flex items-center justify-between">
+                            <Label htmlFor="vz-keyring" className="text-sm">Keyring hole</Label>
+                            <Switch id="vz-keyring" checked={model.keyring.enabled} onCheckedChange={(enabled) => setModel((m) => ({ ...m, keyring: { ...m.keyring, enabled } }))} />
+                          </div>
+                          {model.keyring.enabled && (
+                            <div className="grid grid-cols-3 gap-3">
+                              <Field label="Position">
+                                <Select value={model.keyring.position} onValueChange={(position) => setModel((m) => ({ ...m, keyring: { ...m.keyring, position: position as KeyringPosition } }))}>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {(['top-left', 'top', 'top-right', 'left', 'right', 'bottom'] as KeyringPosition[]).map((p) => (
+                                      <SelectItem key={p} value={p}>
+                                        {p.replace('-', ' ')}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </Field>
+                              <Field label="Hole Ø (mm)">
+                                <NumberInput value={model.keyring.holeDiameterMm} min={1.5} max={15} step={0.5} onChange={(v) => setModel((m) => ({ ...m, keyring: { ...m.keyring, holeDiameterMm: v } }))} />
+                              </Field>
+                              <Field label="Ring (mm)">
+                                <NumberInput value={model.keyring.ringWidthMm} min={1} max={10} step={0.5} onChange={(v) => setModel((m) => ({ ...m, keyring: { ...m.keyring, ringWidthMm: v } }))} />
+                              </Field>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </>
+                )}
+                {model.mode !== 'flat' && (
+                  <Field label={model.mode === 'relief' ? 'Height above the base, per color (mm)' : 'Height per color (mm)'}>
+                    <div className="grid grid-cols-2 gap-2">
+                      {items
+                        .filter((it) => it.id !== backgroundId || backgroundMode === 'keep')
+                        .map((it) => (
+                          <div key={it.id} className="flex items-center gap-2">
+                            <span className="h-5 w-5 shrink-0 rounded border" style={{ background: it.color }} />
+                            <span className="min-w-0 flex-1 truncate text-xs">{it.name}</span>
+                            <NumberInput className="h-8 w-20" value={heights[it.id] ?? 1} min={0.2} max={20} step={0.2} onChange={(v) => setHeights((h) => ({ ...h, [it.id]: v }))} />
+                          </div>
+                        ))}
+                    </div>
+                  </Field>
+                )}
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Nozzle (mm)">
+                    <NumberInput value={nozzleMm} min={0.1} max={1.2} step={0.05} onChange={setNozzleMm} />
+                  </Field>
+                  <Field label="Min. printable detail (mm)">
+                    <NumberInput value={minFeatureMm} min={0.1} max={3} step={0.05} onChange={setMinFeatureMm} />
+                  </Field>
+                </div>
+                <ToggleRow id="vz-thicken" label="Thicken fine details" hint="Grows lines thinner than the minimum into the background so they print." checked={thickenThin} onChange={setThickenThin} />
+                <div className="grid gap-2">
+                  <ExportButton icon={<Box className="h-4 w-4" />} title="3MF — multi-color, ready to slice" hint="One part per filament with colors assigned (Bambu Studio, OrcaSlicer, PrusaSlicer)." primary onClick={() => doExport('3mf')} busy={exporting === '3mf'} disabled={!result || vzState.busy} />
+                  <div className="grid grid-cols-2 gap-2">
+                    <ExportButton small icon={<FileArchive className="h-4 w-4" />} title="STL per color (ZIP)" onClick={() => doExport('stl-zip')} busy={exporting === 'stl-zip'} disabled={!result || vzState.busy} />
+                    <ExportButton small icon={<FileImage className="h-4 w-4" />} title="SVG with base" onClick={() => doExport('svg-base')} busy={exporting === 'svg-base'} disabled={!result || vzState.busy || !hasBase} />
+                  </div>
+                </div>
+              </>
+            )}
           </Panel>
         </div>
       </div>
@@ -672,8 +766,8 @@ export function VectorizerSection() {
 function Header({ action }: { action?: ReactNode }) {
   return (
     <SectionHeader
-      title="3D Vectorizer"
-      description="Turn a logo image into clean, print-ready SVG layers and multi-color 3MF models."
+      title="Logo Vectorizer"
+      description="Convert PNG / JPEG logos into clean, editable SVG for Figma, Illustrator and Fusion 360 — plus print-ready 3MF."
       icon={<Shapes className="w-5 h-5" />}
       action={action}
     />
@@ -692,12 +786,13 @@ function Feature({ icon, title, children }: { icon: ReactNode; title: string; ch
   );
 }
 
-function Panel({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) {
+function Panel({ title, icon, action, children }: { title: string; icon: ReactNode; action?: ReactNode; children: ReactNode }) {
   return (
     <AdminCard padding="compact" className="space-y-4">
       <div className="flex items-center gap-2 text-sm font-semibold">
         {icon}
         {title}
+        {action && <div className="ml-auto">{action}</div>}
       </div>
       {children}
     </AdminCard>

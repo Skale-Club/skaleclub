@@ -233,10 +233,8 @@ export function composeBase(labels: Int32Array, w: number, h: number, opt: BaseO
       if (y > y1) y1 = y;
     }
   }
-  x0 = Math.max(0, x0 - 1);
-  y0 = Math.max(0, y0 - 1);
-  x1 = Math.min(W - 1, x1 + 1);
-  y1 = Math.min(H - 1, y1 + 1);
+  // No margin: outlines run along pixel edges, so the artwork's width in the
+  // SVG is exactly the requested width.
   const cw = x1 - x0 + 1;
   const ch = y1 - y0 + 1;
   const labelsOut = new Int32Array(cw * ch);

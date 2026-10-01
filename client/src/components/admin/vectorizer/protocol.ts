@@ -1,3 +1,4 @@
+import type { SvgOptions } from '@shared/vectorizer/pipeline';
 import type { ImageAnalysis, MeshPart, VectorizeOptions, VectorizeResult } from '@shared/vectorizer/types';
 
 export type ExportFormat = 'svg' | 'svg-base' | 'svg-stacked' | 'layers-zip' | '3mf' | 'stl-zip';
@@ -7,7 +8,7 @@ export type WorkerRequest =
   | { type: 'analyze'; id: number; colorCount: number | null }
   | { type: 'vectorize'; id: number; options: VectorizeOptions }
   | { type: 'mesh'; id: number }
-  | { type: 'export'; id: number; format: ExportFormat; name: string };
+  | { type: 'export'; id: number; format: ExportFormat; name: string; svg?: SvgOptions };
 
 export type WorkerResponse =
   | { type: 'analysis'; id: number; analysis: ImageAnalysis }

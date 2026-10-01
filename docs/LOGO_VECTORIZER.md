@@ -1,8 +1,25 @@
-# 3D Vectorizer
+# Logo Vectorizer
 
-Admin → **3D Vectorizer** (`/admin/vectorizer`) turns a logo image into clean SVG
-layers and a multi-color 3MF ready to slice. Everything runs in the browser, in
-a Web Worker. Nothing is uploaded.
+Admin → **Logo Vectorizer** (`/admin/vectorizer`) converts a client's PNG / JPEG
+logo into a clean, editable SVG — the main job — and, optionally, into a
+multi-color 3MF ready to slice. Everything runs in the browser, in a Web
+Worker. Nothing is uploaded.
+
+## SVG output
+
+- **Real size (mm)** — `width`/`height` in mm and a viewBox in 96 dpi user
+  units (1 unit = 1/96 in). Fusion 360 reads SVG at 96 dpi and ignores the
+  units; Illustrator, Inkscape, laser/CNC software and slicers honour the mm
+  size. Both land on the exact width typed in the tool.
+- **Pixels** — the artwork at the source image's own pixel size, for Figma and
+  the web.
+- One group per color (named after the color, Inkscape layers), and by default
+  one path per shape with its holes (letters stay editable). The alternative is
+  one compound path per color.
+- "Copy SVG code" puts the markup on the clipboard; Figma and Illustrator
+  accept it pasted straight onto the canvas.
+- Also: one SVG per color (ZIP) and a stacked variant (each color also fills
+  under the colors above it — handy for vinyl / layered cutting).
 
 - Engine: `shared/vectorizer/` (plain TypeScript, no DOM; also runs in Node)
 - UI: `client/src/components/admin/vectorizer/`
@@ -35,7 +52,7 @@ a Web Worker. Nothing is uploaded.
    color, stacked SVG, per-color ZIP, watertight meshes (`mesh.ts`, earcut with
    T-junction repair), 3MF and STL (`export3d.ts`, `zip.ts`).
 
-## 3D modes
+## 3D printing (optional switch)
 
 - **Colors only**: each color extruded on its own (per-color height).
 - **Flat inlay**: colors inlaid flush into the top of the plate.

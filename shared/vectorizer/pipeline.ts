@@ -43,14 +43,25 @@ export function workingSize(width: number, height: number, detail: DetailLevel) 
 export interface VectorDocument {
   result: VectorizeResult;
   /** Combined SVG, one group per colour, cut-out (no overlaps). */
-  svg(opts?: { includeBase?: boolean }): string;
+  svg(opts?: SvgOptions): string;
   /** Stacked SVG: each layer also fills the area under the layers above it. */
-  stackedSvg(): string;
-  layerSvgs(): Array<{ name: string; svg: string }>;
+  stackedSvg(opts?: SvgOptions): string;
+  layerSvgs(opts?: SvgOptions): Array<{ name: string; svg: string }>;
   meshParts(): MeshPart[];
   export3mf(name: string): Uint8Array;
   exportStlZip(): Uint8Array;
-  exportLayersZip(): Uint8Array;
+  exportLayersZip(opts?: SvgOptions): Uint8Array;
+}
+
+export type SvgUnits = 'mm' | 'px';
+
+export interface SvgOptions {
+  /** 'mm' (default): real size, 96 dpi user units. 'px': source pixel size. */
+  units?: SvgUnits;
+  /** One path per shape (default) instead of one compound path per colour. */
+  separateShapes?: boolean;
+  /** Put the base plate outline under the artwork. */
+  includeBase?: boolean;
 }
 
 type Progress = (stage: string, fraction: number) => void;
@@ -113,7 +124,8 @@ export function vectorize(src: RasterImage, opts: VectorizeOptions, onProgress?:
   const thinRadius = opts.minFeatureMm / 2 / mmPerPx;
   const colorLabels = opts.palette.map((_, i) => i).filter((i) => i !== bg || opts.backgroundMode === 'keep');
   let thinFixed = 0;
-  if (opts.thickenThin && thinRadius >= 1) {
+  const printChecks = opts.printChecks ?? true;
+  if (printChecks && opts.thickenThin && thinRadius >= 1) {
     const keptBg = bg !== null && opts.backgroundMode === 'keep' ? bg : null;
     thinFixed = thickenThin(
       labels,
@@ -165,10 +177,10 @@ export function vectorize(src: RasterImage, opts: VectorizeOptions, onProgress?:
   const f = Math.max(1, Math.min(Math.floor(thinRadius / 1.25), Math.ceil(Math.max(CW, CH) / 700)));
   const TW = Math.ceil(CW / f);
   const TH = Math.ceil(CH / f);
-  const small = f === 1 ? comp.labels : downsampleLabels(comp.labels, CW, CH, f);
+  const small = f === 1 || !printChecks ? comp.labels : downsampleLabels(comp.labels, CW, CH, f);
   const overlaySrc = new Uint8Array(TW * TH);
   const thinByLabel = new Map<number, number>();
-  for (const L of colorLabels) {
+  for (const L of printChecks ? colorLabels : []) {
     const mask = thinMask(small, TW, TH, L, thinRadius / f);
     let count = 0;
     for (let i = 0; i < mask.length; i++) {
@@ -351,7 +363,7 @@ export function vectorize(src: RasterImage, opts: VectorizeOptions, onProgress?:
   if (thinFixed > 0) {
     warnings.push({ level: 'info', message: `Fine details thickened to the ${opts.minFeatureMm} mm minimum.` });
   }
-  if (opts.minFeatureMm < opts.nozzleMm) {
+  if (printChecks && opts.minFeatureMm < opts.nozzleMm) {
     warnings.push({ level: 'warn', message: `Minimum feature (${opts.minFeatureMm} mm) is below the nozzle width (${opts.nozzleMm} mm).` });
   }
   mark('layers', 1);
@@ -393,42 +405,78 @@ export function vectorize(src: RasterImage, opts: VectorizeOptions, onProgress?:
     },
   };
 
-  const svgHeader = (title: string) =>
-    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${fmt(widthMm)}mm" height="${fmt(heightMm)}mm" viewBox="0 0 ${fmt(widthMm)} ${fmt(heightMm)}">\n<title>${esc(title)}</title>\n`;
-  const group = (id: string, name: string, color: string, d: string) =>
-    d ? `<g id="${id}" inkscape:groupmode="layer" inkscape:label="${esc(name)}"><path fill="${color}" d="${d}"/></g>\n` : '';
-  const artLayers = layerResults.filter((l) => !l.isBase);
-  const baseLayer = layerResults.find((l) => l.isBase);
-
-  const svg = (o?: { includeBase?: boolean }) => {
-    let s = svgHeader('Vectorized artwork');
-    if (o?.includeBase && baseLayer) s += group('base', baseLayer.name, baseLayer.color, baseLayer.d);
-    artLayers.forEach((l, i) => (s += group(slug(l.name, i), l.name, l.color, l.d)));
-    return s + '</svg>\n';
+  // ── SVG writers ───────────────────────────────────────────────────────
+  // 'mm': physical size, one user unit = 1 px at 96 dpi. Fusion 360 reads SVG
+  //       at 96 dpi and ignores width/height units, Inkscape / Illustrator /
+  //       slicers honour the mm width — both land on the same real size.
+  // 'px': the artwork at the source image's own pixel size (Figma, web).
+  const svgScale = (units: SvgUnits) => (units === 'px' ? 1 / u : (mmPerPx * 96) / 25.4);
+  const svgHeader = (title: string, units: SvgUnits) => {
+    const k = svgScale(units);
+    const vw = fmt(CW * k);
+    const vh = fmt(CH * k);
+    const size = units === 'px' ? `width="${vw}" height="${vh}"` : `width="${fmt(widthMm)}mm" height="${fmt(heightMm)}mm"`;
+    return (
+      `<?xml version="1.0" encoding="UTF-8"?>\n` +
+      `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" version="1.1" ${size} viewBox="0 0 ${vw} ${vh}">\n` +
+      `<title>${esc(title)}</title>\n` +
+      `<desc>${fmt(widthMm)} x ${fmt(heightMm)} mm. Vectorized by Skale Club.</desc>\n`
+    );
   };
+  const regionPaths = (map: TracedMap, regions: PlanarRegion[], units: SvgUnits) => {
+    const t: Transform = { scale: svgScale(units), ox: 0, oy: 0 };
+    return regions.map((r) => regionRings(map, r).map((ring) => ringToPath(ring, t)).join(''));
+  };
+  const group = (id: string, name: string, color: string, paths: string[], separate: boolean) => {
+    const ds = paths.filter(Boolean);
+    if (!ds.length) return '';
+    const body = separate ? ds.map((d) => `<path d="${d}"/>`).join('') : `<path d="${ds.join('')}"/>`;
+    return `<g id="${id}" inkscape:groupmode="layer" inkscape:label="${esc(name)}" fill="${color}">${body}</g>\n`;
+  };
+  const artLabels = Array.from(artByLabel.keys()).sort((a, b) => a - b);
+  const layerOf = (L: number) => layerResults.find((l) => l.paletteIndex === L && !l.isBase)!;
+  const baseLayer = layerResults.find((l) => l.isBase);
+  const slabRegions = () => (slabMap ? slabMap.map.regions.filter((r) => r.label !== VOID) : []);
 
-  const stackedSvg = () => {
-    // Largest colour at the bottom. Each layer covers itself plus every layer
-    // above it, traced as one silhouette so the outline stays exact.
-    const order = [...artLayers].sort((a, b) => b.areaMm2 - a.areaMm2);
-    let s = svgHeader('Vectorized artwork (stacked)');
-    order.forEach((l, k) => {
-      const above = new Set(order.slice(k).map((o) => o.paletteIndex));
-      const mask = new Int32Array(CW * CH);
-      for (let i = 0; i < mask.length; i++) mask[i] = above.has(comp.labels[i]) ? 0 : VOID;
-      const traced = trace(mask);
-      s += group(slug(l.name, k), l.name, l.color, pathOf(traced, traced.map.regions.filter((r) => r.label !== VOID)));
+  const svg = (o: SvgOptions = {}) => {
+    const units = o.units ?? 'mm';
+    const separate = o.separateShapes ?? true;
+    let s = svgHeader('Vectorized artwork', units);
+    if (o.includeBase && baseLayer && slabMap) s += group('base', baseLayer.name, baseLayer.color, regionPaths(slabMap, slabRegions(), units), false);
+    artLabels.forEach((L, i) => {
+      const l = layerOf(L);
+      s += group(slug(l.name, i), l.name, l.color, regionPaths(artMap, artByLabel.get(L)!, units), separate);
     });
     return s + '</svg>\n';
   };
 
-  const layerSvgs = () => {
+  const stackedSvg = (o: SvgOptions = {}) => {
+    // Largest colour at the bottom. Each layer covers itself plus every layer
+    // above it, traced as one silhouette so the outline stays exact.
+    const units = o.units ?? 'mm';
+    const order = artLabels.map(layerOf).sort((a, b) => b.areaMm2 - a.areaMm2);
+    let s = svgHeader('Vectorized artwork (stacked)', units);
+    order.forEach((l, k) => {
+      const above = new Set(order.slice(k).map((x) => x.paletteIndex));
+      const mask = new Int32Array(CW * CH);
+      for (let i = 0; i < mask.length; i++) mask[i] = above.has(comp.labels[i]) ? 0 : VOID;
+      const traced = trace(mask);
+      s += group(slug(l.name, k), l.name, l.color, regionPaths(traced, traced.map.regions.filter((r) => r.label !== VOID), units), o.separateShapes ?? true);
+    });
+    return s + '</svg>\n';
+  };
+
+  const layerSvgs = (o: SvgOptions = {}) => {
+    const units = o.units ?? 'mm';
     const out: Array<{ name: string; svg: string }> = [];
-    layerResults.forEach((l, i) => {
-      if (!l.d) return;
+    if (baseLayer && slabMap) {
+      out.push({ name: '00-base', svg: svgHeader('Base', units) + group('base', baseLayer.name, baseLayer.color, regionPaths(slabMap, slabRegions(), units), false) + '</svg>\n' });
+    }
+    artLabels.forEach((L, i) => {
+      const l = layerOf(L);
       out.push({
         name: `${String(i + 1).padStart(2, '0')}-${slug(l.name, i)}`,
-        svg: svgHeader(l.name) + group(slug(l.name, i), l.name, l.color, l.d) + '</svg>\n',
+        svg: svgHeader(l.name, units) + group(slug(l.name, i), l.name, l.color, regionPaths(artMap, artByLabel.get(L)!, units), o.separateShapes ?? true) + '</svg>\n',
       });
     });
     return out;
@@ -443,10 +491,10 @@ export function vectorize(src: RasterImage, opts: VectorizeOptions, onProgress?:
     export3mf: (name) => build3mf(meshParts(), name),
     exportStlZip: () =>
       createZip(meshParts().map((p, i) => ({ name: `${String(i + 1).padStart(2, '0')}-${slug(p.name, i)}.stl`, data: buildStl(p) }))),
-    exportLayersZip: () =>
+    exportLayersZip: (o) =>
       createZip([
-        ...layerSvgs().map((l) => ({ name: `${l.name}.svg`, data: l.svg })),
-        { name: 'all-layers.svg', data: svg({ includeBase: true }) },
+        ...layerSvgs(o).map((l) => ({ name: `${l.name}.svg`, data: l.svg })),
+        { name: 'all-layers.svg', data: svg({ ...o, includeBase: true }) },
       ]),
   };
 }

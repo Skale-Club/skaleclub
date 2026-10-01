@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { SvgOptions } from '@shared/vectorizer/pipeline';
 import type { ImageAnalysis, MeshPart, VectorizeOptions, VectorizeResult } from '@shared/vectorizer/types';
 import type { ExportFormat, WorkerRequest, WorkerRequestBody, WorkerResponse } from './protocol';
 
@@ -118,8 +119,8 @@ export function useVectorizerWorker() {
   const meshes = useCallback(async (): Promise<MeshPart[]> => (await request<'mesh'>({ type: 'mesh' })).parts, [request]);
 
   const exportFile = useCallback(
-    async (format: ExportFormat, name: string) => {
-      const res = await request<'export'>({ type: 'export', format, name });
+    async (format: ExportFormat, name: string, svg?: SvgOptions) => {
+      const res = await request<'export'>({ type: 'export', format, name, svg });
       const blob = new Blob([res.data as BlobPart], { type: res.mime });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -134,5 +135,14 @@ export function useVectorizerWorker() {
     [request],
   );
 
-  return { state, load, analyze, vectorize, meshes, exportFile };
+  /** SVG markup as text (for "copy and paste into Figma / Illustrator"). */
+  const svgText = useCallback(
+    async (svg: SvgOptions) => {
+      const res = await request<'export'>({ type: 'export', format: 'svg', name: 'logo', svg });
+      return typeof res.data === 'string' ? res.data : new TextDecoder().decode(res.data);
+    },
+    [request],
+  );
+
+  return { state, load, analyze, vectorize, meshes, exportFile, svgText };
 }
