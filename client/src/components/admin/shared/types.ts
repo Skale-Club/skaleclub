@@ -22,7 +22,8 @@ export type AdminSection =
   | 'pages'
   | 'notifications'
   | 'traffic'
-  | 'redirects';
+  | 'redirects'
+  | 'smartTags';
 
 export interface DayHours {
   isOpen: boolean;

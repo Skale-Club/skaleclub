@@ -14,6 +14,8 @@ export const RESERVED_SLUGS: readonly string[] = [
   "e",          // /e/:slug — estimate viewer
   "p",          // /p/:slug — presentation viewer
   "f",          // /f/:slug — public form
+  "q",          // /q/:code — smart tag QR redirect
+  "n",          // /n/:code — smart tag NFC redirect
   "links",
   "vcard",
   "xpot",

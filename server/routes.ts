@@ -43,6 +43,7 @@ import { registerOAuthRoutes } from "./routes/oauth.js";
 import { registerContactRoutes } from "./routes/contact.js";
 import { registerRevisionRoutes } from "./routes/revisions.js";
 import { registerRetentionRoutes } from "./routes/retention.js";
+import { registerSmartTagAdminRoutes, registerSmartTagPublicRoutes } from "./routes/smartTags.js";
 import { requireAdmin, sendError, setPublicCache } from "./routes/_shared.js";
 import { pool } from "./db.js";
 
@@ -110,6 +111,8 @@ export async function registerRoutes(
   registerFaqRoutes(app);
   registerBootstrapRoutes(app);
   registerRedirectRoutes(app);
+  registerSmartTagPublicRoutes(app);  // /q/:code + /n/:code — physical QR/NFC redirects
+  registerSmartTagAdminRoutes(app);
   registerVCardRoutes(app);
   registerBlogAutomationRoutes(app);
   registerBlogRoutes(app);
