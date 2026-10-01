@@ -87,6 +87,7 @@
     "cross-env": "^10.1.0",
     "date-fns": "^3.6.0",
     "drizzle-kit": "^0.31.8",
+    "earcut": "^3.2.4",
     "esbuild": "^0.25.0",
     "framer-motion": "^11.18.2",
     "ghostscript-wasm-esm": "^1.0.1",
