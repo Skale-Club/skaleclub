@@ -22,6 +22,13 @@ const num = (v: number) => {
  */
 export function build3mf(parts: MeshPart[], name: string): Uint8Array {
   const assemblyId = parts.length + 2;
+  // One filament slot per material, numbered in order of first appearance.
+  const materials: MeshPart[] = [];
+  const slot = parts.map((p) => {
+    let k = materials.findIndex((m) => m.material === p.material);
+    if (k < 0) k = materials.push(p) - 1;
+    return k;
+  });
   const out: string[] = [];
   out.push('<?xml version="1.0" encoding="UTF-8"?>');
   out.push(
@@ -31,11 +38,11 @@ export function build3mf(parts: MeshPart[], name: string): Uint8Array {
   out.push('<metadata name="Application">Skale Club 3D Vectorizer</metadata>');
   out.push('<resources>');
   out.push('<basematerials id="1">');
-  for (const p of parts) out.push(`<base name="${xmlEscape(p.name)}" displaycolor="${p.color.toUpperCase()}FF"/>`);
+  for (const p of materials) out.push(`<base name="${xmlEscape(p.name)}" displaycolor="${p.color.toUpperCase()}FF"/>`);
   out.push('</basematerials>');
   parts.forEach((p, k) => {
     const id = k + 2;
-    out.push(`<object id="${id}" name="${xmlEscape(p.name)}" type="model" pid="1" pindex="${k}">`);
+    out.push(`<object id="${id}" name="${xmlEscape(p.name)}" type="model" pid="1" pindex="${slot[k]}">`);
     out.push('<mesh><vertices>');
     const v = p.positions;
     const lines: string[] = [];
@@ -63,7 +70,7 @@ export function build3mf(parts: MeshPart[], name: string): Uint8Array {
     settings.push(`    <part id="${k + 2}" subtype="normal_part">`);
     settings.push(`      <metadata key="name" value="${xmlEscape(p.name)}"/>`);
     settings.push('      <metadata key="matrix" value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"/>');
-    settings.push(`      <metadata key="extruder" value="${k + 1}"/>`);
+    settings.push(`      <metadata key="extruder" value="${slot[k] + 1}"/>`);
     settings.push('    </part>');
   });
   settings.push('  </object>');

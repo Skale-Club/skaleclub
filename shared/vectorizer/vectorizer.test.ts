@@ -127,6 +127,20 @@ test("analysis finds exactly the artwork colours, not the anti-aliasing blends",
   assert.equal(a.photographic, false);
 });
 
+test("colours that only exist in thin strokes are still found", () => {
+  // Grey hairline "tagline" strokes, 1.6 px wide, far from the navy shape:
+  // no flat grey pixel exists, and grey is close to a navy/white blend.
+  const NAVY: Rgb = [15, 23, 42];
+  const SLATE: Rgb = [100, 116, 139];
+  const strokes: Array<[Shape, Rgb]> = [[rect(10, 10, 70, 50), NAVY]];
+  for (let k = 0; k < 14; k++) strokes.push([rect(12 + k * 10, 70, 13.6 + k * 10, 82), SLATE]);
+  for (let k = 0; k < 7; k++) strokes.push([rect(12 + k * 20, 75.2, 20 + k * 20, 76.8), SLATE]);
+  const a = analyzeImage(buildColorModel(render(160, 96, WHITE, strokes)));
+  assert.equal(a.autoColorCount, 3, a.colors.map((c) => c.hex).join(","));
+  const grey = a.colors.find((c) => c.name === "Slate");
+  assert.ok(grey, a.colors.map((c) => `${c.hex} ${c.name}`).join(","));
+});
+
 test("a requested colour count merges the closest colours first", () => {
   const a = analyzeImage(buildColorModel(logo()), 3);
   assert.equal(a.colors.length, 3);
@@ -208,7 +222,9 @@ test("vectorize: layers, exact base, watertight coloured parts and a valid 3MF",
   assert.equal((svg.match(/<path /g) ?? []).length, 4);
 
   const parts = doc.meshParts();
-  assert.deepEqual(parts.map((p) => p.name), ["Base", "Black", "Red", "Yellow"]);
+  // The base's top band is its own solid sharing the base filament.
+  assert.deepEqual(parts.map((p) => p.name), ["Base", "Black", "Red", "Yellow", "Base (top)"]);
+  assert.equal(parts[4].material, parts[0].material);
   for (const p of parts) assertWatertight(p);
   // Coloured parts sit in the top 0.6 mm of a 3 mm plate.
   for (const p of parts.slice(1)) {
@@ -225,6 +241,7 @@ test("vectorize: layers, exact base, watertight coloured parts and a valid 3MF",
   assert.ok(text.includes("3D/3dmodel.model"));
   assert.ok(text.includes("Metadata/model_settings.config"));
   assert.ok(text.includes('<metadata key="extruder" value="4"/>'));
+  assert.ok(!text.includes('<metadata key="extruder" value="5"/>'), "base top band reuses the base slot");
 });
 
 test("relief mode stacks colours on the base and uses per-colour heights", () => {

@@ -1,4 +1,4 @@
-import { Building2, Briefcase, ClipboardList, FileText, HelpCircle, Image, LayoutDashboard, LayoutPanelLeft, Link, Link2, MessageSquare, Puzzle, Receipt, Search, Sparkles, Users, Smartphone, Presentation, RadioTower, Bell, TrendingUp } from 'lucide-react';
+import { Building2, Briefcase, ClipboardList, FileText, HelpCircle, Image, LayoutDashboard, LayoutPanelLeft, Link, Link2, MessageSquare, Puzzle, Receipt, Search, Sparkles, Users, Smartphone, Presentation, RadioTower, Bell, TrendingUp, Shapes } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { AdminSection, BusinessHours, IntakeObjective } from './types';
 
@@ -50,5 +50,6 @@ export const SIDEBAR_MENU_ITEMS: SidebarMenuItem[] = [
   { id: 'pages', title: 'Pages', description: 'Build managed pages at any /slug — composable sections, no code.', icon: LayoutPanelLeft },
   { id: 'notifications', title: 'Notifications', description: 'Configure notification templates for SMS and Telegram alerts.', icon: Bell },
   { id: 'traffic', title: 'Traffic', description: 'Analytics for visits, sources, campaigns, and conversions.', icon: TrendingUp },
+  { id: 'vectorizer', title: '3D Vectorizer', description: 'Turn logos into print-ready SVG layers and multi-color 3MF models.', icon: Shapes },
   // { id: 'redirects', title: 'Redirects', description: 'Short vanity links — /meet → your Meet URL, etc.', icon: Link2 },
 ];

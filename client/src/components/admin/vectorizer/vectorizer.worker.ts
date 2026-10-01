@@ -41,7 +41,6 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
             type: 'result',
             id: msg.id,
             result: { ...result, overlay: overlay ? { width: overlay.width, height: overlay.height, data: overlay.data } : null },
-            svg: doc.svg({ includeBase: true }),
           },
           overlay ? [overlay.data.buffer] : [],
         );

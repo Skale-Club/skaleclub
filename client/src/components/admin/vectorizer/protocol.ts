@@ -12,7 +12,10 @@ export type WorkerRequest =
 export type WorkerResponse =
   | { type: 'analysis'; id: number; analysis: ImageAnalysis }
   | { type: 'progress'; id: number; stage: string; fraction: number }
-  | { type: 'result'; id: number; result: VectorizeResult; svg: string }
+  | { type: 'result'; id: number; result: VectorizeResult }
   | { type: 'mesh'; id: number; parts: MeshPart[] }
   | { type: 'export'; id: number; data: string | Uint8Array; mime: string; filename: string }
   | { type: 'error'; id: number; message: string };
+
+/** A request without its id (distributes over the union). */
+export type WorkerRequestBody = WorkerRequest extends infer R ? (R extends WorkerRequest ? Omit<R, 'id'> : never) : never;

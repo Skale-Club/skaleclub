@@ -295,32 +295,32 @@ export function vectorize(src: RasterImage, opts: VectorizeOptions, onProgress?:
     const toMm = (ring: Point[]) => ring.map((p) => ({ x: p.x * mmPerPx, y: (CH - p.y) * mmPerPx }));
     const modelMap = getModelMap();
     const modelByLabel = groupByLabel(modelMap);
-    const materials = new Set<number>(modelByLabel.keys());
-    if (comp.base) materials.add(baseLabel);
     const parts: MeshPart[] = [];
-    for (const L of Array.from(materials).sort((a, b) => (a === baseLabel ? -1 : b === baseLabel ? 1 : a - b))) {
+    const baseMaterial = baseLabel < opts.palette.length ? `color-${baseLabel}` : 'base';
+    const push = (mb: MeshBuilder, part: Omit<MeshPart, 'positions' | 'indices'>) => {
+      const { positions, indices } = mb.build();
+      if (indices.length) parts.push({ ...part, positions, indices });
+    };
+    // Every part is its own closed solid: the slab and whatever sits on or in
+    // it are never fused into one mesh, they share a filament instead.
+    if (comp.base && slabMap) {
       const mb = new MeshBuilder();
-      const withSlab = !!comp.base && L === baseLabel && slabMap;
-      if (withSlab) {
-        for (const r of slabMap!.map.regions) {
-          if (r.label === VOID) continue;
-          mb.addPrism(regionPolygons(slabMap!, r, flattenTol, slabCache).map(toMm), 0, slabTop);
-        }
+      for (const r of slabMap.map.regions) {
+        if (r.label === VOID) continue;
+        mb.addPrism(regionPolygons(slabMap, r, flattenTol, slabCache).map(toMm), 0, slabTop);
       }
+      push(mb, { key: 'base', name: 'Base', color: baseColor, material: baseMaterial });
+    }
+    for (const L of Array.from(modelByLabel.keys()).sort((a, b) => a - b)) {
+      const mb = new MeshBuilder();
       const [z0, z1] = zRange(L);
       for (const r of modelByLabel.get(L) ?? []) {
         mb.addPrism(regionPolygons(modelMap, r, flattenTol, modelCache).map(toMm), z0, z1);
       }
-      const { positions, indices } = mb.build();
-      if (!indices.length) continue;
       const entry = opts.palette[L];
-      parts.push({
-        key: withSlab ? 'base' : `color-${L}`,
-        name: entry ? (withSlab ? `${entry.name} + base` : entry.name) : 'Base',
-        color: entry ? entry.color : baseColor,
-        positions,
-        indices,
-      });
+      push(mb, entry
+        ? { key: `color-${L}`, name: entry.name, color: entry.color, material: `color-${L}` }
+        : { key: 'base', name: 'Base (top)', color: baseColor, material: baseMaterial });
     }
     partsCache = parts;
     return parts;

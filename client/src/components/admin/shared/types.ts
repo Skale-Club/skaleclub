@@ -22,7 +22,8 @@ export type AdminSection =
   | 'pages'
   | 'notifications'
   | 'traffic'
-  | 'redirects';
+  | 'redirects'
+  | 'vectorizer';
 
 export interface DayHours {
   isOpen: boolean;

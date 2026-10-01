@@ -152,6 +152,8 @@ export interface MeshPart {
   key: string;
   name: string;
   color: string;
+  /** Parts with the same material print with the same filament. */
+  material: string;
   /** xyz triples in millimetres, z up. */
   positions: Float32Array;
   indices: Uint32Array;
