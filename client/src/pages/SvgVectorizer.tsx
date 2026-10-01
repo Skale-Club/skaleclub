@@ -12,6 +12,8 @@ export default function SvgVectorizer() {
     description: t(
       "Convert a PNG or JPG logo into a clean, editable SVG for Figma, Illustrator and Fusion 360 — exact colors, real corners, no gaps. Free, runs in your browser.",
     ),
+    // Not for search engines: the server also sends noindex for /svg.
+    noindex: true,
   });
 
   return (
