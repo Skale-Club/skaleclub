@@ -114,7 +114,7 @@ export default function Links() {
   if (isLoading) {
     return (
       <div
-        className="min-h-screen flex flex-col items-center pt-12 px-5"
+        className="min-h-screen flex flex-col items-center pt-16 px-5"
         style={{
           background: DEFAULT_LINKS_PAGE_THEME.backgroundColor,
           colorScheme: 'dark',
@@ -210,7 +210,9 @@ export default function Links() {
       <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-cta/10 rounded-full blur-[120px] pointer-events-none z-[1]" />
 
       <motion.div
-        className={`relative z-10 mx-auto w-full max-w-[420px] px-5 pt-12 ${embedded ? "pb-12" : "pb-28 md:pb-12"} flex flex-col items-center`}
+        className={`relative z-10 mx-auto w-full max-w-[420px] px-5 ${embedded ? "pb-12" : "pb-28 md:pb-12"} flex flex-col items-center`}
+        // Clear the phone's status bar / notch, then a generous top margin.
+        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 4rem)' }}
         {...(reduceMotion
           ? {}
           : {
@@ -223,10 +225,7 @@ export default function Links() {
           SKALE CLUB · LINKS
         </p>
 
-        <div
-          className="mt-6 mb-5 h-24 w-24 rounded-full"
-          style={{ boxShadow: '0 0 0 8px rgba(81,115,214,0.08), 0 0 40px rgba(81,115,214,0.25)' }}
-        >
+        <div className="mt-8 mb-5 h-24 w-24 rounded-full">
           {config.avatarUrl && config.avatarUrl !== failedAvatarUrl ? (
             <img
               src={config.avatarUrl}
