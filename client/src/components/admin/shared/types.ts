@@ -23,7 +23,8 @@ export type AdminSection =
   | 'notifications'
   | 'traffic'
   | 'redirects'
-  | 'smartTags';
+  | 'smartTags'
+  | 'vectorizer';
 
 export interface DayHours {
   isOpen: boolean;

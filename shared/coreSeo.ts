@@ -161,7 +161,8 @@ export const CORE_PAGES_LASTMOD = "2026-09-29";
 
 // Never indexed: private viewers, admin/OAuth/print tooling, the order form and
 // thank-you pages. The `/br/...` twin of each is covered too.
-const NOINDEX_PREFIXES = ["/e", "/p", "/admin", "/print", "/oauth", "/nfc-order", "/thankyou", "/thank-you"];
+// /svg is a free internal tool (logo vectorizer), kept out of search on purpose.
+const NOINDEX_PREFIXES = ["/e", "/p", "/admin", "/print", "/oauth", "/nfc-order", "/thankyou", "/thank-you", "/svg"];
 
 export function isNoindexPath(pathname: string, pageSlugs?: Partial<PageSlugs> | null): boolean {
   const clean = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;

@@ -41,7 +41,7 @@ function isReservedLandingSegment(segment: string): boolean {
 }
 
 function staticRoutes(pageSlugs?: Partial<PageSlugs> | null) {
-  const exact = new Set<string>(["/", "/nfc-guide", "/nfc-order"]);
+  const exact = new Set<string>(["/", "/nfc-guide", "/nfc-order", "/svg"]);
   const vcards = new Set<string>();
   const blogs = new Set<string>();
   const hubs = new Set<string>();

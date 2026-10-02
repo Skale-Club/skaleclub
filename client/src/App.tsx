@@ -33,6 +33,7 @@ const NotFound = lazy(() => import("@/pages/not-found").then(m => ({ default: ()
 const Home = lazy(() => import("@/pages/Home").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const PublicForm = lazy(() => import("@/pages/PublicForm").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const NfcOrderForm = lazy(() => import("@/pages/NfcOrderForm").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const SvgVectorizer = lazy(() => import("@/pages/SvgVectorizer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const NfcGuide = lazy(() => import("@/pages/NfcGuide").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const LeadThankYou = lazy(() => import("@/pages/LeadThankYou").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
@@ -290,6 +291,7 @@ function Router() {
             <Route path="/" component={Home} />
             <Route path="/f/:slug" component={PublicForm} />
             <Route path="/nfc-guide" component={NfcGuide} />
+            <Route path="/svg" component={SvgVectorizer} />
             <Route path={pagePaths.thankYou} component={LeadThankYou} />
             {pagePaths.thankYou !== LEGACY_PATHS.thankYou && <Route path={LEGACY_PATHS.thankYou} component={LeadThankYou} />}
             <Route path={pagePaths.privacyPolicy} component={PrivacyPolicy} />
