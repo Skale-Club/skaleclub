@@ -1,5 +1,5 @@
 import { usePageSeo } from "@/hooks/use-seo";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { CalendarDays, CheckCircle2, Clock3, ExternalLink, Radio, Sparkles, Users } from "lucide-react";
 
@@ -79,6 +79,8 @@ export default function SkaleHub() {
   const [form, setForm] = useState({ name: "", phone: "", email: "" });
   const [selectedCountry, setSelectedCountry] = useState<PhoneCountry>(() => detectDefaultPhoneCountry());
   const [unlockData, setUnlockData] = useState<HubRegisterResponse | null>(null);
+  // Honeypot for the registration card (see the hidden input below).
+  const honeypotRef = useRef<HTMLInputElement>(null);
 
   const activeQuery = useQuery<HubActiveResponse>({
     queryKey: ["/api/skale-hub/active"],
@@ -99,6 +101,7 @@ export default function SkaleHub() {
       const response = await apiRequest("POST", "/api/skale-hub/register", {
         ...form,
         phone: getInternationalPhone(form.phone, selectedCountry),
+        hp_extra: honeypotRef.current?.value || "",
       });
       return response.json() as Promise<HubRegisterResponse>;
     },
@@ -334,6 +337,18 @@ export default function SkaleHub() {
                             placeholder="Email"
                             value={form.email}
                             onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
+                          />
+                          {/* Honeypot: invisible to people, filled by naive bots. Last child so
+                              it cannot shift the space-y spacing of the real fields. */}
+                          <input
+                            ref={honeypotRef}
+                            type="text"
+                            name="hp_extra"
+                            tabIndex={-1}
+                            autoComplete="new-password"
+                            aria-hidden="true"
+                            defaultValue=""
+                            style={{ position: "absolute", left: "-10000px", width: 1, height: 1, opacity: 0 }}
                           />
                         </div>
 

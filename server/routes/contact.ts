@@ -35,7 +35,7 @@ export function registerContactRoutes(app: Express) {
       const { name, email, phone, subject, message, smsConsent, marketingConsent } = parsed.data;
 
       // Silent success for bots: filled honeypot or a submit faster than a human can type.
-      if (isBotSubmission(parsed.data, { source: "contact" })) {
+      if (isBotSubmission(parsed.data, { source: "contact", ip: req.ip, userAgent: req.get("user-agent") })) {
         return res.json({ ok: true });
       }
 
