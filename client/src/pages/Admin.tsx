@@ -72,6 +72,7 @@ function AdminContent() {
       redirects: 'redirects',
       'smart-tags': 'smartTags',
       vectorizer: 'vectorizer',
+      'review-link': 'reviewLink',
     };
     return slugMap[segment] || 'dashboard';
   }, [location]);
@@ -135,6 +136,7 @@ function AdminContent() {
       redirects: 'redirects',
       smartTags: 'smart-tags',
       vectorizer: 'vectorizer',
+      reviewLink: 'review-link',
     };
     startTransition(() => {
       setLocation(`/admin/${slugMap[section]}`);

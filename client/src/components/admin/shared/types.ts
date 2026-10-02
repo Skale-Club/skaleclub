@@ -24,7 +24,8 @@ export type AdminSection =
   | 'traffic'
   | 'redirects'
   | 'smartTags'
-  | 'vectorizer';
+  | 'vectorizer'
+  | 'reviewLink';
 
 export interface DayHours {
   isOpen: boolean;

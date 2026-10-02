@@ -16,6 +16,25 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import type { CompanySettings } from '@shared/schema';
 
+const POST_LOGIN_KEY = 'adminLoginNext';
+
+// Only same-app admin paths (e.g. /admin/review-link) — never an arbitrary URL.
+function safeAdminPath(value: string | null | undefined): string | null {
+  if (!value || !/^\/admin\/[A-Za-z0-9/_-]*$/.test(value)) return null;
+  return /^\/admin\/(login|signup)\b/.test(value) ? null : value;
+}
+
+// ?next= survives the email form; sessionStorage carries it across the Google OAuth round trip.
+function readPostLoginPath(): string {
+  const fromQuery = safeAdminPath(new URLSearchParams(window.location.search).get('next'));
+  try {
+    if (fromQuery) window.sessionStorage.setItem(POST_LOGIN_KEY, fromQuery);
+    return fromQuery ?? safeAdminPath(window.sessionStorage.getItem(POST_LOGIN_KEY)) ?? '/admin';
+  } catch {
+    return fromQuery ?? '/admin';
+  }
+}
+
 export default function AdminLogin() {
   const googleLogoUrl = 'https://commons.wikimedia.org/wiki/Special:FilePath/Google_Favicon_2025.svg';
   const { isAdmin, loading, signIn, isSupabaseAuth, turnstileSiteKey } = useAdminAuth();
@@ -23,6 +42,7 @@ export default function AdminLogin() {
     queryKey: ['/api/company-settings'],
   });
   const [, setLocation] = useLocation();
+  const [postLoginPath] = useState(readPostLoginPath);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -36,9 +56,14 @@ export default function AdminLogin() {
 
   useEffect(() => {
     if (!loading && isAdmin) {
-      setLocation('/admin');
+      try {
+        window.sessionStorage.removeItem(POST_LOGIN_KEY);
+      } catch {
+        // Ignore storage errors.
+      }
+      setLocation(postLoginPath);
     }
-  }, [loading, isAdmin, setLocation]);
+  }, [loading, isAdmin, setLocation, postLoginPath]);
 
   if (loading) {
     return <AppLoader />;

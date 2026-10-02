@@ -9,11 +9,16 @@ import { lazyPage } from "@/lib/initialLoad";
 const loadAdmin = () => import("@/pages/Admin");
 const Admin = lazyPage(loadAdmin);
 // Start the (large) admin chunk now instead of after the shell renders.
-if (window.location.pathname.startsWith("/admin")) void loadAdmin();
+// The review-link tool is opened on phones and never needs it, so skip it there.
+if (window.location.pathname.startsWith("/admin") && !window.location.pathname.startsWith("/admin/review-link")) {
+  void loadAdmin();
+}
 const AdminLogin = lazyPage(() => import("@/pages/AdminLogin"));
 const AdminSignup = lazyPage(() => import("@/pages/AdminSignup"));
 const NotFound = lazyPage(() => import("@/pages/not-found"));
 const OAuthAuthorize = lazyPage(() => import("@/pages/OAuthAuthorize"));
+// Full-screen, phone-first tool with its own installable manifest — outside the admin layout.
+const ReviewLinkTool = lazyPage(() => import("@/pages/ReviewLinkTool"));
 
 export default function AdminShell({ kind, showLoader }: { kind: "admin" | "oauth"; showLoader: boolean }) {
   const fallback = showLoader ? <PageLoader /> : null;
@@ -35,6 +40,7 @@ export default function AdminShell({ kind, showLoader }: { kind: "admin" | "oaut
         <Switch>
           <Route path="/admin/login" component={AdminLogin} />
           <Route path="/admin/signup" component={AdminSignup} />
+          <Route path="/admin/review-link" component={ReviewLinkTool} />
           <Route path="/admin/*?" component={Admin} />
           <Route component={NotFound} />
         </Switch>
