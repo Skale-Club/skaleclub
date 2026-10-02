@@ -50,6 +50,7 @@ export type SourceChannel =
   | 'Paid Ads'
   | 'Email'
   | 'Referral'
+  | 'Physical'
   | 'Unknown';
 
 // ─── Visitor ID ───────────────────────────────────────────────────────────────
@@ -141,6 +142,9 @@ export function channelFromUtmMedium(utmMedium: string | undefined | null): Sour
   if (['social', 'social-media'].includes(normalized)) return 'Social Media';
   if (normalized === 'email') return 'Email';
   if (normalized === 'organic') return 'Organic Search';
+  // Smart Tags (QR scan / NFC tap on a physical product) tag outbound links
+  // with utm_medium=qr|nfc.
+  if (normalized === 'qr' || normalized === 'nfc') return 'Physical';
 
   // Any other non-empty medium is treated as Referral.
   return 'Referral';

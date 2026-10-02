@@ -216,7 +216,8 @@ split into build-time and runtime:
   pre-render the SEO meta tags into `dist/public/index.html`). `POSTGRES_URL`
   is also a runtime variable.
 - **Runtime** (`is_runtime=true`): everything else — `SUPABASE_*`,
-  `SESSION_SECRET`, `ADMIN_EMAIL`, `CRON_SECRET`, `SENTRY_DSN`, plus the
+  `SESSION_SECRET`, `ADMIN_EMAIL`, `CRON_SECRET`, `SENTRY_DSN`,
+  `SMART_TAG_HASH_SECRET` (Smart Tags unique-visitor HMAC), plus the
   container-specific `NODE_ENV`, `PORT` and `CANONICAL_HOST`. Leave
   `ENABLE_INPROCESS_CRON` unset (external scheduler); bootstrap tasks run by
   default in production.

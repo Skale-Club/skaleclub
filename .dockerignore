@@ -19,3 +19,4 @@ nul
 .env
 .env.*
 !.env.example
+nfc-provisioner

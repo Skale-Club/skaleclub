@@ -103,5 +103,6 @@ export function channelLabel(source: string | null | undefined): string {
   if (s === 'social') return 'Social Media';
   if (s === 'referral') return 'Referral';
   if (s === 'direct') return 'Direct';
+  if (s === 'physical') return 'Physical';
   return 'Unknown';
 }

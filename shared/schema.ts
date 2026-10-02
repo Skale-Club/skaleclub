@@ -14,3 +14,4 @@ export * from "./schema/mcp.js";
 export * from "./schema/integrations.js";
 export * from "./schema/bootstrap.js";
 export * from "./schema/content.js";
+export * from "./schema/smartTags.js";

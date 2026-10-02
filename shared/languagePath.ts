@@ -17,6 +17,8 @@ const LANGUAGE_EXEMPT_PREFIXES = [
   "/p",
   "/print",
   "/oauth",
+  "/q",
+  "/n",
   `/${DEFAULT_PAGE_SLUGS.links}`,
   `/${DEFAULT_PAGE_SLUGS.vcard}`,
 ];
