@@ -12,6 +12,8 @@ import { CORE_OG_IMAGE, type SeoImage } from "./landingSeo.js";
 export type CoreSeoKey =
   | "home"
   | "portfolio"
+  | "apps"
+  | "services"
   | "contact"
   | "faq"
   | "blog"
@@ -58,6 +60,32 @@ export const CORE_SEO: Record<CoreSeoKey, CoreSeoEntry> = {
       description: "Apps prontos e os serviços que prestamos: IA, automação, sites, marketing e mais.",
     },
     crumb: { en: "Our Solutions", pt: "Nossas Soluções" },
+    sitemap: true,
+    ogImage: CORE_OG_IMAGE,
+  },
+  apps: {
+    en: {
+      title: "Apps | Skale Club",
+      description: "Ready-made apps we build and run, each with a fixed price. Subscribe and start.",
+    },
+    pt: {
+      title: "Apps | Skale Club",
+      description: "Apps prontos que criamos e operamos, cada um com preço fechado. Você assina e começa.",
+    },
+    crumb: { en: "Apps", pt: "Apps" },
+    sitemap: true,
+    ogImage: CORE_OG_IMAGE,
+  },
+  services: {
+    en: {
+      title: "Services | Skale Club",
+      description: "Marketing and technology services tailored to your business: AI, automation, websites and more.",
+    },
+    pt: {
+      title: "Serviços | Skale Club",
+      description: "Serviços de marketing e tecnologia sob medida para o seu negócio: IA, automação, sites e mais.",
+    },
+    crumb: { en: "Services", pt: "Serviços" },
     sitemap: true,
     ogImage: CORE_OG_IMAGE,
   },
@@ -157,7 +185,7 @@ export const CORE_SEO: Record<CoreSeoKey, CoreSeoEntry> = {
 };
 
 // Bump when core copy changes: it is the sitemap <lastmod> of the core pages.
-export const CORE_PAGES_LASTMOD = "2026-09-29";
+export const CORE_PAGES_LASTMOD = "2026-10-02";
 
 // Never indexed: private viewers, admin/OAuth/print tooling, the order form and
 // thank-you pages. The `/br/...` twin of each is covered too.

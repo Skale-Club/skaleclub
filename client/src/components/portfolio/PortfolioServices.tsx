@@ -2,21 +2,39 @@ import { ArrowRight } from "lucide-react";
 import { CATALOG_CATEGORY_LABEL, type CatalogItem } from "@shared/catalog";
 import { Band, EditorialCard, Eyebrow } from "@/components/editorial";
 import { SectionHeading } from "@/components/layout/SectionHeading";
+import { SectionHeadingRow } from "@/components/portfolio/SectionHeadingRow";
 import { getImageUrl } from "@/components/admin/shared/utils";
 import { useTranslation } from "@/hooks/useTranslation";
+import { cn } from "@/lib/utils";
 
-export function PortfolioServices({ services, onOpen }: { services: CatalogItem[]; onOpen: (item: CatalogItem) => void }) {
+export function PortfolioServices({
+  services,
+  onOpen,
+  seeAllHref,
+  hideHeading,
+}: {
+  services: CatalogItem[];
+  onOpen: (item: CatalogItem) => void;
+  /** Adds a "See all" link to the section heading (the /portfolio umbrella). */
+  seeAllHref?: string;
+  /** For /services, whose hero already says what the heading would. */
+  hideHeading?: boolean;
+}) {
   const { t } = useTranslation();
   if (services.length === 0) return null;
   return (
     <Band tone="dark" id="services" className="scroll-mt-[calc(var(--nav-offset)+1rem)]">
-      <SectionHeading
-        variant="editorial"
-        eyebrow="02 · Services"
-        title="Built by us, for your business"
-        subtitle="Tailored marketing and technology, quoted for your case."
-      />
-      <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      {!hideHeading && (
+        <SectionHeadingRow seeAllHref={seeAllHref}>
+          <SectionHeading
+            variant="editorial"
+            eyebrow="02 · Services"
+            title="Built by us, for your business"
+            subtitle="Tailored marketing and technology, quoted for your case."
+          />
+        </SectionHeadingRow>
+      )}
+      <div className={cn(!hideHeading && "mt-12", "grid gap-5 sm:grid-cols-2 lg:grid-cols-3")}>
         {services.map((item) => {
           const eyebrow = item.category ? t(CATALOG_CATEGORY_LABEL[item.category]) : undefined;
           const description = item.subtitle ?? item.description;

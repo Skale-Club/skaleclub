@@ -51,6 +51,8 @@ function FooterComponent() {
   // in the admin keeps the footer in step with the navbar.
   const navLinks = [
     { href: pagePaths.portfolio, label: "Portfolio" },
+    { href: "/apps", label: "Apps" },
+    { href: "/services", label: "Services" },
     { href: "/products", label: "Products" },
     // Unknown count (loading or failed) keeps the link; a confirmed empty blog hides it.
     ...(blogCount?.count === 0 ? [] : [{ href: pagePaths.blog, label: "Blog" }]),

@@ -43,6 +43,8 @@ const Faq = lazy(() => import("@/pages/Faq").then(m => ({ default: () => <PageWr
 const Blog = lazy(() => import("@/pages/Blog").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const BlogPost = lazy(() => import("@/pages/BlogPost").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Portfolio = lazy(() => import("@/pages/Portfolio").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const Apps = lazy(() => import("@/pages/Apps").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const Services = lazy(() => import("@/pages/Services").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const SkaleHub = lazy(() => import("@/pages/SkaleHub").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Links = lazy(() => import("@/pages/Links").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const VCard = lazy(() => import("@/pages/VCard").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
@@ -308,6 +310,9 @@ function Router() {
             {pagePaths.blogPostPattern !== LEGACY_PATHS.blogPostPattern && <Route path={LEGACY_PATHS.blogPostPattern} component={BlogPost} />}
             <Route path={pagePaths.portfolio} component={Portfolio} />
             {pagePaths.portfolio !== LEGACY_PATHS.portfolio && <Route path={LEGACY_PATHS.portfolio} component={Portfolio} />}
+            {/* The portfolio's category pages; fixed paths, reserved in shared/reservedSlugs.ts. */}
+            <Route path="/apps" component={Apps} />
+            <Route path="/services" component={Services} />
             {/* Legacy Skale Hub group URLs — 301 to managed landing /grupo (43-05).
                 Production redirects run in server/canonicalHost.ts; these are the client-side fallback. */}
             <Route path={`${pagePaths.hub}/grupo`}>{() => <Redirect to="/grupo" />}</Route>

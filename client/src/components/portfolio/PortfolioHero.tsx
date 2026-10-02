@@ -1,6 +1,5 @@
 import { ArrowRight } from "lucide-react";
 import { Band, Eyebrow, PillButton, PillLink } from "@/components/editorial";
-import { useTranslation } from "@/hooks/useTranslation";
 
 export function PortfolioHero({
   badge,
@@ -8,14 +7,16 @@ export function PortfolioHero({
   subtitle,
   buttonText,
   onCta,
+  secondary,
 }: {
   badge: string;
   title: string;
   subtitle: string;
   buttonText: string;
   onCta: () => void;
+  /** Optional ghost link next to the main button. */
+  secondary?: { href: string; label: string };
 }) {
-  const { t } = useTranslation();
   return (
     <Band tone="hero" pattern containerClassName="page-top pb-16 sm:pb-24">
       <Eyebrow>{badge}</Eyebrow>
@@ -28,7 +29,7 @@ export function PortfolioHero({
           {buttonText}
           <ArrowRight className="h-4 w-4" />
         </PillButton>
-        <PillLink href="#apps" variant="ghost">{t("See the apps")}</PillLink>
+        {secondary && <PillLink href={secondary.href} variant="ghost">{secondary.label}</PillLink>}
       </div>
     </Band>
   );

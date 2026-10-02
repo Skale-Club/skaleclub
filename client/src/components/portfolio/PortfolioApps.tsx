@@ -2,13 +2,14 @@ import { Check } from "lucide-react";
 import { CATALOG_CATEGORY_LABEL, headlineParts, siteDomain, type CatalogItem } from "@shared/catalog";
 import { Band, Eyebrow, Figure, PillButton, PillLink } from "@/components/editorial";
 import { SectionHeading } from "@/components/layout/SectionHeading";
+import { SectionHeadingRow } from "@/components/portfolio/SectionHeadingRow";
 import { getImageUrl } from "@/components/admin/shared/utils";
 import { useTranslation } from "@/hooks/useTranslation";
 import { cn } from "@/lib/utils";
 import { trackCTAClick } from "@/lib/analytics";
 import { priceParts } from "@/lib/format";
 
-function AppRow({ item, flip, onOpen }: { item: CatalogItem; flip: boolean; onOpen: (item: CatalogItem) => void }) {
+function AppRow({ item, flip, analyticsSource, onOpen }: { item: CatalogItem; flip: boolean; analyticsSource: string; onOpen: (item: CatalogItem) => void }) {
   const { t, language } = useTranslation();
   const price = item.price ? priceParts(item.price, language, t) : undefined;
   const eyebrow = item.category ? t(CATALOG_CATEGORY_LABEL[item.category]) : undefined;
@@ -70,7 +71,7 @@ function AppRow({ item, flip, onOpen }: { item: CatalogItem; flip: boolean; onOp
               target="_blank"
               variant="primary"
               aria-label={siteDomain(siteUrl) ? `${t("Start")} ${siteDomain(siteUrl)}` : undefined}
-              onClick={() => trackCTAClick(`portfolio-start-${item.slug ?? item.key}`, item.slug ?? item.key)}
+              onClick={() => trackCTAClick(`${analyticsSource}-start-${item.slug ?? item.key}`, item.slug ?? item.key)}
             >
               {t("Start")} <span aria-hidden="true">↗</span>
             </PillLink>
@@ -95,27 +96,50 @@ function AppRow({ item, flip, onOpen }: { item: CatalogItem; flip: boolean; onOp
   );
 }
 
-export function PortfolioApps({ apps, onOpen }: { apps: CatalogItem[]; onOpen: (item: CatalogItem) => void }) {
+export function PortfolioApps({
+  apps,
+  onOpen,
+  source = "portfolio",
+  seeAllHref,
+  hideHeading,
+}: {
+  apps: CatalogItem[];
+  onOpen: (item: CatalogItem) => void;
+  /** Prefix of the analytics name of the Start links. */
+  source?: string;
+  /** Adds a "See all" link to the section heading (the /portfolio umbrella). */
+  seeAllHref?: string;
+  /** For /apps, whose hero already says what the heading would. */
+  hideHeading?: boolean;
+}) {
   if (apps.length === 0) return null;
   return (
     <>
-      <Band tone="dark" id="apps" className="scroll-mt-[calc(var(--nav-offset)+1rem)] pb-10 sm:pb-14">
-        <SectionHeading
-          variant="editorial"
-          eyebrow="01 · Apps"
-          title="Apps we build and run"
-          subtitle="Our own products, live today, with a fixed price. Subscribe and start."
-        />
-      </Band>
+      {!hideHeading && (
+        <Band tone="dark" id="apps" className="scroll-mt-[calc(var(--nav-offset)+1rem)] pb-10 sm:pb-14">
+          <SectionHeadingRow seeAllHref={seeAllHref}>
+            <SectionHeading
+              variant="editorial"
+              eyebrow="01 · Apps"
+              title="Apps we build and run"
+              subtitle="Our own products, live today, with a fixed price. Subscribe and start."
+            />
+          </SectionHeadingRow>
+        </Band>
+      )}
       {/* Each app is its own full-bleed band; alternating navy steps plus a
           hairline keep the rows readable as separate products. */}
       {apps.map((item, i) => (
         <Band
           key={item.key}
           tone="dark"
-          className={cn("border-t border-white/10 py-16 sm:py-20", i % 2 === 0 && "bg-navy-900")}
+          className={cn(
+            "py-16 sm:py-20",
+            (i > 0 || !hideHeading) && "border-t border-white/10",
+            i % 2 === 0 && "bg-navy-900",
+          )}
         >
-          <AppRow item={item} flip={i % 2 === 1} onOpen={onOpen} />
+          <AppRow item={item} flip={i % 2 === 1} analyticsSource={source} onOpen={onOpen} />
         </Band>
       ))}
     </>

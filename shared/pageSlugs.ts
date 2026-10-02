@@ -79,6 +79,9 @@ export function buildPagePaths(pageSlugs?: Partial<PageSlugs> | null) {
     blogPostPattern: `${blog}/:slug`,
     blogPost: (slug: string) => `${blog}/${slug}`,
     portfolio: toPath(slugs.portfolio),
+    // Fixed paths: the portfolio's category pages are not renameable in the admin.
+    apps: "/apps",
+    services: "/services",
     hub: toPath(slugs.hub),
     links: toPath(slugs.links),
     vcard,
@@ -96,6 +99,8 @@ export function getCorePagePaths(pageSlugs?: Partial<PageSlugs> | null): string[
     paths.faq,
     paths.blog,
     paths.portfolio,
+    paths.apps,
+    paths.services,
     paths.privacyPolicy,
     paths.termsOfService,
     paths.hub,

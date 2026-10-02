@@ -47,7 +47,7 @@ function staticRoutes(pageSlugs?: Partial<PageSlugs> | null) {
   const hubs = new Set<string>();
   for (const slugs of [pageSlugs, null]) {
     const paths = buildPagePaths(slugs);
-    for (const key of ["thankYou", "privacyPolicy", "termsOfService", "contact", "faq", "blog", "portfolio", "hub", "links"] as const) {
+    for (const key of ["thankYou", "privacyPolicy", "termsOfService", "contact", "faq", "blog", "portfolio", "apps", "services", "hub", "links"] as const) {
       exact.add(paths[key]);
     }
     vcards.add(paths.vcard);

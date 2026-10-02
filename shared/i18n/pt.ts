@@ -662,6 +662,18 @@ export const translations = {
     'We publish with your own domain, analytics integration, and forms connected to your CRM. Post-launch support included.': 'Publicamos com domínio próprio, integração de analytics e formulários conectados ao seu CRM. Suporte pós-lançamento incluso.',
     "Let's talk about your website": 'Vamos conversar sobre seu site',
     "Tell us about your project in 1 minute. We'll reply within 24 hours with a proposal.": 'Conte sobre o seu projeto em 1 minuto. Respondemos em até 24 horas com uma proposta.',
+    // Portfolio categories: /apps, /services, the /portfolio umbrella and the navbar menu (2026-10)
+    'Apps': 'Apps', 'See all': 'Ver tudo', 'Portfolio menu': 'Menu do portfólio', '03 · Products': '03 · Produtos',
+    'Ready-made apps we build and run, each with a fixed price. Subscribe and start.': 'Apps prontos que criamos e operamos, cada um com preço fechado. Você assina e começa.',
+    'Marketing and technology services tailored to your business: AI, automation, websites and more.': 'Serviços de marketing e tecnologia sob medida para o seu negócio: IA, automação, sites e mais.',
+    'Ready-made apps, live today, with a fixed price.': 'Apps prontos, já no ar, com preço fechado.',
+    'Things we make for your counter': 'O que fazemos para o seu balcão', 'Things we make for your counter.': 'O que fazemos para o seu balcão.',
+    'Two things, each with its own page.': 'Duas coisas, cada uma com a sua página.',
+    'NFC review plaque': 'Placa de avaliação NFC', 'NFC keychains': 'Chaveiros NFC',
+    'A plaque for your counter that opens your Google review page in one tap.': 'Uma placa para o seu balcão que abre a sua página de avaliações do Google com um toque.',
+    'Custom keychains with your branding, plus a display to sell them at your counter.': 'Chaveiros personalizados com a sua marca, mais um expositor para vendê-los no seu balcão.',
+    'A customer tapping a phone on an NFC tag at a shop counter': 'Um cliente aproximando o celular de uma tag NFC no balcão de uma loja',
+    'Three custom 3D-printed NFC keychains on a work table': 'Três chaveiros NFC personalizados, impressos em 3D, sobre uma mesa de trabalho',
     // Chunk load failure (ChunkErrorBoundary)
     'This page failed to load': 'Esta página não carregou',
     'Part of the site failed to load, usually because a new version was just published.': 'Parte do site não carregou, geralmente porque uma nova versão acabou de ser publicada.',
