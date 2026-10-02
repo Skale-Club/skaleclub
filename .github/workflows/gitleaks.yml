@@ -24,7 +24,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout (full history)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # Needed so gitleaks can scan every commit, not just the tip.
           fetch-depth: 0
