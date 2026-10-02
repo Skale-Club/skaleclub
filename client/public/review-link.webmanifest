@@ -1,0 +1,36 @@
+{
+  "id": "/admin/review-link",
+  "name": "Skale Review Link",
+  "short_name": "Review Link",
+  "description": "Gera o link de avaliação do Google a partir do link do Google Business.",
+  "start_url": "/admin/review-link?source=pwa",
+  "scope": "/admin/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d121a",
+  "theme_color": "#0d121a",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/pwa-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "share_target": {
+    "action": "/admin/review-link",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
+}
