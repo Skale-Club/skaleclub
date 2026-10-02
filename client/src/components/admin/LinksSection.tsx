@@ -174,6 +174,22 @@ function SortableLinkRow({
               placeholder="https://..."
             />
           </div>
+          <div className="space-y-2">
+            <Label>{t('Subtitle')}</Label>
+            <Input
+              value={link.subtitle ?? ''}
+              onChange={(e) => onUpdate(index, { subtitle: e.target.value })}
+              maxLength={200}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch
+              id={`featured-${index}`}
+              checked={link.featured === true}
+              onCheckedChange={(checked) => onUpdate(index, { featured: checked })}
+            />
+            <Label htmlFor={`featured-${index}`} className="text-sm cursor-pointer">{t('Featured')}</Label>
+          </div>
         </div>
         <Button
           size="icon"

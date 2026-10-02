@@ -25,6 +25,8 @@ export const DEFAULT_LINKS_PAGE_THEME: Required<Pick<LinksPageTheme, 'primaryCol
  *   - iconValue (string, default '')
  *   - visible (boolean, default true)
  *   - clickCount (integer, default 0)
+ *   - subtitle (string, default "")
+ *   - featured (boolean, default false)
  *   - order (integer, falls back to array index when missing)
  *
  * Guarantees every returned config has:
@@ -53,6 +55,8 @@ export function normalizeLinksPageConfig(
     iconValue: typeof l.iconValue === "string" ? l.iconValue : "",
     visible: typeof l.visible === "boolean" ? l.visible : true,
     clickCount: typeof l.clickCount === "number" ? l.clickCount : 0,
+    subtitle: typeof l.subtitle === "string" ? l.subtitle : "",
+    featured: typeof l.featured === "boolean" ? l.featured : false,
   }));
 
   const rawSocial = Array.isArray(src.socialLinks) ? (src.socialLinks as Record<string, unknown>[]) : [];

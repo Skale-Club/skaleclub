@@ -173,6 +173,8 @@ export const linksPageLinkSchema = z.object({
   iconValue: z.string().optional(),
   visible: z.boolean().optional(),
   clickCount: z.number().int().min(0).optional(),
+  subtitle: z.string().max(200).optional(),
+  featured: z.boolean().optional(),
 });
 
 export const linksPageSocialSchema = z.object({

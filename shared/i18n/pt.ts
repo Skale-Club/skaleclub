@@ -347,6 +347,7 @@ export const translations = {
     'Add your first link to show on the bio page': 'Adicione seu primeiro link para mostrar na página',
     'Add first link': 'Adicionar primeiro link',
     'Link Title': 'Título do Link', 'Destination URL': 'URL de Destino', 'Visible': 'Visível', 'clicks': 'cliques',
+    'Subtitle': 'Subtítulo', 'Featured': 'Destaque',
     'Live Preview': 'Pré-visualização ao Vivo', 'Drag to reorder': 'Arraste para reordenar', 'My Portfolio': 'Meu Portfólio',
     // Admin — Links Page Uploaders (Phase 12-02)
     'Drop image here or click to browse': 'Solte a imagem aqui ou clique para procurar',
