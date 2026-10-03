@@ -32,10 +32,13 @@ export const PRODUCT_CARDS: readonly ProductCard[] = [
     slug: "nfc-keychains",
     title: "NFC keychains",
     description: "Custom keychains with your branding, plus a display to sell them at your counter.",
-    href: "/products/nfc-keychains",
+    // The full keychain guide (models, pricing, FAQ, order); /products/nfc-keychains 301s there.
+    href: "/nfc-guide",
     image: {
-      src: "/nfc-keychains-hero.webp",
-      alt: "Custom 3D-printed NFC keychains in different designs",
+      // Blender render of three real client keychains from their print files
+      // ("3D Printing/Keychains/_render/render_keychains.py").
+      src: "/nfc-keychains-trio.webp",
+      alt: "Three custom NFC keychains made for businesses, with their logos in raised relief",
     },
   },
 ];

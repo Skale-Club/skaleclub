@@ -1,7 +1,7 @@
 import type { CompanySettings, HomepageContent } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useSiteWhatsappHref } from "@/hooks/use-site-whatsapp";
 import { trackCTAClick, trackEvent } from "@/lib/analytics";
-import { whatsappHref } from "@shared/phone";
 import { TrustBadges } from "@/components/home/TrustBadges";
 import { Band, PillButton, PillLink } from "@/components/editorial";
 
@@ -19,6 +19,7 @@ interface HeroSectionProps {
 
 export function HeroSection({ companySettings, homepageContent, onCtaClick, showTrustBadges = true }: HeroSectionProps) {
   const { t } = useTranslation();
+  const whatsappLink = useSiteWhatsappHref(companySettings?.companyPhone);
   const heroImageUrl = (companySettings?.heroImageUrl || '').trim();
   const trustBadges = homepageContent.trustBadges || [];
   // ── Trust-bar bleed contract ──────────────────────────────────────────
@@ -99,7 +100,7 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
               ) : null}
               {companySettings?.companyPhone?.trim() ? (
                 <PillLink
-                  href={whatsappHref(companySettings.companyPhone, t("Hi! I found you on the Skale Club website and would like to talk about my project."))}
+                  href={whatsappLink}
                   target="_blank"
                   variant="ghost"
                   className="w-full sm:w-auto shrink-0 whitespace-nowrap px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg"

@@ -1,8 +1,8 @@
 import { ArrowRight, MessageCircle } from "lucide-react";
 import { Band, Eyebrow, PillButton, PillLink } from "@/components/editorial";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useSiteWhatsappHref } from "@/hooks/use-site-whatsapp";
 import { trackEvent } from "@/lib/analytics";
-import { whatsappHref } from "@shared/phone";
 
 export function PortfolioCta({
   title,
@@ -18,6 +18,7 @@ export function PortfolioCta({
   onCta: () => void;
 }) {
   const { t } = useTranslation();
+  const whatsappLink = useSiteWhatsappHref(phone);
   return (
     <Band tone="cta" id="cta">
       <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto]">
@@ -33,7 +34,7 @@ export function PortfolioCta({
           </PillButton>
           {phone && (
             <PillLink
-              href={whatsappHref(phone, t("Hi! I found you on the Skale Club website and would like to talk about my project."))}
+              href={whatsappLink}
               target="_blank"
               variant="ghost"
               onClick={() => trackEvent("click_whatsapp", { location: "portfolio_cta" })}

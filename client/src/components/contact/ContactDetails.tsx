@@ -6,7 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
 import { trackEvent } from "@/lib/analytics";
 import { useTranslation } from "@/hooks/useTranslation";
-import { formatPhoneDisplay, telHref, whatsappHref } from "@shared/phone";
+import { useSiteWhatsappHref } from "@/hooks/use-site-whatsapp";
+import { formatPhoneDisplay, telHref } from "@shared/phone";
 
 interface ContactDetailsProps {
   phone: string;
@@ -57,6 +58,7 @@ function Row({ icon: Icon, label, children }: { icon: LucideIcon; label: string;
 export function ContactDetails({ phone, email, address }: ContactDetailsProps) {
   const { data: settings } = useQuery<CompanySettings>({ queryKey: ["/api/company-settings"] });
   const { t, language } = useTranslation();
+  const whatsappLink = useSiteWhatsappHref(phone);
   const linkClass = "hover:text-cta-ink hover:underline";
   const hours = groupHours(settings?.businessHours, language === "pt");
   const short: Record<(typeof DAYS)[number], string> = {
@@ -110,7 +112,7 @@ export function ContactDetails({ phone, email, address }: ContactDetailsProps) {
       </div>
       {phone && (
         <PillLink
-          href={whatsappHref(phone, t("Hi! I found you on the Skale Club website and would like to talk about my project."))}
+          href={whatsappLink}
           target="_blank"
           variant="primary"
           className="mt-8"

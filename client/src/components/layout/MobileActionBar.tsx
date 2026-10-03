@@ -4,9 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import { MessageCircle, Phone, FileText } from "lucide-react";
 import type { CompanySettings } from "@shared/schema";
 import { buildPagePaths, DEFAULT_PAGE_SLUGS } from "@shared/pageSlugs";
-import { telHref, whatsappHref } from "@shared/phone";
+import { telHref } from "@shared/phone";
 import { PillButton, PillLink } from "@/components/editorial";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useSiteWhatsappHref } from "@/hooks/use-site-whatsapp";
 import { trackCTAClick, trackEvent } from "@/lib/analytics";
 
 const LeadFormModal = lazy(() => import("@/components/LeadFormModal").then((m) => ({ default: m.LeadFormModal })));
@@ -14,6 +15,14 @@ const LeadFormModal = lazy(() => import("@/components/LeadFormModal").then((m) =
 // Routes that render their own full-screen UI or are not marketing pages.
 const LEGACY_THANK_YOU = buildPagePaths(DEFAULT_PAGE_SLUGS).thankYou;
 const HIDDEN_PREFIXES = ["/admin", "/e/", "/p/", "/nfc-order", "/plaque-order", "/print", "/oauth/", "/f/"];
+
+/** True on routes where the floating site chrome (action bar, WhatsApp button) stays out of the way. */
+export function isFloatingChromeHidden(location: string, thankYou: string) {
+  return (
+    HIDDEN_PREFIXES.some((p) => location === p.replace(/\/$/, "") || location.startsWith(p)) ||
+    location === thankYou || location === LEGACY_THANK_YOU
+  );
+}
 
 /**
  * Fixed call / WhatsApp / quote bar for phones, shipped with the site chrome.
@@ -38,10 +47,9 @@ export function MobileActionBar() {
   }, []);
 
   const thankYou = buildPagePaths(settings?.pageSlugs).thankYou;
-  const hidden =
-    HIDDEN_PREFIXES.some((p) => location === p.replace(/\/$/, "") || location.startsWith(p)) ||
-    location === thankYou || location === LEGACY_THANK_YOU;
+  const hidden = isFloatingChromeHidden(location, thankYou);
   const phone = settings?.companyPhone?.trim() || "";
+  const whatsappLink = useSiteWhatsappHref(phone);
 
   if (hidden) return null;
 
@@ -68,7 +76,7 @@ export function MobileActionBar() {
             )}
             {phone && (
               <PillLink
-                href={whatsappHref(phone, t("Hi! I found you on the Skale Club website and would like to talk about my project."))}
+                href={whatsappLink}
                 target="_blank"
                 size="sm"
                 variant="ghost"

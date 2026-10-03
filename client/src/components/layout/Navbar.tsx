@@ -8,6 +8,7 @@ import { buildPagePaths } from "@shared/pageSlugs";
 import { trackEvent } from "@/lib/analytics";
 import { formatPhoneDisplay, telHref } from "@shared/phone";
 import { MobileActionBar } from "./MobileActionBar";
+import { FloatingWhatsApp } from "./FloatingWhatsApp";
 import { PortfolioMegaMenu, PortfolioMobileMenu } from "./PortfolioMenu";
 import {
   SiFacebook,
@@ -170,6 +171,7 @@ export function Navbar() {
       )}
     </nav>
     <MobileActionBar />
+    <FloatingWhatsApp />
     </>
   );
 }

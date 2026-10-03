@@ -4,9 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
 import { buildPagePaths } from "@shared/pageSlugs";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useSiteWhatsappHref } from "@/hooks/use-site-whatsapp";
 import { trackEvent } from "@/lib/analytics";
 import { Phone, Mail, MapPin, MessageCircle } from "lucide-react";
-import { formatPhoneDisplay, telHref, whatsappHref } from "@shared/phone";
+import { formatPhoneDisplay, telHref } from "@shared/phone";
 import {
   SiFacebook,
   SiInstagram,
@@ -31,10 +32,6 @@ function FooterComponent() {
   const { data: companySettings } = useQuery<CompanySettings>({
     queryKey: ['/api/company-settings'],
   });
-  const { data: blogCount } = useQuery<{ count: number }>({
-    queryKey: ['/api/blog/count'],
-    staleTime: 5 * 60 * 1000,
-  });
   const pagePaths = useMemo(() => buildPagePaths(companySettings?.pageSlugs), [companySettings?.pageSlugs]);
 
   const companyName = companySettings?.companyName?.trim() || "";
@@ -44,6 +41,7 @@ function FooterComponent() {
     '';
 
   const phone = companySettings?.companyPhone?.trim() || "";
+  const whatsappLink = useSiteWhatsappHref(phone);
   const email = companySettings?.companyEmail?.trim() || "";
   const address = companySettings?.companyAddress?.trim() || "";
 
@@ -51,13 +49,6 @@ function FooterComponent() {
   // in the admin keeps the footer in step with the navbar.
   const navLinks = [
     { href: pagePaths.portfolio, label: "Portfolio" },
-    { href: "/apps", label: "Apps" },
-    { href: "/services", label: "Services" },
-    { href: "/products", label: "Products" },
-    // Unknown count (loading or failed) keeps the link; a confirmed empty blog hides it.
-    ...(blogCount?.count === 0 ? [] : [{ href: pagePaths.blog, label: "Blog" }]),
-    { href: pagePaths.faq, label: "FAQ" },
-    { href: pagePaths.contact, label: "Contact" },
   ];
 
   const socialLinks = Array.isArray(companySettings?.socialLinks)
@@ -100,7 +91,7 @@ function FooterComponent() {
             ) : null}
 
             {socialLinks.length > 0 && (
-              <div className="flex gap-3">
+              <div className="flex items-center gap-5">
                 {socialLinks.map((link, i) => {
                   const Icon = platformIcons[link.platform.toLowerCase()] || SiFacebook;
                   return (
@@ -111,9 +102,9 @@ function FooterComponent() {
                       rel="noopener noreferrer"
                       aria-label={link.platform}
                       onClick={() => trackEvent('click_social', { location: 'footer', label: link.platform })}
-                      className="flex items-center justify-center w-9 h-9 rounded-full bg-white/5 border border-white/10 text-fog-300 transition-colors hover:text-fog-50 hover:bg-cta hover:border-cta"
+                      className="text-fog-300/60 transition-colors hover:text-fog-50"
                     >
-                      <Icon className="w-4 h-4" />
+                      <Icon className="w-[18px] h-[18px]" />
                     </a>
                   );
                 })}
@@ -159,7 +150,7 @@ function FooterComponent() {
               {phone && (
                 <li>
                   <a
-                    href={whatsappHref(phone, t("Hi! I found you on the Skale Club website and would like to talk about my project."))}
+                    href={whatsappLink}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => trackEvent('click_whatsapp', { location: 'footer' })}

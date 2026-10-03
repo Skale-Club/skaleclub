@@ -156,17 +156,21 @@ export const LANDING_SEO: Record<string, LandingSeo> = {
   // page at the top-level /nfc-keychains), which is a different page with
   // different content. Reusing that slug here would make this product page
   // render that page's content instead. See PRODUCT_ROUTES below.
+  // Superseded by /nfc-guide (server/canonicalHost.ts 301s the URL): kept out
+  // of the sitemap and the index while the DB row still exists.
   "nfc-custom-keychains": {
     title: "NFC Keychains | Skale Club",
     description:
       "Custom 3D-printed NFC keychains with your branding. The tap opens the link you choose. Made to order.",
     locale: "en_US",
+    robots: "noindex, follow",
   },
   "nfc-custom-keychains-br": {
     title: "Chaveiros NFC | Skale Club",
     description:
       "Chaveiros NFC personalizados e impressos em 3D com a sua marca. O toque abre o link que você escolher. Feitos sob encomenda.",
     locale: "pt_BR",
+    robots: "noindex, follow",
   },
 };
 

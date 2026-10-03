@@ -8,7 +8,7 @@ import type { LandingRow } from "./data.js";
 // run JavaScript (and the ones that queue rendering) still see it.
 
 const SCHEMA = "https://schema.org";
-const PHONE = "+1-508-500-1095";
+const PHONE = "+1-508-801-8190";
 const ADDRESS = {
   "@type": "PostalAddress",
   streetAddress: "36 South St",

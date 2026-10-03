@@ -682,7 +682,7 @@ export const translations = {
     'A plaque for your counter that opens your Google review page in one tap.': 'Uma placa para o seu balcão que abre a sua página de avaliações do Google com um toque.',
     'Custom keychains with your branding, plus a display to sell them at your counter.': 'Chaveiros personalizados com a sua marca, mais um expositor para vendê-los no seu balcão.',
     'Google Review and Instagram NFC plaques side by side': 'Placas NFC do Google e do Instagram lado a lado',
-    'Custom 3D-printed NFC keychains in different designs': 'Chaveiros NFC personalizados e impressos em 3D em diferentes modelos',
+    'Three custom NFC keychains made for businesses, with their logos in raised relief': 'Três chaveiros NFC personalizados para empresas, com a logo em alto-relevo',
     // Chunk load failure (ChunkErrorBoundary)
     'This page failed to load': 'Esta página não carregou',
     'Part of the site failed to load, usually because a new version was just published.': 'Parte do site não carregou, geralmente porque uma nova versão acabou de ser publicada.',
@@ -731,8 +731,6 @@ export const translations = {
     'App home screen': 'Tela inicial do aplicativo', 'What we solve': 'O que resolvemos', 'Three problems, one partner': 'Três problemas, um só parceiro',
     // Audit D
     'Start': 'Começar', 'Draft': 'Rascunho', 'Call': 'Ligar', 'Quote': 'Orçamento',
-    'We reply within one business day': 'Respondemos em até um dia útil',
-    'Hi! I found you on the Skale Club website and would like to talk about my project.': 'Olá! Vim pelo site da Skale Club e gostaria de conversar sobre meu projeto.',
     'By submitting, you agree to be contacted by WhatsApp, email or phone about your request. See our': 'Ao enviar, você concorda em receber contato por WhatsApp, e-mail ou telefone sobre sua solicitação. Veja nossa',
     'I agree to receive messages about my request, such as order and service confirmations and updates, by WhatsApp, email or phone.': 'Concordo em receber mensagens sobre minha solicitação, como confirmações e atualizações de pedidos ou serviços, por WhatsApp, e-mail ou telefone.',
     'I agree to receive offers, news and promotional content by WhatsApp or email. I can opt out any time.': 'Concordo em receber ofertas, novidades e conteúdos promocionais por WhatsApp ou e-mail. Posso cancelar quando quiser.',

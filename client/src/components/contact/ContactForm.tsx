@@ -163,7 +163,7 @@ export function ContactForm({ companyName }: { companyName: string }) {
             id="sms-consent"
             checked={smsConsent}
             onCheckedChange={(checked) => setSmsConsent(checked === true)}
-            className="mt-1 shrink-0 rounded-none border-ink-500 data-[state=checked]:border-cta-ink data-[state=checked]:bg-cta-ink data-[state=checked]:text-white"
+            className="mt-1 h-[18px] w-[18px] shrink-0 rounded-none border-ink-700/25 bg-white data-[state=checked]:border-cta-ink data-[state=checked]:bg-cta-ink data-[state=checked]:text-white [&_svg]:h-3.5 [&_svg]:w-3.5"
           />
           <span className="text-sm leading-relaxed text-ink-500">
             {pt
@@ -179,7 +179,7 @@ export function ContactForm({ companyName }: { companyName: string }) {
             id="marketing-consent"
             checked={marketingConsent}
             onCheckedChange={(checked) => setMarketingConsent(checked === true)}
-            className="mt-1 shrink-0 rounded-none border-ink-500 data-[state=checked]:border-cta-ink data-[state=checked]:bg-cta-ink data-[state=checked]:text-white"
+            className="mt-1 h-[18px] w-[18px] shrink-0 rounded-none border-ink-700/25 bg-white data-[state=checked]:border-cta-ink data-[state=checked]:bg-cta-ink data-[state=checked]:text-white [&_svg]:h-3.5 [&_svg]:w-3.5"
           />
           <span className="text-sm leading-relaxed text-ink-500">
             {pt
@@ -211,7 +211,6 @@ export function ContactForm({ companyName }: { companyName: string }) {
         </p>
       </form>
     </EditorialCard>
-    <p className="mt-4 text-sm text-ink-500" data-testid="text-contact-reply-time">{t("We reply within one business day")}</p>
     </div>
   );
 }
