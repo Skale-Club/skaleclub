@@ -53,7 +53,9 @@ export function SectionHeading({
   if (variant === 'editorial') {
     const light = tone === 'light';
     return (
-      <div className={`max-w-3xl ${centered ? 'mx-auto text-center' : ''} ${className ?? ''}`}>
+      // Title block up to max-w-4xl so a wide screen does not break it after a
+      // few words; the subtitle keeps its own max-w-2xl reading measure.
+      <div className={`max-w-4xl ${centered ? 'mx-auto text-center' : ''} ${className ?? ''}`}>
         {eyebrow && (
           <p
             className={`text-xs font-bold uppercase tracking-[0.24em] ${
