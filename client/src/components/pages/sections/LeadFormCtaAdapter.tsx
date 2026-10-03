@@ -102,7 +102,10 @@ function DarkCta({ props, onOpen, children }: VariantProps) {
               alt={props.imageAlt ? t(props.imageAlt) : ""}
               loading="lazy"
               decoding="async"
-              className="mx-auto hidden h-44 w-44 object-contain lg:block"
+              // Height-bound, width free: a landscape product shot (plaque pair,
+              // keychain trio) reads at a useful size instead of shrinking into
+              // the old 176px square; a portrait one stays proportional.
+              className="mx-auto hidden h-60 w-auto max-w-[420px] object-contain drop-shadow-2xl lg:block xl:h-64"
             />
           )}
 
