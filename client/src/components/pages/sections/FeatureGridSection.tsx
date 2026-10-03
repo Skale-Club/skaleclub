@@ -30,6 +30,10 @@ const itemSchema = z.object({
   icon:        z.enum(featureGridIconNames),
   title:       z.string(),
   description: z.string(),
+  // Optional editorial photo. Kept local/root-relative so managed page content
+  // cannot turn this component into a third-party tracking surface.
+  imageUrl:    z.string().regex(/^\/(?![\/\\])/).optional(),
+  imageAlt:    z.string().optional(),
   // Optional: makes the card a link to a site path (e.g. a group page's cards
   // pointing at each item's own page). Root-relative only, same convention as
   // leadFormCta's imageUrl, but tighter: `/^\/` alone also passed "//evil.com"
@@ -81,18 +85,36 @@ export function FeatureGridSection({ props }: { props: FeatureGridProps }) {
         <ul className={`mt-12 grid grid-cols-1 gap-4 sm:gap-5 ${cols}`}>
           {props.items.map((item, i) => {
             const Icon = ICON_MAP[item.icon];
+            const hasImage = !!item.imageUrl;
             const card = (
-              <EditorialCard tone={dark ? "dark" : "light"} className="h-full">
-                <span className={`flex h-11 w-11 items-center justify-center rounded-full ${c.icon}`}>
-                  <Icon className="h-5 w-5" aria-hidden="true" />
-                </span>
-                <h3 className={`mt-5 font-display text-xl font-semibold leading-tight ${c.title}`}>{t(item.title)}</h3>
-                <p className={`mt-2 text-sm leading-6 ${c.body}`}>{t(item.description)}</p>
+              <EditorialCard
+                tone={dark ? "dark" : "light"}
+                className={hasImage ? "flex h-full flex-col overflow-hidden p-0" : "h-full"}
+              >
+                <div className={hasImage ? "flex flex-1 flex-col p-6 sm:p-8" : undefined}>
+                  <span className={`flex h-11 w-11 items-center justify-center rounded-full ${c.icon}`}>
+                    <Icon className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  <h3 className={`mt-5 font-display text-xl font-semibold leading-tight ${c.title}`}>{t(item.title)}</h3>
+                  <p className={`mt-2 text-sm leading-6 ${c.body}`}>{t(item.description)}</p>
+                </div>
+                {item.imageUrl && (
+                  <div className={`aspect-[4/3] w-full overflow-hidden border-t ${dark ? "border-white/10" : "border-ink-700/10"}`}>
+                    <img
+                      src={item.imageUrl}
+                      alt={item.imageAlt ? t(item.imageAlt) : t(item.title)}
+                      loading="lazy"
+                      decoding="async"
+                      className="h-full w-full object-cover transition-transform duration-500 motion-safe:group-hover:scale-[1.025]"
+                      sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+                    />
+                  </div>
+                )}
               </EditorialCard>
             );
             return (
               <li key={i}>
-                {item.href ? <a href={languageHref(item.href)} className="block h-full">{card}</a> : card}
+                {item.href ? <a href={languageHref(item.href)} className="group block h-full">{card}</a> : card}
               </li>
             );
           })}

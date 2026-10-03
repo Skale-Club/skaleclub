@@ -71,7 +71,7 @@ import { pathToFileURL } from "node:url";
 import { seedForm, seedPage, withSeedGuard } from "./lib/seed-utils.js";
 import { type PageSection } from "../shared/schema/pages.js";
 import type { FormConfig, FormQuestion } from "../shared/schema/forms.js";
-import { NFC_PLAQUE_PRICES } from "../shared/nfc-plaque-pricing.js";
+import { NFC_PLAQUE_PRICES, quotePlaqueOrder } from "../shared/nfc-plaque-pricing.js";
 
 // ── Shared "what kind of business" question, reused by both product forms ──
 
@@ -120,10 +120,34 @@ const MADE_FOR_SECTION: PageSection = {
     eyebrow: "Made for",
     heading: "Works anywhere customers pause",
     items: [
-      { icon: "IdCard", title: "Barbershops", description: "At the chair or the front desk." },
-      { icon: "ConciergeBell", title: "Salons", description: "At reception or at the styling station." },
-      { icon: "UtensilsCrossed", title: "Restaurants", description: "On the table or by the register." },
-      { icon: "Store", title: "Any counter", description: "Front desk, register, waiting area." },
+      {
+        icon: "IdCard",
+        title: "Barbershops",
+        description: "At the chair or the front desk.",
+        imageUrl: "/industry-scenes/barbershop.webp",
+        imageAlt: "A classic barber chair inside a barbershop",
+      },
+      {
+        icon: "ConciergeBell",
+        title: "Salons",
+        description: "At reception or at the styling station.",
+        imageUrl: "/industry-scenes/salon.webp",
+        imageAlt: "Mirrors and styling chairs inside a hair salon",
+      },
+      {
+        icon: "UtensilsCrossed",
+        title: "Restaurants",
+        description: "On the table or by the register.",
+        imageUrl: "/industry-scenes/restaurant.webp",
+        imageAlt: "Dining tables set inside a restaurant",
+      },
+      {
+        icon: "Store",
+        title: "Any counter",
+        description: "Front desk, register, waiting area.",
+        imageUrl: "/industry-scenes/counter.webp",
+        imageAlt: "A customer paying by card at a service counter",
+      },
     ],
   },
 };
@@ -330,17 +354,36 @@ export const NFC_REVIEW_PLAQUE_SECTIONS: PageSection[] = [
     },
   },
   {
-    type: "pricingTable",
+    // One card per way to order, so the two price rules read as two choices
+    // (a flat list of four price rows did not). Examples come from the same
+    // quote function the order form uses.
+    type: "pricingPlans",
     props: {
       theme: "dark",
       eyebrow: "Pricing",
       heading: "Simple, upfront pricing",
       subheading: "No hidden fees. You know the total before we start.",
-      lines: [
-        { label: "Standard plaque", price: usd(PP.standardUnitCents), note: "Google Review or Instagram design", kind: "per-unit" },
-        { label: "2 standard plaques", price: usd(PP.standardPairCents), note: "Every pair of standard plaques", kind: "bundle" },
-        { label: "Custom plaque", price: usd(PP.customFirstCents), note: "The first one, custom artwork included", kind: "per-unit" },
-        { label: "Each additional custom plaque", price: usd(PP.customAdditionalCents), note: "Same design, same order", kind: "per-unit" },
+      ctaLabel: "Order your plaque",
+      plans: [
+        {
+          name: "Standard",
+          title: "Google Review or Instagram",
+          price: usd(PP.standardUnitCents),
+          priceUnit: "per plaque",
+          priceNote: `or 2 for ${usd(PP.standardPairCents)}`,
+          features: ["Our ready-made design", "We can change the link anytime", "We see every tap and scan"],
+          example: `3 plaques: ${usd(quotePlaqueOrder({ quantity: 3, typeId: "google" }).totalCents)}`,
+        },
+        {
+          name: "Custom",
+          title: "Your brand on the plaque",
+          price: usd(PP.customFirstCents),
+          priceUnit: "first plaque",
+          priceNote: `${usd(PP.customAdditionalCents)} each additional`,
+          features: ["Your logo, name or @", "Custom artwork included", "Opens your own link directly"],
+          example: `3 plaques: ${usd(quotePlaqueOrder({ quantity: 3, typeId: "custom" }).totalCents)}`,
+          highlight: true,
+        },
       ],
       footnote: "No payment in the order form. We confirm the total with you on WhatsApp before production.",
     },

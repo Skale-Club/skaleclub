@@ -76,12 +76,18 @@ export function FaqAccordionSection({ props }: { props: FaqAccordionProps }) {
           subtitle={props.subheading ?? DEFAULTS.subheading}
         />
 
+        {/* Two columns from lg (first half left, second half right, so reading
+            order stays top-to-bottom per column); one column below that. */}
         <AccordionPrimitive.Root
           type="single"
           collapsible
-          className={`mt-12 max-w-3xl divide-y border-y ${c.list}`}
+          className="mt-12 grid gap-x-12 lg:grid-cols-2"
         >
-          {items.map((item, idx) => (
+          {[items.slice(0, Math.ceil(items.length / 2)), items.slice(Math.ceil(items.length / 2))].map((column, col) => (
+            <div key={col} className={`divide-y border-y ${c.list} ${col === 1 ? "border-t-0 lg:border-t" : ""}`}>
+          {column.map((item, i) => {
+            const idx = col === 0 ? i : Math.ceil(items.length / 2) + i;
+            return (
             <AccordionPrimitive.Item key={idx} value={`faq-${idx}`} data-testid={`faq-item-${idx + 1}`}>
               <AccordionPrimitive.Header className="flex">
                 <AccordionPrimitive.Trigger
@@ -96,6 +102,9 @@ export function FaqAccordionSection({ props }: { props: FaqAccordionProps }) {
                 <p className={`whitespace-pre-wrap pb-6 pr-8 text-sm leading-7 ${c.answer}`}>{t(item.answer)}</p>
               </AccordionPrimitive.Content>
             </AccordionPrimitive.Item>
+            );
+          })}
+            </div>
           ))}
         </AccordionPrimitive.Root>
       </Band>

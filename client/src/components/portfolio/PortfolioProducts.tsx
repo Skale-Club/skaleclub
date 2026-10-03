@@ -31,7 +31,7 @@ export function PortfolioProducts({ seeAllHref, hideHeading }: { seeAllHref?: st
             >
               {/* Transparent product cut-outs, contained on a panel so both
                   products sit at the same scale whatever their shape. */}
-              <div className="relative aspect-[16/10] w-full bg-[radial-gradient(ellipse_at_center,rgba(81,115,214,0.16),transparent_70%)]">
+              <div className="relative aspect-[16/10] w-full bg-navy-900">
                 <img
                   src={product.image.src}
                   alt={t(product.image.alt)}

@@ -387,6 +387,14 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Na mesa ou perto do caixa.",
   "Any counter":
     "Qualquer balcão",
+  "A classic barber chair inside a barbershop":
+    "Uma cadeira clássica dentro de uma barbearia",
+  "Mirrors and styling chairs inside a hair salon":
+    "Espelhos e cadeiras de atendimento dentro de um salão de beleza",
+  "Dining tables set inside a restaurant":
+    "Mesas postas dentro de um restaurante",
+  "A customer paying by card at a service counter":
+    "Uma cliente pagando com cartão em um balcão de atendimento",
   "Front desk, register, waiting area.":
     "Recepção, caixa, sala de espera.",
   "Customization":

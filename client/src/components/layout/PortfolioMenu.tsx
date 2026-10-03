@@ -199,7 +199,7 @@ export function PortfolioMegaMenu({ portfolioHref }: { portfolioHref: string }) 
               href={href}
               className="group block overflow-hidden rounded-2xl border border-white/5 bg-navy-900/70 transition-colors hover:border-cta-soft/40 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-cta-soft"
             >
-              <span className="relative flex aspect-[16/10] items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_center,rgba(81,115,214,0.16),transparent_70%)]">
+              <span className="relative flex aspect-[16/10] items-center justify-center overflow-hidden bg-navy-900">
                 {image ? (
                   <img
                     src={image.src}

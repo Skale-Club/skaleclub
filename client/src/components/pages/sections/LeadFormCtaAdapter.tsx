@@ -6,8 +6,7 @@ import { Band, Eyebrow, PillButton, PillLink } from "@/components/editorial";
 import { languageHref } from "@/lib/languageRouting";
 import { useTranslation } from "@/hooks/useTranslation";
 import { sectionThemeSchema } from "./sectionTheme";
-import { WhatsappCtaLink, whatsappCtaSchema } from "./whatsappCta";
-import { defaultWhatsappCtaForForm } from "@shared/nfc-whatsapp";
+import { whatsappCtaSchema } from "./whatsappCta";
 
 export const leadFormCtaPropsSchema = z.object({
   formSlug: z.string().min(1),
@@ -19,7 +18,9 @@ export const leadFormCtaPropsSchema = z.object({
   note: z.string().optional(),
   imageUrl: z.string().regex(/^\//).optional(),
   imageAlt: z.string().optional(),
-  // Dark only: a "Talk to us on WhatsApp" button beside the form button.
+  // Still accepted so stored rows keep validating, but no longer rendered: the
+  // floating WhatsApp button (md+) and the mobile action bar already offer it
+  // on every page, so a second button here was redundant (user, 2026-10-03).
   whatsapp: whatsappCtaSchema,
   // Dark only: a quiet link under the buttons to a second-level page (e.g. the
   // keychain landing pointing at its full guide). Site path only.
@@ -75,7 +76,6 @@ function DarkCta({ props, onOpen, children }: VariantProps) {
   const { t } = useTranslation();
   const heading = props.heading ?? DEFAULTS.heading;
   const ctaLabel = props.ctaLabel ?? DEFAULTS.ctaLabel;
-  const whatsapp = props.whatsapp ?? defaultWhatsappCtaForForm(props.formSlug);
   const hasImage = !!props.imageUrl;
 
   return (
@@ -117,7 +117,6 @@ function DarkCta({ props, onOpen, children }: VariantProps) {
                 {t(ctaLabel)}
                 <ArrowRight aria-hidden="true" className="h-4 w-4" />
               </PillButton>
-              {whatsapp && <WhatsappCtaLink cta={whatsapp} location="lead_form_cta" variant="button" />}
             </div>
             {props.note && <span className="text-sm font-medium text-fog-400">{t(props.note)}</span>}
             {props.secondaryLabel && props.secondaryHref && (

@@ -5,7 +5,7 @@
 //
 // Price strings are BUILT from NFC_PLAQUE_PRICES exactly like the seed builds
 // the English ones, so a price change keeps both languages in step.
-import { NFC_PLAQUE_PRICES } from "../../shared/nfc-plaque-pricing.js";
+import { NFC_PLAQUE_PRICES, quotePlaqueOrder } from "../../shared/nfc-plaque-pricing.js";
 
 const P = NFC_PLAQUE_PRICES;
 const en = (cents: number) => `$${cents / 100}`;
@@ -111,18 +111,25 @@ export const PLAQUE_PT_COPY: Record<string, string> = {
   [en(P.standardUnitCents)]: pt(P.standardUnitCents),
   [en(P.standardPairCents)]: pt(P.standardPairCents),
   [en(P.customFirstCents)]: pt(P.customFirstCents),
-  "2 standard plaques":
-    "2 placas padrão",
-  "Each additional custom plaque":
-    "Cada placa personalizada adicional",
-  "Google Review or Instagram design":
-    "Design do Google ou do Instagram",
-  "Every pair of standard plaques":
-    "A cada par de placas padrão",
-  "The first one, custom artwork included":
-    "A primeira, com a arte personalizada",
-  "Same design, same order":
-    "Mesmo design, mesmo pedido",
+  // Plan cards (pricingPlans)
+  "Standard": "Padrão",
+  "Custom": "Personalizada",
+  "Google Review or Instagram": "Google ou Instagram",
+  "Your brand on the plaque": "A sua marca na placa",
+  "per plaque": "por placa",
+  "first plaque": "a primeira placa",
+  [`or 2 for ${en(P.standardPairCents)}`]: `ou 2 por ${pt(P.standardPairCents)}`,
+  [`${en(P.customAdditionalCents)} each additional`]: `${pt(P.customAdditionalCents)} cada adicional`,
+  "Our ready-made design": "O nosso design pronto",
+  "We can change the link anytime": "A gente troca o link quando você quiser",
+  "We see every tap and scan": "A gente vê cada toque e leitura",
+  "Your logo, name or @": "A sua logo, nome ou @",
+  "Custom artwork included": "Arte personalizada inclusa",
+  "Opens your own link directly": "Abre direto o seu próprio link",
+  [`3 plaques: ${en(quotePlaqueOrder({ quantity: 3, typeId: "google" }).totalCents)}`]:
+    `3 placas: ${pt(quotePlaqueOrder({ quantity: 3, typeId: "google" }).totalCents)}`,
+  [`3 plaques: ${en(quotePlaqueOrder({ quantity: 3, typeId: "custom" }).totalCents)}`]:
+    `3 placas: ${pt(quotePlaqueOrder({ quantity: 3, typeId: "custom" }).totalCents)}`,
   "No payment in the order form. We confirm the total with you on WhatsApp before production.":
     "Nenhum pagamento no formulário. Confirmamos o total com você no WhatsApp antes da produção.",
 
