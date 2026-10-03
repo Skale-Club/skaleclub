@@ -164,6 +164,11 @@
   background: var(--surface-card); border: 1px solid var(--cat-line); border-radius: 0; overflow: hidden;
   box-shadow: 0 40px 120px rgba(0, 0, 0, 0.6); display: grid; grid-template-rows: minmax(0, 1fr) auto; color: var(--cat-ink);
 }
+/* One fixed height for every item, so stepping through the list (prev / next)
+   never resizes the dialog; longer copy scrolls inside .cat-detail__content. */
+@media (min-width: 768px) {
+  .cat-detail { height: min(700px, calc(100dvh - 40px)); }
+}
 .cat-detail__body { display: grid; grid-template-columns: 1.05fr 1fr; min-height: 0; overflow: hidden; }
 .cat-detail__content {
   padding: clamp(28px, 4.6cqw, 56px); padding-right: clamp(20px, 3.4cqw, 40px);

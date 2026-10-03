@@ -3,52 +3,63 @@ import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { AppWindow, Briefcase, ChevronDown, Package, type LucideIcon } from "lucide-react";
 import { clsx } from "clsx";
-import type { PortfolioService } from "@shared/schema";
-import { catalogProducts } from "@shared/catalog";
+import type { CompanySettings, PortfolioService } from "@shared/schema";
+import { catalogProducts, catalogServices } from "@shared/catalog";
 import { PRODUCT_CARDS } from "@shared/products";
+import { getImageUrl } from "@/components/admin/shared/utils";
 import { useTranslation } from "@/hooks/useTranslation";
 
 interface MenuItem {
   href: string;
   icon: LucideIcon;
   title: string;
-  description: string;
-  /** Names of what is inside, shown under the description when there are any. */
-  names?: string;
+  /** How many items the category holds, and the word for them ("3 apps"). */
+  count: number;
+  unit: "apps" | "services" | "products";
+  /** Thumbnail for the desktop panel: a photo/screenshot (cover) or a cut-out (contain). */
+  image?: { src: string; fit: "cover" | "contain" };
 }
 
 /** Apps, Services and Products: the three categories /portfolio is made of. */
 function usePortfolioMenuItems(): MenuItem[] {
-  // The same list /portfolio reads; cached, so the navbar costs one request per visit.
+  // The same lists /portfolio reads; cached, so the navbar adds no extra request on those pages.
   const { data: portfolioServices } = useQuery<PortfolioService[]>({
     queryKey: ["/api/portfolio-services"],
     staleTime: 5 * 60 * 1000,
   });
-  return useMemo(
-    () => [
+  const { data: settings } = useQuery<CompanySettings>({ queryKey: ["/api/company-settings"] });
+  return useMemo(() => {
+    const apps = catalogProducts(portfolioServices);
+    const services = catalogServices(settings?.homepageContent?.ourServicesSection?.cards);
+    const appCover = apps.find((app) => app.cover)?.cover;
+    const serviceCover = services.find((service) => service.cover)?.cover;
+    return [
       {
         href: "/apps",
         icon: AppWindow,
         title: "Apps",
-        description: "Ready-made apps, live today, with a fixed price.",
-        names: catalogProducts(portfolioServices).slice(0, 3).map((app) => app.title).join(" · "),
+        count: apps.length,
+        unit: "apps",
+        image: appCover ? { src: getImageUrl(appCover, { width: 480, quality: 75 }), fit: "cover" } : undefined,
       },
       {
         href: "/services",
         icon: Briefcase,
         title: "Services",
-        description: "Tailored marketing and technology, quoted for your case.",
+        count: services.length,
+        unit: "services",
+        image: serviceCover ? { src: getImageUrl(serviceCover, { width: 480, quality: 75 }), fit: "cover" } : undefined,
       },
       {
         href: "/products",
         icon: Package,
         title: "Products",
-        description: "Things we make for your counter.",
-        names: PRODUCT_CARDS.map((product) => product.title).join(" · "),
+        count: PRODUCT_CARDS.length,
+        unit: "products",
+        image: { src: PRODUCT_CARDS[0].image.src, fit: "contain" },
       },
-    ],
-    [portfolioServices],
-  );
+    ];
+  }, [portfolioServices, settings]);
 }
 
 /** True while the current page is the portfolio or one of its category pages. */
@@ -179,24 +190,34 @@ export function PortfolioMegaMenu({ portfolioHref }: { portfolioHref: string }) 
         <div
           role="group"
           aria-label={t("Portfolio")}
-          className="grid grid-cols-3 gap-2 rounded-3xl border border-white/10 bg-navy-800 p-2 shadow-[0_24px_60px_rgba(0,0,0,.35)] backdrop-blur-md"
+          className="grid grid-cols-3 gap-3 rounded-3xl border border-white/10 bg-navy-800 p-3 shadow-[0_24px_60px_rgba(0,0,0,.35)] backdrop-blur-md"
         >
-          {items.map(({ href, icon: Icon, title, description, names }) => (
+          {/* Picture first, two words under it: the panel is for choosing, not reading. */}
+          {items.map(({ href, icon: Icon, title, count, unit, image }) => (
             <Link
               key={href}
               href={href}
-              className="group flex flex-col gap-3 rounded-2xl p-4 transition-colors hover:bg-white/5 focus-visible:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-cta-soft"
+              className="group block overflow-hidden rounded-2xl border border-white/5 bg-navy-900/70 transition-colors hover:border-cta-soft/40 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-cta-soft"
             >
-              <span
-                className="flex h-10 w-10 items-center justify-center rounded-xl"
-                style={{ background: "rgba(81,115,214,0.14)" }}
-              >
-                <Icon className="h-5 w-5 text-cta-soft" aria-hidden="true" />
+              <span className="relative flex aspect-[16/10] items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_center,rgba(81,115,214,0.16),transparent_70%)]">
+                {image ? (
+                  <img
+                    src={image.src}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className={clsx(
+                      "absolute inset-0 h-full w-full transition duration-300 group-hover:scale-105",
+                      image.fit === "cover" ? "object-cover object-top" : "object-contain p-3",
+                    )}
+                  />
+                ) : (
+                  <Icon className="h-8 w-8 text-cta-soft" aria-hidden="true" />
+                )}
               </span>
-              <span>
-                <span className="block font-display text-base font-semibold text-fog-50">{t(title)}</span>
-                <span className="mt-1 block text-sm leading-5 text-fog-400">{t(description)}</span>
-                {names && <span className="mt-2 block text-xs font-medium leading-5 text-fog-300">{names}</span>}
+              <span className="flex items-baseline justify-between gap-2 px-4 py-3">
+                <span className="font-display text-base font-semibold text-fog-50">{t(title)}</span>
+                {count > 0 && <span className="text-xs font-medium text-fog-400">{count} {t(unit)}</span>}
               </span>
             </Link>
           ))}

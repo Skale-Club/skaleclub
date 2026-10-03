@@ -24,8 +24,8 @@ export default function Services() {
             buttonText={buttonText}
             onCta={() => openForm("hero")}
           />
-          <PortfolioPillars />
           <PortfolioServices services={services} onOpen={openItem("services")} hideHeading />
+          <PortfolioPillars />
           {cta}
         </>
       )}

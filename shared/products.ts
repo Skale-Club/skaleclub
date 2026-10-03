@@ -13,8 +13,8 @@ export interface ProductCard {
   title: string;
   description: string;
   href: string;
-  /** Photo for the card; the plaque has no product shot yet, so it borrows the counter-tap scene. */
-  image?: { src: string; alt: string };
+  /** Transparent product cut-out (WebP), shown contained on the card's panel. */
+  image: { src: string; alt: string };
 }
 
 export const PRODUCT_CARDS: readonly ProductCard[] = [
@@ -24,8 +24,8 @@ export const PRODUCT_CARDS: readonly ProductCard[] = [
     description: "A plaque for your counter that opens your Google review page in one tap.",
     href: "/products/nfc-review-plaque",
     image: {
-      src: "/nfc-guide/tap.webp",
-      alt: "A customer tapping a phone on an NFC tag at a shop counter",
+      src: "/nfc-plaque-pair.webp",
+      alt: "Google Review and Instagram NFC plaques side by side",
     },
   },
   {
@@ -34,8 +34,8 @@ export const PRODUCT_CARDS: readonly ProductCard[] = [
     description: "Custom keychains with your branding, plus a display to sell them at your counter.",
     href: "/products/nfc-keychains",
     image: {
-      src: "/nfc-guide/hero.webp",
-      alt: "Three custom 3D-printed NFC keychains on a work table",
+      src: "/nfc-keychains-hero.webp",
+      alt: "Custom 3D-printed NFC keychains in different designs",
     },
   },
 ];

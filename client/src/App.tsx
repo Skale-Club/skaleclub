@@ -46,6 +46,7 @@ const BlogPost = lazy(() => import("@/pages/BlogPost").then(m => ({ default: () 
 const Portfolio = lazy(() => import("@/pages/Portfolio").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Apps = lazy(() => import("@/pages/Apps").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Services = lazy(() => import("@/pages/Services").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const Products = lazy(() => import("@/pages/Products").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const SkaleHub = lazy(() => import("@/pages/SkaleHub").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const Links = lazy(() => import("@/pages/Links").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const VCard = lazy(() => import("@/pages/VCard").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
@@ -135,6 +136,7 @@ const RESERVED_LANDING_SEGMENTS = new Set<string>([
   "nfc-order",
   "plaque-order",
   "nfc-guide",
+  "products",
   ...Object.values(DEFAULT_PAGE_SLUGS),
   ...RESERVED_SLUGS,
 ]);
@@ -317,6 +319,10 @@ function Router() {
             {/* The portfolio's category pages; fixed paths, reserved in shared/reservedSlugs.ts. */}
             <Route path="/apps" component={Apps} />
             <Route path="/services" component={Services} />
+            {/* /products is the third category page (React, like /apps and /services).
+                The "products" DB row (scripts/seed-products-landing.ts) is no longer
+                rendered here; the server still reads its SEO from LANDING_SEO. */}
+            <Route path="/products" component={Products} />
             {/* Legacy Skale Hub group URLs — 301 to managed landing /grupo (43-05).
                 Production redirects run in server/canonicalHost.ts; these are the client-side fallback. */}
             <Route path={`${pagePaths.hub}/grupo`}>{() => <Redirect to="/grupo" />}</Route>
@@ -326,9 +332,8 @@ function Router() {
             <Route path={pagePaths.hub} component={SkaleHub} />
             {pagePaths.hub !== LEGACY_PATHS.hub && <Route path={LEGACY_PATHS.hub} component={SkaleHub} />}
             {/* /products/<slug> managed landings (scripts/seed-products-landing.ts).
-                Bare "/products" needs no entry here — it's a single segment, so
-                the catch-all "/:slug" below already resolves it. Must stay ABOVE
-                that catch-all. See PRODUCT_ROUTES in shared/landingSeo.ts for the
+                Bare "/products" is the React category page above. Must stay ABOVE
+                the catch-all. See PRODUCT_ROUTES in shared/landingSeo.ts for the
                 URL-segment -> DB-slug mapping these pages need on top of it. */}
             <Route path="/products/:slug" component={DynamicPage} />
             {/* The review-plaque product's DB slug equals its own URL segment, so

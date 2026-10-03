@@ -27,9 +27,10 @@ export default function Portfolio() {
               secondary={{ href: "#apps", label: t("See the apps") }}
             />
             <PortfolioApps apps={apps} onOpen={openItem("apps")} source="portfolio" seeAllHref="/apps" />
-            <PortfolioPillars />
             <PortfolioServices services={services} onOpen={openItem("services")} seeAllHref="/services" />
             <PortfolioProducts seeAllHref="/products" />
+            {/* The pitch goes after the catalog: the archive leads with what we offer. */}
+            <PortfolioPillars />
             {cta}
           </>
         );
