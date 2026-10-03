@@ -30,7 +30,7 @@ const ICON_MAP: Record<(typeof featureGridIconNames)[number], LucideIcon> = {
 
 // Optional brand badge in place of the plain icon: the destination's own logo
 // and colour (Google, Instagram, WhatsApp) or, for destinations without a brand
-// (digital card, menu, website), the item's icon on a solid site-blue circle.
+// (digital card, menu, website), the item's icon on its own solid colour.
 export const featureGridBrands = ["google", "instagram", "whatsapp", "vcard", "menu", "web"] as const;
 type FeatureGridBrand = (typeof featureGridBrands)[number];
 
@@ -49,7 +49,9 @@ function BrandBadge({ brand, Icon }: { brand: FeatureGridBrand; Icon: LucideIcon
   if (brand === "whatsapp") {
     return <span className={`${base} bg-[#25D366]`}><SiWhatsapp className="h-5 w-5 text-white" aria-hidden="true" /></span>;
   }
-  return <span className={`${base} bg-cta`}><Icon className="h-5 w-5 text-white" aria-hidden="true" /></span>;
+  // Brandless destinations still get one colour each, so no two badges match.
+  const tint: Record<"vcard" | "menu" | "web", string> = { vcard: "bg-[#0A162E]", menu: "bg-[#EA580C]", web: "bg-cta" };
+  return <span className={`${base} ${tint[brand]}`}><Icon className="h-5 w-5 text-white" aria-hidden="true" /></span>;
 }
 
 const itemSchema = z.object({
