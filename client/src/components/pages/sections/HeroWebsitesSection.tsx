@@ -116,11 +116,19 @@ function DarkProductHero({ props }: { props: HeroWebsitesProps }) {
   const { t } = useTranslation();
   const headline = props.headline ?? DEFAULTS.headline;
   const bgUrl = props.backgroundImageUrl;
+  // A landscape product shot (the plaque pair) would come out short in a column
+  // sized for portrait photos (the keychains): give it a wider column and cap.
+  const size = bgUrl ? KNOWN_IMAGE_SIZES[bgUrl] : undefined;
+  const wide = Boolean(size && size.width > size.height * 1.15);
 
   return (
     <div data-testid="section-hero-websites">
       <Band tone="hero" pattern containerClassName="pt-nav">
-        <div className="grid items-center gap-6 py-8 sm:py-12 lg:min-h-[600px] lg:grid-cols-[1.05fr_.95fr] lg:gap-12 lg:py-20">
+        <div
+          className={`grid items-center gap-6 py-8 sm:py-12 lg:min-h-[600px] lg:gap-12 lg:py-20 ${
+            wide ? "lg:grid-cols-[.9fr_1.1fr]" : "lg:grid-cols-[1.05fr_.95fr]"
+          }`}
+        >
           <div className="order-2 lg:order-1">
             {props.eyebrow && <Eyebrow>{t(props.eyebrow)}</Eyebrow>}
             <h1 className="mt-4 font-display text-[2.4rem] font-semibold leading-[0.98] tracking-[-0.04em] text-fog-50 text-balance sm:text-5xl xl:text-6xl">
@@ -138,7 +146,11 @@ function DarkProductHero({ props }: { props: HeroWebsitesProps }) {
           </div>
 
           {bgUrl ? (
-            <div className="relative order-1 mx-auto w-full max-w-[220px] sm:max-w-[300px] lg:order-2 lg:max-w-[460px]">
+            <div
+              className={`relative order-1 mx-auto w-full lg:order-2 ${
+                wide ? "max-w-[340px] sm:max-w-[480px] lg:max-w-[680px]" : "max-w-[220px] sm:max-w-[300px] lg:max-w-[460px]"
+              }`}
+            >
               <img
                 src={bgUrl}
                 alt={t(props.backgroundImageAlt ?? "")}
