@@ -79,6 +79,10 @@ export const NFC_GUIDE_FAQ_EN: readonly NfcFaqGroup[] = [
         "A vector file is ideal, but a clear PNG, JPG, WEBP or PDF can also work. If you only have a photo or screenshot, send the best version available and we will tell you what can be done.",
       ],
       [
+        "Can every logo be reproduced exactly?",
+        "Most logos print very well. Each color is a separate plastic filament, so gradients, shadows and photos become solid colors, and very fine lines or small text may look slightly different from the screen. When a detail is very fine, we adapt how the piece is made, for example a slightly larger keychain, and you approve the design before production.",
+      ],
+      [
         "Will I see the design before production?",
         "Yes. You approve the adapted design before production begins. This is also when we resolve any necessary simplification or NFC placement detail.",
       ],
@@ -164,6 +168,10 @@ export const NFC_GUIDE_FAQ_PT: readonly NfcFaqGroup[] = [
       [
         "Qual arquivo de arte devo enviar?",
         "Um arquivo vetorial é ideal, mas um PNG, JPG, WEBP ou PDF nítido também pode servir. Se você só tiver uma foto ou captura de tela, envie a melhor versão disponível e diremos o que pode ser feito."
+      ],
+      [
+        "Toda logo pode ser reproduzida exatamente igual?",
+        "A maioria das logos fica muito bem impressa. Cada cor é um filamento de plástico separado, então degradês, sombras e fotos viram cores sólidas, e linhas muito finas ou textos pequenos podem ficar levemente diferentes da tela. Quando um detalhe é muito fino, adaptamos a forma de produzir, por exemplo um chaveiro um pouco maior, e você aprova o design antes da produção."
       ],
       [
         "Vou ver o design antes da produção?",

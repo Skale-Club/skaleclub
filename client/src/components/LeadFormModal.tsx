@@ -1621,6 +1621,13 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
                         <ArrowRight className="h-4 w-4 flex-shrink-0" />
                       </button>
                     </div>
+                    {/* A quiet line, not a warning box: sending means agreeing to the
+                        page the form points to (config.agreementNote). */}
+                    {isLastStep && config?.agreementNote && (
+                      <p className="text-center text-xs leading-5 text-slate-400" data-testid="form-agreement-note">
+                        {t(config.agreementNote)}
+                      </p>
+                    )}
                   </form>
                 )}
 

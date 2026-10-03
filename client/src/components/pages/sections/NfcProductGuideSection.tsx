@@ -321,7 +321,10 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
             />
             <EditorialCard tone="dark" className="mt-9 p-7 sm:p-9">
               {[
-                "We check whether fine details need to be simplified.",
+                "We check how fine lines, small text and colors will translate to plastic.",
+                // Kept gentle on purpose (user, 2026-10-02): a fact, not a warning. The
+                // logo itself is never cut down; the production method adapts to it.
+                "Gradients, shadows and photos become solid colors, and very fine details may look slightly different.",
                 "We choose a safe position for the NFC tag and keyring hole.",
                 "We confirm colors, layers, contour and overall proportions.",
                 "You approve the adapted design before production.",
@@ -419,6 +422,9 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
             </h2>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-fog-300">
               {t("The form takes a few minutes and does not collect payment. We review everything before production.")}
+            </p>
+            <p className="mt-3 text-xs leading-5 text-fog-400">
+              {t("By placing an order, you agree to the information on this page.")}
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">

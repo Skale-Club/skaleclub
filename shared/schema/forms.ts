@@ -282,6 +282,11 @@ export interface FormConfig {
    */
   completionRedirect?: string;
   /**
+   * One short, quiet line under the Finish button on the last step, e.g. that
+   * sending the order means agreeing to the guide. Plain text (no link).
+   */
+  agreementNote?: string;
+  /**
    * Opting a form into live pricing. Set it and the modal shows the running
    * quote, and the server recomputes + freezes that quote onto the lead on
    * completion. Absent means a plain lead form, exactly as before.

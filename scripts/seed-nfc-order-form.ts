@@ -158,6 +158,8 @@ const CONFIG: FormConfig = {
   // After the last step the lead lands on the full keychain guide (the same page
   // the team sends on WhatsApp), which fires the lead conversion itself.
   completionRedirect: "/nfc-guide",
+  // Kept quiet on purpose (user, 2026-10-02): stated, not alarming.
+  agreementNote: "By sending this order, you agree to the information in the keychain guide.",
   pricing: {
     model: "nfc-keychain",
     typeQuestionId: "tipoChaveiro",
