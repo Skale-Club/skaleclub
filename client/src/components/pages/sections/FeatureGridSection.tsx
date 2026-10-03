@@ -89,17 +89,13 @@ export function FeatureGridSection({ props }: { props: FeatureGridProps }) {
             const card = (
               <EditorialCard
                 tone={dark ? "dark" : "light"}
-                className={hasImage ? "flex h-full flex-col overflow-hidden p-0" : "h-full"}
+                // With a photo the card drops its own padding (both p-6 AND sm:p-8,
+                // or the text ends up double-padded): the photo runs edge to edge
+                // on top and the copy below gets one even inset.
+                className={hasImage ? "flex h-full flex-col overflow-hidden p-0 sm:p-0" : "h-full"}
               >
-                <div className={hasImage ? "flex flex-1 flex-col p-6 sm:p-8" : undefined}>
-                  <span className={`flex h-11 w-11 items-center justify-center rounded-full ${c.icon}`}>
-                    <Icon className="h-5 w-5" aria-hidden="true" />
-                  </span>
-                  <h3 className={`mt-5 font-display text-xl font-semibold leading-tight ${c.title}`}>{t(item.title)}</h3>
-                  <p className={`mt-2 text-sm leading-6 ${c.body}`}>{t(item.description)}</p>
-                </div>
                 {item.imageUrl && (
-                  <div className={`aspect-[4/3] w-full overflow-hidden border-t ${dark ? "border-white/10" : "border-ink-700/10"}`}>
+                  <div className={`aspect-[4/3] w-full overflow-hidden border-b ${dark ? "border-white/10" : "border-ink-700/10"}`}>
                     <img
                       src={item.imageUrl}
                       alt={item.imageAlt ? t(item.imageAlt) : t(item.title)}
@@ -110,6 +106,13 @@ export function FeatureGridSection({ props }: { props: FeatureGridProps }) {
                     />
                   </div>
                 )}
+                <div className={hasImage ? "flex flex-1 flex-col p-6" : undefined}>
+                  <span className={`flex h-11 w-11 items-center justify-center rounded-full ${c.icon}`}>
+                    <Icon className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  <h3 className={`mt-5 font-display text-xl font-semibold leading-tight ${c.title}`}>{t(item.title)}</h3>
+                  <p className={`mt-2 text-sm leading-6 ${c.body}`}>{t(item.description)}</p>
+                </div>
               </EditorialCard>
             );
             return (
