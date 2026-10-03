@@ -25,7 +25,7 @@
 export const MVP_VID_KEY = 'mvp_vid';
 
 export function isAttributionIgnoredPath(path: string | undefined | null): boolean {
-  return typeof path === 'string' && (path.startsWith('/admin') || path === '/nfc' || path.startsWith('/nfc/'));
+  return typeof path === 'string' && path.startsWith('/admin');
 }
 
 // Classification lookup tables — exported so tests and maintenance can verify them.
