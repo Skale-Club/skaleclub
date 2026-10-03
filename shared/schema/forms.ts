@@ -201,9 +201,10 @@ export type FormQuestionType =
   | 'select'
   | 'voice'
   | 'phoneCountry'
-  // Order-form types (NFC keychains). `productPicker` and `quantitySlider` read
-  // their catalogue and range from shared/nfc-pricing.ts, not from `options`,
-  // so pricing stays in one file.
+  // Order-form types (NFC keychains, NFC plaques). `productPicker` and
+  // `quantitySlider` read their catalogue and range from the form's pricing
+  // model (shared/order-catalog.ts), not from `options`, so pricing stays in
+  // one file per product.
   | 'productPicker'
   | 'quantitySlider'
   | 'fileUpload';
@@ -255,6 +256,14 @@ export interface FormQuestion {
   note?: FormQuestionNote;
   /** Required by `fileUpload`, ignored otherwise. */
   upload?: FormUploadConfig;
+  /**
+   * Makes an otherwise optional question required for one answer of another
+   * question (e.g. the logo only for the custom plaque). Checked client-side.
+   */
+  requiredWhen?: {
+    questionId: string;
+    equals: string;
+  };
 }
 
 export interface FormConfig {
@@ -271,7 +280,8 @@ export interface FormConfig {
    * completion. Absent means a plain lead form, exactly as before.
    */
   pricing?: {
-    model: 'nfc-keychain';
+    /** A key of shared/order-catalog.ts: picks the product list, range and price. */
+    model: 'nfc-keychain' | 'nfc-plaque';
     /** Question id holding the chosen type; defaults to `tipoChaveiro`. */
     typeQuestionId?: string;
     /** Question id holding the quantity; defaults to `quantidade`. */

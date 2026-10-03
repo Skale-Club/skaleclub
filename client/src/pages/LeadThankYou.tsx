@@ -82,6 +82,7 @@ export default function LeadThankYou() {
   // An order request, not an enquiry: what follows is a call to confirm it, so
   // the copy promises that rather than a generic "a specialist will reach out".
   const isNfcOrder = formSlug === "nfc-keychain-order";
+  const isPlaqueOrder = formSlug === "nfc-plaque-order";
 
   // Xphere visit booking CTA (quick 260906-g80). Open-redirect guard: only
   // accept URLs on Xphere's public booking host.
@@ -136,6 +137,8 @@ export default function LeadThankYou() {
             <p className="mt-4 text-slate-200 text-lg leading-relaxed">
               {t(isGroupLead
                 ? 'You are in. We will add you to the Skale Hub WhatsApp group using the number you provided.'
+                : isPlaqueOrder
+                  ? 'Your plaque order was received. We will review the model, quantity and shipping address, then call you on WhatsApp to confirm everything before production starts.'
                 : isNfcOrder
                   ? 'Your order request was received. We will review the quantity, artwork and shipping address, then call you on WhatsApp to confirm everything before production starts.'
                   : isNfcLead
@@ -170,6 +173,14 @@ export default function LeadThankYou() {
                   {t('Back to website')}
                 </button>
               </Link>
+              {isPlaqueOrder && (
+                <Link href="/products/nfc-review-plaque">
+                  <button className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 text-white font-semibold py-3 transition-all">
+                    <Sparkles className="w-4 h-4" />
+                    {t('See the plaque page')}
+                  </button>
+                </Link>
+              )}
               {(isNfcLead || isNfcOrder) && (
                 <Link href="/nfc-guide">
                   <button className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 text-white font-semibold py-3 transition-all">
@@ -182,7 +193,7 @@ export default function LeadThankYou() {
             <p className="mt-3 text-sm text-slate-300">
               {t(isGroupLead
                 ? 'Keep your WhatsApp available. We will use the number you provided.'
-                : isNfcOrder
+                : isNfcOrder || isPlaqueOrder
                   ? 'Keep your WhatsApp handy. We call to confirm before producing anything.'
                   : isNfcLead
                     ? 'Keep your WhatsApp available. We will use the number you provided in the form.'
@@ -198,15 +209,15 @@ export default function LeadThankYou() {
                 <div className="space-y-3 text-sm text-white/90">
                   <div className="p-3 rounded-xl bg-white/10 border border-white/10 flex items-center gap-3">
                     <span className="flex-shrink-0 w-7 h-7 rounded-full bg-cta/20 border border-cta/30 flex items-center justify-center text-blue-300 font-bold text-sm">1</span>
-                    <span>{t(isGroupLead ? 'We check the number you provided.' : isNfcOrder ? 'We review your order and check the artwork you sent.' : isNfcLead ? 'We review your quantity, logo, and the link you want the NFC tap to open.' : 'Our team reviews your answers and identifies the best plan.')}</span>
+                    <span>{t(isGroupLead ? 'We check the number you provided.' : isPlaqueOrder ? 'We review your order and the link you sent.' : isNfcOrder ? 'We review your order and check the artwork you sent.' : isNfcLead ? 'We review your quantity, logo, and the link you want the NFC tap to open.' : 'Our team reviews your answers and identifies the best plan.')}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-white/10 border border-white/10 flex items-center gap-3">
                     <span className="flex-shrink-0 w-7 h-7 rounded-full bg-cta/20 border border-cta/30 flex items-center justify-center text-blue-300 font-bold text-sm">2</span>
-                    <span>{t(isGroupLead ? 'We add you to the Skale Hub WhatsApp group.' : isNfcOrder ? 'We call you on WhatsApp to confirm quantity, artwork and the final total.' : isNfcLead ? 'We contact you on WhatsApp to confirm the artwork, total, and production window.' : 'We will contact you to align objectives and next steps.')}</span>
+                    <span>{t(isGroupLead ? 'We add you to the Skale Hub WhatsApp group.' : isPlaqueOrder ? 'We call you on WhatsApp to confirm the model, quantity and final total.' : isNfcOrder ? 'We call you on WhatsApp to confirm quantity, artwork and the final total.' : isNfcLead ? 'We contact you on WhatsApp to confirm the artwork, total, and production window.' : 'We will contact you to align objectives and next steps.')}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-white/10 border border-white/10 flex items-center gap-3">
                     <span className="flex-shrink-0 w-7 h-7 rounded-full bg-cta/20 border border-cta/30 flex items-center justify-center text-blue-300 font-bold text-sm">3</span>
-                    <span>{t(isGroupLead ? 'You get the live announcements straight on WhatsApp.' : isNfcOrder ? 'After your approval and payment, production starts.' : isNfcLead ? 'Production starts after payment and your artwork approval.' : 'You receive a summary of the initial plan and practical instructions.')}</span>
+                    <span>{t(isGroupLead ? 'You get the live announcements straight on WhatsApp.' : isNfcOrder || isPlaqueOrder ? 'After your approval and payment, production starts.' : isNfcLead ? 'Production starts after payment and your artwork approval.' : 'You receive a summary of the initial plan and practical instructions.')}</span>
                   </div>
                 </div>
               </div>

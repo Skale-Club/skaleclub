@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1000" width="900" height="1000" role="img" aria-label="NFC review plaque">
+  <!-- PLACEHOLDER: generic counter-plaque mockup for /products/nfc-review-plaque
+       until real product photos exist. Swap the backgroundImageUrl / imageUrl in
+       scripts/seed-products-landing.ts (PLAQUE_IMAGE) and re-run the seed. -->
+  <defs>
+    <linearGradient id="face" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F4F6FB"/>
+      <stop offset="1" stop-color="#DCE2EF"/>
+    </linearGradient>
+    <linearGradient id="base" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2A3A5E"/>
+      <stop offset="1" stop-color="#14213D"/>
+    </linearGradient>
+  </defs>
+
+  <!-- floor shadow -->
+  <ellipse cx="450" cy="930" rx="330" ry="34" fill="#000" opacity=".28"/>
+
+  <!-- base -->
+  <path d="M150 840 h600 l40 70 a14 14 0 0 1 -12 20 H122 a14 14 0 0 1 -12 -20 z" fill="url(#base)"/>
+  <rect x="150" y="826" width="600" height="22" rx="6" fill="#33466F"/>
+
+  <!-- plaque body (slight thickness on the right edge) -->
+  <rect x="196" y="96" width="532" height="744" rx="40" fill="#B9C3D8"/>
+  <rect x="180" y="86" width="532" height="744" rx="40" fill="url(#face)"/>
+
+  <!-- logo area -->
+  <rect x="300" y="172" width="292" height="92" rx="20" fill="none" stroke="#5173D6" stroke-width="6" stroke-dasharray="18 14" opacity=".75"/>
+  <circle cx="352" cy="218" r="22" fill="#5173D6" opacity=".35"/>
+  <rect x="390" y="204" width="150" height="12" rx="6" fill="#0A162E" opacity=".25"/>
+  <rect x="390" y="226" width="104" height="10" rx="5" fill="#0A162E" opacity=".15"/>
+
+  <!-- stars -->
+  <g fill="#5173D6">
+    <path id="s" d="M0 -30 L8.8 -9.3 L31.4 -9.3 L13.3 4.2 L19.6 26 L0 13 L-19.6 26 L-13.3 4.2 L-31.4 -9.3 L-8.8 -9.3 Z" transform="translate(286 352)"/>
+    <use href="#s" x="80"/>
+    <use href="#s" x="160"/>
+    <use href="#s" x="240"/>
+    <use href="#s" x="320"/>
+  </g>
+
+  <!-- tap target: phone + NFC waves -->
+  <circle cx="446" cy="560" r="150" fill="#5173D6" opacity=".1"/>
+  <circle cx="446" cy="560" r="110" fill="#5173D6" opacity=".14"/>
+  <g fill="none" stroke="#5173D6" stroke-width="12" stroke-linecap="round">
+    <path d="M520 498 a90 90 0 0 1 0 124"/>
+    <path d="M556 470 a130 130 0 0 1 0 180"/>
+  </g>
+  <rect x="380" y="474" width="108" height="176" rx="20" fill="#0A162E"/>
+  <rect x="392" y="496" width="84" height="132" rx="8" fill="#5173D6" opacity=".55"/>
+  <rect x="418" y="484" width="32" height="6" rx="3" fill="#33466F"/>
+
+  <!-- caption lines (text area) -->
+  <rect x="306" y="736" width="280" height="16" rx="8" fill="#0A162E" opacity=".3"/>
+  <rect x="346" y="768" width="200" height="12" rx="6" fill="#0A162E" opacity=".16"/>
+</svg>

@@ -172,6 +172,15 @@ function rawSubtotalCents(quantity: number, type: NfcKeychainType): number {
   return unitPriceCentsFor(quantity, type) * quantity;
 }
 
+/** One row of an itemised quote, e.g. "2 × Pair of plaques  $158.00". */
+export type NfcQuoteLine = {
+  /** English source label; the UI passes it through t(). */
+  label: string;
+  count: number;
+  unitPriceCents: number;
+  totalCents: number;
+};
+
 export type NfcQuote = {
   quantity: number;
   typeId: string;
@@ -192,6 +201,11 @@ export type NfcQuote = {
    * cost — not an upsell.
    */
   upgrade: { quantity: number; subtotalCents: number } | null;
+  /**
+   * Itemised breakdown for prices that are not "quantity × unit" (the plaque's
+   * pair and first-plaque pricing). Absent on keychain quotes.
+   */
+  lines?: NfcQuoteLine[];
   pricingVersion: string;
   currency: string;
 };

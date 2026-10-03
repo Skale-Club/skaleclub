@@ -1,7 +1,8 @@
 import type { LeadClassification, FormConfig, FormQuestion, FormOption as SchemaFormOption, FormConditionalField } from "./schema.js";
 // Value imports from "./schema.js" are avoided on purpose — that barrel reaches
 // node-only modules and would follow this file into the browser bundle.
-import { NFC_PRICING_QUESTION_IDS, quoteNfcOrder, snapQuantity, type NfcQuote } from "./nfc-pricing.js";
+import { NFC_PRICING_QUESTION_IDS, type NfcQuote } from "./nfc-pricing.js";
+import { getOrderCatalog } from "./order-catalog.js";
 
 // Legacy type for backward compatibility
 export type FormOption = {
@@ -325,7 +326,8 @@ export function quoteFromAnswers(
   config: FormConfig,
   answers: Record<string, string | undefined>,
 ): NfcQuote | null {
-  if (config?.pricing?.model !== "nfc-keychain") return null;
+  const catalog = getOrderCatalog(config?.pricing?.model);
+  if (!catalog) return null;
   const ids = resolvePricingQuestionIds(config);
 
   const rawQuantity = Number.parseInt(answers[ids.quantityQuestionId] ?? "", 10);
@@ -335,8 +337,8 @@ export function quoteFromAnswers(
   // art fee shows up front rather than appearing later as a surprise.
   const isFirstOrder = (answers[ids.returningQuestionId] ?? "") !== ids.returningValue;
 
-  return quoteNfcOrder({
-    quantity: snapQuantity(rawQuantity),
+  return catalog.quote({
+    quantity: catalog.snapQuantity(rawQuantity),
     typeId: answers[ids.typeQuestionId],
     isFirstOrder,
   });
@@ -355,6 +357,16 @@ export function shouldShowQuestionNote(
   if (when.equals !== undefined) return value === when.equals;
   if (when.notEquals !== undefined) return value !== when.notEquals;
   return true;
+}
+
+/** `required`, or required because of another answer (`requiredWhen`). */
+export function isQuestionRequired(
+  question: FormQuestion,
+  answers: Record<string, string | undefined>,
+): boolean {
+  if (question.required) return true;
+  const when = question.requiredWhen;
+  return Boolean(when && (answers[when.questionId] ?? "") === when.equals);
 }
 
 export function validateFormConfig(config: FormConfig, opts: { requireQuestions?: boolean } = {}): string[] {
@@ -434,12 +446,22 @@ export function validateFormConfig(config: FormConfig, opts: { requireQuestions?
     }
   });
 
+  questions.forEach((question) => {
+    const when = question.requiredWhen;
+    if (when && !questionIds.has(when.questionId)) {
+      errors.push(`Question "${question.id}" is required when "${when.questionId}" is answered, but that question does not exist.`);
+    }
+  });
+
   // A priced form must be able to find the answers its quote is built from,
   // otherwise the price panel silently never appears.
   // The quantity question is what a quote cannot be built without. The type
   // question is optional — with none, every order prices as the default type,
   // which is what happens while the catalogue holds a single entry.
-  if (config?.pricing?.model === "nfc-keychain") {
+  if (config?.pricing && !getOrderCatalog(config.pricing.model)) {
+    errors.push(`Unknown pricing model "${config.pricing.model}".`);
+  }
+  if (getOrderCatalog(config?.pricing?.model)) {
     const ids = resolvePricingQuestionIds(config);
     if (!questionIds.has(ids.quantityQuestionId)) {
       errors.push(`Pricing is enabled but the quantity question "${ids.quantityQuestionId}" does not exist.`);

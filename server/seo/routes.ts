@@ -35,13 +35,14 @@ function isReservedLandingSegment(segment: string): boolean {
     segment === "oauth" ||
     segment === "print" ||
     segment === "nfc-order" ||
+    segment === "plaque-order" ||
     segment === "nfc-guide" ||
     (Object.values(DEFAULT_PAGE_SLUGS) as string[]).includes(segment)
   );
 }
 
 function staticRoutes(pageSlugs?: Partial<PageSlugs> | null) {
-  const exact = new Set<string>(["/", "/nfc-guide", "/nfc-order", "/svg"]);
+  const exact = new Set<string>(["/", "/nfc-guide", "/nfc-order", "/plaque-order", "/svg"]);
   const vcards = new Set<string>();
   const blogs = new Set<string>();
   const hubs = new Set<string>();

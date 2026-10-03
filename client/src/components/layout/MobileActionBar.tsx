@@ -13,7 +13,7 @@ const LeadFormModal = lazy(() => import("@/components/LeadFormModal").then((m) =
 
 // Routes that render their own full-screen UI or are not marketing pages.
 const LEGACY_THANK_YOU = buildPagePaths(DEFAULT_PAGE_SLUGS).thankYou;
-const HIDDEN_PREFIXES = ["/admin", "/e/", "/p/", "/nfc-order", "/print", "/oauth/", "/f/"];
+const HIDDEN_PREFIXES = ["/admin", "/e/", "/p/", "/nfc-order", "/plaque-order", "/print", "/oauth/", "/f/"];
 
 /**
  * Fixed call / WhatsApp / quote bar for phones, shipped with the site chrome.

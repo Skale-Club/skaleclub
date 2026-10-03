@@ -153,6 +153,12 @@ export const translations = {
     'Answer one question at a time. Your progress is saved automatically on this device.': 'Responda uma pergunta por vez. O seu progresso é salvo automaticamente neste dispositivo.',
     'No payment is taken on this page': 'Nenhum pagamento é feito nesta página',
     'We confirm the design and final price before production': 'Confirmamos o design e o preço final antes da produção',
+    // NFC plaque order page + thank-you
+    'Complete your NFC plaque order | Skale Club': 'Complete seu pedido de placas NFC | Skale Club',
+    'Plaque order': 'Pedido de placa', 'See the plaque page': 'Ver a página da placa', 'Plaque': 'Placa',
+    'Your plaque order was received. We will review the model, quantity and shipping address, then call you on WhatsApp to confirm everything before production starts.': 'Recebemos o seu pedido de placa. Vamos conferir o modelo, a quantidade e o endereço de entrega e ligar no seu WhatsApp para confirmar tudo antes de começar a produção.',
+    'We review your order and the link you sent.': 'Conferimos o seu pedido e o link que você enviou.',
+    'We call you on WhatsApp to confirm the model, quantity and final total.': 'Ligamos no seu WhatsApp para confirmar o modelo, a quantidade e o total final.',
     'Review the keychain guide': 'Rever o guia dos chaveiros',
     'Book Now': 'Agendar Agora', 'Learn More': 'Saiba Mais', 'Get Started': 'Começar',
     'Submit': 'Enviar', 'Cancel': 'Cancelar', 'Save': 'Salvar', 'Edit': 'Editar', 'Delete': 'Deletar',

@@ -69,6 +69,20 @@ export const LANDING_SEO: Record<string, LandingSeo> = {
       "Converta um logo PNG ou JPG em SVG limpo e editável para Figma, Illustrator e Fusion 360 — cores exatas, cantos reais, sem frestas. Grátis, roda no seu navegador.",
     locale: "pt_BR",
   },
+  "plaque-order": {
+    title: "Complete Your NFC Plaque Order | Skale Club",
+    description:
+      "Send the details for your NFC counter plaque order. No payment is collected and the final price is confirmed with you before production.",
+    locale: "en_US",
+    robots: "noindex, follow",
+  },
+  "plaque-order-br": {
+    title: "Complete seu Pedido de Placas NFC | Skale Club",
+    description:
+      "Envie os dados do seu pedido de placas NFC de balcão. Nenhum pagamento é feito no formulário e confirmamos o valor final com você antes da produção.",
+    locale: "pt_BR",
+    robots: "noindex, follow",
+  },
   "nfc-guide": {
     title: "NFC Keychain Guide: Models, Pricing and FAQs | Skale Club",
     description:

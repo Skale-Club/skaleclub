@@ -9,7 +9,10 @@
 // The key is the exact EN string the seeds write; scripts/patch-landing-pt-copy.ts
 // only replaces a stored value when it still equals that EN string.
 
+import { PLAQUE_PT_COPY } from "./plaque-pt-copy.js";
+
 export const LANDING_PT_COPY: Record<string, string> = {
+  ...PLAQUE_PT_COPY,
   "Custom NFC keychains":
     "Chaveiros NFC personalizados",
   "One tap. Your customers land exactly where you want them.":

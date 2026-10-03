@@ -17,7 +17,7 @@ const priceLineSchema = z.object({
   label: z.string(),
   price: z.string(),
   note:  z.string().optional(),
-  kind:  z.enum(["one-time", "per-unit", "minimum"]),
+  kind:  z.enum(["one-time", "per-unit", "minimum", "bundle"]),
 }) satisfies z.ZodType<PriceLine>;
 
 export const pricingTablePropsSchema = z.object({
@@ -36,6 +36,7 @@ const KIND_LABELS: Record<PriceLineKind, string> = {
   "one-time": "One-time",
   "per-unit": "Per unit",
   "minimum":  "Minimum order",
+  "bundle":   "Bundle",
 };
 
 // Same generator the NFC page seeds use (shared/nfc-price-lines.ts), derived

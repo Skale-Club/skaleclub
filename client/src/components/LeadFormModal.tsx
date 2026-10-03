@@ -18,7 +18,8 @@ import { trackEvent } from "@/lib/analytics";
 import { usePagePaths } from "@/lib/pagePaths";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Loader2 } from '@/components/ui/loader';
-import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead, getConditionalFields, getSortedQuestions, KNOWN_FIELD_IDS, quoteFromAnswers, resolvePricingQuestionIds, shouldShowQuestionNote } from "@shared/form";
+import { DEFAULT_FORM_CONFIG, calculateFormScoresWithConfig, classifyLead, getConditionalFields, getSortedQuestions, isQuestionRequired, KNOWN_FIELD_IDS, quoteFromAnswers, resolvePricingQuestionIds, shouldShowQuestionNote } from "@shared/form";
+import { getOrderCatalog } from "@shared/order-catalog";
 import type { LeadClassification, FormLead, FormConfig, FormQuestion, FormConditionalField } from "@shared/schema";
 import { QuantitySliderInput } from "@/components/form-fields/QuantitySliderInput";
 import { ProductPickerInput } from "@/components/form-fields/ProductPickerInput";
@@ -208,7 +209,7 @@ function getFieldError(
   const value = (answers[question.id] || "").trim();
 
   // Check if required and empty
-  if (question.required && !value) {
+  if (isQuestionRequired(question, answers) && !value) {
     if (question.type === "select" || question.type === "productPicker") {
       return "Please select an option";
     }
@@ -618,6 +619,12 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
   // recomputed server-side on submit — this is display only.
   const quote = useMemo(() => quoteFromAnswers(config, answers), [answers, config]);
   const pricingIds = useMemo(() => resolvePricingQuestionIds(config), [config]);
+  // Unpriced forms that still use the order widgets keep their original
+  // keychain catalogue, as before the plaque model existed.
+  const orderCatalog = useMemo(
+    () => getOrderCatalog(config?.pricing?.model) ?? getOrderCatalog("nfc-keychain"),
+    [config],
+  );
   const isPricedQuestion =
     Boolean(quote) &&
     (currentQuestionId === pricingIds.quantityQuestionId || currentQuestionId === pricingIds.typeQuestionId);
@@ -1498,17 +1505,19 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
                           </div>
                         )}
 
-                        {/* Keychain type — catalogue and prices come from shared/nfc-pricing */}
-                        {currentQuestion.type === "productPicker" && (
+                        {/* Product type: catalogue and prices come from the form's pricing model */}
+                        {currentQuestion.type === "productPicker" && orderCatalog && (
                           <ProductPickerInput
+                            catalog={orderCatalog}
                             value={answers[currentQuestion.id] || ""}
                             quantity={Number.parseInt(answers[pricingIds.quantityQuestionId] || "", 10) || undefined}
                             onChange={(typeId) => handleOptionSelect(currentQuestion.id, typeId)}
                           />
                         )}
 
-                        {currentQuestion.type === "quantitySlider" && (
+                        {currentQuestion.type === "quantitySlider" && orderCatalog && (
                           <QuantitySliderInput
+                            catalog={orderCatalog}
                             value={answers[currentQuestion.id] || ""}
                             onChange={(quantity) => handleAnswerChange(currentQuestion.id, String(quantity))}
                           />
@@ -1566,8 +1575,9 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
                           />
                         ))}
 
-                        {isPricedQuestion && quote && (
+                        {isPricedQuestion && quote && orderCatalog && (
                           <NfcPricePanel
+                            catalog={orderCatalog}
                             quote={quote}
                             onApplyUpgrade={
                               currentQuestion.type === "quantitySlider"

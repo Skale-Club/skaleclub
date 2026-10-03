@@ -1,6 +1,7 @@
 import { ArrowUpRight } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { formatUsdCentsFor, type NfcQuote } from "@shared/nfc-pricing";
+import type { OrderCatalog } from "@shared/order-catalog";
 
 /**
  * The running quote shown under the type and quantity steps.
@@ -9,14 +10,17 @@ import { formatUsdCentsFor, type NfcQuote } from "@shared/nfc-pricing";
  * order is submitted, so nothing here can change what is actually charged.
  */
 export function NfcPricePanel({
+  catalog,
   quote,
   onApplyUpgrade,
 }: {
+  catalog: OrderCatalog;
   quote: NfcQuote;
   onApplyUpgrade?: (quantity: number) => void;
 }) {
   const { t, language } = useTranslation();
   const formatUsdCents = formatUsdCentsFor(language);
+  const units = (count: number) => `${count} ${t(count === 1 ? catalog.unit.singular : catalog.unit.plural)}`;
 
   // Relief and custom shapes are priced by hand: no number, just what happens next.
   if (quote.quoteOnRequest) {
@@ -25,7 +29,7 @@ export function NfcPricePanel({
         <div className="flex items-baseline justify-between gap-3">
           <span className="text-sm font-medium text-slate-600">{t(quote.typeLabel)}</span>
           <span className="text-sm font-medium text-slate-900 tabular-nums">
-            {quote.quantity} {t("pieces")}
+            {units(quote.quantity)}
           </span>
         </div>
         <p className="mt-3 border-t border-cta/15 pt-3 text-base font-semibold text-slate-900" data-testid="nfc-price-total">
@@ -48,17 +52,29 @@ export function NfcPricePanel({
       </div>
 
       <dl className="mt-3 space-y-1.5 border-t border-cta/15 pt-3 text-sm">
-        <div className="flex justify-between gap-3">
-          {/* When the tier cap is in play the effective unit price does not
-              divide evenly (90 pieces at $800 is $8.888...), so showing
-              "90 x $8.89" would not add up to the subtotal beside it. Only
-              spell out the multiplication when it actually multiplies. */}
-          <dt className="text-slate-600">
-            {quote.quantity} {t("pieces")}
-            {!quote.upgrade && ` × ${formatUsdCents(quote.effectiveUnitPriceCents)}`}
-          </dt>
-          <dd className="font-medium text-slate-900 tabular-nums">{formatUsdCents(quote.subtotalCents)}</dd>
-        </div>
+        {/* Itemised prices (plaque pairs, custom first plaque) list each row;
+            the keychain's "quantity × unit" stays a single line. */}
+        {quote.lines?.map((line) => (
+          <div key={line.label} className="flex justify-between gap-3">
+            <dt className="text-slate-600">
+              {line.count} × {t(line.label)}
+            </dt>
+            <dd className="font-medium text-slate-900 tabular-nums">{formatUsdCents(line.totalCents)}</dd>
+          </div>
+        ))}
+        {!quote.lines && (
+          <div className="flex justify-between gap-3">
+            {/* When the tier cap is in play the effective unit price does not
+                divide evenly (90 pieces at $800 is $8.888...), so showing
+                "90 x $8.89" would not add up to the subtotal beside it. Only
+                spell out the multiplication when it actually multiplies. */}
+            <dt className="text-slate-600">
+              {units(quote.quantity)}
+              {!quote.upgrade && ` × ${formatUsdCents(quote.effectiveUnitPriceCents)}`}
+            </dt>
+            <dd className="font-medium text-slate-900 tabular-nums">{formatUsdCents(quote.subtotalCents)}</dd>
+          </div>
+        )}
         {quote.artFeeApplies && (
           <div className="flex justify-between gap-3">
             <dt className="text-slate-600">{t("Art fee (first order only)")}</dt>
@@ -76,7 +92,7 @@ export function NfcPricePanel({
           data-testid="nfc-price-upgrade"
         >
           <span className="text-slate-700">
-            {t("Take")} <strong className="text-slate-900">{quote.upgrade.quantity} {t("pieces")}</strong>{" "}
+            {t("Take")} <strong className="text-slate-900">{units(quote.upgrade.quantity)}</strong>{" "}
             {t("for the same price")}
           </span>
           {onApplyUpgrade && <ArrowUpRight className="h-4 w-4 shrink-0 text-cta" />}

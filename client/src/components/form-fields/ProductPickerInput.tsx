@@ -2,34 +2,32 @@ import { useEffect } from "react";
 import { Check } from "lucide-react";
 import clsx from "clsx";
 import { useTranslation } from "@/hooks/useTranslation";
-import {
-  NFC_KEYCHAIN_TYPES,
-  NFC_QUANTITY,
-  formatUsdCentsFor,
-  quoteNfcOrder,
-  type NfcKeychainType,
-} from "@shared/nfc-pricing";
+import { formatUsdCentsFor } from "@shared/nfc-pricing";
+import { activeOrderTypes, type OrderCatalog, type OrderProductType } from "@shared/order-catalog";
 
 /**
- * Keychain type cards, priced from shared/nfc-pricing.ts rather than from the
- * form config — one catalogue, one set of numbers.
+ * Product type cards (keychain styles, plaque models), priced from the form's
+ * catalogue (shared/order-catalog.ts) rather than from the form config — one
+ * catalogue, one set of numbers.
  *
  * While a single type is active it is selected automatically, so the step
  * becomes a one-glance confirmation instead of a forced click. Adding types to
  * the catalogue turns it into a real choice with no change here.
  */
 export function ProductPickerInput({
+  catalog,
   value,
   quantity,
   onChange,
 }: {
+  catalog: OrderCatalog;
   value: string;
   /** Chosen quantity when the type step runs after it; the minimum otherwise. */
   quantity?: number;
   onChange: (typeId: string) => void;
 }) {
   const { t, language } = useTranslation();
-  const types = NFC_KEYCHAIN_TYPES.filter((type) => type.active);
+  const types = activeOrderTypes(catalog);
   const onlyType = types.length === 1 ? types[0] : null;
 
   useEffect(() => {
@@ -41,6 +39,7 @@ export function ProductPickerInput({
       {types.map((type) => (
         <TypeCard
           key={type.id}
+          catalog={catalog}
           type={type}
           quantity={quantity}
           selected={value === type.id}
@@ -55,6 +54,7 @@ export function ProductPickerInput({
 }
 
 function TypeCard({
+  catalog,
   type,
   quantity,
   selected,
@@ -63,7 +63,8 @@ function TypeCard({
   priceLabel: t,
   formatPrice: formatUsdCents,
 }: {
-  type: NfcKeychainType;
+  catalog: OrderCatalog;
+  type: OrderProductType;
   quantity?: number;
   selected: boolean;
   soleOption: boolean;
@@ -73,8 +74,8 @@ function TypeCard({
 }) {
   // Before a quantity exists the card quotes the entry price, hence "from".
   const knownQuantity = typeof quantity === "number" && Number.isFinite(quantity);
-  const quote = quoteNfcOrder({
-    quantity: knownQuantity ? quantity! : NFC_QUANTITY.min,
+  const quote = catalog.quote({
+    quantity: knownQuantity ? quantity! : catalog.quantity.min,
     typeId: type.id,
   });
 
@@ -87,18 +88,20 @@ function TypeCard({
         "flex items-center justify-between gap-4 rounded-xl border px-4 py-4 text-left shadow-sm transition-all",
         selected ? "border-cta bg-cta/10 shadow-md" : "border-slate-200 hover:border-cta/70 hover:bg-slate-50",
       )}
-      data-testid={`button-keychain-type-${type.id}`}
+      data-testid={`button-${catalog.model}-type-${type.id}`}
     >
       <div className="min-w-0">
         <p className="font-semibold text-slate-900">{t(type.label)}</p>
         <p className="mt-0.5 text-sm text-slate-500">{t(type.description)}</p>
         {quote.quoteOnRequest ? (
           <p className="mt-1.5 text-sm font-medium text-slate-700">{t("Price confirmed on WhatsApp")}</p>
+        ) : type.priceSummary ? (
+          <p className="mt-1.5 text-sm font-medium text-slate-700 tabular-nums">{t(type.priceSummary)}</p>
         ) : (
           <p className="mt-1.5 text-sm font-medium text-slate-700 tabular-nums">
             {!knownQuantity && `${t("from")} `}
             {formatUsdCents(quote.effectiveUnitPriceCents)}
-            <span className="font-normal text-slate-500">{` / ${t("piece")}`}</span>
+            <span className="font-normal text-slate-500">{` / ${t(catalog.unit.singular)}`}</span>
           </p>
         )}
       </div>

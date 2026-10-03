@@ -15,6 +15,7 @@ import type { IStorage } from "../storage.js";
 import type { FormConfig, FormLead } from "#shared/schema.js";
 import { quoteFromAnswers, resolvePricingQuestionIds } from "#shared/form.js";
 import { NFC_ON_REQUEST_LABEL, buildNfcQuoteSnapshot, formatUsdCents } from "#shared/nfc-pricing.js";
+import { getOrderCatalog } from "#shared/order-catalog.js";
 import { dispatchNotification } from "./notifications.js";
 
 /** Flattens a lead back into the answer map the shared quote helper expects. */
@@ -30,7 +31,7 @@ function answersFromLead(lead: FormLead): Record<string, string | undefined> {
 }
 
 export function isPricedForm(formConfig: FormConfig): boolean {
-  return formConfig?.pricing?.model === "nfc-keychain";
+  return getOrderCatalog(formConfig?.pricing?.model) !== null;
 }
 
 /**
@@ -86,6 +87,26 @@ export async function finalizeNfcOrder(
   if (alreadyHandled) return current;
 
   try {
+    if (formConfig.pricing?.model === "nfc-plaque") {
+      // Plaques have no art fee; what the operator needs instead is the link
+      // the tap and QR should open, to set up the tag (or the custom chip).
+      await dispatchNotification(storage, "nfc_plaque_order", {
+        company: companyName,
+        name: current.nome?.trim() || "No name",
+        phone: current.telefone?.trim() || "No phone",
+        business: (custom.nomeEmpresa || current.tipoNegocio || "").trim(),
+        quantity: String(quote.quantity),
+        plaqueType: quote.typeLabel,
+        total: formatUsdCents(quote.totalCents),
+        customerStatus: isFirstOrder
+          ? "New customer"
+          : `Returning (${previousOrders} previous order${previousOrders === 1 ? "" : "s"})`,
+        link: (custom.linkDestino || "").trim() || "not sent",
+        logo: custom.logo__filename || custom.logo || "not sent",
+        address: (custom.enderecoEnvio || "").trim(),
+      });
+      return current;
+    }
     await dispatchNotification(storage, "nfc_order", {
       company: companyName,
       name: current.nome?.trim() || "No name",

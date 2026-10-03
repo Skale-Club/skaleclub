@@ -33,6 +33,7 @@ const NotFound = lazy(() => import("@/pages/not-found").then(m => ({ default: ()
 const Home = lazy(() => import("@/pages/Home").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const PublicForm = lazy(() => import("@/pages/PublicForm").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const NfcOrderForm = lazy(() => import("@/pages/NfcOrderForm").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
+const PlaqueOrderForm = lazy(() => import("@/pages/PlaqueOrderForm").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const SvgVectorizer = lazy(() => import("@/pages/SvgVectorizer").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const NfcGuide = lazy(() => import("@/pages/NfcGuide").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
 const LeadThankYou = lazy(() => import("@/pages/LeadThankYou").then(m => ({ default: () => <PageWrapper><m.default /></PageWrapper> })));
@@ -132,6 +133,7 @@ const RESERVED_LANDING_SEGMENTS = new Set<string>([
   "api",
   "assets",
   "nfc-order",
+  "plaque-order",
   "nfc-guide",
   ...Object.values(DEFAULT_PAGE_SLUGS),
   ...RESERVED_SLUGS,
@@ -168,7 +170,8 @@ function Router() {
   const isEstimateRoute = location.startsWith('/e/');
   const isPresentationRoute = location.startsWith('/p/');
   const isPrintRoute = location.startsWith('/print/');
-  const isNfcOrderRoute = location === '/nfc-order';
+  // Full-screen order pages: no navbar, footer or chat widget.
+  const isOrderRoute = location === '/nfc-order' || location === '/plaque-order';
   const prevLocation = useRef(location);
 
   // Xpot was extracted to a standalone app on xpot.skale.club.
@@ -265,11 +268,12 @@ function Router() {
     );
   }
 
-  if (isNfcOrderRoute) {
+  if (isOrderRoute) {
     return (
       <Suspense fallback={fallback}>
         <Switch>
           <Route path="/nfc-order" component={NfcOrderForm} />
+          <Route path="/plaque-order" component={PlaqueOrderForm} />
           <Route component={NotFound} />
         </Switch>
       </Suspense>

@@ -14,7 +14,7 @@ import {
   tierUnitPriceCents,
 } from "./nfc-pricing.js";
 
-export type PriceLine = { label: string; price: string; note?: string; kind: "one-time" | "per-unit" | "minimum" };
+export type PriceLine = { label: string; price: string; note?: string; kind: "one-time" | "per-unit" | "minimum" | "bundle" };
 
 export function buildPriceLines(): PriceLine[] {
   const reachable = NFC_VOLUME_TIERS.filter((tier) => tier.minQuantity <= NFC_QUANTITY.max);

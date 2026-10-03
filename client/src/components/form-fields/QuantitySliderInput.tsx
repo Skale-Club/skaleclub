@@ -2,46 +2,45 @@ import { useEffect } from "react";
 import * as SliderPrimitive from "@radix-ui/react-slider";
 import { Minus, Plus } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
-import {
-  NFC_QUANTITY,
-  quantityFromSliderPosition,
-  sliderPositionFromQuantity,
-  snapQuantity,
-} from "@shared/nfc-pricing";
+import type { OrderCatalog } from "@shared/order-catalog";
 
 // Radix works in integers, so the 0..1 curve position is carried as 0..1000.
 const TRACK_RESOLUTION = 1000;
 
 /**
- * Quantity picker on an exponential track: most of the travel sits at the low
- * end, where nearly every order lands, and the top end compresses. The +/-
- * buttons give exact single-step control the drag can't offer up there.
+ * Quantity picker. The track's curve comes from the catalogue: exponential for
+ * keychains (most of the travel at the low end, where nearly every order
+ * lands), linear for plaques. The +/- buttons give exact single-step control.
  */
 export function QuantitySliderInput({
+  catalog,
   value,
   onChange,
 }: {
+  catalog: OrderCatalog;
   value: string;
   onChange: (quantity: number) => void;
 }) {
   const { t } = useTranslation();
   const parsed = Number.parseInt(value, 10);
   const hasValue = Number.isFinite(parsed);
-  const quantity = hasValue ? snapQuantity(parsed) : NFC_QUANTITY.min;
+  const { min, max, step } = catalog.quantity;
+  const quantity = hasValue ? catalog.snapQuantity(parsed) : min;
 
   // Land on the minimum so the step is answerable by pressing Next, and so the
   // price panel has something to show the moment the question opens.
   useEffect(() => {
-    if (!hasValue) onChange(NFC_QUANTITY.min);
-  }, [hasValue, onChange]);
+    if (!hasValue) onChange(min);
+  }, [hasValue, onChange, min]);
 
   const setQuantity = (next: number) => {
-    const snapped = snapQuantity(next);
+    const snapped = catalog.snapQuantity(next);
     if (snapped !== quantity) onChange(snapped);
   };
 
-  const atMin = quantity <= NFC_QUANTITY.min;
-  const atMax = quantity >= NFC_QUANTITY.max;
+  const atMin = quantity <= min;
+  const atMax = quantity >= max;
+  const unitLabel = t(quantity === 1 ? catalog.unit.singular : catalog.unit.plural);
 
   return (
     <div className="space-y-5">
@@ -49,8 +48,8 @@ export function QuantitySliderInput({
         <StepButton
           direction="down"
           disabled={atMin}
-          label={t("Fewer pieces")}
-          onClick={() => setQuantity(quantity - NFC_QUANTITY.step)}
+          label={t(catalog.unit.fewer)}
+          onClick={() => setQuantity(quantity - step)}
         />
         <div className="min-w-[7rem] text-center">
           <span
@@ -59,25 +58,25 @@ export function QuantitySliderInput({
           >
             {quantity}
           </span>
-          <span className="text-sm text-slate-500">{t("pieces")}</span>
+          <span className="text-sm text-slate-500">{unitLabel}</span>
         </div>
         <StepButton
           direction="up"
           disabled={atMax}
-          label={t("More pieces")}
-          onClick={() => setQuantity(quantity + NFC_QUANTITY.step)}
+          label={t(catalog.unit.more)}
+          onClick={() => setQuantity(quantity + step)}
         />
       </div>
 
       <SliderPrimitive.Root
         className="relative flex w-full touch-none select-none items-center py-2"
-        value={[Math.round(sliderPositionFromQuantity(quantity) * TRACK_RESOLUTION)]}
+        value={[Math.round(catalog.positionFromQuantity(quantity) * TRACK_RESOLUTION)]}
         min={0}
         max={TRACK_RESOLUTION}
         step={1}
-        onValueChange={([position]) => setQuantity(quantityFromSliderPosition(position / TRACK_RESOLUTION))}
+        onValueChange={([position]) => setQuantity(catalog.quantityFromPosition(position / TRACK_RESOLUTION))}
         aria-label={t("Quantity")}
-        aria-valuetext={`${quantity} ${t("pieces")}`}
+        aria-valuetext={`${quantity} ${unitLabel}`}
         data-testid="input-quantity-slider"
       >
         <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-slate-200">
@@ -87,8 +86,8 @@ export function QuantitySliderInput({
       </SliderPrimitive.Root>
 
       <div className="flex justify-between text-xs font-medium text-slate-400">
-        <span>{NFC_QUANTITY.min}</span>
-        <span>{NFC_QUANTITY.max}</span>
+        <span>{min}</span>
+        <span>{max}</span>
       </div>
     </div>
   );
