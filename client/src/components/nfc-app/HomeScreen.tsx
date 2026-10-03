@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { ChevronRight, Download, Link2, Nfc, PlusCircle, QrCode, ScanLine, Settings2, Tag } from 'lucide-react';
+import { Download, Link2, Nfc, PlusCircle, QrCode, ScanLine, Settings2, Tag } from 'lucide-react';
 import QrScanner from './QrScanner';
+import { TagSearch } from './TagSearch';
 import {
   classify,
   clearRecents,
@@ -32,10 +33,8 @@ import {
   EYEBROW_MUTED,
   ICON_BLOCK_DIRECT,
   ICON_BLOCK_SKALE,
-  INPUT,
   SHEET_TITLE,
   Screen,
-  Spinner,
 } from './ui';
 import { isWebNfcSupported, scanOnce } from './webNfc';
 
@@ -46,7 +45,6 @@ export default function HomeScreen() {
   const { banner, show } = useBanner();
   const { canInstall, install } = useInstallPrompt();
   const [recents, setRecents] = useState<RecentItem[]>(getRecents);
-  const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
   const [sheet, setSheet] = useState<Sheet>(null);
@@ -186,32 +184,14 @@ export default function HomeScreen() {
         )}
       </div>
 
-      <form
-        className="mt-5 flex gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (code.trim()) void handleScan(code.trim());
+      <TagSearch
+        busy={busy}
+        onSubmit={(text) => void handleScan(text)}
+        onOpen={(publicCode) => {
+          pushRecent({ kind: 'skale', value: publicCode });
+          navigate(tagPath(publicCode));
         }}
-      >
-        <input
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          placeholder="Digitar código da tag"
-          autoCapitalize="characters"
-          autoCorrect="off"
-          spellCheck={false}
-          className={INPUT}
-          data-testid="input-tag-code"
-        />
-        <button
-          type="submit"
-          disabled={!code.trim() || busy}
-          aria-label="Abrir tag"
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-none border border-white/10 bg-navy-800 text-fog-50 active:bg-navy-700 disabled:opacity-40"
-        >
-          {busy ? <Spinner /> : <ChevronRight className="h-6 w-6" />}
-        </button>
-      </form>
+      />
 
       <div className="mt-5 grid grid-cols-1 gap-2">
         <ActionTile
