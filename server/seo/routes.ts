@@ -93,7 +93,7 @@ export async function resolveRoute(
 
   const routes = staticRoutes(pageSlugs);
   if (routes.exact.has(path)) return ok();
-  if (hasPrefix(path, "/admin") || hasPrefix(path, "/oauth") || hasPrefix(path, "/print")) return ok();
+  if (hasPrefix(path, "/admin") || hasPrefix(path, "/nfc") || hasPrefix(path, "/oauth") || hasPrefix(path, "/print")) return ok();
   if (["/e/", "/p/", "/f/"].some((prefix) => path.startsWith(prefix) && path.length > prefix.length)) return ok();
   for (const vcard of Array.from(routes.vcards)) if (hasPrefix(path, vcard)) return ok();
   for (const hub of Array.from(routes.hubs)) {

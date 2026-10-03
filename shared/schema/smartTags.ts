@@ -167,7 +167,25 @@ export const smartTagProvisioningEvents = pgTable("smart_tag_provisioning_events
   jobIdx: index("smart_tag_provisioning_events_job_idx").on(table.jobId, table.createdAt),
 }));
 
-export type SmartTagProvisioningDevice = typeof smartTagProvisioningDevices.$inferSelect;
+// ─── Direct pieces (Skale NFC app) ───────────────────────────────────────────
+// Chips written with the customer's own URL, no redirect. Log only.
+// SQL: supabase/migrations/20261003120000_smart_tag_direct_writes.sql
+
+export const smartTagDirectWrites = pgTable("smart_tag_direct_writes", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: uuid("customer_id").references(() => smartTagCustomers.id, { onDelete: "set null" }),
+  url: text("url").notNull(),
+  label: text("label"),
+  method: text("method").notNull().default("web_nfc"),
+  verified: boolean("verified").notNull().default(false),
+  writtenByUserId: text("written_by_user_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  createdIdx: index("smart_tag_direct_writes_created_idx").on(table.createdAt.desc()),
+  customerIdx: index("smart_tag_direct_writes_customer_idx").on(table.customerId, table.createdAt.desc()),
+}));
+
+export type SmartTagProvisioningDevice =typeof smartTagProvisioningDevices.$inferSelect;
 export type SmartTagProvisioningJob = typeof smartTagProvisioningJobs.$inferSelect;
 
 export type SmartTagCustomer = typeof smartTagCustomers.$inferSelect;

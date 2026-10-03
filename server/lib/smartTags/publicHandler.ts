@@ -143,7 +143,8 @@ export function createSmartTagHandler(method: SmartTagAccessMethod, deps: Public
       }
       res.status(200).type("html").send(renderTagPage("inactive", {
         code: tag.publicCode,
-        configureUrl: isAdmin ? `/admin/smart-tags/tags/${encodeURIComponent(tag.id)}` : undefined,
+        // Opens the phone app on this tag: scan → configure → live.
+        configureUrl: isAdmin ? `/nfc/t/${encodeURIComponent(tag.publicCode)}` : undefined,
       }));
       await record(deps, req, tag, method, "inventory_scan");
       return;

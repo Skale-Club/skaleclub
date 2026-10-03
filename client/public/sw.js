@@ -20,6 +20,7 @@ const NETWORK_ONLY_PATHS = [
   /^\/e\//,
   /^\/p\//,
   /^\/admin(?:\/|$)/,
+  /^\/nfc(?:\/|$)/,
   /^\/print(?:\/|$)/,
   /\.wasm$/,
 ];

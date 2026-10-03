@@ -147,7 +147,7 @@ test("admins scanning an unassigned tag get a configure shortcut", async () => {
   const tags = new Map([["A7K3P9X2", makeTag({ status: "inventory", customerId: null, destinationUrl: null })]]);
   await withServer({ tags, isAdminRequest: async () => true }, async ({ base }) => {
     const html = await (await get(`${base}/q/A7K3P9X2`)).text();
-    assert.match(html, /href="\/admin\/smart-tags\/tags\/11111111-1111-4111-8111-111111111111"/);
+    assert.match(html, /href="\/nfc\/t\/A7K3P9X2"/);
   });
 });
 

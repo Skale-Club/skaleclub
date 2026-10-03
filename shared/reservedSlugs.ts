@@ -18,6 +18,7 @@ export const RESERVED_SLUGS: readonly string[] = [
   "f",          // /f/:slug — public form
   "q",          // /q/:code — smart tag QR redirect
   "n",          // /n/:code — smart tag NFC redirect
+  "nfc",        // /nfc — Skale NFC phone app (admin PWA)
   "links",
   "vcard",
   "xpot",

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, boolean, jsonb, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, boolean, jsonb, index, uuid, bigint } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -44,3 +44,22 @@ export const insertSystemHeartbeatSchema = z.object({
 
 export type SystemHeartbeat = typeof systemHeartbeats.$inferSelect;
 export type InsertSystemHeartbeat = typeof systemHeartbeats.$inferInsert;
+
+// Admin passkeys (WebAuthn / Face ID) for the Skale NFC phone app
+export const adminPasskeys = pgTable(
+  "admin_passkeys",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    credentialId: text("credential_id").notNull().unique(), // base64url
+    publicKey: text("public_key").notNull(), // base64url of the COSE key
+    counter: bigint("counter", { mode: "number" }).notNull().default(0),
+    transports: text("transports").array(),
+    deviceName: text("device_name"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    lastUsedAt: timestamp("last_used_at"),
+  },
+  (table) => [index("admin_passkeys_user_idx").on(table.userId)],
+);
+
+export type AdminPasskey = typeof adminPasskeys.$inferSelect;

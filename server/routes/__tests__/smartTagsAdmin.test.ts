@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import express from "express";
 import type { AddressInfo } from "net";
 import { analyticsWindow, registerSmartTagAdminRoutes } from "../smartTags.js";
+import { registerSmartTagMobileRoutes } from "../smartTagsMobile.js";
 
 const ID = "11111111-1111-4111-8111-111111111111";
 
@@ -11,6 +12,7 @@ test("every smart-tag admin endpoint refuses anonymous callers", async () => {
   app.use(express.json());
   // No session middleware → no session → requireAdmin must stop every request.
   registerSmartTagAdminRoutes(app);
+  registerSmartTagMobileRoutes(app);
   const server = app.listen(0);
   try {
     const { port } = server.address() as AddressInfo;
@@ -37,6 +39,10 @@ test("every smart-tag admin endpoint refuses anonymous callers", async () => {
       ["GET", `/api/admin/smart-tag-batches/${ID}`],
       ["GET", `/api/admin/smart-tag-batches/${ID}/export.csv`],
       ["GET", `/api/admin/smart-tag-batches/${ID}/qr-assets.zip`],
+      ["POST", `/api/admin/smart-tags/${ID}/quick-activate`],
+      ["POST", `/api/admin/smart-tags/${ID}/nfc-written`],
+      ["GET", "/api/admin/smart-tag-direct-writes"],
+      ["POST", "/api/admin/smart-tag-direct-writes"],
     ];
     for (const [method, path] of calls) {
       const res = await fetch(`${base}${path}`, {
