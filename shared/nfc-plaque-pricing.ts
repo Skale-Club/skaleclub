@@ -8,8 +8,8 @@
  *
  * Prices are the ones recommended on 2026-10-02 (Notion: "Projeção de preços —
  * plaquinhas NFC de balcão, padrão e custom"):
- *   - Standard (our ready-made Google or Instagram design, QR + chip through a
- *     Smart Tags link): $49 each, or every pair for $79.
+ *   - Standard (our ready-made Google or Instagram design, QR + chip through an
+ *     Xpot tag link): $49 each, or every pair for $79.
  *   - Custom (the customer's logo / name / @, QR + chip straight to their own
  *     link): $89 the first (it carries the hour of custom artwork), $49 each
  *     additional.

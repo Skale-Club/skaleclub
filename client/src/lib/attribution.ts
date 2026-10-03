@@ -142,7 +142,7 @@ export function channelFromUtmMedium(utmMedium: string | undefined | null): Sour
   if (['social', 'social-media'].includes(normalized)) return 'Social Media';
   if (normalized === 'email') return 'Email';
   if (normalized === 'organic') return 'Organic Search';
-  // Smart Tags (QR scan / NFC tap on a physical product) tag outbound links
+  // Physical pieces (QR scan / NFC tap, e.g. Xpot tags) tag outbound links
   // with utm_medium=qr|nfc.
   if (normalized === 'qr' || normalized === 'nfc') return 'Physical';
 

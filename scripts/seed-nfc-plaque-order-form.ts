@@ -17,7 +17,7 @@
 //   - The logo is optional, and required only for the custom plaque
 //     (`requiredWhen`): the standard plaques carry our ready-made design.
 //   - "What should the tap open?" becomes the link itself (optional): the
-//     operator needs it to set up the Smart Tag (standard) or the chip (custom).
+//     operator needs it to set up the Xpot tag (standard) or the chip (custom).
 //
 // Pricing lives in shared/nfc-plaque-pricing.ts (models, 1..10 range, $49 /
 // 2 for $79 standard, $89 + $49 custom) and is read at render time through
