@@ -7,7 +7,6 @@ import { users } from "#shared/schema.js";
 import { eq } from "drizzle-orm";
 import { rateLimit, normalizeIpKey } from "../lib/rateLimit.js";
 import { verifyTurnstileToken, getClientIp } from "../lib/turnstile.js";
-import { startAdminSession, trustedSessionRenewal } from "../lib/auth/trustedSession.js";
 
 function isLoginRateLimited(ip: string): boolean {
   // 10 attempts per 15 minutes
@@ -40,9 +39,6 @@ export async function setupSupabaseAuth(app: Express) {
       },
     })
   );
-
-  // Rolling renewal for trusted (180-day) sessions; plain sessions are untouched.
-  app.use(trustedSessionRenewal);
 
   // Login endpoint - validates with Supabase Auth, creates server session.
   // Cloudflare Turnstile is required for password-based sign-ins; OAuth flows
@@ -112,7 +108,16 @@ export async function setupSupabaseAuth(app: Express) {
 
       // A fresh session id on every login: reusing the pre-login session lets a
       // cookie planted before authentication become an admin session after it.
-      await startAdminSession(req, dbUser);
+      await new Promise<void>((resolve, reject) =>
+        req.session.regenerate((err) => (err ? reject(err) : resolve())),
+      );
+
+      // Store user info in session
+      (req.session as any).userId = dbUser.id;
+      (req.session as any).email = dbUser.email;
+      (req.session as any).isAdmin = dbUser.isAdmin;
+      (req.session as any).firstName = dbUser.firstName;
+      (req.session as any).lastName = dbUser.lastName;
 
       res.json({
         isAdmin: dbUser.isAdmin || false,
@@ -143,7 +148,7 @@ export async function setupSupabaseAuth(app: Express) {
     const sess = req.session as any;
 
     if (!sess?.userId) {
-      return res.json({ isAdmin: false, email: null, firstName: null, lastName: null, trusted: false });
+      return res.json({ isAdmin: false, email: null, firstName: null, lastName: null });
     }
 
     try {
@@ -153,10 +158,9 @@ export async function setupSupabaseAuth(app: Express) {
         email: dbUser?.email || null,
         firstName: dbUser?.firstName || null,
         lastName: dbUser?.lastName || null,
-        trusted: !!sess.trusted,
       });
     } catch (error) {
-      res.json({ isAdmin: false, email: null, firstName: null, lastName: null, trusted: false });
+      res.json({ isAdmin: false, email: null, firstName: null, lastName: null });
     }
   });
 

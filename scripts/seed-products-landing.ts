@@ -214,11 +214,11 @@ const PLAQUE_ORDER_FORM_SLUG = "nfc-plaque-order";
 // projection). Do not add claims beyond these without checking:
 //   - Every plaque has an NFC chip AND a QR code ("tap or scan").
 //   - Standard plaque = our ready-made Google Review or Instagram design,
-//     nothing of the customer printed; chip and QR go through a Smart Tags link
-//     (skale.club/n|q/<code>), so the destination can change and taps/scans are
+//     nothing of the customer printed; chip and QR go through an Xpot tag link
+//     (xpot.place/n|q/<code>), so the destination can change and taps/scans are
 //     counted.
 //   - Custom plaque = the customer's logo / name / @; chip and QR open the
-//     customer's own link directly (no Smart Tags), so the link is fixed at print.
+//     customer's own link directly (no tag link), so the link is fixed at print.
 //   - Prices come from shared/nfc-plaque-pricing.ts (NFC_PLAQUE_PRICES), never typed here.
 //   - Google's review policy bans incentives and asking only happy customers.
 //   - No turnaround number: the window is confirmed at approval.

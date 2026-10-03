@@ -37,7 +37,6 @@ const PagesSection = lazy(() => import('@/components/admin/pages/PagesSection').
 const NotificationsSection = lazy(() => import('@/components/admin/NotificationsSection').then(m => ({ default: m.NotificationsSection })));
 const MarketingSection = lazy(() => import('@/components/admin/MarketingSection').then(m => ({ default: m.MarketingSection })));
 const RedirectsSection = lazy(() => import('@/components/admin/RedirectsSection').then(m => ({ default: m.RedirectsSection })));
-const SmartTagsSection = lazy(() => import('@/components/admin/smart-tags/SmartTagsSection').then(m => ({ default: m.SmartTagsSection })));
 const VectorizerSection = lazy(() => import('@/components/admin/vectorizer/VectorizerSection').then(m => ({ default: m.VectorizerSection })));
 
 const menuItems = SIDEBAR_MENU_ITEMS;
@@ -70,7 +69,6 @@ function AdminContent() {
       notifications: 'notifications',
       traffic: 'traffic',
       redirects: 'redirects',
-      'smart-tags': 'smartTags',
       vectorizer: 'vectorizer',
       'review-link': 'reviewLink',
     };
@@ -134,7 +132,6 @@ function AdminContent() {
       notifications: 'notifications',
       traffic: 'traffic',
       redirects: 'redirects',
-      smartTags: 'smart-tags',
       vectorizer: 'vectorizer',
       reviewLink: 'review-link',
     };
@@ -225,7 +222,7 @@ function AdminContent() {
           {activeSection !== 'chat' && (
             <div className="flex-1 overflow-y-auto min-h-0 p-6 pb-16 md:p-8 md:pb-10">
               {(() => {
-                const sectionsWithOwnHeader: AdminSection[] = ['leads', 'forms', 'faqs', 'users', 'blog', 'portfolio', 'links', 'vcards', 'estimates', 'company', 'website', 'seo', 'integrations', 'presentations', 'skaleHub', 'pages', 'notifications', 'traffic', 'redirects', 'smartTags', 'vectorizer'];
+                const sectionsWithOwnHeader: AdminSection[] = ['leads', 'forms', 'faqs', 'users', 'blog', 'portfolio', 'links', 'vcards', 'estimates', 'company', 'website', 'seo', 'integrations', 'presentations', 'skaleHub', 'pages', 'notifications', 'traffic', 'redirects', 'vectorizer'];
                 if (sectionsWithOwnHeader.includes(activeSection)) return null;
                 // Dashboard renders its own SectionHeader (with form selector action)
                 if (activeSection === 'dashboard') return null;
@@ -258,7 +255,6 @@ function AdminContent() {
               {activeSection === 'notifications' && <NotificationsSection />}
               {activeSection === 'traffic' && <MarketingSection />}
               {activeSection === 'redirects' && <RedirectsSection />}
-              {activeSection === 'smartTags' && <SmartTagsSection />}
               {activeSection === 'vectorizer' && <VectorizerSection />}
             </div>
           )}
