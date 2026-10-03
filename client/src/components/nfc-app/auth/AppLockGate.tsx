@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Fingerprint, LogOut } from 'lucide-react';
-import { CtaButton, GhostButton } from './ui';
+import { CtaButton, GhostButton, eyebrowClass, iconBlockClass, titleClass } from './ui';
 import { PasskeyCancelled, biometricLabel, deviceFlags, nfcLogout, reauthWithPasskey } from './lib';
 
 const LOCK_AFTER_MS = 5 * 60_000;
@@ -55,22 +55,25 @@ export function AppLockGate({ children }: { children: ReactNode }) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0A162E] px-6 text-white"
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-navy-900 px-6 pattern-grid-dark"
       style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-cta/20 text-cta">
-        <Fingerprint className="h-10 w-10" />
-      </div>
-      <h1 className="mt-6 text-2xl font-bold">Skale NFC bloqueado</h1>
-      <p className="mt-2 text-center text-white/70">Confirme com {biometricLabel()} para continuar.</p>
-      {error && <p className="mt-3 text-center text-sm text-red-300">{error}</p>}
-      <div className="mt-8 w-full max-w-xs space-y-3">
-        <CtaButton busy={busy} onClick={() => unlock()} icon={<Fingerprint className="h-5 w-5" />}>
-          Desbloquear
-        </CtaButton>
-        <GhostButton onClick={() => void nfcLogout()} icon={<LogOut className="h-5 w-5" />}>
-          Sair
-        </GhostButton>
+      <div className="w-full max-w-xs">
+        <div className={`h-16 w-16 ${iconBlockClass}`}>
+          <Fingerprint className="h-8 w-8" />
+        </div>
+        <p className={`mt-6 ${eyebrowClass}`}>Skale NFC</p>
+        <h1 className={`mt-3 ${titleClass}`}>Skale NFC bloqueado</h1>
+        <p className="mt-3 text-fog-200">Confirme com {biometricLabel()} para continuar.</p>
+        {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
+        <div className="mt-8 space-y-3">
+          <CtaButton busy={busy} onClick={() => unlock()} icon={<Fingerprint className="h-5 w-5" />}>
+            Desbloquear
+          </CtaButton>
+          <GhostButton onClick={() => void nfcLogout()} icon={<LogOut className="h-5 w-5" />}>
+            Sair
+          </GhostButton>
+        </div>
       </div>
     </div>
   );

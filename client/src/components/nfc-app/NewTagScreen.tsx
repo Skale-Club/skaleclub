@@ -31,10 +31,9 @@ export default function NewTagScreen() {
   };
 
   return (
-    <Screen>
-      <TopBar title="Nova tag Skale" />
+    <Screen hero={<TopBar title="Nova tag Skale" eyebrow="Tag Skale" />}>
       <Banner banner={banner} />
-      <p className="mb-4 px-1 text-sm text-slate-400">Cria uma tag avulsa com código novo e já abre a gravação do chip.</p>
+      <p className="mb-4 px-1 text-sm text-fog-400">Cria uma tag avulsa com código novo e já abre a gravação do chip.</p>
 
       <section className={`${CARD} p-4`}>
         <FieldLabel>Tipo de peça</FieldLabel>
@@ -47,12 +46,12 @@ export default function NewTagScreen() {
                 type="button"
                 onClick={() => setProductType(t)}
                 aria-pressed={active}
-                className={`flex min-h-[52px] items-center justify-between rounded-xl border px-4 text-left text-base font-semibold transition-colors ${
-                  active ? 'border-cta bg-cta/20 text-white' : 'border-white/10 bg-white/5 text-slate-200 active:bg-white/10'
+                className={`flex min-h-[52px] items-center justify-between rounded-none border px-4 text-left text-base font-semibold transition-colors ${
+                  active ? 'border-cta bg-cta/15 text-fog-50' : 'border-white/10 bg-navy-900 text-fog-200 active:bg-navy-700'
                 }`}
               >
                 {PRODUCT_LABELS_PT[t]}
-                {active && <Check className="h-5 w-5 text-blue-200" />}
+                {active && <Check className="h-5 w-5 text-cta-soft" />}
               </button>
             );
           })}

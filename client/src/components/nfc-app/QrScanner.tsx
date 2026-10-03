@@ -136,7 +136,7 @@ export default function QrScanner({ onResult, onClose }: Props) {
     <div className="fixed inset-0 z-[100] bg-black" role="dialog" aria-label="Escanear QR">
       <video ref={videoRef} className="absolute inset-0 h-full w-full object-cover" playsInline muted />
       <canvas ref={canvasRef} className="hidden" />
-      <div className="absolute inset-0 bg-[#0A162E]/40" />
+      <div className="absolute inset-0 bg-navy-950/40" />
 
       <div
         className="absolute inset-x-0 top-0 flex items-center justify-between px-4"
@@ -166,12 +166,12 @@ export default function QrScanner({ onResult, onClose }: Props) {
 
       <div className="absolute inset-0 flex flex-col items-center justify-center px-6">
         {error ? (
-          <div className="max-w-sm rounded-2xl border border-white/10 bg-[#0A162E] p-5 text-center text-white">
+          <div className="max-w-sm rounded-none border border-white/10 bg-navy-800 p-5 text-center text-fog-50">
             <p className="font-semibold">{error}</p>
             <button
               type="button"
               onClick={onClose}
-              className="mt-4 rounded-full bg-cta px-6 py-3 font-bold active:bg-cta-hover"
+              className="mt-4 min-h-[48px] rounded-full bg-cta px-6 font-bold text-white hover:bg-cta-hover active:bg-cta-hover"
             >
               Voltar
             </button>
@@ -179,7 +179,7 @@ export default function QrScanner({ onResult, onClose }: Props) {
         ) : (
           <>
             <div className="relative aspect-square w-[68vw] max-w-[320px]">
-              {(['left-0 top-0 border-l-4 border-t-4 rounded-tl-2xl', 'right-0 top-0 border-r-4 border-t-4 rounded-tr-2xl', 'bottom-0 left-0 border-b-4 border-l-4 rounded-bl-2xl', 'bottom-0 right-0 border-b-4 border-r-4 rounded-br-2xl'] as const).map((c) => (
+              {(['left-0 top-0 border-l-4 border-t-4', 'right-0 top-0 border-r-4 border-t-4', 'bottom-0 left-0 border-b-4 border-l-4', 'bottom-0 right-0 border-b-4 border-r-4'] as const).map((c) => (
                 <span key={c} className={`absolute h-10 w-10 border-cta ${c}`} />
               ))}
             </div>

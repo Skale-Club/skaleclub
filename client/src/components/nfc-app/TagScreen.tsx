@@ -12,12 +12,14 @@ import { errorMessage, haptic, lookupTag, nfcGet, nfcPost, pushRecent, shortUrl,
 import {
   BTN_PRIMARY,
   BTN_SECONDARY,
+  BTN_TERTIARY,
   Banner,
   CARD,
   FieldLabel,
   IdentityHeader,
   INPUT,
   LinkInput,
+  OPTION,
   Pill,
   Screen,
   Spinner,
@@ -70,9 +72,8 @@ export default function TagScreen({ code }: { code: string }) {
 
   if (isLoading) {
     return (
-      <Screen>
-        <TopBar title="Tag Skale" />
-        <div className="flex justify-center py-20 text-slate-400">
+      <Screen hero={<TopBar title="Tag Skale" eyebrow="Tag Skale" identity="skale" />}>
+        <div className="flex justify-center py-20 text-fog-400">
           <Spinner className="h-8 w-8" />
         </div>
       </Screen>
@@ -81,12 +82,11 @@ export default function TagScreen({ code }: { code: string }) {
 
   if (error || !tag) {
     return (
-      <Screen>
-        <TopBar title="Tag Skale" />
+      <Screen hero={<TopBar title="Tag Skale" eyebrow="Tag Skale" identity="skale" />}>
         <div className={`${CARD} mt-4 p-6 text-center`}>
-          <ScanLine className="mx-auto h-10 w-10 text-slate-500" />
-          <p className="mt-3 text-lg font-bold text-white">{error ? 'Não consegui carregar' : 'Tag não encontrada'}</p>
-          <p className="mt-1 text-sm text-slate-400">{error ? errorMessage(error) : `Nenhuma tag com o código ${code}.`}</p>
+          <ScanLine className="mx-auto h-10 w-10 text-fog-400" />
+          <p className="mt-3 text-xl font-semibold tracking-[-0.02em] text-fog-50">{error ? 'Não consegui carregar' : 'Tag não encontrada'}</p>
+          <p className="mt-1 text-sm text-fog-400">{error ? errorMessage(error) : `Nenhuma tag com o código ${code}.`}</p>
           <button type="button" onClick={() => navigate('/nfc/home')} className={`${BTN_SECONDARY} mt-5`}>
             Voltar ao início
           </button>
@@ -146,12 +146,11 @@ export default function TagScreen({ code }: { code: string }) {
   };
 
   return (
-    <Screen>
-      <TopBar title="Tag Skale" />
+    <Screen hero={<TopBar title={tag.customerName ?? 'Tag sem cliente'} eyebrow="Tag Skale" identity="skale" />}>
       <Banner banner={banner} />
 
       <IdentityHeader kind="skale">
-        <p className="font-mono text-4xl font-extrabold tracking-[0.2em] text-white" data-testid="text-tag-code">
+        <p className="font-mono text-4xl font-semibold tracking-[0.2em] text-fog-50" data-testid="text-tag-code">
           {tag.publicCode}
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -160,20 +159,20 @@ export default function TagScreen({ code }: { code: string }) {
         </div>
         <dl className="mt-4 space-y-2 text-sm">
           <div className="flex justify-between gap-4">
-            <dt className="text-slate-300">Cliente</dt>
-            <dd className="truncate font-semibold text-white">{tag.customerName ?? 'Sem cliente'}</dd>
+            <dt className="text-fog-400">Cliente</dt>
+            <dd className="truncate font-semibold text-fog-50">{tag.customerName ?? 'Sem cliente'}</dd>
           </div>
           {tag.label && (
             <div className="flex justify-between gap-4">
-              <dt className="text-slate-300">Rótulo</dt>
-              <dd className="truncate font-semibold text-white">{tag.label}</dd>
+              <dt className="text-fog-400">Rótulo</dt>
+              <dd className="truncate font-semibold text-fog-50">{tag.label}</dd>
             </div>
           )}
           <div className="flex items-start justify-between gap-4">
-            <dt className="text-slate-300">Destino</dt>
-            <dd className="min-w-0 text-right font-semibold text-white">
+            <dt className="text-fog-400">Destino</dt>
+            <dd className="min-w-0 text-right font-semibold text-fog-50">
               {tag.destinationUrl ? (
-                <a href={tag.destinationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex max-w-full items-center gap-1 break-all text-blue-200 underline-offset-2 active:underline">
+                <a href={tag.destinationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex max-w-full items-center gap-1 break-all text-cta-soft underline-offset-2 active:underline">
                   <span className="truncate">{shortUrl(tag.destinationUrl)}</span>
                   <ExternalLink className="h-3.5 w-3.5 shrink-0" />
                 </a>
@@ -184,15 +183,15 @@ export default function TagScreen({ code }: { code: string }) {
           </div>
         </dl>
         <div className="mt-4 grid grid-cols-2 gap-2 text-center">
-          <div className="rounded-xl bg-black/20 py-2">
-            <QrCode className="mx-auto h-4 w-4 text-slate-300" />
-            <p className="text-xl font-bold text-white">{tag.qrInteractions}</p>
-            <p className="text-xs text-slate-400">scans de QR</p>
+          <div className="rounded-none border border-white/10 bg-navy-900 py-2">
+            <QrCode className="mx-auto h-4 w-4 text-cta-soft" />
+            <p className="text-xl font-semibold text-fog-50">{tag.qrInteractions}</p>
+            <p className="text-xs text-fog-400">scans de QR</p>
           </div>
-          <div className="rounded-xl bg-black/20 py-2">
-            <Nfc className="mx-auto h-4 w-4 text-slate-300" />
-            <p className="text-xl font-bold text-white">{tag.nfcInteractions}</p>
-            <p className="text-xs text-slate-400">toques NFC</p>
+          <div className="rounded-none border border-white/10 bg-navy-900 py-2">
+            <Nfc className="mx-auto h-4 w-4 text-cta-soft" />
+            <p className="text-xl font-semibold text-fog-50">{tag.nfcInteractions}</p>
+            <p className="text-xs text-fog-400">toques NFC</p>
           </div>
         </div>
       </IdentityHeader>
@@ -213,7 +212,7 @@ export default function TagScreen({ code }: { code: string }) {
             className={INPUT}
           >
             {SMART_TAG_DESTINATION_TYPES.map((t) => (
-              <option key={t} value={t} className="text-black">
+              <option key={t} value={t} className={OPTION}>
                 {DESTINATION_LABELS_PT[t]}
               </option>
             ))}
@@ -233,16 +232,16 @@ export default function TagScreen({ code }: { code: string }) {
 
       <div className="mt-4 space-y-2">
         <button type="button" onClick={() => setWriteOpen(true)} className={BTN_SECONDARY}>
-          <Nfc className="h-5 w-5 text-blue-300" />
+          <Nfc className="h-5 w-5 text-cta-ink" />
           {tag.nfcStatus === 'not_programmed' ? 'Gravar chip' : 'Regravar chip'}
         </button>
         {(tag.status === 'active' || disabled) && (
-          <button type="button" onClick={() => void toggle()} disabled={busy !== null} className={BTN_SECONDARY}>
-            {busy === 'toggle' ? <Spinner /> : <Power className={`h-5 w-5 ${disabled ? 'text-emerald-400' : 'text-red-300'}`} />}
+          <button type="button" onClick={() => void toggle()} disabled={busy !== null} className={BTN_TERTIARY}>
+            {busy === 'toggle' ? <Spinner /> : <Power className={`h-5 w-5 ${disabled ? 'text-emerald-400' : 'text-red-400'}`} />}
             {disabled ? 'Reativar tag' : 'Desativar tag'}
           </button>
         )}
-        <button type="button" onClick={() => navigate('/nfc/home')} className="flex min-h-[48px] w-full items-center justify-center gap-2 text-sm font-semibold text-slate-400 active:text-white">
+        <button type="button" onClick={() => navigate('/nfc/home')} className="flex min-h-[48px] w-full items-center justify-center gap-2 text-sm font-semibold text-fog-400 active:text-fog-50">
           <Search className="h-4 w-4" />
           Ler outra tag
         </button>

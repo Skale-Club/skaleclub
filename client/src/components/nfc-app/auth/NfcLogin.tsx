@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import { Fingerprint, Mail } from 'lucide-react';
 import { useAdminAuth } from '@/context/AuthContext';
 import { TurnstileWidget } from '@/components/TurnstileWidget';
-import { CtaButton, GhostButton, cardClass } from './ui';
+import { CtaButton, HeroBand, SecondaryButton, cardClass, eyebrowClass, inputClass, titleClass } from './ui';
 import {
   PasskeyCancelled,
   biometricLabel,
@@ -16,9 +16,6 @@ import {
 
 // AdminLogin reads this after the Google round trip and sends the admin on to it.
 const POST_LOGIN_KEY = 'adminLoginNext';
-
-const inputClass =
-  'min-h-12 w-full rounded-xl border border-white/15 bg-white/5 px-4 text-base text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-cta';
 
 export function NfcLogin() {
   const { isAdmin, loading, signIn, checkSession, isSupabaseAuth, turnstileSiteKey } = useAdminAuth();
@@ -104,15 +101,13 @@ export function NfcLogin() {
   };
 
   return (
-    <main
-      className="flex min-h-[100dvh] flex-col justify-center bg-[#0A162E] px-5 text-white"
-      style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))', paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
-    >
-      <div className="mx-auto w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold tracking-tight">Skale NFC</h1>
-          <p className="mt-2 text-white/70">Entre para gravar e gerenciar plaquinhas.</p>
-        </div>
+    <main className="min-h-[100dvh] bg-navy-950 font-sans text-fog-200" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
+      <HeroBand>
+        <p className={`mt-6 ${eyebrowClass}`}>Skale Club</p>
+        <h1 className={`mt-3 ${titleClass}`}>Skale NFC</h1>
+        <p className="mt-3 text-fog-200">Entre para gravar e gerenciar plaquinhas.</p>
+      </HeroBand>
+      <div className="mx-auto w-full max-w-md px-4 pt-6">
 
         <div className="space-y-3">
           {supported && (
@@ -122,9 +117,9 @@ export function NfcLogin() {
           )}
 
           {!emailOpen ? (
-            <GhostButton disabled={busy !== null} onClick={() => setEmailOpen(true)} icon={<Mail className="h-5 w-5" />}>
+            <SecondaryButton disabled={busy !== null} onClick={() => setEmailOpen(true)} icon={<Mail className="h-5 w-5" />}>
               Entrar com e-mail
-            </GhostButton>
+            </SecondaryButton>
           ) : (
             <form onSubmit={emailLogin} className={`${cardClass} space-y-3 p-4`}>
               <input
@@ -163,9 +158,9 @@ export function NfcLogin() {
             </form>
           )}
 
-          <GhostButton disabled={busy !== null} busy={busy === 'google'} onClick={googleLogin}>
+          <SecondaryButton disabled={busy !== null} busy={busy === 'google'} onClick={googleLogin}>
             Continuar com Google
-          </GhostButton>
+          </SecondaryButton>
         </div>
 
         {error && (

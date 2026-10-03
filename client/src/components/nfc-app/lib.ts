@@ -181,15 +181,23 @@ export function useAppManifest() {
     const prevApple = appleTitle?.content;
     const prevTheme = theme?.content;
     const prevTitle = document.title;
+    // Real dark mode: native selects, date pickers, autofill and scrollbars render dark.
+    const root = document.documentElement;
+    const prevScheme = root.style.colorScheme;
+    const hadDark = root.classList.contains('dark');
+    root.style.colorScheme = 'dark';
+    root.classList.add('dark');
     link?.setAttribute('href', MANIFEST_HREF);
     if (appleTitle) appleTitle.content = 'Skale NFC';
-    if (theme) theme.content = '#0A162E';
+    if (theme) theme.content = '#0d121a';
     document.title = 'Skale NFC';
     return () => {
       if (link && prevHref) link.setAttribute('href', prevHref);
       if (appleTitle && prevApple) appleTitle.content = prevApple;
       if (theme && prevTheme) theme.content = prevTheme;
       document.title = prevTitle;
+      root.style.colorScheme = prevScheme;
+      if (!hadDark) root.classList.remove('dark');
     };
   }, []);
 }

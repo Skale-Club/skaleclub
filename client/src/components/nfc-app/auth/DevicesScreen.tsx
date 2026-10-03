@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'wouter';
 import { ArrowLeft, Fingerprint, Loader2, LogOut, Plus, Smartphone, Trash2 } from 'lucide-react';
-import { CtaButton, GhostButton, cardClass } from './ui';
+import { GhostButton, HeroBand, cardClass, eyebrowClass, eyebrowMutedClass, titleClass } from './ui';
 import {
   PasskeyCancelled,
   api,
@@ -43,18 +43,18 @@ function Row({
   return (
     <li className="flex items-center gap-3 px-4 py-3">
       <div className="min-w-0 flex-1">
-        <p className="truncate font-semibold text-white">
+        <p className="truncate font-semibold text-fog-50">
           {title}
-          {badge && <span className="ml-2 rounded-full bg-cta/20 px-2 py-0.5 text-xs font-bold text-cta">{badge}</span>}
+          {badge && <span className="ml-2 rounded-full bg-cta/15 px-2 py-0.5 text-xs font-bold text-cta-soft">{badge}</span>}
         </p>
-        <p className="truncate text-sm text-white/60">{meta}</p>
+        <p className="truncate text-sm text-fog-400">{meta}</p>
       </div>
       <button
         type="button"
         onClick={onRevoke}
         disabled={busy}
         aria-label={`Revogar ${title}`}
-        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-white/60 hover:bg-white/10 hover:text-red-300 disabled:opacity-50"
+        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-fog-400 hover:bg-white/10 hover:text-red-300 disabled:opacity-50"
       >
         {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Trash2 className="h-5 w-5" />}
       </button>
@@ -150,37 +150,36 @@ export function DevicesScreen() {
   const hasPasskey = (passkeys?.length ?? 0) > 0;
 
   return (
-    <main
-      className="min-h-[100dvh] bg-[#0A162E] px-4 text-white"
-      style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))', paddingBottom: 'max(2rem, env(safe-area-inset-bottom))' }}
-    >
-      <div className="mx-auto w-full max-w-md">
+    <main className="min-h-[100dvh] bg-navy-950 font-sans text-fog-200" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom))' }}>
+      <HeroBand>
         <Link
           href="/nfc/home"
-          className="-ml-2 inline-flex min-h-12 items-center gap-2 px-2 font-semibold text-white/80 hover:text-white"
+          className="-ml-2 inline-flex min-h-12 items-center gap-2 rounded-full px-2 font-semibold text-fog-50 active:bg-white/10"
         >
           <ArrowLeft className="h-5 w-5" />
           Início
         </Link>
-        <h1 className="mt-1 text-2xl font-bold">Aparelhos e acesso</h1>
-
+        <p className={`mt-3 ${eyebrowClass}`}>Skale NFC</p>
+        <h1 className={`mt-3 ${titleClass}`}>Aparelhos e acesso</h1>
+      </HeroBand>
+      <div className="mx-auto w-full max-w-md px-4 pt-5">
         {error && (
-          <p role="alert" className="mt-3 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          <p role="alert" className="mb-2 rounded-none border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-100">
             {error}
           </p>
         )}
 
         <section className="mt-6">
-          <h2 className="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-white/60">
+          <h2 className={`mb-2 flex items-center gap-2 ${eyebrowMutedClass}`}>
             <Smartphone className="h-4 w-4" /> Aparelhos confiáveis
           </h2>
           <ul className={`${cardClass} divide-y divide-white/10`}>
             {devices === null ? (
               <li className="flex justify-center p-5">
-                <Loader2 className="h-5 w-5 animate-spin text-white/60" />
+                <Loader2 className="h-5 w-5 animate-spin text-fog-400" />
               </li>
             ) : devices.length === 0 ? (
-              <li className="px-4 py-4 text-sm text-white/60">Nenhum aparelho confiável.</li>
+              <li className="px-4 py-4 text-sm text-fog-400">Nenhum aparelho confiável.</li>
             ) : (
               devices.map((d) => (
                 <Row
@@ -197,16 +196,16 @@ export function DevicesScreen() {
         </section>
 
         <section className="mt-6">
-          <h2 className="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-white/60">
+          <h2 className={`mb-2 flex items-center gap-2 ${eyebrowMutedClass}`}>
             <Fingerprint className="h-4 w-4" /> {biometricLabel()}
           </h2>
           <ul className={`${cardClass} divide-y divide-white/10`}>
             {passkeys === null ? (
               <li className="flex justify-center p-5">
-                <Loader2 className="h-5 w-5 animate-spin text-white/60" />
+                <Loader2 className="h-5 w-5 animate-spin text-fog-400" />
               </li>
             ) : passkeys.length === 0 ? (
-              <li className="px-4 py-4 text-sm text-white/60">Nenhum acesso cadastrado.</li>
+              <li className="px-4 py-4 text-sm text-fog-400">Nenhum acesso cadastrado.</li>
             ) : (
               passkeys.map((p) => (
                 <Row
@@ -224,14 +223,14 @@ export function DevicesScreen() {
               Adicionar {biometricLabel()} neste aparelho
             </GhostButton>
           ) : (
-            <p className="mt-3 text-sm text-white/60">Este navegador não oferece acesso por biometria.</p>
+            <p className="mt-3 text-sm text-fog-400">Este navegador não oferece acesso por biometria.</p>
           )}
         </section>
 
         <section className={`${cardClass} mt-6 flex items-center gap-3 p-4`}>
           <div className="min-w-0 flex-1">
-            <p className="font-semibold">Pedir {biometricLabel()} ao abrir o app</p>
-            <p className="text-sm text-white/60">
+            <p className="font-semibold text-fog-50">Pedir {biometricLabel()} ao abrir o app</p>
+            <p className="text-sm text-fog-400">
               {hasPasskey ? 'Pede de novo depois de 5 minutos fora do app.' : 'Cadastre o acesso por biometria primeiro.'}
             </p>
           </div>
@@ -242,7 +241,7 @@ export function DevicesScreen() {
             aria-label={`Pedir ${biometricLabel()} ao abrir o app`}
             disabled={!hasPasskey}
             onClick={toggleLock}
-            className={`relative h-8 w-14 shrink-0 rounded-full transition-colors disabled:opacity-40 ${lock ? 'bg-cta' : 'bg-white/20'}`}
+            className={`relative h-8 w-14 shrink-0 rounded-full transition-colors disabled:opacity-40 ${lock ? 'bg-cta' : 'bg-navy-600'}`}
           >
             <span
               className={`absolute top-1 h-6 w-6 rounded-full bg-white transition-all ${lock ? 'left-7' : 'left-1'}`}
@@ -250,9 +249,9 @@ export function DevicesScreen() {
           </button>
         </section>
 
-        <CtaButton className="mt-8 bg-white/10 hover:bg-white/15" onClick={() => void nfcLogout()} icon={<LogOut className="h-5 w-5" />}>
+        <GhostButton className="mt-8" onClick={() => void nfcLogout()} icon={<LogOut className="h-5 w-5" />}>
           Sair
-        </CtaButton>
+        </GhostButton>
       </div>
     </main>
   );

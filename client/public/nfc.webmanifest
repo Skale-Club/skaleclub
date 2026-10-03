@@ -7,8 +7,8 @@
   "scope": "/nfc/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0A162E",
-  "theme_color": "#0A162E",
+  "background_color": "#0d121a",
+  "theme_color": "#0d121a",
   "lang": "pt-BR",
   "icons": [
     { "src": "/pwa-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },

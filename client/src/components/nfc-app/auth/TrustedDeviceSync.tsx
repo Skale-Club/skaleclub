@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Fingerprint, X } from 'lucide-react';
 import { useAdminAuth } from '@/context/AuthContext';
-import { CtaButton, cardClass } from './ui';
+import { CtaButton, cardClass, iconBlockClass } from './ui';
 import {
   PasskeyCancelled,
   api,
@@ -64,20 +64,20 @@ export function TrustedDeviceSync() {
       className="fixed inset-x-0 bottom-0 z-50 px-4"
       style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
     >
-      <div className={`${cardClass} mx-auto max-w-md bg-[#0F2040] p-4 shadow-xl`}>
+      <div className={`${cardClass} mx-auto max-w-md p-4`}>
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cta/20 text-cta">
+          <div className={`h-10 w-10 ${iconBlockClass}`}>
             <Fingerprint className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="font-bold text-white">Ativar {biometricLabel()} neste aparelho</p>
-            <p className="mt-1 text-sm text-white/70">Entre sem senha quando a sessão acabar.</p>
+            <p className="font-semibold tracking-[-0.01em] text-fog-50">Ativar {biometricLabel()} neste aparelho</p>
+            <p className="mt-1 text-sm text-fog-400">Entre sem senha quando a sessão acabar.</p>
           </div>
           <button
             type="button"
             onClick={dismiss}
             aria-label="Agora não"
-            className="-m-2 flex h-12 w-12 items-center justify-center rounded-full text-white/60 hover:text-white"
+            className="-m-2 flex h-12 w-12 items-center justify-center rounded-full text-fog-400 hover:text-fog-50"
           >
             <X className="h-5 w-5" />
           </button>
