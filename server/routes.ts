@@ -44,6 +44,7 @@ import { registerOAuthRoutes } from "./routes/oauth.js";
 import { registerContactRoutes } from "./routes/contact.js";
 import { registerRevisionRoutes } from "./routes/revisions.js";
 import { registerRetentionRoutes } from "./routes/retention.js";
+import { registerXpotRedirects } from "./routes/xpotRedirects.js";
 import { requireAdmin, sendError, setPublicCache } from "./routes/_shared.js";
 import { pool } from "./db.js";
 
@@ -110,6 +111,8 @@ export async function registerRoutes(
   registerPortfolioRoutes(app);
   registerFaqRoutes(app);
   registerBootstrapRoutes(app);
+  // Before the /:slug vanity redirects: the tag system moved to Xpot (/nfc, /smart-tags, /n/:code, /q/:code).
+  registerXpotRedirects(app);
   registerRedirectRoutes(app);
   registerVCardRoutes(app);
   registerBlogAutomationRoutes(app);
