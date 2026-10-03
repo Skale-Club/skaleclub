@@ -77,26 +77,26 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "No balcão",
   "Next to the register, where every customer passes.":
     "Ao lado do caixa, por onde todo cliente passa.",
-  "Blue NFC keychain beside a card reader on a checkout counter":
-    "Chaveiro NFC azul ao lado de uma maquininha de cartão no balcão",
+  "Custom Vorell Construction 3D-printed keychain on a checkout counter":
+    "Chaveiro personalizado da Vorell Construction impresso em 3D sobre um balcão",
   "At reception":
     "Na recepção",
   "On the front desk or in the waiting area.":
     "No balcão de atendimento ou na sala de espera.",
-  "Blue NFC keychain on a reception desk beside a service bell":
-    "Chaveiro NFC azul em uma recepção ao lado da campainha de atendimento",
+  "Custom Nolia Cleaning 3D-printed keychain on a reception desk":
+    "Chaveiro personalizado da Nolia Cleaning impresso em 3D sobre uma recepção",
   "In your vehicle":
     "No seu veículo",
   "In the car or truck, if you offer mobile services.":
     "No carro ou na caminhonete, se você atende na casa do cliente.",
-  "Blue NFC keychain attached to vehicle keys on a center console":
-    "Chaveiro NFC azul preso às chaves do veículo no console central",
+  "Custom Stuscle 3D-printed keychain attached to vehicle keys":
+    "Chaveiro personalizado da Stuscle impresso em 3D preso às chaves de um veículo",
   "On your keyring":
     "No seu chaveiro",
   "Always one on hand to give away.":
     "Sempre um à mão para entregar.",
-  "Hand holding keys with a blue NFC keychain outside a storefront":
-    "Mão segurando chaves com um chaveiro NFC azul em frente a uma loja",
+  "Hand holding a custom moustache-shaped 3D-printed keychain outside a barbershop":
+    "Mão segurando um chaveiro personalizado em forma de bigode impresso em 3D em frente a uma barbearia",
   "How it works":
     "Como funciona",
   "From first message to tapping in 4 steps":
@@ -401,8 +401,8 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Espelhos e cadeiras de atendimento dentro de um salão de beleza",
   "Dining tables set inside a restaurant":
     "Mesas postas dentro de um restaurante",
-  "A customer paying by card at a service counter":
-    "Uma cliente pagando com cartão em um balcão de atendimento",
+  "Google review NFC plaque displayed on a customer service counter":
+    "Placa NFC de avaliação do Google exibida em um balcão de atendimento",
   "Front desk, register, waiting area.":
     "Recepção, caixa, sala de espera.",
   "Customization":
