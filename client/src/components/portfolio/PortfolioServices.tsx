@@ -23,7 +23,7 @@ export function PortfolioServices({
   const { t } = useTranslation();
   if (services.length === 0) return null;
   return (
-    <Band tone="dark" id="services" className="scroll-mt-[calc(var(--nav-offset)+1rem)]">
+    <Band tone="dark" id="services" className={cn("scroll-mt-[calc(var(--nav-offset)+1rem)]", hideHeading && "pt-10 sm:pt-12")}>
       {!hideHeading && (
         <SectionHeadingRow seeAllHref={seeAllHref}>
           <SectionHeading

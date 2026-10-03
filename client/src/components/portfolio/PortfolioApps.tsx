@@ -135,6 +135,8 @@ export function PortfolioApps({
           tone="dark"
           className={cn(
             "py-16 sm:py-20",
+            // Right under the archive hero on /apps: no big gap above the first app.
+            hideHeading && i === 0 && "pt-10 sm:pt-12",
             (i > 0 || !hideHeading) && "border-t border-white/10",
             i % 2 === 0 && "bg-navy-900",
           )}

@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 export function PortfolioProducts({ seeAllHref, hideHeading }: { seeAllHref?: string; hideHeading?: boolean }) {
   const { t } = useTranslation();
   return (
-    <Band tone="dark" id="products" className="scroll-mt-[calc(var(--nav-offset)+1rem)]">
+    <Band tone="dark" id="products" className={cn("scroll-mt-[calc(var(--nav-offset)+1rem)]", hideHeading && "pt-10 sm:pt-12")}>
       {!hideHeading && (
         <SectionHeadingRow seeAllHref={seeAllHref}>
           <SectionHeading

@@ -18,8 +18,8 @@ export default function Products() {
         <>
           <PortfolioHero
             badge={t("Products")}
-            title={t("Things we make for your counter")}
-            subtitle={t("3D-printed in-house, programmed and tested before they ship.")}
+            title={t("One tap, more customers")}
+            subtitle={t("NFC plaques and keychains that open your Google reviews, Instagram or menu. Made by us, ready to use.")}
             buttonText={buttonText}
             onCta={() => openForm("hero")}
           />

@@ -24,7 +24,7 @@ export function PortfolioHero({
 }) {
   return (
     <Band tone="hero" pattern containerClassName="page-top pb-10 sm:pb-12">
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between lg:gap-12">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between lg:gap-12">
         <div>
           <Eyebrow>{badge}</Eyebrow>
           <h1 className="mt-4 max-w-3xl font-display text-4xl font-semibold leading-[1.02] tracking-[-0.035em] text-fog-50 sm:text-5xl">
