@@ -116,6 +116,10 @@ export const PLAQUE_PT_COPY: Record<string, string> = {
   "Custom": "Personalizada",
   "Google Review or Instagram": "Google ou Instagram",
   "Your brand on the plaque": "A sua marca na placa",
+  "Example of the standard Google and Instagram NFC plaques":
+    "Exemplo das placas NFC padrão para Google e Instagram",
+  "Example of a custom NFC plaque with a fictional coffee brand":
+    "Exemplo de placa NFC personalizada com uma marca fictícia de café",
   "per plaque": "por placa",
   "first plaque": "a primeira placa",
   [`or 2 for ${en(P.standardPairCents)}`]: `ou 2 por ${pt(P.standardPairCents)}`,

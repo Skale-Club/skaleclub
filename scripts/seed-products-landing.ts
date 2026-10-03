@@ -368,6 +368,8 @@ export const NFC_REVIEW_PLAQUE_SECTIONS: PageSection[] = [
         {
           name: "Standard",
           title: "Google Review or Instagram",
+          imageUrl: "/plaque-pricing/standard-pair.webp",
+          imageAlt: "Example of the standard Google and Instagram NFC plaques",
           price: usd(PP.standardUnitCents),
           priceUnit: "per plaque",
           priceNote: `or 2 for ${usd(PP.standardPairCents)}`,
@@ -377,6 +379,8 @@ export const NFC_REVIEW_PLAQUE_SECTIONS: PageSection[] = [
         {
           name: "Custom",
           title: "Your brand on the plaque",
+          imageUrl: "/plaque-pricing/custom-example.webp",
+          imageAlt: "Example of a custom NFC plaque with a fictional coffee brand",
           price: usd(PP.customFirstCents),
           priceUnit: "first plaque",
           priceNote: `${usd(PP.customAdditionalCents)} each additional`,

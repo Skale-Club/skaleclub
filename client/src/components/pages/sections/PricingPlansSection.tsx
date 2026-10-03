@@ -15,6 +15,8 @@ import { sectionThemeSchema } from "./sectionTheme";
 const planSchema = z.object({
   name:      z.string(),
   title:     z.string(),
+  imageUrl:  z.string().regex(/^\/(?![\/\\])/).optional(),
+  imageAlt:  z.string().optional(),
   price:     z.string(),
   priceUnit: z.string().optional(),
   priceNote: z.string().optional(),
@@ -60,12 +62,31 @@ export function PricingPlansSection({ props }: { props: PricingPlansProps }) {
             <EditorialCard
               key={plan.name}
               tone={dark ? "dark" : "light"}
-              className={cn("flex flex-col", plan.highlight && (dark ? "border-cta-soft/50" : "border-cta-ink/40"))}
+              className={cn("group flex flex-col", plan.highlight && (dark ? "border-cta-soft/50" : "border-cta-ink/40"))}
             >
               <Eyebrow className={dark ? "text-cta-soft" : "text-cta-ink"}>{t(plan.name)}</Eyebrow>
               <h3 className={cn("mt-3 font-display text-2xl font-semibold", dark ? "text-fog-50" : "text-ink")}>{t(plan.title)}</h3>
 
-              <p className="mt-6 flex items-baseline gap-2">
+              {plan.imageUrl && (
+                <figure
+                  className={cn(
+                    "relative mt-5 h-44 overflow-hidden border sm:h-48",
+                    dark
+                      ? "border-white/10 bg-[radial-gradient(circle_at_50%_30%,rgba(103,136,230,0.18),rgba(255,255,255,0.025)_62%)]"
+                      : "border-ink-700/10 bg-[radial-gradient(circle_at_50%_30%,rgba(72,105,200,0.12),rgba(11,20,36,0.025)_62%)]",
+                  )}
+                >
+                  <img
+                    src={plan.imageUrl}
+                    alt={t(plan.imageAlt ?? plan.title)}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-contain px-5 py-2 transition-transform duration-500 ease-out group-hover:scale-[1.025]"
+                  />
+                </figure>
+              )}
+
+              <p className={cn("flex items-baseline gap-2", plan.imageUrl ? "mt-5" : "mt-6")}>
                 <span className={cn("font-display text-5xl font-semibold tabular-nums tracking-[-0.03em]", dark ? "text-fog-50" : "text-ink")}>
                   {t(plan.price)}
                 </span>
