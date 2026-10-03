@@ -62,12 +62,12 @@ const destinationUrlField = z
     return result.url;
   });
 
-const tagCreateSchema = z.object({
+export const tagCreateSchema = z.object({
   productType: z.enum(SMART_TAG_PRODUCT_TYPES),
   label: optionalText(120),
 });
 
-const tagPatchSchema = z.object({
+export const tagPatchSchema = z.object({
   label: optionalText(120),
   productType: z.enum(SMART_TAG_PRODUCT_TYPES).optional(),
   destinationType: z.enum(SMART_TAG_DESTINATION_TYPES).nullable().optional(),
@@ -78,7 +78,7 @@ const tagPatchSchema = z.object({
   reason: optionalText(300),
 }).strict();
 
-const customerSchema = z.object({
+export const customerSchema = z.object({
   businessName: z.string().trim().min(1, "Business name is required").max(200),
   slug: optionalText(80),
   contactName: optionalText(200),
@@ -91,14 +91,14 @@ const customerSchema = z.object({
   notes: optionalText(2000),
 }).strict();
 
-const assignSchema = z.union([
+export const assignSchema = z.union([
   z.object({ customerId: z.string().uuid() }).strict(),
   z.object({ customer: customerSchema }).strict(),
 ]);
 
-const actionSchema = z.object({ reason: optionalText(300) }).strict();
+export const actionSchema = z.object({ reason: optionalText(300) }).strict();
 
-const batchCreateSchema = z.object({
+export const batchCreateSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(120),
   batchCode: z.preprocess(
     (v) => (typeof v === "string" ? v.trim().toUpperCase() || undefined : v),
@@ -110,14 +110,14 @@ const batchCreateSchema = z.object({
   notes: optionalText(2000),
 }).strict();
 
-const batchPatchSchema = z.object({
+export const batchPatchSchema = z.object({
   name: z.string().trim().min(1).max(120).optional(),
   vendor: optionalText(120),
   notes: optionalText(2000),
   status: z.enum(SMART_TAG_BATCH_STATUSES).optional(),
 }).strict();
 
-const listQuerySchema = z.object({
+export const listQuerySchema = z.object({
   status: z.enum(SMART_TAG_STATUSES).optional(),
   productType: z.enum(SMART_TAG_PRODUCT_TYPES).optional(),
   customerId: z.string().uuid().optional(),
