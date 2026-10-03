@@ -17,6 +17,7 @@ import { FaqAccordionSection, faqAccordionPropsSchema } from "./sections/FaqAcco
 import { ContentBlocksSection, contentBlocksPropsSchema } from "./sections/ContentBlocksSection";
 import { FeatureGridSection, featureGridPropsSchema } from "./sections/FeatureGridSection";
 import { PricingPlansSection, pricingPlansPropsSchema } from "./sections/PricingPlansSection";
+import { LinkCalloutSection, linkCalloutPropsSchema } from "./sections/LinkCalloutSection";
 
 export interface SectionEntry {
   component: ComponentType<{ props: any }>;
@@ -48,6 +49,7 @@ export const sectionRegistry: Record<string, SectionEntry> = {
   contentBlocks:  { component: ContentBlocksSection,  propsSchema: contentBlocksPropsSchema },
   featureGrid:    { component: FeatureGridSection,    propsSchema: featureGridPropsSchema },
   pricingPlans:   { component: PricingPlansSection,   propsSchema: pricingPlansPropsSchema },
+  linkCallout:    { component: LinkCalloutSection,    propsSchema: linkCalloutPropsSchema },
 };
 
 export const registeredSectionTypes = Object.keys(sectionRegistry);

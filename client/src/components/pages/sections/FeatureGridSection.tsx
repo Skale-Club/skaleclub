@@ -8,6 +8,8 @@ import {
   Store, ConciergeBell, Car, KeyRound, Nfc, Smartphone,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { FcGoogle } from "react-icons/fc";
+import { SiInstagram, SiWhatsapp } from "react-icons/si";
 import { Band, EditorialCard } from "@/components/editorial";
 import { SectionHeading } from "@/components/layout/SectionHeading";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -26,8 +28,33 @@ const ICON_MAP: Record<(typeof featureGridIconNames)[number], LucideIcon> = {
   Store, ConciergeBell, Car, KeyRound, Nfc, Smartphone,
 };
 
+// Optional brand badge in place of the plain icon: the destination's own logo
+// and colour (Google, Instagram, WhatsApp) or, for destinations without a brand
+// (digital card, menu, website), the item's icon on a solid site-blue circle.
+export const featureGridBrands = ["google", "instagram", "whatsapp", "vcard", "menu", "web"] as const;
+type FeatureGridBrand = (typeof featureGridBrands)[number];
+
+function BrandBadge({ brand, Icon }: { brand: FeatureGridBrand; Icon: LucideIcon }) {
+  const base = "flex h-11 w-11 items-center justify-center rounded-full";
+  if (brand === "google") {
+    return <span className={`${base} bg-white ring-1 ring-inset ring-ink-700/10`}><FcGoogle className="h-6 w-6" aria-hidden="true" /></span>;
+  }
+  if (brand === "instagram") {
+    return (
+      <span className={base} style={{ background: "linear-gradient(45deg, #F58529, #DD2A7B 45%, #8134AF 75%, #515BD4)" }}>
+        <SiInstagram className="h-5 w-5 text-white" aria-hidden="true" />
+      </span>
+    );
+  }
+  if (brand === "whatsapp") {
+    return <span className={`${base} bg-[#25D366]`}><SiWhatsapp className="h-5 w-5 text-white" aria-hidden="true" /></span>;
+  }
+  return <span className={`${base} bg-cta`}><Icon className="h-5 w-5 text-white" aria-hidden="true" /></span>;
+}
+
 const itemSchema = z.object({
   icon:        z.enum(featureGridIconNames),
+  brand:       z.enum(featureGridBrands).optional(),
   title:       z.string(),
   description: z.string(),
   // Optional editorial photo. Kept local/root-relative so managed page content
@@ -107,9 +134,13 @@ export function FeatureGridSection({ props }: { props: FeatureGridProps }) {
                   </div>
                 )}
                 <div className={hasImage ? "flex flex-1 flex-col p-6" : undefined}>
-                  <span className={`flex h-11 w-11 items-center justify-center rounded-full ${c.icon}`}>
-                    <Icon className="h-5 w-5" aria-hidden="true" />
-                  </span>
+                  {item.brand ? (
+                    <BrandBadge brand={item.brand} Icon={Icon} />
+                  ) : (
+                    <span className={`flex h-11 w-11 items-center justify-center rounded-full ${c.icon}`}>
+                      <Icon className="h-5 w-5" aria-hidden="true" />
+                    </span>
+                  )}
                   <h3 className={`mt-5 font-display text-xl font-semibold leading-tight ${c.title}`}>{t(item.title)}</h3>
                   <p className={`mt-2 text-sm leading-6 ${c.body}`}>{t(item.description)}</p>
                 </div>

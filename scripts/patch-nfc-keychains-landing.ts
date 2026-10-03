@@ -3,8 +3,11 @@
 //
 //   - hero + closing CTA image: the Blender render of three real client keychains
 //     (/nfc-keychains-trio.webp) instead of the generic "car key" render
-//   - closing CTA: a quiet link to the full guide (/nfc-guide), the landing's
-//     second level (the guide is also what the team sends on WhatsApp)
+//   - the full guide (/nfc-guide, the landing's second level and what the team
+//     sends on WhatsApp) gets its own quiet linkCallout band right after the FAQ;
+//     the closing CTA keeps only the order button (no guide link, no price note)
+//   - "what the tap opens" grid: each destination shows its own logo and colour
+//     (featureGrid `brand`), matched by the item's icon
 //
 // DRY-RUN by default; --apply writes (each row snapshotted into content_revisions first).
 // Run: npx tsx --env-file=.env scripts/patch-nfc-keychains-landing.ts [--apply]
@@ -20,7 +23,34 @@ const ALT = {
   en: "Three custom NFC keychains made for businesses, with their logos in raised relief",
   pt: "Três chaveiros NFC personalizados para empresas, com a logo em alto-relevo",
 };
-const GUIDE = { href: "/nfc-guide", en: "Read the full keychain guide", pt: "Ler o guia completo dos chaveiros" };
+const GUIDE_CALLOUT: Record<"en" | "pt", PageSection> = {
+  en: {
+    type: "linkCallout",
+    props: {
+      theme: "dark",
+      eyebrow: "Keychain guide",
+      text: "Want every detail? Models, pricing, artwork and production in the full guide.",
+      linkLabel: "Read the guide",
+      href: "/nfc-guide",
+    },
+  },
+  pt: {
+    type: "linkCallout",
+    props: {
+      theme: "dark",
+      eyebrow: "Guia dos chaveiros",
+      text: "Quer todos os detalhes? Modelos, preços, arte e produção no guia completo.",
+      linkLabel: "Ler o guia",
+      href: "/nfc-guide",
+    },
+  },
+};
+
+// featureGrid icon -> brand badge, for the grid of tap destinations only.
+const BRAND_BY_ICON: Record<string, string> = {
+  Star: "google", Instagram: "instagram", MessageCircle: "whatsapp",
+  IdCard: "vcard", UtensilsCrossed: "menu", Globe: "web",
+};
 
 function patch(sections: PageSection[], lang: "en" | "pt"): { sections: PageSection[]; changes: string[] } {
   const changes: string[] = [];
@@ -32,18 +62,43 @@ function patch(sections: PageSection[], lang: "en" | "pt"): { sections: PageSect
         props[key] = value;
       }
     };
+    const drop = (key: string) => {
+      if (key in props) {
+        changes.push(`${s.type}.${key}: ${JSON.stringify(props[key])} -> (removed)`);
+        delete props[key];
+      }
+    };
     if (s.type === "heroWebsites") {
       set("backgroundImageUrl", IMAGE);
       set("backgroundImageAlt", ALT[lang]);
     }
+    // The destinations grid is the featureGrid holding the Instagram item.
+    if (s.type === "featureGrid" && Array.isArray(props.items) &&
+        (props.items as Array<{ icon?: string }>).some((it) => it.icon === "Instagram")) {
+      const items = (props.items as Array<Record<string, unknown>>).map((it) => {
+        const brand = BRAND_BY_ICON[it.icon as string];
+        if (!brand || it.brand === brand) return it;
+        changes.push(`featureGrid "${it.title}": brand -> ${brand}`);
+        return { ...it, brand };
+      });
+      props.items = items;
+    }
     if (s.type === "leadFormCta") {
       set("imageUrl", IMAGE);
       set("imageAlt", ALT[lang]);
-      set("secondaryHref", GUIDE.href);
-      set("secondaryLabel", GUIDE[lang]);
+      // The guide moved to its own band; the price line did not belong here.
+      drop("secondaryHref");
+      drop("secondaryLabel");
+      drop("note");
     }
     return { ...s, props };
   });
+  if (!next.some((s) => s.type === "linkCallout")) {
+    const faq = next.findIndex((s) => s.type === "faqAccordion");
+    const at = faq >= 0 ? faq + 1 : next.length - 1;
+    next.splice(at, 0, GUIDE_CALLOUT[lang]);
+    changes.push(`linkCallout: inserted at position ${at} (after the FAQ)`);
+  }
   return { sections: next, changes };
 }
 

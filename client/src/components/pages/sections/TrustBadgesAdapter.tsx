@@ -46,7 +46,9 @@ function BadgeBand({ badges, dark }: { badges: Badge[]; dark: boolean }) {
           {badges.map((badge, i) => {
             const Icon = badgeIconMap[(badge.icon || "").toLowerCase()] || badgeIconMap.star;
             return (
-              <li key={i} className="flex items-start gap-4 py-5 first:pt-0 last:pb-0 md:px-8 md:py-0 md:first:pl-0 md:last:pr-0">
+              // Same inset on every column and the icon+text group centred in it,
+              // so the three badges and their dividers sit symmetrically.
+              <li key={i} className="flex items-start gap-4 py-5 first:pt-0 last:pb-0 md:justify-center md:px-6 md:py-0">
                 <Icon
                   className={`mt-0.5 h-6 w-6 shrink-0 ${dark ? "text-cta-soft" : "text-cta-ink"}`}
                   aria-hidden="true"
