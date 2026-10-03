@@ -15,6 +15,7 @@ import { errorMessage, formatDate, getJson, invalidateSmartTags, percent, sendJs
 import { AnalyticsPanel, FilterSelect, MetricCard, PRODUCT_OPTIONS, productLabel, RangePicker, type AnalyticsRange } from './shared';
 import { TagTable } from './TagTable';
 import { useSmartTagBatches } from './TagsTab';
+import { JourneyPanel } from './JourneyPanel';
 
 const BATCH_STATUS_OPTIONS = SMART_TAG_BATCH_STATUSES.map((s) => ({ value: s, label: s[0].toUpperCase() + s.slice(1) }));
 
@@ -204,6 +205,8 @@ export function BatchDetail({ id, onBack, onOpenTag }: { id: string; onBack: () 
         <p className="mb-3 text-sm font-semibold">Tags</p>
         <TagTable tags={batch.tags} onOpen={onOpenTag} showBatch={false} />
       </AdminCard>
+
+      <JourneyPanel scope={{ batchId: id }} title="Batch journey" />
 
       <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">

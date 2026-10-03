@@ -43,6 +43,12 @@ test("every smart-tag admin endpoint refuses anonymous callers", async () => {
       ["POST", `/api/admin/smart-tags/${ID}/nfc-written`],
       ["GET", "/api/admin/smart-tag-direct-writes"],
       ["POST", "/api/admin/smart-tag-direct-writes"],
+      ["GET", "/api/admin/smart-tag-journey"],
+      ["POST", "/api/admin/smart-tag-journey"],
+      ["PATCH", `/api/admin/smart-tag-journey/${ID}`],
+      ["GET", "/api/admin/smart-tag-plans"],
+      ["POST", "/api/admin/smart-tag-plans"],
+      ["PATCH", `/api/admin/smart-tag-plans/${ID}`],
     ];
     for (const [method, path] of calls) {
       const res = await fetch(`${base}${path}`, {

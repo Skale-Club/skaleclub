@@ -28,7 +28,8 @@ import type {
   ProvisioningJobItem,
   TagProvisioningState,
 } from "#shared/smartTagsApi.js";
-import { SmartTagError } from "./repository.js";
+import { SmartTagError } from "./errors.js";
+import { recordJourney } from "./journey.js";
 
 // Server side of the desktop NFC provisioner. The website owns every decision:
 // which URL a chip must hold, whether a write counts as verified, and which
@@ -361,9 +362,15 @@ export async function completeJob(
   jobId: string,
   report: CompletionReport & { tagType?: string | null },
 ) {
-  return db.transaction(async (tx) => {
+  let outcome: { tagId: string; succeeded: boolean; errorCode: string | null } | null = null;
+  const updated = await db.transaction(async (tx) => {
     const job = await lockOwnOpenJob(tx, jobId, deviceId);
     const decision = decideCompletion(job, report);
+    outcome = {
+      tagId: job.tagId,
+      succeeded: decision.status === "succeeded",
+      errorCode: decision.status === "failed" ? decision.errorCode ?? null : null,
+    };
     const now = new Date();
     const [updated] = await tx
       .update(smartTagProvisioningJobs)
@@ -409,6 +416,20 @@ export async function completeJob(
     console.log(`[smart-tags] provisioning job ${job.id} ${decision.status}${decision.status === "failed" ? ` (${decision.errorCode})` : ""}`);
     return updated;
   });
+  const done = outcome as { tagId: string; succeeded: boolean; errorCode: string | null } | null;
+  if (done) {
+    const [tag] = await db.select({ publicCode: smartTags.publicCode }).from(smartTags).where(eq(smartTags.id, done.tagId)).limit(1);
+    const code = tag?.publicCode ?? "tag";
+    await recordJourney({
+      kind: "execution",
+      action: done.succeeded ? "nfc_verified" : "nfc_failed",
+      title: done.succeeded ? `NFC chip of ${code} written and verified` : `NFC chip write failed on ${code}`,
+      tagId: done.tagId,
+      afterValue: updated.readbackUrl,
+      metadata: { jobId: updated.id, deviceId, tagType: updated.tagType, errorCode: done.errorCode },
+    }, { source: "system", userId: null });
+  }
+  return updated;
 }
 
 // ─── Admin read model ─────────────────────────────────────────────────────────

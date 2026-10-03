@@ -167,3 +167,58 @@ export interface TagProvisioningState {
   qrTestAt: string | null;
   jobs: ProvisioningJobItem[];
 }
+
+// ─── Journey (server/routes/smartTagJourney.ts) ──────────────────────────────
+
+export interface SmartTagJourneyEntryItem {
+  id: string;
+  kind: string;
+  action: string | null;
+  title: string;
+  content: string | null;
+  batchId: string | null;
+  batchCode: string | null;
+  tagId: string | null;
+  publicCode: string | null;
+  serialNumber: number | null;
+  customerId: string | null;
+  customerName: string | null;
+  planId: string | null;
+  planTitle: string | null;
+  beforeValue: string | null;
+  afterValue: string | null;
+  source: string;
+  actor: string;
+  actorUserId: string | null;
+  actorEmail: string | null;
+  status: string;
+  metadata: Record<string, unknown>;
+  occurredAt: string;
+  createdAt: string;
+}
+
+export interface SmartTagPlanItem {
+  id: string;
+  kind: string;
+  title: string;
+  description: string | null;
+  batchId: string | null;
+  batchCode: string | null;
+  tagId: string | null;
+  publicCode: string | null;
+  customerId: string | null;
+  customerName: string | null;
+  status: string;
+  outcome: string | null;
+  dueDate: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+  closedAt: string | null;
+}
+
+/** One scope's story: its timeline (newest first) and its plans. */
+export interface SmartTagJourney {
+  entries: SmartTagJourneyEntryItem[];
+  plans: SmartTagPlanItem[];
+}

@@ -7,7 +7,7 @@
 // migration (supabase/migrations/20261001120000_smart_tags.sql); the allowed
 // values are the arrays in shared/smartTags.ts.
 
-import { pgTable, uuid, text, integer, boolean, jsonb, timestamp, bigserial, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, integer, boolean, jsonb, timestamp, date, bigserial, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 export const smartTagCustomers = pgTable("smart_tag_customers", {
@@ -184,6 +184,58 @@ export const smartTagDirectWrites = pgTable("smart_tag_direct_writes", {
   createdIdx: index("smart_tag_direct_writes_created_idx").on(table.createdAt.desc()),
   customerIdx: index("smart_tag_direct_writes_customer_idx").on(table.customerId, table.createdAt.desc()),
 }));
+
+// ─── Journey (story, planning, execution) ────────────────────────────────────
+// SQL: supabase/migrations/20261003150000_smart_tag_journey.sql
+// Allowed values: shared/smartTagJourney.ts.
+
+export const smartTagPlans = pgTable("smart_tag_plans", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  kind: text("kind").notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  batchId: uuid("batch_id").references(() => smartTagBatches.id, { onDelete: "set null" }),
+  tagId: uuid("tag_id").references(() => smartTags.id, { onDelete: "set null" }),
+  customerId: uuid("customer_id").references(() => smartTagCustomers.id, { onDelete: "set null" }),
+  status: text("status").notNull().default("active"),
+  outcome: text("outcome"),
+  dueDate: date("due_date", { mode: "string" }),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+  createdByUserId: text("created_by_user_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  closedAt: timestamp("closed_at", { withTimezone: true }),
+}, (table) => ({
+  statusIdx: index("smart_tag_plans_status_idx").on(table.status, table.createdAt.desc()),
+}));
+
+// Append-only timeline; a DB trigger lets UPDATE change `status` only.
+export const smartTagJourneyEntries = pgTable("smart_tag_journey_entries", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  kind: text("kind").notNull(),
+  action: text("action"),
+  title: text("title").notNull(),
+  content: text("content"),
+  batchId: uuid("batch_id").references(() => smartTagBatches.id, { onDelete: "set null" }),
+  tagId: uuid("tag_id").references(() => smartTags.id, { onDelete: "set null" }),
+  customerId: uuid("customer_id").references(() => smartTagCustomers.id, { onDelete: "set null" }),
+  planId: uuid("plan_id").references(() => smartTagPlans.id, { onDelete: "set null" }),
+  beforeValue: text("before_value"),
+  afterValue: text("after_value"),
+  source: text("source").notNull(),
+  actor: text("actor").notNull(),
+  actorUserId: text("actor_user_id"),
+  status: text("status").notNull().default("active"),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+  occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  occurredIdx: index("smart_tag_journey_entries_occurred_idx").on(table.occurredAt.desc()),
+}));
+
+export type SmartTagPlan = typeof smartTagPlans.$inferSelect;
+export type SmartTagJourneyEntry = typeof smartTagJourneyEntries.$inferSelect;
+export type InsertSmartTagJourneyEntry = typeof smartTagJourneyEntries.$inferInsert;
 
 export type SmartTagProvisioningDevice =typeof smartTagProvisioningDevices.$inferSelect;
 export type SmartTagProvisioningJob = typeof smartTagProvisioningJobs.$inferSelect;

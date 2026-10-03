@@ -127,7 +127,11 @@ test("smart tags: batch → assign → activate → redirect → analytics → l
     await settle();
 
     // History rows cannot be edited, even directly in SQL.
-    await assert.rejects(db.execute(sql`UPDATE smart_tag_destination_history SET reason = 'x'`), /immutable/);
+    await assert.rejects(
+      db.execute(sql`UPDATE smart_tag_destination_history SET reason = 'x'`),
+      // Drizzle wraps the driver error; the trigger's message is on `cause`.
+      (err: Error) => /immutable/.test(`${err.message} ${(err.cause as Error | undefined)?.message ?? ""}`),
+    );
 
     // An active tag cannot lose its destination or move to another customer.
     assert.equal((await api("PATCH", `/api/admin/smart-tags/${tag.id}`, { destinationUrl: null })).status, 400);

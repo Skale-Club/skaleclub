@@ -14,6 +14,7 @@ import { copyText, errorMessage, formatDateTime, getJson, invalidateSmartTags, s
 import { AnalyticsPanel, DESTINATION_OPTIONS, destinationLabel, FilterSelect, productLabel, RangePicker, StatusBadge, type AnalyticsRange } from './shared';
 import { useSmartTagCustomers } from './TagsTab';
 import { NfcProvisioningCard } from './NfcProvisioningCard';
+import { JourneyPanel } from './JourneyPanel';
 
 const URL_HINTS: Record<string, string> = {
   google_review: 'The customer\'s official Google review link (Google Business Profile → "Ask for reviews").',
@@ -326,6 +327,8 @@ export function TagDetail({ id, onBack }: { id: string; onBack: () => void }) {
       </div>
 
       <NfcProvisioningCard tagId={tag.id} publicCode={tag.publicCode} nfcUrl={tag.nfcUrl} retired={tag.status === 'retired'} />
+
+      <JourneyPanel scope={{ tagId: tag.id }} title="Tag journey" />
 
       <AdminCard padding="compact">
         <p className="mb-3 text-sm font-semibold">Destination history</p>

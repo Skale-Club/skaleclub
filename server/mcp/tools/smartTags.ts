@@ -8,6 +8,8 @@ import {
 import type { createAuditLog } from "../../lib/mcp-storage.js";
 import * as repo from "../../lib/smartTags/repository.js";
 import { createJob } from "../../lib/smartTags/provisioning.js";
+import * as journey from "../../lib/smartTags/journey.js";
+import { JOURNEY_ENTRY_KINDS, JOURNEY_PRODUCTION_ACTIONS, PLAN_KINDS, PLAN_STATUSES } from "#shared/smartTagJourney.js";
 import {
   actionSchema,
   assignSchema,
@@ -19,6 +21,15 @@ import {
   tagCreateSchema,
   tagPatchSchema,
 } from "../../routes/smartTags.js";
+import {
+  journeyEntryCreateSchema,
+  journeyEntryPatchSchema,
+  journeyQuerySchema,
+  planCreateSchema,
+  planPatchSchema,
+  planQuerySchema,
+  toEntryInput,
+} from "../../routes/smartTagJourney.js";
 
 type AuditFn = typeof createAuditLog;
 type AuditAction = "read" | "create" | "update";
@@ -44,7 +55,9 @@ const text = (value: unknown) => ({ content: [{ type: "text" as const, text: JSO
  * as QR and serial on each piece) and queue the NFC chip writes without the
  * admin panel. There is no delete: tags are retired, never removed.
  * MCP calls have no session user, so history rows record no user id; the MCP
- * audit log records the token instead.
+ * audit log records the token instead. Every mutation made here lands in the
+ * Smart Tags Journey with source "mcp", and the journey tools let a session
+ * record the steps the site never sees (art, slicing, printing, tests).
  */
 export function registerSmartTagTools(server: McpServer, audit: AuditFn, tokenId: string, tokenPrefix: string, ip: string) {
   const base = () => smartTagBaseUrl();
@@ -132,7 +145,7 @@ export function registerSmartTagTools(server: McpServer, audit: AuditFn, tokenId
     async ({ tag, patch }) =>
       run("smart_tags_update", "update", "smart_tag", tag, async () => {
         const id = await resolveTagId(tag);
-        await repo.updateTag(id, tagPatchSchema.parse(patch), null);
+        await repo.updateTag(id, tagPatchSchema.parse(patch), null, "mcp");
         return detail(id);
       }),
   );
@@ -145,8 +158,8 @@ export function registerSmartTagTools(server: McpServer, audit: AuditFn, tokenId
       run("smart_tags_assign", "update", "smart_tag", tag, async () => {
         const id = await resolveTagId(tag);
         const body = assignSchema.parse(to);
-        const customerId = "customerId" in body ? body.customerId : (await repo.createCustomer(body.customer)).id;
-        await repo.assignTag(id, customerId, null);
+        const customerId = "customerId" in body ? body.customerId : (await repo.createCustomer(body.customer, null, "mcp")).id;
+        await repo.assignTag(id, customerId, null, "mcp");
         return detail(id);
       }),
   );
@@ -163,7 +176,7 @@ export function registerSmartTagTools(server: McpServer, audit: AuditFn, tokenId
       run("smart_tags_transition", "update", "smart_tag", tag, async () => {
         const id = await resolveTagId(tag);
         const { reason: r } = actionSchema.parse({ reason });
-        await repo.transitionTag(id, action, null, r);
+        await repo.transitionTag(id, action, null, r, "mcp");
         return detail(id);
       }),
   );
@@ -192,7 +205,7 @@ export function registerSmartTagTools(server: McpServer, audit: AuditFn, tokenId
     { customer: objectParam },
     async ({ customer }) =>
       run("smart_tags_customer_create", "create", "smart_tag_customer", undefined, () =>
-        repo.createCustomer(customerSchema.parse(customer))),
+        repo.createCustomer(customerSchema.parse(customer), null, "mcp")),
   );
 
   // ─── Batches ────────────────────────────────────────────────────────────────
@@ -210,7 +223,7 @@ export function registerSmartTagTools(server: McpServer, audit: AuditFn, tokenId
     { batch: objectParam },
     async ({ batch }) =>
       run("smart_tags_batch_create", "create", "smart_tag_batch", undefined, async () => {
-        const created = await repo.createBatch(batchCreateSchema.parse(batch), null);
+        const created = await repo.createBatch(batchCreateSchema.parse(batch), null, "mcp");
         return batchWithManifest(created.id);
       }),
   );
@@ -229,7 +242,83 @@ export function registerSmartTagTools(server: McpServer, audit: AuditFn, tokenId
     { batchId: z.string().uuid(), patch: objectParam },
     async ({ batchId, patch }) =>
       run("smart_tags_batch_update", "update", "smart_tag_batch", batchId, () =>
-        repo.updateBatch(batchId, batchPatchSchema.parse(patch))),
+        repo.updateBatch(batchId, batchPatchSchema.parse(patch), null, "mcp")),
+  );
+
+  // ─── Journey ────────────────────────────────────────────────────────────────
+
+  const ctx = journey.journeyContext(null, "mcp");
+
+  /** `batch` (uuid or batch code) and `tag` (uuid or public code) → batchId / tagId. */
+  async function withScopeRefs(input: Record<string, unknown>): Promise<Record<string, unknown>> {
+    const { batch, tag, ...rest } = input;
+    if (typeof batch === "string" && batch.trim()) rest.batchId = await journey.resolveBatchId(batch);
+    if (typeof tag === "string" && tag.trim()) rest.tagId = await resolveTagId(tag);
+    return rest;
+  }
+
+  const scope = "`batch` (uuid or batch code, e.g. REV-2026-001), `tag` (uuid or public code) and/or `customerId`";
+
+  server.tool(
+    "smart_tags_journey_get",
+    `The story of the Smart Tags: the journey timeline (executions with before → after, decisions, insights, observations, risks, results) and the plans. Scope with ${scope}; a tag's story includes its batch's batch-wide entries. Optional: kind (${JOURNEY_ENTRY_KINDS.join("|")}), planId, includeArchived, limit (1-500), planStatus (open|closed|all|<status>, default all), order (asc = oldest first, the default, to read it as a story; desc = newest first).`,
+    { filters: objectParam.optional() },
+    async ({ filters }) =>
+      run("smart_tags_journey_get", "read", undefined, undefined, async () => {
+        const { order, planStatus, ...rest } = (filters ?? {}) as Record<string, unknown>;
+        const query = journeyQuerySchema.parse(await withScopeRefs(rest));
+        const status = planQuerySchema.shape.status.parse(planStatus);
+        const result = await journey.getJourney({ ...query, planStatus: status ?? "all" });
+        if (order !== "desc") result.entries.reverse();
+        return result;
+      }),
+  );
+
+  server.tool(
+    "smart_tags_journey_record",
+    `Record a journey entry. \`entry\`: { kind (${JOURNEY_ENTRY_KINDS.join("|")}), title, content?, action? (snake_case; production steps: ${JOURNEY_PRODUCTION_ACTIONS.join(", ")}), batch? | tag? | customerId?, planId?, beforeValue?, afterValue?, metadata? (files, slice numbers, checks), occurredAt? (ISO, when it happened if earlier than now), proposed? (true → waits for admin review) }. The site already records its own mutations (batch created, assigned, activated, destination changed, NFC verified); use this for what happens outside it and for decisions and learnings.`,
+    { entry: objectParam },
+    async ({ entry }) =>
+      run("smart_tags_journey_record", "create", "smart_tag_journey_entry", undefined, async () => {
+        const body = journeyEntryCreateSchema.parse(await withScopeRefs(entry));
+        return journey.createJourneyEntry(toEntryInput(body), ctx);
+      }),
+  );
+
+  server.tool(
+    "smart_tags_journey_review",
+    "Change a journey entry's review status: active (approve a proposed entry), needs_review, archived, superseded (it was wrong; record the correction as a new entry). Entries are otherwise immutable.",
+    { entryId: z.string().uuid(), status: z.enum(["active", "needs_review", "archived", "superseded"]) },
+    async ({ entryId, status }) =>
+      run("smart_tags_journey_review", "update", "smart_tag_journey_entry", entryId, () =>
+        journey.setJourneyEntryStatus(entryId, journeyEntryPatchSchema.parse({ status }).status)),
+  );
+
+  server.tool(
+    "smart_tags_plans_list",
+    `List plans. Optional filters: status (open = draft|active|paused, the default; closed; all; or one of ${PLAN_STATUSES.join("|")}), ${scope}, limit.`,
+    { filters: objectParam.optional() },
+    async ({ filters }) =>
+      run("smart_tags_plans_list", "read", undefined, undefined, async () =>
+        journey.listPlans(planQuerySchema.parse(await withScopeRefs(filters ?? {})))),
+  );
+
+  server.tool(
+    "smart_tags_plan_create",
+    `Create a plan. \`plan\`: { kind (${PLAN_KINDS.join("|")}), title, description?, batch? | tag? | customerId?, status? (default active), dueDate? (YYYY-MM-DD), metadata? }. Written to the journey as a decision.`,
+    { plan: objectParam },
+    async ({ plan }) =>
+      run("smart_tags_plan_create", "create", "smart_tag_plan", undefined, async () =>
+        journey.createPlan(planCreateSchema.parse(await withScopeRefs(plan)), ctx)),
+  );
+
+  server.tool(
+    "smart_tags_plan_update",
+    `Patch a plan: title, description, status (${PLAN_STATUSES.join("|")}), outcome (what closing it showed), dueDate, metadata. A status change is written to the journey (validated / invalidated / done as a result, with the outcome).`,
+    { planId: z.string().uuid(), patch: objectParam },
+    async ({ planId, patch }) =>
+      run("smart_tags_plan_update", "update", "smart_tag_plan", planId, () =>
+        journey.updatePlan(planId, planPatchSchema.parse(patch), ctx)),
   );
 
   async function batchWithManifest(batchId: string) {
