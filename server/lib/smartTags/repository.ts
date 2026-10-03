@@ -12,6 +12,7 @@ import {
   type SmartTag,
 } from "#shared/schema.js";
 import {
+  SMART_TAG_PRODUCT_LABELS,
   buildSmartTagUrls,
   planTransition,
   type SmartTagAction,
@@ -29,12 +30,11 @@ import type {
 import { generateUniqueCodes } from "./codes.js";
 import type { PublicSmartTag } from "./publicHandler.js";
 
-/** A 4xx the routes pass straight to the client. */
-export class SmartTagError extends Error {
-  constructor(message: string, public status = 400) {
-    super(message);
-  }
-}
+import { SmartTagError, pgError } from "./errors.js";
+import { journeyContext, recordJourney } from "./journey.js";
+import { tagActionEntry, type JourneySource } from "#shared/smartTagJourney.js";
+
+export { SmartTagError };
 
 async function rows<T>(query: SQL): Promise<T[]> {
   const result = await db.execute(query);
@@ -269,9 +269,11 @@ export interface TagUpdate {
 }
 
 /** Edits a tag; any destination change is written to the immutable history. */
-export async function updateTag(id: string, patch: TagUpdate, userId: string | null): Promise<SmartTag> {
-  return db.transaction(async (tx) => {
+export async function updateTag(id: string, patch: TagUpdate, userId: string | null, via?: JourneySource): Promise<SmartTag> {
+  let before: SmartTag | null = null;
+  const updated = await db.transaction(async (tx) => {
     const tag = await lockTag(tx, id);
+    before = tag;
     if (tag.status === "retired") throw new SmartTagError("A retired tag cannot be edited");
     const next = {
       destinationUrl: patch.destinationUrl !== undefined ? patch.destinationUrl : tag.destinationUrl,
@@ -299,6 +301,20 @@ export async function updateTag(id: string, patch: TagUpdate, userId: string | n
       .returning();
     return updated;
   });
+  const old = before as SmartTag | null;
+  if (old && (old.destinationUrl !== updated.destinationUrl || old.destinationType !== updated.destinationType)) {
+    await recordJourney({
+      kind: "execution",
+      action: "destination_changed",
+      title: `Destination of ${updated.publicCode} changed`,
+      content: patch.reason ?? null,
+      tagId: id,
+      beforeValue: old.destinationUrl,
+      afterValue: updated.destinationUrl,
+      metadata: { previousType: old.destinationType, newType: updated.destinationType },
+    }, journeyContext(userId, via));
+  }
+  return updated;
 }
 
 /**
@@ -310,9 +326,12 @@ export async function transitionTag(
   action: Exclude<SmartTagAction, "assign">,
   userId: string | null,
   reason?: string | null,
+  via?: JourneySource,
 ): Promise<SmartTag> {
-  return db.transaction(async (tx) => {
+  let fromStatus = "";
+  const updated = await db.transaction(async (tx) => {
     const tag = await lockTag(tx, id);
+    fromStatus = tag.status;
     const plan = planTransition(tag, action);
     if (!plan.ok) throw new SmartTagError(plan.error, 409);
     const now = new Date();
@@ -333,15 +352,33 @@ export async function transitionTag(
     console.log(`[smart-tags] ${action} ${tag.publicCode}: ${tag.status} → ${plan.status} (user ${userId ?? "?"})`);
     return updated;
   });
+  const entry = tagActionEntry(action, updated.publicCode, fromStatus, updated.status);
+  await recordJourney({
+    kind: "execution",
+    action: entry.action,
+    title: entry.title,
+    content: reason ?? null,
+    tagId: id,
+    beforeValue: entry.before,
+    afterValue: entry.after,
+  }, journeyContext(userId, via));
+  return updated;
 }
 
-export async function assignTag(id: string, customerId: string, userId: string | null): Promise<SmartTag> {
-  return db.transaction(async (tx) => {
+export async function assignTag(id: string, customerId: string, userId: string | null, via?: JourneySource): Promise<SmartTag> {
+  let fromStatus = "";
+  let customerName = "";
+  const updated = await db.transaction(async (tx) => {
     const tag = await lockTag(tx, id);
+    fromStatus = tag.status;
     const plan = planTransition(tag, "assign");
     if (!plan.ok) throw new SmartTagError(plan.error, 409);
-    const [customer] = await tx.select({ id: smartTagCustomers.id }).from(smartTagCustomers).where(eq(smartTagCustomers.id, customerId));
+    const [customer] = await tx
+      .select({ id: smartTagCustomers.id, businessName: smartTagCustomers.businessName })
+      .from(smartTagCustomers)
+      .where(eq(smartTagCustomers.id, customerId));
     if (!customer) throw new SmartTagError("Customer not found", 404);
+    customerName = customer.businessName;
     const changingOwner = tag.customerId !== customerId;
     const set: Partial<SmartTag> = {
       customerId,
@@ -361,6 +398,17 @@ export async function assignTag(id: string, customerId: string, userId: string |
     console.log(`[smart-tags] assign ${tag.publicCode} → customer ${customerId} (user ${userId ?? "?"})`);
     return updated;
   });
+  const entry = tagActionEntry("assign", updated.publicCode, fromStatus, updated.status, `to ${customerName}`);
+  await recordJourney({
+    kind: "execution",
+    action: entry.action,
+    title: entry.title,
+    tagId: id,
+    customerId,
+    beforeValue: entry.before,
+    afterValue: entry.after,
+  }, journeyContext(userId, via));
+  return updated;
 }
 
 /** One standalone tag (not part of a manufacturing batch). */
@@ -423,8 +471,14 @@ export interface CustomerInput {
   notes?: string | null;
 }
 
-export async function createCustomer(input: CustomerInput) {
+export async function createCustomer(input: CustomerInput, userId: string | null = null, via?: JourneySource) {
   const [customer] = await db.insert(smartTagCustomers).values(input).returning();
+  await recordJourney({
+    kind: "execution",
+    action: "customer_created",
+    title: `Customer created: ${customer.businessName}`,
+    customerId: customer.id,
+  }, journeyContext(userId, via));
   return customer;
 }
 
@@ -477,7 +531,7 @@ export interface BatchInput {
  * checked against the database before insert; a race that still collides on
  * the unique index rolls the whole batch back and is retried.
  */
-export async function createBatch(input: BatchInput, userId: string | null) {
+export async function createBatch(input: BatchInput, userId: string | null, via?: JourneySource) {
   const batchCode = input.batchCode?.trim() || (await nextBatchCode(input.productType));
   for (let attempt = 1; ; attempt++) {
     const codes = await generateUniqueCodes(input.quantity, findExistingCodes);
@@ -508,9 +562,19 @@ export async function createBatch(input: BatchInput, userId: string | null) {
         return batch;
       });
       console.log(`[smart-tags] batch ${batch.batchCode} created with ${input.quantity} tags (user ${userId ?? "?"})`);
+      const product = SMART_TAG_PRODUCT_LABELS[input.productType as keyof typeof SMART_TAG_PRODUCT_LABELS] ?? input.productType;
+      await recordJourney({
+        kind: "execution",
+        action: "batch_created",
+        title: `Batch ${batch.batchCode} created: ${input.quantity} × ${product}`,
+        content: batch.name,
+        batchId: batch.id,
+        afterValue: batch.status,
+        metadata: { quantity: input.quantity, productType: input.productType, vendor: batch.vendor },
+      }, journeyContext(userId, via));
       return batch;
     } catch (err) {
-      const pg = err as { code?: string; constraint?: string };
+      const pg = pgError(err);
       if (pg.code === "23505" && pg.constraint === "smart_tags_public_code_unique" && attempt < 3) continue;
       if (pg.code === "23505") throw new SmartTagError(`Batch code ${batchCode} already exists`, 409);
       throw err;
@@ -518,13 +582,30 @@ export async function createBatch(input: BatchInput, userId: string | null) {
   }
 }
 
-export async function updateBatch(id: string, input: Partial<Pick<BatchInput, "name" | "vendor" | "notes">> & { status?: string }) {
+export async function updateBatch(
+  id: string,
+  input: Partial<Pick<BatchInput, "name" | "vendor" | "notes">> & { status?: string },
+  userId: string | null = null,
+  via?: JourneySource,
+) {
+  const [previous] = await db.select({ status: smartTagBatches.status }).from(smartTagBatches).where(eq(smartTagBatches.id, id)).limit(1);
+  if (!previous) throw new SmartTagError("Batch not found", 404);
   const [batch] = await db
     .update(smartTagBatches)
     .set({ ...input, updatedAt: new Date() })
     .where(eq(smartTagBatches.id, id))
     .returning();
   if (!batch) throw new SmartTagError("Batch not found", 404);
+  if (input.status && input.status !== previous.status) {
+    await recordJourney({
+      kind: "execution",
+      action: "batch_status_changed",
+      title: `Batch ${batch.batchCode} ${input.status}`,
+      batchId: id,
+      beforeValue: previous.status,
+      afterValue: batch.status,
+    }, journeyContext(userId, via));
+  }
   return batch;
 }
 

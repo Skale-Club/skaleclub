@@ -10,7 +10,8 @@ import {
 } from "#shared/schema.js";
 import { buildSmartTagUrls, defaultUtmEnabled } from "#shared/smartTags.js";
 import { decidePhoneWrite, type DirectWriteItem, type DirectWriteMethod } from "#shared/nfcApp.js";
-import { SmartTagError } from "./repository.js";
+import { SmartTagError } from "./errors.js";
+import { recordJourney } from "./journey.js";
 
 // Server side of the Skale NFC phone app (/nfc). Same rules as the admin
 // panel, packed into the few one-shot operations a phone needs.
@@ -31,10 +32,12 @@ export interface QuickActivateInput {
  * flow (history row, no owner change on a live tag, retired stays retired).
  */
 export async function quickActivateTag(id: string, input: QuickActivateInput, userId: string | null): Promise<SmartTag> {
-  return db.transaction(async (tx) => {
+  let fromStatus = "";
+  const updated = await db.transaction(async (tx) => {
     const [tag] = await tx.select().from(smartTags).where(eq(smartTags.id, id)).for("update");
     if (!tag) throw new SmartTagError("Tag not found", 404);
     if (tag.status === "retired") throw new SmartTagError("A retired tag cannot be edited", 409);
+    fromStatus = tag.status;
 
     let customerId = tag.customerId;
     const newName = input.customerName?.trim();
@@ -89,6 +92,17 @@ export async function quickActivateTag(id: string, input: QuickActivateInput, us
     console.log(`[smart-tags] quick-activate ${tag.publicCode}: ${tag.status} → active (user ${userId ?? "?"})`);
     return updated;
   });
+  await recordJourney({
+    kind: "execution",
+    action: "tag_activated",
+    title: `Tag ${updated.publicCode} activated in the NFC app`,
+    tagId: id,
+    customerId: updated.customerId,
+    beforeValue: fromStatus,
+    afterValue: updated.status,
+    metadata: { destinationType: updated.destinationType, destinationUrl: updated.destinationUrl, via: "nfc_app" },
+  }, { source: "admin", userId });
+  return updated;
 }
 
 /**
@@ -101,9 +115,11 @@ export async function recordPhoneWrite(
   baseUrl: string,
   userId: string | null,
 ) {
-  return db.transaction(async (tx) => {
+  let publicCode = "";
+  const result = await db.transaction(async (tx) => {
     const [tag] = await tx.select().from(smartTags).where(eq(smartTags.id, id)).for("update");
     if (!tag) throw new SmartTagError("Tag not found", 404);
+    publicCode = tag.publicCode;
     const { nfcUrl } = buildSmartTagUrls(baseUrl, tag.publicCode);
     const decision = decidePhoneWrite(nfcUrl, report.readbackUrl);
     const now = new Date();
@@ -128,6 +144,17 @@ export async function recordPhoneWrite(
     if (!decision.ok) throw new SmartTagError(decision.error, 409);
     return { status: decision.status, expectedUrl: nfcUrl };
   });
+  await recordJourney({
+    kind: "execution",
+    action: result.status === "verified" ? "nfc_verified" : "nfc_written",
+    title: result.status === "verified"
+      ? `NFC chip of ${publicCode} written and verified (phone)`
+      : `NFC chip of ${publicCode} written, not read back (phone)`,
+    tagId: id,
+    afterValue: result.expectedUrl,
+    metadata: { method: report.method, via: "nfc_app" },
+  }, { source: "admin", userId });
+  return result;
 }
 
 // ─── Direct pieces ────────────────────────────────────────────────────────────
@@ -142,7 +169,8 @@ export interface DirectWriteInput {
 }
 
 export async function recordDirectWrite(input: DirectWriteInput, userId: string | null): Promise<{ id: string }> {
-  return db.transaction(async (tx) => {
+  let ownerId: string | null = null;
+  const written = await db.transaction(async (tx) => {
     let customerId: string | null = null;
     const newName = input.customerName?.trim();
     if (input.customerId) {
@@ -164,8 +192,18 @@ export async function recordDirectWrite(input: DirectWriteInput, userId: string 
         writtenByUserId: userId,
       })
       .returning({ id: smartTagDirectWrites.id });
+    ownerId = customerId;
     return row;
   });
+  await recordJourney({
+    kind: "execution",
+    action: "direct_write",
+    title: `Direct NFC piece written${input.label ? `: ${input.label}` : ""}`,
+    customerId: ownerId,
+    afterValue: input.url,
+    metadata: { directWriteId: written.id, method: input.method, verified: input.verified, via: "nfc_app" },
+  }, { source: "admin", userId });
+  return written;
 }
 
 export async function listDirectWrites(limit = 30): Promise<DirectWriteItem[]> {

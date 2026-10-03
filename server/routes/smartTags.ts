@@ -16,6 +16,7 @@ import { requireAdmin, sendError } from "./_shared.js";
 import { createSmartTagHandler } from "../lib/smartTags/publicHandler.js";
 import { buildBatchZip, qrPng, qrSvg } from "../lib/smartTags/qrAssets.js";
 import * as repo from "../lib/smartTags/repository.js";
+import { registerSmartTagJourneyRoutes } from "./smartTagJourney.js";
 
 // Smart Tags: public QR/NFC redirects (/q/:code, /n/:code) and the admin API
 // behind /api/admin/smart-tags*, /api/admin/smart-tag-customers*,
@@ -185,6 +186,7 @@ function fileSafe(value: string): string {
 
 export function registerSmartTagAdminRoutes(app: Express) {
   const base = "/api/admin/smart-tags";
+  registerSmartTagJourneyRoutes(app);
 
   app.get(`${base}/overview`, requireAdmin, async (_req, res) => {
     try {
@@ -264,7 +266,7 @@ export function registerSmartTagAdminRoutes(app: Express) {
     if (!id) return;
     try {
       const body = assignSchema.parse(req.body);
-      const customerId = "customerId" in body ? body.customerId : (await repo.createCustomer(body.customer)).id;
+      const customerId = "customerId" in body ? body.customerId : (await repo.createCustomer(body.customer, userIdOf(req))).id;
       await repo.assignTag(id, customerId, userIdOf(req));
       res.json(await repo.getTagDetail(id, smartTagBaseUrl()));
     } catch (err) {
@@ -341,7 +343,7 @@ export function registerSmartTagAdminRoutes(app: Express) {
 
   app.post("/api/admin/smart-tag-customers", requireAdmin, async (req, res) => {
     try {
-      res.status(201).json(await repo.createCustomer(customerSchema.parse(req.body)));
+      res.status(201).json(await repo.createCustomer(customerSchema.parse(req.body), userIdOf(req)));
     } catch (err) {
       fail(res, err, "Failed to create customer");
     }
@@ -392,7 +394,7 @@ export function registerSmartTagAdminRoutes(app: Express) {
     const id = idParam(req, res);
     if (!id) return;
     try {
-      res.json(await repo.updateBatch(id, batchPatchSchema.parse(req.body)));
+      res.json(await repo.updateBatch(id, batchPatchSchema.parse(req.body), userIdOf(req)));
     } catch (err) {
       fail(res, err, "Failed to update batch");
     }
