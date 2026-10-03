@@ -1090,10 +1090,13 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
           // A quote-on-request type has no real total, so it sends no value.
           ...(quote && !quote.quoteOnRequest && { value: quote.totalCents / 100, currency: quote.currency }),
         });
-        // Keep a Portuguese lead on the `/br` thank-you page
+        // Keep a Portuguese lead on the `/br` version of the landing page. A form
+        // with `completionRedirect` lands there instead of the thank-you page
+        // (that page fires the conversion itself); a booking link still wins.
+        const landing = !bookingUrl && config?.completionRedirect ? config.completionRedirect : pagePaths.thankYou;
         const target = languageHref(bookingUrl
-          ? `${pagePaths.thankYou}?form=${encodeURIComponent(formSlug)}&booking=${encodeURIComponent(bookingUrl)}`
-          : `${pagePaths.thankYou}?form=${encodeURIComponent(formSlug)}`);
+          ? `${landing}?form=${encodeURIComponent(formSlug)}&booking=${encodeURIComponent(bookingUrl)}`
+          : `${landing}?form=${encodeURIComponent(formSlug)}`);
         onClose();
         window.setTimeout(() => {
           window.location.href = target;

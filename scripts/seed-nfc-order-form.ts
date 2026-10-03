@@ -155,6 +155,9 @@ const CONFIG: FormConfig = {
   // `novo` with no classification and goes straight to the team.
   maxScore: 0,
   thresholds: { hot: 0, warm: 0, cold: 0 },
+  // After the last step the lead lands on the full keychain guide (the same page
+  // the team sends on WhatsApp), which fires the lead conversion itself.
+  completionRedirect: "/nfc-guide",
   pricing: {
     model: "nfc-keychain",
     typeQuestionId: "tipoChaveiro",

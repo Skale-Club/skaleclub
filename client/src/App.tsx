@@ -335,8 +335,8 @@ function Router() {
                 Bare "/products" is the React category page above. Must stay ABOVE
                 the catch-all. See PRODUCT_ROUTES in shared/landingSeo.ts for the
                 URL-segment -> DB-slug mapping these pages need on top of it. */}
-            {/* The keychain product is the full guide (server/canonicalHost.ts 301s it). */}
-            <Route path="/products/nfc-keychains">{() => <Redirect to="/nfc-guide" />}</Route>
+            {/* The keychain product is its landing (server/canonicalHost.ts 301s it). */}
+            <Route path="/products/nfc-keychains">{() => <Redirect to="/nfc-keychains" />}</Route>
             <Route path="/products/:slug" component={DynamicPage} />
             {/* The review-plaque product's DB slug equals its own URL segment, so
                 the bare "/:slug" catch-all below would also resolve it directly.

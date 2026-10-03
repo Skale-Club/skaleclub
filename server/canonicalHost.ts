@@ -34,10 +34,10 @@ const PATH_REDIRECTS: Record<string, string> = {
   // at the top-level /nfc-keychains) and must keep serving it untouched.
   "/nfc-review-plaque": "/products/nfc-review-plaque",
   "/br/nfc-review-plaque": "/br/products/nfc-review-plaque",
-  // The keychain product page was a thin duplicate of the full keychain guide
-  // (models, pricing, FAQ, order); the product card links to the guide now.
-  "/products/nfc-keychains": "/nfc-guide",
-  "/br/products/nfc-keychains": "/br/nfc-guide",
+  // The keychain product page was a thin duplicate of the keychain landing
+  // (/nfc-keychains, first level; the /nfc-guide is its second level).
+  "/products/nfc-keychains": "/nfc-keychains",
+  "/br/products/nfc-keychains": "/br/nfc-keychains",
 };
 
 export function registerCanonicalHostRedirects(app: Express) {

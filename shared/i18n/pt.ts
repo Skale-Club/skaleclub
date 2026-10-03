@@ -160,6 +160,8 @@ export const translations = {
     'We review your order and the link you sent.': 'Conferimos o seu pedido e o link que você enviou.',
     'We call you on WhatsApp to confirm the model, quantity and final total.': 'Ligamos no seu WhatsApp para confirmar o modelo, a quantidade e o total final.',
     'Review the keychain guide': 'Rever o guia dos chaveiros',
+    'Order received.': 'Pedido recebido.',
+    'We call you on WhatsApp to confirm everything before production. Meanwhile, here is the full guide.': 'Vamos te chamar no WhatsApp para confirmar tudo antes da produção. Enquanto isso, veja o guia completo.',
     'Book Now': 'Agendar Agora', 'Learn More': 'Saiba Mais', 'Get Started': 'Começar',
     'Submit': 'Enviar', 'Cancel': 'Cancelar', 'Save': 'Salvar', 'Edit': 'Editar', 'Delete': 'Deletar',
     'Add': 'Adicionar', 'Update': 'Atualizar', 'Search': 'Buscar', 'Filter': 'Filtrar',

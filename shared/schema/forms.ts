@@ -275,6 +275,13 @@ export interface FormConfig {
     cold: number;
   };
   /**
+   * Site path the lead lands on after the last step, instead of the thank-you
+   * page (e.g. the keychain order form sends people to /nfc-guide). The page
+   * gets `?form=<slug>` and must fire the lead conversion itself
+   * (useLeadConversion), exactly like the thank-you page does.
+   */
+  completionRedirect?: string;
+  /**
    * Opting a form into live pricing. Set it and the modal shows the running
    * quote, and the server recomputes + freezes that quote onto the lead on
    * completion. Absent means a plain lead form, exactly as before.

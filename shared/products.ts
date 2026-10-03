@@ -32,8 +32,9 @@ export const PRODUCT_CARDS: readonly ProductCard[] = [
     slug: "nfc-keychains",
     title: "NFC keychains",
     description: "Custom keychains with your branding, plus a display to sell them at your counter.",
-    // The full keychain guide (models, pricing, FAQ, order); /products/nfc-keychains 301s there.
-    href: "/nfc-guide",
+    // First level is the keychain landing; the guide (/nfc-guide) is its second
+    // level, linked from there. /products/nfc-keychains 301s to the landing.
+    href: "/nfc-keychains",
     image: {
       // Blender render of three real client keychains from their print files
       // ("3D Printing/Keychains/_render/render_keychains.py").

@@ -446,6 +446,10 @@ export function validateFormConfig(config: FormConfig, opts: { requireQuestions?
     }
   });
 
+  if (config?.completionRedirect !== undefined && !/^\/[a-z0-9/-]*$/.test(config.completionRedirect)) {
+    errors.push(`Completion redirect "${config.completionRedirect}" must be a site path like /nfc-guide.`);
+  }
+
   questions.forEach((question) => {
     const when = question.requiredWhen;
     if (when && !questionIds.has(when.questionId)) {

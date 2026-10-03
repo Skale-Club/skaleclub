@@ -156,7 +156,7 @@ export const LANDING_SEO: Record<string, LandingSeo> = {
   // page at the top-level /nfc-keychains), which is a different page with
   // different content. Reusing that slug here would make this product page
   // render that page's content instead. See PRODUCT_ROUTES below.
-  // Superseded by /nfc-guide (server/canonicalHost.ts 301s the URL): kept out
+  // Superseded by the /nfc-keychains landing (server/canonicalHost.ts 301s the URL): kept out
   // of the sitemap and the index while the DB row still exists.
   "nfc-custom-keychains": {
     title: "NFC Keychains | Skale Club",

@@ -2,7 +2,8 @@ import { useState } from "react";
 import { z } from "zod";
 import { ArrowRight } from "lucide-react";
 import { LeadFormModal } from "@/components/LeadFormModal";
-import { Band, Eyebrow, PillButton } from "@/components/editorial";
+import { Band, Eyebrow, PillButton, PillLink } from "@/components/editorial";
+import { languageHref } from "@/lib/languageRouting";
 import { useTranslation } from "@/hooks/useTranslation";
 import { sectionThemeSchema } from "./sectionTheme";
 import { WhatsappCtaLink, whatsappCtaSchema } from "./whatsappCta";
@@ -20,6 +21,10 @@ export const leadFormCtaPropsSchema = z.object({
   imageAlt: z.string().optional(),
   // Dark only: a "Talk to us on WhatsApp" button beside the form button.
   whatsapp: whatsappCtaSchema,
+  // Dark only: a quiet link under the buttons to a second-level page (e.g. the
+  // keychain landing pointing at its full guide). Site path only.
+  secondaryLabel: z.string().optional(),
+  secondaryHref: z.string().regex(/^\/[a-z0-9/-]*$/).optional(),
   theme: sectionThemeSchema,
 });
 type LeadFormCtaProps = z.infer<typeof leadFormCtaPropsSchema>;
@@ -115,6 +120,12 @@ function DarkCta({ props, onOpen, children }: VariantProps) {
               {whatsapp && <WhatsappCtaLink cta={whatsapp} location="lead_form_cta" variant="button" />}
             </div>
             {props.note && <span className="text-sm font-medium text-fog-400">{t(props.note)}</span>}
+            {props.secondaryLabel && props.secondaryHref && (
+              <PillLink href={languageHref(props.secondaryHref)} variant="ghost" className="w-full whitespace-nowrap sm:w-auto">
+                {t(props.secondaryLabel)}
+                <ArrowRight aria-hidden="true" className="h-4 w-4" />
+              </PillLink>
+            )}
           </div>
         </div>
         {children}

@@ -59,6 +59,7 @@ const KNOWN_IMAGE_SIZES: Record<string, { width: number; height: number }> = {
   "/nfc-keychains-hero.webp": { width: 1199, height: 1312 },
   "/SkaleClub.webp": { width: 1169, height: 1500 },
   "/nfc-plaque-pair.webp": { width: 1157, height: 852 },
+  "/nfc-keychains-trio.webp": { width: 1200, height: 775 },
 };
 
 const scrollToLeadCta = () => {
