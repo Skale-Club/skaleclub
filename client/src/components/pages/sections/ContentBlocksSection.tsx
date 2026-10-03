@@ -23,6 +23,12 @@ export const contentBlocksPropsSchema = z.object({
   headingLevel: z.enum(["h1", "h2"]).optional(),
   blocks:     z.array(contentBlockSchema).min(1).optional(),
   theme:      sectionThemeSchema,
+  // Optional product image beside the blocks (two columns from lg). Flat
+  // imageUrl/imageAlt like leadFormCta, so the PT copy pass translates the alt.
+  // Root-relative only; the lookahead blocks "//host" (protocol-relative).
+  imageUrl:   z.string().regex(/^\/(?![\/\\])/).optional(),
+  imageAlt:   z.string().optional(),
+  imageSide:  z.enum(["left", "right"]).optional(),
 });
 export type ContentBlocksProps = z.infer<typeof contentBlocksPropsSchema>;
 
@@ -106,33 +112,47 @@ export function ContentBlocksSection({ props }: { props: ContentBlocksProps }) {
           </p>
         </div>
 
-        <div className="max-w-3xl mx-auto space-y-10">
-          {blocks.map((block, idx) => (
-            <div key={idx} data-testid={`content-block-${idx + 1}`}>
-              <h3 className={`text-xl sm:text-2xl font-bold font-display ${c.blockHeading} mb-4`}>
-                {t(block.heading)}
-              </h3>
-              <div className="space-y-4">
-                {block.paragraphs.map((paragraph, pIdx) => (
-                  <p key={pIdx} className={`text-base ${c.paragraph} leading-relaxed`}>
-                    {t(paragraph)}
-                  </p>
-                ))}
-              </div>
-              {block.bullets && block.bullets.length > 0 && (
-                <ul className="mt-5 space-y-3">
-                  {block.bullets.map((bullet, bIdx) => (
-                    <li key={bIdx} className="flex items-start gap-3">
-                      <Check className={`h-5 w-5 ${c.bulletIcon} shrink-0 mt-0.5`} />
-                      <span className={`text-base ${c.bulletText} leading-relaxed`}>
-                        {t(bullet)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
+        <div className={props.imageUrl ? "mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-2 lg:gap-16" : undefined}>
+          {props.imageUrl && (
+            <div className={props.imageSide === "left" ? "lg:order-first" : "lg:order-last"}>
+              <img
+                src={props.imageUrl}
+                alt={t(props.imageAlt ?? "")}
+                loading="lazy"
+                decoding="async"
+                className="mx-auto w-full max-w-[420px] object-contain"
+                data-testid="content-blocks-image"
+              />
             </div>
-          ))}
+          )}
+          <div className="max-w-3xl mx-auto space-y-10">
+            {blocks.map((block, idx) => (
+              <div key={idx} data-testid={`content-block-${idx + 1}`}>
+                <h3 className={`text-xl sm:text-2xl font-bold font-display ${c.blockHeading} mb-4`}>
+                  {t(block.heading)}
+                </h3>
+                <div className="space-y-4">
+                  {block.paragraphs.map((paragraph, pIdx) => (
+                    <p key={pIdx} className={`text-base ${c.paragraph} leading-relaxed`}>
+                      {t(paragraph)}
+                    </p>
+                  ))}
+                </div>
+                {block.bullets && block.bullets.length > 0 && (
+                  <ul className="mt-5 space-y-3">
+                    {block.bullets.map((bullet, bIdx) => (
+                      <li key={bIdx} className="flex items-start gap-3">
+                        <Check className={`h-5 w-5 ${c.bulletIcon} shrink-0 mt-0.5`} />
+                        <span className={`text-base ${c.bulletText} leading-relaxed`}>
+                          {t(bullet)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>

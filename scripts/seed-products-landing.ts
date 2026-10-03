@@ -174,11 +174,12 @@ export const PRODUCTS_SECTIONS: PageSection[] = [
 
 // ── /products/nfc-review-plaque ────────────────────────────────────────────
 
-// PLACEHOLDER image: a generic plaque mockup (client/public/), used by the hero
-// and the closing CTA until real product photos exist. Swap this one constant
-// for the photo path and re-run the seed.
-const PLAQUE_IMAGE = "/nfc-review-plaque-placeholder.svg";
-const PLAQUE_IMAGE_ALT = "NFC review plaque on a business counter";
+// Product renders (client/public/, transparent WebP): Blender renders of the real
+// Fusion model, made by "3D Printing/NFC Plaque/source/render/render_previews.py".
+// Re-render there and re-export the WebPs when the plaque design changes.
+const PLAQUE_PAIR = { src: "/nfc-plaque-pair.webp", alt: "Google Review and Instagram NFC plaques side by side" };
+const PLAQUE_GOOGLE = { src: "/nfc-plaque-google.webp", alt: "Google Review NFC plaque with a QR code, on its black stand" };
+const PLAQUE_INSTAGRAM = { src: "/nfc-plaque-instagram.webp", alt: "Instagram NFC plaque with the logo in silk filament" };
 
 // The closing CTA opens the PRICED order form (scripts/seed-nfc-plaque-order-form.ts),
 // the same pattern as the keychain landing. PLAQUE_FORM_SLUG (the unpriced
@@ -216,8 +217,8 @@ export const NFC_REVIEW_PLAQUE_SECTIONS: PageSection[] = [
       ctaLabel: "Order your plaque",
       secondaryCtaLabel: "See how it works",
       secondaryCtaHref: "#how-it-works",
-      backgroundImageUrl: PLAQUE_IMAGE,
-      backgroundImageAlt: PLAQUE_IMAGE_ALT,
+      backgroundImageUrl: PLAQUE_PAIR.src,
+      backgroundImageAlt: PLAQUE_PAIR.alt,
     },
   },
   {
@@ -236,6 +237,9 @@ export const NFC_REVIEW_PLAQUE_SECTIONS: PageSection[] = [
     props: {
       theme: "light",
       eyebrow: "Why it matters",
+      imageUrl: PLAQUE_GOOGLE.src,
+      imageAlt: PLAQUE_GOOGLE.alt,
+      imageSide: "right",
       heading: "Reviews are how new customers choose you",
       subheading: "Before visiting a business for the first time, people check its rating on Google.",
       blocks: [
@@ -299,6 +303,9 @@ export const NFC_REVIEW_PLAQUE_SECTIONS: PageSection[] = [
     props: {
       theme: "light",
       eyebrow: "Two ways to order",
+      imageUrl: PLAQUE_INSTAGRAM.src,
+      imageAlt: PLAQUE_INSTAGRAM.alt,
+      imageSide: "left",
       heading: "Standard or custom",
       subheading: "Both are 3D-printed, programmed and tested before they ship.",
       blocks: [
@@ -395,8 +402,8 @@ export const NFC_REVIEW_PLAQUE_SECTIONS: PageSection[] = [
       subheading:
         "About a minute to fill in. You see the price as you choose the plaque and quantity, and we confirm everything with you on WhatsApp before producing anything. Sending the form costs nothing.",
       ctaLabel: "Order your plaque",
-      imageUrl: PLAQUE_IMAGE,
-      imageAlt: PLAQUE_IMAGE_ALT,
+      imageUrl: PLAQUE_PAIR.src,
+      imageAlt: PLAQUE_PAIR.alt,
     },
   },
 ];

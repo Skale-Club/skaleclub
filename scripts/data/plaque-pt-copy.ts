@@ -13,8 +13,12 @@ const pt = (cents: number) => `US$ ${cents / 100}`;
 
 export const PLAQUE_PT_COPY: Record<string, string> = {
   // ── Hero + badges ───────────────────────────────────────────────────────
-  "NFC review plaque on a business counter":
-    "Placa de avaliação NFC no balcão de um negócio",
+  "Google Review and Instagram NFC plaques side by side":
+    "Placas NFC do Google e do Instagram lado a lado",
+  "Google Review NFC plaque with a QR code, on its black stand":
+    "Placa NFC de avaliação do Google com QR code, na base preta",
+  "Instagram NFC plaque with the logo in silk filament":
+    "Placa NFC do Instagram com o logo em filamento silk",
   "More Google reviews, right from your counter.":
     "Mais avaliações no Google, direto do seu balcão.",
   "A 3D-printed plaque for your counter. A customer taps their phone or scans the QR code and your Google review page opens. No app, no searching, no typing.":
