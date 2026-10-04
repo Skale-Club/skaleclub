@@ -26,6 +26,11 @@
 
 -- One statement, so the foreign keys between these tables need no ordering.
 DROP TABLE IF EXISTS
+  -- smart_tag_journey_entries / smart_tag_plans exist in production without a
+  -- migration in this repo (created directly); both reference smart_tags, so
+  -- leaving them out would make this statement fail (no CASCADE).
+  public.smart_tag_journey_entries,
+  public.smart_tag_plans,
   public.smart_tag_direct_writes,
   public.smart_tag_provisioning_events,
   public.smart_tag_provisioning_jobs,
@@ -40,3 +45,4 @@ DROP TABLE IF EXISTS
 -- The trigger went with smart_tag_destination_history; its function stays
 -- until dropped explicitly.
 DROP FUNCTION IF EXISTS public.smart_tag_destination_history_immutable();
+DROP FUNCTION IF EXISTS public.smart_tag_journey_entries_append_only();
