@@ -23,7 +23,6 @@ export type AdminSection =
   | 'notifications'
   | 'traffic'
   | 'redirects'
-  | 'smartTags'
   | 'vectorizer'
   | 'reviewLink';
 

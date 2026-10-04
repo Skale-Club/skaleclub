@@ -16,9 +16,10 @@ export const RESERVED_SLUGS: readonly string[] = [
   "e",          // /e/:slug — estimate viewer
   "p",          // /p/:slug — presentation viewer
   "f",          // /f/:slug — public form
-  "q",          // /q/:code — smart tag QR redirect
-  "n",          // /n/:code — smart tag NFC redirect
-  "nfc",        // /nfc — Skale NFC phone app (admin PWA)
+  "q",          // /q/:code — 301 to the tag link on Xpot
+  "n",          // /n/:code — 301 to the tag link on Xpot
+  "nfc",        // /nfc — 302 to the Xpot tags app (old phone app)
+  "smart-tags", // /smart-tags — 302 to the Xpot tags app
   "links",
   "vcard",
   "xpot",

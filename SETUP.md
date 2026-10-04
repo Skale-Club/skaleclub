@@ -216,8 +216,9 @@ split into build-time and runtime:
   pre-render the SEO meta tags into `dist/public/index.html`). `POSTGRES_URL`
   is also a runtime variable.
 - **Runtime** (`is_runtime=true`): everything else — `SUPABASE_*`,
-  `SESSION_SECRET`, `ADMIN_EMAIL`, `CRON_SECRET`, `SENTRY_DSN`,
-  `SMART_TAG_HASH_SECRET` (Smart Tags unique-visitor HMAC), plus the
+  `SESSION_SECRET`, `ADMIN_EMAIL`, `CRON_SECRET`, `SENTRY_DSN`, the optional
+  `XPOT_APP_URL` / `XPOT_TAGS_BASE_URL` (where the old `/nfc` and `/n|q/:code`
+  tag URLs redirect; both default to `https://xpot.place`), plus the
   container-specific `NODE_ENV`, `PORT` and `CANONICAL_HOST`. Leave
   `ENABLE_INPROCESS_CRON` unset (external scheduler); bootstrap tasks run by
   default in production.

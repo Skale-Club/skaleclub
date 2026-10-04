@@ -166,8 +166,7 @@ function Router() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const isOAuthRoute = location.startsWith('/oauth/');
-  // /nfc is the Skale NFC phone app (admin-only PWA); /nfc-guide etc. are public pages.
-  const isAdminRoute = location.startsWith('/admin') || location === '/nfc' || location.startsWith('/nfc/');
+  const isAdminRoute = location.startsWith('/admin');
   const isLinksRoute = isRoutePrefixMatch(location, pagePaths.links) || isRoutePrefixMatch(location, LEGACY_PATHS.links);
   const isVCardRoute = isRoutePrefixMatch(location, pagePaths.vcard) || isRoutePrefixMatch(location, LEGACY_PATHS.vcard);
   const isEstimateRoute = location.startsWith('/e/');

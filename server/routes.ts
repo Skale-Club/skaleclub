@@ -44,10 +44,7 @@ import { registerOAuthRoutes } from "./routes/oauth.js";
 import { registerContactRoutes } from "./routes/contact.js";
 import { registerRevisionRoutes } from "./routes/revisions.js";
 import { registerRetentionRoutes } from "./routes/retention.js";
-import { registerSmartTagAdminRoutes, registerSmartTagPublicRoutes } from "./routes/smartTags.js";
-import { registerSmartTagProvisioningRoutes } from "./routes/smartTagProvisioning.js";
-import { registerSmartTagMobileRoutes } from "./routes/smartTagsMobile.js";
-import { registerPasskeyRoutes } from "./routes/passkeys.js";
+import { registerXpotRedirects } from "./routes/xpotRedirects.js";
 import { requireAdmin, sendError, setPublicCache } from "./routes/_shared.js";
 import { pool } from "./db.js";
 
@@ -114,12 +111,9 @@ export async function registerRoutes(
   registerPortfolioRoutes(app);
   registerFaqRoutes(app);
   registerBootstrapRoutes(app);
+  // Before the /:slug vanity redirects: the tag system moved to Xpot (/nfc, /smart-tags, /n/:code, /q/:code).
+  registerXpotRedirects(app);
   registerRedirectRoutes(app);
-  registerSmartTagPublicRoutes(app);  // /q/:code + /n/:code — physical QR/NFC redirects
-  registerSmartTagAdminRoutes(app);
-  registerSmartTagProvisioningRoutes(app); // desktop NFC provisioner (device token) + admin pairing/jobs
-  registerSmartTagMobileRoutes(app); // Skale NFC phone app (/nfc): quick activate, phone writes, direct links
-  registerPasskeyRoutes(app); // trusted devices + passkeys (Face ID) for the /nfc app
   registerVCardRoutes(app);
   registerBlogAutomationRoutes(app);
   registerBlogRoutes(app);
