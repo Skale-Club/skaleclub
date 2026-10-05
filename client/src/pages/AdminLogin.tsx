@@ -18,7 +18,7 @@ import type { CompanySettings } from '@shared/schema';
 
 const POST_LOGIN_KEY = 'adminLoginNext';
 
-// Only same-app admin paths (e.g. /admin/review-link) — never an arbitrary URL.
+// Only same-app admin paths — never an arbitrary URL.
 function safeAdminPath(value: string | null | undefined): string | null {
   if (!value || !/^\/admin\/[A-Za-z0-9/_-]*$/.test(value)) return null;
   return /^\/admin\/(login|signup)\b/.test(value) ? null : value;

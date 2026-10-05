@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react';
 import {
   DndContext,
   KeyboardSensor,
@@ -14,7 +15,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ArrowLeft, GripVertical, LogOut } from 'lucide-react';
+import { ArrowLeft, ChevronDown, GripVertical, LogOut } from 'lucide-react';
 import { Link } from 'wouter';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -30,7 +31,12 @@ import {
   SidebarMenuButton,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { SIDEBAR_MENU_ITEMS, type SidebarMenuItem as SidebarEntry } from './shared/constants';
+import {
+  SIDEBAR_GROUPS,
+  SIDEBAR_MENU_ITEMS,
+  type SidebarGroupId,
+  type SidebarMenuItem as SidebarEntry,
+} from './shared/constants';
 import type { AdminSection, CompanySettingsData } from './shared/types';
 
 interface AdminSidebarProps {
@@ -123,6 +129,10 @@ export function AdminSidebar({
   onDragEnd,
   onLogout,
 }: AdminSidebarProps) {
+  const activeGroup = SIDEBAR_MENU_ITEMS.find((item) => item.id === activeSection)?.group ?? 'workspace';
+  const [openGroups, setOpenGroups] = useState<Set<SidebarGroupId>>(
+    () => new Set<SidebarGroupId>([activeGroup]),
+  );
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
@@ -131,6 +141,35 @@ export function AdminSidebar({
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  const orderedGroups = useMemo(() => {
+    const orderIndex = new Map(sectionsOrder.map((id, index) => [id, index]));
+
+    return SIDEBAR_GROUPS.map((group) => ({
+      ...group,
+      items: SIDEBAR_MENU_ITEMS
+        .filter((item) => item.group === group.id)
+        .sort((a, b) => (orderIndex.get(a.id) ?? 999) - (orderIndex.get(b.id) ?? 999)),
+    }));
+  }, [sectionsOrder]);
+
+  useEffect(() => {
+    setOpenGroups((current) => {
+      if (current.has(activeGroup)) return current;
+      const next = new Set(current);
+      next.add(activeGroup);
+      return next;
+    });
+  }, [activeGroup]);
+
+  const toggleGroup = (groupId: SidebarGroupId) => {
+    setOpenGroups((current) => {
+      const next = new Set(current);
+      if (next.has(groupId)) next.delete(groupId);
+      else next.add(groupId);
+      return next;
+    });
+  };
 
   return (
     <Sidebar className="border-r border-sidebar-border bg-sidebar">
@@ -160,30 +199,53 @@ export function AdminSidebar({
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="p-2 bg-sidebar">
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-              <SortableContext items={sectionsOrder} strategy={verticalListSortingStrategy}>
-                <SidebarMenu>
-                  {sectionsOrder.map((sectionId) => {
-                    const item = SIDEBAR_MENU_ITEMS.find((entry) => entry.id === sectionId);
-                    if (!item) return null;
+      <SidebarContent className="gap-1 bg-sidebar px-2 py-3">
+        {orderedGroups.map((group) => {
+          const isOpen = openGroups.has(group.id);
+          const containsActiveItem = group.id === activeGroup;
 
-                    return (
-                      <SidebarSortableItem
-                        key={item.id}
-                        item={item}
-                        isActive={activeSection === item.id}
-                        onSelect={() => onSectionSelect(item.id)}
-                      />
-                    );
-                  })}
-                </SidebarMenu>
-              </SortableContext>
-            </DndContext>
-          </SidebarGroupContent>
-        </SidebarGroup>
+          return (
+            <SidebarGroup key={group.id} className="p-0">
+              <button
+                type="button"
+                aria-expanded={isOpen}
+                aria-controls={`sidebar-group-${group.id}`}
+                onClick={() => toggleGroup(group.id)}
+                className={cn(
+                  'flex h-8 w-full items-center justify-between rounded-md px-2 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground transition-colors',
+                  'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
+                  containsActiveItem && 'text-foreground',
+                )}
+                data-testid={`sidebar-group-${group.id}`}
+              >
+                <span>{group.title}</span>
+                <ChevronDown
+                  aria-hidden
+                  className={cn('h-3.5 w-3.5 transition-transform duration-200', isOpen && 'rotate-180')}
+                />
+              </button>
+
+              {isOpen && (
+                <SidebarGroupContent id={`sidebar-group-${group.id}`} className="pb-1">
+                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+                    <SortableContext items={group.items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
+                      <SidebarMenu>
+                        {group.items.map((item) => (
+                          <SidebarSortableItem
+                            key={item.id}
+                            item={item}
+                            isActive={activeSection === item.id}
+                            onSelect={() => onSectionSelect(item.id)}
+                          />
+                        ))}
+                      </SidebarMenu>
+                    </SortableContext>
+                  </DndContext>
+                </SidebarGroupContent>
+              )}
+            </SidebarGroup>
+          );
+        })}
       </SidebarContent>
 
       <SidebarFooter className="p-4 border-t border-border mt-auto bg-sidebar">

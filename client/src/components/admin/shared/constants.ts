@@ -1,4 +1,4 @@
-import { Building2, Briefcase, ClipboardList, FileText, HelpCircle, Image, LayoutDashboard, LayoutPanelLeft, Link, Link2, MessageSquare, Puzzle, Receipt, Search, Sparkles, Users, Smartphone, Presentation, RadioTower, Bell, TrendingUp, Shapes, Star } from 'lucide-react';
+import { Building2, Briefcase, ClipboardList, FileText, HelpCircle, Image, LayoutDashboard, LayoutPanelLeft, Link, Puzzle, Receipt, Search, Sparkles, Users, Smartphone, Presentation, RadioTower, Bell, TrendingUp, Shapes } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { AdminSection, BusinessHours, IntakeObjective } from './types';
 
@@ -27,30 +27,46 @@ export interface SidebarMenuItem {
   title: string;
   description: string;
   icon: LucideIcon;
+  group: SidebarGroupId;
 }
 
+export type SidebarGroupId = 'workspace' | 'growth' | 'content' | 'channels' | 'system' | 'production';
+
+export interface SidebarGroupDefinition {
+  id: SidebarGroupId;
+  title: string;
+}
+
+export const SIDEBAR_GROUPS: SidebarGroupDefinition[] = [
+  { id: 'workspace', title: 'Workspace' },
+  { id: 'growth', title: 'Growth & Sales' },
+  { id: 'content', title: 'Content & Website' },
+  { id: 'channels', title: 'Digital Presence' },
+  { id: 'system', title: 'System' },
+  { id: 'production', title: 'Production' },
+];
+
 export const SIDEBAR_MENU_ITEMS: SidebarMenuItem[] = [
-  { id: 'dashboard', title: 'Dashboard', description: 'Performance snapshot for leads, chat and growth', icon: LayoutDashboard },
-  { id: 'company', title: 'Company Infos', description: 'Business details, contact info and operating hours', icon: Building2 },
-  { id: 'website', title: 'Website', description: 'Customize homepage content and sections', icon: Image },
-  { id: 'portfolio', title: 'Portfolio', description: 'Services shown on the portfolio page — drag to reorder, click to edit', icon: Briefcase },
-  { id: 'leads', title: 'Leads', description: 'All captured leads with ratings and follow-up status', icon: Sparkles },
-  { id: 'forms', title: 'Forms', description: 'Manage lead capture forms — questions, scoring, and thresholds', icon: ClipboardList },
+  { id: 'dashboard', title: 'Dashboard', description: 'Performance snapshot for leads, chat and growth', icon: LayoutDashboard, group: 'workspace' },
+  { id: 'company', title: 'Company Infos', description: 'Business details, contact info and operating hours', icon: Building2, group: 'workspace' },
+  { id: 'users', title: 'Users', description: 'Manage admin and team member accounts', icon: Users, group: 'workspace' },
+  { id: 'leads', title: 'Leads', description: 'All captured leads with ratings and follow-up status', icon: Sparkles, group: 'growth' },
+  { id: 'forms', title: 'Forms', description: 'Manage lead capture forms — questions, scoring, and thresholds', icon: ClipboardList, group: 'growth' },
+  { id: 'estimates', title: 'Estimates', description: 'Client proposals with shareable links', icon: Receipt, group: 'growth' },
+  { id: 'presentations', title: 'Presentations', description: 'Build AI-powered slide decks and share them as immersive fullscreen experiences.', icon: Presentation, group: 'growth' },
+  { id: 'website', title: 'Website', description: 'Customize homepage content and sections', icon: Image, group: 'content' },
+  { id: 'portfolio', title: 'Portfolio', description: 'Services shown on the portfolio page — drag to reorder, click to edit', icon: Briefcase, group: 'content' },
+  { id: 'pages', title: 'Pages', description: 'Build managed pages at any /slug — composable sections, no code.', icon: LayoutPanelLeft, group: 'content' },
+  { id: 'blog', title: 'Blog', description: 'Articles, drafts and SEO-optimized content', icon: FileText, group: 'content' },
+  { id: 'faqs', title: 'FAQs', description: 'Questions and answers shown on the FAQ page', icon: HelpCircle, group: 'content' },
+  { id: 'seo', title: 'SEO', description: 'Meta tags, sitemap and analytics configuration', icon: Search, group: 'content' },
   // { id: 'chat', title: 'Chat', description: 'AI assistant conversations and response settings', icon: MessageSquare },
-  { id: 'faqs', title: 'FAQs', description: 'Questions and answers shown on the FAQ page', icon: HelpCircle },
-  { id: 'users', title: 'Users', description: 'Manage admin and team member accounts', icon: Users },
-  { id: 'blog', title: 'Blog', description: 'Articles, drafts and SEO-optimized content', icon: FileText },
-  { id: 'seo', title: 'SEO', description: 'Meta tags, sitemap and analytics configuration', icon: Search },
-  { id: 'integrations', title: 'Integrations', description: 'Connect external services — AI, CRM, communication', icon: Puzzle },
-  { id: 'links', title: 'Links Page', description: 'Bio links and social media profiles', icon: Link },
-  { id: 'vcards', title: 'VCards', description: 'Digital business cards for your team', icon: Smartphone },
-  { id: 'estimates', title: 'Estimates', description: 'Client proposals with shareable links', icon: Receipt },
-  { id: 'presentations', title: 'Presentations', description: 'Build AI-powered slide decks and share them as immersive fullscreen experiences.', icon: Presentation },
-  { id: 'skaleHub', title: 'Skale Hub', description: 'Manage weekly lives, registration gates, and active session access.', icon: RadioTower },
-  { id: 'pages', title: 'Pages', description: 'Build managed pages at any /slug — composable sections, no code.', icon: LayoutPanelLeft },
-  { id: 'notifications', title: 'Notifications', description: 'Configure notification templates for SMS and Telegram alerts.', icon: Bell },
-  { id: 'traffic', title: 'Traffic', description: 'Analytics for visits, sources, campaigns, and conversions.', icon: TrendingUp },
-  { id: 'vectorizer', title: 'Logo Vectorizer', description: 'Convert PNG / JPEG logos into clean SVG (Figma, Illustrator, Fusion 360) and 3MF.', icon: Shapes },
-  { id: 'reviewLink', title: 'Review Link', description: 'Turn a Google Business / Maps link into its "leave a review" link. Installable on your phone.', icon: Star },
+  { id: 'links', title: 'Links Page', description: 'Bio links and social media profiles', icon: Link, group: 'channels' },
+  { id: 'vcards', title: 'VCards', description: 'Digital business cards for your team', icon: Smartphone, group: 'channels' },
+  { id: 'skaleHub', title: 'Skale Hub', description: 'Manage weekly lives, registration gates, and active session access.', icon: RadioTower, group: 'channels' },
+  { id: 'integrations', title: 'Integrations', description: 'Connect external services — AI, CRM, communication', icon: Puzzle, group: 'system' },
+  { id: 'notifications', title: 'Notifications', description: 'Configure notification templates for SMS and Telegram alerts.', icon: Bell, group: 'system' },
+  { id: 'traffic', title: 'Traffic', description: 'Analytics for visits, sources, campaigns, and conversions.', icon: TrendingUp, group: 'system' },
+  { id: 'vectorizer', title: 'Logo Vectorizer', description: 'Convert PNG / JPEG logos into clean SVG (Figma, Illustrator, Fusion 360) and 3MF.', icon: Shapes, group: 'production' },
   // { id: 'redirects', title: 'Redirects', description: 'Short vanity links — /meet → your Meet URL, etc.', icon: Link2 },
 ];

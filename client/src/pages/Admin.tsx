@@ -70,7 +70,6 @@ function AdminContent() {
       traffic: 'traffic',
       redirects: 'redirects',
       vectorizer: 'vectorizer',
-      'review-link': 'reviewLink',
     };
     return slugMap[segment] || 'dashboard';
   }, [location]);
@@ -133,7 +132,6 @@ function AdminContent() {
       traffic: 'traffic',
       redirects: 'redirects',
       vectorizer: 'vectorizer',
-      reviewLink: 'review-link',
     };
     startTransition(() => {
       setLocation(`/admin/${slugMap[section]}`);
