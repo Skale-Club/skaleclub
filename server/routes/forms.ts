@@ -6,6 +6,7 @@ import { calculateMaxScore, DEFAULT_FORM_CONFIG, validateFormConfig } from "#sha
 import type { FormConfig } from "#shared/schema.js";
 import { requireAdmin, sendError } from "./_shared.js";
 import { SKALE_HUB_GROUP_FORM_SLUG, ensureSkaleHubGroupForm, registerFormPublicRoutes } from "./formsPublic.js";
+import { registerWhatsappChatLeadRoutes } from "./whatsappChatLead.js";
 
 export function registerFormRoutes(app: Express) {
   // Ensure the Skale Hub group form exists in the DB at startup so it always
@@ -243,4 +244,5 @@ export function registerFormRoutes(app: Express) {
   });
 
   registerFormPublicRoutes(app);
+  registerWhatsappChatLeadRoutes(app);
 }
