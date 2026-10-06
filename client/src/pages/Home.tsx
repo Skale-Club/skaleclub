@@ -83,7 +83,9 @@ export default function Home() {
 
   return (
     <div className="pb-0">
-      <div className="trust-bar-bleed">
+      {/* The wrapper owns the hero's navy + grid so the pattern runs unbroken
+          from the hero into the top half of the trust bar's rows. */}
+      <div className="bg-navy-900 pattern-grid-dark">
         <HeroSection
           companySettings={companySettings}
           homepageContent={homepageContent}
@@ -92,34 +94,15 @@ export default function Home() {
         />
 
         {trustBadges.length > 0 && (
-          // ── Trust-bar bleed contract ────────────────────────────────────
-          // Source of truth: the `--trust-bleed` var set per breakpoint by
-          // `.trust-bar-bleed` in index.css (on the wrapper above). This
-          // section's `mt` and the fill `<div>`'s `top-[…]` below both read
-          // that var, and so does HeroSection's `bottomPadding`
-          // (showTrustBadges=false branch) — keeping the hero photo glued to
-          // the card's top edge and the dark fill starting exactly at the
-          // hero's true bottom edge, so only the card (not a
-          // full-width bar) shows over the hero. Change the var once in
-          // index.css to change all three.
-          <section className="relative z-20 mt-[calc(var(--trust-bleed)*-1)]">
-            {/*
-              Bleeds up into the hero by roughly half the card's height (tuned per
-              breakpoint, since TrustBadges' own grid — and thus its height —
-              changes at md/lg) so the split reads ~50/50 across the hero/services
-              boundary. Real flow (not absolute/zero-height): the card's bottom
-              half pushes the What We Do section down naturally. No extra trailing
-              padding here — that section's own py-20 sm:py-28 (the standard
-              section-to-section rhythm used across this page) is what creates
-              the gap before its heading, so it matches every other transition.
-
-              The fill below only starts at `top: <bleed>` — i.e. right where this
-              section crosses back below the hero's true bottom edge — so only the
-              card (not a full-width bar) shows above that line, over the
-              hero's own background/photo.
-            */}
-            <div className="absolute inset-x-0 bottom-0 top-[var(--trust-bleed)] bg-navy-900 pattern-grid-dark" aria-hidden />
-            <div className="container-editorial relative">
+          // The trust card sits exactly centred on the hero/services boundary,
+          // whatever its height (it changes with breakpoint and language): the
+          // card spans two equal `1fr` rows, so each row is half the card. The
+          // top row shows the wrapper's navy, the bottom row is filled with the
+          // next section's cream. Real flow, so the bottom half pushes the
+          // services section down and its own py rhythm sets the gap below.
+          <section className="relative z-20 grid grid-cols-1 grid-rows-2">
+            <div className="col-start-1 row-start-2 bg-paper" aria-hidden />
+            <div className="container-editorial relative col-start-1 row-span-2 row-start-1">
               <TrustBadges badges={trustBadges} />
             </div>
           </section>

@@ -497,27 +497,6 @@ html.admin-theme.dark {
     }
   }
 
-  /* ── Trust-bar bleed contract ──────────────────────────────────────────
-     Single source of truth for the trust-bar bleed amount, consumed by
-     Home.tsx (mt-[calc(var(--trust-bleed)*-1)] on the bleed section, and
-     top-[var(--trust-bleed)] on its dark fill div) and HeroSection.tsx (the
-     showTrustBadges=false branch's bottom padding). Apply `.trust-bar-bleed`
-     to the wrapper around the hero + trust bar. If you change a value here,
-     every consumer picks it up automatically — no need to touch them. */
-  .trust-bar-bleed {
-    --trust-bleed: 3.4rem;
-  }
-  @media (min-width: 770px) {
-    .trust-bar-bleed {
-      --trust-bleed: 6.0625rem;
-    }
-  }
-  @media (min-width: 1024px) {
-    .trust-bar-bleed {
-      --trust-bleed: 4.0625rem;
-    }
-  }
-
   /* Admin Panel Design Tokens */
 
   /* Card container - usado para cards de conteúdo */

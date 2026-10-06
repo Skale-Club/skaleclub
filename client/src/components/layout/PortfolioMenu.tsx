@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { AppWindow, Briefcase, ChevronDown, Package, type LucideIcon } from "lucide-react";
+import { AppWindow, ArrowUpRight, Briefcase, ChevronDown, Package, type LucideIcon } from "lucide-react";
 import { clsx } from "clsx";
 import type { CompanySettings, PortfolioService } from "@shared/schema";
 import { catalogProducts, catalogServices } from "@shared/catalog";
@@ -227,52 +227,47 @@ export function PortfolioMegaMenu({ portfolioHref }: { portfolioHref: string }) 
   );
 }
 
-/**
- * Mobile menu row: "Portfolio" is still a link, with a chevron that reveals
- * the three categories as indented links.
- */
+/** Mobile menu: keep the portfolio categories visible so the panel works as a sitemap. */
 export function PortfolioMobileMenu({ portfolioHref, onNavigate }: { portfolioHref: string; onNavigate: () => void }) {
   const { t } = useTranslation();
   const items = usePortfolioMenuItems();
-  const [open, setOpen] = useState(false);
-  const panelId = useId();
 
   return (
     <div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-end justify-between gap-4">
         <Link
           href={portfolioHref}
-          className="text-3xl font-semibold text-fog-200 hover:text-fog-50 transition-colors"
+          className="font-display text-3xl font-semibold text-fog-50 transition-colors hover:text-cta-soft"
           onClick={onNavigate}
         >
           {t("Portfolio")}
         </Link>
-        <button
-          type="button"
-          aria-expanded={open}
-          aria-controls={panelId}
-          aria-label={t("Portfolio menu")}
-          onClick={() => setOpen((value) => !value)}
-          className="flex h-10 w-10 items-center justify-center rounded-full text-fog-300 hover:text-fog-50"
+        <Link
+          href={portfolioHref}
+          onClick={onNavigate}
+          className="mb-1 inline-flex items-center gap-1 text-xs font-bold uppercase tracking-[0.16em] text-cta-soft transition-colors hover:text-fog-50"
         >
-          <ChevronDown className={clsx("h-6 w-6 transition-transform duration-200", open && "rotate-180")} aria-hidden="true" />
-        </button>
+          {t("See all")}
+          <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+        </Link>
       </div>
-      {open && (
-        <ul id={panelId} className="mt-4 ml-1 flex flex-col gap-4 border-l border-white/10 pl-5">
-          {items.map(({ href, title }) => (
-            <li key={href}>
+      <ul className="mt-5 grid grid-cols-3 gap-2.5">
+          {items.map(({ href, icon: Icon, title, count }) => (
+            <li key={href} className="min-w-0">
               <Link
                 href={href}
-                className="text-2xl font-semibold text-fog-300 hover:text-fog-50 transition-colors"
+                className="group flex min-h-[6.5rem] flex-col justify-between rounded-2xl border border-white/[0.08] bg-navy-900/70 p-3 transition-colors hover:border-cta-soft/40 hover:bg-navy-850"
                 onClick={onNavigate}
               >
-                {t(title)}
+                <Icon className="h-5 w-5 text-cta-soft" aria-hidden="true" />
+                <span>
+                  <span className="block truncate text-sm font-semibold text-fog-50">{t(title)}</span>
+                  {count > 0 && <span className="mt-0.5 block text-xs text-fog-400">{count}</span>}
+                </span>
               </Link>
             </li>
           ))}
         </ul>
-      )}
     </div>
   );
 }

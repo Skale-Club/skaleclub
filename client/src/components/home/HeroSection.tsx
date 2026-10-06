@@ -1,9 +1,8 @@
 import type { CompanySettings, HomepageContent } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useSiteWhatsappHref } from "@/hooks/use-site-whatsapp";
-import { trackCTAClick, trackEvent } from "@/lib/analytics";
+import { trackCTAClick } from "@/lib/analytics";
 import { TrustBadges } from "@/components/home/TrustBadges";
-import { Band, PillButton, PillLink } from "@/components/editorial";
+import { Band, PillButton } from "@/components/editorial";
 
 interface HeroSectionProps {
   companySettings?: CompanySettings;
@@ -19,30 +18,23 @@ interface HeroSectionProps {
 
 export function HeroSection({ companySettings, homepageContent, onCtaClick, showTrustBadges = true }: HeroSectionProps) {
   const { t } = useTranslation();
-  const whatsappLink = useSiteWhatsappHref(companySettings?.companyPhone);
   const heroImageUrl = (companySettings?.heroImageUrl || '').trim();
   const trustBadges = homepageContent.trustBadges || [];
-  // ── Trust-bar bleed contract ──────────────────────────────────────────
-  // Source of truth: the `--trust-bleed` var set per breakpoint by
-  // `.trust-bar-bleed` in index.css, applied on the wrapper around this
-  // section + the trust bar in Home.tsx. Home.tsx's trust-bar `mt-[…]`
-  // bleed and its fill div's `top-[…]` read the same var. Equal (not
-  // larger) so the photo's bottom edge sits flush against the card's top
-  // edge — glued, not floating with a gap, and not clipped by overlap
-  // either. Change the var once in index.css to change all three.
-  const bottomPadding = showTrustBadges
-    ? 'pb-[1.275rem] sm:pb-[1.7rem] lg:pb-[1.275rem]'
-    : 'pb-[var(--trust-bleed)]';
+  // With the trust bar inline the hero keeps its own bottom padding. On the
+  // homepage (showTrustBadges=false) the hero ends flush at the photo's bottom
+  // edge and paints no background of its own: the wrapper in Home.tsx owns the
+  // navy + grid so it runs unbroken behind the top half of the trust card,
+  // which straddles the hero/next-section boundary.
+  const bottomPadding = showTrustBadges ? 'pb-[1.275rem] sm:pb-[1.7rem] lg:pb-[1.275rem]' : 'bg-transparent';
 
   // From tablet up the text column is vertically centered in the hero's
   // *visible* band: the section pt matches the overlaying header's height
-  // (--nav-offset, defined in index.css) and the pb variants match the
-  // trust-bar bleed, so the flex centering inside splits only the space the
-  // user actually sees.
+  // (--nav-offset, defined in index.css), so the flex centering inside splits
+  // only the space the user actually sees.
   return (
     <Band
       tone="hero"
-      pattern
+      pattern={showTrustBadges}
       className={`relative flex flex-col justify-end overflow-hidden border-b-0 ${bottomPadding} min-h-[min(100dvh,620px)] sm:min-h-[min(100dvh,540px)] tablet:min-h-[min(100dvh,620px)]`}
       containerClassName="relative z-10 pt-[calc(var(--nav-offset)+0.825rem)] sm:pt-[var(--nav-offset)] sm:flex-1 sm:flex sm:flex-col"
     >
@@ -97,17 +89,6 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
                 >
                   {t(companySettings.ctaText)}
                 </PillButton>
-              ) : null}
-              {companySettings?.companyPhone?.trim() ? (
-                <PillLink
-                  href={whatsappLink}
-                  target="_blank"
-                  variant="ghost"
-                  className="w-full sm:w-auto shrink-0 whitespace-nowrap px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg"
-                  onClick={() => trackEvent('click_whatsapp', { location: 'hero' })}
-                >
-                  {t("Talk on WhatsApp")}
-                </PillLink>
               ) : null}
             </div>
           </div>
