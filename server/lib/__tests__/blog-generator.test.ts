@@ -347,6 +347,10 @@ async function expectSuccessfulGeneration() {
 
 async function expectAutoApprovePublishes() {
   let createdPostInput: InsertBlogPost | null = null;
+  const { default: sharp } = await import("sharp");
+  const squarePng = await sharp({
+    create: { width: 640, height: 640, channels: 3, background: "#173b72" },
+  }).png().toBuffer();
 
   __setBlogGeneratorTestDeps({
     storage: createStorageStub(createSettings({ autoPublish: true }), {
@@ -368,9 +372,14 @@ async function expectAutoApprovePublishes() {
       focusKeyword: "keyword",
       tags: ["Tag"],
     }),
-    generateImage: async () => null,
-    uploadImage: async () => {
-      throw new Error("upload should not run without image bytes");
+    generateImage: async () => ({ bytes: squarePng, mime: "image/png" }),
+    uploadImage: async ({ bytes, mime, path }) => {
+      const metadata = await sharp(bytes).metadata();
+      assert.equal(metadata.width, 1200, "published cover is normalized to 1200px wide");
+      assert.equal(metadata.height, 675, "published cover is normalized to 675px tall");
+      assert.equal(mime, "image/webp", "published cover is stored as WebP");
+      assert.match(path, /\.webp$/);
+      return `https://cdn.example.com/${path}`;
     },
   } as never);
 
@@ -380,6 +389,45 @@ async function expectAutoApprovePublishes() {
   assert.ok(createdPost, "auto-approve runs create a post");
   assert.equal(createdPost.status, "published", "autoPublish=true publishes immediately");
   assert.ok(createdPost.publishedAt instanceof Date, "autoPublish=true stamps publishedAt");
+  assert.ok(createdPost.featureImageUrl, "auto-published posts always have a feature image");
+  __resetBlogGeneratorTestDeps();
+}
+
+async function expectAutoPublishWaitsForImage() {
+  let createdPostInput: InsertBlogPost | null = null;
+
+  __setBlogGeneratorTestDeps({
+    storage: createStorageStub(createSettings({ autoPublish: true }), {
+      onCreatePost: (data) => {
+        createdPostInput = data;
+      },
+    }),
+    acquireLock: async () => true,
+    releaseLock: async () => {},
+    resolveAiConfig: stubAiConfig,
+    selectRssItem: stubSelectRssItem,
+    now: () => new Date("2026-04-22T12:00:00Z"),
+    generateTopic: async () => "Missing image topic",
+    generatePost: async () => ({
+      title: "Missing Image Topic",
+      content: LONG_CONTENT,
+      excerpt: "Excerpt",
+      metaDescription: "Meta",
+      focusKeyword: "keyword",
+      tags: ["Tag"],
+    }),
+    generateImage: async () => null,
+    uploadImage: async () => {
+      throw new Error("upload should not run without image bytes");
+    },
+  } as never);
+
+  const result = await BlogGenerator.generate({ manual: false });
+  assert.equal(result.skipped, false, "the recoverable post is still saved");
+  const createdPost = createdPostInput as unknown as InsertBlogPost;
+  assert.equal(createdPost.status, "draft", "a post without a cover cannot auto-publish");
+  assert.equal(createdPost.publishedAt, null, "a post without a cover has no publication date");
+  assert.equal(createdPost.featureImageUrl, null, "the missing cover remains explicit for review");
   __resetBlogGeneratorTestDeps();
 }
 
@@ -528,6 +576,7 @@ async function main() {
   await expectManualBypass();
   await expectSuccessfulGeneration();
   await expectAutoApprovePublishes();
+  await expectAutoPublishWaitsForImage();
   await expectImageFailureFallback();
   await expectFailureCleanup();
 

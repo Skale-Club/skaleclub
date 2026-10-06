@@ -11,6 +11,12 @@ import { withAiRetry } from "../blog/ai-retry.js";
 import { selectNextRssItem } from "../blog/rss-selector.js";
 import { logAiUsage } from "../blog/ai-usage-log.js";
 import {
+  BLOG_COVER_HEIGHT,
+  BLOG_COVER_WIDTH,
+  buildBlogCoverPrompt,
+  pickBlogCoverVisualDirection,
+} from "../blog/cover-prompt.js";
+import {
   assignPillar,
   buildCatalogSection,
   buildInternalLinksSection,
@@ -23,7 +29,7 @@ import {
 } from "#shared/blog-prompt.js";
 import { isRunDue } from "#shared/blog-schedule.js";
 import { AiEmptyResponseError, AiTimeoutError, getPlainTextLength, sanitizeBlogHtml, slugifyTitle as slugifyTitleNFD } from "../blog/content-validator.js";
-import { normaliseAspectAndConvertToWebp } from "../blog/image-webp.js";
+import { normaliseAspectAndConvertToWebp, WEBP_QUALITY } from "../blog/image-webp.js";
 
 const STALE_LOCK_MS = 10 * 60 * 1000;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
@@ -39,14 +45,8 @@ const MAX_PLAIN_TEXT_CHARS = 4000;
 // Autopost port: how many recent approve/reject signals feed the prompts.
 const FEEDBACK_PROMPT_LIMIT = 10;
 
-// Blog covers render wide everywhere they appear, and the image models return
-// squares unless told otherwise in structured config — so the crop is what
-// actually enforces the shape.
-const BLOG_COVER_ASPECT_W = 16;
-const BLOG_COVER_ASPECT_H = 9;
-// Google's "16:9" bucket is 1344x768 — 1.750 against 1.778, i.e. 1.6% narrow.
-// Trimming 12px off that would cost real pixels to fix a difference nobody can
-// see, so anything within this band is left exactly as the model returned it.
+// Compatibility fallback for invalid/unsupported inputs. Valid generated
+// covers are always resized to the exact dimensions in cover-prompt.ts.
 const BLOG_COVER_ASPECT_TOLERANCE = 0.05;
 
 const generatedPostSchema = z.object({ title: z.string().min(1), content: z.string().min(1), excerpt: z.string().nullable().optional(), metaDescription: z.string().nullable().optional(), focusKeyword: z.string().nullable().optional(), tags: z.union([z.array(z.string().min(1)), z.string().min(1)]) });
@@ -69,6 +69,10 @@ type EditorialContext = {
   systemMessage: string;
   /** The only hrefs the generated body may keep. */
   allowedLinkPaths: string[];
+  /** Deterministic rotation prevents adjacent covers defaulting to one look. */
+  coverVisualDirection: string;
+  /** Latest visible covers named in the image prompt as a diversity check. */
+  recentCoverTitles: string[];
 };
 
 type BlogGeneratorResult =
@@ -105,7 +109,7 @@ type BlogGeneratorDeps = {
   runPipeline: (ctx: PipelineContext) => Promise<PipelineSuccess>;
   generateTopic: (ctx: { settings: BlogSettings; manual: boolean; rssItem: BlogRssItem | null; aiConfig: BlogAiConfig; feedback: BlogPostFeedback[]; editorial: EditorialContext }) => Promise<string>;
   generatePost: (ctx: { settings: BlogSettings; topic: string; manual: boolean; rssItem: BlogRssItem | null; aiConfig: BlogAiConfig; feedback: BlogPostFeedback[]; editorial: EditorialContext }) => Promise<GeneratedPost>;
-  generateImage: (ctx: { settings: BlogSettings; post: GeneratedPost; manual: boolean; aiConfig: BlogAiConfig }) => Promise<GeneratedImage | null>;
+  generateImage: (ctx: { settings: BlogSettings; post: GeneratedPost; manual: boolean; aiConfig: BlogAiConfig; editorial: EditorialContext }) => Promise<GeneratedImage | null>;
   uploadImage: (ctx: { bytes: Buffer; mime: string; path: string }) => Promise<string>;
 };
 
@@ -340,6 +344,11 @@ async function buildEditorialContext({ settings, jobSeed, rssItem }: {
     assignment,
     systemMessage: sections.join("\n\n"),
     allowedLinkPaths: internalLinks.map((l) => l.path),
+    coverVisualDirection: pickBlogCoverVisualDirection(jobSeed),
+    recentCoverTitles: recentPosts
+      .filter((post) => post.status === "published" && !!post.featureImageUrl)
+      .slice(0, 3)
+      .map((post) => post.title),
   };
 }
 
@@ -402,15 +411,11 @@ async function generatePostWithAi({ settings, topic, manual, rssItem, aiConfig, 
   return post;
 }
 
-async function generateImageWithAi({ post, aiConfig }: { settings: BlogSettings; post: GeneratedPost; manual: boolean; aiConfig: BlogAiConfig }): Promise<GeneratedImage | null> {
-  const prompt = [
-    "Crie uma imagem de capa cinematográfica para um post de blog brasileiro.",
-    `Título: ${post.title}`,
-    `Resumo: ${post.excerpt ?? post.metaDescription ?? ""}`,
-    `Palavra-chave foco: ${post.focusKeyword ?? ""}`,
-    "Estilo: fotografia editorial profissional, limpa e convidativa. Proporção 16:9.",
-    "Sem texto, marcas d'água ou logotipos na imagem.",
-  ].join("\n");
+async function generateImageWithAi({ post, aiConfig, editorial }: { settings: BlogSettings; post: GeneratedPost; manual: boolean; aiConfig: BlogAiConfig; editorial: EditorialContext }): Promise<GeneratedImage | null> {
+  const prompt = buildBlogCoverPrompt(post, {
+    visualDirection: editorial.coverVisualDirection,
+    recentCoverTitles: editorial.recentCoverTitles,
+  });
 
   const startedAt = Date.now();
   try {
@@ -419,6 +424,7 @@ async function generateImageWithAi({ post, aiConfig }: { settings: BlogSettings;
       step: "blog_image",
       provider: "openrouter",
       model: aiConfig.imageModel,
+      prompt,
       // "skipped", not "failure": the call succeeded and was paid for, the
       // model simply returned nothing. Conflating the two would make the
       // failure rate in this table meaningless.
@@ -432,6 +438,7 @@ async function generateImageWithAi({ post, aiConfig }: { settings: BlogSettings;
       step: "blog_image",
       provider: "openrouter",
       model: aiConfig.imageModel,
+      prompt,
       status: "failure",
       error: (err as Error).message,
       durationMs: Date.now() - startedAt,
@@ -458,17 +465,35 @@ function imageExtensionFromMime(mime: string): string {
  * file is a missed optimisation; a failed post is not.
  */
 async function normaliseCover(image: GeneratedImage): Promise<GeneratedImage & { extension: string }> {
+  try {
+    const { default: sharp } = await import("sharp");
+    const metadata = await sharp(image.bytes).metadata();
+    const buffer = await sharp(image.bytes)
+      .resize(BLOG_COVER_WIDTH, BLOG_COVER_HEIGHT, { fit: "cover", position: "attention" })
+      .webp({ quality: WEBP_QUALITY })
+      .toBuffer();
+    if (metadata.width !== BLOG_COVER_WIDTH || metadata.height !== BLOG_COVER_HEIGHT) {
+      console.log(
+        `[blog-generator] cover normalised: ${metadata.width ?? "?"}x${metadata.height ?? "?"} -> ` +
+        `${BLOG_COVER_WIDTH}x${BLOG_COVER_HEIGHT}`,
+      );
+    }
+    return { bytes: buffer, mime: "image/webp", extension: "webp" };
+  } catch (error) {
+    console.warn(`[blog-generator] exact cover normalisation failed; using compatibility fallback: ${(error as Error).message}`);
+  }
+
   const fallbackExtension = imageExtensionFromMime(image.mime);
   const result = await normaliseAspectAndConvertToWebp(
     image.bytes,
     image.mime,
-    BLOG_COVER_ASPECT_W,
-    BLOG_COVER_ASPECT_H,
+    BLOG_COVER_WIDTH,
+    BLOG_COVER_HEIGHT,
     { tolerance: BLOG_COVER_ASPECT_TOLERANCE },
   );
   if (result.cropped) {
     console.log(
-      `[blog-generator] cover normalised to ${BLOG_COVER_ASPECT_W}:${BLOG_COVER_ASPECT_H}: ` +
+      `[blog-generator] cover normalised to ${BLOG_COVER_WIDTH}:${BLOG_COVER_HEIGHT}: ` +
       `${result.cropped.from.width}x${result.cropped.from.height} -> ${result.cropped.to.width}x${result.cropped.to.height}`,
     );
   }
@@ -527,7 +552,7 @@ async function runPipeline({ settings, job, manual, rssItem, aiConfig, feedback,
 
     try {
       const tImage = Date.now();
-      const image = await deps.generateImage({ settings, post: generatedPost, manual, aiConfig });
+      const image = await deps.generateImage({ settings, post: generatedPost, manual, aiConfig, editorial });
       dImage = Date.now() - tImage;
       if (image?.bytes.length) {
         const tUpload = Date.now();
@@ -549,7 +574,14 @@ async function runPipeline({ settings, job, manual, rssItem, aiConfig, feedback,
 
     // Autopost port: auto-approve publishes immediately; otherwise the draft
     // waits in the approval queue (Blog → Automation) for a human decision.
-    const autoPublish = settings.autoPublish;
+    // A post without a cover remains recoverable in the approval queue, but it
+    // must never reach the public site through automation. This turns the
+    // cover requirement into a pipeline invariant instead of a prompt that
+    // can fail silently.
+    const autoPublish = settings.autoPublish && !!featureImageUrl;
+    if (settings.autoPublish && !featureImageUrl) {
+      console.warn("[blog-generator] auto-publish withheld: generated post has no feature image");
+    }
 
     const postInput: InsertBlogPost = {
       title: generatedPost.title,
@@ -711,7 +743,7 @@ export async function runPreview(options?: { rssItemId?: number }): Promise<RunP
 
     let featureImageUrl: string | null = null;
     try {
-      const image = await deps.generateImage({ settings, post: generatedPost, manual: true, aiConfig });
+      const image = await deps.generateImage({ settings, post: generatedPost, manual: true, aiConfig, editorial });
       if (image?.bytes.length) {
         // Same normalisation as the real pipeline, so a preview shows the cover
         // that would actually be published rather than a differently-shaped one.
