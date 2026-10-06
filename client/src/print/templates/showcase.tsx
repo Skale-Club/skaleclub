@@ -1,187 +1,84 @@
-import { Phone, Mail, MapPin, Globe } from "lucide-react";
-import QRCode from "react-qr-code";
 import type { FolderData, FolderTemplate } from "../types";
 import { panelPadding } from "../paper";
-import { Editable, ImageFrame, INK, Rule, printImage } from "../primitives";
-import { AppCard, CardGrid, PanelHeading, ServiceCard, TrustPoints } from "../cards";
+import { ClosingPanel } from "../closing";
+import { Editable, Eyebrow, GridPattern, INK, printImage } from "../primitives";
+import { EditorialInside } from "./editorial";
 
 /**
- * "Showcase" — image-forward.
+ * "Showcase": the photo-led cover.
  *
- * Same four panels as Editorial, but panel 3 is a grid of picture cards rather
- * than a read-through list. Use it when the service artwork carries the pitch
- * and the descriptions can live on the website; Editorial is the choice when
- * the reader needs to know what each service actually is.
+ * Same inside spread and back as Editorial; only the cover differs. The
+ * picture fills the whole front panel and the headline is set over its lower
+ * half, which suits a full photograph (picked in the toolbar) better than the
+ * site's cut-out portrait does.
  */
 
-function Outside({ bleed, brand, settings }: FolderData) {
-  const badges = settings?.homepageContent?.trustBadges ?? [];
-  const left = panelPadding(bleed, "left");
-  const right = panelPadding(bleed, "right");
+function Cover({ bleed, brand }: FolderData) {
   const heroImage = brand.coverPhoto;
-
   return (
-    <>
-      {/* Back cover — quiet, contact-led */}
-      <div className="w-1/2 h-full flex flex-col" style={{ ...left, backgroundColor: INK.navyDeep }}>
-        <Editable as="h2" className="text-[20pt] font-extrabold leading-tight text-white">
-          Let's talk.
-        </Editable>
-        <Rule className="mt-[3mm]" />
-        <Editable className="mt-[3mm] text-[9.5pt] leading-relaxed" style={{ color: "#A9B8D8" }}>
-          Tell us what slows your team down. We will show you what can run on its own.
-        </Editable>
-
-        <div className="mt-[6mm] flex flex-col gap-[2.5mm] text-[10pt]" style={{ color: "#DCE4F2" }}>
-          {brand.phone && (
-            <div className="flex items-center gap-[2.5mm]">
-              <Phone style={{ width: "3.6mm", height: "3.6mm", color: INK.cta }} />
-              <Editable>{brand.phone}</Editable>
-            </div>
-          )}
-          {brand.email && (
-            <div className="flex items-center gap-[2.5mm]">
-              <Mail style={{ width: "3.6mm", height: "3.6mm", color: INK.cta }} />
-              <Editable>{brand.email}</Editable>
-            </div>
-          )}
-          {brand.address && (
-            <div className="flex items-center gap-[2.5mm]">
-              <MapPin style={{ width: "3.6mm", height: "3.6mm", color: INK.cta }} />
-              <Editable>{brand.address}</Editable>
-            </div>
-          )}
-          <div className="flex items-center gap-[2.5mm]">
-            <Globe style={{ width: "3.6mm", height: "3.6mm", color: INK.cta }} />
-            <Editable>{brand.siteLabel}</Editable>
-          </div>
-        </div>
-
-        <TrustPoints badges={badges} />
-
-        <div className="mt-auto flex items-end justify-between gap-[4mm]">
-          <div className="flex flex-col gap-[2mm]">
-            <div className="bg-white p-[1.5mm] rounded-[1.5mm]">
-              <QRCode value={brand.siteUrl} size={64} />
-            </div>
-            <Editable className="text-[7pt]" style={{ color: INK.muted }}>
-              Scan to visit our site
-            </Editable>
-          </div>
-          {brand.logoOnDark && (
-            <img src={printImage(brand.logoOnDark, 400)} alt={brand.name} className="object-contain" style={{ height: "9mm" }} />
-          )}
-        </div>
-      </div>
-
-      {/* Front cover — full-bleed image with the headline set over it */}
-      <div className="w-1/2 h-full relative overflow-hidden" style={{ backgroundColor: INK.navy }}>
-        {heroImage && (
-          <>
-            <img
-              src={printImage(heroImage, 1600)}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-            <div
-              className="absolute inset-0"
-              style={{ background: "linear-gradient(180deg, rgba(6,14,29,0.55) 0%, rgba(6,14,29,0.80) 55%, rgba(6,14,29,0.95) 100%)" }}
-            />
-          </>
+    <div className="w-1/2 h-full relative overflow-hidden" style={{ backgroundColor: INK.navy }}>
+      <GridPattern />
+      {heroImage && (
+        <>
+          <img
+            src={printImage(heroImage, 1600)}
+            alt=""
+            // Contained, not cropped: the site's hero is a square cut-out, and
+            // cover-cropping it to a portrait panel blew the face up to a
+            // blurry close-up. Contained it sits on the grid, top-anchored.
+            className="absolute inset-0 w-full h-full object-contain object-top"
+          />
+          {/* The top of the photo prints clean; the fade is solid navy before
+              the contained image ends (~58% down), so its bottom edge never
+              shows as a line across the panel. */}
+          <div
+            className="absolute inset-0"
+            style={{ background: "linear-gradient(180deg, rgba(16,21,30,0) 28%, rgba(16,21,30,0.9) 48%, #10151e 56%)" }}
+          />
+        </>
+      )}
+      <div className="relative h-full flex flex-col" style={panelPadding(bleed, "right")}>
+        {brand.logoOnDark ? (
+          <img
+            src={printImage(brand.logoOnDark, 400)}
+            alt={brand.name}
+            className="object-contain self-start"
+            style={{ height: "10mm" }}
+          />
+        ) : (
+          <Editable className="text-[15pt] font-semibold" style={{ color: INK.fog50 }}>{brand.name}</Editable>
         )}
-        <div className="relative h-full flex flex-col" style={right}>
-          {brand.logoOnDark ? (
-            <img
-              src={printImage(brand.logoOnDark, 400)}
-              alt={brand.name}
-              className="object-contain self-start"
-              style={{ height: "11mm" }}
-            />
-          ) : (
-            <Editable className="text-[15pt] font-extrabold text-white">{brand.name}</Editable>
-          )}
 
-          <div className="mt-auto">
-            <Editable as="h1" className="text-[26pt] font-extrabold leading-[1.08] text-white">
-              {brand.heroTitle}
-            </Editable>
-            <Rule className="mt-[4mm]" width="30mm" />
-            <Editable className="mt-[4mm] text-[10.5pt] leading-relaxed" style={{ color: "#C9D6EE" }}>
-              {brand.heroSubtitle}
-            </Editable>
-            <div className="mt-[6mm] flex items-center justify-between text-[9.5pt]" style={{ color: "#A9B8D8" }}>
-              <Editable>{brand.siteLabel}</Editable>
-              {brand.phone && <Editable>{brand.phone}</Editable>}
-            </div>
+        <div className="mt-auto">
+          <Eyebrow>Apps · Services · Products</Eyebrow>
+          <Editable
+            as="h1"
+            className="mt-[3.5mm] text-[27pt] font-semibold leading-[1.02] tracking-[-0.035em]"
+            style={{ color: INK.fog50 }}
+          >
+            {brand.heroTitle}
+          </Editable>
+          <Editable className="mt-[4mm] text-[10pt] leading-[1.45]" style={{ color: INK.fog300 }}>
+            {brand.heroSubtitle}
+          </Editable>
+          <div
+            className="mt-[6mm] pt-[3mm] flex items-center justify-between text-[9pt]"
+            style={{ color: INK.fog400, borderTop: `0.25mm solid ${INK.hairline}` }}
+          >
+            <Editable>{brand.siteLabel}</Editable>
+            {brand.phone && <Editable>{brand.phone}</Editable>}
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
-function Inside({ bleed, apps, services, showPrices }: FolderData) {
-  const denseApps = apps.length > 8;
-  const denseServices = services.length > 8;
-  const appColumns: 2 | 3 = apps.length > 8 ? 3 : 2;
-  const serviceColumns: 2 | 3 = services.length > 8 ? 3 : 2;
-  // Past three rows the photo has to give up height or the tag below it falls
-  // outside the card.
-  const serviceRows = Math.ceil(services.length / serviceColumns);
-  const serviceImageRatio = serviceRows >= 4 ? "16 / 6" : serviceRows === 3 ? "16 / 7" : undefined;
-
+function Outside(props: FolderData) {
   return (
     <>
-      {/* Panel 2 — every app */}
-      <div
-        className="w-1/2 h-full flex flex-col"
-        style={{ ...panelPadding(bleed, "left"), backgroundColor: INK.navyDeep }}
-      >
-        <PanelHeading eyebrow="Ready-made software" title="Our Apps" onDark />
-        {apps.length > 0 ? (
-          <CardGrid
-            keyOf={(item) => item.key}
-            items={apps}
-            columns={appColumns}
-            renderItem={(item, { wide, span }) => (
-              <AppCard key={item.key} item={item} showPrices={showPrices} dense={denseApps} span={wide ? span : 1} onDark />
-            )}
-          />
-        ) : (
-          <p className="mt-[4mm] text-[9pt]" style={{ color: "#A9B8D8" }}>
-            Pick apps in the sidebar.
-          </p>
-        )}
-      </div>
-
-      {/* Panel 3 — every service */}
-      <div
-        className="w-1/2 h-full flex flex-col"
-        style={{ ...panelPadding(bleed, "right"), backgroundColor: INK.navyDeep }}
-      >
-        <PanelHeading eyebrow="Work we do for you" title="Our Services" onDark />
-        {services.length > 0 ? (
-          <CardGrid
-            keyOf={(item) => item.key}
-            items={services}
-            columns={serviceColumns}
-            renderItem={(item, { wide, span }) => (
-              <ServiceCard
-                key={item.key}
-                item={item}
-                dense={denseServices}
-                imageRatio={serviceImageRatio}
-                span={wide ? span : 1}
-                onDark
-              />
-            )}
-          />
-        ) : (
-          <p className="mt-[4mm] text-[9pt]" style={{ color: "#A9B8D8" }}>
-            Pick services in the sidebar.
-          </p>
-        )}
-      </div>
+      <ClosingPanel {...props} />
+      <Cover {...props} />
     </>
   );
 }
@@ -189,8 +86,8 @@ function Inside({ bleed, apps, services, showPrices }: FolderData) {
 export const showcaseTemplate: FolderTemplate = {
   id: "showcase",
   name: "Showcase",
-  description: "All dark, cover photo bled edge to edge. Both panels as picture cards, for when artwork carries the pitch.",
+  description: "Photo-led cover, the picture filling the front with the headline over it. Inside and back as Editorial.",
   Outside,
-  Inside,
+  Inside: EditorialInside,
   sheetBackground: { outside: INK.navyDeep, inside: INK.navyDeep },
 };

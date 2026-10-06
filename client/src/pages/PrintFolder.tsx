@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Printer, Info, Loader2, Palette, LayoutTemplate, ImagePlus, AlertTriangle } from "lucide-react";
+import { Printer, Info, Loader2, Palette, LayoutTemplate, AlertTriangle } from "lucide-react";
 import type { CompanySettings, PortfolioService } from "@shared/schema";
 
 import { buildCatalog, SOURCE_LABEL, type FolderItemSource } from "@/print/items";
 import { MM_TO_PX, PAPER_PRESETS, type PaperKey } from "@/print/paper";
 import { CropMarks, Guides, INK, isDark } from "@/print/primitives";
+import { CoverPhotoPicker } from "@/print/CoverPhotoPicker";
+import { FOLDER_PRODUCTS } from "@/print/products";
 import { DEFAULT_TEMPLATE_ID, FOLDER_TEMPLATES, getTemplate } from "@/print/templates";
 import type { FolderData } from "@/print/types";
 
@@ -18,7 +20,7 @@ import type { FolderData } from "@/print/types";
  * interchangeable and never touch any of the above, so a new visual direction
  * is a new file, not a rewrite of this page.
  *
- * Sheet 1 (outside): [back cover | front cover] — Sheet 2 (inside): the spread.
+ * Sheet 1 (outside): [back cover | front cover]. Sheet 2 (inside): the spread.
  * Sizes are for the OPEN sheet; bleed is added around it and trimmed after printing.
  */
 export default function PrintFolder() {
@@ -43,26 +45,13 @@ export default function PrintFolder() {
   const [showPrices, setShowPrices] = useState(true);
   const [showGuides, setShowGuides] = useState(true);
   const [selectedKeys, setSelectedKeys] = useState<string[] | null>(null);
+  // The NFC products are static (shared/products.ts), so they need no loading
+  // gate: all of them by default, trimmed in the sidebar like the catalog.
+  const [selectedProducts, setSelectedProducts] = useState<string[]>(() => FOLDER_PRODUCTS.map((p) => p.key));
 
   // Cover photo. `null` means "whatever the site's hero uses"; a string is an
-  // explicit override, either a pasted URL or a local file picked for this
-  // print run. Kept separate from the settings value so the reset button can
-  // always get back to the site's own image.
+  // explicit override (a pasted URL or a local file), set by CoverPhotoPicker.
   const [coverOverride, setCoverOverride] = useState<string | null>(null);
-  const coverObjectUrl = useRef<string | null>(null);
-  const coverFileRef = useRef<HTMLInputElement>(null);
-
-  // Object URLs outlive the element that used them; release the previous one on
-  // every change and on unmount.
-  const setCoverFile = (file: File) => {
-    if (coverObjectUrl.current) URL.revokeObjectURL(coverObjectUrl.current);
-    const url = URL.createObjectURL(file);
-    coverObjectUrl.current = url;
-    setCoverOverride(url);
-  };
-  useEffect(() => () => {
-    if (coverObjectUrl.current) URL.revokeObjectURL(coverObjectUrl.current);
-  }, []);
 
   const template = getTemplate(templateId);
 
@@ -96,6 +85,10 @@ export default function PrintFolder() {
   );
   const chosenApps = useMemo(() => chosen.filter((i) => i.kind === "product"), [chosen]);
   const chosenServices = useMemo(() => chosen.filter((i) => i.kind === "service"), [chosen]);
+  const chosenProducts = useMemo(
+    () => FOLDER_PRODUCTS.filter((p) => selectedProducts.includes(p.key)),
+    [selectedProducts],
+  );
 
   // Toolbar groups, so it is obvious which catalog an entry comes from.
   const groups = useMemo(() => {
@@ -119,6 +112,7 @@ export default function PrintFolder() {
       settings,
       apps: chosenApps,
       services: chosenServices,
+      products: chosenProducts,
       bleed,
       showPrices,
       brand: {
@@ -138,7 +132,7 @@ export default function PrintFolder() {
         socialLinks,
       },
     };
-  }, [settings, chosenApps, chosenServices, bleed, showPrices, siteUrl, coverPhoto]);
+  }, [settings, chosenApps, chosenServices, chosenProducts, bleed, showPrices, siteUrl, coverPhoto]);
 
   // Full page = open sheet + bleed on every side
   const pageW = sheetW + bleed * 2;
@@ -200,6 +194,10 @@ export default function PrintFolder() {
         ? current.filter((x) => x !== key)
         : [...current, key];
     });
+  };
+
+  const toggleProduct = (key: string) => {
+    setSelectedProducts((prev) => (prev.includes(key) ? prev.filter((x) => x !== key) : [...prev, key]));
   };
 
   const applyPreset = (key: PaperKey) => {
@@ -285,95 +283,7 @@ export default function PrintFolder() {
             </div>
           </div>
 
-          {/* ---- Cover photo ---- */}
-          <div>
-            <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              <ImagePlus className="w-3.5 h-3.5" />
-              Foto da capa
-            </label>
-
-            {coverPhoto ? (
-              <div className="mt-2 flex items-start gap-3">
-                <img
-                  src={coverPhoto}
-                  alt="Prévia da foto da capa"
-                  className="w-16 h-16 rounded-lg object-cover border border-slate-200 shrink-0"
-                  data-testid="img-cover-preview"
-                />
-                <p className="text-[11px] leading-snug text-slate-500">
-                  {coverOverride
-                    ? "Foto escolhida para esta impressão."
-                    : "Usando a imagem do hero do site."}
-                </p>
-              </div>
-            ) : (
-              <div
-                className="mt-2 flex items-start gap-2 rounded-lg border p-2.5"
-                style={{ borderColor: "#FDBA74", backgroundColor: "#FFF7ED" }}
-                data-testid="warning-no-cover"
-              >
-                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
-                <p className="text-[11px] leading-snug text-amber-800">
-                  Sem foto de capa. O site não tem imagem de hero definida — escolha
-                  um arquivo abaixo, senão a capa sai sem foto.
-                </p>
-              </div>
-            )}
-
-            <button
-              onClick={() => coverFileRef.current?.click()}
-              className="mt-2 w-full rounded-lg border px-3 py-2 text-sm font-semibold transition-colors hover:bg-slate-50"
-              style={{ borderColor: "#E2E8F0", color: INK.navy }}
-              data-testid="button-choose-cover"
-            >
-              Escolher arquivo…
-            </button>
-            <input
-              ref={coverFileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              data-testid="input-cover-file"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) setCoverFile(file);
-                e.target.value = "";
-              }}
-            />
-            <input
-              type="url"
-              placeholder="ou cole a URL de uma imagem"
-              className="mt-1.5 w-full rounded-lg border px-3 py-2 text-sm placeholder:text-slate-400"
-              style={{ borderColor: "#E2E8F0", backgroundColor: "#fff", color: INK.navy }}
-              data-testid="input-cover-url"
-              // Applied on Enter or blur, not per keystroke: a half-typed URL
-              // is a broken image on the cover and a request to nowhere.
-              // Only a typed value applies. An empty blur must not clear a
-              // photo just chosen from disk; the reset link below does that.
-              onBlur={(e) => {
-                const value = e.target.value.trim();
-                if (value) setCoverOverride(value);
-              }}
-              onKeyDown={(e) => {
-                if (e.key !== "Enter") return;
-                const value = (e.target as HTMLInputElement).value.trim();
-                if (value) setCoverOverride(value);
-              }}
-            />
-            {coverOverride && (
-              <button
-                onClick={() => {
-                  if (coverObjectUrl.current) URL.revokeObjectURL(coverObjectUrl.current);
-                  coverObjectUrl.current = null;
-                  setCoverOverride(null);
-                }}
-                className="mt-1.5 text-[11px] underline text-slate-500 hover:text-slate-700"
-                data-testid="button-reset-cover"
-              >
-                Voltar a usar a imagem do site
-              </button>
-            )}
-          </div>
+          <CoverPhotoPicker coverPhoto={coverPhoto} isOverride={coverOverride !== null} onChange={setCoverOverride} />
 
           <div>
             <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -436,7 +346,7 @@ export default function PrintFolder() {
                 checked={showPrices}
                 onChange={(e) => setShowPrices(e.target.checked)}
               />
-              Mostrar preços dos apps
+              Mostrar preços
             </label>
             <label className="flex items-center gap-2 text-sm cursor-pointer">
               <input
@@ -451,10 +361,10 @@ export default function PrintFolder() {
 
           <div>
             <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Serviços no folder
+              Itens no folder
             </label>
             <p className="text-[11px] text-slate-400 mt-1 leading-snug">
-              Aplicativos ocupam a página 2, serviços a página 3.
+              Apps na página 2, serviços na página 3 e produtos NFC na contracapa.
             </p>
             {(chosenApps.length > 12 || chosenServices.length > 12) && (
               // Beyond twelve per panel every template starts clipping captions,
@@ -493,6 +403,26 @@ export default function PrintFolder() {
                   ))}
                 </div>
               ))}
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 pb-0.5">
+                  Produtos NFC
+                </p>
+                {FOLDER_PRODUCTS.map((product) => (
+                  <label
+                    key={product.key}
+                    className="flex items-start gap-2 text-sm cursor-pointer rounded-md px-2 py-1.5 hover:bg-slate-50"
+                  >
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 accent-blue-600"
+                      checked={selectedProducts.includes(product.key)}
+                      onChange={() => toggleProduct(product.key)}
+                      data-testid={`checkbox-product-${product.key}`}
+                    />
+                    <span className="leading-tight">{product.title}</span>
+                  </label>
+                ))}
+              </div>
               {!catalogsSettled && (
                 <p className="text-sm text-slate-400">Carregando serviços…</p>
               )}
@@ -557,7 +487,7 @@ export default function PrintFolder() {
               <strong>“Salvar como PDF”</strong>, papel no tamanho exato mostrado, margens{" "}
               <strong>“Nenhuma”</strong> e sem cabeçalhos e rodapés.{" "}
               <strong>Passo 2:</strong> selecione o PDF salvo e ele será convertido para{" "}
-              <strong>CMYK nativo</strong> (padrão de gráfica) aqui mesmo no navegador — na
+              <strong>CMYK nativo</strong> (padrão de gráfica) aqui mesmo no navegador. Na
               primeira vez o conversor (~16 MB) é baixado.
             </p>
           </div>
@@ -568,7 +498,7 @@ export default function PrintFolder() {
           <div className="print-zoom flex flex-col items-start gap-6" style={{ zoom }}>
             {/* ---------- Sheet 1: outside ---------- */}
             <div className="w-full no-print text-xs font-semibold uppercase tracking-widest text-slate-500">
-              Lado externo — contracapa (esq.) e capa (dir.)
+              Lado externo | contracapa (esq.) e capa (dir.)
             </div>
             <div
               className="print-sheet relative shadow-xl overflow-hidden flex"
@@ -582,7 +512,7 @@ export default function PrintFolder() {
 
             {/* ---------- Sheet 2: inside spread ---------- */}
             <div className="w-full no-print text-xs font-semibold uppercase tracking-widest text-slate-500">
-              Lado interno — portfólio de serviços
+              Lado interno | apps e serviços
             </div>
             <div
               className="print-sheet relative shadow-xl overflow-hidden flex"

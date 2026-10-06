@@ -1,218 +1,98 @@
-import { Phone, Mail, MapPin, Globe } from "lucide-react";
-import QRCode from "react-qr-code";
+import { Phone } from "lucide-react";
 import type { FolderData, FolderTemplate } from "../types";
 import { CONTENT_PAD_MM, panelPadding } from "../paper";
-import { AppCard, CardGrid, PanelHeading, ServiceListItem, TrustPoints } from "../cards";
-import { Editable, ImageFrame, INK, Rule, printImage } from "../primitives";
+import { AppCard, CardGrid, gridFillsPhotos, gridImageRatio, PanelHeading, ServiceCard, TrustStrip } from "../cards";
+import { ClosingPanel } from "../closing";
+import { Editable, Eyebrow, GridPattern, INK, printImage } from "../primitives";
 
 /**
- * "Editorial" — the default folder.
+ * "Editorial", the default folder, set in the site's editorial design
+ * (the 2026-09-28 redesign that took /nfc-guide as its reference).
  *
- * A bi-fold is four panels, and each one has a job:
+ * A bi-fold is four panels, read in this order:
  *
- *   Panel 1 (outside right)  Cover. Brand, promise, the founder photo.
- *   Panel 2 (inside left)    Every app, as a card with its own artwork.
- *   Panel 3 (inside right)   Every service we perform.
- *   Panel 4 (outside left)   The close: what to do next, and how to reach us.
+ *   Panel 1 (outside right)  Cover, as the home hero: navy, hairline grid,
+ *                            the founder cut-out and the proof strip.
+ *   Panel 2 (inside left)    01 · Apps, cards like /portfolio's.
+ *   Panel 3 (inside right)   02 · Services, photo cards like /portfolio's.
+ *   Panel 4 (outside left)   03 · Products (NFC) and the close.
  *
- * Apps and services get a panel each rather than being mixed into one flowing
- * list. They are different things to buy, and a reader opening the folder
- * should see the line-up split the way the business is actually split.
+ * The numbered eyebrows are the site's, so the folder walks the same
+ * Apps · Services · Products sequence the Portfolio menu does.
  */
 
-function ContactRow({
-  icon,
-  children,
-  onDark = false,
-}: {
-  icon: React.ReactNode;
-  children: React.ReactNode;
-  onDark?: boolean;
-}) {
-  return (
-    <div className="flex items-center gap-[3mm]">
-      <span
-        className="flex items-center justify-center shrink-0 rounded-full text-white"
-        style={{ width: "7mm", height: "7mm", backgroundColor: INK.cta }}
-      >
-        {icon}
-      </span>
-      <Editable className="text-[10pt]" style={{ color: onDark ? "#DCE4F2" : INK.navy }}>
-        {children}
-      </Editable>
-    </div>
-  );
-}
-
-const ICON = { width: "3.4mm", height: "3.4mm" } as const;
-
-/** Panel 4 — the close. */
-function BackPanel({ bleed, brand, settings }: FolderData) {
-  // Reuses the homepage trust badges rather than inventing closing copy: the
-  // claims on the folder should be the claims on the site.
-  const badges = (settings?.homepageContent?.trustBadges ?? []).slice(0, 3);
-  return (
-    <div
-      className="w-1/2 h-full flex flex-col"
-      style={{ ...panelPadding(bleed, "left"), backgroundColor: INK.navyDeep }}
-    >
-      <Editable
-        className="text-[7.5pt] font-bold uppercase tracking-[0.2em]"
-        style={{ color: "#8FA9EE" }}
-      >
-        Next step
-      </Editable>
-      <Editable
-        as="h2"
-        className="mt-[1.5mm] text-[20pt] font-extrabold leading-[1.1] text-white"
-      >
-        {brand.ctaText || "Let's automate your business."}
-      </Editable>
-      <Rule className="mt-[3mm]" />
-      <Editable className="mt-[3mm] text-[9.5pt] leading-relaxed" style={{ color: "#A9B8D8" }}>
-        Book a free 20-minute call. Tell us what slows your team down and we will
-        map what can run on its own, with no obligation.
-      </Editable>
-
-      <div className="mt-[6mm] flex flex-col gap-[3mm]">
-        {brand.phone && (
-          <ContactRow icon={<Phone style={ICON} />} onDark>{brand.phone}</ContactRow>
-        )}
-        {brand.email && (
-          <ContactRow icon={<Mail style={ICON} />} onDark>{brand.email}</ContactRow>
-        )}
-        {brand.address && (
-          <ContactRow icon={<MapPin style={ICON} />} onDark>{brand.address}</ContactRow>
-        )}
-        <ContactRow icon={<Globe style={ICON} />} onDark>{brand.siteLabel}</ContactRow>
-      </div>
-
-      <TrustPoints badges={badges} />
-
-      <div
-        className="mt-[7mm] shrink-0 rounded-[3mm] px-[5mm] py-[4.5mm] flex items-center gap-[4.5mm]"
-        style={{ backgroundColor: "rgba(255,255,255,0.06)", border: "0.25mm solid rgba(255,255,255,0.12)" }}
-      >
-        {/* The QR tile stays white whatever the panel does: a code printed
-            light-on-dark does not scan reliably. */}
-        <div className="bg-white p-[1.5mm] rounded-[1.5mm] shrink-0">
-          <QRCode value={brand.siteUrl} size={62} />
-        </div>
-        <div className="min-w-0">
-          <Editable className="text-[10pt] font-bold leading-tight text-white">
-            See everything we build
-          </Editable>
-          <Editable className="mt-[1mm] text-[8.5pt] leading-snug" style={{ color: "#A9B8D8" }}>
-            Point your camera at the code to open {brand.siteLabel}, with pricing
-            and examples for every item in this folder.
-          </Editable>
-        </div>
-      </div>
-
-      {/* Footer, pinned to the bottom: whatever height is left over sits between
-          the QR tile and this line, where it reads as margin rather than as a
-          hole in the middle of the panel. */}
-      <div className="mt-auto pt-[5mm] shrink-0 flex items-end justify-between gap-[4mm]">
-        {brand.socialLinks.length > 0 ? (
-          <div className="flex flex-col gap-[1mm] text-[8pt]" style={{ color: INK.muted }}>
-            {brand.socialLinks.map((link, i) => (
-              <span key={i}>
-                <span className="capitalize">{link.platform}</span>:{" "}
-                {link.url.replace(/^https?:\/\/(www\.)?/, "")}
-              </span>
-            ))}
-          </div>
-        ) : (
-          <span />
-        )}
-        {brand.logoOnDark && (
-          <img
-            src={printImage(brand.logoOnDark, 400)}
-            alt={brand.name}
-            className="shrink-0 object-contain"
-            style={{ height: "9mm" }}
-          />
-        )}
-      </div>
-    </div>
-  );
-}
-
-/** Panel 1 — the cover. */
-function CoverPanel({ bleed, brand }: FolderData) {
-  const heroImage = brand.coverPhoto;
-  const pad = panelPadding(bleed, "right");
+/** Panel 1, the cover. Shared with Catalog. */
+export function CoverPanel({ bleed, brand, settings }: FolderData) {
+  const badges = settings?.homepageContent?.trustBadges ?? [];
+  const outer = CONTENT_PAD_MM + bleed;
 
   return (
     <div
       className="w-1/2 h-full flex flex-col relative overflow-hidden"
-      style={{ ...pad, backgroundColor: INK.navy }}
+      style={{ ...panelPadding(bleed, "right"), backgroundColor: INK.navy }}
     >
-      <div
-        className="absolute top-0 left-0 right-0"
-        style={{ height: `${4 + bleed}mm`, backgroundColor: INK.cta }}
-      />
+      <GridPattern />
+
+      {/* The site's hero image is a transparent cut-out, so it stands on the
+          grid as on the home page, bottom-anchored on the proof strip and
+          aligned to its right edge, so nothing of it shows beside the strip.
+          A rectangular photo picked in the toolbar lands in the same box. */}
+      {brand.coverPhoto && (
+        <img
+          src={printImage(brand.coverPhoto, 1400)}
+          alt=""
+          className="absolute object-contain object-right-bottom pointer-events-none"
+          // Bottom edge tucked behind the strip (which paints over it), so the
+          // cut-out never ends on a hard line above the cells.
+          style={{ right: `${outer}mm`, bottom: `${outer + 12}mm`, width: "62%", height: "56%" }}
+        />
+      )}
 
       {brand.logoOnDark ? (
         <img
           src={printImage(brand.logoOnDark, 400)}
           alt={brand.name}
           className="object-contain self-start relative shrink-0"
-          style={{ height: "11mm", marginTop: "4mm" }}
+          style={{ height: "10mm", marginTop: "2mm" }}
         />
       ) : (
-        <Editable
-          className="text-[15pt] font-extrabold text-white relative shrink-0"
-          style={{ marginTop: "4mm" }}
-        >
+        <Editable className="text-[15pt] font-semibold relative shrink-0" style={{ color: INK.fog50, marginTop: "2mm" }}>
           {brand.name}
         </Editable>
       )}
 
-      <div className="mt-[9mm] relative shrink-0">
-        <Editable as="h1" className="text-[26pt] font-extrabold leading-[1.08] text-white">
+      <div className="relative shrink-0 mt-[14mm]">
+        <Eyebrow>Apps · Services · Products</Eyebrow>
+        <Editable
+          as="h1"
+          className="mt-[3.5mm] text-[28pt] font-semibold leading-[1.02] tracking-[-0.035em]"
+          style={{ color: INK.fog50 }}
+        >
           {brand.heroTitle}
         </Editable>
-        <Rule className="mt-[4mm]" width="30mm" />
-        <Editable className="mt-[4mm] text-[10.5pt] leading-relaxed" style={{ color: "#A9B8D8" }}>
+        <Editable className="mt-[4mm] text-[10pt] leading-[1.45]" style={{ color: INK.fog400, maxWidth: "62mm" }}>
           {brand.heroSubtitle}
         </Editable>
+        {brand.phone && (
+          // The site's CTA pill. On paper the action is the phone number, so
+          // that is what the pill carries.
+          <div
+            className="mt-[6mm] inline-flex items-center gap-[1.8mm] rounded-full px-[4.5mm] py-[2.2mm] font-bold text-[9.5pt] text-white"
+            style={{ backgroundColor: INK.cta }}
+          >
+            <Phone style={{ width: "3.2mm", height: "3.2mm" }} />
+            <Editable>{brand.phone}</Editable>
+          </div>
+        )}
       </div>
 
-      {/* The founder photo, bled to the panel edges. This is the same image the
-          site runs in its hero — the folder should not introduce a different
-          face for the business. */}
-      {heroImage ? (
-        <div
-          className="mt-[6mm] flex-1 min-h-0 flex flex-col relative"
-          style={{
-            marginLeft: `-${CONTENT_PAD_MM}mm`,
-            marginRight: `-${CONTENT_PAD_MM + bleed}mm`,
-            marginBottom: `-${CONTENT_PAD_MM + bleed}mm`,
-          }}
-        >
-          <ImageFrame
-            src={heroImage}
-            radius="0"
-            tone="navy"
-            fill
-            className="w-full"
-            style={{ minHeight: "60mm" }}
-          />
-          <div
-            className="absolute left-0 right-0 bottom-0 flex items-center justify-between text-[9.5pt]"
-            style={{ padding: `4mm ${CONTENT_PAD_MM + bleed}mm ${6 + bleed}mm ${CONTENT_PAD_MM}mm`, color: "#C9D6EE" }}
-          >
-            <Editable>{brand.siteLabel}</Editable>
-            {brand.phone && <Editable>{brand.phone}</Editable>}
-          </div>
-        </div>
-      ) : (
-        <div className="mt-auto flex items-center justify-between text-[10pt]" style={{ color: "#A9B8D8" }}>
+      <div className="mt-auto relative shrink-0">
+        <TrustStrip badges={badges} />
+        <div className="mt-[3mm] flex items-center justify-between text-[8pt]" style={{ color: INK.fog400 }}>
           <Editable>{brand.siteLabel}</Editable>
-          {brand.phone && <Editable>{brand.phone}</Editable>}
+          {brand.email && <Editable>{brand.email}</Editable>}
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -220,67 +100,82 @@ function CoverPanel({ bleed, brand }: FolderData) {
 function Outside(props: FolderData) {
   return (
     <>
-      <BackPanel {...props} />
+      <ClosingPanel {...props} />
       <CoverPanel {...props} />
     </>
   );
 }
 
-function Inside({ bleed, apps, services, showPrices }: FolderData) {
+/** Panels 2 and 3. Shared with Showcase. */
+export function EditorialInside({ bleed, apps, services, showPrices }: FolderData) {
   // Past eight cards a two-column grid runs out of row height, so the panel
-  // goes to three columns and the cards drop their feature chips.
-  const denseApps = apps.length > 8;
+  // goes to three columns.
   const appColumns: 2 | 3 = apps.length > 8 ? 3 : 2;
-  // Description lines per row: fewer as the list grows, so every row still fits.
-  const descriptionLines = services.length > 9 ? 1 : services.length > 7 ? 2 : services.length > 5 ? 3 : 4;
-  // A short list should not be spread across the whole panel.
-  const stretchList = services.length >= 5;
+  const serviceColumns: 2 | 3 = services.length > 8 ? 3 : 2;
+  const serviceRows = Math.ceil(services.length / serviceColumns);
+  // Description lines per card: fewer as the grid gets denser, so every card
+  // keeps its title and the photos stay the same height across the row.
+  const descriptionLines = serviceColumns === 3 ? 1 : serviceRows >= 4 ? 2 : 3;
 
   return (
     <>
-      {/* Panel 2 — every app */}
       <div
         className="w-1/2 h-full flex flex-col"
         style={{ ...panelPadding(bleed, "left"), backgroundColor: INK.navyDeep }}
       >
-        <PanelHeading eyebrow="Ready-made software" title="Our Apps" />
+        <PanelHeading
+          eyebrow="01 · Apps"
+          title="Apps we build and run"
+          subtitle="Our own products, live today, with a fixed price."
+        />
         {apps.length > 0 ? (
           <CardGrid
             keyOf={(item) => item.key}
             items={apps}
             columns={appColumns}
             renderItem={(item, { wide, span }) => (
-              <AppCard key={item.key} item={item} showPrices={showPrices} dense={denseApps} span={wide ? span : 1} />
+              <AppCard
+                item={item}
+                showPrices={showPrices}
+                imageRatio={gridImageRatio(apps.length, appColumns)}
+                fillImage={gridFillsPhotos(apps.length, appColumns)}
+                span={wide ? span : 1}
+              />
             )}
           />
         ) : (
-          <p className="mt-[4mm] text-[9pt]" style={{ color: INK.muted }}>
+          <p className="mt-[4mm] text-[9pt]" style={{ color: INK.fog400 }}>
             Pick apps in the sidebar.
           </p>
         )}
       </div>
 
-      {/* Panel 3 — every service */}
       <div
         className="w-1/2 h-full flex flex-col"
         style={{ ...panelPadding(bleed, "right"), backgroundColor: INK.navyDeep }}
       >
-        <PanelHeading eyebrow="Work we do for you" title="Our Services" />
+        <PanelHeading
+          eyebrow="02 · Services"
+          title="Built by us, for your business"
+          subtitle="Tailored marketing and technology, quoted for your case."
+        />
         {services.length > 0 ? (
-          // A list, not a grid: panel 2 is scanned by picture, panel 3 is read.
-          <div className="mt-[3mm] flex-1 min-h-0 flex flex-col">
-            {services.map((item, i) => (
-              <ServiceListItem
-                key={item.key}
+          <CardGrid
+            keyOf={(item) => item.key}
+            items={services}
+            columns={serviceColumns}
+            renderItem={(item, { wide, span }) => (
+              <ServiceCard
                 item={item}
+                imageRatio={gridImageRatio(services.length, serviceColumns)}
+                fillImage={gridFillsPhotos(services.length, serviceColumns)}
                 descriptionLines={descriptionLines}
-                last={i === services.length - 1}
-                stretch={stretchList}
+                span={wide ? span : 1}
               />
-            ))}
-          </div>
+            )}
+          />
         ) : (
-          <p className="mt-[4mm] text-[9pt]" style={{ color: "#A9B8D8" }}>
+          <p className="mt-[4mm] text-[9pt]" style={{ color: INK.fog400 }}>
             Pick services in the sidebar.
           </p>
         )}
@@ -292,10 +187,8 @@ function Inside({ bleed, apps, services, showPrices }: FolderData) {
 export const editorialTemplate: FolderTemplate = {
   id: "editorial",
   name: "Editorial",
-  description: "All dark, like the site. Apps as picture cards on one panel, services as a read-through list on the other.",
+  description: "The site's look: hero cover with the grid, apps and services as /portfolio cards, NFC products on the back.",
   Outside,
-  Inside,
+  Inside: EditorialInside,
   sheetBackground: { outside: INK.navyDeep, inside: INK.navyDeep },
 };
-
-export { ContactRow, CoverPanel };

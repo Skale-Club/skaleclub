@@ -1,5 +1,6 @@
 import type { CompanySettings } from "@shared/schema";
 import type { FolderItem } from "./items";
+import type { FolderProduct } from "./products";
 
 /**
  * Everything a template needs to draw a folder. Templates are pure presentation:
@@ -17,6 +18,11 @@ export interface FolderData {
    */
   apps: FolderItem[];
   services: FolderItem[];
+  /**
+   * The physical NFC products (/products). They print on panel 4, the back,
+   * as "03 · Products" after the inside spread's "01 · Apps" and "02 · Services".
+   */
+  products: FolderProduct[];
   /** Millimetres of bleed on each side (0 disables crop marks). */
   bleed: number;
   /** Whether price/priceLabel are printed on the cards. */
@@ -29,7 +35,7 @@ export interface FolderData {
     address: string;
     siteUrl: string;
     siteLabel: string;
-    /** Logo that reads on a dark surface — every template prints on navy. */
+    /** Logo that reads on a dark surface: every template prints on navy. */
     logoOnDark: string;
     /**
      * The photo on the cover. Defaults to the site's hero image so the folder
@@ -51,9 +57,9 @@ export interface FolderTemplate {
   name: string;
   /** One line describing the visual idea, shown under the picker. */
   description: string;
-  /** Sheet 1 — the outside: back cover (left panel) and front cover (right panel). */
+  /** Sheet 1, the outside: back cover (left panel) and front cover (right panel). */
   Outside: (props: FolderData) => JSX.Element;
-  /** Sheet 2 — the inside spread: panel 2 (apps) on the left, panel 3 (services) on the right. */
+  /** Sheet 2, the inside spread: panel 2 (apps) on the left, panel 3 (services) on the right. */
   Inside: (props: FolderData) => JSX.Element;
   /**
    * Background of each sheet, so the shell can paint the bleed area to match

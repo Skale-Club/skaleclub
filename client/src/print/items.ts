@@ -12,6 +12,6 @@ export type FolderItem = CatalogItem;
 export type FolderItemSource = CatalogKind;
 
 export const SOURCE_LABEL: Record<FolderItemSource, string> = {
-  product: "Produtos",
+  product: "Apps",
   service: "Serviços",
 };
