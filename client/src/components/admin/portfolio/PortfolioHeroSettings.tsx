@@ -228,7 +228,7 @@ export function PortfolioHeroSettings() {
               <button
                 type="button"
                 onClick={handleRemoveImage}
-                className="absolute top-2 right-2 z-10 rounded-full bg-black/60 p-1.5 text-white transition-colors hover:bg-red-500/80"
+                className="absolute top-2 right-2 z-10 rounded-none bg-black/60 p-1.5 text-white transition-colors hover:bg-red-500/80"
                 title="Remove image"
               >
                 <Trash2 className="w-4 h-4" />
@@ -336,7 +336,7 @@ export function PortfolioHeroSettings() {
                 <button
                   type="button"
                   onClick={handleRemoveCtaImage}
-                  className="absolute top-2 right-2 z-10 rounded-full bg-black/60 p-1.5 text-white transition-colors hover:bg-red-500/80"
+                  className="absolute top-2 right-2 z-10 rounded-none bg-black/60 p-1.5 text-white transition-colors hover:bg-red-500/80"
                   title="Remove image"
                 >
                   <Trash2 className="w-4 h-4" />

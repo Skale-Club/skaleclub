@@ -19,7 +19,7 @@ export const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
       {...props}
     >
       {icon ? (
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground [&_svg]:size-6">
+        <div className="flex h-14 w-14 items-center justify-center rounded-none bg-muted text-muted-foreground [&_svg]:size-6">
           {icon}
         </div>
       ) : null}

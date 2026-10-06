@@ -288,7 +288,7 @@ export function BlogPostEditorForm({
                   className="w-full h-full object-cover"
                   data-testid="img-blog-feature-preview"
                 />
-                <div className="absolute top-2 left-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white">
+                <div className="absolute top-2 left-2 rounded-none bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white">
                   Uploaded
                 </div>
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -300,7 +300,7 @@ export function BlogPostEditorForm({
                     e.stopPropagation();
                     onFormDataChange(prev => ({ ...prev, featureImageUrl: '' }));
                   }}
-                  className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 hover:bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-2 right-2 p-1.5 rounded-none bg-black/60 hover:bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>

@@ -60,7 +60,7 @@ export function MarketingSourcesTab({ filters }: MarketingSourcesTabProps) {
       <div className="flex items-center justify-center py-16">
         <Card className="max-w-sm w-full text-center">
           <CardContent className="pt-8 pb-8 px-6">
-            <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+            <div className="mx-auto mb-4 h-12 w-12 rounded-none bg-muted flex items-center justify-center">
               <BarChart2 className="h-6 w-6 text-muted-foreground" />
             </div>
             <h3 className="text-base font-bold mb-2">No traffic sources tracked yet</h3>

@@ -330,8 +330,8 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
                     <span className="text-muted-foreground">{stage.label}</span>
                     <span className="font-semibold">{count}</span>
                   </div>
-                  <div className="h-2 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full bg-primary/80" style={{ width: `${width}%` }} />
+                  <div className="h-2 rounded-none bg-muted overflow-hidden">
+                    <div className="h-full rounded-none bg-primary/80" style={{ width: `${width}%` }} />
                   </div>
                 </div>
               );
@@ -393,8 +393,8 @@ export function DashboardSection({ onNavigate }: { onNavigate: (section: AdminSe
             <h3 className="text-xl font-semibold">{t('Brand Profile')}</h3>
             <Badge variant="secondary" className="border-0 bg-muted">{brandProfilePercent}%</Badge>
           </div>
-          <div className="h-2 rounded-full bg-muted overflow-hidden">
-            <div className="h-full rounded-full bg-primary" style={{ width: `${brandProfilePercent}%` }} />
+          <div className="h-2 rounded-none bg-muted overflow-hidden">
+            <div className="h-full rounded-none bg-primary" style={{ width: `${brandProfilePercent}%` }} />
           </div>
           <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
             {profileChecks.map((item) => (

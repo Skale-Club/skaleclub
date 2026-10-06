@@ -98,7 +98,7 @@ export function ServiceGalleryFields({ formData, setFormData, previewUploading, 
                                     <button
                                         type="button"
                                         onClick={() => setFormData(prev => ({ ...prev, popupSliderImages: (prev.popupSliderImages ?? []).filter((_, i) => i !== idx) }))}
-                                        className="p-1.5 bg-red-500/80 text-white rounded-full"
+                                        className="p-1.5 bg-red-500/80 text-white rounded-none"
                                         aria-label={`Remove slide ${idx + 1}`}
                                     >
                                         <Trash2 className="w-3.5 h-3.5" />

@@ -60,7 +60,7 @@ export function OurServicesCardEditor({ card, onPatch, onDone }: {
                 <span className="text-white text-xs font-medium">Replace</span>
                 <input type="file" className="hidden" accept="image/*" onChange={onFile} />
               </label>
-              <button type="button" onClick={() => onPatch({ imageUrl: '' })} className="absolute top-2 right-2 z-10 p-1.5 bg-black/60 hover:bg-red-500/80 text-white rounded-full transition-colors" title="Remove image">
+              <button type="button" onClick={() => onPatch({ imageUrl: '' })} className="absolute top-2 right-2 z-10 p-1.5 bg-black/60 hover:bg-red-500/80 text-white rounded-none transition-colors" title="Remove image">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>

@@ -169,7 +169,7 @@ Tailwind units: 4, 6, 8, 12, 16, 24
 #### Cards
 ```css
 .admin-card
-/* bg-card text-card-foreground rounded-lg border border-border p-6 */
+/* bg-card text-card-foreground rounded-none border border-border p-6 */
 ```
 
 ```jsx
@@ -179,7 +179,7 @@ Tailwind units: 4, 6, 8, 12, 16, 24
 #### Sections
 ```css
 .admin-section
-/* bg-muted rounded-lg p-6 space-y-4 */
+/* bg-muted rounded-none p-6 space-y-4 */
 ```
 
 ```jsx
@@ -242,7 +242,7 @@ Tailwind units: 4, 6, 8, 12, 16, 24
 #### Stat Cards
 ```css
 .admin-stat-card
-/* bg-card rounded-lg p-6 border border-border */
+/* bg-card rounded-none p-6 border border-border */
 ```
 
 #### Actions
@@ -624,7 +624,7 @@ Small `rounded-full` pills with colored backgrounds:
 
 ### Border Radius
 - Main CTAs: `rounded-full`
-- Admin cards: `rounded-lg`
+- Admin (all surfaces: cards, inputs, buttons, dialogs, tables): square (`rounded-none`), enforced by the `html.admin-theme [class*="rounded"]` rule in `index.css`; only avatars, status dots and `rounded-full` chips stay round
 - Public cards: `rounded-xl` or `rounded-2xl`
 
 ---

@@ -78,7 +78,7 @@ export function ServiceMediaFields({ formData, setFormData, previewUploading, up
                                 type="button"
                                 disabled={previewUploading}
                                 onClick={(e) => { e.preventDefault(); setFormData(prev => ({ ...prev, homeImageUrl: null })); }}
-                                className="absolute top-2 right-2 z-10 p-1.5 bg-black/60 hover:bg-red-500/80 text-white rounded-full transition-colors"
+                                className="absolute top-2 right-2 z-10 p-1.5 bg-black/60 hover:bg-red-500/80 text-white rounded-none transition-colors"
                                 title="Remove image"
                             >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -125,7 +125,7 @@ export function ServiceMediaFields({ formData, setFormData, previewUploading, up
                             <button
                                 type="button"
                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); setFormData(prev => ({ ...prev, logoIconUrl: '' })); }}
-                                className="absolute top-1 right-1 z-10 p-1 bg-black/60 hover:bg-red-500/80 text-white rounded-full transition-colors"
+                                className="absolute top-1 right-1 z-10 p-1 bg-black/60 hover:bg-red-500/80 text-white rounded-none transition-colors"
                                 title="Remove logo icon"
                             >
                                 <Trash2 className="w-3 h-3" />

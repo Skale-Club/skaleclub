@@ -43,7 +43,7 @@ export function MarketingJourneyTab({ selectedVisitorUuid }: MarketingJourneyTab
       <div className="flex items-center justify-center py-16">
         <Card className="max-w-sm w-full text-center">
           <CardContent className="pt-8 pb-8 px-6">
-            <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+            <div className="mx-auto mb-4 h-12 w-12 rounded-none bg-muted flex items-center justify-center">
               <TrendingUp className="h-6 w-6 text-muted-foreground" />
             </div>
             <h3 className="text-base font-bold mb-2">Pick a visitor to see their journey</h3>
@@ -145,8 +145,8 @@ export function MarketingJourneyTab({ selectedVisitorUuid }: MarketingJourneyTab
                       <div
                         className={
                           isPageView
-                            ? 'h-8 w-8 rounded-full bg-muted flex items-center justify-center'
-                            : 'h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center'
+                            ? 'h-8 w-8 rounded-none bg-muted flex items-center justify-center'
+                            : 'h-8 w-8 rounded-none bg-primary/10 flex items-center justify-center'
                         }
                       >
                         {isPageView

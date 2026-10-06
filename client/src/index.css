@@ -501,13 +501,13 @@ html.admin-theme.dark {
 
   /* Card container - usado para cards de conteúdo */
   .admin-card {
-    @apply bg-card text-card-foreground rounded-lg border border-border p-6;
+    @apply bg-card text-card-foreground rounded-none border border-border p-6;
     transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
   }
 
   /* Section container - usado para agrupar seções */
   .admin-section {
-    @apply bg-muted rounded-lg p-6 space-y-4;
+    @apply bg-muted rounded-none p-6 space-y-4;
     transition: background-color 0.2s ease-in-out;
   }
 
@@ -541,13 +541,13 @@ html.admin-theme.dark {
 
   /* Stat card para dashboard */
   .admin-stat-card {
-    @apply bg-card rounded-lg p-6 border border-border;
+    @apply bg-card rounded-none p-6 border border-border;
     transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
   }
 
   /* Table container */
   .admin-table-container {
-    @apply bg-card rounded-lg border border-border overflow-hidden;
+    @apply bg-card rounded-none border border-border overflow-hidden;
     transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
   }
 
@@ -617,4 +617,12 @@ html.admin-theme.dark {
 /* If the widget injects its own markup, keep all corners square */
 .lc_reviews_widget * {
   border-radius: 0 !important;
+}
+
+/* Admin shape language: square corners, matching the editorial public site.
+   Scoped to html.admin-theme (also covers portaled dialogs/popovers/toasts).
+   Circles (avatars, status dots) opt out by using `rounded-full`. */
+html.admin-theme [class*="rounded"]:not(.rounded-full),
+html.admin-theme :where(a, button, [role="button"], summary):focus-visible {
+  border-radius: 0;
 }

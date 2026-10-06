@@ -187,11 +187,11 @@ export function McpSettingsSection({ embedded = false }: { embedded?: boolean })
         <p className="text-sm font-medium text-foreground">How to connect in Claude Code</p>
         <ol className="space-y-2.5 text-sm text-muted-foreground">
           <li className="flex gap-2.5">
-            <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">1</span>
+            <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-none bg-muted text-xs font-medium">1</span>
             Generate a token below and copy the Bearer token.
           </li>
           <li className="flex gap-2.5">
-            <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">2</span>
+            <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-none bg-muted text-xs font-medium">2</span>
             Run this command in your terminal:
           </li>
         </ol>
