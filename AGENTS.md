@@ -32,6 +32,27 @@ shared/schema.ts         # Drizzle tables + Zod schemas
 - Use `data-testid` attributes for UI elements that need reliable selectors.
 - Manually verify critical flows (booking, admin CRUD, availability) before PRs.
 
+## Blog Feature Image Guidelines
+- Every published post must have a feature image. Before completion, verify that
+  the published-post count matches the count of non-empty feature-image URLs.
+- Deliver covers as 1200 x 675 WebP files (16:9). Keep the focal subject and all
+  meaningful objects inside the central 84% of the canvas, leaving at least an
+  8% visual safe area on every edge so card crops never feel cramped.
+- Blog-card covers intentionally render with 12 px of internal space between the
+  image and the card frame on both the homepage and `/blog`. Do not remove or
+  reduce this inset without explicit visual approval.
+- Adjacent posts must be visibly distinct. Do not repeat the same person,
+  location, camera angle, composition, or visual metaphor across the three-card
+  homepage row. Change at least one major dimension (subject, perspective, scene,
+  or medium) while preserving the shared brand palette.
+- Prefer specific editorial concepts tied to each article. Avoid generic AI
+  imagery such as holograms, floating chat bubbles, glossy 3D icons, neon
+  circuitry, fake UI text, and interchangeable corporate scenes.
+- Review the final result in the real homepage cards and on `/blog`, at desktop
+  and mobile widths. Asset previews alone are not acceptance evidence: confirm
+  the images load, the safe area survives `object-cover`, and no focal element is
+  pressed against or clipped by a card edge.
+
 ## Commit & Pull Request Guidelines
 - Git history shows no strict convention; keep commit messages short and imperative.
 - PRs should include a brief summary, testing notes (commands or manual steps), and
