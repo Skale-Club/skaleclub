@@ -40,7 +40,9 @@ export function BlogSection({ content, band = "ice" }: BlogSectionProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 tablet:grid-cols-3 gap-[1.7rem]">
           {[0, 1, 2].map((i) => (
             <EditorialCard key={i} tone={tone} className={`h-full flex flex-col overflow-hidden p-0 sm:p-0 ${dark ? "bg-steel-700" : ""}`}>
-              <Skeleton className="aspect-[16/10] w-full rounded-none" />
+              <div className="aspect-[16/10] w-full p-3">
+                <Skeleton className="h-full w-full rounded-none" />
+              </div>
               <div className="p-6 flex flex-col flex-1 gap-3">
                 <Skeleton className="h-4 w-32" />
                 <Skeleton className="h-5 w-full" />
@@ -86,7 +88,7 @@ export function BlogSection({ content, band = "ice" }: BlogSectionProps) {
           <Link key={post.id} href={pagePaths.blogPost(post.slug)} className="group" data-testid={`link-blog-card-${post.id}`}>
             <EditorialCard tone={tone} className={`h-full flex flex-col overflow-hidden p-0 sm:p-0 transition-colors duration-300 ${dark ? "bg-steel-700 group-hover:border-cta-soft/30" : "group-hover:border-cta-ink/30"}`}>
               {post.featureImageUrl ? (
-                <div className="aspect-[16/10] overflow-hidden">
+                <div className="aspect-[16/10] overflow-hidden p-3">
                   <img
                     src={post.featureImageUrl}
                     alt={post.title}
@@ -94,7 +96,7 @@ export function BlogSection({ content, band = "ice" }: BlogSectionProps) {
                     height={400}
                     loading="lazy"
                     decoding="async"
-                    className="w-full h-full object-cover"
+                    className={`w-full h-full object-cover outline outline-1 -outline-offset-1 ${dark ? "outline-white/10" : "outline-black/10"}`}
                     data-testid={`img-blog-home-${post.id}`}
                   />
                 </div>

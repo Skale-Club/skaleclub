@@ -97,7 +97,9 @@ export default function Blog() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {[...Array(6)].map((_, i) => (
               <Card key={i} className="overflow-hidden border-0">
-                <Skeleton className="aspect-video" />
+                <div className="aspect-video p-3">
+                  <Skeleton className="h-full w-full rounded-none" />
+                </div>
                 <CardContent className="p-4 space-y-3 bg-slate-50">
                   <Skeleton className="h-6 w-3/4" />
                   <Skeleton className="h-4 w-full" />
@@ -116,11 +118,11 @@ export default function Blog() {
                     data-testid={`card-blog-${post.id}`}
                   >
                     {post.featureImageUrl ? (
-                      <div className="aspect-video overflow-hidden">
+                      <div className="aspect-video overflow-hidden p-3">
                         <img
                           src={post.featureImageUrl}
                           alt={post.title}
-                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-[1.025]"
+                          className="w-full h-full object-cover outline outline-1 -outline-offset-1 outline-black/10 transition-transform duration-300 hover:scale-[1.025]"
                           data-testid={`img-blog-${post.id}`}
                         />
                       </div>
@@ -162,7 +164,9 @@ export default function Blog() {
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-6">
                 {[...Array(3)].map((_, i) => (
                   <Card key={`loading-more-${i}`} className="overflow-hidden border-0">
-                    <Skeleton className="aspect-video" />
+                    <div className="aspect-video p-3">
+                      <Skeleton className="h-full w-full rounded-none" />
+                    </div>
                     <CardContent className="p-4 space-y-3 bg-slate-50">
                       <Skeleton className="h-6 w-3/4" />
                       <Skeleton className="h-4 w-full" />
