@@ -49,6 +49,9 @@ export default {
           700: "#182132",
           600: "#222b3a",
         },
+        // Muted slate-blue bands for the home content sections: one hue (218deg,
+        // ~28% saturation), three even lightness steps a notch above the navy.
+        steel: { 700: "#1d2634", 600: "#212b3b", 500: "#252f41" },
         paper: { DEFAULT: "#f5f3ed", ice: "#eef3f9" },
         fog: { 50: "#f3f5f8", 200: "#e3e7ee", 300: "#cdd3dc", 400: "#a7afbc" },
         ink: { DEFAULT: "#101b31", 700: "#172238", 500: "#596276", 400: "#727b8d" },

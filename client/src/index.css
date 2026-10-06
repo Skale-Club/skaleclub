@@ -626,3 +626,17 @@ html.admin-theme [class*="rounded"]:not(.rounded-full),
 html.admin-theme :where(a, button, [role="button"], summary):focus-visible {
   border-radius: 0;
 }
+
+/* Xphere reviews widget (xphere.app/reviews-widget.js renders into the page
+   DOM). Its dark theme is neutral black with an indigo accent; recolor it to
+   the navy cards and CTA blue here instead of changing the widget default for
+   every Xphere client. Kept outside @layer so Tailwind does not purge it;
+   !important beats the accent the widget sets inline. */
+.orw-root[data-theme="dark"] {
+  --orw-card: #161d28 !important; /* navy-800 */
+  --orw-text: #f3f5f8 !important; /* fog-50 */
+  --orw-muted: #a7afbc !important; /* fog-400 */
+  --orw-border: rgba(255, 255, 255, 0.10) !important;
+  --orw-brand: #8FA9EE !important; /* cta-soft: links and labels on dark */
+  --orw-brand-soft: rgba(81, 115, 214, 0.12) !important; /* cta tint */
+}

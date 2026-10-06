@@ -101,7 +101,7 @@ export default function Home() {
           // next section's cream. Real flow, so the bottom half pushes the
           // services section down and its own py rhythm sets the gap below.
           <section className="relative z-20 grid grid-cols-1 grid-rows-2">
-            <div className="col-start-1 row-start-2 bg-paper" aria-hidden />
+            <div className="col-start-1 row-start-2 bg-steel-700" aria-hidden />
             <div className="container-editorial relative col-start-1 row-span-2 row-start-1">
               <TrustBadges badges={trustBadges} />
             </div>
@@ -112,6 +112,7 @@ export default function Home() {
       <ServicesSection
         section={horizontalScrollSection}
         onCtaClick={handleConsultingCta}
+        band="steel"
       />
 
       <OurServicesSection
@@ -126,9 +127,10 @@ export default function Home() {
         title={reviewsTitle}
         subtitle={reviewsSubtitle}
       />
-      <BlogSection content={homepageContent.blogSection} />
+      <BlogSection content={homepageContent.blogSection} band="steel-2" />
       <AboutSection
-        tone="light"
+        tone="dark"
+        band="steel-3"
         aboutImageUrl={companySettings?.aboutImageUrl}
         content={homepageContent.aboutSection}
       />

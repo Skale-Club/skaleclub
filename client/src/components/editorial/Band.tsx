@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-export type BandTone = "dark" | "hero" | "cream" | "ice" | "white" | "cta";
+export type BandTone = "dark" | "hero" | "cream" | "ice" | "white" | "cta" | "steel" | "steel-2" | "steel-3";
 
 const TONE_CLASSES: Record<BandTone, string> = {
   dark: "bg-navy-950 text-fog-200 py-20 sm:py-28",
@@ -10,6 +10,10 @@ const TONE_CLASSES: Record<BandTone, string> = {
   ice: "bg-paper-ice text-ink-700 py-20 sm:py-28",
   white: "bg-white text-ink-700 py-20 sm:py-28",
   cta: "bg-navy-850 text-white border-t border-cta-soft/20 py-14 sm:py-16",
+  // Blue steps, lightest last: same hue as navy, each a little brighter.
+  steel: "bg-steel-700 text-fog-200 py-20 sm:py-28",
+  "steel-2": "bg-steel-600 text-fog-200 py-20 sm:py-28",
+  "steel-3": "bg-steel-500 text-fog-200 py-20 sm:py-28",
 };
 
 // Must not start with "bg-": tailwind-merge (cn) would treat it as a background color and strip the tone bg.
@@ -20,6 +24,9 @@ const PATTERN_CLASSES: Record<BandTone, string> = {
   ice: "pattern-grid-light",
   white: "pattern-grid-light",
   cta: "pattern-grid-dark",
+  steel: "pattern-grid-dark",
+  "steel-2": "pattern-grid-dark",
+  "steel-3": "pattern-grid-dark",
 };
 
 export interface BandProps {

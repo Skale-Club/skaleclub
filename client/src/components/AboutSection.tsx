@@ -2,7 +2,7 @@ import { User, CheckCircle } from "lucide-react";
 import type { HomepageContent } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
 import { SectionHeading } from "@/components/layout/SectionHeading";
-import { Band, Figure } from "@/components/editorial";
+import { Band, Figure, type BandTone } from "@/components/editorial";
 
 interface AboutSectionProps {
   content?: HomepageContent['aboutSection'] | null;
@@ -10,9 +10,11 @@ interface AboutSectionProps {
   /** Home renders this on a white band so the second half of the page keeps
    *  alternating; the landing adapter keeps the dark default. */
   tone?: "dark" | "light";
+  /** Overrides the band background (e.g. a blue step on the home); text follows `tone`. */
+  band?: BandTone;
 }
 
-export function AboutSection({ content, aboutImageUrl, tone = "dark" }: AboutSectionProps) {
+export function AboutSection({ content, aboutImageUrl, tone = "dark", band }: AboutSectionProps) {
   const { t } = useTranslation();
   const sectionContent = content || {};
   const light = tone === "light";
@@ -20,7 +22,7 @@ export function AboutSection({ content, aboutImageUrl, tone = "dark" }: AboutSec
   const highlights = sectionContent?.highlights || [];
 
   return (
-    <Band tone={light ? "white" : "dark"} id="about">
+    <Band tone={band ?? (light ? "white" : "dark")} id="about">
       <div className="grid grid-cols-1 tablet:grid-cols-2 gap-[2.55rem] items-center">
         <div className="order-2 tablet:order-1">
           <SectionHeading

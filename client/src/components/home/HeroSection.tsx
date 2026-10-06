@@ -35,7 +35,7 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
     <Band
       tone="hero"
       pattern={showTrustBadges}
-      className={`relative flex flex-col justify-end overflow-hidden border-b-0 ${bottomPadding} min-h-[min(100dvh,620px)] sm:min-h-[min(100dvh,540px)] tablet:min-h-[min(100dvh,620px)]`}
+      className={`relative flex flex-col justify-end overflow-hidden border-b-0 ${bottomPadding} min-h-[min(100dvh,620px)] sm:min-h-[min(100dvh,500px)] tablet:min-h-[min(100dvh,540px)]`}
       containerClassName="relative z-10 pt-[calc(var(--nav-offset)+0.825rem)] sm:pt-[var(--nav-offset)] sm:flex-1 sm:flex sm:flex-col"
     >
         {/* Below tablet (770px): stacked, image full-width beneath the text

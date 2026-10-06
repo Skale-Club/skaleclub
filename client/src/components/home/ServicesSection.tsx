@@ -4,7 +4,7 @@ import { catalogProducts, type CatalogItem } from '@shared/catalog';
 import { useQuery } from '@tanstack/react-query';
 import { CatalogCard } from '@/components/catalog/CatalogCard';
 import { CatalogDetail } from '@/components/catalog/CatalogDetail';
-import { Band } from '@/components/editorial';
+import { Band, type BandTone } from '@/components/editorial';
 import { SectionHeading } from '@/components/layout/SectionHeading';
 import { ServicesCarousel } from '@/components/home/ServicesCarousel';
 import { StepCard } from '@/components/home/StepCard';
@@ -13,10 +13,13 @@ import type { StepItem } from '@/components/home/StepCard';
 type Props = {
   section?: HomepageContent['consultingStepsSection'] | HomepageContent['horizontalScrollSection'] | null;
   mode?: 'steps' | 'services';
+  /** Band background. Defaults to cream; the home passes a blue step (dark text treatment). */
+  band?: BandTone;
   onCtaClick?: () => void;
 };
 
-export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Props) {
+export function ServicesSection({ section, mode: explicitMode, onCtaClick, band = 'cream' }: Props) {
+  const dark = band !== 'cream' && band !== 'ice' && band !== 'white';
   const displayMode = explicitMode || (section as any)?.mode || 'steps';
 
   const { data: portfolioServices } = useQuery<PortfolioService[]>({
@@ -56,9 +59,9 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
       key={`${item.key}-${idx}`}
       className="flex-shrink-0 w-[85%] sm:w-[280px] md:w-[260px] tablet:w-[245px]"
     >
-      <CatalogCard item={item} variant="compact" className="cat--light" onOpen={openServiceModal} />
+      <CatalogCard item={item} variant="compact" className={dark ? undefined : 'cat--light'} onOpen={openServiceModal} />
     </div>
-  ), [openServiceModal]);
+  ), [openServiceModal, dark]);
 
   const stepLabel = section?.stepLabel || '';
   const whatWeDoLabel = section?.whatWeDoLabel || '';
@@ -72,9 +75,10 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
         stepLabel={stepLabel}
         whatWeDoLabel={whatWeDoLabel}
         outcomeLabel={outcomeLabel}
+        dark={dark}
       />
     </div>
-  ), [stepLabel, whatWeDoLabel, outcomeLabel]);
+  ), [stepLabel, whatWeDoLabel, outcomeLabel, dark]);
 
   if (!section || section.enabled === false) return null;
 
@@ -86,17 +90,17 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
 
     return (
       <>
-        <SectionShell sectionId={sectionId}>
+        <SectionShell sectionId={sectionId} band={band}>
           <SectionHeading
             variant="editorial"
-            tone="light"
+            tone={dark ? 'dark' : 'light'}
             eyebrow={tagLabel}
             title={section?.title || ''}
             subtitle={section?.subtitle}
           />
           <ServicesCarousel
             items={services}
-            dark={false}
+            dark={dark}
             paused={isModalOpen}
             ariaLabel="Services carousel"
             renderItem={renderServiceItem}
@@ -120,10 +124,10 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
   if (sortedSteps.length === 0) return null;
 
   return (
-    <SectionShell sectionId={sectionId}>
+    <SectionShell sectionId={sectionId} band={band}>
       <SectionHeading
         variant="editorial"
-        tone="light"
+        tone={dark ? 'dark' : 'light'}
         eyebrow={tagLabel}
         title={section?.title || ''}
         subtitle={section?.subtitle}
@@ -131,16 +135,16 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick }: Pro
       <ServicesCarousel
         items={sortedSteps}
         ariaLabel="Consulting steps"
-        dark={false}
+        dark={dark}
         renderItem={renderStepItem}
       />
     </SectionShell>
   );
 }
 
-function SectionShell({ sectionId, children }: { sectionId: string; children: React.ReactNode }) {
+function SectionShell({ sectionId, band, children }: { sectionId: string; band: BandTone; children: React.ReactNode }) {
   return (
-    <Band tone="cream" id={sectionId} className="overflow-hidden" containerClassName="space-y-[2.125rem]">
+    <Band tone={band} id={sectionId} className="overflow-hidden" containerClassName="space-y-[2.125rem]">
       {children}
     </Band>
   );
