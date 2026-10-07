@@ -21,10 +21,14 @@
 // happens to use that exact word). This list is therefore kept to strings
 // that are either specific enough to this landing's copy to be unambiguous
 // everywhere (headlines, full sentences), or identity rows for short reused
-// tokens ("Google Ads") where translating to itself cannot break anything.
-// Generic single-word feature tags that used to live here (Reminders,
-// Calendar Sync, Responsive, SEO Optimized, Analytics, ...) were deliberately
-// dropped along with the three-item bullet lists that used them — see
+// tokens (brand names, prices) where translating to itself or to the US$
+// convention cannot break anything.
+// 2026-10-07: the pricing block now does seed a few short tokens ("$89", "$299",
+// "$49" -> "US$ n", "/month" -> "/mês", "Website", "Starting price",
+// "Questions", and the brand names Xkedule/Xsites/Xareable as identity rows).
+// They are the same on every page of the live site, so a shared row is
+// consistent with it. Generic feature tags that used to live here (Reminders,
+// Calendar Sync, Responsive, SEO Optimized, Analytics, ...) stay out; see
 // scripts/seed-barbershop-landing.ts.
 //
 // NOTE: the form slug `barbershop-leads` is deliberately EXCLUDED from this
@@ -56,13 +60,20 @@ const TARGET_LANGUAGE = "pt";
 
 // ── Translation pairs (English source → hand-written pt-BR) ────────────────
 //
-// Every display string on /barbershops-br: the 12 `barbershop-leads` question
-// titles, every select option label, every placeholder, plus the hero and CTA
-// copy carried on the landing's `heroWebsites` and `leadFormCta` sections.
+// Every display string on /barbershops-br: the 7 `barbershop-leads` question
+// titles, every select option label, every placeholder, plus the copy of every
+// landing section (hero, problem grid, how it works, photo cards, pricing, NFC
+// link, reviews, FAQ, closing form). Pairs for the five questions dropped on
+// 2026-10-07 (barbers, booking system, average ticket, ad budget, notes) are no
+// longer seeded; rows already in the table are left alone.
 //
-// Strings reused across questions (`2-3`, `4-6`, `7+`, `Other`) appear exactly
-// ONCE — the unique index keys on the source string, so one row covers every
+// Strings reused across questions (`2-3`, `4-6`, `Other`) appear exactly
+// ONCE: the unique index keys on the source string, so one row covers every
 // occurrence.
+//
+// The same landing pairs live in scripts/data/landing-pt-copy.ts (that file is
+// what seedPage() bakes into the `-br` row). Keep both in step. Do NOT add
+// formSlug, processStepper icon names, enum values or URLs here.
 
 const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
   // ── Contact questions ───────────────────────────────────────────────────
@@ -70,7 +81,8 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
   { source: "Your full name", translated: "Seu nome completo" },
   { source: "What's your WhatsApp?", translated: "Qual é o seu WhatsApp?" },
 
-  // Identity rows (this one, plus `1`, `2-3`, `4-6`, `7+` below) are
+  // Identity rows (this one, plus `1`, `2-3`, `4-6`, `7+` below, and the brand
+  // names Xkedule/Xsites/Xareable in the pricing block) are
   // DELIBERATE no-op translations: source and target are identical. They are
   // not redundant. Without a cached row, t() treats every render as a cache
   // miss and re-queries the (currently broken) AI provider forever — on every
@@ -92,28 +104,7 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
   { source: "4-6", translated: "4-6" },
   { source: "7+", translated: "7+" },
 
-  { source: "How many barbers work with you?", translated: "Quantos barbeiros trabalham com você?" },
-  { source: "Just me", translated: "Só eu" },
-
-  // ── Booking system ──────────────────────────────────────────────────────
-  { source: "How do clients book with you today?", translated: "Como os clientes agendam com você hoje?" },
-  { source: "WhatsApp only", translated: "Só pelo WhatsApp" },
-  { source: "Booking app (Booksy, Agendor, etc.)", translated: "Aplicativo de agendamento (Booksy, Agendor, etc.)" },
-  { source: "Walk-ins only", translated: "Só por ordem de chegada" },
-  { source: "Phone calls", translated: "Por ligação" },
   { source: "Other", translated: "Outro" },
-
-  // ── Economics ───────────────────────────────────────────────────────────
-  { source: "What's your average ticket per client?", translated: "Qual é o seu ticket médio por cliente?" },
-  { source: "Under $25", translated: "Menos de US$ 25" },
-  { source: "$25-$45", translated: "US$ 25 a US$ 45" },
-  { source: "$45-$75", translated: "US$ 45 a US$ 75" },
-  { source: "Over $75", translated: "Mais de US$ 75" },
-  { source: "How much do you invest in ads per month today?", translated: "Quanto você investe em anúncios por mês hoje?" },
-  { source: "Nothing yet", translated: "Ainda não invisto" },
-  { source: "Under $300", translated: "Menos de US$ 300" },
-  { source: "$300-$1,000", translated: "US$ 300 a US$ 1.000" },
-  { source: "Over $1,000", translated: "Mais de US$ 1.000" },
 
   // ── Challenge ───────────────────────────────────────────────────────────
   { source: "What's your biggest challenge right now?", translated: "Qual é o seu maior desafio hoje?" },
@@ -133,139 +124,97 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
   { source: "Schedule your visit", translated: "Agendar minha visita" },
   { source: "Pick the day and time that work best for you. It only takes a minute.", translated: "Escolha o dia e o horário que funcionam melhor para você. Leva só um minuto." },
 
-  // ── Free-form ───────────────────────────────────────────────────────────
-  { source: "Anything else we should know?", translated: "Mais alguma coisa que a gente deva saber?" },
-  { source: "Optional", translated: "Opcional" },
-
-  // ── Landing hero + CTA copy (2026-09-30 content: hero phone demo, the
-  // "more money / more time" feature grids, the NFC block and the pricing
-  // block copied from the live catalog; revised 2026-09-30 to drop ad-cliché
-  // phrasing and three-item lists per review) ─────────────────────────────
-  {
-    source: "More time in your day. More money in your pocket.",
-    translated: "Mais tempo no seu dia. Mais dinheiro no seu bolso.",
-  },
-  { source: "We work with barbershops.", translated: "Trabalhamos com barbearias." },
+  // ── Landing copy (2026-10-07 rewrite: dark hero, problem grid, how-it-works,
+  // photo cards, pricing, NFC link, reviews, FAQ, closing form). Same pairs as
+  // scripts/data/landing-pt-copy.ts; keep the two files in step. ───────────
+  // ── Hero
+  { source: "For barbershops", translated: "Para barbearias" },
+  { source: "Your phone gets answered while you cut.", translated: "Seu telefone é atendido enquanto você corta." },
+  { source: "An AI picks up the call and books the cut. You keep working.", translated: "Uma IA atende a ligação e agenda o corte. Você continua trabalhando." },
+  { source: "Barber chair in a barbershop with a Google review plaque on the counter", translated: "Cadeira de barbeiro em uma barbearia, com uma placa de avaliação do Google no balcão" },
   { source: "Get more clients", translated: "Quero mais clientes" },
-  {
-    source: "Hear it working: (224) 551-6131",
-    translated: "Ouça funcionando: (224) 551-6131",
-  },
-  {
-    source: "An AI answers that line for a barbershop. It gives prices and hours. Then it books the cut.",
-    translated: "Uma IA atende esse número para uma barbearia. Ela informa preço e horário. Depois agenda o corte.",
-  },
-  { source: "Let's fill your chairs", translated: "Vamos encher suas cadeiras" },
-  {
-    source: "Tell us about your shop in a minute. Or call (224) 551-6131 first to hear the AI answer the phone.",
-    translated: "Conte sobre a sua barbearia em um minuto. Ou ligue primeiro para (224) 551-6131 para ouvir a IA atendendo o telefone.",
-  },
-
-  // ── "More money" feature grid ────────────────────────────────────────────
-  { source: "More money", translated: "Mais dinheiro" },
-  { source: "More money in your pocket", translated: "Mais dinheiro no seu bolso" },
-  { source: "Where the extra money actually comes from.", translated: "De onde vem o dinheiro extra." },
-  { source: "Your own website", translated: "Seu próprio site" },
-  {
-    source: "It takes bookings and the clients stay yours, not a marketplace's.",
-    translated: "Ele recebe agendamentos e os clientes ficam seus, não de uma plataforma de terceiros.",
-  },
-  { source: "Ads that bring people in", translated: "Anúncios que trazem gente nova" },
-  {
-    source: "Google and Instagram ads that fill your calendar with new clients.",
-    translated: "Anúncios no Google e no Instagram que enchem sua agenda com clientes novos.",
-  },
-
-  // ── "More time" feature grid ─────────────────────────────────────────────
-  { source: "More time", translated: "Mais tempo" },
-  { source: "More time in your day", translated: "Mais tempo no seu dia" },
-  { source: "Where the extra time in your day comes from.", translated: "De onde vem o tempo extra no seu dia." },
-  { source: "Calls and texts get answered", translated: "Ligações e mensagens são atendidas" },
-  {
-    source: "An AI answers calls and texts any time of day and books the appointment.",
-    translated: "Uma IA atende ligações e mensagens a qualquer hora do dia e agenda o horário.",
-  },
-  { source: "Fewer no-shows", translated: "Menos faltas" },
-  {
-    source: "Reminders go out on their own and cut down on no-shows.",
-    translated: "Os lembretes são enviados automaticamente e reduzem as faltas.",
-  },
-  { source: "Social media", translated: "Redes sociais" },
-  {
-    source: "Posts get made and scheduled for you every week.",
-    translated: "As postagens são feitas e agendadas para você toda semana.",
-  },
-
-  // ── "NFC for your shop" feature grid ─────────────────────────────────────
-  { source: "NFC for your shop", translated: "NFC para a sua barbearia" },
-  { source: "For your counter", translated: "Para o seu balcão" },
-  {
-    source: "Three things we 3D print for barbershops, made to order.",
-    translated: "Três itens que imprimimos em 3D para barbearias, feitos sob encomenda.",
-  },
-  { source: "Review plaque", translated: "Placa de avaliação" },
-  {
-    source: "A plaque for your counter. Tap a phone on it and it opens your Google review page.",
-    translated: "Uma placa para o seu balcão. O cliente encosta o celular e ela abre a página de avaliação no Google.",
-  },
-  { source: "Custom keychains", translated: "Chaveiros personalizados" },
-  {
-    source: "NFC keychains with your barbershop's own branding. The tap opens the link you choose.",
-    translated: "Chaveiros NFC com a marca da sua barbearia. O toque abre o link que você escolher.",
-  },
-  { source: "Keychain display", translated: "Display de chaveiros" },
-  {
-    source: "A display for your counter so you can sell the keychains yourself. Extra money for the shop.",
-    translated: "Um display para o balcão para você mesmo vender os chaveiros. Uma renda extra para a barbearia.",
-  },
-
-  // ── Pricing block (copied from the live catalog — see seed-barbershop-landing.ts).
-  // Only the strings the page still shows after the review's "remove the
-  // three-item bullet lists" note: the Xkedule/Xsites/Xareable feature tags
-  // (Calendar Sync, Reminders, Responsive, Analytics, ...) were cut from the
-  // page along with their bullets and are deliberately NOT seeded here. ───
+  { source: "Hear it working: (224) 551-6131", translated: "Ouça funcionando: (224) 551-6131" },
+  { source: "That line is answered by an AI set up as a barbershop. Ask it a price, then book a cut.", translated: "Esse número é atendido por uma IA configurada como barbearia. Pergunte um preço e depois agende um corte." },
+  // ── The problem
+  { source: "The problem", translated: "O problema" },
+  { source: "Where a barbershop loses money", translated: "Onde uma barbearia perde dinheiro" },
+  { source: "The phone rings mid-cut", translated: "O telefone toca no meio do corte" },
+  { source: "You can't pick up with the clippers in your hand, so the client calls the next shop.", translated: "Você não consegue atender com a máquina na mão, então o cliente liga para a próxima barbearia." },
+  { source: "No-shows", translated: "Faltas" },
+  { source: "Someone books Saturday at 10 and never shows up. That chair earned nothing.", translated: "Alguém marca para sábado às 10h e não aparece. Aquela cadeira não rendeu nada." },
+  { source: "Slow weekdays", translated: "Dias fracos na semana" },
+  { source: "Friday is packed and Tuesday afternoon sits empty.", translated: "A sexta fica lotada e a terça à tarde fica vazia." },
+  { source: "Clients who belong to the app", translated: "Clientes que pertencem ao aplicativo" },
+  { source: "Book through a marketplace and your client sees every other shop nearby too.", translated: "Quando o cliente agenda por um aplicativo, ele também vê todas as outras barbearias da região." },
+  // ── How it works (eyebrow "How it works" already exists for the keychain landing)
+  { source: "What happens when a client calls", translated: "O que acontece quando um cliente liga" },
+  { source: "Call (224) 551-6131 and try it.", translated: "Ligue para (224) 551-6131 e teste." },
+  { source: "The client calls", translated: "O cliente liga" },
+  { source: "At 9pm or in the middle of a fade, the call gets picked up.", translated: "Às 9 da noite ou no meio de um degradê, a ligação é atendida." },
+  { source: "The AI answers", translated: "A IA atende" },
+  { source: "It knows your prices and your hours.", translated: "Ela conhece os seus preços e os seus horários." },
+  { source: "The cut gets booked", translated: "O corte é agendado" },
+  { source: "The appointment goes straight into your calendar.", translated: "O horário vai direto para a sua agenda." },
+  { source: "A reminder goes out", translated: "O lembrete é enviado" },
+  { source: "The client gets a reminder before the visit, so fewer chairs sit empty.", translated: "O cliente recebe um lembrete antes da visita, e menos cadeiras ficam vazias." },
+  // ── What you get
+  { source: "What you get", translated: "O que você recebe" },
+  { source: "What we set up for your shop", translated: "O que a gente configura para a sua barbearia" },
+  { source: "A booking page for your shop", translated: "Uma página de agendamento para a sua barbearia" },
+  { source: "Clients pick a time and book on a page with your shop's name.", translated: "O cliente escolhe um horário e agenda em uma página com o nome da sua barbearia." },
+  { source: "Booking page built with Xkedule", translated: "Página de agendamento feita com o Xkedule" },
+  { source: "Calls and texts answered", translated: "Ligações e mensagens atendidas" },
+  { source: "The AI replies any time of day and books the appointment.", translated: "A IA responde a qualquer hora do dia e agenda o horário." },
+  { source: "Xkedule dashboard listing recent appointments", translated: "Painel do Xkedule com a lista de agendamentos recentes" },
+  { source: "Posts every week", translated: "Posts toda semana" },
+  { source: "Make posts with AI and schedule them, so your Instagram doesn't go quiet.", translated: "Faça posts com IA e agende, para o seu Instagram não ficar parado." },
+  { source: "Xareable home page", translated: "Página inicial do Xareable" },
+  { source: "More Google reviews", translated: "Mais avaliações no Google" },
+  { source: "A plaque on your counter. Clients tap their phone and land on your review page.", translated: "Uma placa no seu balcão. O cliente encosta o celular e cai na sua página de avaliação." },
+  { source: "NFC Google review plaque on a counter", translated: "Placa NFC de avaliação do Google sobre um balcão" },
+  // ── Pricing (prices are the live catalog; PT keeps the US$ convention). Brand names are identity rows.
   { source: "Pricing", translated: "Preços" },
-  { source: "What you can get", translated: "O que você pode ter" },
-  { source: "Same prices we charge everyone.", translated: "Os mesmos preços que cobramos de todo mundo." },
-
-  { source: "Xkedule: $89 a month", translated: "Xkedule: US$ 89 por mês" },
-  { source: "Your site that books for you.", translated: "Seu site que agenda para você." },
-  {
-    source: "A booking page with AI that answers messages and calls. It books the appointment when the customer is ready.",
-    translated: "Uma página de agendamento com IA que responde mensagens e ligações. Ela agenda o horário quando o cliente está pronto.",
-  },
-
-  { source: "Xsites: $299 starting", translated: "Xsites: a partir de US$ 299" },
-  { source: "A professional website for your shop.", translated: "Um site profissional para a sua barbearia." },
-  {
-    source: "A clean site built for service businesses. Start with the essentials and add pages and features as you grow.",
-    translated: "Um site limpo, feito para negócios de serviço. Comece com o essencial e vá adicionando páginas e recursos conforme cresce.",
-  },
-
-  { source: "Xareable: $49 a month", translated: "Xareable: US$ 49 por mês" },
-  { source: "We post for you.", translated: "A gente posta para você." },
-  {
-    source: "Create and publish posts with AI from one place. Post by hand or put it on a schedule and stay active every week.",
-    translated: "Crie e publique posts com IA em um só lugar. Publique na hora ou deixe agendado e fique ativo toda semana.",
-  },
-
-  { source: "Ads that fill the calendar: talk to us", translated: "Anúncios que enchem a agenda: fale com a gente" },
-  {
-    source: "Google Ads, Facebook and Instagram Ads, TikTok Ads, retargeting campaigns, and campaign optimization.",
-    translated: "Google Ads, anúncios no Facebook e Instagram, anúncios no TikTok, campanhas de retargeting e otimização de campanha.",
-  },
-  // The bullets that used to repeat these same four terms ("Google Ads",
-  // "Meta & TikTok Ads", "Retargeting campaigns", "Campaign optimization")
-  // were removed from the page (the paragraph above already says all of
-  // it) — dropped here too, same reasoning as the other dead rows above.
-
-  // ── Reviews section (props.title/subtitle — see seed-barbershop-landing.ts
-  // for why these are no longer left as `props: {}`) ──────────────────────
-  { source: "What people say", translated: "O que as pessoas dizem" },
-  {
-    source: "Real reviews from businesses we've worked with.",
-    translated: "Avaliações reais de negócios com quem já trabalhamos.",
-  },
+  { source: "What it costs", translated: "Quanto custa" },
+  { source: "Same prices we charge everyone. Start with one.", translated: "Os mesmos preços que cobramos de todo mundo. Comece por um." },
+  { source: "Xkedule", translated: "Xkedule" },
+  { source: "Booking and AI receptionist", translated: "Agendamento e recepcionista com IA" },
+  { source: "$89", translated: "US$ 89" },
+  { source: "/month", translated: "/mês" },
+  { source: "Online booking with calendar sync", translated: "Agendamento online com sincronização de agenda" },
+  { source: "Appointment reminders", translated: "Lembretes de agendamento" },
+  { source: "Xsites", translated: "Xsites" },
+  { source: "Website", translated: "Site" },
+  { source: "$299", translated: "US$ 299" },
+  { source: "Starting price", translated: "Preço inicial" },
+  { source: "A professional site for your shop", translated: "Um site profissional para a sua barbearia" },
+  { source: "Add pages as you grow", translated: "Adicione páginas conforme você cresce" },
+  { source: "Xareable", translated: "Xareable" },
+  { source: "Social posts", translated: "Posts para redes sociais" },
+  { source: "$49", translated: "US$ 49" },
+  { source: "Posts made with AI", translated: "Posts feitos com IA" },
+  { source: "Post by hand or on a schedule", translated: "Poste na hora ou deixe agendado" },
+  { source: "Google and Instagram ads are priced around your budget, so we quote them after we talk.", translated: "Os anúncios no Google e no Instagram são cobrados de acordo com o seu orçamento, então passamos o valor depois que conversarmos." },
+  // ── NFC link
+  { source: "We also make NFC keychains with your shop's logo.", translated: "A gente também faz chaveiros NFC com a logo da sua barbearia." },
+  { source: "See the keychains", translated: "Ver os chaveiros" },
+  // ── Reviews
+  { source: "What clients say", translated: "O que os clientes dizem" },
+  { source: "Reviews from businesses we've worked with.", translated: "Avaliações de negócios com quem já trabalhamos." },
+  // ── FAQ
+  { source: "Questions", translated: "Dúvidas" },
+  { source: "Before you call", translated: "Antes de ligar" },
+  { source: "Short answers before you call or fill out the form.", translated: "Respostas curtas antes de ligar ou preencher o formulário." },
+  { source: "Do I have to buy everything?", translated: "Preciso comprar tudo?" },
+  { source: "No. Each product has its own price and you can start with one.", translated: "Não. Cada produto tem o seu preço e você pode começar por um só." },
+  { source: "Do the clients stay mine?", translated: "Os clientes continuam sendo meus?" },
+  { source: "Yes. They book on your own page, not on a marketplace.", translated: "Sim. Eles agendam na sua própria página, e não em uma plataforma." },
+  { source: "Can you come to my shop?", translated: "Vocês podem ir até a minha barbearia?" },
+  { source: "You can ask for an in-person visit in the form, or pick a video call.", translated: "Você pode pedir uma visita presencial no formulário ou escolher uma chamada de vídeo." },
+  { source: "How much do the ads cost?", translated: "Quanto custam os anúncios?" },
+  { source: "It depends on how much you want to spend each month. We quote it after we talk about your shop.", translated: "Depende de quanto você quer investir por mês. Passamos o valor depois de conversar sobre a sua barbearia." },
+  // ── Closing lead form
+  { source: "Let's fill your chairs", translated: "Vamos encher suas cadeiras" },
+  { source: "Tell us about your shop. It takes a minute.", translated: "Conte sobre a sua barbearia. Leva um minuto." },
 ];
 
 // ── Seed runner ───────────────────────────────────────────────────────────

@@ -9,6 +9,7 @@ import {
   MessageCircle, PenTool, Factory, Truck,
   Nfc, Smartphone, QrCode, Star,
   CreditCard, Package, Link2, Check,
+  PhoneCall, Bot, CalendarCheck, Bell,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Band } from "@/components/editorial";
@@ -29,6 +30,7 @@ export const processStepperIconNames = [
   "MessageCircle", "PenTool", "Factory", "Truck",
   "Nfc", "Smartphone", "QrCode", "Star",
   "CreditCard", "Package", "Link2", "Check",
+  "PhoneCall", "Bot", "CalendarCheck", "Bell",
 ] as const;
 export type ProcessStepperIconName = (typeof processStepperIconNames)[number];
 
@@ -37,6 +39,7 @@ const ICON_MAP: Record<ProcessStepperIconName, LucideIcon> = {
   MessageCircle, PenTool, Factory, Truck,
   Nfc, Smartphone, QrCode, Star,
   CreditCard, Package, Link2, Check,
+  PhoneCall, Bot, CalendarCheck, Bell,
 };
 
 export const processStepperPropsSchema = z.object({

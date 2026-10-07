@@ -6,6 +6,7 @@ import { z } from "zod";
 import {
   Star, Instagram, IdCard, UtensilsCrossed, Globe, MessageCircle,
   Store, ConciergeBell, Car, KeyRound, Nfc, Smartphone,
+  PhoneMissed, CalendarX, CalendarClock,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
@@ -21,11 +22,13 @@ import { sectionThemeSchema } from "./sectionTheme";
 export const featureGridIconNames = [
   "Star", "Instagram", "IdCard", "UtensilsCrossed", "Globe", "MessageCircle",
   "Store", "ConciergeBell", "Car", "KeyRound", "Nfc", "Smartphone",
+  "PhoneMissed", "CalendarX", "CalendarClock",
 ] as const;
 
 const ICON_MAP: Record<(typeof featureGridIconNames)[number], LucideIcon> = {
   Star, Instagram, IdCard, UtensilsCrossed, Globe, MessageCircle,
   Store, ConciergeBell, Car, KeyRound, Nfc, Smartphone,
+  PhoneMissed, CalendarX, CalendarClock,
 };
 
 // Optional brand badge in place of the plain icon: the destination's own logo
@@ -130,7 +133,7 @@ export function FeatureGridSection({ props }: { props: FeatureGridProps }) {
                       alt={item.imageAlt ? t(item.imageAlt) : t(item.title)}
                       loading="lazy"
                       decoding="async"
-                      className="h-full w-full object-cover transition-transform duration-500 motion-safe:group-hover:scale-[1.025]"
+                      className="h-full w-full object-cover object-top transition-transform duration-500 motion-safe:group-hover:scale-[1.025]"
                       sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
                     />
                   </div>
