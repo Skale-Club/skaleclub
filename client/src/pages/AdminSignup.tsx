@@ -2,17 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAdminAuth } from '@/context/AuthContext';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AuthHeading, AuthLayout, AUTH_INPUT, AUTH_INPUT_ICON, AUTH_LABEL, AUTH_SECONDARY_BUTTON } from '@/components/admin/AuthLayout';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from '@/components/ui/loader';
 import { AppLoader } from '@/components/ui/spinner';
 import { TurnstileWidget } from '@/components/TurnstileWidget';
-import {
-  ArrowLeft,
-  Lock,
-  Mail,
-} from 'lucide-react';
+import { ArrowRight, Lock, Mail } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import type { CompanySettings } from '@shared/schema';
 
@@ -106,166 +102,149 @@ export default function AdminSignup() {
   };
 
   return (
-    <main className="min-h-screen bg-[#f4f7fb] px-4 py-6 text-slate-950 md:py-8">
-      <div className="mx-auto w-full max-w-md">
-        <button
-          type="button"
-          onClick={() => setLocation('/')}
-          className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-slate-800 transition-colors hover:text-slate-900"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Back to Home
-        </button>
+    <AuthLayout
+      logoUrl={companySettings?.logoMain}
+      companyName={companySettings?.companyName || 'Skale Club'}
+      onBack={() => setLocation('/')}
+    >
+      <AuthHeading
+        eyebrow="Get started"
+        title="Create your account"
+        description="Set up your access to the admin dashboard."
+      />
 
-        <Card className="w-full rounded-2xl border border-slate-200 bg-white text-slate-950 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-          <CardHeader className="px-5 pb-4 pt-7 text-center md:px-6">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center overflow-hidden">
-              {companySettings?.logoIcon ? (
-                <img
-                  src={companySettings.logoIcon}
-                  alt="Logo"
-                  className="h-full w-full object-contain"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                  }}
-                />
-              ) : null}
-              <Lock className={`h-6 w-6 text-primary ${companySettings?.logoIcon ? 'hidden' : ''}`} />
-            </div>
-            <CardTitle className="text-4xl leading-none tracking-tight text-slate-900">
-              {companySettings?.companyName || 'Create Account'}
-            </CardTitle>
-            <CardDescription className="pt-2 text-xl text-slate-600">
-              Create your account to access the admin dashboard
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5 px-5 pb-7 md:px-6">
-            {isSupabaseAuth ? (
-              <>
-                {error && (
-                  <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">
-                    {error}
-                  </div>
-                )}
-                {success && (
-                  <div className="rounded-md bg-green-50 p-3 text-sm text-green-700">
-                    {success}
-                  </div>
-                )}
-
-                <Button
-                  type="button"
-                  onClick={handleGoogleSignup}
-                  className="h-12 w-full border border-slate-300 bg-white text-slate-900 hover:bg-slate-50"
-                  disabled={googleSubmitting}
-                >
-                  {googleSubmitting ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <img src={googleLogoUrl} alt="" aria-hidden="true" className="mr-2 h-4 w-4" />
-                  )}
-                  Continue with Google
-                </Button>
-
-                <div className="flex items-center gap-3">
-                  <div className="h-px flex-1 bg-slate-200" />
-                  <div className="text-xs uppercase tracking-wider text-slate-500">or continue with</div>
-                  <div className="h-px flex-1 bg-slate-200" />
-                </div>
-
-                <form onSubmit={handleEmailSignup} className="space-y-5">
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-xl font-semibold text-slate-900">Email</Label>
-                    <div className="relative">
-                      <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="admin@example.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="h-12 border-slate-300 bg-white pl-10 text-base text-slate-950 placeholder:text-slate-400"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="password" className="text-xl font-semibold text-slate-900">Password</Label>
-                    <div className="relative">
-                      <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="*****"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="h-12 border-slate-300 bg-white pl-10 text-base text-slate-950 placeholder:text-slate-400"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirm-password" className="text-xl font-semibold text-slate-900">Confirm Password</Label>
-                    <div className="relative">
-                      <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-                      <Input
-                        id="confirm-password"
-                        type="password"
-                        placeholder="*****"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="h-12 border-slate-300 bg-white pl-10 text-base text-slate-950 placeholder:text-slate-400"
-                        required
-                      />
-                    </div>
-                  </div>
-                  {captchaRequired && (
-                    <TurnstileWidget
-                      siteKey={turnstileSiteKey}
-                      onVerify={handleCaptchaVerify}
-                      onExpire={handleCaptchaExpire}
-                      onError={handleCaptchaExpire}
-                    />
-                  )}
-                  <Button
-                    type="submit"
-                    className="h-12 w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                    disabled={submitting || !captchaReady}
-                  >
-                    {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Sign Up
-                  </Button>
-                </form>
-                <p className="text-center text-base text-slate-600">
-                  Already have an account?{' '}
-                  <button
-                    type="button"
-                    onClick={() => setLocation('/admin/login')}
-                    className="font-medium text-[#2459A8]"
-                  >
-                    Sign in
-                  </button>
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-center text-sm text-slate-600">
-                  Sign up is not available in this authentication mode. Please sign in with Google.
-                </p>
-                <Button
-                  onClick={() => signIn()}
-                  className="h-12 w-full border border-slate-300 bg-white text-slate-900 hover:bg-slate-50"
-                >
-                  <img src={googleLogoUrl} alt="" aria-hidden="true" className="mr-2 h-4 w-4" />
-                  Continue with Google
-                </Button>
-              </>
+      <div className="space-y-5">
+        {isSupabaseAuth ? (
+          <>
+            {error && (
+              <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                {error}
+              </div>
             )}
-          </CardContent>
-        </Card>
+            {success && (
+              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+                {success}
+              </div>
+            )}
+
+            <Button
+              type="button"
+              onClick={handleGoogleSignup}
+              className={AUTH_SECONDARY_BUTTON}
+              disabled={googleSubmitting}
+              data-testid="button-signup-google"
+            >
+              {googleSubmitting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <img src={googleLogoUrl} alt="" aria-hidden="true" className="mr-2 h-4 w-4" />
+              )}
+              Continue with Google
+            </Button>
+
+            <div className="flex items-center gap-3">
+              <div className="h-px flex-1 bg-white/10" />
+              <div className="text-xs font-bold uppercase tracking-[0.24em] text-fog-400">or</div>
+              <div className="h-px flex-1 bg-white/10" />
+            </div>
+
+            <form onSubmit={handleEmailSignup} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="email" className={AUTH_LABEL}>Email</Label>
+                <div className="group relative">
+                  <Mail className={AUTH_INPUT_ICON} />
+                  <Input
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@company.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className={AUTH_INPUT}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password" className={AUTH_LABEL}>Password</Label>
+                <div className="group relative">
+                  <Lock className={AUTH_INPUT_ICON} />
+                  <Input
+                    id="password"
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={AUTH_INPUT}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password" className={AUTH_LABEL}>Confirm Password</Label>
+                <div className="group relative">
+                  <Lock className={AUTH_INPUT_ICON} />
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={AUTH_INPUT}
+                    required
+                  />
+                </div>
+              </div>
+              {captchaRequired && (
+                <TurnstileWidget
+                  siteKey={turnstileSiteKey}
+                  onVerify={handleCaptchaVerify}
+                  onExpire={handleCaptchaExpire}
+                  onError={handleCaptchaExpire}
+                />
+              )}
+              <Button
+                type="submit"
+                className="group !mt-8 h-12 w-full rounded-full bg-cta text-base font-bold text-white hover:bg-cta-hover focus-visible:ring-2 focus-visible:ring-cta/40 focus-visible:ring-offset-0 disabled:opacity-60"
+                disabled={submitting || !captchaReady}
+                data-testid="button-signup"
+              >
+                {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Create Account
+                {!submitting && (
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                )}
+              </Button>
+            </form>
+
+            <p className="pt-2 text-center text-sm text-fog-400">
+              Already have an account?{' '}
+              <button
+                type="button"
+                onClick={() => setLocation('/admin/login')}
+                className="font-semibold text-cta-soft transition-colors hover:text-fog-50"
+              >
+                Sign in
+              </button>
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-fog-400">
+              Sign up is not available in this authentication mode. Please sign in with Google.
+            </p>
+            <Button
+              onClick={() => signIn()}
+              className={AUTH_SECONDARY_BUTTON}
+            >
+              <img src={googleLogoUrl} alt="" aria-hidden="true" className="mr-2 h-4 w-4" />
+              Continue with Google
+            </Button>
+          </>
+        )}
       </div>
-    </main>
+    </AuthLayout>
   );
 }
-

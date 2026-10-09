@@ -3,7 +3,7 @@ import { Band, EditorialCard } from "@/components/editorial";
 import { SectionHeading } from "@/components/layout/SectionHeading";
 import { useTranslation } from "@/hooks/useTranslation";
 
-/** The three things we solve. Page copy, not the home's trust badges. */
+/** The three stages we cover, prospect to close. Page copy, not the home's trust badges. */
 const PILLARS = [
   { icon: Target, title: "Prospect", desc: "Find the right businesses and reach them first" },
   { icon: Magnet, title: "Attract", desc: "Get found online and stay active where customers look" },
@@ -14,7 +14,7 @@ export function PortfolioPillars() {
   const { t } = useTranslation();
   return (
     <Band tone="cream">
-      <SectionHeading variant="editorial" tone="light" eyebrow="What we solve" title="Three problems, one partner" />
+      <SectionHeading variant="editorial" tone="light" eyebrow="How we help" title="From first contact to closed deal" />
       <div className="mt-12 grid gap-5 lg:grid-cols-3">
         {PILLARS.map(({ icon: Icon, title, desc }) => (
           <EditorialCard key={title} tone="light">

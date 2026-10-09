@@ -735,7 +735,7 @@ export const translations = {
     // Redesign Phase 3
     'Estimate only. We confirm the final total with you before anything is produced.': 'Apenas uma estimativa. Confirmamos o total final com você antes de produzir qualquer coisa.',
     'Keep your WhatsApp handy. We call to confirm before producing anything.': 'Deixe o WhatsApp por perto. Ligamos para confirmar antes de produzir qualquer coisa.',
-    'App home screen': 'Tela inicial do aplicativo', 'What we solve': 'O que resolvemos', 'Three problems, one partner': 'Três problemas, um só parceiro',
+    'App home screen': 'Tela inicial do aplicativo', 'How we help': 'Como ajudamos', 'From first contact to closed deal': 'Do primeiro contato ao negócio fechado',
     // Audit D
     'Start': 'Começar', 'Draft': 'Rascunho', 'Call': 'Ligar', 'Quote': 'Orçamento',
     'By submitting, you agree to be contacted by WhatsApp, email or phone about your request. See our': 'Ao enviar, você concorda em receber contato por WhatsApp, e-mail ou telefone sobre sua solicitação. Veja nossa',
