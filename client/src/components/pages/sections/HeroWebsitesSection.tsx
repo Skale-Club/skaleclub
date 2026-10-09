@@ -60,6 +60,7 @@ const KNOWN_IMAGE_SIZES: Record<string, { width: number; height: number }> = {
   "/SkaleClub.webp": { width: 1169, height: 1500 },
   "/nfc-plaque-pair.webp": { width: 1157, height: 852 },
   "/nfc-keychains-trio.webp": { width: 1200, height: 775 },
+  "/industry-scenes/barbershop.webp": { width: 960, height: 640 },
 };
 
 const scrollToLeadCta = () => {
@@ -117,10 +118,14 @@ function DarkProductHero({ props }: { props: HeroWebsitesProps }) {
   const { t } = useTranslation();
   const headline = props.headline ?? DEFAULTS.headline;
   const bgUrl = props.backgroundImageUrl;
+  const bgVideoUrl = props.bgVideoUrl;
   // A landscape product shot (the plaque pair) would come out short in a column
   // sized for portrait photos (the keychains): give it a wider column and cap.
+  // A video (uploaded in Admin -> Pages) is assumed landscape.
   const size = bgUrl ? KNOWN_IMAGE_SIZES[bgUrl] : undefined;
-  const wide = Boolean(size && size.width > size.height * 1.15);
+  const wide = Boolean(bgVideoUrl || (size && size.width > size.height * 1.15));
+  // Reduced-motion visitors get the still image as the video's poster.
+  const reduceMotion = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
   return (
     <div data-testid="section-hero-websites">
@@ -146,7 +151,24 @@ function DarkProductHero({ props }: { props: HeroWebsitesProps }) {
             )}
           </div>
 
-          {bgUrl ? (
+          {bgVideoUrl ? (
+            // The video takes the image's place; the image stays as its poster
+            // so the slot is never empty while it loads.
+            <div className="relative order-1 mx-auto w-full max-w-[340px] sm:max-w-[480px] lg:order-2 lg:max-w-[680px]">
+              <video
+                key={bgVideoUrl}
+                src={bgVideoUrl}
+                poster={bgUrl}
+                aria-label={props.backgroundImageAlt ? t(props.backgroundImageAlt) : undefined}
+                className="aspect-[3/2] w-full object-cover drop-shadow-2xl"
+                autoPlay={!reduceMotion}
+                loop
+                muted
+                playsInline
+                preload="metadata"
+              />
+            </div>
+          ) : bgUrl ? (
             <div
               className={`relative order-1 mx-auto w-full lg:order-2 ${
                 wide ? "max-w-[340px] sm:max-w-[480px] lg:max-w-[680px]" : "max-w-[220px] sm:max-w-[300px] lg:max-w-[460px]"

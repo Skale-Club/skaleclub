@@ -10,36 +10,43 @@
 //   2. pages   WHERE slug = 'barbershops'    (EN mother, language='en')
 //   3. pages   WHERE slug = 'barbershops-br' (PT,        language='pt')
 //
-// Both landings share the SAME sections [heroWebsites, featureGrid x3,
-// contentBlocks, reviews, leadFormCta]; copy is t()-based so the language
-// column drives EN vs PT. seedPage() bakes the curated pt-BR copy from
-// scripts/data/landing-pt-copy.ts straight into the '-br' row automatically
-// (see scripts/lib/pt-copy.ts) — no extra script to run for that. Also run
+// Both landings share the SAME sections [heroWebsites (dark), featureGrid x2,
+// processStepper, pricingPlans, linkCallout, reviews, faqAccordion,
+// leadFormCta]; copy is t()-based so the language column drives EN vs PT.
+// seedPage() bakes the curated pt-BR copy from scripts/data/landing-pt-copy.ts
+// straight into the '-br' row automatically (see scripts/lib/pt-copy.ts), so
+// no extra script is needed for that. Also run
 // scripts/seed-barbershop-translations.ts once; it writes the SAME hand-
 // written pairs into the `translations` table so t() never falls back to a
 // live AI round-trip for this copy anywhere else it might be reused. After
 // running, /barbershops renders in English and /barbershops-br in Portuguese.
+// Finally run scripts/patch-landing-pt-copy.ts --apply: it upserts the en->pt
+// identity rows for the Portuguese strings stored in the '-br' row.
 //
-// Content brief (2026-09-30): one page, one ask (call the demo number or send
-// the lead form), built entirely from registered section types — no new page
-// component. The price, priceLabel and description for Xkedule/Xsites/
-// Xareable, and the paragraph for the "Paid Advertising" service card, are
-// copied VERBATIM from the live /api/portfolio-services and
-// /api/company-settings responses, so it never invents a number the real
-// catalog doesn't charge — see the note above LANDING_SECTIONS for exactly
-// which fields. The NFC block
-// covers the three real 3D-printed products (review plaque, custom
-// keychains, keychain display), each linking to its own page under
-// /products/ (scripts/seed-products-landing.ts) — not a generic "NFC tag" —
-// and is deliberately its own section rather than a dedicated page.
+// Content brief (2026-10-07): one page, one ask (call the demo number or send
+// the lead form), built entirely from registered section types, with no new
+// page component. Order: dark hero with the shop photo, "where a barbershop
+// loses money", "what happens when a client calls", "what we set up" photo
+// cards, pricing, a quiet NFC link, reviews, FAQ, closing lead form.
+//
+// Prices: Xkedule $89 a month, Xsites $299 starting and Xareable $49 a month
+// are the live catalog numbers (curl https://skale.club/api/portfolio-services,
+// checked 2026-09-30). Ads have no price on purpose: "we quote after we talk".
+// This page is a snapshot, not a live read: if the numbers change in admin,
+// re-copy them here and re-run this script.
+//
 // Per the site owner: never say "tech", "technology", "small company", or
-// claim to be local — the copy below sells time/money/a full chair, not a
-// technology category. The `reviews` section is given its own title/subtitle
+// claim to be local. The `reviews` section is given its own title/subtitle
 // props for exactly that reason: left as `props: {}` it falls back to
 // company-settings' homepage copy, which mentions "technology".
-// Text rule: no em dash, no "frase de efeito" (ad-cliché taglines), no
-// three-parallel-items sentences, no three-item bullet lists — write like a
-// business owner, not a copywriter.
+// Text rule: no em dash or en dash, no "frase de efeito" (ad-cliche taglines),
+// no three-parallel-items sentences, no three-item bullet lists. Write like a
+// business owner, not a copywriter. Do not invent facts (contract terms, setup
+// times, client counts, integrations).
+//
+// Hero CTA: HeroWebsitesSection always renders the form button as the primary
+// (filled) pill and a tel: link only as the secondary (ghost) pill, so the
+// demo line is the secondary CTA here, with the note under it.
 import "dotenv/config";
 import { pathToFileURL } from "node:url";
 import { seedForm, seedPage, withSeedGuard } from "./lib/seed-utils.js";
@@ -70,11 +77,15 @@ const LANDING_PT = { slug: "barbershops-br", name: "Barbershops (PT)", language:
 // - `principalDesafio` ALSO maps to a native form_leads.principal_desafio
 //   column (shared/schema/forms.ts:55) — benign; the answer simply lands in a
 //   dedicated column instead of customAnswers.
-// - All other IDs (nomeBarbearia, numeroCadeiras, numeroBarbeiros,
-//   sistemaAgendamento, ticketMedio, investimentoAnuncios, tipoVisita,
-//   enderecoBarbearia, observacoes) fall through into form_leads.customAnswers
-//   (jsonb). `enderecoBarbearia` is a conditional field shown only when
+// - All other IDs (nomeBarbearia, numeroCadeiras, tipoVisita,
+//   enderecoBarbearia) fall through into form_leads.customAnswers (jsonb).
+//   `enderecoBarbearia` is a conditional field shown only when
 //   tipoVisita = presencial.
+// - 2026-10-07: trimmed from 12 to 7 questions. numeroBarbeiros,
+//   sistemaAgendamento, ticketMedio, investimentoAnuncios and observacoes were
+//   dropped. Old leads keep those answers in customAnswers; the admin lead
+//   dialog lists any answer without a configured question as a raw id/value
+//   row (LeadDetailDialog.tsx extraCustomAnswers), so nothing is hidden.
 // - `points` is 0 for every option — this form is NOT scored; all leads route
 //   as `novo` regardless of answers.
 // - Question 2 uses the `phoneCountry` type (Plan 44-03) which renders the
@@ -93,7 +104,7 @@ const BARBERSHOP_LEADS_QUESTIONS: FormQuestion[] = [
     id: "telefone",
     order: 2,
     title: "What's your WhatsApp?",
-    type: "phoneCountry", // ← inline country selector + phone input (44-03)
+    type: "phoneCountry", // inline country selector + phone input (44-03)
     required: true,
     placeholder: "(555) 123-4567",
   },
@@ -127,61 +138,8 @@ const BARBERSHOP_LEADS_QUESTIONS: FormQuestion[] = [
     ],
   },
   {
-    id: "numeroBarbeiros", // → customAnswers.numeroBarbeiros
-    order: 6,
-    title: "How many barbers work with you?",
-    type: "select",
-    required: true,
-    options: [
-      { value: "just-me", label: "Just me", points: 0 },
-      { value: "2-3",     label: "2-3",     points: 0 },
-      { value: "4-6",     label: "4-6",     points: 0 },
-      { value: "7-plus",  label: "7+",      points: 0 },
-    ],
-  },
-  {
-    id: "sistemaAgendamento", // → customAnswers.sistemaAgendamento
-    order: 7,
-    title: "How do clients book with you today?",
-    type: "select",
-    required: true,
-    options: [
-      { value: "whatsapp-only", label: "WhatsApp only",                       points: 0 },
-      { value: "booking-app",   label: "Booking app (Booksy, Agendor, etc.)", points: 0 },
-      { value: "walk-ins-only", label: "Walk-ins only",                       points: 0 },
-      { value: "phone-calls",   label: "Phone calls",                         points: 0 },
-      { value: "other",         label: "Other",                               points: 0 },
-    ],
-  },
-  {
-    id: "ticketMedio", // → customAnswers.ticketMedio
-    order: 8,
-    title: "What's your average ticket per client?",
-    type: "select",
-    required: true,
-    options: [
-      { value: "under-25", label: "Under $25", points: 0 },
-      { value: "25-45",    label: "$25-$45",   points: 0 },
-      { value: "45-75",    label: "$45-$75",   points: 0 },
-      { value: "over-75",  label: "Over $75",  points: 0 },
-    ],
-  },
-  {
-    id: "investimentoAnuncios", // → customAnswers.investimentoAnuncios
-    order: 9,
-    title: "How much do you invest in ads per month today?",
-    type: "select",
-    required: true,
-    options: [
-      { value: "nothing-yet", label: "Nothing yet", points: 0 },
-      { value: "under-300",   label: "Under $300",  points: 0 },
-      { value: "300-1000",    label: "$300-$1,000", points: 0 },
-      { value: "over-1000",   label: "Over $1,000", points: 0 },
-    ],
-  },
-  {
     id: "principalDesafio", // → native form_leads.principal_desafio column
-    order: 10,
+    order: 6,
     title: "What's your biggest challenge right now?",
     type: "select",
     required: true,
@@ -198,11 +156,11 @@ const BARBERSHOP_LEADS_QUESTIONS: FormQuestion[] = [
   // Xphere's side: since quick 260906-g80 the post-submit redirect consumes
   // this answer (via the admin-configured in-person/online event slugs in
   // Admin -> Integrations -> CRM -> Xphere) and sends the lead to the matching
-  // https://xphere.app/book/... page from the thank-you CTA. Do NOT add a
-  // date/time question here — no such form question type exists.
+  // https://xphere.app/book/... page from the thank-you CTA. Do NOT remove it
+  // and do NOT add a date/time question here: no such form question type exists.
   {
     id: "tipoVisita", // → customAnswers.tipoVisita
-    order: 11,
+    order: 7,
     title: "How would you like to meet us?",
     type: "select",
     required: true,
@@ -217,14 +175,6 @@ const BARBERSHOP_LEADS_QUESTIONS: FormQuestion[] = [
       placeholder: "Street, number, city",
     },
   },
-  {
-    id: "observacoes", // → customAnswers.observacoes
-    order: 12,
-    title: "Anything else we should know?",
-    type: "text",
-    required: false,
-    placeholder: "Optional",
-  },
 ];
 
 const BARBERSHOP_LEADS_CONFIG: FormConfig = {
@@ -235,161 +185,219 @@ const BARBERSHOP_LEADS_CONFIG: FormConfig = {
 
 // ── Landing sections (in render order) ─────────────────────────────────────
 
-// Sections are IDENTICAL for both languages — the pages.language column drives
-// EN vs PT through t(). Copy here is barbershop-specific (not the shared
-// component defaults). No bgVideoUrl: the /websites video asset is specific
-// to that page.
-//
-// Pricing block: the price, priceLabel and description of Xkedule/Xsites/
-// Xareable, and the Ads card's whole paragraph, are copied VERBATIM on
-// 2026-09-30 from the live public catalog:
-//   curl https://skale.club/api/portfolio-services   (Xkedule/Xsites/Xareable)
-//   curl https://skale.club/api/company-settings      ("Paid Advertising" card
-//                                                       under homepageContent
-//                                                       .ourServicesSection.cards)
-// The short tagline on each of the three product blocks ("Your site that
-// books for you.", etc.) is NOT from the API — it is page-specific copy
-// written to fit this landing, not the product's own subtitle field.
-// If the verbatim numbers change in admin, re-copy them here and re-run this
-// script — this page is a snapshot, not a live read, same as every other
-// managed landing on the site.
+// Sections are IDENTICAL for both languages: the pages.language column drives
+// EN vs PT through t(). Copy is barbershop-specific (not the shared component
+// defaults). Every image is a real file in client/public and is used once on
+// the page. No bgVideoUrl: the /websites video asset is specific to that page.
+const SCENES = "/industry-scenes";
+const CATALOG = "/product-assets/catalog-2026-09";
+
 export const LANDING_SECTIONS: PageSection[] = [
   {
     type: "heroWebsites",
     props: {
-      headline: "More time in your day. More money in your pocket.",
-      subheadline: "We work with barbershops.",
+      theme: "dark",
+      eyebrow: "For barbershops",
+      headline: "Your phone gets answered while you cut.",
+      subheadline: "An AI picks up the call and books the cut. You keep working.",
+      // Also the poster of the hero video. The video itself (bgVideoUrl) is
+      // uploaded in Admin -> Pages -> Hero background video, per page (EN and
+      // PT separately). Re-running this seed replaces the sections and drops
+      // that video unless you add its bgVideoUrl here.
+      backgroundImageUrl: `${SCENES}/barbershop.webp`,
+      backgroundImageAlt: "Barber chair in a barbershop with a Google review plaque on the counter",
       ctaLabel: "Get more clients",
       secondaryCtaLabel: "Hear it working: (224) 551-6131",
       secondaryCtaHref: "tel:+12245516131",
-      secondaryCtaNote: "An AI answers that line for a barbershop. It gives prices and hours. Then it books the cut.",
+      secondaryCtaNote: "That line is answered by an AI set up as a barbershop. Ask it a price, then book a cut.",
     },
   },
   {
     type: "featureGrid",
     props: {
-      eyebrow: "More money",
-      heading: "More money in your pocket",
-      subheading: "Where the extra money actually comes from.",
+      theme: "light",
+      eyebrow: "The problem",
+      heading: "Where a barbershop loses money",
+      items: [
+        {
+          icon: "PhoneMissed",
+          title: "The phone rings mid-cut",
+          description: "You can't pick up with the clippers in your hand, so the client calls the next shop.",
+        },
+        {
+          icon: "CalendarX",
+          title: "No-shows",
+          description: "Someone books Saturday at 10 and never shows up. That chair earned nothing.",
+        },
+        {
+          icon: "CalendarClock",
+          title: "Slow weekdays",
+          description: "Friday is packed and Tuesday afternoon sits empty.",
+        },
+        {
+          icon: "Smartphone",
+          title: "Clients who belong to the app",
+          description: "Book through a marketplace and your client sees every other shop nearby too.",
+        },
+      ],
+    },
+  },
+  {
+    type: "processStepper",
+    props: {
+      theme: "dark",
+      eyebrow: "How it works",
+      heading: "What happens when a client calls",
+      subheading: "Call (224) 551-6131 and try it.",
+      steps: [
+        {
+          title: "The client calls",
+          description: "At 9pm or in the middle of a fade, the call gets picked up.",
+        },
+        {
+          title: "The AI answers",
+          description: "It knows your prices and your hours.",
+        },
+        {
+          title: "The cut gets booked",
+          description: "The appointment goes straight into your calendar.",
+        },
+        {
+          title: "A reminder goes out",
+          description: "The client gets a reminder before the visit, so fewer chairs sit empty.",
+        },
+      ],
+      // Closed allowlist (processStepperIconNames): never an icon name outside it.
+      icons: ["PhoneCall", "Bot", "CalendarCheck", "Bell"],
+    },
+  },
+  {
+    type: "featureGrid",
+    props: {
+      theme: "light",
+      eyebrow: "What you get",
+      heading: "What we set up for your shop",
       items: [
         {
           icon: "Globe",
-          title: "Your own website",
-          description: "It takes bookings and the clients stay yours, not a marketplace's.",
-        },
-        {
-          icon: "Instagram",
-          title: "Ads that bring people in",
-          description: "Google and Instagram ads that fill your calendar with new clients.",
-        },
-      ],
-    },
-  },
-  {
-    type: "featureGrid",
-    props: {
-      eyebrow: "More time",
-      heading: "More time in your day",
-      subheading: "Where the extra time in your day comes from.",
-      items: [
-        {
-          icon: "Smartphone",
-          title: "Calls and texts get answered",
-          description: "An AI answers calls and texts any time of day and books the appointment.",
+          title: "A booking page for your shop",
+          description: "Clients pick a time and book on a page with your shop's name.",
+          imageUrl: `${CATALOG}/scheduling-system-home.webp`,
+          imageAlt: "Booking page built with Xkedule",
         },
         {
           icon: "MessageCircle",
-          title: "Fewer no-shows",
-          description: "Reminders go out on their own and cut down on no-shows.",
+          title: "Calls and texts answered",
+          description: "The AI replies any time of day and books the appointment.",
+          imageUrl: `${CATALOG}/scheduling-system-dashboard.webp`,
+          imageAlt: "Xkedule dashboard listing recent appointments",
         },
         {
-          icon: "ConciergeBell",
-          title: "Social media",
-          description: "Posts get made and scheduled for you every week.",
+          icon: "Instagram",
+          title: "Posts every week",
+          description: "Make posts with AI and schedule them, so your Instagram doesn't go quiet.",
+          imageUrl: `${CATALOG}/xareable-home.webp`,
+          imageAlt: "Xareable home page",
         },
-      ],
-      theme: "dark",
-    },
-  },
-  {
-    type: "featureGrid",
-    props: {
-      eyebrow: "NFC for your shop",
-      heading: "For your counter",
-      subheading: "Three things we 3D print for barbershops, made to order.",
-      items: [
         {
-          icon: "Nfc",
-          title: "Review plaque",
-          description: "A plaque for your counter. Tap a phone on it and it opens your Google review page.",
+          icon: "Star",
+          title: "More Google reviews",
+          description: "A plaque on your counter. Clients tap their phone and land on your review page.",
+          imageUrl: `${SCENES}/counter-plaque-v2.webp`,
+          imageAlt: "NFC Google review plaque on a counter",
           href: "/products/nfc-review-plaque",
         },
-        {
-          icon: "KeyRound",
-          title: "Custom keychains",
-          description: "NFC keychains with your barbershop's own branding. The tap opens the link you choose.",
-          href: "/products/nfc-keychains",
-        },
-        {
-          icon: "Store",
-          title: "Keychain display",
-          description: "A display for your counter so you can sell the keychains yourself. Extra money for the shop.",
-          href: "/products/nfc-keychains",
-        },
       ],
     },
   },
   {
-    type: "contentBlocks",
+    // Prices are the live catalog: Xkedule $89 a month, Xsites $299 starting,
+    // Xareable $49 a month. No plan images: the section above already shows
+    // the Xkedule and Xareable screens.
+    type: "pricingPlans",
     props: {
-      eyebrow: "Pricing",
-      heading: "What you can get",
-      subheading: "Same prices we charge everyone.",
       theme: "dark",
-      blocks: [
+      eyebrow: "Pricing",
+      heading: "What it costs",
+      subheading: "Same prices we charge everyone. Start with one.",
+      ctaLabel: "Get more clients",
+      plans: [
         {
-          heading: "Xkedule: $89 a month",
-          paragraphs: [
-            "Your site that books for you.",
-            "A booking page with AI that answers messages and calls. It books the appointment when the customer is ready.",
-          ],
+          name: "Xkedule",
+          title: "Booking and AI receptionist",
+          price: "$89",
+          priceUnit: "/month",
+          highlight: true,
+          features: ["Online booking with calendar sync", "Appointment reminders"],
         },
         {
-          heading: "Xsites: $299 starting",
-          paragraphs: [
-            "A professional website for your shop.",
-            "A clean site built for service businesses. Start with the essentials and add pages and features as you grow.",
-          ],
+          name: "Xsites",
+          title: "Website",
+          price: "$299",
+          priceNote: "Starting price",
+          features: ["A professional site for your shop", "Add pages as you grow"],
         },
         {
-          heading: "Xareable: $49 a month",
-          paragraphs: [
-            "We post for you.",
-            "Create and publish posts with AI from one place. Post by hand or put it on a schedule and stay active every week.",
-          ],
-        },
-        {
-          heading: "Ads that fill the calendar: talk to us",
-          paragraphs: [
-            "Google Ads, Facebook and Instagram Ads, TikTok Ads, retargeting campaigns, and campaign optimization.",
-          ],
+          name: "Xareable",
+          title: "Social posts",
+          price: "$49",
+          priceUnit: "/month",
+          features: ["Posts made with AI", "Post by hand or on a schedule"],
         },
       ],
+      footnote: "Google and Instagram ads are priced around your budget, so we quote them after we talk.",
+    },
+  },
+  {
+    type: "linkCallout",
+    props: {
+      theme: "dark",
+      text: "We also make NFC keychains with your shop's logo.",
+      linkLabel: "See the keychains",
+      href: "/nfc-keychains",
     },
   },
   {
     type: "reviews",
     props: {
-      title: "What people say",
-      subtitle: "Real reviews from businesses we've worked with.",
+      title: "What clients say",
+      subtitle: "Reviews from businesses we've worked with.",
     },
   },
   {
+    type: "faqAccordion",
+    props: {
+      theme: "light",
+      eyebrow: "Questions",
+      heading: "Before you call",
+      subheading: "Short answers before you call or fill out the form.",
+      items: [
+        {
+          question: "Do I have to buy everything?",
+          answer: "No. Each product has its own price and you can start with one.",
+        },
+        {
+          question: "Do the clients stay mine?",
+          answer: "Yes. They book on your own page, not on a marketplace.",
+        },
+        {
+          question: "Can you come to my shop?",
+          answer: "You can ask for an in-person visit in the form, or pick a video call.",
+        },
+        {
+          question: "How much do the ads cost?",
+          answer: "It depends on how much you want to spend each month. We quote it after we talk about your shop.",
+        },
+      ],
+    },
+  },
+  {
+    // Light variant: it renders no image (imageUrl is dark-theme only), so none is set.
     type: "leadFormCta",
     props: {
       formSlug: FORM_SLUG,
       heading: "Let's fill your chairs",
-      subheading: "Tell us about your shop in a minute. Or call (224) 551-6131 first to hear the AI answer the phone.",
+      subheading: "Tell us about your shop. It takes a minute.",
       ctaLabel: "Get more clients",
     },
   },

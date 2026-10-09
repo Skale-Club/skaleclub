@@ -159,110 +159,174 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Pronto para ter os seus chaveiros?",
   "About a minute to fill in. You see the price as you choose the quantity, and we confirm everything with you on WhatsApp before producing anything. Sending the form costs nothing.":
     "Leva cerca de um minuto. Você vê o preço conforme escolhe a quantidade, e confirmamos tudo com você no WhatsApp antes de produzir qualquer coisa. Enviar o formulário não custa nada.",
-  "More time in your day. More money in your pocket.":
-    "Mais tempo no seu dia. Mais dinheiro no seu bolso.",
-  "We work with barbershops.":
-    "Trabalhamos com barbearias.",
+  // ── /barbershops + /barbershops-br (seed-barbershop-landing.ts, rewritten 2026-10-07) ──
+  // Hero
+  "For barbershops":
+    "Para barbearias",
+  "Your phone gets answered while you cut.":
+    "Seu telefone é atendido enquanto você corta.",
+  "An AI picks up the call and books the cut. You keep working.":
+    "Uma IA atende a ligação e agenda o corte. Você continua trabalhando.",
+  "Barber chair in a barbershop with a Google review plaque on the counter":
+    "Cadeira de barbeiro em uma barbearia, com uma placa de avaliação do Google no balcão",
   "Get more clients":
     "Quero mais clientes",
   "Hear it working: (224) 551-6131":
     "Ouça funcionando: (224) 551-6131",
-  "An AI answers that line for a barbershop. It gives prices and hours. Then it books the cut.":
-    "Uma IA atende esse número para uma barbearia. Ela informa preço e horário. Depois agenda o corte.",
-  "Let's fill your chairs":
-    "Vamos encher suas cadeiras",
-  "Tell us about your shop in a minute. Or call (224) 551-6131 first to hear the AI answer the phone.":
-    "Conte sobre a sua barbearia em um minuto. Ou ligue primeiro para (224) 551-6131 para ouvir a IA atendendo o telefone.",
-
-  // ── /barbershops "More money" feature grid ───────────────────────────────
-  "More money":
-    "Mais dinheiro",
-  "More money in your pocket":
-    "Mais dinheiro no seu bolso",
-  "Where the extra money actually comes from.":
-    "De onde vem o dinheiro extra.",
-  "Your own website":
-    "Seu próprio site",
-  "It takes bookings and the clients stay yours, not a marketplace's.":
-    "Ele recebe agendamentos e os clientes ficam seus, não de uma plataforma de terceiros.",
-  "Ads that bring people in":
-    "Anúncios que trazem gente nova",
-  "Google and Instagram ads that fill your calendar with new clients.":
-    "Anúncios no Google e no Instagram que enchem sua agenda com clientes novos.",
-
-  // ── /barbershops "More time" feature grid ────────────────────────────────
-  "More time":
-    "Mais tempo",
-  "More time in your day":
-    "Mais tempo no seu dia",
-  "Where the extra time in your day comes from.":
-    "De onde vem o tempo extra no seu dia.",
-  "Calls and texts get answered":
-    "Ligações e mensagens são atendidas",
-  "An AI answers calls and texts any time of day and books the appointment.":
-    "Uma IA atende ligações e mensagens a qualquer hora do dia e agenda o horário.",
-  "Fewer no-shows":
-    "Menos faltas",
-  "Reminders go out on their own and cut down on no-shows.":
-    "Os lembretes são enviados automaticamente e reduzem as faltas.",
-  "Social media":
-    "Redes sociais",
-  "Posts get made and scheduled for you every week.":
-    "As postagens são feitas e agendadas para você toda semana.",
-
-  // ── /barbershops "NFC for your shop" feature grid ────────────────────────
-  "NFC for your shop":
-    "NFC para a sua barbearia",
-  "For your counter":
-    "Para o seu balcão",
-  "Three things we 3D print for barbershops, made to order.":
-    "Três itens que imprimimos em 3D para barbearias, feitos sob encomenda.",
-  "Review plaque":
-    "Placa de avaliação",
-  "A plaque for your counter. Tap a phone on it and it opens your Google review page.":
-    "Uma placa para o seu balcão. O cliente encosta o celular e ela abre a página de avaliação no Google.",
-  "Custom keychains":
-    "Chaveiros personalizados",
-  "NFC keychains with your barbershop's own branding. The tap opens the link you choose.":
-    "Chaveiros NFC com a marca da sua barbearia. O toque abre o link que você escolher.",
-  "Keychain display":
-    "Display de chaveiros",
-  "A display for your counter so you can sell the keychains yourself. Extra money for the shop.":
-    "Um display para o balcão para você mesmo vender os chaveiros. Uma renda extra para a barbearia.",
-
-  // ── /barbershops pricing block (copied from the live catalog) ───────────
+  "That line is answered by an AI set up as a barbershop. Ask it a price, then book a cut.":
+    "Esse número é atendido por uma IA configurada como barbearia. Pergunte um preço e depois agende um corte.",
+  // The problem
+  "The problem":
+    "O problema",
+  "Where a barbershop loses money":
+    "Onde uma barbearia perde dinheiro",
+  "The phone rings mid-cut":
+    "O telefone toca no meio do corte",
+  "You can't pick up with the clippers in your hand, so the client calls the next shop.":
+    "Você não consegue atender com a máquina na mão, então o cliente liga para a próxima barbearia.",
+  "No-shows":
+    "Faltas",
+  "Someone books Saturday at 10 and never shows up. That chair earned nothing.":
+    "Alguém marca para sábado às 10h e não aparece. Aquela cadeira não rendeu nada.",
+  "Slow weekdays":
+    "Dias fracos na semana",
+  "Friday is packed and Tuesday afternoon sits empty.":
+    "A sexta fica lotada e a terça à tarde fica vazia.",
+  "Clients who belong to the app":
+    "Clientes que pertencem ao aplicativo",
+  "Book through a marketplace and your client sees every other shop nearby too.":
+    "Quando o cliente agenda por um aplicativo, ele também vê todas as outras barbearias da região.",
+  // How it works (eyebrow "How it works" already exists for the keychain landing)
+  "What happens when a client calls":
+    "O que acontece quando um cliente liga",
+  "Call (224) 551-6131 and try it.":
+    "Ligue para (224) 551-6131 e teste.",
+  "The client calls":
+    "O cliente liga",
+  "At 9pm or in the middle of a fade, the call gets picked up.":
+    "Às 9 da noite ou no meio de um degradê, a ligação é atendida.",
+  "The AI answers":
+    "A IA atende",
+  "It knows your prices and your hours.":
+    "Ela conhece os seus preços e os seus horários.",
+  "The cut gets booked":
+    "O corte é agendado",
+  "The appointment goes straight into your calendar.":
+    "O horário vai direto para a sua agenda.",
+  "A reminder goes out":
+    "O lembrete é enviado",
+  "The client gets a reminder before the visit, so fewer chairs sit empty.":
+    "O cliente recebe um lembrete antes da visita, e menos cadeiras ficam vazias.",
+  // What you get
+  "What you get":
+    "O que você recebe",
+  "What we set up for your shop":
+    "O que a gente configura para a sua barbearia",
+  "A booking page for your shop":
+    "Uma página de agendamento para a sua barbearia",
+  "Clients pick a time and book on a page with your shop's name.":
+    "O cliente escolhe um horário e agenda em uma página com o nome da sua barbearia.",
+  "Booking page built with Xkedule":
+    "Página de agendamento feita com o Xkedule",
+  "Calls and texts answered":
+    "Ligações e mensagens atendidas",
+  "The AI replies any time of day and books the appointment.":
+    "A IA responde a qualquer hora do dia e agenda o horário.",
+  "Xkedule dashboard listing recent appointments":
+    "Painel do Xkedule com a lista de agendamentos recentes",
+  "Posts every week":
+    "Posts toda semana",
+  "Make posts with AI and schedule them, so your Instagram doesn't go quiet.":
+    "Faça posts com IA e agende, para o seu Instagram não ficar parado.",
+  "Xareable home page":
+    "Página inicial do Xareable",
+  "More Google reviews":
+    "Mais avaliações no Google",
+  "A plaque on your counter. Clients tap their phone and land on your review page.":
+    "Uma placa no seu balcão. O cliente encosta o celular e cai na sua página de avaliação.",
+  "NFC Google review plaque on a counter":
+    "Placa NFC de avaliação do Google sobre um balcão",
+  // Pricing (prices are the live catalog; PT keeps the US$ convention). Brand names are identity rows.
   "Pricing":
     "Preços",
-  "What you can get":
-    "O que você pode ter",
-  "Same prices we charge everyone.":
-    "Os mesmos preços que cobramos de todo mundo.",
-  "Xkedule: $89 a month":
-    "Xkedule: US$ 89 por mês",
-  "Your site that books for you.":
-    "Seu site que agenda para você.",
-  "A booking page with AI that answers messages and calls. It books the appointment when the customer is ready.":
-    "Uma página de agendamento com IA que responde mensagens e ligações. Ela agenda o horário quando o cliente está pronto.",
-  "Xsites: $299 starting":
-    "Xsites: a partir de US$ 299",
-  "A professional website for your shop.":
-    "Um site profissional para a sua barbearia.",
-  "A clean site built for service businesses. Start with the essentials and add pages and features as you grow.":
-    "Um site limpo, feito para negócios de serviço. Comece com o essencial e vá adicionando páginas e recursos conforme cresce.",
-  "Xareable: $49 a month":
-    "Xareable: US$ 49 por mês",
-  "We post for you.":
-    "A gente posta para você.",
-  "Create and publish posts with AI from one place. Post by hand or put it on a schedule and stay active every week.":
-    "Crie e publique posts com IA em um só lugar. Publique na hora ou deixe agendado e fique ativo toda semana.",
-  "Ads that fill the calendar: talk to us":
-    "Anúncios que enchem a agenda: fale com a gente",
-  "Google Ads, Facebook and Instagram Ads, TikTok Ads, retargeting campaigns, and campaign optimization.":
-    "Google Ads, anúncios no Facebook e Instagram, anúncios no TikTok, campanhas de retargeting e otimização de campanha.",
-  "What people say":
-    "O que as pessoas dizem",
-  "Real reviews from businesses we've worked with.":
-    "Avaliações reais de negócios com quem já trabalhamos.",
+  "What it costs":
+    "Quanto custa",
+  "Same prices we charge everyone. Start with one.":
+    "Os mesmos preços que cobramos de todo mundo. Comece por um.",
+  "Xkedule":
+    "Xkedule",
+  "Booking and AI receptionist":
+    "Agendamento e recepcionista com IA",
+  "$89":
+    "US$ 89",
+  "/month":
+    "/mês",
+  "Online booking with calendar sync":
+    "Agendamento online com sincronização de agenda",
+  "Appointment reminders":
+    "Lembretes de agendamento",
+  "Xsites":
+    "Xsites",
+  "Website":
+    "Site",
+  "$299":
+    "US$ 299",
+  "Starting price":
+    "Preço inicial",
+  "A professional site for your shop":
+    "Um site profissional para a sua barbearia",
+  "Add pages as you grow":
+    "Adicione páginas conforme você cresce",
+  "Xareable":
+    "Xareable",
+  "Social posts":
+    "Posts para redes sociais",
+  "$49":
+    "US$ 49",
+  "Posts made with AI":
+    "Posts feitos com IA",
+  "Post by hand or on a schedule":
+    "Poste na hora ou deixe agendado",
+  "Google and Instagram ads are priced around your budget, so we quote them after we talk.":
+    "Os anúncios no Google e no Instagram são cobrados de acordo com o seu orçamento, então passamos o valor depois que conversarmos.",
+  // NFC link
+  "We also make NFC keychains with your shop's logo.":
+    "A gente também faz chaveiros NFC com a logo da sua barbearia.",
+  "See the keychains":
+    "Ver os chaveiros",
+  // Reviews
+  "What clients say":
+    "O que os clientes dizem",
+  "Reviews from businesses we've worked with.":
+    "Avaliações de negócios com quem já trabalhamos.",
+  // FAQ
+  "Questions":
+    "Dúvidas",
+  "Before you call":
+    "Antes de ligar",
+  "Short answers before you call or fill out the form.":
+    "Respostas curtas antes de ligar ou preencher o formulário.",
+  "Do I have to buy everything?":
+    "Preciso comprar tudo?",
+  "No. Each product has its own price and you can start with one.":
+    "Não. Cada produto tem o seu preço e você pode começar por um só.",
+  "Do the clients stay mine?":
+    "Os clientes continuam sendo meus?",
+  "Yes. They book on your own page, not on a marketplace.":
+    "Sim. Eles agendam na sua própria página, e não em uma plataforma.",
+  "Can you come to my shop?":
+    "Vocês podem ir até a minha barbearia?",
+  "You can ask for an in-person visit in the form, or pick a video call.":
+    "Você pode pedir uma visita presencial no formulário ou escolher uma chamada de vídeo.",
+  "How much do the ads cost?":
+    "Quanto custam os anúncios?",
+  "It depends on how much you want to spend each month. We quote it after we talk about your shop.":
+    "Depende de quanto você quer investir por mês. Passamos o valor depois de conversar sobre a sua barbearia.",
+  // Closing lead form
+  "Let's fill your chairs":
+    "Vamos encher suas cadeiras",
+  "Tell us about your shop. It takes a minute.":
+    "Conte sobre a sua barbearia. Leva um minuto.",
   "Order your NFC keychains":
     "Peça os seus chaveiros NFC",
   "Choose how many you need, send us your logo, and we confirm every detail with you before anything is produced.":
