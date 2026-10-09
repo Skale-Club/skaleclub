@@ -7,7 +7,9 @@ import type { CompanySettings } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLeadConversion } from "@/hooks/useLeadConversion";
 
-const Lottie = lazy(() => import("lottie-react"));
+const Lottie = lazy(() =>
+  import("lottie-react").then(({ Lottie: LottieComponent }) => ({ default: LottieComponent })),
+);
 
 export default function LeadThankYou() {
   const { t } = useTranslation();
@@ -105,8 +107,9 @@ export default function LeadThankYou() {
                 <Suspense fallback={<div className="w-16 h-16" />}>
                   {successAnimation && (
                     <Lottie
-                      animationData={successAnimation}
-                      loop={true}
+                      src={successAnimation}
+                      autoplay
+                      loop
                       style={{ width: '100%', height: '100%' }}
                     />
                   )}

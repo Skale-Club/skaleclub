@@ -91,7 +91,7 @@
     "esbuild": "^0.28.2",
     "framer-motion": "^14.0.0",
     "ghostscript-wasm-esm": "^1.0.1",
-    "lottie-react": "^2.4.1",
+    "lottie-react": "^3.1.2",
     "lucide-react": "^0.453.0",
     "postcss": "^8.5.28",
     "react": "^18.3.1",
