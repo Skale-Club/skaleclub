@@ -11,7 +11,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { SiInstagram, SiWhatsapp } from "react-icons/si";
-import { Band, EditorialCard } from "@/components/editorial";
+import { Band, EditorialCard, Figure } from "@/components/editorial";
 import { SectionHeading } from "@/components/layout/SectionHeading";
 import { useTranslation } from "@/hooks/useTranslation";
 import { languageHref } from "@/lib/languageRouting";
@@ -66,6 +66,8 @@ const itemSchema = z.object({
   // cannot turn this component into a third-party tracking surface.
   imageUrl:    z.string().regex(/^\/(?![\/\\])/).optional(),
   imageAlt:    z.string().optional(),
+  imageWidth:  z.number().int().positive().optional(),
+  imageHeight: z.number().int().positive().optional(),
   // Optional: makes the card a link to a site path (e.g. a group page's cards
   // pointing at each item's own page). Root-relative only, same convention as
   // leadFormCta's imageUrl, but tighter: `/^\/` alone also passed "//evil.com"
@@ -79,6 +81,11 @@ export const featureGridPropsSchema = z.object({
   eyebrow:    z.string().optional(),
   heading:    z.string(),
   subheading: z.string().optional(),
+  imageUrl:   z.string().regex(/^\/(?![\/\\])/).optional(),
+  imageAlt:   z.string().optional(),
+  imagePosition: z.enum(["left", "right"]).optional(),
+  imageWidth: z.number().int().positive().optional(),
+  imageHeight: z.number().int().positive().optional(),
   items:      z.array(itemSchema).min(2).max(6),
   theme:      sectionThemeSchema,
 });
@@ -100,19 +107,35 @@ export function FeatureGridSection({ props }: { props: FeatureGridProps }) {
   const { t } = useTranslation();
   const dark = props.theme === "dark";
   const c = dark ? DARK : LIGHT;
+  const imageLeft = props.imagePosition === "left";
   // 4 items read best as 2x2 / 4-across; 3, 5 and 6 as rows of three.
   const cols = props.items.length === 4 ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-2 lg:grid-cols-3";
 
   return (
     <div data-testid="section-feature-grid">
       <Band tone={dark ? "dark" : "cream"}>
-        <SectionHeading
-          variant="editorial"
-          tone={dark ? "dark" : "light"}
-          eyebrow={props.eyebrow}
-          title={props.heading}
-          subtitle={props.subheading}
-        />
+        <div className={props.imageUrl ? "grid items-center gap-10 lg:grid-cols-[.82fr_1.18fr] lg:gap-16" : undefined}>
+          <div className={imageLeft ? "lg:order-2" : undefined}>
+            <SectionHeading
+              variant="editorial"
+              tone={dark ? "dark" : "light"}
+              eyebrow={props.eyebrow}
+              title={props.heading}
+              subtitle={props.subheading}
+            />
+          </div>
+          {props.imageUrl ? (
+            <Figure
+              src={props.imageUrl}
+              alt={props.imageAlt ?? ""}
+              tone={dark ? "dark" : "light"}
+              aspect="16/9"
+              width={props.imageWidth}
+              height={props.imageHeight}
+              className={imageLeft ? "lg:order-1" : undefined}
+            />
+          ) : null}
+        </div>
 
         <ul className={`mt-12 grid grid-cols-1 gap-4 sm:gap-5 ${cols}`}>
           {props.items.map((item, i) => {
@@ -131,6 +154,8 @@ export function FeatureGridSection({ props }: { props: FeatureGridProps }) {
                     <img
                       src={item.imageUrl}
                       alt={item.imageAlt ? t(item.imageAlt) : t(item.title)}
+                      width={item.imageWidth}
+                      height={item.imageHeight}
                       loading="lazy"
                       decoding="async"
                       className="h-full w-full object-cover object-top transition-transform duration-500 motion-safe:group-hover:scale-[1.025]"

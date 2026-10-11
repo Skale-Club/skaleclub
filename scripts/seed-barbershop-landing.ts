@@ -189,7 +189,6 @@ const BARBERSHOP_LEADS_CONFIG: FormConfig = {
 // EN vs PT through t(). Copy is barbershop-specific (not the shared component
 // defaults). Every image is a real file in client/public and is used once on
 // the page. No bgVideoUrl: the /websites video asset is specific to that page.
-const SCENES = "/industry-scenes";
 const CATALOG = "/product-assets/catalog-2026-09";
 
 export const LANDING_SECTIONS: PageSection[] = [
@@ -204,8 +203,8 @@ export const LANDING_SECTIONS: PageSection[] = [
       // uploaded in Admin -> Pages -> Hero background video, per page (EN and
       // PT separately). Re-running this seed replaces the sections and drops
       // that video unless you add its bgVideoUrl here.
-      backgroundImageUrl: `${SCENES}/barbershop.webp`,
-      backgroundImageAlt: "Barber chair in a barbershop with a Google review plaque on the counter",
+      backgroundImageUrl: "/barbershops/hero-barbershop.webp",
+      backgroundImageAlt: "Barber cutting a client's hair in a busy modern barbershop.",
       ctaLabel: "Get more clients",
       secondaryCtaLabel: "Hear it working: (224) 551-6131",
       secondaryCtaHref: "tel:+12245516131",
@@ -218,6 +217,11 @@ export const LANDING_SECTIONS: PageSection[] = [
       theme: "light",
       eyebrow: "The problem",
       heading: "Where a barbershop loses money",
+      imageUrl: "/barbershops/full-chairs.webp",
+      imageAlt: "Busy barbershop with several chairs occupied and a new customer arriving.",
+      imagePosition: "right",
+      imageWidth: 1280,
+      imageHeight: 720,
       items: [
         {
           icon: "PhoneMissed",
@@ -277,6 +281,11 @@ export const LANDING_SECTIONS: PageSection[] = [
       theme: "light",
       eyebrow: "What you get",
       heading: "What we set up for your shop",
+      imageUrl: "/barbershops/barber-automation.webp",
+      imageAlt: "Barber serving a client while an appointment phone remains on the counter.",
+      imagePosition: "left",
+      imageWidth: 1280,
+      imageHeight: 720,
       items: [
         {
           icon: "Globe",
@@ -299,13 +308,46 @@ export const LANDING_SECTIONS: PageSection[] = [
           imageUrl: `${CATALOG}/xareable-home.webp`,
           imageAlt: "Xareable home page",
         },
+      ],
+    },
+  },
+  {
+    type: "featureGrid",
+    props: {
+      theme: "light",
+      eyebrow: "NFC for your shop",
+      heading: "For your counter",
+      subheading: "Made to order for barbershops.",
+      items: [
         {
-          icon: "Star",
-          title: "More Google reviews",
-          description: "A plaque on your counter. Clients tap their phone and land on your review page.",
-          imageUrl: `${SCENES}/counter-plaque-v2.webp`,
-          imageAlt: "NFC Google review plaque on a counter",
+          icon: "Nfc",
+          title: "NFC stands and table plates",
+          description: "Choose a counter stand or a flat table plate. One tap opens Google reviews or Instagram.",
+          imageUrl: "/barbershops/products/nfc-stands-and-plates.webp",
+          imageAlt: "Light NFC stands and table plates for Google reviews and Instagram.",
+          imageWidth: 960,
+          imageHeight: 720,
           href: "/products/nfc-review-plaque",
+        },
+        {
+          icon: "KeyRound",
+          title: "Custom keychains",
+          description: "NFC keychains with your barbershop's own branding. The tap opens the link you choose.",
+          imageUrl: "/barbershops/products/custom-keychains.webp",
+          imageAlt: "Three custom 3D-printed keychains, including a barbershop design.",
+          imageWidth: 960,
+          imageHeight: 720,
+          href: "/products/nfc-keychains",
+        },
+        {
+          icon: "Store",
+          title: "Keychain display",
+          description: "A display for your counter so you can sell the keychains yourself. Extra money for the shop.",
+          imageUrl: "/barbershops/products/keychain-display.webp",
+          imageAlt: "Counter display designed to hold keychains for sale.",
+          imageWidth: 960,
+          imageHeight: 720,
+          href: "/products/nfc-keychains",
         },
       ],
     },
@@ -349,12 +391,9 @@ export const LANDING_SECTIONS: PageSection[] = [
     },
   },
   {
-    type: "linkCallout",
+    type: "about",
     props: {
-      theme: "dark",
-      text: "We also make NFC keychains with your shop's logo.",
-      linkLabel: "See the keychains",
-      href: "/nfc-keychains",
+      tone: "light",
     },
   },
   {

@@ -167,8 +167,8 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Seu telefone é atendido enquanto você corta.",
   "An AI picks up the call and books the cut. You keep working.":
     "Uma IA atende a ligação e agenda o corte. Você continua trabalhando.",
-  "Barber chair in a barbershop with a Google review plaque on the counter":
-    "Cadeira de barbeiro em uma barbearia, com uma placa de avaliação do Google no balcão",
+  "Barber cutting a client's hair in a busy modern barbershop.":
+    "Barbeiro cortando o cabelo de um cliente em uma barbearia moderna e movimentada.",
   "Get more clients":
     "Quero mais clientes",
   "Hear it working: (224) 551-6131":
@@ -180,6 +180,8 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "O problema",
   "Where a barbershop loses money":
     "Onde uma barbearia perde dinheiro",
+  "Busy barbershop with several chairs occupied and a new customer arriving.":
+    "Barbearia movimentada, com várias cadeiras ocupadas e um novo cliente chegando.",
   "The phone rings mid-cut":
     "O telefone toca no meio do corte",
   "You can't pick up with the clippers in your hand, so the client calls the next shop.":
@@ -222,6 +224,8 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "O que você recebe",
   "What we set up for your shop":
     "O que a gente configura para a sua barbearia",
+  "Barber serving a client while an appointment phone remains on the counter.":
+    "Barbeiro atendendo um cliente enquanto o celular de agendamentos fica no balcão.",
   "A booking page for your shop":
     "Uma página de agendamento para a sua barbearia",
   "Clients pick a time and book on a page with your shop's name.":
@@ -240,12 +244,31 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Faça posts com IA e agende, para o seu Instagram não ficar parado.",
   "Xareable home page":
     "Página inicial do Xareable",
-  "More Google reviews":
-    "Mais avaliações no Google",
-  "A plaque on your counter. Clients tap their phone and land on your review page.":
-    "Uma placa no seu balcão. O cliente encosta o celular e cai na sua página de avaliação.",
-  "NFC Google review plaque on a counter":
-    "Placa NFC de avaliação do Google sobre um balcão",
+  // NFC products
+  "NFC for your shop":
+    "NFC para a sua barbearia",
+  "For your counter":
+    "Para o seu balcão",
+  "Made to order for barbershops.":
+    "Feitos sob encomenda para barbearias.",
+  "NFC stands and table plates":
+    "Stands e plates de mesa NFC",
+  "Choose a counter stand or a flat table plate. One tap opens Google reviews or Instagram.":
+    "Escolha um stand de balcão ou um plate de mesa. Um toque abre as avaliações no Google ou o Instagram.",
+  "Light NFC stands and table plates for Google reviews and Instagram.":
+    "Stands e plates de mesa NFC claros para avaliações no Google e Instagram.",
+  "Custom keychains":
+    "Chaveiros personalizados",
+  "NFC keychains with your barbershop's own branding. The tap opens the link you choose.":
+    "Chaveiros NFC com a marca da sua barbearia. O toque abre o link que você escolher.",
+  "Three custom 3D-printed keychains, including a barbershop design.":
+    "Três chaveiros personalizados impressos em 3D, incluindo um modelo de barbearia.",
+  "Keychain display":
+    "Display de chaveiros",
+  "A display for your counter so you can sell the keychains yourself. Extra money for the shop.":
+    "Um display para o balcão para você mesmo vender os chaveiros. Uma renda extra para a barbearia.",
+  "Counter display designed to hold keychains for sale.":
+    "Display de balcão projetado para expor chaveiros à venda.",
   // Pricing (prices are the live catalog; PT keeps the US$ convention). Brand names are identity rows.
   "Pricing":
     "Preços",
@@ -289,11 +312,6 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Poste na hora ou deixe agendado",
   "Google and Instagram ads are priced around your budget, so we quote them after we talk.":
     "Os anúncios no Google e no Instagram são cobrados de acordo com o seu orçamento, então passamos o valor depois que conversarmos.",
-  // NFC link
-  "We also make NFC keychains with your shop's logo.":
-    "A gente também faz chaveiros NFC com a logo da sua barbearia.",
-  "See the keychains":
-    "Ver os chaveiros",
   // Reviews
   "What clients say":
     "O que os clientes dizem",
