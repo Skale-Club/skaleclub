@@ -258,7 +258,7 @@ export const LANDING_SECTIONS: PageSection[] = [
     type: "heroWebsites",
     props: {
       headline: "More time in your day. More money in your pocket.",
-      subheadline: "We handle bookings and promotion so you can focus on cuts and keep the chairs occupied.",
+      subheadline: "More clients on your calendar. Less time on the phone.",
       ctaLabel: "Get more clients",
       secondaryCtaLabel: "Hear it working: (224) 551-6131",
       secondaryCtaHref: "tel:+12245516131",
