@@ -117,13 +117,18 @@ The industry template provides:
 - an optional, explicitly selected `accentMark` (currently `barber-pole`);
 - a reusable media frame with `square`, `4:3`, `3:2`, or `16:9` proportions;
 - configurable crop focal point and corner radius;
+- balanced desktop columns that scale the media frame with the full copy block,
+  including CTAs and their supporting note, instead of assigning an unrelated
+  fixed image height;
 - a static image when `mediaItems` contains one item and accessible carousel
   controls when it contains two or more;
 - optional autoplay, disabled with `0` and automatically suppressed for
   reduced-motion visitors or while the carousel is being used.
 
 The primary CTA stays visually dominant. A telephone demo is grouped with its
-own explanatory note so the note does not appear to describe both actions.
+own explanatory note so the note does not appear to describe both actions. Its
+desktop width is bounded so the note cannot force the secondary CTA onto a new
+row and make the text column artificially taller than the 4:3 media frame.
 
 To reproduce the barbershop structure for another industry, duplicate the
 managed page and change only its local `heroWebsites` props, section copy,
