@@ -422,17 +422,25 @@ export async function registerRoutes(
         // Get next question
         const nextQuestion = getNextQuestion(lead, formConfig);
 
-        // Send SMS notification if phone is provided
+        // Notify as soon as the conversational flow captures a phone number.
+        // Only acknowledge the lead after Telegram confirms at least one delivery.
         if (lead.telefone && !lead.notificacaoEnviada) {
           const companyName = (await storage.getCompanySettings())?.companyName || 'My Company';
           try {
-            await dispatchNotification(storage, 'hot_lead', {
+            const notification = await dispatchNotification(storage, 'hot_lead', {
               company: companyName,
               name: lead.nome?.trim() || 'No name',
               phone: lead.telefone?.trim() || 'No phone',
               classification: lead.classificacao || '',
             });
-            await storage.updateFormLead(lead.id, { notificacaoEnviada: true });
+            if (notification.deliveredChannels.includes('telegram')) {
+              await storage.updateFormLead(lead.id, { notificacaoEnviada: true });
+            } else {
+              console.error(
+                `[lead-notification] Telegram did not receive chat lead ${lead.id}: ` +
+                (notification.failures.map((failure) => failure.message).join('; ') || 'no active Telegram delivery'),
+              );
+            }
           } catch (err) {
             console.error('Lead notification error:', err);
           }

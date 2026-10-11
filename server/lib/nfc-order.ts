@@ -76,7 +76,6 @@ export async function finalizeNfcOrder(
       ...buildNfcQuoteSnapshot(quote),
       nfcPreviousOrders: String(previousOrders),
       nfcDeclaredReturning: declaredReturning ? "yes" : "no",
-      nfcOrderNotifiedAt: custom.nfcOrderNotifiedAt || new Date().toISOString(),
     });
     if (updated) current = updated;
   } catch (err) {
@@ -87,10 +86,11 @@ export async function finalizeNfcOrder(
   if (alreadyHandled) return current;
 
   try {
+    let notification;
     if (formConfig.pricing?.model === "nfc-plaque") {
       // Plaques have no art fee; what the operator needs instead is the link
       // the tap and QR should open, to set up the tag (or the custom chip).
-      await dispatchNotification(storage, "nfc_plaque_order", {
+      notification = await dispatchNotification(storage, "nfc_plaque_order", {
         company: companyName,
         name: current.nome?.trim() || "No name",
         phone: current.telefone?.trim() || "No phone",
@@ -105,23 +105,37 @@ export async function finalizeNfcOrder(
         logo: custom.logo__filename || custom.logo || "not sent",
         address: (custom.enderecoEnvio || "").trim(),
       });
+    } else {
+      notification = await dispatchNotification(storage, "nfc_order", {
+        company: companyName,
+        name: current.nome?.trim() || "No name",
+        phone: current.telefone?.trim() || "No phone",
+        business: (custom.nomeEmpresa || current.tipoNegocio || "").trim(),
+        quantity: String(quote.quantity),
+        keychainType: quote.typeLabel,
+        total: quote.quoteOnRequest ? NFC_ON_REQUEST_LABEL : formatUsdCents(quote.totalCents),
+        artFee: quote.artFeeApplies ? formatUsdCents(quote.artFeeCents) : "waived",
+        customerStatus: isFirstOrder
+          ? "New customer"
+          : `Returning (${previousOrders} previous order${previousOrders === 1 ? "" : "s"})`,
+        logo: custom.logo__filename || custom.logo || "not sent",
+        address: (custom.enderecoEnvio || "").trim(),
+      });
+    }
+
+    if (!notification.deliveredChannels.includes("telegram")) {
+      console.error(
+        `[nfc-order] Telegram did not receive completed order lead ${lead.id}: ` +
+        (notification.failures.map((failure) => failure.message).join("; ") || "no active Telegram delivery"),
+      );
       return current;
     }
-    await dispatchNotification(storage, "nfc_order", {
-      company: companyName,
-      name: current.nome?.trim() || "No name",
-      phone: current.telefone?.trim() || "No phone",
-      business: (custom.nomeEmpresa || current.tipoNegocio || "").trim(),
-      quantity: String(quote.quantity),
-      keychainType: quote.typeLabel,
-      total: quote.quoteOnRequest ? NFC_ON_REQUEST_LABEL : formatUsdCents(quote.totalCents),
-      artFee: quote.artFeeApplies ? formatUsdCents(quote.artFeeCents) : "waived",
-      customerStatus: isFirstOrder
-        ? "New customer"
-        : `Returning (${previousOrders} previous order${previousOrders === 1 ? "" : "s"})`,
-      logo: custom.logo__filename || custom.logo || "not sent",
-      address: (custom.enderecoEnvio || "").trim(),
-    });
+
+    const notifiedAt = new Date().toISOString();
+    const marked = await storage.mergeFormLeadCustomAnswers(lead.id, { nfcOrderNotifiedAt: notifiedAt });
+    if (marked) current = marked;
+    const acknowledged = await storage.updateFormLead(lead.id, { notificacaoEnviada: true });
+    if (acknowledged) current = acknowledged;
   } catch (err) {
     console.error("[nfc-order] Telegram alert failed:", err);
   }

@@ -19,8 +19,8 @@ type PostProcessResult = {
 };
 
 /**
- * Run the side-effects that follow a lead upsert: SMS notification (when the
- * lead has a phone number and hasn't been notified yet) and GHL contact sync
+ * Run the side-effects that follow a lead upsert: Telegram notification (when
+ * a completed lead hasn't been delivered yet) and GHL contact sync
  * (when the form is complete). Errors in either side-effect are swallowed
  * (best-effort) and the lead is still returned.
  */
@@ -40,17 +40,23 @@ export async function runLeadPostProcessing(
     lead = await finalizeNfcOrder(storage, lead, formConfig, companyName);
   }
 
-  const hasPhone = !!lead.telefone?.trim();
-  if (!isPricedForm(formConfig) && lead.formCompleto && hasPhone && !lead.notificacaoEnviada) {
+  if (!isPricedForm(formConfig) && lead.formCompleto && !lead.notificacaoEnviada) {
     try {
-      await dispatchNotification(storage, 'hot_lead', {
+      const notification = await dispatchNotification(storage, 'hot_lead', {
         company: companyName,
         name: lead.nome?.trim() || 'No name',
         phone: lead.telefone?.trim() || 'No phone',
         classification: lead.classificacao || '',
       });
-      const updated = await storage.updateFormLead(lead.id, { notificacaoEnviada: true });
-      lead = updated || { ...lead, notificacaoEnviada: true };
+      if (notification.deliveredChannels.includes('telegram')) {
+        const updated = await storage.updateFormLead(lead.id, { notificacaoEnviada: true });
+        lead = updated || { ...lead, notificacaoEnviada: true };
+      } else {
+        console.error(
+          `[lead-notification] Telegram did not receive completed lead ${lead.id}: ` +
+          (notification.failures.map((failure) => failure.message).join('; ') || 'no active Telegram delivery'),
+        );
+      }
     } catch (err) {
       console.error("Lead notification error:", err);
     }

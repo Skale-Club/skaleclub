@@ -99,12 +99,31 @@ GHL_LOCATION_ID=your-location-id
 GHL_CALENDAR_ID=your-calendar-id
 ```
 
-### Twilio SMS Notifications
+### Telegram Lead Notifications
+
+All completed website forms are delivered through Telegram. Configure the bot
+and one or more destination groups in **Admin → Integrations → Telegram**, then
+keep the `telegram` templates active for these events:
+
+- `hot_lead` — ordinary forms and WhatsApp/chat leads
+- `new_chat` — a new site-chat conversation
+- `nfc_order` — NFC keychain orders
+- `nfc_plaque_order` — NFC plaque orders
+
+Lead-related SMS templates must remain inactive. The dispatcher only marks a
+lead as notified after Telegram confirms at least one delivery; a disabled bot,
+missing destination, or Telegram API failure leaves the lead pending instead of
+recording a false success. Never commit bot tokens or paste them into docs.
+
+### Twilio SMS Notifications (non-lead alerts only)
+
+Twilio can remain configured for operational alerts such as
+`low_perf_alert`, but it is not the lead-delivery channel.
+
 ```env
 TWILIO_ACCOUNT_SID=your-account-sid
 TWILIO_AUTH_TOKEN=your-auth-token
 TWILIO_PHONE_NUMBER=+1234567890
-TWILIO_HOT_LEAD_RECIPIENTS=+1111111111,+2222222222
 ```
 
 ### OpenAI (AI Features)
