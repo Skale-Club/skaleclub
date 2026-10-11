@@ -698,24 +698,24 @@ html.admin-theme :where(a, button, [role="button"], summary):focus-visible {
   right: auto;
   top: auto;
   flex: 0 0 auto;
-  width: 0.9rem;
-  height: 2.15rem;
-  padding: 0.12rem;
+  width: 0.72rem;
+  height: 1.75rem;
+  padding: 0.1rem;
   transform: none;
 }
 
 .barber-pole-mark--inline::before,
 .barber-pole-mark--inline::after {
-  width: 1.12rem;
-  height: 0.28rem;
+  width: 0.92rem;
+  height: 0.24rem;
 }
 
 .barber-pole-mark--inline::before {
-  top: -0.14rem;
+  top: -0.12rem;
 }
 
 .barber-pole-mark--inline::after {
-  bottom: -0.14rem;
+  bottom: -0.12rem;
 }
 
 @keyframes barber-pole-scroll {
@@ -738,13 +738,13 @@ html.admin-theme :where(a, button, [role="button"], summary):focus-visible {
 
   .barber-pole-mark--inline {
     right: auto;
-    width: 1rem;
-    height: 2.4rem;
+    width: 0.82rem;
+    height: 1.95rem;
   }
 
   .barber-pole-mark--inline::before,
   .barber-pole-mark--inline::after {
-    width: 1.24rem;
+    width: 1.02rem;
   }
 }
 
