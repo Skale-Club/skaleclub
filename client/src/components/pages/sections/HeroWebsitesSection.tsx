@@ -346,7 +346,7 @@ function IndustryLandingHero({ props }: { props: HeroWebsitesProps }) {
         tone="hero"
         heroVariant="industry"
         pattern
-        className="relative isolate flex min-h-[760px] overflow-hidden lg:min-h-[min(760px,100svh)]"
+        className="relative isolate flex min-h-[720px] overflow-hidden tablet:min-h-[600px] lg:min-h-[620px] xl:min-h-[640px]"
         containerClassName="relative z-10 flex min-w-0 flex-1 pt-nav"
       >
         <div className="grid min-w-0 flex-1 grid-cols-1 content-center items-center gap-10 py-10 sm:py-14 lg:grid-cols-[.92fr_1.08fr] lg:gap-16 lg:py-12">
