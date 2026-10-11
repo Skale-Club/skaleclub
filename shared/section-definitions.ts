@@ -23,6 +23,11 @@ const optionalUrl = z.preprocess(
   ).optional(),
 );
 
+const mediaUrl = z.string().refine(
+  (value) => value.startsWith("/") || z.string().url().safeParse(value).success,
+  "Expected an absolute URL or a root-relative asset path",
+);
+
 const rootAsset = z.string().regex(/^\/(?![\/\\])/);
 const sitePath = z.string().regex(/^\/(?![\/\\])[a-z0-9/-]*$/);
 const anchorId = z.string().regex(/^[a-z][a-z0-9-]*$/);
@@ -102,18 +107,38 @@ const catalogSelectionSchema = z.discriminatedUnion("source", [
   z.object({ source: z.literal("service"), title: z.string().min(1).max(120) }),
 ]);
 
+const heroHeadlineLineSchema = z.object({
+  text: z.string().min(1).max(120),
+  accent: z.boolean().optional(),
+});
+
+const heroMediaItemSchema = z.object({
+  imageUrl: mediaUrl,
+  imageAlt: z.string().optional(),
+  imageWidth: z.number().int().positive().optional(),
+  imageHeight: z.number().int().positive().optional(),
+  focalPoint: z.enum(["center", "top", "bottom", "left", "right"]).optional(),
+});
+
 export const heroPropsSchema = z.object({}).passthrough();
 
 export const heroWebsitesPropsSchema = z.object({
+  layout: z.enum(["classic", "industry"]).optional(),
   headline: z.string().optional(),
+  headlineLines: z.array(heroHeadlineLineSchema).min(1).max(3).optional(),
   subheadline: z.string().optional(),
   ctaLabel: z.string().optional(),
   secondaryCtaLabel: z.string().optional(),
   secondaryCtaHref: z.string().regex(/^(\/[a-z0-9/-]*|#[a-z][a-z0-9-]*|tel:\+?[0-9]{7,15})$/).optional(),
   secondaryCtaNote: z.string().optional(),
   eyebrow: z.string().optional(),
+  accentMark: z.enum(["barber-pole"]).optional(),
   backgroundImageUrl: optionalUrl,
   backgroundImageAlt: z.string().optional(),
+  mediaItems: z.array(heroMediaItemSchema).min(1).max(5).optional(),
+  mediaAspectRatio: z.enum(["square", "4:3", "3:2", "16:9"]).optional(),
+  mediaRadius: z.enum(["none", "medium", "large"]).optional(),
+  carouselAutoplayMs: z.number().int().min(0).max(20000).optional(),
   bgVideoUrl: optionalUrl,
   whatsapp: whatsappCtaSchema,
   theme: sectionThemeSchema,

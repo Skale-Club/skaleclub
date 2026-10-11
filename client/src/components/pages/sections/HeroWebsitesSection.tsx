@@ -1,5 +1,6 @@
 import type { z } from "zod";
-import { ArrowDown, ArrowRight, Phone } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowDown, ArrowRight, ChevronLeft, ChevronRight, Phone } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { languageHref } from "@/lib/languageRouting";
 import { Band, Eyebrow, PillButton, PillLink } from "@/components/editorial";
@@ -42,14 +43,22 @@ export function HeroWebsitesSection({ props }: { props: HeroWebsitesProps }) {
   return <WebsitesHero props={props} />;
 }
 
-function HeroCtas({ props, ctaLabel }: { props: HeroWebsitesProps; ctaLabel: string }) {
+function HeroCtas({
+  props,
+  ctaLabel,
+  groupedSecondary = false,
+}: {
+  props: HeroWebsitesProps;
+  ctaLabel: string;
+  groupedSecondary?: boolean;
+}) {
   const { t } = useTranslation();
   const secondaryHref = props.secondaryCtaHref;
   const isAnchor = !!secondaryHref?.startsWith("#");
   const isTel = !!secondaryHref?.startsWith("tel:");
   return (
     <div className="min-w-0">
-      <div className="mt-8 flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap">
+      <div className={`mt-8 flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap ${groupedSecondary ? "sm:items-start" : ""}`}>
         <PillButton
           variant="primary"
           onClick={scrollToLeadCta}
@@ -59,18 +68,23 @@ function HeroCtas({ props, ctaLabel }: { props: HeroWebsitesProps; ctaLabel: str
           {t(ctaLabel)} <ArrowRight aria-hidden="true" className="h-4 w-4" />
         </PillButton>
         {props.secondaryCtaLabel && secondaryHref ? (
-          <PillLink
-            href={isAnchor ? secondaryHref : languageHref(secondaryHref)}
-            variant="ghost"
-            className="w-full min-w-0 sm:w-auto sm:whitespace-nowrap"
-          >
-            {isTel && <Phone aria-hidden="true" className="h-4 w-4" />}
-            {t(props.secondaryCtaLabel)}
-            {isAnchor && <ArrowDown aria-hidden="true" className="h-4 w-4" />}
-          </PillLink>
+          <div className="min-w-0 sm:max-w-[22rem]">
+            <PillLink
+              href={isAnchor ? secondaryHref : languageHref(secondaryHref)}
+              variant="ghost"
+              className="w-full min-w-0 sm:w-auto sm:whitespace-nowrap"
+            >
+              {isTel && <Phone aria-hidden="true" className="h-4 w-4" />}
+              {t(props.secondaryCtaLabel)}
+              {isAnchor && <ArrowDown aria-hidden="true" className="h-4 w-4" />}
+            </PillLink>
+            {groupedSecondary && isTel && props.secondaryCtaNote && (
+              <p className="mt-2 break-words px-2 text-xs leading-5 text-fog-400">{t(props.secondaryCtaNote)}</p>
+            )}
+          </div>
         ) : null}
       </div>
-      {isTel && props.secondaryCtaNote && (
+      {!groupedSecondary && isTel && props.secondaryCtaNote && (
         <p className="mt-3 max-w-md break-words text-sm leading-6 text-fog-400">{t(props.secondaryCtaNote)}</p>
       )}
     </div>
@@ -81,11 +95,153 @@ function HeroCtas({ props, ctaLabel }: { props: HeroWebsitesProps; ctaLabel: str
  * A lightweight barbershop signature for the industry landing. The striped
  * cylinder moves in CSS, so there is no Lottie runtime or extra image request.
  */
-function BarberPoleMark() {
+function BarberPoleMark({ inline = false }: { inline?: boolean }) {
   return (
-    <span className="barber-pole-mark" aria-hidden="true">
+    <span className={`barber-pole-mark${inline ? " barber-pole-mark--inline" : ""}`} aria-hidden="true">
       <span className="barber-pole-stripes" />
     </span>
+  );
+}
+
+type HeroMediaItem = NonNullable<HeroWebsitesProps["mediaItems"]>[number];
+
+const ASPECT_CLASSES = {
+  square: "aspect-square",
+  "4:3": "aspect-[4/3]",
+  "3:2": "aspect-[3/2]",
+  "16:9": "aspect-video",
+} as const;
+
+const RADIUS_CLASSES = {
+  none: "rounded-none",
+  medium: "rounded-2xl",
+  large: "rounded-[1.75rem]",
+} as const;
+
+const FOCAL_POINT_CLASSES = {
+  center: "object-center",
+  top: "object-top",
+  bottom: "object-bottom",
+  left: "object-left",
+  right: "object-right",
+} as const;
+
+/**
+ * Reusable media frame for vertical-specific landing heroes. One image stays
+ * static; adding more items in page data turns on the same accessible carousel
+ * without changing the component or creating a new landing-page fork.
+ */
+function IndustryHeroMedia({ props, fallbackUrl, fallbackAlt }: {
+  props: HeroWebsitesProps;
+  fallbackUrl: string;
+  fallbackAlt: string;
+}) {
+  const { t } = useTranslation();
+  const fallbackSize = KNOWN_IMAGE_SIZES[fallbackUrl];
+  const items: HeroMediaItem[] = props.mediaItems?.length ? props.mediaItems : [{
+    imageUrl: fallbackUrl,
+    imageAlt: fallbackAlt,
+    imageWidth: fallbackSize?.width,
+    imageHeight: fallbackSize?.height,
+    focalPoint: "center",
+  }];
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const touchStartX = useRef<number | null>(null);
+  const activeItem = items[activeIndex] ?? items[0];
+  const mediaIdentity = items.map((item) => item.imageUrl).join("|");
+  const autoplayMs = props.carouselAutoplayMs ?? 0;
+  const step = (delta: number) => setActiveIndex((current) => (current + delta + items.length) % items.length);
+
+  useEffect(() => setActiveIndex(0), [mediaIdentity]);
+
+  useEffect(() => {
+    if (items.length < 2 || autoplayMs === 0 || paused) return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    const timer = window.setInterval(() => setActiveIndex((current) => (current + 1) % items.length), autoplayMs);
+    return () => window.clearInterval(timer);
+  }, [autoplayMs, items.length, paused]);
+
+  if (!activeItem) return null;
+
+  const aspectClass = ASPECT_CLASSES[props.mediaAspectRatio ?? "4:3"];
+  const radiusClass = RADIUS_CLASSES[props.mediaRadius ?? "medium"];
+  const focalPointClass = FOCAL_POINT_CLASSES[activeItem.focalPoint ?? "center"];
+
+  return (
+    <div
+      className="relative w-full max-w-[640px]"
+      role={items.length > 1 ? "region" : undefined}
+      aria-roledescription={items.length > 1 ? "carousel" : undefined}
+      aria-label={items.length > 1 ? t("Hero image carousel") : undefined}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocusCapture={() => setPaused(true)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false);
+      }}
+      onKeyDown={(event) => {
+        if (items.length < 2 || (event.key !== "ArrowLeft" && event.key !== "ArrowRight")) return;
+        event.preventDefault();
+        step(event.key === "ArrowRight" ? 1 : -1);
+      }}
+      onTouchStart={(event) => {
+        touchStartX.current = event.touches[0]?.clientX ?? null;
+        setPaused(true);
+      }}
+      onTouchEnd={(event) => {
+        const startX = touchStartX.current;
+        touchStartX.current = null;
+        if (items.length < 2 || startX === null) return;
+        const endX = event.changedTouches[0]?.clientX;
+        if (endX === undefined || Math.abs(endX - startX) < 40) return;
+        step(endX < startX ? 1 : -1);
+      }}
+    >
+      <div className={`relative overflow-hidden border border-white/10 bg-navy-800 shadow-2xl ${aspectClass} ${radiusClass}`}>
+        <img
+          key={activeItem.imageUrl}
+          src={activeItem.imageUrl}
+          alt={t(activeItem.imageAlt ?? "")}
+          className={`h-full w-full object-cover ${focalPointClass}`}
+          {...(activeIndex === 0 ? ({ fetchpriority: "high" } as Record<string, string>) : {})}
+          decoding="async"
+          loading={activeIndex === 0 ? "eager" : "lazy"}
+          width={activeItem.imageWidth ?? KNOWN_IMAGE_SIZES[activeItem.imageUrl]?.width}
+          height={activeItem.imageHeight ?? KNOWN_IMAGE_SIZES[activeItem.imageUrl]?.height}
+        />
+      </div>
+
+      {items.length > 1 && (
+        <div className="mt-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2" role="group" aria-label={t("Choose hero image")}>
+            {items.map((item, index) => (
+              <button
+                key={`${item.imageUrl}-${index}`}
+                type="button"
+                className={`h-2 rounded-full transition-[width,background-color] ${index === activeIndex ? "w-8 bg-cta-soft" : "w-2 bg-white/30 hover:bg-white/50"}`}
+                aria-label={`${t("Show image")} ${index + 1}`}
+                aria-current={index === activeIndex ? "true" : undefined}
+                onClick={() => setActiveIndex(index)}
+              />
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <button type="button" className="grid h-10 w-10 place-items-center rounded-full border border-white/20 text-fog-50 transition-colors hover:border-cta-soft hover:text-cta-soft" aria-label={t("Previous image")} onClick={() => step(-1)}>
+              <ChevronLeft aria-hidden="true" className="h-4 w-4" />
+            </button>
+            <button type="button" className="grid h-10 w-10 place-items-center rounded-full border border-white/20 text-fog-50 transition-colors hover:border-cta-soft hover:text-cta-soft" aria-label={t("Next image")} onClick={() => step(1)}>
+              <ChevronRight aria-hidden="true" className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+      {items.length > 1 && (
+        <span className="sr-only" aria-live="polite">
+          {`${t("Image")} ${activeIndex + 1} ${t("of")} ${items.length}`}
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -171,6 +327,56 @@ function DarkProductHero({ props }: { props: HeroWebsitesProps }) {
   );
 }
 
+/**
+ * Configurable hero for vertical landing pages (barbershops, salons, clinics,
+ * and future niches). The floating-header clearance belongs to the outer flex
+ * frame; the grid then centers inside the remaining visible hero area.
+ */
+function IndustryLandingHero({ props }: { props: HeroWebsitesProps }) {
+  const { t } = useTranslation();
+  const headline = props.headline ?? DEFAULTS.headline;
+  const headlineLines = props.headlineLines?.length ? props.headlineLines : [{ text: headline }];
+  const subheadline = props.subheadline ?? DEFAULTS.subheadline;
+  const bgUrl = props.backgroundImageUrl ?? DEFAULTS.backgroundImageUrl;
+  const bgAlt = props.backgroundImageAlt ?? "";
+
+  return (
+    <div data-testid="section-hero-websites">
+      <Band
+        tone="hero"
+        heroVariant="industry"
+        pattern
+        className="relative isolate flex min-h-[760px] overflow-hidden lg:min-h-[min(760px,100svh)]"
+        containerClassName="relative z-10 flex min-w-0 flex-1 pt-nav"
+      >
+        <div className="grid min-w-0 flex-1 grid-cols-1 content-center items-center gap-10 py-10 sm:py-14 lg:grid-cols-[.92fr_1.08fr] lg:gap-16 lg:py-12">
+          <div className="order-2 min-w-0 lg:order-1">
+            <IndustryHeroMedia props={props} fallbackUrl={bgUrl} fallbackAlt={bgAlt} />
+          </div>
+
+          <div className="order-1 min-w-0 lg:order-2">
+            {props.eyebrow && (
+              <div className="flex items-center gap-3">
+                {props.accentMark === "barber-pole" && <BarberPoleMark inline />}
+                <Eyebrow>{t(props.eyebrow)}</Eyebrow>
+              </div>
+            )}
+            <h1 className={`${props.eyebrow ? "mt-5" : ""} font-display text-[clamp(2.25rem,8.5vw,3rem)] font-semibold leading-[0.98] tracking-[-0.045em] text-fog-50 lg:text-[clamp(2.5rem,3.6vw,3.25rem)]`}>
+              {headlineLines.map((line, index) => (
+                <span key={`${line.text}-${index}`} className={`block text-balance ${line.accent ? "text-cta-soft" : ""}`}>
+                  {t(line.text)}
+                </span>
+              ))}
+            </h1>
+            <p className="mt-6 max-w-xl text-base leading-7 text-fog-300 sm:text-xl sm:leading-8">{t(subheadline)}</p>
+            <HeroCtas props={props} ctaLabel={props.ctaLabel ?? DEFAULTS.ctaLabel} groupedSecondary />
+          </div>
+        </div>
+      </Band>
+    </div>
+  );
+}
+
 /** /websites and /barbershops hero: same band, image left and copy right. */
 function WebsitesHero({ props }: { props: HeroWebsitesProps }) {
   const { t } = useTranslation();
@@ -180,6 +386,8 @@ function WebsitesHero({ props }: { props: HeroWebsitesProps }) {
   const bgAlt = props.backgroundImageAlt ?? "";
   const bgVideoUrl = props.bgVideoUrl;
   const isBarbershopHero = bgUrl === "/barbershops/hero-barbershop.webp";
+
+  if (props.layout === "industry") return <IndustryLandingHero props={props} />;
 
   return (
     // pt-nav clears the fixed navbar. From lg the band stretches full height

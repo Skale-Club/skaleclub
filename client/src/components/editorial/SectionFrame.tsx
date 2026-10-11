@@ -4,7 +4,7 @@ import type { SectionRole as SharedSectionRole } from "@shared/section-definitio
 
 export type SectionTone = "dark" | "hero" | "cream" | "ice" | "white" | "cta" | "steel" | "steel-2" | "steel-3";
 export type SectionRole = SharedSectionRole;
-export type HeroVariant = "homepage" | "split-landing" | "dark-product" | "editorial-header" | "portfolio" | "campaign-form" | "blog-post";
+export type HeroVariant = "homepage" | "split-landing" | "industry" | "dark-product" | "editorial-header" | "portfolio" | "campaign-form" | "blog-post";
 
 const ManagedSectionRoleContext = createContext<SectionRole | undefined>(undefined);
 

@@ -246,14 +246,33 @@ export const LANDING_SECTIONS: PageSection[] = [
   {
     type: "heroWebsites",
     props: {
+      layout: "industry",
+      eyebrow: "Built for Barbershops",
+      accentMark: "barber-pole",
       headline: "More time in your day. More money in your pocket.",
-      subheadline: "More clients on your calendar. Less time on the phone.",
+      headlineLines: [
+        { text: "More time in your day." },
+        { text: "More money in your pocket.", accent: true },
+      ],
+      subheadline: "Fill more chairs while an AI answers calls, shares prices, and books appointments.",
       ctaLabel: "Get more clients",
-      secondaryCtaLabel: "Hear it working: (224) 551-6131",
+      secondaryCtaLabel: "Hear the AI answer",
       secondaryCtaHref: "tel:+12245516131",
-      secondaryCtaNote: "An AI answers that line for a barbershop. It gives prices and hours. Then it books the cut.",
+      secondaryCtaNote: "Call (224) 551-6131. It shares prices and books appointments.",
       backgroundImageUrl: "/barbershops/hero-barbershop.webp",
       backgroundImageAlt: "Barber cutting a client's hair in a busy modern barbershop.",
+      mediaItems: [
+        {
+          imageUrl: "/barbershops/hero-barbershop.webp",
+          imageAlt: "Barber cutting a client's hair in a busy modern barbershop.",
+          imageWidth: 960,
+          imageHeight: 960,
+          focalPoint: "center",
+        },
+      ],
+      mediaAspectRatio: "4:3",
+      mediaRadius: "medium",
+      carouselAutoplayMs: 7000,
     },
   },
   {

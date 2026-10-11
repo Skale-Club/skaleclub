@@ -690,6 +690,34 @@ html.admin-theme :where(a, button, [role="button"], summary):focus-visible {
   animation: barber-pole-scroll 2.8s linear infinite;
 }
 
+/* Industry heroes can place the same mark in the eyebrow instead of floating
+   it over photography. Keeping the mark selectable in page data makes the
+   hero reusable by industries that should not render a barber-specific icon. */
+.barber-pole-mark--inline {
+  position: relative;
+  right: auto;
+  top: auto;
+  flex: 0 0 auto;
+  width: 0.9rem;
+  height: 2.15rem;
+  padding: 0.12rem;
+  transform: none;
+}
+
+.barber-pole-mark--inline::before,
+.barber-pole-mark--inline::after {
+  width: 1.12rem;
+  height: 0.28rem;
+}
+
+.barber-pole-mark--inline::before {
+  top: -0.14rem;
+}
+
+.barber-pole-mark--inline::after {
+  bottom: -0.14rem;
+}
+
 @keyframes barber-pole-scroll {
   to {
     background-position: 0 3.84rem;
@@ -706,6 +734,17 @@ html.admin-theme :where(a, button, [role="button"], summary):focus-visible {
   .barber-pole-mark::before,
   .barber-pole-mark::after {
     width: 2.35rem;
+  }
+
+  .barber-pole-mark--inline {
+    right: auto;
+    width: 1rem;
+    height: 2.4rem;
+  }
+
+  .barber-pole-mark--inline::before,
+  .barber-pole-mark--inline::after {
+    width: 1.24rem;
   }
 }
 

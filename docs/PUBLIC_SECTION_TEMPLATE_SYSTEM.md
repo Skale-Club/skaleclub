@@ -86,6 +86,7 @@ variant:
 
 - homepage;
 - split landing;
+- industry landing;
 - dark product;
 - editorial page header;
 - portfolio;
@@ -101,6 +102,42 @@ Each variant must define:
 - mobile/tablet/desktop behavior;
 - trust placement: inline, bridge, or absent;
 - bottom handoff to the next section.
+
+### Industry landing hero
+
+Use `heroWebsites` with `layout: "industry"` for a vertical-specific landing
+such as barbershops, beauty salons, clinics, or home services. The template is
+content-driven and must not inspect the image path or page slug to decide its
+layout.
+
+The industry template provides:
+
+- vertical centering inside the usable hero area *below* the floating header;
+- one-to-three `headlineLines`, each optionally using the brand accent;
+- an optional, explicitly selected `accentMark` (currently `barber-pole`);
+- a reusable media frame with `square`, `4:3`, `3:2`, or `16:9` proportions;
+- configurable crop focal point and corner radius;
+- a static image when `mediaItems` contains one item and accessible carousel
+  controls when it contains two or more;
+- optional autoplay, disabled with `0` and automatically suppressed for
+  reduced-motion visitors or while the carousel is being used.
+
+The primary CTA stays visually dominant. A telephone demo is grouped with its
+own explanatory note so the note does not appear to describe both actions.
+
+To reproduce the barbershop structure for another industry, duplicate the
+managed page and change only its local `heroWebsites` props, section copy,
+images, and curated catalog selections. Do not fork the React component. For a
+salon, for example, omit `accentMark` unless an approved salon-specific mark is
+added to the shared enum, replace `eyebrow`, `headlineLines`, `subheadline`,
+CTAs, and `mediaItems`, then select the relevant shared services in
+`ourServices`.
+
+`backgroundImageUrl` and `backgroundImageAlt` remain as backwards-compatible
+single-image fallbacks. New industry pages should also declare `mediaItems`,
+including intrinsic width and height, so adding carousel slides later is only
+a data edit. Keep hero photography distinct from images repeated in sections
+below it.
 
 ## Template definition contract
 
@@ -256,3 +293,4 @@ acceptable exception.
 | 2026-10-11 | Created target contract and maintenance workflow | Preserve spacing/template decisions beyond the initial migration |
 | 2026-10-11 | Implemented role tokens, shared schemas/metadata, guided editor, versioning, and safe review parsing locally | Make spacing and templates consistent and maintainable without changing production |
 | 2026-10-11 | Connected registry roles to visual frames, activated schema-bound migrations, and verified 390/834/1440px landing previews | Prevent metadata drift, stale editor JSON, and responsive regressions before production approval |
+| 2026-10-11 | Added the reusable `industry` landing-hero configuration, header-aware vertical centering, and data-driven media carousel capability | Make the approved barbershop hero reproducible for salons and other vertical pages without component forks |

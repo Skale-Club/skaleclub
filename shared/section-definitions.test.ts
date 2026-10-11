@@ -80,3 +80,37 @@ test("our services supports an ordered mix of existing products and services", (
   });
   assert.equal(result.success, true);
 });
+
+test("industry hero is configurable without a page-specific component", () => {
+  const result = sectionPropsSchemas.heroWebsites.safeParse({
+    layout: "industry",
+    eyebrow: "Built for Salons",
+    headlineLines: [
+      { text: "More time for your clients." },
+      { text: "Less time on the phone.", accent: true },
+    ],
+    mediaItems: [
+      {
+        imageUrl: "/salons/hero.webp",
+        imageAlt: "A stylist serving a client.",
+        imageWidth: 1200,
+        imageHeight: 900,
+        focalPoint: "center",
+      },
+    ],
+    mediaAspectRatio: "4:3",
+    mediaRadius: "medium",
+    carouselAutoplayMs: 7000,
+  });
+
+  assert.equal(result.success, true);
+});
+
+test("industry hero rejects media without a usable image URL", () => {
+  const result = sectionPropsSchemas.heroWebsites.safeParse({
+    layout: "industry",
+    mediaItems: [{ imageAlt: "Missing image" }],
+  });
+
+  assert.equal(result.success, false);
+});

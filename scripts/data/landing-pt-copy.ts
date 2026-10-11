@@ -150,12 +150,24 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Leva cerca de um minuto. Você vê o preço conforme escolhe a quantidade, e confirmamos tudo com você no WhatsApp antes de produzir qualquer coisa. Enviar o formulário não custa nada.",
   "More time in your day. More money in your pocket.":
     "Mais tempo no seu dia. Mais dinheiro no seu bolso.",
+  "Built for Barbershops":
+    "Criado para Barbearias",
+  "More time in your day.":
+    "Mais tempo no seu dia.",
+  "More money in your pocket.":
+    "Mais dinheiro no seu bolso.",
+  "Fill more chairs while an AI answers calls, shares prices, and books appointments.":
+    "Encha mais cadeiras enquanto uma IA atende ligações, informa preços e agenda clientes.",
   "More clients on your calendar. Less time on the phone.":
     "Mais clientes na agenda. Menos tempo no telefone.",
   "Get more clients":
     "Quero mais clientes",
   "Hear it working: (224) 551-6131":
     "Ouça funcionando: (224) 551-6131",
+  "Hear the AI answer":
+    "Ouça a IA atendendo",
+  "Call (224) 551-6131. It shares prices and books appointments.":
+    "Ligue para (224) 551-6131. Ela informa preços e agenda clientes.",
   "An AI answers that line for a barbershop. It gives prices and hours. Then it books the cut.":
     "Uma IA atende esse número para uma barbearia. Ela informa preço e horário. Depois agenda o corte.",
   "Barber cutting a client's hair in a busy modern barbershop.":
