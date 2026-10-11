@@ -16,13 +16,17 @@ type OurServicesSectionData = NonNullable<HomepageContent['ourServicesSection']>
  * every usage (homepage + `ourServices` page-builder sections), so edits
  * apply everywhere at once. Same CatalogCard and CatalogDetail as the apps.
  */
-export function OurServicesSection({ section, onCtaClick }: {
+export function OurServicesSection({ section, onCtaClick, itemsOverride, eyebrow }: {
   section?: OurServicesSectionData;
   /** Opens the lead form. Without it the popup shows no CTA. */
   onCtaClick?: () => void;
+  /** Optional curated subset; the homepage still falls back to section.cards. */
+  itemsOverride?: CatalogItem[];
+  eyebrow?: string;
 }) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const items = useMemo(() => catalogServices(section?.cards), [section?.cards]);
+  const catalogItems = useMemo(() => catalogServices(section?.cards), [section?.cards]);
+  const items = itemsOverride ?? catalogItems;
 
   // startTransition lets the tap's frame paint before React mounts the popup
   // and re-renders the paused carousel (INP fix).
@@ -42,10 +46,10 @@ export function OurServicesSection({ section, onCtaClick }: {
   if (!section?.enabled || items.length === 0) return null;
 
   return (
-    <Band tone="dark" id="our-services" className="overflow-hidden" containerClassName="space-y-[2.125rem]">
+    <Band tone="dark" id="our-services" className="overflow-hidden" containerClassName="section-content-stack">
       <SectionHeading
         variant="editorial"
-        eyebrow="What we do"
+        eyebrow={eyebrow ?? "What we do"}
         icon={LayoutGrid}
         title={section.title || 'Our Services'}
         subtitle={section.subtitle}

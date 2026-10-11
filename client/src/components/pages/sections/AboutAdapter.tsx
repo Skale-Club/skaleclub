@@ -1,11 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { z } from "zod";
+import type { z } from "zod";
 import type { CompanySettings } from "@shared/schema";
+import { aboutPropsSchema } from "@shared/section-definitions";
 import { AboutSection } from "@/components/AboutSection";
 
-export const aboutPropsSchema = z.object({
-  tone: z.enum(["dark", "light"]).optional(),
-}).passthrough();
 
 export function AboutAdapter({ props }: { props: z.infer<typeof aboutPropsSchema> }) {
   const { data: settings } = useQuery<CompanySettings>({

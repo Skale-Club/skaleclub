@@ -15,8 +15,8 @@ export default function Apps() {
         <>
           <PortfolioHero
             badge={t("Apps")}
-            title={t("Apps we build and run")}
-            subtitle={t("Our own products, live today, with a fixed price. Subscribe and start.")}
+            title={t("Tools to sell more and work less")}
+            subtitle={t("Booking, content, website, CRM and sales solutions that simplify your day-to-day and help your business grow.")}
             buttonText={buttonText}
             onCta={() => openForm("hero")}
           />

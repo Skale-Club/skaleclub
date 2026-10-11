@@ -5,29 +5,13 @@
 // renders the confirmed NFC-keychain pricing; PT is served via t() when the
 // page language is 'pt'.
 
-import { z } from "zod";
+import type { z } from "zod";
 import { useTranslation } from "@/hooks/useTranslation";
-import { DARK_SURFACE, sectionThemeSchema } from "./sectionTheme";
+import { DARK_SURFACE } from "./sectionTheme";
 import { buildPriceLines, type PriceLine } from "@shared/nfc-price-lines";
+import { pricingTablePropsSchema } from "@shared/section-definitions";
+import { SectionFrame } from "@/components/editorial";
 
-// `satisfies` makes this fail to compile the moment this shape stops matching
-// the `PriceLine` type in shared/nfc-price-lines.ts — one type, checked in two
-// places, instead of two definitions that can quietly diverge.
-const priceLineSchema = z.object({
-  label: z.string(),
-  price: z.string(),
-  note:  z.string().optional(),
-  kind:  z.enum(["one-time", "per-unit", "minimum", "bundle"]),
-}) satisfies z.ZodType<PriceLine>;
-
-export const pricingTablePropsSchema = z.object({
-  eyebrow:    z.string().optional(),
-  heading:    z.string().optional(),
-  subheading: z.string().optional(),
-  lines:      z.array(priceLineSchema).min(1).optional(),
-  footnote:   z.string().optional(),
-  theme:      sectionThemeSchema,
-});
 export type PricingTableProps = z.infer<typeof pricingTablePropsSchema>;
 
 type PriceLineKind = PriceLine["kind"];
@@ -91,12 +75,10 @@ export function PricingTableSection({ props }: { props: PricingTableProps }) {
   const c          = props.theme === "dark" ? DARK : LIGHT;
 
   return (
-    <section
-      className={`${c.section} py-16 md:py-24`}
-      data-testid="section-pricing-table"
-    >
-      <div className="container-custom mx-auto px-6">
-        <div className="max-w-3xl mx-auto text-center mb-12 sm:mb-16">
+    <div data-testid="section-pricing-table">
+      <SectionFrame tone={props.theme === "dark" ? "dark" : "ice"} role="editorial" bare>
+        <div className="container-custom mx-auto px-6">
+        <div className="section-heading-flow max-w-3xl mx-auto text-center">
           <p className={`text-sm font-semibold uppercase tracking-widest ${c.eyebrow} mb-3`}>
             {t(eyebrow)}
           </p>
@@ -144,7 +126,8 @@ export function PricingTableSection({ props }: { props: PricingTableProps }) {
             </p>
           )}
         </div>
-      </div>
-    </section>
+        </div>
+      </SectionFrame>
+    </div>
   );
 }

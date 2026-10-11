@@ -1,4 +1,6 @@
 
+@import "./styles/section-tokens.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -443,18 +445,6 @@ html.admin-theme.dark {
     }
   }
 
-  /* Vertical rhythm for public sections. 4.25rem was already the most common
-     value on the homepage; this makes it a single knob and gives desktop more
-     air, instead of every section hard-coding its own padding. */
-  .section-y {
-    padding-block: 4.25rem;
-  }
-  @media (min-width: 768px) {
-    .section-y {
-      padding-block: 5.5rem;
-    }
-  }
-
   /* Standard clearance for the first block of any inner page: enough space
      below the overlaying fixed navbar (--nav-offset) plus a bit of breathing
      room, more generous from tablet up. */
@@ -639,4 +629,88 @@ html.admin-theme :where(a, button, [role="button"], summary):focus-visible {
   --orw-border: rgba(255, 255, 255, 0.10) !important;
   --orw-brand: #8FA9EE !important; /* cta-soft: links and labels on dark */
   --orw-brand-soft: rgba(81, 115, 214, 0.12) !important; /* cta tint */
+}
+
+/* Small industry signature used only by the barbershop landing hero. The
+   casing stays still while the inner stripes move, mimicking a barber pole
+   without adding an image or animation runtime to the page. */
+.barber-pole-mark {
+  position: absolute;
+  right: -0.55rem;
+  top: 12%;
+  z-index: 20;
+  display: block;
+  width: 1.8rem;
+  height: 4.5rem;
+  padding: 0.22rem;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 999px;
+  background: linear-gradient(90deg, #9da7b7 0%, #f8fafc 45%, #aab3c0 100%);
+  box-shadow: 0 10px 24px rgba(3, 8, 18, 0.38), inset 0 0 0 1px rgba(15, 23, 42, 0.22);
+  transform: rotate(2deg);
+}
+
+.barber-pole-mark::before,
+.barber-pole-mark::after {
+  position: absolute;
+  left: 50%;
+  width: 2.15rem;
+  height: 0.48rem;
+  content: "";
+  transform: translateX(-50%);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f8fafc 0%, #aab3c0 100%);
+  box-shadow: 0 2px 5px rgba(3, 8, 18, 0.32);
+}
+
+.barber-pole-mark::before {
+  top: -0.23rem;
+}
+
+.barber-pole-mark::after {
+  bottom: -0.23rem;
+}
+
+.barber-pole-stripes {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  background-image: repeating-linear-gradient(
+    135deg,
+    #2563eb 0 0.48rem,
+    #f8fafc 0.48rem 0.96rem,
+    #dc2638 0.96rem 1.44rem,
+    #f8fafc 1.44rem 1.92rem
+  );
+  background-size: 100% 3.84rem;
+  box-shadow: inset 0 0 0.42rem rgba(15, 23, 42, 0.3);
+  animation: barber-pole-scroll 2.8s linear infinite;
+}
+
+@keyframes barber-pole-scroll {
+  to {
+    background-position: 0 3.84rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .barber-pole-mark {
+    right: -0.7rem;
+    width: 2rem;
+    height: 5.15rem;
+  }
+
+  .barber-pole-mark::before,
+  .barber-pole-mark::after {
+    width: 2.35rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .barber-pole-stripes {
+    animation: none;
+  }
 }

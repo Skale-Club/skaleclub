@@ -118,9 +118,9 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
 
   return (
     <article className="bg-navy-950 text-fog-200 [color-scheme:dark]" data-testid="section-nfc-product-guide">
-      <Band tone="hero" pattern containerClassName="page-top pb-16 sm:pb-24">
+      <Band tone="hero" heroVariant="dark-product" pattern containerClassName="page-top pb-16 sm:pb-24">
         <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div>
+          <div className="section-content-stack">
             <div className="inline-flex items-center gap-2 rounded-full border border-cta-soft/25 bg-navy-800/80 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-cta-softer shadow-[0_10px_35px_rgba(0,0,0,.18)] backdrop-blur">
               <Radio className="h-4 w-4" />
               {t("NFC keychain guide")}
@@ -152,7 +152,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
           caption="Illustrative concepts. Your final design is reviewed and approved before production."
           icon={Sparkles}
           imgClassName="sm:aspect-[2/1]"
-          className="mt-12 border-transparent sm:mt-16"
+          className="section-content-after-heading border-transparent"
           captionClassName="py-4 sm:px-6"
         />
       </Band>
@@ -182,7 +182,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
           subtitle="The model defines the base level of design and production work. We then adapt size, colors, contour and NFC placement to your idea."
         />
 
-        <div className="mt-12 grid gap-5 lg:grid-cols-3">
+        <div className="section-content-after-heading section-grid-gap grid lg:grid-cols-3">
           {NFC_KEYCHAIN_TYPES.filter((type) => type.active).map((type) => {
             const detail = modelDetails[type.id as keyof typeof modelDetails];
             const Icon = detail.icon;
@@ -235,9 +235,9 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
               src="/nfc-guide/price-factors.webp" width={1400} height={933}
               alt="Three illustrative keychains showing increasing design and production complexity"
               caption="A flat surface, raised layers and a detailed custom contour require different amounts of work."
-              className="mt-9"
+              className=""
             />
-            <div className="mt-10 grid gap-x-8 gap-y-7 sm:grid-cols-2">
+            <div className="grid gap-x-8 gap-y-7 sm:grid-cols-2">
               {priceFactors.map(({ icon: Icon, title, text }) => (
                 <div key={title} className="border-t border-white/15 pt-5">
                   <Icon className="h-5 w-5 text-cta-soft" />
@@ -290,9 +290,9 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
           alt="Smartphone reading an NFC keychain at a business counter"
           caption="Bring the back of the phone close to the keychain and open the notification. No app required."
           imgClassName="sm:aspect-[2/1]"
-          className="mt-12"
+          className="section-content-after-heading"
         />
-        <div className="mt-12 grid gap-5 md:grid-cols-3">
+        <div className="section-content-after-heading section-grid-gap grid md:grid-cols-3">
           {[
             [Smartphone, "No app required", "Modern iPhone and Android phones can read the tag without installing anything."],
             [Radio, "Your destination", "Open Google reviews, Instagram, WhatsApp, a menu, booking page, digital card or website."],
@@ -360,9 +360,9 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
           alt="Illustrative batch of NFC keychains being tested and prepared for shipping"
           caption="After approval, the batch is produced, every NFC tag is tested and the order is prepared for delivery."
           imgClassName="sm:aspect-[2/1]"
-          className="mt-12"
+          className="section-content-after-heading"
         />
-        <div className="mt-12 grid gap-px overflow-hidden border border-ink-700/10 bg-ink-700/10 md:grid-cols-2 lg:grid-cols-4">
+        <div className="section-content-after-heading grid gap-px overflow-hidden border border-ink-700/10 bg-ink-700/10 md:grid-cols-2 lg:grid-cols-4">
           {processSteps.map(([number, title, text]) => (
             <div key={number} className="bg-white p-6 transition hover:bg-paper-ice/60 sm:p-7">
               <span className="text-sm tabular-nums text-cta-ink">{number}</span>
@@ -391,7 +391,7 @@ export function NfcProductGuideSection({ props }: { props: NfcProductGuideProps 
             decoding="async"
           />
         </div>
-        <div className="mt-12 grid gap-x-12 gap-y-12 lg:grid-cols-2">
+        <div className="section-content-after-heading grid gap-x-12 gap-y-12 lg:grid-cols-2">
           {faqGroups.map((group) => (
             <div key={group.title}>
               <h3 className="border-b-2 border-cta-softer/70 pb-4 text-sm font-bold uppercase tracking-[0.16em] text-fog-50">

@@ -1,55 +1,82 @@
-import type { ComponentType } from "react";
+import { createElement, type ComponentType } from "react";
 import type { z } from "zod";
-import { HeroSectionAdapter, heroPropsSchema } from "./sections/HeroSectionAdapter";
-import { HeroWebsitesSection, heroWebsitesPropsSchema } from "./sections/HeroWebsitesSection";
-import { TrustBadgesAdapter, trustBadgesPropsSchema } from "./sections/TrustBadgesAdapter";
-import { ServicesAdapter, servicesPropsSchema } from "./sections/ServicesAdapter";
-import { OurServicesAdapter, ourServicesPropsSchema } from "./sections/OurServicesAdapter";
-import { ReviewsAdapter, reviewsPropsSchema } from "./sections/ReviewsAdapter";
-import { BlogAdapter, blogPropsSchema } from "./sections/BlogAdapter";
-import { AboutAdapter, aboutPropsSchema } from "./sections/AboutAdapter";
-import { AreasServedAdapter, areasServedPropsSchema } from "./sections/AreasServedAdapter";
-import { LeadFormCtaAdapter, leadFormCtaPropsSchema } from "./sections/LeadFormCtaAdapter";
-import { WhatsAppGroupSection, whatsAppGroupPropsSchema } from "./sections/WhatsAppGroupSection";
-import { ProcessStepperSection, processStepperPropsSchema } from "./sections/ProcessStepperSection";
-import { PricingTableSection, pricingTablePropsSchema } from "./sections/PricingTableSection";
-import { FaqAccordionSection, faqAccordionPropsSchema } from "./sections/FaqAccordionSection";
-import { ContentBlocksSection, contentBlocksPropsSchema } from "./sections/ContentBlocksSection";
-import { FeatureGridSection, featureGridPropsSchema } from "./sections/FeatureGridSection";
-import { PricingPlansSection, pricingPlansPropsSchema } from "./sections/PricingPlansSection";
-import { LinkCalloutSection, linkCalloutPropsSchema } from "./sections/LinkCalloutSection";
+import {
+  registeredSectionTypes,
+  sectionDefinitionMetadata,
+  sectionPropsSchemas,
+  type RegisteredSectionType,
+  type SectionDefinitionMetadata,
+} from "@shared/section-definitions";
+import { HeroSectionAdapter } from "./sections/HeroSectionAdapter";
+import { HeroWebsitesSection } from "./sections/HeroWebsitesSection";
+import { TrustBadgesAdapter } from "./sections/TrustBadgesAdapter";
+import { ServicesAdapter } from "./sections/ServicesAdapter";
+import { OurServicesAdapter } from "./sections/OurServicesAdapter";
+import { ReviewsAdapter } from "./sections/ReviewsAdapter";
+import { BlogAdapter } from "./sections/BlogAdapter";
+import { AboutAdapter } from "./sections/AboutAdapter";
+import { AreasServedAdapter } from "./sections/AreasServedAdapter";
+import { LeadFormCtaAdapter } from "./sections/LeadFormCtaAdapter";
+import { WhatsAppGroupSection } from "./sections/WhatsAppGroupSection";
+import { ProcessStepperSection } from "./sections/ProcessStepperSection";
+import { PricingTableSection } from "./sections/PricingTableSection";
+import { FaqAccordionSection } from "./sections/FaqAccordionSection";
+import { ContentBlocksSection } from "./sections/ContentBlocksSection";
+import { FeatureGridSection } from "./sections/FeatureGridSection";
+import { PricingPlansSection } from "./sections/PricingPlansSection";
+import { LinkCalloutSection } from "./sections/LinkCalloutSection";
+import { SectionRoleProvider } from "@/components/editorial";
 
 export interface SectionEntry {
-  component: ComponentType<{ props: any }>;
-  propsSchema: z.ZodTypeAny;
+  component: ComponentType<{ props: unknown }>;
+  propsSchema: z.ZodType<unknown>;
+  metadata: SectionDefinitionMetadata;
 }
 
-// Map of section `type` → React component + zod props schema.
-// Add new section types here. This registry is the ONLY registration point:
-// there is no server-side section registry — `insertPageSchema` accepts
-// `props: z.record(z.unknown())`, so the server stores each section's props
-// bag unvalidated and DynamicLanding validates via `propsSchema.safeParse`
-// at render time (a failed parse renders nothing in production).
-//
-export const sectionRegistry: Record<string, SectionEntry> = {
-  hero:          { component: HeroSectionAdapter,    propsSchema: heroPropsSchema },
-  heroWebsites:  { component: HeroWebsitesSection,   propsSchema: heroWebsitesPropsSchema },
-  trustBadges:   { component: TrustBadgesAdapter,    propsSchema: trustBadgesPropsSchema },
-  services:      { component: ServicesAdapter,       propsSchema: servicesPropsSchema },
-  ourServices:   { component: OurServicesAdapter,    propsSchema: ourServicesPropsSchema },
-  reviews:       { component: ReviewsAdapter,        propsSchema: reviewsPropsSchema },
-  blog:          { component: BlogAdapter,           propsSchema: blogPropsSchema },
-  about:         { component: AboutAdapter,          propsSchema: aboutPropsSchema },
-  areasServed:   { component: AreasServedAdapter,    propsSchema: areasServedPropsSchema },
-  leadFormCta:   { component: LeadFormCtaAdapter,    propsSchema: leadFormCtaPropsSchema },
-  whatsappGroup:  { component: WhatsAppGroupSection,  propsSchema: whatsAppGroupPropsSchema },
-  processStepper: { component: ProcessStepperSection, propsSchema: processStepperPropsSchema },
-  pricingTable:   { component: PricingTableSection,   propsSchema: pricingTablePropsSchema },
-  faqAccordion:   { component: FaqAccordionSection,   propsSchema: faqAccordionPropsSchema },
-  contentBlocks:  { component: ContentBlocksSection,  propsSchema: contentBlocksPropsSchema },
-  featureGrid:    { component: FeatureGridSection,    propsSchema: featureGridPropsSchema },
-  pricingPlans:   { component: PricingPlansSection,   propsSchema: pricingPlansPropsSchema },
-  linkCallout:    { component: LinkCalloutSection,    propsSchema: linkCalloutPropsSchema },
+type SectionProps<Type extends RegisteredSectionType> = z.infer<(typeof sectionPropsSchemas)[Type]>;
+
+function bindSection<Type extends RegisteredSectionType>(
+  type: Type,
+  component: ComponentType<{ props: SectionProps<Type> }>,
+): SectionEntry {
+  const metadata = sectionDefinitionMetadata[type];
+  const ManagedRenderer = ({ props }: { props: SectionProps<Type> }) => createElement(
+    SectionRoleProvider,
+    { role: metadata.role },
+    createElement(component, { props }),
+  );
+
+  return {
+    component: ManagedRenderer as ComponentType<{ props: unknown }>,
+    propsSchema: sectionPropsSchemas[type],
+    metadata,
+  };
+}
+
+// Client-only map from a shared section definition to its React renderer.
+// Schema, role, label and version live in shared/section-definitions.ts so the
+// editor, API and renderer all enforce the same contract.
+const registeredSectionRenderers: Record<RegisteredSectionType, SectionEntry> = {
+  hero: bindSection("hero", HeroSectionAdapter),
+  heroWebsites: bindSection("heroWebsites", HeroWebsitesSection),
+  trustBadges: bindSection("trustBadges", TrustBadgesAdapter),
+  services: bindSection("services", ServicesAdapter),
+  ourServices: bindSection("ourServices", OurServicesAdapter),
+  reviews: bindSection("reviews", ReviewsAdapter),
+  blog: bindSection("blog", BlogAdapter),
+  about: bindSection("about", AboutAdapter),
+  areasServed: bindSection("areasServed", AreasServedAdapter),
+  leadFormCta: bindSection("leadFormCta", LeadFormCtaAdapter),
+  whatsappGroup: bindSection("whatsappGroup", WhatsAppGroupSection),
+  processStepper: bindSection("processStepper", ProcessStepperSection),
+  pricingTable: bindSection("pricingTable", PricingTableSection),
+  faqAccordion: bindSection("faqAccordion", FaqAccordionSection),
+  contentBlocks: bindSection("contentBlocks", ContentBlocksSection),
+  featureGrid: bindSection("featureGrid", FeatureGridSection),
+  pricingPlans: bindSection("pricingPlans", PricingPlansSection),
+  linkCallout: bindSection("linkCallout", LinkCalloutSection),
 };
 
-export const registeredSectionTypes = Object.keys(sectionRegistry);
+export const sectionRegistry: Readonly<Record<string, SectionEntry>> = registeredSectionRenderers;
+
+export { registeredSectionTypes };

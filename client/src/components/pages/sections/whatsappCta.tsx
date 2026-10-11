@@ -1,9 +1,10 @@
-import { z } from "zod";
 import { MessageCircle } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { trackEvent } from "@/lib/analytics";
 import { whatsappHref } from "@shared/nfc-whatsapp";
 import { PillLink } from "@/components/editorial";
+import { whatsappCtaSchema } from "@shared/section-definitions";
+import type { z } from "zod";
 
 // Optional "Talk to us on WhatsApp" link shared by landing sections.
 //
@@ -11,13 +12,6 @@ import { PillLink } from "@/components/editorial";
 // language directly, never through t(). The WhatsApp line routes by keywords
 // in that first message (see shared/nfc-whatsapp.ts), and a machine-translated
 // fallback could drop the keyword. The button label does go through t().
-export const whatsappCtaSchema = z
-  .object({
-    number: z.string().regex(/^\+?[0-9 ()-]{8,20}$/, "WhatsApp number, digits with country code"),
-    label: z.string().optional(),
-    messages: z.object({ en: z.string().min(1), pt: z.string().min(1) }),
-  })
-  .optional();
 export type WhatsappCta = z.infer<typeof whatsappCtaSchema>;
 
 const DEFAULT_LABEL = "Talk to us on WhatsApp";

@@ -170,7 +170,7 @@ export default function SkaleHub() {
 
   return (
     <div className="bg-gradient-to-b from-[#f7f9fc] via-[#eef4ff] to-white">
-      <section className="relative overflow-hidden pb-20 page-top">
+      <section data-section-role="hero" data-hero-variant="campaign-form" className="relative overflow-hidden pb-20 page-top">
         <div
           aria-hidden
           className="absolute inset-x-0 top-0 h-[420px]"

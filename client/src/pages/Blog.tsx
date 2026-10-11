@@ -12,6 +12,7 @@ import type { BlogPost } from '@shared/schema';
 import { usePagePaths } from '@/lib/pagePaths';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { fetchJson } from '@/lib/queryClient';
+import { SectionFrame } from '@/components/editorial';
 
 const POSTS_PER_PAGE = 9;
 
@@ -76,24 +77,22 @@ export default function Blog() {
         ]}
       />
 
-      <div className="container-custom px-4 sm:px-6 tablet:px-0 pt-8">
-        <div className="w-full max-w-md md:max-w-sm md:ml-auto">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              aria-label="Search articles"
-              placeholder="Search articles..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-              data-testid="input-blog-search"
-            />
+      <SectionFrame tone="ice" role="editorial" bare>
+        <div className="container-custom px-4 sm:px-6 tablet:px-0">
+          <div className="mb-8 w-full max-w-md md:ml-auto md:max-w-sm">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                aria-label="Search articles"
+                placeholder="Search articles..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+                data-testid="input-blog-search"
+              />
+            </div>
           </div>
-        </div>
-      </div>
-
-      <div className="container-custom px-4 sm:px-6 tablet:px-0 py-8 md:py-12">
-        {isLoading ? (
+          {isLoading ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {[...Array(6)].map((_, i) => (
               <Card key={i} className="overflow-hidden border-0">
@@ -186,8 +185,9 @@ export default function Blog() {
               {searchTerm ? 'Try a different search term' : 'Check back soon for new articles'}
             </p>
           </div>
-        )}
-      </div>
+          )}
+        </div>
+      </SectionFrame>
     </div>
   );
 }

@@ -3,26 +3,14 @@
 // is prop-driven with English defaults (the t() source language) so a bare
 // `props: {}` still renders; PT is served via t() when the page language is 'pt'.
 
-import { z } from "zod";
+import type { z } from "zod";
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
 import { ChevronDown } from "lucide-react";
 import { Band } from "@/components/editorial";
 import { SectionHeading } from "@/components/layout/SectionHeading";
 import { useTranslation } from "@/hooks/useTranslation";
-import { sectionThemeSchema } from "./sectionTheme";
+import { faqAccordionPropsSchema } from "@shared/section-definitions";
 
-const faqItemSchema = z.object({
-  question: z.string(),
-  answer:   z.string(),
-});
-
-export const faqAccordionPropsSchema = z.object({
-  eyebrow:    z.string().optional(),
-  heading:    z.string().optional(),
-  subheading: z.string().optional(),
-  items:      z.array(faqItemSchema).min(1).optional(),
-  theme:      sectionThemeSchema,
-});
 export type FaqAccordionProps = z.infer<typeof faqAccordionPropsSchema>;
 
 const DEFAULTS = {
@@ -81,7 +69,7 @@ export function FaqAccordionSection({ props }: { props: FaqAccordionProps }) {
         <AccordionPrimitive.Root
           type="single"
           collapsible
-          className="mt-12 grid gap-x-12 lg:grid-cols-2"
+          className="section-content-after-heading grid gap-x-12 lg:grid-cols-2"
         >
           {[items.slice(0, Math.ceil(items.length / 2)), items.slice(Math.ceil(items.length / 2))].map((column, col) => (
             <div key={col} className={`divide-y border-y ${c.list} ${col === 1 ? "border-t-0 lg:border-t" : ""}`}>

@@ -1,0 +1,412 @@
+[
+  {
+    "name": "mobile",
+    "viewport": {
+      "innerWidth": 390,
+      "innerHeight": 844,
+      "clientWidth": 390
+    },
+    "widths": {
+      "document": 390,
+      "body": 390
+    },
+    "horizontalOverflow": false,
+    "copy": {
+      "heading": true,
+      "xkedule": true,
+      "xsites": true,
+      "ads": true,
+      "xareable": true,
+      "about": false
+    },
+    "requiredImages": [
+      {
+        "src": "/product-assets/catalog-2026-09/scheduling-system-home.webp",
+        "loaded": false
+      },
+      {
+        "src": "/service-images/editorial-2026-09/digital-marketing-consultation.webp",
+        "loaded": false
+      },
+      {
+        "src": "/barbershops/hero-barbershop.webp",
+        "loaded": true
+      },
+      {
+        "src": "/barbershops/full-chairs-v2.webp",
+        "loaded": true
+      },
+      {
+        "src": "/barbershops/barber-automation-v3.webp",
+        "loaded": true
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/scheduling-system-home.webp",
+        "loaded": false
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/websites-home.webp",
+        "loaded": false
+      },
+      {
+        "src": "/service-images/editorial-2026-09/paid-advertising.webp",
+        "loaded": false
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/xareable-home.webp",
+        "loaded": false
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/scheduling-system-home.webp",
+        "loaded": false
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/websites-home.webp",
+        "loaded": false
+      },
+      {
+        "src": "/service-images/editorial-2026-09/paid-advertising.webp",
+        "loaded": false
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/xareable-home.webp",
+        "loaded": false
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/scheduling-system-home.webp",
+        "loaded": true
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/websites-home.webp",
+        "loaded": false
+      },
+      {
+        "src": "/service-images/editorial-2026-09/paid-advertising.webp",
+        "loaded": false
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/xareable-home.webp",
+        "loaded": false
+      },
+      {
+        "src": "/barbershops/products/nfc-google-plate-v4.webp",
+        "loaded": false
+      },
+      {
+        "src": "/barbershops/products/custom-keychains.webp",
+        "loaded": false
+      },
+      {
+        "src": "/barbershops/products/keychain-display.webp",
+        "loaded": false
+      }
+    ],
+    "servicesImagesAfterScroll": [
+      {
+        "src": "/product-assets/catalog-2026-09/scheduling-system-home.webp",
+        "loaded": false
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/websites-home.webp",
+        "loaded": false
+      },
+      {
+        "src": "/service-images/editorial-2026-09/paid-advertising.webp",
+        "loaded": false
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/xareable-home.webp",
+        "loaded": true
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/scheduling-system-home.webp",
+        "loaded": true
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/websites-home.webp",
+        "loaded": true
+      },
+      {
+        "src": "/service-images/editorial-2026-09/paid-advertising.webp",
+        "loaded": false
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/xareable-home.webp",
+        "loaded": false
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/scheduling-system-home.webp",
+        "loaded": true
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/websites-home.webp",
+        "loaded": false
+      },
+      {
+        "src": "/service-images/editorial-2026-09/paid-advertising.webp",
+        "loaded": false
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/xareable-home.webp",
+        "loaded": false
+      }
+    ],
+    "aboutSection": {
+      "exists": true,
+      "src": "https://neummispnnqzrhdhnxwa.supabase.co/storage/v1/object/public/uploads/1771605841009_39f705e8-4b70-4210-931b-a1955e54b608.webp",
+      "loaded": true
+    }
+  },
+  {
+    "name": "tablet",
+    "viewport": {
+      "innerWidth": 834,
+      "innerHeight": 1194,
+      "clientWidth": 819
+    },
+    "widths": {
+      "document": 819,
+      "body": 819
+    },
+    "horizontalOverflow": false,
+    "copy": {
+      "heading": true,
+      "xkedule": true,
+      "xsites": true,
+      "ads": true,
+      "xareable": true,
+      "about": false
+    },
+    "requiredImages": [
+      {
+        "src": "/product-assets/catalog-2026-09/scheduling-system-home.webp",
+        "loaded": true
+      },
+      {
+        "src": "/service-images/editorial-2026-09/digital-marketing-consultation.webp",
+        "loaded": true
+      },
+      {
+        "src": "/barbershops/hero-barbershop.webp",
+        "loaded": true
+      },
+      {
+        "src": "/barbershops/full-chairs-v2.webp",
+        "loaded": true
+      },
+      {
+        "src": "/barbershops/barber-automation-v3.webp",
+        "loaded": true
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/scheduling-system-home.webp",
+        "loaded": true
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/websites-home.webp",
+        "loaded": false
+      },
+      {
+        "src": "/service-images/editorial-2026-09/paid-advertising.webp",
+        "loaded": false
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/xareable-home.webp",
+        "loaded": false
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/scheduling-system-home.webp",
+        "loaded": true
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/websites-home.webp",
+        "loaded": false
+      },
+      {
+        "src": "/service-images/editorial-2026-09/paid-advertising.webp",
+        "loaded": false
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/xareable-home.webp",
+        "loaded": false
+      },
+      {
+        "src": "/barbershops/products/nfc-google-plate-v4.webp",
+        "loaded": false
+      },
+      {
+        "src": "/barbershops/products/custom-keychains.webp",
+        "loaded": false
+      },
+      {
+        "src": "/barbershops/products/keychain-display.webp",
+        "loaded": false
+      }
+    ],
+    "servicesImagesAfterScroll": [
+      {
+        "src": "/product-assets/catalog-2026-09/scheduling-system-home.webp",
+        "loaded": true
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/websites-home.webp",
+        "loaded": true
+      },
+      {
+        "src": "/service-images/editorial-2026-09/paid-advertising.webp",
+        "loaded": true
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/xareable-home.webp",
+        "loaded": true
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/scheduling-system-home.webp",
+        "loaded": true
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/websites-home.webp",
+        "loaded": false
+      },
+      {
+        "src": "/service-images/editorial-2026-09/paid-advertising.webp",
+        "loaded": false
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/xareable-home.webp",
+        "loaded": false
+      }
+    ],
+    "aboutSection": {
+      "exists": true,
+      "src": "https://neummispnnqzrhdhnxwa.supabase.co/storage/v1/object/public/uploads/1771605841009_39f705e8-4b70-4210-931b-a1955e54b608.webp",
+      "loaded": true
+    }
+  },
+  {
+    "name": "desktop",
+    "viewport": {
+      "innerWidth": 1440,
+      "innerHeight": 900,
+      "clientWidth": 1425
+    },
+    "widths": {
+      "document": 1425,
+      "body": 1425
+    },
+    "horizontalOverflow": false,
+    "copy": {
+      "heading": true,
+      "xkedule": true,
+      "xsites": true,
+      "ads": true,
+      "xareable": true,
+      "about": false
+    },
+    "requiredImages": [
+      {
+        "src": "/product-assets/catalog-2026-09/scheduling-system-home.webp",
+        "loaded": true
+      },
+      {
+        "src": "/service-images/editorial-2026-09/digital-marketing-consultation.webp",
+        "loaded": true
+      },
+      {
+        "src": "/barbershops/hero-barbershop.webp",
+        "loaded": true
+      },
+      {
+        "src": "/barbershops/full-chairs-v2.webp",
+        "loaded": true
+      },
+      {
+        "src": "/barbershops/barber-automation-v3.webp",
+        "loaded": true
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/scheduling-system-home.webp",
+        "loaded": true
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/websites-home.webp",
+        "loaded": false
+      },
+      {
+        "src": "/service-images/editorial-2026-09/paid-advertising.webp",
+        "loaded": false
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/xareable-home.webp",
+        "loaded": false
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/scheduling-system-home.webp",
+        "loaded": true
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/websites-home.webp",
+        "loaded": false
+      },
+      {
+        "src": "/service-images/editorial-2026-09/paid-advertising.webp",
+        "loaded": false
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/xareable-home.webp",
+        "loaded": false
+      },
+      {
+        "src": "/barbershops/products/nfc-google-plate-v4.webp",
+        "loaded": false
+      },
+      {
+        "src": "/barbershops/products/custom-keychains.webp",
+        "loaded": false
+      },
+      {
+        "src": "/barbershops/products/keychain-display.webp",
+        "loaded": false
+      }
+    ],
+    "servicesImagesAfterScroll": [
+      {
+        "src": "/product-assets/catalog-2026-09/scheduling-system-home.webp",
+        "loaded": true
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/websites-home.webp",
+        "loaded": true
+      },
+      {
+        "src": "/service-images/editorial-2026-09/paid-advertising.webp",
+        "loaded": true
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/xareable-home.webp",
+        "loaded": true
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/scheduling-system-home.webp",
+        "loaded": true
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/websites-home.webp",
+        "loaded": true
+      },
+      {
+        "src": "/service-images/editorial-2026-09/paid-advertising.webp",
+        "loaded": false
+      },
+      {
+        "src": "/product-assets/catalog-2026-09/xareable-home.webp",
+        "loaded": false
+      }
+    ],
+    "aboutSection": {
+      "exists": true,
+      "src": "https://neummispnnqzrhdhnxwa.supabase.co/storage/v1/object/public/uploads/1771605841009_39f705e8-4b70-4210-931b-a1955e54b608.webp",
+      "loaded": true
+    }
+  }
+]

@@ -5,31 +5,13 @@
 // `props: {}` still renders; PT is served via t() when the page language
 // is 'pt'.
 
-import { z } from "zod";
+import type { z } from "zod";
 import { Check } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
-import { DARK_SURFACE, sectionThemeSchema } from "./sectionTheme";
+import { DARK_SURFACE } from "./sectionTheme";
+import { SectionFrame } from "@/components/editorial";
+import { contentBlocksPropsSchema } from "@shared/section-definitions";
 
-const contentBlockSchema = z.object({
-  heading:    z.string(),
-  paragraphs: z.array(z.string()),
-  bullets:    z.array(z.string()).optional(),
-});
-
-export const contentBlocksPropsSchema = z.object({
-  eyebrow:    z.string().optional(),
-  heading:    z.string().optional(),
-  subheading: z.string().optional(),
-  headingLevel: z.enum(["h1", "h2"]).optional(),
-  blocks:     z.array(contentBlockSchema).min(1).optional(),
-  theme:      sectionThemeSchema,
-  // Optional product image beside the blocks (two columns from lg). Flat
-  // imageUrl/imageAlt like leadFormCta, so the PT copy pass translates the alt.
-  // Root-relative only; the lookahead blocks "//host" (protocol-relative).
-  imageUrl:   z.string().regex(/^\/(?![\/\\])/).optional(),
-  imageAlt:   z.string().optional(),
-  imageSide:  z.enum(["left", "right"]).optional(),
-});
 export type ContentBlocksProps = z.infer<typeof contentBlocksPropsSchema>;
 
 const DEFAULTS = {
@@ -95,12 +77,10 @@ export function ContentBlocksSection({ props }: { props: ContentBlocksProps }) {
   const HeadingTag = props.headingLevel === "h1" ? "h1" : "h2";
 
   return (
-    <section
-      className={`${c.section} py-16 md:py-24`}
-      data-testid="section-content-blocks"
-    >
-      <div className="container-custom mx-auto px-6">
-        <div className="max-w-3xl mx-auto text-center mb-12 sm:mb-16">
+    <div data-testid="section-content-blocks">
+      <SectionFrame tone={props.theme === "dark" ? "dark" : "white"} role="editorial" bare>
+        <div className="container-custom mx-auto px-6">
+        <div className="section-heading-flow max-w-3xl mx-auto text-center">
           <p className={`text-sm font-semibold uppercase tracking-widest ${c.eyebrow} mb-3`}>
             {t(eyebrow)}
           </p>
@@ -154,7 +134,8 @@ export function ContentBlocksSection({ props }: { props: ContentBlocksProps }) {
             ))}
           </div>
         </div>
-      </div>
-    </section>
+        </div>
+      </SectionFrame>
+    </div>
   );
 }

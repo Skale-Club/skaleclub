@@ -1,103 +1,118 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Star } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { SectionHeading } from "@/components/layout/SectionHeading";
 import { Band } from "@/components/editorial";
+import {
+  parseLegacyReviewsEmbed,
+  type ReviewsXphereConfig,
+} from "@shared/reviews-embed";
+
+export type { ReviewsXphereConfig } from "@shared/reviews-embed";
 
 interface ReviewsSectionProps {
+  xphere?: ReviewsXphereConfig;
+  /** Deprecated: retained while stored pages move to the structured config. */
   embedUrl?: string;
   title?: string;
   subtitle?: string;
 }
 
-type EmbedType = 'url' | 'iframe' | 'script';
+const XPHERE_SCRIPT_URL = "https://xphere.app/reviews-widget.js";
+const REPUTATIONHUB_SCRIPT_URL = "https://reputationhub.site/reputation/assets/review-widget.js";
 
-function getEmbedType(embed: string): EmbedType {
-  const t = embed.trim();
-  if (t.includes('<iframe')) return 'iframe';
-  if (t.includes('<script')) return 'script';
-  return 'url';
-}
-
-function EmbedRenderer({ code }: { code: string }) {
+function XphereReviews({ config }: { config: ReviewsXphereConfig }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const type = getEmbedType(code);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
-    if (type !== 'script') return;
+    const host = containerRef.current;
+    if (!host) return;
+    host.replaceChildren();
+    setLoadError(false);
 
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(code, 'text/html');
-    const scripts = Array.from(doc.querySelectorAll('script'));
-    const injected: HTMLScriptElement[] = [];
+    const script = document.createElement("script");
+    script.src = XPHERE_SCRIPT_URL;
+    script.async = true;
+    script.dataset.skaleReviewsLoader = config.token;
+    script.addEventListener("error", () => setLoadError(true));
+    document.body.appendChild(script);
 
-    scripts.forEach((s) => {
-      const el = document.createElement('script');
-      Array.from(s.attributes).forEach((a) => el.setAttribute(a.name, a.value));
-      el.textContent = s.textContent ?? '';
-      document.body.appendChild(el);
-      injected.push(el);
-    });
+    return () => {
+      script.remove();
+      host.replaceChildren();
+    };
+  }, [config]);
 
-    return () => injected.forEach((s) => s.remove());
-  }, [code, type]);
-
-  if (type === 'url') {
-    return (
-      <iframe
-        className="lc_reviews_widget rounded-none"
-        src={code}
-        frameBorder="0"
-        scrolling="no"
-        style={{ minWidth: '100%', width: '100%', height: '488px', border: 'none', display: 'block', borderRadius: '0', background: '#10151e' }}
-        onLoad={() => {
-          const script = document.createElement('script');
-          script.type = 'text/javascript';
-          script.src = 'https://reputationhub.site/reputation/assets/review-widget.js';
-          document.body.appendChild(script);
-        }}
-      />
-    );
-  }
-
-  if (type === 'iframe') {
-    return (
-      <div
-        className="w-full [&_iframe]:w-full [&_iframe]:min-w-full [&_iframe]:border-none [&_iframe]:block"
-        dangerouslySetInnerHTML={{ __html: code }}
-      />
-    );
-  }
-
-  // script — inject via useEffect above; render any container HTML (divs, etc.)
-  const containerHtml = code.replace(/<script[\s\S]*?<\/script>/gi, '').trim();
   return (
-    <div
-      ref={containerRef}
-      className="w-full"
-      dangerouslySetInnerHTML={{ __html: containerHtml }}
+    <div>
+      <div
+        ref={containerRef}
+        data-operator-reviews
+        data-token={config.token}
+        data-layout={config.layout ?? "carousel"}
+        data-theme={config.theme ?? "dark"}
+        data-min-rating={config.minRating ?? 4}
+        data-sort={config.sort ?? "recent"}
+        data-limit={config.limit ?? 12}
+        data-hero={(config.showHero ?? true) ? "1" : "0"}
+        data-hero-style={config.heroStyle ?? "full"}
+        data-shape={config.cardShape ?? "square"}
+        data-equal-height={(config.equalHeight ?? true) ? "1" : "0"}
+        data-footer-cta={(config.footerCta ?? false) ? "1" : "0"}
+      />
+      {loadError ? <ReviewEmbedError message="The reviews widget could not be loaded." /> : null}
+    </div>
+  );
+}
+
+function ReputationHubReviews({ url }: { url: string }) {
+  return (
+    <iframe
+      className="lc_reviews_widget block h-[488px] w-full min-w-full border-0"
+      src={url}
+      title="Customer reviews"
+      loading="lazy"
+      scrolling="no"
+      onLoad={() => {
+        if (document.querySelector(`script[src="${REPUTATIONHUB_SCRIPT_URL}"]`)) return;
+        const script = document.createElement("script");
+        script.src = REPUTATIONHUB_SCRIPT_URL;
+        script.async = true;
+        document.body.appendChild(script);
+      }}
     />
   );
 }
 
-export function ReviewsSection({ embedUrl, title, subtitle }: ReviewsSectionProps) {
-  const { t } = useTranslation();
+function ReviewEmbedError({ message }: { message: string }) {
+  const visible = import.meta.env.DEV || new URLSearchParams(window.location.search).has("preview");
+  if (!visible) return null;
+  return <p className="border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-100">{message}</p>;
+}
 
-  if (!embedUrl && !title && !subtitle) {
-    return null;
-  }
+export function ReviewsSection({ xphere, embedUrl, title, subtitle }: ReviewsSectionProps) {
+  const { t } = useTranslation();
+  const legacy = useMemo(() => (embedUrl ? parseLegacyReviewsEmbed(embedUrl) : null), [embedUrl]);
+  const xphereConfig = xphere ?? (legacy?.type === "xphere" ? legacy.config : undefined);
+  const iframeUrl = legacy?.type === "iframe" ? legacy.url : undefined;
+
+  if (!xphereConfig && !iframeUrl && !title && !subtitle && !legacy) return null;
 
   return (
-    <Band tone="dark" className="overflow-hidden mb-0 border-t border-white/10 bg-navy-900" containerClassName="space-y-[2.125rem]">
-      <SectionHeading variant="editorial" eyebrow="Reviews" icon={Star} title={title || ''} subtitle={subtitle || ''} />
-      {embedUrl ? (
-        // Full-bleed like the services carousels: span the viewport edge to
-        // edge at every breakpoint; the band's overflow-hidden clips the
-        // scrollbar-width excess of w-screen.
-        <div className="relative w-screen left-1/2 -translate-x-1/2">
-          <div className="bg-navy-950">
-            <EmbedRenderer code={embedUrl.trim()} />
-          </div>
+    <Band
+      id="reviews"
+      tone="dark"
+      role="editorial"
+      className="mb-0 overflow-hidden border-t border-white/10 bg-navy-900"
+      containerClassName="section-content-stack"
+    >
+      <SectionHeading variant="editorial" eyebrow="Reviews" icon={Star} title={title || ""} subtitle={subtitle || ""} />
+      {xphereConfig || iframeUrl || legacy?.type === "invalid" ? (
+        <div className="relative left-1/2 w-screen -translate-x-1/2 bg-navy-950">
+          {xphereConfig ? <XphereReviews config={xphereConfig} /> : null}
+          {!xphereConfig && iframeUrl ? <ReputationHubReviews url={iframeUrl} /> : null}
+          {!xphereConfig && !iframeUrl && legacy?.type === "invalid" ? <ReviewEmbedError message={t(legacy.reason)} /> : null}
         </div>
       ) : null}
     </Band>

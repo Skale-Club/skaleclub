@@ -1,33 +1,12 @@
 import { useState } from "react";
-import { z } from "zod";
+import type { z } from "zod";
 import { ArrowRight } from "lucide-react";
 import { LeadFormModal } from "@/components/LeadFormModal";
 import { Band, Eyebrow, PillButton, PillLink } from "@/components/editorial";
 import { languageHref } from "@/lib/languageRouting";
 import { useTranslation } from "@/hooks/useTranslation";
-import { sectionThemeSchema } from "./sectionTheme";
-import { whatsappCtaSchema } from "./whatsappCta";
+import { leadFormCtaPropsSchema } from "@shared/section-definitions";
 
-export const leadFormCtaPropsSchema = z.object({
-  formSlug: z.string().min(1),
-  ctaLabel: z.string().optional(),
-  heading: z.string().optional(),
-  subheading: z.string().optional(),
-  // Dark only: a short line under the buttons (e.g. the entry price) and a
-  // small product image between the copy and the buttons (lg and up).
-  note: z.string().optional(),
-  imageUrl: z.string().regex(/^\//).optional(),
-  imageAlt: z.string().optional(),
-  // Still accepted so stored rows keep validating, but no longer rendered: the
-  // floating WhatsApp button (md+) and the mobile action bar already offer it
-  // on every page, so a second button here was redundant (user, 2026-10-03).
-  whatsapp: whatsappCtaSchema,
-  // Dark only: a quiet link under the buttons to a second-level page (e.g. the
-  // keychain landing pointing at its full guide). Site path only.
-  secondaryLabel: z.string().optional(),
-  secondaryHref: z.string().regex(/^\/[a-z0-9/-]*$/).optional(),
-  theme: sectionThemeSchema,
-});
 type LeadFormCtaProps = z.infer<typeof leadFormCtaPropsSchema>;
 
 // English defaults (the t() source language); PT served via translations.ts.

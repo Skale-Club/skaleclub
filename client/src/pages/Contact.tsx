@@ -15,7 +15,7 @@ export default function Contact() {
 
   return (
     <div>
-      <Band tone="hero" pattern containerClassName="page-top pb-14 sm:pb-20">
+      <Band tone="hero" heroVariant="editorial-header" pattern containerClassName="page-top pb-14 sm:pb-20">
         <Eyebrow>{t("Contact")}</Eyebrow>
         <h1 className="mt-6 max-w-4xl font-display text-5xl font-semibold leading-[0.98] tracking-[-0.04em] text-fog-50 sm:text-6xl">
           {t("Contact Us")}

@@ -1,11 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { z } from "zod";
+import type { z } from "zod";
 import type { CompanySettings } from "@shared/schema";
+import { servicesPropsSchema } from "@shared/section-definitions";
 import { ServicesSection } from "@/components/home/ServicesSection";
 
-export const servicesPropsSchema = z.object({
-  mode: z.enum(["steps", "services"]).optional(),
-});
 
 export function ServicesAdapter({ props }: { props: z.infer<typeof servicesPropsSchema> }) {
   const { data: settings } = useQuery<CompanySettings>({

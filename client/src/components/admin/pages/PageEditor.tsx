@@ -12,21 +12,12 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { isReservedSlug } from '@shared/reservedSlugs';
 import type { Page } from '@shared/schema';
+import {
+  managedPageSectionsSchema,
+} from '@shared/section-definitions';
+import { SectionComposer } from './SectionComposer';
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
-// Section types currently registered. Update as the registry grows.
-const AVAILABLE_TYPES = [
-  'hero',
-  'trustBadges',
-  'services',
-  'ourServices',
-  'reviews',
-  'blog',
-  'about',
-  'areasServed',
-  'leadFormCta',
-];
 
 interface PageEditorProps {
   pageId: string;
@@ -39,21 +30,18 @@ interface SectionShape {
 }
 
 function validateSections(value: unknown): string | null {
-  if (!Array.isArray(value)) return 'Sections must be a JSON array.';
-  for (let i = 0; i < value.length; i++) {
-    const section = value[i];
-    if (typeof section !== 'object' || section === null || Array.isArray(section)) {
-      return `Section ${i + 1} must be a JSON object.`;
-    }
-    const s = section as Record<string, unknown>;
-    if (typeof s.type !== 'string' || s.type.length === 0) {
-      return `Section ${i + 1}: "type" must be a non-empty string.`;
-    }
-    if (s.props === undefined || s.props === null || typeof s.props !== 'object' || Array.isArray(s.props)) {
-      return `Section ${i + 1}: "props" must be an object.`;
-    }
-  }
-  return null;
+  const parsed = managedPageSectionsSchema.safeParse(value);
+  if (parsed.success) return null;
+
+  return parsed.error.issues
+    .slice(0, 5)
+    .map((issue) => {
+      const [sectionIndex, ...fieldPath] = issue.path;
+      const sectionLabel = typeof sectionIndex === 'number' ? `Section ${sectionIndex + 1}` : 'Sections';
+      const path = fieldPath.length > 0 ? ` (${fieldPath.join('.')})` : '';
+      return `${sectionLabel}${path}: ${issue.message}`;
+    })
+    .join(' ');
 }
 
 function HeroVideoPanel({
@@ -450,35 +438,44 @@ export function PageEditor({ pageId, onBack }: PageEditorProps) {
 
       <HeroVideoPanel sectionsText={sectionsText} onPatch={patchHeroSections} />
 
-      <AdminCard className="space-y-3">
+      <AdminCard className="space-y-4">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <Label htmlFor="edit-page-sections" className="text-base font-semibold">
-              Sections (JSON)
-            </Label>
+            <Label className="text-base font-semibold">Page sections</Label>
             <p className="text-xs text-muted-foreground mt-1">
-              Available types: {AVAILABLE_TYPES.join(', ')}
+              Add, reorder, duplicate, delete and edit templates. Spacing role and schema come from the shared definition.
             </p>
           </div>
         </div>
-        <Textarea
-          id="edit-page-sections"
+        <SectionComposer
           value={sectionsText}
-          onChange={(e) => {
-            setSectionsText(e.target.value);
+          onChange={(next) => {
+            setSectionsText(next);
             if (parseError) setParseError(null);
           }}
-          spellCheck={false}
-          className="font-mono text-xs min-h-[400px] resize-y"
-          data-testid="textarea-edit-page-sections"
         />
+        <details className="rounded-md border bg-muted/20 p-3">
+          <summary className="cursor-pointer text-sm font-medium">Advanced JSON</summary>
+          <p className="mb-2 mt-2 text-xs text-muted-foreground">Use only for bulk changes. The same validation still runs before save and in the API.</p>
+          <Textarea
+            id="edit-page-sections"
+            value={sectionsText}
+            onChange={(e) => {
+              setSectionsText(e.target.value);
+              if (parseError) setParseError(null);
+            }}
+            spellCheck={false}
+            className="min-h-[400px] resize-y font-mono text-xs"
+            data-testid="textarea-edit-page-sections"
+          />
+        </details>
         {parseError ? (
           <p className="text-sm text-destructive" data-testid="error-edit-page-sections">
             {parseError}
           </p>
         ) : (
           <p className="text-xs text-muted-foreground">
-            Each section must be {'{ "type": "...", "props": {...} }'}. Per-type prop validation runs at render time.
+            Each section must be {'{ "type": "...", "props": {...} }'}. Type and props are checked here and again by the API.
           </p>
         )}
         <div className="flex justify-end">

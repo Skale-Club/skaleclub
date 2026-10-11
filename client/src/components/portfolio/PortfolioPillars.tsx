@@ -15,7 +15,7 @@ export function PortfolioPillars() {
   return (
     <Band tone="cream">
       <SectionHeading variant="editorial" tone="light" eyebrow="How we help" title="From first contact to closed deal" />
-      <div className="mt-12 grid gap-5 lg:grid-cols-3">
+      <div className="section-content-after-heading section-grid-gap grid lg:grid-cols-3">
         {PILLARS.map(({ icon: Icon, title, desc }) => (
           <EditorialCard key={title} tone="light">
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-cta-ink/10 text-cta-ink ring-1 ring-inset ring-cta-ink/10">

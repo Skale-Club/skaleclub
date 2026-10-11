@@ -231,35 +231,19 @@ export const LANDING_PT_COPY: Record<string, string> = {
   "Counter display designed to hold keychains for sale.":
     "Display de balcão projetado para expor chaveiros à venda.",
 
-  // ── /barbershops pricing block (copied from the live catalog) ───────────
-  "Pricing":
-    "Preços",
-  "What you can get":
-    "O que você pode ter",
-  "Same prices we charge everyone.":
-    "Os mesmos preços que cobramos de todo mundo.",
-  "Xkedule: $89 a month":
-    "Xkedule: US$ 89 por mês",
-  "Your site that books for you.":
-    "Seu site que agenda para você.",
-  "A booking page with AI that answers messages and calls. It books the appointment when the customer is ready.":
-    "Uma página de agendamento com IA que responde mensagens e ligações. Ela agenda o horário quando o cliente está pronto.",
-  "Xsites: $299 starting":
-    "Xsites: a partir de US$ 299",
-  "A professional website for your shop.":
-    "Um site profissional para a sua barbearia.",
-  "A clean site built for service businesses. Start with the essentials and add pages and features as you grow.":
-    "Um site limpo, feito para negócios de serviço. Comece com o essencial e vá adicionando páginas e recursos conforme cresce.",
-  "Xareable: $49 a month":
-    "Xareable: US$ 49 por mês",
-  "We post for you.":
-    "A gente posta para você.",
-  "Create and publish posts with AI from one place. Post by hand or put it on a schedule and stay active every week.":
-    "Crie e publique posts com IA em um só lugar. Publique na hora ou deixe agendado e fique ativo toda semana.",
-  "Ads that fill the calendar: talk to us":
-    "Anúncios que enchem a agenda: fale com a gente",
-  "Google Ads, Facebook and Instagram Ads, TikTok Ads, retargeting campaigns, and campaign optimization.":
-    "Google Ads, anúncios no Facebook e Instagram, anúncios no TikTok, campanhas de retargeting e otimização de campanha.",
+  // ── /barbershops curated catalog carousel ──────────────────────────────
+  "Services for barbershops":
+    "Serviços para barbearias",
+  "What your barbershop needs to grow":
+    "O que sua barbearia precisa para crescer",
+  "Start with Xkedule for calls and bookings. Add a website, ads or weekly content when you need them.":
+    "Comece com o Xkedule para atender ligações e agendar clientes. Depois, combine site, anúncios e conteúdo conforme precisar.",
+  "A barber welcoming a customer into a busy neighborhood barbershop.":
+    "Um barbeiro recebendo um cliente em uma barbearia movimentada do bairro.",
+  "Google review and Instagram NFC stands on a barbershop counter while a barber serves a client.":
+    "Plaquinhas NFC do Google e Instagram no balcão enquanto um barbeiro atende um cliente.",
+  "Google review NFC table plate on a barbershop counter.":
+    "Plate NFC para avaliações no Google sobre o balcão de uma barbearia.",
   "What people say":
     "O que as pessoas dizem",
   "Real reviews from businesses we've worked with.":

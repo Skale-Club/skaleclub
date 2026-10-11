@@ -6,7 +6,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { z } from "zod";
+import type { z } from "zod";
 import { ArrowRight, CheckCircle2, Loader2, Radio, Sparkles, Users } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
@@ -23,35 +23,9 @@ import {
   isValidPhoneForCountry,
   type PhoneCountry,
 } from "@/lib/phoneCountries";
-import { sectionThemeSchema } from "./sectionTheme";
+import { whatsAppGroupPropsSchema } from "@shared/section-definitions";
 
 // All optional — defaults preserve the current SkaleHubGroup look verbatim.
-export const whatsAppGroupPropsSchema = z.object({
-  badgeLabel: z.string().optional(),
-  groupName: z.string().optional(),
-  groupSubtitle: z.string().optional(),
-  groupLabel: z.string().optional(),
-  groupOfficialLabel: z.string().optional(),
-  socialProofLabel: z.string().optional(),
-  headline: z.string().optional(),
-  headlineAccent: z.string().optional(),
-  subheadline: z.string().optional(),
-  bullets: z.array(z.string()).optional(),
-  formTitle: z.string().optional(),
-  formSubtitle: z.string().optional(),
-  formHelper: z.string().optional(),
-  phoneCountryAriaLabel: z.string().optional(),
-  submitLabel: z.string().optional(),
-  privacyLabel: z.string().optional(),
-  submitEndpoint: z.string().optional(),
-  successTitle: z.string().optional(),
-  successBody: z.string().optional(),
-  toastSuccessTitle: z.string().optional(),
-  toastSuccessBody: z.string().optional(),
-  toastErrorTitle: z.string().optional(),
-  phoneInvalidPrefix: z.string().optional(),
-  theme: sectionThemeSchema,
-});
 export type WhatsAppGroupProps = z.infer<typeof whatsAppGroupPropsSchema>;
 
 const DEFAULTS = {
@@ -192,7 +166,7 @@ export function WhatsAppGroupSection({ props }: { props: WhatsAppGroupProps }) {
       {/* No `w-full` here: it is a Tailwind utility and would beat
           .container-custom's own 90%/80% width from the components layer,
           making the column full-bleed from 770px up. */}
-      <section className="container-custom container-page page-top relative grid grid-cols-1 items-center gap-9 pb-9 lg:grid-cols-[1fr_437px]">
+      <section data-section-role="hero" data-hero-variant="campaign-form" className="container-custom container-page page-top relative grid grid-cols-1 items-center gap-9 pb-9 lg:grid-cols-[1fr_437px]">
 
         {/* ── Left column ── */}
         <div className="text-center lg:text-left">

@@ -1,0 +1,79 @@
+:root {
+  /* Public-section vertical rhythm. Keep role values on the 8px grid and edit
+     them here — never on individual public sections. */
+  --section-space-editorial: 3rem;   /* 48px */
+  --section-space-dense: 2.5rem;     /* 40px */
+  --section-space-compact: 1.5rem;   /* 24px */
+  --section-space-pill: 1.5rem;      /* 24px */
+  --section-space-cta: 2.5rem;       /* 40px */
+
+  /* Internal rhythm is intentionally separate from outer section padding. */
+  --section-heading-gap: 2rem;
+  --section-grid-gap: 1.25rem;
+}
+
+@media (min-width: 770px) {
+  :root {
+    --section-space-editorial: 4rem; /* 64px */
+    --section-space-dense: 3rem;     /* 48px */
+    --section-space-compact: 2rem;   /* 32px */
+    --section-space-pill: 2rem;      /* 32px */
+    --section-space-cta: 3rem;       /* 48px */
+    --section-heading-gap: 2.5rem;
+    --section-grid-gap: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --section-space-editorial: 5rem; /* 80px */
+    --section-space-dense: 4rem;     /* 64px */
+    --section-space-compact: 2.5rem; /* 40px */
+    --section-space-pill: 2.5rem;    /* 40px */
+    --section-space-cta: 3.5rem;     /* 56px */
+  }
+}
+
+.section-frame--editorial {
+  padding-block: var(--section-space-editorial);
+}
+
+.section-frame--dense {
+  padding-block: var(--section-space-dense);
+}
+
+.section-frame--compact {
+  padding-block: var(--section-space-compact);
+}
+
+.section-frame--pill {
+  padding-block: var(--section-space-pill);
+}
+
+.section-frame--cta {
+  padding-block: var(--section-space-cta);
+}
+
+.section-frame--bridge,
+.section-frame--flush,
+.section-frame--hero {
+  padding-block: 0;
+}
+
+.section-content-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--section-heading-gap);
+}
+
+.section-content-after-heading {
+  margin-block-start: var(--section-heading-gap);
+}
+
+.section-heading-flow {
+  margin-block-end: var(--section-heading-gap);
+}
+
+.section-grid-gap {
+  gap: var(--section-grid-gap);
+}

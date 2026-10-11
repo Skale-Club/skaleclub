@@ -1,0 +1,872 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portfolio v2 (mockup)</title>
+<!--
+  ==========================================================================
+  PORTFOLIO PAGE MOCKUP v2 — static, self-contained, for approval only.
+  Not wired to the app. No build step. Open directly from file://.
+
+  WHAT CHANGES WHERE
+  -------------------------------------------------------------------------
+  PAGE-ONLY (lives in client/src/pages/Portfolio.tsx only — nothing else
+  in the app is affected):
+    - Nav stand-in (.prt-nav)                     — real navbar is a shared
+      component elsewhere; this is just a stand-in so the sticky filter
+      offset can be judged.
+    - Hero layout + "product stage" visual (.prt-hero, .prt-stage, .prt-win)
+    - Page background atmosphere (body background gradient)
+    - Proof band → trust badges (.prt-trust)
+    - Category filter bar (.prt-filterwrap, .prt-filter, .cat-chip-btn) and its JS
+    - Services list layout: rows instead of a card grid (.cat-row) — this
+      is a NEW pattern, only used on /portfolio, not a change to the
+      existing card template
+    - Final CTA tuning (background only; structure unchanged)
+
+  CARD-TEMPLATE CHANGES (propagate to catalog.css → CatalogCard.tsx /
+  Cover.tsx → and therefore to: /portfolio app grid, home page carousels,
+  the CatalogDetail popup, and the admin preview. Must be mirrored by hand
+  in client/src/print/cards.tsx, which has its own copy of this markup for
+  print/PDF output):
+    - .cat-feat → .cat-chip: features render as small pill chips (max 3,
+      wrap) instead of a dash-bullet list. This is a real template change:
+      .cat-feat li::before (the dash) is retired for the tile variant.
+    - .cat-card__title: 22–24px instead of 26px, tighter body padding.
+    - .cat-card__sub: clamped to 2 lines (-webkit-line-clamp) instead of
+      unclamped.
+    - .cat-cover--empty gets a slightly richer treatment (grid texture +
+      glow already existed in catalog.css; this mockup just increases the
+      visual weight of the wordmark) — this is a minor tuning, not a new
+      state.
+  All three real screenshots in the hero and the composed app covers are
+  CSS-drawn placeholders (see "FAKE UI" comments below). The real build
+  feeds the Cover component from each catalog item's stored cover image —
+  nothing here is a live screenshot or a hotlinked image.
+  ==========================================================================
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     TOKENS — real values, copied from client/src/index.css and
+     client/src/components/catalog/catalog.css. Ink colors match
+     the previous mockup / catalog.css convention (no official
+     token exists for them yet).
+     ============================================================ */
+  :root {
+    --font-sans: 'Inter', sans-serif;
+    --font-display: 'Outfit', sans-serif;
+    --cta: #5173D6;
+    --cta-hover: #3B5BBE;
+    --cta-soft: #8FA9EE;
+    --surface-dark: #111111;
+    --surface-card: #0C1424;
+    --surface-raised: #142038;
+    --ink: #F3F6FB;
+    --ink-2: #B4C0D8;
+    --ink-dim: #7C8AA6;
+    --line: rgba(180, 192, 216, .14);
+    --line-strong: rgba(180, 192, 216, .22);
+  }
+
+  /* ============================================================
+     RESET & BASE
+     ============================================================ */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  img { display: block; max-width: 100%; }
+  button { font: inherit; color: inherit; background: none; border: 0; }
+  a { color: inherit; }
+  ul { list-style: none; }
+
+  /* Navy atmosphere across the whole page (fixes brief problem #2: page
+     was flat neutral black while cards were navy — now the page itself
+     carries the same navy the home hero uses, so cards sit naturally on
+     it instead of looking pasted on). */
+  body {
+    font-family: var(--font-sans);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    background-color: #0a0e18;
+    background-image:
+      radial-gradient(52% 46% at 12% 0%, rgba(81, 115, 214, .20), transparent 62%),
+      radial-gradient(46% 38% at 96% 6%, rgba(100, 135, 215, .13), transparent 60%),
+      linear-gradient(180deg, #090d17 0%, #0a0f1c 30%, #0b1220 60%, #0c1424 100%);
+    background-attachment: fixed;
+    overflow-x: hidden;
+  }
+  .wrap { width: min(1200px, 100% - 2 * clamp(16px, 4vw, 48px)); margin-inline: auto; }
+  :is(button, a):focus-visible { outline: 2px solid var(--cta-soft); outline-offset: 3px; border-radius: 4px; }
+
+  /* one accent, one CTA shape */
+  .btn-cta {
+    display: inline-flex; align-items: center; gap: 10px; background: var(--cta); color: #fff;
+    border-radius: 999px; font-weight: 700; font-size: 16px; padding: 15px 26px; cursor: pointer;
+    text-decoration: none; transition: background .2s, transform .2s; white-space: nowrap;
+  }
+  .btn-cta:hover { background: var(--cta-hover); }
+  .link2 {
+    color: var(--ink-2); text-decoration: none; font-size: 15px; font-weight: 500; background: none; border: 0;
+    cursor: pointer; transition: color .2s;
+  }
+  .link2:hover { color: var(--ink); }
+
+  /* the house pattern: rule + uppercase label */
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 12px; font-size: 12px; font-weight: 600; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--cta-soft);
+  }
+  .eyebrow::before { content: ""; width: 28px; height: 3px; border-radius: 3px; background: var(--cta); flex: none; }
+
+  /* ============================================================
+     NAV — page-only stand-in for the real floating pill navbar
+     ============================================================ */
+  .prt-navwrap { position: sticky; top: 0; z-index: 50; padding: 14px clamp(16px, 4vw, 32px) 0; }
+  .prt-nav {
+    max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; padding: 10px 10px 10px 22px; border-radius: 999px; border: 1px solid var(--line);
+    background: rgba(12, 20, 36, .72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  }
+  .prt-nav__logo { font-family: var(--font-display); font-weight: 800; font-size: 18px; letter-spacing: -.01em; }
+  .prt-nav__links { display: flex; align-items: center; gap: 26px; font-size: 14px; }
+  .prt-nav__links a { text-decoration: none; color: var(--ink-2); }
+  .prt-nav__links a.here { color: var(--ink); font-weight: 600; }
+  .prt-nav__phone {
+    font-size: 13px; font-weight: 700; color: var(--ink); background: var(--surface-raised);
+    border: 1px solid var(--line-strong); border-radius: 999px; padding: 10px 16px; white-space: nowrap;
+  }
+
+  /* ============================================================
+     HERO — two columns, copy left, product stage right
+     ============================================================ */
+  .hero { position: relative; padding: clamp(36px, 7vw, 96px) 0 clamp(28px, 5vw, 56px); overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: -160px 0 0 0; pointer-events: none; z-index: 0;
+    background: repeating-linear-gradient(0deg, transparent 0 31px, rgba(180, 192, 216, .03) 31px 32px);
+    mask-image: linear-gradient(180deg, #000 55%, transparent);
+  }
+  .hero__grid { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr 1fr; gap: clamp(28px, 5vw, 64px); align-items: center; }
+  .hero__copy h1 {
+    font-family: var(--font-display); font-weight: 800; letter-spacing: -.03em; line-height: .98;
+    font-size: clamp(2.5rem, 4.6vw, 4.25rem); margin-top: 20px; max-width: 14ch;
+  }
+  .hero__copy h1 em { font-style: normal; color: var(--cta); }
+  .hero__copy p { margin-top: 22px; font-size: clamp(16px, 1.3vw, 19px); line-height: 1.55; color: var(--ink-2); max-width: 42ch; }
+  .hero__actions { margin-top: 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px 26px; }
+
+  /* ---- product stage: 3 overlapping browser windows on a glow ---- */
+  .prt-stage { position: relative; height: clamp(320px, 34vw, 460px); }
+  .prt-stage__glow {
+    position: absolute; inset: -10% -10% 0 -10%; z-index: 0; pointer-events: none;
+    background: radial-gradient(55% 55% at 55% 45%, rgba(81, 115, 214, .32), transparent 68%);
+  }
+  .prt-win {
+    position: absolute; border-radius: 12px 12px 0 0; overflow: hidden; background: #0b0f18;
+    border: 1px solid rgba(180, 192, 216, .22); box-shadow: 0 30px 70px rgba(0, 0, 0, .55);
+    animation: prt-float 6.5s ease-in-out infinite;
+  }
+  .prt-win__bar { height: 24px; display: flex; align-items: center; gap: 5px; padding: 0 10px; background: #151b28; border-bottom: 1px solid rgba(180, 192, 216, .12); }
+  .prt-win__bar i { width: 7px; height: 7px; border-radius: 50%; background: rgba(180, 192, 216, .3); }
+  .prt-win__bar span { margin-left: 8px; font-size: 10px; color: var(--ink-dim); background: rgba(180, 192, 216, .08); border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+  .prt-win__body { position: relative; height: calc(100% - 24px); background: var(--surface-raised); overflow: hidden; }
+
+  .prt-win--back { left: 0; top: 8%; width: 58%; height: 62%; opacity: .55; filter: saturate(.75) brightness(.8); z-index: 1; animation-delay: -1.2s; }
+  .prt-win--mid { right: 0; top: 26%; width: 56%; height: 58%; opacity: .8; filter: saturate(.9) brightness(.92); z-index: 2; animation-delay: -3.6s; }
+  .prt-win--front { left: 12%; bottom: 0; width: 64%; height: 72%; z-index: 3; animation-delay: 0s; }
+
+  @keyframes prt-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+  /* -- FAKE UI: CSS-drawn placeholder screenshots. The real build swaps
+     these for <img> tags fed by each catalog item's cover, via the Cover
+     component (see client/src/components/catalog/Cover.tsx). -- */
+  .fake { position: absolute; inset: 0; padding: 10%; display: flex; flex-direction: column; gap: 8%; }
+  .fake__row { display: flex; gap: 6%; }
+  .fake__bar { border-radius: 5px; background: linear-gradient(90deg, rgba(180, 192, 216, .16), rgba(180, 192, 216, .07)); }
+  .fake__panel { border-radius: 8px; background: linear-gradient(160deg, rgba(81, 115, 214, .35), rgba(20, 32, 56, .3)); border: 1px solid rgba(180, 192, 216, .1); }
+  .fake__dot { width: 14px; height: 14px; border-radius: 50%; background: rgba(81, 115, 214, .55); flex: none; }
+
+  .fake--analytics .fake__row:first-child { height: 12%; }
+  .fake--analytics .fake__row:first-child .fake__bar:first-child { width: 34%; }
+  .fake--analytics .fake__row:first-child .fake__bar:last-child { width: 18%; margin-left: auto; background: var(--cta); opacity: .7; }
+  .fake--analytics .fake__chart { flex: 1; display: flex; align-items: flex-end; gap: 8%; padding-top: 6%; }
+  .fake--analytics .fake__chart i { flex: 1; border-radius: 4px 4px 0 0; background: linear-gradient(180deg, var(--cta), rgba(81, 115, 214, .25)); opacity: .85; }
+  .fake--analytics .fake__chart i:nth-child(1) { height: 38%; } .fake--analytics .fake__chart i:nth-child(2) { height: 64%; }
+  .fake--analytics .fake__chart i:nth-child(3) { height: 48%; } .fake--analytics .fake__chart i:nth-child(4) { height: 82%; opacity: 1; }
+  .fake--analytics .fake__chart i:nth-child(5) { height: 58%; } .fake--analytics .fake__chart i:nth-child(6) { height: 70%; }
+
+  .fake--social .fake__grid { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8%; }
+  .fake--social .fake__grid .fake__panel { aspect-ratio: 1; }
+  .fake--social .fake__row:first-child { height: 10%; align-items: center; }
+  .fake--social .fake__row:first-child .fake__bar { width: 40%; }
+
+  .fake--calendar .fake__row:first-child { height: 10%; }
+  .fake--calendar .fake__row:first-child .fake__bar:first-child { width: 30%; }
+  .fake--calendar .fake__cal { flex: 1; display: grid; grid-template-columns: repeat(7, 1fr); gap: 5%; }
+  .fake--calendar .fake__cal i { border-radius: 4px; background: rgba(180, 192, 216, .1); }
+  .fake--calendar .fake__cal i:nth-child(4n) { background: var(--cta); opacity: .55; }
+  .fake--calendar .fake__cal i:nth-child(9), .fake--calendar .fake__cal i:nth-child(15) { background: var(--cta); opacity: .8; }
+
+  .fake--menu .fake__row:first-child { height: 10%; }
+  .fake--menu .fake__row:first-child .fake__bar { width: 46%; }
+  .fake--menu .fake__cards { flex: 1; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8%; }
+  .fake--menu .fake__cards .fake__panel { display: flex; align-items: flex-end; padding: 8%; }
+  .fake--menu .fake__cards .fake__bar { height: 12%; width: 60%; background: rgba(243, 246, 251, .5); }
+
+  .fake--pipeline .fake__row:first-child { height: 10%; }
+  .fake--pipeline .fake__row:first-child .fake__bar { width: 36%; }
+  .fake--pipeline .fake__cols { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 7%; }
+  .fake--pipeline .fake__cols > div { display: flex; flex-direction: column; gap: 12%; }
+  .fake--pipeline .fake__cols .fake__panel { height: 22%; }
+
+  /* front window cycles between two fake states, crossfaded */
+  .prt-win--front .fake { transition: opacity .6s ease; }
+  .prt-win--front .fake.is-hidden { opacity: 0; }
+  @media (prefers-reduced-motion: reduce) {
+    .prt-win { animation: none; }
+    .prt-win--front .fake { transition: none; }
+  }
+
+  /* ============================================================
+     PROOF BAND → trust badges (replaces the "06 / 08 / $29" numerals
+     and the giant outlined numerals; one bordered row, three badges)
+     ============================================================ */
+  .prt-trust { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .prt-trust__row { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .prt-trust__item { display: flex; align-items: center; gap: 18px; padding: 26px 24px; border-left: 1px solid var(--line); }
+  .prt-trust__item:first-child { border-left: 0; padding-left: 0; }
+  .prt-trust__icon {
+    display: grid; place-items: center; flex: none; width: 46px; height: 46px; border-radius: 50%;
+    background: rgba(81, 115, 214, .14); color: var(--cta-soft);
+  }
+  .prt-trust__icon svg { width: 22px; height: 22px; }
+  .prt-trust__title { font-weight: 700; font-size: 15px; color: var(--ink); }
+  .prt-trust__desc { margin-top: 3px; font-size: 13.5px; color: var(--ink-dim); line-height: 1.4; }
+
+  /* ============================================================
+     FILTER BAR — sticky under the nav, category chips
+     ============================================================ */
+  .prt-filterwrap { position: sticky; top: 68px; z-index: 40; padding: 14px 0; background: linear-gradient(180deg, rgba(9, 13, 23, .92), rgba(9, 13, 23, .78) 70%, transparent); backdrop-filter: blur(6px); }
+  .prt-filter {
+    display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
+    padding: 4px 2px;
+  }
+  .prt-filter::-webkit-scrollbar { display: none; }
+  .cat-chip-btn {
+    flex: none; font-size: 13.5px; font-weight: 600; color: var(--ink-2); background: var(--surface-card);
+    border: 1px solid var(--line); border-radius: 999px; padding: 9px 18px; cursor: pointer; white-space: nowrap;
+    transition: border-color .2s, color .2s, background .2s;
+  }
+  .cat-chip-btn:hover { color: var(--ink); border-color: var(--line-strong); }
+  .cat-chip-btn[aria-pressed="true"] { background: var(--cta); border-color: var(--cta); color: #fff; }
+
+  /* ============================================================
+     SECTIONS — shared heading pattern
+     ============================================================ */
+  .prt-section { padding: clamp(48px, 7vw, 96px) 0 0; }
+  .prt-section.is-hidden { display: none; }
+  .prt-section__head { margin-bottom: clamp(26px, 4vw, 44px); }
+  .prt-section__head h2 {
+    font-family: var(--font-display); font-weight: 800; letter-spacing: -.03em; line-height: .98;
+    font-size: clamp(30px, 4.2vw, 52px); margin-top: 14px; max-width: 22ch;
+  }
+  .prt-section__head p { margin-top: 12px; font-size: 16px; color: var(--ink-2); max-width: 50ch; line-height: 1.5; }
+
+  /* ============================================================
+     CAT-CARD (template) — apps grid. Small evolution of catalog.css:
+     chips instead of dash bullets, tighter title/padding, clamped
+     subtitle. See header comment for the propagation note.
+     ============================================================ */
+  .prt-appsgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(14px, 1.6vw, 22px); }
+
+  .cat-card {
+    appearance: none; font: inherit; color: var(--ink); text-align: left; cursor: pointer; padding: 0;
+    display: flex; flex-direction: column; width: 100%; height: 100%;
+    background: var(--surface-card); border: 1px solid var(--line); border-radius: 18px; overflow: hidden;
+    transition: border-color .25s, transform .25s;
+  }
+  .cat-card:hover { border-color: rgba(81, 115, 214, .55); transform: translateY(-3px); }
+  .cat-card__body { padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
+  .cat-eyebrow {
+    display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 11px; font-weight: 600;
+    letter-spacing: .16em; text-transform: uppercase; color: var(--cta-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .cat-eyebrow::before { content: ""; width: 16px; height: 3px; border-radius: 3px; background: var(--cta); flex: none; }
+  /* title: 22-24px, down from 26px */
+  .cat-card__title { font-family: var(--font-display); font-weight: 800; font-size: 23px; letter-spacing: -.02em; line-height: 1.08; margin: 0; }
+  /* subtitle: clamped to 2 lines, was unclamped */
+  .cat-card__sub {
+    font-size: 14.5px; line-height: 1.42; color: var(--ink-2); margin: 0;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  /* CHANGE: chips replace the dash-bullet feature list */
+  .cat-chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+  .cat-chip {
+    font-size: 12px; font-weight: 600; color: var(--ink-2); background: rgba(180, 192, 216, .08);
+    border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px; white-space: nowrap;
+  }
+  .cat-card__foot { margin-top: auto; padding-top: 13px; border-top: 1px solid var(--line); display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+  .cat-price { font-family: var(--font-display); font-weight: 800; font-size: 26px; letter-spacing: -.02em; line-height: 1; white-space: nowrap; }
+  .cat-price small { font-family: var(--font-sans); font-size: 12.5px; font-weight: 500; color: var(--ink-2); letter-spacing: 0; margin-left: 4px; }
+  .cat-card__more { font-size: 13.5px; font-weight: 600; color: var(--cta-soft); white-space: nowrap; }
+  .cat-card:hover .cat-card__more { color: var(--ink); }
+
+  /* ---- cat-cover (template): unchanged states, ported as-is ---- */
+  .cat-cover { position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: var(--surface-raised); flex: none; }
+  .cat-cover__badge {
+    position: absolute; right: 12px; top: 12px; z-index: 3; font-size: 10px; font-weight: 600; letter-spacing: .13em;
+    text-transform: uppercase; color: var(--ink); background: rgba(12, 20, 36, .8); border: 1px solid var(--line);
+    border-radius: 999px; padding: 6px 10px;
+  }
+  .cat-cover--composed {
+    background:
+      radial-gradient(70% 70% at 50% 110%, rgba(81, 115, 214, .4), transparent 70%),
+      repeating-linear-gradient(90deg, transparent 0 23px, rgba(180, 192, 216, .05) 23px 24px),
+      var(--surface-raised);
+  }
+  .cat-cover__win {
+    position: absolute; left: 9%; right: 9%; top: 15%; bottom: -8%; overflow: hidden;
+    border-radius: 10px 10px 0 0; background: #0b0f18; border: 1px solid rgba(180, 192, 216, .22);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, .55); transition: transform .35s cubic-bezier(.2, .7, .2, 1);
+  }
+  .cat-card:hover .cat-cover__win { transform: translateY(-4px); }
+  .cat-cover__bar { height: 22px; display: flex; align-items: center; gap: 5px; padding: 0 9px; background: #151b28; border-bottom: 1px solid rgba(180, 192, 216, .12); }
+  .cat-cover__bar i { width: 7px; height: 7px; border-radius: 50%; background: rgba(180, 192, 216, .28); }
+  .cat-cover__bar span { margin-left: 8px; font-size: 9.5px; color: var(--ink-dim); background: rgba(180, 192, 216, .08); border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+  .cat-cover__mark {
+    position: absolute; left: 12px; top: 12px; z-index: 3; width: 32px; height: 32px; border-radius: 9px; overflow: hidden;
+    background: rgba(12, 20, 36, .8); border: 1px solid var(--line); display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; color: var(--ink);
+  }
+  .cat-cover--empty {
+    display: grid; place-items: center; position: relative;
+    background:
+      radial-gradient(55% 55% at 50% 50%, rgba(81, 115, 214, .34), transparent 70%),
+      repeating-linear-gradient(0deg, transparent 0 22px, rgba(180, 192, 216, .06) 22px 23px),
+      repeating-linear-gradient(90deg, transparent 0 22px, rgba(180, 192, 216, .06) 22px 23px),
+      var(--surface-raised);
+  }
+  .cat-cover__mono {
+    width: 64px; height: 64px; border-radius: 18px; display: grid; place-items: center; margin-bottom: 14px;
+    background: rgba(81, 115, 214, .16); border: 1px solid rgba(81, 115, 214, .4);
+    font-family: var(--font-display); font-weight: 800; font-size: 30px; color: var(--ink);
+    box-shadow: 0 18px 36px rgba(0, 0, 0, .45);
+  }
+  .cat-cover__word { font-family: var(--font-display); font-weight: 800; font-size: clamp(22px, 2.4vw, 30px); letter-spacing: -.02em; color: var(--ink); }
+
+  /* ============================================================
+     SERVICES — compact rows, page-only pattern (lighter than cards)
+     ============================================================ */
+  .prt-serviceslist { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px 28px; }
+  .cat-row {
+    appearance: none; font: inherit; color: var(--ink); text-align: left; cursor: pointer; width: 100%;
+    display: flex; align-items: center; gap: 16px; padding: 16px 6px; border-top: 1px solid var(--line);
+    background: none; transition: background .2s;
+  }
+  .prt-serviceslist .cat-row:nth-child(1), .prt-serviceslist .cat-row:nth-child(2) { border-top: 0; }
+  .cat-row:hover, .cat-row:focus-visible { background: rgba(180, 192, 216, .05); border-radius: 12px; }
+  .cat-row__thumb {
+    flex: none; width: 76px; height: 76px; border-radius: 16px; display: grid; place-items: center;
+    background: linear-gradient(150deg, rgba(81, 115, 214, .3), var(--surface-raised)); border: 1px solid var(--line); color: var(--cta-soft);
+  }
+  .cat-row__thumb svg { width: 30px; height: 30px; }
+  .cat-row__body { flex: 1; min-width: 0; }
+  .cat-row__body .cat-eyebrow { font-size: 10px; }
+  .cat-row__title { font-family: var(--font-display); font-weight: 700; font-size: 17px; margin-top: 4px; letter-spacing: -.01em; }
+  .cat-row__desc {
+    margin-top: 3px; font-size: 13.5px; color: var(--ink-dim); line-height: 1.4;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .cat-row__chip { margin-top: 8px; }
+  .cat-row__more { flex: none; font-size: 13.5px; font-weight: 600; color: var(--cta-soft); white-space: nowrap; }
+  .cat-row:hover .cat-row__more { color: var(--ink); }
+  .cat-row__more .txt { display: inline; }
+  .cat-row__more .arw { display: none; }
+
+  /* ============================================================
+     FINAL CTA — same block, navy background
+     ============================================================ */
+  .prt-final { padding: clamp(56px, 8vw, 108px) 0 clamp(48px, 6vw, 88px); }
+  .prt-final__box {
+    position: relative; overflow: hidden; border-radius: 26px; border: 1px solid var(--line); background: var(--surface-card);
+    padding: clamp(28px, 5vw, 72px); display: grid; grid-template-columns: 1.3fr auto; align-items: end; gap: 28px;
+  }
+  .prt-final__box::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(45% 80% at 100% 100%, rgba(81, 115, 214, .24), transparent 70%);
+  }
+  .prt-final h2 { position: relative; font-family: var(--font-display); font-weight: 800; letter-spacing: -.03em; line-height: .96; font-size: clamp(32px, 5vw, 66px); margin-top: 16px; max-width: 14ch; }
+  .prt-final__actions { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+
+  .prt-foot { border-top: 1px solid var(--line); padding: 22px 0 30px; font-size: 13px; color: var(--ink-dim); }
+
+  /* ============================================================
+     RESPONSIVE — 1280 desktop above, 768 tablet, 375 mobile below
+     ============================================================ */
+  @media (max-width: 980px) {
+    .hero__grid { grid-template-columns: 1fr; }
+    .prt-stage { height: 320px; width: 100%; max-width: 480px; margin: 0 auto; }
+    .prt-appsgrid { grid-template-columns: repeat(2, 1fr); }
+    .prt-trust__row { grid-template-columns: 1fr; }
+    .prt-trust__item { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); padding-top: 20px; }
+    .prt-trust__item:first-child { border-top: 0; padding-top: 0; }
+  }
+  @media (max-width: 700px) {
+    .prt-nav__links a:not(.prt-nav__phone) { display: none; }
+    .prt-appsgrid { grid-template-columns: 1fr; }
+    .prt-serviceslist { grid-template-columns: 1fr; }
+    .prt-serviceslist .cat-row:nth-child(2) { border-top: 1px solid var(--line); }
+    .prt-final__box { grid-template-columns: 1fr; }
+    .cat-row__more .txt { display: none; }
+    .cat-row__more .arw { display: inline; font-size: 18px; }
+    .prt-filterwrap { top: 62px; }
+  }
+
+  /* ============================================================
+     MOTION — opacity/transform only, disabled under reduced motion
+     ============================================================ */
+  .rise { opacity: 0; transform: translateY(14px); animation: rise .7s cubic-bezier(.2, .7, .2, 1) forwards; }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .rise { animation: none; opacity: 1; transform: none; }
+    .cat-card, .cat-cover__win { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ NAV (page-only stand-in) ============ -->
+<div class="prt-navwrap">
+  <nav class="prt-nav">
+    <span class="prt-nav__logo">Skale Club</span>
+    <div class="prt-nav__links">
+      <a href="#apps" class="here">Portfolio</a>
+      <a class="prt-nav__phone" href="tel:+15085001095">(508) 500-1095</a>
+    </div>
+  </nav>
+</div>
+
+<main>
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <div class="wrap hero__grid">
+      <div class="hero__copy">
+        <div class="eyebrow rise">Our Solutions</div>
+        <h1 class="rise" style="animation-delay:.06s">Apps and Services Built to <em>Scale Your Business</em></h1>
+        <p class="rise" style="animation-delay:.12s">Explore the tools and services we've built to help businesses grow — ready-made products and hands-on work, side by side.</p>
+        <div class="hero__actions rise" style="animation-delay:.18s">
+          <a class="btn-cta" href="#">Book a Strategy Session <span aria-hidden="true">→</span></a>
+          <a class="link2" href="#apps">See the apps ↓</a>
+        </div>
+      </div>
+
+      <!-- product stage: 3 overlapping browser windows, CSS-drawn fake UI.
+           Real build: each window's screenshot comes from the matching
+           catalog item's cover via <Cover item={...} />. -->
+      <div class="prt-stage" aria-hidden="true">
+        <div class="prt-stage__glow"></div>
+
+        <div class="prt-win prt-win--back">
+          <div class="prt-win__bar"><i></i><i></i><i></i><span>xkedule.com</span></div>
+          <div class="prt-win__body">
+            <div class="fake fake--calendar">
+              <div class="fake__row"><div class="fake__bar"></div></div>
+              <div class="fake__cal">
+                <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+                <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+                <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="prt-win prt-win--mid">
+          <div class="prt-win__bar"><i></i><i></i><i></i><span>xmartmenu.skale.club</span></div>
+          <div class="prt-win__body">
+            <div class="fake fake--menu">
+              <div class="fake__row"><div class="fake__bar"></div></div>
+              <div class="fake__cards">
+                <div class="fake__panel"><div class="fake__bar"></div></div>
+                <div class="fake__panel"><div class="fake__bar"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="prt-win prt-win--front" id="frontWin">
+          <div class="prt-win__bar"><i></i><i></i><i></i><span>xareable.com</span></div>
+          <div class="prt-win__body">
+            <div class="fake fake--social" id="frontStateA">
+              <div class="fake__row"><div class="fake__dot"></div><div class="fake__bar"></div></div>
+              <div class="fake__grid"><div class="fake__panel"></div><div class="fake__panel"></div><div class="fake__panel"></div></div>
+            </div>
+            <div class="fake fake--analytics is-hidden" id="frontStateB">
+              <div class="fake__row"><div class="fake__bar"></div><div class="fake__bar"></div></div>
+              <div class="fake__chart"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PROOF BAND → trust badges ============ -->
+  <div class="prt-trust">
+    <div class="wrap prt-trust__row">
+      <div class="prt-trust__item">
+        <span class="prt-trust__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="13,2 4,14 10,14 9,22 20,9 13,9"></polygon></svg>
+        </span>
+        <div>
+          <div class="prt-trust__title">Fast Implementation</div>
+          <div class="prt-trust__desc">Solutions deployed in weeks, not months</div>
+        </div>
+      </div>
+      <div class="prt-trust__item">
+        <span class="prt-trust__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5.2 3.4 9.4 8 11 4.6-1.6 8-5.8 8-11V5z"></path><path d="M8.5 12l2.3 2.3L16 9.5"></path></svg>
+        </span>
+        <div>
+          <div class="prt-trust__title">Enterprise Security</div>
+          <div class="prt-trust__desc">Bank-level security standards</div>
+        </div>
+      </div>
+      <div class="prt-trust__item">
+        <span class="prt-trust__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,17 9,11 13,15 21,7"></polyline><polyline points="15,7 21,7 21,13"></polyline></svg>
+        </span>
+        <div>
+          <div class="prt-trust__title">Proven Results</div>
+          <div class="prt-trust__desc">50+ successful implementations</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ FILTER BAR (sticky) ============ -->
+  <div class="prt-filterwrap">
+    <div class="wrap">
+      <div class="prt-filter" id="filterBar" role="group" aria-label="Filter by category">
+        <button class="cat-chip-btn" data-cat="all" aria-pressed="true">All</button>
+        <button class="cat-chip-btn" data-cat="ai-automation" aria-pressed="false">AI &amp; Automation</button>
+        <button class="cat-chip-btn" data-cat="websites" aria-pressed="false">Websites</button>
+        <button class="cat-chip-btn" data-cat="systems-booking" aria-pressed="false">Systems &amp; Booking</button>
+        <button class="cat-chip-btn" data-cat="crm-sales" aria-pressed="false">CRM &amp; Sales</button>
+        <button class="cat-chip-btn" data-cat="marketing" aria-pressed="false">Marketing</button>
+        <button class="cat-chip-btn" data-cat="branding" aria-pressed="false">Branding</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ APPS ============ -->
+  <section class="prt-section" id="apps">
+    <div class="wrap">
+      <div class="prt-section__head">
+        <div class="eyebrow">01 · Apps</div>
+        <h2>Software ready to use</h2>
+        <p>Booking, content, website, CRM and sales solutions that simplify your day-to-day and help your business grow.</p>
+      </div>
+
+      <div class="prt-appsgrid" id="appsGrid">
+
+        <!-- Xareable -->
+        <button class="cat-card rise" data-category="ai-automation" style="animation-delay:0s">
+          <div class="cat-cover cat-cover--composed">
+            <span class="cat-cover__mark">X</span>
+            <span class="cat-cover__badge">AI Powered</span>
+            <div class="cat-cover__win">
+              <div class="cat-cover__bar"><i></i><i></i><i></i><span>xareable.com</span></div>
+              <div class="fake fake--social" style="position:absolute;inset:0"><div class="fake__row"><div class="fake__dot"></div><div class="fake__bar"></div></div><div class="fake__grid"><div class="fake__panel"></div><div class="fake__panel"></div><div class="fake__panel"></div></div></div>
+            </div>
+          </div>
+          <div class="cat-card__body">
+            <div class="cat-eyebrow">App · AI &amp; Automation</div>
+            <h3 class="cat-card__title">Xareable</h3>
+            <p class="cat-card__sub">Social Media AI Creator</p>
+            <div class="cat-chip-row"><span class="cat-chip">AI Content</span><span class="cat-chip">Multi-Platform</span><span class="cat-chip">Analytics</span></div>
+            <div class="cat-card__foot">
+              <div class="cat-price">$49<small>/month</small></div>
+              <span class="cat-card__more" aria-hidden="true">See details →</span>
+            </div>
+          </div>
+        </button>
+
+        <!-- Xsites -->
+        <button class="cat-card rise" data-category="websites" style="animation-delay:.05s">
+          <div class="cat-cover cat-cover--composed">
+            <span class="cat-cover__mark">X</span>
+            <span class="cat-cover__badge">Popular</span>
+            <div class="cat-cover__win">
+              <div class="cat-cover__bar"><i></i><i></i><i></i><span>yourbusiness.com</span></div>
+              <div class="fake fake--menu" style="position:absolute;inset:0"><div class="fake__row"><div class="fake__bar"></div></div><div class="fake__cards"><div class="fake__panel"><div class="fake__bar"></div></div><div class="fake__panel"><div class="fake__bar"></div></div></div></div>
+            </div>
+          </div>
+          <div class="cat-card__body">
+            <div class="cat-eyebrow">App · Websites</div>
+            <h3 class="cat-card__title">Xsites</h3>
+            <p class="cat-card__sub">Basic &amp; Custom Solutions</p>
+            <div class="cat-chip-row"><span class="cat-chip">Responsive</span><span class="cat-chip">SEO Optimized</span><span class="cat-chip">Fast Loading</span></div>
+            <div class="cat-card__foot">
+              <div class="cat-price">$299<small>starting</small></div>
+              <span class="cat-card__more" aria-hidden="true">See details →</span>
+            </div>
+          </div>
+        </button>
+
+        <!-- Xkedule -->
+        <button class="cat-card rise" data-category="systems-booking" style="animation-delay:.1s">
+          <div class="cat-cover cat-cover--composed">
+            <span class="cat-cover__mark">X</span>
+            <div class="cat-cover__win">
+              <div class="cat-cover__bar"><i></i><i></i><i></i><span>xkedule.com</span></div>
+              <div class="fake fake--calendar" style="position:absolute;inset:0"><div class="fake__row"><div class="fake__bar"></div></div><div class="fake__cal"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+            </div>
+          </div>
+          <div class="cat-card__body">
+            <div class="cat-eyebrow">App · Systems &amp; Booking</div>
+            <h3 class="cat-card__title">Xkedule</h3>
+            <p class="cat-card__sub">Never Miss a Booking</p>
+            <div class="cat-chip-row"><span class="cat-chip">Calendar Sync</span><span class="cat-chip">Reminders</span><span class="cat-chip">Online Booking</span></div>
+            <div class="cat-card__foot">
+              <div class="cat-price">$89<small>/month</small></div>
+              <span class="cat-card__more" aria-hidden="true">See details →</span>
+            </div>
+          </div>
+        </button>
+
+        <!-- XmartMenu -->
+        <button class="cat-card rise" data-category="systems-booking" style="animation-delay:.15s">
+          <div class="cat-cover cat-cover--composed">
+            <span class="cat-cover__mark">X</span>
+            <div class="cat-cover__win">
+              <div class="cat-cover__bar"><i></i><i></i><i></i><span>xmartmenu.skale.club</span></div>
+              <div class="fake fake--menu" style="position:absolute;inset:0"><div class="fake__row"><div class="fake__bar"></div></div><div class="fake__cards"><div class="fake__panel"><div class="fake__bar"></div></div><div class="fake__panel"><div class="fake__bar"></div></div></div></div>
+            </div>
+          </div>
+          <div class="cat-card__body">
+            <div class="cat-eyebrow">App · Systems &amp; Booking</div>
+            <h3 class="cat-card__title">XmartMenu</h3>
+            <p class="cat-card__sub">A smarter ordering experience</p>
+            <div class="cat-chip-row"><span class="cat-chip">QR code access</span><span class="cat-chip">iPad menu</span><span class="cat-chip">AI assistant</span></div>
+            <div class="cat-card__foot">
+              <div class="cat-price">$29<small>/month</small></div>
+              <span class="cat-card__more" aria-hidden="true">See details →</span>
+            </div>
+          </div>
+        </button>
+
+        <!-- Xphere -->
+        <button class="cat-card rise" data-category="crm-sales" style="animation-delay:.2s">
+          <div class="cat-cover cat-cover--composed">
+            <span class="cat-cover__mark">X</span>
+            <span class="cat-cover__badge">Recommended</span>
+            <div class="cat-cover__win">
+              <div class="cat-cover__bar"><i></i><i></i><i></i><span>app.xphere.io</span></div>
+              <div class="fake fake--pipeline" style="position:absolute;inset:0"><div class="fake__row"><div class="fake__bar"></div></div><div class="fake__cols"><div><div class="fake__panel"></div><div class="fake__panel"></div></div><div><div class="fake__panel"></div></div><div><div class="fake__panel"></div><div class="fake__panel"></div></div></div></div>
+            </div>
+          </div>
+          <div class="cat-card__body">
+            <div class="cat-eyebrow">App · CRM &amp; Sales</div>
+            <h3 class="cat-card__title">Xphere</h3>
+            <p class="cat-card__sub">Your CRM and sales pipeline, set up for you</p>
+            <div class="cat-chip-row"><span class="cat-chip">CRM Setup</span><span class="cat-chip">Pipelines</span><span class="cat-chip">Reporting</span></div>
+            <div class="cat-card__foot">
+              <div class="cat-price">$597<small>one-time</small></div>
+              <span class="cat-card__more" aria-hidden="true">See details →</span>
+            </div>
+          </div>
+        </button>
+
+        <!-- Xtimator: empty-cover example -->
+        <button class="cat-card rise" data-category="systems-booking" style="animation-delay:.25s">
+          <div class="cat-cover cat-cover--empty">
+            <div class="cat-cover__mono">X</div>
+            <span class="cat-cover__word">Xtimator</span>
+          </div>
+          <div class="cat-card__body">
+            <div class="cat-eyebrow">App · Systems &amp; Booking</div>
+            <h3 class="cat-card__title">Xtimator</h3>
+            <p class="cat-card__sub">Generate estimates in seconds</p>
+            <div class="cat-chip-row"><span class="cat-chip">Fast estimates</span><span class="cat-chip">Branded PDFs</span><span class="cat-chip">Price book</span></div>
+            <div class="cat-card__foot">
+              <div class="cat-price">$49<small>/month</small></div>
+              <span class="cat-card__more" aria-hidden="true">See details →</span>
+            </div>
+          </div>
+        </button>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SERVICES ============ -->
+  <section class="prt-section" id="services">
+    <div class="wrap">
+      <div class="prt-section__head">
+        <div class="eyebrow">02 · Services</div>
+        <h2>Built by us, for your business</h2>
+        <p>Tailored marketing and technology, quoted for your case.</p>
+      </div>
+
+      <div class="prt-serviceslist" id="servicesList">
+
+        <button class="cat-row" data-category="marketing">
+          <span class="cat-row__thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="4"></circle><circle cx="12" cy="12" r=".6" fill="currentColor"></circle></svg></span>
+          <span class="cat-row__body">
+            <span class="cat-eyebrow">Marketing</span>
+            <span class="cat-row__title">Digital Marketing Consultation</span>
+            <span class="cat-row__desc">One-on-one sessions to help you understand and run your own marketing.</span>
+            <span class="cat-row__chip"><span class="cat-chip">Free audit</span></span>
+          </span>
+          <span class="cat-row__more" aria-hidden="true"><span class="txt">See details →</span><span class="arw">→</span></span>
+        </button>
+
+        <button class="cat-row" data-category="websites">
+          <span class="cat-row__thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 8h18"></path><circle cx="6" cy="6" r=".6" fill="currentColor"></circle></svg></span>
+          <span class="cat-row__body">
+            <span class="cat-eyebrow">Websites</span>
+            <span class="cat-row__title">Website Design &amp; Development</span>
+            <span class="cat-row__desc">Sites, landing pages, booking pages and e-commerce, built and maintained.</span>
+            <span class="cat-row__chip"><span class="cat-chip">Live in days</span></span>
+          </span>
+          <span class="cat-row__more" aria-hidden="true"><span class="txt">See details →</span><span class="arw">→</span></span>
+        </button>
+
+        <button class="cat-row" data-category="marketing">
+          <span class="cat-row__thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10v4l5 1v-6z"></path><path d="M8 9l11-4v14l-11-4"></path><path d="M6 15l1 5h2l-1-5"></path></svg></span>
+          <span class="cat-row__body">
+            <span class="cat-eyebrow">Marketing</span>
+            <span class="cat-row__title">Paid Advertising</span>
+            <span class="cat-row__desc">Google, Meta and TikTok Ads, with remarketing and ongoing optimization.</span>
+            <span class="cat-row__chip"><span class="cat-chip">Multi-platform</span></span>
+          </span>
+          <span class="cat-row__more" aria-hidden="true"><span class="txt">See details →</span><span class="arw">→</span></span>
+        </button>
+
+        <button class="cat-row" data-category="marketing">
+          <span class="cat-row__thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="11" r="2.4"></circle><path d="M14 15l3-3 4 4"></path></svg></span>
+          <span class="cat-row__body">
+            <span class="cat-eyebrow">Marketing</span>
+            <span class="cat-row__title">Content Creation</span>
+            <span class="cat-row__desc">Posts, video, blog articles, site copy, ad creative and product photography.</span>
+            <span class="cat-row__chip"><span class="cat-chip">Photo &amp; video</span></span>
+          </span>
+          <span class="cat-row__more" aria-hidden="true"><span class="txt">See details →</span><span class="arw">→</span></span>
+        </button>
+
+        <button class="cat-row" data-category="branding">
+          <span class="cat-row__thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a8.5 8.5 0 000 17c1 0 1.5-.6 1.5-1.4 0-.4-.2-.7-.4-1-.3-.3-.4-.6-.4-1 0-.8.6-1.4 1.4-1.4H16a4 4 0 004-4C20 6.6 16.4 3 12 3z"></path><circle cx="7.5" cy="10.5" r=".9" fill="currentColor"></circle><circle cx="10.5" cy="7.5" r=".9" fill="currentColor"></circle><circle cx="14.5" cy="7.8" r=".9" fill="currentColor"></circle></svg></span>
+          <span class="cat-row__body">
+            <span class="cat-eyebrow">Branding</span>
+            <span class="cat-row__title">Branding &amp; Graphic Design</span>
+            <span class="cat-row__desc">Logo, visual identity, business cards, social templates and marketing materials.</span>
+            <span class="cat-row__chip"><span class="cat-chip">Full identity kit</span></span>
+          </span>
+          <span class="cat-row__more" aria-hidden="true"><span class="txt">See details →</span><span class="arw">→</span></span>
+        </button>
+
+        <button class="cat-row" data-category="crm-sales">
+          <span class="cat-row__thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16l-6 8v6l-4 2v-8z"></path></svg></span>
+          <span class="cat-row__body">
+            <span class="cat-eyebrow">CRM &amp; Sales</span>
+            <span class="cat-row__title">Lead Generation</span>
+            <span class="cat-row__desc">Landing pages, forms, sales funnels, booking flows and B2B prospecting.</span>
+            <span class="cat-row__chip"><span class="cat-chip">B2B-ready</span></span>
+          </span>
+          <span class="cat-row__more" aria-hidden="true"><span class="txt">See details →</span><span class="arw">→</span></span>
+        </button>
+
+        <button class="cat-row" data-category="crm-sales">
+          <span class="cat-row__thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.2"></circle><circle cx="18" cy="6" r="2.2"></circle><circle cx="12" cy="18" r="2.2"></circle><path d="M7.8 7.4L11 16.3M16.2 7.4L13 16.3M8.2 6h7.6"></path></svg></span>
+          <span class="cat-row__body">
+            <span class="cat-eyebrow">CRM &amp; Sales</span>
+            <span class="cat-row__title">CRM and Marketing Automation</span>
+            <span class="cat-row__desc">Lead organization, automated follow-ups, pipelines and AI phone attendants.</span>
+            <span class="cat-row__chip"><span class="cat-chip">AI follow-ups</span></span>
+          </span>
+          <span class="cat-row__more" aria-hidden="true"><span class="txt">See details →</span><span class="arw">→</span></span>
+        </button>
+
+        <button class="cat-row" data-category="branding">
+          <span class="cat-row__thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.6v9L12 21l-8-4.4v-9z"></path><path d="M12 3v9M12 12l8-4.4M12 12l-8-4.4"></path></svg></span>
+          <span class="cat-row__body">
+            <span class="cat-eyebrow">Branding</span>
+            <span class="cat-row__title">3D Printing</span>
+            <span class="cat-row__desc">Rapid prototypes, product mockups and physical branding pieces on demand.</span>
+            <span class="cat-row__chip"><span class="cat-chip">Rapid prototyping</span></span>
+          </span>
+          <span class="cat-row__more" aria-hidden="true"><span class="txt">See details →</span><span class="arw">→</span></span>
+        </button>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FINAL CTA ============ -->
+  <section class="prt-final">
+    <div class="wrap">
+      <div class="prt-final__box">
+        <div>
+          <div class="eyebrow">Next step</div>
+          <h2>Ready to Redefine Your Potential?</h2>
+        </div>
+        <div class="prt-final__actions">
+          <a class="btn-cta" href="#">Book a Strategy Session <span aria-hidden="true">→</span></a>
+          <a class="link2" href="#">or talk on WhatsApp ↗</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="prt-foot"><div class="wrap">© 2026 Skale Club</div></footer>
+</main>
+
+<script>
+  // ---------- category filter ----------
+  (function () {
+    var chips = Array.prototype.slice.call(document.querySelectorAll('#filterBar .cat-chip-btn'));
+    var apps = Array.prototype.slice.call(document.querySelectorAll('#appsGrid .cat-card'));
+    var rows = Array.prototype.slice.call(document.querySelectorAll('#servicesList .cat-row'));
+    var appsSection = document.getElementById('apps');
+    var servicesSection = document.getElementById('services');
+
+    function applyFilter(cat) {
+      var appsVisible = 0, rowsVisible = 0;
+      apps.forEach(function (el) {
+        var match = cat === 'all' || el.dataset.category === cat;
+        el.style.display = match ? '' : 'none';
+        if (match) appsVisible++;
+      });
+      rows.forEach(function (el) {
+        var match = cat === 'all' || el.dataset.category === cat;
+        el.style.display = match ? '' : 'none';
+        if (match) rowsVisible++;
+      });
+      appsSection.classList.toggle('is-hidden', appsVisible === 0);
+      servicesSection.classList.toggle('is-hidden', rowsVisible === 0);
+    }
+
+    chips.forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        chips.forEach(function (c) { c.setAttribute('aria-pressed', String(c === chip)); });
+        applyFilter(chip.dataset.cat);
+      });
+    });
+  })();
+
+  // ---------- hero front-window state cycle (disabled under reduced motion) ----------
+  (function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) return;
+    var a = document.getElementById('frontStateA');
+    var b = document.getElementById('frontStateB');
+    if (!a || !b) return;
+    setInterval(function () {
+      a.classList.toggle('is-hidden');
+      b.classList.toggle('is-hidden');
+    }, 4500);
+  })();
+</script>
+</body>
+</html>

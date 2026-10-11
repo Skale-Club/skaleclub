@@ -25,6 +25,7 @@ export function PageHeader({ title, subtitle, breadcrumb, compact = false, eyebr
   return (
     <Band
       tone="hero"
+      heroVariant="editorial-header"
       pattern
       bare
       containerClassName={compact ? "page-top pb-12" : "page-top pb-12 md:pb-16"}

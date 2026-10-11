@@ -1,13 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { z } from "zod";
+import type { z } from "zod";
 import type { CompanySettings } from "@shared/schema";
+import { reviewsPropsSchema } from "@shared/section-definitions";
 import { ReviewsSection } from "@/components/home/ReviewsSection";
 
-export const reviewsPropsSchema = z.object({
-  embedUrl: z.string().optional(),
-  title: z.string().optional(),
-  subtitle: z.string().optional(),
-});
 
 export function ReviewsAdapter({ props }: { props: z.infer<typeof reviewsPropsSchema> }) {
   const { data: settings } = useQuery<CompanySettings>({
@@ -20,7 +16,7 @@ export function ReviewsAdapter({ props }: { props: z.infer<typeof reviewsPropsSc
   const title = props.title ?? fallback?.title;
   const subtitle = props.subtitle ?? fallback?.subtitle;
 
-  if (!embedUrl && !title && !subtitle) return null;
+  if (!props.xphere && !embedUrl && !title && !subtitle) return null;
 
-  return <ReviewsSection embedUrl={embedUrl} title={title} subtitle={subtitle} />;
+  return <ReviewsSection xphere={props.xphere} embedUrl={embedUrl} title={title} subtitle={subtitle} />;
 }

@@ -20,6 +20,7 @@ import type { BlogPost, CompanySettings } from '@shared/schema';
 import { usePagePaths } from '@/lib/pagePaths';
 import { NotFoundState } from '@/components/NotFoundState';
 import { fetchJson } from '@/lib/queryClient';
+import { SectionFrame } from '@/components/editorial';
 
 export default function BlogPostPage() {
   const params = useParams<{ slug: string }>();
@@ -113,7 +114,8 @@ export default function BlogPostPage() {
   return (
     <div className="min-h-screen bg-background">
       <article>
-        <div className="bg-surface-dark text-white page-top pb-8 md:pb-12">
+        <SectionFrame tone="dark" role="hero" heroVariant="blog-post" bare className="bg-surface-dark text-white">
+          <div className="page-top pb-8 md:pb-12">
           <div className="container-custom container-page">
             <nav className="flex items-center gap-2 text-sm text-white/60 mb-4" data-testid="nav-post-breadcrumb">
               <Link href="/" className="hover:text-white">Home</Link>
@@ -150,9 +152,11 @@ export default function BlogPostPage() {
               )}
             </div>
           </div>
-        </div>
+          </div>
+        </SectionFrame>
 
-        <div className="container-custom container-page py-8 md:py-12">
+        <SectionFrame tone="white" role="editorial" bare>
+        <div className="container-custom container-page">
           <div className="flex flex-col lg:flex-row gap-8">
             <div className="lg:w-[70%]">
               {post.featureImageUrl && (
@@ -286,6 +290,7 @@ export default function BlogPostPage() {
             </aside>
           </div>
         </div>
+        </SectionFrame>
       </article>
 
       <script type="application/ld+json" dangerouslySetInnerHTML={{

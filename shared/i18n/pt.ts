@@ -710,11 +710,11 @@ export const translations = {
     'Talk to us': 'Falar com a gente', 'Talk to us on WhatsApp': 'Fale com a gente no WhatsApp', 'See the apps': 'Ver os apps', 'Next step': 'Próximo passo',
     'ready-made apps in production': 'apps próprios em produção', 'marketing and technology services': 'serviços de marketing e tecnologia', 'entry plan': 'plano de entrada',
     '01 · Apps': '01 · Apps', '02 · Services': '02 · Serviços',
-    'Our own products, live today, with a fixed price. Subscribe and start.': 'Produtos nossos, já no ar, com preço fechado. Você assina e começa.',
+    'Booking, content, website, CRM and sales solutions that simplify your day-to-day and help your business grow.': 'Soluções de agendamento, conteúdo, sites, CRM e vendas que simplificam a rotina e ajudam o negócio a crescer.',
     'Built by us, for your business': 'Feito por nós, para o seu negócio', 'Tailored marketing and technology, quoted for your case.': 'Marketing e tecnologia sob medida, com orçamento para o seu caso.',
     // Catalog: /portfolio showroom redesign (v3, 2026-09)
     'dashboard': 'painel',
-    'Start here': 'Comece aqui', 'Apps we build and run': 'Apps que criamos e operamos',
+    'Start here': 'Comece aqui', 'Tools to sell more and work less': 'Ferramentas para vender mais e trabalhar menos',
     'Your social media **on autopilot**': 'Suas redes sociais **no piloto automático**', 'A professional website **live in 3 days**': 'Um site profissional **no ar em 3 dias**',
     '**Never miss** a booking': '**Nunca perca** um agendamento', "Your menu **on the customer's phone**": 'Seu cardápio **no celular do cliente**',
     'Every lead **followed up automatically**': 'Todo lead **com follow-up automático**', 'Send the estimate **before you leave the site**': 'Envie o orçamento **antes de sair da obra**',

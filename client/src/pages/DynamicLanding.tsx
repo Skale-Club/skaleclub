@@ -2,6 +2,7 @@ import { useParams } from "wouter";
 import { usePathname } from "wouter/use-browser-location";
 import { useQuery } from "@tanstack/react-query";
 import { lazy, Suspense, useEffect, useState } from "react";
+import * as Sentry from "@sentry/react";
 import { AppLoader } from "@/components/ui/spinner";
 import { sectionRegistry } from "@/components/pages/sectionRegistry";
 import { usePageLanguage } from "@/context/LanguageContext";
@@ -11,6 +12,14 @@ import { getLandingSeo, landingPathForSlug, productDbSlugForUrlSlug } from "@sha
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 
 const NotFound = lazy(() => import("@/pages/not-found"));
+
+const reportedSectionContractErrors = new Set<string>();
+
+function reportSectionContractError(key: string, message: string, extra: Record<string, unknown>) {
+  if (reportedSectionContractErrors.has(key)) return;
+  reportedSectionContractErrors.add(key);
+  Sentry.captureMessage(message, { level: "error", tags: { area: "managed-section" }, extra });
+}
 
 interface PageResponse {
   slug: string;
@@ -211,6 +220,11 @@ export default function DynamicPage() {
       {data.sections.map((section, idx) => {
         const entry = sectionRegistry[section.type];
         if (!entry) {
+          reportSectionContractError(
+            `${data.slug}:${idx}:unknown:${section.type}`,
+            "Managed page contains an unknown section type",
+            { slug: data.slug, sectionIndex: idx, sectionType: section.type },
+          );
           if (import.meta.env.DEV) {
             return (
               <div
@@ -225,6 +239,11 @@ export default function DynamicPage() {
         }
         const parsed = entry.propsSchema.safeParse(section.props ?? {});
         if (!parsed.success) {
+          reportSectionContractError(
+            `${data.slug}:${idx}:invalid:${section.type}`,
+            "Managed page section props failed validation",
+            { slug: data.slug, sectionIndex: idx, sectionType: section.type, issues: parsed.error.issues },
+          );
           if (import.meta.env.DEV) {
             return (
               <div

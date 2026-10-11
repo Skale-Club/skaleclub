@@ -114,7 +114,7 @@ function Inside({ bleed, apps, services, showPrices }: FolderData) {
         className="w-1/2 h-full flex flex-col"
         style={{ ...panelPadding(bleed, "left"), backgroundColor: INK.navyDeep }}
       >
-        <PanelHeading eyebrow="01 · Apps" title="Apps we build and run" />
+        <PanelHeading eyebrow="01 · Apps" title="Tools to sell more and work less" />
         <CatalogList items={apps} showPrices={showPrices} />
       </div>
       <div

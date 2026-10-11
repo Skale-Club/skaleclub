@@ -1,23 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { z } from "zod";
+import type { z } from "zod";
 import type { CompanySettings } from "@shared/schema";
+import { trustBadgesPropsSchema } from "@shared/section-definitions";
 import { badgeIconMap } from "@/components/home/TrustBadges";
 import { Band } from "@/components/editorial";
 import { useTranslation } from "@/hooks/useTranslation";
-import { sectionThemeSchema } from "./sectionTheme";
 
-const badgeSchema = z.object({
-  title: z.string(),
-  description: z.string(),
-  icon: z.string().optional(),
-});
-
-export const trustBadgesPropsSchema = z.object({
-  theme: sectionThemeSchema,
-  badges: z.array(badgeSchema).max(6).optional(),
-}).passthrough();
-
-type Badge = z.infer<typeof badgeSchema>;
+type Badge = NonNullable<z.infer<typeof trustBadgesPropsSchema>["badges"]>[number];
 
 export function TrustBadgesAdapter({ props }: { props: z.infer<typeof trustBadgesPropsSchema> }) {
   const { data: settings } = useQuery<CompanySettings>({
@@ -37,7 +26,7 @@ function BadgeBand({ badges, dark }: { badges: Badge[]; dark: boolean }) {
   const { t } = useTranslation();
   return (
     <div data-testid="section-trust-badges">
-      <Band tone="dark" className="border-b border-white/10 py-8 sm:py-10">
+      <Band tone="dark" role="compact" className="border-b border-white/10">
         <ul
           className={`grid grid-cols-1 divide-y md:grid-cols-3 md:divide-x md:divide-y-0 ${
             dark ? "divide-white/10" : "divide-ink-700/10"

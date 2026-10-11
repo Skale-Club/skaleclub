@@ -2,7 +2,7 @@
 // Built for the NFC landing ("what the tap opens", "where to use it"). Copy is
 // English (the t() source language); PT is served via t() on 'pt' pages.
 
-import { z } from "zod";
+import type { z } from "zod";
 import {
   Star, Instagram, IdCard, UtensilsCrossed, Globe, MessageCircle,
   Store, ConciergeBell, Car, KeyRound, Nfc, Smartphone,
@@ -15,15 +15,14 @@ import { Band, EditorialCard, Figure } from "@/components/editorial";
 import { SectionHeading } from "@/components/layout/SectionHeading";
 import { useTranslation } from "@/hooks/useTranslation";
 import { languageHref } from "@/lib/languageRouting";
-import { sectionThemeSchema } from "./sectionTheme";
+import {
+  featureGridBrands,
+  featureGridIconNames,
+  featureGridPropsSchema,
+} from "@shared/section-definitions";
 
 // Closed allowlist, like processStepper: seeded props can never name an icon
 // the bundle does not ship.
-export const featureGridIconNames = [
-  "Star", "Instagram", "IdCard", "UtensilsCrossed", "Globe", "MessageCircle",
-  "Store", "ConciergeBell", "Car", "KeyRound", "Nfc", "Smartphone",
-  "PhoneMissed", "CalendarX", "CalendarClock",
-] as const;
 
 const ICON_MAP: Record<(typeof featureGridIconNames)[number], LucideIcon> = {
   Star, Instagram, IdCard, UtensilsCrossed, Globe, MessageCircle,
@@ -34,7 +33,6 @@ const ICON_MAP: Record<(typeof featureGridIconNames)[number], LucideIcon> = {
 // Optional brand badge in place of the plain icon: the destination's own logo
 // and colour (Google, Instagram, WhatsApp) or, for destinations without a brand
 // (digital card, menu, website), the item's icon on its own solid colour.
-export const featureGridBrands = ["google", "instagram", "whatsapp", "vcard", "menu", "web"] as const;
 type FeatureGridBrand = (typeof featureGridBrands)[number];
 
 function BrandBadge({ brand, Icon }: { brand: FeatureGridBrand; Icon: LucideIcon }) {
@@ -57,38 +55,6 @@ function BrandBadge({ brand, Icon }: { brand: FeatureGridBrand; Icon: LucideIcon
   return <span className={`${base} ${tint[brand]}`}><Icon className="h-5 w-5 text-white" aria-hidden="true" /></span>;
 }
 
-const itemSchema = z.object({
-  icon:        z.enum(featureGridIconNames),
-  brand:       z.enum(featureGridBrands).optional(),
-  title:       z.string(),
-  description: z.string(),
-  // Optional editorial photo. Kept local/root-relative so managed page content
-  // cannot turn this component into a third-party tracking surface.
-  imageUrl:    z.string().regex(/^\/(?![\/\\])/).optional(),
-  imageAlt:    z.string().optional(),
-  imageWidth:  z.number().int().positive().optional(),
-  imageHeight: z.number().int().positive().optional(),
-  // Optional: makes the card a link to a site path (e.g. a group page's cards
-  // pointing at each item's own page). Root-relative only, same convention as
-  // leadFormCta's imageUrl, but tighter: `/^\/` alone also passed "//evil.com"
-  // (protocol-relative, i.e. an external URL). The negative lookahead blocks
-  // a second leading slash (or backslash, which browsers treat the same way).
-  // Absent = the plain, non-interactive card (every existing use of this section).
-  href:        z.string().regex(/^\/(?![\/\\])[a-z0-9/-]*$/).optional(),
-});
-
-export const featureGridPropsSchema = z.object({
-  eyebrow:    z.string().optional(),
-  heading:    z.string(),
-  subheading: z.string().optional(),
-  imageUrl:   z.string().regex(/^\/(?![\/\\])/).optional(),
-  imageAlt:   z.string().optional(),
-  imagePosition: z.enum(["left", "right"]).optional(),
-  imageWidth: z.number().int().positive().optional(),
-  imageHeight: z.number().int().positive().optional(),
-  items:      z.array(itemSchema).min(2).max(6),
-  theme:      sectionThemeSchema,
-});
 export type FeatureGridProps = z.infer<typeof featureGridPropsSchema>;
 
 const LIGHT = {
@@ -137,7 +103,7 @@ export function FeatureGridSection({ props }: { props: FeatureGridProps }) {
           ) : null}
         </div>
 
-        <ul className={`mt-12 grid grid-cols-1 gap-4 sm:gap-5 ${cols}`}>
+        <ul className={`section-content-after-heading section-grid-gap grid grid-cols-1 ${cols}`}>
           {props.items.map((item, i) => {
             const Icon = ICON_MAP[item.icon];
             const hasImage = !!item.imageUrl;

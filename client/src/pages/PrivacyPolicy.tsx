@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { CompanySettings } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { SectionFrame } from "@/components/editorial";
 
 export default function PrivacyPolicy() {
   const { t } = useTranslation();
@@ -31,8 +32,9 @@ export default function PrivacyPolicy() {
       />
 
       {/* Content */}
-      <div className="container-custom container-page py-12">
-        <div className="space-y-12">
+      <SectionFrame tone="white" role="editorial" bare>
+        <div className="container-custom container-page">
+          <div className="space-y-12">
 
           {/* Introduction */}
           <Section
@@ -264,8 +266,9 @@ export default function PrivacyPolicy() {
             </p>
           </Section>
 
+          </div>
         </div>
-      </div>
+      </SectionFrame>
     </div>
   );
 }

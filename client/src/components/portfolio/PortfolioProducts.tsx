@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 export function PortfolioProducts({ seeAllHref, hideHeading }: { seeAllHref?: string; hideHeading?: boolean }) {
   const { t } = useTranslation();
   return (
-    <Band tone="dark" id="products" className={cn("scroll-mt-[calc(var(--nav-offset)+1rem)]", hideHeading && "pt-10 sm:pt-12")}>
+    <Band tone="dark" role={hideHeading ? "dense" : "editorial"} id="products" className="scroll-mt-[calc(var(--nav-offset)+1rem)]">
       {!hideHeading && (
         <SectionHeadingRow seeAllHref={seeAllHref}>
           <SectionHeading
@@ -22,7 +22,7 @@ export function PortfolioProducts({ seeAllHref, hideHeading }: { seeAllHref?: st
           />
         </SectionHeadingRow>
       )}
-      <div className={cn(!hideHeading && "mt-12", "grid gap-5 sm:grid-cols-2")}>
+      <div className={cn(!hideHeading && "section-content-after-heading", "section-grid-gap grid sm:grid-cols-2")}>
         {PRODUCT_CARDS.map((product) => (
           <article key={product.slug} className="group relative">
             <EditorialCard

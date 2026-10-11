@@ -243,45 +243,27 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
     translated: "Display de balcão projetado para expor chaveiros à venda.",
   },
 
-  // ── Pricing block (copied from the live catalog — see seed-barbershop-landing.ts).
-  // Only the strings the page still shows after the review's "remove the
-  // three-item bullet lists" note: the Xkedule/Xsites/Xareable feature tags
-  // (Calendar Sync, Reminders, Responsive, Analytics, ...) were cut from the
-  // page along with their bullets and are deliberately NOT seeded here. ───
-  { source: "Pricing", translated: "Preços" },
-  { source: "What you can get", translated: "O que você pode ter" },
-  { source: "Same prices we charge everyone.", translated: "Os mesmos preços que cobramos de todo mundo." },
-
-  { source: "Xkedule: $89 a month", translated: "Xkedule: US$ 89 por mês" },
-  { source: "Your site that books for you.", translated: "Seu site que agenda para você." },
+  // ── Barbershop curated catalog carousel (see seed-barbershop-landing.ts). ──
+  { source: "Services for barbershops", translated: "Serviços para barbearias" },
+  { source: "What your barbershop needs to grow", translated: "O que sua barbearia precisa para crescer" },
   {
-    source: "A booking page with AI that answers messages and calls. It books the appointment when the customer is ready.",
-    translated: "Uma página de agendamento com IA que responde mensagens e ligações. Ela agenda o horário quando o cliente está pronto.",
+    source: "Start with Xkedule for calls and bookings. Add a website, ads or weekly content when you need them.",
+    translated: "Comece com o Xkedule para atender ligações e agendar clientes. Depois, combine site, anúncios e conteúdo conforme precisar.",
   },
 
-  { source: "Xsites: $299 starting", translated: "Xsites: a partir de US$ 299" },
-  { source: "A professional website for your shop.", translated: "Um site profissional para a sua barbearia." },
+  // Alt text for the three approved WebP replacements.
   {
-    source: "A clean site built for service businesses. Start with the essentials and add pages and features as you grow.",
-    translated: "Um site limpo, feito para negócios de serviço. Comece com o essencial e vá adicionando páginas e recursos conforme cresce.",
+    source: "A barber welcoming a customer into a busy neighborhood barbershop.",
+    translated: "Um barbeiro recebendo um cliente em uma barbearia movimentada do bairro.",
   },
-
-  { source: "Xareable: $49 a month", translated: "Xareable: US$ 49 por mês" },
-  { source: "We post for you.", translated: "A gente posta para você." },
   {
-    source: "Create and publish posts with AI from one place. Post by hand or put it on a schedule and stay active every week.",
-    translated: "Crie e publique posts com IA em um só lugar. Publique na hora ou deixe agendado e fique ativo toda semana.",
+    source: "Google review and Instagram NFC stands on a barbershop counter while a barber serves a client.",
+    translated: "Plaquinhas NFC do Google e Instagram no balcão enquanto um barbeiro atende um cliente.",
   },
-
-  { source: "Ads that fill the calendar: talk to us", translated: "Anúncios que enchem a agenda: fale com a gente" },
   {
-    source: "Google Ads, Facebook and Instagram Ads, TikTok Ads, retargeting campaigns, and campaign optimization.",
-    translated: "Google Ads, anúncios no Facebook e Instagram, anúncios no TikTok, campanhas de retargeting e otimização de campanha.",
+    source: "Google review NFC table plate on a barbershop counter.",
+    translated: "Plate NFC para avaliações no Google sobre o balcão de uma barbearia.",
   },
-  // The bullets that used to repeat these same four terms ("Google Ads",
-  // "Meta & TikTok Ads", "Retargeting campaigns", "Campaign optimization")
-  // were removed from the page (the paragraph above already says all of
-  // it) — dropped here too, same reasoning as the other dead rows above.
 
   // ── Reviews section (props.title/subtitle — see seed-barbershop-landing.ts
   // for why these are no longer left as `props: {}`) ──────────────────────

@@ -21,6 +21,7 @@ import {
 import type { CompanySettings } from "@shared/schema";
 import { useTranslation } from "@/hooks/useTranslation";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { SectionFrame } from "@/components/editorial";
 
 export default function TermsOfService() {
   const { t } = useTranslation();
@@ -47,8 +48,9 @@ export default function TermsOfService() {
         }
       />
 
-      <div className="container-custom container-page py-12">
-        <div className="space-y-12">
+      <SectionFrame tone="white" role="editorial" bare>
+        <div className="container-custom container-page">
+          <div className="space-y-12">
           <Section icon={<ShieldCheck className="w-6 h-6" />} title={t('1. Acceptance of Terms')}>
             <p>{t(`By accessing the site, creating an account, or requesting services with ${companyName}, you agree to these Terms of Service and our Privacy Policy. If you do not agree, do not use our services.`)}</p>
           </Section>
@@ -170,8 +172,9 @@ export default function TermsOfService() {
             </div>
             <p className="mt-4 text-gray-600">{t('We aim to respond to inquiries within 30 days.')}</p>
           </Section>
+          </div>
         </div>
-      </div>
+      </SectionFrame>
     </div>
   );
 }

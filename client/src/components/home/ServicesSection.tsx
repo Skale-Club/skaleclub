@@ -144,7 +144,7 @@ export function ServicesSection({ section, mode: explicitMode, onCtaClick, band 
 
 function SectionShell({ sectionId, band, children }: { sectionId: string; band: BandTone; children: React.ReactNode }) {
   return (
-    <Band tone={band} id={sectionId} className="overflow-hidden" containerClassName="space-y-[2.125rem]">
+    <Band tone={band} id={sectionId} className="overflow-hidden" containerClassName="section-content-stack">
       {children}
     </Band>
   );

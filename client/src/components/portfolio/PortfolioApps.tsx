@@ -116,13 +116,13 @@ export function PortfolioApps({
   return (
     <>
       {!hideHeading && (
-        <Band tone="dark" id="apps" className="scroll-mt-[calc(var(--nav-offset)+1rem)] pb-10 sm:pb-14">
+        <Band tone="dark" role="compact" id="apps" className="scroll-mt-[calc(var(--nav-offset)+1rem)]">
           <SectionHeadingRow seeAllHref={seeAllHref}>
             <SectionHeading
               variant="editorial"
               eyebrow="01 · Apps"
-              title="Apps we build and run"
-              subtitle="Our own products, live today, with a fixed price. Subscribe and start."
+              title="Tools to sell more and work less"
+              subtitle="Booking, content, website, CRM and sales solutions that simplify your day-to-day and help your business grow."
             />
           </SectionHeadingRow>
         </Band>
@@ -133,10 +133,8 @@ export function PortfolioApps({
         <Band
           key={item.key}
           tone="dark"
+          role="dense"
           className={cn(
-            "py-16 sm:py-20",
-            // Right under the archive hero on /apps: no big gap above the first app.
-            hideHeading && i === 0 && "pt-10 sm:pt-12",
             (i > 0 || !hideHeading) && "border-t border-white/10",
             i % 2 === 0 && "bg-navy-900",
           )}

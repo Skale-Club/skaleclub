@@ -1,46 +1,13 @@
-import { z } from "zod";
+import type { z } from "zod";
 import { ArrowDown, ArrowRight, Phone } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { languageHref } from "@/lib/languageRouting";
 import { Band, Eyebrow, PillButton, PillLink } from "@/components/editorial";
-import { sectionThemeSchema } from "./sectionTheme";
-import { WhatsappCtaLink, whatsappCtaSchema } from "./whatsappCta";
+import { WhatsappCtaLink } from "./whatsappCta";
+import { heroWebsitesPropsSchema } from "@shared/section-definitions";
 
 // Pill CTAs follow the CLAUDE.md Brand Guidelines. Copy defaults are English (the t() source
 // language); PT is served via translations.ts when language is 'pt'.
-// Tolerant optional URL: treats null and "" as "absent" so a removed asset
-// (the editor may persist null, and JSON has no `undefined`) never fails
-// validation and breaks the page render.
-const optionalUrl = z.preprocess(
-  (v) => (v === null || v === "" ? undefined : v),
-  z.string().refine(
-    (value) => value.startsWith("/") || z.string().url().safeParse(value).success,
-    "Expected an absolute URL or a root-relative asset path",
-  ).optional(),
-);
-
-export const heroWebsitesPropsSchema = z.object({
-  headline: z.string().optional(),
-  subheadline: z.string().optional(),
-  ctaLabel: z.string().optional(),
-  secondaryCtaLabel: z.string().optional(),
-  // A site path ("/nfc-order"), an in-page anchor ("#how-it-works"), or a
-  // "tel:" link ("tel:+12245516131") for a landing whose secondary CTA is a
-  // phone number to call rather than a page to visit.
-  secondaryCtaHref: z.string().regex(/^(\/[a-z0-9/-]*|#[a-z][a-z0-9-]*|tel:\+?[0-9]{7,15})$/).optional(),
-  // Short line under the CTA row, shown only when secondaryCtaHref is a "tel:"
-  // link (e.g. explaining what happens when you call it).
-  secondaryCtaNote: z.string().optional(),
-  eyebrow: z.string().optional(),
-  backgroundImageUrl: optionalUrl,
-  backgroundImageAlt: z.string().optional(),
-  bgVideoUrl: optionalUrl,
-  // Dark hero only: a quiet "Talk to us on WhatsApp" link under the buttons.
-  whatsapp: whatsappCtaSchema,
-  // "dark" = the NFC product hero (copy left, product right, navy). Absent =
-  // the /websites hero, unchanged.
-  theme: sectionThemeSchema,
-});
 export type HeroWebsitesProps = z.infer<typeof heroWebsitesPropsSchema>;
 
 const DEFAULTS = {
@@ -81,13 +48,13 @@ function HeroCtas({ props, ctaLabel }: { props: HeroWebsitesProps; ctaLabel: str
   const isAnchor = !!secondaryHref?.startsWith("#");
   const isTel = !!secondaryHref?.startsWith("tel:");
   return (
-    <div>
-      <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+    <div className="min-w-0">
+      <div className="mt-8 flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap">
         <PillButton
           variant="primary"
           onClick={scrollToLeadCta}
           data-testid="button-hero-websites-cta"
-          className="w-full whitespace-nowrap sm:w-auto"
+          className="w-full min-w-0 sm:w-auto sm:whitespace-nowrap"
         >
           {t(ctaLabel)} <ArrowRight aria-hidden="true" className="h-4 w-4" />
         </PillButton>
@@ -95,7 +62,7 @@ function HeroCtas({ props, ctaLabel }: { props: HeroWebsitesProps; ctaLabel: str
           <PillLink
             href={isAnchor ? secondaryHref : languageHref(secondaryHref)}
             variant="ghost"
-            className="w-full whitespace-nowrap sm:w-auto"
+            className="w-full min-w-0 sm:w-auto sm:whitespace-nowrap"
           >
             {isTel && <Phone aria-hidden="true" className="h-4 w-4" />}
             {t(props.secondaryCtaLabel)}
@@ -104,9 +71,21 @@ function HeroCtas({ props, ctaLabel }: { props: HeroWebsitesProps; ctaLabel: str
         ) : null}
       </div>
       {isTel && props.secondaryCtaNote && (
-        <p className="mt-3 max-w-md text-sm leading-6 text-fog-400">{t(props.secondaryCtaNote)}</p>
+        <p className="mt-3 max-w-md break-words text-sm leading-6 text-fog-400">{t(props.secondaryCtaNote)}</p>
       )}
     </div>
+  );
+}
+
+/**
+ * A lightweight barbershop signature for the industry landing. The striped
+ * cylinder moves in CSS, so there is no Lottie runtime or extra image request.
+ */
+function BarberPoleMark() {
+  return (
+    <span className="barber-pole-mark" aria-hidden="true">
+      <span className="barber-pole-stripes" />
+    </span>
   );
 }
 
@@ -130,7 +109,7 @@ function DarkProductHero({ props }: { props: HeroWebsitesProps }) {
 
   return (
     <div data-testid="section-hero-websites">
-      <Band tone="hero" pattern containerClassName="pt-nav">
+      <Band tone="hero" heroVariant="dark-product" pattern containerClassName="pt-nav">
         <div
           className={`grid items-center gap-6 py-8 sm:py-12 lg:min-h-[600px] lg:gap-12 lg:py-20 ${
             wide ? "lg:grid-cols-[.9fr_1.1fr]" : "lg:grid-cols-[1.05fr_.95fr]"
@@ -200,6 +179,7 @@ function WebsitesHero({ props }: { props: HeroWebsitesProps }) {
   const bgUrl = props.backgroundImageUrl ?? DEFAULTS.backgroundImageUrl;
   const bgAlt = props.backgroundImageAlt ?? "";
   const bgVideoUrl = props.bgVideoUrl;
+  const isBarbershopHero = bgUrl === "/barbershops/hero-barbershop.webp";
 
   return (
     // pt-nav clears the fixed navbar. From lg the band stretches full height
@@ -208,9 +188,10 @@ function WebsitesHero({ props }: { props: HeroWebsitesProps }) {
     <div data-testid="section-hero-websites">
       <Band
         tone="hero"
+        heroVariant="split-landing"
         pattern
         className="relative isolate flex min-h-[70vh] items-end overflow-hidden sm:min-h-[55vh] lg:min-h-[550px] lg:items-stretch"
-        containerClassName="relative z-10 pt-nav"
+        containerClassName="relative z-10 min-w-0 pt-nav"
       >
         {/* Video background: a flat scrim keeps the copy readable over it. */}
         {bgVideoUrl && (
@@ -226,8 +207,8 @@ function WebsitesHero({ props }: { props: HeroWebsitesProps }) {
             <div aria-hidden="true" className="absolute inset-0 -z-10 bg-navy-950/75" />
           </>
         )}
-        <div className="grid grid-cols-1 items-end gap-1 sm:gap-6 lg:h-full lg:grid-cols-2 lg:gap-12">
-          <div className="relative z-20 order-1 pb-12 pt-9 sm:pb-16 sm:pt-10 lg:order-2 lg:self-center lg:pb-0 lg:pt-0">
+        <div className="grid min-w-0 grid-cols-1 items-end gap-1 sm:gap-6 lg:h-full lg:grid-cols-2 lg:gap-12">
+          <div className="relative z-20 order-1 min-w-0 pb-12 pt-9 sm:pb-16 sm:pt-10 lg:order-2 lg:self-center lg:pb-0 lg:pt-0">
             <h1 className="mb-3 font-display text-[9vw] font-semibold leading-[1.02] tracking-[-0.04em] text-fog-50 text-balance sm:text-5xl md:text-6xl lg:mb-6 lg:text-4xl xl:text-5xl">
               {t(headline)}
             </h1>
@@ -236,18 +217,21 @@ function WebsitesHero({ props }: { props: HeroWebsitesProps }) {
           </div>
           {/* The character stands on the band's bottom edge: no padding below
               the image column and the img is a block so no baseline gap. */}
-          <div className="relative z-10 order-2 flex w-full items-end justify-center self-end lg:order-1 lg:min-h-[400px] lg:justify-end">
+          <div className="relative z-10 order-2 flex min-w-0 w-full items-end justify-center self-end lg:order-1 lg:min-h-[400px] lg:justify-end">
             {bgUrl ? (
-              <img
-                src={bgUrl}
-                alt={t(bgAlt)}
-                className="block w-[70vw] max-w-[260px] origin-bottom object-contain object-bottom drop-shadow-2xl sm:w-[75%] md:max-w-[300px] lg:w-full lg:max-w-[340px] xl:max-w-[380px]"
-                // React 18 does not know the camelCase prop; the lowercase attribute reaches the DOM as-is.
-                {...({ fetchpriority: "high" } as Record<string, string>)}
-                decoding="async"
-                loading="eager"
-                {...(KNOWN_IMAGE_SIZES[bgUrl] ?? {})}
-              />
+              <div className="relative w-fit">
+                <img
+                  src={bgUrl}
+                  alt={t(bgAlt)}
+                  className="block w-[70vw] max-w-[260px] origin-bottom object-contain object-bottom drop-shadow-2xl sm:w-[75vw] md:max-w-[300px] lg:w-[340px] lg:max-w-[340px] xl:w-[380px] xl:max-w-[380px]"
+                  // React 18 does not know the camelCase prop; the lowercase attribute reaches the DOM as-is.
+                  {...({ fetchpriority: "high" } as Record<string, string>)}
+                  decoding="async"
+                  loading="eager"
+                  {...(KNOWN_IMAGE_SIZES[bgUrl] ?? {})}
+                />
+                {isBarbershopHero && <BarberPoleMark />}
+              </div>
             ) : null}
           </div>
         </div>

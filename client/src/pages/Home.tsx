@@ -100,7 +100,7 @@ export default function Home() {
           // top row shows the wrapper's navy, the bottom row is filled with the
           // next section's cream. Real flow, so the bottom half pushes the
           // services section down and its own py rhythm sets the gap below.
-          <section className="relative z-20 grid grid-cols-1 grid-rows-2">
+          <section data-section-role="bridge" className="relative z-20 grid grid-cols-1 grid-rows-2">
             <div className="col-start-1 row-start-2 bg-steel-700" aria-hidden />
             <div className="container-editorial relative col-start-1 row-span-2 row-start-1">
               <TrustBadges badges={trustBadges} />

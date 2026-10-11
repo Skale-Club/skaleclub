@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { z } from "zod";
+import type { z } from "zod";
 import type { CompanySettings, HomepageContent } from "@shared/schema";
+import { heroPropsSchema } from "@shared/section-definitions";
 import { HeroSection } from "@/components/home/HeroSection";
 
 // v1: no per-landing knobs; section inherits content from /api/company-settings.
 // Future landing-specific overrides (e.g. /websites) get their own section type.
-export const heroPropsSchema = z.object({}).passthrough();
 
 export function HeroSectionAdapter({ props: _ }: { props: z.infer<typeof heroPropsSchema> }) {
   const { data: settings } = useQuery<CompanySettings>({

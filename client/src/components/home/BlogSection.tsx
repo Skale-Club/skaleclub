@@ -32,12 +32,12 @@ export function BlogSection({ content, band = "ice" }: BlogSectionProps) {
 
   if (isLoading) {
     return (
-      <Band tone={band}>
-        <div className="mb-[2.125rem] space-y-3">
+      <Band tone={band} containerClassName="section-content-stack">
+        <div className="space-y-3">
           <Skeleton className="h-9 w-64" />
           <Skeleton className="h-6 w-48" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 tablet:grid-cols-3 gap-[1.7rem]">
+        <div className="section-grid-gap grid grid-cols-1 md:grid-cols-2 tablet:grid-cols-3">
           {[0, 1, 2].map((i) => (
             <EditorialCard key={i} tone={tone} className={`h-full flex flex-col overflow-hidden p-0 sm:p-0 ${dark ? "bg-steel-700" : ""}`}>
               <div className="aspect-[16/10] w-full p-3">
@@ -67,8 +67,8 @@ export function BlogSection({ content, band = "ice" }: BlogSectionProps) {
   };
 
   return (
-    <Band tone={band}>
-      <div className="flex items-end justify-between gap-6 mb-[2.125rem]">
+    <Band tone={band} containerClassName="section-content-stack">
+      <div className="flex items-end justify-between gap-6">
         <div data-testid="text-blog-section-title">
           <SectionHeading
             variant="editorial"
@@ -83,7 +83,7 @@ export function BlogSection({ content, band = "ice" }: BlogSectionProps) {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 tablet:grid-cols-3 gap-[1.7rem]">
+      <div className="section-grid-gap grid grid-cols-1 md:grid-cols-2 tablet:grid-cols-3">
         {posts.map(post => (
           <Link key={post.id} href={pagePaths.blogPost(post.slug)} className="group" data-testid={`link-blog-card-${post.id}`}>
             <EditorialCard tone={tone} className={`h-full flex flex-col overflow-hidden p-0 sm:p-0 transition-colors duration-300 ${dark ? "bg-steel-700 group-hover:border-cta-soft/30" : "group-hover:border-cta-ink/30"}`}>

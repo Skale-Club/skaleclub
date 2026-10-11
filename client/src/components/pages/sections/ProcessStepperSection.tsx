@@ -3,7 +3,7 @@
 // English defaults (the t() source language) so the /websites seed can pass
 // `props: {}`; PT is served via translations.ts when language is 'pt'.
 
-import { z } from "zod";
+import type { z } from "zod";
 import {
   Search, Palette, Code2, Rocket,
   MessageCircle, PenTool, Factory, Truck,
@@ -15,23 +15,11 @@ import type { LucideIcon } from "lucide-react";
 import { Band } from "@/components/editorial";
 import { SectionHeading } from "@/components/layout/SectionHeading";
 import { useTranslation } from "@/hooks/useTranslation";
-import { sectionThemeSchema } from "./sectionTheme";
-
-const stepSchema = z.object({
-  title:       z.string(),
-  description: z.string(),
-});
+import { processStepperIconNames, processStepperPropsSchema } from "@shared/section-definitions";
 
 // Optional per-step icon override. A closed enum allowlist keyed to a lucide
 // component map (not free-form strings) so seeded props can never reference
 // an icon that does not exist in the bundle.
-export const processStepperIconNames = [
-  "Search", "Palette", "Code2", "Rocket",
-  "MessageCircle", "PenTool", "Factory", "Truck",
-  "Nfc", "Smartphone", "QrCode", "Star",
-  "CreditCard", "Package", "Link2", "Check",
-  "PhoneCall", "Bot", "CalendarCheck", "Bell",
-] as const;
 export type ProcessStepperIconName = (typeof processStepperIconNames)[number];
 
 const ICON_MAP: Record<ProcessStepperIconName, LucideIcon> = {
@@ -42,16 +30,6 @@ const ICON_MAP: Record<ProcessStepperIconName, LucideIcon> = {
   PhoneCall, Bot, CalendarCheck, Bell,
 };
 
-export const processStepperPropsSchema = z.object({
-  eyebrow:     z.string().optional(),
-  heading:     z.string().optional(),
-  subheading:  z.string().optional(),
-  steps:       z.array(stepSchema).length(4).optional(),
-  icons:       z.array(z.enum(processStepperIconNames)).length(4).optional(),
-  // In-page anchor (e.g. "how-it-works") so a hero button can scroll here.
-  anchorId:    z.string().regex(/^[a-z][a-z0-9-]*$/).optional(),
-  theme:       sectionThemeSchema,
-});
 export type ProcessStepperProps = z.infer<typeof processStepperPropsSchema>;
 
 const DEFAULTS = {
@@ -119,7 +97,7 @@ export function ProcessStepperSection({ props }: { props: ProcessStepperProps })
 
         {/* A timeline: numbered markers joined by a line, horizontal from lg
             (four columns), vertical below it. */}
-        <ol className="mt-14 grid gap-10 lg:grid-cols-4 lg:gap-8">
+        <ol className="section-content-after-heading grid gap-10 lg:grid-cols-4 lg:gap-8">
           {steps.map((step, idx) => {
             const Icon = icons[idx];
             const stepNumber = idx + 1;

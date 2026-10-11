@@ -5,6 +5,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { Loader2 } from '@/components/ui/loader';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { FaqList } from '@/components/FaqList';
+import { SectionFrame } from '@/components/editorial';
 
 export default function FaqPage() {
   const { t } = useTranslation();
@@ -20,20 +21,22 @@ export default function FaqPage() {
         subtitle={t('Find answers to common questions about our services.')}
       />
 
-      <div className="container-custom mx-auto px-4 sm:px-6 tablet:px-0 py-16 md:py-24">
-        {isLoading ? (
-          <div className="flex w-full justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        ) : (
-          <div className="max-w-3xl mx-auto bg-white text-slate-900 rounded-2xl shadow-sm p-6 md:p-8">
-            <FaqList
-              items={(faqs ?? []).map((faq) => ({ question: t(faq.question), answer: t(faq.answer) }))}
-              emptyMessage={t('No FAQs available yet. Check back soon!')}
-            />
-          </div>
-        )}
-      </div>
+      <SectionFrame tone="ice" role="editorial" bare>
+        <div className="container-custom mx-auto px-4 sm:px-6 tablet:px-0">
+          {isLoading ? (
+            <div className="flex w-full justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="max-w-3xl mx-auto bg-white text-slate-900 rounded-2xl shadow-sm p-6 md:p-8">
+              <FaqList
+                items={(faqs ?? []).map((faq) => ({ question: t(faq.question), answer: t(faq.answer) }))}
+                emptyMessage={t('No FAQs available yet. Check back soon!')}
+              />
+            </div>
+          )}
+        </div>
+      </SectionFrame>
     </div>
   );
 }

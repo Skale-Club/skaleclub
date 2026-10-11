@@ -1,8 +1,8 @@
 // Phase 43 — Page System
 // A managed page addressable at a root slug (e.g. /grupo, /websites).
 // Sections live as a JSONB array on the row — no separate join table.
-// Per-type props validation is enforced at render time (sectionRegistry);
-// at the route layer v1 accepts any object as `props`.
+// Section type, version and per-template props are validated from the shared
+// registry before a page can be stored and again before it is rendered.
 
 import {
   pgTable,
@@ -15,13 +15,10 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 import { z } from "zod";
+import { managedPageSectionSchema } from "../section-definitions";
 
-// Permissive section schema — per-type validation runs in the client renderer.
-// The shape is fixed: a string `type` (component key) + an unstructured `props` bag.
-export const pageSectionSchema = z.object({
-  type: z.string().min(1).max(80),
-  props: z.record(z.unknown()).default({}),
-});
+// Shared contract used by the admin, API and public renderer.
+export const pageSectionSchema = managedPageSectionSchema;
 export type PageSection = z.infer<typeof pageSectionSchema>;
 
 // Slug pattern mirrors forms.ts:231 — lowercase, alphanumeric, single hyphens between segments.

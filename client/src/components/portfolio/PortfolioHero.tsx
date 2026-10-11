@@ -23,7 +23,7 @@ export function PortfolioHero({
   secondary?: { href: string; label: string };
 }) {
   return (
-    <Band tone="hero" pattern containerClassName="page-top pb-10 sm:pb-12">
+    <Band tone="hero" heroVariant="portfolio" pattern containerClassName="page-top pb-10 sm:pb-12">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between lg:gap-12">
         <div>
           <Eyebrow>{badge}</Eyebrow>

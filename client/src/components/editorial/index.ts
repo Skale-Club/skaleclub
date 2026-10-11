@@ -1,5 +1,7 @@
 export { Band } from "./Band";
-export type { BandProps, BandTone } from "./Band";
+export type { BandProps, BandRole, BandTone } from "./Band";
+export { SectionFrame, SectionRoleProvider } from "./SectionFrame";
+export type { HeroVariant, SectionFrameProps, SectionRole, SectionTone } from "./SectionFrame";
 export { Figure } from "./Figure";
 export type { FigureProps } from "./Figure";
 export { EditorialCard } from "./EditorialCard";

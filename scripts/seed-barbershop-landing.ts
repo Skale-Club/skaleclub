@@ -11,7 +11,7 @@
 //   3. pages   WHERE slug = 'barbershops-br' (PT,        language='pt')
 //
 // Both landings share the SAME sections [heroWebsites, featureGrid x3,
-// contentBlocks, reviews, leadFormCta]; copy is t()-based so the language
+// ourServices, about, reviews, leadFormCta]; copy is t()-based so the language
 // column drives EN vs PT. seedPage() bakes the curated pt-BR copy from
 // scripts/data/landing-pt-copy.ts straight into the '-br' row automatically
 // (see scripts/lib/pt-copy.ts) — no extra script to run for that. Also run
@@ -22,12 +22,9 @@
 //
 // Content brief (2026-09-30): one page, one ask (call the demo number or send
 // the lead form), built entirely from registered section types — no new page
-// component. The price, priceLabel and description for Xkedule/Xsites/
-// Xareable, and the paragraph for the "Paid Advertising" service card, are
-// copied VERBATIM from the live /api/portfolio-services and
-// /api/company-settings responses, so it never invents a number the real
-// catalog doesn't charge — see the note above LANDING_SECTIONS for exactly
-// which fields. The NFC block
+// component. The service carousel selects existing cards from the two live
+// catalogs, with Xkedule first, so the landing does not duplicate prices,
+// images, links, or product descriptions. The NFC block
 // covers the three real 3D-printed products (review plaque, custom
 // keychains, keychain display), each linking to its own page under
 // /products/ (scripts/seed-products-landing.ts) — not a generic "NFC tag" —
@@ -240,19 +237,11 @@ const BARBERSHOP_LEADS_CONFIG: FormConfig = {
 // component defaults). No bgVideoUrl: the /websites video asset is specific
 // to that page.
 //
-// Pricing block: the price, priceLabel and description of Xkedule/Xsites/
-// Xareable, and the Ads card's whole paragraph, are copied VERBATIM on
-// 2026-09-30 from the live public catalog:
-//   curl https://skale.club/api/portfolio-services   (Xkedule/Xsites/Xareable)
-//   curl https://skale.club/api/company-settings      ("Paid Advertising" card
-//                                                       under homepageContent
-//                                                       .ourServicesSection.cards)
-// The short tagline on each of the three product blocks ("Your site that
-// books for you.", etc.) is NOT from the API — it is page-specific copy
-// written to fit this landing, not the product's own subtitle field.
-// If the verbatim numbers change in admin, re-copy them here and re-run this
-// script — this page is a snapshot, not a live read, same as every other
-// managed landing on the site.
+// Service carousel: the local section stores only the selection and order.
+// Product cards are read from /api/portfolio-services and service cards from
+// company-settings, using the same CatalogCard/CatalogDetail components as the
+// homepage. Changes made in the existing catalog administration flow through
+// here automatically without reseeding this landing.
 export const LANDING_SECTIONS: PageSection[] = [
   {
     type: "heroWebsites",
@@ -273,8 +262,8 @@ export const LANDING_SECTIONS: PageSection[] = [
       eyebrow: "More money",
       heading: "More money in your pocket",
       subheading: "Where the extra money actually comes from.",
-      imageUrl: "/barbershops/full-chairs.webp",
-      imageAlt: "Busy barbershop with several chairs occupied and a new customer arriving.",
+      imageUrl: "/barbershops/full-chairs-v2.webp",
+      imageAlt: "A barber welcoming a customer into a busy neighborhood barbershop.",
       imagePosition: "right",
       imageWidth: 1280,
       imageHeight: 720,
@@ -298,8 +287,8 @@ export const LANDING_SECTIONS: PageSection[] = [
       eyebrow: "More time",
       heading: "More time in your day",
       subheading: "Where the extra time in your day comes from.",
-      imageUrl: "/barbershops/barber-automation.webp",
-      imageAlt: "Barber serving a client while an appointment phone remains on the counter.",
+      imageUrl: "/barbershops/barber-automation-v3.webp",
+      imageAlt: "Google review and Instagram NFC stands on a barbershop counter while a barber serves a client.",
       imagePosition: "left",
       imageWidth: 1280,
       imageHeight: 720,
@@ -324,6 +313,20 @@ export const LANDING_SECTIONS: PageSection[] = [
     },
   },
   {
+    type: "ourServices",
+    props: {
+      eyebrow: "Services for barbershops",
+      title: "What your barbershop needs to grow",
+      subtitle: "Start with Xkedule for calls and bookings. Add a website, ads or weekly content when you need them.",
+      items: [
+        { source: "product", slug: "scheduling-system" },
+        { source: "product", slug: "websites" },
+        { source: "service", title: "Paid Advertising" },
+        { source: "product", slug: "xareable" },
+      ],
+    },
+  },
+  {
     type: "featureGrid",
     props: {
       eyebrow: "NFC for your shop",
@@ -334,8 +337,8 @@ export const LANDING_SECTIONS: PageSection[] = [
           icon: "Nfc",
           title: "NFC stands and table plates",
           description: "Choose a counter stand or a flat table plate. One tap opens Google reviews or Instagram.",
-          imageUrl: "/barbershops/products/nfc-stands-and-plates.webp",
-          imageAlt: "Light NFC stands and table plates for Google reviews and Instagram.",
+          imageUrl: "/barbershops/products/nfc-google-plate-v4.webp",
+          imageAlt: "Google review NFC table plate on a barbershop counter.",
           imageWidth: 960,
           imageHeight: 720,
           href: "/products/nfc-review-plaque",
@@ -359,44 +362,6 @@ export const LANDING_SECTIONS: PageSection[] = [
           imageWidth: 960,
           imageHeight: 720,
           href: "/products/nfc-keychains",
-        },
-      ],
-    },
-  },
-  {
-    type: "contentBlocks",
-    props: {
-      eyebrow: "Pricing",
-      heading: "What you can get",
-      subheading: "Same prices we charge everyone.",
-      theme: "dark",
-      blocks: [
-        {
-          heading: "Xkedule: $89 a month",
-          paragraphs: [
-            "Your site that books for you.",
-            "A booking page with AI that answers messages and calls. It books the appointment when the customer is ready.",
-          ],
-        },
-        {
-          heading: "Xsites: $299 starting",
-          paragraphs: [
-            "A professional website for your shop.",
-            "A clean site built for service businesses. Start with the essentials and add pages and features as you grow.",
-          ],
-        },
-        {
-          heading: "Xareable: $49 a month",
-          paragraphs: [
-            "We post for you.",
-            "Create and publish posts with AI from one place. Post by hand or put it on a schedule and stay active every week.",
-          ],
-        },
-        {
-          heading: "Ads that fill the calendar: talk to us",
-          paragraphs: [
-            "Google Ads, Facebook and Instagram Ads, TikTok Ads, retargeting campaigns, and campaign optimization.",
-          ],
         },
       ],
     },

@@ -23,7 +23,7 @@ export function PortfolioServices({
   const { t } = useTranslation();
   if (services.length === 0) return null;
   return (
-    <Band tone="dark" id="services" className={cn("scroll-mt-[calc(var(--nav-offset)+1rem)]", hideHeading && "pt-10 sm:pt-12")}>
+    <Band tone="dark" role={hideHeading ? "dense" : "editorial"} id="services" className="scroll-mt-[calc(var(--nav-offset)+1rem)]">
       {!hideHeading && (
         <SectionHeadingRow seeAllHref={seeAllHref}>
           <SectionHeading
@@ -34,7 +34,7 @@ export function PortfolioServices({
           />
         </SectionHeadingRow>
       )}
-      <div className={cn(!hideHeading && "mt-12", "grid gap-5 sm:grid-cols-2 lg:grid-cols-3")}>
+      <div className={cn(!hideHeading && "section-content-after-heading", "section-grid-gap grid sm:grid-cols-2 lg:grid-cols-3")}>
         {services.map((item) => {
           const eyebrow = item.category ? t(CATALOG_CATEGORY_LABEL[item.category]) : undefined;
           const description = item.subtitle ?? item.description;

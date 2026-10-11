@@ -125,8 +125,8 @@ export function EditorialInside({ bleed, apps, services, showPrices }: FolderDat
       >
         <PanelHeading
           eyebrow="01 · Apps"
-          title="Apps we build and run"
-          subtitle="Our own products, live today, with a fixed price."
+          title="Tools to sell more and work less"
+          subtitle="Booking, content, website, CRM and sales solutions that simplify your day-to-day and help your business grow."
         />
         {apps.length > 0 ? (
           <CardGrid

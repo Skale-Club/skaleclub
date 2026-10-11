@@ -4,39 +4,14 @@
 // standard "$49, or 2 for $79" against custom "$89 first, $49 each". Copy is
 // t()-based English like every managed section; seeds build the numbers from
 // the product's pricing file so a card never quotes what the form does not.
-import { z } from "zod";
+import type { z } from "zod";
 import { ArrowRight, Check } from "lucide-react";
 import { Band, EditorialCard, Eyebrow, PillButton } from "@/components/editorial";
 import { SectionHeading } from "@/components/layout/SectionHeading";
 import { useTranslation } from "@/hooks/useTranslation";
 import { cn } from "@/lib/utils";
-import { sectionThemeSchema } from "./sectionTheme";
+import { pricingPlansPropsSchema } from "@shared/section-definitions";
 
-const planSchema = z.object({
-  name:      z.string(),
-  title:     z.string(),
-  imageUrl:  z.string().regex(/^\/(?![\/\\])/).optional(),
-  imageAlt:  z.string().optional(),
-  price:     z.string(),
-  priceUnit: z.string().optional(),
-  priceNote: z.string().optional(),
-  features:  z.array(z.string()).max(6).optional(),
-  example:   z.string().optional(),
-  highlight: z.boolean().optional(),
-});
-
-export const pricingPlansPropsSchema = z.object({
-  eyebrow:    z.string().optional(),
-  heading:    z.string().optional(),
-  subheading: z.string().optional(),
-  plans:      z.array(planSchema).min(1).max(3),
-  // Label of each card's button; it opens the page's lead form (the same
-  // trigger the hero button uses). Omit for cards without a button.
-  ctaLabel:   z.string().optional(),
-  footnote:   z.string().optional(),
-  anchorId:   z.string().regex(/^[a-z][a-z0-9-]*$/).optional(),
-  theme:      sectionThemeSchema,
-});
 type PricingPlansProps = z.infer<typeof pricingPlansPropsSchema>;
 
 const openLeadForm = () => {
@@ -57,7 +32,7 @@ export function PricingPlansSection({ props }: { props: PricingPlansProps }) {
           title={props.heading ?? "Simple, upfront pricing"}
           subtitle={props.subheading}
         />
-        <div className={cn("mt-12 grid gap-5", props.plans.length > 1 && "md:grid-cols-2", props.plans.length > 2 && "lg:grid-cols-3")}>
+        <div className={cn("section-content-after-heading section-grid-gap grid", props.plans.length > 1 && "md:grid-cols-2", props.plans.length > 2 && "lg:grid-cols-3")}>
           {props.plans.map((plan) => (
             <EditorialCard
               key={plan.name}
