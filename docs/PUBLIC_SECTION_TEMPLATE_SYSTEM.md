@@ -147,8 +147,13 @@ below it.
 
 Use `aiReception` when a landing needs to explain automated customer service
 across phone and messaging channels. The template owns the split composition,
-channel cards, contextual photography, one primary lead-form action, and an
-optional low-emphasis telephone demonstration.
+channel cards, contextual photography, channel-specific icon groups, and an
+optional low-emphasis telephone demonstration inside the call card. The page's
+floating form action remains the primary conversion path.
+
+This is a compact supporting section, not a second hero. Use tightly framed
+detail photography, keep the media narrower than the copy, and avoid broad
+room scenes that repeat the landing hero's visual weight.
 
 Industry-specific copy and imagery live in the managed page props. The React
 component must not inspect the page slug, so the same structure can serve a

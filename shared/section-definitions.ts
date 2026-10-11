@@ -120,10 +120,16 @@ const heroMediaItemSchema = z.object({
   focalPoint: z.enum(["center", "top", "bottom", "left", "right"]).optional(),
 });
 
+const aiReceptionIconSchema = z.enum(["phone", "instagram", "whatsapp", "imessage", "messages"]);
+
 const aiReceptionChannelSchema = z.object({
-  icon: z.enum(["phone", "instagram", "whatsapp", "messages"]),
+  icon: aiReceptionIconSchema,
+  icons: z.array(aiReceptionIconSchema).min(1).max(4).optional(),
   title: z.string().min(1).max(120),
   description: z.string().min(1).max(320),
+  actionLabel: z.string().min(1).max(120).optional(),
+  actionHref: z.string().regex(/^tel:\+?[0-9]{7,15}$/).optional(),
+  actionNote: z.string().max(120).optional(),
 });
 
 export const heroPropsSchema = z.object({}).passthrough();
@@ -300,10 +306,7 @@ export const aiReceptionPropsSchema = z.object({
   imageHeight: z.number().int().positive().optional(),
   imagePosition: z.enum(["left", "right"]).optional(),
   channels: z.array(aiReceptionChannelSchema).min(2).max(4),
-  ctaLabel: z.string().optional(),
-  demoLabel: z.string().optional(),
-  demoHref: z.string().regex(/^tel:\+?[0-9]{7,15}$/).optional(),
-  demoNote: z.string().optional(),
+  bandTone: z.enum(["dark", "cream", "steel", "steel-2", "steel-3"]).optional(),
   theme: sectionThemeSchema,
 });
 
@@ -375,7 +378,7 @@ export const sectionDefinitionMetadata: Record<RegisteredSectionType, SectionDef
   faqAccordion: { label: "FAQ accordion", family: "section", role: "editorial", version: 1, contentSource: "local" },
   contentBlocks: { label: "Content blocks", family: "section", role: "editorial", version: 1, contentSource: "local" },
   featureGrid: { label: "Feature grid", family: "section", role: "editorial", version: 1, contentSource: "local" },
-  aiReception: { label: "AI reception", family: "section", role: "editorial", version: 1, contentSource: "local" },
+  aiReception: { label: "AI reception", family: "section", role: "compact", version: 1, contentSource: "local" },
   pricingPlans: { label: "Pricing plans", family: "section", role: "editorial", version: 1, contentSource: "local" },
   linkCallout: { label: "Link callout", family: "section", role: "pill", version: 1, contentSource: "local" },
 };

@@ -25,8 +25,8 @@ are:
 | Role/family | Templates |
 |---|---|
 | Hero | `hero`, `heroWebsites`, `whatsappGroup` |
-| Editorial | `services`, `ourServices`, `reviews`, `blog`, `about`, `areasServed`, `processStepper`, `pricingTable`, `faqAccordion`, `contentBlocks`, `featureGrid`, `aiReception`, `pricingPlans` |
-| Compact | `trustBadges` |
+| Editorial | `services`, `ourServices`, `reviews`, `blog`, `about`, `areasServed`, `processStepper`, `pricingTable`, `faqAccordion`, `contentBlocks`, `featureGrid`, `pricingPlans` |
+| Compact | `trustBadges`, `aiReception` |
 | Pill | `linkCallout` |
 | CTA | `leadFormCta` |
 

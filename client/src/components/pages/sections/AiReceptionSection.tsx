@@ -1,13 +1,12 @@
 import type { z } from "zod";
-import { ArrowRight, MessageCircle, PhoneCall } from "lucide-react";
-import { SiInstagram, SiWhatsapp } from "react-icons/si";
+import { MessageCircle, PhoneCall } from "lucide-react";
+import { SiImessage, SiInstagram, SiWhatsapp } from "react-icons/si";
 import type { IconType } from "react-icons";
 import type { LucideIcon } from "lucide-react";
-import { Band, PillButton, PillLink } from "@/components/editorial";
+import { Band, PillLink } from "@/components/editorial";
 import { SectionHeading } from "@/components/layout/SectionHeading";
 import { useTranslation } from "@/hooks/useTranslation";
-import { trackCTAClick, trackEvent } from "@/lib/analytics";
-import { requestLeadFormOpen } from "@/lib/leadForm";
+import { trackEvent } from "@/lib/analytics";
 import { aiReceptionPropsSchema } from "@shared/section-definitions";
 
 type AiReceptionProps = z.infer<typeof aiReceptionPropsSchema>;
@@ -17,14 +16,15 @@ const CHANNEL_ICONS: Record<AiReceptionProps["channels"][number]["icon"], Channe
   phone: PhoneCall,
   instagram: SiInstagram,
   whatsapp: SiWhatsapp,
+  imessage: SiImessage,
   messages: MessageCircle,
 };
 
 export function AiReceptionSection({ props }: { props: AiReceptionProps }) {
   const { t } = useTranslation();
   const dark = props.theme !== "light";
+  const bandTone = props.bandTone ?? (dark ? "dark" : "cream");
   const imageLeft = props.imagePosition === "left";
-  const ctaLabel = props.ctaLabel ?? "Get my AI receptionist";
 
   const content = (
     <div className={imageLeft ? "lg:order-2" : undefined}>
@@ -34,70 +34,66 @@ export function AiReceptionSection({ props }: { props: AiReceptionProps }) {
         eyebrow={props.eyebrow}
         title={props.heading}
         subtitle={props.subheading}
+        className="[&_h2]:text-3xl sm:[&_h2]:text-4xl [&_h2]:leading-[1.08] [&_p:last-child]:mt-3 [&_p:last-child]:text-base [&_p:last-child]:leading-6"
       />
 
-      <ul className="mt-8 grid gap-3 sm:grid-cols-2">
+      <ul className="mt-5 grid gap-3 sm:grid-cols-2">
         {props.channels.map((channel) => {
-          const Icon = CHANNEL_ICONS[channel.icon];
+          const icons = channel.icons?.length ? channel.icons : [channel.icon];
           return (
             <li
               key={`${channel.icon}-${channel.title}`}
-              className={`rounded-2xl border p-5 ${
+              className={`rounded-2xl border p-4 ${
                 dark ? "border-white/10 bg-white/[0.035]" : "border-ink-700/10 bg-white"
               }`}
             >
-              <span className={`grid h-10 w-10 place-items-center rounded-full ${dark ? "bg-white/5 text-cta-soft" : "bg-cta-ink/10 text-cta-ink"}`}>
-                <Icon className="h-5 w-5" aria-hidden="true" />
-              </span>
-              <h3 className={`mt-4 font-display text-lg font-semibold ${dark ? "text-fog-50" : "text-ink"}`}>
+              <div className="flex items-center gap-2" aria-hidden="true">
+                {icons.map((iconName) => {
+                  const Icon = CHANNEL_ICONS[iconName];
+                  return (
+                    <span
+                      key={iconName}
+                      className={`grid h-8 w-8 place-items-center rounded-full ${dark ? "bg-white/5 text-cta-soft" : "bg-cta-ink/10 text-cta-ink"}`}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </span>
+                  );
+                })}
+              </div>
+              <h3 className={`mt-3 font-display text-base font-semibold ${dark ? "text-fog-50" : "text-ink"}`}>
                 {t(channel.title)}
               </h3>
               <p className={`mt-2 text-sm leading-6 ${dark ? "text-fog-400" : "text-ink-500"}`}>
                 {t(channel.description)}
               </p>
+              {channel.actionLabel && channel.actionHref ? (
+                <div className="mt-4">
+                  <PillLink
+                    href={channel.actionHref}
+                    variant="ghost"
+                    size="sm"
+                    tone={dark ? "dark" : "light"}
+                    onClick={() => trackEvent("click_call", { location: "ai-reception-card" })}
+                  >
+                    <PhoneCall className="h-4 w-4" aria-hidden="true" />
+                    {t(channel.actionLabel)}
+                  </PillLink>
+                  {channel.actionNote ? (
+                    <p className={`mt-2 text-xs leading-5 ${dark ? "text-fog-400" : "text-ink-500"}`}>
+                      {t(channel.actionNote)}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
             </li>
           );
         })}
       </ul>
-
-      <div className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-        <PillButton
-          variant="primary"
-          data-floating-lead-inline
-          onClick={() => {
-            requestLeadFormOpen("ai-reception");
-            trackCTAClick("ai-reception", ctaLabel);
-          }}
-          className="w-full sm:w-auto"
-        >
-          {t(ctaLabel)}
-          <ArrowRight className="h-4 w-4" aria-hidden="true" />
-        </PillButton>
-        {props.demoLabel && props.demoHref ? (
-          <div>
-            <PillLink
-              href={props.demoHref}
-              variant="ghost"
-              tone={dark ? "dark" : "light"}
-              className="w-full sm:w-auto"
-              onClick={() => trackEvent("click_call", { location: "ai-reception" })}
-            >
-              <PhoneCall className="h-4 w-4" aria-hidden="true" />
-              {t(props.demoLabel)}
-            </PillLink>
-            {props.demoNote ? (
-              <p className={`mt-2 px-2 text-xs leading-5 ${dark ? "text-fog-400" : "text-ink-500"}`}>
-                {t(props.demoNote)}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
     </div>
   );
 
   const media = props.imageUrl ? (
-    <figure className={`overflow-hidden rounded-3xl border ${imageLeft ? "lg:order-1" : undefined} ${dark ? "border-white/10 bg-navy-800 shadow-2xl" : "border-ink-700/10 bg-white shadow-xl"}`}>
+    <figure className={`w-full overflow-hidden rounded-2xl border lg:max-w-[460px] ${imageLeft ? "lg:order-1 lg:justify-self-start" : "lg:justify-self-end"} ${dark ? "border-white/10 bg-navy-800 shadow-xl" : "border-ink-700/10 bg-white shadow-lg"}`}>
       <img
         src={props.imageUrl}
         alt={t(props.imageAlt ?? "")}
@@ -105,7 +101,7 @@ export function AiReceptionSection({ props }: { props: AiReceptionProps }) {
         height={props.imageHeight}
         loading="lazy"
         decoding="async"
-        className="aspect-[3/2] h-full w-full object-cover"
+        className="aspect-[4/3] h-full w-full object-cover"
         sizes="(min-width: 1024px) 50vw, 100vw"
       />
     </figure>
@@ -113,8 +109,8 @@ export function AiReceptionSection({ props }: { props: AiReceptionProps }) {
 
   return (
     <div data-testid="section-ai-reception">
-      <Band tone={dark ? "dark" : "cream"}>
-        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+      <Band tone={bandTone}>
+        <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)] lg:gap-12">
           {content}
           {media}
         </div>

@@ -216,6 +216,10 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Anúncios que trazem gente nova",
   "Google and Instagram ads that fill your calendar with new clients.":
     "Anúncios no Google e no Instagram que enchem sua agenda com clientes novos.",
+  "More Google reviews":
+    "Mais avaliações no Google",
+  "Happy clients can leave a review before they walk out, helping the next client choose your shop.":
+    "Clientes satisfeitos podem avaliar antes de sair, ajudando o próximo cliente a escolher a sua barbearia.",
 
   // ── /barbershops "More time" feature grid ────────────────────────────────
   "More time":
@@ -248,6 +252,8 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Três itens que imprimimos em 3D para barbearias, feitos sob encomenda.",
   "NFC stands and table plates":
     "Stands e plates de mesa NFC",
+  "Rotating keychain display":
+    "Expositor giratório de chaveiros",
   "Choose a counter stand or a flat table plate. One tap opens Google reviews or Instagram.":
     "Escolha um stand de balcão ou um plate de mesa. Um toque abre as avaliações no Google ou o Instagram.",
   "Light NFC stands and table plates for Google reviews and Instagram.":

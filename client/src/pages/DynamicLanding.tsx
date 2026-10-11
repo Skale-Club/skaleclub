@@ -30,6 +30,132 @@ interface PageResponse {
   alternateSlug?: string | null;
 }
 
+const BARBERSHOP_AI_RECEPTION_PREVIEW: PageResponse["sections"][number] = {
+  type: "aiReception",
+  props: {
+    eyebrow: "AI reception for barbershops",
+    heading: "Your barbershop keeps answering while you keep cutting",
+    subheading:
+      "The assistant talks to customers on the phone and responds to social messages. It answers routine questions and moves people toward a booking.",
+    imageUrl: "/barbershops/ai-reception-barber-v3.webp",
+    imageAlt: "Close view of a barber shaping a client's fade.",
+    imageWidth: 1280,
+    imageHeight: 960,
+    imagePosition: "right",
+    channels: [
+      {
+        icon: "phone",
+        title: "Phone calls",
+        description: "It answers when you cannot, shares hours and prices, and helps the customer book.",
+        actionLabel: "Hear a real call",
+        actionHref: "tel:+12245516131",
+        actionNote: "(224) 551-6131",
+      },
+      {
+        icon: "messages",
+        icons: ["imessage", "instagram", "whatsapp"],
+        title: "Instagram and WhatsApp",
+        description: "It responds to messages, handles common questions, and keeps new inquiries from going cold.",
+      },
+    ],
+    bandTone: "steel",
+    theme: "dark",
+  },
+};
+
+const BARBERSHOP_MONEY_FEATURE_PREVIEW = {
+  en: {
+    icon: "Star",
+    brand: "google",
+    title: "More Google reviews",
+    description: "Happy clients can leave a review before they walk out, helping the next client choose your shop.",
+  },
+  pt: {
+    icon: "Star",
+    brand: "google",
+    title: "Mais avaliações no Google",
+    description: "Clientes satisfeitos podem avaliar antes de sair, ajudando o próximo cliente a escolher a sua barbearia.",
+  },
+} as const;
+
+const BARBERSHOP_NFC_IMAGE_PREVIEW = [
+  {
+    imageUrl: "/barbershops/products/nfc-stands-barbershop-v2.webp",
+    imageAlt: "Google review and Instagram NFC stands on a barbershop counter.",
+  },
+  {
+    imageUrl: "/barbershops/products/custom-keychains-barbershop-v5.webp",
+    imageAlt: "Three matte 3D-printed barbershop keychains with correctly attached metal rings.",
+  },
+  {
+    imageUrl: "/barbershops/products/rotating-keychain-display-v3.webp",
+    imageAlt: "Rotating countertop display stocked with custom barbershop keychains.",
+  },
+] as const;
+
+function sectionsWithLocalBarbershopPreview(data: PageResponse) {
+  const isBarbershopLanding = data.slug === "barbershops" || data.slug === "barbershops-br";
+
+  if (!import.meta.env.DEV || !isBarbershopLanding) {
+    return data.sections;
+  }
+
+  let sections = data.sections;
+  const alreadyHasAiReception = sections.some((section) => section.type === "aiReception");
+
+  if (!alreadyHasAiReception) {
+    const heroIndex = sections.findIndex((section) => section.type === "heroWebsites");
+    const insertionIndex = heroIndex >= 0 ? heroIndex + 1 : 0;
+    sections = [
+      ...sections.slice(0, insertionIndex),
+      BARBERSHOP_AI_RECEPTION_PREVIEW,
+      ...sections.slice(insertionIndex),
+    ];
+  }
+
+  const moneyFeature = BARBERSHOP_MONEY_FEATURE_PREVIEW[data.language];
+  return sections.map((section) => {
+    const eyebrow = section.props.eyebrow;
+    const isMoneyGrid = section.type === "featureGrid" && (eyebrow === "More money" || eyebrow === "Mais dinheiro");
+    const items = Array.isArray(section.props.items) ? section.props.items : [];
+    const isNfcGrid = section.type === "featureGrid" && (
+      eyebrow === "NFC for your shop" || eyebrow === "NFC para a sua barbearia"
+    );
+
+    if (isNfcGrid) {
+      return {
+        ...section,
+        props: {
+          ...section.props,
+          items: items.map((item, index) => {
+            if (typeof item !== "object" || item === null || index >= BARBERSHOP_NFC_IMAGE_PREVIEW.length) {
+              return item;
+            }
+            const preview = BARBERSHOP_NFC_IMAGE_PREVIEW[index];
+            return {
+              ...item,
+              ...preview,
+              imageWidth: 1280,
+              imageHeight: 960,
+              ...(index === 2 ? {
+                title: data.language === "pt" ? "Expositor giratório de chaveiros" : "Rotating keychain display",
+              } : {}),
+            };
+          }),
+        },
+      };
+    }
+
+    const alreadyHasReviews = items.some((item) => (
+      typeof item === "object" && item !== null && "title" in item &&
+      (item.title === "More Google reviews" || item.title === "Mais avaliações no Google")
+    ));
+
+    if (!isMoneyGrid || alreadyHasReviews) return section;
+    return { ...section, props: { ...section.props, items: [...items, moneyFeature] } };
+  });
+}
+
 export default function DynamicPage() {
   const { slug: routeSlug } = useParams<{ slug: string }>();
   const { path: langlessPath, language: urlLanguage } = splitLanguagePath(usePathname());
@@ -215,9 +341,11 @@ export default function DynamicPage() {
     );
   }
 
+  const sections = sectionsWithLocalBarbershopPreview(data);
+
   return (
     <>
-      {data.sections.map((section, idx) => {
+      {sections.map((section, idx) => {
         const entry = sectionRegistry[section.type];
         if (!entry) {
           reportSectionContractError(

@@ -231,6 +231,11 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
     source: "Google and Instagram ads that fill your calendar with new clients.",
     translated: "Anúncios no Google e no Instagram que enchem sua agenda com clientes novos.",
   },
+  { source: "More Google reviews", translated: "Mais avaliações no Google" },
+  {
+    source: "Happy clients can leave a review before they walk out, helping the next client choose your shop.",
+    translated: "Clientes satisfeitos podem avaliar antes de sair, ajudando o próximo cliente a escolher a sua barbearia.",
+  },
 
   // ── "More time" feature grid ─────────────────────────────────────────────
   { source: "More time", translated: "Mais tempo" },
@@ -264,6 +269,7 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
     translated: "Três itens que imprimimos em 3D para barbearias, feitos sob encomenda.",
   },
   { source: "NFC stands and table plates", translated: "Stands e plates de mesa NFC" },
+  { source: "Rotating keychain display", translated: "Expositor giratório de chaveiros" },
   {
     source: "Choose a counter stand or a flat table plate. One tap opens Google reviews or Instagram.",
     translated: "Escolha um stand de balcão ou um plate de mesa. Um toque abre as avaliações no Google ou o Instagram.",

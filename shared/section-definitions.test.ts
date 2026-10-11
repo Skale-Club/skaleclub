@@ -123,12 +123,21 @@ test("AI reception template keeps industry copy and channels data-driven", () =>
     imageWidth: 1280,
     imageHeight: 853,
     channels: [
-      { icon: "phone", title: "Phone calls", description: "Answers common questions." },
-      { icon: "instagram", title: "Instagram", description: "Responds to new inquiries." },
+      {
+        icon: "phone",
+        title: "Phone calls",
+        description: "Answers common questions.",
+        actionLabel: "Hear a real call",
+        actionHref: "tel:+12245516131",
+      },
+      {
+        icon: "messages",
+        icons: ["imessage", "instagram", "whatsapp"],
+        title: "Social messages",
+        description: "Responds to new inquiries.",
+      },
     ],
-    ctaLabel: "Set up my assistant",
-    demoLabel: "Hear a real call",
-    demoHref: "tel:+12245516131",
+    bandTone: "steel",
   });
 
   assert.equal(result.success, true);
