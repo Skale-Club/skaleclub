@@ -10,8 +10,8 @@ import { eq } from "drizzle-orm";
 import type { FormConfig, FormLead } from "#shared/schema.js";
 import { getOrCreateGHLContact } from "../integrations/ghl.js";
 import { enqueueXphereLead, buildXphereBookingUrl } from "../integrations/xphere.js";
-import { dispatchNotification } from "./notifications.js";
 import { finalizeNfcOrder, isPricedForm } from "./nfc-order.js";
+import { sendCompletedLeadToTelegram } from "./lead-telegram.js";
 
 type PostProcessResult = {
   lead: FormLead;
@@ -30,6 +30,7 @@ export async function runLeadPostProcessing(
   companyName: string,
   visitorUuid?: string,
   formSlug?: string,
+  formName?: string,
 ): Promise<PostProcessResult> {
   let lead = initialLead;
 
@@ -37,18 +38,18 @@ export async function runLeadPostProcessing(
   // type, repeat-customer flag) instead of the generic hot-lead SMS, so an
   // order never pings twice with two different stories.
   if (isPricedForm(formConfig)) {
-    lead = await finalizeNfcOrder(storage, lead, formConfig, companyName);
+    lead = await finalizeNfcOrder(storage, lead, formConfig, companyName, formSlug, formName);
   }
 
   if (!isPricedForm(formConfig) && lead.formCompleto && !lead.notificacaoEnviada) {
     try {
-      const notification = await dispatchNotification(storage, 'hot_lead', {
-        company: companyName,
-        name: lead.nome?.trim() || 'No name',
-        phone: lead.telefone?.trim() || 'No phone',
-        classification: lead.classificacao || '',
+      const notification = await sendCompletedLeadToTelegram(storage, lead, {
+        companyName,
+        formName: formName || formSlug || "Lead Form",
+        formSlug: formSlug || "lead-form",
+        formConfig,
       });
-      if (notification.deliveredChannels.includes('telegram')) {
+      if (notification.success) {
         const updated = await storage.updateFormLead(lead.id, { notificacaoEnviada: true });
         lead = updated || { ...lead, notificacaoEnviada: true };
       } else {

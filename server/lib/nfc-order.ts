@@ -14,9 +14,9 @@
 import type { IStorage } from "../storage.js";
 import type { FormConfig, FormLead } from "#shared/schema.js";
 import { quoteFromAnswers, resolvePricingQuestionIds } from "#shared/form.js";
-import { NFC_ON_REQUEST_LABEL, buildNfcQuoteSnapshot, formatUsdCents } from "#shared/nfc-pricing.js";
+import { buildNfcQuoteSnapshot } from "#shared/nfc-pricing.js";
 import { getOrderCatalog } from "#shared/order-catalog.js";
-import { dispatchNotification } from "./notifications.js";
+import { sendCompletedLeadToTelegram } from "./lead-telegram.js";
 
 /** Flattens a lead back into the answer map the shared quote helper expects. */
 function answersFromLead(lead: FormLead): Record<string, string | undefined> {
@@ -44,6 +44,8 @@ export async function finalizeNfcOrder(
   lead: FormLead,
   formConfig: FormConfig,
   companyName: string,
+  formSlug = "nfc-order",
+  formName = "NFC Order",
 ): Promise<FormLead> {
   if (!isPricedForm(formConfig) || !lead.formCompleto) return lead;
 
@@ -86,44 +88,14 @@ export async function finalizeNfcOrder(
   if (alreadyHandled) return current;
 
   try {
-    let notification;
-    if (formConfig.pricing?.model === "nfc-plaque") {
-      // Plaques have no art fee; what the operator needs instead is the link
-      // the tap and QR should open, to set up the tag (or the custom chip).
-      notification = await dispatchNotification(storage, "nfc_plaque_order", {
-        company: companyName,
-        name: current.nome?.trim() || "No name",
-        phone: current.telefone?.trim() || "No phone",
-        business: (custom.nomeEmpresa || current.tipoNegocio || "").trim(),
-        quantity: String(quote.quantity),
-        plaqueType: quote.typeLabel,
-        total: formatUsdCents(quote.totalCents),
-        customerStatus: isFirstOrder
-          ? "New customer"
-          : `Returning (${previousOrders} previous order${previousOrders === 1 ? "" : "s"})`,
-        link: (custom.linkDestino || "").trim() || "not sent",
-        logo: custom.logo__filename || custom.logo || "not sent",
-        address: (custom.enderecoEnvio || "").trim(),
-      });
-    } else {
-      notification = await dispatchNotification(storage, "nfc_order", {
-        company: companyName,
-        name: current.nome?.trim() || "No name",
-        phone: current.telefone?.trim() || "No phone",
-        business: (custom.nomeEmpresa || current.tipoNegocio || "").trim(),
-        quantity: String(quote.quantity),
-        keychainType: quote.typeLabel,
-        total: quote.quoteOnRequest ? NFC_ON_REQUEST_LABEL : formatUsdCents(quote.totalCents),
-        artFee: quote.artFeeApplies ? formatUsdCents(quote.artFeeCents) : "waived",
-        customerStatus: isFirstOrder
-          ? "New customer"
-          : `Returning (${previousOrders} previous order${previousOrders === 1 ? "" : "s"})`,
-        logo: custom.logo__filename || custom.logo || "not sent",
-        address: (custom.enderecoEnvio || "").trim(),
-      });
-    }
+    const notification = await sendCompletedLeadToTelegram(storage, current, {
+      companyName,
+      formName,
+      formSlug,
+      formConfig,
+    });
 
-    if (!notification.deliveredChannels.includes("telegram")) {
+    if (!notification.success) {
       console.error(
         `[nfc-order] Telegram did not receive completed order lead ${lead.id}: ` +
         (notification.failures.map((failure) => failure.message).join("; ") || "no active Telegram delivery"),

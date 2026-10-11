@@ -64,6 +64,16 @@ test("fan-out reaches every destination", async () => {
   assert.equal(calls[2].body.message_thread_id, 9);
 });
 
+test("HTML mode and preview suppression are forwarded to Telegram", async () => {
+  const calls = await capture(() =>
+    sendTelegramToAll("123:abc", ["-100111"], "<b>lead</b>", {
+      parseMode: "HTML",
+      disableWebPagePreview: true,
+    }));
+  assert.equal(calls[0].body.parse_mode, "HTML");
+  assert.equal(calls[0].body.disable_web_page_preview, true);
+});
+
 test("one bad destination does not silence the others", async () => {
   // A bot removed from one group, or one typo, used to be the whole
   // notification. Every destination is attempted and the failures are named.

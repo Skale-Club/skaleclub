@@ -101,14 +101,14 @@ GHL_CALENDAR_ID=your-calendar-id
 
 ### Telegram Lead Notifications
 
-All completed website forms are delivered through Telegram. Configure the bot
-and one or more destination groups in **Admin → Integrations → Telegram**, then
-keep the `telegram` templates active for these events:
+The message format, locale rules and form integration contract are documented
+in [`docs/lead-notifications.md`](docs/lead-notifications.md).
 
-- `hot_lead` — ordinary forms and WhatsApp/chat leads
-- `new_chat` — a new site-chat conversation
-- `nfc_order` — NFC keychain orders
-- `nfc_plaque_order` — NFC plaque orders
+All completed website forms are delivered through Telegram. Configure the bot
+and one or more destination groups in **Admin → Integrations → Telegram**.
+Completed leads use the structured formatter directly, so their content does
+not depend on notification templates. The `new_chat` Telegram template remains
+responsible only for announcing a new site-chat conversation.
 
 Lead-related SMS templates must remain inactive. The dispatcher only marks a
 lead as notified after Telegram confirms at least one delivery; a disabled bot,

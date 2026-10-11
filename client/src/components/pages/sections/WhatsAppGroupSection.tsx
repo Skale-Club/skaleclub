@@ -16,6 +16,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { trackEvent } from "@/lib/analytics";
 import { getStoredVisitorId } from "@/lib/attribution";
 import { usePagePaths } from "@/lib/pagePaths";
+import { useTranslation } from "@/hooks/useTranslation";
 import {
   detectDefaultPhoneCountry,
   formatPhoneForCountry,
@@ -80,6 +81,7 @@ function readUtmParams() {
 
 export function WhatsAppGroupSection({ props }: { props: WhatsAppGroupProps }) {
   const { toast } = useToast();
+  const { language } = useTranslation();
   const pagePaths = usePagePaths();
   const [phone, setPhone] = useState("");
   const [selectedCountry, setSelectedCountry] = useState<PhoneCountry>(() => detectDefaultPhoneCountry());
@@ -122,9 +124,13 @@ export function WhatsAppGroupSection({ props }: { props: WhatsAppGroupProps }) {
     return {
       phone: getInternationalPhone(phone, selectedCountry),
       ...readUtmParams(),
+      language,
+      referrerUrl: typeof document !== "undefined" && document.referrer
+        ? document.referrer.slice(0, 500)
+        : undefined,
       ...(visitorId ? { __visitorId: visitorId } : {}),
     };
-  }, [phone, selectedCountry]);
+  }, [language, phone, selectedCountry]);
 
   const submitMutation = useMutation({
     mutationFn: async () => {

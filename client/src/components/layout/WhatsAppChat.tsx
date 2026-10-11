@@ -201,6 +201,8 @@ export function WhatsAppChat({ open, entry, onClose, phone, companyName, avatarU
           pageRef: whatsappPageRef(location),
           entry,
           ...readUtmParams(),
+          language,
+          referrerUrl: document.referrer ? document.referrer.slice(0, 500) : undefined,
           hp_extra: honeypotRef.current?.value || "",
           elapsedMs: Date.now() - openedAtRef.current,
           ...(visitorId ? { __visitorId: visitorId } : {}),

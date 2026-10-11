@@ -31,6 +31,8 @@ const whatsappChatLeadSchema = z.object({
   pageRef: z.string().trim().max(200).optional(),
   entry: z.string().trim().max(40).optional(),
   urlOrigem: z.string().max(500).optional(),
+  referrerUrl: z.string().max(500).optional(),
+  language: z.enum(["en", "pt"]).optional(),
   utmSource: z.string().max(200).optional(),
   utmMedium: z.string().max(200).optional(),
   utmCampaign: z.string().max(200).optional(),
@@ -101,6 +103,8 @@ export function registerWhatsappChatLeadRoutes(app: Express) {
             telefone: parsed.phone,
             formCompleto: true,
             urlOrigem: parsed.urlOrigem,
+            referrerUrl: parsed.referrerUrl,
+            language: parsed.language,
             utmSource: parsed.utmSource,
             utmMedium: parsed.utmMedium,
             utmCampaign: parsed.utmCampaign,
@@ -125,6 +129,7 @@ export function registerWhatsappChatLeadRoutes(app: Express) {
           companyName,
           typeof req.body?.__visitorId === "string" ? req.body.__visitorId : undefined,
           WHATSAPP_CHAT_FORM_SLUG,
+          form.name,
         );
 
         res.status(201).json({ success: true, leadId: lead.id });

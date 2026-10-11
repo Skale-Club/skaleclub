@@ -1034,6 +1034,10 @@ export class DatabaseStorage implements IStorage {
       tempoTotalSegundos: progress.tempoTotalSegundos ?? existing?.tempoTotalSegundos,
       userAgent: metadata.userAgent ?? existing?.userAgent,
       urlOrigem: progress.urlOrigem ?? existing?.urlOrigem,
+      referrerUrl: progress.referrerUrl ?? existing?.referrerUrl,
+      language: progress.language
+        ?? existing?.language
+        ?? (progress.urlOrigem && /\/br(?:\/|$|[?#])/i.test(progress.urlOrigem) ? "pt" : "en"),
       utmSource: progress.utmSource ?? existing?.utmSource,
       utmMedium: progress.utmMedium ?? existing?.utmMedium,
       utmCampaign: progress.utmCampaign ?? existing?.utmCampaign,
@@ -1080,6 +1084,8 @@ export class DatabaseStorage implements IStorage {
         tempoTotalSegundos: payload.tempoTotalSegundos ?? null,
         userAgent: payload.userAgent ?? null,
         urlOrigem: payload.urlOrigem ?? null,
+        referrerUrl: payload.referrerUrl ?? null,
+        language: payload.language ?? "en",
         utmSource: payload.utmSource ?? null,
         utmMedium: payload.utmMedium ?? null,
         utmCampaign: payload.utmCampaign ?? null,

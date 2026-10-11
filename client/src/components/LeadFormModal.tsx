@@ -535,7 +535,7 @@ function ConditionalFieldInput({
 
 export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadFormModalProps) {
   const pagePaths = usePagePaths();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   const configUrl = `/api/forms/slug/${encodeURIComponent(formSlug)}/config`;
   const progressUrl = `/api/forms/slug/${encodeURIComponent(formSlug)}/leads/progress`;
@@ -847,6 +847,8 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
         questionNumber,
         startedAt: (startedAt || new Date()).toISOString(),
         urlOrigem: originUrl,
+        referrerUrl: document.referrer ? document.referrer.slice(0, 500) : undefined,
+        language,
         utmSource: utmParams.source || undefined,
         utmMedium: utmParams.medium || undefined,
         utmCampaign: utmParams.campaign || undefined,
@@ -939,6 +941,7 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
       sortedQuestions,
       currentStep,
       ensureSession,
+      language,
       originUrl,
       pendingSync,
       selectedCountry,

@@ -12,6 +12,7 @@ import type { FormAnswers } from "#shared/form.js";
 import type { FormConfig } from "#shared/schema.js";
 import { getOrCreateGHLContact } from "./integrations/ghl.js";
 import { dispatchNotification } from "./lib/notifications.js";
+import { sendCompletedLeadToTelegram } from "./lib/lead-telegram.js";
 import { registerStorageRoutes } from "./storage/storageAdapter.js";
 import { registerPortfolioRoutes } from "./routes/portfolio.js";
 import { registerFaqRoutes } from "./routes/faqs.js";
@@ -307,7 +308,7 @@ export async function registerRoutes(
     toolName: string,
     args: any,
     conversationId?: string,
-    options?: { allowFaqs?: boolean }
+    options?: { allowFaqs?: boolean; language?: string; pageUrl?: string; referrerUrl?: string }
   ) {
     switch (toolName) {
       case 'get_form_config': {
@@ -417,7 +418,10 @@ export async function registerRoutes(
           questionNumber,
           formCompleto,
           customAnswers,
-        }, { conversationId, source: 'chat' }, formConfig);
+          language: options?.language?.toLowerCase().startsWith('pt') ? 'pt' : 'en',
+          urlOrigem: options?.pageUrl,
+          referrerUrl: options?.referrerUrl,
+        }, { conversationId, source: 'chat', formId: chatForm.id }, formConfig);
 
         // Get next question
         const nextQuestion = getNextQuestion(lead, formConfig);
@@ -427,13 +431,13 @@ export async function registerRoutes(
         if (lead.telefone && !lead.notificacaoEnviada) {
           const companyName = (await storage.getCompanySettings())?.companyName || 'My Company';
           try {
-            const notification = await dispatchNotification(storage, 'hot_lead', {
-              company: companyName,
-              name: lead.nome?.trim() || 'No name',
-              phone: lead.telefone?.trim() || 'No phone',
-              classification: lead.classificacao || '',
+            const notification = await sendCompletedLeadToTelegram(storage, lead, {
+              companyName,
+              formName: chatForm.name,
+              formSlug: chatForm.slug,
+              formConfig,
             });
-            if (notification.deliveredChannels.includes('telegram')) {
+            if (notification.success) {
               await storage.updateFormLead(lead.id, { notificacaoEnviada: true });
             } else {
               console.error(
@@ -1120,6 +1124,9 @@ You: "Excellent, John! A specialist will contact you within 24 hours to discuss 
             }
             const toolResult = await runChatTool(call.function.name, args, conversationId, {
               allowFaqs,
+              language: input.language,
+              pageUrl: input.pageUrl,
+              referrerUrl: req.get('referer') || undefined,
             });
 
             // Track lead capture (first time contact info is saved)

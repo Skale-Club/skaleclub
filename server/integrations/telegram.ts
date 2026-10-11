@@ -26,9 +26,15 @@ export type TelegramConfig = {
   chatId: string;
 };
 
+export type TelegramSendOptions = {
+  parseMode?: "Markdown" | "MarkdownV2" | "HTML";
+  disableWebPagePreview?: boolean;
+};
+
 export async function sendTelegramMessage(
   config: TelegramConfig,
-  text: string
+  text: string,
+  options: TelegramSendOptions = {},
 ): Promise<TelegramResult> {
   try {
     const target = parseTelegramTarget(config.chatId);
@@ -43,7 +49,8 @@ export async function sendTelegramMessage(
         chat_id: target?.chatId ?? config.chatId,
         ...(target?.threadId ? { message_thread_id: target.threadId } : {}),
         text,
-        parse_mode: "Markdown",
+        parse_mode: options.parseMode ?? "Markdown",
+        ...(options.disableWebPagePreview ? { disable_web_page_preview: true } : {}),
       }),
     });
 
@@ -79,12 +86,13 @@ export async function sendTelegramToAll(
   botToken: string,
   chatIds: readonly string[],
   text: string,
+  options: TelegramSendOptions = {},
 ): Promise<TelegramFanoutResult> {
   const failures: TelegramFanoutResult["failures"] = [];
   let delivered = 0;
 
   for (const chatId of chatIds) {
-    const result = await sendTelegramMessage({ botToken, chatId }, text);
+    const result = await sendTelegramMessage({ botToken, chatId }, text, options);
     if (result.success) {
       delivered += 1;
     } else {
