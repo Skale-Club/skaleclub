@@ -150,8 +150,8 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Leva cerca de um minuto. Você vê o preço conforme escolhe a quantidade, e confirmamos tudo com você no WhatsApp antes de produzir qualquer coisa. Enviar o formulário não custa nada.",
   "More time in your day. More money in your pocket.":
     "Mais tempo no seu dia. Mais dinheiro no seu bolso.",
-  "We work with barbershops.":
-    "Trabalhamos com barbearias.",
+  "We handle bookings and promotion so you can focus on cuts and keep the chairs occupied.":
+    "A gente cuida dos agendamentos e da divulgação para você focar nos cortes e manter as cadeiras ocupadas.",
   "Get more clients":
     "Quero mais clientes",
   "Hear it working: (224) 551-6131":

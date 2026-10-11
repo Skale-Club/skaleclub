@@ -145,7 +145,7 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
     source: "More time in your day. More money in your pocket.",
     translated: "Mais tempo no seu dia. Mais dinheiro no seu bolso.",
   },
-  { source: "We work with barbershops.", translated: "Trabalhamos com barbearias." },
+  { source: "We handle bookings and promotion so you can focus on cuts and keep the chairs occupied.", translated: "A gente cuida dos agendamentos e da divulgação para você focar nos cortes e manter as cadeiras ocupadas." },
   { source: "Get more clients", translated: "Quero mais clientes" },
   {
     source: "Hear it working: (224) 551-6131",
