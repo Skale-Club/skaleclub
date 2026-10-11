@@ -81,6 +81,7 @@ export function HeroSection({ companySettings, homepageContent, onCtaClick, show
               {companySettings?.ctaText ? (
                 <PillButton
                   data-form-trigger="lead-form"
+                  data-floating-lead-source
                   className="w-full sm:w-auto shrink-0 whitespace-nowrap px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg"
                   onClick={() => {
                     onCtaClick();

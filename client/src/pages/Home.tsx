@@ -55,8 +55,8 @@ export default function Home() {
     }
   }, []);
 
-  // The mobile action bar asks the page to open its own lead form so two
-  // modals never coexist; preventDefault tells the bar it was handled.
+  // Site-wide form actions ask the page to open its own lead form so two
+  // modals never coexist; preventDefault confirms the request was handled.
   useEffect(() => {
     const openHandler = (event: Event) => {
       event.preventDefault();

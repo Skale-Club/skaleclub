@@ -47,10 +47,12 @@ function HeroCtas({
   props,
   ctaLabel,
   groupedSecondary = false,
+  primaryOnly = false,
 }: {
   props: HeroWebsitesProps;
   ctaLabel: string;
   groupedSecondary?: boolean;
+  primaryOnly?: boolean;
 }) {
   const { t } = useTranslation();
   const secondaryHref = props.secondaryCtaHref;
@@ -62,12 +64,13 @@ function HeroCtas({
         <PillButton
           variant="primary"
           onClick={scrollToLeadCta}
+          data-floating-lead-source
           data-testid="button-hero-websites-cta"
           className="w-full min-w-0 sm:w-auto sm:whitespace-nowrap"
         >
           {t(ctaLabel)} <ArrowRight aria-hidden="true" className="h-4 w-4" />
         </PillButton>
-        {props.secondaryCtaLabel && secondaryHref ? (
+        {!primaryOnly && props.secondaryCtaLabel && secondaryHref ? (
           <div className={`min-w-0 ${groupedSecondary ? "sm:w-56 sm:flex-none" : "sm:max-w-[22rem]"}`}>
             <PillLink
               href={isAnchor ? secondaryHref : languageHref(secondaryHref)}
@@ -84,7 +87,7 @@ function HeroCtas({
           </div>
         ) : null}
       </div>
-      {!groupedSecondary && isTel && props.secondaryCtaNote && (
+      {!primaryOnly && !groupedSecondary && isTel && props.secondaryCtaNote && (
         <p className="mt-3 max-w-md break-words text-sm leading-6 text-fog-400">{t(props.secondaryCtaNote)}</p>
       )}
     </div>
@@ -369,7 +372,7 @@ function IndustryLandingHero({ props }: { props: HeroWebsitesProps }) {
               ))}
             </h1>
             <p className="mt-6 max-w-xl text-base leading-7 text-fog-300 sm:text-xl sm:leading-8">{t(subheadline)}</p>
-            <HeroCtas props={props} ctaLabel={props.ctaLabel ?? DEFAULTS.ctaLabel} groupedSecondary />
+            <HeroCtas props={props} ctaLabel={props.ctaLabel ?? DEFAULTS.ctaLabel} primaryOnly />
           </div>
         </div>
       </Band>

@@ -178,7 +178,36 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
     source: "Barber cutting a client's hair in a busy modern barbershop.",
     translated: "Barbeiro cortando o cabelo de um cliente em uma barbearia moderna e movimentada.",
   },
+  { source: "AI reception for barbershops", translated: "Atendimento com IA para barbearias" },
+  {
+    source: "Your barbershop keeps answering while you keep cutting",
+    translated: "Sua barbearia continua atendendo enquanto você continua cortando",
+  },
+  {
+    source: "The assistant talks to customers on the phone and responds to social messages. It answers routine questions and moves people toward a booking.",
+    translated: "A assistente conversa com clientes por telefone e responde mensagens nas redes sociais. Ela tira dúvidas comuns e conduz as pessoas até o agendamento.",
+  },
+  {
+    source: "A barber serving a client while the reception phone is ready for incoming calls.",
+    translated: "Um barbeiro atende um cliente enquanto o telefone da recepção está pronto para receber ligações.",
+  },
+  { source: "Phone calls", translated: "Ligações" },
+  {
+    source: "It answers when you cannot, shares hours and prices, and helps the customer book.",
+    translated: "Ela atende quando você não pode, informa horários e preços e ajuda o cliente a agendar.",
+  },
+  { source: "Instagram and WhatsApp", translated: "Instagram e WhatsApp" },
+  {
+    source: "It responds to messages, handles common questions, and keeps new inquiries from going cold.",
+    translated: "Ela responde mensagens, tira dúvidas comuns e evita que novos contatos esfriem.",
+  },
+  { source: "Set up my AI receptionist", translated: "Quero meu atendimento com IA" },
+  { source: "Hear a real call", translated: "Ouça uma ligação real" },
   { source: "Let's fill your chairs", translated: "Vamos encher suas cadeiras" },
+  {
+    source: "Tell us about your shop in a minute. We'll recommend the best place to start.",
+    translated: "Conte sobre a sua barbearia em um minuto. Vamos recomendar o melhor ponto de partida.",
+  },
   {
     source: "Tell us about your shop in a minute. Or call (224) 551-6131 first to hear the AI answer the phone.",
     translated: "Conte sobre a sua barbearia em um minuto. Ou ligue primeiro para (224) 551-6131 para ouvir a IA atendendo o telefone.",

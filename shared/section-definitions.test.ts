@@ -114,3 +114,22 @@ test("industry hero rejects media without a usable image URL", () => {
 
   assert.equal(result.success, false);
 });
+
+test("AI reception template keeps industry copy and channels data-driven", () => {
+  const result = sectionPropsSchemas.aiReception.safeParse({
+    eyebrow: "AI reception for salons",
+    heading: "Keep answering while you serve a client",
+    imageUrl: "/salons/ai-reception.webp",
+    imageWidth: 1280,
+    imageHeight: 853,
+    channels: [
+      { icon: "phone", title: "Phone calls", description: "Answers common questions." },
+      { icon: "instagram", title: "Instagram", description: "Responds to new inquiries." },
+    ],
+    ctaLabel: "Set up my assistant",
+    demoLabel: "Hear a real call",
+    demoHref: "tel:+12245516131",
+  });
+
+  assert.equal(result.success, true);
+});

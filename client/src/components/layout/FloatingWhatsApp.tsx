@@ -9,8 +9,9 @@ import { openWhatsAppChat } from "@/lib/whatsappChat";
 import { isFloatingChromeHidden } from "./MobileActionBar";
 
 /**
- * Floating WhatsApp button for phones, tablets, and desktop. On phones it sits
- * above the action bar; at `md` and up it moves down to the screen edge.
+ * Floating WhatsApp button for phones, tablets, and desktop. Form-first pages
+ * hide it through the body marker owned by FloatingLeadCta, keeping one clear
+ * persistent action; other pages retain the WhatsApp shortcut.
  *
  * A click first asks for the WhatsApp chat (name + phone, hosted by
  * MobileActionBar); the plain wa.me link only goes ahead when nothing claims it.

@@ -69,7 +69,7 @@ export function CatalogPageShell({ source, children }: { source: string; childre
     trackCTAClick(`${source}-${ctaSource}`, ctaSource);
   };
 
-  // The mobile action bar defers to this page's modal instead of mounting a second one.
+  // Site-wide form actions defer to this page's modal instead of mounting a second one.
   useEffect(() => {
     const onLeadFormOpen = (event: Event) => {
       event.preventDefault();

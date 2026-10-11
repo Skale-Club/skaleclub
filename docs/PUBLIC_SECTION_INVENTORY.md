@@ -25,7 +25,7 @@ are:
 | Role/family | Templates |
 |---|---|
 | Hero | `hero`, `heroWebsites`, `whatsappGroup` |
-| Editorial | `services`, `ourServices`, `reviews`, `blog`, `about`, `areasServed`, `processStepper`, `pricingTable`, `faqAccordion`, `contentBlocks`, `featureGrid`, `pricingPlans` |
+| Editorial | `services`, `ourServices`, `reviews`, `blog`, `about`, `areasServed`, `processStepper`, `pricingTable`, `faqAccordion`, `contentBlocks`, `featureGrid`, `aiReception`, `pricingPlans` |
 | Compact | `trustBadges` |
 | Pill | `linkCallout` |
 | CTA | `leadFormCta` |
@@ -38,7 +38,7 @@ are:
 - Hero variants own navbar clearance, viewport height, image geometry, and
   bottom handoff. Direct top/bottom utilities are permitted only inside those
   named variants.
-- Sticky guide navigation, the site header, footer, mobile action bar, and
+- Sticky guide navigation, the site header, footer, floating lead CTA, and
   floating WhatsApp control are layout chrome and do not receive section roles.
 - Card, list-row, accordion-item, button, badge, and pill padding is internal
   component spacing and is not part of the section-frame audit.

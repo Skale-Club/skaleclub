@@ -9,6 +9,7 @@ import { trackEvent } from "@/lib/analytics";
 import { formatPhoneDisplay, telHref } from "@shared/phone";
 import { MobileActionBar } from "./MobileActionBar";
 import { FloatingWhatsApp } from "./FloatingWhatsApp";
+import { FloatingLeadCta } from "./FloatingLeadCta";
 import { PortfolioMegaMenu, PortfolioMobileMenu } from "./PortfolioMenu";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
@@ -171,6 +172,7 @@ export function Navbar() {
       )}
     </nav>
     <MobileActionBar />
+    <FloatingLeadCta />
     <FloatingWhatsApp />
     </>
   );

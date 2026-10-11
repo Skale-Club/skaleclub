@@ -23,6 +23,7 @@ import { PricingTableSection } from "./sections/PricingTableSection";
 import { FaqAccordionSection } from "./sections/FaqAccordionSection";
 import { ContentBlocksSection } from "./sections/ContentBlocksSection";
 import { FeatureGridSection } from "./sections/FeatureGridSection";
+import { AiReceptionSection } from "./sections/AiReceptionSection";
 import { PricingPlansSection } from "./sections/PricingPlansSection";
 import { LinkCalloutSection } from "./sections/LinkCalloutSection";
 import { SectionRoleProvider } from "@/components/editorial";
@@ -73,6 +74,7 @@ const registeredSectionRenderers: Record<RegisteredSectionType, SectionEntry> = 
   faqAccordion: bindSection("faqAccordion", FaqAccordionSection),
   contentBlocks: bindSection("contentBlocks", ContentBlocksSection),
   featureGrid: bindSection("featureGrid", FeatureGridSection),
+  aiReception: bindSection("aiReception", AiReceptionSection),
   pricingPlans: bindSection("pricingPlans", PricingPlansSection),
   linkCallout: bindSection("linkCallout", LinkCalloutSection),
 };

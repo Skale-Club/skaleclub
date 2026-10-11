@@ -120,6 +120,12 @@ const heroMediaItemSchema = z.object({
   focalPoint: z.enum(["center", "top", "bottom", "left", "right"]).optional(),
 });
 
+const aiReceptionChannelSchema = z.object({
+  icon: z.enum(["phone", "instagram", "whatsapp", "messages"]),
+  title: z.string().min(1).max(120),
+  description: z.string().min(1).max(320),
+});
+
 export const heroPropsSchema = z.object({}).passthrough();
 
 export const heroWebsitesPropsSchema = z.object({
@@ -284,6 +290,23 @@ export const featureGridPropsSchema = z.object({
   theme: sectionThemeSchema,
 });
 
+export const aiReceptionPropsSchema = z.object({
+  eyebrow: z.string().optional(),
+  heading: z.string().min(1),
+  subheading: z.string().optional(),
+  imageUrl: rootAsset.optional(),
+  imageAlt: z.string().optional(),
+  imageWidth: z.number().int().positive().optional(),
+  imageHeight: z.number().int().positive().optional(),
+  imagePosition: z.enum(["left", "right"]).optional(),
+  channels: z.array(aiReceptionChannelSchema).min(2).max(4),
+  ctaLabel: z.string().optional(),
+  demoLabel: z.string().optional(),
+  demoHref: z.string().regex(/^tel:\+?[0-9]{7,15}$/).optional(),
+  demoNote: z.string().optional(),
+  theme: sectionThemeSchema,
+});
+
 export const pricingPlansPropsSchema = z.object({
   eyebrow: z.string().optional(),
   heading: z.string().optional(),
@@ -320,6 +343,7 @@ export const sectionPropsSchemas = {
   faqAccordion: faqAccordionPropsSchema,
   contentBlocks: contentBlocksPropsSchema,
   featureGrid: featureGridPropsSchema,
+  aiReception: aiReceptionPropsSchema,
   pricingPlans: pricingPlansPropsSchema,
   linkCallout: linkCalloutPropsSchema,
 } as const satisfies Record<string, z.ZodTypeAny>;
@@ -351,6 +375,7 @@ export const sectionDefinitionMetadata: Record<RegisteredSectionType, SectionDef
   faqAccordion: { label: "FAQ accordion", family: "section", role: "editorial", version: 1, contentSource: "local" },
   contentBlocks: { label: "Content blocks", family: "section", role: "editorial", version: 1, contentSource: "local" },
   featureGrid: { label: "Feature grid", family: "section", role: "editorial", version: 1, contentSource: "local" },
+  aiReception: { label: "AI reception", family: "section", role: "editorial", version: 1, contentSource: "local" },
   pricingPlans: { label: "Pricing plans", family: "section", role: "editorial", version: 1, contentSource: "local" },
   linkCallout: { label: "Link callout", family: "section", role: "pill", version: 1, contentSource: "local" },
 };
@@ -379,6 +404,13 @@ export const sectionStarterProps: Record<RegisteredSectionType, Record<string, u
     items: [
       { icon: "Star", title: "Feature one", description: "Describe the first feature." },
       { icon: "Star", title: "Feature two", description: "Describe the second feature." },
+    ],
+  },
+  aiReception: {
+    heading: "Keep answering while you work",
+    channels: [
+      { icon: "phone", title: "Phone calls", description: "Explain what the assistant handles." },
+      { icon: "messages", title: "Messages", description: "Explain which channels the assistant handles." },
     ],
   },
   pricingPlans: {

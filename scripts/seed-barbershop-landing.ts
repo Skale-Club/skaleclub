@@ -10,8 +10,8 @@
 //   2. pages   WHERE slug = 'barbershops'    (EN mother, language='en')
 //   3. pages   WHERE slug = 'barbershops-br' (PT,        language='pt')
 //
-// Both landings share the SAME sections [heroWebsites, featureGrid x3,
-// ourServices, about, reviews, leadFormCta]; copy is t()-based so the language
+// Both landings share the SAME sections [heroWebsites, aiReception,
+// featureGrid x2, ourServices, about, reviews, leadFormCta]; copy is t()-based so the language
 // column drives EN vs PT. seedPage() bakes the curated pt-BR copy from
 // scripts/data/landing-pt-copy.ts straight into the '-br' row automatically
 // (see scripts/lib/pt-copy.ts) — no extra script to run for that. Also run
@@ -256,9 +256,6 @@ export const LANDING_SECTIONS: PageSection[] = [
       ],
       subheadline: "Fill more chairs while an AI answers calls, shares prices, and books appointments.",
       ctaLabel: "Get more clients",
-      secondaryCtaLabel: "Hear the AI answer",
-      secondaryCtaHref: "tel:+12245516131",
-      secondaryCtaNote: "Call (224) 551-6131. It shares prices and books appointments.",
       backgroundImageUrl: "/barbershops/hero-barbershop.webp",
       backgroundImageAlt: "Barber cutting a client's hair in a busy modern barbershop.",
       mediaItems: [
@@ -273,6 +270,36 @@ export const LANDING_SECTIONS: PageSection[] = [
       mediaAspectRatio: "4:3",
       mediaRadius: "medium",
       carouselAutoplayMs: 7000,
+    },
+  },
+  {
+    type: "aiReception",
+    props: {
+      eyebrow: "AI reception for barbershops",
+      heading: "Your barbershop keeps answering while you keep cutting",
+      subheading: "The assistant talks to customers on the phone and responds to social messages. It answers routine questions and moves people toward a booking.",
+      imageUrl: "/barbershops/ai-reception-v1.webp",
+      imageAlt: "A barber serving a client while the reception phone is ready for incoming calls.",
+      imageWidth: 1280,
+      imageHeight: 853,
+      imagePosition: "right",
+      channels: [
+        {
+          icon: "phone",
+          title: "Phone calls",
+          description: "It answers when you cannot, shares hours and prices, and helps the customer book.",
+        },
+        {
+          icon: "messages",
+          title: "Instagram and WhatsApp",
+          description: "It responds to messages, handles common questions, and keeps new inquiries from going cold.",
+        },
+      ],
+      ctaLabel: "Set up my AI receptionist",
+      demoLabel: "Hear a real call",
+      demoHref: "tel:+12245516131",
+      demoNote: "(224) 551-6131",
+      theme: "dark",
     },
   },
   {
@@ -298,37 +325,6 @@ export const LANDING_SECTIONS: PageSection[] = [
           description: "Google and Instagram ads that fill your calendar with new clients.",
         },
       ],
-    },
-  },
-  {
-    type: "featureGrid",
-    props: {
-      eyebrow: "More time",
-      heading: "More time in your day",
-      subheading: "Where the extra time in your day comes from.",
-      imageUrl: "/barbershops/barber-automation-v3.webp",
-      imageAlt: "Google review and Instagram NFC stands on a barbershop counter while a barber serves a client.",
-      imagePosition: "left",
-      imageWidth: 1280,
-      imageHeight: 720,
-      items: [
-        {
-          icon: "Smartphone",
-          title: "Calls and texts get answered",
-          description: "An AI answers calls and texts any time of day and books the appointment.",
-        },
-        {
-          icon: "MessageCircle",
-          title: "Fewer no-shows",
-          description: "Reminders go out on their own and cut down on no-shows.",
-        },
-        {
-          icon: "ConciergeBell",
-          title: "Social media",
-          description: "Posts get made and scheduled for you every week.",
-        },
-      ],
-      theme: "dark",
     },
   },
   {
@@ -403,7 +399,7 @@ export const LANDING_SECTIONS: PageSection[] = [
     props: {
       formSlug: FORM_SLUG,
       heading: "Let's fill your chairs",
-      subheading: "Tell us about your shop in a minute. Or call (224) 551-6131 first to hear the AI answer the phone.",
+      subheading: "Tell us about your shop in a minute. We'll recommend the best place to start.",
       ctaLabel: "Get more clients",
     },
   },

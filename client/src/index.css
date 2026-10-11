@@ -753,3 +753,9 @@ html.admin-theme :where(a, button, [role="button"], summary):focus-visible {
     animation: none;
   }
 }
+
+/* Form-first pages keep one persistent conversion action. WhatsApp remains in
+   the page content but does not compete with the hero/form CTA as floating UI. */
+body[data-floating-lead-page="true"] [data-testid="floating-whatsapp"] {
+  display: none;
+}

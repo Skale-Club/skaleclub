@@ -172,8 +172,30 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Uma IA atende esse número para uma barbearia. Ela informa preço e horário. Depois agenda o corte.",
   "Barber cutting a client's hair in a busy modern barbershop.":
     "Barbeiro cortando o cabelo de um cliente em uma barbearia moderna e movimentada.",
+  "AI reception for barbershops":
+    "Atendimento com IA para barbearias",
+  "Your barbershop keeps answering while you keep cutting":
+    "Sua barbearia continua atendendo enquanto você continua cortando",
+  "The assistant talks to customers on the phone and responds to social messages. It answers routine questions and moves people toward a booking.":
+    "A assistente conversa com clientes por telefone e responde mensagens nas redes sociais. Ela tira dúvidas comuns e conduz as pessoas até o agendamento.",
+  "A barber serving a client while the reception phone is ready for incoming calls.":
+    "Um barbeiro atende um cliente enquanto o telefone da recepção está pronto para receber ligações.",
+  "Phone calls":
+    "Ligações",
+  "It answers when you cannot, shares hours and prices, and helps the customer book.":
+    "Ela atende quando você não pode, informa horários e preços e ajuda o cliente a agendar.",
+  "Instagram and WhatsApp":
+    "Instagram e WhatsApp",
+  "It responds to messages, handles common questions, and keeps new inquiries from going cold.":
+    "Ela responde mensagens, tira dúvidas comuns e evita que novos contatos esfriem.",
+  "Set up my AI receptionist":
+    "Quero meu atendimento com IA",
+  "Hear a real call":
+    "Ouça uma ligação real",
   "Let's fill your chairs":
     "Vamos encher suas cadeiras",
+  "Tell us about your shop in a minute. We'll recommend the best place to start.":
+    "Conte sobre a sua barbearia em um minuto. Vamos recomendar o melhor ponto de partida.",
   "Tell us about your shop in a minute. Or call (224) 551-6131 first to hear the AI answer the phone.":
     "Conte sobre a sua barbearia em um minuto. Ou ligue primeiro para (224) 551-6131 para ouvir a IA atendendo o telefone.",
 

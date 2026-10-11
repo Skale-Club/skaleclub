@@ -125,10 +125,9 @@ The industry template provides:
 - optional autoplay, disabled with `0` and automatically suppressed for
   reduced-motion visitors or while the carousel is being used.
 
-The primary CTA stays visually dominant. A telephone demo is grouped with its
-own explanatory note so the note does not appear to describe both actions. Its
-desktop width is bounded so the note cannot force the secondary CTA onto a new
-row and make the text column artificially taller than the 4:3 media frame.
+The primary CTA stays visually dominant. Product demonstrations such as a
+telephone demo belong in the relevant editorial section below the hero, not as
+a competing hero button.
 
 To reproduce the barbershop structure for another industry, duplicate the
 managed page and change only its local `heroWebsites` props, section copy,
@@ -143,6 +142,33 @@ single-image fallbacks. New industry pages should also declare `mediaItems`,
 including intrinsic width and height, so adding carousel slides later is only
 a data edit. Keep hero photography distinct from images repeated in sections
 below it.
+
+### AI reception section
+
+Use `aiReception` when a landing needs to explain automated customer service
+across phone and messaging channels. The template owns the split composition,
+channel cards, contextual photography, one primary lead-form action, and an
+optional low-emphasis telephone demonstration.
+
+Industry-specific copy and imagery live in the managed page props. The React
+component must not inspect the page slug, so the same structure can serve a
+barbershop, salon, clinic, or another service business. Configure `channels`,
+`imageUrl`, CTA copy, and the optional demo number in the page data instead of
+forking the component.
+
+### Floating lead-form CTA
+
+The site-wide `FloatingLeadCta` observes the hero button marked with
+`data-floating-lead-source`. It stays hidden while that button is available and
+appears only after the visitor scrolls past it. The floating action dispatches
+the shared `lead-form:open` event, so the current page retains ownership of its
+modal and form slug. Do not mount a second form inside the floating control.
+
+Telephone calls must not replace this primary floating conversion action.
+Pages without an eligible hero trigger do not render the floating CTA.
+Form-first pages also suppress the floating WhatsApp shortcut while retaining
+normal WhatsApp links in page content, preventing two persistent actions from
+competing for attention.
 
 ## Template definition contract
 
@@ -197,6 +223,8 @@ These are the implemented single sources of truth:
 | Guided admin editor | `client/src/components/admin/pages/SectionComposer.tsx` |
 | Legacy review embed parser | `shared/reviews-embed.ts` |
 | Barbershop landing content/order | `scripts/seed-barbershop-landing.ts` |
+| Floating form CTA behavior | `client/src/components/layout/FloatingLeadCta.tsx` |
+| AI reception template | `client/src/components/pages/sections/AiReceptionSection.tsx` |
 | Curated Portuguese landing copy | `scripts/data/landing-pt-copy.ts` |
 | Permanent maintenance guide | This document |
 | Migration/execution history | `.planning/plans/public-section-template-system-v1.md` |
@@ -299,3 +327,4 @@ acceptable exception.
 | 2026-10-11 | Implemented role tokens, shared schemas/metadata, guided editor, versioning, and safe review parsing locally | Make spacing and templates consistent and maintainable without changing production |
 | 2026-10-11 | Connected registry roles to visual frames, activated schema-bound migrations, and verified 390/834/1440px landing previews | Prevent metadata drift, stale editor JSON, and responsive regressions before production approval |
 | 2026-10-11 | Added the reusable `industry` landing-hero configuration, header-aware vertical centering, and data-driven media carousel capability | Make the approved barbershop hero reproducible for salons and other vertical pages without component forks |
+| 2026-10-11 | Added reusable AI reception and scroll-aware lead-form CTA templates | Explain phone/social AI without competing with the hero and keep the primary form action available after scrolling |

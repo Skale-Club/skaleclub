@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { z } from "zod";
 import { ArrowRight } from "lucide-react";
 import { LeadFormModal } from "@/components/LeadFormModal";
 import { Band, Eyebrow, PillButton, PillLink } from "@/components/editorial";
 import { languageHref } from "@/lib/languageRouting";
 import { useTranslation } from "@/hooks/useTranslation";
+import { LEAD_FORM_OPEN_EVENT } from "@/lib/leadForm";
 import { leadFormCtaPropsSchema } from "@shared/section-definitions";
 
 type LeadFormCtaProps = z.infer<typeof leadFormCtaPropsSchema>;
@@ -18,6 +19,14 @@ const DEFAULTS = {
 
 export function LeadFormCtaAdapter({ props }: { props: LeadFormCtaProps }) {
   const [isOpen, setIsOpen] = useState(false);
+  useEffect(() => {
+    const onOpen = (event: Event) => {
+      event.preventDefault();
+      setIsOpen(true);
+    };
+    document.addEventListener(LEAD_FORM_OPEN_EVENT, onOpen);
+    return () => document.removeEventListener(LEAD_FORM_OPEN_EVENT, onOpen);
+  }, []);
   const modal = <LeadFormModal open={isOpen} onClose={() => setIsOpen(false)} formSlug={props.formSlug} />;
   return props.theme === "dark"
     ? <DarkCta props={props} onOpen={() => setIsOpen(true)}>{modal}</DarkCta>
@@ -40,7 +49,7 @@ function LightCta({ props, onOpen, children }: VariantProps) {
             <h2 className="font-display text-4xl font-semibold leading-tight text-white sm:text-5xl">{t(heading)}</h2>
           ) : null}
           {subheading ? <p className="mt-4 text-base leading-7 text-fog-300 sm:text-lg">{t(subheading)}</p> : null}
-          <PillButton variant="primary" data-landing-lead-cta onClick={onOpen} className="mt-8">
+          <PillButton variant="primary" data-landing-lead-cta data-floating-lead-inline onClick={onOpen} className="mt-8">
             {t(ctaLabel)}
           </PillButton>
         </div>
@@ -93,6 +102,7 @@ function DarkCta({ props, onOpen, children }: VariantProps) {
               <PillButton
                 variant="primary"
                 data-landing-lead-cta
+                data-floating-lead-inline
                 onClick={onOpen}
                 className="w-full whitespace-nowrap sm:w-auto"
               >
