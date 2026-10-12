@@ -88,7 +88,7 @@ const BARBERSHOP_LEADS_QUESTIONS: FormQuestion[] = [
   {
     id: "telefone",
     order: 2,
-    title: "What's your WhatsApp?",
+    title: "What's the best phone number to reach you?",
     type: "phoneCountry", // ← inline country selector + phone input (44-03)
     required: true,
     placeholder: "(555) 123-4567",

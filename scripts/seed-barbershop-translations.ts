@@ -69,6 +69,7 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
   { source: "What's your name?", translated: "Qual é o seu nome?" },
   { source: "Your full name", translated: "Seu nome completo" },
   { source: "What's your WhatsApp?", translated: "Qual é o seu WhatsApp?" },
+  { source: "What's the best phone number to reach you?", translated: "Qual é o seu WhatsApp?" },
 
   // Identity rows (this one, plus `1`, `2-3`, `4-6`, `7+` below) are
   // DELIBERATE no-op translations: source and target are identical. They are
