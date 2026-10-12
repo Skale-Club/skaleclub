@@ -120,11 +120,19 @@ const heroMediaItemSchema = z.object({
   focalPoint: z.enum(["center", "top", "bottom", "left", "right"]).optional(),
 });
 
-const aiReceptionIconSchema = z.enum(["phone", "instagram", "whatsapp", "imessage", "messages"]);
+const aiReceptionIconSchema = z.enum([
+  "phone",
+  "facebook",
+  "instagram",
+  "whatsapp",
+  "imessage",
+  "messenger",
+  "messages",
+]);
 
 const aiReceptionChannelSchema = z.object({
   icon: aiReceptionIconSchema,
-  icons: z.array(aiReceptionIconSchema).min(1).max(4).optional(),
+  icons: z.array(aiReceptionIconSchema).min(1).max(5).optional(),
   title: z.string().min(1).max(120),
   description: z.string().min(1).max(320),
   actionLabel: z.string().min(1).max(120).optional(),

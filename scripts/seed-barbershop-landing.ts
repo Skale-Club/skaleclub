@@ -293,9 +293,9 @@ export const LANDING_SECTIONS: PageSection[] = [
           actionNote: "(224) 551-6131",
         },
         {
-          icon: "messages",
-          icons: ["imessage", "instagram", "whatsapp"],
-          title: "Instagram and WhatsApp",
+          icon: "imessage",
+          icons: ["imessage", "facebook", "instagram", "whatsapp", "messenger"],
+          title: "Messages and social media",
           description: "It responds to messages, handles common questions, and keeps new inquiries from going cold.",
         },
       ],
@@ -389,16 +389,16 @@ export const LANDING_SECTIONS: PageSection[] = [
     },
   },
   {
-    type: "about",
-    props: {
-      tone: "light",
-    },
-  },
-  {
     type: "reviews",
     props: {
       title: "What people say",
       subtitle: "Real reviews from businesses we've worked with.",
+    },
+  },
+  {
+    type: "about",
+    props: {
+      tone: "light",
     },
   },
   {

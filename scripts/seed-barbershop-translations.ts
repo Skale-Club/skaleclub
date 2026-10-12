@@ -196,7 +196,7 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
     source: "It answers when you cannot, shares hours and prices, and helps the customer book.",
     translated: "Ela atende quando você não pode, informa horários e preços e ajuda o cliente a agendar.",
   },
-  { source: "Instagram and WhatsApp", translated: "Instagram e WhatsApp" },
+  { source: "Messages and social media", translated: "Mensagens e redes sociais" },
   {
     source: "It responds to messages, handles common questions, and keeps new inquiries from going cold.",
     translated: "Ela responde mensagens, tira dúvidas comuns e evita que novos contatos esfriem.",

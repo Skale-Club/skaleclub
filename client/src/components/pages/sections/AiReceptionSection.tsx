@@ -1,6 +1,6 @@
 import type { z } from "zod";
-import { MessageCircle, PhoneCall } from "lucide-react";
-import { SiImessage, SiInstagram, SiWhatsapp } from "react-icons/si";
+import { PhoneCall } from "lucide-react";
+import { SiFacebook, SiImessage, SiInstagram, SiMessenger, SiWhatsapp } from "react-icons/si";
 import type { IconType } from "react-icons";
 import type { LucideIcon } from "lucide-react";
 import { Band, PillLink } from "@/components/editorial";
@@ -14,10 +14,12 @@ type ChannelIcon = LucideIcon | IconType;
 
 const CHANNEL_ICONS: Record<AiReceptionProps["channels"][number]["icon"], ChannelIcon> = {
   phone: PhoneCall,
+  facebook: SiFacebook,
   instagram: SiInstagram,
   whatsapp: SiWhatsapp,
   imessage: SiImessage,
-  messages: MessageCircle,
+  messenger: SiMessenger,
+  messages: SiMessenger,
 };
 
 export function AiReceptionSection({ props }: { props: AiReceptionProps }) {
@@ -43,48 +45,52 @@ export function AiReceptionSection({ props }: { props: AiReceptionProps }) {
           return (
             <li
               key={`${channel.icon}-${channel.title}`}
-              className={`rounded-2xl border p-4 ${
+              className={`flex h-full flex-col rounded-2xl border p-4 ${
                 dark ? "border-white/10 bg-white/[0.035]" : "border-ink-700/10 bg-white"
               }`}
             >
-              <div className="flex items-center gap-2" aria-hidden="true">
-                {icons.map((iconName) => {
-                  const Icon = CHANNEL_ICONS[iconName];
-                  return (
-                    <span
-                      key={iconName}
-                      className={`grid h-8 w-8 place-items-center rounded-full ${dark ? "bg-white/5 text-cta-soft" : "bg-cta-ink/10 text-cta-ink"}`}
-                    >
-                      <Icon className="h-4 w-4" />
-                    </span>
-                  );
-                })}
-              </div>
-              <h3 className={`mt-3 font-display text-base font-semibold ${dark ? "text-fog-50" : "text-ink"}`}>
+              <h3 className={`font-display text-base font-semibold ${dark ? "text-fog-50" : "text-ink"}`}>
                 {t(channel.title)}
               </h3>
               <p className={`mt-2 text-sm leading-6 ${dark ? "text-fog-400" : "text-ink-500"}`}>
                 {t(channel.description)}
               </p>
               {channel.actionLabel && channel.actionHref ? (
-                <div className="mt-4">
+                <div className="mt-auto pt-5">
                   <PillLink
                     href={channel.actionHref}
                     variant="ghost"
                     size="sm"
                     tone={dark ? "dark" : "light"}
+                    className="max-w-full justify-start text-left"
                     onClick={() => trackEvent("click_call", { location: "ai-reception-card" })}
                   >
-                    <PhoneCall className="h-4 w-4" aria-hidden="true" />
-                    {t(channel.actionLabel)}
+                    <PhoneCall className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    <span className="flex min-w-0 flex-col items-start leading-tight">
+                      <span>{t(channel.actionLabel)}</span>
+                      {channel.actionNote ? (
+                        <span className={`mt-1 text-xs font-normal ${dark ? "text-fog-400" : "text-ink-500"}`}>
+                          {t(channel.actionNote)}
+                        </span>
+                      ) : null}
+                    </span>
                   </PillLink>
-                  {channel.actionNote ? (
-                    <p className={`mt-2 text-xs leading-5 ${dark ? "text-fog-400" : "text-ink-500"}`}>
-                      {t(channel.actionNote)}
-                    </p>
-                  ) : null}
                 </div>
-              ) : null}
+              ) : (
+                <div className="mt-auto flex flex-wrap items-center gap-2 pt-5" aria-hidden="true">
+                  {icons.map((iconName) => {
+                    const Icon = CHANNEL_ICONS[iconName];
+                    return (
+                      <span
+                        key={iconName}
+                        className={`grid h-8 w-8 place-items-center rounded-full ${dark ? "bg-white/5 text-cta-soft" : "bg-cta-ink/10 text-cta-ink"}`}
+                      >
+                        <Icon className="h-4 w-4" />
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
             </li>
           );
         })}
@@ -93,7 +99,7 @@ export function AiReceptionSection({ props }: { props: AiReceptionProps }) {
   );
 
   const media = props.imageUrl ? (
-    <figure className={`w-full overflow-hidden rounded-2xl border lg:max-w-[460px] ${imageLeft ? "lg:order-1 lg:justify-self-start" : "lg:justify-self-end"} ${dark ? "border-white/10 bg-navy-800 shadow-xl" : "border-ink-700/10 bg-white shadow-lg"}`}>
+    <figure className={`relative aspect-[4/3] w-full overflow-hidden rounded-2xl border lg:aspect-auto lg:max-w-[460px] lg:self-stretch ${imageLeft ? "lg:order-1 lg:justify-self-start" : "lg:justify-self-end"} ${dark ? "border-white/10 bg-navy-800 shadow-xl" : "border-ink-700/10 bg-white shadow-lg"}`}>
       <img
         src={props.imageUrl}
         alt={t(props.imageAlt ?? "")}
@@ -101,7 +107,7 @@ export function AiReceptionSection({ props }: { props: AiReceptionProps }) {
         height={props.imageHeight}
         loading="lazy"
         decoding="async"
-        className="aspect-[4/3] h-full w-full object-cover"
+        className="absolute inset-0 h-full w-full object-cover"
         sizes="(min-width: 1024px) 50vw, 100vw"
       />
     </figure>

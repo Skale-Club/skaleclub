@@ -184,8 +184,8 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Ligações",
   "It answers when you cannot, shares hours and prices, and helps the customer book.":
     "Ela atende quando você não pode, informa horários e preços e ajuda o cliente a agendar.",
-  "Instagram and WhatsApp":
-    "Instagram e WhatsApp",
+  "Messages and social media":
+    "Mensagens e redes sociais",
   "It responds to messages, handles common questions, and keeps new inquiries from going cold.":
     "Ela responde mensagens, tira dúvidas comuns e evita que novos contatos esfriem.",
   "Set up my AI receptionist":

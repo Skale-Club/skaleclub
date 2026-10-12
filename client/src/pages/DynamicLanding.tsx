@@ -52,9 +52,9 @@ const BARBERSHOP_AI_RECEPTION_PREVIEW: PageResponse["sections"][number] = {
         actionNote: "(224) 551-6131",
       },
       {
-        icon: "messages",
-        icons: ["imessage", "instagram", "whatsapp"],
-        title: "Instagram and WhatsApp",
+        icon: "imessage",
+        icons: ["imessage", "facebook", "instagram", "whatsapp", "messenger"],
+        title: "Messages and social media",
         description: "It responds to messages, handles common questions, and keeps new inquiries from going cold.",
       },
     ],
@@ -114,7 +114,26 @@ function sectionsWithLocalBarbershopPreview(data: PageResponse) {
   }
 
   const moneyFeature = BARBERSHOP_MONEY_FEATURE_PREVIEW[data.language];
-  return sections.map((section) => {
+  const previewSections = sections.map((section) => {
+    if (section.type === "aiReception") {
+      const channels = Array.isArray(section.props.channels) ? section.props.channels : [];
+      return {
+        ...section,
+        props: {
+          ...section.props,
+          channels: channels.map((channel, index) => {
+            if (index !== 1 || typeof channel !== "object" || channel === null) return channel;
+            return {
+              ...channel,
+              icon: "imessage",
+              icons: ["imessage", "facebook", "instagram", "whatsapp", "messenger"],
+              title: data.language === "pt" ? "Mensagens e redes sociais" : "Messages and social media",
+            };
+          }),
+        },
+      };
+    }
+
     const eyebrow = section.props.eyebrow;
     const isMoneyGrid = section.type === "featureGrid" && (eyebrow === "More money" || eyebrow === "Mais dinheiro");
     const items = Array.isArray(section.props.items) ? section.props.items : [];
@@ -154,6 +173,19 @@ function sectionsWithLocalBarbershopPreview(data: PageResponse) {
     if (!isMoneyGrid || alreadyHasReviews) return section;
     return { ...section, props: { ...section.props, items: [...items, moneyFeature] } };
   });
+
+  const aboutIndex = previewSections.findIndex((section) => section.type === "about");
+  const reviewsIndex = previewSections.findIndex((section) => section.type === "reviews");
+  if (aboutIndex >= 0 && reviewsIndex > aboutIndex) {
+    const reorderedSections = [...previewSections];
+    [reorderedSections[aboutIndex], reorderedSections[reviewsIndex]] = [
+      reorderedSections[reviewsIndex],
+      reorderedSections[aboutIndex],
+    ];
+    return reorderedSections;
+  }
+
+  return previewSections;
 }
 
 export default function DynamicPage() {

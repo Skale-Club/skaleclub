@@ -131,8 +131,8 @@ test("AI reception template keeps industry copy and channels data-driven", () =>
         actionHref: "tel:+12245516131",
       },
       {
-        icon: "messages",
-        icons: ["imessage", "instagram", "whatsapp"],
+        icon: "imessage",
+        icons: ["imessage", "facebook", "instagram", "whatsapp", "messenger"],
         title: "Social messages",
         description: "Responds to new inquiries.",
       },
