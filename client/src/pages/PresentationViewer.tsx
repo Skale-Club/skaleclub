@@ -12,6 +12,7 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { LazyDottedSurface as DottedSurface } from '@/components/ui/LazyDottedSurface';
 import { usePageSeo } from '@/hooks/use-seo';
 import { GradientBackground } from '@/components/ui/gradient-background-4';
+import { brandPageTitle } from '@shared/seoTitle';
 
 interface PublicPresentation {
   id: string;
@@ -175,7 +176,7 @@ export default function PresentationViewer() {
   useEffect(() => {
     if (!presentation?.title) return;
     const companyName = companySettings?.companyName?.trim() || 'Skale Club';
-    document.title = `${presentation.title} | ${companyName}`;
+    document.title = brandPageTitle(presentation.title, companyName);
   }, [presentation?.title, companySettings?.companyName]);
 
   const goTo = useCallback((idx: number) => {

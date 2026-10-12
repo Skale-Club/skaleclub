@@ -1,4 +1,5 @@
 import { splitLanguagePath, withLanguage } from "./languagePath.js";
+import { brandPageTitle } from "./seoTitle.js";
 
 // Single source of truth for managed-landing-page SEO metadata (title, description,
 // locale) plus the slug <-> path mapping shared by the server-side crawler injection
@@ -30,123 +31,123 @@ export interface LandingSeo {
 
 export const LANDING_SEO: Record<string, LandingSeo> = {
   "nfc-keychains": {
-    title: "Custom NFC Keychains for Businesses | Skale Club",
+    title: "Skale Club | Custom NFC Keychains for Businesses",
     description:
       "Custom 3D-printed NFC keychains that open your reviews, Instagram, menu, digital card, or website with one tap.",
     locale: "en_US",
     ogImage: NFC_OG_IMAGE,
   },
   "nfc-keychains-br": {
-    title: "Chaveiros NFC Personalizados para Empresas | Skale Club",
+    title: "Skale Club | Chaveiros NFC Personalizados para Empresas",
     description:
       "Chaveiros NFC personalizados e impressos em 3D para abrir avaliações, Instagram, cardápio, cartão digital ou site com um toque.",
     locale: "pt_BR",
     ogImage: NFC_OG_IMAGE,
   },
   "nfc-order": {
-    title: "Complete Your NFC Keychain Order | Skale Club",
+    title: "Skale Club | Complete Your NFC Keychain Order",
     description:
       "Send the details for your custom NFC keychain order. No payment is collected and every design and final price is confirmed before production.",
     locale: "en_US",
     robots: "noindex, follow",
   },
   "nfc-order-br": {
-    title: "Complete seu Pedido de Chaveiros NFC | Skale Club",
+    title: "Skale Club | Complete seu Pedido de Chaveiros NFC",
     description:
       "Envie os dados do seu pedido de chaveiros NFC personalizados. Nenhum pagamento é feito no formulário e confirmamos o design e o valor final antes da produção.",
     locale: "pt_BR",
     robots: "noindex, follow",
   },
   svg: {
-    title: "Free Logo to SVG Converter (PNG, JPG) | Skale Club",
+    title: "Skale Club | Free Logo to SVG Converter (PNG, JPG)",
     description:
       "Convert a PNG or JPG logo into a clean, editable SVG for Figma, Illustrator and Fusion 360 — exact colors, real corners, no gaps. Free, runs in your browser.",
     locale: "en_US",
   },
   "svg-br": {
-    title: "Conversor de Logo para SVG Grátis (PNG, JPG) | Skale Club",
+    title: "Skale Club | Conversor de Logo para SVG Grátis (PNG, JPG)",
     description:
       "Converta um logo PNG ou JPG em SVG limpo e editável para Figma, Illustrator e Fusion 360 — cores exatas, cantos reais, sem frestas. Grátis, roda no seu navegador.",
     locale: "pt_BR",
   },
   "plaque-order": {
-    title: "Complete Your NFC Plaque Order | Skale Club",
+    title: "Skale Club | Complete Your NFC Plaque Order",
     description:
       "Send the details for your NFC counter plaque order. No payment is collected and the final price is confirmed with you before production.",
     locale: "en_US",
     robots: "noindex, follow",
   },
   "plaque-order-br": {
-    title: "Complete seu Pedido de Placas NFC | Skale Club",
+    title: "Skale Club | Complete seu Pedido de Placas NFC",
     description:
       "Envie os dados do seu pedido de placas NFC de balcão. Nenhum pagamento é feito no formulário e confirmamos o valor final com você antes da produção.",
     locale: "pt_BR",
     robots: "noindex, follow",
   },
   "nfc-guide": {
-    title: "NFC Keychain Guide: Models, Pricing and FAQs | Skale Club",
+    title: "Skale Club | NFC Keychain Guide: Models, Pricing and FAQs",
     description:
       "Understand flat, raised-relief and custom-shaped NFC keychains, what changes the price, phone compatibility, artwork and the complete order process.",
     locale: "en_US",
     ogImage: NFC_OG_IMAGE,
   },
   "nfc-guide-br": {
-    title: "Guia de Chaveiros NFC: Modelos, Preços e Dúvidas | Skale Club",
+    title: "Skale Club | Guia de Chaveiros NFC: Modelos, Preços e Dúvidas",
     description:
       "Entenda os chaveiros NFC flat, com alto-relevo e em formatos personalizados, o que altera o preço, compatibilidade, arte e processo do pedido.",
     locale: "pt_BR",
     ogImage: NFC_OG_IMAGE,
   },
   websites: {
-    title: "Websites for Service Businesses | Skale Club",
+    title: "Skale Club | Websites for Service Businesses",
     description:
       "Fast, Google-optimized websites for service businesses, deployed in days. Tell us about your project and get a proposal within 24 hours.",
     locale: "en_US",
   },
   "websites-br": {
-    title: "Sites para Empresas de Serviços | Skale Club",
+    title: "Skale Club | Sites para Empresas de Serviços",
     description:
       "Sites rápidos e otimizados para o Google para empresas de serviços, no ar em dias. Conte sobre seu projeto e receba uma proposta em até 24 horas.",
     locale: "pt_BR",
   },
   barbershops: {
-    title: "More Clients for Your Barbershop | Skale Club",
+    title: "Skale Club | More Clients for Your Barbershop",
     description:
       "A phone that's always answered and a calendar that stays full. Hear it working, or tell us about your shop.",
     locale: "en_US",
   },
   "barbershops-br": {
-    title: "Mais Clientes para a Sua Barbearia | Skale Club",
+    title: "Skale Club | Mais Clientes para a Sua Barbearia",
     description:
       "Um telefone sempre atendido e uma agenda sempre cheia. Ouça funcionando ou conte sobre a sua barbearia.",
     locale: "pt_BR",
   },
   grupo: {
-    title: "Grupo do Skale Hub no WhatsApp | Skale Club",
+    title: "Skale Club | Grupo do Skale Hub no WhatsApp",
     description:
       "Receba os avisos das lives semanais do Skale Hub no seu WhatsApp: aquisição de clientes nos EUA, Google Ads, Meta Ads, CRM, automação e IA.",
     locale: "pt_BR",
   },
   products: {
-    title: "Products | Skale Club",
+    title: "Skale Club | Products",
     description:
       "Things we 3D print for your counter: an NFC review plaque and custom NFC keychains.",
     locale: "en_US",
   },
   "products-br": {
-    title: "Produtos | Skale Club",
+    title: "Skale Club | Produtos",
     description:
       "O que a gente imprime em 3D para o seu balcão: uma placa de avaliação NFC e chaveiros NFC personalizados.",
     locale: "pt_BR",
   },
   "nfc-review-plaque": {
-    title: "NFC Review Plaque | Skale Club",
+    title: "Skale Club | NFC Review Plaque",
     description:
       "A 3D-printed plaque for your counter. Tap a phone on it and it opens your Google review page. Made to order.",
     locale: "en_US",
   },
   "nfc-review-plaque-br": {
-    title: "Placa de Avaliação NFC | Skale Club",
+    title: "Skale Club | Placa de Avaliação NFC",
     description:
       "Uma placa impressa em 3D para o seu balcão. O cliente encosta o celular e ela abre a sua página de avaliação no Google. Feita sob encomenda.",
     locale: "pt_BR",
@@ -159,14 +160,14 @@ export const LANDING_SEO: Record<string, LandingSeo> = {
   // Superseded by the /nfc-keychains landing (server/canonicalHost.ts 301s the URL): kept out
   // of the sitemap and the index while the DB row still exists.
   "nfc-custom-keychains": {
-    title: "NFC Keychains | Skale Club",
+    title: "Skale Club | NFC Keychains",
     description:
       "Custom 3D-printed NFC keychains with your branding. The tap opens the link you choose. Made to order.",
     locale: "en_US",
     robots: "noindex, follow",
   },
   "nfc-custom-keychains-br": {
-    title: "Chaveiros NFC | Skale Club",
+    title: "Skale Club | Chaveiros NFC",
     description:
       "Chaveiros NFC personalizados e impressos em 3D com a sua marca. O toque abre o link que você escolher. Feitos sob encomenda.",
     locale: "pt_BR",
@@ -242,5 +243,6 @@ export function slugForLandingPath(pathname: string): string {
 }
 
 export function getLandingSeo(slug: string): LandingSeo | undefined {
-  return LANDING_SEO[slug];
+  const seo = LANDING_SEO[slug];
+  return seo ? { ...seo, title: brandPageTitle(seo.title) } : undefined;
 }

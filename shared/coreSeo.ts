@@ -52,11 +52,11 @@ export const CORE_SEO: Record<CoreSeoKey, CoreSeoEntry> = {
   },
   portfolio: {
     en: {
-      title: "Our Solutions | Skale Club",
+      title: "Skale Club | Our Solutions",
       description: "Ready-made apps and the services we perform: AI, automation, websites, marketing and more.",
     },
     pt: {
-      title: "Nossas Soluções | Skale Club",
+      title: "Skale Club | Nossas Soluções",
       description: "Apps prontos e os serviços que prestamos: IA, automação, sites, marketing e mais.",
     },
     crumb: { en: "Our Solutions", pt: "Nossas Soluções" },
@@ -65,11 +65,11 @@ export const CORE_SEO: Record<CoreSeoKey, CoreSeoEntry> = {
   },
   apps: {
     en: {
-      title: "Apps | Skale Club",
+      title: "Skale Club | Apps",
       description: "Ready-made apps we build and run, each with a fixed price. Subscribe and start.",
     },
     pt: {
-      title: "Apps | Skale Club",
+      title: "Skale Club | Apps",
       description: "Apps prontos que criamos e operamos, cada um com preço fechado. Você assina e começa.",
     },
     crumb: { en: "Apps", pt: "Apps" },
@@ -78,11 +78,11 @@ export const CORE_SEO: Record<CoreSeoKey, CoreSeoEntry> = {
   },
   services: {
     en: {
-      title: "Services | Skale Club",
+      title: "Skale Club | Services",
       description: "Marketing and technology services tailored to your business: AI, automation, websites and more.",
     },
     pt: {
-      title: "Serviços | Skale Club",
+      title: "Skale Club | Serviços",
       description: "Serviços de marketing e tecnologia sob medida para o seu negócio: IA, automação, sites e mais.",
     },
     crumb: { en: "Services", pt: "Serviços" },
@@ -91,11 +91,11 @@ export const CORE_SEO: Record<CoreSeoKey, CoreSeoEntry> = {
   },
   contact: {
     en: {
-      title: "Contact | Skale Club",
+      title: "Skale Club | Contact",
       description: "Get in touch with Skale Club. Call, email or send us a message and we will get back to you.",
     },
     pt: {
-      title: "Contato | Skale Club",
+      title: "Skale Club | Contato",
       description: "Fale com a Skale Club. Ligue, envie um e-mail ou mande uma mensagem e retornaremos em breve.",
     },
     crumb: { en: "Contact", pt: "Contato" },
@@ -104,11 +104,11 @@ export const CORE_SEO: Record<CoreSeoKey, CoreSeoEntry> = {
   },
   faq: {
     en: {
-      title: "FAQ | Skale Club",
+      title: "Skale Club | FAQ",
       description: "Find answers to common questions about our services.",
     },
     pt: {
-      title: "Perguntas Frequentes | Skale Club",
+      title: "Skale Club | Perguntas Frequentes",
       description: "Encontre respostas para perguntas comuns sobre nossos serviços.",
     },
     crumb: { en: "FAQ", pt: "Perguntas Frequentes" },
@@ -117,11 +117,11 @@ export const CORE_SEO: Record<CoreSeoKey, CoreSeoEntry> = {
   },
   blog: {
     en: {
-      title: "Blog | Skale Club",
+      title: "Skale Club | Blog",
       description: "Tips, guides, and insights about marketing services",
     },
     pt: {
-      title: "Blog | Skale Club",
+      title: "Skale Club | Blog",
       description: "Dicas, guias e insights sobre serviços de marketing.",
     },
     crumb: { en: "Blog", pt: "Blog" },
@@ -130,11 +130,11 @@ export const CORE_SEO: Record<CoreSeoKey, CoreSeoEntry> = {
   },
   links: {
     en: {
-      title: "Links | Skale Club",
+      title: "Skale Club | Links",
       description: "All the Skale Club links in one place: website, proposals, portfolio and blog.",
     },
     pt: {
-      title: "Links | Skale Club",
+      title: "Skale Club | Links",
       description: "Todos os links da Skale Club em um só lugar: site, propostas, portfólio e blog.",
     },
     crumb: { en: "Links", pt: "Links" },
@@ -143,12 +143,12 @@ export const CORE_SEO: Record<CoreSeoKey, CoreSeoEntry> = {
   },
   hub: {
     en: {
-      title: "Skale Hub | Skale Club",
+      title: "Skale Club | Skale Hub",
       description:
         "Weekly live sessions on winning clients in the US: Google Ads, Meta Ads, CRM, automation and AI. Register to join the next Skale Hub.",
     },
     pt: {
-      title: "Skale Hub | Skale Club",
+      title: "Skale Club | Skale Hub",
       description:
         "Lives semanais sobre aquisição de clientes nos EUA: Google Ads, Meta Ads, CRM, automação e IA. Cadastre-se para entrar no próximo Skale Hub.",
     },
@@ -158,11 +158,11 @@ export const CORE_SEO: Record<CoreSeoKey, CoreSeoEntry> = {
   },
   privacyPolicy: {
     en: {
-      title: "Privacy Policy | Skale Club",
+      title: "Skale Club | Privacy Policy",
       description: "Read how Skale Club collects, uses and protects your personal information.",
     },
     pt: {
-      title: "Política de Privacidade | Skale Club",
+      title: "Skale Club | Política de Privacidade",
       description: "Saiba como a Skale Club coleta, usa e protege as suas informações pessoais.",
     },
     crumb: { en: "Privacy Policy", pt: "Política de Privacidade" },
@@ -171,11 +171,11 @@ export const CORE_SEO: Record<CoreSeoKey, CoreSeoEntry> = {
   },
   termsOfService: {
     en: {
-      title: "Terms of Service | Skale Club",
+      title: "Skale Club | Terms of Service",
       description: "Read the terms that govern your use of the Skale Club website and services.",
     },
     pt: {
-      title: "Termos de Serviço | Skale Club",
+      title: "Skale Club | Termos de Serviço",
       description: "Leia os termos que regem o uso do site e dos serviços da Skale Club.",
     },
     crumb: { en: "Terms of Service", pt: "Termos de Serviço" },

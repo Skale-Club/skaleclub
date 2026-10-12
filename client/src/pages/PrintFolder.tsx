@@ -10,6 +10,7 @@ import { CoverPhotoPicker } from "@/print/CoverPhotoPicker";
 import { FOLDER_PRODUCTS } from "@/print/products";
 import { DEFAULT_TEMPLATE_ID, FOLDER_TEMPLATES, getTemplate } from "@/print/templates";
 import type { FolderData } from "@/print/types";
+import { usePageSeo } from "@/hooks/use-seo";
 
 /**
  * Half-fold folder generator.
@@ -24,6 +25,8 @@ import type { FolderData } from "@/print/types";
  * Sizes are for the OPEN sheet; bleed is added around it and trimmed after printing.
  */
 export default function PrintFolder() {
+  usePageSeo({ title: "Print folder", noindex: true });
+
   // Both queries are kept as query objects rather than destructured data: the
   // default selection needs `isPending` from each to know when both catalogs
   // have settled. The per-query `retryOnMount: false` workaround that used to

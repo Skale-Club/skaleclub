@@ -21,6 +21,7 @@ import { usePagePaths } from '@/lib/pagePaths';
 import { NotFoundState } from '@/components/NotFoundState';
 import { fetchJson } from '@/lib/queryClient';
 import { SectionFrame } from '@/components/editorial';
+import { brandPageTitle } from '@shared/seoTitle';
 
 export default function BlogPostPage() {
   const params = useParams<{ slug: string }>();
@@ -47,7 +48,7 @@ export default function BlogPostPage() {
 
   useEffect(() => {
     if (post) {
-      document.title = `${post.title} | ${settings?.companyName || 'Blog'}`;
+      document.title = brandPageTitle(post.title, settings?.companyName);
       
       const metaDesc = document.querySelector('meta[name="description"]');
       if (metaDesc) {

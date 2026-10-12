@@ -11,6 +11,7 @@ import { TurnstileWidget } from '@/components/TurnstileWidget';
 import { ArrowRight, Lock, Mail } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import type { CompanySettings } from '@shared/schema';
+import { usePageSeo } from '@/hooks/use-seo';
 
 const POST_LOGIN_KEY = 'adminLoginNext';
 
@@ -32,6 +33,8 @@ function readPostLoginPath(): string {
 }
 
 export default function AdminLogin() {
+  usePageSeo({ title: 'Admin login', noindex: true });
+
   const googleLogoUrl = 'https://commons.wikimedia.org/wiki/Special:FilePath/Google_Favicon_2025.svg';
   const { isAdmin, loading, signIn, isSupabaseAuth, turnstileSiteKey } = useAdminAuth();
   const { data: companySettings } = useQuery<CompanySettings>({

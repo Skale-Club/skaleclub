@@ -1,6 +1,7 @@
 import { legacyLanguagePath, splitLanguagePath, withLanguage } from "#shared/languagePath.js";
 import { buildPagePaths } from "#shared/pageSlugs.js";
 import { CORE_SEO, coreKeyForPath, corePathForKey, type CoreSeoKey } from "#shared/coreSeo.js";
+import { brandPageTitle } from "#shared/seoTitle.js";
 import {
   CORE_OG_IMAGE,
   LANDING_SEO,
@@ -140,12 +141,13 @@ export function injectSeo(html: string, pathname: string, ctx: InjectContext): s
     description = copy?.description;
     image = CORE_SEO[coreKey].ogImage;
   } else if (blog) {
-    title = `${blog.title} | ${settings?.companyName?.trim() || "Blog"}`;
+    title = blog.title;
     description = blog.metaDescription || undefined;
     imageUrl = blog.featureImageUrl ? absoluteUrl(origin, blog.featureImageUrl) : undefined;
   }
 
   if (title) {
+    title = brandPageTitle(title, settings?.companyName);
     const socialTitle = blog ? blog.title : title;
     head.title(title).meta("property", "og:title", socialTitle).meta("name", "twitter:title", socialTitle);
   }

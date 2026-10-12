@@ -1,5 +1,5 @@
 import { getLandingSeo, landingPathForSlug, slugForLandingPath } from '@shared/landingSeo';
-import { homepageTitle } from '@shared/seoTitle';
+import { brandPageTitle, homepageTitle } from '@shared/seoTitle';
 import { CORE_SEO, coreKeyForPath, isNoindexPath } from '@shared/coreSeo';
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -108,11 +108,11 @@ export function usePageSeo(opts: { title: string; description?: string; noindex?
   const { data: settings } = useQuery<SeoSettings>({ queryKey: ['/api/company-settings'] });
   const { title, description, noindex } = opts;
   useEffect(() => {
-    const brand = settings?.ogSiteName || settings?.seoTitle || settings?.companyName || 'Skale Club';
+    const brand = settings?.companyName || settings?.ogSiteName || 'Skale Club';
     // An empty title leaves the document title to the page (or the server-side
     // injection); the page only wants the noindex side effects below.
     if (title) {
-      const fullTitle = `${title} | ${brand}`;
+      const fullTitle = brandPageTitle(title, brand);
       document.title = fullTitle;
       setMetaTag('og:title', fullTitle, true);
       setMetaTag('twitter:title', fullTitle);
@@ -164,7 +164,9 @@ export function useSEO() {
     // The Portuguese home (`/br`) has its own copy (shared/coreSeo.ts); the
     // settings row is English.
     const homeCopy = isPortugueseHome() ? CORE_SEO.home.pt : null;
-    const homeTitle = homeCopy?.title ?? homepageTitle(settings);
+    const homeTitle = homeCopy
+      ? brandPageTitle(homeCopy.title, settings.companyName)
+      : homepageTitle(settings);
     const homeDescription = homeCopy?.description ?? settings.seoDescription;
     if (onHomepage) {
       document.title = homeTitle;

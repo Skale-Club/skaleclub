@@ -50,3 +50,8 @@ test("getLandingSeo: every product slug (EN and PT) has curated SEO copy", () =>
     assert.ok(getLandingSeo(slug), `missing LANDING_SEO entry for "${slug}"`);
   }
 });
+
+test("getLandingSeo: managed landing titles are brand-first", () => {
+  assert.equal(getLandingSeo("barbershops")?.title, "Skale Club | More Clients for Your Barbershop");
+  assert.equal(getLandingSeo("barbershops-br")?.title, "Skale Club | Mais Clientes para a Sua Barbearia");
+});

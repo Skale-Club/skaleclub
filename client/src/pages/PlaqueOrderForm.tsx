@@ -5,7 +5,7 @@ export default function PlaqueOrderForm() {
     <OrderFormPage
       formSlug="nfc-plaque-order"
       badge="Plaque order"
-      documentTitle="Complete your NFC plaque order | Skale Club"
+      documentTitle="Complete your NFC plaque order"
       backHref="/products/nfc-review-plaque"
       backLabel="See the plaque page"
       backLabelShort="Plaque"

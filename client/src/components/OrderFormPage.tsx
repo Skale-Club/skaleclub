@@ -8,6 +8,7 @@ import { LeadFormModal } from "@/components/LeadFormModal";
 import { useTranslation } from "@/hooks/useTranslation";
 import { usePageSeo } from "@/hooks/use-seo";
 import type { TranslationKey } from "@/lib/translations";
+import { brandPageTitle } from "@shared/seoTitle";
 
 /**
  * Full-screen order page around a priced order form (/nfc-order, /plaque-order).
@@ -36,11 +37,11 @@ export function OrderFormPage({
 
   useEffect(() => {
     const previousTitle = document.title;
-    document.title = t(documentTitle);
+    document.title = brandPageTitle(t(documentTitle), settings?.companyName);
     return () => {
       document.title = previousTitle;
     };
-  }, [t, documentTitle]);
+  }, [t, documentTitle, settings?.companyName]);
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-navy-900 pattern-grid-dark text-fog-200">

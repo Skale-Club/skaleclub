@@ -25,6 +25,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { buildPagePaths } from "@shared/pageSlugs";
 import { telHref, formatPhoneDisplay } from "@shared/phone";
 import { MobileActionBar } from "@/components/layout/MobileActionBar";
+import { usePageSeo } from "@/hooks/use-seo";
 
 const iconMap: Record<string, React.ReactNode> = {
   instagram: <SiInstagram className="w-5 h-5" />,
@@ -101,6 +102,7 @@ export default function Links() {
   }, []);
 
   const { t } = useTranslation();
+  usePageSeo({ title: t("Links") });
   const reduceMotion = useReducedMotion();
   // Url of an avatar that failed to load, so the initials block replaces a broken image.
   const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null);

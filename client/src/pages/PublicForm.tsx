@@ -5,6 +5,7 @@ import { LeadFormModal } from '@/components/LeadFormModal';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Loader2 } from '@/components/ui/loader';
 import { NotFoundState } from '@/components/NotFoundState';
+import { usePageSeo } from '@/hooks/use-seo';
 
 type SlugParams = { slug: string };
 
@@ -18,6 +19,8 @@ export default function PublicForm() {
   const [, setLocation] = useLocation();
   const { t } = useTranslation();
   const slug = params?.slug;
+
+  usePageSeo({ title: t('Form') });
 
   const [modalOpen, setModalOpen] = useState(true);
 

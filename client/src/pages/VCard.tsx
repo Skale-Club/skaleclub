@@ -28,6 +28,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import type { VCard as VCardType, CompanySettings } from "@shared/schema";
 import { formatPhoneDisplay } from "@shared/phone";
+import { brandPageTitle } from "@shared/seoTitle";
 
 import { useToast } from "@/hooks/use-toast";
 
@@ -108,7 +109,9 @@ export default function VCard() {
 
   useEffect(() => {
     if (contactData) {
-      document.title = `${contactData.organization || "VCard"} | ${contactData.firstName} ${contactData.lastName}`;
+      document.title = brandPageTitle(
+        `${contactData.organization || "VCard"} | ${contactData.firstName} ${contactData.lastName}`,
+      );
     }
   }, [contactData]);
 

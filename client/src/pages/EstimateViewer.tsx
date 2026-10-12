@@ -14,6 +14,7 @@ import { usePageSeo } from '@/hooks/use-seo';
 import { GradientBackground } from '@/components/ui/gradient-background-4';
 import { NotFoundState } from '@/components/NotFoundState';
 import type { CompanySettings, EstimateServiceItem } from '@shared/schema';
+import { brandPageTitle } from '@shared/seoTitle';
 
 interface PublicEstimate {
   id: number;
@@ -432,7 +433,7 @@ export default function EstimateViewer() {
     const estimateName = data.companyName?.trim() || data.contactName?.trim() || data.clientName?.trim();
     if (!estimateName) return;
     const companyName = siteSettings?.companyName?.trim() || 'Skale Club';
-    document.title = `${estimateName} | ${companyName}`;
+    document.title = brandPageTitle(estimateName, companyName);
   }, [data, siteSettings?.companyName]);
 
   const goTo = useCallback((idx: number) => {

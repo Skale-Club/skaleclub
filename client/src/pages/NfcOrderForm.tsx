@@ -5,7 +5,7 @@ export default function NfcOrderForm() {
     <OrderFormPage
       formSlug="nfc-keychain-order"
       badge="NFC order"
-      documentTitle="Complete your NFC keychain order | Skale Club"
+      documentTitle="Complete your NFC keychain order"
       backHref="/nfc-guide"
       backLabel="Read the keychain guide"
       backLabelShort="Guide"
