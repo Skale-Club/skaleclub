@@ -156,12 +156,14 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Mais tempo no seu dia.",
   "More money in your pocket.":
     "Mais dinheiro no seu bolso.",
-  "Fill more chairs while an AI answers calls, shares prices, and books appointments.":
-    "Encha mais cadeiras enquanto uma IA atende ligações, informa preços e agenda clientes.",
+  "Fill more chairs with our booking system while AI answers calls, shares prices, and helps clients schedule appointments.":
+    "Encha mais cadeiras com o nosso sistema de agendamento enquanto a IA atende ligações, informa preços e ajuda clientes a marcar horários.",
   "More clients on your calendar. Less time on the phone.":
     "Mais clientes na agenda. Menos tempo no telefone.",
   "Get more clients":
     "Quero mais clientes",
+  "Let's talk":
+    "Vamos conversar",
   "Hear it working: (224) 551-6131":
     "Ouça funcionando: (224) 551-6131",
   "Hear the AI answer":
@@ -276,8 +278,8 @@ export const LANDING_PT_COPY: Record<string, string> = {
     "Serviços para barbearias",
   "What your barbershop needs to grow":
     "O que sua barbearia precisa para crescer",
-  "Start with Xkedule for calls and bookings. Add a website, ads or weekly content when you need them.":
-    "Comece com o Xkedule para atender ligações e agendar clientes. Depois, combine site, anúncios e conteúdo conforme precisar.",
+  "Start with Xkedule for calls and bookings. Add ads or professionally recorded and edited social media videos when you need them.":
+    "Comece com o Xkedule para atender ligações e agendar clientes. Depois, adicione anúncios ou vídeos para redes sociais gravados e editados profissionalmente.",
   "A barber welcoming a customer into a busy neighborhood barbershop.":
     "Um barbeiro recebendo um cliente em uma barbearia movimentada do bairro.",
   "Google review and Instagram NFC stands on a barbershop counter while a barber serves a client.":

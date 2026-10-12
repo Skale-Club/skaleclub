@@ -149,11 +149,12 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
   { source: "More time in your day.", translated: "Mais tempo no seu dia." },
   { source: "More money in your pocket.", translated: "Mais dinheiro no seu bolso." },
   {
-    source: "Fill more chairs while an AI answers calls, shares prices, and books appointments.",
-    translated: "Encha mais cadeiras enquanto uma IA atende ligações, informa preços e agenda clientes.",
+    source: "Fill more chairs with our booking system while AI answers calls, shares prices, and helps clients schedule appointments.",
+    translated: "Encha mais cadeiras com o nosso sistema de agendamento enquanto a IA atende ligações, informa preços e ajuda clientes a marcar horários.",
   },
   { source: "More clients on your calendar. Less time on the phone.", translated: "Mais clientes na agenda. Menos tempo no telefone." },
   { source: "Get more clients", translated: "Quero mais clientes" },
+  { source: "Let's talk", translated: "Vamos conversar" },
   {
     source: "Hear it working: (224) 551-6131",
     translated: "Ouça funcionando: (224) 551-6131",
@@ -301,9 +302,18 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
   { source: "Services for barbershops", translated: "Serviços para barbearias" },
   { source: "What your barbershop needs to grow", translated: "O que sua barbearia precisa para crescer" },
   {
-    source: "Start with Xkedule for calls and bookings. Add a website, ads or weekly content when you need them.",
-    translated: "Comece com o Xkedule para atender ligações e agendar clientes. Depois, combine site, anúncios e conteúdo conforme precisar.",
+    source: "Start with Xkedule for calls and bookings. Add ads or professionally recorded and edited social media videos when you need them.",
+    translated: "Comece com o Xkedule para atender ligações e agendar clientes. Depois, adicione anúncios ou vídeos para redes sociais gravados e editados profissionalmente.",
   },
+  { source: "Content Creation", translated: "Produção de conteúdo" },
+  {
+    source: "Social media posts, videos, blogs, website copy, ad creatives, product photography, and promotional materials.",
+    translated: "Gravação e edição de vídeos para redes sociais, criação de posts, textos, criativos para anúncios, fotografia de produtos e materiais promocionais.",
+  },
+  { source: "Social media content", translated: "Conteúdo para redes sociais" },
+  { source: "Video production", translated: "Gravação e edição de vídeos" },
+  { source: "Blog writing", translated: "Produção de textos" },
+  { source: "Product photography", translated: "Fotografia de produtos" },
 
   // Alt text for the three approved WebP replacements.
   {

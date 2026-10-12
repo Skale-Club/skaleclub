@@ -254,8 +254,8 @@ export const LANDING_SECTIONS: PageSection[] = [
         { text: "More time in your day." },
         { text: "More money in your pocket.", accent: true },
       ],
-      subheadline: "Fill more chairs while an AI answers calls, shares prices, and books appointments.",
-      ctaLabel: "Get more clients",
+      subheadline: "Fill more chairs with our booking system while AI answers calls, shares prices, and helps clients schedule appointments.",
+      ctaLabel: "Let's talk",
       backgroundImageUrl: "/barbershops/hero-barbershop.webp",
       backgroundImageAlt: "Barber cutting a client's hair in a busy modern barbershop.",
       mediaItems: [
@@ -339,12 +339,11 @@ export const LANDING_SECTIONS: PageSection[] = [
     props: {
       eyebrow: "Services for barbershops",
       title: "What your barbershop needs to grow",
-      subtitle: "Start with Xkedule for calls and bookings. Add a website, ads or weekly content when you need them.",
+      subtitle: "Start with Xkedule for calls and bookings. Add ads or professionally recorded and edited social media videos when you need them.",
       items: [
         { source: "product", slug: "scheduling-system" },
-        { source: "product", slug: "websites" },
         { source: "service", title: "Paid Advertising" },
-        { source: "product", slug: "xareable" },
+        { source: "service", title: "Content Creation" },
       ],
     },
   },
@@ -407,7 +406,7 @@ export const LANDING_SECTIONS: PageSection[] = [
       formSlug: FORM_SLUG,
       heading: "Let's fill your chairs",
       subheading: "Tell us about your shop in a minute. We'll recommend the best place to start.",
-      ctaLabel: "Get more clients",
+      ctaLabel: "Let's talk",
     },
   },
 ];
