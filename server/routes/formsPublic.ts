@@ -7,7 +7,11 @@ import { DEFAULT_FORM_CONFIG } from "#shared/form.js";
 import type { FormConfig } from "#shared/schema.js";
 import { sendError, setPublicCache } from "./_shared.js";
 import { runLeadPostProcessing } from "../lib/lead-processing.js";
-import { buildXphereBookingUrl } from "../integrations/xphere.js";
+import {
+  createXphereBooking,
+  getXphereBookingContext,
+  isXphereBookingConfigured,
+} from "../integrations/xphere.js";
 import { summarizeFormTranscript, transcribeFormAudio } from "../lib/form-audio.js";
 import { rateLimitMiddleware } from "../lib/rateLimit.js";
 import { isBotSubmission } from "../lib/botTrap.js";
@@ -33,7 +37,7 @@ const EXT_TO_MIME: Record<string, string> = {
 // anyone holding the sessionId must not be able to fetch.
 function publicLeadView(
   lead: { id: number; sessionId: string | null; formCompleto: boolean | null; ultimaPerguntaRespondida: number | null; classificacao: string | null; scoreTotal: number | null },
-  bookingUrl?: string | null,
+  bookingAvailable = false,
 ) {
   return {
     id: lead.id,
@@ -42,7 +46,7 @@ function publicLeadView(
     ultimaPerguntaRespondida: lead.ultimaPerguntaRespondida,
     classificacao: lead.classificacao,
     scoreTotal: lead.scoreTotal,
-    ...(bookingUrl ? { bookingUrl } : {}),
+    ...(bookingAvailable ? { bookingAvailable: true } : {}),
   };
 }
 
@@ -61,6 +65,16 @@ const skaleHubGroupLeadSchema = z.object({
   utmSource: z.string().max(200).optional(),
   utmMedium: z.string().max(200).optional(),
   utmCampaign: z.string().max(200).optional(),
+});
+
+const bookingQuerySchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+});
+
+const bookingCreateSchema = z.object({
+  sessionId: z.string().uuid(),
+  startAt: z.string().datetime({ offset: true }),
+  timezone: z.string().trim().min(1).max(100),
 });
 
 const SKALE_HUB_GROUP_FORM_CONFIG: FormConfig = {
@@ -228,7 +242,7 @@ export function registerFormPublicRoutes(app: Express) {
         formConfig,
       );
 
-      const { lead, bookingUrl } = await runLeadPostProcessing(
+      const { lead, bookingAvailable } = await runLeadPostProcessing(
         initialLead,
         formConfig,
         companyName,
@@ -236,7 +250,7 @@ export function registerFormPublicRoutes(app: Express) {
         form.slug,
         form.name,
       );
-      res.json(publicLeadView(lead, bookingUrl));
+      res.json(publicLeadView(lead, bookingAvailable));
     } catch (err: any) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors?.[0]?.message || "Validation error" });
@@ -246,16 +260,18 @@ export function registerFormPublicRoutes(app: Express) {
         if (sessionId) {
           const existing = await storage.getFormLeadBySession(sessionId);
           if (existing) {
-            // Double-submitted final step: still surface the booking URL so the
-            // thank-you CTA appears. No enqueue here — the original request did
-            // it, or the sweep's reconcile will.
+            // Double-submitted final step: still surface embedded-booking
+            // availability. No enqueue here — the original request did it, or
+            // the sweep's reconcile will.
             if (existing.formCompleto) {
               try {
                 const form = await storage.getFormBySlug(req.params.slug);
-                const cfg = (form?.config as FormConfig | null) ?? DEFAULT_FORM_CONFIG;
+                const formConfig = (form?.config as FormConfig | null) ?? DEFAULT_FORM_CONFIG;
                 const xphere = await storage.getXphereSettings();
-                const bookingUrl = xphere ? buildXphereBookingUrl(existing, cfg, xphere) : null;
-                if (bookingUrl) return res.json(publicLeadView(existing, bookingUrl));
+                if (
+                  formConfig.embeddedBooking?.provider === "xphere"
+                  && isXphereBookingConfigured(xphere)
+                ) return res.json(publicLeadView(existing, true));
               } catch { /* fall through: respond exactly as before */ }
             }
             return res.json(publicLeadView(existing));
@@ -266,6 +282,106 @@ export function registerFormPublicRoutes(app: Express) {
       console.error("[forms] progressive lead failed:", err);
       res.status(400).json({ message: "Could not save your data. Please try again." });
     }
+    },
+  );
+
+  // Embedded Xphere scheduler. The browser never sees the provider URL, API
+  // key, profile slug, or event slug; it only receives the safe event metadata
+  // and currently available slots needed to render the picker locally.
+  app.get(
+    "/api/forms/slug/:slug/booking",
+    publicLeadRateLimit,
+    async (req, res) => {
+      try {
+        const form = await storage.getFormBySlug(req.params.slug);
+        if (!form || !form.isActive) return res.status(404).json({ message: "Form not found" });
+
+        const parsed = bookingQuerySchema.parse(req.query);
+        const formConfig = (form.config as FormConfig | null) ?? DEFAULT_FORM_CONFIG;
+        if (formConfig.embeddedBooking?.provider !== "xphere") {
+          return res.status(404).json({ message: "Scheduling is not available" });
+        }
+        const settings = await storage.getXphereSettings();
+        if (!settings || !isXphereBookingConfigured(settings)) {
+          return res.status(404).json({ message: "Scheduling is not available" });
+        }
+
+        const context = await getXphereBookingContext(settings, parsed.date);
+        res.json(context);
+      } catch (err: any) {
+        if (err instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid date" });
+        }
+        const status = typeof err?.status === "number" && err.status < 500 ? err.status : 502;
+        console.error("[forms] Xphere availability failed:", err?.code || err?.message || err);
+        res.status(status).json({ message: "Could not load available times" });
+      }
+    },
+  );
+
+  app.post(
+    "/api/forms/slug/:slug/booking",
+    rateLimitMiddleware({
+      limit: 10,
+      windowMs: 60 * 60_000,
+      message: "Too many booking attempts. Please try again later.",
+    }),
+    async (req, res) => {
+      try {
+        const form = await storage.getFormBySlug(req.params.slug);
+        if (!form || !form.isActive) return res.status(404).json({ message: "Form not found" });
+
+        const parsed = bookingCreateSchema.parse(req.body);
+        const formConfig = (form.config as FormConfig | null) ?? DEFAULT_FORM_CONFIG;
+        if (formConfig.embeddedBooking?.provider !== "xphere") {
+          return res.status(404).json({ message: "Scheduling is not available" });
+        }
+        const lead = await storage.getFormLeadBySession(parsed.sessionId);
+        if (!lead || lead.formId !== form.id || !lead.formCompleto) {
+          return res.status(404).json({ message: "Completed form not found" });
+        }
+        if (!lead.nome?.trim() || !lead.email?.trim()) {
+          return res.status(422).json({ message: "Name and email are required to schedule" });
+        }
+
+        const settings = await storage.getXphereSettings();
+        if (!settings || !isXphereBookingConfigured(settings)) {
+          return res.status(404).json({ message: "Scheduling is not available" });
+        }
+
+        const notes = [
+          `Skale Club form: ${form.name}`,
+          lead.customAnswers?.nomeBarbearia ? `Barbershop: ${lead.customAnswers.nomeBarbearia}` : null,
+          lead.principalDesafio ? `Primary goal: ${lead.principalDesafio}` : null,
+        ].filter(Boolean).join("\n");
+
+        const booking = await createXphereBooking(settings, {
+          startAt: parsed.startAt,
+          bookerName: lead.nome.trim(),
+          bookerEmail: lead.email.trim(),
+          bookerPhone: lead.telefone,
+          bookerTimezone: parsed.timezone,
+          notes,
+        });
+        res.status(201).json(booking);
+      } catch (err: any) {
+        if (err instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid booking details" });
+        }
+        const status = err?.code === "slot_taken"
+          ? 409
+          : err?.code === "rate_limited"
+            ? 429
+            : typeof err?.status === "number" && err.status < 500
+              ? err.status
+              : 502;
+        console.error("[forms] Xphere booking failed:", err?.code || err?.message || err);
+        res.status(status).json({
+          message: status === 409
+            ? "That time was just booked. Please choose another one."
+            : "Could not confirm the meeting. Please try again.",
+        });
+      }
     },
   );
 

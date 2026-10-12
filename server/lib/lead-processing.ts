@@ -1,7 +1,7 @@
 // Shared helpers for the public lead-progress endpoint
 // (`POST /api/forms/slug/:slug/leads/progress`) and the chat tool-use sites.
 // Centralizes post-upsert work (notifications, GHL sync, Xphere handoff +
-// booking URL) so behavior stays consistent across entry points.
+// embedded-booking availability) so behavior stays consistent across entry points.
 
 import { storage } from "../storage.js";
 import { db } from "../db.js";
@@ -9,13 +9,13 @@ import { visitorSessions } from "#shared/schema.js";
 import { eq } from "drizzle-orm";
 import type { FormConfig, FormLead } from "#shared/schema.js";
 import { getOrCreateGHLContact } from "../integrations/ghl.js";
-import { enqueueXphereLead, buildXphereBookingUrl } from "../integrations/xphere.js";
+import { enqueueXphereLead, isXphereBookingConfigured } from "../integrations/xphere.js";
 import { finalizeNfcOrder, isPricedForm } from "./nfc-order.js";
 import { sendCompletedLeadToTelegram } from "./lead-telegram.js";
 
 type PostProcessResult = {
   lead: FormLead;
-  bookingUrl: string | null;
+  bookingAvailable: boolean;
 };
 
 /**
@@ -174,13 +174,14 @@ export async function runLeadPostProcessing(
     }
   }
 
-  // 4) Xphere lead handoff + visit booking URL (quick 260906-g80) — best-effort, never throws
-  let bookingUrl: string | null = null;
+  // 4) Xphere lead handoff + embedded scheduling availability — best-effort, never throws
+  let bookingAvailable = false;
   if (lead.formCompleto) {
     try {
       const xphere = await storage.getXphereSettings();
       if (xphere?.enabled) await enqueueXphereLead(lead, formConfig, formSlug);
-      if (xphere) bookingUrl = buildXphereBookingUrl(lead, formConfig, xphere);
+      bookingAvailable = formConfig.embeddedBooking?.provider === "xphere"
+        && isXphereBookingConfigured(xphere);
     } catch (err) {
       console.error(
         "[xphere] lead handoff error (non-blocking):",
@@ -189,5 +190,5 @@ export async function runLeadPostProcessing(
     }
   }
 
-  return { lead, bookingUrl };
+  return { lead, bookingAvailable };
 }

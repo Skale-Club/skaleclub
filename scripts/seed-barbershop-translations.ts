@@ -56,7 +56,7 @@ const TARGET_LANGUAGE = "pt";
 
 // ── Translation pairs (English source → hand-written pt-BR) ────────────────
 //
-// Every display string on /barbershops-br: the 12 `barbershop-leads` question
+// Every display string on /barbershops-br: the seven `barbershop-leads` question
 // titles, every select option label, every placeholder, plus the hero and CTA
 // copy carried on the landing's `heroWebsites` and `leadFormCta` sections.
 //
@@ -93,6 +93,7 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
   { source: "7+", translated: "7+" },
 
   { source: "How many barbers work with you?", translated: "Quantos barbeiros trabalham com você?" },
+  { source: "How many professionals work at your shop?", translated: "Quantos profissionais atendem na sua barbearia?" },
   { source: "Just me", translated: "Só eu" },
 
   // ── Booking system ──────────────────────────────────────────────────────
@@ -121,9 +122,37 @@ const PT_TRANSLATIONS: Array<{ source: string; translated: string }> = [
   { source: "Clients don't come back", translated: "Os clientes não voltam" },
   { source: "Empty chairs on slow days", translated: "Cadeiras vazias nos dias fracos" },
   { source: "No time to handle marketing", translated: "Falta tempo para cuidar do marketing" },
+  { source: "What would you most like to improve?", translated: "O que você mais gostaria de melhorar?" },
+  { source: "Organize appointments", translated: "Organizar os agendamentos" },
+  { source: "Respond to clients faster", translated: "Responder clientes mais rápido" },
+  { source: "Attract more clients", translated: "Atrair mais clientes" },
+  { source: "Create social media content", translated: "Produzir conteúdo para redes sociais" },
+  { source: "Improve my ads", translated: "Melhorar os anúncios" },
+  { source: "Get more Google reviews", translated: "Conseguir mais avaliações no Google" },
+
+  // ── Embedded Xphere scheduling ─────────────────────────────────────────
+  { source: "One last step", translated: "Só falta uma etapa" },
+  { source: "Choose the best time to talk", translated: "Escolha o melhor horário para conversar" },
+  { source: "minutes", translated: "minutos" },
+  { source: "Select a date", translated: "Escolha uma data" },
+  { source: "Available times", translated: "Horários disponíveis" },
+  { source: "Loading available times", translated: "Carregando horários disponíveis" },
+  { source: "No times are available on this date. Choose another day.", translated: "Não há horários disponíveis nesta data. Escolha outro dia." },
+  { source: "Could not load times. Choose another date or try again.", translated: "Não foi possível carregar os horários. Escolha outra data ou tente novamente." },
+  { source: "Choose a time first.", translated: "Escolha um horário primeiro." },
+  { source: "Confirm meeting", translated: "Confirmar reunião" },
+  { source: "I'll schedule later", translated: "Vou agendar depois" },
+  { source: "Meeting confirmed", translated: "Reunião confirmada" },
+  { source: "Your meeting is on our calendar. We sent the confirmation and meeting link to your email.", translated: "Sua reunião está na nossa agenda. Enviamos a confirmação e o link da reunião para o seu e-mail." },
+  { source: "Done", translated: "Concluir" },
+  { source: "We received your information", translated: "Recebemos suas informações" },
+  { source: "The calendar is unavailable right now, but our team will contact you.", translated: "A agenda está indisponível agora, mas nossa equipe entrará em contato com você." },
+  { source: "Continue", translated: "Continuar" },
 
   // ── Meeting format (tipoVisita — the Xphere booking hook point) ──────────
   { source: "How would you like to meet us?", translated: "Como você prefere falar com a gente?" },
+  { source: "How would you prefer to talk with us?", translated: "Como você prefere conversar com a gente?" },
+  { source: "Phone call", translated: "Ligação" },
   { source: "In-person visit at my shop", translated: "Visita presencial na minha barbearia" },
   { source: "Online meeting (video call)", translated: "Reunião online (chamada de vídeo)" },
   { source: "What's your shop address?", translated: "Qual é o endereço da sua barbearia?" },

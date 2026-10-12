@@ -22,7 +22,6 @@ import { deriveLeadLanguage } from "#shared/lead-language.js";
 import { storage } from "../storage.js";
 
 const XPHERE_API_BASE = "https://xphere.app/api/v1";
-const XPHERE_BOOK_BASE = "https://xphere.app/book";
 const WORKER_ID = `skaleclub-${process.pid}-${randomUUID()}`;
 const MAX_ATTEMPTS = 8;
 const RETRY_DELAYS_MS = [60_000, 300_000, 1_800_000, 7_200_000, 28_800_000, 86_400_000];
@@ -60,6 +59,37 @@ export type XphereInfo = {
   capabilities: { lead_ingestion: boolean; lead_schema_versions: string[] };
 };
 
+export type XphereBookingSlot = {
+  start: string;
+  end: string;
+  startLocal: string;
+  endLocal: string;
+};
+
+export type XphereBookingContext = {
+  event: {
+    title: string;
+    description: string | null;
+    durationMinutes: number;
+    color: string;
+    locationType: string;
+    locationValue: string | null;
+    allowedLocationKinds: string[];
+    timezone: string;
+    availableDows: number[];
+  };
+  slots?: XphereBookingSlot[];
+};
+
+export type CreateXphereBookingInput = {
+  startAt: string;
+  bookerName: string;
+  bookerEmail: string;
+  bookerPhone?: string | null;
+  bookerTimezone: string;
+  notes?: string;
+};
+
 type DeliveryError = Error & { permanent?: boolean; status?: number; code?: string };
 
 function sanitizeError(value: unknown): string {
@@ -79,6 +109,76 @@ export async function validateKey(apiKey: string): Promise<XphereInfo> {
     throw new Error("The API key must grant the leads:write scope");
   }
   return body as XphereInfo;
+}
+
+function requireBookingSettings(settings: XphereSettings): {
+  apiKey: string;
+  profileSlug: string;
+  eventTypeSlug: string;
+} {
+  const apiKey = settings.apiKey?.trim();
+  const profileSlug = settings.bookingProfileSlug?.trim();
+  const eventTypeSlug = settings.onlineEventSlug?.trim() || settings.inPersonEventSlug?.trim();
+  if (!settings.enabled || !settings.bookingEnabled || !apiKey || !profileSlug || !eventTypeSlug) {
+    throw Object.assign(new Error("Xphere booking is not configured"), { code: "booking_not_configured" });
+  }
+  return { apiKey, profileSlug, eventTypeSlug };
+}
+
+async function parseXphereResponse<T>(response: Response): Promise<T> {
+  const body = await response.json().catch(() => ({})) as T & { error?: string; code?: string };
+  if (!response.ok) {
+    throw Object.assign(
+      new Error(body.error || `Xphere returned HTTP ${response.status}`),
+      { status: response.status, code: body.code || `http_${response.status}` },
+    );
+  }
+  return body;
+}
+
+export async function getXphereBookingContext(
+  settings: XphereSettings,
+  date?: string,
+): Promise<XphereBookingContext> {
+  const { apiKey, profileSlug, eventTypeSlug } = requireBookingSettings(settings);
+  const url = new URL(`${XPHERE_API_BASE}/bookings`);
+  url.searchParams.set("profile_slug", profileSlug);
+  url.searchParams.set("event_type_slug", eventTypeSlug);
+  if (date) url.searchParams.set("date", date);
+
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+    redirect: "error",
+    signal: AbortSignal.timeout(10_000),
+  });
+  return parseXphereResponse<XphereBookingContext>(response);
+}
+
+export async function createXphereBooking(
+  settings: XphereSettings,
+  input: CreateXphereBookingInput,
+): Promise<{ id: string; status: "confirmed" }> {
+  const { apiKey, profileSlug, eventTypeSlug } = requireBookingSettings(settings);
+  const response = await fetch(`${XPHERE_API_BASE}/bookings`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      profile_slug: profileSlug,
+      event_type_slug: eventTypeSlug,
+      start_at: input.startAt,
+      booker_name: input.bookerName,
+      booker_email: input.bookerEmail,
+      booker_phone: input.bookerPhone || undefined,
+      booker_timezone: input.bookerTimezone,
+      notes: input.notes,
+    }),
+    redirect: "error",
+    signal: AbortSignal.timeout(12_000),
+  });
+  return parseXphereResponse<{ id: string; status: "confirmed" }>(response);
 }
 
 function leadValue(lead: FormLead, id: string): string | undefined {
@@ -339,35 +439,14 @@ export async function reconcileMissingXphereDeliveries(): Promise<void> {
   queueXphereDeliverySweep();
 }
 
-// Pure: picks the in-person/online event from the lead's visit-type answer and
-// returns a prefilled https://xphere.app/book/<profile>/<event> URL, else null.
-export function buildXphereBookingUrl(
-  lead: FormLead,
-  formConfig: FormConfig,
-  settings: XphereSettings,
-): string | null {
-  try {
-    if (!settings.bookingEnabled || !settings.bookingProfileSlug) return null;
-    const questionId = settings.visitTypeQuestionId || "tipoVisita";
-    if (!formConfig.questions.some((q) => q.id === questionId)) return null;
-    const answer = leadValue(lead, questionId);
-    if (!answer) return null;
-    const eventSlug = answer === (settings.inPersonAnswerValue || "presencial")
-      ? settings.inPersonEventSlug
-      : answer === (settings.onlineAnswerValue || "online")
-        ? settings.onlineEventSlug
-        : null;
-    if (!eventSlug) return null;
-    const url = new URL(`${XPHERE_BOOK_BASE}/${encodeURIComponent(settings.bookingProfileSlug)}/${encodeURIComponent(eventSlug)}`);
-    const prefill: Array<[string, string | null | undefined]> = [
-      ["name", lead.nome], ["email", lead.email], ["phone", lead.telefone],
-    ];
-    for (const [key, value] of prefill) {
-      const trimmed = value?.trim();
-      if (trimmed) url.searchParams.set(key, trimmed.slice(0, 200));
-    }
-    return url.toString();
-  } catch {
-    return null;
-  }
+// Public callers only need to know whether to continue into the embedded
+// scheduling step. The API key and all Xphere identifiers stay server-side.
+export function isXphereBookingConfigured(settings: XphereSettings | null | undefined): boolean {
+  return Boolean(
+    settings?.enabled
+    && settings.bookingEnabled
+    && settings.apiKey
+    && settings.bookingProfileSlug
+    && (settings.onlineEventSlug || settings.inPersonEventSlug),
+  );
 }

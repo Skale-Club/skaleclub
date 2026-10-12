@@ -156,6 +156,8 @@ export type AnalyticsEventName =
   | 'generate_lead'
   | 'form_abandoned'
   | 'form_result_action'
+  | 'booking_completed'
+  | 'booking_skipped'
   | 'form_closed_draft';
 
 export interface AnalyticsEventPayload {

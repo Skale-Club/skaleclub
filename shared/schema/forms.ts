@@ -280,6 +280,10 @@ export interface FormConfig {
     warm: number;
     cold: number;
   };
+  /** Continue into an on-site provider-backed scheduler after submission. */
+  embeddedBooking?: {
+    provider: 'xphere';
+  };
   /**
    * Site path the lead lands on after the last step, instead of the thank-you
    * page (e.g. the keychain order form sends people to /nfc-guide). The page

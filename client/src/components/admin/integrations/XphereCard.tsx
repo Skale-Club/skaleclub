@@ -191,12 +191,12 @@ export function XphereCard() {
           </p>
         </div>
 
-        {/* Visit booking */}
+        {/* Embedded booking */}
         <div className="space-y-4 pt-4 border-t">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h4 className="font-medium text-sm">Visit booking</h4>
-              <p className="text-xs text-muted-foreground">Redirects completed leads to your Xphere booking page based on their visit-type answer</p>
+              <h4 className="font-medium text-sm">Embedded meeting scheduling</h4>
+              <p className="text-xs text-muted-foreground">Shows Xphere availability inside the lead form and confirms the selected time in Xphere without redirecting the visitor</p>
             </div>
             <Switch id="xphere-booking" checked={settings.bookingEnabled} onCheckedChange={handleToggleBooking} disabled={isSaving} data-testid="switch-xphere-booking" />
           </div>
@@ -216,20 +216,8 @@ export function XphereCard() {
           </div>
           <details className="rounded-lg border p-3">
             <summary className="cursor-pointer text-sm font-medium">Advanced</summary>
-            <div className="mt-3 grid gap-4 sm:grid-cols-3">
+            <div className="mt-3">
               <div className="space-y-2">
-                <Label htmlFor="xphere-question-id">Visit-type question id</Label>
-                <Input id="xphere-question-id" value={settings.visitTypeQuestionId} onChange={field('visitTypeQuestionId')} placeholder="tipoVisita" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="xphere-in-person-value">In-person answer value</Label>
-                <Input id="xphere-in-person-value" value={settings.inPersonAnswerValue} onChange={field('inPersonAnswerValue')} placeholder="presencial" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="xphere-online-value">Online answer value</Label>
-                <Input id="xphere-online-value" value={settings.onlineAnswerValue} onChange={field('onlineAnswerValue')} placeholder="online" />
-              </div>
-              <div className="space-y-2 sm:col-span-3">
                 <Label htmlFor="xphere-tenant-ref">Tenant reference</Label>
                 <Input id="xphere-tenant-ref" value={settings.tenantRef} onChange={field('tenantRef')} placeholder="skaleclub" data-testid="input-xphere-tenant-ref" />
                 <p className="text-xs text-muted-foreground">Sent to Xphere as source.tenant_ref on every lead. Default: skaleclub</p>

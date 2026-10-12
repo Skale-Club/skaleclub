@@ -26,6 +26,7 @@ import { ProductPickerInput } from "@/components/form-fields/ProductPickerInput"
 import { LogoUploadInput } from "@/components/form-fields/LogoUploadInput";
 import { NfcPricePanel } from "@/components/form-fields/NfcPricePanel";
 import { PhoneCountrySelect } from "@/components/ui/PhoneCountrySelect";
+import { EmbeddedBooking } from "@/components/form-fields/EmbeddedBooking";
 import {
   detectDefaultPhoneCountry,
   formatPhoneForCountry as formatPhoneForPhoneCountry,
@@ -36,7 +37,7 @@ import {
 import { getStoredVisitorId } from "@/lib/attribution";
 import { languageHref } from "@/lib/languageRouting";
 
-type FormView = "form" | "loading";
+type FormView = "form" | "loading" | "booking";
 
 // Dynamic answers type - supports any question ID
 type Answers = Record<string, string>;
@@ -1053,6 +1054,15 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
     setErrorMessage(null);
   };
 
+  const navigateAfterForm = useCallback(() => {
+    const landing = config?.completionRedirect || pagePaths.thankYou;
+    const target = languageHref(`${landing}?form=${encodeURIComponent(formSlug)}`);
+    onClose();
+    window.setTimeout(() => {
+      window.location.href = target;
+    }, 300);
+  }, [config?.completionRedirect, formSlug, onClose, pagePaths.thankYou]);
+
   const handleFinish = async () => {
     const error = getFieldError(currentQuestion, answers, selectedCountry, phoneCountrySelected);
     if (error) {
@@ -1074,15 +1084,15 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
         try { window.sessionStorage.removeItem("leadContext"); } catch { /* ignore */ }
         const leadClassification = lead.classificacao || classification;
         const leadScore = lead.scoreTotal ?? score.total;
-        // Xphere visit booking (quick 260906-g80): the progress route appends
-        // bookingUrl when the lead's visit-type answer maps to a booking event.
-        const rawBookingUrl = (lead as FormLead & { bookingUrl?: unknown }).bookingUrl;
-        const bookingUrl = typeof rawBookingUrl === 'string' ? rawBookingUrl : null;
+        // The server exposes only a boolean capability. Xphere credentials and
+        // calendar identifiers never enter the browser; the next view talks to
+        // our own server-side booking proxy.
+        const bookingAvailable = (lead as FormLead & { bookingAvailable?: unknown }).bookingAvailable === true;
         trackEvent("form_completed", {
           classification: leadClassification,
           score: leadScore,
           synced: true,
-          booking: Boolean(bookingUrl),
+          booking: bookingAvailable,
           transport_type: "beacon",
           form: formSlug,
           // This is the total the customer SAW in the form, not a server-confirmed
@@ -1093,17 +1103,11 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
           // A quote-on-request type has no real total, so it sends no value.
           ...(quote && !quote.quoteOnRequest && { value: quote.totalCents / 100, currency: quote.currency }),
         });
-        // Keep a Portuguese lead on the `/br` version of the landing page. A form
-        // with `completionRedirect` lands there instead of the thank-you page
-        // (that page fires the conversion itself); a booking link still wins.
-        const landing = !bookingUrl && config?.completionRedirect ? config.completionRedirect : pagePaths.thankYou;
-        const target = languageHref(bookingUrl
-          ? `${landing}?form=${encodeURIComponent(formSlug)}&booking=${encodeURIComponent(bookingUrl)}`
-          : `${landing}?form=${encodeURIComponent(formSlug)}`);
-        onClose();
-        window.setTimeout(() => {
-          window.location.href = target;
-        }, 300);
+        if (bookingAvailable) {
+          setView("booking");
+          return;
+        }
+        navigateAfterForm();
         return;
       }
 
@@ -1632,6 +1636,21 @@ export function LeadFormModal({ open, onClose, formSlug, mode = "modal" }: LeadF
                       </p>
                     )}
                   </form>
+                )}
+
+                {view === "booking" && sessionId && (
+                  <EmbeddedBooking
+                    formSlug={formSlug}
+                    sessionId={sessionId}
+                    onComplete={() => {
+                      trackEvent("booking_completed", { form: formSlug, provider: "xphere" });
+                      navigateAfterForm();
+                    }}
+                    onSkip={() => {
+                      trackEvent("booking_skipped", { form: formSlug, provider: "xphere" });
+                      navigateAfterForm();
+                    }}
+                  />
                 )}
 
                 {view === "loading" && (

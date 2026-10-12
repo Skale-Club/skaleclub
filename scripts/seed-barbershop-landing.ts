@@ -63,15 +63,14 @@ const LANDING_PT = { slug: "barbershops-br", name: "Barbershops (PT)", language:
 //   language: LeadFormModal renders t(question.title), which passes English
 //   through untouched on the EN landing and auto-translates it on the PT one.
 //   Authoring Portuguese here would leak PT copy onto /barbershops.
-// - IDs `nome`, `email`, `telefone` map to native form_leads columns.
+// - IDs `nome`, `telefone`, and `email` map to native form_leads columns.
 // - `principalDesafio` ALSO maps to a native form_leads.principal_desafio
 //   column (shared/schema/forms.ts:55) — benign; the answer simply lands in a
 //   dedicated column instead of customAnswers.
-// - All other IDs (nomeBarbearia, numeroCadeiras, numeroBarbeiros,
-//   sistemaAgendamento, ticketMedio, investimentoAnuncios, tipoVisita,
-//   enderecoBarbearia, observacoes) fall through into form_leads.customAnswers
-//   (jsonb). `enderecoBarbearia` is a conditional field shown only when
-//   tipoVisita = presencial.
+// - All other IDs (nomeBarbearia, numeroBarbeiros, sistemaAgendamento) fall
+//   through into form_leads.customAnswers (jsonb).
+// - Email stays in the seven-question intake because the embedded Xphere
+//   calendar uses it to send the confirmation and meeting link.
 // - `points` is 0 for every option — this form is NOT scored; all leads route
 //   as `novo` regardless of answers.
 // - Question 2 uses the `phoneCountry` type (Plan 44-03) which renders the
@@ -111,22 +110,9 @@ const BARBERSHOP_LEADS_QUESTIONS: FormQuestion[] = [
     placeholder: "Your shop name",
   },
   {
-    id: "numeroCadeiras", // → customAnswers.numeroCadeiras
-    order: 5,
-    title: "How many chairs does your shop have?",
-    type: "select",
-    required: true,
-    options: [
-      { value: "1",      label: "1",   points: 0 },
-      { value: "2-3",    label: "2-3", points: 0 },
-      { value: "4-6",    label: "4-6", points: 0 },
-      { value: "7-plus", label: "7+",  points: 0 },
-    ],
-  },
-  {
     id: "numeroBarbeiros", // → customAnswers.numeroBarbeiros
-    order: 6,
-    title: "How many barbers work with you?",
+    order: 5,
+    title: "How many professionals work at your shop?",
     type: "select",
     required: true,
     options: [
@@ -138,7 +124,7 @@ const BARBERSHOP_LEADS_QUESTIONS: FormQuestion[] = [
   },
   {
     id: "sistemaAgendamento", // → customAnswers.sistemaAgendamento
-    order: 7,
+    order: 6,
     title: "How do clients book with you today?",
     type: "select",
     required: true,
@@ -151,76 +137,19 @@ const BARBERSHOP_LEADS_QUESTIONS: FormQuestion[] = [
     ],
   },
   {
-    id: "ticketMedio", // → customAnswers.ticketMedio
-    order: 8,
-    title: "What's your average ticket per client?",
-    type: "select",
-    required: true,
-    options: [
-      { value: "under-25", label: "Under $25", points: 0 },
-      { value: "25-45",    label: "$25-$45",   points: 0 },
-      { value: "45-75",    label: "$45-$75",   points: 0 },
-      { value: "over-75",  label: "Over $75",  points: 0 },
-    ],
-  },
-  {
-    id: "investimentoAnuncios", // → customAnswers.investimentoAnuncios
-    order: 9,
-    title: "How much do you invest in ads per month today?",
-    type: "select",
-    required: true,
-    options: [
-      { value: "nothing-yet", label: "Nothing yet", points: 0 },
-      { value: "under-300",   label: "Under $300",  points: 0 },
-      { value: "300-1000",    label: "$300-$1,000", points: 0 },
-      { value: "over-1000",   label: "Over $1,000", points: 0 },
-    ],
-  },
-  {
     id: "principalDesafio", // → native form_leads.principal_desafio column
-    order: 10,
-    title: "What's your biggest challenge right now?",
+    order: 7,
+    title: "What would you most like to improve?",
     type: "select",
     required: true,
     options: [
-      { value: "not-enough-clients",    label: "Not enough new clients",      points: 0 },
-      { value: "clients-dont-return",   label: "Clients don't come back",     points: 0 },
-      { value: "empty-chairs",          label: "Empty chairs on slow days",   points: 0 },
-      { value: "no-time-for-marketing", label: "No time to handle marketing", points: 0 },
-      { value: "other",                 label: "Other",                       points: 0 },
+      { value: "organize-bookings",      label: "Organize appointments",         points: 0 },
+      { value: "faster-responses",       label: "Respond to clients faster",      points: 0 },
+      { value: "attract-clients",        label: "Attract more clients",           points: 0 },
+      { value: "social-content",         label: "Create social media content",    points: 0 },
+      { value: "improve-ads",            label: "Improve my ads",                 points: 0 },
+      { value: "more-google-reviews",    label: "Get more Google reviews",        points: 0 },
     ],
-  },
-  // ── Xphere booking integration hook point ────────────────────────────────
-  // tipoVisita captures the MEETING FORMAT only. Date/slot picking happens on
-  // Xphere's side: since quick 260906-g80 the post-submit redirect consumes
-  // this answer (via the admin-configured in-person/online event slugs in
-  // Admin -> Integrations -> CRM -> Xphere) and sends the lead to the matching
-  // https://xphere.app/book/... page from the thank-you CTA. Do NOT add a
-  // date/time question here — no such form question type exists.
-  {
-    id: "tipoVisita", // → customAnswers.tipoVisita
-    order: 11,
-    title: "How would you like to meet us?",
-    type: "select",
-    required: true,
-    options: [
-      { value: "presencial", label: "In-person visit at my shop",  points: 0 },
-      { value: "online",     label: "Online meeting (video call)", points: 0 },
-    ],
-    conditionalField: {
-      showWhen: "presencial",
-      id: "enderecoBarbearia", // → customAnswers.enderecoBarbearia
-      title: "What's your shop address?",
-      placeholder: "Street, number, city",
-    },
-  },
-  {
-    id: "observacoes", // → customAnswers.observacoes
-    order: 12,
-    title: "Anything else we should know?",
-    type: "text",
-    required: false,
-    placeholder: "Optional",
   },
 ];
 
@@ -228,6 +157,7 @@ const BARBERSHOP_LEADS_CONFIG: FormConfig = {
   questions: BARBERSHOP_LEADS_QUESTIONS,
   maxScore: 0,
   thresholds: { hot: 0, warm: 0, cold: 0 }, // not scored — all leads land as `novo`
+  embeddedBooking: { provider: "xphere" },
 };
 
 // ── Landing sections (in render order) ─────────────────────────────────────
