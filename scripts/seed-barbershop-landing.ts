@@ -322,6 +322,7 @@ export const LANDING_SECTIONS: PageSection[] = [
         },
           {
             icon: "Instagram",
+            brand: "instagram",
             title: "Ads that bring people in",
             description: "Google and Instagram ads that fill your calendar with new clients.",
           },
