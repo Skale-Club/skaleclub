@@ -62,7 +62,7 @@ export function AiReceptionSection({ props }: { props: AiReceptionProps }) {
                     variant="ghost"
                     size="sm"
                     tone={dark ? "dark" : "light"}
-                    className="max-w-full justify-start text-left"
+                    className="min-h-16 max-w-full justify-start gap-3 px-5 py-3 text-left"
                     onClick={() => trackEvent("click_call", { location: "ai-reception-card" })}
                   >
                     <PhoneCall className="h-4 w-4 shrink-0" aria-hidden="true" />
