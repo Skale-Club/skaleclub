@@ -130,7 +130,7 @@ import type {
   MarketingByCampaign,
   VisitorJourney,
 } from "#shared/marketing-types.js";
-import { eq, and, or, ilike, gte, lte, lt, desc, asc, sql, ne, inArray, count, getTableColumns } from "drizzle-orm";
+import { eq, and, or, ilike, gte, lte, lt, desc, asc, sql, ne, inArray, isNotNull, count, getTableColumns } from "drizzle-orm";
 
 // Phase 37 — read-side joined shapes for admin RSS UI (BLOG2-08, BLOG2-10).
 // Exported so Plan 02 (REST endpoints) and Plan 03 (frontend types) can import.
@@ -329,11 +329,14 @@ export interface IStorage {
 
   getHubLives(status?: HubLiveStatus): Promise<HubLive[]>;
   getCurrentHubLive(): Promise<HubLive | undefined>;
+  getLatestReplayHubLive(): Promise<HubLive | undefined>;
+  countActiveHubRegistrations(liveId: number): Promise<number>;
   getHubLive(id: number): Promise<HubLive | undefined>;
   getHubLiveBySlug(slug: string): Promise<HubLive | undefined>;
   createHubLive(data: InsertHubLive): Promise<HubLive>;
   updateHubLive(id: number, data: Partial<InsertHubLive>): Promise<HubLive>;
-  activateHubLive(id: number): Promise<HubLive>;
+  activateHubLive(id: number, data?: Partial<InsertHubLive>): Promise<HubLive>;
+  deleteHubLive(id: number): Promise<boolean>;
 
   getHubParticipant(id: number): Promise<HubParticipant | undefined>;
   findHubParticipantByIdentity(identity: HubParticipantIdentityLookup): Promise<HubParticipant | undefined>;
@@ -1646,6 +1649,33 @@ export class DatabaseStorage implements IStorage {
     return live;
   }
 
+  async getLatestReplayHubLive(): Promise<HubLive | undefined> {
+    const [live] = await db
+      .select()
+      .from(hubLives)
+      .where(and(
+        eq(hubLives.status, "ended"),
+        isNotNull(hubLives.replayUrl),
+        ne(hubLives.replayUrl, ""),
+      ))
+      .orderBy(desc(hubLives.startsAt))
+      .limit(1);
+
+    return live;
+  }
+
+  async countActiveHubRegistrations(liveId: number): Promise<number> {
+    const [row] = await db
+      .select({ value: count() })
+      .from(hubRegistrations)
+      .where(and(
+        eq(hubRegistrations.liveId, liveId),
+        inArray(hubRegistrations.status, ["registered", "approved"]),
+      ));
+
+    return Number(row?.value ?? 0);
+  }
+
   async getHubLive(id: number): Promise<HubLive | undefined> {
     const [live] = await db.select().from(hubLives).where(eq(hubLives.id, id));
     return live;
@@ -1675,7 +1705,7 @@ export class DatabaseStorage implements IStorage {
     return live;
   }
 
-  async activateHubLive(id: number): Promise<HubLive> {
+  async activateHubLive(id: number, data?: Partial<InsertHubLive>): Promise<HubLive> {
     return await db.transaction(async (tx) => {
       await tx
         .update(hubLives)
@@ -1684,7 +1714,7 @@ export class DatabaseStorage implements IStorage {
 
       const [live] = await tx
         .update(hubLives)
-        .set({ status: "live", updatedAt: new Date() })
+        .set({ ...data, status: "live", updatedAt: new Date() })
         .where(eq(hubLives.id, id))
         .returning();
 
@@ -1694,6 +1724,15 @@ export class DatabaseStorage implements IStorage {
 
       return live;
     });
+  }
+
+  async deleteHubLive(id: number): Promise<boolean> {
+    const deleted = await db
+      .delete(hubLives)
+      .where(eq(hubLives.id, id))
+      .returning({ id: hubLives.id });
+
+    return deleted.length > 0;
   }
 
   async getHubParticipant(id: number): Promise<HubParticipant | undefined> {
@@ -1733,26 +1772,80 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertHubParticipant(data: UpsertHubParticipantInput): Promise<HubParticipant> {
-    const existing = await this.findHubParticipantByIdentity({
-      phone: data.phoneRaw ?? null,
-      email: data.emailRaw ?? null,
-      phoneNormalized: data.phoneNormalized,
-      emailNormalized: data.emailNormalized,
-    });
     const phoneNormalized = normalizeHubPhone(data.phoneNormalized ?? data.phoneRaw);
     const emailNormalized = normalizeHubEmail(data.emailNormalized ?? data.emailRaw);
 
+    let existing: HubParticipant | undefined;
+    let matchedBy: "phone" | "email" | null = null;
+
+    if (phoneNormalized) {
+      [existing] = await db
+        .select()
+        .from(hubParticipants)
+        .where(eq(hubParticipants.phoneNormalized, phoneNormalized))
+        .orderBy(asc(hubParticipants.id))
+        .limit(1);
+      if (existing) matchedBy = "phone";
+    }
+
+    if (!existing && emailNormalized) {
+      [existing] = await db
+        .select()
+        .from(hubParticipants)
+        .where(eq(hubParticipants.emailNormalized, emailNormalized))
+        .orderBy(asc(hubParticipants.id))
+        .limit(1);
+      if (existing) matchedBy = "email";
+    }
+
     if (existing) {
+      // MERGE: never wipe stored phone/email/notes/source with missing input.
+      let nextPhoneRaw = existing.phoneRaw;
+      let nextPhoneNormalized = existing.phoneNormalized;
+      let nextEmailRaw = existing.emailRaw;
+      let nextEmailNormalized = existing.emailNormalized;
+
+      if (phoneNormalized && phoneNormalized !== existing.phoneNormalized) {
+        // Matched by email (phone lookup found nobody), so no other participant owns this phone.
+        // Guard anyway so a different participant's phone is never copied onto this row.
+        const [owner] = matchedBy === "phone"
+          ? []
+          : await db
+              .select({ id: hubParticipants.id })
+              .from(hubParticipants)
+              .where(and(eq(hubParticipants.phoneNormalized, phoneNormalized), ne(hubParticipants.id, existing.id)))
+              .limit(1);
+        if (!owner) {
+          nextPhoneRaw = data.phoneRaw ?? existing.phoneRaw;
+          nextPhoneNormalized = phoneNormalized;
+        }
+      } else if (phoneNormalized && data.phoneRaw) {
+        nextPhoneRaw = data.phoneRaw;
+      }
+
+      if (emailNormalized && emailNormalized !== existing.emailNormalized) {
+        const [owner] = await db
+          .select({ id: hubParticipants.id })
+          .from(hubParticipants)
+          .where(and(eq(hubParticipants.emailNormalized, emailNormalized), ne(hubParticipants.id, existing.id)))
+          .limit(1);
+        if (!owner) {
+          nextEmailRaw = data.emailRaw ?? existing.emailRaw;
+          nextEmailNormalized = emailNormalized;
+        }
+      } else if (emailNormalized && data.emailRaw) {
+        nextEmailRaw = data.emailRaw;
+      }
+
       const [participant] = await db
         .update(hubParticipants)
         .set({
           fullName: data.fullName,
-          phoneRaw: data.phoneRaw ?? null,
-          phoneNormalized,
-          emailRaw: data.emailRaw ?? null,
-          emailNormalized,
-          source: data.source,
-          notes: data.notes ?? null,
+          phoneRaw: nextPhoneRaw,
+          phoneNormalized: nextPhoneNormalized,
+          emailRaw: nextEmailRaw,
+          emailNormalized: nextEmailNormalized,
+          ...(data.notes !== undefined ? { notes: data.notes } : {}),
           updatedAt: new Date(),
         })
         .where(eq(hubParticipants.id, existing.id))
@@ -1798,40 +1891,57 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertHubRegistration(data: UpsertHubRegistrationInput): Promise<HubRegistration> {
-    const existing = await this.getHubRegistration(data.liveId, data.participantId);
-
-    if (existing) {
+    // Update-then-insert rather than ON CONFLICT: the (live_id, participant_id)
+    // unique constraint only exists in the SQL migration, not in the Drizzle
+    // schema, so a database synced with db:push may not have it. A concurrent
+    // double-submit that loses the insert race falls through to a second update.
+    // registeredAt is never overwritten on an existing row.
+    const updateExisting = async () => {
       const [registration] = await db
         .update(hubRegistrations)
         .set({
           status: data.status,
           source: data.source,
           notes: data.notes ?? null,
-          registeredAt: data.registeredAt,
           cancelledAt: data.cancelledAt,
           attendedAt: data.attendedAt,
           lastAccessAt: data.lastAccessAt,
           updatedAt: new Date(),
         })
-        .where(eq(hubRegistrations.id, existing.id))
+        .where(and(eq(hubRegistrations.liveId, data.liveId), eq(hubRegistrations.participantId, data.participantId)))
         .returning();
+      return registration as HubRegistration | undefined;
+    };
 
-      return registration;
+    const updated = await updateExisting();
+    if (updated) {
+      return updated;
     }
 
-    const [registration] = await db.insert(hubRegistrations).values({
-      liveId: data.liveId,
-      participantId: data.participantId,
-      status: data.status,
-      source: data.source,
-      notes: data.notes ?? null,
-      registeredAt: data.registeredAt,
-      cancelledAt: data.cancelledAt,
-      attendedAt: data.attendedAt,
-      lastAccessAt: data.lastAccessAt,
-    }).returning();
+    const [inserted] = await db
+      .insert(hubRegistrations)
+      .values({
+        liveId: data.liveId,
+        participantId: data.participantId,
+        status: data.status,
+        source: data.source,
+        notes: data.notes ?? null,
+        registeredAt: data.registeredAt,
+        cancelledAt: data.cancelledAt,
+        attendedAt: data.attendedAt,
+        lastAccessAt: data.lastAccessAt,
+      })
+      .onConflictDoNothing()
+      .returning();
+    if (inserted) {
+      return inserted;
+    }
 
-    return registration;
+    const raced = await updateExisting();
+    if (!raced) {
+      throw new Error(`Hub registration for live ${data.liveId} / participant ${data.participantId} could not be saved`);
+    }
+    return raced;
   }
 
   async logHubAccessEvent(data: InsertHubAccessEvent): Promise<HubAccessEvent> {
@@ -1861,7 +1971,9 @@ export class DatabaseStorage implements IStorage {
       createdAt: data.createdAt,
     }).returning();
 
-    if (event.outcome === "granted" && registrationId) {
+    // Only real opens of the live/replay count as access; the registration
+    // gate_check does not, so a null lastAccessAt means "never opened the link".
+    if (event.outcome === "granted" && event.eventType !== "gate_check" && registrationId) {
       await db
         .update(hubRegistrations)
         .set({ lastAccessAt: event.createdAt ?? new Date(), updatedAt: new Date() })

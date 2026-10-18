@@ -2,14 +2,21 @@ import type { Express, Request } from "express";
 import crypto from "crypto";
 
 import { storage } from "../storage.js";
-import { syncHubAccessEventToGhl } from "../lib/skale-hub-ghl-sync.js";
 import {
+  queueHubAccessEventGhlSync,
+  skipHubAccessEventGhlSync,
+} from "../lib/skale-hub-ghl-sync.js";
+import {
+  getHubLivePhase,
   hubAccessRequestSchema,
   hubRegisterRequestSchema,
   hubLiveStatusSchema,
   insertHubLiveSchema,
   normalizeHubPhone,
   normalizeHubEmail,
+  type HubLive,
+  type HubLivePhase,
+  type HubRegistrationState,
 } from "#shared/schema.js";
 import { requireAdmin, setPublicCache } from "./_shared.js";
 import { rateLimitMiddleware } from "../lib/rateLimit.js";
@@ -23,12 +30,17 @@ const hubPublicRateLimit = rateLimitMiddleware({
   message: "Too many requests. Please try again in a few minutes.",
 });
 
-// `participantId` alone proved nothing: ids are sequential, so anyone could
-// claim any registered participant. /register now hands back an HMAC of the
-// id, and /access only trusts the id when that token comes with it.
+// `participantId` alone proves nothing: ids are sequential, so anyone could
+// claim any registered participant. /register hands back an HMAC of the id,
+// and /access only trusts the id when that token comes with it.
 function signParticipant(id: number): string {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) {
+    // Fail closed: an HMAC keyed with "" would be forgeable by anyone.
+    throw new Error("SESSION_SECRET is not configured");
+  }
   return crypto
-    .createHmac("sha256", process.env.SESSION_SECRET ?? "")
+    .createHmac("sha256", secret)
     .update(`skale-hub-participant:${id}`)
     .digest("hex");
 }
@@ -50,29 +62,80 @@ function getRequestIpHash(req: Request): string | null {
   return rawIp ? crypto.createHash("sha256").update(rawIp).digest("hex") : null;
 }
 
-function getMatchedBy(params: { participantId?: number | null; phone?: string | null; email?: string | null }): "manual" | "phone" | "email" | "none" {
-  if (params.participantId) {
-    return "manual";
+const MAX_ACCESS_METADATA_CHARS = 4000;
+
+function isUniqueViolation(err: unknown): boolean {
+  const code = (err as { code?: string } | null)?.code
+    ?? (err as { cause?: { code?: string } } | null)?.cause?.code;
+  return code === "23505";
+}
+
+// The live shown on the public page: the one in progress, else the latest
+// ended one that still has a replay to watch.
+async function getPublicHubLive(): Promise<HubLive | undefined> {
+  return (await storage.getCurrentHubLive()) ?? (await storage.getLatestReplayHubLive());
+}
+
+// An admin-ended live is over even if its scheduled window has not elapsed yet.
+function getLivePhase(live: HubLive, now: Date = new Date()): HubLivePhase {
+  return live.status === "ended" ? "ended" : getHubLivePhase(live, now);
+}
+
+function hasUrl(value?: string | null): boolean {
+  return Boolean(value && value.trim());
+}
+
+async function getRegistrationState(live: HubLive, phase: HubLivePhase, now: Date = new Date()): Promise<HubRegistrationState> {
+  if (phase === "ended") {
+    return hasUrl(live.replayUrl) ? "open" : "closed";
   }
-  if (normalizeHubPhone(params.phone)) {
-    return "phone";
+  if (live.registrationOpensAt && now < new Date(live.registrationOpensAt)) {
+    return "not_yet_open";
   }
-  if (normalizeHubEmail(params.email)) {
-    return "email";
+  if (live.registrationClosesAt && now >= new Date(live.registrationClosesAt)) {
+    return "closed";
   }
-  return "none";
+  if (live.capacity != null && (await storage.countActiveHubRegistrations(live.id)) >= live.capacity) {
+    return "full";
+  }
+  return "open";
+}
+
+const REGISTRATION_BLOCKED_MESSAGES: Record<Exclude<HubRegistrationState, "open">, string> = {
+  not_yet_open: "Registration for this live has not opened yet.",
+  closed: "Registration for this live is closed.",
+  full: "This live is full.",
+};
+
+type HubDeniedCode = "live_not_available" | "registration_required" | "registration_not_allowed" | "destination_missing";
+
+function validateLiveWindow(times: {
+  startsAt?: Date | null;
+  endsAt?: Date | null;
+  registrationOpensAt?: Date | null;
+  registrationClosesAt?: Date | null;
+}): string | null {
+  const { startsAt, endsAt, registrationOpensAt, registrationClosesAt } = times;
+  if (startsAt && endsAt && endsAt.getTime() <= startsAt.getTime()) {
+    return "End time must be after the start time";
+  }
+  if (registrationOpensAt && registrationClosesAt && registrationClosesAt.getTime() <= registrationOpensAt.getTime()) {
+    return "Registration close time must be after the open time";
+  }
+  return null;
 }
 
 export function registerSkaleHubRoutes(app: Express) {
   app.get("/api/skale-hub/active", async (_req, res) => {
     try {
       setPublicCache(res, 30);
-      const live = await storage.getCurrentHubLive();
+      const live = await getPublicHubLive();
 
       if (!live) {
         return res.json({ live: null, message: "No active live right now." });
       }
 
+      const phase = getLivePhase(live);
       return res.json({
         live: {
           id: live.id,
@@ -86,7 +149,10 @@ export function registerSkaleHubRoutes(app: Express) {
           registrationOpensAt: live.registrationOpensAt,
           registrationClosesAt: live.registrationClosesAt,
           status: live.status,
-          hasReplay: Boolean(live.replayUrl),
+          hasStream: hasUrl(live.streamUrl),
+          hasReplay: hasUrl(live.replayUrl),
+          phase,
+          registrationState: await getRegistrationState(live, phase),
         },
       });
     } catch (err) {
@@ -100,16 +166,38 @@ export function registerSkaleHubRoutes(app: Express) {
       // Bot trap: a filled honeypot gets an ordinary "no live" answer — no
       // participant row, no GHL sync, no access token.
       if (isBotSubmission(req.body, { source: "skale-hub/register", checkElapsed: false, ip: req.ip, userAgent: req.get("user-agent") })) {
-        return res.status(409).json({ message: "No active live right now." });
+        return res.status(409).json({ code: "no_live", message: "No active live right now." });
       }
       const parsed = hubRegisterRequestSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ message: parsed.error.errors[0].message });
       }
 
-      const live = await storage.getCurrentHubLive();
+      const live = await getPublicHubLive();
       if (!live) {
-        return res.status(409).json({ message: "No active live right now." });
+        return res.status(409).json({ code: "no_live", message: "No active live right now." });
+      }
+
+      const phase = getLivePhase(live);
+      const registrationState = await getRegistrationState(live, phase);
+
+      // Someone already registered for this live may always get back in, even
+      // after registration closed or the live filled up. Anyone else is turned
+      // away BEFORE a participant row is created.
+      if (registrationState !== "open") {
+        const known = await storage.findHubParticipantByIdentity({
+          phone: parsed.data.phone ?? null,
+          email: parsed.data.email ?? null,
+          phoneNormalized: normalizeHubPhone(parsed.data.phone),
+          emailNormalized: normalizeHubEmail(parsed.data.email),
+        });
+        const knownRegistration = known ? await storage.getHubRegistration(live.id, known.id) : undefined;
+        if (!knownRegistration) {
+          return res.status(409).json({
+            code: registrationState,
+            message: REGISTRATION_BLOCKED_MESSAGES[registrationState],
+          });
+        }
       }
 
       const participant = await storage.upsertHubParticipant({
@@ -122,6 +210,14 @@ export function registerSkaleHubRoutes(app: Express) {
       });
 
       const existing = await storage.getHubRegistration(live.id, participant.id);
+      if (existing && (existing.status === "cancelled" || existing.status === "waitlisted")) {
+        // Re-submitting the form must not undo an admin's cancellation.
+        return res.status(403).json({
+          code: "registration_not_allowed",
+          message: "Registration is not approved for this live",
+        });
+      }
+
       const registration = await storage.upsertHubRegistration({
         liveId: live.id,
         participantId: participant.id,
@@ -152,18 +248,21 @@ export function registerSkaleHubRoutes(app: Express) {
         createdAt: new Date(),
       });
 
-      await syncHubAccessEventToGhl({ live, participant, event });
+      // Sign before kicking off the GHL sync so a missing SESSION_SECRET fails
+      // the request without leaving background work behind.
+      const accessToken = signParticipant(participant.id);
+
+      queueHubAccessEventGhlSync({ live, participant, event });
 
       return res.json({
         unlocked: true,
         liveId: live.id,
         participantId: participant.id,
-        accessToken: signParticipant(participant.id),
         registrationId: registration.id,
-        access: {
-          streamUrl: live.streamUrl ?? null,
-          replayUrl: live.replayUrl ?? null,
-        },
+        accessToken,
+        phase,
+        hasStream: hasUrl(live.streamUrl),
+        hasReplay: hasUrl(live.replayUrl),
       });
     } catch (err) {
       console.error("[skale-hub] POST /api/skale-hub/register failed", err);
@@ -183,105 +282,102 @@ export function registerSkaleHubRoutes(app: Express) {
         return res.status(400).json({ message: parsed.error.errors[0].message });
       }
 
+      // Identity comes ONLY from the signed token issued by /register. There is
+      // deliberately no phone/email lookup: it would reveal who is registered.
+      const invalidToken = () => res.status(403).json({
+        granted: false,
+        code: "invalid_token",
+        message: "Please register again.",
+      });
+      if (!participantTokenValid(parsed.data.participantId, parsed.data.accessToken)) {
+        return invalidToken();
+      }
+      const participant = await storage.getHubParticipant(parsed.data.participantId);
+      if (!participant) {
+        return invalidToken();
+      }
+
       const live = await storage.getHubLive(liveId);
       if (!live) {
-        return res.status(404).json({ message: "Live not found" });
+        return res.status(409).json({ granted: false, code: "live_not_available", message: "This live is not available." });
       }
 
-      const trustedId =
-        parsed.data.participantId && participantTokenValid(parsed.data.participantId, parsed.data.accessToken)
-          ? parsed.data.participantId
-          : null;
-      let participant = trustedId ? await storage.getHubParticipant(trustedId) : undefined;
-      let matchedBy = getMatchedBy({ participantId: participant?.id ?? parsed.data.participantId ?? null });
+      const phase = getLivePhase(live);
+      const eventType = phase === "ended" ? "replay" : "join";
+      const registration = await storage.getHubRegistration(live.id, participant.id);
 
-      if (!participant) {
-        const lookup = {
-          phone: parsed.data.phone ?? null,
-          email: parsed.data.email ?? null,
-        };
-        participant = await storage.findHubParticipantByIdentity({
-          ...lookup,
-          phoneNormalized: normalizeHubPhone(lookup.phone),
-          emailNormalized: normalizeHubEmail(lookup.email),
-        });
-        matchedBy = getMatchedBy(lookup);
-      }
-
-      const registration = participant
-        ? await storage.getHubRegistration(live.id, participant.id)
-        : undefined;
-
-      const destinationUrl = parsed.data.eventType === "join"
-        ? live.streamUrl
-        : live.replayUrl ?? live.streamUrl;
+      const metadata = JSON.stringify(parsed.data.metadata).length > MAX_ACCESS_METADATA_CHARS
+        ? {}
+        : parsed.data.metadata;
 
       const baseEvent = {
         liveId: live.id,
-        participantId: participant?.id ?? null,
+        participantId: participant.id,
         registrationId: registration?.id ?? null,
-        eventType: parsed.data.eventType,
-        matchedBy,
-        phoneRaw: parsed.data.phone ?? null,
-        emailRaw: parsed.data.email ?? null,
+        eventType,
+        matchedBy: "manual",
+        phoneRaw: participant.phoneRaw,
+        emailRaw: participant.emailRaw,
         ipHash: getRequestIpHash(req),
         userAgent: req.headers["user-agent"] ?? null,
       } as const;
 
-      if (!participant || !registration) {
+      // Denied attempts are logged for the admin but never sent to GHL.
+      const deny = async (status: number, code: HubDeniedCode, message: string) => {
         const event = await storage.logHubAccessEvent({
           ...baseEvent,
           outcome: "denied",
-          metadata: {
-            ...parsed.data.metadata,
-            reason: !participant ? "participant_not_found" : "registration_not_found",
-          },
+          metadata: { ...metadata, reason: code },
           createdAt: new Date(),
         });
-        await syncHubAccessEventToGhl({ live, participant, event });
-        return res.status(403).json({ granted: false, message: "Registration required" });
+        await skipHubAccessEventGhlSync(event.id, "access denied");
+        return res.status(status).json({ granted: false, code, message });
+      };
+
+      if (live.status !== "live" && live.status !== "ended") {
+        return deny(409, "live_not_available", "This live is not available.");
+      }
+
+      if (!registration) {
+        return deny(403, "registration_required", "Registration required");
       }
 
       if (registration.status === "cancelled" || registration.status === "waitlisted") {
-        const event = await storage.logHubAccessEvent({
-          ...baseEvent,
-          outcome: "denied",
-          metadata: { ...parsed.data.metadata, reason: "registration_not_allowed" },
-          createdAt: new Date(),
-        });
-        await syncHubAccessEventToGhl({ live, participant, event });
-        return res.status(403).json({ granted: false, message: "Registration is not approved for this live" });
+        return deny(403, "registration_not_allowed", "Registration is not approved for this live");
       }
 
+      const destinationUrl = phase === "ended"
+        ? (hasUrl(live.replayUrl) ? live.replayUrl : null)
+        : (hasUrl(live.streamUrl) ? live.streamUrl : hasUrl(live.replayUrl) ? live.replayUrl : null);
+
       if (!destinationUrl) {
-        const event = await storage.logHubAccessEvent({
-          ...baseEvent,
-          outcome: "denied",
-          metadata: { ...parsed.data.metadata, reason: "destination_missing" },
-          createdAt: new Date(),
-        });
-        await syncHubAccessEventToGhl({ live, participant, event });
-        return res.status(409).json({ granted: false, message: "Live link unavailable" });
+        return deny(409, "destination_missing", "Live link unavailable");
       }
+
+      // Decide "first access" BEFORE logging the granted event: logging stamps
+      // registration.lastAccessAt (gate_check events do not).
+      const isFirstAccess = registration.lastAccessAt == null;
 
       const event = await storage.logHubAccessEvent({
         ...baseEvent,
-        participantId: participant.id,
-        registrationId: registration.id,
         outcome: "granted",
-        metadata: parsed.data.metadata,
+        metadata,
         createdAt: new Date(),
       });
 
-      await syncHubAccessEventToGhl({ live, participant, event });
+      if (isFirstAccess) {
+        queueHubAccessEventGhlSync({ live, participant, event });
+      } else {
+        await skipHubAccessEventGhlSync(event.id, "repeat access");
+      }
 
       return res.json({
         granted: true,
         destinationUrl,
+        eventType,
         liveId: live.id,
         participantId: participant.id,
         registrationId: registration.id,
-        eventType: parsed.data.eventType,
       });
     } catch (err) {
       console.error("[skale-hub] POST /api/skale-hub/:liveId/access failed", err);
@@ -353,13 +449,24 @@ export function registerSkaleHubRoutes(app: Express) {
         return res.status(400).json({ message: parsed.error.errors[0].message });
       }
 
-      const created = await storage.createHubLive(parsed.data);
-      if (parsed.data.status === "live") {
-        await storage.activateHubLive(created.id);
+      const windowError = validateLiveWindow(parsed.data);
+      if (windowError) {
+        return res.status(400).json({ message: windowError });
+      }
+
+      // A live that should go live is created as "scheduled" first and then
+      // activated atomically, so two rows are never "live" at the same time.
+      const wantsLive = parsed.data.status === "live";
+      const created = await storage.createHubLive(wantsLive ? { ...parsed.data, status: "scheduled" } : parsed.data);
+      if (wantsLive) {
+        await storage.activateHubLive(created.id, { status: "live" });
       }
 
       return res.status(201).json(await storage.getHubLiveSummary(created.id));
     } catch (err) {
+      if (isUniqueViolation(err)) {
+        return res.status(409).json({ message: "A live with this slug already exists" });
+      }
       console.error("[skale-hub] POST /api/skale-hub/lives failed", err);
       return res.status(500).json({ message: "Failed to create live" });
     }
@@ -382,15 +489,49 @@ export function registerSkaleHubRoutes(app: Express) {
         return res.status(400).json({ message: parsed.error.errors[0].message });
       }
 
-      await storage.updateHubLive(liveId, parsed.data);
+      const windowError = validateLiveWindow({
+        startsAt: parsed.data.startsAt !== undefined ? parsed.data.startsAt : existing.startsAt,
+        endsAt: parsed.data.endsAt !== undefined ? parsed.data.endsAt : existing.endsAt,
+        registrationOpensAt: parsed.data.registrationOpensAt !== undefined ? parsed.data.registrationOpensAt : existing.registrationOpensAt,
+        registrationClosesAt: parsed.data.registrationClosesAt !== undefined ? parsed.data.registrationClosesAt : existing.registrationClosesAt,
+      });
+      if (windowError) {
+        return res.status(400).json({ message: windowError });
+      }
+
       if (parsed.data.status === "live") {
-        await storage.activateHubLive(liveId);
+        // Field update + demoting the previous live happen in one transaction.
+        await storage.activateHubLive(liveId, parsed.data);
+      } else {
+        await storage.updateHubLive(liveId, parsed.data);
       }
 
       return res.json(await storage.getHubLiveSummary(liveId));
     } catch (err) {
+      if (isUniqueViolation(err)) {
+        return res.status(409).json({ message: "A live with this slug already exists" });
+      }
       console.error("[skale-hub] PUT /api/skale-hub/lives/:id failed", err);
       return res.status(500).json({ message: "Failed to update live" });
+    }
+  });
+
+  app.delete("/api/skale-hub/lives/:id", requireAdmin, async (req, res) => {
+    try {
+      const liveId = parseLiveId(req.params.id);
+      if (!liveId) {
+        return res.status(400).json({ message: "Invalid live id" });
+      }
+
+      const deleted = await storage.deleteHubLive(liveId);
+      if (!deleted) {
+        return res.status(404).json({ message: "Live not found" });
+      }
+
+      return res.status(204).end();
+    } catch (err) {
+      console.error("[skale-hub] DELETE /api/skale-hub/lives/:id failed", err);
+      return res.status(500).json({ message: "Failed to delete live" });
     }
   });
 }

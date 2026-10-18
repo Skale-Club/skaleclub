@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from '@/components/ui/loader';
 import type { HubLiveSummary } from '@shared/schema';
+import { hubStatusLabel } from './hubTypes';
+import { formatInZone } from './hubTime';
 
 function statusBadge(status: string) {
   if (status === 'live') return 'success';
@@ -34,7 +36,7 @@ export function HubLiveLineupCard(props: HubLiveLineupCardProps): JSX.Element {
           <h3 className="text-lg font-semibold">Live lineup</h3>
           <p className="text-sm text-muted-foreground">Select a live to edit or review quick participation counts.</p>
         </div>
-        <Button variant="ghost" size="icon" onClick={onRefresh}>
+        <Button variant="ghost" size="icon" onClick={onRefresh} aria-label="Refresh lives" data-testid="button-hub-refresh-lives">
           <RefreshCcw className="w-4 h-4" />
         </Button>
       </div>
@@ -71,15 +73,19 @@ export function HubLiveLineupCard(props: HubLiveLineupCardProps): JSX.Element {
                   <div className="space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-semibold text-foreground">{live.title}</p>
-                      <Badge variant={statusBadge(live.status) as any}>{live.status}</Badge>
+                      <Badge variant={statusBadge(live.status) as any}>{hubStatusLabel(live.status)}</Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">/{live.slug}</p>
+                    <p className="text-xs text-muted-foreground" data-testid={`text-hub-live-start-${live.id}`}>
+                      {formatInZone(live.startsAt, live.timezone) || 'No start time'}
+                    </p>
                   </div>
                   <div className="flex flex-wrap justify-end gap-2">
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
+                      data-testid={`button-hub-edit-live-${live.id}`}
                       onClick={(event) => {
                         event.stopPropagation();
                         onEdit(live);
@@ -93,6 +99,8 @@ export function HubLiveLineupCard(props: HubLiveLineupCardProps): JSX.Element {
                         size="sm"
                         variant="outline"
                         className="gap-2"
+                        disabled={props.isActivating}
+                        data-testid={`button-hub-activate-live-${live.id}`}
                         onClick={(event) => {
                           event.stopPropagation();
                           onActivate(live.id);

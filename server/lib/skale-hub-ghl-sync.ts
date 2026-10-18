@@ -187,3 +187,32 @@ export async function syncHubAccessEventToGhl(params: {
     return { synced: false, message };
   }
 }
+
+/**
+ * Fire-and-forget wrapper: call AFTER the DB writes and never `await` it in a
+ * request handler, so a slow or failing GHL API cannot delay or fail the response.
+ */
+export function queueHubAccessEventGhlSync(params: {
+  live: HubLive;
+  participant?: HubParticipant | null;
+  event: HubAccessEvent;
+}): void {
+  void syncHubAccessEventToGhl(params).catch((err) => {
+    console.error("[skale-hub] GHL sync failed", err);
+  });
+}
+
+/**
+ * Marks an event as intentionally not synced (denied attempts, repeat accesses)
+ * so the admin log shows "skipped" instead of a perpetual "pending". Never throws.
+ */
+export async function skipHubAccessEventGhlSync(eventId: number, reason: string): Promise<void> {
+  try {
+    await storage.updateHubAccessEventGhlSync(eventId, {
+      ghlSyncStatus: "skipped",
+      ghlSyncError: reason,
+    });
+  } catch (err) {
+    console.error("[skale-hub] failed to mark GHL sync as skipped", err);
+  }
+}
