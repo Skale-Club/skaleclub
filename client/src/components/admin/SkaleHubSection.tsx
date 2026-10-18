@@ -5,7 +5,7 @@ import { Plus, RadioTower } from 'lucide-react';
 import { AdminCard, SectionHeader } from './shared';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from '@/components/ui/loader';
-import { apiRequest, queryClient } from '@/lib/queryClient';
+import { adminQueryOptions, apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import type { HubDashboardSummary, HubLiveSummary, HubParticipantHistory } from '@shared/schema';
 
@@ -15,6 +15,8 @@ import { HubParticipantHistoryCard } from './hub/HubParticipantHistoryCard';
 import {
   HubLiveFormDialog,
   fromSummaryToForm,
+  buildLivePayload,
+  validateLiveForm,
   EMPTY_FORM,
   type LiveFormState,
 } from './hub/HubLiveFormDialog';
@@ -29,6 +31,7 @@ export function SkaleHubSection() {
 
   const dashboardQuery = useQuery<HubDashboardSummary>({
     queryKey: ['/api/skale-hub/dashboard'],
+    ...adminQueryOptions,
   });
 
   const participantHistoryQuery = useQuery<HubParticipantHistory[]>({
@@ -47,10 +50,12 @@ export function SkaleHubSection() {
       }
       return response.json();
     },
+    ...adminQueryOptions,
   });
 
   const livesQuery = useQuery<HubLiveSummary[]>({
     queryKey: ['/api/skale-hub/lives'],
+    ...adminQueryOptions,
   });
 
   const selectedLive = useMemo(
@@ -68,6 +73,7 @@ export function SkaleHubSection() {
       return response.json();
     },
     enabled: selectedId != null,
+    ...adminQueryOptions,
   });
 
   useEffect(() => {
@@ -81,25 +87,23 @@ export function SkaleHubSection() {
     }
   }, [livesQuery.data, selectedId]);
 
-  useEffect(() => {
-    if (isLiveFormOpen && selectedLive && form.id === selectedLive.id) {
-      setForm(fromSummaryToForm(selectedLive));
-    }
-  }, [isLiveFormOpen, selectedLive, form.id]);
+  // Prefix keys: ['/api/skale-hub/lives'] also covers every live detail query, and
+  // ['/api/skale-hub/participants'] covers each search variant.
+  const invalidateHubQueries = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['/api/skale-hub/lives'] }),
+      queryClient.invalidateQueries({ queryKey: ['/api/skale-hub/dashboard'] }),
+      queryClient.invalidateQueries({ queryKey: ['/api/skale-hub/participants'] }),
+    ]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const payload = {
-        slug: form.slug,
-        title: form.title,
-        description: form.description || null,
-        startsAt: new Date(form.startsAt).toISOString(),
-        timezone: form.timezone,
-        streamUrl: form.streamUrl || null,
-        replayUrl: form.replayUrl || null,
-        status: form.status,
-        capacity: form.capacity ? Number(form.capacity) : null,
-      };
+      const validationError = validateLiveForm(form);
+      if (validationError) {
+        throw new Error(validationError);
+      }
+      // Wall-clock inputs are interpreted in the form's timezone, not the browser's.
+      const payload = buildLivePayload(form);
 
       const response = form.id == null
         ? await apiRequest('POST', '/api/skale-hub/lives', payload)
@@ -108,10 +112,7 @@ export function SkaleHubSection() {
       return response.json() as Promise<HubLiveSummary>;
     },
     onSuccess: async (live) => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['/api/skale-hub/lives'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/skale-hub/dashboard'] }),
-      ]);
+      await invalidateHubQueries();
       setSelectedId(live.id);
       setForm(fromSummaryToForm(live));
       setIsLiveFormOpen(false);
@@ -132,10 +133,7 @@ export function SkaleHubSection() {
       return response.json() as Promise<HubLiveSummary>;
     },
     onSuccess: async (live) => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['/api/skale-hub/lives'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/skale-hub/lives', live.id] }),
-      ]);
+      await invalidateHubQueries();
       setSelectedId(live.id);
       toast({ title: 'Live activated' });
     },
@@ -148,7 +146,33 @@ export function SkaleHubSection() {
     },
   });
 
-  const canSave = Boolean(form.slug.trim() && form.title.trim() && form.startsAt);
+  const deleteMutation = useMutation({
+    mutationFn: async (liveId: number) => {
+      await apiRequest('DELETE', `/api/skale-hub/lives/${liveId}`);
+      return liveId;
+    },
+    onSuccess: async (liveId) => {
+      // Drop the deleted live locally first so selection logic never lands on it again.
+      queryClient.setQueryData<HubLiveSummary[]>(['/api/skale-hub/lives'], (current) =>
+        current?.filter((live) => live.id !== liveId),
+      );
+      queryClient.removeQueries({ queryKey: ['/api/skale-hub/lives', liveId] });
+      setSelectedId(null);
+      setForm(EMPTY_FORM);
+      setIsLiveFormOpen(false);
+      await invalidateHubQueries();
+      toast({ title: 'Live deleted' });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Unable to delete live',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const canSave = Boolean(form.slug.trim() && form.title.trim() && form.startsAt) && !validateLiveForm(form);
 
   const openCreateLiveDialog = () => {
     setForm(EMPTY_FORM);
@@ -189,6 +213,7 @@ export function SkaleHubSection() {
           <Button
             className="gap-2 border-blue-600 bg-blue-600 text-white hover:bg-blue-700"
             onClick={openCreateLiveDialog}
+            data-testid="button-hub-new-live"
           >
             <Plus className="w-4 h-4" />
             New live
@@ -257,6 +282,12 @@ export function SkaleHubSection() {
           }
         }}
         isPending={saveMutation.isPending}
+        onDelete={() => {
+          if (form.id != null && !deleteMutation.isPending) {
+            deleteMutation.mutate(form.id);
+          }
+        }}
+        isDeleting={deleteMutation.isPending}
       />
     </div>
   );

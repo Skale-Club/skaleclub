@@ -1,32 +1,33 @@
 import { index, integer, jsonb, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
-const nullableDateInputSchema = z.union([z.string(), z.date(), z.null()]).optional().transform((value) => {
+function parseHubDateInput(value: string | Date, ctx: z.RefinementCtx): Date {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid date" });
+    return z.NEVER;
+  }
+  return date;
+}
+
+const nullableDateInputSchema = z.union([z.string(), z.date(), z.null()]).optional().transform((value, ctx) => {
   if (value === undefined) {
     return undefined;
   }
 
-  if (value === null) {
+  if (value === null || (typeof value === "string" && value.trim() === "")) {
     return null;
   }
 
-  if (value instanceof Date) {
-    return value;
-  }
-
-  return new Date(value);
+  return parseHubDateInput(value, ctx);
 });
 
-const dateInputSchema = z.union([z.string(), z.date()]).optional().transform((value) => {
+const dateInputSchema = z.union([z.string(), z.date()]).optional().transform((value, ctx) => {
   if (value === undefined) {
     return undefined;
   }
 
-  if (value instanceof Date) {
-    return value;
-  }
-
-  return new Date(value);
+  return parseHubDateInput(value, ctx);
 });
 
 export function normalizeHubPhone(value?: string | null): string | null {
@@ -37,6 +38,33 @@ export function normalizeHubPhone(value?: string | null): string | null {
 export function normalizeHubEmail(value?: string | null): string | null {
   const normalized = (value ?? "").trim().toLowerCase();
   return normalized.length > 0 ? normalized : null;
+}
+
+/** Assumed session length when a live has no `endsAt`. */
+export const HUB_DEFAULT_DURATION_MS = 3 * 60 * 60 * 1000;
+
+export type HubLivePhase = "upcoming" | "live" | "ended";
+export type HubRegistrationState = "open" | "not_yet_open" | "closed" | "full";
+
+type HubLiveTimes = { startsAt: Date | string; endsAt: Date | string | null };
+
+export function getHubLiveEffectiveEnd(live: HubLiveTimes): Date {
+  if (live.endsAt) {
+    return new Date(live.endsAt);
+  }
+  return new Date(new Date(live.startsAt).getTime() + HUB_DEFAULT_DURATION_MS);
+}
+
+/** upcoming: now < startsAt; live: startsAt <= now < effectiveEnd; ended: now >= effectiveEnd. */
+export function getHubLivePhase(live: HubLiveTimes, now: Date = new Date()): HubLivePhase {
+  const nowMs = now.getTime();
+  if (nowMs < new Date(live.startsAt).getTime()) {
+    return "upcoming";
+  }
+  if (nowMs < getHubLiveEffectiveEnd(live).getTime()) {
+    return "live";
+  }
+  return "ended";
 }
 
 export const hubLiveStatusSchema = z.enum(["draft", "scheduled", "live", "ended", "cancelled"]);
@@ -146,20 +174,44 @@ export type HubAccessEventType = z.infer<typeof hubAccessEventTypeSchema>;
 export type HubAccessOutcome = z.infer<typeof hubAccessOutcomeSchema>;
 export type HubIdentityMatch = z.infer<typeof hubIdentityMatchSchema>;
 
+// Empty / whitespace-only strings become null; anything else must be an http(s) URL.
+const optionalHttpUrlSchema = z
+  .string()
+  .nullable()
+  .optional()
+  .transform((value) => {
+    if (value == null) {
+      return value;
+    }
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  })
+  .refine((value) => {
+    if (!value) {
+      return true;
+    }
+    try {
+      const protocol = new URL(value).protocol;
+      return protocol === "http:" || protocol === "https:";
+    } catch {
+      return false;
+    }
+  }, { message: "Must be a valid http(s) URL" });
+
 export const insertHubLiveSchema = z.object({
   slug: z.string().min(1).max(120),
   title: z.string().min(1).max(200),
   description: z.string().nullable().optional(),
   hostName: z.string().default("Skale Club"),
   timezone: z.string().default("America/New_York"),
-  startsAt: z.union([z.string(), z.date()]).transform((value) => value instanceof Date ? value : new Date(value)),
+  startsAt: z.union([z.string(), z.date()]).transform((value, ctx) => parseHubDateInput(value, ctx)),
   endsAt: nullableDateInputSchema,
   registrationOpensAt: nullableDateInputSchema,
   registrationClosesAt: nullableDateInputSchema,
-  streamUrl: z.string().nullable().optional(),
-  replayUrl: z.string().nullable().optional(),
+  streamUrl: optionalHttpUrlSchema,
+  replayUrl: optionalHttpUrlSchema,
   status: hubLiveStatusSchema.default("draft"),
-  capacity: z.number().int().nullable().optional(),
+  capacity: z.number().int().min(0).nullable().optional(),
 });
 
 export const selectHubLiveSchema = z.object({
@@ -340,21 +392,10 @@ export const hubRegisterRequestSchema = z.object({
 });
 
 export const hubAccessRequestSchema = z.object({
-  participantId: z.number().int().positive().nullable().optional(),
+  participantId: z.number().int().positive(),
   /** Issued by /register; proves the caller registered as `participantId`. */
-  accessToken: z.string().max(128).optional(),
-  phone: optionalTrimmedNullableString,
-  email: optionalTrimmedNullableString,
-  eventType: z.enum(["join", "replay"]).default("join"),
+  accessToken: z.string().max(128),
   metadata: z.record(z.unknown()).default({}),
-}).superRefine((value, ctx) => {
-  if (!value.participantId && !normalizeHubPhone(value.phone) && !normalizeHubEmail(value.email)) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "participantId, phone, or email is required",
-      path: ["participantId"],
-    });
-  }
 });
 
 export type UpsertHubParticipantInput = z.infer<typeof upsertHubParticipantSchema>;
