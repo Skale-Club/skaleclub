@@ -16,6 +16,20 @@ export const DEFAULT_LINKS_PAGE_THEME: Required<Pick<LinksPageTheme, 'primaryCol
   backgroundImageUrl: "",
 };
 
+const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+
+/** Keep only valid hex colors of a link's optional brand palette; omit the key when none is set. */
+function normalizeLinkColors(raw: unknown): Pick<LinksPageLink, 'colors'> {
+  if (!raw || typeof raw !== "object") return {};
+  const src = raw as Record<string, unknown>;
+  const colors: NonNullable<LinksPageLink['colors']> = {};
+  for (const key of ["background", "text", "accent"] as const) {
+    const value = src[key];
+    if (typeof value === "string" && HEX_COLOR.test(value)) colors[key] = value;
+  }
+  return Object.keys(colors).length > 0 ? { colors } : {};
+}
+
 /**
  * Lazy-normalize a (possibly legacy) linksPageConfig JSONB payload.
  *
@@ -57,6 +71,8 @@ export function normalizeLinksPageConfig(
     clickCount: typeof l.clickCount === "number" ? l.clickCount : 0,
     subtitle: typeof l.subtitle === "string" ? l.subtitle : "",
     featured: typeof l.featured === "boolean" ? l.featured : false,
+    ...normalizeLinkColors(l.colors),
+    iconBare: l.iconBare === true,
   }));
 
   const rawSocial = Array.isArray(src.socialLinks) ? (src.socialLinks as Record<string, unknown>[]) : [];

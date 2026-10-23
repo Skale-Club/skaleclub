@@ -55,16 +55,17 @@ const getLinkIcon = (url: string) => {
 };
 
 const renderLinkIcon = (link: LinksPageLink) => {
+  const bare = link.iconBare === true;
   if (link.iconType === 'lucide' && link.iconValue) {
     const Icon = getCuratedIcon(link.iconValue);
-    if (Icon) return <Icon className="w-5 h-5" />;
+    if (Icon) return <Icon className={bare ? "w-7 h-7" : "w-5 h-5"} />;
   }
   if (link.iconType === 'upload' && link.iconValue) {
     return (
       <img
         src={link.iconValue}
         alt=""
-        className="w-6 h-6 object-contain"
+        className={bare ? "w-12 h-12 object-contain" : "w-6 h-6 object-contain"}
       />
     );
   }
@@ -266,6 +267,9 @@ export default function Links() {
             .map((link, index) => {
               const featured = link.featured === true;
               const subtitle = link.subtitle?.trim();
+              // Brand links (link.colors) draw their own palette instead of the theme CTA colors.
+              const brand = link.colors;
+              const branded = !!brand;
               return (
                 <motion.a
                   key={link.id ?? index}
@@ -273,8 +277,11 @@ export default function Links() {
                   target={link.url.startsWith('http') ? "_blank" : "_self"}
                   rel="noopener noreferrer"
                   onClick={() => trackLinkClick(link.id)}
+                  style={branded ? { backgroundColor: brand.background, borderColor: brand.accent, color: brand.text } : undefined}
                   className={
-                    featured
+                    branded
+                      ? "group flex w-full items-center gap-[14px] rounded-2xl border-2 p-[18px] transition-[filter] hover:brightness-110 focus-visible:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                      : featured
                       ? "group flex w-full items-center gap-[14px] rounded-2xl bg-cta p-[18px] transition-colors hover:bg-cta-hover focus-visible:bg-cta-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
                       : "group flex w-full items-center gap-[14px] rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-[14px] transition-colors hover:border-[var(--link-color)] hover:bg-[color-mix(in_srgb,var(--link-color)_10%,transparent)] focus-visible:border-[var(--link-color)] focus-visible:bg-[color-mix(in_srgb,var(--link-color)_10%,transparent)] focus-visible:outline-none"
                   }
@@ -288,8 +295,11 @@ export default function Links() {
                       })}
                 >
                   <span
+                    style={branded && brand.accent ? { color: brand.accent } : undefined}
                     className={
-                      featured
+                      link.iconBare
+                        ? "flex h-12 w-12 shrink-0 items-center justify-center"
+                        : featured
                         ? "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white"
                         : "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cta/[0.14] text-cta-soft"
                     }
@@ -298,15 +308,22 @@ export default function Links() {
                   </span>
                   <span className="min-w-0 flex-1 text-left">
                     {featured && (
-                      <span className="block text-[10px] font-bold uppercase tracking-[0.2em] text-white/70">
+                      <span
+                        style={branded && brand.accent ? { color: brand.accent } : undefined}
+                        className="block text-[10px] font-bold uppercase tracking-[0.2em] text-white/70"
+                      >
                         {t('Start here')}
                       </span>
                     )}
-                    <span className="block text-base font-semibold leading-snug text-white">
+                    <span
+                      style={branded && brand.text ? { color: brand.text } : undefined}
+                      className="block text-base font-semibold leading-snug text-white"
+                    >
                       {t(link.title)}
                     </span>
                     {subtitle && (
                       <span
+                        style={branded && brand.text ? { color: brand.text, opacity: 0.8 } : undefined}
                         className={
                           featured
                             ? "mt-0.5 block text-[13px] leading-snug text-white/80 line-clamp-1"
@@ -319,6 +336,7 @@ export default function Links() {
                   </span>
                   <ChevronRight
                     aria-hidden="true"
+                    style={branded && brand.accent ? { color: brand.accent } : undefined}
                     className={
                       featured
                         ? "h-[18px] w-[18px] shrink-0 text-white/80 transition-transform group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5"

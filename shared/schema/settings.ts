@@ -175,6 +175,14 @@ export const linksPageLinkSchema = z.object({
   clickCount: z.number().int().min(0).optional(),
   subtitle: z.string().max(200).optional(),
   featured: z.boolean().optional(),
+  // Per-link exception for brand links (e.g. a game with its own palette): custom
+  // card colors and an icon drawn without the rounded wrapper.
+  colors: z.object({
+    background: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+    text: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+    accent: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  }).optional(),
+  iconBare: z.boolean().optional(),
 });
 
 export const linksPageSocialSchema = z.object({
