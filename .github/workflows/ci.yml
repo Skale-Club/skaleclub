@@ -18,7 +18,21 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    # Disposable database for the *.pg.test.ts suites.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          # Throwaway, job-local database: no password to leak or to flag.
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -38,16 +52,23 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: Postgres tests
+        run: npm run test:pg
+        env:
+          DATABASE_URL: postgresql://postgres@127.0.0.1:5432/postgres
+
       - name: Build
         run: npm run build
 
-      # Browser tests against the build above (Chromium version pinned by the
-      # exact `playwright` devDependency).
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+      # Browser tests against the build above, in Chrome's, Firefox's and
+      # Safari's engines (versions pinned by the exact `playwright` devDependency).
+      - name: Install browsers
+        run: npx playwright install --with-deps chromium firefox webkit
 
       - name: End-to-end tests
         run: npm run test:e2e:run
+        env:
+          E2E_BROWSERS: chromium,firefox,webkit
 
       - name: Dependency audit (high and above, prod deps only)
         run: npm audit --omit=dev --audit-level=high

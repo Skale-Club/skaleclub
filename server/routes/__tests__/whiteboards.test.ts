@@ -95,14 +95,16 @@ test("list shows summaries with element counts and thumbnails, and filters by se
 
     const all = await call("GET", "/api/whiteboards");
     assert.equal(all.status, 200);
-    assert.equal(all.json.length, 2);
-    assert.equal(all.json[0].id, a.id, "most recently saved first");
-    assert.equal(all.json[0].elementCount, 2);
-    assert.equal(all.json[0].thumbnailUrl, THUMB);
-    assert.equal("scene" in all.json[0], false);
+    assert.equal(all.json.total, 2);
+    assert.equal(all.json.data.length, 2);
+    assert.equal(all.json.data[0].id, a.id, "most recently saved first");
+    assert.equal(all.json.data[0].elementCount, 2);
+    assert.equal(all.json.data[0].thumbnailUrl, THUMB);
+    assert.equal("scene" in all.json.data[0], false);
 
     const filtered = await call("GET", "/api/whiteboards?search=meta");
-    assert.deepEqual(filtered.json.map((row: { title: string }) => row.title), ["Meta Ads"]);
+    assert.deepEqual(filtered.json.data.map((row: { title: string }) => row.title), ["Meta Ads"]);
+    assert.equal(filtered.json.total, 1);
   }));
 
 test("a save that omits the thumbnail keeps the previous one; null clears it", () =>
@@ -160,4 +162,63 @@ test("delete removes the board and its public page", () =>
     assert.equal((await call("DELETE", `/api/whiteboards/${id}`)).status, 200);
     assert.equal((await call("GET", `/api/whiteboards/slug/${slug}`, undefined, false)).status, 404);
     assert.equal((await call("DELETE", `/api/whiteboards/${id}`)).status, 404);
+  }));
+
+test("the list is paginated, with a bounded page size", () =>
+  withApi(async (call) => {
+    for (let i = 1; i <= 30; i++) await call("POST", "/api/whiteboards", { title: `Board ${i}` });
+
+    const first = await call("GET", "/api/whiteboards");
+    assert.equal(first.json.total, 30);
+    assert.equal(first.json.data.length, 24, "default page size");
+
+    const rest = await call("GET", "/api/whiteboards?limit=24&offset=24");
+    assert.equal(rest.json.data.length, 6);
+    const ids = new Set([...first.json.data, ...rest.json.data].map((row: { id: string }) => row.id));
+    assert.equal(ids.size, 30, "pages do not overlap");
+
+    assert.equal((await call("GET", "/api/whiteboards?limit=5000")).json.data.length, 30, "capped at 100, not an error");
+    assert.equal((await call("GET", "/api/whiteboards?limit=abc")).json.data.length, 24, "junk falls back to the default");
+    assert.equal((await call("GET", "/api/whiteboards?offset=-5")).json.data.length, 24);
+  }));
+
+test("every save bumps the version", () =>
+  withApi(async (call) => {
+    const { id, version } = (await call("POST", "/api/whiteboards", { title: "V" })).json;
+    assert.equal(version, 1);
+    const first = await call("PUT", `/api/whiteboards/${id}`, { title: "V2", baseVersion: 1 });
+    assert.equal(first.json.version, 2);
+    const second = await call("PUT", `/api/whiteboards/${id}`, { title: "V3", baseVersion: 2 });
+    assert.equal(second.json.version, 3);
+  }));
+
+test("a save from a stale version is refused instead of overwriting another tab's work", () =>
+  withApi(async (call) => {
+    const { id, slug } = (await call("POST", "/api/whiteboards", { title: "Shared" })).json;
+    const tabA = { elements: [rectangle] };
+    const tabB = { elements: [{ ...rectangle, id: "from-b" }] };
+
+    // Both tabs opened version 1; tab A saves first.
+    assert.equal((await call("PUT", `/api/whiteboards/${id}`, { scene: tabA, baseVersion: 1 })).status, 200);
+    const stale = await call("PUT", `/api/whiteboards/${id}`, { scene: tabB, baseVersion: 1 });
+    assert.equal(stale.status, 409);
+    assert.equal(stale.json.code, "version_conflict");
+    assert.equal(stale.json.version, 2, "tells the editor which version won");
+
+    const pub = await call("GET", `/api/whiteboards/slug/${slug}`, undefined, false);
+    assert.deepEqual(pub.json.scene.elements, [rectangle], "tab A's work is intact");
+
+    // Tab B chooses to overwrite: a save without baseVersion wins.
+    const forced = await call("PUT", `/api/whiteboards/${id}`, { scene: tabB });
+    assert.equal(forced.status, 200);
+    assert.equal(forced.json.version, 3);
+  }));
+
+test("a slug conflict and a version conflict are told apart", () =>
+  withApi(async (call) => {
+    const a = (await call("POST", "/api/whiteboards", { title: "A" })).json;
+    const b = (await call("POST", "/api/whiteboards", { title: "B" })).json;
+    const taken = await call("PUT", `/api/whiteboards/${b.id}`, { slug: a.slug, baseVersion: 1 });
+    assert.equal(taken.status, 409);
+    assert.equal(taken.json.code, "slug_taken");
   }));

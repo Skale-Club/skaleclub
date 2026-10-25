@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState } from 'react';
 import { useLocation } from 'wouter';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation } from '@tanstack/react-query';
 import { Copy, ExternalLink, PenLine, PenTool, Plus, Search, Trash2, X } from 'lucide-react';
 import {
   AlertDialog,
@@ -29,12 +29,15 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { whiteboardPublicUrl } from '@/components/whiteboard/whiteboardScene';
 import { AdminCard, EmptyState, SectionHeader } from './shared';
-import type { Whiteboard, WhiteboardSummary } from '@shared/schema';
+import type { Whiteboard, WhiteboardPage, WhiteboardSummary } from '@shared/schema';
 
 // Excalidraw is a large bundle: it loads only once a board is opened.
 const WhiteboardEditor = lazy(() =>
   import('./whiteboards/WhiteboardEditor').then((m) => ({ default: m.WhiteboardEditor })),
 );
+
+// Each card carries a thumbnail, so the list loads a page at a time.
+const PAGE_SIZE = 24;
 
 export function WhiteboardsSection() {
   const { t } = useTranslation();
@@ -49,17 +52,24 @@ export function WhiteboardsSection() {
   const [newTitle, setNewTitle] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<WhiteboardSummary | null>(null);
 
-  const { data: boards = [], isLoading } = useQuery<WhiteboardSummary[]>({
+  const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: ['/api/whiteboards', 'list', debouncedSearch],
-    queryFn: () => {
-      const params = new URLSearchParams();
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) => {
+      const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(pageParam) });
       if (debouncedSearch) params.set('search', debouncedSearch);
-      return apiRequest('GET', `/api/whiteboards?${params.toString()}`).then((r) => r.json());
+      return apiRequest('GET', `/api/whiteboards?${params.toString()}`).then((r) => r.json() as Promise<WhiteboardPage>);
+    },
+    getNextPageParam: (lastPage, pages) => {
+      const loaded = pages.reduce((sum, page) => sum + page.data.length, 0);
+      return loaded < lastPage.total ? loaded : undefined;
     },
   });
+  const boards = data?.pages.flatMap((page) => page.data) ?? [];
+  const total = data?.pages[0]?.total ?? 0;
 
   const openBoard = (id: string) => setLocation(`/admin/whiteboards/${id}`);
-  const closeBoard = () => setLocation('/admin/whiteboards');
+  const closeBoard = (opts?: { replace?: boolean }) => setLocation('/admin/whiteboards', opts);
 
   const createMutation = useMutation({
     mutationFn: (title: string) => apiRequest('POST', '/api/whiteboards', { title }).then((r) => r.json() as Promise<Whiteboard>),
@@ -207,6 +217,24 @@ export function WhiteboardsSection() {
               </div>
             </AdminCard>
           ))}
+        </div>
+      )}
+
+      {hasNextPage && (
+        <div className="flex flex-col items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => void fetchNextPage()}
+            disabled={isFetchingNextPage}
+            className="gap-2"
+            data-testid="whiteboards-load-more"
+          >
+            {isFetchingNextPage && <Loader2 className="w-4 h-4 animate-spin" />}
+            {t('Load more')}
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            {boards.length} / {total}
+          </p>
         </div>
       )}
 
