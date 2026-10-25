@@ -38,6 +38,7 @@ import {
   estimateViews,
   presentations,
   presentationViews,
+  whiteboards,
   brandGuidelines,
   estimateGuidelines,
   pages,
@@ -88,6 +89,9 @@ import {
   type InsertPresentation,
   type PresentationView,
   type PresentationWithStats,
+  type Whiteboard,
+  type InsertWhiteboard,
+  type WhiteboardSummary,
   type BrandGuidelines,
   type EstimateGuidelines,
   type SlideBlock,
@@ -387,6 +391,14 @@ export interface IStorage {
   updatePresentation(id: string, data: Partial<InsertPresentation>): Promise<Presentation>;
   deletePresentation(id: string): Promise<void>;
   recordPresentationView(presentationId: string, ipHash?: string): Promise<void>;
+
+  // Whiteboards
+  listWhiteboards(search?: string): Promise<WhiteboardSummary[]>;
+  getWhiteboard(id: string): Promise<Whiteboard | undefined>;
+  getWhiteboardBySlug(slug: string): Promise<Whiteboard | undefined>;
+  createWhiteboard(data: InsertWhiteboard): Promise<Whiteboard>;
+  updateWhiteboard(id: string, data: Partial<InsertWhiteboard>): Promise<Whiteboard>;
+  deleteWhiteboard(id: string): Promise<void>;
 
   // Pages (Phase 43)
   listPages(): Promise<Page[]>;
@@ -2529,6 +2541,44 @@ export class DatabaseStorage implements IStorage {
       presentationId,
       ipHash: ipHash ?? null,
     });
+  }
+
+  async listWhiteboards(search?: string): Promise<WhiteboardSummary[]> {
+    const { scene: _scene, ...columns } = getTableColumns(whiteboards);
+    const term = search?.trim();
+    const rows = await db
+      .select({
+        ...columns,
+        elementCount: sql<number>`coalesce(jsonb_array_length(${whiteboards.scene}->'elements'), 0)::int`,
+      })
+      .from(whiteboards)
+      .where(term ? or(ilike(whiteboards.title, `%${term}%`), ilike(whiteboards.slug, `%${term}%`)) : undefined)
+      .orderBy(desc(whiteboards.updatedAt));
+    return rows;
+  }
+
+  async getWhiteboard(id: string): Promise<Whiteboard | undefined> {
+    const [row] = await db.select().from(whiteboards).where(eq(whiteboards.id, id));
+    return row;
+  }
+
+  async getWhiteboardBySlug(slug: string): Promise<Whiteboard | undefined> {
+    const [row] = await db.select().from(whiteboards).where(eq(whiteboards.slug, slug));
+    return row;
+  }
+
+  async createWhiteboard(data: InsertWhiteboard): Promise<Whiteboard> {
+    const [row] = await db.insert(whiteboards).values(data).returning();
+    return row;
+  }
+
+  async updateWhiteboard(id: string, data: Partial<InsertWhiteboard>): Promise<Whiteboard> {
+    const [row] = await db.update(whiteboards).set(data).where(eq(whiteboards.id, id)).returning();
+    return row;
+  }
+
+  async deleteWhiteboard(id: string): Promise<void> {
+    await db.delete(whiteboards).where(eq(whiteboards.id, id));
   }
 
   // Pages (Phase 43)

@@ -76,9 +76,10 @@ export async function createApp(): Promise<{ app: express.Express; httpServer: S
 
   // Admin-only routes that accept large base64 bodies.
   // Matches the base64 image endpoints (/api/upload, /api/upload-local,
-  // /api/uploads/*, /api/update-favicon) plus presentation/estimate media.
+  // /api/uploads/*, /api/update-favicon) plus presentation/estimate media and
+  // whiteboard scenes (which embed pasted images).
   const LARGE_BODY_RE =
-    /^\/api\/(upload(s|-local)?(\/|$)|update-favicon(\/|$)|presentations\/(transcribe|upload-image)|presentations\/[^/]+\/thumbnail|estimates\/[^/]+\/thumbnail)/;
+    /^\/api\/(upload(s|-local)?(\/|$)|update-favicon(\/|$)|presentations\/(transcribe|upload-image)|presentations\/[^/]+\/thumbnail|estimates\/[^/]+\/thumbnail|whiteboards\/[0-9a-f-]{36}$)/;
 
   app.use((req, res, next) => {
     // Large-body routes are parsed further down, once the session exists and
