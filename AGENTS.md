@@ -28,7 +28,12 @@ shared/schema.ts         # Drizzle tables + Zod schemas
 - No lint/format script is configured; rely on editor defaults and `npm run check`.
 
 ## Testing Guidelines
-- No automated test runner is configured currently.
+- `npm test` runs the unit and route tests (`server/**/*.test.ts`, `shared/**/*.test.ts`)
+  with Node's test runner; no database is needed.
+- `npm run test:e2e` builds the client and drives it in Chromium (`e2e/*.e2e.ts`).
+  The whiteboard suite runs the real routes against an in-memory table.
+- `*.pg.test.ts` files need a disposable Postgres and are skipped by `npm test`; each
+  file's header has the command (e.g. `WHITEBOARDS_PG_TEST=1 DATABASE_URL=...`).
 - Use `data-testid` attributes for UI elements that need reliable selectors.
 - Manually verify critical flows (booking, admin CRUD, availability) before PRs.
 

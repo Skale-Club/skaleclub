@@ -1,7 +1,25 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
 import path from "path";
+import { cp } from "fs/promises";
+
+// Whiteboards (Excalidraw) fetch their hand-drawn fonts at runtime from
+// /excalidraw/ (client/src/components/whiteboard/excalidrawAssets.ts) instead of
+// esm.sh. Xiaolai is 13 MB of CJK glyphs: it stays on the esm.sh fallback.
+function excalidrawFonts(): Plugin {
+  return {
+    name: "excalidraw-fonts",
+    apply: "build",
+    async closeBundle() {
+      const fonts = path.resolve(import.meta.dirname, "node_modules/@excalidraw/excalidraw/dist/prod/fonts");
+      await cp(fonts, path.resolve(import.meta.dirname, "dist/public/excalidraw/fonts"), {
+        recursive: true,
+        filter: (source) => !source.includes(`${path.sep}Xiaolai`),
+      });
+    },
+  };
+}
 
 // Sentry release: the commit CI/Coolify builds, or an explicit VITE_RELEASE.
 const release = process.env.VITE_RELEASE || process.env.GITHUB_SHA || process.env.SOURCE_COMMIT || "";
@@ -12,6 +30,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    excalidrawFonts(),
     // Upload source maps to Sentry on production builds (only when auth token is set)
     ...(process.env.SENTRY_AUTH_TOKEN
       ? [

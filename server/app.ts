@@ -8,6 +8,7 @@ import { originCheck } from "./lib/originCheck.js";
 import { registerHealthRoutes } from "./routes/health.js";
 import { registerMonitoringRoute } from "./routes/monitoring.js";
 import { registerCanonicalHostRedirects } from "./canonicalHost.js";
+import { LARGE_BODY_LIMIT, LARGE_BODY_RE } from "./lib/bodyLimits.js";
 import { createServer, type Server } from "http";
 import { botDefenseMiddleware, clientIpMiddleware } from "./lib/botDefenseMiddleware.js";
 
@@ -67,18 +68,12 @@ export async function createApp(): Promise<{ app: express.Express; httpServer: S
     req.rawBody = buf;
   };
   const jsonDefault = express.json({ limit: '1mb', verify: captureRawBody });
-  const jsonLarge = express.json({ limit: '25mb', verify: captureRawBody });
+  const jsonLarge = express.json({ limit: LARGE_BODY_LIMIT, verify: captureRawBody });
   // The order-form logo upload is public, so it cannot use the 25 MB admin cap.
   // 4 MB holds a 3 MB file once base64 inflates it by a third, and the route is
   // rate-limited, which keeps the worst case a long way below jsonLarge.
   const jsonPublicUpload = express.json({ limit: '4mb', verify: captureRawBody });
   const PUBLIC_UPLOAD_RE = /^\/api\/forms\/slug\/[^/]+\/upload$/;
-
-  // Admin-only routes that accept large base64 bodies.
-  // Matches the base64 image endpoints (/api/upload, /api/upload-local,
-  // /api/uploads/*, /api/update-favicon) plus presentation/estimate media.
-  const LARGE_BODY_RE =
-    /^\/api\/(upload(s|-local)?(\/|$)|update-favicon(\/|$)|presentations\/(transcribe|upload-image)|presentations\/[^/]+\/thumbnail|estimates\/[^/]+\/thumbnail)/;
 
   app.use((req, res, next) => {
     // Large-body routes are parsed further down, once the session exists and

@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../db.js";
 import { bootstrapTasksEnabled } from "./runtimeFlags.js";
 import { bootstrapTasks } from "#shared/schema.js";
+import { ensureWhiteboardsTable } from "./whiteboardsTable.js";
 import { applyContentFixes, assignServiceCategories, ensure3dPrintingService, refreshProductCatalogArtwork, refreshServiceImages, syncProductArtwork, type TaskResult } from "./contentFixes.js";
 
 /**
@@ -30,6 +31,7 @@ const TASKS: Task[] = [
   { name: "product-artwork", description: "Product icons and photos copied from each X app's own site", run: syncProductArtwork },
   // After service-3d-printing, so the card it adds gets a category too.
   { name: "catalog-categories-2026-09", description: "Explicit catalog category on each Our Services card", run: assignServiceCategories },
+  { name: "whiteboards-table-2026-10", description: "Whiteboards table for /admin/whiteboards and the public /w/:slug pages", run: ensureWhiteboardsTable },
 ];
 
 let tableReady: Promise<void> | null = null;

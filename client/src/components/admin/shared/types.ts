@@ -18,6 +18,7 @@ export type AdminSection =
   | 'vcards'
   | 'estimates'
   | 'presentations'
+  | 'whiteboards'
   | 'skaleHub'
   | 'pages'
   | 'notifications'

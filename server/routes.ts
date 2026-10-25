@@ -29,6 +29,7 @@ import { registerMarketingRoutes } from "./routes/marketing.js";
 import { registerIntegrationRoutes } from "./routes/integrations.js";
 import { registerEstimatesRoutes } from "./routes/estimates.js";
 import { registerPresentationsRoutes } from "./routes/presentations.js";
+import { registerWhiteboardsRoutes } from "./routes/whiteboards.js";
 import { registerPageRoutes } from "./routes/pages.js";
 import { registerUploadRoutes } from "./routes/uploads.js";
 import { registerLinksPageRoutes } from "./routes/linksPage.js";
@@ -133,6 +134,7 @@ export async function registerRoutes(
   registerMcpRoutes(app);
   registerOAuthRoutes(app);
   registerPresentationsRoutes(app);
+  registerWhiteboardsRoutes(app);
   registerPageRoutes(app);
   registerRevisionRoutes(app);
   registerRetentionRoutes(app);

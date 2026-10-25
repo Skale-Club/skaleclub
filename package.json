@@ -19,7 +19,9 @@
     "gen:service-images": "tsx scripts/generate-service-images.ts",
     "secrets:scan": "tsx scripts/run-gitleaks.ts",
     "db:migrate": "node scripts/apply-migrations.mjs",
-    "test": "cross-env DATABASE_URL=postgresql://test:test@127.0.0.1:1/test POSTGRES_URL=postgresql://test:test@127.0.0.1:1/test tsx --test \"server/**/*.test.ts\" \"shared/**/*.test.ts\""
+    "test": "cross-env DATABASE_URL=postgresql://test:test@127.0.0.1:1/test POSTGRES_URL=postgresql://test:test@127.0.0.1:1/test tsx --test \"server/**/*.test.ts\" \"shared/**/*.test.ts\"",
+    "test:e2e": "vite build && npm run test:e2e:run",
+    "test:e2e:run": "cross-env DATABASE_URL=postgresql://test:test@127.0.0.1:1/test POSTGRES_URL=postgresql://test:test@127.0.0.1:1/test tsx --test \"e2e/**/*.e2e.ts\""
   },
   "dependencies": {
     "@google/genai": "^1.50.1",
@@ -50,6 +52,7 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@excalidraw/excalidraw": "^0.18.1",
     "@radix-ui/react-accordion": "^1.2.20",
     "@radix-ui/react-alert-dialog": "^1.1.23",
     "@radix-ui/react-avatar": "^1.2.6",
@@ -93,6 +96,7 @@
     "ghostscript-wasm-esm": "^1.0.1",
     "lottie-react": "^3.1.2",
     "lucide-react": "^0.453.0",
+    "playwright": "1.63.0",
     "postcss": "^8.5.28",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
