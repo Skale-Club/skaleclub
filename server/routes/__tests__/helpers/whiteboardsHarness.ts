@@ -71,9 +71,12 @@ function stubAdminLookup() {
   });
 }
 
-export function createWhiteboardsApp(opts: { alwaysAdmin?: boolean } = {}): Express {
+export function createWhiteboardsApp(
+  opts: { alwaysAdmin?: boolean; beforeRoutes?: (app: Express) => void } = {},
+): Express {
   stubAdminLookup();
   const app = express();
+  opts.beforeRoutes?.(app);
   app.use((req, _res, next) => {
     const isAdmin = opts.alwaysAdmin || req.get("x-test-admin") === "1";
     (req as unknown as { session: object }).session = isAdmin ? { userId: "admin" } : {};

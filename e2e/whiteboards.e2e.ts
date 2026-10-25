@@ -54,6 +54,9 @@ function whiteboardSuite(browserName: EngineName) {
     if (dir) await target.screenshot({ path: path.join(dir, `${browserName}-${name}.png`) });
   }
 
+  // When set, the next whiteboard save waits on the server until released.
+  let saveHold: { gate: Promise<void>; landed: () => void } | null = null;
+
   function startServer() {
     rows = installMemoryWhiteboards();
     board = () => {
@@ -61,7 +64,17 @@ function whiteboardSuite(browserName: EngineName) {
       assert.ok(only, "a whiteboard exists");
       return only;
     };
-    const app = createWhiteboardsApp({ alwaysAdmin: true });
+    const app = createWhiteboardsApp({
+      alwaysAdmin: true,
+      beforeRoutes: (app) =>
+        app.use((req, res, next) => {
+          if (!saveHold || req.method !== "PUT" || !/^\/api\/whiteboards\/[^/]+$/.test(req.path)) return next();
+          const hold = saveHold;
+          saveHold = null;
+          res.on("finish", hold.landed);
+          void hold.gate.then(() => next());
+        }),
+    });
     // Everything else the admin shell and public pages ask for.
     app.get("/api/admin/session", (_req, res) => {
       res.json({ isAdmin: true, email: "admin@skale.club", firstName: "Admin", lastName: "" });
@@ -238,21 +251,17 @@ function whiteboardSuite(browserName: EngineName) {
       assert.ok(stats.inkRatio < 0.5, `thumbnail is not a solid block (ink ${stats.inkRatio})`);
     });
 
-    // Holds the next PUT until the returned release() lets it through (and it lands).
+    // Holds the next save on the server (a slow network, in any browser) until
+    // the returned release() lets it through; resolves once its response is sent.
     async function holdNextSave() {
-      let release: () => void = () => {};
-      const held = new Promise<void>((resolve) => (release = resolve));
-      await page.route("**/api/whiteboards/*", async (route) => {
-        if (route.request().method() === "PUT") await held;
-        await route.continue();
-      });
+      let open: () => void = () => {};
+      let landed: () => void = () => {};
+      const gate = new Promise<void>((resolve) => (open = resolve));
+      const done = new Promise<void>((resolve) => (landed = resolve));
+      saveHold = { gate, landed };
       return async () => {
-        const saved = page.waitForResponse(
-          (response) => response.request().method() === "PUT" && response.url().includes("/api/whiteboards/"),
-        );
-        release();
-        await saved;
-        await page.unroute("**/api/whiteboards/*");
+        open();
+        await done;
       };
     }
 
